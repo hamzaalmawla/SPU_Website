@@ -13,27 +13,32 @@ use Closure;
  */
 final class CacheServicePlaceholder implements CacheServiceInterface
 {
-    public function remember(string $key, Closure $callback, int $ttl): mixed
+    public function remember(string $key, Closure $callback, int $ttlSeconds = 3600): mixed
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function invalidatePage(string $pageKey): void
+    public function forget(string $key): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function invalidateMenu(): void
+    public function flushTag(string $tag): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function invalidateAll(): void
+    public function flushTags(array $tags): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function tags(string $tag): static
+    public function flushAll(): bool
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function tags(array|string $tags): static
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }

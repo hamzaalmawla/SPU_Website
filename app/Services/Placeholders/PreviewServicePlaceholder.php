@@ -13,12 +13,22 @@ use BadMethodCallException;
  */
 final class PreviewServicePlaceholder implements PreviewServiceInterface
 {
-    public function generate(string $entityType, int|string $entityId, string $locale): PreviewDTO
+    public function createToken(string $targetType, int $targetId, string $locale, int $userId): PreviewDTO
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function resolveToken(string $token): ?PreviewDTO
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
     public function validateToken(string $token): bool
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function invalidateToken(string $token): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }

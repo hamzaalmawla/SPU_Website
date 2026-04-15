@@ -14,25 +14,32 @@ interface CacheServiceInterface
     /**
      * Retrieve cached value or store callback result.
      */
-    public function remember(string $key, Closure $callback, int $ttl): mixed;
+    public function remember(string $key, Closure $callback, int $ttlSeconds = 3600): mixed;
 
     /**
-     * Invalidate cache for a specific page key.
+     * Forget a specific cache key.
      */
-    public function invalidatePage(string $pageKey): void;
+    public function forget(string $key): bool;
 
     /**
-     * Invalidate menu-related cache keys.
+     * Flush a single cache tag.
      */
-    public function invalidateMenu(): void;
+    public function flushTag(string $tag): bool;
 
     /**
-     * Invalidate all managed cache keys.
+     * Flush multiple cache tags.
+     *
+     * @param  array<int, string>  $tags
      */
-    public function invalidateAll(): void;
+    public function flushTags(array $tags): bool;
 
     /**
-     * Scope cache operations by tag.
+     * Flush all managed cache entries.
      */
-    public function tags(string $tag): static;
+    public function flushAll(): bool;
+
+    /**
+     * Scope cache operations by one or more tags.
+     */
+    public function tags(array|string $tags): static;
 }

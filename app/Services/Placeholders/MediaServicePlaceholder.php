@@ -7,7 +7,7 @@ namespace App\Services\Placeholders;
 use App\Contracts\MediaServiceInterface;
 use App\DTOs\MediaUploadResultDTO;
 use BadMethodCallException;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 /**
  * Placeholder implementation for media service contract.
@@ -24,7 +24,15 @@ final class MediaServicePlaceholder implements MediaServiceInterface
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function paginate(array $filters = []): LengthAwarePaginator
+    public function updateMetadata(int|string $mediaId, array $metadata): bool
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    /**
+     * @return Collection<int, MediaUploadResultDTO>
+     */
+    public function list(array $filters = []): Collection
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }

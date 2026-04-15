@@ -5,25 +5,51 @@ declare(strict_types=1);
 namespace App\Services\Placeholders;
 
 use App\Contracts\MenuServiceInterface;
+use App\DTOs\MenuItemDataDTO;
+use App\DTOs\MenuItemDTO;
+use App\DTOs\MenuTreeNodeDTO;
+use App\DTOs\NavigationTreeDTO;
 use BadMethodCallException;
-use Illuminate\Support\Collection;
 
 /**
- * Placeholder implementation for menu service contract.
+ * Placeholder implementation for the menu service contract.
  */
 final class MenuServicePlaceholder implements MenuServiceInterface
 {
-    public function getTree(string $locale): Collection
+    public function createItem(MenuItemDataDTO $payload): MenuItemDTO
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function publish(int|string $menuId): bool
+    public function updateItem(int $itemId, MenuItemDataDTO $payload): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function reorder(array $orderedItemKeys): bool
+    public function deleteItem(int $itemId): bool
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    /**
+     * @param  array<int, MenuTreeNodeDTO>  $tree
+     */
+    public function reorderTree(string $treeType, array $tree): bool
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function toggleItemState(int $itemId, bool $enabled): bool
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function getPrimaryTree(string $locale, ?string $currentPath = null): NavigationTreeDTO
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function getUtilityTree(string $locale, ?string $currentPath = null): NavigationTreeDTO
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }

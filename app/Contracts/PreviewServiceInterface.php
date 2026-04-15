@@ -7,17 +7,27 @@ namespace App\Contracts;
 use App\DTOs\PreviewDTO;
 
 /**
- * Defines content preview generation and validation operations.
+ * Defines preview token generation and payload resolution for draft content.
  */
 interface PreviewServiceInterface
 {
     /**
-     * Build preview data for an entity.
+     * Create a preview token and payload for a draft target.
      */
-    public function generate(string $entityType, int|string $entityId, string $locale): PreviewDTO;
+    public function createToken(string $targetType, int $targetId, string $locale, int $userId): PreviewDTO;
+
+    /**
+     * Resolve a preview token to a preview payload.
+     */
+    public function resolveToken(string $token): ?PreviewDTO;
 
     /**
      * Validate a preview token.
      */
     public function validateToken(string $token): bool;
+
+    /**
+     * Invalidate a preview token.
+     */
+    public function invalidateToken(string $token): bool;
 }

@@ -5,25 +5,32 @@ declare(strict_types=1);
 namespace App\Services\Placeholders;
 
 use App\Contracts\HomepagePublishingServiceInterface;
-use App\DTOs\HomepageDraftWriteDTO;
+use App\DTOs\HomepageDraftDataDTO;
+use App\DTOs\HomepageDraftDTO;
 use BadMethodCallException;
+use DateTimeInterface;
 
 /**
- * Placeholder implementation for homepage publishing service contract.
+ * Placeholder implementation for the homepage publishing service contract.
  */
 final class HomepagePublishingServicePlaceholder implements HomepagePublishingServiceInterface
 {
-    public function saveDraft(HomepageDraftWriteDTO $data): bool
+    public function saveDraft(HomepageDraftDataDTO $payload, int $userId): HomepageDraftDTO
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function publish(): bool
+    public function publish(int $draftId, int $userId): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function unpublish(): bool
+    public function unpublish(string $targetType, int $targetId, int $userId): bool
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function schedulePublish(int $draftId, DateTimeInterface $publishAt, int $userId): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }

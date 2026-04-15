@@ -12,12 +12,7 @@ use BadMethodCallException;
  */
 final class SlugServicePlaceholder implements SlugServiceInterface
 {
-    public function generate(string $source, string $table, int|string|null $ignoreId = null): string
-    {
-        throw new BadMethodCallException(__METHOD__.' is not implemented.');
-    }
-
-    public function isUnique(string $slug, string $table, int|string|null $ignoreId = null): bool
+    public function generate(string $source, string $modelClass, string $locale = 'ar', ?int $ignoreId = null): string
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }

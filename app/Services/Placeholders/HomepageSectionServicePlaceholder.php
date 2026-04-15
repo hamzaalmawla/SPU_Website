@@ -5,31 +5,52 @@ declare(strict_types=1);
 namespace App\Services\Placeholders;
 
 use App\Contracts\HomepageSectionServiceInterface;
-use App\DTOs\HomepageSectionWriteDTO;
+use App\DTOs\HomepageDTO;
+use App\DTOs\HomepageSectionDataDTO;
+use App\DTOs\HomepageSectionDTO;
+use App\DTOs\ValidationResultDTO;
 use BadMethodCallException;
 use Illuminate\Support\Collection;
 
 /**
- * Placeholder implementation for homepage section service contract.
+ * Placeholder implementation for the homepage section service contract.
  */
 final class HomepageSectionServicePlaceholder implements HomepageSectionServiceInterface
 {
+    /**
+     * @return Collection<int, HomepageSectionDTO>
+     */
     public function getSections(): Collection
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function getPublicHomepage(string $locale): array
+    public function getSectionByKey(string $key): ?HomepageSectionDTO
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function updateSection(string $sectionKey, HomepageSectionWriteDTO $data): bool
+    public function getPublicHomepage(string $locale): HomepageDTO
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function reorder(array $orderedKeys): bool
+    public function updateSection(string $key, HomepageSectionDataDTO $payload, string $locale): bool
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function toggleSection(string $key, bool $enabled): bool
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function reorderSections(array $orderedKeys): bool
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function validateSectionPayload(string $key, HomepageSectionDataDTO $payload, string $locale): ValidationResultDTO
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\DTOs;
 
 /**
- * Data transfer object for menu item entities.
+ * Data transfer object for a localized menu item.
  */
 final readonly class MenuItemDTO
 {
@@ -14,11 +14,18 @@ final readonly class MenuItemDTO
      */
     public function __construct(
         public int $id,
+        public ?int $parentId,
         public string $label,
-        public string $url,
-        public string $type,
+        public string $itemType,
+        public string $targetType,
         public string $locale,
+        public ?int $targetId,
+        public ?string $url,
+        public ?string $resolvedUrl,
+        public ?string $target,
+        public bool $isActive,
         public int $sortOrder,
+        public int $depth,
         public bool $isEnabled,
         public array $children,
     ) {}

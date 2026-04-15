@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Contracts;
 
 use App\DTOs\MediaUploadResultDTO;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 /**
- * Defines media upload and retrieval operations.
+ * Defines media library operations for CMS-managed assets.
  */
 interface MediaServiceInterface
 {
@@ -20,7 +20,15 @@ interface MediaServiceInterface
     public function delete(int|string $mediaId): bool;
 
     /**
-     * @param  array<string, mixed>  $filters
+     * Update stored media metadata.
+     *
+     * @param  array<string, mixed>  $metadata
      */
-    public function paginate(array $filters = []): LengthAwarePaginator;
+    public function updateMetadata(int|string $mediaId, array $metadata): bool;
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return Collection<int, MediaUploadResultDTO>
+     */
+    public function list(array $filters = []): Collection;
 }

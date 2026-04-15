@@ -4,30 +4,50 @@ declare(strict_types=1);
 
 namespace App\Contracts;
 
+use App\DTOs\MenuItemDataDTO;
 use App\DTOs\MenuItemDTO;
-use Illuminate\Support\Collection;
+use App\DTOs\MenuTreeNodeDTO;
+use App\DTOs\NavigationTreeDTO;
 
 /**
- * Defines menu retrieval and publication operations.
+ * Defines CMS menu tree management for primary and utility navigation.
  */
 interface MenuServiceInterface
 {
     /**
-     * Retrieve menu items tree for a locale.
-     *
-     * @return Collection<int, MenuItemDTO>
+     * Create a menu item while enforcing a maximum depth of two.
      */
-    public function getTree(string $locale): Collection;
+    public function createItem(MenuItemDataDTO $payload): MenuItemDTO;
 
     /**
-     * Publish a menu revision.
+     * Update a locale-aware menu item.
      */
-    public function publish(int|string $menuId): bool;
+    public function updateItem(int $itemId, MenuItemDataDTO $payload): bool;
 
     /**
-     * Reorder menu items.
-     *
-     * @param  array<int, string>  $orderedItemKeys
+     * Delete a menu item.
      */
-    public function reorder(array $orderedItemKeys): bool;
+    public function deleteItem(int $itemId): bool;
+
+    /**
+     * Reorder a menu tree.
+     *
+     * @param  array<int, MenuTreeNodeDTO>  $tree
+     */
+    public function reorderTree(string $treeType, array $tree): bool;
+
+    /**
+     * Enable or disable a menu item without deleting it.
+     */
+    public function toggleItemState(int $itemId, bool $enabled): bool;
+
+    /**
+     * Retrieve the primary navigation tree for a locale.
+     */
+    public function getPrimaryTree(string $locale, ?string $currentPath = null): NavigationTreeDTO;
+
+    /**
+     * Retrieve the utility navigation tree for a locale.
+     */
+    public function getUtilityTree(string $locale, ?string $currentPath = null): NavigationTreeDTO;
 }

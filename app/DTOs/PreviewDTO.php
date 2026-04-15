@@ -5,17 +5,17 @@ declare(strict_types=1);
 namespace App\DTOs;
 
 /**
- * Data transfer object for content preview payloads.
+ * Data transfer object for preview tokens and payloads.
  */
 final readonly class PreviewDTO
 {
-    /**
-     * @param  array<string, mixed>  $payload
-     */
     public function __construct(
-        public string $entityType,
-        public int|string $entityId,
+        public string $token,
+        public string $targetType,
+        public int $targetId,
         public string $locale,
-        public array $payload,
+        public string $previewUrl,
+        public PreviewPayloadDTO $payload,
+        public ?string $expiresAt = null,
     ) {}
 }

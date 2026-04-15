@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Contracts;
 
 /**
- * Defines authentication and account lock operations.
+ * Defines authentication and access checks for the admin foundation.
  */
 interface AuthServiceInterface
 {
@@ -17,24 +17,19 @@ interface AuthServiceInterface
     public function attempt(array $credentials): bool;
 
     /**
-     * Lock a user account.
-     */
-    public function lockAccount(int|string $userId): void;
-
-    /**
-     * Unlock a user account.
-     */
-    public function unlockAccount(int|string $userId): void;
-
-    /**
      * Check if the user has a specific role.
      */
-    public function checkRole(int|string $userId, string $role): bool;
+    public function checkRole(mixed $user, string $role): bool;
 
     /**
      * Check whether the account is currently locked.
      */
-    public function isLocked(int|string $userId): bool;
+    public function isLocked(mixed $user): bool;
+
+    /**
+     * End the current authenticated session.
+     */
+    public function logout(): void;
 
     /**
      * Extend active session lifetime.

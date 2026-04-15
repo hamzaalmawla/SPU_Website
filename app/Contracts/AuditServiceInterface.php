@@ -8,21 +8,35 @@ use App\DTOs\AuditLogDTO;
 use Illuminate\Support\Collection;
 
 /**
- * Defines audit log write and retrieval operations.
+ * Defines audit logging operations for admin-managed content.
  */
 interface AuditServiceInterface
 {
     /**
      * Write an audit log record.
      *
-     * @param  array<string, mixed>  $context
+     * @param  array<string, mixed>  $metadata
      */
-    public function logAction(string $action, int|string|null $actorId, array $context = []): void;
+    public function log(string $action, ?int $userId = null, ?string $entityType = null, ?int $entityId = null, array $metadata = []): bool;
+
+    /**
+     * Retrieve audit entries for a specific entity.
+     *
+     * @return Collection<int, AuditLogDTO>
+     */
+    public function forEntity(string $entityType, int $entityId): Collection;
+
+    /**
+     * Retrieve audit entries for a specific action.
+     *
+     * @return Collection<int, AuditLogDTO>
+     */
+    public function forAction(string $action): Collection;
 
     /**
      * Retrieve recent audit log entries.
      *
      * @return Collection<int, AuditLogDTO>
      */
-    public function getRecent(int $limit = 50): Collection;
+    public function latest(int $limit = 50): Collection;
 }

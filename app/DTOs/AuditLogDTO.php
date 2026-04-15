@@ -13,9 +13,11 @@ final readonly class AuditLogDTO
      * @param  array<string, mixed>  $context
      */
     public function __construct(
-        public int|string $id,
+        public int $id,
         public string $action,
-        public int|string|null $actorId,
+        public ?int $actorId,
+        public ?string $entityType,
+        public ?int $entityId,
         public string $createdAt,
         public array $context,
     ) {}

@@ -10,12 +10,15 @@ namespace App\DTOs;
 final readonly class MediaUploadResultDTO
 {
     public function __construct(
-        public int|string $mediaId,
+        public int $mediaId,
         public string $disk,
         public string $path,
         public string $url,
         public string $mimeType,
         public int $size,
         public string $originalName,
+        public ?string $title = null,
+        public ?string $altText = null,
+        public ?string $caption = null,
     ) {}
 }

@@ -4,30 +4,42 @@ declare(strict_types=1);
 
 namespace App\Contracts;
 
-use App\DTOs\SeoMetadataDTO;
+use App\DTOs\PageSeoDTO;
 
 /**
- * Defines SEO metadata retrieval, generation, and persistence operations.
+ * Defines SEO metadata resolution for public pages and shared fallbacks.
  */
 interface SeoMetadataServiceInterface
 {
     /**
-     * Retrieve SEO metadata for an entity and locale.
+     * Build page-level SEO metadata.
      */
-    public function getFor(string $entityType, int|string $entityId, string $locale): ?SeoMetadataDTO;
+    public function buildForPage(int $pageId, string $locale): PageSeoDTO;
 
     /**
-     * Create or update SEO metadata for an entity and locale.
+     * Build fallback SEO metadata from global settings and request context.
      *
-     * @param  array<string, mixed>  $metadata
+     * @param  array<string, mixed>  $context
      */
-    public function upsertFor(string $entityType, int|string $entityId, string $locale, array $metadata): bool;
+    public function buildFallback(string $locale, array $context = []): PageSeoDTO;
 
     /**
-     * Generate metadata payload from content data.
+     * Resolve the canonical URL for a localized path.
+     */
+    public function resolveCanonical(string $path, string $locale): string;
+
+    /**
+     * Resolve hreflang metadata from locale-path pairs.
      *
-     * @param  array<string, mixed>  $data
+     * @param  array<string, string>  $localePathMap
+     * @return array<int, array<string, string>>
+     */
+    public function resolveHreflang(array $localePathMap): array;
+
+    /**
+     * Convert a SEO DTO to a meta tag payload.
+     *
      * @return array<string, mixed>
      */
-    public function generate(string $contentType, array $data, string $locale): array;
+    public function toMetaArray(PageSeoDTO $dto): array;
 }

@@ -5,17 +5,12 @@ declare(strict_types=1);
 namespace App\Contracts;
 
 /**
- * Defines slug generation and uniqueness checks.
+ * Defines locale-aware slug generation for CMS pages.
  */
 interface SlugServiceInterface
 {
     /**
      * Generate a unique slug from source text.
      */
-    public function generate(string $source, string $table, int|string|null $ignoreId = null): string;
-
-    /**
-     * Check slug uniqueness in a storage table.
-     */
-    public function isUnique(string $slug, string $table, int|string|null $ignoreId = null): bool;
+    public function generate(string $source, string $modelClass, string $locale = 'ar', ?int $ignoreId = null): string;
 }
