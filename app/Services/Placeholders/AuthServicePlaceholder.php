@@ -6,6 +6,7 @@ namespace App\Services\Placeholders;
 
 use App\Contracts\AuthServiceInterface;
 use BadMethodCallException;
+use Illuminate\Contracts\Auth\Authenticatable;
 
 /**
  * Placeholder implementation for auth service contract.
@@ -17,12 +18,12 @@ final class AuthServicePlaceholder implements AuthServiceInterface
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function checkRole(mixed $user, string $role): bool
+    public function checkRole(Authenticatable $user, string $role): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function isLocked(mixed $user): bool
+    public function isLocked(Authenticatable $user): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
