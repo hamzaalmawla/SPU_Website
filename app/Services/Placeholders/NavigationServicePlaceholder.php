@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Services\Placeholders;
 
 use App\Contracts\NavigationServiceInterface;
-use App\DTOs\NavigationPayloadDTO;
 use App\DTOs\NavigationTreeDTO;
 use BadMethodCallException;
 
@@ -29,7 +28,7 @@ final class NavigationServicePlaceholder implements NavigationServiceInterface
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function getFullNavigationPayload(string $locale, ?string $currentPath = null): NavigationPayloadDTO
+    public function getFullNavigationPayload(string $locale, ?string $currentPath = null): array
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }

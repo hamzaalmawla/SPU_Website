@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Services\Placeholders;
 
 use App\Contracts\HomepagePublishingServiceInterface;
-use App\DTOs\HomepageDraftDataDTO;
 use App\DTOs\HomepageDraftDTO;
 use BadMethodCallException;
 use DateTimeInterface;
@@ -15,7 +14,7 @@ use DateTimeInterface;
  */
 final class HomepagePublishingServicePlaceholder implements HomepagePublishingServiceInterface
 {
-    public function saveDraft(HomepageDraftDataDTO $payload, int $userId): HomepageDraftDTO
+    public function saveDraft(array $payload, int $userId): HomepageDraftDTO
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }

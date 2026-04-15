@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Contracts;
 
-use App\DTOs\HomepageDraftDataDTO;
 use App\DTOs\HomepageDraftDTO;
 use DateTimeInterface;
 
@@ -15,8 +14,10 @@ interface HomepagePublishingServiceInterface
 {
     /**
      * Save homepage draft content.
+     *
+     * @param  array<string, mixed>  $payload
      */
-    public function saveDraft(HomepageDraftDataDTO $payload, int $userId): HomepageDraftDTO;
+    public function saveDraft(array $payload, int $userId): HomepageDraftDTO;
 
     /**
      * Publish a saved homepage draft.

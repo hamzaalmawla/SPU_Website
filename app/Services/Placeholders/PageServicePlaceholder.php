@@ -87,7 +87,7 @@ final class PageServicePlaceholder implements PageServiceInterface
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function buildPreviewPayload(int $pageId, string $locale): PreviewDTO
+    public function buildPreviewPayload(int $pageId, string $locale, string $device): PreviewDTO
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }

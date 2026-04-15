@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Contracts;
 
-use App\DTOs\NavigationPayloadDTO;
 use App\DTOs\NavigationTreeDTO;
 
 /**
@@ -29,6 +28,8 @@ interface NavigationServiceInterface
 
     /**
      * Build the full public navigation payload.
+     *
+     * @return array<string, mixed>
      */
-    public function getFullNavigationPayload(string $locale, ?string $currentPath = null): NavigationPayloadDTO;
+    public function getFullNavigationPayload(string $locale, ?string $currentPath = null): array;
 }

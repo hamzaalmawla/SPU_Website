@@ -14,7 +14,7 @@ interface PreviewServiceInterface
     /**
      * Create a preview token and payload for a draft target.
      */
-    public function createToken(string $targetType, int $targetId, string $locale, int $userId): PreviewDTO;
+    public function createToken(string $targetType, int $targetId, string $locale, string $device, int $userId): PreviewDTO;
 
     /**
      * Resolve a preview token to a preview payload.

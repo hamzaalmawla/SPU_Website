@@ -14,6 +14,7 @@ final readonly class PreviewDTO
         public string $targetType,
         public int $targetId,
         public string $locale,
+        public string $device,
         public string $previewUrl,
         public PreviewPayloadDTO $payload,
         public ?string $expiresAt = null,

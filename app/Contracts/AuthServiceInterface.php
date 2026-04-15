@@ -29,10 +29,10 @@ interface AuthServiceInterface
     /**
      * End the current authenticated session.
      */
-    public function logout(): void;
+    public function logout(): bool;
 
     /**
      * Extend active session lifetime.
      */
-    public function extendSession(): void;
+    public function extendSession(): bool;
 }

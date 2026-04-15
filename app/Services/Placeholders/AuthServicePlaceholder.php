@@ -27,12 +27,12 @@ final class AuthServicePlaceholder implements AuthServiceInterface
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function logout(): void
+    public function logout(): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function extendSession(): void
+    public function extendSession(): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }

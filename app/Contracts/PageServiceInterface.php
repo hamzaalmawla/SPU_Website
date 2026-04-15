@@ -51,7 +51,7 @@ interface PageServiceInterface
     public function updateEnglishSeo(int $pageId, PageSeoInputDTO $payload): bool;
 
     /**
-     * Save a draft snapshot for the page editor.
+     * Save a draft snapshot for the page editor using the shared draft workflow DTO.
      */
     public function saveDraft(int $pageId, PageDraftDataDTO $payload, int $userId): HomepageDraftDTO;
 
@@ -88,7 +88,7 @@ interface PageServiceInterface
     /**
      * Build preview payload for a page.
      */
-    public function buildPreviewPayload(int $pageId, string $locale): PreviewDTO;
+    public function buildPreviewPayload(int $pageId, string $locale, string $device): PreviewDTO;
 
     /**
      * Resolve the language-switch target URL for a page.

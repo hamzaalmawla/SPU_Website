@@ -6,6 +6,8 @@ namespace App\DTOs;
 
 /**
  * Structured editor payload for one homepage section.
+ * Shared shell concerns such as footer, social, and contact settings are
+ * handled outside the homepage section set.
  */
 final readonly class HomepageSectionDataDTO
 {
@@ -15,9 +17,6 @@ final readonly class HomepageSectionDataDTO
      * @param  array<int, ArticleCardDTO>  $articles
      * @param  array<int, ResearchCardDTO>  $researchItems
      * @param  array<int, EventCardDTO>  $events
-     * @param  array<int, FooterColumnDTO>  $footerColumns
-     * @param  array<int, ContactLinkDTO>  $contactLinks
-     * @param  array<int, SocialLinkDTO>  $socialLinks
      */
     public function __construct(
         public ?string $eyebrow = null,
@@ -33,8 +32,5 @@ final readonly class HomepageSectionDataDTO
         public array $articles = [],
         public array $researchItems = [],
         public array $events = [],
-        public array $footerColumns = [],
-        public array $contactLinks = [],
-        public array $socialLinks = [],
     ) {}
 }
