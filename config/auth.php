@@ -42,7 +42,10 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
     ],
+
+    'admin_guard' => env('AUTH_ADMIN_GUARD', 'web'),
 
     /*
     |--------------------------------------------------------------------------

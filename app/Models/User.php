@@ -22,6 +22,10 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role_slug',
+        'failed_login_attempts',
+        'locked_at',
+        'faculty_scope_slug',
     ];
 
     /**
@@ -43,6 +47,8 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'failed_login_attempts' => 'integer',
+            'locked_at' => 'datetime',
             'password' => 'hashed',
         ];
     }
