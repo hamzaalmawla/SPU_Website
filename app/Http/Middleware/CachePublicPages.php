@@ -67,7 +67,7 @@ final class CachePublicPages
             return true;
         }
 
-        if ($request->user() !== null || $this->authFactory->guard((string) config('auth.admin_guard', 'admin'))->check()) {
+        if ($request->user() !== null || $this->authFactory->guard((string) config('auth.admin_guard', 'web'))->check()) {
             return true;
         }
 

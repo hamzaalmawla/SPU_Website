@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('entity_type')->nullable();
             $table->unsignedBigInteger('entity_id')->nullable();
             $table->json('metadata')->nullable();
-            $table->timestamps();
+            $table->timestamp('created_at')->useCurrent();
 
             $table->index(['entity_type', 'entity_id']);
         });

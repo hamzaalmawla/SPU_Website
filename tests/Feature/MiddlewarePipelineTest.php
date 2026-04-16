@@ -117,4 +117,17 @@ class MiddlewarePipelineTest extends TestCase
 
         $this->get('/admin/content')->assertOk();
     }
+
+    /**
+     * It denies access when the authenticated user lacks the required role.
+     */
+    public function test_role_middleware_denies_unauthorized_access(): void
+    {
+        $user = new User;
+        $user->forceFill(['role_slug' => 'faculty_editor']);
+
+        $this->actingAs($user, 'web');
+
+        $this->get('/admin/content')->assertForbidden();
+    }
 }

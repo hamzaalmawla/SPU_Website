@@ -27,7 +27,7 @@ final class AuthService implements AuthServiceInterface
      */
     public function attempt(array $credentials): bool
     {
-        return $this->authFactory->guard((string) config('auth.admin_guard', 'web'))->attempt($credentials);
+        return $this->authFactory->guard($this->guardName())->attempt($credentials);
     }
 
     /**
@@ -71,7 +71,7 @@ final class AuthService implements AuthServiceInterface
      */
     public function logout(): void
     {
-        $this->authFactory->guard((string) config('auth.admin_guard', 'web'))->logout();
+        $this->authFactory->guard($this->guardName())->logout();
 
         if ($this->session->isStarted()) {
             $this->session->invalidate();
@@ -87,6 +87,11 @@ final class AuthService implements AuthServiceInterface
         if ($this->session->isStarted()) {
             $this->session->migrate(true);
         }
+    }
+
+    private function guardName(): string
+    {
+        return (string) config('auth.admin_guard', 'web');
     }
 
     /**

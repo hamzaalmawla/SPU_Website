@@ -15,6 +15,8 @@ class AuditLog extends Model
 {
     use HasFactory;
 
+    public const UPDATED_AT = null;
+
     /**
      * @var list<string>
      */
@@ -36,7 +38,6 @@ class AuditLog extends Model
             'entity_id' => 'integer',
             'metadata' => 'array',
             'created_at' => 'datetime',
-            'updated_at' => 'datetime',
         ];
     }
 
