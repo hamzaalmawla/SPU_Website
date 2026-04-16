@@ -33,7 +33,7 @@ final class AuthController extends Controller
 
     public function store(LoginRequest $request): RedirectResponse
     {
-        if (! $this->authService->attempt($request->validated())) {
+        if (! $this->authService->attempt($request->credentials())) {
             return back()
                 ->withErrors(['email' => __('auth.failed')])
                 ->onlyInput('email');

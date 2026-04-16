@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit;
 
 use App\Contracts\AuthServiceInterface;
+use App\DTOs\LoginCredentialsDTO;
 use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -62,10 +63,10 @@ class AuthServiceTest extends TestCase
         $authService = app(AuthServiceInterface::class);
 
         foreach (range(1, 5) as $attempt) {
-            $this->assertFalse($authService->attempt([
-                'email' => 'editor@example.com',
-                'password' => 'wrong-password',
-            ]));
+            $this->assertFalse($authService->attempt(new LoginCredentialsDTO(
+                email: 'editor@example.com',
+                password: 'wrong-password',
+            )));
         }
 
         $user->refresh();
@@ -95,10 +96,10 @@ class AuthServiceTest extends TestCase
 
         $authService = app(AuthServiceInterface::class);
 
-        $this->assertTrue($authService->attempt([
-            'email' => 'admin@example.com',
-            'password' => 'password',
-        ]));
+        $this->assertTrue($authService->attempt(new LoginCredentialsDTO(
+            email: 'admin@example.com',
+            password: 'password',
+        )));
 
         $user->refresh();
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Auth;
 
+use App\DTOs\LoginCredentialsDTO;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -26,5 +27,17 @@ final class LoginRequest extends FormRequest
             'password' => ['required', 'string'],
             'remember' => ['sometimes', 'boolean'],
         ];
+    }
+
+    public function credentials(): LoginCredentialsDTO
+    {
+        /** @var array{email: string, password: string, remember?: bool} $validated */
+        $validated = $this->validated();
+
+        return new LoginCredentialsDTO(
+            email: $validated['email'],
+            password: $validated['password'],
+            remember: (bool) ($validated['remember'] ?? false),
+        );
     }
 }

@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Contracts\AuditServiceInterface;
 use App\Contracts\AuthServiceInterface;
+use App\DTOs\LoginCredentialsDTO;
 use App\Models\User;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
@@ -26,14 +27,12 @@ final class AuthService implements AuthServiceInterface
 
     /**
      * Attempt user authentication.
-     *
-     * @param  array<string, mixed>  $credentials
      */
-    public function attempt(array $credentials): bool
+    public function attempt(LoginCredentialsDTO $credentials): bool
     {
-        $email = strtolower(trim((string) ($credentials['email'] ?? '')));
-        $password = (string) ($credentials['password'] ?? '');
-        $remember = (bool) ($credentials['remember'] ?? false);
+        $email = strtolower(trim($credentials->email));
+        $password = $credentials->password;
+        $remember = $credentials->remember;
 
         if ($email === '' || $password === '') {
             return false;

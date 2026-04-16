@@ -111,9 +111,9 @@ class MiddlewarePipelineTest extends TestCase
     }
 
     /**
-     * It allows configured admin roles through the role middleware.
+     * It allows configured admin roles through gate-protected admin routes.
      */
-    public function test_role_middleware_allows_editor_access(): void
+    public function test_gate_protected_admin_routes_allow_editor_access(): void
     {
         $user = new User;
         $user->forceFill(['role_slug' => 'editor']);
@@ -124,9 +124,9 @@ class MiddlewarePipelineTest extends TestCase
     }
 
     /**
-     * It denies access when the authenticated user lacks the required role.
+     * It denies access when the authenticated user lacks the required gate permission.
      */
-    public function test_role_middleware_denies_unauthorized_access(): void
+    public function test_gate_protected_admin_routes_deny_unauthorized_access(): void
     {
         $user = new User;
         $user->forceFill(['role_slug' => 'faculty_editor']);

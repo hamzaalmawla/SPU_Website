@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Placeholders;
 
 use App\Contracts\AuthServiceInterface;
+use App\DTOs\LoginCredentialsDTO;
 use BadMethodCallException;
 use Illuminate\Contracts\Auth\Authenticatable;
 
@@ -13,7 +14,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
  */
 final class AuthServicePlaceholder implements AuthServiceInterface
 {
-    public function attempt(array $credentials): bool
+    public function attempt(LoginCredentialsDTO $credentials): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
