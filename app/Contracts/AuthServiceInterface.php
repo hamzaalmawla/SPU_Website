@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Contracts;
 
+use Illuminate\Contracts\Auth\Authenticatable;
+
 /**
  * Defines authentication and access checks for the admin foundation.
  */
@@ -19,12 +21,12 @@ interface AuthServiceInterface
     /**
      * Check if the user has a specific role.
      */
-    public function checkRole(mixed $user, string $role): bool;
+    public function checkRole(Authenticatable $user, string $role): bool;
 
     /**
      * Check whether the account is currently locked.
      */
-    public function isLocked(mixed $user): bool;
+    public function isLocked(Authenticatable $user): bool;
 
     /**
      * End the current authenticated session.

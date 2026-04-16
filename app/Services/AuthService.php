@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Contracts\AuthServiceInterface;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Contracts\Session\Session;
 use Illuminate\Support\Collection;
@@ -32,18 +33,14 @@ final class AuthService implements AuthServiceInterface
     /**
      * Check if the user has a specific role.
      */
-    public function checkRole(mixed $user, string $role): bool
+    public function checkRole(Authenticatable $user, string $role): bool
     {
-        if (! is_object($user)) {
-            return false;
-        }
-
         if (method_exists($user, 'hasRole')) {
-            return (bool) $user->hasRole($role);
+            return (bool) call_user_func([$user, 'hasRole'], $role);
         }
 
         if (method_exists($user, 'hasAnyRole')) {
-            return (bool) $user->hasAnyRole([$role]);
+            return (bool) call_user_func([$user, 'hasAnyRole'], [$role]);
         }
 
         $roles = $this->extractRoles($user);
@@ -54,14 +51,10 @@ final class AuthService implements AuthServiceInterface
     /**
      * Check whether the account is currently locked.
      */
-    public function isLocked(mixed $user): bool
+    public function isLocked(Authenticatable $user): bool
     {
-        if (! is_object($user)) {
-            return false;
-        }
-
         if (method_exists($user, 'isLocked')) {
-            return (bool) $user->isLocked();
+            return (bool) call_user_func([$user, 'isLocked']);
         }
 
         $isLocked = $this->readAttribute($user, 'is_locked');
