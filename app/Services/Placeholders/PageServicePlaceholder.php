@@ -6,8 +6,8 @@ namespace App\Services\Placeholders;
 
 use App\Contracts\PageServiceInterface;
 use App\DTOs\BreadcrumbTrailDTO;
-use App\DTOs\HomepageDraftDTO;
 use App\DTOs\PageDraftDataDTO;
+use App\DTOs\PageDraftDTO;
 use App\DTOs\PageDTO;
 use App\DTOs\PageMetadataDTO;
 use App\DTOs\PageSeoInputDTO;
@@ -52,7 +52,7 @@ final class PageServicePlaceholder implements PageServiceInterface
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function saveDraft(int $pageId, PageDraftDataDTO $payload, int $userId): HomepageDraftDTO
+    public function saveDraft(int $pageId, PageDraftDataDTO $payload, int $userId): PageDraftDTO
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }

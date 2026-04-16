@@ -1,0 +1,44 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers\Admin;
+
+use App\Contracts\AuthServiceInterface;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\LoginRequest;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
+
+/**
+ * Handles admin authentication entry points.
+ */
+final class AuthController extends Controller
+{
+    public function __construct(
+        private readonly AuthServiceInterface $authService,
+    ) {}
+
+    public function create(): View
+    {
+        return view('admin.auth.login');
+    }
+
+    public function destroy(): RedirectResponse
+    {
+        $this->authService->logout();
+
+        return redirect()->route('filament.admin.auth.login');
+    }
+
+    public function store(LoginRequest $request): RedirectResponse
+    {
+        if (! $this->authService->attempt($request->validated())) {
+            return back()
+                ->withErrors(['email' => __('auth.failed')])
+                ->onlyInput('email');
+        }
+
+        return redirect()->intended('/admin');
+    }
+}

@@ -54,36 +54,4 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
-
-    /**
-     * Determine whether the user has the given role slug.
-     */
-    public function hasRole(string $role): bool
-    {
-        return $role !== '' && $this->role_slug === $role;
-    }
-
-    /**
-     * Determine whether the user has any of the given role slugs.
-     *
-     * @param  array<int, string>  $roles
-     */
-    public function hasAnyRole(array $roles): bool
-    {
-        foreach ($roles as $role) {
-            if ($this->hasRole($role)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Determine whether the account is locked.
-     */
-    public function isLocked(): bool
-    {
-        return $this->locked_at !== null;
-    }
 }

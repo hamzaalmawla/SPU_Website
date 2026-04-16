@@ -14,7 +14,7 @@ interface AuthServiceInterface
     /**
      * Attempt user authentication.
      *
-     * @param  array<string, string>  $credentials
+     * @param  array<string, mixed>  $credentials
      */
     public function attempt(array $credentials): bool;
 

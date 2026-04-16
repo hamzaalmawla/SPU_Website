@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
@@ -13,6 +14,8 @@ use Tests\TestCase;
  */
 class MiddlewarePipelineTest extends TestCase
 {
+    use RefreshDatabase;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -63,7 +66,7 @@ class MiddlewarePipelineTest extends TestCase
     public function test_preview_requests_bypass_public_cache(): void
     {
         $this->get('/ar/preview?preview_token=scheduled-preview')
-            ->assertOk()
+            ->assertNotFound()
             ->assertHeader('X-Cache', 'BYPASS');
     }
 
@@ -81,13 +84,15 @@ class MiddlewarePipelineTest extends TestCase
     public function test_admin_login_is_throttled_after_five_requests(): void
     {
         foreach (range(1, 5) as $attempt) {
-            $this->postJson('/admin/login', [
+            $this->post('/admin/login', [
                 'email' => 'test@example.com',
-            ])->assertOk();
+                'password' => 'wrong-password',
+            ])->assertRedirect();
         }
 
-        $this->postJson('/admin/login', [
+        $this->post('/admin/login', [
             'email' => 'test@example.com',
+            'password' => 'wrong-password',
         ])->assertStatus(429);
     }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Contracts\AuthServiceInterface;
 use Closure;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Http\Request;
@@ -16,6 +17,7 @@ final class AdminAuthMiddleware
 {
     public function __construct(
         private readonly AuthFactory $authFactory,
+        private readonly AuthServiceInterface $authService,
     ) {}
 
     /**
@@ -26,8 +28,10 @@ final class AdminAuthMiddleware
         $guard ??= (string) config('auth.admin_guard', 'web');
 
         if (! $this->authFactory->guard($guard)->check()) {
-            return redirect()->guest(route('admin.login'));
+            return redirect()->guest(route('filament.admin.auth.login'));
         }
+
+        $this->authService->extendSession();
 
         return $next($request);
     }
