@@ -1,8 +1,10 @@
 *.log
 .DS_Store
 .env
+.env.testing
 .env.backup
 .env.production
+.env.example
 .phpactor.json
 .phpunit.result.cache
 /.fleet
@@ -22,3 +24,4 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+/Docs/STUDENT_GUIDE

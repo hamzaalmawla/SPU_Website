@@ -72,9 +72,12 @@ class AuthServiceTest extends TestCase
         $user->refresh();
 
         $this->assertSame(5, $user->failed_login_attempts);
+        $this->assertSame(5, $user->failed_attempts);
+        $this->assertTrue($user->is_locked);
         $this->assertNotNull($user->locked_at);
         $this->assertDatabaseHas('audit_logs', [
             'action' => 'user.locked',
+            'user_id' => $user->id,
             'actor_user_id' => $user->id,
             'entity_type' => User::class,
             'entity_id' => $user->id,
@@ -104,9 +107,12 @@ class AuthServiceTest extends TestCase
         $user->refresh();
 
         $this->assertSame(0, $user->failed_login_attempts);
+        $this->assertSame(0, $user->failed_attempts);
+        $this->assertFalse($user->is_locked);
         $this->assertNull($user->locked_at);
         $this->assertDatabaseHas('audit_logs', [
             'action' => 'user.login',
+            'user_id' => $user->id,
             'actor_user_id' => $user->id,
             'entity_type' => User::class,
             'entity_id' => $user->id,

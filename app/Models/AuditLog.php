@@ -22,10 +22,13 @@ class AuditLog extends Model
      */
     protected $fillable = [
         'action',
+        'user_id',
         'actor_user_id',
         'entity_type',
         'entity_id',
         'metadata',
+        'ip_address',
+        'user_agent',
     ];
 
     /**
@@ -34,11 +37,17 @@ class AuditLog extends Model
     protected function casts(): array
     {
         return [
+            'user_id' => 'integer',
             'actor_user_id' => 'integer',
             'entity_id' => 'integer',
             'metadata' => 'array',
             'created_at' => 'datetime',
         ];
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function actor(): BelongsTo

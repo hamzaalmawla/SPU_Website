@@ -93,7 +93,7 @@ final class AuthService implements AuthServiceInterface
      */
     public function isLocked(Authenticatable $user): bool
     {
-        return $this->readLockedAt($user) !== null;
+        return (bool) $this->readAttribute($user, 'is_locked') || $this->readLockedAt($user) !== null;
     }
 
     /**
@@ -138,13 +138,19 @@ final class AuthService implements AuthServiceInterface
 
     private function clearFailedAttempts(User $user): void
     {
-        if ((int) $user->failed_login_attempts === 0 && $user->locked_at === null) {
+        if ((int) $user->failed_login_attempts === 0
+            && (int) $user->failed_attempts === 0
+            && ! $user->isAccountLocked()
+        ) {
             return;
         }
 
         $user->forceFill([
             'failed_login_attempts' => 0,
+            'failed_attempts' => 0,
+            'is_locked' => false,
             'locked_at' => null,
+            'last_login_at' => now(),
         ])->save();
     }
 
@@ -162,10 +168,13 @@ final class AuthService implements AuthServiceInterface
 
         $wasUnlocked = $user->locked_at === null;
         $failedAttempts = min((int) $user->failed_login_attempts + 1, 5);
+        $isLocked = $failedAttempts >= 5;
 
         $user->forceFill([
             'failed_login_attempts' => $failedAttempts,
-            'locked_at' => $failedAttempts >= 5 ? now() : $user->locked_at,
+            'failed_attempts' => $failedAttempts,
+            'is_locked' => $isLocked,
+            'locked_at' => $isLocked ? now() : $user->locked_at,
         ])->save();
 
         $this->logLoginFailure($user, $email);

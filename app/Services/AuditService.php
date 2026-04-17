@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Contracts\AuditServiceInterface;
 use App\DTOs\AuditLogDTO;
 use App\Models\AuditLog;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
 /**
@@ -14,6 +15,10 @@ use Illuminate\Support\Collection;
  */
 final class AuditService implements AuditServiceInterface
 {
+    public function __construct(
+        private readonly Request $request,
+    ) {}
+
     /**
      * Write an audit log record.
      *
@@ -23,10 +28,13 @@ final class AuditService implements AuditServiceInterface
     {
         $auditLog = AuditLog::query()->create([
             'action' => $action,
+            'user_id' => $userId,
             'actor_user_id' => $userId,
             'entity_type' => $entityType,
             'entity_id' => $entityId,
             'metadata' => $metadata,
+            'ip_address' => $this->request->ip(),
+            'user_agent' => $this->request->userAgent(),
         ]);
 
         return $auditLog->exists;
@@ -88,7 +96,9 @@ final class AuditService implements AuditServiceInterface
             ->map(fn (AuditLog $auditLog): AuditLogDTO => new AuditLogDTO(
                 id: (int) $auditLog->getKey(),
                 action: (string) $auditLog->action,
-                actorId: $auditLog->actor_user_id !== null ? (int) $auditLog->actor_user_id : null,
+                actorId: $auditLog->user_id !== null
+                    ? (int) $auditLog->user_id
+                    : ($auditLog->actor_user_id !== null ? (int) $auditLog->actor_user_id : null),
                 entityType: $auditLog->entity_type,
                 entityId: $auditLog->entity_id !== null ? (int) $auditLog->entity_id : null,
                 createdAt: $auditLog->created_at?->toIso8601String() ?? now()->toIso8601String(),

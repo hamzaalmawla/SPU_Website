@@ -45,6 +45,7 @@ class AdminAuthFlowTest extends TestCase
         $this->assertAuthenticatedAs($user, 'web');
         $this->assertDatabaseHas('audit_logs', [
             'action' => 'user.login',
+            'user_id' => $user->id,
             'actor_user_id' => $user->id,
             'entity_type' => User::class,
             'entity_id' => $user->id,
@@ -73,6 +74,8 @@ class AdminAuthFlowTest extends TestCase
 
         $this->assertNotNull($user->locked_at);
         $this->assertSame(5, $user->failed_login_attempts);
+        $this->assertSame(5, $user->failed_attempts);
+        $this->assertTrue($user->is_locked);
 
         RateLimiter::clear('admin-login|locked@example.com');
         $this->travel(61)->seconds();
@@ -101,6 +104,7 @@ class AdminAuthFlowTest extends TestCase
         $this->assertGuest('web');
         $this->assertDatabaseHas('audit_logs', [
             'action' => 'user.logout',
+            'user_id' => $user->id,
             'actor_user_id' => $user->id,
             'entity_type' => User::class,
             'entity_id' => $user->id,
