@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Contracts\AuditServiceInterface;
 use App\Contracts\AuthServiceInterface;
+use App\DTOs\LoginCredentialsDTO;
+use App\Models\User;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Contracts\Session\Session;
-use Illuminate\Support\Collection;
+use Illuminate\Http\Request;
 
 /**
  * Framework-backed authentication service for admin access checks.
@@ -17,17 +20,60 @@ final class AuthService implements AuthServiceInterface
 {
     public function __construct(
         private readonly AuthFactory $authFactory,
+        private readonly AuditServiceInterface $auditService,
+        private readonly Request $request,
         private readonly Session $session,
     ) {}
 
     /**
      * Attempt user authentication.
-     *
-     * @param  array<string, string>  $credentials
      */
-    public function attempt(array $credentials): bool
+    public function attempt(LoginCredentialsDTO $credentials): bool
     {
-        return $this->authFactory->guard($this->guardName())->attempt($credentials);
+        $email = strtolower(trim($credentials->email));
+        $password = $credentials->password;
+        $remember = $credentials->remember;
+
+        if ($email === '' || $password === '') {
+            return false;
+        }
+
+        $user = User::query()->where('email', $email)->first();
+
+        if ($user instanceof User && $this->isLocked($user)) {
+            $this->logLoginFailure($user, $email);
+
+            return false;
+        }
+
+        $authenticated = $this->authFactory->guard($this->guardName())->attempt([
+            'email' => $email,
+            'password' => $password,
+        ], $remember);
+
+        if (! $authenticated) {
+            $this->handleFailedAttempt($user, $email);
+
+            return false;
+        }
+
+        $authenticatedUser = $this->authFactory->guard($this->guardName())->user();
+
+        if (! $authenticatedUser instanceof User) {
+            return false;
+        }
+
+        $this->clearFailedAttempts($authenticatedUser);
+        $this->extendSession();
+        $this->auditService->log(
+            action: 'user.login',
+            userId: (int) $authenticatedUser->getKey(),
+            entityType: User::class,
+            entityId: (int) $authenticatedUser->getKey(),
+            metadata: $this->authMetadata($authenticatedUser, $email),
+        );
+
+        return true;
     }
 
     /**
@@ -35,17 +81,11 @@ final class AuthService implements AuthServiceInterface
      */
     public function checkRole(Authenticatable $user, string $role): bool
     {
-        if (method_exists($user, 'hasRole')) {
-            return (bool) call_user_func([$user, 'hasRole'], $role);
+        if ($role === '') {
+            return false;
         }
 
-        if (method_exists($user, 'hasAnyRole')) {
-            return (bool) call_user_func([$user, 'hasAnyRole'], [$role]);
-        }
-
-        $roles = $this->extractRoles($user);
-
-        return in_array($role, $roles, true);
+        return $this->readRoleSlug($user) === $role;
     }
 
     /**
@@ -53,17 +93,7 @@ final class AuthService implements AuthServiceInterface
      */
     public function isLocked(Authenticatable $user): bool
     {
-        if (method_exists($user, 'isLocked')) {
-            return (bool) call_user_func([$user, 'isLocked']);
-        }
-
-        $isLocked = $this->readAttribute($user, 'is_locked');
-
-        if (is_bool($isLocked)) {
-            return $isLocked;
-        }
-
-        return $this->readAttribute($user, 'locked_at') !== null;
+        return $this->readLockedAt($user) !== null;
     }
 
     /**
@@ -71,6 +101,18 @@ final class AuthService implements AuthServiceInterface
      */
     public function logout(): void
     {
+        $user = $this->authFactory->guard($this->guardName())->user();
+
+        if ($user instanceof User) {
+            $this->auditService->log(
+                action: 'user.logout',
+                userId: (int) $user->getKey(),
+                entityType: User::class,
+                entityId: (int) $user->getKey(),
+                metadata: $this->authMetadata($user, (string) $user->email),
+            );
+        }
+
         $this->authFactory->guard($this->guardName())->logout();
 
         if ($this->session->isStarted()) {
@@ -94,74 +136,112 @@ final class AuthService implements AuthServiceInterface
         return (string) config('auth.admin_guard', 'web');
     }
 
-    /**
-     * @return array<int, string>
-     */
-    private function extractRoles(object $user): array
+    private function clearFailedAttempts(User $user): void
     {
-        $rawRoles = null;
-
-        if (method_exists($user, 'getRoleNames')) {
-            $rawRoles = $user->getRoleNames();
+        if ((int) $user->failed_login_attempts === 0 && $user->locked_at === null) {
+            return;
         }
 
-        $rawRoles ??= $this->readAttribute($user, 'roles');
-
-        if ($rawRoles !== null) {
-            return $this->normalizeRoles($rawRoles);
-        }
-
-        $singleRole = $this->readAttribute($user, 'role_slug');
-
-        if (is_string($singleRole) && $singleRole !== '') {
-            return [$singleRole];
-        }
-
-        $singleRole = $this->readAttribute($user, 'role');
-
-        return is_string($singleRole) && $singleRole !== '' ? [$singleRole] : [];
+        $user->forceFill([
+            'failed_login_attempts' => 0,
+            'locked_at' => null,
+        ])->save();
     }
 
-    private function readAttribute(object $user, string $attribute): mixed
+    private function handleFailedAttempt(?User $user, string $email): void
     {
-        if (method_exists($user, 'getAttribute')) {
+        if (! $user instanceof User) {
+            $this->auditService->log(
+                action: 'user.login_failed',
+                entityType: User::class,
+                metadata: $this->failureMetadata($email),
+            );
+
+            return;
+        }
+
+        $wasUnlocked = $user->locked_at === null;
+        $failedAttempts = min((int) $user->failed_login_attempts + 1, 5);
+
+        $user->forceFill([
+            'failed_login_attempts' => $failedAttempts,
+            'locked_at' => $failedAttempts >= 5 ? now() : $user->locked_at,
+        ])->save();
+
+        $this->logLoginFailure($user, $email);
+
+        if ($wasUnlocked && $user->locked_at !== null) {
+            $this->auditService->log(
+                action: 'user.locked',
+                userId: (int) $user->getKey(),
+                entityType: User::class,
+                entityId: (int) $user->getKey(),
+                metadata: $this->authMetadata($user, $email),
+            );
+        }
+    }
+
+    private function logLoginFailure(User $user, string $email): void
+    {
+        $this->auditService->log(
+            action: 'user.login_failed',
+            userId: (int) $user->getKey(),
+            entityType: User::class,
+            entityId: (int) $user->getKey(),
+            metadata: $this->failureMetadata($email),
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function authMetadata(?User $user, string $email): array
+    {
+        $metadata = [
+            'email' => $email,
+            'ip_address' => $this->request->ip(),
+        ];
+
+        if ($user instanceof User && is_string($user->role_slug) && $user->role_slug !== '') {
+            $metadata['role_slug'] = $user->role_slug;
+        }
+
+        return $metadata;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function failureMetadata(string $email): array
+    {
+        return [
+            'email' => $email,
+            'ip_address' => $this->request->ip(),
+        ];
+    }
+
+    private function readRoleSlug(Authenticatable $user): ?string
+    {
+        $roleSlug = $this->readAttribute($user, 'role_slug');
+
+        if (is_string($roleSlug) && $roleSlug !== '') {
+            return $roleSlug;
+        }
+
+        return null;
+    }
+
+    private function readLockedAt(Authenticatable $user): mixed
+    {
+        return $this->readAttribute($user, 'locked_at');
+    }
+
+    private function readAttribute(Authenticatable $user, string $attribute): mixed
+    {
+        if ($user instanceof User) {
             return $user->getAttribute($attribute);
         }
 
         return isset($user->{$attribute}) ? $user->{$attribute} : null;
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    private function normalizeRoles(mixed $roles): array
-    {
-        if ($roles instanceof Collection) {
-            $roles = $roles->all();
-        }
-
-        if (is_string($roles)) {
-            return $roles === '' ? [] : [$roles];
-        }
-
-        if (! is_array($roles)) {
-            return [];
-        }
-
-        $normalized = [];
-
-        foreach ($roles as $role) {
-            if (is_string($role) && $role !== '') {
-                $normalized[] = $role;
-
-                continue;
-            }
-
-            if (is_object($role) && isset($role->name) && is_string($role->name) && $role->name !== '') {
-                $normalized[] = $role->name;
-            }
-        }
-
-        return array_values(array_unique($normalized));
     }
 }
