@@ -6,6 +6,7 @@ namespace Database\Seeders\LegacyImport;
 
 use App\Models\MediaAsset;
 use App\Models\MenuItem;
+use App\Models\MigrationLog;
 
 class ImportLegacyLinksSeeder extends BaseLegacyImportSeeder
 {
@@ -69,16 +70,13 @@ class ImportLegacyLinksSeeder extends BaseLegacyImportSeeder
 
         foreach ($this->legacyRows('jx_sites') as $row) {
             $sourceId = $this->normalizedInteger($this->rowValue($row, 'id'));
-
-            if ($this->alreadyImported('jx_sites', $sourceId, 'menu_items')) {
-                continue;
-            }
-
-            $locale = $this->normalizedLocale($row) ?? 'ar';
-            $label = $this->cleanedString($row, ['title', 'name', 'label']);
             $url = $this->cleanedString($row, ['url', 'link', 'path']);
+            $labels = [
+                'ar' => $this->cleanedString($row, 'ar_name'),
+                'en' => $this->cleanedString($row, 'en_name'),
+            ];
 
-            if ($label === null || $url === null) {
+            if ($url === null || $this->availableLabels($labels) === []) {
                 $this->logSkip($module, $batch, 'jx_sites', $sourceId, 'menu_items', 'Skipped site link without label or URL.');
 
                 continue;
@@ -97,27 +95,57 @@ class ImportLegacyLinksSeeder extends BaseLegacyImportSeeder
                 default => 'footer',
             };
 
-            $menuItem = MenuItem::query()->updateOrCreate(
-                ['type' => $group, 'locale' => $locale, 'label' => $label],
-                [
-                    'parent_id' => null,
-                    'target_kind' => 'url',
-                    'target_id' => null,
-                    'url' => $url,
-                    'target' => $this->normalizedBoolean($this->rowValue($row, ['new_tab', 'open_in_new_tab']), false) ? '_blank' : null,
-                    'route_name' => null,
-                    'css_token' => null,
-                    'icon' => null,
-                    'group_key' => $group,
-                    'is_enabled' => true,
-                    'is_utility' => $group === 'utility',
-                    'open_in_new_tab' => $this->normalizedBoolean($this->rowValue($row, ['new_tab', 'open_in_new_tab']), false),
-                    'sort_order' => $this->normalizedInteger($this->rowValue($row, ['sort_order', 'order'])) ?? 0,
-                    'depth' => 0,
-                ],
-            );
+            foreach ($this->availableLabels($labels) as $locale => $label) {
+                if ($this->siteLocaleAlreadyImported($sourceId, $locale)) {
+                    continue;
+                }
 
-            $this->migrationLogger()->log($module, $batch, 'jx_sites', $sourceId, 'menu_items', (int) $menuItem->getKey(), 'success', 'Imported legacy link into menu items.', ['group' => $group, 'locale' => $locale]);
+                $menuItem = MenuItem::query()->updateOrCreate(
+                    ['type' => $group, 'locale' => $locale, 'label' => $label],
+                    [
+                        'parent_id' => null,
+                        'target_kind' => 'url',
+                        'target_id' => null,
+                        'url' => $url,
+                        'target' => $this->normalizedBoolean($this->rowValue($row, ['new_tab', 'open_in_new_tab']), false) ? '_blank' : null,
+                        'route_name' => null,
+                        'css_token' => null,
+                        'icon' => null,
+                        'group_key' => $group,
+                        'is_enabled' => $this->normalizedBoolean($this->rowValue($row, 'is_visible'), true),
+                        'is_utility' => $group === 'utility',
+                        'open_in_new_tab' => $this->normalizedBoolean($this->rowValue($row, ['new_tab', 'open_in_new_tab']), false),
+                        'sort_order' => $this->normalizedInteger($this->rowValue($row, ['record_order', 'sort_order', 'order'])) ?? 0,
+                        'depth' => 0,
+                    ],
+                );
+
+                $this->migrationLogger()->log($module, $batch, 'jx_sites', $sourceId, 'menu_items', (int) $menuItem->getKey(), 'success', 'Imported legacy link into menu items.', ['group' => $group, 'locale' => $locale]);
+            }
         }
+    }
+
+    /**
+     * @param  array<string, ?string>  $labels
+     * @return array<string, string>
+     */
+    private function availableLabels(array $labels): array
+    {
+        return array_filter($labels, static fn (?string $label): bool => $label !== null && $label !== '');
+    }
+
+    private function siteLocaleAlreadyImported(?int $sourceId, string $locale): bool
+    {
+        if ($sourceId === null) {
+            return false;
+        }
+
+        return MigrationLog::query()
+            ->where('source_table', 'jx_sites')
+            ->where('source_id', $sourceId)
+            ->where('target_table', 'menu_items')
+            ->where('status', 'success')
+            ->where('metadata->locale', $locale)
+            ->exists();
     }
 }

@@ -16,6 +16,8 @@ Current safe modules:
 
 Broad legacy import is intentionally not enabled.
 
+For the verified backlog and module-by-module implementation rules, see `Docs/LEGACY_IMPORT_IMPLEMENTATION_PLAN.md`.
+
 ## Configure Legacy Connection
 
 Set the old database connection values in local environment only.

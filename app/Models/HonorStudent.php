@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class HonorStudent extends Model
@@ -48,6 +49,11 @@ class HonorStudent extends Model
     public function photoMedia(): BelongsTo
     {
         return $this->belongsTo(MediaAsset::class, 'photo_media_id');
+    }
+
+    public function translations(): HasMany
+    {
+        return $this->hasMany(HonorStudentTranslation::class)->orderBy('locale');
     }
 
     public function scopeEnabled(Builder $query): Builder
