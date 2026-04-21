@@ -81,6 +81,29 @@ abstract class BaseLegacyImportSeeder extends Seeder
         return Schema::connection((string) config('old_database.connection_name', 'legacy_mysql'))->hasTable($table);
     }
 
+    protected function legacyTableHasColumn(string $table, string $column): bool
+    {
+        if (! $this->legacyTableExists($table)) {
+            return false;
+        }
+
+        $this->legacyConnection()->connection();
+
+        return Schema::connection((string) config('old_database.connection_name', 'legacy_mysql'))->hasColumn($table, $column);
+    }
+
+    /**
+     * @param  array<int, string>  $columns
+     * @return array<int, string>
+     */
+    protected function legacyAvailableColumns(string $table, array $columns): array
+    {
+        return array_values(array_filter(
+            $columns,
+            fn (string $column): bool => $this->legacyTableHasColumn($table, $column),
+        ));
+    }
+
     /**
      * @return Collection<int, object>
      */
@@ -144,6 +167,227 @@ abstract class BaseLegacyImportSeeder extends Seeder
     protected function normalizedInteger(mixed $value): ?int
     {
         return is_numeric($value) ? (int) $value : null;
+    }
+
+    /**
+     * @return array<int, array{slug: string, sort_order: int, name_ar: string, name_en: string, service_types: array<int, int>}>
+     */
+    protected function legacyFacultyCatalog(): array
+    {
+        return [
+            2 => [
+                'slug' => 'medicine',
+                'sort_order' => 1,
+                'name_ar' => 'كلية الطب البشري',
+                'name_en' => 'Faculty of Medicine',
+                'service_types' => [3, 4],
+            ],
+            3 => [
+                'slug' => 'dentistry',
+                'sort_order' => 2,
+                'name_ar' => 'كلية طب الأسنان',
+                'name_en' => 'Faculty of Dentistry',
+                'service_types' => [5, 6],
+            ],
+            4 => [
+                'slug' => 'pharmacy',
+                'sort_order' => 3,
+                'name_ar' => 'كلية الصيدلة',
+                'name_en' => 'Faculty of Pharmacy',
+                'service_types' => [7, 8],
+            ],
+            5 => [
+                'slug' => 'engineering',
+                'sort_order' => 4,
+                'name_ar' => 'كلية الهندسة',
+                'name_en' => 'Faculty of Engineering',
+                'service_types' => [9, 10],
+            ],
+            6 => [
+                'slug' => 'petroleum-engineering',
+                'sort_order' => 5,
+                'name_ar' => 'كلية هندسة البترول',
+                'name_en' => 'Faculty of Petroleum Engineering',
+                'service_types' => [11, 12],
+            ],
+            7 => [
+                'slug' => 'business-administration',
+                'sort_order' => 6,
+                'name_ar' => 'كلية إدارة الأعمال',
+                'name_en' => 'Faculty of Business Administration',
+                'service_types' => [13, 14],
+            ],
+        ];
+    }
+
+    /**
+     * @return array<int, array{source_id: int, slug: string, type: string, sort_order: int, name_ar: string, name_en: string, service_types: array<int, int>}>
+     */
+    protected function legacyCouncilCatalog(): array
+    {
+        return [
+            [
+                'source_id' => 1,
+                'slug' => 'university-council',
+                'type' => 'university',
+                'sort_order' => 1,
+                'name_ar' => 'مجلس الجامعة',
+                'name_en' => 'University Council',
+                'service_types' => [1, 2],
+            ],
+            [
+                'source_id' => 2,
+                'slug' => 'medicine-council',
+                'type' => 'faculty',
+                'sort_order' => 2,
+                'name_ar' => 'مجلس كلية الطب البشري',
+                'name_en' => 'Faculty of Medicine Council',
+                'service_types' => [3, 4],
+            ],
+            [
+                'source_id' => 3,
+                'slug' => 'dentistry-council',
+                'type' => 'faculty',
+                'sort_order' => 3,
+                'name_ar' => 'مجلس كلية طب الأسنان',
+                'name_en' => 'Faculty of Dentistry Council',
+                'service_types' => [5, 6],
+            ],
+            [
+                'source_id' => 4,
+                'slug' => 'pharmacy-council',
+                'type' => 'faculty',
+                'sort_order' => 4,
+                'name_ar' => 'مجلس كلية الصيدلة',
+                'name_en' => 'Faculty of Pharmacy Council',
+                'service_types' => [7, 8],
+            ],
+            [
+                'source_id' => 5,
+                'slug' => 'engineering-council',
+                'type' => 'faculty',
+                'sort_order' => 5,
+                'name_ar' => 'مجلس كلية الهندسة',
+                'name_en' => 'Faculty of Engineering Council',
+                'service_types' => [9, 10],
+            ],
+            [
+                'source_id' => 6,
+                'slug' => 'petroleum-engineering-council',
+                'type' => 'faculty',
+                'sort_order' => 6,
+                'name_ar' => 'مجلس كلية هندسة البترول',
+                'name_en' => 'Faculty of Petroleum Engineering Council',
+                'service_types' => [11, 12],
+            ],
+            [
+                'source_id' => 7,
+                'slug' => 'business-administration-council',
+                'type' => 'faculty',
+                'sort_order' => 7,
+                'name_ar' => 'مجلس كلية إدارة الأعمال',
+                'name_en' => 'Faculty of Business Administration Council',
+                'service_types' => [13, 14],
+            ],
+        ];
+    }
+
+    /**
+     * @return array{slug: string, sort_order: int, name_ar: string, name_en: string, service_types: array<int, int>}|null
+     */
+    protected function legacyFacultyDefinition(?int $legacyFacultyId): ?array
+    {
+        return $legacyFacultyId !== null ? ($this->legacyFacultyCatalog()[$legacyFacultyId] ?? null) : null;
+    }
+
+    /**
+     * @return array{slug: string, sort_order: int, name_ar: string, name_en: string, service_types: array<int, int>}|null
+     */
+    protected function legacyFacultyDefinitionByServiceType(?int $serviceType): ?array
+    {
+        if ($serviceType === null) {
+            return null;
+        }
+
+        foreach ($this->legacyFacultyCatalog() as $definition) {
+            if (in_array($serviceType, $definition['service_types'], true)) {
+                return $definition;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array{source_id: int, slug: string, type: string, sort_order: int, name_ar: string, name_en: string, service_types: array<int, int>}|null
+     */
+    protected function legacyCouncilDefinitionByServiceType(?int $serviceType): ?array
+    {
+        if ($serviceType === null) {
+            return null;
+        }
+
+        foreach ($this->legacyCouncilCatalog() as $definition) {
+            if (in_array($serviceType, $definition['service_types'], true)) {
+                return $definition;
+            }
+        }
+
+        return null;
+    }
+
+    protected function resolveLegacyFacultyId(?int $legacyFacultyId): ?int
+    {
+        if ($legacyFacultyId === null) {
+            return null;
+        }
+
+        $mapped = $this->targetIdResolver()->resolve('jx_member_categories', $legacyFacultyId, 'faculties');
+
+        if ($mapped !== null) {
+            return $mapped;
+        }
+
+        $definition = $this->legacyFacultyDefinition($legacyFacultyId);
+
+        if ($definition === null) {
+            return null;
+        }
+
+        return \Illuminate\Support\Facades\DB::table('faculties')
+            ->where('slug', $definition['slug'])
+            ->value('id');
+    }
+
+    protected function resolveLegacyFacultyIdByServiceType(?int $serviceType): ?int
+    {
+        $definition = $this->legacyFacultyDefinitionByServiceType($serviceType);
+
+        if ($definition === null) {
+            return null;
+        }
+
+        return \Illuminate\Support\Facades\DB::table('faculties')
+            ->where('slug', $definition['slug'])
+            ->value('id');
+    }
+
+    protected function resolveLegacyCouncilIdByServiceType(?int $serviceType): ?int
+    {
+        $definition = $this->legacyCouncilDefinitionByServiceType($serviceType);
+
+        if ($definition === null) {
+            return null;
+        }
+
+        return \Illuminate\Support\Facades\DB::table('councils')
+            ->where('slug', $definition['slug'])
+            ->value('id');
+    }
+
+    protected function legacyLocaleFromLanguageCode(mixed $value): string
+    {
+        return $this->normalizedInteger($value) === 2 ? 'en' : 'ar';
     }
 
     /**
