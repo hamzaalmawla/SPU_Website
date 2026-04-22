@@ -9,6 +9,9 @@ use App\Models\HomepageSection;
 use App\Models\HomepageSectionTranslation;
 use Illuminate\Database\Seeder;
 
+/**
+ * Seeds editable starter copy for local development and content previews.
+ */
 class HomepageSectionTranslationSeeder extends Seeder
 {
     public function run(): void

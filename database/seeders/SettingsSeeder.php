@@ -7,6 +7,9 @@ namespace Database\Seeders;
 use App\Models\Setting;
 use Illuminate\Database\Seeder;
 
+/**
+ * Seeds starter public-shell settings for local development only.
+ */
 class SettingsSeeder extends Seeder
 {
     public function run(): void
@@ -14,11 +17,11 @@ class SettingsSeeder extends Seeder
         foreach ($this->settings() as $setting) {
             Setting::query()->updateOrCreate(
                 [
+                    'group_key' => $setting['group_key'],
                     'key' => $setting['key'],
                     'locale' => $setting['locale'],
                 ],
                 [
-                    'group_key' => $setting['group_key'],
                     'type' => $setting['type'],
                     'value_json' => $setting['value_json'],
                     'value_text' => $setting['value_text'],

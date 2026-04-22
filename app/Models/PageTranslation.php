@@ -13,6 +13,12 @@ class PageTranslation extends Model
     use HasFactory;
 
     /**
+     * Localized page content record.
+     *
+     * Payload/body fields here are the authoritative source for locale-specific runtime reads.
+     */
+
+    /**
      * @var list<string>
      */
     protected $fillable = [

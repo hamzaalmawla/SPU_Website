@@ -6,6 +6,8 @@ namespace App\DTOs;
 
 /**
  * Structured editor payload for one homepage section.
+ *
+ * Teaser card items here are homepage presentation data, not full module contracts.
  */
 final readonly class HomepageSectionDataDTO
 {

@@ -17,6 +17,8 @@ use App\Contracts\PreviewServiceInterface;
 use App\Contracts\SeoMetadataServiceInterface;
 use App\Contracts\SettingsServiceInterface;
 use App\Contracts\SlugServiceInterface;
+use App\Models\MenuItem;
+use App\Models\Page;
 use App\Models\User;
 use App\Policies\HomepagePolicy;
 use App\Policies\MenuItemPolicy;
@@ -51,19 +53,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->bind(MediaServiceInterface::class, MediaServicePlaceholder::class);
-        $this->app->bind(CacheServiceInterface::class, CacheService::class);
-        $this->app->bind(AuditServiceInterface::class, AuditService::class);
-        $this->app->bind(AuthServiceInterface::class, AuthService::class);
-        $this->app->bind(MenuServiceInterface::class, MenuServicePlaceholder::class);
-        $this->app->bind(SlugServiceInterface::class, SlugServicePlaceholder::class);
-        $this->app->bind(SeoMetadataServiceInterface::class, SeoMetadataServicePlaceholder::class);
-        $this->app->bind(HomepageSectionServiceInterface::class, HomepageSectionServicePlaceholder::class);
-        $this->app->bind(HomepagePublishingServiceInterface::class, HomepagePublishingServicePlaceholder::class);
-        $this->app->bind(PreviewServiceInterface::class, PreviewServicePlaceholder::class);
-        $this->app->bind(PageServiceInterface::class, PageServicePlaceholder::class);
-        $this->app->bind(SettingsServiceInterface::class, SettingsServicePlaceholder::class);
-        $this->app->bind(NavigationServiceInterface::class, NavigationServicePlaceholder::class);
+        $this->registerFoundationBindings();
     }
 
     /**
@@ -78,6 +68,8 @@ class AppServiceProvider extends ServiceProvider
     private function registerAuthorization(): void
     {
         Gate::policy(User::class, UserPolicy::class);
+        Gate::policy(Page::class, PagePolicy::class);
+        Gate::policy(MenuItem::class, MenuItemPolicy::class);
 
         Gate::define('manage-users', [UserPolicy::class, 'manageUsers']);
         Gate::define('manage-settings', [UserPolicy::class, 'manageSettings']);
@@ -101,5 +93,47 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('public-form', function (Request $request): Limit {
             return Limit::perMinute(20)->by('public-form|'.$request->ip());
         });
+    }
+
+    private function registerFoundationBindings(): void
+    {
+        foreach ($this->resolvedBindings() as $contract => $implementation) {
+            $this->app->singleton($contract, $implementation);
+        }
+
+        foreach ($this->intentionalPlaceholderBindings() as $contract => $implementation) {
+            $this->app->singleton($contract, $implementation);
+        }
+    }
+
+    /**
+     * @return array<class-string, class-string>
+     */
+    private function resolvedBindings(): array
+    {
+        return [
+            CacheServiceInterface::class => CacheService::class,
+            AuditServiceInterface::class => AuditService::class,
+            AuthServiceInterface::class => AuthService::class,
+        ];
+    }
+
+    /**
+     * @return array<class-string, class-string>
+     */
+    private function intentionalPlaceholderBindings(): array
+    {
+        return [
+            MediaServiceInterface::class => MediaServicePlaceholder::class,
+            MenuServiceInterface::class => MenuServicePlaceholder::class,
+            SlugServiceInterface::class => SlugServicePlaceholder::class,
+            SeoMetadataServiceInterface::class => SeoMetadataServicePlaceholder::class,
+            HomepageSectionServiceInterface::class => HomepageSectionServicePlaceholder::class,
+            HomepagePublishingServiceInterface::class => HomepagePublishingServicePlaceholder::class,
+            PreviewServiceInterface::class => PreviewServicePlaceholder::class,
+            PageServiceInterface::class => PageServicePlaceholder::class,
+            SettingsServiceInterface::class => SettingsServicePlaceholder::class,
+            NavigationServiceInterface::class => NavigationServicePlaceholder::class,
+        ];
     }
 }

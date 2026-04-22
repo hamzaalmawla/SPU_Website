@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Models\MenuItem;
 use App\Models\User;
 
 /**
- * Authorizes menu-management actions without assuming the MenuItem model exists yet.
+ * Authorizes menu-management actions against the current menu item model.
  */
 final class MenuItemPolicy
 {
@@ -21,7 +22,7 @@ final class MenuItemPolicy
         return $this->manage($user);
     }
 
-    public function delete(User $user, object $menuItem): bool
+    public function delete(User $user, MenuItem $menuItem): bool
     {
         return $this->manage($user);
     }
@@ -36,7 +37,7 @@ final class MenuItemPolicy
         return $this->manage($user);
     }
 
-    public function update(User $user, object $menuItem): bool
+    public function update(User $user, MenuItem $menuItem): bool
     {
         return $this->manage($user);
     }

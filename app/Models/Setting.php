@@ -12,6 +12,18 @@ class Setting extends Model
 {
     use HasFactory;
 
+    public const GROUP_KEYS = [
+        'navigation',
+        'public_shell',
+        'footer',
+        'seo',
+    ];
+
+    /**
+     * group_key is the current settings namespace boundary used by the service layer.
+     * New groups should be introduced deliberately rather than inferred ad hoc by later phases.
+     */
+
     /**
      * @var list<string>
      */

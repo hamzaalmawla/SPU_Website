@@ -26,7 +26,7 @@ interface HomepagePublishingServiceInterface
     /**
      * Unpublish an already published homepage target.
      */
-    public function unpublish(string $targetType, int $targetId, int $userId): bool;
+    public function unpublish(string $targetType, ?int $targetId, int $userId): bool;
 
     /**
      * Schedule a homepage draft for publication.

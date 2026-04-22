@@ -28,7 +28,7 @@ final class AuthController extends Controller
     {
         $this->authService->logout();
 
-        return redirect()->route('filament.admin.auth.login');
+        return redirect()->route('admin.login');
     }
 
     public function store(LoginRequest $request): RedirectResponse

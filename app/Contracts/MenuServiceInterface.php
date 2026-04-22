@@ -14,8 +14,23 @@ use App\DTOs\NavigationTreeDTO;
  */
 interface MenuServiceInterface
 {
+    public const GROUP_KEYS = [
+        'header',
+        'footer',
+        'utility',
+    ];
+
+    public const TREE_TYPES = [
+        'header',
+        'footer',
+        'utility',
+    ];
+
     /**
      * Create a menu item while enforcing a maximum depth of two.
+     *
+     * groupKey is the authoritative tree identifier in the current schema. itemType mirrors the
+     * persisted type column until a later phase collapses that duplication.
      */
     public function createItem(MenuItemDataDTO $payload): MenuItemDTO;
 
@@ -42,9 +57,14 @@ interface MenuServiceInterface
     public function toggleItemState(int $itemId, bool $enabled): bool;
 
     /**
-     * Retrieve the primary navigation tree for a locale.
+     * Retrieve the localized header navigation tree.
      */
-    public function getPrimaryTree(string $locale, ?string $currentPath = null): NavigationTreeDTO;
+    public function getHeaderTree(string $locale, ?string $currentPath = null): NavigationTreeDTO;
+
+    /**
+     * Retrieve the localized footer navigation tree.
+     */
+    public function getFooterTree(string $locale, ?string $currentPath = null): NavigationTreeDTO;
 
     /**
      * Retrieve the utility navigation tree for a locale.

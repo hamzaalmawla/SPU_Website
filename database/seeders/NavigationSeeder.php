@@ -8,6 +8,9 @@ use App\Models\MenuItem;
 use App\Models\Page;
 use Illuminate\Database\Seeder;
 
+/**
+ * Seeds placeholder navigation trees for local development only.
+ */
 class NavigationSeeder extends Seeder
 {
     public function run(): void
@@ -22,6 +25,7 @@ class NavigationSeeder extends Seeder
             MenuItem::query()->updateOrCreate(
                 [
                     'type' => $item['type'],
+                    'group_key' => $item['group_key'],
                     'locale' => $item['locale'],
                     'label' => $item['label'],
                 ],
@@ -34,7 +38,6 @@ class NavigationSeeder extends Seeder
                     'route_name' => null,
                     'css_token' => null,
                     'icon' => $item['icon'],
-                    'group_key' => $item['group_key'],
                     'is_enabled' => true,
                     'is_utility' => $item['is_utility'],
                     'open_in_new_tab' => $item['open_in_new_tab'],

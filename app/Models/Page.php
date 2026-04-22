@@ -16,6 +16,13 @@ class Page extends Model
     use HasFactory, SoftDeletes;
 
     /**
+     * Non-localized page shell record.
+     *
+     * content_json is reserved for shell-level data. Localized runtime content lives on
+     * page_translations and should win when both shapes are present.
+     */
+
+    /**
      * @var list<string>
      */
     protected $fillable = [

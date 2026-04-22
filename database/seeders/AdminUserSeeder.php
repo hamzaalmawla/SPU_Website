@@ -9,6 +9,9 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
+/**
+ * Seeds a convenience super admin for local development only.
+ */
 class AdminUserSeeder extends Seeder
 {
     public function run(): void

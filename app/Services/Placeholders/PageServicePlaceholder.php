@@ -19,6 +19,9 @@ use DateTimeInterface;
 
 /**
  * Placeholder implementation for the landing-page service contract.
+ *
+ * When replaced, the real service must preserve the documented read precedence:
+ * localized page_translations content first, pages.content_json only as non-localized shell data.
  */
 final class PageServicePlaceholder implements PageServiceInterface
 {

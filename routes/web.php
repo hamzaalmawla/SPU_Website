@@ -70,5 +70,3 @@ Route::prefix('admin')
                 })->middleware('can:manage-users')->name('users.index');
             });
     });
-
-Route::get('/admin/login', [AuthController::class, 'create'])->name('filament.admin.auth.login');

@@ -18,6 +18,8 @@ use Illuminate\Http\Request;
  */
 final class AuthService implements AuthServiceInterface
 {
+    private const MAX_FAILED_ATTEMPTS = 5;
+
     public function __construct(
         private readonly AuthFactory $authFactory,
         private readonly AuditServiceInterface $auditService,
@@ -138,8 +140,7 @@ final class AuthService implements AuthServiceInterface
 
     private function clearFailedAttempts(User $user): void
     {
-        if ((int) $user->failed_login_attempts === 0
-            && (int) $user->failed_attempts === 0
+        if ($this->currentFailedAttempts($user) === 0
             && ! $user->isAccountLocked()
         ) {
             return;
@@ -167,8 +168,8 @@ final class AuthService implements AuthServiceInterface
         }
 
         $wasUnlocked = $user->locked_at === null;
-        $failedAttempts = min((int) $user->failed_login_attempts + 1, 5);
-        $isLocked = $failedAttempts >= 5;
+        $failedAttempts = min($this->currentFailedAttempts($user) + 1, self::MAX_FAILED_ATTEMPTS);
+        $isLocked = $failedAttempts >= self::MAX_FAILED_ATTEMPTS;
 
         $user->forceFill([
             'failed_login_attempts' => $failedAttempts,
@@ -252,5 +253,10 @@ final class AuthService implements AuthServiceInterface
         }
 
         return isset($user->{$attribute}) ? $user->{$attribute} : null;
+    }
+
+    private function currentFailedAttempts(User $user): int
+    {
+        return max((int) $user->failed_login_attempts, (int) $user->failed_attempts);
     }
 }

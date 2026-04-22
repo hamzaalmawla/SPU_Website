@@ -10,6 +10,9 @@ use App\Models\PageTranslation;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
+/**
+ * Seeds placeholder landing pages for local development and demo content only.
+ */
 class LandingPageSeeder extends Seeder
 {
     public function run(): void
@@ -38,6 +41,7 @@ class LandingPageSeeder extends Seeder
                     'last_reviewed_at' => now()->toDateString(),
                     'layout_key' => $definition['layout_key'],
                     'builder_schema_version' => 1,
+                    // content_json stays shell-level; localized runtime copy is seeded below.
                     'content_json' => ['seeded' => true, 'slug' => $definition['slug']],
                 ]
             );

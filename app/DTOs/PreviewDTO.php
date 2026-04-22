@@ -12,7 +12,7 @@ final readonly class PreviewDTO
     public function __construct(
         public string $token,
         public string $targetType,
-        public int $targetId,
+        public ?int $targetId,
         public string $locale,
         public string $previewUrl,
         public PreviewPayloadDTO $payload,

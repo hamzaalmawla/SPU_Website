@@ -25,7 +25,7 @@ final class HomepagePublishingServicePlaceholder implements HomepagePublishingSe
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function unpublish(string $targetType, int $targetId, int $userId): bool
+    public function unpublish(string $targetType, ?int $targetId, int $userId): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }

@@ -7,7 +7,7 @@ namespace App\Policies;
 use App\Models\User;
 
 /**
- * Authorizes homepage draft and publish actions without assuming a concrete draft model yet.
+ * Authorizes homepage draft and publish actions for the current homepage workflow.
  */
 final class HomepagePolicy
 {

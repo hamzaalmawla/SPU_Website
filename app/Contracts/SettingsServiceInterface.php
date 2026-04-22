@@ -30,7 +30,7 @@ interface SettingsServiceInterface
     /**
      * Update a settings group.
      */
-    public function updateGroup(SettingsDTO $values, string $group, ?string $locale = null, ?int $userId = null): bool;
+    public function updateGroup(SettingsDTO $values, ?int $userId = null): bool;
 
     /**
      * Retrieve the localized apply CTA target payload.

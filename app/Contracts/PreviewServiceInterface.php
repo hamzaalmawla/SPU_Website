@@ -11,10 +11,15 @@ use App\DTOs\PreviewDTO;
  */
 interface PreviewServiceInterface
 {
+    public const TARGET_TYPES = [
+        'homepage',
+        'page',
+    ];
+
     /**
      * Create a preview token and payload for a draft target.
      */
-    public function createToken(string $targetType, int $targetId, string $locale, int $userId): PreviewDTO;
+    public function createToken(string $targetType, ?int $targetId, string $locale, int $userId): PreviewDTO;
 
     /**
      * Resolve a preview token to a preview payload.

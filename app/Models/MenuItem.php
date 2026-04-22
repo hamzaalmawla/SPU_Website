@@ -15,6 +15,17 @@ class MenuItem extends Model
 {
     use HasFactory, SoftDeletes;
 
+    public const GROUP_KEYS = [
+        'header',
+        'footer',
+        'utility',
+    ];
+
+    /**
+     * group_key is the current top-level menu registry because this foundation has no menus table yet.
+     * New public menu areas should not be invented ad hoc outside an explicit phase decision.
+     */
+
     /**
      * @var list<string>
      */

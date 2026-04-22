@@ -28,7 +28,17 @@ final class AdminAuthMiddleware
         $guard ??= (string) config('auth.admin_guard', 'web');
 
         if (! $this->authFactory->guard($guard)->check()) {
-            return redirect()->guest(route('filament.admin.auth.login'));
+            return redirect()->guest(route('admin.login'));
+        }
+
+        $user = $this->authFactory->guard($guard)->user();
+
+        if ($user !== null && $this->authService->isLocked($user)) {
+            $this->authFactory->guard($guard)->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->guest(route('admin.login'));
         }
 
         $this->authService->extendSession();

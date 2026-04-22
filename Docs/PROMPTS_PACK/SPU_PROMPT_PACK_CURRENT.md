@@ -192,6 +192,7 @@ Current repo reality that must be treated as true:
 •	public runtime is still mostly stubbed and will be addressed later
 •	Filament is already mounted under /admin
 •	legacy import foundation and audit/export tooling already exist
+•	page content storage has grown beyond the earliest prompt assumptions and now includes both page-level content_json and localized page_translations payload/body fields
 •	the old prompt pack assumed earlier phases were incomplete, but that is no longer true
 This phase is for patching and normalizing the existing foundation so the next implementation phases can build on stable and intentional base behavior.
 This phase is not for:
@@ -241,7 +242,19 @@ Goals:
 •	remove DTO drift caused by earlier wide-scope assumptions
 •	ensure naming, fields, imports, and readonly usage are consistent
 •	ensure DTOs support the actual runtime/admin/navigation/SEO/homepage needs
+•	inspect page/page-translation DTO boundaries against the real dual content storage shape so later phases do not guess incorrectly
 Do not invent broad new DTO layers unless the current service boundary actually requires them.
+2.1 Document page content precedence before PX02
+Inspect the actual page-related schema, models, DTOs, services, and any existing rendering assumptions around:
+•	pages.content_json
+•	page_translations hero/body/cta/sidebar/overview/stats payload fields
+•	page_translations excerpt/body/raw_excerpt/meta fallback fields
+Goals:
+•	explicitly document the current content precedence rule per page type
+•	state which fields are authoritative for homepage shell vs landing-page shell runtime reads
+•	patch contracts/DTOs/comments/placeholders if they currently imply the wrong source of truth
+•	remove ambiguity so PX02 does not make an arbitrary runtime assumption
+If the repo currently supports multiple storage shapes for historical reasons, this phase must still define the read-precedence rule clearly rather than leaving it implicit.
 3. Normalize service bindings in AppServiceProvider
 Inspect and patch app/Providers/AppServiceProvider.php.
 Goals:
@@ -309,6 +322,7 @@ Examples:
 •	DTOs implying modules not yet in scope
 •	bindings or helpers tied to broad legacy scope without current use
 •	seed defaults pretending to be final public IA/SEO behavior
+•	page foundation code implying an outdated or undocumented content source when both content_json and localized payload/body columns exist
 Patch these where necessary so the foundation reflects the current real phased plan.
 REQUIRED INPUTS
 You must derive this phase from the actual current repository, including at minimum:
@@ -333,6 +347,7 @@ DTOs
 •	internally consistent
 •	aligned to actual service boundaries
 •	no stale wide-scope leftovers
+•	page-content source-of-truth assumptions are explicit enough for PX02 runtime work
 Bindings
 •	interface resolution is clean and intentional
 •	placeholder vs real bindings are deliberate
@@ -351,9 +366,11 @@ At the end of the phase, verify at minimum:
 •	no public contract returns raw Eloquent models
 •	foundation bindings are intentional and consistent
 •	no stale early-phase assumptions remain in core foundation code
+•	the current page-content precedence rule is documented clearly enough that PX02 can implement runtime reads without guessing
 DONE WHEN
 •	Existing contracts have been patched to match the actual repo direction.
 •	Existing DTOs have been normalized to current service boundaries.
+•	The page-content precedence rule is explicit enough to guide PX02 runtime implementation safely.
 •	AppServiceProvider bindings are clean and intentional.
 •	Middleware/auth/model foundations no longer reflect stale greenfield assumptions.
 •	Seeding policy is explicit enough to support future phases safely.

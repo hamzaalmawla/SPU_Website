@@ -17,6 +17,12 @@ use DateTimeInterface;
 
 /**
  * Defines service-layer operations for bilingual landing-page shells.
+ *
+ * Current precedence rule for runtime reads:
+ * - localized page_translations payload/body fields are the authoritative source for
+ *   locale-specific page content
+ * - pages.content_json is shell-level, non-localized supplemental data and must not
+ *   displace localized translation content unless a later page type explicitly documents it
  */
 interface PageServiceInterface
 {
@@ -71,12 +77,12 @@ interface PageServiceInterface
     public function schedulePublish(int $pageId, DateTimeInterface $publishAt, int $userId): bool;
 
     /**
-     * Retrieve the public localized page by slug.
+     * Retrieve the public localized page by slug using the documented content precedence rule.
      */
     public function getPublicPageBySlug(string $slug, string $locale): ?PageDTO;
 
     /**
-     * Retrieve admin editor payload for a page.
+     * Retrieve admin editor payload for a page with both shell-level and localized content sources explicit.
      */
     public function getAdminEditorPayload(int $pageId): PageDTO;
 
