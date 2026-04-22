@@ -4,16 +4,19 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -25,8 +28,12 @@ class User extends Authenticatable
         'email',
         'password',
         'role_slug',
+        'role_id',
         'failed_login_attempts',
+        'failed_attempts',
+        'is_locked',
         'locked_at',
+        'last_login_at',
         'faculty_scope_slug',
     ];
 
@@ -50,40 +57,71 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'failed_login_attempts' => 'integer',
+            'failed_attempts' => 'integer',
+            'is_locked' => 'boolean',
             'locked_at' => 'datetime',
+            'last_login_at' => 'datetime',
+            'deleted_at' => 'datetime',
             'password' => 'hashed',
         ];
     }
 
-    /**
-     * Determine whether the user has the given role slug.
-     */
-    public function hasRole(string $role): bool
+    protected function roleSlug(): Attribute
     {
-        return $role !== '' && $this->role_slug === $role;
+        return Attribute::make(
+            get: fn (?string $value): ?string => is_string($value) && $value !== ''
+                ? $value
+                : $this->role?->slug,
+        );
     }
 
-    /**
-     * Determine whether the user has any of the given role slugs.
-     *
-     * @param  array<int, string>  $roles
-     */
-    public function hasAnyRole(array $roles): bool
+    public function role(): BelongsTo
     {
-        foreach ($roles as $role) {
-            if ($this->hasRole($role)) {
-                return true;
-            }
-        }
-
-        return false;
+        return $this->belongsTo(Role::class);
     }
 
-    /**
-     * Determine whether the account is locked.
-     */
-    public function isLocked(): bool
+    public function auditLogs(): HasMany
     {
-        return $this->locked_at !== null;
+        return $this->hasMany(AuditLog::class, 'user_id');
+    }
+
+    public function legacyAuditLogs(): HasMany
+    {
+        return $this->hasMany(AuditLog::class, 'actor_user_id');
+    }
+
+    public function issuedPreviewTokens(): HasMany
+    {
+        return $this->hasMany(PreviewToken::class, 'issued_to_user_id');
+    }
+
+    public function createdPages(): HasMany
+    {
+        return $this->hasMany(Page::class, 'created_by');
+    }
+
+    public function updatedPages(): HasMany
+    {
+        return $this->hasMany(Page::class, 'updated_by');
+    }
+
+    public function approvedPages(): HasMany
+    {
+        return $this->hasMany(Page::class, 'approved_by');
+    }
+
+    public function createdHomepageDrafts(): HasMany
+    {
+        return $this->hasMany(HomepageDraft::class, 'created_by');
+    }
+
+    public function createdPageDrafts(): HasMany
+    {
+        return $this->hasMany(PageDraft::class, 'created_by');
+    }
+
+    public function isAccountLocked(): bool
+    {
+        return (bool) $this->is_locked || $this->locked_at !== null;
     }
 }

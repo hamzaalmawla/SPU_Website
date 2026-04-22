@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Admin\AuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -19,14 +20,8 @@ Route::prefix('{locale}')
             );
         })->name('public.home');
 
-        Route::get('/preview', function (Request $request, string $locale) {
-            $token = (string) $request->query('preview_token', 'preview');
-
-            return response(
-                sprintf('<html lang="%s"><body>Preview %s %s</body></html>', $locale, strtoupper($locale), $token),
-                200,
-                ['Content-Type' => 'text/html; charset=UTF-8'],
-            );
+        Route::get('/preview', function () {
+            abort(404);
         })->name('preview.show');
 
         Route::post('/contact', function (Request $request, string $locale) {
@@ -41,30 +36,14 @@ Route::prefix('{locale}')
 Route::prefix('admin')
     ->name('admin.')
     ->group(function (): void {
-        Route::get('/login', function () {
-            return response(
-                '<html lang="en"><body>Admin login</body></html>',
-                200,
-                ['Content-Type' => 'text/html; charset=UTF-8'],
-            );
-        })->name('login');
-
-        Route::post('/login', function (Request $request) {
-            return response()->json([
-                'submitted' => true,
-                'email' => (string) $request->string('email'),
-            ]);
-        })->middleware('throttle:admin-login')->name('login.attempt');
+        Route::get('/login', [AuthController::class, 'create'])->name('login');
+        Route::post('/login', [AuthController::class, 'store'])
+            ->middleware('throttle:admin-login')
+            ->name('login.attempt');
 
         Route::middleware(['admin.auth'])
             ->group(function (): void {
-                Route::get('/', function () {
-                    return response(
-                        '<html lang="en"><body>Admin dashboard</body></html>',
-                        200,
-                        ['Content-Type' => 'text/html; charset=UTF-8'],
-                    );
-                })->name('dashboard');
+                Route::post('/auth/logout', [AuthController::class, 'destroy'])->name('logout');
 
                 Route::get('/content', function () {
                     return response(
@@ -72,6 +51,24 @@ Route::prefix('admin')
                         200,
                         ['Content-Type' => 'text/html; charset=UTF-8'],
                     );
-                })->middleware('role:super_admin,editor')->name('content');
+                })->middleware('can:manage-homepage')->name('content');
+
+                Route::get('/settings', function () {
+                    return response(
+                        '<html lang="en"><body>Admin settings</body></html>',
+                        200,
+                        ['Content-Type' => 'text/html; charset=UTF-8'],
+                    );
+                })->middleware('can:manage-settings')->name('settings');
+
+                Route::get('/users', function () {
+                    return response(
+                        '<html lang="en"><body>Admin users</body></html>',
+                        200,
+                        ['Content-Type' => 'text/html; charset=UTF-8'],
+                    );
+                })->middleware('can:manage-users')->name('users.index');
             });
     });
+
+Route::get('/admin/login', [AuthController::class, 'create'])->name('filament.admin.auth.login');

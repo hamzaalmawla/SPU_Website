@@ -17,6 +17,11 @@ use App\Contracts\PreviewServiceInterface;
 use App\Contracts\SeoMetadataServiceInterface;
 use App\Contracts\SettingsServiceInterface;
 use App\Contracts\SlugServiceInterface;
+use App\Models\User;
+use App\Policies\HomepagePolicy;
+use App\Policies\MenuItemPolicy;
+use App\Policies\PagePolicy;
+use App\Policies\UserPolicy;
 use App\Services\AuditService;
 use App\Services\AuthService;
 use App\Services\CacheService;
@@ -32,6 +37,7 @@ use App\Services\Placeholders\SettingsServicePlaceholder;
 use App\Services\Placeholders\SlugServicePlaceholder;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
@@ -65,7 +71,23 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->registerAuthorization();
         $this->configureRateLimiting();
+    }
+
+    private function registerAuthorization(): void
+    {
+        Gate::policy(User::class, UserPolicy::class);
+
+        Gate::define('manage-users', [UserPolicy::class, 'manageUsers']);
+        Gate::define('manage-settings', [UserPolicy::class, 'manageSettings']);
+        Gate::define('manage-homepage', [HomepagePolicy::class, 'manage']);
+        Gate::define('manage-pages', [PagePolicy::class, 'manage']);
+        Gate::define('manage-menu', [MenuItemPolicy::class, 'manage']);
+        Gate::define('manage-media', [UserPolicy::class, 'manageMedia']);
+        Gate::define('publish-content', [UserPolicy::class, 'publishContent']);
+        Gate::define('preview-content', [UserPolicy::class, 'previewContent']);
+        Gate::define('view-audit-log', [UserPolicy::class, 'viewAuditLog']);
     }
 
     private function configureRateLimiting(): void

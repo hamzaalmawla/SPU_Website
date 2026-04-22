@@ -3,7 +3,6 @@
 use App\Http\Middleware\AdminAuthMiddleware;
 use App\Http\Middleware\CachePublicPages;
 use App\Http\Middleware\LocaleSetterMiddleware;
-use App\Http\Middleware\RoleMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -22,7 +21,6 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'locale' => LocaleSetterMiddleware::class,
             'admin.auth' => AdminAuthMiddleware::class,
-            'role' => RoleMiddleware::class,
             'cache.public' => CachePublicPages::class,
         ]);
 

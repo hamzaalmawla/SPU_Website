@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Contracts;
 
 use App\DTOs\BreadcrumbTrailDTO;
-use App\DTOs\HomepageDraftDTO;
 use App\DTOs\PageDraftDataDTO;
+use App\DTOs\PageDraftDTO;
 use App\DTOs\PageDTO;
 use App\DTOs\PageMetadataDTO;
 use App\DTOs\PageSeoInputDTO;
@@ -53,7 +53,7 @@ interface PageServiceInterface
     /**
      * Save a draft snapshot for the page editor using the shared draft workflow DTO.
      */
-    public function saveDraft(int $pageId, PageDraftDataDTO $payload, int $userId): HomepageDraftDTO;
+    public function saveDraft(int $pageId, PageDraftDataDTO $payload, int $userId): PageDraftDTO;
 
     /**
      * Publish a page.

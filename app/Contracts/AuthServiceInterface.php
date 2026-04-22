@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Contracts;
 
+use App\DTOs\LoginCredentialsDTO;
 use Illuminate\Contracts\Auth\Authenticatable;
 
 /**
@@ -13,10 +14,8 @@ interface AuthServiceInterface
 {
     /**
      * Attempt user authentication.
-     *
-     * @param  array<string, string>  $credentials
      */
-    public function attempt(array $credentials): bool;
+    public function attempt(LoginCredentialsDTO $credentials): bool;
 
     /**
      * Check if the user has a specific role.
