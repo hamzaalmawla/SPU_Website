@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Seeders\LegacyImport;
 
 use App\Models\LegacyRecordSnapshot;
+use App\Models\MediaAsset;
 use App\Support\LegacyImport\DateNormalizer;
 use App\Support\LegacyImport\EmailValidator;
 use App\Support\LegacyImport\HtmlSanitizer;
@@ -15,6 +16,7 @@ use App\Support\LegacyImport\TargetIdResolver;
 use App\Support\LegacyImport\TextCleaner;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
@@ -145,6 +147,14 @@ abstract class BaseLegacyImportSeeder extends Seeder
         return $this->localeFilter()->normalize($this->cleanedString($row, $keys));
     }
 
+    protected function normalizedLegacyVisibility(object|array $row, bool $default = true): bool
+    {
+        return $this->normalizedBoolean(
+            $this->rowValue($row, ['is_visible', 'is_active', 'active', 'is_enabled']),
+            $default,
+        );
+    }
+
     protected function normalizedBoolean(mixed $value, bool $default = false): bool
     {
         if ($value === null) {
@@ -197,10 +207,10 @@ abstract class BaseLegacyImportSeeder extends Seeder
                 'service_types' => [7, 8],
             ],
             5 => [
-                'slug' => 'engineering',
+                'slug' => 'computer-and-informatics-engineering',
                 'sort_order' => 4,
-                'name_ar' => 'كلية الهندسة',
-                'name_en' => 'Faculty of Engineering',
+                'name_ar' => 'كلية هندسة الحاسوب والمعلوماتية',
+                'name_en' => 'Faculty of Computer Engineering and Informatics',
                 'service_types' => [9, 10],
             ],
             6 => [
@@ -211,10 +221,10 @@ abstract class BaseLegacyImportSeeder extends Seeder
                 'service_types' => [11, 12],
             ],
             7 => [
-                'slug' => 'business-administration',
+                'slug' => 'administrative-sciences',
                 'sort_order' => 6,
-                'name_ar' => 'كلية إدارة الأعمال',
-                'name_en' => 'Faculty of Business Administration',
+                'name_ar' => 'كلية العلوم الإدارية',
+                'name_en' => 'Faculty of Administrative Sciences',
                 'service_types' => [13, 14],
             ],
         ];
@@ -264,11 +274,11 @@ abstract class BaseLegacyImportSeeder extends Seeder
             ],
             [
                 'source_id' => 5,
-                'slug' => 'engineering-council',
+                'slug' => 'computer-and-informatics-engineering-council',
                 'type' => 'faculty',
                 'sort_order' => 5,
-                'name_ar' => 'مجلس كلية الهندسة',
-                'name_en' => 'Faculty of Engineering Council',
+                'name_ar' => 'مجلس كلية هندسة الحاسوب والمعلوماتية',
+                'name_en' => 'Faculty of Computer Engineering and Informatics Council',
                 'service_types' => [9, 10],
             ],
             [
@@ -282,11 +292,11 @@ abstract class BaseLegacyImportSeeder extends Seeder
             ],
             [
                 'source_id' => 7,
-                'slug' => 'business-administration-council',
+                'slug' => 'administrative-sciences-council',
                 'type' => 'faculty',
                 'sort_order' => 7,
-                'name_ar' => 'مجلس كلية إدارة الأعمال',
-                'name_en' => 'Faculty of Business Administration Council',
+                'name_ar' => 'مجلس كلية العلوم الإدارية',
+                'name_en' => 'Faculty of Administrative Sciences Council',
                 'service_types' => [13, 14],
             ],
         ];
@@ -354,7 +364,7 @@ abstract class BaseLegacyImportSeeder extends Seeder
             return null;
         }
 
-        return \Illuminate\Support\Facades\DB::table('faculties')
+        return DB::table('faculties')
             ->where('slug', $definition['slug'])
             ->value('id');
     }
@@ -367,8 +377,35 @@ abstract class BaseLegacyImportSeeder extends Seeder
             return null;
         }
 
-        return \Illuminate\Support\Facades\DB::table('faculties')
+        return DB::table('faculties')
             ->where('slug', $definition['slug'])
+            ->value('id');
+    }
+
+    /**
+     * @return array{canonical_slug: string, legacy_alumni_category_id: int, legacy_service_type: int, ar_name: string, en_name: string, evidence_url: string}|null
+     */
+    protected function legacyStudentFacultyDefinition(?int $legacyFacultyCode): ?array
+    {
+        if ($legacyFacultyCode === null) {
+            return null;
+        }
+
+        $definition = config("legacy_student_taxonomy.faculty_code_map.{$legacyFacultyCode}");
+
+        return is_array($definition) ? $definition : null;
+    }
+
+    protected function resolveLegacyStudentFacultyId(?int $legacyFacultyCode): ?int
+    {
+        $definition = $this->legacyStudentFacultyDefinition($legacyFacultyCode);
+
+        if ($definition === null) {
+            return $this->resolveLegacyFacultyId($legacyFacultyCode);
+        }
+
+        return DB::table('faculties')
+            ->where('slug', $definition['canonical_slug'])
             ->value('id');
     }
 
@@ -380,14 +417,18 @@ abstract class BaseLegacyImportSeeder extends Seeder
             return null;
         }
 
-        return \Illuminate\Support\Facades\DB::table('councils')
+        return DB::table('councils')
             ->where('slug', $definition['slug'])
             ->value('id');
     }
 
-    protected function legacyLocaleFromLanguageCode(mixed $value): string
+    protected function legacyLocaleFromLanguageCode(mixed $value): ?string
     {
-        return $this->normalizedInteger($value) === 2 ? 'en' : 'ar';
+        return match ($this->normalizedInteger($value)) {
+            1 => 'ar',
+            2 => 'en',
+            default => null,
+        };
     }
 
     /**
@@ -419,6 +460,74 @@ abstract class BaseLegacyImportSeeder extends Seeder
             'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             default => 'application/octet-stream',
         };
+    }
+
+    protected function legacyMediaAssetId(
+        ?string $path,
+        ?string $directoryPrefix = null,
+        ?string $titleAr = null,
+        ?string $titleEn = null,
+    ): ?int {
+        $cleanPath = $this->textCleaner()->clean((string) $path);
+
+        if ($cleanPath === null || $cleanPath === '') {
+            return null;
+        }
+
+        $normalizedPath = str_replace('\\', '/', $cleanPath);
+
+        if ($directoryPrefix !== null && ! str_contains($normalizedPath, '/')) {
+            $normalizedPath = trim($directoryPrefix, '/').'/'.$normalizedPath;
+        }
+
+        $media = MediaAsset::query()->updateOrCreate(
+            ['disk' => 'legacy', 'path' => $normalizedPath],
+            [
+                'directory' => dirname($normalizedPath) !== '.' ? dirname($normalizedPath) : null,
+                'filename' => basename($normalizedPath),
+                'original_name' => basename($cleanPath),
+                'mime_type' => $this->guessMimeType($normalizedPath),
+                'extension' => strtolower((string) pathinfo($normalizedPath, PATHINFO_EXTENSION)) ?: null,
+                'size_bytes' => 0,
+                'width' => null,
+                'height' => null,
+                'alt_text_ar' => null,
+                'alt_text_en' => null,
+                'caption_ar' => null,
+                'caption_en' => null,
+                'title_ar' => $titleAr,
+                'title_en' => $titleEn,
+                'webp_path' => null,
+                'srcset_json' => null,
+                'uploaded_by' => null,
+            ],
+        );
+
+        return (int) $media->getKey();
+    }
+
+    /**
+     * @return list<string>|null
+     */
+    protected function normalizedLegacyList(?string $value): ?array
+    {
+        $cleaned = $this->textCleaner()->clean((string) $value);
+
+        if ($cleaned === null || $cleaned === '') {
+            return null;
+        }
+
+        $parts = preg_split('/[\r\n,;|،]+/u', $cleaned) ?: [];
+        $items = array_values(array_filter(array_map(
+            fn (string $part): ?string => $this->textCleaner()->clean($part),
+            $parts,
+        )));
+
+        if ($items === []) {
+            return [$cleaned];
+        }
+
+        return array_values(array_unique($items));
     }
 
     protected function slugFrom(object|array $row, array|string $keys, string $fallback): string

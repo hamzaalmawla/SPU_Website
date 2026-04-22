@@ -27,40 +27,52 @@ class ImportLegacyFacultiesSeeder extends BaseLegacyImportSeeder
             }
 
             try {
-                $existingId = DB::table('faculties')->where('slug', $definition['slug'])->value('id');
+                $facultyId = DB::transaction(function () use ($definition): int {
+                    $timestamp = now();
+                    $existingId = DB::table('faculties')->where('slug', $definition['slug'])->value('id');
 
-                if ($existingId !== null) {
-                    $facultyId = (int) $existingId;
-                } else {
-                    $facultyId = DB::table('faculties')->insertGetId([
-                        'slug' => $definition['slug'],
-                        'sort_order' => $definition['sort_order'],
-                        'is_enabled' => true,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
+                    if ($existingId !== null) {
+                        $facultyId = (int) $existingId;
 
-                    DB::table('faculty_translations')->insert([
+                        DB::table('faculties')->where('id', $facultyId)->update([
+                            'sort_order' => $definition['sort_order'],
+                            'is_enabled' => true,
+                            'updated_at' => $timestamp,
+                        ]);
+                    } else {
+                        $facultyId = DB::table('faculties')->insertGetId([
+                            'slug' => $definition['slug'],
+                            'sort_order' => $definition['sort_order'],
+                            'is_enabled' => true,
+                            'created_at' => $timestamp,
+                            'updated_at' => $timestamp,
+                        ]);
+                    }
+
+                    DB::table('faculty_translations')->updateOrInsert(
+                        ['faculty_id' => $facultyId, 'locale' => 'ar'],
                         [
-                            'faculty_id' => $facultyId,
-                            'locale' => 'ar',
                             'name' => $definition['name_ar'],
                             'short_description' => null,
                             'description' => null,
-                            'created_at' => now(),
-                            'updated_at' => now(),
+                            'updated_at' => $timestamp,
+                            'created_at' => $timestamp,
                         ],
+                    );
+
+                    DB::table('faculty_translations')->updateOrInsert(
+                        ['faculty_id' => $facultyId, 'locale' => 'en'],
                         [
-                            'faculty_id' => $facultyId,
-                            'locale' => 'en',
                             'name' => $definition['name_en'],
                             'short_description' => null,
                             'description' => null,
-                            'created_at' => now(),
-                            'updated_at' => now(),
+                            'updated_at' => $timestamp,
+                            'created_at' => $timestamp,
                         ],
-                    ]);
-                }
+                    );
+
+                    return $facultyId;
+                });
 
                 $this->migrationLogger()->log(
                     $module,

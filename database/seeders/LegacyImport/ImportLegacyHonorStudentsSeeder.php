@@ -43,9 +43,31 @@ class ImportLegacyHonorStudentsSeeder extends BaseLegacyImportSeeder
             }
 
             $studentId = $this->cleanedString($row, ['student_id', 'student_number', 'student_identifier', 'number']);
+            $translations = array_filter([
+                'ar' => $this->cleanedString($row, ['ar_name', 'name_ar', 'full_name_ar', 'name']),
+                'en' => $this->cleanedString($row, ['en_name', 'name_en', 'full_name_en']),
+            ], static fn (?string $value): bool => $value !== null && $value !== '');
+
+            if ($translations === []) {
+                $this->reject($module, 'jx_good_students', $sourceId, 'missing_translation', 'Honor student row has no usable AR/EN full name.');
+                $this->logSkip($module, $batch, 'jx_good_students', $sourceId, 'honor_students', 'Skipped honor student row without AR/EN full name.');
+                $skipped++;
+
+                continue;
+            }
 
             $legacyFacultyId = $this->normalizedInteger($this->rowValue($row, $facultyKeys));
-            $facultyId = $this->resolveLegacyFacultyId($legacyFacultyId);
+            $facultyId = $this->resolveLegacyStudentFacultyId($legacyFacultyId);
+
+            if ($facultyId === null) {
+                $this->reject($module, 'jx_good_students', $sourceId, 'missing_parent', 'Could not resolve student faculty from legacy department code.', [
+                    'legacy_faculty_code' => $legacyFacultyId,
+                ]);
+                $this->logSkip($module, $batch, 'jx_good_students', $sourceId, 'honor_students', 'Missing student faculty mapping.');
+                $skipped++;
+
+                continue;
+            }
 
             $gpaRaw = $this->rowValue($row, ['gpa', 'grade', 'average', 'mark']);
             $gpa = null;
@@ -58,29 +80,72 @@ class ImportLegacyHonorStudentsSeeder extends BaseLegacyImportSeeder
                 }
             }
 
-            $sortOrder = $this->normalizedInteger($this->rowValue($row, ['order', 'sort_order', 'record_order', 'rank'])) ?? 0;
-            $isEnabled = $this->normalizedBoolean($this->rowValue($row, ['is_active', 'active', 'is_enabled']), true);
+            $studyYear = $this->normalizedInteger($this->rowValue($row, 'year'));
+            $academicDateYear = $this->normalizedInteger($this->rowValue($row, 'date_year'));
 
-            $createdAt = $this->dateNormalizer()->normalize($this->rowValue($row, ['created_at', 'date_added', 'reg_date']));
+            if ($academicDateYear !== null && $studyYear !== null && $studyYear > 0) {
+                $academicYear = $academicDateYear.' / '.$studyYear;
+            } elseif ($academicDateYear !== null) {
+                $academicYear = (string) $academicDateYear;
+            } elseif ($studyYear !== null && $studyYear > 0) {
+                $academicYear = 'year '.$studyYear;
+            }
+
+            $sortOrder = $this->normalizedInteger($this->rowValue($row, ['s_order', 'record_order', 'sort_order', 'order', 'rank'])) ?? ($sourceId ?? 0);
+            $isEnabled = $this->normalizedLegacyVisibility($row, true);
+
+            $createdAt = $this->dateNormalizer()->normalize($this->rowValue($row, ['post_date', 'created_at', 'date_added', 'reg_date']));
 
             try {
-                $honorId = DB::table('honor_students')->insertGetId([
-                    'student_identifier' => $studentId,
-                    'faculty_id' => $facultyId,
-                    'department_id' => null,
-                    'academic_year' => $academicYear,
-                    'gpa' => $gpa,
-                    'photo_media_id' => null,
-                    'sort_order' => $sortOrder,
-                    'is_enabled' => $isEnabled,
-                    'created_at' => $createdAt?->toDateTimeString() ?? now()->toDateTimeString(),
-                    'updated_at' => now(),
-                ]);
+                $honorId = DB::transaction(function () use ($row, $studentId, $facultyId, $academicYear, $gpa, $sortOrder, $isEnabled, $createdAt, $translations): int {
+                    $timestamp = now();
+                    $photoMediaId = $this->legacyMediaAssetId(
+                        $this->cleanedString($row, 'photo'),
+                        'students/honor',
+                        $translations['ar'] ?? null,
+                        $translations['en'] ?? null,
+                    );
+
+                    $honorId = DB::table('honor_students')->insertGetId([
+                        'student_identifier' => $studentId,
+                        'faculty_id' => $facultyId,
+                        'department_id' => null,
+                        'academic_year' => $academicYear,
+                        'gpa' => $gpa,
+                        'photo_media_id' => $photoMediaId,
+                        'sort_order' => $sortOrder,
+                        'is_enabled' => $isEnabled,
+                        'created_at' => $createdAt?->toDateTimeString() ?? $timestamp->toDateTimeString(),
+                        'updated_at' => $timestamp,
+                    ]);
+
+                    DB::table('honor_student_translations')->insert(array_map(
+                        static fn (string $locale, string $fullName): array => [
+                            'honor_student_id' => $honorId,
+                            'locale' => $locale,
+                            'full_name' => $fullName,
+                            'created_at' => $timestamp,
+                            'updated_at' => $timestamp,
+                        ],
+                        array_keys($translations),
+                        array_values($translations),
+                    ));
+
+                    return $honorId;
+                });
 
                 $this->migrationLogger()->log(
                     $module, $batch, 'jx_good_students', $sourceId, 'honor_students', $honorId,
                     'success', 'Imported honor student.',
-                    ['academic_year' => $academicYear, 'gpa' => $gpa, 'faculty_id' => $facultyId],
+                    [
+                        'academic_year' => $academicYear,
+                        'gpa' => $gpa,
+                        'faculty_id' => $facultyId,
+                        'section_id' => $this->normalizedInteger($this->rowValue($row, 'section_id')),
+                        'study_year' => $studyYear,
+                        'date_year' => $academicDateYear,
+                        'locales' => array_keys($translations),
+                    ],
                 );
                 $imported++;
             } catch (\Throwable $e) {

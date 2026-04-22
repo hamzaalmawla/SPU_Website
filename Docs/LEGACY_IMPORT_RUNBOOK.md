@@ -48,19 +48,26 @@ php artisan db:seed --class="Database\\Seeders\\LegacyImport\\ImportLegacyLinksS
 
 ## Reporting
 
-Summary report:
+Available commands:
 
 ```bash
 php artisan legacy-import:report
-php artisan legacy-import:report settings
-php artisan legacy-import:report --details
+php artisan legacy-import:report faqs --details
+php artisan legacy-import:verify
+php artisan legacy-import:verify research
+php artisan legacy-import:audit
+php artisan legacy-import:audit faqs --details
+php artisan legacy-import:export-missing
+php artisan legacy-import:export-missing faqs
 ```
 
-Verification summary:
+Direct database checks are still useful for deeper inspection:
 
 ```bash
-php artisan legacy-import:verify
-php artisan legacy-import:verify static_pages
+php artisan tinker
+DB::table('migration_logs')->selectRaw('module, status, count(*) as c')->groupBy('module', 'status')->get();
+DB::table('migration_rejections')->selectRaw('module, reason_code, count(*) as c')->groupBy('module', 'reason_code')->get();
+DB::table('legacy_record_snapshots')->selectRaw('module, classification, count(*) as c')->groupBy('module', 'classification')->get();
 ```
 
 ## Logging Behavior
@@ -91,8 +98,7 @@ Rejected rows write to `migration_rejections` with reason codes such as:
 
 After each manual import:
 
-1. run `php artisan legacy-import:report <module> --details`
-2. run `php artisan legacy-import:verify <module>`
-3. inspect imported target rows directly in MySQL
-4. compare rejection reasons against the source data
-5. record any new mapping decisions before expanding import coverage
+1. inspect `migration_logs`, `migration_rejections`, and `legacy_record_snapshots`
+2. inspect imported target rows directly in MySQL
+3. compare rejection reasons against the source data
+4. record any new mapping decisions before expanding import coverage

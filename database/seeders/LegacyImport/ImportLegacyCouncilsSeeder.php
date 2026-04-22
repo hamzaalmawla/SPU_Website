@@ -36,39 +36,52 @@ class ImportLegacyCouncilsSeeder extends BaseLegacyImportSeeder
             }
 
             try {
-                $existingId = DB::table('councils')->where('slug', $definition['slug'])->value('id');
+                $councilId = DB::transaction(function () use ($definition): int {
+                    $timestamp = now();
+                    $existingId = DB::table('councils')->where('slug', $definition['slug'])->value('id');
 
-                if ($existingId !== null) {
-                    $councilId = (int) $existingId;
-                } else {
-                    $councilId = DB::table('councils')->insertGetId([
-                        'slug' => $definition['slug'],
-                        'type' => $definition['type'],
-                        'sort_order' => $definition['sort_order'],
-                        'is_enabled' => true,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
+                    if ($existingId !== null) {
+                        $councilId = (int) $existingId;
 
-                    DB::table('council_translations')->insert([
+                        DB::table('councils')->where('id', $councilId)->update([
+                            'type' => $definition['type'],
+                            'sort_order' => $definition['sort_order'],
+                            'is_enabled' => true,
+                            'updated_at' => $timestamp,
+                        ]);
+                    } else {
+                        $councilId = DB::table('councils')->insertGetId([
+                            'slug' => $definition['slug'],
+                            'type' => $definition['type'],
+                            'sort_order' => $definition['sort_order'],
+                            'is_enabled' => true,
+                            'created_at' => $timestamp,
+                            'updated_at' => $timestamp,
+                        ]);
+                    }
+
+                    DB::table('council_translations')->updateOrInsert(
+                        ['council_id' => $councilId, 'locale' => 'ar'],
                         [
-                            'council_id' => $councilId,
-                            'locale' => 'ar',
                             'name' => $definition['name_ar'],
                             'description' => null,
-                            'created_at' => now(),
-                            'updated_at' => now(),
+                            'created_at' => $timestamp,
+                            'updated_at' => $timestamp,
                         ],
+                    );
+
+                    DB::table('council_translations')->updateOrInsert(
+                        ['council_id' => $councilId, 'locale' => 'en'],
                         [
-                            'council_id' => $councilId,
-                            'locale' => 'en',
                             'name' => $definition['name_en'],
                             'description' => null,
-                            'created_at' => now(),
-                            'updated_at' => now(),
+                            'created_at' => $timestamp,
+                            'updated_at' => $timestamp,
                         ],
-                    ]);
-                }
+                    );
+
+                    return $councilId;
+                });
 
                 $this->migrationLogger()->log(
                     $module,
@@ -146,8 +159,8 @@ class ImportLegacyCouncilsSeeder extends BaseLegacyImportSeeder
             }
 
             $facultyMemberId = $this->targetIdResolver()->resolve('jx_councils1', $sourceId, 'faculty_members');
-            $sortOrder = $this->normalizedInteger($this->rowValue($row, ['council_order', 'order', 'sort_order', 'record_order'])) ?? 0;
-            $isEnabled = $this->normalizedBoolean($this->rowValue($row, ['is_visible', 'is_active', 'active', 'is_enabled']), true);
+            $sortOrder = $this->normalizedInteger($this->rowValue($row, ['council_order', 'record_order', 'order', 'sort_order'])) ?? ($sourceId ?? 0);
+            $isEnabled = $this->normalizedLegacyVisibility($row, true);
 
             try {
                 $memberId = DB::table('council_members')->insertGetId([

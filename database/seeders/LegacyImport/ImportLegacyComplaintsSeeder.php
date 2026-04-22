@@ -64,8 +64,8 @@ class ImportLegacyComplaintsSeeder extends BaseLegacyImportSeeder
                 $slug = $slug.'-'.$sourceId;
             }
 
-            $sortOrder = $this->normalizedInteger($this->rowValue($row, ['order', 'sort_order', 'record_order'])) ?? 0;
-            $isEnabled = $this->normalizedBoolean($this->rowValue($row, ['is_active', 'active', 'is_enabled']), true);
+            $sortOrder = $this->normalizedInteger($this->rowValue($row, ['order', 'sort_order', 'record_order'])) ?? ($sourceId ?? 0);
+            $isEnabled = $this->normalizedLegacyVisibility($row, true);
 
             $assignedEmail = $this->cleanedString($row, ['email', 'assigned_email', 'admin_email']);
             $assignedToUserId = null;
@@ -176,9 +176,16 @@ class ImportLegacyComplaintsSeeder extends BaseLegacyImportSeeder
 
             $legacyCatId = $this->normalizedInteger($this->rowValue($row, ['complaint_cat_id', 'category_id', 'cat_id']));
             $complaintCategoryId = null;
+            $assignedToUserId = null;
 
             if ($legacyCatId !== null) {
                 $complaintCategoryId = $this->targetIdResolver()->resolve('jx_complaint_cats', $legacyCatId, 'complaint_categories');
+
+                if ($complaintCategoryId !== null) {
+                    $assignedToUserId = DB::table('complaint_categories')
+                        ->where('id', $complaintCategoryId)
+                        ->value('assigned_to_user_id');
+                }
             }
 
             $ticketNumber = 'LEGACY-'.str_pad((string) ($sourceId ?? rand(1000, 9999)), 6, '0', STR_PAD_LEFT);
@@ -189,20 +196,26 @@ class ImportLegacyComplaintsSeeder extends BaseLegacyImportSeeder
 
             $createdAt = $this->dateNormalizer()->normalize($this->rowValue($row, ['post_date', 'created_at', 'date_added', 'reg_date', 'date']));
             $resolution = $this->htmlSanitizer()->sanitize((string) $this->rowValue($row, 'answer', ''));
+            $firstName = $this->cleanedString($row, 'first_name');
+            $lastName = $this->cleanedString($row, 'last_name');
+            $submitterName = trim(implode(' ', array_filter([$firstName, $lastName])));
+            $subject = $subject !== null && $subject !== '' ? mb_substr($subject, 0, 255) : null;
+            $priority = $this->normalizedBoolean($this->rowValue($row, 'is_main'), false) ? 'high' : 'medium';
+            $status = $resolution !== null && $resolution !== '' ? 'resolved' : 'open';
 
             try {
                 $complaintId = DB::table('complaints')->insertGetId([
                     'ticket_number' => $ticketNumber,
                     'complaint_category_id' => $complaintCategoryId,
                     'submitted_by_user_id' => null,
-                    'assigned_to_user_id' => null,
-                    'submitter_name' => $this->cleanedString($row, ['name', 'submitter_name', 'full_name', 'ar_name']),
+                    'assigned_to_user_id' => $assignedToUserId,
+                    'submitter_name' => $submitterName !== '' ? $submitterName : null,
                     'submitter_email' => $submitterEmail,
                     'submitter_phone' => $this->cleanedString($row, ['phone', 'mobile', 'tel']),
                     'subject' => $subject ?? 'شكوى مرحّلة',
                     'description' => $description !== null && $description !== '' ? $description : ($subject ?? 'لا يوجد وصف'),
-                    'priority' => 'medium',
-                    'status' => $resolution !== null && $resolution !== '' ? 'resolved' : 'closed',
+                    'priority' => $priority,
+                    'status' => $status,
                     'resolution' => $resolution !== null && $resolution !== '' ? $resolution : null,
                     'resolved_at' => $resolution !== null && $resolution !== '' ? ($createdAt?->toDateTimeString() ?? now()->toDateTimeString()) : null,
                     'created_at' => $createdAt?->toDateTimeString() ?? now()->toDateTimeString(),
@@ -211,7 +224,17 @@ class ImportLegacyComplaintsSeeder extends BaseLegacyImportSeeder
 
                 $this->migrationLogger()->log(
                     $module, $batch, 'jx_complaints', $sourceId, 'complaints', $complaintId,
-                    'success', 'Imported complaint.', ['ticket' => $ticketNumber, 'category_id' => $complaintCategoryId],
+                    'success', 'Imported complaint.', [
+                        'ticket' => $ticketNumber,
+                        'category_id' => $complaintCategoryId,
+                        'legacy_lang' => $this->rowValue($row, 'lang'),
+                        'governorate' => $this->cleanedString($row, 'governorate'),
+                        'country' => $this->cleanedString($row, 'country'),
+                        'association_id' => $this->normalizedInteger($this->rowValue($row, 'association_id')),
+                        'is_new' => $this->normalizedBoolean($this->rowValue($row, 'is_new'), false),
+                        'is_main' => $this->normalizedBoolean($this->rowValue($row, 'is_main'), false),
+                        'status' => $status,
+                    ],
                 );
                 $imported++;
             } catch (\Throwable $e) {

@@ -68,7 +68,7 @@ class ImportLegacyFacultyMembersSeeder extends BaseLegacyImportSeeder
                 $serviceType = $this->normalizedInteger($this->rowValue($row, 'service_type'));
                 $facultyId = $this->resolveLegacyFacultyIdByServiceType($serviceType);
 
-                if ($facultyId === null) {
+                if ($facultyId === null && ! in_array($serviceType, [1, 2], true)) {
                     $this->logSkip(
                         $module,
                         $batch,
@@ -84,64 +84,80 @@ class ImportLegacyFacultyMembersSeeder extends BaseLegacyImportSeeder
                 }
             }
 
-            $sortOrder = $this->normalizedInteger($this->rowValue($row, ['council_order', 'order', 'sort_order', 'record_order'])) ?? 0;
-            $isEnabled = $this->normalizedBoolean($this->rowValue($row, ['is_visible', 'is_active', 'active', 'is_enabled']), true);
+            $sortOrder = $this->normalizedInteger($this->rowValue($row, ['council_order', 'record_order', 'order', 'sort_order'])) ?? ($sourceId ?? 0);
+            $isEnabled = $this->normalizedLegacyVisibility($row, true);
 
             try {
-                $memberId = DB::table('faculty_members')->insertGetId([
-                    'faculty_id' => $facultyId,
-                    'department_id' => null,
-                    'email' => $email,
-                    'phone' => $this->cleanedString($row, ['phone', 'mobile', 'tel']),
-                    'photo_media_id' => null,
-                    'cv_media_id' => null,
-                    'sort_order' => $sortOrder,
-                    'is_enabled' => $isEnabled,
-                    'created_at' => $this->dateNormalizer()->normalize($this->rowValue($row, ['created_at', 'added_date', 'reg_date', 'date_added']))?->toDateTimeString() ?? now()->toDateTimeString(),
-                    'updated_at' => now(),
-                ]);
+                $memberId = DB::transaction(function () use ($row, $facultyId, $email, $sortOrder, $isEnabled, $nameAr, $nameEn): int {
+                    $timestamp = now();
 
-                $translations = [];
-
-                if ($nameAr !== null && $nameAr !== '') {
-                    $translations[] = [
-                        'faculty_member_id' => $memberId,
-                        'locale' => 'ar',
-                        'full_name' => $nameAr,
-                        'title' => $this->cleanedString($row, ['ar_title', 'title_ar']),
-                        'position' => $this->cleanedString($row, ['ar_position', 'position_ar']),
-                        'bio' => $this->htmlSanitizer()->sanitize(
-                            (string) $this->rowValue($row, ['ar_data', 'ar_bio', 'bio_ar', 'ar_description'], '')
-                        ) ?: null,
-                        'specializations' => $this->decodeJson(
-                            (string) $this->rowValue($row, ['ar_specializations', 'specializations_ar'], '')
+                    $memberId = DB::table('faculty_members')->insertGetId([
+                        'faculty_id' => $facultyId,
+                        'department_id' => null,
+                        'email' => $email,
+                        'phone' => $this->cleanedString($row, ['phone', 'mobile', 'tel']),
+                        'photo_media_id' => $this->legacyMediaAssetId(
+                            $this->cleanedString($row, 'photo'),
+                            'faculty-members/photos',
+                            $nameAr,
+                            $nameEn,
                         ),
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ];
-                }
-
-                if ($nameEn !== null && $nameEn !== '') {
-                    $translations[] = [
-                        'faculty_member_id' => $memberId,
-                        'locale' => 'en',
-                        'full_name' => $nameEn,
-                        'title' => $this->cleanedString($row, ['en_title', 'title_en']),
-                        'position' => $this->cleanedString($row, ['en_position', 'position_en']),
-                        'bio' => $this->htmlSanitizer()->sanitize(
-                            (string) $this->rowValue($row, ['en_data', 'en_bio', 'bio_en', 'en_description'], '')
-                        ) ?: null,
-                        'specializations' => $this->decodeJson(
-                            (string) $this->rowValue($row, ['en_specializations', 'specializations_en'], '')
+                        'cv_media_id' => $this->legacyMediaAssetId(
+                            $this->cleanedString($row, 'cv'),
+                            'faculty-members/cv',
+                            $nameAr !== null ? $nameAr.' CV' : null,
+                            $nameEn !== null ? $nameEn.' CV' : null,
                         ),
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ];
-                }
+                        'sort_order' => $sortOrder,
+                        'is_enabled' => $isEnabled,
+                        'created_at' => $this->dateNormalizer()->normalize($this->rowValue($row, ['added_date', 'created_at', 'reg_date', 'date_added']))?->toDateTimeString() ?? $timestamp->toDateTimeString(),
+                        'updated_at' => $timestamp,
+                    ]);
 
-                if ($translations !== []) {
-                    DB::table('faculty_member_translations')->insert($translations);
-                }
+                    $translations = [];
+
+                    if ($nameAr !== null && $nameAr !== '') {
+                        $translations[] = [
+                            'faculty_member_id' => $memberId,
+                            'locale' => 'ar',
+                            'full_name' => $nameAr,
+                            'title' => $this->cleanedString($row, ['ar_title', 'title_ar']),
+                            'position' => $this->cleanedString($row, ['ar_position', 'position_ar']),
+                            'bio' => $this->htmlSanitizer()->sanitize(
+                                (string) $this->rowValue($row, ['ar_data', 'ar_bio', 'bio_ar', 'ar_description', 'ar_brief'], '')
+                            ) ?: null,
+                            'specializations' => ($specializations = $this->normalizedLegacyList(
+                                $this->cleanedString($row, ['ar_specializations', 'specializations_ar', 'ar_specialization'])
+                            )) !== null ? json_encode($specializations, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null,
+                            'created_at' => $timestamp,
+                            'updated_at' => $timestamp,
+                        ];
+                    }
+
+                    if ($nameEn !== null && $nameEn !== '') {
+                        $translations[] = [
+                            'faculty_member_id' => $memberId,
+                            'locale' => 'en',
+                            'full_name' => $nameEn,
+                            'title' => $this->cleanedString($row, ['en_title', 'title_en']),
+                            'position' => $this->cleanedString($row, ['en_position', 'position_en']),
+                            'bio' => $this->htmlSanitizer()->sanitize(
+                                (string) $this->rowValue($row, ['en_data', 'en_bio', 'bio_en', 'en_description', 'en_brief'], '')
+                            ) ?: null,
+                            'specializations' => ($specializations = $this->normalizedLegacyList(
+                                $this->cleanedString($row, ['en_specializations', 'specializations_en', 'en_specialization'])
+                            )) !== null ? json_encode($specializations, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null,
+                            'created_at' => $timestamp,
+                            'updated_at' => $timestamp,
+                        ];
+                    }
+
+                    if ($translations !== []) {
+                        DB::table('faculty_member_translations')->insert($translations);
+                    }
+
+                    return $memberId;
+                });
 
                 $this->migrationLogger()->log(
                     $module,

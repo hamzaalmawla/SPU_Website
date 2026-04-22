@@ -48,44 +48,46 @@ class ImportLegacyCountriesSeeder extends BaseLegacyImportSeeder
                 continue;
             }
 
-            $code = $this->cleanedString($row, ['code', 'country_code', 'iso_code']);
-            $code3 = $this->cleanedString($row, ['code3', 'iso3', 'country_code3']);
-            $phoneCode = $this->cleanedString($row, ['phone_code', 'phone', 'dial_code']);
-            $sortOrder = $this->normalizedInteger($this->rowValue($row, ['order', 'sort_order', 'record_order'])) ?? 0;
-            $isEnabled = $this->normalizedBoolean($this->rowValue($row, ['is_active', 'active', 'is_enabled']), true);
+            $code = $this->legacyCountryCode($sourceId);
 
-            if ($code !== null && mb_strlen($code) > 2) {
-                $code = mb_substr($code, 0, 2);
-            }
-
-            if ($code !== null && DB::table('countries')->where('code', $code)->exists()) {
-                $this->reject($module, 'jx_countries', $sourceId, 'duplicate_conflict', "Country code '{$code}' already exists.", ['code' => $code]);
-                $this->logSkip($module, $batch, 'jx_countries', $sourceId, 'countries', 'Duplicate country code.');
+            if ($code === null) {
+                $this->snapshotLegacyRow(
+                    $module,
+                    $batch,
+                    'jx_countries',
+                    $sourceId,
+                    null,
+                    'non_country_aggregate',
+                    null,
+                    ['en_name' => $nameEn, 'ar_name' => $nameAr],
+                );
+                $this->reject($module, 'jx_countries', $sourceId, 'unknown_mapping', 'Legacy country row could not be mapped to a curated ISO country code.', [
+                    'en_name' => $nameEn,
+                    'ar_name' => $nameAr,
+                ]);
+                $this->logSkip($module, $batch, 'jx_countries', $sourceId, 'countries', 'Skipped non-country or unmapped country row.');
                 $skipped++;
 
                 continue;
             }
 
-            if ($code === null || $code === '') {
-                $baseId = $sourceId ?? rand(1, 1295);
-                $suffix = 0;
+            if (DB::table('countries')->where('code', $code)->exists()) {
+                $this->reject($module, 'jx_countries', $sourceId, 'duplicate_conflict', "Country code '{$code}' already exists.", ['code' => $code]);
+                $this->logSkip($module, $batch, 'jx_countries', $sourceId, 'countries', 'Duplicate curated country code.');
+                $skipped++;
 
-                do {
-                    $candidate = strtoupper(str_pad(base_convert((string) ($baseId + $suffix), 10, 36), 2, '0', STR_PAD_LEFT));
-                    $candidateCode = mb_substr($candidate, -2, 2);
-                    $suffix++;
-                } while (DB::table('countries')->where('code', $candidateCode)->exists());
-
-                $code = $candidateCode;
+                continue;
             }
+
+            $sortOrder = $this->normalizedInteger($this->rowValue($row, ['order', 'sort_order', 'record_order'])) ?? ($sourceId ?? 0);
 
             try {
                 $countryId = DB::table('countries')->insertGetId([
                     'code' => $code,
-                    'code3' => $code3,
-                    'phone_code' => $phoneCode,
-                    'currency_code' => $this->cleanedString($row, ['currency_code', 'currency']),
-                    'is_enabled' => $isEnabled,
+                    'code3' => null,
+                    'phone_code' => null,
+                    'currency_code' => null,
+                    'is_enabled' => true,
                     'sort_order' => $sortOrder,
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -141,5 +143,103 @@ class ImportLegacyCountriesSeeder extends BaseLegacyImportSeeder
         }
 
         $this->command?->info("Countries import complete. Imported: {$imported}, Skipped: {$skipped}");
+    }
+
+    private function legacyCountryCode(?int $sourceId): ?string
+    {
+        return match ($sourceId) {
+            1 => 'SY',
+            2 => 'PS',
+            3 => 'LB',
+            4 => 'JO',
+            5 => 'IQ',
+            6 => 'AE',
+            7 => 'BH',
+            8 => 'DZ',
+            9 => 'SA',
+            10 => 'SD',
+            11 => 'EG',
+            12 => 'MA',
+            13 => 'QA',
+            14 => 'LY',
+            15 => 'KW',
+            16 => 'YE',
+            17 => 'OM',
+            18 => 'DJ',
+            19 => 'SO',
+            20 => 'TN',
+            21 => 'MR',
+            22 => 'KM',
+            26 => 'FR',
+            27 => 'AF',
+            28 => 'US',
+            29 => 'IR',
+            30 => 'IT',
+            31 => 'GB',
+            32 => 'RO',
+            33 => 'CH',
+            34 => 'DE',
+            35 => 'GR',
+            36 => 'RU',
+            37 => 'ES',
+            38 => 'TR',
+            39 => 'CY',
+            40 => 'JP',
+            41 => 'TW',
+            42 => 'KR',
+            43 => 'CN',
+            44 => 'SG',
+            45 => 'HK',
+            46 => 'IN',
+            47 => 'PK',
+            48 => 'BD',
+            49 => 'BG',
+            50 => 'HU',
+            51 => 'CZ',
+            52 => 'FI',
+            53 => 'AT',
+            54 => 'BR',
+            55 => 'SE',
+            57 => 'PL',
+            58 => 'PT',
+            59 => 'KP',
+            63 => 'SI',
+            64 => 'LK',
+            65 => 'AR',
+            66 => 'MT',
+            68 => 'CR',
+            69 => 'EC',
+            96 => 'AU',
+            98 => 'DK',
+            99 => 'NL',
+            101 => 'TH',
+            102 => 'CA',
+            103 => 'BE',
+            104 => 'ID',
+            105 => 'NO',
+            106 => 'MY',
+            108 => 'AL',
+            110 => 'NZ',
+            111 => 'SK',
+            112 => 'UA',
+            113 => 'NG',
+            114 => 'ZA',
+            115 => 'BY',
+            116 => 'MX',
+            119 => 'BA',
+            120 => 'UG',
+            121 => 'PH',
+            125 => 'CI',
+            126 => 'PE',
+            127 => 'IE',
+            130 => 'TZ',
+            131 => 'CU',
+            133 => 'SN',
+            134 => 'CL',
+            135 => 'ET',
+            136 => 'CM',
+            137 => 'EE',
+            default => null,
+        };
     }
 }

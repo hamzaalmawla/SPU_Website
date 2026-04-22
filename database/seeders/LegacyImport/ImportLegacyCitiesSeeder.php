@@ -66,8 +66,8 @@ class ImportLegacyCitiesSeeder extends BaseLegacyImportSeeder
             }
 
             $code = $this->cleanedString($row, ['code', 'city_code']);
-            $sortOrder = $this->normalizedInteger($this->rowValue($row, ['order', 'sort_order', 'record_order'])) ?? 0;
-            $isEnabled = $this->normalizedBoolean($this->rowValue($row, ['is_active', 'active', 'is_enabled']), true);
+            $sortOrder = $this->normalizedInteger($this->rowValue($row, ['order', 'sort_order', 'record_order'])) ?? ($sourceId ?? 0);
+            $isEnabled = $this->normalizedLegacyVisibility($row, true);
 
             try {
                 $cityId = DB::table('cities')->insertGetId([

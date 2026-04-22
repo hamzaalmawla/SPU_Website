@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Database\Seeders\LegacyImport;
 
-use App\Models\MediaAsset;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -61,11 +60,10 @@ class ImportLegacyResearchSeeder extends BaseLegacyImportSeeder
             }
 
             $legacyParentId = $this->normalizedInteger($this->rowValue($row, 'parent'));
-            $parentRow = $legacyParentId !== null ? $categoriesById->get($legacyParentId) : null;
-            $categoryKey = $this->deriveCategoryKey($row, $parentRow, $legacyParentId);
+            $categoryKey = null;
             $publishedAt = $this->dateNormalizer()->normalize($this->rowValue($row, ['post_date', 'start_date', 'created_at', 'added_date']));
             $sortOrder = $this->normalizedInteger($this->rowValue($row, ['member_category_order', 'sort_order', 'record_order'])) ?? 0;
-            $isEnabled = $this->normalizedBoolean($this->rowValue($row, ['is_visible', 'is_active', 'active', 'is_enabled']), true);
+            $isEnabled = $this->normalizedLegacyVisibility($row, true);
 
             try {
                 $publicationId = DB::table('research_publications')->insertGetId([
@@ -154,6 +152,10 @@ class ImportLegacyResearchSeeder extends BaseLegacyImportSeeder
         foreach ($rows as $row) {
             $sourceId = $this->normalizedInteger($this->rowValue($row, 'id'));
 
+            if ($this->normalizedInteger($this->rowValue($row, 'service_type')) !== 1) {
+                continue;
+            }
+
             if ($this->alreadyImported('jx_member_items', $sourceId, 'research_files')) {
                 $skipped++;
 
@@ -175,9 +177,24 @@ class ImportLegacyResearchSeeder extends BaseLegacyImportSeeder
             $paths = array_values(array_unique(array_filter([
                 $this->cleanedString($row, 'en_file'),
                 $this->cleanedString($row, 'ar_file'),
+                $this->cleanedString($row, 'photo'),
             ])));
 
             if ($paths === []) {
+                if ($this->cleanedString($row, 'video_link') !== null) {
+                    $this->snapshotLegacyRow(
+                        $module,
+                        $batch,
+                        'jx_member_items',
+                        $sourceId,
+                        null,
+                        'unsupported_attachment_media',
+                        null,
+                        ['video_link' => $this->rowValue($row, 'video_link'), 'member_category_id' => $legacyPublicationId],
+                    );
+                    $this->reject($module, 'jx_member_items', $sourceId, 'unknown_mapping', 'Research attachment uses unsupported video-only legacy media.');
+                }
+
                 $this->logSkip($module, $batch, 'jx_member_items', $sourceId, 'research_files', 'No file path found.');
                 $skipped++;
 
@@ -186,32 +203,20 @@ class ImportLegacyResearchSeeder extends BaseLegacyImportSeeder
 
             try {
                 $firstMediaId = null;
+                $baseSortOrder = $this->normalizedInteger($this->rowValue($row, 'member_item_order')) ?? 0;
+                $attachmentLabel = $this->cleanedString($row, ['ar_name', 'en_name']);
 
                 foreach ($paths as $index => $path) {
-                    $media = MediaAsset::query()->updateOrCreate(
-                        ['disk' => 'legacy', 'path' => $path],
-                        [
-                            'directory' => dirname($path) !== '.' ? dirname($path) : null,
-                            'filename' => basename($path),
-                            'original_name' => basename($path),
-                            'mime_type' => $this->guessMimeType($path),
-                            'extension' => strtolower((string) pathinfo($path, PATHINFO_EXTENSION)) ?: null,
-                            'size_bytes' => 0,
-                            'width' => null,
-                            'height' => null,
-                            'alt_text_ar' => null,
-                            'alt_text_en' => null,
-                            'caption_ar' => null,
-                            'caption_en' => null,
-                            'title_ar' => null,
-                            'title_en' => null,
-                            'webp_path' => null,
-                            'srcset_json' => null,
-                            'uploaded_by' => null,
-                        ],
+                    $mediaId = $this->legacyMediaAssetId(
+                        $path,
+                        'research/files',
+                        $this->cleanedString($row, 'ar_name'),
+                        $this->cleanedString($row, 'en_name'),
                     );
 
-                    $mediaId = (int) $media->getKey();
+                    if ($mediaId === null) {
+                        continue;
+                    }
 
                     if ($firstMediaId === null) {
                         $firstMediaId = $mediaId;
@@ -224,8 +229,8 @@ class ImportLegacyResearchSeeder extends BaseLegacyImportSeeder
                         DB::table('research_files')->insert([
                             'research_publication_id' => $publicationId,
                             'media_asset_id' => $mediaId,
-                            'label' => count($paths) > 1 ? 'legacy-file-'.($index + 1) : null,
-                            'sort_order' => $index,
+                            'label' => $attachmentLabel ?? (count($paths) > 1 ? 'legacy-file-'.($index + 1) : null),
+                            'sort_order' => $baseSortOrder + $index,
                             'created_at' => now(),
                             'updated_at' => now(),
                         ]);
@@ -259,20 +264,5 @@ class ImportLegacyResearchSeeder extends BaseLegacyImportSeeder
         }
 
         $this->command?->info("Research files import complete. Imported: {$imported}, Skipped: {$skipped}");
-    }
-
-    private function deriveCategoryKey(object $row, ?object $parentRow, ?int $legacyParentId): ?string
-    {
-        $source = $parentRow !== null
-            ? ($this->cleanedString($parentRow, ['en_name', 'ar_name']) ?? 'legacy-category-'.$legacyParentId)
-            : ($this->cleanedString($row, ['type', 'category', 'publication_type']) ?? ($legacyParentId !== null ? 'legacy-category-'.$legacyParentId : null));
-
-        if ($source === null || $source === '') {
-            return null;
-        }
-
-        $slug = $this->slugFrom(['value' => $source], 'value', $source);
-
-        return $slug !== '' ? $slug : null;
     }
 }

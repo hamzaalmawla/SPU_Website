@@ -48,10 +48,22 @@ class ImportLegacyCareerLinksSeeder extends BaseLegacyImportSeeder
             $url = $this->cleanedString($row, ['url', 'link', 'website', 'site_url']);
 
             if ($url === null || $url === '') {
-                $url = '#';
+                $this->reject($module, 'jx_job_sites', $sourceId, 'unknown_mapping', 'Career link has no usable URL.');
+                $this->logSkip($module, $batch, 'jx_job_sites', $sourceId, 'career_links', 'No URL found.');
+                $skipped++;
+
+                continue;
             }
 
-            if (mb_strpos($url, 'http') !== 0 && $url !== '#') {
+            if ($this->htmlSanitizer()->hasUnsafeLinks('href="'.$url.'"')) {
+                $this->reject($module, 'jx_job_sites', $sourceId, 'unsafe_html', 'Legacy career link URL failed safety validation.', ['url' => $url]);
+                $this->logSkip($module, $batch, 'jx_job_sites', $sourceId, 'career_links', 'Skipped unsafe career link URL.', ['url' => $url]);
+                $skipped++;
+
+                continue;
+            }
+
+            if (mb_strpos($url, 'http') !== 0) {
                 $url = 'https://'.$url;
             }
 
@@ -61,8 +73,8 @@ class ImportLegacyCareerLinksSeeder extends BaseLegacyImportSeeder
                 $isExternal = false;
             }
 
-            $sortOrder = $this->normalizedInteger($this->rowValue($row, ['order', 'sort_order', 'record_order'])) ?? 0;
-            $isEnabled = $this->normalizedBoolean($this->rowValue($row, ['is_active', 'active', 'is_enabled']), true);
+            $sortOrder = $this->normalizedInteger($this->rowValue($row, ['record_order', 'sort_order', 'order'])) ?? ($sourceId ?? 0);
+            $isEnabled = $this->normalizedLegacyVisibility($row, true);
 
             try {
                 $linkId = DB::table('career_links')->insertGetId([
@@ -70,7 +82,7 @@ class ImportLegacyCareerLinksSeeder extends BaseLegacyImportSeeder
                     'is_external' => $isExternal,
                     'sort_order' => $sortOrder,
                     'is_enabled' => $isEnabled,
-                    'created_at' => $this->dateNormalizer()->normalize($this->rowValue($row, ['created_at', 'date_added', 'reg_date']))?->toDateTimeString() ?? now()->toDateTimeString(),
+                    'created_at' => $this->dateNormalizer()->normalize($this->rowValue($row, ['added_date', 'updated_date', 'created_at', 'date_added', 'reg_date']))?->toDateTimeString() ?? now()->toDateTimeString(),
                     'updated_at' => now(),
                 ]);
 

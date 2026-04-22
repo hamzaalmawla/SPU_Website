@@ -22,7 +22,7 @@ class ImportLegacyFaqsSeeder extends BaseLegacyImportSeeder
 
         $this->command?->info("Starting FAQs import: {$rows->count()} rows found.");
 
-        $categoriesCreated = $this->ensureDefaultCategory();
+        $this->ensureDefaultCategory();
         $imported = 0;
         $skipped = 0;
 
@@ -35,7 +35,36 @@ class ImportLegacyFaqsSeeder extends BaseLegacyImportSeeder
                 continue;
             }
 
-            $locale = $this->legacyLocaleFromLanguageCode($this->rowValue($row, 'lang'));
+            $legacyLanguageCode = $this->rowValue($row, 'lang');
+            $locale = $this->legacyLocaleFromLanguageCode($legacyLanguageCode);
+
+            if ($locale === null) {
+                $this->snapshotLegacyRow(
+                    $module,
+                    $batch,
+                    'jx_faqs',
+                    $sourceId,
+                    null,
+                    'unsupported_locale',
+                    null,
+                    [
+                        'lang' => $legacyLanguageCode,
+                        'subject' => $this->rowValue($row, 'subject'),
+                        'question' => $this->rowValue($row, 'question'),
+                        'answer' => $this->rowValue($row, 'answer'),
+                    ],
+                );
+                $this->reject($module, 'jx_faqs', $sourceId, 'unsupported_locale', 'FAQ locale is not supported for import.', [
+                    'lang' => $legacyLanguageCode,
+                ]);
+                $this->logSkip($module, $batch, 'jx_faqs', $sourceId, 'faqs', 'Skipped FAQ with unsupported locale.', [
+                    'lang' => $legacyLanguageCode,
+                ]);
+                $skipped++;
+
+                continue;
+            }
+
             $questionBody = $this->htmlSanitizer()->sanitize((string) $this->rowValue($row, 'question', ''));
             $questionText = $this->cleanedString($row, 'subject')
                 ?? $this->cleanedString(['value' => strip_tags((string) $questionBody)], 'value');
@@ -64,7 +93,7 @@ class ImportLegacyFaqsSeeder extends BaseLegacyImportSeeder
             $faqCategoryId = $this->resolveFaqCategory($legacyCatId);
 
             $sortOrder = $this->normalizedInteger($this->rowValue($row, ['faq_order', 'order', 'sort_order', 'record_order'])) ?? 0;
-            $isEnabled = $this->normalizedBoolean($this->rowValue($row, ['is_visible', 'is_active', 'active', 'is_enabled']), true);
+            $isEnabled = $this->normalizedLegacyVisibility($row, true);
             $isFeatured = $this->normalizedBoolean($this->rowValue($row, ['is_featured', 'featured']), false);
 
             try {
@@ -74,7 +103,7 @@ class ImportLegacyFaqsSeeder extends BaseLegacyImportSeeder
                         'sort_order' => $sortOrder,
                         'is_enabled' => $isEnabled,
                         'is_featured' => $isFeatured,
-                        'created_at' => $this->dateNormalizer()->normalize($this->rowValue($row, ['created_at', 'date_added', 'reg_date']))?->toDateTimeString() ?? now()->toDateTimeString(),
+                        'created_at' => $this->dateNormalizer()->normalize($this->rowValue($row, ['post_date', 'created_at', 'date_added', 'reg_date']))?->toDateTimeString() ?? now()->toDateTimeString(),
                         'updated_at' => now(),
                     ]);
 
