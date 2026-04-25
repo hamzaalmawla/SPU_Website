@@ -24,7 +24,7 @@ interface PreviewServiceInterface
     /**
      * Resolve a preview token to a preview payload.
      */
-    public function resolveToken(string $token): ?PreviewDTO;
+    public function resolveToken(string $token, ?string $locale = null): ?PreviewDTO;
 
     /**
      * Validate a preview token.

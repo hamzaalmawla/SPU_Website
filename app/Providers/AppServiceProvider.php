@@ -27,16 +27,16 @@ use App\Policies\UserPolicy;
 use App\Services\AuditService;
 use App\Services\AuthService;
 use App\Services\CacheService;
+use App\Services\HomepageSectionService;
+use App\Services\MenuService;
+use App\Services\NavigationService;
+use App\Services\PageService;
 use App\Services\Placeholders\HomepagePublishingServicePlaceholder;
-use App\Services\Placeholders\HomepageSectionServicePlaceholder;
 use App\Services\Placeholders\MediaServicePlaceholder;
-use App\Services\Placeholders\MenuServicePlaceholder;
-use App\Services\Placeholders\NavigationServicePlaceholder;
-use App\Services\Placeholders\PageServicePlaceholder;
-use App\Services\Placeholders\PreviewServicePlaceholder;
-use App\Services\Placeholders\SeoMetadataServicePlaceholder;
-use App\Services\Placeholders\SettingsServicePlaceholder;
 use App\Services\Placeholders\SlugServicePlaceholder;
+use App\Services\PreviewService;
+use App\Services\SeoMetadataService;
+use App\Services\SettingsService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -125,15 +125,15 @@ class AppServiceProvider extends ServiceProvider
     {
         return [
             MediaServiceInterface::class => MediaServicePlaceholder::class,
-            MenuServiceInterface::class => MenuServicePlaceholder::class,
+            MenuServiceInterface::class => MenuService::class,
             SlugServiceInterface::class => SlugServicePlaceholder::class,
-            SeoMetadataServiceInterface::class => SeoMetadataServicePlaceholder::class,
-            HomepageSectionServiceInterface::class => HomepageSectionServicePlaceholder::class,
+            SeoMetadataServiceInterface::class => SeoMetadataService::class,
+            HomepageSectionServiceInterface::class => HomepageSectionService::class,
             HomepagePublishingServiceInterface::class => HomepagePublishingServicePlaceholder::class,
-            PreviewServiceInterface::class => PreviewServicePlaceholder::class,
-            PageServiceInterface::class => PageServicePlaceholder::class,
-            SettingsServiceInterface::class => SettingsServicePlaceholder::class,
-            NavigationServiceInterface::class => NavigationServicePlaceholder::class,
+            PreviewServiceInterface::class => PreviewService::class,
+            PageServiceInterface::class => PageService::class,
+            SettingsServiceInterface::class => SettingsService::class,
+            NavigationServiceInterface::class => NavigationService::class,
         ];
     }
 }
