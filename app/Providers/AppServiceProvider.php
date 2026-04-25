@@ -27,11 +27,11 @@ use App\Policies\UserPolicy;
 use App\Services\AuditService;
 use App\Services\AuthService;
 use App\Services\CacheService;
+use App\Services\HomepagePublishingService;
 use App\Services\HomepageSectionService;
 use App\Services\MenuService;
 use App\Services\NavigationService;
 use App\Services\PageService;
-use App\Services\Placeholders\HomepagePublishingServicePlaceholder;
 use App\Services\Placeholders\MediaServicePlaceholder;
 use App\Services\Placeholders\SlugServicePlaceholder;
 use App\Services\PreviewService;
@@ -129,7 +129,7 @@ class AppServiceProvider extends ServiceProvider
             SlugServiceInterface::class => SlugServicePlaceholder::class,
             SeoMetadataServiceInterface::class => SeoMetadataService::class,
             HomepageSectionServiceInterface::class => HomepageSectionService::class,
-            HomepagePublishingServiceInterface::class => HomepagePublishingServicePlaceholder::class,
+            HomepagePublishingServiceInterface::class => HomepagePublishingService::class,
             PreviewServiceInterface::class => PreviewService::class,
             PageServiceInterface::class => PageService::class,
             SettingsServiceInterface::class => SettingsService::class,

@@ -18,5 +18,7 @@ final readonly class ArticleCardDTO
         public ?string $imageUrl,
         public ?string $publishedAt,
         public ?string $url,
+        public ?string $categoryLabel = null,
+        public ?string $badgeTag = null,
     ) {}
 }

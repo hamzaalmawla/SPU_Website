@@ -17,5 +17,6 @@ final readonly class PreviewDTO
         public string $previewUrl,
         public PreviewPayloadDTO $payload,
         public ?string $expiresAt = null,
+        public ?string $device = null,
     ) {}
 }

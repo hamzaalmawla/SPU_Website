@@ -9,6 +9,9 @@ namespace App\DTOs;
  */
 final readonly class ResearchCardDTO
 {
+    /**
+     * @param  array<int, string>  $authors
+     */
     public function __construct(
         public int $id,
         public string $locale,
@@ -18,5 +21,7 @@ final readonly class ResearchCardDTO
         public ?string $imageUrl,
         public ?string $publishedAt,
         public ?string $url,
+        public ?string $categoryLabel = null,
+        public array $authors = [],
     ) {}
 }

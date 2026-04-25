@@ -17,5 +17,7 @@ final readonly class HomepageSectionDTO
         public HomepageSectionDataDTO $payload,
         public HomepageSectionTranslationDTO $arabicTranslation,
         public HomepageSectionTranslationDTO $englishTranslation,
+        public ?HomepageSectionDataDTO $arabicPayload = null,
+        public ?HomepageSectionDataDTO $englishPayload = null,
     ) {}
 }

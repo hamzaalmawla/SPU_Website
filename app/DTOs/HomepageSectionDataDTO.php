@@ -20,16 +20,22 @@ final readonly class HomepageSectionDataDTO
      * @param  array<int, FooterColumnDTO>  $footerColumns
      * @param  array<int, ContactLinkDTO>  $contactLinks
      * @param  array<int, SocialLinkDTO>  $socialLinks
+     * @param  array<int, array<string, mixed>>  $items
+     * @param  array<string, mixed>  $content
      */
     public function __construct(
         public ?string $eyebrow = null,
+        public ?string $subtitle = null,
+        public ?string $badge = null,
         public ?string $title = null,
         public ?string $summary = null,
         public ?string $body = null,
+        public ?string $videoUrl = null,
         public ?string $imageUrl = null,
         public ?string $backgroundImageUrl = null,
         public ?NavigationActionDTO $primaryAction = null,
         public ?NavigationActionDTO $secondaryAction = null,
+        public ?NavigationActionDTO $sectionAction = null,
         public array $stats = [],
         public array $featuredItems = [],
         public array $articles = [],
@@ -38,5 +44,7 @@ final readonly class HomepageSectionDataDTO
         public array $footerColumns = [],
         public array $contactLinks = [],
         public array $socialLinks = [],
+        public array $items = [],
+        public array $content = [],
     ) {}
 }

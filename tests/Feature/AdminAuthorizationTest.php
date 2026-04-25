@@ -81,7 +81,7 @@ class AdminAuthorizationTest extends TestCase
         $this->assertFalse(Gate::forUser($facultyEditor)->allows('manage-users'));
         $this->assertFalse(Gate::forUser($facultyEditor)->allows('manage-settings'));
         $this->assertFalse(Gate::forUser($facultyEditor)->allows('manage-homepage'));
-        $this->assertTrue(Gate::forUser($facultyEditor)->allows('manage-pages'));
+        $this->assertFalse(Gate::forUser($facultyEditor)->allows('manage-pages'));
         $this->assertFalse(Gate::forUser($facultyEditor)->allows('manage-menu'));
         $this->assertTrue(Gate::forUser($facultyEditor)->allows('manage-media'));
         $this->assertFalse(Gate::forUser($facultyEditor)->allows('publish-content'));
