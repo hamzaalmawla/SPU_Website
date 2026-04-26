@@ -38,6 +38,8 @@ final class NavigationService implements NavigationServiceInterface
     {
         $applyCta = $this->settingsService->getApplyCtaTarget($locale);
         $emergencyNotice = $this->settingsService->getEmergencyNotice($locale);
+        $footerSettings = $this->settingsService->getFooterSettings($locale);
+        $socialContact = $this->settingsService->getSocialContactSettings($locale);
 
         return new NavigationPayloadDTO(
             locale: $locale,
@@ -50,6 +52,8 @@ final class NavigationService implements NavigationServiceInterface
             studentPortalUrl: $this->settingsService->getStudentPortalUrl(),
             staffAccessUrl: $this->settingsService->getStaffAccessUrl(),
             emergencyNotice: $emergencyNotice,
+            footerSettings: $footerSettings,
+            socialContact: $socialContact,
         );
     }
 

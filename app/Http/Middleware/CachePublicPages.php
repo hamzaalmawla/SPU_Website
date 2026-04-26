@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Contracts\CacheServiceInterface;
+use BadMethodCallException;
 use Closure;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Http\Request;
@@ -35,7 +36,9 @@ final class CachePublicPages
         $cacheHit = true;
         $freshResponse = null;
 
-        $cachedPayload = $this->cacheService->remember(
+        $cacheService = $this->taggedCacheService($request);
+
+        $cachedPayload = $cacheService->remember(
             $this->buildCacheKey($request),
             function () use (&$cacheHit, &$freshResponse, $next, $request): ?array {
                 $cacheHit = false;
@@ -105,6 +108,22 @@ final class CachePublicPages
             trim($request->path(), '/'),
             $queryString,
         ]));
+    }
+
+    private function taggedCacheService(Request $request): CacheServiceInterface
+    {
+        $locale = $request->route('locale');
+        $tags = ['public-pages', 'public-shell'];
+
+        if (is_string($locale) && $locale !== '') {
+            $tags[] = 'public-shell:'.$locale;
+        }
+
+        try {
+            return $this->cacheService->tags($tags);
+        } catch (BadMethodCallException) {
+            return $this->cacheService;
+        }
     }
 
     /**

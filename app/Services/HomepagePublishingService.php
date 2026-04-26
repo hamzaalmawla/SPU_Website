@@ -773,6 +773,7 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
     {
         foreach (['ar', 'en'] as $locale) {
             $this->cacheService->forget('public_pages:'.sha1($locale.'|'.$locale.'|'));
+            $this->cacheService->flushTags(['public-pages', 'public-shell', 'public-shell:'.$locale]);
         }
     }
 

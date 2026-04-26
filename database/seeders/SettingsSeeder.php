@@ -96,7 +96,24 @@ class SettingsSeeder extends Seeder
                 'group_key' => 'footer',
                 'type' => 'json',
                 'locale' => 'ar',
-                'value_json' => ['copyrightText' => 'الجامعة الخاصة السورية', 'address' => 'دمشق، سوريا', 'phone' => '+963 11 000 0000', 'email' => 'info@spu.edu.sy'],
+                'value_json' => [
+                    'copyrightText' => 'الجامعة الخاصة السورية',
+                    'address' => 'دمشق، سوريا',
+                    'phone' => '+963 11 000 0000',
+                    'email' => 'info@spu.edu.sy',
+                    'brandBlock' => [
+                        'title' => 'الجامعة الخاصة السورية',
+                        'body' => 'واجهة مشتركة قابلة للإدارة للتجارب المحلية وتكاملات القالب العام.',
+                        'logoUrl' => '/images/home/footer-logo.png',
+                    ],
+                    'mapEmbed' => [
+                        'url' => 'https://maps.google.com/?q=Damascus+Syria',
+                    ],
+                    'legalLinks' => [
+                        ['label' => 'سياسة الخصوصية', 'url' => '/ar/about'],
+                        ['label' => 'شروط الاستخدام', 'url' => '/ar/contact'],
+                    ],
+                ],
                 'value_text' => null,
                 'is_public' => true,
             ],
@@ -105,7 +122,24 @@ class SettingsSeeder extends Seeder
                 'group_key' => 'footer',
                 'type' => 'json',
                 'locale' => 'en',
-                'value_json' => ['copyrightText' => 'Syrian Private University', 'address' => 'Damascus, Syria', 'phone' => '+963 11 000 0000', 'email' => 'info@spu.edu.sy'],
+                'value_json' => [
+                    'copyrightText' => 'Syrian Private University',
+                    'address' => 'Damascus, Syria',
+                    'phone' => '+963 11 000 0000',
+                    'email' => 'info@spu.edu.sy',
+                    'brandBlock' => [
+                        'title' => 'Syrian Private University',
+                        'body' => 'A managed shared shell for local development and public runtime integration.',
+                        'logoUrl' => '/images/home/footer-logo.png',
+                    ],
+                    'mapEmbed' => [
+                        'url' => 'https://maps.google.com/?q=Damascus+Syria',
+                    ],
+                    'legalLinks' => [
+                        ['label' => 'Privacy Policy', 'url' => '/en/about'],
+                        ['label' => 'Terms of Use', 'url' => '/en/contact'],
+                    ],
+                ],
                 'value_text' => null,
                 'is_public' => true,
             ],

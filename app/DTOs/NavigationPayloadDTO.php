@@ -18,10 +18,12 @@ final readonly class NavigationPayloadDTO
         public NavigationTreeDTO $header,
         public NavigationTreeDTO $footer,
         public NavigationTreeDTO $utility,
-        public array $languageSwitchLinks,
-        public ?NavigationActionDTO $applyCta,
-        public ?string $studentPortalUrl,
-        public ?string $staffAccessUrl,
-        public EmergencyNoticeDTO $emergencyNotice,
+            public array $languageSwitchLinks,
+            public ?NavigationActionDTO $applyCta,
+            public ?string $studentPortalUrl,
+            public ?string $staffAccessUrl,
+            public EmergencyNoticeDTO $emergencyNotice,
+            public FooterSettingsDTO $footerSettings,
+            public SocialContactSettingsDTO $socialContact,
     ) {}
 }

@@ -47,6 +47,21 @@ class PublicRuntimeTest extends TestCase
             ->assertSee('Home');
     }
 
+    public function test_public_shell_renders_navigation_and_footer_payloads(): void
+    {
+        $this->get('/en')
+            ->assertOk()
+            ->assertSee('About')
+            ->assertSee('Student Portal')
+            ->assertSee('Privacy Policy')
+            ->assertSee('Contact us: info@spu.edu.sy');
+
+        $this->get('/en/about')
+            ->assertOk()
+            ->assertSee('Apply now')
+            ->assertSee('Syrian Private University');
+    }
+
     public function test_missing_page_slug_returns_not_found(): void
     {
         $this->get('/en/does-not-exist')->assertNotFound();

@@ -123,16 +123,25 @@
             <footer class="border-t border-white/10 bg-slate-950/90">
                 <div class="mx-auto grid max-w-7xl gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[1.4fr,1fr,1fr] lg:px-8">
                     <div>
-                        <h2 class="text-lg font-semibold text-white">{{ $settings->footer->copyrightText }}</h2>
-                        @if ($settings->footer->address)
-                            <p class="mt-3 text-sm text-slate-300">{{ $settings->footer->address }}</p>
+                        @if ($navigation->footerSettings->logoUrl)
+                            <img src="{{ $navigation->footerSettings->logoUrl }}" alt="{{ $navigation->footerSettings->brandTitle ?? $seo->title }}" class="h-12 w-auto rounded-xl object-contain">
+                        @endif
+                        <h2 class="{{ $navigation->footerSettings->logoUrl ? 'mt-4 ' : '' }}text-lg font-semibold text-white">{{ $navigation->footerSettings->brandTitle ?? $seo->title }}</h2>
+                        @if ($navigation->footerSettings->brandSummary)
+                            <p class="mt-3 text-sm leading-7 text-slate-300">{{ $navigation->footerSettings->brandSummary }}</p>
+                        @endif
+                        @if ($navigation->footerSettings->address)
+                            <p class="mt-3 text-sm text-slate-300">{{ $navigation->footerSettings->address }}</p>
                         @endif
                         <div class="mt-4 space-y-2 text-sm text-slate-300">
-                            @if ($settings->footer->phone)
-                                <p>{{ $settings->footer->phone }}</p>
+                            @if ($navigation->footerSettings->phone)
+                                <p>{{ $navigation->footerSettings->phone }}</p>
                             @endif
-                            @if ($settings->footer->email)
-                                <p>{{ $settings->footer->email }}</p>
+                            @if ($navigation->footerSettings->email)
+                                <p>{{ $navigation->footerSettings->email }}</p>
+                            @endif
+                            @if ($navigation->footerSettings->mapEmbedUrl)
+                                <a href="{{ $navigation->footerSettings->mapEmbedUrl }}" target="_blank" rel="noreferrer" class="inline-flex transition hover:text-white">Campus Map</a>
                             @endif
                         </div>
                     </div>
@@ -151,14 +160,20 @@
                     <div>
                         <h3 class="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">Connect</h3>
                         <div class="mt-4 space-y-2 text-sm text-slate-300">
-                            @foreach ($settings->socialContact->socialLinks as $link)
+                            @foreach ($navigation->socialContact->socialLinks as $link)
                                 <a href="{{ $link->url }}" target="_blank" rel="noreferrer" class="block transition hover:text-white">{{ $link->platform }}</a>
                             @endforeach
-                            @foreach ($settings->socialContact->contactLinks as $link)
+                            @foreach ($navigation->socialContact->contactLinks as $link)
                                 <p>{{ $link->label }}: {{ $link->value }}</p>
+                            @endforeach
+                            @foreach ($navigation->footerSettings->legalLinks as $link)
+                                <a href="{{ $link->url }}" @if ($link->target) target="{{ $link->target }}" @endif class="block transition hover:text-white">{{ $link->label }}</a>
                             @endforeach
                         </div>
                     </div>
+                </div>
+                <div class="border-t border-white/10 px-4 py-4 text-center text-sm text-slate-400 sm:px-6 lg:px-8">
+                    {{ $navigation->footerSettings->copyrightText }}
                 </div>
             </footer>
         </div>
