@@ -11,7 +11,6 @@ use App\Contracts\SeoMetadataServiceInterface;
 use App\Contracts\SettingsServiceInterface;
 use App\DTOs\HomepageDTO;
 use App\DTOs\HomepageSectionDTO;
-use App\DTOs\LanguageSwitchLinkDTO;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
@@ -28,15 +27,17 @@ final class HomeController extends Controller
     public function __invoke(Request $request, string $locale): View
     {
         $homepage = $this->homepageSectionService->getPublicHomepage($locale);
+        abort_if(! $this->hasRenderableHomepage($homepage), 404);
+
+        $navigation = $this->navigationService->getFullNavigationPayload($locale, $request->path());
         $homeShell = $this->pageService->getPublicPageBySlug('home', $locale);
 
         return view('public.home', [
             'locale' => $locale,
             'direction' => $homepage->direction,
             'homepage' => $homepage,
-            'heroSection' => $this->findSection($homepage, 'hero'),
-            'bodySections' => $this->bodySections($homepage),
-            'navigation' => $this->navigationService->getFullNavigationPayload($locale, $request->path()),
+            'homepageFooterSection' => $this->findSection($homepage, 'footer'),
+            'navigation' => $navigation,
             'settings' => $this->settingsService->getPublicSettings($locale),
             'seo' => $homeShell !== null
                 ? ($locale === 'ar' ? $homeShell->arabicSeo : $homeShell->englishSeo)
@@ -44,7 +45,7 @@ final class HomeController extends Controller
                     'path' => '/'.$locale,
                     'locale_paths' => ['ar' => '/ar', 'en' => '/en'],
                 ]),
-            'languageSwitch' => $this->languageSwitchLinks($locale),
+            'languageSwitch' => $navigation->languageSwitchLinks,
             'isPreview' => false,
         ]);
     }
@@ -60,30 +61,8 @@ final class HomeController extends Controller
         return null;
     }
 
-    /**
-     * @return array<int, HomepageSectionDTO>
-     */
-    private function bodySections(HomepageDTO $homepage): array
+    private function hasRenderableHomepage(HomepageDTO $homepage): bool
     {
-        return array_values(array_filter(
-            $homepage->sections,
-            static fn (HomepageSectionDTO $section): bool => $section->key !== 'hero'
-        ));
-    }
-
-    /**
-     * @return array<int, LanguageSwitchLinkDTO>
-     */
-    private function languageSwitchLinks(string $locale): array
-    {
-        return array_map(
-            static fn (string $candidateLocale): LanguageSwitchLinkDTO => new LanguageSwitchLinkDTO(
-                locale: $candidateLocale,
-                label: strtoupper($candidateLocale),
-                url: '/'.$candidateLocale,
-                isCurrent: $candidateLocale === $locale,
-            ),
-            ['ar', 'en']
-        );
+        return $homepage->sections !== [] && $this->findSection($homepage, 'hero') instanceof HomepageSectionDTO;
     }
 }

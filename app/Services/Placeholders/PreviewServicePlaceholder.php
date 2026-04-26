@@ -18,7 +18,7 @@ final class PreviewServicePlaceholder implements PreviewServiceInterface
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function resolveToken(string $token): ?PreviewDTO
+    public function resolveToken(string $token, ?string $locale = null): ?PreviewDTO
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }

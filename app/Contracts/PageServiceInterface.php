@@ -97,6 +97,13 @@ interface PageServiceInterface
     public function buildPreviewPayload(int $pageId, string $locale): PreviewDTO;
 
     /**
+     * Build preview payload for a specific draft snapshot.
+     *
+     * @param  array<string, mixed>  $snapshot
+     */
+    public function buildPreviewPayloadFromSnapshot(int $pageId, array $snapshot, string $locale): PreviewDTO;
+
+    /**
      * Resolve the language-switch target URL for a page.
      */
     public function resolveLanguageSwitchTargetUrl(int $pageId, string $targetLocale): ?string;

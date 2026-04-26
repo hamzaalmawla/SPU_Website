@@ -8,6 +8,10 @@ use App\Contracts\HomepageSectionServiceInterface;
 use App\Contracts\NavigationServiceInterface;
 use App\Contracts\PageServiceInterface;
 use App\Contracts\PreviewServiceInterface;
+use App\DTOs\ArticleCardDTO;
+use App\DTOs\ContactLinkDTO;
+use App\DTOs\EventCardDTO;
+use App\DTOs\FooterColumnDTO;
 use App\DTOs\HomepageDTO;
 use App\DTOs\HomepageFeatureItemDTO;
 use App\DTOs\HomepageSectionDataDTO;
@@ -17,7 +21,10 @@ use App\DTOs\HomepageStatItemDTO;
 use App\DTOs\NavigationActionDTO;
 use App\DTOs\PreviewDTO;
 use App\DTOs\PreviewPayloadDTO;
+use App\DTOs\ResearchCardDTO;
+use App\DTOs\SocialLinkDTO;
 use App\Models\HomepageDraft;
+use App\Models\PageDraft;
 use App\Models\PreviewToken;
 use Illuminate\Support\Str;
 
@@ -35,6 +42,7 @@ final class PreviewService implements PreviewServiceInterface
     {
         $this->assertSupportedTargetType($targetType);
         $this->assertSupportedDevice($device);
+        $this->assertSupportedLocale($locale);
 
         $token = PreviewToken::query()->create([
             'token' => Str::random(64),
@@ -43,7 +51,7 @@ final class PreviewService implements PreviewServiceInterface
             'locale' => $locale,
             'device' => $device,
             'issued_to_user_id' => $userId,
-            'payload_json' => null,
+            'payload_json' => $this->snapshotPayload($targetType, $targetId),
             'expires_at' => now()->addHours(6),
         ]);
 
@@ -75,10 +83,13 @@ final class PreviewService implements PreviewServiceInterface
 
     private function buildPreviewDto(PreviewToken $token, ?string $requestedLocale = null): PreviewDTO
     {
-        $locale = is_string($requestedLocale) && $requestedLocale !== ''
-            ? $requestedLocale
-            : (is_string($token->locale) && $token->locale !== '' ? $token->locale : app()->getLocale());
-        $payload = $this->buildPayload($token->target_type, $token->target_id, $locale);
+        $locale = $this->resolveSupportedLocale($requestedLocale, is_string($token->locale) ? $token->locale : null);
+        $payload = $this->buildPayload(
+            $token->target_type,
+            $token->target_id,
+            $locale,
+            is_array($token->payload_json) ? $token->payload_json : null,
+        );
         $navigationPath = $token->target_type === 'homepage'
             ? $locale
             : $this->pagePreviewPath($payload, $locale);
@@ -99,35 +110,70 @@ final class PreviewService implements PreviewServiceInterface
         );
     }
 
-    private function buildPayload(string $targetType, ?int $targetId, string $locale): PreviewPayloadDTO
+    /**
+     * @param  array<string, mixed>|null  $snapshot
+     */
+    private function buildPayload(string $targetType, ?int $targetId, string $locale, ?array $snapshot = null): PreviewPayloadDTO
     {
         if ($targetType === 'page' && $targetId !== null) {
-            $preview = $this->pageService->buildPreviewPayload($targetId, $locale);
+            $preview = $snapshot !== null
+                ? $this->pageService->buildPreviewPayloadFromSnapshot($targetId, $snapshot, $locale)
+                : $this->pageService->buildPreviewPayload($targetId, $locale);
 
             return $preview->payload;
         }
 
-        return new PreviewPayloadDTO(homepage: $this->buildHomepagePreview($locale));
+        return new PreviewPayloadDTO(homepage: $this->buildHomepagePreview($locale, $snapshot));
     }
 
-    private function buildHomepagePreview(string $locale): HomepageDTO
+    /**
+     * @param  array<string, mixed>|null  $snapshot
+     */
+    private function buildHomepagePreview(string $locale, ?array $snapshot = null): HomepageDTO
     {
-        $draft = HomepageDraft::query()
-            ->where('target_type', 'homepage')
-            ->whereIn('status', self::EDITABLE_STATUSES)
-            ->latest('updated_at')
-            ->first();
+        $draftHomepage = is_array($snapshot['homepage'] ?? null)
+            ? $snapshot['homepage']
+            : $snapshot;
 
-        if (! $draft instanceof HomepageDraft || ! is_array($draft->payload_json)) {
-            return $this->homepageSectionService->getPublicHomepage($locale);
+        if (! is_array($draftHomepage)) {
+            $draft = HomepageDraft::query()
+                ->where('target_type', 'homepage')
+                ->whereIn('status', self::EDITABLE_STATUSES)
+                ->latest('updated_at')
+                ->first();
+
+            if (! $draft instanceof HomepageDraft || ! is_array($draft->payload_json)) {
+                return $this->homepageSectionService->getPublicHomepage($locale);
+            }
+
+            $draftHomepage = is_array($draft->payload_json['homepage'] ?? null)
+                ? $draft->payload_json['homepage']
+                : $draft->payload_json;
         }
 
-        $draftHomepage = is_array($draft->payload_json['homepage'] ?? null)
-            ? $draft->payload_json['homepage']
-            : $draft->payload_json;
         $sections = is_array($draftHomepage['sections'] ?? null) ? $draftHomepage['sections'] : [];
 
         if ($sections === []) {
+            return $this->homepageSectionService->getPublicHomepage($locale);
+        }
+
+        $approvedSections = [];
+
+        foreach ($sections as $section) {
+            if (! is_array($section)) {
+                continue;
+            }
+
+            $key = is_string($section['key'] ?? null) ? $section['key'] : null;
+
+            if ($key === null || ! in_array($key, HomepageSectionServiceInterface::SECTION_KEYS, true)) {
+                continue;
+            }
+
+            $approvedSections[$key] = $this->sectionFromDraft($section, $locale);
+        }
+
+        if ($approvedSections === []) {
             return $this->homepageSectionService->getPublicHomepage($locale);
         }
 
@@ -135,8 +181,8 @@ final class PreviewService implements PreviewServiceInterface
             locale: $locale,
             direction: $locale === 'ar' ? 'rtl' : 'ltr',
             sections: array_values(array_filter(array_map(
-                fn (mixed $section): ?HomepageSectionDTO => is_array($section) ? $this->sectionFromDraft($section, $locale) : null,
-                $sections
+                static fn (string $key): ?HomepageSectionDTO => $approvedSections[$key] ?? null,
+                HomepageSectionServiceInterface::SECTION_KEYS,
             ))),
         );
     }
@@ -232,6 +278,56 @@ final class PreviewService implements PreviewServiceInterface
         }
     }
 
+    private function assertSupportedLocale(string $locale): void
+    {
+        if (! in_array($locale, ['ar', 'en'], true)) {
+            throw new \InvalidArgumentException('Unsupported preview locale.');
+        }
+    }
+
+    private function resolveSupportedLocale(?string $preferredLocale, ?string $fallbackLocale = null): string
+    {
+        foreach ([$preferredLocale, $fallbackLocale, app()->getLocale(), 'ar'] as $candidate) {
+            if (is_string($candidate) && in_array($candidate, ['ar', 'en'], true)) {
+                return $candidate;
+            }
+        }
+
+        return 'ar';
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function snapshotPayload(string $targetType, ?int $targetId): ?array
+    {
+        if ($targetType === 'homepage') {
+            $draft = HomepageDraft::query()
+                ->where('target_type', 'homepage')
+                ->whereIn('status', self::EDITABLE_STATUSES)
+                ->latest('updated_at')
+                ->first();
+
+            return $draft instanceof HomepageDraft && is_array($draft->payload_json)
+                ? $draft->payload_json
+                : null;
+        }
+
+        if ($targetType === 'page' && $targetId !== null) {
+            $draft = PageDraft::query()
+                ->where('page_id', $targetId)
+                ->whereIn('status', self::EDITABLE_STATUSES)
+                ->latest('updated_at')
+                ->first();
+
+            return $draft instanceof PageDraft && is_array($draft->payload_json)
+                ? $draft->payload_json
+                : null;
+        }
+
+        return null;
+    }
+
     private function pagePreviewPath(PreviewPayloadDTO $payload, string $locale): ?string
     {
         if ($payload->page === null || $payload->page->metadata->isHomepageShell) {
@@ -313,7 +409,7 @@ final class PreviewService implements PreviewServiceInterface
         }
 
         return array_values(array_map(
-            static fn (array $item): \App\DTOs\ArticleCardDTO => new \App\DTOs\ArticleCardDTO(
+            static fn (array $item): ArticleCardDTO => new ArticleCardDTO(
                 id: (int) ($item['id'] ?? 0),
                 locale: (string) ($item['locale'] ?? 'ar'),
                 title: (string) ($item['title'] ?? ''),
@@ -336,7 +432,7 @@ final class PreviewService implements PreviewServiceInterface
         }
 
         return array_values(array_map(
-            static fn (array $item): \App\DTOs\ResearchCardDTO => new \App\DTOs\ResearchCardDTO(
+            static fn (array $item): ResearchCardDTO => new ResearchCardDTO(
                 id: (int) ($item['id'] ?? 0),
                 locale: (string) ($item['locale'] ?? 'ar'),
                 title: (string) ($item['title'] ?? ''),
@@ -363,7 +459,7 @@ final class PreviewService implements PreviewServiceInterface
         }
 
         return array_values(array_map(
-            static fn (array $item): \App\DTOs\EventCardDTO => new \App\DTOs\EventCardDTO(
+            static fn (array $item): EventCardDTO => new EventCardDTO(
                 id: (int) ($item['id'] ?? 0),
                 locale: (string) ($item['locale'] ?? 'ar'),
                 title: (string) ($item['title'] ?? ''),
@@ -391,7 +487,7 @@ final class PreviewService implements PreviewServiceInterface
         }
 
         return array_values(array_map(
-            fn (array $item): \App\DTOs\FooterColumnDTO => new \App\DTOs\FooterColumnDTO(
+            fn (array $item): FooterColumnDTO => new FooterColumnDTO(
                 title: (string) ($item['title'] ?? ''),
                 links: array_values(array_filter(array_map(
                     fn (mixed $link): ?NavigationActionDTO => is_array($link) ? $this->actionFromDraft($link) : null,
@@ -409,7 +505,7 @@ final class PreviewService implements PreviewServiceInterface
         }
 
         return array_values(array_map(
-            static fn (array $item): \App\DTOs\ContactLinkDTO => new \App\DTOs\ContactLinkDTO(
+            static fn (array $item): ContactLinkDTO => new ContactLinkDTO(
                 type: (string) ($item['type'] ?? 'text'),
                 label: (string) ($item['label'] ?? $item['value'] ?? ''),
                 value: (string) ($item['value'] ?? ''),
@@ -425,7 +521,7 @@ final class PreviewService implements PreviewServiceInterface
         }
 
         return array_values(array_map(
-            static fn (array $item): \App\DTOs\SocialLinkDTO => new \App\DTOs\SocialLinkDTO(
+            static fn (array $item): SocialLinkDTO => new SocialLinkDTO(
                 platform: (string) ($item['platform'] ?? $item['label'] ?? 'Social'),
                 url: (string) ($item['url'] ?? '#'),
                 isEnabled: (bool) ($item['isEnabled'] ?? ($item['is_enabled'] ?? true)),

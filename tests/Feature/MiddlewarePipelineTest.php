@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\User;
+use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
@@ -20,6 +21,7 @@ class MiddlewarePipelineTest extends TestCase
     {
         parent::setUp();
 
+        $this->seed(DatabaseSeeder::class);
         Cache::flush();
     }
 

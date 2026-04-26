@@ -26,6 +26,8 @@ use DateTimeInterface;
 
 final class PageService implements PageServiceInterface
 {
+    private const EDITABLE_STATUSES = ['draft', 'scheduled'];
+
     public function __construct(
         private readonly SeoMetadataServiceInterface $seoMetadataService,
     ) {}
@@ -164,6 +166,26 @@ final class PageService implements PageServiceInterface
         );
     }
 
+    public function buildPreviewPayloadFromSnapshot(int $pageId, array $snapshot, string $locale): PreviewDTO
+    {
+        $page = Page::query()
+            ->with(['translations', 'seoMeta'])
+            ->find($pageId);
+
+        $pageDto = $page instanceof Page
+            ? $this->mapDraftPayloadToPageDto($page, $snapshot, $locale)
+            : null;
+
+        return new PreviewDTO(
+            token: '',
+            targetType: 'page',
+            targetId: $pageId,
+            locale: $locale,
+            previewUrl: '/'.$locale.'/preview',
+            payload: new PreviewPayloadDTO(page: $pageDto),
+        );
+    }
+
     public function resolveLanguageSwitchTargetUrl(int $pageId, string $targetLocale): ?string
     {
         $page = Page::query()
@@ -181,6 +203,7 @@ final class PageService implements PageServiceInterface
     {
         $draft = PageDraft::query()
             ->where('page_id', $page->getKey())
+            ->whereIn('status', self::EDITABLE_STATUSES)
             ->latest('updated_at')
             ->first();
 

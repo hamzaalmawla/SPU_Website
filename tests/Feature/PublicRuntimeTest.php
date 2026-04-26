@@ -31,11 +31,14 @@ class PublicRuntimeTest extends TestCase
         $this->get('/ar')
             ->assertOk()
             ->assertSee('منصة الجامعة الرئيسية')
+            ->assertSee('الكليات الأكاديمية')
+            ->assertDontSee('academic faculties')
             ->assertDontSee('Public AR homepage');
 
         $this->get('/en')
             ->assertOk()
             ->assertSee('Primary university shell')
+            ->assertSee('Academic faculties')
             ->assertDontSee('Public EN homepage');
     }
 
@@ -53,12 +56,22 @@ class PublicRuntimeTest extends TestCase
             ->assertOk()
             ->assertSee('About')
             ->assertSee('Student Portal')
-            ->assertSee('Privacy Policy')
-            ->assertSee('Contact us: info@spu.edu.sy');
+            ->assertSee('Important links')
+            ->assertSee('Privacy policy')
+            ->assertSee('Contact us')
+            ->assertDontSee('Connect');
+
+        $this->get('/ar')
+            ->assertOk()
+            ->assertSee('بوابة الطالب')
+            ->assertSee('روابط سريعة')
+            ->assertSee('تواصل معنا')
+            ->assertDontSee('Student Portal');
 
         $this->get('/en/about')
             ->assertOk()
             ->assertSee('Apply now')
+            ->assertSee('Navigation')
             ->assertSee('Syrian Private University');
     }
 
@@ -230,6 +243,74 @@ class PublicRuntimeTest extends TestCase
             ->assertDontSee('Published page body');
     }
 
+    public function test_page_preview_token_stays_bound_to_original_draft_snapshot(): void
+    {
+        $page = $this->createPage('stable-preview-shell');
+
+        PageDraft::query()->create([
+            'page_id' => (int) $page->getKey(),
+            'payload_json' => [
+                'page' => [
+                    'metadata' => [
+                        'slug' => 'stable-preview-shell',
+                        'template' => 'landing-page',
+                        'isHomepageShell' => false,
+                        'status' => 'draft',
+                    ],
+                    'englishTranslation' => [
+                        'title' => 'Stable Preview',
+                        'headline' => 'Stable Preview',
+                        'body' => 'Original preview body',
+                        'bodyPayload' => [
+                            'blocks' => [
+                                ['type' => 'paragraph', 'content' => 'Original preview body'],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'status' => 'draft',
+            'draft_notes' => 'Original draft snapshot',
+            'created_by' => $this->author()->id,
+            'updated_by' => $this->author()->id,
+        ]);
+
+        $preview = app(PreviewServiceInterface::class)->createToken('page', (int) $page->getKey(), 'en', $this->author()->id);
+
+        PageDraft::query()->create([
+            'page_id' => (int) $page->getKey(),
+            'payload_json' => [
+                'page' => [
+                    'metadata' => [
+                        'slug' => 'stable-preview-shell',
+                        'template' => 'landing-page',
+                        'isHomepageShell' => false,
+                        'status' => 'draft',
+                    ],
+                    'englishTranslation' => [
+                        'title' => 'Stable Preview',
+                        'headline' => 'Stable Preview',
+                        'body' => 'Newer preview body',
+                        'bodyPayload' => [
+                            'blocks' => [
+                                ['type' => 'paragraph', 'content' => 'Newer preview body'],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'status' => 'draft',
+            'draft_notes' => 'Newer draft snapshot',
+            'created_by' => $this->author()->id,
+            'updated_by' => $this->author()->id,
+        ]);
+
+        $this->get($preview->previewUrl)
+            ->assertOk()
+            ->assertSee('Original preview body')
+            ->assertDontSee('Newer preview body');
+    }
+
     public function test_homepage_preview_hydrates_draft_section_payloads(): void
     {
         HomepageDraft::query()->create([
@@ -239,32 +320,12 @@ class PublicRuntimeTest extends TestCase
                 'homepage' => [
                     'sections' => [
                         [
-                            'id' => 1,
-                            'key' => 'hero',
+                            'id' => 99,
+                            'key' => 'legacy_unknown',
                             'sortOrder' => 1,
                             'isEnabled' => true,
                             'payload' => [
-                                'eyebrow' => 'Preview Runtime',
-                                'title' => 'Preview Homepage Hero',
-                                'summary' => 'Draft homepage summary',
-                                'primaryAction' => [
-                                    'label' => 'Explore Draft',
-                                    'url' => '/en/explore-draft',
-                                ],
-                                'stats' => [
-                                    ['value' => '12', 'label' => 'Draft Stat'],
-                                ],
-                                'featuredItems' => [
-                                    ['title' => 'Draft Feature', 'summary' => 'Feature summary'],
-                                ],
-                            ],
-                            'arabicTranslation' => [
-                                'headline' => 'واجهة رئيسية تجريبية',
-                                'body' => 'ملخص تجريبي',
-                            ],
-                            'englishTranslation' => [
-                                'headline' => 'Preview Homepage Hero',
-                                'body' => 'Draft homepage summary',
+                                'title' => 'Legacy Unknown Section',
                             ],
                         ],
                         [
@@ -291,6 +352,35 @@ class PublicRuntimeTest extends TestCase
                                 'body' => 'Secondary draft summary',
                             ],
                         ],
+                        [
+                            'id' => 1,
+                            'key' => 'hero',
+                            'sortOrder' => 3,
+                            'isEnabled' => true,
+                            'payload' => [
+                                'eyebrow' => 'Preview Runtime',
+                                'title' => 'Preview Homepage Hero',
+                                'summary' => 'Draft homepage summary',
+                                'primaryAction' => [
+                                    'label' => 'Explore Draft',
+                                    'url' => '/en/explore-draft',
+                                ],
+                                'stats' => [
+                                    ['value' => '12', 'label' => 'Draft Stat'],
+                                ],
+                                'featuredItems' => [
+                                    ['title' => 'Draft Feature', 'summary' => 'Feature summary'],
+                                ],
+                            ],
+                            'arabicTranslation' => [
+                                'headline' => 'واجهة رئيسية تجريبية',
+                                'body' => 'ملخص تجريبي',
+                            ],
+                            'englishTranslation' => [
+                                'headline' => 'Preview Homepage Hero',
+                                'body' => 'Draft homepage summary',
+                            ],
+                        ],
                     ],
                 ],
             ],
@@ -304,7 +394,9 @@ class PublicRuntimeTest extends TestCase
 
         $this->get($preview->previewUrl)
             ->assertOk()
+            ->assertDontSee('Legacy Unknown Section')
             ->assertSee('Preview Homepage Hero')
+            ->assertSeeInOrder(['Preview Homepage Hero', 'Draft Section'])
             ->assertSee('Draft homepage summary')
             ->assertSee('Explore Draft')
             ->assertSee('Draft Stat')

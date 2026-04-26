@@ -27,13 +27,14 @@ final class PageController extends Controller
 
         abort_if($page === null || $page->metadata->isHomepageShell, 404);
 
+        $navigation = $this->navigationService->getFullNavigationPayload($locale, $request->path());
         $translation = $locale === 'ar' ? $page->arabicTranslation : $page->englishTranslation;
         $seo = $locale === 'ar' ? $page->arabicSeo : $page->englishSeo;
 
         return view('public.page', [
             'locale' => $locale,
             'direction' => $locale === 'ar' ? 'rtl' : 'ltr',
-            'navigation' => $this->navigationService->getFullNavigationPayload($locale, $request->path()),
+            'navigation' => $navigation,
             'settings' => $this->settingsService->getPublicSettings($locale),
             'seo' => $seo,
             'page' => $this->pagePayload($page, $translation),

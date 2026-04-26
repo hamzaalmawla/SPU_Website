@@ -16,6 +16,7 @@ use App\Models\HomepageDraft;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Auth;
 use Tests\TestCase;
 
 class HomepageCmsWorkflowTest extends TestCase
@@ -98,6 +99,33 @@ class HomepageCmsWorkflowTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['action' => 'homepage.draft_saved']);
     }
 
+    public function test_homepage_preview_token_stays_bound_to_original_draft_snapshot(): void
+    {
+        $this->actingAs($this->author(), 'web');
+
+        $this->assertTrue(
+            $this->homepageService()->updateSection('hero', $this->validHeroPayload('en', 'Snapshot Preview Hero'), 'en'),
+        );
+
+        $preview = $this->previewService()->createToken('homepage', null, 'en', $this->author()->id);
+
+        $this->assertTrue(
+            $this->homepageService()->updateSection('hero', $this->validHeroPayload('en', 'Later Homepage Draft'), 'en'),
+        );
+
+        $this->get($preview->previewUrl)
+            ->assertOk()
+            ->assertSee('Snapshot Preview Hero')
+            ->assertDontSee('Later Homepage Draft');
+    }
+
+    public function test_preview_token_creation_rejects_unsupported_locale(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        $this->previewService()->createToken('homepage', null, 'fr', $this->author()->id);
+    }
+
     public function test_publish_blocks_when_required_content_is_missing(): void
     {
         $sections = $this->homepageService()->getSections()->all();
@@ -141,7 +169,7 @@ class HomepageCmsWorkflowTest extends TestCase
 
         $this->get('/en')->assertOk()->assertHeader('X-Cache', 'BYPASS');
 
-        auth()->logout();
+        Auth::guard('web')->logout();
 
         $this->get('/en')->assertOk()->assertHeader('X-Cache', 'MISS')->assertSee('Primary university shell');
         $this->get('/en')->assertOk()->assertHeader('X-Cache', 'HIT');
@@ -158,7 +186,7 @@ class HomepageCmsWorkflowTest extends TestCase
 
         $this->assertTrue($this->publishingService()->publish($draft->id, $this->author()->id));
 
-        auth()->logout();
+        Auth::guard('web')->logout();
 
         $this->get('/en')
             ->assertOk()
@@ -174,6 +202,7 @@ class HomepageCmsWorkflowTest extends TestCase
     {
         $this->assertTrue($this->publishingService()->unpublish('homepage', null, $this->author()->id));
         $this->assertSame([], $this->publicSectionKeys('en'));
+        $this->get('/en')->assertNotFound();
         $this->assertDatabaseHas('audit_logs', ['action' => 'homepage.unpublish']);
     }
 
@@ -190,7 +219,7 @@ class HomepageCmsWorkflowTest extends TestCase
             $this->author()->id,
         );
 
-        auth()->logout();
+        Auth::guard('web')->logout();
 
         $this->get('/en')->assertOk()->assertHeader('X-Cache', 'MISS');
         $this->get('/en')->assertOk()->assertHeader('X-Cache', 'HIT');

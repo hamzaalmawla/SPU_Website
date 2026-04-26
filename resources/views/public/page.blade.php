@@ -94,7 +94,7 @@
 
             <aside class="space-y-6">
                 <div class="rounded-[2rem] border border-white/10 bg-slate-900/70 p-6">
-                    <p class="text-sm font-semibold uppercase tracking-[0.25em] text-slate-400">Page Shell</p>
+                    <p class="text-sm font-semibold uppercase tracking-[0.25em] text-slate-400">{{ __('public.page_shell') }}</p>
                     <dl class="mt-4 space-y-3 text-sm text-slate-300">
                         <div class="flex items-center justify-between gap-4">
                             <dt>Slug</dt>
@@ -109,7 +109,7 @@
 
                 @if ($page['cta'] && ! empty($page['cta']['label']) && ! empty($page['cta']['url']))
                     <div class="rounded-[2rem] border border-sky-300/20 bg-sky-400/10 p-6">
-                        <p class="text-sm font-semibold uppercase tracking-[0.25em] text-sky-200">Call to Action</p>
+                        <p class="text-sm font-semibold uppercase tracking-[0.25em] text-sky-200">{{ __('public.call_to_action') }}</p>
                         <a href="{{ $page['cta']['url'] }}" class="mt-4 inline-flex rounded-full bg-sky-400 px-5 py-3 font-semibold text-slate-950 transition hover:bg-sky-300">
                             {{ $page['cta']['label'] }}
                         </a>

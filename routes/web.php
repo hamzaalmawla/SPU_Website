@@ -3,10 +3,11 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Admin\AuthController;
+use App\Http\Controllers\Admin\ShellController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PreviewController;
-use Illuminate\Http\Request;
+use App\Http\Controllers\PublicContactController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/ar')->name('root');
@@ -19,13 +20,9 @@ Route::prefix('{locale}')
 
         Route::get('/preview', PreviewController::class)->name('preview.show');
 
-        Route::post('/contact', function (Request $request, string $locale) {
-            return response()->json([
-                'submitted' => true,
-                'locale' => $locale,
-                'email' => (string) $request->string('email'),
-            ]);
-        })->middleware('throttle:public-form')->name('public.contact.submit');
+        Route::post('/contact', PublicContactController::class)
+            ->middleware('throttle:public-form')
+            ->name('public.contact.submit');
 
         Route::get('/{slugPath}', PageController::class)
             ->where('slugPath', '.+')
@@ -44,28 +41,16 @@ Route::prefix('admin')
             ->group(function (): void {
                 Route::post('/auth/logout', [AuthController::class, 'destroy'])->name('logout');
 
-                Route::get('/content', function () {
-                    return response(
-                        '<html lang="en"><body>Admin content</body></html>',
-                        200,
-                        ['Content-Type' => 'text/html; charset=UTF-8'],
-                    );
-                })->middleware('can:manage-homepage')->name('content');
+                Route::get('/content', [ShellController::class, 'content'])
+                    ->middleware('can:manage-homepage')
+                    ->name('content');
 
-                Route::get('/settings', function () {
-                    return response(
-                        '<html lang="en"><body>Admin settings</body></html>',
-                        200,
-                        ['Content-Type' => 'text/html; charset=UTF-8'],
-                    );
-                })->middleware('can:manage-settings')->name('settings');
+                Route::get('/settings', [ShellController::class, 'settings'])
+                    ->middleware('can:manage-settings')
+                    ->name('settings');
 
-                Route::get('/users', function () {
-                    return response(
-                        '<html lang="en"><body>Admin users</body></html>',
-                        200,
-                        ['Content-Type' => 'text/html; charset=UTF-8'],
-                    );
-                })->middleware('can:manage-users')->name('users.index');
+                Route::get('/users', [ShellController::class, 'users'])
+                    ->middleware('can:manage-users')
+                    ->name('users.index');
             });
     });

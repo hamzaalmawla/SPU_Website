@@ -9,6 +9,8 @@ use App\Contracts\PageServiceInterface;
 use App\Contracts\PreviewServiceInterface;
 use App\Contracts\SeoMetadataServiceInterface;
 use App\Contracts\SettingsServiceInterface;
+use App\DTOs\HomepageDTO;
+use App\DTOs\HomepageSectionDTO;
 use App\DTOs\LanguageSwitchLinkDTO;
 use App\DTOs\PageDTO;
 use App\DTOs\PageTranslationDTO;
@@ -54,8 +56,7 @@ final class PreviewController extends Controller
             'locale' => $locale,
             'direction' => $homepage->direction,
             'homepage' => $homepage,
-            'heroSection' => $this->findSection($homepage->sections, 'hero'),
-            'bodySections' => array_values(array_filter($homepage->sections, static fn ($section): bool => $section->key !== 'hero')),
+            'homepageFooterSection' => $this->findSection($homepage, 'footer'),
             'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $locale),
             'settings' => $this->settingsService->getPublicSettings($locale),
             'seo' => $homeShell !== null
@@ -68,6 +69,17 @@ final class PreviewController extends Controller
             'isPreview' => true,
             'preview' => $preview,
         ]);
+    }
+
+    private function findSection(HomepageDTO $homepage, string $key): ?HomepageSectionDTO
+    {
+        foreach ($homepage->sections as $section) {
+            if ($section->key === $key) {
+                return $section;
+            }
+        }
+
+        return null;
     }
 
     private function renderPagePreview(string $locale, PreviewDTO $preview): View
@@ -97,20 +109,6 @@ final class PreviewController extends Controller
         foreach ([(string) $request->query('token'), (string) $request->query('preview_token'), (string) $request->header('X-Preview-Token')] as $candidate) {
             if ($candidate !== '') {
                 return $candidate;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * @param  array<int, mixed>  $sections
-     */
-    private function findSection(array $sections, string $key): mixed
-    {
-        foreach ($sections as $section) {
-            if ($section->key === $key) {
-                return $section;
             }
         }
 

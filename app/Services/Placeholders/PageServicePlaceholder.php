@@ -95,6 +95,11 @@ final class PageServicePlaceholder implements PageServiceInterface
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
+    public function buildPreviewPayloadFromSnapshot(int $pageId, array $snapshot, string $locale): PreviewDTO
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
     public function resolveLanguageSwitchTargetUrl(int $pageId, string $targetLocale): ?string
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
