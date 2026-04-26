@@ -38,6 +38,7 @@ class AuditServiceTest extends TestCase
         $this->assertTrue($logged);
         $this->assertDatabaseHas('audit_logs', [
             'action' => 'auth.login.success',
+            'user_id' => $user->id,
             'actor_user_id' => $user->id,
             'entity_type' => User::class,
             'entity_id' => $user->id,

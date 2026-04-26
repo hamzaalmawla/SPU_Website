@@ -6,6 +6,9 @@ namespace App\DTOs;
 
 /**
  * Structured draft payload for the page editor.
+ *
+ * This draft shape keeps shell-level metadata separate from localized translation content so
+ * later runtime work does not collapse contentJson and translation payload precedence.
  */
 final readonly class PageDraftDataDTO
 {

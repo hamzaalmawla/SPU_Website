@@ -5,21 +5,21 @@ declare(strict_types=1);
 namespace App\DTOs;
 
 /**
- * Typed key-value entry for grouped settings operations.
+ * Key-value entry for grouped settings operations.
+ *
+ * The settings table stores either value_json or value_text per key, so this DTO keeps that
+ * storage shape explicit instead of forcing artificial primitive/list/map splits.
  */
 final readonly class SettingValueDTO
 {
     /**
-     * @param  array<int, string>  $listValues
-     * @param  array<string, string>  $mapValues
+     * @param  array<string, mixed>|array<int, mixed>|null  $jsonValue
      */
     public function __construct(
         public string $key,
-        public string $valueType,
-        public ?string $stringValue = null,
-        public ?bool $boolValue = null,
-        public ?int $intValue = null,
-        public array $listValues = [],
-        public array $mapValues = [],
+        public string $type,
+        public ?array $jsonValue = null,
+        public ?string $textValue = null,
+        public bool $isPublic = false,
     ) {}
 }

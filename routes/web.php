@@ -2,7 +2,12 @@
 
 declare(strict_types=1);
 
-use Illuminate\Http\Request;
+use App\Http\Controllers\Admin\AuthController;
+use App\Http\Controllers\Admin\ShellController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\PageController;
+use App\Http\Controllers\PreviewController;
+use App\Http\Controllers\PublicContactController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/ar')->name('root');
@@ -11,67 +16,41 @@ Route::prefix('{locale}')
     ->where(['locale' => 'ar|en'])
     ->middleware(['locale', 'cache.public'])
     ->group(function (): void {
-        Route::get('/', function (string $locale) {
-            return response(
-                sprintf('<html lang="%s"><body>Public %s homepage</body></html>', $locale, strtoupper($locale)),
-                200,
-                ['Content-Type' => 'text/html; charset=UTF-8'],
-            );
-        })->name('public.home');
+        Route::get('/', HomeController::class)->name('public.home');
 
-        Route::get('/preview', function (Request $request, string $locale) {
-            $token = (string) $request->query('preview_token', 'preview');
+        Route::get('/preview', PreviewController::class)->name('preview.show');
 
-            return response(
-                sprintf('<html lang="%s"><body>Preview %s %s</body></html>', $locale, strtoupper($locale), $token),
-                200,
-                ['Content-Type' => 'text/html; charset=UTF-8'],
-            );
-        })->name('preview.show');
+        Route::post('/contact', PublicContactController::class)
+            ->middleware('throttle:public-form')
+            ->name('public.contact.submit');
 
-        Route::post('/contact', function (Request $request, string $locale) {
-            return response()->json([
-                'submitted' => true,
-                'locale' => $locale,
-                'email' => (string) $request->string('email'),
-            ]);
-        })->middleware('throttle:public-form')->name('public.contact.submit');
+        Route::get('/{slugPath}', PageController::class)
+            ->where('slugPath', '.+')
+            ->name('public.page');
     });
 
 Route::prefix('admin')
     ->name('admin.')
     ->group(function (): void {
-        Route::get('/login', function () {
-            return response(
-                '<html lang="en"><body>Admin login</body></html>',
-                200,
-                ['Content-Type' => 'text/html; charset=UTF-8'],
-            );
-        })->name('login');
-
-        Route::post('/login', function (Request $request) {
-            return response()->json([
-                'submitted' => true,
-                'email' => (string) $request->string('email'),
-            ]);
-        })->middleware('throttle:admin-login')->name('login.attempt');
+        Route::get('/login', [AuthController::class, 'create'])->name('login');
+        Route::post('/login', [AuthController::class, 'store'])
+            ->middleware('throttle:admin-login')
+            ->name('login.attempt');
 
         Route::middleware(['admin.auth'])
             ->group(function (): void {
-                Route::get('/', function () {
-                    return response(
-                        '<html lang="en"><body>Admin dashboard</body></html>',
-                        200,
-                        ['Content-Type' => 'text/html; charset=UTF-8'],
-                    );
-                })->name('dashboard');
+                Route::post('/auth/logout', [AuthController::class, 'destroy'])->name('logout');
 
-                Route::get('/content', function () {
-                    return response(
-                        '<html lang="en"><body>Admin content</body></html>',
-                        200,
-                        ['Content-Type' => 'text/html; charset=UTF-8'],
-                    );
-                })->middleware('role:super_admin,editor')->name('content');
+                Route::get('/content', [ShellController::class, 'content'])
+                    ->middleware('can:manage-homepage')
+                    ->name('content');
+
+                Route::get('/settings', [ShellController::class, 'settings'])
+                    ->middleware('can:manage-settings')
+                    ->name('settings');
+
+                Route::get('/users', [ShellController::class, 'users'])
+                    ->middleware('can:manage-users')
+                    ->name('users.index');
             });
     });

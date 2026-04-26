@@ -44,7 +44,12 @@ final class MenuServicePlaceholder implements MenuServiceInterface
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function getPrimaryTree(string $locale, ?string $currentPath = null): NavigationTreeDTO
+    public function getHeaderTree(string $locale, ?string $currentPath = null): NavigationTreeDTO
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function getFooterTree(string $locale, ?string $currentPath = null): NavigationTreeDTO
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }

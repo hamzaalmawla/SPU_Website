@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Contracts\AuthServiceInterface;
 use Closure;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Http\Request;
@@ -16,6 +17,7 @@ final class AdminAuthMiddleware
 {
     public function __construct(
         private readonly AuthFactory $authFactory,
+        private readonly AuthServiceInterface $authService,
     ) {}
 
     /**
@@ -28,6 +30,18 @@ final class AdminAuthMiddleware
         if (! $this->authFactory->guard($guard)->check()) {
             return redirect()->guest(route('admin.login'));
         }
+
+        $user = $this->authFactory->guard($guard)->user();
+
+        if ($user !== null && $this->authService->isLocked($user)) {
+            $this->authFactory->guard($guard)->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->guest(route('admin.login'));
+        }
+
+        $this->authService->extendSession();
 
         return $next($request);
     }

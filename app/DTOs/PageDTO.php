@@ -6,6 +6,9 @@ namespace App\DTOs;
 
 /**
  * Bilingual landing-page shell payload for admin and public consumers.
+ *
+ * Translation DTOs carry the authoritative localized content. Page metadata carries
+ * non-localized shell data, including any page-level content_json that is still in use.
  */
 final readonly class PageDTO
 {

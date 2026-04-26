@@ -14,5 +14,10 @@ final readonly class HomepageStatItemDTO
         public string $label,
         public ?string $description = null,
         public ?string $icon = null,
+        public ?string $prefix = null,
+        public ?string $suffix = null,
+        public ?string $helperText = null,
+        public ?string $url = null,
+        public ?int $sortOrder = null,
     ) {}
 }

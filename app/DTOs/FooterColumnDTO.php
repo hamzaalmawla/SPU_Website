@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\DTOs;
 
 /**
- * Footer link column used by shared footer settings.
+ * Footer link column used by the homepage footer section.
  */
 final readonly class FooterColumnDTO
 {

@@ -19,5 +19,7 @@ final readonly class EventCardDTO
         public ?string $endsAt,
         public ?string $location,
         public ?string $url,
+        public ?string $imageUrl = null,
+        public ?string $timeLabel = null,
     ) {}
 }

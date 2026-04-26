@@ -29,7 +29,7 @@ final class SettingsServicePlaceholder implements SettingsServiceInterface
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function updateGroup(SettingsDTO $values, string $group, ?string $locale = null, ?int $userId = null): bool
+    public function updateGroup(SettingsDTO $values, ?int $userId = null): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }

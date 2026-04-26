@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Contracts;
 
 use App\DTOs\BreadcrumbTrailDTO;
-use App\DTOs\HomepageDraftDTO;
 use App\DTOs\PageDraftDataDTO;
+use App\DTOs\PageDraftDTO;
 use App\DTOs\PageDTO;
 use App\DTOs\PageMetadataDTO;
 use App\DTOs\PageSeoInputDTO;
@@ -17,6 +17,12 @@ use DateTimeInterface;
 
 /**
  * Defines service-layer operations for bilingual landing-page shells.
+ *
+ * Current precedence rule for runtime reads:
+ * - localized page_translations payload/body fields are the authoritative source for
+ *   locale-specific page content
+ * - pages.content_json is shell-level, non-localized supplemental data and must not
+ *   displace localized translation content unless a later page type explicitly documents it
  */
 interface PageServiceInterface
 {
@@ -51,9 +57,9 @@ interface PageServiceInterface
     public function updateEnglishSeo(int $pageId, PageSeoInputDTO $payload): bool;
 
     /**
-     * Save a draft snapshot for the page editor using the shared draft workflow DTO.
+     * Save a draft snapshot for the page editor.
      */
-    public function saveDraft(int $pageId, PageDraftDataDTO $payload, int $userId): HomepageDraftDTO;
+    public function saveDraft(int $pageId, PageDraftDataDTO $payload, int $userId): PageDraftDTO;
 
     /**
      * Publish a page.
@@ -71,12 +77,12 @@ interface PageServiceInterface
     public function schedulePublish(int $pageId, DateTimeInterface $publishAt, int $userId): bool;
 
     /**
-     * Retrieve the public localized page by slug.
+     * Retrieve the public localized page by slug using the documented content precedence rule.
      */
     public function getPublicPageBySlug(string $slug, string $locale): ?PageDTO;
 
     /**
-     * Retrieve admin editor payload for a page.
+     * Retrieve admin editor payload for a page with both shell-level and localized content sources explicit.
      */
     public function getAdminEditorPayload(int $pageId): PageDTO;
 
@@ -88,7 +94,14 @@ interface PageServiceInterface
     /**
      * Build preview payload for a page.
      */
-    public function buildPreviewPayload(int $pageId, string $locale, string $device): PreviewDTO;
+    public function buildPreviewPayload(int $pageId, string $locale): PreviewDTO;
+
+    /**
+     * Build preview payload for a specific draft snapshot.
+     *
+     * @param  array<string, mixed>  $snapshot
+     */
+    public function buildPreviewPayloadFromSnapshot(int $pageId, array $snapshot, string $locale): PreviewDTO;
 
     /**
      * Resolve the language-switch target URL for a page.

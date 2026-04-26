@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Services\Placeholders;
 
 use App\Contracts\HomepageSectionServiceInterface;
+use App\DTOs\HomepageDTO;
+use App\DTOs\HomepageSectionDataDTO;
 use App\DTOs\HomepageSectionDTO;
+use App\DTOs\ValidationResultDTO;
 use BadMethodCallException;
 use Illuminate\Support\Collection;
 
@@ -27,12 +30,12 @@ final class HomepageSectionServicePlaceholder implements HomepageSectionServiceI
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function getPublicHomepage(string $locale): array
+    public function getPublicHomepage(string $locale): HomepageDTO
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function updateSection(string $key, array $payload, string $locale): bool
+    public function updateSection(string $key, HomepageSectionDataDTO $payload, string $locale): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
@@ -47,7 +50,7 @@ final class HomepageSectionServicePlaceholder implements HomepageSectionServiceI
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function validateSectionPayload(string $key, array $payload, string $locale): array
+    public function validateSectionPayload(string $key, HomepageSectionDataDTO $payload, string $locale): ValidationResultDTO
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }

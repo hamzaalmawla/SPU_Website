@@ -6,8 +6,8 @@ namespace App\Services\Placeholders;
 
 use App\Contracts\PageServiceInterface;
 use App\DTOs\BreadcrumbTrailDTO;
-use App\DTOs\HomepageDraftDTO;
 use App\DTOs\PageDraftDataDTO;
+use App\DTOs\PageDraftDTO;
 use App\DTOs\PageDTO;
 use App\DTOs\PageMetadataDTO;
 use App\DTOs\PageSeoInputDTO;
@@ -19,6 +19,9 @@ use DateTimeInterface;
 
 /**
  * Placeholder implementation for the landing-page service contract.
+ *
+ * When replaced, the real service must preserve the documented read precedence:
+ * localized page_translations content first, pages.content_json only as non-localized shell data.
  */
 final class PageServicePlaceholder implements PageServiceInterface
 {
@@ -52,7 +55,7 @@ final class PageServicePlaceholder implements PageServiceInterface
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function saveDraft(int $pageId, PageDraftDataDTO $payload, int $userId): HomepageDraftDTO
+    public function saveDraft(int $pageId, PageDraftDataDTO $payload, int $userId): PageDraftDTO
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
@@ -87,7 +90,12 @@ final class PageServicePlaceholder implements PageServiceInterface
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function buildPreviewPayload(int $pageId, string $locale, string $device): PreviewDTO
+    public function buildPreviewPayload(int $pageId, string $locale): PreviewDTO
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function buildPreviewPayloadFromSnapshot(int $pageId, array $snapshot, string $locale): PreviewDTO
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
