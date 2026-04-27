@@ -215,14 +215,14 @@ This plan covers the remaining implementation phases for the SPU website foundat
     - canAccess(): super_admin only
     - _Requirements: 25.1, 25.2, 25.3, 26.1_
 
-- [-] 8. Checkpoint — PX06 verification
+- [x] 8. Checkpoint — PX06 verification
   - Ensure all tests pass, ask the user if questions arise.
   - Verify: Filament panel at /admin discovers all resources and pages
   - Verify: container resolves MediaServiceInterface → MediaService and SlugServiceInterface → SlugService
   - Verify: role-based visibility works (super_admin sees all, editor sees allowed, faculty_editor sees scoped)
 
-- [ ] 9. PX07 — Migration backfill CLI commands
-  - [~] 9.1 Create `continuity:export-url-inventory` Artisan command
+- [x] 9. PX07 — Migration backfill CLI commands
+  - [x] 9.1 Create `continuity:export-url-inventory` Artisan command
     - Register in `routes/console.php`
     - Signature: `continuity:export-url-inventory {--format=json} {--disk=local} {--dir=continuity-exports}`
     - Produce machine-readable (JSON/CSV) list of legacy public URL candidates with source type, legacy path, expected destination, locale, and status classification
@@ -230,7 +230,7 @@ This plan covers the remaining implementation phases for the SPU website foundat
     - Reuse existing MigrationLog/LegacyRecordSnapshot infrastructure
     - _Requirements: 27.1, 27.7_
 
-  - [~] 9.2 Create `continuity:validate-redirects` Artisan command
+  - [x] 9.2 Create `continuity:validate-redirects` Artisan command
     - Register in `routes/console.php`
     - Signature: `continuity:validate-redirects {--fix}`
     - Detect and report invalid, duplicate, or conflicting redirect rules
@@ -238,35 +238,35 @@ This plan covers the remaining implementation phases for the SPU website foundat
     - With --fix flag: deactivate invalid rules
     - _Requirements: 27.2, 27.7_
 
-  - [~] 9.3 Create `continuity:export-file-inventory` Artisan command
+  - [x] 9.3 Create `continuity:export-file-inventory` Artisan command
     - Register in `routes/console.php`
     - Signature: `continuity:export-file-inventory {--format=json} {--disk=local} {--dir=continuity-exports}`
     - Produce machine-readable report of legacy file/document continuity state (mapped vs unmapped)
     - Use ContinuityServiceInterface::getFileInventory()
     - _Requirements: 27.3, 27.7_
 
-  - [~] 9.4 Create `continuity:report-unresolved` Artisan command
+  - [x] 9.4 Create `continuity:report-unresolved` Artisan command
     - Register in `routes/console.php`
     - Signature: `continuity:report-unresolved {--since=} {--type=} {--format=json}`
     - Produce structured report of unresolved URL and file continuity issues
     - Use ContinuityServiceInterface::getUnresolvedRequests()
     - _Requirements: 27.4, 27.7_
 
-  - [~] 9.5 Create `continuity:validate-seo` Artisan command
+  - [x] 9.5 Create `continuity:validate-seo` Artisan command
     - Register in `routes/console.php`
     - Signature: `continuity:validate-seo {--locale=} {--format=json}`
     - Identify published pages with weak, incomplete, or missing SEO metadata
     - Use SeoMetadataServiceInterface for data access
     - _Requirements: 27.5, 27.7_
 
-  - [~] 9.6 Create `continuity:reconciliation-report` Artisan command
+  - [x] 9.6 Create `continuity:reconciliation-report` Artisan command
     - Register in `routes/console.php`
     - Signature: `continuity:reconciliation-report {--format=json} {--disk=local} {--dir=continuity-exports}`
     - Combined reconciliation report: URL inventory + redirect validation + file inventory + unresolved requests + SEO gaps
     - Identify ambiguous or overlapping legacy structures requiring engineering review
     - _Requirements: 27.6, 27.7_
 
-- [ ] 10. Checkpoint — PX07 verification
+- [-] 10. Checkpoint — PX07 verification
   - Ensure all tests pass, ask the user if questions arise.
   - Verify: `php artisan list` shows all 6 continuity commands
   - Verify: each command runs without errors against empty/seeded data
