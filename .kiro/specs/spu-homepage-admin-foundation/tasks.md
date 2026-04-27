@@ -129,7 +129,7 @@ This plan covers the remaining implementation phases for the SPU website foundat
   - Verify: `php artisan route:list` shows sitemap.xml and robots.txt routes
   - Verify: container resolves ContinuityServiceInterface and SitemapServiceInterface
 
-- [-] 5. PX06 — Real MediaService and SlugService (replacing placeholders)
+- [x] 5. PX06 — Real MediaService and SlugService (replacing placeholders)
   - [x] 5.1 Create real `MediaService` implementation
     - Create `app/Services/MediaService.php` implementing `MediaServiceInterface`
     - Inject configured disk (local/s3 via config)
@@ -139,19 +139,19 @@ This plan covers the remaining implementation phases for the SPU website foundat
     - list(): query with filters, map to Collection of MediaUploadResultDTO
     - _Requirements: 22.1, 22.2, 22.3, 22.4, 22.5, 31.1_
 
-  - [~] 5.2 Create real `SlugService` implementation
+  - [x] 5.2 Create real `SlugService` implementation
     - Create `app/Services/SlugService.php` implementing `SlugServiceInterface`
     - generate(): create URL-safe slug from Arabic/English source text; transliterate Arabic; ensure uniqueness within target model table; append numeric suffix on collision (max 10 attempts, then throw)
     - _Requirements: 31.1_
 
-  - [~] 5.3 Update `AppServiceProvider` to bind real MediaService and SlugService
+  - [x] 5.3 Update `AppServiceProvider` to bind real MediaService and SlugService
     - Move MediaServiceInterface and SlugServiceInterface from `intentionalPlaceholderBindings()` to `resolvedBindings()`
     - Bind MediaServiceInterface → MediaService, SlugServiceInterface → SlugService
     - Remove MediaServicePlaceholder and SlugServicePlaceholder imports
     - _Requirements: 31.1, 31.5_
 
-- [ ] 6. PX06 — Filament pages and resources (Homepage, Pages, Menu)
-  - [~] 6.1 Create `ManageHomepage` Filament page
+- [x] 6. PX06 — Filament pages and resources (Homepage, Pages, Menu)
+  - [x] 6.1 Create `ManageHomepage` Filament page
     - Create `app/Filament/Pages/ManageHomepage.php`
     - Custom Filament page (not a resource — homepage is a singleton)
     - Renders fixed 10-section model with tabbed/accordion layout per section
@@ -162,7 +162,7 @@ This plan covers the remaining implementation phases for the SPU website foundat
     - canAccess(): true for super_admin and editor roles
     - _Requirements: 19.1, 19.2, 19.3, 19.4, 19.5, 26.1, 26.2_
 
-  - [~] 6.2 Create `PageResource` Filament resource
+  - [x] 6.2 Create `PageResource` Filament resource
     - Create `app/Filament/Resources/PageResource.php` with ListPages, CreatePage, EditPage, ViewPage pages
     - List: filterable by status, locale, parent; sortable by title, updated_at
     - Create/Edit form tabs: Metadata (parent, slug, template, status, enabled/nav/breadcrumb toggles), Arabic Translation, English Translation, Arabic SEO, English SEO
@@ -170,7 +170,7 @@ This plan covers the remaining implementation phases for the SPU website foundat
     - canAccess(): super_admin, editor, faculty_editor (scoped)
     - _Requirements: 20.1, 20.2, 20.3, 20.4, 20.5, 26.1, 26.2, 26.3_
 
-  - [~] 6.3 Create `ManageMenu` Filament page
+  - [x] 6.3 Create `ManageMenu` Filament page
     - Create `app/Filament/Pages/ManageMenu.php`
     - Custom Filament page with tree builder UI
     - Tabs for header, footer, utility menu groups
@@ -180,8 +180,8 @@ This plan covers the remaining implementation phases for the SPU website foundat
     - canAccess(): super_admin, editor
     - _Requirements: 21.1, 21.2, 21.3, 21.4, 21.5, 26.1, 26.2_
 
-- [ ] 7. PX06 — Filament resources (Media, Settings, Users, Audit)
-  - [~] 7.1 Create `MediaAssetResource` Filament resource
+- [x] 7. PX06 — Filament resources (Media, Settings, Users, Audit)
+  - [x] 7.1 Create `MediaAssetResource` Filament resource
     - Create `app/Filament/Resources/MediaAssetResource.php` with list, create, edit, view pages
     - List: grid/table view toggle, search by filename/title, filter by mime_type
     - Upload: file upload field delegating to MediaServiceInterface::upload()
@@ -190,7 +190,7 @@ This plan covers the remaining implementation phases for the SPU website foundat
     - canAccess(): super_admin, editor, faculty_editor
     - _Requirements: 22.1, 22.2, 22.3, 22.4, 22.5, 26.1, 26.2, 26.3_
 
-  - [~] 7.2 Create `ManageSettings` Filament page
+  - [x] 7.2 Create `ManageSettings` Filament page
     - Create `app/Filament/Pages/ManageSettings.php`
     - Custom Filament page with grouped form sections: Utility Navigation, Footer, Emergency Notice, Contact, Social, SEO Defaults
     - Locale-aware fields where applicable (AR/EN tabs within groups)
@@ -198,7 +198,7 @@ This plan covers the remaining implementation phases for the SPU website foundat
     - canAccess(): super_admin, editor
     - _Requirements: 23.1, 23.2, 23.3, 23.4, 26.1, 26.2_
 
-  - [~] 7.3 Create `UserResource` Filament resource
+  - [x] 7.3 Create `UserResource` Filament resource
     - Create `app/Filament/Resources/UserResource.php` with list, edit pages (no create/delete)
     - List: name, email, role, locked status, last login
     - Edit: name, email, role assignment, faculty_scope_slug, lock/unlock toggle, password reset
@@ -207,7 +207,7 @@ This plan covers the remaining implementation phases for the SPU website foundat
     - canAccess(): super_admin only
     - _Requirements: 24.1, 24.2, 24.3, 26.1_
 
-  - [~] 7.4 Create `AuditLogResource` Filament resource
+  - [x] 7.4 Create `AuditLogResource` Filament resource
     - Create `app/Filament/Resources/AuditLogResource.php` with list, view pages
     - Read-only resource — no create/edit/delete actions
     - List: filterable by action, entity_type, user, date range
@@ -215,7 +215,7 @@ This plan covers the remaining implementation phases for the SPU website foundat
     - canAccess(): super_admin only
     - _Requirements: 25.1, 25.2, 25.3, 26.1_
 
-- [ ] 8. Checkpoint — PX06 verification
+- [-] 8. Checkpoint — PX06 verification
   - Ensure all tests pass, ask the user if questions arise.
   - Verify: Filament panel at /admin discovers all resources and pages
   - Verify: container resolves MediaServiceInterface → MediaService and SlugServiceInterface → SlugService

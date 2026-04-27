@@ -35,8 +35,8 @@ use App\Services\HomepageSectionService;
 use App\Services\MenuService;
 use App\Services\NavigationService;
 use App\Services\PageService;
-use App\Services\Placeholders\MediaServicePlaceholder;
-use App\Services\Placeholders\SlugServicePlaceholder;
+use App\Services\SlugService;
+use App\Services\MediaService;
 use App\Services\PreviewService;
 use App\Services\SeoMetadataService;
 use App\Services\SettingsService;
@@ -121,6 +121,8 @@ class AppServiceProvider extends ServiceProvider
             AuthServiceInterface::class => AuthService::class,
             ContinuityServiceInterface::class => ContinuityService::class,
             SitemapServiceInterface::class => SitemapService::class,
+            MediaServiceInterface::class => MediaService::class,
+            SlugServiceInterface::class => SlugService::class,
         ];
     }
 
@@ -130,9 +132,7 @@ class AppServiceProvider extends ServiceProvider
     private function intentionalPlaceholderBindings(): array
     {
         return [
-            MediaServiceInterface::class => MediaServicePlaceholder::class,
             MenuServiceInterface::class => MenuService::class,
-            SlugServiceInterface::class => SlugServicePlaceholder::class,
             SeoMetadataServiceInterface::class => SeoMetadataService::class,
             HomepageSectionServiceInterface::class => HomepageSectionService::class,
             HomepagePublishingServiceInterface::class => HomepagePublishingService::class,
