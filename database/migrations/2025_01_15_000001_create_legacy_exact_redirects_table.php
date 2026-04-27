@@ -26,7 +26,9 @@ return new class extends Migration
             $table->index(['is_active'], 'idx_is_active');
         });
 
-        DB::statement('CREATE INDEX idx_legacy_path ON legacy_exact_redirects (legacy_path(191))');
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement('CREATE INDEX idx_legacy_path ON legacy_exact_redirects (legacy_path(191))');
+        }
     }
 
     public function down(): void

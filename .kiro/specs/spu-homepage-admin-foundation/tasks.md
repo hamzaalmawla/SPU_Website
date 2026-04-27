@@ -266,104 +266,104 @@ This plan covers the remaining implementation phases for the SPU website foundat
     - Identify ambiguous or overlapping legacy structures requiring engineering review
     - _Requirements: 27.6, 27.7_
 
-- [-] 10. Checkpoint — PX07 verification
+- [x] 10. Checkpoint — PX07 verification
   - Ensure all tests pass, ask the user if questions arise.
   - Verify: `php artisan list` shows all 6 continuity commands
   - Verify: each command runs without errors against empty/seeded data
 
-- [ ] 11. PX08 — Property-based test infrastructure and property tests
-  - [~] 11.1 Create `PropertyTestHelpers` trait
+- [x] 11. PX08 — Property-based test infrastructure and property tests
+  - [x] 11.1 Create `PropertyTestHelpers` trait
     - Create `tests/Support/PropertyTestHelpers.php`
     - Methods: randomLocale(), randomSlugPath(), randomSeoFields(), randomRedirectRules(), randomPageCollection()
     - Each method generates random valid inputs for property test data providers
     - _Requirements: 33.2_
 
-  - [~] 11.2 Write property test: Canonical URL is always absolute and locale-correct (Property 1)
+  - [x] 11.2 Write property test: Canonical URL is always absolute and locale-correct (Property 1)
     - **Property 1: Canonical URL is always absolute and locale-correct**
     - **Validates: Requirements 15.1, 15.2**
     - Create `tests/Unit/SeoMetadataServicePropertyTest.php`
     - Data provider generates 100+ random locale/path combinations
     - Assert: result starts with http:// or https://, contains correct locale prefix
 
-  - [~] 11.3 Write property test: Hreflang reciprocity (Property 2)
+  - [x] 11.3 Write property test: Hreflang reciprocity (Property 2)
     - **Property 2: Hreflang reciprocity**
     - **Validates: Requirements 15.3**
     - Add to `tests/Unit/SeoMetadataServicePropertyTest.php`
     - Data provider generates 100+ random locale-path maps
     - Assert: output count matches input count, output locales match input locales, all URLs are absolute
 
-  - [~] 11.4 Write property test: SEO field resolution with fallback (Property 3)
+  - [x] 11.4 Write property test: SEO field resolution with fallback (Property 3)
     - **Property 3: SEO field resolution with fallback**
     - **Validates: Requirements 15.4, 15.5**
     - Add to `tests/Unit/SeoMetadataServicePropertyTest.php`
     - Data provider generates 100+ random SEO field combinations with nullable fields
     - Assert: output title is never null, page-specific values used when present, fallback used when null
 
-  - [~] 11.5 Write property test: Sitemap contains only published, enabled pages (Property 4)
+  - [x] 11.5 Write property test: Sitemap contains only published, enabled pages (Property 4)
     - **Property 4: Sitemap contains only published, enabled pages**
     - **Validates: Requirements 16.1, 16.2**
     - Create `tests/Unit/SitemapServiceTest.php`
     - Data provider generates 100+ random page collections with mixed statuses
     - Assert: output contains only pages where status=published AND is_enabled=true AND published_at IS NOT NULL
 
-  - [~] 11.6 Write property test: Exact redirect resolution correctness (Property 5)
+  - [x] 11.6 Write property test: Exact redirect resolution correctness (Property 5)
     - **Property 5: Exact redirect resolution correctness**
     - **Validates: Requirements 17.1**
     - Create `tests/Unit/ContinuityServiceTest.php`
     - Data provider generates 100+ random exact redirect rules
     - Assert: resolveRedirect returns correct destination, status code, and matchType='exact'
 
-  - [~] 11.7 Write property test: Pattern redirect resolution correctness (Property 6)
+  - [x] 11.7 Write property test: Pattern redirect resolution correctness (Property 6)
     - **Property 6: Pattern redirect resolution correctness**
     - **Validates: Requirements 17.2**
     - Add to `tests/Unit/ContinuityServiceTest.php`
     - Data provider generates 100+ random pattern rules with matching paths
     - Assert: resolveRedirect returns resolved destination with capture groups applied, matchType='pattern'
 
-  - [~] 11.8 Write property test: Unresolved request logging completeness (Property 7)
+  - [x] 11.8 Write property test: Unresolved request logging completeness (Property 7)
     - **Property 7: Unresolved request logging completeness**
     - **Validates: Requirements 17.3**
     - Add to `tests/Unit/ContinuityServiceTest.php`
     - Data provider generates 100+ random unresolved request paths (mix of file-like and page-like)
     - Assert: record persisted with all required fields, request_type='file' for paths with extensions, 'page' otherwise
 
-  - [~] 11.9 Write property test: No redirect loops (Property 8)
+  - [x] 11.9 Write property test: No redirect loops (Property 8)
     - **Property 8: No redirect loops**
     - **Validates: Requirements 17.4**
     - Add to `tests/Unit/ContinuityServiceTest.php`
     - Data provider generates 100+ redirect chain scenarios including cycles
     - Assert: resolution terminates within 5 hops, returns last non-looping destination on cycle
 
-  - [~] 11.10 Write property test: Exact rules take priority over pattern rules (Property 9)
+  - [x] 11.10 Write property test: Exact rules take priority over pattern rules (Property 9)
     - **Property 9: Exact rules take priority over pattern rules**
     - **Validates: Requirements 17.5**
     - Add to `tests/Unit/ContinuityServiceTest.php`
     - Data provider generates 100+ scenarios where path matches both exact and pattern rules
     - Assert: resolveRedirect returns exact rule destination, never pattern rule destination
 
-  - [~] 11.11 Write property test: File continuity resolution correctness (Property 10)
+  - [x] 11.11 Write property test: File continuity resolution correctness (Property 10)
     - **Property 10: File continuity resolution correctness**
     - **Validates: Requirements 18.1**
     - Add to `tests/Unit/ContinuityServiceTest.php`
     - Data provider generates 100+ file inventory entries (mapped and unmapped)
     - Assert: mapped entries return current_path, non-matching paths return null
 
-  - [~] 11.12 Write property test: Redirect rule conflict detection (Property 11)
+  - [x] 11.12 Write property test: Redirect rule conflict detection (Property 11)
     - **Property 11: Redirect rule conflict detection**
     - **Validates: Requirements 27.2**
     - Add to `tests/Unit/ContinuityServiceTest.php`
     - Data provider generates 100+ rule sets with intentional duplicates and conflicts
     - Assert: validateRedirectRules identifies all duplicates and conflicts in ValidationResultDTO
 
-  - [~] 11.13 Write property test: SEO completeness validation identifies weak entries (Property 12)
+  - [x] 11.13 Write property test: SEO completeness validation identifies weak entries (Property 12)
     - **Property 12: SEO completeness validation identifies weak entries**
     - **Validates: Requirements 27.5**
     - Create `tests/Unit/SeoValidationPropertyTest.php`
     - Data provider generates 100+ published pages with various SEO completeness levels
     - Assert: pages with null/empty meta_title, meta_description, or canonical_url are flagged
 
-- [ ] 12. PX08 — Feature tests for PX05 (SEO & Continuity)
-  - [~] 12.1 Write PX05 feature tests: Sitemap and robots.txt
+- [x] 12. PX08 — Feature tests for PX05 (SEO & Continuity)
+  - [x] 12.1 Write PX05 feature tests: Sitemap and robots.txt
     - Create `tests/Feature/PX05/SitemapTest.php`
     - Test: sitemap.xml returns valid XML with correct Content-Type
     - Test: sitemap contains only published, enabled page URLs with locale alternates
@@ -373,7 +373,7 @@ This plan covers the remaining implementation phases for the SPU website foundat
     - Test: non-production environment returns noindex directives
     - _Requirements: 16.1, 16.2, 16.3, 16.4_
 
-  - [~] 12.2 Write PX05 feature tests: Redirect continuity
+  - [x] 12.2 Write PX05 feature tests: Redirect continuity
     - Create `tests/Feature/PX05/RedirectContinuityTest.php`
     - Test: exact match returns 301 redirect to correct destination
     - Test: pattern match returns 301 redirect with resolved destination
@@ -383,13 +383,13 @@ This plan covers the remaining implementation phases for the SPU website foundat
     - Test: redirect loops terminate within 5 hops
     - _Requirements: 17.1, 17.2, 17.3, 17.4, 17.5_
 
-  - [~] 12.3 Write PX05 feature tests: File continuity
+  - [x] 12.3 Write PX05 feature tests: File continuity
     - Create `tests/Feature/PX05/FileContinuityTest.php`
     - Test: mapped file path resolves to current delivery path
     - Test: unmapped file path is logged as unresolved
     - _Requirements: 18.1, 18.2, 18.3_
 
-  - [~] 12.4 Write PX05 feature tests: SEO rendering
+  - [x] 12.4 Write PX05 feature tests: SEO rendering
     - Create `tests/Feature/PX05/SeoRenderingTest.php`
     - Test: homepage renders absolute canonical URL with correct locale
     - Test: landing page renders absolute canonical URL with correct locale and slug
@@ -399,8 +399,8 @@ This plan covers the remaining implementation phases for the SPU website foundat
     - Test: robots directive renders when set
     - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5, 15.6_
 
-- [ ] 13. PX08 — Feature tests for PX06 (Filament Admin)
-  - [~] 13.1 Write PX06 feature tests: Filament resources and authorization
+- [x] 13. PX08 — Feature tests for PX06 (Filament Admin)
+  - [x] 13.1 Write PX06 feature tests: Filament resources and authorization
     - Create `tests/Feature/PX06/ManageHomepageTest.php` — test section editing, draft save, publish, schedule, unpublish actions delegate to services
     - Create `tests/Feature/PX06/PageResourceTest.php` — test list, create, edit, view; draft/publish/schedule/unpublish actions
     - Create `tests/Feature/PX06/ManageMenuTest.php` — test tree management, reordering, depth enforcement
@@ -410,7 +410,7 @@ This plan covers the remaining implementation phases for the SPU website foundat
     - Create `tests/Feature/PX06/AuditLogResourceTest.php` — test read-only list, view, filtering
     - _Requirements: 19.1–19.5, 20.1–20.5, 21.1–21.5, 22.1–22.5, 23.1–23.4, 24.1–24.3, 25.1–25.3_
 
-  - [~] 13.2 Write PX06 feature tests: Role-based visibility
+  - [x] 13.2 Write PX06 feature tests: Role-based visibility
     - Create `tests/Feature/PX06/RoleBasedVisibilityTest.php`
     - Test: super_admin sees all resources and pages
     - Test: editor sees homepage, pages, menu, media, settings only
@@ -418,8 +418,8 @@ This plan covers the remaining implementation phases for the SPU website foundat
     - Test: unauthorized access returns 403
     - _Requirements: 26.1, 26.2, 26.3, 26.4_
 
-- [ ] 14. PX08 — Feature tests for PX07 (CLI Commands)
-  - [~] 14.1 Write PX07 feature tests: CLI commands
+- [x] 14. PX08 — Feature tests for PX07 (CLI Commands)
+  - [x] 14.1 Write PX07 feature tests: CLI commands
     - Create `tests/Feature/PX07/UrlInventoryExportTest.php` — test JSON/CSV output with seeded data
     - Create `tests/Feature/PX07/RedirectValidationTest.php` — test detection of invalid/duplicate rules, --fix flag
     - Create `tests/Feature/PX07/FileInventoryExportTest.php` — test mapped/unmapped file reporting
@@ -428,45 +428,45 @@ This plan covers the remaining implementation phases for the SPU website foundat
     - Create `tests/Feature/PX07/ReconciliationReportTest.php` — test combined report output
     - _Requirements: 27.1, 27.2, 27.3, 27.4, 27.5, 27.6_
 
-- [ ] 15. PX08 — Unit tests for non-property service logic
-  - [~] 15.1 Write unit tests for SlugService and MediaService
+- [x] 15. PX08 — Unit tests for non-property service logic
+  - [x] 15.1 Write unit tests for SlugService and MediaService
     - Create `tests/Unit/SlugServiceTest.php` — test slug generation, Arabic transliteration, uniqueness with collision suffix, max attempts exception
     - Create `tests/Unit/MediaServiceTest.php` — test upload validation (type, size, dimensions), metadata update, soft-delete, list with filters
     - _Requirements: 31.1, 22.1, 22.5_
 
-- [ ] 16. PX08 — Launch validation and cache warm commands
-  - [~] 16.1 Create `launch:validate` Artisan command
+- [x] 16. PX08 — Launch validation and cache warm commands
+  - [x] 16.1 Create `launch:validate` Artisan command
     - Register in `routes/console.php`
     - Signature: `launch:validate {--environment=staging}`
     - Checks: homepage AR/EN rendering, landing page rendering, canonical/hreflang correctness, sitemap presence, robots.txt correctness, redirect continuity samples, file continuity samples, admin preview safety, cache behavior, audit behavior
     - Continue all checks even if some fail; report all failures at end; exit code 1 if any critical check fails
     - _Requirements: 34.1_
 
-  - [~] 16.2 Create `cache:warm` Artisan command
+  - [x] 16.2 Create `cache:warm` Artisan command
     - Register in `routes/console.php`
     - Signature: `cache:warm {--locale=} {--include-sitemap}`
     - Warms: homepage AR/EN, top-level landing pages AR/EN, navigation/settings payloads, sitemap output (when --include-sitemap)
     - Log warnings for unavailable targets, continue to next; report partial warm at end
     - _Requirements: 34.3_
 
-  - [~] 16.3 Write PX08 feature tests: Launch validation and cache warm
+  - [x] 16.3 Write PX08 feature tests: Launch validation and cache warm
     - Create `tests/Feature/PX08/LaunchValidationTest.php` — test all checks pass with valid seeded data, fail with invalid data
     - Create `tests/Feature/PX08/CacheWarmTest.php` — test expected cache keys are warmed
     - _Requirements: 34.1, 34.3_
 
-- [ ] 17. PX08 — Launch readiness and rollback documentation
-  - [~] 17.1 Create launch-readiness checklist document
+- [x] 17. PX08 — Launch readiness and rollback documentation
+  - [x] 17.1 Create launch-readiness checklist document
     - Create `docs/launch-readiness-checklist.md`
     - Sections: routing, locale, SEO, continuity, file/media, admin, cache, audit, staging noindex, rollback readiness
     - Each section lists specific checks and expected outcomes
     - _Requirements: 33.3_
 
-  - [~] 17.2 Create rollback preparation document
+  - [x] 17.2 Create rollback preparation document
     - Create `docs/rollback-preparation.md`
     - Sections: rollback threshold definitions, cutover abort criteria, pre-cutover snapshot expectations, continuity rollback expectations, unresolved continuity spike monitoring
     - _Requirements: 34.2_
 
-- [ ] 18. Final checkpoint — Full test suite and launch readiness
+- [-] 18. Final checkpoint — Full test suite and launch readiness
   - Ensure all tests pass, ask the user if questions arise.
   - Verify: `php artisan test` passes all PX05–PX08 tests
   - Verify: `php artisan launch:validate` passes against seeded staging data

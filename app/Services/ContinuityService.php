@@ -71,7 +71,7 @@ final class ContinuityService implements ContinuityServiceInterface
                         ],
                     ],
                     ['url', 'method'],
-                    ['hit_count' => \Illuminate\Database\Query\Expression::raw('hit_count + 1'), 'last_seen_at' => $now],
+                    ['hit_count' => new \Illuminate\Database\Query\Expression('hit_count + 1'), 'last_seen_at' => $now],
                 );
 
             return true;

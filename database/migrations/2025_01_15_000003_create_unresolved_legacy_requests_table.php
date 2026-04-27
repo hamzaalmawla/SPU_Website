@@ -30,7 +30,9 @@ return new class extends Migration
             $table->index(['last_seen_at'], 'idx_last_seen');
         });
 
-        DB::statement('CREATE INDEX idx_url ON unresolved_legacy_requests (url(191))');
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement('CREATE INDEX idx_url ON unresolved_legacy_requests (url(191))');
+        }
     }
 
     public function down(): void

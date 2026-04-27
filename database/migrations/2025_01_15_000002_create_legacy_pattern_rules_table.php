@@ -22,8 +22,8 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->timestamps();
 
-            $table->index(['priority'], 'idx_priority');
-            $table->index(['is_active'], 'idx_is_active');
+            $table->index(['priority'], 'idx_lpr_priority');
+            $table->index(['is_active'], 'idx_lpr_is_active');
         });
     }
 

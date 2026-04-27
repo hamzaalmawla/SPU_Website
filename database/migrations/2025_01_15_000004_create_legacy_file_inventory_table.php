@@ -30,7 +30,9 @@ return new class extends Migration
             $table->index(['status'], 'idx_status');
         });
 
-        DB::statement('CREATE INDEX idx_legacy_path ON legacy_file_inventory (legacy_path(191))');
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement('CREATE INDEX idx_legacy_path ON legacy_file_inventory (legacy_path(191))');
+        }
     }
 
     public function down(): void
