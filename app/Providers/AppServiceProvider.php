@@ -7,6 +7,7 @@ namespace App\Providers;
 use App\Contracts\AuditServiceInterface;
 use App\Contracts\AuthServiceInterface;
 use App\Contracts\CacheServiceInterface;
+use App\Contracts\ContinuityServiceInterface;
 use App\Contracts\HomepagePublishingServiceInterface;
 use App\Contracts\HomepageSectionServiceInterface;
 use App\Contracts\MediaServiceInterface;
@@ -16,6 +17,7 @@ use App\Contracts\PageServiceInterface;
 use App\Contracts\PreviewServiceInterface;
 use App\Contracts\SeoMetadataServiceInterface;
 use App\Contracts\SettingsServiceInterface;
+use App\Contracts\SitemapServiceInterface;
 use App\Contracts\SlugServiceInterface;
 use App\Models\MenuItem;
 use App\Models\Page;
@@ -27,6 +29,7 @@ use App\Policies\UserPolicy;
 use App\Services\AuditService;
 use App\Services\AuthService;
 use App\Services\CacheService;
+use App\Services\ContinuityService;
 use App\Services\HomepagePublishingService;
 use App\Services\HomepageSectionService;
 use App\Services\MenuService;
@@ -37,6 +40,7 @@ use App\Services\Placeholders\SlugServicePlaceholder;
 use App\Services\PreviewService;
 use App\Services\SeoMetadataService;
 use App\Services\SettingsService;
+use App\Services\SitemapService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -115,6 +119,8 @@ class AppServiceProvider extends ServiceProvider
             CacheServiceInterface::class => CacheService::class,
             AuditServiceInterface::class => AuditService::class,
             AuthServiceInterface::class => AuthService::class,
+            ContinuityServiceInterface::class => ContinuityService::class,
+            SitemapServiceInterface::class => SitemapService::class,
         ];
     }
 
