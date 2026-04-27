@@ -6,6 +6,7 @@ namespace Tests\Feature\PX07;
 
 use App\Models\LegacyExactRedirect;
 use App\Models\LegacyFileInventory;
+use App\Models\LegacyRecordSnapshot;
 use App\Models\Page;
 use App\Models\PageTranslation;
 use App\Models\Setting;
@@ -39,6 +40,16 @@ class ReconciliationReportTest extends TestCase
             'legacy_path' => '/files/doc.pdf',
             'current_path' => '/media/doc.pdf',
             'status' => 'mapped',
+        ]);
+
+        LegacyRecordSnapshot::create([
+            'module' => 'static_pages',
+            'batch_name' => 'test-batch',
+            'source_table' => 'legacy_pages',
+            'source_id' => 22,
+            'legacy_key' => '/legacy-recon-page',
+            'classification' => 'candidate_url',
+            'locale' => 'ar',
         ]);
 
         UnresolvedLegacyRequest::insert([
@@ -81,6 +92,7 @@ class ReconciliationReportTest extends TestCase
         $this->assertArrayHasKey('unresolved_requests', $content);
         $this->assertArrayHasKey('seo_gaps', $content);
         $this->assertArrayHasKey('ambiguous_structures', $content);
+        $this->assertTrue(collect($content['url_inventory'])->contains(fn (array $row): bool => $row['legacy_path'] === '/legacy-recon-page'));
     }
 
     public function test_command_handles_empty_data(): void

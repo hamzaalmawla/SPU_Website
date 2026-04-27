@@ -86,7 +86,7 @@ class RoleBasedVisibilityTest extends TestCase
         $this->actingAs($user, 'web');
 
         // Faculty editor should be forbidden from homepage management
-        $this->get('/admin/content')->assertForbidden();
+        $this->get('/admin/manage-homepage')->assertForbidden();
     }
 
     private function createUser(string $role): User

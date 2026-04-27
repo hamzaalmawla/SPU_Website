@@ -48,8 +48,11 @@ class ManageMenu extends Page implements HasForms
 
     public string $activeGroup = 'header';
 
-    /** @var array<string, array<string, list<MenuItemDTO>>> */
+    /** @var array<string, array<string, list<array<string, mixed>>>> */
     public array $menuTrees = [];
+
+    /** @var array<string, array<string, list<MenuItemDTO>>> */
+    private array $menuTreeDTOs = [];
 
     private MenuServiceInterface $menuService;
 
@@ -266,7 +269,7 @@ class ManageMenu extends Page implements HasForms
     /**
      * Get the menu tree for a specific group and locale.
      *
-     * @return list<MenuItemDTO>
+     * @return list<array<string, mixed>>
      */
     public function getTreeForGroup(string $group, string $locale): array
     {
@@ -332,6 +335,21 @@ class ManageMenu extends Page implements HasForms
     private function loadMenuTrees(): void
     {
         $this->menuTrees = [];
+        $this->menuTreeDTOs = [];
+
+        $dtoToArray = function (MenuItemDTO $item) use (&$dtoToArray): array {
+            return [
+                'id' => $item->id,
+                'label' => $item->label,
+                'targetType' => $item->targetType,
+                'url' => $item->url,
+                'resolvedUrl' => $item->resolvedUrl,
+                'isEnabled' => $item->isEnabled,
+                'openInNewTab' => $item->openInNewTab,
+                'sortOrder' => $item->sortOrder,
+                'children' => array_map($dtoToArray, $item->children),
+            ];
+        };
 
         foreach (MenuServiceInterface::GROUP_KEYS as $group) {
             foreach (['ar', 'en'] as $locale) {
@@ -342,14 +360,16 @@ class ManageMenu extends Page implements HasForms
                     default => null,
                 };
 
-                $this->menuTrees[$group][$locale] = $tree !== null ? $tree->items : [];
+                $items = $tree !== null ? $tree->items : [];
+                $this->menuTreeDTOs[$group][$locale] = $items;
+                $this->menuTrees[$group][$locale] = array_map($dtoToArray, $items);
             }
         }
     }
 
     private function findItemInTrees(int $itemId): ?MenuItemDTO
     {
-        foreach ($this->menuTrees as $groups) {
+        foreach ($this->menuTreeDTOs as $groups) {
             foreach ($groups as $items) {
                 $found = $this->findItemRecursive($items, $itemId);
                 if ($found !== null) {

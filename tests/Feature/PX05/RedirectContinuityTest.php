@@ -60,14 +60,27 @@ class RedirectContinuityTest extends TestCase
 
     public function test_unresolved_request_is_logged(): void
     {
-        $this->addUniqueIndexForSqlite();
-
         $this->get('/some-missing-page');
 
         $this->assertDatabaseHas('unresolved_legacy_requests', [
             'method' => 'GET',
             'request_type' => 'page',
         ]);
+    }
+
+    public function test_repeated_unresolved_request_increments_hit_count(): void
+    {
+        $this->get('/same-missing-page');
+        $this->get('/same-missing-page');
+
+        $record = UnresolvedLegacyRequest::query()
+            ->where('method', 'GET')
+            ->latest('id')
+            ->first();
+
+        $this->assertNotNull($record);
+        $this->assertSame(1, UnresolvedLegacyRequest::query()->count());
+        $this->assertSame(2, $record->hit_count);
     }
 
     public function test_admin_prefix_is_skipped_by_middleware(): void
@@ -142,21 +155,5 @@ class RedirectContinuityTest extends TestCase
 
         // Should terminate (not hang) and return a redirect to the last valid destination
         $this->assertContains($response->getStatusCode(), [301, 302]);
-    }
-
-    /**
-     * Add unique index for SQLite testing (upsert requires it).
-     */
-    private function addUniqueIndexForSqlite(): void
-    {
-        if (\Illuminate\Support\Facades\Schema::hasTable('unresolved_legacy_requests')) {
-            try {
-                \Illuminate\Support\Facades\Schema::table('unresolved_legacy_requests', function (\Illuminate\Database\Schema\Blueprint $table): void {
-                    $table->unique(['url', 'method'], 'uq_url_method_feat');
-                });
-            } catch (\Throwable) {
-                // Index may already exist
-            }
-        }
     }
 }

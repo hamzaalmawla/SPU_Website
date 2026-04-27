@@ -10,8 +10,11 @@ use App\DTOs\PageSeoInputDTO;
 use App\DTOs\PageShellDataDTO;
 use App\DTOs\PageTranslationDTO;
 use App\Filament\Resources\PageResource;
+use App\Models\Page;
+use App\Models\User;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Database\Eloquent\Model;
 
 class CreatePage extends CreateRecord
 {
@@ -24,9 +27,9 @@ class CreatePage extends CreateRecord
         $this->pageService = $pageService;
     }
 
-    protected function handleRecordCreation(array $data): \Illuminate\Database\Eloquent\Model
+    protected function handleRecordCreation(array $data): Model
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
 
         $shellData = new PageShellDataDTO(
@@ -39,14 +42,19 @@ class CreatePage extends CreateRecord
 
         $pageDTO = $this->pageService->createPageShell($shellData, $user->id);
 
-        $page = \App\Models\Page::findOrFail($pageDTO->id);
-
-        // Update visibility toggles
-        $page->update([
-            'is_enabled' => $data['is_enabled'] ?? true,
-            'show_in_nav' => $data['show_in_nav'] ?? true,
-            'show_in_breadcrumbs' => $data['show_in_breadcrumbs'] ?? true,
-        ]);
+        $this->pageService->updateBaseMetadata(
+            $pageDTO->id,
+            new PageMetadataDTO(
+                slug: $data['slug'],
+                template: $data['template'],
+                isHomepageShell: false,
+                status: $data['status'] ?? 'draft',
+                parentPageId: $data['parent_id'] ?? null,
+                isEnabled: $data['is_enabled'] ?? true,
+                showInBreadcrumbs: $data['show_in_breadcrumbs'] ?? true,
+                showInNav: $data['show_in_nav'] ?? true,
+            ),
+        );
 
         // Save Arabic translation
         $this->pageService->updateArabicTranslation(
@@ -77,7 +85,7 @@ class CreatePage extends CreateRecord
             ->success()
             ->send();
 
-        return $page->refresh();
+        return Page::findOrFail($pageDTO->id)->refresh();
     }
 
     private static function buildTranslationDTO(array $data, string $locale): PageTranslationDTO
@@ -108,7 +116,7 @@ class CreatePage extends CreateRecord
 
         return new PageSeoInputDTO(
             locale: $locale,
-            title: $data["{$prefix}meta_title"] ?? $data[($locale === 'ar' ? 'ar_' : 'en_') . 'title'] ?? '',
+            title: $data["{$prefix}meta_title"] ?? $data[($locale === 'ar' ? 'ar_' : 'en_').'title'] ?? '',
             metaDescription: $data["{$prefix}meta_description"] ?? null,
             ogTitle: $data["{$prefix}og_title"] ?? null,
             ogDescription: $data["{$prefix}og_description"] ?? null,

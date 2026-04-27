@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Contracts\CacheServiceInterface;
 use App\Contracts\HomepageSectionServiceInterface;
 use App\Contracts\NavigationServiceInterface;
 use App\Contracts\PageServiceInterface;
@@ -33,6 +32,7 @@ final class CacheWarmCommand extends Command
     public function __construct(
         private readonly HomepageSectionServiceInterface $homepageService,
         private readonly NavigationServiceInterface $navigationService,
+        private readonly PageServiceInterface $pageService,
         private readonly SettingsServiceInterface $settingsService,
         private readonly SitemapServiceInterface $sitemapService,
     ) {
@@ -48,6 +48,7 @@ final class CacheWarmCommand extends Command
         $this->newLine();
 
         $this->warmHomepage($locales);
+        $this->warmLandingPages($locales);
         $this->warmNavigationPayloads($locales);
         $this->warmSettingsPayloads($locales);
 
@@ -62,7 +63,65 @@ final class CacheWarmCommand extends Command
     }
 
     /**
-     * @param list<string> $locales
+     * @param  list<string>  $locales
+     */
+    private function warmLandingPages(array $locales): void
+    {
+        try {
+            $entries = $this->sitemapService->generateEntries();
+        } catch (\Throwable $e) {
+            $this->warn("  ⚠ Landing pages unavailable: {$e->getMessage()}");
+            $this->warnings++;
+
+            return;
+        }
+
+        foreach ($entries as $entry) {
+            $path = parse_url($entry->loc, PHP_URL_PATH);
+
+            if (! is_string($path) || $path === '') {
+                continue;
+            }
+
+            $segments = array_values(array_filter(explode('/', trim($path, '/'))));
+
+            if (count($segments) < 2) {
+                continue;
+            }
+
+            $locale = $segments[0];
+
+            if (! in_array($locale, $locales, true)) {
+                continue;
+            }
+
+            $slugPath = implode('/', array_slice($segments, 1));
+
+            if ($slugPath === '') {
+                continue;
+            }
+
+            try {
+                $page = $this->pageService->getPublicPageBySlug($slugPath, $locale);
+
+                if ($page === null) {
+                    $this->warn("  ⚠ Landing page ({$locale}/{$slugPath}) unavailable");
+                    $this->warnings++;
+
+                    continue;
+                }
+
+                $this->info("  ✓ Landing page ({$locale}/{$slugPath}) warmed");
+                $this->warmed++;
+            } catch (\Throwable $e) {
+                $this->warn("  ⚠ Landing page ({$locale}/{$slugPath}) unavailable: {$e->getMessage()}");
+                $this->warnings++;
+            }
+        }
+    }
+
+    /**
+     * @param  list<string>  $locales
      */
     private function warmHomepage(array $locales): void
     {
@@ -79,7 +138,7 @@ final class CacheWarmCommand extends Command
     }
 
     /**
-     * @param list<string> $locales
+     * @param  list<string>  $locales
      */
     private function warmNavigationPayloads(array $locales): void
     {
@@ -96,7 +155,7 @@ final class CacheWarmCommand extends Command
     }
 
     /**
-     * @param list<string> $locales
+     * @param  list<string>  $locales
      */
     private function warmSettingsPayloads(array $locales): void
     {

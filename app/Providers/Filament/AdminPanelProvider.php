@@ -6,6 +6,7 @@ namespace App\Providers\Filament;
 
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Middleware\AdminAuthMiddleware;
+use App\Http\Middleware\AdminLocaleMiddleware;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -57,6 +58,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 AdminAuthMiddleware::class,
+                AdminLocaleMiddleware::class,
             ]);
     }
 }

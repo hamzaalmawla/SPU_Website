@@ -5,15 +5,19 @@ declare(strict_types=1);
 namespace App\Filament\Resources\PageResource\Pages;
 
 use App\Contracts\PageServiceInterface;
+use App\Contracts\PreviewServiceInterface;
 use App\DTOs\PageDraftDataDTO;
 use App\DTOs\PageMetadataDTO;
 use App\DTOs\PageSeoInputDTO;
 use App\DTOs\PageTranslationDTO;
 use App\Filament\Resources\PageResource;
+use App\Models\Page;
+use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Model;
 
 class EditPage extends EditRecord
 {
@@ -21,14 +25,17 @@ class EditPage extends EditRecord
 
     private PageServiceInterface $pageService;
 
-    public function boot(PageServiceInterface $pageService): void
+    private PreviewServiceInterface $previewService;
+
+    public function boot(PageServiceInterface $pageService, PreviewServiceInterface $previewService): void
     {
         $this->pageService = $pageService;
+        $this->previewService = $previewService;
     }
 
     protected function mutateFormDataBeforeFill(array $data): array
     {
-        /** @var \App\Models\Page $page */
+        /** @var Page $page */
         $page = $this->record;
         $page->load(['translations', 'seoMeta']);
 
@@ -80,18 +87,22 @@ class EditPage extends EditRecord
         return $data;
     }
 
-    protected function handleRecordUpdate(\Illuminate\Database\Eloquent\Model $record, array $data): \Illuminate\Database\Eloquent\Model
+    protected function handleRecordUpdate(Model $record, array $data): Model
     {
-        /** @var \App\Models\Page $record */
-        $record->update([
-            'parent_id' => $data['parent_id'] ?? null,
-            'slug' => $data['slug'],
-            'template' => $data['template'],
-            'status' => $data['status'],
-            'is_enabled' => $data['is_enabled'] ?? true,
-            'show_in_nav' => $data['show_in_nav'] ?? true,
-            'show_in_breadcrumbs' => $data['show_in_breadcrumbs'] ?? true,
-        ]);
+        /** @var Page $record */
+        $this->pageService->updateBaseMetadata(
+            $record->id,
+            new PageMetadataDTO(
+                slug: $data['slug'],
+                template: $data['template'],
+                isHomepageShell: false,
+                status: $data['status'],
+                parentPageId: $data['parent_id'] ?? null,
+                isEnabled: $data['is_enabled'] ?? true,
+                showInBreadcrumbs: $data['show_in_breadcrumbs'] ?? true,
+                showInNav: $data['show_in_nav'] ?? true,
+            ),
+        );
 
         $this->pageService->updateArabicTranslation(
             $record->id,
@@ -149,14 +160,13 @@ class EditPage extends EditRecord
             ->icon('heroicon-o-eye')
             ->color('info')
             ->action(function (): void {
-                /** @var \App\Models\Page $page */
+                /** @var Page $page */
                 $page = $this->record;
-                $previewService = app(\App\Contracts\PreviewServiceInterface::class);
 
-                /** @var \App\Models\User $user */
+                /** @var User $user */
                 $user = auth()->user();
 
-                $preview = $previewService->createToken(
+                $preview = $this->previewService->createToken(
                     targetType: 'page',
                     targetId: $page->id,
                     locale: 'ar',
@@ -177,10 +187,10 @@ class EditPage extends EditRecord
             ->modalHeading('Publish Page')
             ->modalDescription('This will make the page live immediately.')
             ->action(function (): void {
-                /** @var \App\Models\Page $page */
+                /** @var Page $page */
                 $page = $this->record;
 
-                /** @var \App\Models\User $user */
+                /** @var User $user */
                 $user = auth()->user();
 
                 $result = $this->pageService->publish($page->id, $user->id);
@@ -216,10 +226,10 @@ class EditPage extends EditRecord
                     ->native(false),
             ])
             ->action(function (array $data): void {
-                /** @var \App\Models\Page $page */
+                /** @var Page $page */
                 $page = $this->record;
 
-                /** @var \App\Models\User $user */
+                /** @var User $user */
                 $user = auth()->user();
 
                 $result = $this->pageService->schedulePublish(
@@ -255,10 +265,10 @@ class EditPage extends EditRecord
             ->modalHeading('Unpublish Page')
             ->modalDescription('This will remove the page from public view.')
             ->action(function (): void {
-                /** @var \App\Models\Page $page */
+                /** @var Page $page */
                 $page = $this->record;
 
-                /** @var \App\Models\User $user */
+                /** @var User $user */
                 $user = auth()->user();
 
                 $result = $this->pageService->unpublish($page->id, $user->id);
@@ -287,10 +297,10 @@ class EditPage extends EditRecord
     {
         $formData = $this->form->getState();
 
-        /** @var \App\Models\Page $page */
+        /** @var Page $page */
         $page = $this->record;
 
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
 
         $draftPayload = new PageDraftDataDTO(
@@ -347,7 +357,7 @@ class EditPage extends EditRecord
 
         return new PageSeoInputDTO(
             locale: $locale,
-            title: $data["{$prefix}meta_title"] ?? $data[($locale === 'ar' ? 'ar_' : 'en_') . 'title'] ?? '',
+            title: $data["{$prefix}meta_title"] ?? $data[($locale === 'ar' ? 'ar_' : 'en_').'title'] ?? '',
             metaDescription: $data["{$prefix}meta_description"] ?? null,
             ogTitle: $data["{$prefix}og_title"] ?? null,
             ogDescription: $data["{$prefix}og_description"] ?? null,

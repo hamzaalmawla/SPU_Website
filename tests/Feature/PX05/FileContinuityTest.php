@@ -53,4 +53,17 @@ class FileContinuityTest extends TestCase
 
         $this->assertNull($result);
     }
+
+    public function test_mapped_file_request_redirects_in_runtime(): void
+    {
+        LegacyFileInventory::create([
+            'legacy_path' => '/files/runtime-document.pdf',
+            'current_path' => '/media/runtime-document.pdf',
+            'status' => 'mapped',
+        ]);
+
+        $this->get('/files/runtime-document.pdf')
+            ->assertRedirect('/media/runtime-document.pdf')
+            ->assertStatus(301);
+    }
 }

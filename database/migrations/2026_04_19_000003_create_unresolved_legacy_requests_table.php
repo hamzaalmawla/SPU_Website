@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('method', 10)->default('GET');
             $table->string('referrer', 2048)->nullable();
             $table->string('resolved_locale', 5)->nullable();
-            $table->enum('request_type', ['page', 'file'])->default('page');
+            $table->string('request_type', 20)->default('page');
             $table->string('user_agent', 512)->nullable();
             $table->string('ip_hash', 64)->nullable();
             $table->unsignedInteger('hit_count')->default(1);
@@ -26,6 +26,7 @@ return new class extends Migration
             $table->timestamp('last_seen_at');
             $table->timestamp('created_at')->nullable();
 
+            $table->unique(['url', 'method'], 'uq_unresolved_url_method');
             $table->index(['request_type'], 'idx_request_type');
             $table->index(['last_seen_at'], 'idx_last_seen');
         });

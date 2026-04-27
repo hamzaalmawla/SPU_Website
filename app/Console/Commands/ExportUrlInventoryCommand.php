@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Contracts\ContinuityServiceInterface;
+use App\Models\LegacyRecordSnapshot;
+use App\Models\MigrationLog;
+use App\Models\MigrationRejection;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 
@@ -60,6 +63,10 @@ final class ExportUrlInventoryCommand extends Command
                 'locale' => '',
                 'status' => $rule->isActive ? 'active' : 'inactive',
             ];
+        }
+
+        foreach ($this->legacyCandidateRows() as $candidate) {
+            $items[] = $candidate;
         }
 
         $payload = [
@@ -143,5 +150,65 @@ final class ExportUrlInventoryCommand extends Command
         rewind($handle);
         Storage::disk($disk)->put($path, (string) stream_get_contents($handle));
         fclose($handle);
+    }
+
+    /**
+     * @return array<int, array<string, string>>
+     */
+    private function legacyCandidateRows(): array
+    {
+        $items = [];
+
+        foreach (LegacyRecordSnapshot::query()->orderBy('id')->get() as $snapshot) {
+            $candidatePath = $snapshot->legacy_key
+                ?? (is_array($snapshot->payload_json) ? ($snapshot->payload_json['legacy_path'] ?? null) : null)
+                ?? $snapshot->payload_text;
+
+            if (! is_string($candidatePath) || trim($candidatePath) === '') {
+                continue;
+            }
+
+            $items[] = [
+                'source_type' => 'snapshot:'.$snapshot->module,
+                'legacy_path' => $candidatePath,
+                'expected_destination' => '',
+                'locale' => $snapshot->locale ?? '',
+                'status' => $snapshot->classification,
+            ];
+        }
+
+        foreach (MigrationLog::query()->whereNotNull('metadata')->orderBy('id')->get() as $log) {
+            $legacyPath = is_array($log->metadata) ? ($log->metadata['legacy_path'] ?? null) : null;
+
+            if (! is_string($legacyPath) || trim($legacyPath) === '') {
+                continue;
+            }
+
+            $items[] = [
+                'source_type' => 'migration_log:'.$log->module,
+                'legacy_path' => $legacyPath,
+                'expected_destination' => is_string($log->metadata['destination_url'] ?? null) ? $log->metadata['destination_url'] : '',
+                'locale' => is_string($log->metadata['locale'] ?? null) ? $log->metadata['locale'] : '',
+                'status' => $log->status,
+            ];
+        }
+
+        foreach (MigrationRejection::query()->whereNotNull('raw_summary')->orderBy('id')->get() as $rejection) {
+            $legacyPath = is_array($rejection->raw_summary) ? ($rejection->raw_summary['legacy_path'] ?? null) : null;
+
+            if (! is_string($legacyPath) || trim($legacyPath) === '') {
+                continue;
+            }
+
+            $items[] = [
+                'source_type' => 'rejection:'.$rejection->module,
+                'legacy_path' => $legacyPath,
+                'expected_destination' => '',
+                'locale' => is_string($rejection->raw_summary['locale'] ?? null) ? $rejection->raw_summary['locale'] : '',
+                'status' => $rejection->reason_code,
+            ];
+        }
+
+        return $items;
     }
 }

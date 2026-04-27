@@ -466,7 +466,7 @@ This plan covers the remaining implementation phases for the SPU website foundat
     - Sections: rollback threshold definitions, cutover abort criteria, pre-cutover snapshot expectations, continuity rollback expectations, unresolved continuity spike monitoring
     - _Requirements: 34.2_
 
-- [-] 18. Final checkpoint — Full test suite and launch readiness
+- [x] 18. Final checkpoint — Full test suite and launch readiness
   - Ensure all tests pass, ask the user if questions arise.
   - Verify: `php artisan test` passes all PX05–PX08 tests
   - Verify: `php artisan launch:validate` passes against seeded staging data

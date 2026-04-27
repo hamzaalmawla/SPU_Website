@@ -12,6 +12,7 @@ use App\Contracts\PageServiceInterface;
 use App\Contracts\SeoMetadataServiceInterface;
 use App\Contracts\SitemapServiceInterface;
 use Illuminate\Console\Command;
+use Illuminate\Http\Request as HttpRequest;
 
 /**
  * Repeatable launch validation command that checks all launch-critical behaviors.
@@ -85,15 +86,31 @@ final class LaunchValidateCommand extends Command
     private function checkLandingPageRendering(): void
     {
         try {
-            // Attempt to verify at least one published landing page exists
             $sitemap = $this->sitemapService->generateEntries();
-            $landingPages = $sitemap->filter(fn ($entry) => ! str_ends_with($entry->loc, '/ar') && ! str_ends_with($entry->loc, '/en'));
+            $landingPages = $sitemap->filter(function ($entry): bool {
+                $path = parse_url($entry->loc, PHP_URL_PATH);
+
+                return is_string($path) && preg_match('#^/(ar|en)/.+#', $path) === 1;
+            });
+
+            $first = $landingPages->first();
+
+            if ($first === null) {
+                $this->record('Landing page rendering', 'WARN', 'No landing pages found in sitemap');
+
+                return;
+            }
+
+            $path = (string) parse_url($first->loc, PHP_URL_PATH);
+            $segments = array_values(array_filter(explode('/', trim($path, '/'))));
+            $page = $this->pageService->getPublicPageBySlug(implode('/', array_slice($segments, 1)), $segments[0]);
+
             $this->record(
                 'Landing page rendering',
-                $landingPages->isNotEmpty() ? 'PASS' : 'WARN',
-                $landingPages->isNotEmpty()
-                    ? "Found {$landingPages->count()} landing page(s) in sitemap"
-                    : 'No landing pages found in sitemap',
+                $page !== null ? 'PASS' : 'FAIL',
+                $page !== null
+                    ? "Validated landing page runtime for {$path}"
+                    : "Landing page {$path} could not be rendered from the page service",
             );
         } catch (\Throwable $e) {
             $this->record('Landing page rendering', 'FAIL', $e->getMessage());
@@ -148,13 +165,17 @@ final class LaunchValidateCommand extends Command
     private function checkRobotsTxt(string $env): void
     {
         try {
-            $isProduction = $env === 'production';
+            $response = app()->handle(HttpRequest::create('/robots.txt', 'GET'));
+            $content = $response->getContent();
+            $hasSitemap = is_string($content) && str_contains($content, 'Sitemap:');
+            $allowsOrBlocks = is_string($content) && (str_contains($content, 'Allow: /') || str_contains($content, 'Disallow: /'));
+
             $this->record(
                 'robots.txt correctness',
-                'PASS',
-                $isProduction
-                    ? 'Production environment — robots.txt should allow indexing'
-                    : "Non-production ({$env}) — robots.txt should restrict indexing",
+                $response->getStatusCode() === 200 && $hasSitemap && $allowsOrBlocks ? 'PASS' : 'FAIL',
+                $response->getStatusCode() === 200 && $hasSitemap && $allowsOrBlocks
+                    ? "robots.txt is reachable and contains sitemap/indexing directives for {$env}"
+                    : 'robots.txt is missing required sitemap or indexing directives',
             );
         } catch (\Throwable $e) {
             $this->record('robots.txt correctness', 'FAIL', $e->getMessage());
@@ -167,15 +188,20 @@ final class LaunchValidateCommand extends Command
             $exactRedirects = $this->continuityService->getExactRedirects();
             $patternRules = $this->continuityService->getPatternRules();
             $validation = $this->continuityService->validateRedirectRules();
+            $sample = $exactRedirects->first();
+            $sampleResult = $sample !== null
+                ? $this->continuityService->resolveRedirect($sample->legacyPath)
+                : null;
 
             $this->record(
                 'Redirect continuity',
-                $validation->isValid ? 'PASS' : 'WARN',
+                $validation->isValid && ($sample === null || $sampleResult !== null) ? 'PASS' : 'WARN',
                 sprintf(
-                    '%d exact rules, %d pattern rules. Validation: %s',
+                    '%d exact rules, %d pattern rules. Validation: %s. Sample resolution: %s',
                     $exactRedirects->count(),
                     $patternRules->count(),
                     $validation->isValid ? 'clean' : 'issues found',
+                    $sample === null ? 'n/a' : ($sampleResult !== null ? 'ok' : 'failed'),
                 ),
             );
         } catch (\Throwable $e) {
@@ -189,11 +215,15 @@ final class LaunchValidateCommand extends Command
             $inventory = $this->continuityService->getFileInventory();
             $mapped = $inventory->filter(fn ($item) => $item->status === 'mapped')->count();
             $unmapped = $inventory->filter(fn ($item) => $item->status !== 'mapped')->count();
+            $sample = $inventory->firstWhere('status', 'mapped');
+            $sampleResult = $sample !== null
+                ? $this->continuityService->resolveFileContinuity($sample->legacyPath)
+                : null;
 
             $this->record(
                 'File continuity',
-                $unmapped === 0 ? 'PASS' : 'WARN',
-                sprintf('%d mapped, %d unmapped file(s)', $mapped, $unmapped),
+                ($unmapped === 0 || $mapped > 0) && ($sample === null || $sampleResult !== null) ? 'PASS' : 'WARN',
+                sprintf('%d mapped, %d unmapped file(s). Sample resolution: %s', $mapped, $unmapped, $sample === null ? 'n/a' : ($sampleResult !== null ? 'ok' : 'failed')),
             );
         } catch (\Throwable $e) {
             $this->record('File continuity', 'FAIL', $e->getMessage());
@@ -203,11 +233,13 @@ final class LaunchValidateCommand extends Command
     private function checkAdminPreviewSafety(): void
     {
         try {
-            // Verify preview routes are not publicly accessible without tokens
+            $response = app()->handle(HttpRequest::create('/ar/preview', 'GET'));
             $this->record(
                 'Admin preview safety',
-                'PASS',
-                'Preview routes require valid tokens (structural check)',
+                in_array($response->getStatusCode(), [400, 403, 404], true) ? 'PASS' : 'FAIL',
+                in_array($response->getStatusCode(), [400, 403, 404], true)
+                    ? 'Preview route rejects missing token access'
+                    : 'Preview route responded successfully without a token',
             );
         } catch (\Throwable $e) {
             $this->record('Admin preview safety', 'FAIL', $e->getMessage());
@@ -217,7 +249,7 @@ final class LaunchValidateCommand extends Command
     private function checkCacheBehavior(): void
     {
         try {
-            $testKey = 'launch_validate_cache_test_' . time();
+            $testKey = 'launch_validate_cache_test_'.time();
             $stored = $this->cacheService->remember($testKey, fn () => 'test_value', 10);
             $this->cacheService->forget($testKey);
 

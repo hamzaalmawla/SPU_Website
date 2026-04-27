@@ -133,6 +133,67 @@ final class AuthService implements AuthServiceInterface
         }
     }
 
+    public function updateUser(int $userId, array $payload, int $actorUserId): bool
+    {
+        $user = User::query()->find($userId);
+        $actor = User::query()->find($actorUserId);
+
+        if (! $user instanceof User || ! $actor instanceof User) {
+            return false;
+        }
+
+        $wasLocked = $user->isAccountLocked();
+
+        $user->fill([
+            'name' => $payload['name'] ?? $user->name,
+            'email' => $payload['email'] ?? $user->email,
+            'role_slug' => $payload['role_slug'] ?? $user->role_slug,
+            'faculty_scope_slug' => $payload['faculty_scope_slug'] ?? null,
+        ]);
+
+        if (array_key_exists('password', $payload) && is_string($payload['password']) && $payload['password'] !== '') {
+            $user->password = $payload['password'];
+        }
+
+        $shouldLock = (bool) ($payload['is_locked'] ?? false);
+        $user->is_locked = $shouldLock;
+        $user->locked_at = $shouldLock ? ($user->locked_at ?? now()) : null;
+
+        $changedFields = array_keys($user->getDirty());
+        $saved = $user->save();
+
+        if (! $saved) {
+            return false;
+        }
+
+        if ($wasLocked !== $user->isAccountLocked()) {
+            $this->auditService->log(
+                action: $user->isAccountLocked() ? 'user.locked' : 'user.unlocked',
+                userId: $actorUserId,
+                entityType: User::class,
+                entityId: $userId,
+                metadata: [
+                    'actor_email' => $actor->email,
+                    'target_email' => $user->email,
+                ],
+            );
+        }
+
+        $this->auditService->log(
+            action: 'user.updated',
+            userId: $actorUserId,
+            entityType: User::class,
+            entityId: $userId,
+            metadata: [
+                'actor_email' => $actor->email,
+                'target_email' => $user->email,
+                'changed_fields' => $changedFields,
+            ],
+        );
+
+        return true;
+    }
+
     private function guardName(): string
     {
         return (string) config('auth.admin_guard', 'web');

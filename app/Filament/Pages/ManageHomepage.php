@@ -364,6 +364,8 @@ class ManageHomepage extends Page implements HasForms
 
     private function payloadToFormArray(HomepageSectionDataDTO $payload, \App\DTOs\HomepageSectionTranslationDTO $translation): array
     {
+        $toArray = fn ($obj): array => json_decode(json_encode($obj), true) ?? [];
+
         return [
             'headline' => $translation->headline ?? $payload->title,
             'subheadline' => $translation->body ?? $payload->subtitle,
@@ -376,18 +378,18 @@ class ManageHomepage extends Page implements HasForms
             'secondary_cta_url' => $payload->secondaryAction?->url ?? null,
             'section_title' => $payload->title,
             'subtitle' => $payload->subtitle,
-            'items' => $payload->items,
-            'stats' => array_map(fn ($stat) => (array) $stat, $payload->stats),
-            'featured_items' => array_map(fn ($item) => (array) $item, $payload->featuredItems),
-            'articles' => array_map(fn ($article) => (array) $article, $payload->articles),
-            'research_items' => array_map(fn ($item) => (array) $item, $payload->researchItems),
-            'events' => array_map(fn ($event) => (array) $event, $payload->events),
-            'footer_columns' => array_map(fn ($col) => (array) $col, $payload->footerColumns),
-            'contact_links' => array_map(fn ($link) => (array) $link, $payload->contactLinks),
-            'social_links' => array_map(fn ($link) => (array) $link, $payload->socialLinks),
-            'content' => $payload->content,
-            'copyright_text' => $payload->content['copyright_text'] ?? null,
-            'logo' => $payload->content['logo'] ?? null,
+            'items' => is_array($payload->items) ? array_map($toArray, $payload->items) : [],
+            'stats' => array_map($toArray, $payload->stats),
+            'featured_items' => array_map($toArray, $payload->featuredItems),
+            'articles' => array_map($toArray, $payload->articles),
+            'research_items' => array_map($toArray, $payload->researchItems),
+            'events' => array_map($toArray, $payload->events),
+            'footer_columns' => array_map($toArray, $payload->footerColumns),
+            'contact_links' => array_map($toArray, $payload->contactLinks),
+            'social_links' => array_map($toArray, $payload->socialLinks),
+            'content' => is_array($payload->content) ? $payload->content : ($toArray($payload->content) ?: []),
+            'copyright_text' => is_array($payload->content) ? ($payload->content['copyright_text'] ?? null) : null,
+            'logo' => is_array($payload->content) ? ($payload->content['logo'] ?? null) : null,
         ];
     }
 

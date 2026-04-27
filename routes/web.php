@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Admin\AuthController;
-use App\Http\Controllers\Admin\ShellController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PreviewController;
@@ -44,17 +43,5 @@ Route::prefix('admin')
         Route::middleware(['admin.auth'])
             ->group(function (): void {
                 Route::post('/auth/logout', [AuthController::class, 'destroy'])->name('logout');
-
-                Route::get('/content', [ShellController::class, 'content'])
-                    ->middleware('can:manage-homepage')
-                    ->name('content');
-
-                Route::get('/settings', [ShellController::class, 'settings'])
-                    ->middleware('can:manage-settings')
-                    ->name('settings');
-
-                Route::get('/users', [ShellController::class, 'users'])
-                    ->middleware('can:manage-users')
-                    ->name('users.index');
             });
     });

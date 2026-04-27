@@ -36,4 +36,11 @@ interface AuthServiceInterface
      * Extend active session lifetime.
      */
     public function extendSession(): void;
+
+    /**
+     * Update an admin-managed user account.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    public function updateUser(int $userId, array $payload, int $actorUserId): bool;
 }

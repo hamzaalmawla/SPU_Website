@@ -54,25 +54,35 @@ final class ContinuityService implements ContinuityServiceInterface
         try {
             $now = now();
 
-            UnresolvedLegacyRequest::query()
-                ->upsert(
-                    [
-                        [
-                            'url' => $request->url,
-                            'query_string' => $request->queryString,
-                            'method' => $request->method,
-                            'referrer' => $request->referrer,
-                            'resolved_locale' => $request->resolvedLocale,
-                            'request_type' => $request->requestType,
-                            'hit_count' => 1,
-                            'first_seen_at' => $now,
-                            'last_seen_at' => $now,
-                            'created_at' => $now,
-                        ],
-                    ],
-                    ['url', 'method'],
-                    ['hit_count' => new \Illuminate\Database\Query\Expression('hit_count + 1'), 'last_seen_at' => $now],
-                );
+            $existing = UnresolvedLegacyRequest::query()
+                ->where('url', $request->url)
+                ->where('method', $request->method)
+                ->latest('id')
+                ->first();
+
+            if ($existing instanceof UnresolvedLegacyRequest) {
+                $existing->forceFill([
+                    'query_string' => $request->queryString,
+                    'referrer' => $request->referrer,
+                    'resolved_locale' => $request->resolvedLocale,
+                    'request_type' => $request->requestType,
+                    'hit_count' => $existing->hit_count + 1,
+                    'last_seen_at' => $now,
+                ])->save();
+            } else {
+                UnresolvedLegacyRequest::query()->create([
+                    'url' => $request->url,
+                    'query_string' => $request->queryString,
+                    'method' => $request->method,
+                    'referrer' => $request->referrer,
+                    'resolved_locale' => $request->resolvedLocale,
+                    'request_type' => $request->requestType,
+                    'hit_count' => 1,
+                    'first_seen_at' => $now,
+                    'last_seen_at' => $now,
+                    'created_at' => $now,
+                ]);
+            }
 
             return true;
         } catch (\Throwable $e) {

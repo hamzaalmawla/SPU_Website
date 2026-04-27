@@ -9,6 +9,7 @@ use App\DTOs\UnresolvedRequestDTO;
 use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -28,7 +29,7 @@ final class RedirectContinuityMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $path = '/' . ltrim($request->path(), '/');
+        $path = '/'.ltrim($request->path(), '/');
 
         if ($this->shouldSkip($path)) {
             return $next($request);
@@ -38,6 +39,14 @@ final class RedirectContinuityMiddleware
 
         if ($result !== null) {
             return new RedirectResponse($result->destinationUrl, $result->statusCode);
+        }
+
+        if ($this->detectRequestType($path) === 'file') {
+            $currentPath = $this->continuityService->resolveFileContinuity($path);
+
+            if ($currentPath !== null) {
+                return new RedirectResponse($this->normalizeDestination($currentPath), 301);
+            }
         }
 
         return $next($request);
@@ -52,7 +61,7 @@ final class RedirectContinuityMiddleware
             return;
         }
 
-        $path = '/' . ltrim($request->path(), '/');
+        $path = '/'.ltrim($request->path(), '/');
 
         if ($this->shouldSkip($path)) {
             return;
@@ -96,5 +105,14 @@ final class RedirectContinuityMiddleware
         $extension = pathinfo($path, PATHINFO_EXTENSION);
 
         return $extension !== '' ? 'file' : 'page';
+    }
+
+    private function normalizeDestination(string $path): string
+    {
+        if (Str::startsWith($path, ['http://', 'https://'])) {
+            return $path;
+        }
+
+        return '/'.ltrim($path, '/');
     }
 }

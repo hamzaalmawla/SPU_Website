@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Contracts\AuditServiceInterface;
+use App\Contracts\CacheServiceInterface;
 use App\Contracts\PageServiceInterface;
 use App\Contracts\SeoMetadataServiceInterface;
 use App\DTOs\BreadcrumbItemDTO;
 use App\DTOs\BreadcrumbTrailDTO;
+use App\DTOs\DraftPayloadDTO;
 use App\DTOs\PageDraftDataDTO;
 use App\DTOs\PageDraftDTO;
 use App\DTOs\PageDTO;
@@ -20,66 +23,430 @@ use App\DTOs\PreviewDTO;
 use App\DTOs\PreviewPayloadDTO;
 use App\Models\Page;
 use App\Models\PageDraft;
+use App\Models\PageSeoMeta;
 use App\Models\PageTranslation;
-use BadMethodCallException;
 use DateTimeInterface;
+use Illuminate\Support\Facades\DB;
 
 final class PageService implements PageServiceInterface
 {
     private const EDITABLE_STATUSES = ['draft', 'scheduled'];
 
     public function __construct(
+        private readonly AuditServiceInterface $auditService,
+        private readonly CacheServiceInterface $cacheService,
         private readonly SeoMetadataServiceInterface $seoMetadataService,
     ) {}
 
     public function createPageShell(PageShellDataDTO $payload, int $userId): PageDTO
     {
-        throw new BadMethodCallException(__METHOD__.' is outside the current public-runtime phase.');
+        $page = Page::query()->create([
+            'parent_id' => $payload->parentPageId,
+            'type' => $payload->isHomepageShell ? 'homepage' : 'landing',
+            'template' => $payload->template,
+            'slug' => $payload->slug,
+            'status' => $payload->status,
+            'sort_order' => 0,
+            'is_enabled' => true,
+            'show_in_breadcrumbs' => true,
+            'show_in_nav' => true,
+            'is_homepage_shell' => $payload->isHomepageShell,
+            'created_by' => $userId,
+            'updated_by' => $userId,
+        ]);
+
+        $this->auditService->log('page.created', $userId, Page::class, (int) $page->getKey(), [
+            'slug' => $page->slug,
+            'template' => $page->template,
+            'status' => $page->status,
+        ]);
+
+        return $this->mapPageToDto($page->fresh(['translations', 'seoMeta']));
     }
 
     public function updateBaseMetadata(int $pageId, PageMetadataDTO $payload): bool
     {
-        throw new BadMethodCallException(__METHOD__.' is outside the current public-runtime phase.');
+        $page = Page::query()->find($pageId);
+
+        if (! $page instanceof Page) {
+            return false;
+        }
+
+        $updated = $page->update([
+            'parent_id' => $payload->parentPageId,
+            'template' => $payload->template,
+            'slug' => $payload->slug,
+            'status' => $payload->status,
+            'is_enabled' => $payload->isEnabled,
+            'show_in_breadcrumbs' => $payload->showInBreadcrumbs,
+            'show_in_nav' => $payload->showInNav,
+            'is_homepage_shell' => $payload->isHomepageShell,
+            'publish_at' => $payload->publishAt,
+            'content_json' => $payload->contentJson,
+        ]);
+
+        if ($updated) {
+            $this->touchPageCaches((int) $page->getKey());
+            $this->auditService->log('page.updated', null, Page::class, (int) $page->getKey(), [
+                'field' => 'metadata',
+            ]);
+        }
+
+        return $updated;
     }
 
     public function updateArabicTranslation(int $pageId, PageTranslationDTO $payload): bool
     {
-        throw new BadMethodCallException(__METHOD__.' is outside the current public-runtime phase.');
+        return $this->updateTranslation($pageId, 'ar', $payload);
     }
 
     public function updateEnglishTranslation(int $pageId, PageTranslationDTO $payload): bool
     {
-        throw new BadMethodCallException(__METHOD__.' is outside the current public-runtime phase.');
+        return $this->updateTranslation($pageId, 'en', $payload);
     }
 
     public function updateArabicSeo(int $pageId, PageSeoInputDTO $payload): bool
     {
-        throw new BadMethodCallException(__METHOD__.' is outside the current public-runtime phase.');
+        return $this->updateSeo($pageId, 'ar', $payload);
     }
 
     public function updateEnglishSeo(int $pageId, PageSeoInputDTO $payload): bool
     {
-        throw new BadMethodCallException(__METHOD__.' is outside the current public-runtime phase.');
+        return $this->updateSeo($pageId, 'en', $payload);
     }
 
     public function saveDraft(int $pageId, PageDraftDataDTO $payload, int $userId): PageDraftDTO
     {
-        throw new BadMethodCallException(__METHOD__.' is outside the current public-runtime phase.');
+        $page = Page::query()->findOrFail($pageId);
+
+        $draft = PageDraft::query()->create([
+            'page_id' => $pageId,
+            'payload_json' => $this->pageDraftPayloadToArray($payload),
+            'status' => $payload->metadata->status,
+            'created_by' => $userId,
+            'updated_by' => $userId,
+            'scheduled_at' => $payload->metadata->publishAt,
+        ]);
+
+        $this->auditService->log('page.draft_saved', $userId, Page::class, (int) $page->getKey(), [
+            'draft_id' => (int) $draft->getKey(),
+            'status' => $draft->status,
+        ]);
+
+        return $this->mapDraftToDto($draft);
     }
 
     public function publish(int $pageId, int $userId): bool
     {
-        throw new BadMethodCallException(__METHOD__.' is outside the current public-runtime phase.');
+        $page = Page::query()->with(['translations', 'seoMeta'])->find($pageId);
+
+        if (! $page instanceof Page) {
+            return false;
+        }
+
+        $draft = PageDraft::query()
+            ->where('page_id', $pageId)
+            ->whereIn('status', self::EDITABLE_STATUSES)
+            ->latest('updated_at')
+            ->first();
+
+        DB::transaction(function () use ($page, $draft, $userId): void {
+            if ($draft instanceof PageDraft && is_array($draft->payload_json)) {
+                $this->applyDraftPayloadToPage($page, $draft->payload_json, $userId);
+                $draft->forceFill([
+                    'status' => 'published',
+                    'approved_by' => $userId,
+                    'published_at' => now(),
+                ])->save();
+            }
+
+            $page->forceFill([
+                'status' => 'published',
+                'published_at' => now(),
+                'publish_at' => $page->publish_at?->isFuture() ? $page->publish_at : now(),
+                'approved_by' => $userId,
+                'updated_by' => $userId,
+            ])->save();
+        });
+
+        $this->touchPageCaches((int) $page->getKey());
+        $this->auditService->log('page.publish', $userId, Page::class, (int) $page->getKey());
+
+        return true;
     }
 
     public function unpublish(int $pageId, int $userId): bool
     {
-        throw new BadMethodCallException(__METHOD__.' is outside the current public-runtime phase.');
+        $page = Page::query()->find($pageId);
+
+        if (! $page instanceof Page) {
+            return false;
+        }
+
+        $updated = $page->update([
+            'status' => 'draft',
+            'published_at' => null,
+            'updated_by' => $userId,
+        ]);
+
+        if ($updated) {
+            $this->touchPageCaches((int) $page->getKey());
+            $this->auditService->log('page.unpublish', $userId, Page::class, (int) $page->getKey());
+        }
+
+        return $updated;
     }
 
     public function schedulePublish(int $pageId, DateTimeInterface $publishAt, int $userId): bool
     {
-        throw new BadMethodCallException(__METHOD__.' is outside the current public-runtime phase.');
+        $page = Page::query()->find($pageId);
+
+        if (! $page instanceof Page) {
+            return false;
+        }
+
+        $draft = PageDraft::query()
+            ->where('page_id', $pageId)
+            ->latest('updated_at')
+            ->first();
+
+        if ($draft instanceof PageDraft) {
+            $draft->forceFill([
+                'status' => 'scheduled',
+                'updated_by' => $userId,
+                'scheduled_at' => $publishAt,
+            ])->save();
+        }
+
+        $updated = $page->update([
+            'status' => 'scheduled',
+            'publish_at' => $publishAt,
+            'updated_by' => $userId,
+        ]);
+
+        if ($updated) {
+            $this->touchPageCaches((int) $page->getKey());
+            $this->auditService->log('page.schedule', $userId, Page::class, (int) $page->getKey(), [
+                'publish_at' => $publishAt->format(DATE_ATOM),
+            ]);
+        }
+
+        return $updated;
+    }
+
+    private function updateTranslation(int $pageId, string $locale, PageTranslationDTO $payload): bool
+    {
+        $page = Page::query()->find($pageId);
+
+        if (! $page instanceof Page) {
+            return false;
+        }
+
+        $translation = PageTranslation::query()->updateOrCreate(
+            ['page_id' => $pageId, 'locale' => $locale],
+            [
+                'title' => $payload->title,
+                'navigation_label' => $payload->navigationLabel,
+                'headline' => $payload->headline,
+                'subheadline' => $payload->subheadline,
+                'hero_payload' => $payload->heroPayload,
+                'overview_cards_payload' => $payload->overviewCardsPayload,
+                'stats_payload' => $payload->statsPayload,
+                'body_payload' => $payload->bodyPayload,
+                'cta_payload' => $payload->ctaPayload,
+                'sidebar_payload' => $payload->sidebarPayload,
+                'excerpt' => $payload->excerpt,
+                'body' => $payload->body,
+                'raw_excerpt' => $payload->rawExcerpt,
+                'meta_title_fallback' => $payload->metaTitleFallback,
+            ],
+        );
+
+        $this->touchPageCaches((int) $page->getKey());
+        $this->auditService->log('page.updated', null, Page::class, (int) $page->getKey(), [
+            'field' => 'translation',
+            'locale' => $locale,
+        ]);
+
+        return $translation->exists;
+    }
+
+    private function updateSeo(int $pageId, string $locale, PageSeoInputDTO $payload): bool
+    {
+        $page = Page::query()->find($pageId);
+
+        if (! $page instanceof Page) {
+            return false;
+        }
+
+        $seo = PageSeoMeta::query()->updateOrCreate(
+            ['page_id' => $pageId, 'locale' => $locale],
+            [
+                'meta_title' => $payload->title,
+                'meta_description' => $payload->metaDescription,
+                'og_title' => $payload->ogTitle,
+                'og_description' => $payload->ogDescription,
+                'og_image_url' => $payload->ogImage,
+                'canonical_url' => $payload->canonicalUrl,
+                'robots' => $payload->robots,
+            ],
+        );
+
+        $this->touchPageCaches((int) $page->getKey());
+        $this->auditService->log('page.updated', null, Page::class, (int) $page->getKey(), [
+            'field' => 'seo',
+            'locale' => $locale,
+        ]);
+
+        return $seo->exists;
+    }
+
+    private function applyDraftPayloadToPage(Page $page, array $payload, int $userId): void
+    {
+        $draftPage = is_array($payload['page'] ?? null) ? $payload['page'] : $payload;
+        $metadata = $this->metadataFromDraftArray(is_array($draftPage['metadata'] ?? null) ? $draftPage['metadata'] : [], $page);
+
+        $page->forceFill([
+            'parent_id' => $metadata->parentPageId,
+            'template' => $metadata->template,
+            'slug' => $metadata->slug,
+            'status' => $metadata->status,
+            'is_enabled' => $metadata->isEnabled,
+            'show_in_breadcrumbs' => $metadata->showInBreadcrumbs,
+            'show_in_nav' => $metadata->showInNav,
+            'is_homepage_shell' => $metadata->isHomepageShell,
+            'publish_at' => $metadata->publishAt,
+            'content_json' => $metadata->contentJson,
+            'updated_by' => $userId,
+        ])->save();
+
+        $this->updateTranslation($page->id, 'ar', $this->translationFromDraftArray(is_array($draftPage['arabicTranslation'] ?? null) ? $draftPage['arabicTranslation'] : [], $page, 'ar'));
+        $this->updateTranslation($page->id, 'en', $this->translationFromDraftArray(is_array($draftPage['englishTranslation'] ?? null) ? $draftPage['englishTranslation'] : [], $page, 'en'));
+        $this->updateSeo($page->id, 'ar', $this->seoInputFromDraftArray(is_array($draftPage['arabicSeo'] ?? null) ? $draftPage['arabicSeo'] : [], 'ar'));
+        $this->updateSeo($page->id, 'en', $this->seoInputFromDraftArray(is_array($draftPage['englishSeo'] ?? null) ? $draftPage['englishSeo'] : [], 'en'));
+    }
+
+    private function mapDraftToDto(PageDraft $draft): PageDraftDTO
+    {
+        return new PageDraftDTO(
+            id: (int) $draft->getKey(),
+            pageId: (int) $draft->page_id,
+            status: (string) $draft->status,
+            payload: new DraftPayloadDTO(
+                page: $this->draftPayloadFromArray($draft, is_array($draft->payload_json) ? $draft->payload_json : []),
+            ),
+            createdBy: (int) $draft->created_by,
+            publishAt: $draft->scheduled_at?->toIso8601String(),
+            createdAt: $draft->created_at?->toIso8601String() ?? now()->toIso8601String(),
+            updatedAt: $draft->updated_at?->toIso8601String() ?? now()->toIso8601String(),
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function pageDraftPayloadToArray(PageDraftDataDTO $payload): array
+    {
+        return [
+            'page' => [
+                'metadata' => $this->metadataPayloadToArray($payload->metadata),
+                'arabicTranslation' => $this->translationPayloadToArray($payload->arabicTranslation),
+                'englishTranslation' => $this->translationPayloadToArray($payload->englishTranslation),
+                'arabicSeo' => $this->seoPayloadToArray($payload->arabicSeo),
+                'englishSeo' => $this->seoPayloadToArray($payload->englishSeo),
+            ],
+        ];
+    }
+
+    private function draftPayloadFromArray(PageDraft $draft, array $payload): PageDraftDataDTO
+    {
+        $page = Page::query()->with(['translations', 'seoMeta'])->findOrFail((int) $draft->page_id);
+        $draftPage = is_array($payload['page'] ?? null) ? $payload['page'] : $payload;
+
+        return new PageDraftDataDTO(
+            metadata: $this->metadataFromDraftArray(is_array($draftPage['metadata'] ?? null) ? $draftPage['metadata'] : [], $page),
+            arabicTranslation: $this->translationFromDraftArray(is_array($draftPage['arabicTranslation'] ?? null) ? $draftPage['arabicTranslation'] : [], $page, 'ar'),
+            englishTranslation: $this->translationFromDraftArray(is_array($draftPage['englishTranslation'] ?? null) ? $draftPage['englishTranslation'] : [], $page, 'en'),
+            arabicSeo: $this->seoInputFromDraftArray(is_array($draftPage['arabicSeo'] ?? null) ? $draftPage['arabicSeo'] : [], 'ar'),
+            englishSeo: $this->seoInputFromDraftArray(is_array($draftPage['englishSeo'] ?? null) ? $draftPage['englishSeo'] : [], 'en'),
+        );
+    }
+
+    private function seoInputFromDraftArray(array $payload, string $locale): PageSeoInputDTO
+    {
+        return new PageSeoInputDTO(
+            locale: $locale,
+            title: $this->stringFromDraft($payload, 'title') ?? '',
+            metaDescription: $this->stringFromDraft($payload, 'metaDescription'),
+            ogTitle: $this->stringFromDraft($payload, 'ogTitle'),
+            ogDescription: $this->stringFromDraft($payload, 'ogDescription'),
+            ogImage: $this->stringFromDraft($payload, 'ogImage'),
+            canonicalUrl: $this->stringFromDraft($payload, 'canonicalUrl'),
+            robots: $this->stringFromDraft($payload, 'robots'),
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function metadataPayloadToArray(PageMetadataDTO $payload): array
+    {
+        return [
+            'slug' => $payload->slug,
+            'template' => $payload->template,
+            'isHomepageShell' => $payload->isHomepageShell,
+            'status' => $payload->status,
+            'parentPageId' => $payload->parentPageId,
+            'publishAt' => $payload->publishAt,
+            'contentJson' => $payload->contentJson,
+            'isEnabled' => $payload->isEnabled,
+            'showInBreadcrumbs' => $payload->showInBreadcrumbs,
+            'showInNav' => $payload->showInNav,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function translationPayloadToArray(PageTranslationDTO $payload): array
+    {
+        return [
+            'title' => $payload->title,
+            'navigationLabel' => $payload->navigationLabel,
+            'headline' => $payload->headline,
+            'subheadline' => $payload->subheadline,
+            'heroPayload' => $payload->heroPayload,
+            'overviewCardsPayload' => $payload->overviewCardsPayload,
+            'statsPayload' => $payload->statsPayload,
+            'bodyPayload' => $payload->bodyPayload,
+            'ctaPayload' => $payload->ctaPayload,
+            'sidebarPayload' => $payload->sidebarPayload,
+            'excerpt' => $payload->excerpt,
+            'body' => $payload->body,
+            'rawExcerpt' => $payload->rawExcerpt,
+            'metaTitleFallback' => $payload->metaTitleFallback,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function seoPayloadToArray(PageSeoInputDTO $payload): array
+    {
+        return [
+            'title' => $payload->title,
+            'metaDescription' => $payload->metaDescription,
+            'ogTitle' => $payload->ogTitle,
+            'ogDescription' => $payload->ogDescription,
+            'ogImage' => $payload->ogImage,
+            'canonicalUrl' => $payload->canonicalUrl,
+            'robots' => $payload->robots,
+        ];
+    }
+
+    private function touchPageCaches(int $pageId): void
+    {
+        $this->cacheService->flushTags(['pages', 'seo', 'sitemap', 'navigation', 'settings']);
     }
 
     public function getPublicPageBySlug(string $slug, string $locale): ?PageDTO
@@ -226,6 +593,9 @@ final class PageService implements PageServiceInterface
                 parentPageId: $page->parent_id !== null ? (int) $page->parent_id : null,
                 publishAt: $page->publish_at?->toIso8601String(),
                 contentJson: is_array($page->content_json) ? $page->content_json : null,
+                isEnabled: (bool) $page->is_enabled,
+                showInBreadcrumbs: (bool) $page->show_in_breadcrumbs,
+                showInNav: (bool) $page->show_in_nav,
             ),
             publishedAt: $page->published_at?->toIso8601String(),
             arabicTranslation: $this->mapTranslation($page, $this->findTranslation($page, 'ar'), 'ar'),
@@ -267,6 +637,9 @@ final class PageService implements PageServiceInterface
             contentJson: is_array($payload['contentJson'] ?? null)
                 ? $payload['contentJson']
                 : (is_array($page->content_json) ? $page->content_json : null),
+            isEnabled: $this->boolFromDraft($payload, 'isEnabled', (bool) $page->is_enabled),
+            showInBreadcrumbs: $this->boolFromDraft($payload, 'showInBreadcrumbs', (bool) $page->show_in_breadcrumbs),
+            showInNav: $this->boolFromDraft($payload, 'showInNav', (bool) $page->show_in_nav),
         );
     }
 

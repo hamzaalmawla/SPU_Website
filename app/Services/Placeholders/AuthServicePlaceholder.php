@@ -38,4 +38,9 @@ final class AuthServicePlaceholder implements AuthServiceInterface
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
+
+    public function updateUser(int $userId, array $payload, int $actorUserId): bool
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
 }

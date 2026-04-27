@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('legacy_path', 2048);
             $table->string('current_path', 2048)->nullable();
             $table->unsignedBigInteger('media_asset_id')->nullable();
-            $table->enum('status', ['mapped', 'unmapped', 'missing'])->default('unmapped');
+            $table->string('status', 20)->default('unmapped');
             $table->string('mime_type', 255)->nullable();
             $table->unsignedBigInteger('file_size_bytes')->nullable();
             $table->text('notes')->nullable();

@@ -23,5 +23,8 @@ final readonly class PageMetadataDTO
         public ?int $parentPageId = null,
         public ?string $publishAt = null,
         public ?array $contentJson = null,
+        public bool $isEnabled = true,
+        public bool $showInBreadcrumbs = true,
+        public bool $showInNav = false,
     ) {}
 }

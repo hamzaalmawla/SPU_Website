@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\UserResource\Pages;
 
-use App\Contracts\AuditServiceInterface;
+use App\Contracts\AuthServiceInterface;
 use App\Filament\Resources\UserResource;
+use App\Models\User;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -14,11 +15,11 @@ class EditUser extends EditRecord
 {
     protected static string $resource = UserResource::class;
 
-    private AuditServiceInterface $auditService;
+    private AuthServiceInterface $authService;
 
-    public function boot(AuditServiceInterface $auditService): void
+    public function boot(AuthServiceInterface $authService): void
     {
-        $this->auditService = $auditService;
+        $this->authService = $authService;
     }
 
     protected function getHeaderActions(): array
@@ -28,39 +29,10 @@ class EditUser extends EditRecord
 
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
-        /** @var \App\Models\User $record */
-        $wasLocked = (bool) $record->is_locked;
-        $newLocked = (bool) ($data['is_locked'] ?? false);
-
-        $record->update($data);
-
-        /** @var \App\Models\User $actor */
+        /** @var User $actor */
         $actor = auth()->user();
 
-        if ($wasLocked !== $newLocked) {
-            $this->auditService->log(
-                action: $newLocked ? 'user.locked' : 'user.unlocked',
-                userId: (int) $actor->getKey(),
-                entityType: 'user',
-                entityId: (int) $record->getKey(),
-                metadata: [
-                    'actor_email' => $actor->email,
-                    'target_email' => $record->email,
-                ],
-            );
-        }
-
-        $this->auditService->log(
-            action: 'user.updated',
-            userId: (int) $actor->getKey(),
-            entityType: 'user',
-            entityId: (int) $record->getKey(),
-            metadata: [
-                'actor_email' => $actor->email,
-                'target_email' => $record->email,
-                'changed_fields' => array_keys($record->getChanges()),
-            ],
-        );
+        $this->authService->updateUser((int) $record->getKey(), $data, (int) $actor->getKey());
 
         Notification::make()
             ->title('User updated successfully')

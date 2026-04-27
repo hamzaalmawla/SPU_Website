@@ -6,6 +6,8 @@ namespace App\Filament\Resources\MediaAssetResource\Pages;
 
 use App\Contracts\MediaServiceInterface;
 use App\Filament\Resources\MediaAssetResource;
+use App\Models\MediaAsset;
+use App\Models\User;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -25,7 +27,7 @@ class CreateMediaAsset extends CreateRecord
 
     protected function handleRecordCreation(array $data): Model
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
 
         $filePath = $data['file'] ?? null;
@@ -63,19 +65,16 @@ class CreateMediaAsset extends CreateRecord
                     ->success()
                     ->send();
 
-                return \App\Models\MediaAsset::findOrFail($result->mediaId);
+                return MediaAsset::findOrFail($result->mediaId);
             }
         }
 
-        // Fallback: create record directly if file handling fails
-        return \App\Models\MediaAsset::create([
-            'title_ar' => $data['title_ar'] ?? null,
-            'title_en' => $data['title_en'] ?? null,
-            'alt_text_ar' => $data['alt_text_ar'] ?? null,
-            'alt_text_en' => $data['alt_text_en'] ?? null,
-            'caption_ar' => $data['caption_ar'] ?? null,
-            'caption_en' => $data['caption_en'] ?? null,
-            'uploaded_by' => $user->id,
-        ]);
+        Notification::make()
+            ->title('Media upload failed')
+            ->body('The uploaded file could not be processed by the media service.')
+            ->danger()
+            ->send();
+
+        throw new \RuntimeException('Media upload failed before a valid asset could be created.');
     }
 }

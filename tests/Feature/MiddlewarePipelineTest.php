@@ -104,6 +104,7 @@ class MiddlewarePipelineTest extends TestCase
     public function test_authenticated_users_bypass_public_cache(): void
     {
         $user = new User;
+        $user->forceFill(['name' => 'Authenticated User', 'email' => 'auth-user@example.com']);
 
         $this->actingAs($user, 'web');
 
@@ -118,11 +119,11 @@ class MiddlewarePipelineTest extends TestCase
     public function test_gate_protected_admin_routes_allow_editor_access(): void
     {
         $user = new User;
-        $user->forceFill(['role_slug' => 'editor']);
+        $user->forceFill(['name' => 'Editor User', 'email' => 'editor@example.com', 'role_slug' => 'editor']);
 
         $this->actingAs($user, 'web');
 
-        $this->get('/admin/content')->assertOk();
+        $this->get('/admin/manage-settings')->assertOk();
     }
 
     /**
@@ -131,10 +132,10 @@ class MiddlewarePipelineTest extends TestCase
     public function test_gate_protected_admin_routes_deny_unauthorized_access(): void
     {
         $user = new User;
-        $user->forceFill(['role_slug' => 'faculty_editor']);
+        $user->forceFill(['name' => 'Faculty Editor', 'email' => 'faculty-editor@example.com', 'role_slug' => 'faculty_editor']);
 
         $this->actingAs($user, 'web');
 
-        $this->get('/admin/content')->assertForbidden();
+        $this->get('/admin/manage-settings')->assertForbidden();
     }
 }
