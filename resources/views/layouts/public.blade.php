@@ -23,228 +23,507 @@
             <link rel="alternate" hreflang="{{ $hreflang['locale'] }}" href="{{ $hreflang['url'] }}">
         @endforeach
         <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet" />
         @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
             @vite(['resources/css/app.css', 'resources/js/app.js'])
         @endif
     </head>
-    <body class="min-h-screen bg-slate-950 text-slate-100 antialiased">
-        <div class="relative isolate overflow-hidden">
-            <div class="absolute inset-x-0 top-0 -z-10 h-[28rem] bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.22),_transparent_48%),radial-gradient(circle_at_20%_20%,_rgba(14,165,233,0.18),_transparent_30%)]"></div>
+    <body class="min-h-screen antialiased font-hacen">
 
-            @if ($isPreview ?? false)
-                <div class="border-b border-amber-400/30 bg-amber-400/10">
-                    <div class="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 text-sm text-amber-100 sm:px-6 lg:px-8">
-                        <p>
-                            {{ __('public.preview_mode') }}
-                            @isset($preview)
-                                <span class="text-amber-200/80">{{ strtoupper($preview->targetType) }}</span>
-                            @endisset
-                        </p>
+        @if ($isPreview ?? false)
+            <div class="border-b border-amber-400/30 bg-amber-400/10">
+                <div class="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 text-sm text-amber-100 sm:px-6 lg:px-8">
+                    <p>
+                        {{ __('public.preview_mode') }}
                         @isset($preview)
-                            @if ($preview->expiresAt)
-                                <p class="text-amber-200/80">{{ __('public.expires', ['time' => $preview->expiresAt]) }}</p>
-                            @endif
+                            <span class="text-amber-200/80">{{ strtoupper($preview->targetType) }}</span>
                         @endisset
-                    </div>
-                </div>
-            @endif
-
-            @if ($navigation->emergencyNotice->isEnabled)
-                <div class="border-b border-red-400/30 bg-red-500/10">
-                    <div class="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
-                        <p class="text-sm font-medium text-red-100">{{ $navigation->emergencyNotice->title }}</p>
-                        @if ($navigation->emergencyNotice->message)
-                            <p class="mt-1 text-sm text-red-100/80">{{ $navigation->emergencyNotice->message }}</p>
+                    </p>
+                    @isset($preview)
+                        @if ($preview->expiresAt)
+                            <p class="text-amber-200/80">{{ __('public.expires', ['time' => $preview->expiresAt]) }}</p>
                         @endif
-                    </div>
+                    @endisset
                 </div>
-            @endif
+            </div>
+        @endif
 
-            <header class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-                <div class="rounded-3xl border border-white/10 bg-slate-900/75 p-5 shadow-2xl shadow-sky-950/30 backdrop-blur">
-                    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-4">
-                        <a href="/{{ $locale }}" class="inline-flex items-center gap-3 text-lg font-semibold tracking-tight text-white">
-                            <span class="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-400/15 text-sky-200">SPU</span>
-                            <span>{{ $seo->title }}</span>
-                        </a>
+        @if ($navigation->emergencyNotice->isEnabled)
+            <div class="border-b border-red-400/30 bg-red-500/10">
+                <div class="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
+                    <p class="text-sm font-medium text-red-100">{{ $navigation->emergencyNotice->title }}</p>
+                    @if ($navigation->emergencyNotice->message)
+                        <p class="mt-1 text-sm text-red-100/80">{{ $navigation->emergencyNotice->message }}</p>
+                    @endif
+                </div>
+            </div>
+        @endif
 
-                        <div class="flex flex-wrap items-center gap-3 text-sm text-slate-300">
+        <header id="site-header" class="absolute top-0 z-50 w-full top-3" x-data="mobileNav()"
+            @keydown.escape.window="closeAll()"
+            @click.outside="openMenu = null; if (window.innerWidth < 1536) { mobileNav = false; }"
+            :class="stickyNav ? 'fixed inset-x-0 top-0 z-50 w-full font-hacen' : ''">
+
+            <div class="container">
+                <div class="site-nav-shell" :class="stickyNav ? 'site-nav-shell--sticky' : ''">
+
+                    {{-- Meta bar: utility links + language switcher --}}
+                    <div class="site-nav-shell__meta">
+                        <div class="site-nav-meta-group">
                             @foreach ($navigation->utility->items as $item)
                                 @if ($item->resolvedUrl)
-                                    <a href="{{ $item->resolvedUrl }}" @if ($item->openInNewTab) target="_blank" rel="noreferrer" @endif class="rounded-full border border-white/10 px-3 py-2 transition hover:border-sky-300/50 hover:text-white">
+                                    <a href="{{ $item->resolvedUrl }}"
+                                       @if ($item->openInNewTab) target="_blank" rel="noreferrer" @endif
+                                       class="site-nav-meta-link">
                                         {{ $item->label }}
                                     </a>
                                 @endif
                             @endforeach
+                        </div>
+
+                        <div class="site-nav-meta-group">
+                            @if ($navigation->studentPortalUrl)
+                                <a href="{{ $navigation->studentPortalUrl }}" target="_blank" rel="noreferrer" class="site-nav-meta-link">
+                                    {{ __('public.student_portal') }}
+                                </a>
+                            @endif
+
+                            @if ($navigation->staffAccessUrl)
+                                <a href="{{ $navigation->staffAccessUrl }}" target="_blank" rel="noreferrer" class="site-nav-meta-link">
+                                    {{ __('public.staff_access') }}
+                                </a>
+                            @endif
 
                             @foreach ($languageSwitch as $switchLink)
-                                <a href="{{ $switchLink->url }}" class="rounded-full px-3 py-2 {{ $switchLink->isCurrent ? 'bg-white text-slate-950' : 'border border-white/10 hover:border-slate-300 hover:text-white' }}">
-                                    {{ $switchLink->label }}
-                                </a>
+                                @if (!$switchLink->isCurrent)
+                                    <a href="{{ $switchLink->url }}" class="site-nav-lang">
+                                        <img src="/images/ic_outline-language.svg" alt="{{ __('public.language') }}" class="h-[1.05rem] w-[1.05rem]">
+                                        <span>{{ $switchLink->label }}</span>
+                                    </a>
+                                @endif
                             @endforeach
                         </div>
                     </div>
 
-                    <div class="mt-4 flex flex-wrap items-center justify-between gap-4">
-                        <nav aria-label="Primary navigation" class="flex flex-wrap items-center gap-2 text-sm text-slate-200">
-                            @foreach ($navigation->header->items as $item)
-                                @if ($item->resolvedUrl)
-                                    <a href="{{ $item->resolvedUrl }}" class="rounded-full px-3 py-2 transition {{ $item->isActive ? 'bg-sky-400/20 text-white' : 'hover:bg-white/5 hover:text-white' }}">
-                                        {{ $item->label }}
-                                    </a>
-                                @endif
-                            @endforeach
+                    {{-- Main bar: logo + desktop nav + actions --}}
+                    <div class="site-nav-shell__main">
+                        <a href="/{{ $locale }}" aria-label="{{ __('public.home') }}" class="site-nav-brand">
+                            <img src="/images/logo-spu.png" alt="{{ __('public.spu_logo_alt') }}" class="h-auto w-[9.25rem] sm:w-[11rem] xl:w-[13.5rem]">
+                        </a>
+
+                        <nav class="hidden flex-1 justify-center 2xl:flex" aria-label="{{ __('public.primary_navigation') }}">
+                            <ul class="site-nav-list">
+                                @foreach ($navigation->header->items as $item)
+                                    <li class="site-nav-item"
+                                        @if (!empty($item->children))
+                                            @mouseenter="openMenu = '{{ $loop->index }}'"
+                                            @mouseleave="openMenu = null"
+                                        @endif>
+                                        <a href="{{ $item->resolvedUrl ?? '#' }}"
+                                           class="site-nav-link font-hacen {{ $item->isActive ? 'site-nav-link--active' : '' }}"
+                                           @if ($item->isActive) aria-current="page" @endif
+                                           @if ($item->openInNewTab) target="_blank" rel="noreferrer" @endif>
+                                            <span>{{ $item->label }}</span>
+                                            @if (!empty($item->children))
+                                                <svg class="site-nav-link__chevron"
+                                                     :class="openMenu === '{{ $loop->index }}' ? 'rotate-180' : ''"
+                                                     fill="none" stroke="currentColor" viewBox="0 0 20 20">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="m5 7.5 5 5 5-5"></path>
+                                                </svg>
+                                            @endif
+                                        </a>
+
+                                        @if (!empty($item->children))
+                                            <div x-show="openMenu === '{{ $loop->index }}'"
+                                                 x-transition:enter="transition duration-200 ease-out"
+                                                 x-transition:enter-start="opacity-0 -translate-y-3 scale-95"
+                                                 x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                                                 x-transition:leave="transition duration-150 ease-in"
+                                                 x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                                                 x-transition:leave-end="opacity-0 -translate-y-2 scale-95"
+                                                 style="display: none;"
+                                                 class="site-nav-dropdown">
+                                                @foreach ($item->children as $child)
+                                                    <a href="{{ $child->resolvedUrl ?? '#' }}"
+                                                       class="site-nav-dropdown-link"
+                                                       @if ($child->openInNewTab ?? false) target="_blank" rel="noreferrer" @endif>
+                                                        {{ $child->label }}
+                                                    </a>
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                    </li>
+                                @endforeach
+                            </ul>
                         </nav>
 
-                        <div class="flex flex-wrap items-center gap-3 text-sm">
-                            @if ($navigation->studentPortalUrl)
-                                <a href="{{ $navigation->studentPortalUrl }}" target="_blank" rel="noreferrer" class="text-slate-300 transition hover:text-white">{{ __('public.student_portal') }}</a>
+                        <div class="site-nav-actions">
+                            @if ($navigation->applyCta)
+                                <a href="{{ $navigation->applyCta->url }}"
+                                   @if ($navigation->applyCta->target) target="{{ $navigation->applyCta->target }}" @endif
+                                   @if ($navigation->applyCta->target === '_blank') rel="noreferrer" @endif
+                                   class="site-nav-cta">
+                                    <span class="site-nav-cta__dot" aria-hidden="true"></span>
+                                    {{ $navigation->applyCta->label }}
+                                </a>
                             @endif
 
-                            @if ($navigation->staffAccessUrl)
-                                <a href="{{ $navigation->staffAccessUrl }}" target="_blank" rel="noreferrer" class="text-slate-300 transition hover:text-white">{{ __('public.staff_access') }}</a>
-                            @endif
+                            <button type="button"
+                                    @click="toggleMobile()"
+                                    aria-label="{{ __('public.toggle_navigation') }}"
+                                    class="site-nav-menu-btn 2xl:hidden">
+                                <img :src="mobileNav ? '/images/icon-close-outline.svg' : '/images/icon-bars-outline.svg'"
+                                     class="h-5 w-5" alt="">
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- Mobile navigation panel --}}
+                    <div x-show="mobileNav"
+                         x-transition:enter="transition duration-250 ease-out"
+                         x-transition:enter-start="opacity-0 -translate-y-3"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         x-transition:leave="transition duration-180 ease-in"
+                         x-transition:leave-start="opacity-100 translate-y-0"
+                         x-transition:leave-end="opacity-0 -translate-y-2"
+                         style="display: none;"
+                         class="site-nav-mobile-panel 2xl:hidden">
+
+                        {{-- Mobile actions: utility links, language, portal links --}}
+                        <div class="site-nav-mobile-actions">
+                            <div class="site-nav-mobile-utility-row">
+                                @foreach ($navigation->utility->items as $item)
+                                    @if ($item->resolvedUrl)
+                                        <a href="{{ $item->resolvedUrl }}"
+                                           @if ($item->openInNewTab) target="_blank" rel="noreferrer" @endif
+                                           class="site-nav-utility"
+                                           @click="closeAll()">
+                                            {{ $item->label }}
+                                        </a>
+                                    @endif
+                                @endforeach
+                            </div>
+
+                            <div class="site-nav-mobile-utility-row">
+                                @if ($navigation->studentPortalUrl)
+                                    <a href="{{ $navigation->studentPortalUrl }}" target="_blank" rel="noreferrer" class="site-nav-utility" @click="closeAll()">
+                                        {{ __('public.student_portal') }}
+                                    </a>
+                                @endif
+
+                                @if ($navigation->staffAccessUrl)
+                                    <a href="{{ $navigation->staffAccessUrl }}" target="_blank" rel="noreferrer" class="site-nav-utility" @click="closeAll()">
+                                        {{ __('public.staff_access') }}
+                                    </a>
+                                @endif
+
+                                @foreach ($languageSwitch as $switchLink)
+                                    @if (!$switchLink->isCurrent)
+                                        <a href="{{ $switchLink->url }}" class="site-nav-lang" @click="closeAll()">
+                                            <img src="/images/ic_outline-language.svg" alt="{{ __('public.language') }}" class="h-[1.05rem] w-[1.05rem]">
+                                            <span>{{ $switchLink->label }}</span>
+                                        </a>
+                                    @endif
+                                @endforeach
+                            </div>
 
                             @if ($navigation->applyCta)
-                                <a href="{{ $navigation->applyCta->url }}" @if ($navigation->applyCta->target) target="{{ $navigation->applyCta->target }}" @endif class="rounded-full bg-sky-400 px-4 py-2 font-semibold text-slate-950 transition hover:bg-sky-300">
+                                <a href="{{ $navigation->applyCta->url }}"
+                                   @if ($navigation->applyCta->target) target="{{ $navigation->applyCta->target }}" @endif
+                                   @if ($navigation->applyCta->target === '_blank') rel="noreferrer" @endif
+                                   class="site-nav-cta"
+                                   @click="closeAll()">
+                                    <span class="site-nav-cta__dot" aria-hidden="true"></span>
                                     {{ $navigation->applyCta->label }}
                                 </a>
                             @endif
                         </div>
+
+                        {{-- Mobile nav items --}}
+                        <div class="site-nav-mobile-list">
+                            @foreach ($navigation->header->items as $item)
+                                <div class="site-nav-mobile-card">
+                                    <div class="site-nav-mobile-row">
+                                        <a href="{{ $item->resolvedUrl ?? '#' }}"
+                                           @click="closeAll()"
+                                           class="site-nav-mobile-link {{ $item->isActive ? 'site-nav-mobile-link--active' : '' }}"
+                                           @if ($item->openInNewTab) target="_blank" rel="noreferrer" @endif>
+                                            {{ $item->label }}
+                                        </a>
+
+                                        @if (!empty($item->children))
+                                            <button type="button"
+                                                    @click.prevent="toggleDropdown('{{ $loop->index }}')"
+                                                    aria-label="{{ __('public.toggle_submenu') }}"
+                                                    class="site-nav-mobile-toggle">
+                                                <img src="/images/icon-chevron-down-outline.svg"
+                                                     class="h-2.5 w-2.5 transition-transform duration-200"
+                                                     :class="openMenu === '{{ $loop->index }}' ? 'rotate-180' : ''"
+                                                     alt="">
+                                            </button>
+                                        @endif
+                                    </div>
+
+                                    @if (!empty($item->children))
+                                        <div x-show="openMenu === '{{ $loop->index }}'"
+                                             x-transition:enter="transition duration-200 ease-out"
+                                             x-transition:enter-start="opacity-0 -translate-y-2"
+                                             x-transition:enter-end="opacity-100 translate-y-0"
+                                             x-transition:leave="transition duration-150 ease-in"
+                                             x-transition:leave-start="opacity-100 translate-y-0"
+                                             x-transition:leave-end="opacity-0 -translate-y-1"
+                                             style="display: none;"
+                                             class="site-nav-mobile-children">
+                                            @foreach ($item->children as $child)
+                                                <a href="{{ $child->resolvedUrl ?? '#' }}"
+                                                   @click="closeAll()"
+                                                   class="site-nav-mobile-child"
+                                                   @if ($child->openInNewTab ?? false) target="_blank" rel="noreferrer" @endif>
+                                                    {{ $child->label }}
+                                                </a>
+                                            @endforeach
+                                        </div>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
+
                 </div>
-            </header>
+            </div>
+        </header>
 
-            <main class="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
-                @yield('content')
-            </main>
+        <main>@yield('content')</main>
 
-            @php($homepageFooterPayload = ($homepageFooterSection ?? null)?->payload)
-            <footer class="border-t border-white/10 bg-slate-950/90">
-                @if ($homepageFooterPayload)
-                    <div class="mx-auto grid max-w-7xl gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[1.2fr,1fr,1fr] lg:px-8">
-                        <div>
-                            @if ($homepageFooterPayload->content['brandBlock']['logoUrl'] ?? null)
-                                <img src="{{ $homepageFooterPayload->content['brandBlock']['logoUrl'] }}" alt="{{ $homepageFooterPayload->content['imageAlt'] ?? ($homepageFooterPayload->content['brandBlock']['title'] ?? $seo->title) }}" class="h-12 w-auto rounded-xl object-contain">
+        @php($homepageFooterPayload = ($homepageFooterSection ?? null)?->payload)
+        <footer id="site-footer" class="overflow-hidden bg-spu-blue pt-16 pb-8 font-hacen text-white">
+            @if ($homepageFooterPayload)
+                <div class="container">
+                    <div class="mb-16 grid grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-12">
+                        {{-- Brand block --}}
+                        <div class="flex flex-col items-start lg:col-span-4">
+                            @if ($homepageFooterPayload->content['brandBlock']['title'] ?? null)
+                                <h2 class="mb-6 text-[24px] font-bold uppercase leading-tight tracking-wider">
+                                    {{ $homepageFooterPayload->content['brandBlock']['title'] }}
+                                </h2>
                             @endif
-                            <h2 class="{{ ($homepageFooterPayload->content['brandBlock']['logoUrl'] ?? null) ? 'mt-4 ' : '' }}text-lg font-semibold text-white">{{ $homepageFooterPayload->content['brandBlock']['title'] ?? $seo->title }}</h2>
                             @if ($homepageFooterPayload->content['brandBlock']['body'] ?? null)
-                                <p class="mt-3 text-sm leading-7 text-slate-300">{{ $homepageFooterPayload->content['brandBlock']['body'] }}</p>
+                                <p class="mb-8 max-w-[320px] text-[16px] leading-[1.6] text-white/70">
+                                    {{ $homepageFooterPayload->content['brandBlock']['body'] }}
+                                </p>
+                            @endif
+
+                            @if ($homepageFooterPayload->socialLinks !== [])
+                                <div class="flex items-center gap-6 text-[22px]">
+                                    @foreach ($homepageFooterPayload->socialLinks as $link)
+                                        <a href="{{ $link->url }}" target="_blank" rel="noreferrer"
+                                           class="text-white/80 transition-all hover:scale-110 hover:text-spu-red">
+                                            <i class="{{ $link->icon ?? '' }}"></i>
+                                        </a>
+                                    @endforeach
+                                </div>
                             @endif
                         </div>
 
-                        <div>
-                            <h3 class="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">{{ __('public.quick_links') }}</h3>
-                            <div class="mt-4 space-y-3 text-sm text-slate-300">
-                                @foreach ($homepageFooterPayload->footerColumns as $column)
-                                    <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-                                        <p class="font-medium text-white">{{ $column->title }}</p>
-                                        <div class="mt-3 flex flex-col gap-2">
-                                            @foreach ($column->links as $link)
-                                                <a href="{{ $link->url }}" @if ($link->target) target="{{ $link->target }}" @endif class="transition hover:text-white">{{ $link->label }}</a>
-                                            @endforeach
-                                        </div>
+                        {{-- Footer columns --}}
+                        @foreach ($homepageFooterPayload->footerColumns as $column)
+                            <div class="lg:col-span-2">
+                                <h3 class="mb-8 text-[18px] font-bold uppercase tracking-widest text-white/50">
+                                    {{ $column->title }}
+                                </h3>
+                                <ul class="flex flex-col gap-4">
+                                    @foreach ($column->links as $link)
+                                        <li>
+                                            <a href="{{ $link->url }}"
+                                               @if ($link->target) target="{{ $link->target }}" @endif
+                                               @if ($link->target === '_blank') rel="noreferrer" @endif
+                                               class="text-[16px] text-white/80 transition-colors hover:text-white">
+                                                {{ $link->label }}
+                                            </a>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endforeach
+
+                        {{-- Contact block --}}
+                        <div class="lg:col-span-3">
+                            @if ($homepageFooterPayload->content['contactBlock']['title'] ?? null)
+                                <h3 class="mb-8 text-[18px] font-bold uppercase tracking-widest text-white/50">
+                                    {{ $homepageFooterPayload->content['contactBlock']['title'] }}
+                                </h3>
+                            @else
+                                <h3 class="mb-8 text-[18px] font-bold uppercase tracking-widest text-white/50">
+                                    {{ __('public.contact_heading') }}
+                                </h3>
+                            @endif
+                            <div class="flex flex-col gap-6">
+                                @foreach ($homepageFooterPayload->contactLinks as $link)
+                                    <div class="flex items-start gap-4">
+                                        @if ($link->icon ?? null)
+                                            <i class="{{ $link->icon }} mt-1.5 text-spu-red"></i>
+                                        @endif
+                                        <span class="text-[15px] leading-relaxed text-white/80 {{ ($link->ltr ?? false) ? 'ltr' : '' }}">
+                                            {{ $link->label }}: {{ $link->value }}
+                                        </span>
                                     </div>
                                 @endforeach
                             </div>
                         </div>
 
-                        <div>
-                            <h3 class="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">{{ $homepageFooterPayload->content['contactBlock']['title'] ?? __('public.contact_heading') }}</h3>
-                            <div class="mt-4 space-y-3 text-sm text-slate-300">
-                                @if ($homepageFooterPayload->content['contactBlock']['address'] ?? null)
-                                    <p>{{ $homepageFooterPayload->content['contactBlock']['address'] }}</p>
-                                @endif
+                        {{-- Map embed --}}
+                        @if ($homepageFooterPayload->content['mapEmbed']['url'] ?? null)
+                            <div class="flex flex-col items-start lg:col-span-3 lg:items-end">
                                 @if ($homepageFooterPayload->content['mapEmbed']['label'] ?? null)
-                                    <p>{{ $homepageFooterPayload->content['mapEmbed']['label'] }}</p>
+                                    <h3 class="mb-8 w-full text-[18px] font-bold uppercase tracking-widest text-white/50">
+                                        {{ $homepageFooterPayload->content['mapEmbed']['label'] }}
+                                    </h3>
                                 @endif
+                                <div class="group h-[180px] w-full overflow-hidden rounded-[12px] border border-white/10 shadow-2xl">
+                                    <iframe src="{{ $homepageFooterPayload->content['mapEmbed']['url'] }}"
+                                            class="h-full w-full grayscale-[0.3] opacity-80 transition-all duration-700 group-hover:grayscale-0 group-hover:opacity-100"
+                                            style="border:0;" allowfullscreen="" loading="lazy"
+                                            referrerpolicy="no-referrer-when-downgrade"></iframe>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
 
-                                @if ($homepageFooterPayload->contactLinks !== [])
-                                    @foreach ($homepageFooterPayload->contactLinks as $link)
-                                        <p>{{ $link->label }}: {{ $link->value }}</p>
-                                    @endforeach
-                                @else
-                                    @if ($homepageFooterPayload->content['contactBlock']['phone'] ?? null)
-                                        <p>{{ $homepageFooterPayload->content['contactBlock']['phone'] }}</p>
-                                    @endif
-                                    @if ($homepageFooterPayload->content['contactBlock']['email'] ?? null)
-                                        <p>{{ $homepageFooterPayload->content['contactBlock']['email'] }}</p>
-                                    @endif
-                                @endif
+                    <hr class="mb-8 border-white/10">
 
-                                @foreach ($homepageFooterPayload->socialLinks as $link)
-                                    <a href="{{ $link->url }}" class="block transition hover:text-white">{{ $link->platform }}</a>
-                                @endforeach
+                    <div class="flex flex-col items-center justify-between gap-6 md:flex-row">
+                        <p class="text-[14px] text-white/50" translate="no">
+                            {{ $homepageFooterPayload->content['copyrightText'] ?? $seo->title }}
+                        </p>
 
-                                @foreach (($homepageFooterPayload->content['legalLinks'] ?? []) as $link)
-                                    @if (! empty($link['label']) && ! empty($link['url']))
-                                        <a href="{{ $link['url'] }}" class="block transition hover:text-white">{{ $link['label'] }}</a>
+                        @if (!empty($homepageFooterPayload->content['legalLinks'] ?? []))
+                            <div class="flex flex-wrap items-center justify-center gap-6 text-[14px]">
+                                @foreach ($homepageFooterPayload->content['legalLinks'] as $link)
+                                    @if (!empty($link['label']) && !empty($link['url']))
+                                        <a href="{{ $link['url'] }}"
+                                           class="text-white/50 transition-colors hover:text-white"
+                                           @if (str_starts_with($link['url'] ?? '', 'http')) target="_blank" rel="noreferrer" @endif>
+                                            {{ $link['label'] }}
+                                        </a>
                                     @endif
                                 @endforeach
                             </div>
-                        </div>
+                        @endif
                     </div>
-                    <div class="border-t border-white/10 px-4 py-4 text-center text-sm text-slate-400 sm:px-6 lg:px-8">
-                        {{ $homepageFooterPayload->content['copyrightText'] ?? $seo->title }}
-                    </div>
-                @else
-                    <div class="mx-auto grid max-w-7xl gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[1.4fr,1fr,1fr] lg:px-8">
-                        <div>
+                </div>
+            @else
+                <div class="container">
+                    <div class="mb-16 grid grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-12">
+                        {{-- Brand block (fallback) --}}
+                        <div class="flex flex-col items-start lg:col-span-4">
                             @if ($navigation->footerSettings->logoUrl)
-                                <img src="{{ $navigation->footerSettings->logoUrl }}" alt="{{ $navigation->footerSettings->brandTitle ?? $seo->title }}" class="h-12 w-auto rounded-xl object-contain">
+                                <img src="{{ $navigation->footerSettings->logoUrl }}"
+                                     alt="{{ $navigation->footerSettings->brandTitle ?? $seo->title }}"
+                                     class="mb-6 h-12 w-auto rounded-xl object-contain">
                             @endif
-                            <h2 class="{{ $navigation->footerSettings->logoUrl ? 'mt-4 ' : '' }}text-lg font-semibold text-white">{{ $navigation->footerSettings->brandTitle ?? $seo->title }}</h2>
+                            <h2 class="mb-6 text-[24px] font-bold uppercase leading-tight tracking-wider">
+                                {{ $navigation->footerSettings->brandTitle ?? $seo->title }}
+                            </h2>
                             @if ($navigation->footerSettings->brandSummary)
-                                <p class="mt-3 text-sm leading-7 text-slate-300">{{ $navigation->footerSettings->brandSummary }}</p>
+                                <p class="mb-8 max-w-[320px] text-[16px] leading-[1.6] text-white/70">
+                                    {{ $navigation->footerSettings->brandSummary }}
+                                </p>
                             @endif
-                            @if ($navigation->footerSettings->address)
-                                <p class="mt-3 text-sm text-slate-300">{{ $navigation->footerSettings->address }}</p>
+
+                            @if ($navigation->socialContact->socialLinks !== [])
+                                <div class="flex items-center gap-6 text-[22px]">
+                                    @foreach ($navigation->socialContact->socialLinks as $link)
+                                        <a href="{{ $link->url }}" target="_blank" rel="noreferrer"
+                                           class="text-white/80 transition-all hover:scale-110 hover:text-spu-red">
+                                            <i class="{{ $link->icon ?? '' }}"></i>
+                                        </a>
+                                    @endforeach
+                                </div>
                             @endif
-                            <div class="mt-4 space-y-2 text-sm text-slate-300">
-                                @if ($navigation->footerSettings->phone)
-                                    <p>{{ $navigation->footerSettings->phone }}</p>
-                                @endif
-                                @if ($navigation->footerSettings->email)
-                                    <p>{{ $navigation->footerSettings->email }}</p>
-                                @endif
-                                @if ($navigation->footerSettings->mapEmbedUrl)
-                                    <a href="{{ $navigation->footerSettings->mapEmbedUrl }}" target="_blank" rel="noreferrer" class="inline-flex transition hover:text-white">{{ __('public.campus_map') }}</a>
-                                @endif
-                            </div>
                         </div>
 
-                        <div>
-                            <h3 class="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">{{ __('public.navigation_heading') }}</h3>
-                            <div class="mt-4 flex flex-col gap-2 text-sm text-slate-300">
+                        {{-- Navigation links (fallback) --}}
+                        <div class="lg:col-span-2">
+                            <h3 class="mb-8 text-[18px] font-bold uppercase tracking-widest text-white/50">
+                                {{ __('public.navigation_heading') }}
+                            </h3>
+                            <ul class="flex flex-col gap-4">
                                 @foreach ($navigation->footer->items as $item)
                                     @if ($item->resolvedUrl)
-                                        <a href="{{ $item->resolvedUrl }}" class="transition hover:text-white">{{ $item->label }}</a>
+                                        <li>
+                                            <a href="{{ $item->resolvedUrl }}"
+                                               @if ($item->openInNewTab) target="_blank" rel="noreferrer" @endif
+                                               class="text-[16px] text-white/80 transition-colors hover:text-white">
+                                                {{ $item->label }}
+                                            </a>
+                                        </li>
                                     @endif
+                                @endforeach
+                            </ul>
+                        </div>
+
+                        {{-- Contact (fallback) --}}
+                        <div class="lg:col-span-3">
+                            <h3 class="mb-8 text-[18px] font-bold uppercase tracking-widest text-white/50">
+                                {{ __('public.connect_heading') }}
+                            </h3>
+                            <div class="flex flex-col gap-6">
+                                @if ($navigation->footerSettings->address)
+                                    <div class="flex items-start gap-4">
+                                        <span class="text-[15px] leading-relaxed text-white/80">{{ $navigation->footerSettings->address }}</span>
+                                    </div>
+                                @endif
+                                @foreach ($navigation->socialContact->contactLinks as $link)
+                                    <div class="flex items-start gap-4">
+                                        @if ($link->icon ?? null)
+                                            <i class="{{ $link->icon }} mt-1.5 text-spu-red"></i>
+                                        @endif
+                                        <span class="text-[15px] leading-relaxed text-white/80 {{ ($link->ltr ?? false) ? 'ltr' : '' }}">
+                                            {{ $link->label }}: {{ $link->value }}
+                                        </span>
+                                    </div>
                                 @endforeach
                             </div>
                         </div>
 
-                        <div>
-                            <h3 class="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">{{ __('public.connect_heading') }}</h3>
-                            <div class="mt-4 space-y-2 text-sm text-slate-300">
-                                @foreach ($navigation->socialContact->socialLinks as $link)
-                                    <a href="{{ $link->url }}" target="_blank" rel="noreferrer" class="block transition hover:text-white">{{ $link->platform }}</a>
-                                @endforeach
-                                @foreach ($navigation->socialContact->contactLinks as $link)
-                                    <p>{{ $link->label }}: {{ $link->value }}</p>
-                                @endforeach
+                        {{-- Map embed (fallback) --}}
+                        @if ($navigation->footerSettings->mapEmbedUrl)
+                            <div class="flex flex-col items-start lg:col-span-3 lg:items-end">
+                                <h3 class="mb-8 w-full text-[18px] font-bold uppercase tracking-widest text-white/50">
+                                    {{ __('public.campus_map') }}
+                                </h3>
+                                <div class="group h-[180px] w-full overflow-hidden rounded-[12px] border border-white/10 shadow-2xl">
+                                    <iframe src="{{ $navigation->footerSettings->mapEmbedUrl }}"
+                                            class="h-full w-full grayscale-[0.3] opacity-80 transition-all duration-700 group-hover:grayscale-0 group-hover:opacity-100"
+                                            style="border:0;" allowfullscreen="" loading="lazy"
+                                            referrerpolicy="no-referrer-when-downgrade"></iframe>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+
+                    <hr class="mb-8 border-white/10">
+
+                    <div class="flex flex-col items-center justify-between gap-6 md:flex-row">
+                        <p class="text-[14px] text-white/50" translate="no">
+                            {{ $navigation->footerSettings->copyrightText }}
+                        </p>
+
+                        @if ($navigation->footerSettings->legalLinks !== [])
+                            <div class="flex flex-wrap items-center justify-center gap-6 text-[14px]">
                                 @foreach ($navigation->footerSettings->legalLinks as $link)
-                                    <a href="{{ $link->url }}" @if ($link->target) target="{{ $link->target }}" @endif class="block transition hover:text-white">{{ $link->label }}</a>
+                                    <a href="{{ $link->url }}"
+                                       @if ($link->target) target="{{ $link->target }}" @endif
+                                       @if ($link->target === '_blank') rel="noreferrer" @endif
+                                       class="text-white/50 transition-colors hover:text-white">
+                                        {{ $link->label }}
+                                    </a>
                                 @endforeach
                             </div>
-                        </div>
+                        @endif
                     </div>
-                    <div class="border-t border-white/10 px-4 py-4 text-center text-sm text-slate-400 sm:px-6 lg:px-8">
-                        {{ $navigation->footerSettings->copyrightText }}
-                    </div>
-                @endif
-            </footer>
-        </div>
+                </div>
+            @endif
+        </footer>
+
     </body>
 </html>

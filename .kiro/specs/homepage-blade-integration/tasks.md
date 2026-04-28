@@ -104,14 +104,14 @@ hardcoded in Blade.
     - Set `window.Alpine = Alpine` and call `Alpine.start()`
     - _Requirements: 13.1, 13.4_
 
-- [ ] 4. Checkpoint — verify build
+- [x] 4. Checkpoint — verify build
   - Run `npm install` then `npm run build` and confirm it exits without errors
   - Confirm `public/build/manifest.json` is generated
   - Confirm font files exist at `public/fonts/Hacen Tunisia Regular.ttf`
   - Ask the user if any build errors need resolving before continuing
 
-- [ ] 5. Rewrite the layout shell (`resources/views/layouts/public.blade.php`)
-  - [ ] 5.1 Replace the `<head>` section
+- [x] 5. Rewrite the layout shell (`resources/views/layouts/public.blade.php`)
+  - [x] 5.1 Replace the `<head>` section
     - Remove the Bunny Fonts `instrument-sans` link
     - Add `<link rel="preconnect">` for Bunny Fonts CDN (kept for fallback stack)
     - Keep the `@vite` directive with its manifest/hot-file guard
@@ -120,7 +120,7 @@ hardcoded in Blade.
       `og:image` (conditional), `canonical` (conditional), `hreflang` loop
     - _Requirements: 1.1–1.7, 11.1–11.6_
 
-  - [ ] 5.2 Replace the `<header>` with the full `site-nav-shell` design
+  - [x] 5.2 Replace the `<header>` with the full `site-nav-shell` design
     - Port markup from `c:\Users\hamza\Spu-Website\src\fragments\layout\header.html`
     - Use `x-data="mobileNav()"` (registered Alpine component) for the header shell
     - Replace `x-for` over `$store.navigation.menuItems` with Blade `@foreach` over
@@ -135,7 +135,7 @@ hardcoded in Blade.
     - Keep `@keydown.escape.window` and `@scroll.window` Alpine directives on the header
     - _Requirements: 1.8–1.14, 1.16, 10.1–10.6, 14.1_
 
-  - [ ] 5.3 Replace the `<footer>` with the full footer design
+  - [x] 5.3 Replace the `<footer>` with the full footer design
     - Port markup from `c:\Users\hamza\Spu-Website\src\fragments\layout\footer.html`
     - When `$homepageFooterSection` is not null: render brand block, footer columns,
       contact links, social links, legal links, copyright, map embed from payload
@@ -145,10 +145,10 @@ hardcoded in Blade.
     - Wrap in `<footer>` element
     - _Requirements: 1.15, 9.1–9.11, 14.3_
 
-  - [ ] 5.4 Wrap `@yield('content')` in `<main>` element
+  - [x] 5.4 Wrap `@yield('content')` in `<main>` element
     - _Requirements: 1.17, 14.2_
 
-- [ ] 6. Rewrite the hero section case in the section partial
+- [x] 6. Rewrite the hero section case in the section partial
   - Replace the current `@case('hero')` block in
     `resources/views/public/partials/homepage-section.blade.php`
   - Port full markup from `c:\Users\hamza\Spu-Website\src\fragments\pages\home\hero.html`
@@ -166,7 +166,7 @@ hardcoded in Blade.
   - Add `rel="noreferrer"` when `target` is set on CTA anchors
   - _Requirements: 3.1–3.10, 14.4, 14.7_
 
-- [ ] 7. Rewrite the stats section cases in the section partial
+- [x] 7. Rewrite the stats section cases in the section partial
   - Replace the current `@case('hero_stats')` / `@case('bottom_stats')` block
   - Port full markup from `c:\Users\hamza\Spu-Website\src\fragments\pages\home\stats.html`
   - Use `<section x-data="statsCounter()" class="stats-section ...">` (Alpine component)
@@ -185,7 +185,7 @@ hardcoded in Blade.
     `stats-card-summary`, `stats-card-line`
   - _Requirements: 4.1–4.5, 14.4_
 
-- [ ] 8. Rewrite the academic faculties section case in the section partial
+- [x] 8. Rewrite the academic faculties section case in the section partial
   - Replace the `@case('academic_faculties')` block (currently merged with other feature cases)
   - Port full markup from `c:\Users\hamza\Spu-Website\src\fragments\pages\home\faculties.html`
   - Use `<section x-data="facultiesSlider()" class="...">` (Alpine component)
@@ -202,7 +202,7 @@ hardcoded in Blade.
   - Preserve all CSS classes: `faculty-card`, `site-nav-shell`, etc.
   - _Requirements: 5.1–5.11, 14.4, 14.5_
 
-- [ ] 9. Rewrite the achievements highlights section case in the section partial
+- [x] 9. Rewrite the achievements highlights section case in the section partial
   - Replace the `@case('achievements_highlights')` block
   - Port full markup from `c:\Users\hamza\Spu-Website\src\fragments\pages\home\honor-panel.html`
   - Use `<section x-data="honorPanel()" class="...">` (Alpine component)
@@ -217,7 +217,7 @@ hardcoded in Blade.
     `honor-panel-pill`, `honor-panel-cta`
   - _Requirements: 5.1–5.11, 14.4, 14.5_
 
-- [ ] 10. Rewrite the university news section case in the section partial
+- [x] 10. Rewrite the university news section case in the section partial
   - Replace the `@case('university_news')` block
   - Port full markup from `c:\Users\hamza\Spu-Website\src\fragments\pages\home\news.html`
   - Section header: `<h2>{{ $section->payload->title }}</h2>` and `sectionAction` link (guarded)
@@ -234,7 +234,7 @@ hardcoded in Blade.
     `news-card-date`, `news-card-footer`, `news-card-cta`, `news-card-arrow`
   - _Requirements: 6.1–6.10, 14.4, 14.5, 14.6, 14.7_
 
-- [ ] 11. Rewrite the research studies section case in the section partial
+- [x] 11. Rewrite the research studies section case in the section partial
   - Replace the `@case('research_studies')` block
   - Port full markup from `c:\Users\hamza\Spu-Website\src\fragments\pages\home\research.html`
   - Use `<section x-data="researchSlider()" class="...">` (Alpine component)
@@ -252,7 +252,7 @@ hardcoded in Blade.
     `section-header__title`, `slider-nav-btn`
   - _Requirements: 7.1–7.9, 14.4, 14.5, 14.7_
 
-- [ ] 12. Rewrite the events and activities section case in the section partial
+- [x] 12. Rewrite the events and activities section case in the section partial
   - Replace the `@case('events_activities')` block
   - Port full markup from `c:\Users\hamza\Spu-Website\src\fragments\pages\home\events.html`
   - Inject events data: `<script>window.spuEventsData = @json($section->payload->events);</script>`
@@ -266,7 +266,7 @@ hardcoded in Blade.
     renders `highlight['label']` and `highlight['date']` (guarded); sidebar container always rendered
   - _Requirements: 8.1–8.10, 14.4_
 
-- [ ] 13. Rewrite the medical facilities section case in the section partial
+- [x] 13. Rewrite the medical facilities section case in the section partial
   - Replace the `@case('medical_facilities_services')` block
   - Port full markup from `c:\Users\hamza\Spu-Website\src\fragments\pages\home\healthcare.html`
   - Use `<section x-data="statsCounter()" class="...">` for the stats bar counter trigger
@@ -278,7 +278,7 @@ hardcoded in Blade.
   - Preserve all CSS classes from the healthcare section
   - _Requirements: 5.1–5.11, 14.4, 14.5_
 
-- [ ] 14. Checkpoint — visual and functional review
+- [-] 14. Checkpoint — visual and functional review
   - Ensure all tests pass, ask the user if questions arise.
   - Confirm `php artisan view:cache` completes without errors
   - Confirm `GET /ar` and `GET /en` return HTTP 200 with correct `lang` and `dir` attributes
