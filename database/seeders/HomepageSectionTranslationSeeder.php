@@ -255,7 +255,7 @@ class HomepageSectionTranslationSeeder extends Seeder
                     'summary' => $l === 'ar'
                         ? 'يمكن إبراز كلية الطب هنا عبر صور ميدانية وملاحظات تكريم مختصرة وصياغة تحريرية أقوى تليق بواجهة جامعة رسمية.'
                         : 'The Faculty of Medicine can be highlighted here with field photography, concise recognition notes, and a stronger editorial presentation that feels worthy of an official university homepage.',
-                    'imageUrl' => '/images/dsc-1060.webp',
+                    'image' => '/images/dsc-1060.webp',
                     'meta' => $l === 'ar' ? 'كلية الطب' : 'Faculty of Medicine',
                     'action' => $this->action(
                         $l === 'ar' ? 'اكتشف التفاصيل' : 'View Details',
@@ -270,7 +270,7 @@ class HomepageSectionTranslationSeeder extends Seeder
                     'summary' => $l === 'ar'
                         ? 'يدعم هذا النمط المختبرات والمشاريع الطلابية وجوائز الابتكار وأي إعلان بحثي قائم على الصور من دون أن يبدو القسم عادياً أو مكرراً.'
                         : 'This card format supports laboratories, student projects, innovation awards, and any photo-led research announcement without making the section feel generic.',
-                    'imageUrl' => '/images/dsc-1075.webp',
+                    'image' => '/images/dsc-1075.webp',
                     'meta' => $l === 'ar' ? 'الذكاء الاصطناعي والهندسة التطبيقية' : 'Applied AI and Engineering',
                     'action' => $this->action(
                         $l === 'ar' ? 'اكتشف التفاصيل' : 'View Details',
@@ -285,7 +285,7 @@ class HomepageSectionTranslationSeeder extends Seeder
                     'summary' => $l === 'ar'
                         ? 'يحافظ تخطيط البطاقة الأصغر على أناقة عناصر التكريم واحترافيتها مع ترك مساحة لصور الحرم والملخصات القصيرة والمسار المباشر إلى الصفحة ذات الصلة.'
                         : 'The smaller card layout keeps recognition items neat and professional while still leaving space for campus photography, short summaries, and a direct path to the related page.',
-                    'imageUrl' => '/images/slider-3.webp',
+                    'image' => '/images/slider-3.webp',
                     'meta' => $l === 'ar' ? 'شؤون الطلاب والتواصل المجتمعي' : 'Student Affairs and Outreach',
                     'action' => $this->action(
                         $l === 'ar' ? 'اكتشف التفاصيل' : 'View Details',
@@ -683,6 +683,7 @@ class HomepageSectionTranslationSeeder extends Seeder
                 ],
                 'mapEmbed' => [
                     'url' => 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d13346.741280351659!2d36.26129575!3d33.31448835!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1518f99e3f1e1e1f%3A0xe1e1e1e1e1e1e1e1!2sSyrian%20Private%20University!5e0!3m2!1sen!2ssy!4v1712710000000!5m2!1sen!2ssy',
+                    'label' => $l === 'ar' ? 'الموقع' : 'LOCATION',
                 ],
                 'copyrightText' => $l === 'ar'
                     ? '© 2026 الجامعة السورية الخاصة. التميز في التعليم.'

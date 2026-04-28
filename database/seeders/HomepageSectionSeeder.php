@@ -18,7 +18,7 @@ class HomepageSectionSeeder extends Seeder
                 [
                     'type' => $this->sectionType($key),
                     'sort_order' => $index + 1,
-                    'is_enabled' => true,
+                    'is_enabled' => $key !== 'bottom_stats',
                     'schema_version' => 1,
                     'config_json' => [
                         'approved_key' => $key,

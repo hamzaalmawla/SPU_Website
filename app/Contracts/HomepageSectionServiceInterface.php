@@ -18,10 +18,10 @@ interface HomepageSectionServiceInterface
     public const SECTION_KEYS = [
         'hero',
         'hero_stats',
-        'academic_faculties',
         'achievements_highlights',
-        'university_news',
+        'academic_faculties',
         'research_studies',
+        'university_news',
         'events_activities',
         'medical_facilities_services',
         'bottom_stats',

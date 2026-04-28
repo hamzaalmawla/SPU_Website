@@ -207,9 +207,9 @@
                                     @endif
 
                                     {{-- Logo --}}
-                                    @if (! empty($item['image']))
+                                    @if (! empty($item['imageUrl']))
                                         <div class="relative w-[160px] h-[160px] mt-6 mb-4 flex items-center justify-center">
-                                            <img src="{{ $item['image'] }}"
+                                            <img src="{{ $item['imageUrl'] }}"
                                                  alt="{{ $item['title'] ?? '' }}"
                                                  class="relative z-10 w-[110px] h-[110px] object-contain transition-transform duration-500">
                                         </div>
@@ -694,9 +694,9 @@
                     @isset($section->payload->items[0])
                         @php($mainItem = $section->payload->items[0])
                         <article class="lg:col-span-7 bg-white rounded-[2rem] shadow-xl overflow-hidden flex flex-col group hover:shadow-2xl transition-all duration-500">
-                            @if (! empty($mainItem['image']))
+                            @if (! empty($mainItem['imageUrl']))
                                 <div class="h-[350px] overflow-hidden relative">
-                                    <img src="{{ $mainItem['image'] }}"
+                                    <img src="{{ $mainItem['imageUrl'] }}"
                                          alt="{{ $mainItem['title'] ?? '' }}"
                                          class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110">
                                     <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
@@ -746,9 +746,9 @@
                             @isset($section->payload->items[1])
                                 @php($hospitalItem = $section->payload->items[1])
                                 <article class="bg-white rounded-[2rem] shadow-lg overflow-hidden flex flex-col h-1/2 group hover:shadow-xl transition-all">
-                                    @if (! empty($hospitalItem['image']))
+                                    @if (! empty($hospitalItem['imageUrl']))
                                         <div class="h-48 overflow-hidden">
-                                            <img src="{{ $hospitalItem['image'] }}"
+                                            <img src="{{ $hospitalItem['imageUrl'] }}"
                                                  alt="{{ $hospitalItem['title'] ?? '' }}"
                                                  class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
                                         </div>
@@ -768,9 +768,9 @@
                             @isset($section->payload->items[2])
                                 @php($dentalItem = $section->payload->items[2])
                                 <article class="bg-white rounded-[2rem] shadow-lg overflow-hidden flex flex-col h-1/2 group hover:shadow-xl transition-all">
-                                    @if (! empty($dentalItem['image']))
+                                    @if (! empty($dentalItem['imageUrl']))
                                         <div class="h-48 overflow-hidden">
-                                            <img src="{{ $dentalItem['image'] }}"
+                                            <img src="{{ $dentalItem['imageUrl'] }}"
                                                  alt="{{ $dentalItem['title'] ?? '' }}"
                                                  class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
                                         </div>
