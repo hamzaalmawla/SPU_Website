@@ -15,7 +15,7 @@
     <div class="flex items-center justify-between px-3 py-2 gap-3">
         {{-- Drag handle --}}
         <div class="flex items-center gap-2 flex-1 min-w-0">
-            <span class="cursor-grab text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300" title="Drag to reorder">
+            <span data-drag-handle class="cursor-grab text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300" title="Drag to reorder">
                 <x-heroicon-s-bars-2 class="w-4 h-4" />
             </span>
 

@@ -1,0 +1,137 @@
+/**
+ * Global foundations: fonts, tokens, and base page behavior.
+ * 
+ * Arabic Typography Implementation:
+ * Following W3C Arabic Layout Requirements (https://www.w3.org/TR/alreq/)
+ * and Unicode Bidirectional Algorithm standards for professional Arabic text rendering.
+ */
+
+/**
+ * Font Face Declarations
+ * - font-display: swap for optimal loading performance
+ * - unicode-range: Comprehensive Arabic script coverage including:
+ *   • U+0600-06FF: Arabic block
+ *   • U+0750-077F: Arabic Supplement
+ *   • U+08A0-08FF: Arabic Extended-A
+ *   • U+FB50-FDFF: Arabic Presentation Forms-A
+ *   • U+FE70-FEFF: Arabic Presentation Forms-B
+ */
+@font-face {
+    font-family: 'HacenTunisia';
+    src: url("/fonts/Hacen Tunisia Regular.ttf") format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
+}
+
+@font-face {
+    font-family: 'HacenTunisia';
+    src: url("/fonts/Hacen Tunisia Bold Regular.ttf") format('truetype');
+    font-weight: bold;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
+}
+
+:root {
+    --font-hacen: "HacenTunisia", "Segoe UI", "Tahoma", "Arial", sans-serif;
+}
+
+/**
+ * Design Tokens
+ * Font stack includes professional fallbacks with excellent Arabic support:
+ * - Segoe UI: Windows system font with comprehensive Arabic shaping
+ * - Tahoma: Reliable cross-platform Arabic support
+ * - Arial: Universal fallback
+ */
+@theme {
+    --font-hacen: "HacenTunisia", "Segoe UI", "Tahoma", "Arial", sans-serif;
+
+    --color-spu-blue: #202759;
+    --color-spu-red: #6f1616;
+    --color-section: #EAF3FF40;
+
+    --color-med: #BC2428;
+    --color-dent: #1F77B4;
+    --color-pharm: #5ebe7b;
+    --color-petro: #5EBE7B;
+    --color-admin: #caa949;
+    --color-const: #7f8c8d;
+    --color-ai: #683695;
+}
+
+/**
+ * Base HTML & Body Styles
+ */
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    overflow-x: hidden;
+    font-family: var(--font-hacen);
+    font-variant-ligatures: common-ligatures contextual;
+    text-rendering: optimizeLegibility;
+}
+
+/**
+ * Professional Arabic Text Rendering
+ * 
+ * Implementation based on W3C Arabic Layout Requirements:
+ * - Proper contextual shaping for cursive joining
+ * - Ligature support (mandatory lam-alef and optional ligatures)
+ * - Diacritic positioning
+ * - Multi-level baseline support
+ * 
+ * OpenType Features:
+ * - 'calt': Contextual alternates for proper letter shaping based on position
+ * - 'liga': Standard ligatures (lam-alef combinations)
+ * - 'rlig': Required ligatures for Arabic script
+ * - 'clig': Contextual ligatures
+ * - 'kern': Kerning for optimal spacing
+ * - 'mark': Mark positioning for diacritics
+ * - 'mkmk': Mark-to-mark positioning for stacked diacritics
+ */
+[lang="ar"],
+[dir="rtl"] {
+    font-family: var(--font-hacen);
+    unicode-bidi: isolate;
+
+    /* Enable critical OpenType features for Arabic */
+    font-feature-settings: 
+        "calt" 1,  /* Contextual alternates - essential for Arabic joining */
+        "liga" 1,  /* Standard ligatures */
+        "rlig" 1,  /* Required ligatures */
+        "clig" 1,  /* Contextual ligatures */
+        "kern" 1,  /* Kerning */
+        "mark" 1,  /* Mark positioning */
+        "mkmk" 1;  /* Mark-to-mark positioning */
+    
+    font-variant-ligatures: common-ligatures contextual;
+    
+    /* Optimize text rendering for complex scripts */
+    text-rendering: optimizeLegibility;
+    
+    /* Font smoothing for better on-screen appearance */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    
+    /* Ensure proper word breaking for Arabic */
+    word-break: normal;
+    overflow-wrap: break-word;
+    
+    /* Optimize for Arabic text flow */
+    hyphens: none;
+}
+
+/**
+ * Inherit Arabic rendering properties to all child elements
+ * This ensures consistent rendering throughout the document tree
+ */
+[lang="ar"] *,
+[dir="rtl"] * {
+    font-feature-settings: inherit;
+    text-rendering: inherit;
+}
+

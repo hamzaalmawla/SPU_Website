@@ -7,9 +7,16 @@ namespace App\Filament\Pages;
 use App\Contracts\HomepagePublishingServiceInterface;
 use App\Contracts\HomepageSectionServiceInterface;
 use App\Contracts\PreviewServiceInterface;
+use App\DTOs\ArticleCardDTO;
+use App\DTOs\ContactLinkDTO;
+use App\DTOs\EventCardDTO;
+use App\DTOs\FooterColumnDTO;
 use App\DTOs\HomepageDraftDataDTO;
+use App\DTOs\HomepageFeatureItemDTO;
 use App\DTOs\HomepageSectionDataDTO;
 use App\DTOs\HomepageSectionDTO;
+use App\DTOs\HomepageStatItemDTO;
+use App\DTOs\SocialLinkDTO;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
@@ -106,6 +113,7 @@ class ManageHomepage extends Page implements HasForms
     {
         return [
             $this->saveDraftAction(),
+            $this->discardDraftAction(),
             $this->previewArAction(),
             $this->previewEnAction(),
             $this->publishAction(),
@@ -122,6 +130,25 @@ class ManageHomepage extends Page implements HasForms
             ->color('gray')
             ->action(function (): void {
                 $this->saveDraft();
+            });
+    }
+
+    private function discardDraftAction(): Action
+    {
+        return Action::make('discardDraft')
+            ->label('Discard Draft')
+            ->icon('heroicon-o-trash')
+            ->color('danger')
+            ->requiresConfirmation()
+            ->modalHeading('Discard Draft')
+            ->modalDescription('This will permanently delete the current draft. The live homepage (if published) will not be affected.')
+            ->visible(fn (): bool => \App\Models\HomepageDraft::query()
+                ->where('target_type', 'homepage')
+                ->whereIn('status', ['draft', 'scheduled'])
+                ->exists()
+            )
+            ->action(function (): void {
+                $this->discardDraft();
             });
     }
 
@@ -213,6 +240,26 @@ class ManageHomepage extends Page implements HasForms
             ->title('Draft saved successfully')
             ->success()
             ->send();
+    }
+
+    private function discardDraft(): void
+    {
+        $deleted = \App\Models\HomepageDraft::query()
+            ->where('target_type', 'homepage')
+            ->whereIn('status', ['draft', 'scheduled'])
+            ->delete();
+
+        if ($deleted > 0) {
+            Notification::make()
+                ->title('Draft discarded')
+                ->success()
+                ->send();
+        } else {
+            Notification::make()
+                ->title('No draft to discard')
+                ->warning()
+                ->send();
+        }
     }
 
     private function openPreview(string $locale): void
@@ -465,15 +512,99 @@ class ManageHomepage extends Page implements HasForms
                     url: $data['secondary_cta_url'] ?? '#',
                 )
                 : null,
-            stats: $data['stats'] ?? [],
-            featuredItems: $data['featured_items'] ?? [],
-            articles: $data['articles'] ?? [],
-            researchItems: $data['research_items'] ?? [],
-            events: $data['events'] ?? [],
-            footerColumns: $data['footer_columns'] ?? [],
-            contactLinks: $data['contact_links'] ?? [],
-            socialLinks: $data['social_links'] ?? [],
-            items: $data['items'] ?? [],
+            stats: array_values(array_map(
+                static fn (array $item): HomepageStatItemDTO => new HomepageStatItemDTO(
+                    value: (string) ($item['value'] ?? ''),
+                    label: (string) ($item['label'] ?? ''),
+                    icon: isset($item['icon']) && $item['icon'] !== '' ? (string) $item['icon'] : null,
+                    prefix: isset($item['prefix']) && $item['prefix'] !== '' ? (string) $item['prefix'] : null,
+                    suffix: isset($item['suffix']) && $item['suffix'] !== '' ? (string) $item['suffix'] : null,
+                ),
+                array_filter($data['stats'] ?? [], static fn (mixed $i): bool => is_array($i)),
+            )),
+            featuredItems: array_values(array_map(
+                static fn (array $item): HomepageFeatureItemDTO => new HomepageFeatureItemDTO(
+                    title: (string) ($item['title'] ?? ''),
+                    summary: isset($item['description']) && $item['description'] !== '' ? (string) $item['description'] : (isset($item['text']) && $item['text'] !== '' ? (string) $item['text'] : null),
+                    imageUrl: self::extractFileUploadValue($item['image'] ?? null),
+                    url: isset($item['cta_url']) && $item['cta_url'] !== '' ? (string) $item['cta_url'] : null,
+                ),
+                array_filter($data['featured_items'] ?? [], static fn (mixed $i): bool => is_array($i)),
+            )),
+            articles: array_values(array_map(
+                static fn (array $item): ArticleCardDTO => new ArticleCardDTO(
+                    id: 0,
+                    locale: 'ar',
+                    title: (string) ($item['title'] ?? ''),
+                    slug: '',
+                    excerpt: isset($item['excerpt']) && $item['excerpt'] !== '' ? (string) $item['excerpt'] : null,
+                    imageUrl: self::extractFileUploadValue($item['image'] ?? null),
+                    publishedAt: isset($item['publish_date']) && $item['publish_date'] !== '' ? (string) $item['publish_date'] : null,
+                    url: isset($item['cta_url']) && $item['cta_url'] !== '' ? (string) $item['cta_url'] : null,
+                    categoryLabel: isset($item['category']) && $item['category'] !== '' ? (string) $item['category'] : null,
+                ),
+                array_filter($data['articles'] ?? [], static fn (mixed $i): bool => is_array($i)),
+            )),
+            researchItems: array_values(array_map(
+                static fn (array $item): \App\DTOs\ResearchCardDTO => new \App\DTOs\ResearchCardDTO(
+                    id: 0,
+                    locale: 'ar',
+                    title: (string) ($item['title'] ?? ''),
+                    slug: '',
+                    summary: isset($item['excerpt']) && $item['excerpt'] !== '' ? (string) $item['excerpt'] : null,
+                    imageUrl: self::extractFileUploadValue($item['image'] ?? null),
+                    publishedAt: isset($item['publish_date']) && $item['publish_date'] !== '' ? (string) $item['publish_date'] : null,
+                    url: isset($item['cta_url']) && $item['cta_url'] !== '' ? (string) $item['cta_url'] : null,
+                    categoryLabel: isset($item['category']) && $item['category'] !== '' ? (string) $item['category'] : null,
+                    authors: self::extractAuthors($item['authors'] ?? null),
+                ),
+                array_filter($data['research_items'] ?? [], static fn (mixed $i): bool => is_array($i)),
+            )),
+            events: array_values(array_map(
+                static fn (array $item): EventCardDTO => new EventCardDTO(
+                    id: 0,
+                    locale: 'ar',
+                    title: (string) ($item['title'] ?? ''),
+                    slug: '',
+                    summary: isset($item['description']) && $item['description'] !== '' ? (string) $item['description'] : null,
+                    startsAt: isset($item['date']) && $item['date'] !== '' ? (string) $item['date'] : null,
+                    endsAt: null,
+                    location: isset($item['location']) && $item['location'] !== '' ? (string) $item['location'] : null,
+                    url: isset($item['cta_url']) && $item['cta_url'] !== '' ? (string) $item['cta_url'] : null,
+                    imageUrl: self::extractFileUploadValue($item['image'] ?? null),
+                    timeLabel: isset($item['time']) && $item['time'] !== '' ? (string) $item['time'] : null,
+                ),
+                array_filter($data['events'] ?? [], static fn (mixed $i): bool => is_array($i)),
+            )),
+            footerColumns: array_values(array_map(
+                static fn (array $col): FooterColumnDTO => new FooterColumnDTO(
+                    title: (string) ($col['title'] ?? ''),
+                    links: array_values(array_filter(array_map(
+                        static fn (mixed $link): ?\App\DTOs\NavigationActionDTO => is_array($link) && isset($link['label'], $link['url'])
+                            ? new \App\DTOs\NavigationActionDTO(label: (string) $link['label'], url: (string) $link['url'])
+                            : null,
+                        $col['links'] ?? [],
+                    ))),
+                ),
+                array_filter($data['footer_columns'] ?? [], static fn (mixed $i): bool => is_array($i)),
+            )),
+            contactLinks: array_values(array_map(
+                static fn (array $item): ContactLinkDTO => new ContactLinkDTO(
+                    type: (string) ($item['type'] ?? 'text'),
+                    label: (string) ($item['label'] ?? ''),
+                    value: (string) ($item['value'] ?? ''),
+                ),
+                array_filter($data['contact_links'] ?? [], static fn (mixed $i): bool => is_array($i)),
+            )),
+            socialLinks: array_values(array_map(
+                static fn (array $item): SocialLinkDTO => new SocialLinkDTO(
+                    platform: (string) ($item['platform'] ?? ''),
+                    url: (string) ($item['url'] ?? ''),
+                    isEnabled: (bool) ($item['is_enabled'] ?? true),
+                ),
+                array_filter($data['social_links'] ?? [], static fn (mixed $i): bool => is_array($i)),
+            )),
+            items: array_values(array_filter($data['items'] ?? [], static fn (mixed $i): bool => is_array($i))),
             content: array_filter([
                 'copyright_text' => $data['copyright_text'] ?? null,
                 'logo' => $data['logo'] ?? null,
@@ -556,7 +687,6 @@ class ManageHomepage extends Page implements HasForms
                     ->maxSize(5120),
                 TextInput::make("{$prefix}.video_url")
                     ->label('Video URL')
-                    ->url()
                     ->maxLength(2048),
                 TextInput::make("{$prefix}.headline")
                     ->label('Headline')
@@ -572,14 +702,12 @@ class ManageHomepage extends Page implements HasForms
                     ->maxLength(100),
                 TextInput::make("{$prefix}.primary_cta_url")
                     ->label('Primary CTA URL')
-                    ->url()
                     ->maxLength(2048),
                 TextInput::make("{$prefix}.secondary_cta_label")
                     ->label('Secondary CTA Label')
                     ->maxLength(100),
                 TextInput::make("{$prefix}.secondary_cta_url")
                     ->label('Secondary CTA URL')
-                    ->url()
                     ->maxLength(2048),
             ]),
         ];
@@ -647,7 +775,6 @@ class ManageHomepage extends Page implements HasForms
                         ->maxLength(100),
                     TextInput::make('cta_url')
                         ->label('CTA URL')
-                        ->url()
                         ->maxLength(2048),
                 ])
                 ->columns(2)
@@ -690,7 +817,6 @@ class ManageHomepage extends Page implements HasForms
                         ->maxLength(100),
                     TextInput::make('cta_url')
                         ->label('CTA URL')
-                        ->url()
                         ->maxLength(2048),
                 ])
                 ->columns(2)
@@ -731,7 +857,6 @@ class ManageHomepage extends Page implements HasForms
                         ->maxLength(100),
                     TextInput::make('cta_url')
                         ->label('CTA URL')
-                        ->url()
                         ->maxLength(2048),
                 ])
                 ->columns(2)
@@ -775,7 +900,6 @@ class ManageHomepage extends Page implements HasForms
                         ->maxLength(500),
                     TextInput::make('cta_url')
                         ->label('CTA URL')
-                        ->url()
                         ->maxLength(2048),
                 ])
                 ->columns(2)
@@ -819,7 +943,6 @@ class ManageHomepage extends Page implements HasForms
                         ->maxLength(500),
                     TextInput::make('cta_url')
                         ->label('CTA URL')
-                        ->url()
                         ->maxLength(2048),
                 ])
                 ->columns(2)
@@ -857,7 +980,6 @@ class ManageHomepage extends Page implements HasForms
                         ->maxLength(100),
                     TextInput::make('cta_url')
                         ->label('CTA URL')
-                        ->url()
                         ->maxLength(2048),
                 ])
                 ->columns(2)
@@ -925,7 +1047,6 @@ class ManageHomepage extends Page implements HasForms
                         ->maxLength(50),
                     TextInput::make('url')
                         ->label('URL')
-                        ->url()
                         ->required()
                         ->maxLength(2048),
                     TextInput::make('icon')
@@ -951,7 +1072,6 @@ class ManageHomepage extends Page implements HasForms
                                 ->maxLength(255),
                             TextInput::make('url')
                                 ->label('URL')
-                                ->url()
                                 ->required()
                                 ->maxLength(2048),
                         ])
@@ -969,7 +1089,6 @@ class ManageHomepage extends Page implements HasForms
                         ->maxLength(255),
                     TextInput::make('url')
                         ->label('URL')
-                        ->url()
                         ->required()
                         ->maxLength(2048),
                 ])
@@ -982,5 +1101,49 @@ class ManageHomepage extends Page implements HasForms
                     ->maxLength(500),
             ]),
         ];
+    }
+
+    // ──────────────────────────────────────────────
+    // Static Helpers
+    // ──────────────────────────────────────────────
+
+    /**
+     * Filament FileUpload returns an array of paths inside repeaters.
+     * Extract the first path as a string, or null if empty.
+     */
+    private static function extractFileUploadValue(mixed $value): ?string
+    {
+        if (is_array($value)) {
+            $first = array_values(array_filter($value, static fn (mixed $v): bool => is_string($v) && $v !== ''))[0] ?? null;
+
+            return $first;
+        }
+
+        return is_string($value) && $value !== '' ? $value : null;
+    }
+
+    /**
+     * Authors field is a plain TextInput (comma-separated string) but may arrive
+     * as an array after Livewire re-hydration. Normalise to string[] either way.
+     *
+     * @return array<int, string>
+     */
+    private static function extractAuthors(mixed $value): array
+    {
+        if (is_array($value)) {
+            return array_values(array_filter(
+                array_map('trim', array_map('strval', $value)),
+                static fn (string $a): bool => $a !== '',
+            ));
+        }
+
+        if (is_string($value) && $value !== '') {
+            return array_values(array_filter(
+                array_map('trim', explode(',', $value)),
+                static fn (string $a): bool => $a !== '',
+            ));
+        }
+
+        return [];
     }
 }

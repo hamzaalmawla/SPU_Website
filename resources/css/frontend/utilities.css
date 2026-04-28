@@ -1,0 +1,41 @@
+/**
+ * Small shared utilities and cross-cutting helpers.
+ */
+
+.line-height-100 {
+    line-height: 100%;
+}
+
+.hero-container {
+    backface-visibility: hidden;
+    perspective: 1000px;
+}
+
+.hero-slant {
+    clip-path: polygon(0 0, 100% 12%, 100% 100%, 0 100%);
+}
+
+.shad {
+    filter: drop-shadow(0 7px 15px rgba(0, 0, 0, 0.10));
+    color: #c02323;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+[x-cloak] {
+    display: none !important;
+}
+
+[dir="rtl"] .fa-chevron-right,
+[dir="rtl"] .fa-chevron-left,
+[dir="rtl"] .fa-arrow-right,
+[dir="rtl"] .fa-arrow-left {
+    transform: scaleX(-1);
+}

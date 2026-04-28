@@ -35,6 +35,8 @@
                     <div
                         class="space-y-1"
                         x-data="menuTree('{{ $this->activeGroup }}', '{{ $locale }}')"
+                        x-init="init()"
+                        data-sortable
                     >
                         @foreach ($items as $item)
                             @include('filament.pages.partials.menu-tree-item', [
@@ -61,19 +63,42 @@
     </div>
 
     @push('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
     <script>
         function menuTree(group, locale) {
             return {
                 group: group,
                 locale: locale,
+                init() {
+                    this.$nextTick(() => this.initSortable(this.$el));
+                },
+                initSortable(container) {
+                    const topLevel = container.querySelector(':scope > .space-y-1, :scope > [data-sortable]') || container;
+                    Sortable.create(topLevel, {
+                        handle: '[data-drag-handle]',
+                        animation: 150,
+                        group: { name: group + '_' + locale + '_root', pull: false, put: false },
+                        onEnd: () => {},
+                    });
+
+                    // Also make child containers sortable
+                    container.querySelectorAll('[data-children]').forEach(childContainer => {
+                        Sortable.create(childContainer, {
+                            handle: '[data-drag-handle]',
+                            animation: 150,
+                            group: { name: group + '_' + locale + '_children', pull: false, put: false },
+                            onEnd: () => {},
+                        });
+                    });
+                },
                 saveOrder() {
                     const tree = this.collectOrder(this.$el);
                     this.$wire.reorderItems(tree);
                 },
                 collectOrder(container) {
                     const items = [];
-                    const children = container.querySelectorAll(':scope > [data-menu-item]');
-                    children.forEach(el => {
+                    const directItems = container.querySelectorAll(':scope > [data-menu-item], :scope > .space-y-1 > [data-menu-item]');
+                    directItems.forEach(el => {
                         const entry = { id: parseInt(el.dataset.menuItem) };
                         const childContainer = el.querySelector('[data-children]');
                         if (childContainer) {

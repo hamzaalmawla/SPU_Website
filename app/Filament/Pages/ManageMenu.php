@@ -8,6 +8,7 @@ use App\Contracts\MenuServiceInterface;
 use App\DTOs\MenuItemDataDTO;
 use App\DTOs\MenuItemDTO;
 use App\DTOs\MenuTreeNodeDTO;
+use App\Models\MenuItem;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Tabs;
@@ -353,22 +354,88 @@ class ManageMenu extends Page implements HasForms
 
         foreach (MenuServiceInterface::GROUP_KEYS as $group) {
             foreach (['ar', 'en'] as $locale) {
-                $tree = match ($group) {
-                    'header' => $this->menuService->getHeaderTree($locale),
-                    'footer' => $this->menuService->getFooterTree($locale),
-                    'utility' => $this->menuService->getUtilityTree($locale),
-                    default => null,
-                };
-
-                $items = $tree !== null ? $tree->items : [];
+                $items = $this->loadAdminTreeItems($group, $locale);
                 $this->menuTreeDTOs[$group][$locale] = $items;
                 $this->menuTrees[$group][$locale] = array_map($dtoToArray, $items);
             }
         }
     }
 
+    /**
+     * Load ALL menu items for a group/locale (including disabled) for the admin UI.
+     * The public-facing service methods filter by enabled() scope, which is correct for
+     * the public site but breaks toggle/edit in the admin.
+     *
+     * @return list<MenuItemDTO>
+     */
+    private function loadAdminTreeItems(string $group, string $locale): array
+    {
+        $rows = MenuItem::query()
+            ->whereNull('parent_id')
+            ->where('group_key', $group)
+            ->where('locale', $locale)
+            ->with([
+                'pageTarget.translations',
+                'children' => fn ($q) => $q
+                    ->where('locale', $locale)
+                    ->orderBy('sort_order')
+                    ->with([
+                        'pageTarget.translations',
+                        'children' => fn ($q2) => $q2
+                            ->where('locale', $locale)
+                            ->orderBy('sort_order')
+                            ->with('pageTarget.translations'),
+                    ]),
+            ])
+            ->orderBy('sort_order')
+            ->get();
+
+        return array_values(array_map(
+            fn (MenuItem $item): MenuItemDTO => $this->mapAdminItem($item),
+            $rows->all(),
+        ));
+    }
+
+    private function mapAdminItem(MenuItem $item): MenuItemDTO
+    {
+        $children = array_values(array_map(
+            fn (MenuItem $child): MenuItemDTO => $this->mapAdminItem($child),
+            $item->children->all(),
+        ));
+
+        return new MenuItemDTO(
+            id: (int) $item->getKey(),
+            parentId: $item->parent_id !== null ? (int) $item->parent_id : null,
+            label: (string) $item->label,
+            itemType: (string) $item->type,
+            groupKey: (string) ($item->group_key ?? $item->type),
+            targetType: (string) $item->target_kind,
+            locale: $item->locale,
+            targetId: $item->target_id !== null ? (int) $item->target_id : null,
+            url: $item->url,
+            resolvedUrl: $item->url,
+            target: $item->target,
+            routeName: $item->route_name,
+            cssToken: $item->css_token,
+            icon: $item->icon,
+            isActive: false,
+            sortOrder: (int) $item->sort_order,
+            depth: (int) $item->depth,
+            isEnabled: (bool) $item->is_enabled,
+            isUtility: (bool) $item->is_utility,
+            openInNewTab: (bool) $item->open_in_new_tab,
+            children: $children,
+        );
+    }
+
     private function findItemInTrees(int $itemId): ?MenuItemDTO
     {
+        // $menuTreeDTOs is private and not persisted by Livewire between requests.
+        // Re-load from DB if empty before searching.
+        if ($this->menuTreeDTOs === []) {
+            $this->loadMenuTrees();
+        }
+
         foreach ($this->menuTreeDTOs as $groups) {
             foreach ($groups as $items) {
                 $found = $this->findItemRecursive($items, $itemId);
@@ -378,7 +445,17 @@ class ManageMenu extends Page implements HasForms
             }
         }
 
-        return null;
+        // Fallback: load directly from DB in case the item is in a group/locale
+        // not yet loaded (e.g. after a group switch without a full reload).
+        $row = MenuItem::query()->find($itemId);
+
+        if (! $row instanceof MenuItem) {
+            return null;
+        }
+
+        $row->loadMissing('children.children', 'pageTarget.translations');
+
+        return $this->mapAdminItem($row);
     }
 
     /**

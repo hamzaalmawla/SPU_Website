@@ -1,0 +1,138 @@
+import dayjs from 'dayjs';
+
+const CALENDAR_GRID_DAYS = 35;
+
+function getCurrentLocale() {
+    return document.documentElement.lang || 'ar';
+}
+
+const MONTHS = {
+    en: ['January','February','March','April','May','June','July','August','September','October','November','December'],
+    ar: ['كانون الثاني','شباط','آذار','نيسان','أيار','حزيران','تموز','آب','أيلول','تشرين الأول','تشرين الثاني','كانون الأول'],
+};
+
+function normalizeEvent(event, index) {
+    const parsed = dayjs(event.startsAt ?? event.date);
+    if (!parsed.isValid()) return null;
+
+    return {
+        id: event.id ?? `event-${index + 1}`,
+        type: event.timeLabel ?? event.type ?? 'Event',
+        title: event.title ?? 'Untitled Event',
+        description: event.summary ?? event.description ?? '',
+        image: event.image ?? '/images/slider-1.webp',
+        link: event.url ?? event.link ?? '#',
+        dateKey: parsed.format('YYYY-MM-DD'),
+        dateText: `<span translate="no">${parsed.format('MMM D, YYYY')}</span>`,
+    };
+}
+
+export function createCalendarApp() {
+    return {
+        rawEvents: [],
+        viewDate: dayjs().startOf('month'),
+        selectedDate: dayjs().format('YYYY-MM-DD'),
+        activeEventIndex: 0,
+        carouselInterval: null,
+
+        init() {
+            const incoming = Array.isArray(window.spuEventsData) ? window.spuEventsData : [];
+            this.setEvents(incoming);
+        },
+
+        setEvents(events = []) {
+            this.rawEvents = events
+                .map((e, i) => normalizeEvent(e, i))
+                .filter(Boolean)
+                .sort((a, b) => a.dateKey.localeCompare(b.dateKey));
+
+            const initialDate = this.rawEvents[0]?.dateKey ?? dayjs().format('YYYY-MM-DD');
+            this.selectedDate = initialDate;
+            this.viewDate = dayjs(initialDate).startOf('month');
+            this.activeEventIndex = 0;
+        },
+
+        get eventsByDate() {
+            return this.rawEvents.reduce((acc, event) => {
+                if (!acc[event.dateKey]) acc[event.dateKey] = [];
+                acc[event.dateKey].push(event);
+                return acc;
+            }, {});
+        },
+
+        get selectedDateEvents() {
+            return this.eventsByDate[this.selectedDate] || [];
+        },
+
+        get selectedEvent() {
+            return this.selectedDateEvents[this.activeEventIndex] || null;
+        },
+
+        get selectedDateLabel() {
+            const date = dayjs(this.selectedDate);
+            const lang = getCurrentLocale();
+            if (lang === 'ar') {
+                return `${MONTHS.ar[date.month()]} <span translate="no">${date.date()}</span>, <span translate="no">${date.year()}</span>`;
+            }
+            return `<span translate="no">${date.format('MMM D, YYYY')}</span>`;
+        },
+
+        get calendarDays() {
+            const grouped = this.eventsByDate;
+            const gridStart = this.viewDate.startOf('month');
+
+            return Array.from({ length: CALENDAR_GRID_DAYS }, (_, i) => {
+                const day = gridStart.add(i, 'day');
+                const dateKey = day.format('YYYY-MM-DD');
+                const isCurrentMonth = day.isSame(this.viewDate, 'month');
+
+                return {
+                    date: dateKey,
+                    dayNumber: isCurrentMonth ? `<span translate="no">${day.date()}</span>` : '',
+                    isCurrentMonth,
+                    hasEvent: isCurrentMonth && (grouped[dateKey] || []).length > 0,
+                };
+            });
+        },
+
+        selectDate(date) {
+            this.selectedDate = date;
+            this.activeEventIndex = 0;
+            if (!dayjs(date).isSame(this.viewDate, 'month')) {
+                this.viewDate = dayjs(date).startOf('month');
+            }
+            this.startCarousel();
+        },
+
+        selectEvent(index) {
+            this.activeEventIndex = index;
+            this.startCarousel();
+        },
+
+        changeMonth(step) {
+            const next = this.viewDate.add(step, 'month').startOf('month');
+            const first = this.rawEvents.find((e) => dayjs(e.dateKey).isSame(next, 'month'));
+            this.viewDate = next;
+            this.selectedDate = first?.dateKey ?? next.format('YYYY-MM-DD');
+            this.activeEventIndex = 0;
+        },
+
+        prevMonth() { this.changeMonth(-1); },
+        nextMonth() { this.changeMonth(1); },
+
+        startCarousel() {
+            if (this.selectedDateEvents.length <= 1) return;
+            this.stopCarousel();
+            this.carouselInterval = setInterval(() => {
+                this.activeEventIndex = (this.activeEventIndex + 1) % this.selectedDateEvents.length;
+            }, 5000);
+        },
+
+        stopCarousel() {
+            if (this.carouselInterval) {
+                clearInterval(this.carouselInterval);
+                this.carouselInterval = null;
+            }
+        },
+    };
+}

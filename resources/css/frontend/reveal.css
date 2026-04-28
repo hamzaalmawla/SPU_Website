@@ -1,0 +1,21 @@
+
+/* Initial hidden state - minimal properties to reduce initial paint cost */
+.reveal {
+    opacity: 0;
+}
+
+/* Visible state - GPU-accelerated properties only */
+.reveal-visible {
+    opacity: 1;
+    transition: opacity 0.3s ease-out;
+}
+
+/* Child items - no initial transform to avoid layout calculations */
+.reveal .reveal-item {
+    opacity: 0;
+}
+
+/* Animate all items simultaneously - no stagger for instant feel */
+.reveal-visible .reveal-item {
+    opacity: 1;
+}
