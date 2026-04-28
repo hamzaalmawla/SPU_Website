@@ -5,11 +5,8 @@
 @source '../**/*.blade.php';
 @source '../**/*.js';
 
-@theme {
-    --font-hacen: "HacenTunisia", "Segoe UI", "Tahoma", "Arial", sans-serif;
-    --color-spu-blue: #202759;
-    --color-spu-red: #6f1616;
-    --color-section: #EAF3FF40;
+[x-cloak] {
+    display: none !important;
 }
 
 @import './frontend/foundation.css';
@@ -17,7 +14,11 @@
 @import './frontend/navigation.css';
 @import './frontend/heroes.css';
 @import './frontend/home-sections.css';
-@import './frontend/stats.css';
 @import './frontend/honor-slider.css';
+@import './frontend/stats.css';
 @import './frontend/reveal.css';
 @import './frontend/utilities.css';
+
+body {
+    position: relative;
+}

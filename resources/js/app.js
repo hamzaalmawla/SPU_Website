@@ -1,5 +1,13 @@
 import Alpine from 'alpinejs';
 
+import { config, dom, library } from '@fortawesome/fontawesome-svg-core';
+import '@fortawesome/fontawesome-svg-core/styles.css';
+import { faArrowLeft, faArrowRight, faBars, faCheck, faChevronDown, faChevronLeft, faChevronRight, faEnvelope, faGlobe, faHandshake, faHistory, faMapMarkerAlt, faPhoneAlt, faSitemap, faTimes, faUniversity, faUserGraduate, faUsers } from '@fortawesome/free-solid-svg-icons';
+import { faFacebookF, faInstagram, faTelegramPlane, faYoutube } from '@fortawesome/free-brands-svg-icons';
+
+config.autoAddCss = false;
+library.add(faArrowLeft, faArrowRight, faBars, faCheck, faChevronDown, faChevronLeft, faChevronRight, faEnvelope, faFacebookF, faGlobe, faHandshake, faHistory, faInstagram, faMapMarkerAlt, faPhoneAlt, faSitemap, faTelegramPlane, faTimes, faUniversity, faUserGraduate, faUsers, faYoutube);
+
 import { createHeroSlider }     from './alpine/heroSlider.js';
 import { createStatsCounter }   from './alpine/statsCounter.js';
 import { createFacultiesSlider } from './alpine/facultiesSlider.js';
@@ -21,6 +29,10 @@ Alpine.data('mobileNav',       createMobileNav);
 window.Alpine = Alpine;
 Alpine.start();
 
-document.addEventListener('DOMContentLoaded', () => {
-    initRevealSections();
+// Init reveal after Alpine has rendered the DOM
+requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+        initRevealSections();
+        dom.watch();
+    });
 });

@@ -361,7 +361,7 @@ hardcoded in Blade.
       `<h1>` in hero, `<h2>` in other sections, `rel="noreferrer"` on `target="_blank"` links
     - **Validates: Requirements 14.1–14.7**
 
-- [-] 16. Final checkpoint — full suite
+- [x] 16. Final checkpoint — full suite
   - Ensure all tests pass, ask the user if questions arise.
 
 ---
