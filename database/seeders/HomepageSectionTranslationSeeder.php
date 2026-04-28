@@ -47,6 +47,7 @@ class HomepageSectionTranslationSeeder extends Seeder
             'university_news' => $this->news($locale),
             'research_studies' => $this->research($locale),
             'events_activities' => $this->events($locale),
+            'choose_your_path' => $this->choosePath($locale),
             'medical_facilities_services' => $this->medical($locale),
             'bottom_stats' => $this->bottomStats($locale),
             'footer' => $this->footer($locale),
@@ -542,6 +543,72 @@ class HomepageSectionTranslationSeeder extends Seeder
                     ['date' => '2026-03-13', 'label' => $l === 'ar' ? 'ندوة' : 'Seminar'],
                     ['date' => '2026-03-23', 'label' => $l === 'ar' ? 'منتدى' : 'Forum'],
                     ['date' => '2026-03-30', 'label' => $l === 'ar' ? 'معرض' : 'Fair'],
+                ],
+            ],
+        ];
+    }
+
+    // ──────────────────────────────────────────────
+    //  Choose Your Path – from pathItems in home-content.js
+    // ──────────────────────────────────────────────
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function choosePath(string $locale): array
+    {
+        $l = $locale;
+
+        return [
+            'title' => $l === 'ar' ? 'اختر مسارك' : 'Choose Your Path',
+            'sectionAction' => $this->action(
+                $l === 'ar' ? 'استكشف' : 'Explore',
+                '/'.$l.'/admissions',
+            ),
+            'items' => [
+                [
+                    'title' => $l === 'ar' ? 'الطلاب المستجدون' : 'Prospective Students',
+                    'icon' => '/images/icons/book.svg',
+                    'links' => $l === 'ar'
+                        ? ['استكشاف البرامج', 'القبول', 'المنح الدراسية', 'الحياة الجامعية']
+                        : ['Explore programs', 'Admission', 'Scholarships', 'Campus life'],
+                    'action' => $this->action(
+                        $l === 'ar' ? 'استكشاف القبول' : 'Explore Admissions',
+                        '/'.$l.'/admissions',
+                    ),
+                ],
+                [
+                    'title' => $l === 'ar' ? 'الطلاب الحاليون' : 'Current Students',
+                    'icon' => '/images/icons/globe.svg',
+                    'links' => $l === 'ar'
+                        ? ['بوابات الدخول', 'الجداول', 'الخدمات', 'المصادر الأكاديمية']
+                        : ['Access portals', 'Schedules', 'Services', 'Academic resources'],
+                    'action' => $this->action(
+                        $l === 'ar' ? 'عرض المصادر' : 'View Student Resources',
+                        '/'.$l.'/student-life',
+                    ),
+                ],
+                [
+                    'title' => $l === 'ar' ? 'الكادر التدريسي والمنظومة' : 'Faculty & Staff',
+                    'icon' => '/images/icons/sitemap.svg',
+                    'links' => $l === 'ar'
+                        ? ['أدوات التدريس', 'السياسات', 'الأنظمة', 'الخدمات الداخلية']
+                        : ['Find teaching tools', 'Policies', 'Systems', 'Internal services'],
+                    'action' => $this->action(
+                        $l === 'ar' ? 'استكشاف المصادر' : 'Explore Resources',
+                        '/'.$l.'/about',
+                    ),
+                ],
+                [
+                    'title' => $l === 'ar' ? 'الخريجون' : 'Alumni',
+                    'icon' => '/images/icons/users.svg',
+                    'links' => $l === 'ar'
+                        ? ['خدمات الخريجين', 'الشبكة', 'الفعاليات', 'التوظيف']
+                        : ['Alumni Services', 'Network', 'Events', 'Career'],
+                    'action' => $this->action(
+                        $l === 'ar' ? 'استكشاف المصادر' : 'Explore Resources',
+                        '/'.$l.'/about',
+                    ),
                 ],
             ],
         ];

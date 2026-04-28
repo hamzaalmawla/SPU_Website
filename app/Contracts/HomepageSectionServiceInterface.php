@@ -20,6 +20,7 @@ interface HomepageSectionServiceInterface
         'hero_stats',
         'achievements_highlights',
         'academic_faculties',
+        'choose_your_path',
         'research_studies',
         'university_news',
         'events_activities',

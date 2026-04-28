@@ -66,44 +66,6 @@
             <div class="container">
                 <div class="site-nav-shell" :class="stickyNav ? 'site-nav-shell--sticky' : ''">
 
-                    {{-- Meta bar: utility links + language switcher --}}
-                    <div class="site-nav-shell__meta">
-                        <div class="site-nav-meta-group">
-                            @foreach ($navigation->utility->items as $item)
-                                @if ($item->resolvedUrl)
-                                    <a href="{{ $item->resolvedUrl }}"
-                                       @if ($item->openInNewTab) target="_blank" rel="noreferrer" @endif
-                                       class="site-nav-meta-link">
-                                        {{ $item->label }}
-                                    </a>
-                                @endif
-                            @endforeach
-                        </div>
-
-                        <div class="site-nav-meta-group">
-                            @if ($navigation->studentPortalUrl)
-                                <a href="{{ $navigation->studentPortalUrl }}" target="_blank" rel="noreferrer" class="site-nav-meta-link">
-                                    {{ __('public.student_portal') }}
-                                </a>
-                            @endif
-
-                            @if ($navigation->staffAccessUrl)
-                                <a href="{{ $navigation->staffAccessUrl }}" target="_blank" rel="noreferrer" class="site-nav-meta-link">
-                                    {{ __('public.staff_access') }}
-                                </a>
-                            @endif
-
-                            @foreach ($languageSwitch as $switchLink)
-                                @if (!$switchLink->isCurrent)
-                                    <a href="{{ $switchLink->url }}" class="site-nav-lang">
-                                        <img src="/images/ic_outline-language.svg" alt="{{ __('public.language') }}" class="h-[1.05rem] w-[1.05rem]">
-                                        <span>{{ $switchLink->label }}</span>
-                                    </a>
-                                @endif
-                            @endforeach
-                        </div>
-                    </div>
-
                     {{-- Main bar: logo + desktop nav + actions --}}
                     <div class="site-nav-shell__main">
                         <a href="/{{ $locale }}" aria-label="{{ __('public.home') }}" class="site-nav-brand">
@@ -157,6 +119,15 @@
                         </nav>
 
                         <div class="site-nav-actions">
+                            @foreach ($languageSwitch as $switchLink)
+                                @if (!$switchLink->isCurrent)
+                                    <button type="button" onclick="window.location='{{ $switchLink->url }}'" class="site-nav-lang">
+                                        <img src="/images/ic_outline-language.svg" alt="{{ __('public.language') }}" class="h-[1.05rem] w-[1.05rem]">
+                                        <span>{{ $switchLink->label }}</span>
+                                    </button>
+                                @endif
+                            @endforeach
+
                             @if ($navigation->applyCta)
                                 <a href="{{ $navigation->applyCta->url }}"
                                    @if ($navigation->applyCta->target) target="{{ $navigation->applyCta->target }}" @endif
