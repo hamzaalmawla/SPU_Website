@@ -97,11 +97,11 @@
                     @if ($section->payload->stats !== [])
                         <div class="stats-shell__grid">
                             @foreach ($section->payload->stats as $stat)
-                                <article class="stats-card" style="--card-accent: {{ $stat->accent ?? '#caa949' }};">
+                                <article class="stats-card" style="--card-accent: #caa949;">
                                     <div class="stats-card__top">
-                                        @if ($stat->svgPath)
+                                        @if ($stat->icon)
                                             <div class="stats-icon-badge">
-                                                <img src="{{ $stat->svgPath }}"
+                                                <img src="{{ $stat->icon }}"
                                                      alt="{{ $stat->label }}"
                                                      class="h-7 w-7 object-contain brightness-0 text-white invert sm:h-8 sm:w-8">
                                             </div>
@@ -388,9 +388,9 @@
                             <article class="reveal-item w-full bg-white rounded-[25px] shadow-[0_15px_35px_rgba(0,0,0,0.06)] overflow-hidden flex flex-col group cursor-pointer transition-all duration-500 ease-out hover:-translate-y-2 hover:shadow-[0_25px_60px_rgba(0,0,0,0.12)]">
 
                                 {{-- Image --}}
-                                @if ($article->image)
+                                @if ($article->imageUrl)
                                     <div class="relative h-[210px] overflow-hidden">
-                                        <img src="{{ $article->image }}"
+                                        <img src="{{ $article->imageUrl }}"
                                              alt="{{ $article->title }}"
                                              class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110">
 
@@ -479,9 +479,9 @@
                                      style="transform: translateZ(0);">
 
                                 {{-- Image + category tag --}}
-                                @if ($item->image)
+                                @if ($item->imageUrl)
                                     <div class="relative h-[50%] overflow-hidden bg-gray-100">
-                                        <img src="{{ $item->image }}"
+                                        <img src="{{ $item->imageUrl }}"
                                              alt="{{ $item->title }}"
                                              loading="lazy" decoding="async" width="289" height="174"
                                              class="w-full h-full object-cover"

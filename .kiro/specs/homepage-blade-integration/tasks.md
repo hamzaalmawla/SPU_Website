@@ -278,90 +278,90 @@ hardcoded in Blade.
   - Preserve all CSS classes from the healthcare section
   - _Requirements: 5.1–5.11, 14.4, 14.5_
 
-- [-] 14. Checkpoint — visual and functional review
+- [x] 14. Checkpoint — visual and functional review
   - Ensure all tests pass, ask the user if questions arise.
   - Confirm `php artisan view:cache` completes without errors
   - Confirm `GET /ar` and `GET /en` return HTTP 200 with correct `lang` and `dir` attributes
   - Confirm no inline `<style>` or `<script>` blocks exist in `homepage-section.blade.php`
     other than the two permitted data-injection scripts
 
-- [ ] 15. Write PHPUnit / Pest view rendering tests
-  - [ ] 15.1 Test layout meta tags with a fully-populated `PageSeoDTO`
+- [x] 15. Write PHPUnit / Pest view rendering tests
+  - [x] 15.1 Test layout meta tags with a fully-populated `PageSeoDTO`
     - Assert `<title>`, `<meta name="description">`, `<link rel="canonical">`,
       `<meta property="og:image">`, and all hreflang links are present
     - Assert no duplicate `<title>` or `<meta name="description">` tags
     - _Requirements: 1.2–1.6, 11.1–11.6_
 
-  - [ ]* 15.2 Write property test for HTML root attributes (Property 1)
+  - [x]* 15.2 Write property test for HTML root attributes (Property 1)
     - **Property 1: HTML root attributes match injected locale and direction**
     - Generate random `$locale` / `$direction` pairs; assert `html[lang]` and `html[dir]` match
     - **Validates: Requirements 1.1, 10.1**
 
-  - [ ]* 15.3 Write property test for SEO meta tag completeness (Property 2)
+  - [x]* 15.3 Write property test for SEO meta tag completeness (Property 2)
     - **Property 2: SEO meta tags are complete and non-duplicated**
     - Generate random `PageSeoDTO` with varying null fields; assert correct tag presence/absence
       and no duplicates
     - **Validates: Requirements 1.2–1.6, 11.1–11.6**
 
-  - [ ] 15.4 Test preview banner rendering
+  - [x] 15.4 Test preview banner rendering
     - `$isPreview = true` → banner present with `__('public.preview_mode')` text
     - `$isPreview = false` → no banner markup
     - _Requirements: 12.1–12.5_
 
-  - [ ] 15.5 Test emergency notice rendering
+  - [x] 15.5 Test emergency notice rendering
     - `isEnabled = true` → banner present with title and message
     - `isEnabled = false` → absent
     - _Requirements: 1.9_
 
-  - [ ] 15.6 Test footer fallback path
+  - [x] 15.6 Test footer fallback path
     - `$homepageFooterSection = null` → fallback footer renders `$navigation->footerSettings->brandTitle`
     - _Requirements: 9.2_
 
-  - [ ]* 15.7 Write property test for section loop filtering and ordering (Property 3)
+  - [x]* 15.7 Write property test for section loop filtering and ordering (Property 3)
     - **Property 3: Section loop renders only enabled non-footer sections in sortOrder**
     - Generate random section arrays with varying `isEnabled`, `key`, `sortOrder`
     - Assert rendered order and filtering
     - **Validates: Requirements 2.1–2.3**
 
-  - [ ]* 15.8 Write property test for hero payload field presence (Property 4)
+  - [x]* 15.8 Write property test for hero payload field presence (Property 4)
     - **Property 4: Hero payload fields appear in output iff non-null**
     - Generate random hero `HomepageSectionDataDTO` with varying null combinations
     - Assert non-null fields present, null fields absent
     - **Validates: Requirements 3.1–3.10**
 
-  - [ ]* 15.9 Write property test for stats card count (Property 5)
+  - [x]* 15.9 Write property test for stats card count (Property 5)
     - **Property 5: Stats cards render one card per stat item with correct value and label**
     - Generate random stats arrays (0–20 items); assert card count equals item count
     - **Validates: Requirements 4.1–4.5**
 
-  - [ ]* 15.10 Write property test for feature card sections (Property 6)
+  - [x]* 15.10 Write property test for feature card sections (Property 6)
     - **Property 6: Feature card sections render one card per item with correct fields**
     - Generate random items arrays for `academic_faculties`, `achievements_highlights`,
       `medical_facilities_services`; assert card count and optional field presence
     - **Validates: Requirements 5.1–5.11**
 
-  - [ ]* 15.11 Write property test for news cards (Property 7)
+  - [x]* 15.11 Write property test for news cards (Property 7)
     - **Property 7: News cards render one card per article with correct fields**
     - Generate random articles arrays (0–20); assert card count and field presence
     - **Validates: Requirements 6.1–6.10**
 
-  - [ ]* 15.12 Write property test for research cards (Property 8)
+  - [x]* 15.12 Write property test for research cards (Property 8)
     - **Property 8: Research cards render one card per item with correct fields**
     - Generate random `researchItems` arrays; assert card count and field presence
     - **Validates: Requirements 7.1–7.9**
 
-  - [ ]* 15.13 Write property test for event cards and calendar highlights (Property 9)
+  - [x]* 15.13 Write property test for event cards and calendar highlights (Property 9)
     - **Property 9: Event cards render one card per event; calendar highlights render one entry per highlight**
     - Generate random events + highlights arrays; assert card and highlight counts
     - **Validates: Requirements 8.1–8.10**
 
-  - [ ]* 15.14 Write property test for accessibility landmarks (Property 10)
+  - [x]* 15.14 Write property test for accessibility landmarks (Property 10)
     - **Property 10: Accessibility landmarks are present in every rendered layout**
     - Generate random layout inputs; assert `<nav aria-label>`, `<main>`, `<footer>`,
       `<h1>` in hero, `<h2>` in other sections, `rel="noreferrer"` on `target="_blank"` links
     - **Validates: Requirements 14.1–14.7**
 
-- [ ] 16. Final checkpoint — full suite
+- [-] 16. Final checkpoint — full suite
   - Ensure all tests pass, ask the user if questions arise.
 
 ---

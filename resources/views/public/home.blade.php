@@ -4,6 +4,7 @@
     <div class="space-y-8">
         @foreach ($homepage->sections as $section)
             @continue($section->key === 'footer')
+            @continue(! $section->isEnabled)
             @include('public.partials.homepage-section', ['section' => $section, 'locale' => $locale])
         @endforeach
     </div>
