@@ -622,10 +622,11 @@ class ManageHomepage extends Page implements HasForms
         $sectionLabels = [
             'hero' => 'Hero',
             'hero_stats' => 'Hero Stats',
-            'academic_faculties' => 'Academic Faculties',
             'achievements_highlights' => 'Achievements & Highlights',
-            'university_news' => 'University News',
+            'academic_faculties' => 'Academic Faculties',
+            'choose_your_path' => 'Choose Your Path',
             'research_studies' => 'Research Studies',
+            'university_news' => 'University News',
             'events_activities' => 'Events & Activities',
             'medical_facilities_services' => 'Medical Facilities & Services',
             'bottom_stats' => 'Bottom Stats',
@@ -662,6 +663,7 @@ class ManageHomepage extends Page implements HasForms
             'hero_stats' => $this->heroStatsFields($prefix),
             'academic_faculties' => $this->academicFacultiesFields($prefix),
             'achievements_highlights' => $this->achievementsHighlightsFields($prefix),
+            'choose_your_path' => $this->chooseYourPathFields($prefix),
             'university_news' => $this->universityNewsFields($prefix),
             'research_studies' => $this->researchStudiesFields($prefix),
             'events_activities' => $this->eventsActivitiesFields($prefix),
@@ -812,6 +814,48 @@ class ManageHomepage extends Page implements HasForms
                     TextInput::make('metric')
                         ->label('Metric')
                         ->maxLength(100),
+                    TextInput::make('cta_label')
+                        ->label('CTA Label')
+                        ->maxLength(100),
+                    TextInput::make('cta_url')
+                        ->label('CTA URL')
+                        ->maxLength(2048),
+                ])
+                ->columns(2)
+                ->collapsible()
+                ->defaultItems(0),
+        ];
+    }
+
+    /** @return array<int, \Filament\Forms\Components\Component> */
+    private function chooseYourPathFields(string $prefix): array
+    {
+        return [
+            Section::make('Section Header')->schema([
+                TextInput::make("{$prefix}.section_title")
+                    ->label('Section Title')
+                    ->maxLength(255),
+            ]),
+            Repeater::make("{$prefix}.path_items")
+                ->label('Path Cards')
+                ->schema([
+                    TextInput::make('title')
+                        ->label('Title')
+                        ->required()
+                        ->maxLength(255),
+                    TextInput::make('icon')
+                        ->label('Icon Path')
+                        ->maxLength(500),
+                    Repeater::make('links')
+                        ->label('Quick Links')
+                        ->schema([
+                            TextInput::make('label')
+                                ->label('Link Label')
+                                ->required()
+                                ->maxLength(255),
+                        ])
+                        ->defaultItems(0)
+                        ->collapsible(),
                     TextInput::make('cta_label')
                         ->label('CTA Label')
                         ->maxLength(100),

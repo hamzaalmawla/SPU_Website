@@ -44,7 +44,8 @@ class AccessibilityLandmarksPropertyTest extends TestCase
             'locale' => 'en',
         ])->render();
 
-        $this->assertStringContainsString('<h2', $statsHtml, 'Stats should use <h2>');
+        // Stats should NOT have h2 (title hidden to match frontend overlap design)
+        $this->assertStringNotContainsString('<h2', $statsHtml, 'Stats should not have visible <h2> (matches frontend)');
     }
 
     public function test_news_cards_use_article_elements(): void

@@ -1,7 +1,7 @@
 @extends('layouts.public')
 
 @section('content')
-    <div class="space-y-8">
+    <div>
         @foreach ($homepage->sections as $section)
             @continue($section->key === 'footer')
             @continue(! $section->isEnabled)

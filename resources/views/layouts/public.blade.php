@@ -123,20 +123,10 @@
                                 @if (!$switchLink->isCurrent)
                                     <button type="button" onclick="window.location='{{ $switchLink->url }}'" class="site-nav-lang">
                                         <img src="/images/ic_outline-language.svg" alt="{{ __('public.language') }}" class="h-[1.05rem] w-[1.05rem]">
-                                        <span>{{ $switchLink->label }}</span>
+                                        <span>{{ strtoupper($switchLink->locale) }}</span>
                                     </button>
                                 @endif
                             @endforeach
-
-                            @if ($navigation->applyCta)
-                                <a href="{{ $navigation->applyCta->url }}"
-                                   @if ($navigation->applyCta->target) target="{{ $navigation->applyCta->target }}" @endif
-                                   @if ($navigation->applyCta->target === '_blank') rel="noreferrer" @endif
-                                   class="site-nav-cta">
-                                    <span class="site-nav-cta__dot" aria-hidden="true"></span>
-                                    {{ $navigation->applyCta->label }}
-                                </a>
-                            @endif
 
                             <button type="button"
                                     @click="toggleMobile()"
@@ -196,17 +186,6 @@
                                     @endif
                                 @endforeach
                             </div>
-
-                            @if ($navigation->applyCta)
-                                <a href="{{ $navigation->applyCta->url }}"
-                                   @if ($navigation->applyCta->target) target="{{ $navigation->applyCta->target }}" @endif
-                                   @if ($navigation->applyCta->target === '_blank') rel="noreferrer" @endif
-                                   class="site-nav-cta"
-                                   @click="closeAll()">
-                                    <span class="site-nav-cta__dot" aria-hidden="true"></span>
-                                    {{ $navigation->applyCta->label }}
-                                </a>
-                            @endif
                         </div>
 
                         {{-- Mobile nav items --}}

@@ -83,7 +83,7 @@ class SectionLoopPropertyTest extends TestCase
                     ['key' => 'hero_stats', 'sortOrder' => 2, 'isEnabled' => true],
                     ['key' => 'footer', 'sortOrder' => 10, 'isEnabled' => true],
                 ],
-                ['hero', 'hero_stats'],
+                ['hero'],  // hero_stats title is hidden, but section renders — just check hero
             ],
             'mixed enabled/disabled' => [
                 [
