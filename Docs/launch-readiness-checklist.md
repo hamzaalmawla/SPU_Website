@@ -49,7 +49,7 @@
 
 ## 6. Admin
 
-- [ ] Homepage editor shows all 10 fixed sections with AR/EN tabs
+- [ ] Homepage editor shows all 11 fixed sections with AR/EN tabs
 - [ ] Draft save, preview, publish, schedule, unpublish actions work
 - [ ] Page resource supports CRUD with metadata, translations, SEO per locale
 - [ ] Menu builder enforces max depth of 2

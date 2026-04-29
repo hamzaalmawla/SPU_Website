@@ -97,7 +97,7 @@ GET /robots.txt  → SitemapController@robots
 
 | Page | Route | Access | Features |
 |------|-------|--------|----------|
-| `ManageHomepage` | `/admin/manage-homepage` | super_admin, editor | 10-section tabbed layout, AR/EN locale sub-tabs per section, Save Draft / Preview (AR/EN) / Publish / Schedule / Unpublish actions, state badge |
+| `ManageHomepage` | `/admin/manage-homepage` | super_admin, editor | 11-section tabbed layout, AR/EN locale sub-tabs per section, Save Draft / Preview (AR/EN) / Publish / Schedule / Unpublish actions, state badge |
 | `ManageMenu` | `/admin/manage-menu` | super_admin, editor | Header/footer/utility group tabs, AR/EN locale views, tree item CRUD with drag handles, depth enforcement (max 2), toggle/edit/delete per item |
 | `ManageSettings` | `/admin/manage-settings` | super_admin, editor | 6 grouped sections (Utility Nav, Footer, Emergency Notice, Contact, Social, SEO Defaults), AR/EN tabs within each group |
 
@@ -291,7 +291,7 @@ Then visit `http://localhost:8000/old-about` — you should get a 301 redirect t
 ### Step 8: Test the Filament admin panel
 
 Visit `http://localhost:8000/admin` and log in. You should see:
-- **Homepage** — ManageHomepage page with 10-section tabbed editor
+- **Homepage** — ManageHomepage page with 11-section tabbed editor
 - **Pages** — PageResource with list/create/edit/view
 - **Menu Builder** — ManageMenu with header/footer/utility tabs
 - **Media Library** — MediaAssetResource with upload/search/filter

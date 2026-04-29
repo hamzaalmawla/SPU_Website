@@ -968,9 +968,11 @@ final class HomepageSectionService implements HomepageSectionServiceInterface
             'hero' => [
                 'title' => ['required', 'string', 'max:255'],
                 'subtitle' => ['required', 'string', 'max:500'],
-                'backgroundImageUrl' => ['required', 'string', $this->assetPathRule()],
+                'backgroundImageUrl' => ['nullable', 'string', $this->assetPathRule()],
                 'videoUrl' => ['nullable', 'string', $this->assetPathRule()],
                 'badge' => ['nullable', 'string', 'max:120'],
+                'content.images' => ['nullable', 'array', 'min:1'],
+                'content.images.*' => ['required', 'string', $this->assetPathRule()],
                 'content.overlay' => ['nullable', 'array'],
                 'content.alignment' => ['nullable', 'array'],
             ],
@@ -991,10 +993,11 @@ final class HomepageSectionService implements HomepageSectionServiceInterface
                 'subtitle' => ['nullable', 'string', 'max:500'],
                 'items' => ['required', 'array', 'min:1'],
                 'items.*.title' => ['required', 'string', 'max:255'],
-                'items.*.summary' => ['required', 'string', 'max:500'],
+                'items.*.summary' => ['nullable', 'string', 'max:500'],
                 'items.*.imageUrl' => ['nullable', 'string', $this->assetPathRule()],
                 'items.*.icon' => ['nullable', 'string', 'max:120'],
                 'items.*.accent' => ['nullable', 'string', 'max:120'],
+                'items.*.metric' => ['nullable', 'string', 'max:120'],
                 'items.*.action' => ['required', 'array'],
                 'items.*.action.label' => ['required', 'string', 'max:255'],
                 'items.*.action.url' => ['required', 'string', $this->linkRule()],
@@ -1012,6 +1015,16 @@ final class HomepageSectionService implements HomepageSectionServiceInterface
                 'items.*.action.label' => ['required', 'string', 'max:255'],
                 'items.*.action.url' => ['required', 'string', $this->linkRule()],
             ],
+            'choose_your_path' => [
+                'title' => ['required', 'string', 'max:255'],
+                'items' => ['required', 'array', 'min:1'],
+                'items.*.title' => ['required', 'string', 'max:255'],
+                'items.*.icon' => ['nullable', 'string', $this->assetPathRule()],
+                'items.*.links' => ['nullable', 'array'],
+                'items.*.action' => ['nullable', 'array'],
+                'items.*.action.label' => ['nullable', 'string', 'max:255'],
+                'items.*.action.url' => ['nullable', 'string', $this->linkRule()],
+            ],
             'university_news' => [
                 'title' => ['required', 'string', 'max:255'],
                 'articles' => ['required', 'array', 'min:1'],
@@ -1022,7 +1035,7 @@ final class HomepageSectionService implements HomepageSectionServiceInterface
                 'articles.*.categoryLabel' => ['required', 'string', 'max:120'],
                 'articles.*.badgeTag' => ['nullable', 'string', 'max:120'],
                 'articles.*.url' => ['required', 'string', $this->linkRule()],
-                'content.selectionMode' => ['required', Rule::in(['manual', 'fallback'])],
+                'content.selectionMode' => ['nullable', Rule::in(['manual', 'fallback'])],
             ],
             'research_studies' => [
                 'title' => ['required', 'string', 'max:255'],
@@ -1030,12 +1043,12 @@ final class HomepageSectionService implements HomepageSectionServiceInterface
                 'researchItems.*.imageUrl' => ['nullable', 'string', $this->assetPathRule()],
                 'researchItems.*.title' => ['required', 'string', 'max:255'],
                 'researchItems.*.summary' => ['nullable', 'string', 'max:500'],
-                'researchItems.*.publishedAt' => ['required', 'date'],
+                'researchItems.*.publishedAt' => ['nullable', 'date'],
                 'researchItems.*.categoryLabel' => ['required', 'string', 'max:120'],
                 'researchItems.*.authors' => ['nullable', 'array'],
                 'researchItems.*.authors.*' => ['required', 'string', 'max:120'],
                 'researchItems.*.url' => ['required', 'string', $this->linkRule()],
-                'content.selectionMode' => ['required', Rule::in(['manual', 'fallback'])],
+                'content.selectionMode' => ['nullable', Rule::in(['manual', 'fallback'])],
             ],
             'events_activities' => [
                 'title' => ['required', 'string', 'max:255'],
@@ -1054,12 +1067,12 @@ final class HomepageSectionService implements HomepageSectionServiceInterface
                 'title' => ['required', 'string', 'max:255'],
                 'items' => ['required', 'array', 'min:1'],
                 'items.*.title' => ['required', 'string', 'max:255'],
-                'items.*.summary' => ['required', 'string', 'max:500'],
+                'items.*.summary' => ['nullable', 'string', 'max:500'],
                 'items.*.imageUrl' => ['required', 'string', $this->assetPathRule()],
                 'items.*.typeTag' => ['nullable', 'string', 'max:120'],
-                'items.*.action' => ['required', 'array'],
-                'items.*.action.label' => ['required', 'string', 'max:255'],
-                'items.*.action.url' => ['required', 'string', $this->linkRule()],
+                'items.*.action' => ['nullable', 'array'],
+                'items.*.action.label' => ['nullable', 'string', 'max:255'],
+                'items.*.action.url' => ['nullable', 'string', $this->linkRule()],
             ],
             'footer' => [
                 'footerColumns' => ['required', 'array', 'min:1'],
@@ -1076,8 +1089,8 @@ final class HomepageSectionService implements HomepageSectionServiceInterface
                 'content.brandBlock' => ['required', 'array'],
                 'content.brandBlock.title' => ['required', 'string', 'max:255'],
                 'content.brandBlock.logoUrl' => ['nullable', 'string', $this->assetPathRule()],
-                'content.contactBlock' => ['required', 'array'],
-                'content.contactBlock.title' => ['required', 'string', 'max:255'],
+                'content.contactBlock' => ['nullable', 'array'],
+                'content.contactBlock.title' => ['nullable', 'string', 'max:255'],
                 'content.contactBlock.address' => ['nullable', 'string', 'max:500'],
                 'content.contactBlock.phone' => ['nullable', 'string', 'max:120'],
                 'content.contactBlock.email' => ['nullable', 'string', 'max:255'],
@@ -1115,6 +1128,19 @@ final class HomepageSectionService implements HomepageSectionServiceInterface
     private function applyConditionalRules(\Illuminate\Validation\Validator $validator, string $key, array $payload): void
     {
         $validator->after(function (\Illuminate\Validation\Validator $validator) use ($key, $payload): void {
+            if ($key === 'hero') {
+                $images = [];
+                $contentImages = $payload['content']['images'] ?? [];
+
+                if (is_array($contentImages)) {
+                    $images = array_values(array_filter($contentImages, static fn (mixed $image): bool => is_string($image) && $image !== ''));
+                }
+
+                if (! is_string($payload['backgroundImageUrl'] ?? null) && $images === []) {
+                    $validator->errors()->add('backgroundImageUrl', 'The hero section must include a background image or at least one carousel image.');
+                }
+            }
+
             if (in_array($key, ['academic_faculties', 'medical_facilities_services'], true)) {
                 foreach ($this->listOfArrays($payload['items'] ?? []) as $index => $item) {
                     if (! is_string($item['imageUrl'] ?? null) && ! is_string($item['icon'] ?? null)) {
@@ -1126,7 +1152,7 @@ final class HomepageSectionService implements HomepageSectionServiceInterface
             if ($key === 'footer') {
                 $contactBlock = is_array($payload['content']['contactBlock'] ?? null) ? $payload['content']['contactBlock'] : [];
 
-                if (
+                if ($contactBlock !== [] &&
                     ! is_string($contactBlock['address'] ?? null)
                     && ! is_string($contactBlock['phone'] ?? null)
                     && ! is_string($contactBlock['email'] ?? null)

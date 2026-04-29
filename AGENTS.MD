@@ -133,13 +133,14 @@ Rules:
 
 ## Homepage Rules
 
-The homepage is a fixed 10-section CMS page.
+The homepage is a fixed 11-section CMS page.
 
 Approved homepage section keys:
 - `hero`
 - `hero_stats`
 - `academic_faculties`
 - `achievements_highlights`
+- `choose_your_path`
 - `university_news`
 - `research_studies`
 - `events_activities`

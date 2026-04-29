@@ -80,7 +80,7 @@ Admin login: `admin@spu.edu.sy` / `password`
 - `SlugService` — Arabic transliteration, URL-safe slug generation, uniqueness enforcement (max 10 collision attempts)
 
 **Filament custom pages (3):**
-- `ManageHomepage` (`/admin/manage-homepage`) — 10-section tabbed editor with AR/EN locale sub-tabs, Save Draft / Preview (AR/EN) / Publish / Schedule / Unpublish actions, state badge
+- `ManageHomepage` (`/admin/manage-homepage`) — 11-section tabbed editor with AR/EN locale sub-tabs, Save Draft / Preview (AR/EN) / Publish / Schedule / Unpublish actions, state badge
 - `ManageMenu` (`/admin/manage-menu`) — header/footer/utility group tabs, AR/EN locale views, tree item CRUD with drag handles and depth enforcement (max 2)
 - `ManageSettings` (`/admin/manage-settings`) — 6 grouped sections (Utility Nav, Footer, Emergency Notice, Contact, Social, SEO Defaults) with AR/EN tabs
 
@@ -96,7 +96,7 @@ Admin login: `admin@spu.edu.sy` / `password`
 - `faculty_editor` → scoped pages and media only
 
 **Key files to review:**
-- `app/Filament/Pages/ManageHomepage.php` — the big one (984 lines), all 10 section form schemas
+- `app/Filament/Pages/ManageHomepage.php` — the big one, all 11 section form schemas
 - `app/Filament/Resources/PageResource.php` — page CRUD with translations and SEO
 - `app/Services/MediaService.php` — real upload/validation logic
 - `app/Services/SlugService.php` — Arabic transliteration map
@@ -142,7 +142,7 @@ All commands support `--format=json` or `--format=csv` and `--disk`/`--dir` for 
 - `cache:warm` — warms homepage AR/EN, navigation payloads, settings payloads, optionally sitemap
 
 **Documentation (2):**
-- `docs/launch-readiness-checklist.md` — 10-section pre-launch checklist
+- `docs/launch-readiness-checklist.md` — 11-section pre-launch checklist
 - `docs/rollback-preparation.md` — rollback thresholds, abort criteria, snapshot expectations, spike monitoring
 
 **Key files to review:**

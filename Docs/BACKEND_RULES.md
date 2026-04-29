@@ -198,6 +198,7 @@ Not acceptable:
   - hero_stats
   - academic_faculties
   - achievements_highlights
+  - choose_your_path
   - university_news
   - research_studies
   - events_activities

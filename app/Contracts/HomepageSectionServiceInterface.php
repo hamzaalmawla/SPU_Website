@@ -11,18 +11,18 @@ use App\DTOs\ValidationResultDTO;
 use Illuminate\Support\Collection;
 
 /**
- * Defines management operations for the fixed 10-section homepage CMS page.
+ * Defines management operations for the fixed 11-section homepage CMS page.
  */
 interface HomepageSectionServiceInterface
 {
     public const SECTION_KEYS = [
         'hero',
         'hero_stats',
-        'achievements_highlights',
         'academic_faculties',
+        'achievements_highlights',
         'choose_your_path',
-        'research_studies',
         'university_news',
+        'research_studies',
         'events_activities',
         'medical_facilities_services',
         'bottom_stats',

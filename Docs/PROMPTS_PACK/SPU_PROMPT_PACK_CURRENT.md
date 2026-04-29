@@ -695,11 +695,12 @@ The repository already contains meaningful homepage foundation pieces, including
 There is also already seeded homepage structure and section data scaffolding in the repo.
 This phase is not greenfield homepage creation.
 It is for completing and normalizing the homepage CMS workflow on top of the real public runtime implemented in PX02.
-The homepage is a fixed 10-section CMS page and must use these exact keys only:
+The homepage is a fixed 11-section CMS page and must use these exact keys only:
 •	hero
 •	hero_stats
 •	academic_faculties
 •	achievements_highlights
+•	choose_your_path
 •	university_news
 •	research_studies
 •	events_activities
@@ -935,7 +936,7 @@ Do not degrade the homepage into:
 7. Patch homepage seeders/factories only as needed
 Review the current homepage-related seeders and patch them where needed so local development remains usable.
 Requirements:
-•	preserve the fixed 10-key homepage model
+•	preserve the fixed 11-key homepage model
 •	ensure AR and EN translation rows exist
 •	ensure payloads are realistic enough for local UI/runtime development
 •	ensure seeders remain suitable for local rebuilds
@@ -975,7 +976,7 @@ You must build from the work already done.
 REQUIRED IMPLEMENTATION OUTCOMES
 By the end of this phase, the homepage CMS should have these properties:
 Section management
-•	fixed 10-section model only
+•	fixed 11-section model only
 •	locale-aware payload editing
 •	structured payload validation
 •	ordered section retrieval
@@ -1764,7 +1765,7 @@ If the current repo already shifted some of these responsibilities fully into Fi
 Implement or complete a real homepage builder/admin editing surface.
 This can be a Filament page or the repo’s chosen equivalent, but it must be built on the real homepage services already completed in prior phases.
 Requirements:
-•	represent the homepage as the fixed 10-section model only
+•	represent the homepage as the fixed 11-section model only
 •	support AR and EN editing separately
 •	allow section-level editing using structured forms
 •	allow section enable/disable where permitted
@@ -2506,4 +2507,3 @@ This phase assumes:
 •	migration backfill/reporting tooling exists
 Do not behave as if this phase starts from zero.
 You are hardening and validating an already-implemented foundation so it can support migration rehearsal and launch decision-making.
-

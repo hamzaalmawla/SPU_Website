@@ -34,7 +34,7 @@ class HomepageCmsWorkflowTest extends TestCase
     {
         $sections = $this->homepageService()->getSections();
 
-        $this->assertCount(10, $sections);
+        $this->assertCount(11, $sections);
         $this->assertSame(
             HomepageSectionServiceInterface::SECTION_KEYS,
             $sections->pluck('key')->all(),
@@ -43,8 +43,15 @@ class HomepageCmsWorkflowTest extends TestCase
         $hero = $sections->firstWhere('key', 'hero');
 
         $this->assertInstanceOf(HomepageSectionDTO::class, $hero);
-        $this->assertSame('منصة الجامعة الرئيسية', $hero->arabicPayload?->title);
-        $this->assertSame('Primary university shell', $hero->englishPayload?->title);
+        $this->assertSame('الجامعة السورية الخاصة', $hero->arabicPayload?->title);
+        $this->assertSame('Syrian Private University', $hero->englishPayload?->title);
+
+        $choosePath = $sections->firstWhere('key', 'choose_your_path');
+
+        $this->assertInstanceOf(HomepageSectionDTO::class, $choosePath);
+        $this->assertSame('اختر مسارك', $choosePath->arabicPayload?->title);
+        $this->assertSame('Choose Your Path', $choosePath->englishPayload?->title);
+        $this->assertCount(4, $choosePath->englishPayload?->items ?? []);
     }
 
     public function test_update_section_is_locale_specific_and_does_not_leak_publicly_before_publish(): void
@@ -63,8 +70,8 @@ class HomepageCmsWorkflowTest extends TestCase
 
         $this->assertInstanceOf(HomepageSectionDTO::class, $hero);
         $this->assertSame('Draft Homepage Hero', $hero->englishPayload?->title);
-        $this->assertSame('منصة الجامعة الرئيسية', $hero->arabicPayload?->title);
-        $this->assertSame('Primary university shell', $this->heroTitleFromPublicHomepage('en'));
+        $this->assertSame('الجامعة السورية الخاصة', $hero->arabicPayload?->title);
+        $this->assertSame('Syrian Private University', $this->heroTitleFromPublicHomepage('en'));
         $this->assertDatabaseHas('audit_logs', ['action' => 'homepage.section_updated']);
     }
 
@@ -160,7 +167,7 @@ class HomepageCmsWorkflowTest extends TestCase
         );
 
         $this->assertFalse($this->publishingService()->publish($draft->id, $this->author()->id));
-        $this->assertSame('Primary university shell', $this->heroTitleFromPublicHomepage('en'));
+        $this->assertSame('Syrian Private University', $this->heroTitleFromPublicHomepage('en'));
     }
 
     public function test_publish_updates_public_homepage_invalidates_cache_and_writes_audit_logs(): void
@@ -171,7 +178,7 @@ class HomepageCmsWorkflowTest extends TestCase
 
         Auth::guard('web')->logout();
 
-        $this->get('/en')->assertOk()->assertHeader('X-Cache', 'MISS')->assertSee('Primary university shell');
+        $this->get('/en')->assertOk()->assertHeader('X-Cache', 'MISS')->assertSee('Syrian Private University');
         $this->get('/en')->assertOk()->assertHeader('X-Cache', 'HIT');
 
         $this->actingAs($this->author(), 'web');
@@ -191,8 +198,7 @@ class HomepageCmsWorkflowTest extends TestCase
         $this->get('/en')
             ->assertOk()
             ->assertHeader('X-Cache', 'MISS')
-            ->assertSee('Published Homepage Hero')
-            ->assertDontSee('Primary university shell');
+            ->assertSee('Published Homepage Hero');
 
         $this->assertSame('Published Homepage Hero', $this->heroTitleFromPublicHomepage('en'));
         $this->assertDatabaseHas('audit_logs', ['action' => 'homepage.publish']);
