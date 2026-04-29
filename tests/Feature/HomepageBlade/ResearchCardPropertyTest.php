@@ -30,6 +30,8 @@ class ResearchCardPropertyTest extends TestCase
             'locale' => 'en',
         ])->render();
 
+        $this->assertStringContainsString('Research Title', $html);
+
         for ($i = 0; $i < $count; $i++) {
             $this->assertStringContainsString("Research Item {$i}", $html);
         }

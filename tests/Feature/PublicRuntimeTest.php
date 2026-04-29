@@ -30,15 +30,15 @@ class PublicRuntimeTest extends TestCase
     {
         $this->get('/ar')
             ->assertOk()
-            ->assertSee('منصة الجامعة الرئيسية')
-            ->assertSee('الكليات الأكاديمية')
+            ->assertSee('الجامعة السورية الخاصة')
+            ->assertSee('كلياتنا الجامعية')
             ->assertDontSee('academic faculties')
             ->assertDontSee('Public AR homepage');
 
         $this->get('/en')
             ->assertOk()
-            ->assertSee('Primary university shell')
-            ->assertSee('Academic faculties')
+            ->assertSee('Syrian Private University')
+            ->assertSee('Our Faculties')
             ->assertDontSee('Public EN homepage');
     }
 
@@ -56,15 +56,15 @@ class PublicRuntimeTest extends TestCase
             ->assertOk()
             ->assertSee('About')
             ->assertSee('Student Portal')
-            ->assertSee('Important links')
-            ->assertSee('Privacy policy')
-            ->assertSee('Contact us')
+            ->assertSee('EXPLORE SPU')
+            ->assertSee('Apply Now')
+            ->assertSee('Contact SPU')
             ->assertDontSee('Connect');
 
         $this->get('/ar')
             ->assertOk()
             ->assertSee('بوابة الطالب')
-            ->assertSee('روابط سريعة')
+            ->assertSee('استكشف SPU')
             ->assertSee('تواصل معنا')
             ->assertDontSee('Student Portal');
 
@@ -234,12 +234,12 @@ class PublicRuntimeTest extends TestCase
         $this->get('/ar/preview?token='.$preview->token)
             ->assertOk()
             ->assertSee('محتوى عربي للمعاينة')
-            ->assertSee('/en/preview?token='.$preview->token, false)
-            ->assertSee('/ar/preview?token='.$preview->token, false);
+            ->assertSee('/en/preview?token='.$preview->token, false);
 
         $this->get('/en/preview?token='.$preview->token)
             ->assertOk()
             ->assertSee('English preview content')
+            ->assertSee('/ar/preview?token='.$preview->token, false)
             ->assertDontSee('Published page body');
     }
 
@@ -336,11 +336,16 @@ class PublicRuntimeTest extends TestCase
                             'payload' => [
                                 'title' => 'Draft Section',
                                 'summary' => 'Secondary draft summary',
-                                'stats' => [
-                                    ['value' => '12', 'label' => 'Draft Stat'],
-                                ],
-                                'featuredItems' => [
-                                    ['title' => 'Draft Feature', 'summary' => 'Feature summary'],
+                                'items' => [
+                                    [
+                                        'title' => 'Draft Faculty',
+                                        'imageUrl' => '/images/faculty-test.svg',
+                                        'metric' => 'Draft Stat',
+                                        'action' => [
+                                            'label' => 'Draft Feature',
+                                            'url' => '/en/faculties',
+                                        ],
+                                    ],
                                 ],
                             ],
                             'arabicTranslation' => [
@@ -399,6 +404,7 @@ class PublicRuntimeTest extends TestCase
             ->assertSeeInOrder(['Preview Homepage Hero', 'Draft Section'])
             ->assertSee('Draft homepage summary')
             ->assertSee('Explore Draft')
+            ->assertSee('Draft Faculty')
             ->assertSee('Draft Stat')
             ->assertSee('Draft Feature');
 
