@@ -4,6 +4,7 @@ use App\Http\Middleware\AdminAuthMiddleware;
 use App\Http\Middleware\CachePublicPages;
 use App\Http\Middleware\LocaleSetterMiddleware;
 use App\Http\Middleware\RedirectContinuityMiddleware;
+use App\Http\Middleware\SecurityHeadersMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -16,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->prepend(RedirectContinuityMiddleware::class);
+        $middleware->append(SecurityHeadersMiddleware::class);
 
         $middleware->validateCsrfTokens(except: [
             'webhook/*',

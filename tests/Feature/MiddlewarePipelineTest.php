@@ -52,6 +52,26 @@ class MiddlewarePipelineTest extends TestCase
             ->assertHeader('X-Page-Direction', 'ltr');
     }
 
+    public function test_public_routes_include_security_headers(): void
+    {
+        $this->get('/en')
+            ->assertOk()
+            ->assertHeader('X-Content-Type-Options', 'nosniff')
+            ->assertHeader('Referrer-Policy', 'no-referrer')
+            ->assertHeader('X-Frame-Options', 'SAMEORIGIN')
+            ->assertHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()')
+            ->assertHeader('Content-Security-Policy-Report-Only');
+    }
+
+    public function test_admin_routes_include_security_headers(): void
+    {
+        $this->get('/admin/login')
+            ->assertOk()
+            ->assertHeader('X-Content-Type-Options', 'nosniff')
+            ->assertHeader('Referrer-Policy', 'no-referrer')
+            ->assertHeader('X-Frame-Options', 'SAMEORIGIN');
+    }
+
     /**
      * It serves the second public request from cache.
      */
