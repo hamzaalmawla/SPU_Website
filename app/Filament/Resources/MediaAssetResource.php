@@ -173,7 +173,7 @@ class MediaAssetResource extends Resource
                         ->directory('media')
                         ->visibility('public')
                         ->acceptedFileTypes([
-                            'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+                            'image/jpeg', 'image/png', 'image/gif', 'image/webp',
                             'application/pdf',
                             'application/msword',
                             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',

@@ -60,6 +60,23 @@ class MediaServiceTest extends TestCase
         $this->service->upload(['file' => $file]);
     }
 
+    public function test_upload_rejects_svg_even_when_ui_validation_is_bypassed(): void
+    {
+        $file = UploadedFile::fake()->create('payload.svg', 1, 'image/svg+xml');
+
+        try {
+            $this->service->upload(['file' => $file]);
+
+            $this->fail('SVG uploads must be rejected by service-layer validation.');
+        } catch (ValidationException $exception) {
+            $this->assertSame(
+                ["File type 'image/svg+xml' is not allowed."],
+                $exception->errors()['file'] ?? [],
+            );
+            $this->assertDatabaseCount('media_assets', 0);
+        }
+    }
+
     public function test_upload_rejects_oversized_file(): void
     {
         $file = UploadedFile::fake()->create('large.pdf', 21 * 1024, 'application/pdf');

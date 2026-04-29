@@ -44,6 +44,7 @@
 - [ ] Mapped legacy file paths resolve to current delivery paths
 - [ ] Unmapped file requests are logged structurally
 - [ ] Media uploads validate type, size, and dimensions
+- [ ] Existing SVG media assets reviewed before launch with `SELECT id, path FROM media_assets WHERE mime_type = 'image/svg+xml' AND deleted_at IS NULL;`
 - [ ] Media metadata (title, alt text, caption) editable in AR/EN
 - [ ] Soft-deleted media assets excluded from public queries
 
