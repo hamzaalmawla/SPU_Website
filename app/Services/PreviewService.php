@@ -15,11 +15,15 @@ use App\DTOs\HomepageSectionTranslationDTO;
 use App\DTOs\PreviewDTO;
 use App\DTOs\PreviewPayloadDTO;
 use App\Models\HomepageDraft;
-use App\Models\PageDraft;
 use App\Models\PreviewToken;
 use App\Support\HomepagePayloadMapper;
-use Illuminate\Support\Str;
 
+/**
+ * Preview assembly orchestrator.
+ *
+ * Delegates token lifecycle (create, resolve, validate, invalidate, hash)
+ * to PreviewTokenStore and focuses on building preview DTOs from draft content.
+ */
 final class PreviewService implements PreviewServiceInterface
 {
     private const EDITABLE_STATUSES = ['draft', 'scheduled'];
@@ -28,52 +32,38 @@ final class PreviewService implements PreviewServiceInterface
         private readonly PageServiceInterface $pageService,
         private readonly HomepageSectionServiceInterface $homepageSectionService,
         private readonly NavigationServiceInterface $navigationService,
+        private readonly PreviewTokenStore $tokenStore,
     ) {}
 
     public function createToken(string $targetType, ?int $targetId, string $locale, int $userId, ?string $device = null): PreviewDTO
     {
-        $this->assertSupportedTargetType($targetType);
-        $this->assertSupportedDevice($device);
-        $this->assertSupportedLocale($locale);
+        $result = $this->tokenStore->create($targetType, $targetId, $locale, $userId, $device);
 
-        $rawToken = Str::random(64);
-
-        $token = PreviewToken::query()->create([
-            'token_hash' => $this->hashToken($rawToken),
-            'target_type' => $targetType,
-            'target_id' => $targetId,
-            'locale' => $locale,
-            'device' => $device,
-            'issued_to_user_id' => $userId,
-            'payload_json' => $this->snapshotPayload($targetType, $targetId),
-            'expires_at' => now()->addHours(6),
-        ]);
-
-        return $this->buildPreviewDto($token, rawToken: $rawToken);
+        return $this->buildPreviewDto($result['model'], rawToken: $result['raw_token']);
     }
 
     public function resolveToken(string $token, ?string $locale = null): ?PreviewDTO
     {
-        $previewToken = PreviewToken::query()
-            ->where('token_hash', $this->hashToken($token))
-            ->where('expires_at', '>', now())
-            ->first();
+        $previewToken = $this->tokenStore->resolve($token);
 
-        return $previewToken instanceof PreviewToken ? $this->buildPreviewDto($previewToken, $locale, $token) : null;
+        return $previewToken instanceof PreviewToken
+            ? $this->buildPreviewDto($previewToken, $locale, $token)
+            : null;
     }
 
     public function validateToken(string $token): bool
     {
-        return PreviewToken::query()
-            ->where('token_hash', $this->hashToken($token))
-            ->where('expires_at', '>', now())
-            ->exists();
+        return $this->tokenStore->validate($token);
     }
 
     public function invalidateToken(string $token): bool
     {
-        return PreviewToken::query()->where('token_hash', $this->hashToken($token))->delete() > 0;
+        return $this->tokenStore->invalidate($token);
     }
+
+    // ------------------------------------------------------------------
+    // Preview DTO assembly
+    // ------------------------------------------------------------------
 
     private function buildPreviewDto(PreviewToken $token, ?string $requestedLocale = null, ?string $rawToken = null): PreviewDTO
     {
@@ -102,11 +92,6 @@ final class PreviewService implements PreviewServiceInterface
             expiresAt: $token->expires_at?->toIso8601String(),
             device: is_string($token->device) && $token->device !== '' ? $token->device : null,
         );
-    }
-
-    private function hashToken(string $token): string
-    {
-        return hash_hmac('sha256', $token, (string) config('app.key'));
     }
 
     /**
@@ -186,6 +171,10 @@ final class PreviewService implements PreviewServiceInterface
         );
     }
 
+    // ------------------------------------------------------------------
+    // Section / translation mapping helpers
+    // ------------------------------------------------------------------
+
     private function sectionFromDraft(array $payload, string $locale): HomepageSectionDTO
     {
         $arabicPayload = $this->sectionDataFromDraft(
@@ -238,26 +227,9 @@ final class PreviewService implements PreviewServiceInterface
         );
     }
 
-    private function assertSupportedTargetType(string $targetType): void
-    {
-        if (! in_array($targetType, self::TARGET_TYPES, true)) {
-            throw new \InvalidArgumentException('Unsupported preview target type.');
-        }
-    }
-
-    private function assertSupportedDevice(?string $device): void
-    {
-        if ($device !== null && ! in_array($device, ['desktop', 'tablet', 'mobile'], true)) {
-            throw new \InvalidArgumentException('Unsupported preview device.');
-        }
-    }
-
-    private function assertSupportedLocale(string $locale): void
-    {
-        if (! in_array($locale, ['ar', 'en'], true)) {
-            throw new \InvalidArgumentException('Unsupported preview locale.');
-        }
-    }
+    // ------------------------------------------------------------------
+    // Utility helpers
+    // ------------------------------------------------------------------
 
     private function resolveSupportedLocale(?string $preferredLocale, ?string $fallbackLocale = null): string
     {
@@ -268,38 +240,6 @@ final class PreviewService implements PreviewServiceInterface
         }
 
         return 'ar';
-    }
-
-    /**
-     * @return array<string, mixed>|null
-     */
-    private function snapshotPayload(string $targetType, ?int $targetId): ?array
-    {
-        if ($targetType === 'homepage') {
-            $draft = HomepageDraft::query()
-                ->where('target_type', 'homepage')
-                ->whereIn('status', self::EDITABLE_STATUSES)
-                ->latest('updated_at')
-                ->first();
-
-            return $draft instanceof HomepageDraft && is_array($draft->payload_json)
-                ? $draft->payload_json
-                : null;
-        }
-
-        if ($targetType === 'page' && $targetId !== null) {
-            $draft = PageDraft::query()
-                ->where('page_id', $targetId)
-                ->whereIn('status', self::EDITABLE_STATUSES)
-                ->latest('updated_at')
-                ->first();
-
-            return $draft instanceof PageDraft && is_array($draft->payload_json)
-                ? $draft->payload_json
-                : null;
-        }
-
-        return null;
     }
 
     private function pagePreviewPath(PreviewPayloadDTO $payload, string $locale): ?string

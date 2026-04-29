@@ -40,10 +40,14 @@ use App\Services\HomepageSectionService;
 use App\Services\HomepageSectionValidator;
 use App\Services\MenuService;
 use App\Services\NavigationService;
+use App\Services\PageDraftService;
+use App\Services\PagePublicReadService;
 use App\Services\PageService;
+use App\Services\PageUrlResolver;
 use App\Services\SlugService;
 use App\Services\MediaService;
 use App\Services\PreviewService;
+use App\Services\PreviewTokenStore;
 use App\Services\SeoMetadataService;
 use App\Services\SettingsService;
 use App\Services\SitemapService;
@@ -69,8 +73,12 @@ class AppServiceProvider extends ServiceProvider
         $this->registerFoundationBindings();
 
         $this->app->singleton(HtmlSanitizer::class);
+        $this->app->singleton(PreviewTokenStore::class);
         $this->app->singleton(HomepageDraftReader::class);
         $this->app->singleton(HomepageSectionValidator::class);
+        $this->app->singleton(PagePublicReadService::class);
+        $this->app->singleton(PageDraftService::class);
+        $this->app->singleton(PageUrlResolver::class);
         $this->app->singleton(LogoutResponseContract::class, LogoutResponse::class);
     }
 

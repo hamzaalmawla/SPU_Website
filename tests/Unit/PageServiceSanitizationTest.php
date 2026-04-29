@@ -10,7 +10,10 @@ use App\Contracts\SeoMetadataServiceInterface;
 use App\DTOs\PageTranslationDTO;
 use App\Models\Page;
 use App\Models\PageTranslation;
+use App\Services\PageDraftService;
+use App\Services\PagePublicReadService;
 use App\Services\PageService;
+use App\Services\PageUrlResolver;
 use App\Support\HtmlSanitizer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
@@ -34,7 +37,9 @@ final class PageServiceSanitizationTest extends TestCase
         $this->service = new PageService(
             app(AuditServiceInterface::class),
             app(CacheServiceInterface::class),
-            app(SeoMetadataServiceInterface::class),
+            app(PagePublicReadService::class),
+            app(PageDraftService::class),
+            app(PageUrlResolver::class),
             app(HtmlSanitizer::class),
         );
     }
