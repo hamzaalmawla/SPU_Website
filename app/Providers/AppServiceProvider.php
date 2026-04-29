@@ -35,7 +35,9 @@ use App\Services\AuthService;
 use App\Services\CacheService;
 use App\Services\ContinuityService;
 use App\Services\HomepagePublishingService;
+use App\Services\HomepageDraftReader;
 use App\Services\HomepageSectionService;
+use App\Services\HomepageSectionValidator;
 use App\Services\MenuService;
 use App\Services\NavigationService;
 use App\Services\PageService;
@@ -67,6 +69,8 @@ class AppServiceProvider extends ServiceProvider
         $this->registerFoundationBindings();
 
         $this->app->singleton(HtmlSanitizer::class);
+        $this->app->singleton(HomepageDraftReader::class);
+        $this->app->singleton(HomepageSectionValidator::class);
         $this->app->singleton(LogoutResponseContract::class, LogoutResponse::class);
     }
 
