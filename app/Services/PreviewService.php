@@ -44,8 +44,10 @@ final class PreviewService implements PreviewServiceInterface
         $this->assertSupportedDevice($device);
         $this->assertSupportedLocale($locale);
 
+        $rawToken = Str::random(64);
+
         $token = PreviewToken::query()->create([
-            'token' => Str::random(64),
+            'token_hash' => $this->hashToken($rawToken),
             'target_type' => $targetType,
             'target_id' => $targetId,
             'locale' => $locale,
@@ -55,33 +57,33 @@ final class PreviewService implements PreviewServiceInterface
             'expires_at' => now()->addHours(6),
         ]);
 
-        return $this->buildPreviewDto($token);
+        return $this->buildPreviewDto($token, rawToken: $rawToken);
     }
 
     public function resolveToken(string $token, ?string $locale = null): ?PreviewDTO
     {
         $previewToken = PreviewToken::query()
-            ->where('token', $token)
+            ->where('token_hash', $this->hashToken($token))
             ->where('expires_at', '>', now())
             ->first();
 
-        return $previewToken instanceof PreviewToken ? $this->buildPreviewDto($previewToken, $locale) : null;
+        return $previewToken instanceof PreviewToken ? $this->buildPreviewDto($previewToken, $locale, $token) : null;
     }
 
     public function validateToken(string $token): bool
     {
         return PreviewToken::query()
-            ->where('token', $token)
+            ->where('token_hash', $this->hashToken($token))
             ->where('expires_at', '>', now())
             ->exists();
     }
 
     public function invalidateToken(string $token): bool
     {
-        return PreviewToken::query()->where('token', $token)->delete() > 0;
+        return PreviewToken::query()->where('token_hash', $this->hashToken($token))->delete() > 0;
     }
 
-    private function buildPreviewDto(PreviewToken $token, ?string $requestedLocale = null): PreviewDTO
+    private function buildPreviewDto(PreviewToken $token, ?string $requestedLocale = null, ?string $rawToken = null): PreviewDTO
     {
         $locale = $this->resolveSupportedLocale($requestedLocale, is_string($token->locale) ? $token->locale : null);
         $payload = $this->buildPayload(
@@ -95,11 +97,11 @@ final class PreviewService implements PreviewServiceInterface
             : $this->pagePreviewPath($payload, $locale);
 
         return new PreviewDTO(
-            token: (string) $token->token,
+            token: $rawToken ?? '',
             targetType: (string) $token->target_type,
             targetId: $token->target_id !== null ? (int) $token->target_id : null,
             locale: $locale,
-            previewUrl: '/'.$locale.'/preview?token='.(string) $token->token,
+            previewUrl: '/'.$locale.'/preview?token='.($rawToken ?? ''),
             payload: new PreviewPayloadDTO(
                 page: $payload->page,
                 homepage: $payload->homepage,
@@ -108,6 +110,11 @@ final class PreviewService implements PreviewServiceInterface
             expiresAt: $token->expires_at?->toIso8601String(),
             device: is_string($token->device) && $token->device !== '' ? $token->device : null,
         );
+    }
+
+    private function hashToken(string $token): string
+    {
+        return hash_hmac('sha256', $token, (string) config('app.key'));
     }
 
     /**

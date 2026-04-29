@@ -13,6 +13,7 @@ use App\DTOs\HomepageSectionDTO;
 use App\DTOs\HomepageSectionTranslationDTO;
 use App\DTOs\NavigationActionDTO;
 use App\Models\HomepageDraft;
+use App\Models\PreviewToken;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -93,6 +94,11 @@ class HomepageCmsWorkflowTest extends TestCase
         $this->assertSame($draft->id, HomepageDraft::query()->latest('id')->value('id'));
         $this->assertTrue($this->previewService()->validateToken($preview->token));
         $this->assertSame('mobile', $preview->device);
+
+        $storedPreview = PreviewToken::query()->latest('id')->firstOrFail();
+
+        $this->assertSame(hash_hmac('sha256', $preview->token, (string) config('app.key')), $storedPreview->token_hash);
+        $this->assertFalse(array_key_exists('token', $storedPreview->getAttributes()));
 
         $this->get($preview->previewUrl)
             ->assertOk()

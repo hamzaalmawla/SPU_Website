@@ -16,7 +16,7 @@ class PreviewToken extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'token',
+        'token_hash',
         'target_type',
         'target_id',
         'locale',
