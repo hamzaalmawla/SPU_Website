@@ -82,19 +82,28 @@ final class CacheService implements CacheServiceInterface
 
     /**
      * Scope cache operations by one or more tags.
+     *
+     * Falls back to the untagged repository when the current store
+     * does not support tagging (e.g. database, file drivers).
      */
     public function tags(array|string $tags): static
     {
         $repository = $this->repository();
 
         if (! is_callable([$repository, 'tags'])) {
-            throw new BadMethodCallException('The configured cache store does not support tags.');
+            // Store does not support tags – return a clone that uses the
+            // plain (untagged) repository so callers keep working.
+            return clone $this;
         }
 
-        $taggedRepository = call_user_func([$repository, 'tags'], $tags);
+        try {
+            $taggedRepository = call_user_func([$repository, 'tags'], $tags);
+        } catch (BadMethodCallException) {
+            return clone $this;
+        }
 
         if (! $taggedRepository instanceof Repository) {
-            throw new BadMethodCallException('Unable to create a tagged cache repository.');
+            return clone $this;
         }
 
         $service = clone $this;

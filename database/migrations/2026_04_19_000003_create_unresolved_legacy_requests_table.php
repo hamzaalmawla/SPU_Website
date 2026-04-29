@@ -22,8 +22,8 @@ return new class extends Migration
             $table->string('user_agent', 512)->nullable();
             $table->string('ip_hash', 64)->nullable();
             $table->unsignedInteger('hit_count')->default(1);
-            $table->timestamp('first_seen_at');
-            $table->timestamp('last_seen_at');
+            $table->timestamp('first_seen_at')->useCurrent();
+            $table->timestamp('last_seen_at')->useCurrent();
             $table->timestamp('created_at')->nullable();
 
             $table->unique(['url', 'method'], 'uq_unresolved_url_method');

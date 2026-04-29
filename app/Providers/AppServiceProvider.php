@@ -41,6 +41,9 @@ use App\Services\PreviewService;
 use App\Services\SeoMetadataService;
 use App\Services\SettingsService;
 use App\Services\SitemapService;
+use App\Http\Responses\LogoutResponse;
+use App\Support\HtmlSanitizer;
+use Filament\Http\Responses\Auth\Contracts\LogoutResponse as LogoutResponseContract;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -58,6 +61,9 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->registerFoundationBindings();
+
+        $this->app->singleton(HtmlSanitizer::class);
+        $this->app->singleton(LogoutResponseContract::class, LogoutResponse::class);
     }
 
     /**

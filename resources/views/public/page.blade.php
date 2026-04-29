@@ -80,7 +80,7 @@
                 <div class="mt-6 space-y-5 text-base leading-8 text-slate-200">
                     @foreach ($page['bodyBlocks'] as $block)
                         @if (($block['type'] ?? null) === 'legacy_html' && ! empty($block['content']))
-                            <div class="prose prose-invert max-w-none prose-p:text-slate-200 prose-a:text-sky-300">{!! $block['content'] !!}</div>
+                            <div class="prose prose-invert max-w-none prose-p:text-slate-200 prose-a:text-sky-300">{!! app(\App\Support\HtmlSanitizer::class)->sanitize($block['content']) !!}</div>
                         @elseif (! empty($block['content']))
                             <p>{{ $block['content'] }}</p>
                         @endif

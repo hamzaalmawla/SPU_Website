@@ -25,6 +25,7 @@ use App\Models\Page;
 use App\Models\PageDraft;
 use App\Models\PageSeoMeta;
 use App\Models\PageTranslation;
+use App\Support\HtmlSanitizer;
 use DateTimeInterface;
 use Illuminate\Support\Facades\DB;
 
@@ -36,6 +37,7 @@ final class PageService implements PageServiceInterface
         private readonly AuditServiceInterface $auditService,
         private readonly CacheServiceInterface $cacheService,
         private readonly SeoMetadataServiceInterface $seoMetadataService,
+        private readonly HtmlSanitizer $htmlSanitizer,
     ) {}
 
     public function createPageShell(PageShellDataDTO $payload, int $userId): PageDTO
@@ -242,6 +244,9 @@ final class PageService implements PageServiceInterface
             return false;
         }
 
+        $sanitizedBody = $this->htmlSanitizer->sanitize($payload->body);
+        $sanitizedBodyPayload = $this->sanitizeBodyPayload($payload->bodyPayload);
+
         $translation = PageTranslation::query()->updateOrCreate(
             ['page_id' => $pageId, 'locale' => $locale],
             [
@@ -252,11 +257,11 @@ final class PageService implements PageServiceInterface
                 'hero_payload' => $payload->heroPayload,
                 'overview_cards_payload' => $payload->overviewCardsPayload,
                 'stats_payload' => $payload->statsPayload,
-                'body_payload' => $payload->bodyPayload,
+                'body_payload' => $sanitizedBodyPayload,
                 'cta_payload' => $payload->ctaPayload,
                 'sidebar_payload' => $payload->sidebarPayload,
                 'excerpt' => $payload->excerpt,
-                'body' => $payload->body,
+                'body' => $sanitizedBody,
                 'raw_excerpt' => $payload->rawExcerpt,
                 'meta_title_fallback' => $payload->metaTitleFallback,
             ],
@@ -299,6 +304,37 @@ final class PageService implements PageServiceInterface
         ]);
 
         return $seo->exists;
+    }
+
+    /**
+     * Sanitize the bodyPayload array, cleaning legacy_html block content.
+     *
+     * @param  array<string, mixed>|null  $bodyPayload
+     * @return array<string, mixed>|null
+     */
+    private function sanitizeBodyPayload(?array $bodyPayload): ?array
+    {
+        if ($bodyPayload === null) {
+            return null;
+        }
+
+        if (! is_array($bodyPayload['blocks'] ?? null)) {
+            return $bodyPayload;
+        }
+
+        $bodyPayload['blocks'] = array_map(function (mixed $block): mixed {
+            if (! is_array($block)) {
+                return $block;
+            }
+
+            if (($block['type'] ?? null) === 'legacy_html' && ! empty($block['content'])) {
+                $block['content'] = $this->htmlSanitizer->sanitize($block['content']);
+            }
+
+            return $block;
+        }, $bodyPayload['blocks']);
+
+        return $bodyPayload;
     }
 
     private function applyDraftPayloadToPage(Page $page, array $payload, int $userId): void
