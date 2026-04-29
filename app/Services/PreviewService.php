@@ -8,24 +8,16 @@ use App\Contracts\HomepageSectionServiceInterface;
 use App\Contracts\NavigationServiceInterface;
 use App\Contracts\PageServiceInterface;
 use App\Contracts\PreviewServiceInterface;
-use App\DTOs\ArticleCardDTO;
-use App\DTOs\ContactLinkDTO;
-use App\DTOs\EventCardDTO;
-use App\DTOs\FooterColumnDTO;
 use App\DTOs\HomepageDTO;
-use App\DTOs\HomepageFeatureItemDTO;
 use App\DTOs\HomepageSectionDataDTO;
 use App\DTOs\HomepageSectionDTO;
 use App\DTOs\HomepageSectionTranslationDTO;
-use App\DTOs\HomepageStatItemDTO;
-use App\DTOs\NavigationActionDTO;
 use App\DTOs\PreviewDTO;
 use App\DTOs\PreviewPayloadDTO;
-use App\DTOs\ResearchCardDTO;
-use App\DTOs\SocialLinkDTO;
 use App\Models\HomepageDraft;
 use App\Models\PageDraft;
 use App\Models\PreviewToken;
+use App\Support\HomepagePayloadMapper;
 use Illuminate\Support\Str;
 
 final class PreviewService implements PreviewServiceInterface
@@ -224,32 +216,7 @@ final class PreviewService implements PreviewServiceInterface
 
     private function sectionDataFromDraft(array $payload): HomepageSectionDataDTO
     {
-        return new HomepageSectionDataDTO(
-            eyebrow: $this->stringFromDraft($payload, 'eyebrow'),
-            subtitle: $this->stringFromDraft($payload, 'subtitle') ?? $this->stringFromDraft($payload, 'subheadline'),
-            badge: $this->stringFromDraft($payload, 'badge') ?? $this->stringFromDraft($payload, 'kicker'),
-            title: $this->stringFromDraft($payload, 'title') ?? $this->stringFromDraft($payload, 'headline'),
-            summary: $this->stringFromDraft($payload, 'summary'),
-            body: $this->stringFromDraft($payload, 'body'),
-            videoUrl: $this->stringFromDraft($payload, 'videoUrl'),
-            imageUrl: $this->stringFromDraft($payload, 'imageUrl'),
-            backgroundImageUrl: $this->stringFromDraft($payload, 'backgroundImageUrl'),
-            primaryAction: $this->actionFromDraft($payload['primaryAction'] ?? $payload['primary_action'] ?? null),
-            secondaryAction: $this->actionFromDraft($payload['secondaryAction'] ?? $payload['secondary_action'] ?? null),
-            sectionAction: $this->actionFromDraft($payload['sectionAction'] ?? $payload['section_action'] ?? null),
-            stats: $this->statsFromDraft($payload['stats'] ?? []),
-            featuredItems: $this->featuredItemsFromDraft($payload['featuredItems'] ?? $payload['featured_items'] ?? []),
-            articles: $this->articlesFromDraft($payload['articles'] ?? []),
-            researchItems: $this->researchItemsFromDraft($payload['researchItems'] ?? $payload['research_items'] ?? []),
-            events: $this->eventsFromDraft($payload['events'] ?? []),
-            footerColumns: $this->footerColumnsFromDraft($payload['footerColumns'] ?? $payload['footer_columns'] ?? []),
-            contactLinks: $this->contactLinksFromDraft($payload['contactLinks'] ?? $payload['contact_links'] ?? []),
-            socialLinks: $this->socialLinksFromDraft($payload['socialLinks'] ?? $payload['social_links'] ?? []),
-            items: is_array($payload['items'] ?? null)
-                ? array_values(array_filter($payload['items'], static fn (mixed $item): bool => is_array($item)))
-                : [],
-            content: is_array($payload['content'] ?? null) ? $payload['content'] : [],
-        );
+        return HomepagePayloadMapper::sectionDataFromArray($payload);
     }
 
     private function translationFromDraft(array $payload, string $locale, HomepageSectionDataDTO $fallback): HomepageSectionTranslationDTO
@@ -342,199 +309,6 @@ final class PreviewService implements PreviewServiceInterface
         }
 
         return trim($this->pageService->resolveLanguageSwitchTargetUrl($payload->page->id, $locale) ?? '', '/');
-    }
-
-    /**
-     * @param  array<string, mixed>|null  $payload
-     */
-    private function actionFromDraft(?array $payload): ?NavigationActionDTO
-    {
-        if (! is_array($payload)) {
-            return null;
-        }
-
-        $label = $this->stringFromDraft($payload, 'label');
-        $url = $this->stringFromDraft($payload, 'url');
-
-        if ($label === null || $url === null) {
-            return null;
-        }
-
-        return new NavigationActionDTO($label, $url, $this->stringFromDraft($payload, 'target'));
-    }
-
-    /**
-     * @return array<int, HomepageStatItemDTO>
-     */
-    private function statsFromDraft(mixed $items): array
-    {
-        if (! is_array($items)) {
-            return [];
-        }
-
-        return array_values(array_map(
-            static fn (array $item): HomepageStatItemDTO => new HomepageStatItemDTO(
-                value: (string) ($item['value'] ?? ''),
-                label: (string) ($item['label'] ?? ''),
-                description: is_string($item['description'] ?? null) ? $item['description'] : null,
-                icon: is_string($item['icon'] ?? null) ? $item['icon'] : null,
-                prefix: is_string($item['prefix'] ?? null) ? $item['prefix'] : null,
-                suffix: is_string($item['suffix'] ?? null) ? $item['suffix'] : null,
-                helperText: is_string($item['helperText'] ?? ($item['helper_text'] ?? null)) ? (string) ($item['helperText'] ?? $item['helper_text']) : null,
-                url: is_string($item['url'] ?? null) ? $item['url'] : null,
-                sortOrder: is_int($item['sortOrder'] ?? null) ? $item['sortOrder'] : (is_int($item['sort_order'] ?? null) ? $item['sort_order'] : null),
-            ),
-            array_filter($items, static fn (mixed $item): bool => is_array($item))
-        ));
-    }
-
-    /**
-     * @return array<int, HomepageFeatureItemDTO>
-     */
-    private function featuredItemsFromDraft(mixed $items): array
-    {
-        if (! is_array($items)) {
-            return [];
-        }
-
-        return array_values(array_map(
-            static fn (array $item): HomepageFeatureItemDTO => new HomepageFeatureItemDTO(
-                title: (string) ($item['title'] ?? ''),
-                summary: is_string($item['summary'] ?? null) ? $item['summary'] : null,
-                imageUrl: is_string($item['imageUrl'] ?? ($item['image_url'] ?? null)) ? (string) ($item['imageUrl'] ?? $item['image_url']) : null,
-                url: is_string($item['url'] ?? null) ? $item['url'] : null,
-                tags: is_array($item['tags'] ?? null) ? array_values(array_filter($item['tags'], static fn (mixed $tag): bool => is_string($tag))) : [],
-            ),
-            array_filter($items, static fn (mixed $item): bool => is_array($item))
-        ));
-    }
-
-    private function articlesFromDraft(mixed $items): array
-    {
-        if (! is_array($items)) {
-            return [];
-        }
-
-        return array_values(array_map(
-            static fn (array $item): ArticleCardDTO => new ArticleCardDTO(
-                id: (int) ($item['id'] ?? 0),
-                locale: (string) ($item['locale'] ?? 'ar'),
-                title: (string) ($item['title'] ?? ''),
-                slug: (string) ($item['slug'] ?? ''),
-                excerpt: is_string($item['excerpt'] ?? null) ? $item['excerpt'] : null,
-                imageUrl: is_string($item['imageUrl'] ?? ($item['image_url'] ?? null)) ? (string) ($item['imageUrl'] ?? $item['image_url']) : null,
-                publishedAt: is_string($item['publishedAt'] ?? ($item['published_at'] ?? null)) ? (string) ($item['publishedAt'] ?? $item['published_at']) : null,
-                url: is_string($item['url'] ?? null) ? $item['url'] : null,
-                categoryLabel: is_string($item['categoryLabel'] ?? ($item['category_label'] ?? null)) ? (string) ($item['categoryLabel'] ?? $item['category_label']) : null,
-                badgeTag: is_string($item['badgeTag'] ?? ($item['badge_tag'] ?? null)) ? (string) ($item['badgeTag'] ?? $item['badge_tag']) : null,
-            ),
-            array_filter($items, static fn (mixed $item): bool => is_array($item)),
-        ));
-    }
-
-    private function researchItemsFromDraft(mixed $items): array
-    {
-        if (! is_array($items)) {
-            return [];
-        }
-
-        return array_values(array_map(
-            static fn (array $item): ResearchCardDTO => new ResearchCardDTO(
-                id: (int) ($item['id'] ?? 0),
-                locale: (string) ($item['locale'] ?? 'ar'),
-                title: (string) ($item['title'] ?? ''),
-                slug: (string) ($item['slug'] ?? ''),
-                summary: is_string($item['summary'] ?? ($item['excerpt'] ?? null)) ? (string) ($item['summary'] ?? $item['excerpt']) : null,
-                imageUrl: is_string($item['imageUrl'] ?? ($item['image_url'] ?? null)) ? (string) ($item['imageUrl'] ?? $item['image_url']) : null,
-                publishedAt: is_string($item['publishedAt'] ?? ($item['published_at'] ?? null)) ? (string) ($item['publishedAt'] ?? $item['published_at']) : null,
-                url: is_string($item['url'] ?? null) ? $item['url'] : null,
-                categoryLabel: is_string($item['categoryLabel'] ?? ($item['category_label'] ?? ($item['categoryType'] ?? ($item['category_type'] ?? null))))
-                    ? (string) ($item['categoryLabel'] ?? $item['category_label'] ?? $item['categoryType'] ?? $item['category_type'])
-                    : null,
-                authors: is_array($item['authors'] ?? null)
-                    ? array_values(array_filter($item['authors'], static fn (mixed $author): bool => is_string($author) && $author !== ''))
-                    : [],
-            ),
-            array_filter($items, static fn (mixed $item): bool => is_array($item)),
-        ));
-    }
-
-    private function eventsFromDraft(mixed $items): array
-    {
-        if (! is_array($items)) {
-            return [];
-        }
-
-        return array_values(array_map(
-            static fn (array $item): EventCardDTO => new EventCardDTO(
-                id: (int) ($item['id'] ?? 0),
-                locale: (string) ($item['locale'] ?? 'ar'),
-                title: (string) ($item['title'] ?? ''),
-                slug: (string) ($item['slug'] ?? ''),
-                summary: is_string($item['summary'] ?? ($item['shortDescription'] ?? ($item['short_description'] ?? null)))
-                    ? (string) ($item['summary'] ?? $item['shortDescription'] ?? $item['short_description'])
-                    : null,
-                startsAt: is_string($item['startsAt'] ?? ($item['starts_at'] ?? ($item['date'] ?? null)))
-                    ? (string) ($item['startsAt'] ?? $item['starts_at'] ?? $item['date'])
-                    : null,
-                endsAt: is_string($item['endsAt'] ?? ($item['ends_at'] ?? null)) ? (string) ($item['endsAt'] ?? $item['ends_at']) : null,
-                location: is_string($item['location'] ?? null) ? $item['location'] : null,
-                url: is_string($item['url'] ?? null) ? $item['url'] : null,
-                imageUrl: is_string($item['imageUrl'] ?? ($item['image_url'] ?? null)) ? (string) ($item['imageUrl'] ?? $item['image_url']) : null,
-                timeLabel: is_string($item['timeLabel'] ?? ($item['time'] ?? null)) ? (string) ($item['timeLabel'] ?? $item['time']) : null,
-            ),
-            array_filter($items, static fn (mixed $item): bool => is_array($item)),
-        ));
-    }
-
-    private function footerColumnsFromDraft(mixed $items): array
-    {
-        if (! is_array($items)) {
-            return [];
-        }
-
-        return array_values(array_map(
-            fn (array $item): FooterColumnDTO => new FooterColumnDTO(
-                title: (string) ($item['title'] ?? ''),
-                links: array_values(array_filter(array_map(
-                    fn (mixed $link): ?NavigationActionDTO => is_array($link) ? $this->actionFromDraft($link) : null,
-                    is_array($item['links'] ?? null) ? $item['links'] : [],
-                ))),
-            ),
-            array_filter($items, static fn (mixed $item): bool => is_array($item)),
-        ));
-    }
-
-    private function contactLinksFromDraft(mixed $items): array
-    {
-        if (! is_array($items)) {
-            return [];
-        }
-
-        return array_values(array_map(
-            static fn (array $item): ContactLinkDTO => new ContactLinkDTO(
-                type: (string) ($item['type'] ?? 'text'),
-                label: (string) ($item['label'] ?? $item['value'] ?? ''),
-                value: (string) ($item['value'] ?? ''),
-            ),
-            array_filter($items, static fn (mixed $item): bool => is_array($item)),
-        ));
-    }
-
-    private function socialLinksFromDraft(mixed $items): array
-    {
-        if (! is_array($items)) {
-            return [];
-        }
-
-        return array_values(array_map(
-            static fn (array $item): SocialLinkDTO => new SocialLinkDTO(
-                platform: (string) ($item['platform'] ?? $item['label'] ?? 'Social'),
-                url: (string) ($item['url'] ?? '#'),
-                isEnabled: (bool) ($item['isEnabled'] ?? ($item['is_enabled'] ?? true)),
-            ),
-            array_filter($items, static fn (mixed $item): bool => is_array($item)),
-        ));
     }
 
     private function isEmptySectionPayload(HomepageSectionDataDTO $payload): bool

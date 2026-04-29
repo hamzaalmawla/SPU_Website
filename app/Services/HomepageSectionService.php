@@ -6,25 +6,17 @@ namespace App\Services;
 
 use App\Contracts\AuditServiceInterface;
 use App\Contracts\HomepageSectionServiceInterface;
-use App\DTOs\ArticleCardDTO;
-use App\DTOs\ContactLinkDTO;
-use App\DTOs\EventCardDTO;
-use App\DTOs\FooterColumnDTO;
 use App\DTOs\HomepageDTO;
-use App\DTOs\HomepageFeatureItemDTO;
 use App\DTOs\HomepageSectionDataDTO;
 use App\DTOs\HomepageSectionDTO;
 use App\DTOs\HomepageSectionTranslationDTO;
-use App\DTOs\HomepageStatItemDTO;
-use App\DTOs\NavigationActionDTO;
-use App\DTOs\ResearchCardDTO;
-use App\DTOs\SocialLinkDTO;
 use App\DTOs\ValidationMessageDTO;
 use App\DTOs\ValidationResultDTO;
 use App\Models\HomepageDraft;
 use App\Models\HomepageSection;
 use App\Models\HomepageSectionTranslation;
 use App\Models\User;
+use App\Support\HomepagePayloadMapper;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Validator;
@@ -357,37 +349,7 @@ final class HomepageSectionService implements HomepageSectionServiceInterface
      */
     private function sectionDataFromArray(array $payload): HomepageSectionDataDTO
     {
-        $items = $this->listOfArrays($payload['items'] ?? []);
-        $featuredItems = $this->mapFeaturedItems($payload['featuredItems'] ?? $payload['featured_items'] ?? []);
-
-        if ($featuredItems === [] && $items !== []) {
-            $featuredItems = $this->mapFeaturedItems($items);
-        }
-
-        return new HomepageSectionDataDTO(
-            eyebrow: $this->stringValue($payload, 'eyebrow'),
-            subtitle: $this->stringValue($payload, 'subtitle') ?? $this->stringValue($payload, 'subheadline'),
-            badge: $this->stringValue($payload, 'badge') ?? $this->stringValue($payload, 'kicker'),
-            title: $this->stringValue($payload, 'headline') ?? $this->stringValue($payload, 'title'),
-            summary: $this->stringValue($payload, 'summary'),
-            body: $this->stringValue($payload, 'body'),
-            videoUrl: $this->stringValue($payload, 'videoUrl') ?? $this->stringValue($payload, 'video_url'),
-            imageUrl: $this->stringValue($payload, 'imageUrl') ?? $this->stringValue($payload, 'image_url'),
-            backgroundImageUrl: $this->stringValue($payload, 'backgroundImageUrl') ?? $this->stringValue($payload, 'background_image_url'),
-            primaryAction: $this->mapAction($payload['primaryAction'] ?? $payload['primary_action'] ?? null),
-            secondaryAction: $this->mapAction($payload['secondaryAction'] ?? $payload['secondary_action'] ?? null),
-            sectionAction: $this->mapAction($payload['sectionAction'] ?? $payload['section_action'] ?? null),
-            stats: $this->mapStats($payload['stats'] ?? []),
-            featuredItems: $featuredItems,
-            articles: $this->mapArticles($payload['articles'] ?? []),
-            researchItems: $this->mapResearchItems($payload['researchItems'] ?? $payload['research_items'] ?? []),
-            events: $this->mapEvents($payload['events'] ?? []),
-            footerColumns: $this->mapFooterColumns($payload['footerColumns'] ?? $payload['footer_columns'] ?? []),
-            contactLinks: $this->mapContactLinks($payload['contactLinks'] ?? $payload['contact_links'] ?? []),
-            socialLinks: $this->mapSocialLinks($payload['socialLinks'] ?? $payload['social_links'] ?? []),
-            items: $items,
-            content: is_array($payload['content'] ?? null) ? $payload['content'] : [],
-        );
+        return HomepagePayloadMapper::sectionDataFromArray($payload);
     }
 
     /**
@@ -413,222 +375,9 @@ final class HomepageSectionService implements HomepageSectionServiceInterface
     /**
      * @param  array<string, mixed>|null  $payload
      */
-    private function mapAction(?array $payload): ?NavigationActionDTO
+    private function mapAction(?array $payload): ?\App\DTOs\NavigationActionDTO
     {
-        if (! is_array($payload)) {
-            return null;
-        }
-
-        $label = $payload['label'] ?? null;
-        $url = $payload['url'] ?? null;
-
-        if (! is_string($label) || ! is_string($url) || $label === '' || $url === '') {
-            return null;
-        }
-
-        return new NavigationActionDTO(
-            label: $label,
-            url: $url,
-            target: is_string($payload['target'] ?? null) ? $payload['target'] : null,
-        );
-    }
-
-    /**
-     * @return array<int, HomepageStatItemDTO>
-     */
-    private function mapStats(mixed $items): array
-    {
-        if (! is_array($items)) {
-            return [];
-        }
-
-        return array_values(array_map(
-            static fn (array $item): HomepageStatItemDTO => new HomepageStatItemDTO(
-                value: (string) ($item['value'] ?? ''),
-                label: (string) ($item['label'] ?? ''),
-                description: is_string($item['description'] ?? null) ? $item['description'] : null,
-                icon: is_string($item['icon'] ?? null) ? $item['icon'] : null,
-                prefix: is_string($item['prefix'] ?? null) ? $item['prefix'] : null,
-                suffix: is_string($item['suffix'] ?? null) ? $item['suffix'] : null,
-                helperText: is_string($item['helperText'] ?? ($item['helper_text'] ?? null)) ? (string) ($item['helperText'] ?? $item['helper_text']) : null,
-                url: is_string($item['url'] ?? null) ? $item['url'] : null,
-                sortOrder: is_int($item['sortOrder'] ?? null) ? $item['sortOrder'] : (is_int($item['sort_order'] ?? null) ? $item['sort_order'] : null),
-            ),
-            $this->listOfArrays($items),
-        ));
-    }
-
-    /**
-     * @return array<int, HomepageFeatureItemDTO>
-     */
-    private function mapFeaturedItems(mixed $items): array
-    {
-        if (! is_array($items)) {
-            return [];
-        }
-
-        return array_values(array_map(
-            static fn (array $item): HomepageFeatureItemDTO => new HomepageFeatureItemDTO(
-                title: (string) ($item['title'] ?? ''),
-                summary: is_string($item['summary'] ?? ($item['shortDescription'] ?? ($item['short_description'] ?? null)))
-                    ? (string) ($item['summary'] ?? $item['shortDescription'] ?? $item['short_description'])
-                    : null,
-                imageUrl: is_string($item['imageUrl'] ?? ($item['image_url'] ?? null)) ? (string) ($item['imageUrl'] ?? $item['image_url']) : null,
-                url: is_string($item['url'] ?? ($item['ctaUrl'] ?? ($item['cta_url'] ?? null)))
-                    ? (string) ($item['url'] ?? $item['ctaUrl'] ?? $item['cta_url'])
-                    : null,
-                tags: is_array($item['tags'] ?? null)
-                    ? array_values(array_filter($item['tags'], static fn (mixed $tag): bool => is_string($tag)))
-                    : [],
-            ),
-            $this->listOfArrays($items),
-        ));
-    }
-
-    /**
-     * @return array<int, ArticleCardDTO>
-     */
-    private function mapArticles(mixed $items): array
-    {
-        if (! is_array($items)) {
-            return [];
-        }
-
-        return array_values(array_map(
-            static fn (array $item): ArticleCardDTO => new ArticleCardDTO(
-                id: (int) ($item['id'] ?? 0),
-                locale: (string) ($item['locale'] ?? 'ar'),
-                title: (string) ($item['title'] ?? ''),
-                slug: (string) ($item['slug'] ?? ''),
-                excerpt: is_string($item['excerpt'] ?? null) ? $item['excerpt'] : null,
-                imageUrl: is_string($item['imageUrl'] ?? ($item['image_url'] ?? null)) ? (string) ($item['imageUrl'] ?? $item['image_url']) : null,
-                publishedAt: is_string($item['publishedAt'] ?? ($item['published_at'] ?? null)) ? (string) ($item['publishedAt'] ?? $item['published_at']) : null,
-                url: is_string($item['url'] ?? null) ? $item['url'] : null,
-                categoryLabel: is_string($item['categoryLabel'] ?? ($item['category_label'] ?? null)) ? (string) ($item['categoryLabel'] ?? $item['category_label']) : null,
-                badgeTag: is_string($item['badgeTag'] ?? ($item['badge_tag'] ?? null)) ? (string) ($item['badgeTag'] ?? $item['badge_tag']) : null,
-            ),
-            $this->listOfArrays($items),
-        ));
-    }
-
-    /**
-     * @return array<int, ResearchCardDTO>
-     */
-    private function mapResearchItems(mixed $items): array
-    {
-        if (! is_array($items)) {
-            return [];
-        }
-
-        return array_values(array_map(
-            static fn (array $item): ResearchCardDTO => new ResearchCardDTO(
-                id: (int) ($item['id'] ?? 0),
-                locale: (string) ($item['locale'] ?? 'ar'),
-                title: (string) ($item['title'] ?? ''),
-                slug: (string) ($item['slug'] ?? ''),
-                summary: is_string($item['summary'] ?? ($item['excerpt'] ?? null)) ? (string) ($item['summary'] ?? $item['excerpt']) : null,
-                imageUrl: is_string($item['imageUrl'] ?? ($item['image_url'] ?? null)) ? (string) ($item['imageUrl'] ?? $item['image_url']) : null,
-                publishedAt: is_string($item['publishedAt'] ?? ($item['published_at'] ?? null)) ? (string) ($item['publishedAt'] ?? $item['published_at']) : null,
-                url: is_string($item['url'] ?? null) ? $item['url'] : null,
-                categoryLabel: is_string($item['categoryLabel'] ?? ($item['category_label'] ?? ($item['categoryType'] ?? ($item['category_type'] ?? null))))
-                    ? (string) ($item['categoryLabel'] ?? $item['category_label'] ?? $item['categoryType'] ?? $item['category_type'])
-                    : null,
-                authors: is_array($item['authors'] ?? null)
-                    ? array_values(array_filter($item['authors'], static fn (mixed $author): bool => is_string($author) && $author !== ''))
-                    : [],
-            ),
-            $this->listOfArrays($items),
-        ));
-    }
-
-    /**
-     * @return array<int, EventCardDTO>
-     */
-    private function mapEvents(mixed $items): array
-    {
-        if (! is_array($items)) {
-            return [];
-        }
-
-        return array_values(array_map(
-            static fn (array $item): EventCardDTO => new EventCardDTO(
-                id: (int) ($item['id'] ?? 0),
-                locale: (string) ($item['locale'] ?? 'ar'),
-                title: (string) ($item['title'] ?? ''),
-                slug: (string) ($item['slug'] ?? ''),
-                summary: is_string($item['summary'] ?? ($item['shortDescription'] ?? ($item['short_description'] ?? null)))
-                    ? (string) ($item['summary'] ?? $item['shortDescription'] ?? $item['short_description'])
-                    : null,
-                startsAt: is_string($item['startsAt'] ?? ($item['starts_at'] ?? ($item['date'] ?? null)))
-                    ? (string) ($item['startsAt'] ?? $item['starts_at'] ?? $item['date'])
-                    : null,
-                endsAt: is_string($item['endsAt'] ?? ($item['ends_at'] ?? null)) ? (string) ($item['endsAt'] ?? $item['ends_at']) : null,
-                location: is_string($item['location'] ?? null) ? $item['location'] : null,
-                url: is_string($item['url'] ?? null) ? $item['url'] : null,
-                imageUrl: is_string($item['imageUrl'] ?? ($item['image_url'] ?? null)) ? (string) ($item['imageUrl'] ?? $item['image_url']) : null,
-                timeLabel: is_string($item['timeLabel'] ?? ($item['time'] ?? null)) ? (string) ($item['timeLabel'] ?? $item['time']) : null,
-            ),
-            $this->listOfArrays($items),
-        ));
-    }
-
-    /**
-     * @return array<int, FooterColumnDTO>
-     */
-    private function mapFooterColumns(mixed $items): array
-    {
-        if (! is_array($items)) {
-            return [];
-        }
-
-        return array_values(array_map(
-            fn (array $item): FooterColumnDTO => new FooterColumnDTO(
-                title: (string) ($item['title'] ?? ''),
-                links: array_values(array_filter(array_map(
-                    fn (mixed $link): ?NavigationActionDTO => is_array($link) ? $this->mapAction($link) : null,
-                    is_array($item['links'] ?? null) ? $item['links'] : [],
-                ))),
-            ),
-            $this->listOfArrays($items),
-        ));
-    }
-
-    /**
-     * @return array<int, ContactLinkDTO>
-     */
-    private function mapContactLinks(mixed $items): array
-    {
-        if (! is_array($items)) {
-            return [];
-        }
-
-        return array_values(array_map(
-            static fn (array $item): ContactLinkDTO => new ContactLinkDTO(
-                type: (string) ($item['type'] ?? 'text'),
-                label: (string) ($item['label'] ?? $item['value'] ?? ''),
-                value: (string) ($item['value'] ?? ''),
-            ),
-            $this->listOfArrays($items),
-        ));
-    }
-
-    /**
-     * @return array<int, SocialLinkDTO>
-     */
-    private function mapSocialLinks(mixed $items): array
-    {
-        if (! is_array($items)) {
-            return [];
-        }
-
-        return array_values(array_map(
-            static fn (array $item): SocialLinkDTO => new SocialLinkDTO(
-                platform: (string) ($item['platform'] ?? $item['label'] ?? 'Social'),
-                url: (string) ($item['url'] ?? '#'),
-                isEnabled: (bool) ($item['is_enabled'] ?? ($item['isEnabled'] ?? true)),
-            ),
-            $this->listOfArrays($items),
-        ));
+        return HomepagePayloadMapper::actionFromArray($payload);
     }
 
     private function replaceSectionPayload(HomepageSectionDTO $section, HomepageSectionDataDTO $payload, string $locale): HomepageSectionDTO
@@ -729,134 +478,7 @@ final class HomepageSectionService implements HomepageSectionServiceInterface
      */
     private function sectionDataToArray(HomepageSectionDataDTO $payload): array
     {
-        return array_filter([
-            'eyebrow' => $payload->eyebrow,
-            'subtitle' => $payload->subtitle,
-            'badge' => $payload->badge,
-            'title' => $payload->title,
-            'summary' => $payload->summary,
-            'body' => $payload->body,
-            'videoUrl' => $payload->videoUrl,
-            'imageUrl' => $payload->imageUrl,
-            'backgroundImageUrl' => $payload->backgroundImageUrl,
-            'primaryAction' => $this->actionToArray($payload->primaryAction),
-            'secondaryAction' => $this->actionToArray($payload->secondaryAction),
-            'sectionAction' => $this->actionToArray($payload->sectionAction),
-            'stats' => array_values(array_map(
-                static fn (HomepageStatItemDTO $item): array => array_filter([
-                    'value' => $item->value,
-                    'label' => $item->label,
-                    'description' => $item->description,
-                    'icon' => $item->icon,
-                    'prefix' => $item->prefix,
-                    'suffix' => $item->suffix,
-                    'helperText' => $item->helperText,
-                    'url' => $item->url,
-                    'sortOrder' => $item->sortOrder,
-                ], static fn (mixed $value): bool => $value !== null && $value !== []),
-                $payload->stats,
-            )),
-            'featuredItems' => array_values(array_map(
-                static fn (HomepageFeatureItemDTO $item): array => array_filter([
-                    'title' => $item->title,
-                    'summary' => $item->summary,
-                    'imageUrl' => $item->imageUrl,
-                    'url' => $item->url,
-                    'tags' => $item->tags,
-                ], static fn (mixed $value): bool => $value !== null && $value !== []),
-                $payload->featuredItems,
-            )),
-            'articles' => array_values(array_map(
-                static fn (ArticleCardDTO $item): array => array_filter([
-                    'id' => $item->id,
-                    'locale' => $item->locale,
-                    'title' => $item->title,
-                    'slug' => $item->slug,
-                    'excerpt' => $item->excerpt,
-                    'imageUrl' => $item->imageUrl,
-                    'publishedAt' => $item->publishedAt,
-                    'url' => $item->url,
-                    'categoryLabel' => $item->categoryLabel,
-                    'badgeTag' => $item->badgeTag,
-                ], static fn (mixed $value): bool => $value !== null && $value !== []),
-                $payload->articles,
-            )),
-            'researchItems' => array_values(array_map(
-                static fn (ResearchCardDTO $item): array => array_filter([
-                    'id' => $item->id,
-                    'locale' => $item->locale,
-                    'title' => $item->title,
-                    'slug' => $item->slug,
-                    'summary' => $item->summary,
-                    'imageUrl' => $item->imageUrl,
-                    'publishedAt' => $item->publishedAt,
-                    'url' => $item->url,
-                    'categoryLabel' => $item->categoryLabel,
-                    'authors' => $item->authors,
-                ], static fn (mixed $value): bool => $value !== null && $value !== []),
-                $payload->researchItems,
-            )),
-            'events' => array_values(array_map(
-                static fn (EventCardDTO $item): array => array_filter([
-                    'id' => $item->id,
-                    'locale' => $item->locale,
-                    'title' => $item->title,
-                    'slug' => $item->slug,
-                    'summary' => $item->summary,
-                    'startsAt' => $item->startsAt,
-                    'endsAt' => $item->endsAt,
-                    'location' => $item->location,
-                    'url' => $item->url,
-                    'imageUrl' => $item->imageUrl,
-                    'timeLabel' => $item->timeLabel,
-                ], static fn (mixed $value): bool => $value !== null && $value !== []),
-                $payload->events,
-            )),
-            'footerColumns' => array_values(array_map(
-                fn (FooterColumnDTO $column): array => [
-                    'title' => $column->title,
-                    'links' => array_values(array_filter(array_map(
-                        fn (NavigationActionDTO $action): ?array => $this->actionToArray($action),
-                        $column->links,
-                    ))),
-                ],
-                $payload->footerColumns,
-            )),
-            'contactLinks' => array_values(array_map(
-                static fn (ContactLinkDTO $item): array => [
-                    'type' => $item->type,
-                    'label' => $item->label,
-                    'value' => $item->value,
-                ],
-                $payload->contactLinks,
-            )),
-            'socialLinks' => array_values(array_map(
-                static fn (SocialLinkDTO $item): array => [
-                    'platform' => $item->platform,
-                    'url' => $item->url,
-                    'isEnabled' => $item->isEnabled,
-                ],
-                $payload->socialLinks,
-            )),
-            'items' => array_values($payload->items),
-            'content' => $payload->content,
-        ], static fn (mixed $value): bool => $value !== null && $value !== []);
-    }
-
-    /**
-     * @return array<string, mixed>|null
-     */
-    private function actionToArray(?NavigationActionDTO $action): ?array
-    {
-        if (! $action instanceof NavigationActionDTO) {
-            return null;
-        }
-
-        return array_filter([
-            'label' => $action->label,
-            'url' => $action->url,
-            'target' => $action->target,
-        ], static fn (mixed $value): bool => $value !== null && $value !== '');
+        return HomepagePayloadMapper::sectionDataToArray($payload);
     }
 
     /**
