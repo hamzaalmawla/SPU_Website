@@ -32,9 +32,10 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Gate;
 
 /**
- * Filament custom page for managing the fixed 10-section homepage.
+ * Filament custom page for managing the fixed 11-section homepage.
  *
  * All business logic is delegated to injected service interfaces.
  */
@@ -78,14 +79,7 @@ class ManageHomepage extends Page implements HasForms
 
     public static function canAccess(): bool
     {
-        /** @var \App\Models\User|null $user */
-        $user = auth()->user();
-
-        if ($user === null) {
-            return false;
-        }
-
-        return in_array($user->role_slug, ['super_admin', 'editor'], true);
+        return Gate::allows('manage-homepage');
     }
 
     public function mount(): void

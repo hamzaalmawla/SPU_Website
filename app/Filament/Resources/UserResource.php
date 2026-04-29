@@ -16,6 +16,7 @@ use Filament\Tables;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * Filament resource for managing admin user accounts (super_admin only).
@@ -40,14 +41,7 @@ class UserResource extends Resource
 
     public static function canAccess(): bool
     {
-        /** @var \App\Models\User|null $user */
-        $user = auth()->user();
-
-        if ($user === null) {
-            return false;
-        }
-
-        return $user->role_slug === 'super_admin';
+        return Gate::allows('manage-users');
     }
 
     public static function form(Form $form): Form

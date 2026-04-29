@@ -18,6 +18,7 @@ use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * Filament resource for managing media assets (upload, search, edit metadata, view).
@@ -41,14 +42,7 @@ class MediaAssetResource extends Resource
 
     public static function canAccess(): bool
     {
-        /** @var \App\Models\User|null $user */
-        $user = auth()->user();
-
-        if ($user === null) {
-            return false;
-        }
-
-        return in_array($user->role_slug, ['super_admin', 'editor', 'faculty_editor'], true);
+        return Gate::allows('manage-media');
     }
 
     public static function form(Form $form): Form

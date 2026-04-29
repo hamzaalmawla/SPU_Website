@@ -7,7 +7,6 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\PageResource\Pages;
 use App\Models\Page;
 use App\Models\PageTranslation;
-use App\Models\User;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -23,6 +22,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * Filament resource for managing bilingual landing pages.
@@ -46,14 +46,7 @@ class PageResource extends Resource
 
     public static function canAccess(): bool
     {
-        /** @var User|null $user */
-        $user = auth()->user();
-
-        if ($user === null) {
-            return false;
-        }
-
-        return in_array($user->role_slug, ['super_admin', 'editor', 'faculty_editor'], true);
+        return Gate::allows('manage-pages');
     }
 
     public static function form(Form $form): Form

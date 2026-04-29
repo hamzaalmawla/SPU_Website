@@ -17,6 +17,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * Read-only Filament resource for viewing audit log entries (super_admin only).
@@ -38,14 +39,7 @@ class AuditLogResource extends Resource
 
     public static function canAccess(): bool
     {
-        /** @var \App\Models\User|null $user */
-        $user = auth()->user();
-
-        if ($user === null) {
-            return false;
-        }
-
-        return $user->role_slug === 'super_admin';
+        return Gate::allows('view-audit-log');
     }
 
     public static function canCreate(): bool
