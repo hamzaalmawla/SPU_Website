@@ -18,7 +18,11 @@
                      x-transition:leave-start="opacity-100"
                      x-transition:leave-end="opacity-0"
                      class="absolute inset-0">
-                    <img src="{{ $img }}" alt="{{ $section->payload->title }}" class="h-full w-full object-cover">
+                    <img src="{{ $img }}"
+                         alt="{{ $section->payload->title }}"
+                         class="h-full w-full object-cover"
+                         @if ($loop->first) fetchpriority="high" @else loading="lazy" decoding="async" @endif
+                         width="1920" height="800">
                 </div>
             @endforeach
 
@@ -211,6 +215,7 @@
                                         <div class="relative w-[160px] h-[160px] mt-6 mb-4 flex items-center justify-center">
                                             <img src="{{ $item['imageUrl'] }}"
                                                  alt="{{ $item['title'] ?? '' }}"
+                                                 loading="lazy" decoding="async" width="110" height="110"
                                                  class="relative z-10 w-[110px] h-[110px] object-contain transition-transform duration-500">
                                         </div>
                                     @endif
@@ -494,6 +499,7 @@
                                     <div class="relative h-[210px] overflow-hidden">
                                         <img src="{{ $article->imageUrl }}"
                                              alt="{{ $article->title }}"
+                                             loading="lazy" decoding="async" width="400" height="210"
                                              class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110">
 
                                         @if ($article->categoryLabel)

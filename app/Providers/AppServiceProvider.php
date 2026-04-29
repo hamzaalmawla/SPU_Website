@@ -116,10 +116,6 @@ class AppServiceProvider extends ServiceProvider
         foreach ($this->resolvedBindings() as $contract => $implementation) {
             $this->app->singleton($contract, $implementation);
         }
-
-        foreach ($this->intentionalPlaceholderBindings() as $contract => $implementation) {
-            $this->app->singleton($contract, $implementation);
-        }
     }
 
     /**
@@ -135,15 +131,6 @@ class AppServiceProvider extends ServiceProvider
             SitemapServiceInterface::class => SitemapService::class,
             MediaServiceInterface::class => MediaService::class,
             SlugServiceInterface::class => SlugService::class,
-        ];
-    }
-
-    /**
-     * @return array<class-string, class-string>
-     */
-    private function intentionalPlaceholderBindings(): array
-    {
-        return [
             MenuServiceInterface::class => MenuService::class,
             SeoMetadataServiceInterface::class => SeoMetadataService::class,
             HomepageSectionServiceInterface::class => HomepageSectionService::class,

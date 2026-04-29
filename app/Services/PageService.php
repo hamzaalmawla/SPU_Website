@@ -146,6 +146,11 @@ final class PageService implements PageServiceInterface
             return false;
         }
 
+        // Validate page is publishable before proceeding.
+        if (! $this->isPublishable($page)) {
+            return false;
+        }
+
         $draft = PageDraft::query()
             ->where('page_id', $pageId)
             ->whereIn('status', self::EDITABLE_STATUSES)
@@ -791,6 +796,42 @@ final class PageService implements PageServiceInterface
             if ($ancestor->publish_at !== null && $ancestor->publish_at->isFuture()) {
                 return false;
             }
+        }
+
+        return true;
+    }
+
+    /**
+     * Validate that a page meets minimum requirements for publication.
+     *
+     * Checks: slug exists, template is set, page is enabled,
+     * and at least one translation has a non-empty title.
+     */
+    private function isPublishable(Page $page): bool
+    {
+        // Must have a slug.
+        if (empty($page->slug)) {
+            return false;
+        }
+
+        // Must have a template.
+        if (empty($page->template)) {
+            return false;
+        }
+
+        // Must be enabled.
+        if (! (bool) $page->is_enabled) {
+            return false;
+        }
+
+        // Must have at least one translation with a non-empty title.
+        $page->loadMissing('translations');
+        $hasValidTranslation = $page->translations->contains(
+            fn ($translation) => ! empty($translation->title)
+        );
+
+        if (! $hasValidTranslation) {
+            return false;
         }
 
         return true;

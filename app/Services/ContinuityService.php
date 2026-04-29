@@ -235,9 +235,23 @@ final class ContinuityService implements ContinuityServiceInterface
         $rule->increment('hit_count');
         $rule->update(['last_hit_at' => now()]);
 
+        $destinationUrl = (string) $rule->destination_url;
+
+        if (! $this->isAllowedDestination($destinationUrl)) {
+            Log::warning('Blocked unsafe exact redirect destination', [
+                'rule_id' => $rule->getKey(),
+                'path' => $path,
+                'destination' => $destinationUrl,
+            ]);
+
+            return null;
+        }
+
+        $destinationUrl = $this->sanitizeDestination($destinationUrl);
+
         return new RedirectResultDTO(
             statusCode: (int) $rule->status_code,
-            destinationUrl: (string) $rule->destination_url,
+            destinationUrl: $destinationUrl,
             matchType: 'exact',
         );
     }
@@ -259,6 +273,18 @@ final class ContinuityService implements ContinuityServiceInterface
                     foreach ($matches as $index => $match) {
                         $destination = str_replace('$'.$index, $match, $destination);
                     }
+
+                    if (! $this->isAllowedDestination($destination)) {
+                        Log::warning('Blocked unsafe pattern redirect destination', [
+                            'rule_id' => $rule->getKey(),
+                            'path' => $path,
+                            'destination' => $destination,
+                        ]);
+
+                        return null;
+                    }
+
+                    $destination = $this->sanitizeDestination($destination);
 
                     $rule->increment('hit_count');
                     $rule->update(['last_hit_at' => now()]);
@@ -370,5 +396,59 @@ final class ContinuityService implements ContinuityServiceInterface
                 $current = $pathMap[$current];
             }
         }
+    }
+
+    /**
+     * Validate that a redirect destination is safe (internal or allowlisted).
+     *
+     * Relative paths are always allowed. Absolute URLs must target spu.edu.sy,
+     * a subdomain thereof, or an explicitly allowlisted external host.
+     */
+    private function isAllowedDestination(string $url): bool
+    {
+        $parsed = parse_url($url);
+
+        // Relative paths are always allowed.
+        if (! isset($parsed['host'])) {
+            return true;
+        }
+
+        $host = strtolower($parsed['host']);
+
+        /** @var array<int, string> $allowedHosts */
+        $allowedHosts = config('continuity.allowed_redirect_hosts', ['spu.edu.sy']);
+
+        if (in_array($host, $allowedHosts, true)) {
+            return true;
+        }
+
+        // Allow subdomains of spu.edu.sy.
+        if (str_ends_with($host, '.spu.edu.sy')) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Strip query string and fragment from a redirect destination URL.
+     *
+     * Preserves scheme, host, and path only.
+     */
+    private function sanitizeDestination(string $url): string
+    {
+        $parsed = parse_url($url);
+
+        // Relative path — strip query/fragment only.
+        if (! isset($parsed['host'])) {
+            return $parsed['path'] ?? '/';
+        }
+
+        $scheme = $parsed['scheme'] ?? 'https';
+        $host = $parsed['host'];
+        $port = isset($parsed['port']) ? ':'.$parsed['port'] : '';
+        $path = $parsed['path'] ?? '/';
+
+        return "{$scheme}://{$host}{$port}{$path}";
     }
 }

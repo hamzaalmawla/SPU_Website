@@ -47,6 +47,10 @@ final class LaunchValidateCommand extends Command
         $this->info("Running launch validation for environment: {$env}");
         $this->newLine();
 
+        if ($env === 'production') {
+            $this->checkProductionEnvironment();
+        }
+
         $this->checkHomepageRendering();
         $this->checkLandingPageRendering();
         $this->checkCanonicalHreflang();
@@ -56,6 +60,7 @@ final class LaunchValidateCommand extends Command
         $this->checkFileContinuity();
         $this->checkAdminPreviewSafety();
         $this->checkCacheBehavior();
+        $this->checkCacheTagSupport();
         $this->checkAuditBehavior();
 
         $this->newLine();
@@ -64,6 +69,71 @@ final class LaunchValidateCommand extends Command
         $failures = array_filter($this->results, fn (array $r): bool => $r['status'] === 'FAIL');
 
         return $failures !== [] ? self::FAILURE : self::SUCCESS;
+    }
+
+    /**
+     * Validate production-required environment settings.
+     */
+    private function checkProductionEnvironment(): void
+    {
+        $checks = [
+            ['APP_DEBUG', 'false', config('app.debug') === false],
+            ['CACHE_STORE', 'redis', config('cache.default') === 'redis'],
+            ['SESSION_DRIVER', 'redis', config('session.driver') === 'redis'],
+            ['QUEUE_CONNECTION', 'redis', config('queue.default') === 'redis'],
+            ['SESSION_SECURE_COOKIE', 'true', config('session.secure') === true],
+            ['SESSION_ENCRYPT', 'true', config('session.encrypt') === true],
+            ['SESSION_HTTP_ONLY', 'true', config('session.http_only') === true],
+        ];
+
+        foreach ($checks as [$setting, $expected, $pass]) {
+            $this->record(
+                "Production env: {$setting}",
+                $pass ? 'PASS' : 'FAIL',
+                $pass
+                    ? "{$setting} is correctly set to {$expected}"
+                    : "CRITICAL: {$setting} must be {$expected} in production",
+            );
+        }
+
+        // Check APP_KEY is not the default/empty
+        $appKey = config('app.key');
+        $hasKey = is_string($appKey) && strlen($appKey) > 10;
+        $this->record(
+            'Production env: APP_KEY',
+            $hasKey ? 'PASS' : 'FAIL',
+            $hasKey ? 'APP_KEY is set' : 'CRITICAL: APP_KEY is missing or too short',
+        );
+
+        // Check APP_URL uses HTTPS
+        $appUrl = config('app.url');
+        $isHttps = is_string($appUrl) && str_starts_with($appUrl, 'https://');
+        $this->record(
+            'Production env: APP_URL',
+            $isHttps ? 'PASS' : 'FAIL',
+            $isHttps ? 'APP_URL uses HTTPS' : 'CRITICAL: APP_URL should use HTTPS in production',
+        );
+    }
+
+    /**
+     * Verify that the configured cache store supports tag operations.
+     */
+    private function checkCacheTagSupport(): void
+    {
+        try {
+            $store = config('cache.default');
+            $supportsTags = in_array($store, ['redis', 'memcached', 'array'], true);
+
+            $this->record(
+                'Cache tag support',
+                $supportsTags ? 'PASS' : 'WARN',
+                $supportsTags
+                    ? "Cache store '{$store}' supports tag-based invalidation"
+                    : "Cache store '{$store}' does not support tags — cache invalidation may be unreliable",
+            );
+        } catch (\Throwable $e) {
+            $this->record('Cache tag support', 'FAIL', $e->getMessage());
+        }
     }
 
     private function checkHomepageRendering(): void

@@ -21,6 +21,9 @@ class User extends Authenticatable
     /**
      * The attributes that are mass assignable.
      *
+     * Security-sensitive fields (is_locked, locked_at, failed_login_attempts, etc.)
+     * are intentionally excluded. Use forceFill() in AuthService for those fields.
+     *
      * @var list<string>
      */
     protected $fillable = [
@@ -29,12 +32,8 @@ class User extends Authenticatable
         'password',
         'role_slug',
         'role_id',
-        'failed_login_attempts',
-        'failed_attempts',
-        'is_locked',
-        'locked_at',
-        'last_login_at',
         'faculty_scope_slug',
+        'locale_preference',
     ];
 
     /**
