@@ -771,4 +771,88 @@ final class MenuService implements MenuServiceInterface
             'parent_id' => $item->parent_id,
         ];
     }
+
+    /**
+     * Retrieve the full admin tree for a group and locale (including disabled items).
+     *
+     * @return list<MenuItemDTO>
+     */
+    public function getAdminTree(string $groupKey, string $locale): array
+    {
+        $rows = MenuItem::query()
+            ->whereNull('parent_id')
+            ->where('group_key', $groupKey)
+            ->where('locale', $locale)
+            ->with([
+                'pageTarget.translations',
+                'children' => fn ($q) => $q
+                    ->where('locale', $locale)
+                    ->orderBy('sort_order')
+                    ->with([
+                        'pageTarget.translations',
+                        'children' => fn ($q2) => $q2
+                            ->where('locale', $locale)
+                            ->orderBy('sort_order')
+                            ->with('pageTarget.translations'),
+                    ]),
+            ])
+            ->orderBy('sort_order')
+            ->get();
+
+        return array_values(array_map(
+            fn (MenuItem $item): MenuItemDTO => $this->mapAdminItem($item),
+            $rows->all(),
+        ));
+    }
+
+    /**
+     * Find a single menu item by ID for admin editing.
+     */
+    public function findAdminItem(int $itemId): ?MenuItemDTO
+    {
+        $row = MenuItem::query()->find($itemId);
+
+        if (! $row instanceof MenuItem) {
+            return null;
+        }
+
+        $row->loadMissing('children.children', 'pageTarget.translations');
+
+        return $this->mapAdminItem($row);
+    }
+
+    /**
+     * Map a MenuItem model to a MenuItemDTO for admin use (includes disabled items).
+     */
+    private function mapAdminItem(MenuItem $item): MenuItemDTO
+    {
+        $children = array_values(array_map(
+            fn (MenuItem $child): MenuItemDTO => $this->mapAdminItem($child),
+            $item->children->all(),
+        ));
+
+        return new MenuItemDTO(
+            id: (int) $item->getKey(),
+            parentId: $item->parent_id !== null ? (int) $item->parent_id : null,
+            label: (string) $item->label,
+            itemType: (string) $item->type,
+            groupKey: (string) ($item->group_key ?? $item->type),
+            targetType: (string) $item->target_kind,
+            locale: $item->locale,
+            targetId: $item->target_id !== null ? (int) $item->target_id : null,
+            url: $item->url,
+            resolvedUrl: $item->url,
+            target: $item->target,
+            routeName: $item->route_name,
+            cssToken: $item->css_token,
+            icon: $item->icon,
+            isActive: false,
+            sortOrder: (int) $item->sort_order,
+            depth: (int) $item->depth,
+            isEnabled: (bool) $item->is_enabled,
+            isUtility: (bool) $item->is_utility,
+            openInNewTab: (bool) $item->open_in_new_tab,
+            children: $children,
+        );
+    }
 }

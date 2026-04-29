@@ -238,10 +238,7 @@ class ManageHomepage extends Page implements HasForms
 
     private function discardDraft(): void
     {
-        $deleted = \App\Models\HomepageDraft::query()
-            ->where('target_type', 'homepage')
-            ->whereIn('status', ['draft', 'scheduled'])
-            ->delete();
+        $deleted = $this->publishingService->discardEditableDraft();
 
         if ($deleted > 0) {
             Notification::make()
@@ -353,16 +350,7 @@ class ManageHomepage extends Page implements HasForms
 
     public function getHomepageState(): string
     {
-        $latestDraft = \App\Models\HomepageDraft::query()
-            ->where('target_type', 'homepage')
-            ->latest()
-            ->first();
-
-        if ($latestDraft === null) {
-            return 'draft';
-        }
-
-        return $latestDraft->status ?? 'draft';
+        return $this->publishingService->latestHomepageState() ?? 'draft';
     }
 
     public function getStateBadgeColor(): string

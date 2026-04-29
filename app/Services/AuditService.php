@@ -106,4 +106,31 @@ final class AuditService implements AuditServiceInterface
             ))
             ->values();
     }
+
+    /**
+     * Return distinct action values for admin filter dropdowns.
+     *
+     * @return array<string, string>
+     */
+    public function distinctActions(): array
+    {
+        return AuditLog::query()
+            ->distinct()
+            ->pluck('action', 'action')
+            ->toArray();
+    }
+
+    /**
+     * Return distinct entity type values for admin filter dropdowns.
+     *
+     * @return array<string, string>
+     */
+    public function distinctEntityTypes(): array
+    {
+        return AuditLog::query()
+            ->distinct()
+            ->whereNotNull('entity_type')
+            ->pluck('entity_type', 'entity_type')
+            ->toArray();
+    }
 }

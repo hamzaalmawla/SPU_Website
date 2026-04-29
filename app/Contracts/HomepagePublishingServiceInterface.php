@@ -32,4 +32,21 @@ interface HomepagePublishingServiceInterface
      * Schedule a homepage draft for publication.
      */
     public function schedulePublish(int $draftId, DateTimeInterface $publishAt, int $userId): bool;
+
+    /**
+     * Check whether an editable (draft or scheduled) homepage draft exists.
+     */
+    public function hasEditableDraft(): bool;
+
+    /**
+     * Discard all editable (draft or scheduled) homepage drafts.
+     *
+     * @return int Number of drafts deleted.
+     */
+    public function discardEditableDraft(): int;
+
+    /**
+     * Return the status string of the latest homepage draft, or null if none exists.
+     */
+    public function latestHomepageState(): ?string;
 }

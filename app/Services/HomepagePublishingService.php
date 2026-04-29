@@ -786,4 +786,41 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
 
         return is_string($value) && $value !== '' ? $value : null;
     }
+
+    /**
+     * Check whether an editable (draft or scheduled) homepage draft exists.
+     */
+    public function hasEditableDraft(): bool
+    {
+        return HomepageDraft::query()
+            ->where('target_type', 'homepage')
+            ->whereIn('status', ['draft', 'scheduled'])
+            ->exists();
+    }
+
+    /**
+     * Discard all editable (draft or scheduled) homepage drafts.
+     *
+     * @return int Number of drafts deleted.
+     */
+    public function discardEditableDraft(): int
+    {
+        return HomepageDraft::query()
+            ->where('target_type', 'homepage')
+            ->whereIn('status', ['draft', 'scheduled'])
+            ->delete();
+    }
+
+    /**
+     * Return the status string of the latest homepage draft, or null if none exists.
+     */
+    public function latestHomepageState(): ?string
+    {
+        $latestDraft = HomepageDraft::query()
+            ->where('target_type', 'homepage')
+            ->latest()
+            ->first();
+
+        return $latestDraft?->status;
+    }
 }

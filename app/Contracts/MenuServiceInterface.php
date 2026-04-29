@@ -70,4 +70,16 @@ interface MenuServiceInterface
      * Retrieve the utility navigation tree for a locale.
      */
     public function getUtilityTree(string $locale, ?string $currentPath = null): NavigationTreeDTO;
+
+    /**
+     * Retrieve the full admin tree for a group and locale (including disabled items).
+     *
+     * @return list<MenuItemDTO>
+     */
+    public function getAdminTree(string $groupKey, string $locale): array;
+
+    /**
+     * Find a single menu item by ID for admin editing.
+     */
+    public function findAdminItem(int $itemId): ?MenuItemDTO;
 }

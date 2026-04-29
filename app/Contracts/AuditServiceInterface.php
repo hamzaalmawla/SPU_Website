@@ -39,4 +39,18 @@ interface AuditServiceInterface
      * @return Collection<int, AuditLogDTO>
      */
     public function latest(int $limit = 50): Collection;
+
+    /**
+     * Return distinct action values for admin filter dropdowns.
+     *
+     * @return array<string, string> Keyed by action value.
+     */
+    public function distinctActions(): array;
+
+    /**
+     * Return distinct entity type values for admin filter dropdowns.
+     *
+     * @return array<string, string> Keyed by entity type value.
+     */
+    public function distinctEntityTypes(): array;
 }

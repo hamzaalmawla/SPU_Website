@@ -19,10 +19,14 @@ use App\Contracts\SeoMetadataServiceInterface;
 use App\Contracts\SettingsServiceInterface;
 use App\Contracts\SitemapServiceInterface;
 use App\Contracts\SlugServiceInterface;
+use App\Models\AuditLog;
+use App\Models\MediaAsset;
 use App\Models\MenuItem;
 use App\Models\Page;
 use App\Models\User;
+use App\Policies\AuditLogPolicy;
 use App\Policies\HomepagePolicy;
+use App\Policies\MediaAssetPolicy;
 use App\Policies\MenuItemPolicy;
 use App\Policies\PagePolicy;
 use App\Policies\UserPolicy;
@@ -80,6 +84,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(User::class, UserPolicy::class);
         Gate::policy(Page::class, PagePolicy::class);
         Gate::policy(MenuItem::class, MenuItemPolicy::class);
+        Gate::policy(AuditLog::class, AuditLogPolicy::class);
+        Gate::policy(MediaAsset::class, MediaAssetPolicy::class);
 
         Gate::define('manage-users', [UserPolicy::class, 'manageUsers']);
         Gate::define('manage-settings', [UserPolicy::class, 'manageSettings']);

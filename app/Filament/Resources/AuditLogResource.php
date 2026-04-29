@@ -37,6 +37,11 @@ class AuditLogResource extends Resource
 
     protected static ?int $navigationSort = 11;
 
+    private static function auditService(): \App\Contracts\AuditServiceInterface
+    {
+        return app(\App\Contracts\AuditServiceInterface::class);
+    }
+
     public static function canAccess(): bool
     {
         return Gate::allows('view-audit-log');
@@ -136,20 +141,11 @@ class AuditLogResource extends Resource
             ->filters([
                 SelectFilter::make('action')
                     ->label('Action')
-                    ->options(fn (): array => AuditLog::query()
-                        ->distinct()
-                        ->pluck('action', 'action')
-                        ->toArray()
-                    ),
+                    ->options(fn (): array => self::auditService()->distinctActions()),
 
                 SelectFilter::make('entity_type')
                     ->label('Entity Type')
-                    ->options(fn (): array => AuditLog::query()
-                        ->distinct()
-                        ->whereNotNull('entity_type')
-                        ->pluck('entity_type', 'entity_type')
-                        ->toArray()
-                    ),
+                    ->options(fn (): array => self::auditService()->distinctEntityTypes()),
 
                 SelectFilter::make('user_id')
                     ->label('User')
