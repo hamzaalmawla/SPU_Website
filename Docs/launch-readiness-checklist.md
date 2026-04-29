@@ -83,7 +83,16 @@
 - [ ] Non-production `robots.txt` includes `Disallow: /` or noindex directive
 - [ ] Production `robots.txt` allows indexing and references sitemap
 
-## 10. Rollback Readiness
+## 10. Production Environment
+
+- [ ] Production env follows `Docs/production-env-baseline.md`
+- [ ] `.env` and `.env.production` are ignored and untracked
+- [ ] `APP_ENV=production`, `APP_DEBUG=false`, and `APP_URL` is canonical HTTPS
+- [ ] `APP_KEY`, `DB_PASSWORD`, and `ADMIN_PASSWORD` are unique production secrets stored outside git
+- [ ] Application DB user is least-privileged and is not `root`
+- [ ] Session cookies use `SESSION_SECURE_COOKIE=true`, `SESSION_HTTP_ONLY=true`, and `SESSION_SAME_SITE=lax` or stricter
+
+## 11. Rollback Readiness
 
 - [ ] Database snapshot taken before cutover
 - [ ] Rollback procedure documented and tested
