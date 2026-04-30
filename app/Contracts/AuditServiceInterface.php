@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Contracts;
 
 use App\DTOs\AuditLogDTO;
+use App\DTOs\PaginatedResultDTO;
 use Illuminate\Support\Collection;
 
 /**
@@ -39,6 +40,11 @@ interface AuditServiceInterface
      * @return Collection<int, AuditLogDTO>
      */
     public function latest(int $limit = 50): Collection;
+
+    /**
+     * Paginated audit log listing for non-Filament consumers.
+     */
+    public function latestPaginated(int $page = 1, int $perPage = 50): PaginatedResultDTO;
 
     /**
      * Return distinct action values for admin filter dropdowns.

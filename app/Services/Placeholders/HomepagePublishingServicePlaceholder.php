@@ -15,7 +15,7 @@ use DateTimeInterface;
  */
 final class HomepagePublishingServicePlaceholder implements HomepagePublishingServiceInterface
 {
-    public function saveDraft(HomepageDraftDataDTO $payload, int $userId): HomepageDraftDTO
+    public function saveDraft(HomepageDraftDataDTO $payload, int $userId, ?int $expectedVersion = null): HomepageDraftDTO
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }

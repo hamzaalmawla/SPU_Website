@@ -6,6 +6,7 @@ namespace App\Services\Placeholders;
 
 use App\Contracts\MediaServiceInterface;
 use App\DTOs\MediaUploadResultDTO;
+use App\DTOs\PaginatedResultDTO;
 use BadMethodCallException;
 use Illuminate\Support\Collection;
 
@@ -33,6 +34,11 @@ final class MediaServicePlaceholder implements MediaServiceInterface
      * @return Collection<int, MediaUploadResultDTO>
      */
     public function list(array $filters = []): Collection
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function listPaginated(array $filters = [], int $page = 1, int $perPage = 20): PaginatedResultDTO
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }

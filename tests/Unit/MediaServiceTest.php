@@ -233,4 +233,60 @@ class MediaServiceTest extends TestCase
 
         $this->assertCount(0, $results);
     }
+
+    // ── Paginated list ───────────────────────────────────────────────────
+
+    public function test_list_paginated_returns_paginated_result_dto(): void
+    {
+        for ($i = 0; $i < 5; $i++) {
+            $this->service->upload([
+                'file' => UploadedFile::fake()->create("file{$i}.jpg", 100, 'image/jpeg'),
+            ]);
+        }
+
+        $result = $this->service->listPaginated([], 1, 3);
+
+        $this->assertInstanceOf(\App\DTOs\PaginatedResultDTO::class, $result);
+        $this->assertCount(3, $result->items);
+        $this->assertSame(5, $result->total);
+        $this->assertSame(1, $result->currentPage);
+        $this->assertSame(3, $result->perPage);
+        $this->assertSame(2, $result->lastPage);
+    }
+
+    public function test_list_paginated_second_page(): void
+    {
+        for ($i = 0; $i < 5; $i++) {
+            $this->service->upload([
+                'file' => UploadedFile::fake()->create("file{$i}.jpg", 100, 'image/jpeg'),
+            ]);
+        }
+
+        $result = $this->service->listPaginated([], 2, 3);
+
+        $this->assertCount(2, $result->items);
+        $this->assertSame(2, $result->currentPage);
+        $this->assertSame(5, $result->total);
+    }
+
+    public function test_list_paginated_applies_filters(): void
+    {
+        $this->service->upload(['file' => UploadedFile::fake()->create('photo.jpg', 100, 'image/jpeg')]);
+        $this->service->upload(['file' => UploadedFile::fake()->create('doc.pdf', 100, 'application/pdf')]);
+
+        $result = $this->service->listPaginated(['mime_type' => 'image/'], 1, 10);
+
+        $this->assertCount(1, $result->items);
+        $this->assertSame(1, $result->total);
+    }
+
+    public function test_list_paginated_empty_result(): void
+    {
+        $result = $this->service->listPaginated([], 1, 10);
+
+        $this->assertCount(0, $result->items);
+        $this->assertSame(0, $result->total);
+        $this->assertSame(1, $result->currentPage);
+        $this->assertSame(1, $result->lastPage);
+    }
 }

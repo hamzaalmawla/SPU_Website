@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Contracts\AuditServiceInterface;
 use App\DTOs\AuditLogDTO;
+use App\DTOs\PaginatedResultDTO;
 use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -83,6 +84,26 @@ final class AuditService implements AuditServiceInterface
                 ->latest('created_at')
                 ->limit($limit)
                 ->get()
+        );
+    }
+
+    /**
+     * Paginated audit log listing for non-Filament consumers.
+     */
+    public function latestPaginated(int $page = 1, int $perPage = 50): PaginatedResultDTO
+    {
+        $paginator = AuditLog::query()
+            ->latest('created_at')
+            ->paginate(perPage: $perPage, page: $page);
+
+        $items = $this->mapToDtos(collect($paginator->items()));
+
+        return new PaginatedResultDTO(
+            items: $items,
+            total: $paginator->total(),
+            currentPage: $paginator->currentPage(),
+            perPage: $paginator->perPage(),
+            lastPage: $paginator->lastPage(),
         );
     }
 

@@ -6,8 +6,10 @@ namespace App\Services;
 
 use App\Contracts\MediaServiceInterface;
 use App\DTOs\MediaUploadResultDTO;
+use App\DTOs\PaginatedResultDTO;
 use App\Models\MediaAsset;
 use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
@@ -154,6 +156,42 @@ final class MediaService implements MediaServiceInterface
      */
     public function list(array $filters = []): Collection
     {
+        $query = $this->buildListQuery($filters);
+
+        return $query->get()->map(fn (MediaAsset $asset): MediaUploadResultDTO => $this->toDto($asset));
+    }
+
+    /**
+     * Paginated media listing for non-Filament consumers.
+     *
+     * @param  array<string, mixed>  $filters  Accepts 'mime_type', 'search', 'uploaded_by'
+     */
+    public function listPaginated(array $filters = [], int $page = 1, int $perPage = 20): PaginatedResultDTO
+    {
+        $query = $this->buildListQuery($filters);
+
+        $paginator = $query->paginate(perPage: $perPage, page: $page);
+
+        $items = collect($paginator->items())
+            ->map(fn (MediaAsset $asset): MediaUploadResultDTO => $this->toDto($asset));
+
+        return new PaginatedResultDTO(
+            items: $items,
+            total: $paginator->total(),
+            currentPage: $paginator->currentPage(),
+            perPage: $paginator->perPage(),
+            lastPage: $paginator->lastPage(),
+        );
+    }
+
+    /**
+     * Build the base query for media listing with optional filters.
+     *
+     * @param  array<string, mixed>  $filters
+     * @return Builder<MediaAsset>
+     */
+    private function buildListQuery(array $filters = []): Builder
+    {
         $query = MediaAsset::query();
 
         if (isset($filters['mime_type']) && is_string($filters['mime_type'])) {
@@ -176,7 +214,7 @@ final class MediaService implements MediaServiceInterface
 
         $query->orderByDesc('created_at');
 
-        return $query->get()->map(fn (MediaAsset $asset): MediaUploadResultDTO => $this->toDto($asset));
+        return $query;
     }
 
     private function validateFile(UploadedFile $file): void

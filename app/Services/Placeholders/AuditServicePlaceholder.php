@@ -6,6 +6,7 @@ namespace App\Services\Placeholders;
 
 use App\Contracts\AuditServiceInterface;
 use App\DTOs\AuditLogDTO;
+use App\DTOs\PaginatedResultDTO;
 use BadMethodCallException;
 use Illuminate\Support\Collection;
 
@@ -33,6 +34,27 @@ final class AuditServicePlaceholder implements AuditServiceInterface
      * @return Collection<int, AuditLogDTO>
      */
     public function latest(int $limit = 50): Collection
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function latestPaginated(int $page = 1, int $perPage = 50): PaginatedResultDTO
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function distinctActions(): array
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function distinctEntityTypes(): array
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }

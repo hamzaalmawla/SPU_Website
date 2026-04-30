@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Contracts;
 
 use App\DTOs\MediaUploadResultDTO;
+use App\DTOs\PaginatedResultDTO;
 use Illuminate\Support\Collection;
 
 /**
@@ -31,4 +32,11 @@ interface MediaServiceInterface
      * @return Collection<int, MediaUploadResultDTO>
      */
     public function list(array $filters = []): Collection;
+
+    /**
+     * Paginated media listing for non-Filament consumers.
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    public function listPaginated(array $filters = [], int $page = 1, int $perPage = 20): PaginatedResultDTO;
 }

@@ -16,6 +16,8 @@ use App\DTOs\PageSeoInputDTO;
 use App\DTOs\PageShellDataDTO;
 use App\DTOs\PageTranslationDTO;
 use App\DTOs\PreviewDTO;
+use App\Events\DraftConflictDetected;
+use App\Exceptions\ConflictException;
 use App\Models\Page;
 use App\Models\PageDraft;
 use App\Models\PageSeoMeta;
@@ -121,9 +123,53 @@ final class PageService implements PageServiceInterface
         return $this->updateSeo($pageId, 'en', $payload);
     }
 
-    public function saveDraft(int $pageId, PageDraftDataDTO $payload, int $userId): PageDraftDTO
+    public function saveDraft(int $pageId, PageDraftDataDTO $payload, int $userId, ?int $expectedVersion = null): PageDraftDTO
     {
         $page = Page::query()->findOrFail($pageId);
+
+        // Optimistic locking: check version if expectedVersion is provided
+        if ($expectedVersion !== null) {
+            $currentDraft = PageDraft::query()
+                ->where('page_id', $pageId)
+                ->whereIn('status', self::EDITABLE_STATUSES)
+                ->latest()
+                ->first();
+
+            if ($currentDraft instanceof PageDraft && (int) $currentDraft->version !== $expectedVersion) {
+                $this->auditService->log(
+                    action: 'draft.conflict',
+                    userId: $userId,
+                    entityType: Page::class,
+                    entityId: $pageId,
+                    metadata: [
+                        'expected_version' => $expectedVersion,
+                        'actual_version' => (int) $currentDraft->version,
+                        'draft_id' => (int) $currentDraft->getKey(),
+                    ],
+                );
+
+                DraftConflictDetected::dispatch(
+                    PageDraft::class,
+                    (int) $currentDraft->getKey(),
+                    $expectedVersion,
+                    (int) $currentDraft->version,
+                    $userId,
+                );
+
+                throw new ConflictException(
+                    'Draft has been modified by another editor.',
+                    (int) $currentDraft->version,
+                );
+            }
+        }
+
+        // Determine the next version number
+        $latestDraft = PageDraft::query()
+            ->where('page_id', $pageId)
+            ->whereIn('status', self::EDITABLE_STATUSES)
+            ->latest()
+            ->first();
+        $nextVersion = $latestDraft instanceof PageDraft ? ((int) $latestDraft->version) + 1 : 1;
 
         $draft = PageDraft::query()->create([
             'page_id' => $pageId,
@@ -132,6 +178,7 @@ final class PageService implements PageServiceInterface
             'created_by' => $userId,
             'updated_by' => $userId,
             'scheduled_at' => $payload->metadata->publishAt,
+            'version' => $nextVersion,
         ]);
 
         $this->auditService->log('page.draft_saved', $userId, Page::class, (int) $page->getKey(), [

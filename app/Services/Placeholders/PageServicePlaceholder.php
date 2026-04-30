@@ -55,7 +55,7 @@ final class PageServicePlaceholder implements PageServiceInterface
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function saveDraft(int $pageId, PageDraftDataDTO $payload, int $userId): PageDraftDTO
+    public function saveDraft(int $pageId, PageDraftDataDTO $payload, int $userId, ?int $expectedVersion = null): PageDraftDTO
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
