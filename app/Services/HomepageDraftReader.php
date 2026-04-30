@@ -18,6 +18,18 @@ use Illuminate\Support\Collection;
  * and building section DTOs from draft arrays.
  *
  * Extracted from HomepageSectionService to keep each class focused on a single responsibility.
+ *
+ * Index coverage for hot-path queries (verified 2026-04-30):
+ * ──────────────────────────────────────────────────────────
+ * latestEditableDraft():
+ *   → where('target_type', 'homepage') + whereIn('status', [...]) + latest('updated_at')
+ *   → Covered by idx_homepage_draft_lookup: (target_type, status, updated_at)
+ *     from migration 2026_04_30_000002_add_composite_performance_indexes
+ *
+ * publishedSections():
+ *   → whereIn('key', $sectionKeys) + orderBy('sort_order') + with('translations')
+ *   → homepage_sections.key has a UNIQUE index (sufficient — max 11 rows)
+ *   → homepage_section_translations has UNIQUE(section_id, locale) — eager-load covered
  */
 final class HomepageDraftReader
 {

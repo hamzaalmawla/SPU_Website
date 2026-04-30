@@ -436,6 +436,57 @@ final class HomepagePayloadMapper
     }
 
     // ──────────────────────────────────────────────
+    //  Section serialization — DTO → array
+    // ──────────────────────────────────────────────
+
+    /**
+     * Serialize an array of HomepageSectionDTOs into a plain array structure
+     * suitable for JSON storage in draft payloads.
+     *
+     * Consolidates the duplicated serialization logic previously in
+     * HomepageSectionService and HomepagePublishingService.
+     *
+     * @param  array<int, \App\DTOs\HomepageSectionDTO>  $sections
+     * @return array<int, array<string, mixed>>
+     */
+    public static function serializeSections(array $sections): array
+    {
+        return array_values(array_map(
+            static fn (\App\DTOs\HomepageSectionDTO $section): array => [
+                'id' => $section->id,
+                'key' => $section->key,
+                'sortOrder' => $section->sortOrder,
+                'isEnabled' => $section->isEnabled,
+                'payload' => self::sectionDataToArray($section->payload),
+                'arabicPayload' => self::sectionDataToArray($section->arabicPayload ?? $section->payload),
+                'englishPayload' => self::sectionDataToArray($section->englishPayload ?? $section->payload),
+                'arabicTranslation' => self::translationToArray($section->arabicTranslation),
+                'englishTranslation' => self::translationToArray($section->englishTranslation),
+            ],
+            $sections,
+        ));
+    }
+
+    /**
+     * Convert a HomepageSectionTranslationDTO into a plain array,
+     * filtering out null and empty-string values.
+     *
+     * Consolidates the duplicated logic previously in
+     * HomepageSectionService and HomepagePublishingService.
+     *
+     * @return array<string, mixed>
+     */
+    public static function translationToArray(\App\DTOs\HomepageSectionTranslationDTO $translation): array
+    {
+        return array_filter([
+            'headline' => $translation->headline,
+            'body' => $translation->body,
+            'ctaLabel' => $translation->ctaLabel,
+            'imageAlt' => $translation->imageAlt,
+        ], static fn (mixed $value): bool => $value !== null && $value !== '');
+    }
+
+    // ──────────────────────────────────────────────
     //  Internal helpers
     // ──────────────────────────────────────────────
 

@@ -17,15 +17,11 @@ use App\DTOs\HomepageSectionDataDTO;
 use App\DTOs\HomepageSectionDTO;
 use App\DTOs\HomepageStatItemDTO;
 use App\DTOs\SocialLinkDTO;
+use App\Filament\Support\HomepageFormSchema;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\Tabs\Tab;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
@@ -99,10 +95,6 @@ class ManageHomepage extends Page implements HasForms
             ->statePath('data');
     }
 
-    // ──────────────────────────────────────────────
-    // Header Actions
-    // ──────────────────────────────────────────────
-
     protected function getHeaderActions(): array
     {
         return [
@@ -122,9 +114,7 @@ class ManageHomepage extends Page implements HasForms
             ->label('Save Draft')
             ->icon('heroicon-o-document')
             ->color('gray')
-            ->action(function (): void {
-                $this->saveDraft();
-            });
+            ->action(fn () => $this->saveDraft());
     }
 
     private function discardDraftAction(): Action
@@ -136,14 +126,8 @@ class ManageHomepage extends Page implements HasForms
             ->requiresConfirmation()
             ->modalHeading('Discard Draft')
             ->modalDescription('This will permanently delete the current draft. The live homepage (if published) will not be affected.')
-            ->visible(fn (): bool => \App\Models\HomepageDraft::query()
-                ->where('target_type', 'homepage')
-                ->whereIn('status', ['draft', 'scheduled'])
-                ->exists()
-            )
-            ->action(function (): void {
-                $this->discardDraft();
-            });
+            ->visible(fn (): bool => $this->publishingService->hasEditableDraft())
+            ->action(fn () => $this->discardDraft());
     }
 
     private function previewArAction(): Action
@@ -152,9 +136,7 @@ class ManageHomepage extends Page implements HasForms
             ->label('Preview (AR)')
             ->icon('heroicon-o-eye')
             ->color('info')
-            ->action(function (): void {
-                $this->openPreview('ar');
-            });
+            ->action(fn () => $this->openPreview('ar'));
     }
 
     private function previewEnAction(): Action
@@ -163,9 +145,7 @@ class ManageHomepage extends Page implements HasForms
             ->label('Preview (EN)')
             ->icon('heroicon-o-eye')
             ->color('info')
-            ->action(function (): void {
-                $this->openPreview('en');
-            });
+            ->action(fn () => $this->openPreview('en'));
     }
 
     private function publishAction(): Action
@@ -177,9 +157,7 @@ class ManageHomepage extends Page implements HasForms
             ->requiresConfirmation()
             ->modalHeading('Publish Homepage')
             ->modalDescription('Are you sure you want to publish the current draft? This will make it live immediately.')
-            ->action(function (): void {
-                $this->publishHomepage();
-            });
+            ->action(fn () => $this->publishHomepage());
     }
 
     private function scheduleAction(): Action
@@ -195,9 +173,7 @@ class ManageHomepage extends Page implements HasForms
                     ->minDate(now())
                     ->native(false),
             ])
-            ->action(function (array $data): void {
-                $this->schedulePublish($data['publish_at']);
-            });
+            ->action(fn (array $data) => $this->schedulePublish($data['publish_at']));
     }
 
     private function unpublishAction(): Action
@@ -209,47 +185,27 @@ class ManageHomepage extends Page implements HasForms
             ->requiresConfirmation()
             ->modalHeading('Unpublish Homepage')
             ->modalDescription('Are you sure you want to unpublish the homepage? It will no longer be visible to the public.')
-            ->action(function (): void {
-                $this->unpublishHomepage();
-            });
+            ->action(fn () => $this->unpublishHomepage());
     }
-
-    // ──────────────────────────────────────────────
-    // Action Handlers (delegate to services)
-    // ──────────────────────────────────────────────
 
     private function saveDraft(): void
     {
         $formData = $this->form->getState();
         $sectionDTOs = $this->buildSectionDTOsFromFormData($formData);
-
         $draftPayload = new HomepageDraftDataDTO(sections: $sectionDTOs);
-
         /** @var \App\Models\User $user */
         $user = auth()->user();
-
         $this->publishingService->saveDraft($draftPayload, $user->id);
-
-        Notification::make()
-            ->title('Draft saved successfully')
-            ->success()
-            ->send();
+        Notification::make()->title('Draft saved successfully')->success()->send();
     }
 
     private function discardDraft(): void
     {
         $deleted = $this->publishingService->discardEditableDraft();
-
         if ($deleted > 0) {
-            Notification::make()
-                ->title('Draft discarded')
-                ->success()
-                ->send();
+            Notification::make()->title('Draft discarded')->success()->send();
         } else {
-            Notification::make()
-                ->title('No draft to discard')
-                ->warning()
-                ->send();
+            Notification::make()->title('No draft to discard')->warning()->send();
         }
     }
 
@@ -257,14 +213,12 @@ class ManageHomepage extends Page implements HasForms
     {
         /** @var \App\Models\User $user */
         $user = auth()->user();
-
         $preview = $this->previewService->createToken(
             targetType: 'homepage',
             targetId: null,
             locale: $locale,
             userId: $user->id,
         );
-
         $this->redirect($preview->previewUrl);
     }
 
@@ -272,25 +226,16 @@ class ManageHomepage extends Page implements HasForms
     {
         /** @var \App\Models\User $user */
         $user = auth()->user();
-
         $formData = $this->form->getState();
         $sectionDTOs = $this->buildSectionDTOsFromFormData($formData);
         $draftPayload = new HomepageDraftDataDTO(sections: $sectionDTOs);
-
         $draft = $this->publishingService->saveDraft($draftPayload, $user->id);
         $result = $this->publishingService->publish($draft->id, $user->id);
-
         if ($result) {
-            Notification::make()
-                ->title('Homepage published successfully')
-                ->success()
-                ->send();
+            Notification::make()->title('Homepage published successfully')->success()->send();
         } else {
-            Notification::make()
-                ->title('Publish failed')
-                ->body('Please ensure all required content is filled in.')
-                ->danger()
-                ->send();
+            Notification::make()->title('Publish failed')
+                ->body('Please ensure all required content is filled in.')->danger()->send();
         }
     }
 
@@ -298,29 +243,20 @@ class ManageHomepage extends Page implements HasForms
     {
         /** @var \App\Models\User $user */
         $user = auth()->user();
-
         $formData = $this->form->getState();
         $sectionDTOs = $this->buildSectionDTOsFromFormData($formData);
         $draftPayload = new HomepageDraftDataDTO(sections: $sectionDTOs);
-
         $draft = $this->publishingService->saveDraft($draftPayload, $user->id);
         $result = $this->publishingService->schedulePublish(
             $draft->id,
             new \DateTimeImmutable($publishAt),
             $user->id,
         );
-
         if ($result) {
-            Notification::make()
-                ->title('Homepage scheduled for publication')
-                ->body("Scheduled for: {$publishAt}")
-                ->success()
-                ->send();
+            Notification::make()->title('Homepage scheduled for publication')
+                ->body("Scheduled for: {$publishAt}")->success()->send();
         } else {
-            Notification::make()
-                ->title('Schedule failed')
-                ->danger()
-                ->send();
+            Notification::make()->title('Schedule failed')->danger()->send();
         }
     }
 
@@ -328,25 +264,13 @@ class ManageHomepage extends Page implements HasForms
     {
         /** @var \App\Models\User $user */
         $user = auth()->user();
-
         $result = $this->publishingService->unpublish('homepage', null, $user->id);
-
         if ($result) {
-            Notification::make()
-                ->title('Homepage unpublished')
-                ->success()
-                ->send();
+            Notification::make()->title('Homepage unpublished')->success()->send();
         } else {
-            Notification::make()
-                ->title('Unpublish failed')
-                ->danger()
-                ->send();
+            Notification::make()->title('Unpublish failed')->danger()->send();
         }
     }
-
-    // ──────────────────────────────────────────────
-    // State Badge
-    // ──────────────────────────────────────────────
 
     public function getHomepageState(): string
     {
@@ -361,10 +285,6 @@ class ManageHomepage extends Page implements HasForms
             default => 'gray',
         };
     }
-
-    // ──────────────────────────────────────────────
-    // Data Loading
-    // ──────────────────────────────────────────────
 
     private function loadSectionData(): void
     {
@@ -429,10 +349,6 @@ class ManageHomepage extends Page implements HasForms
             'en' => [],
         ];
     }
-
-    // ──────────────────────────────────────────────
-    // Form → DTO Conversion
-    // ──────────────────────────────────────────────
 
     /**
      * @return array<int, HomepageSectionDTO>
@@ -594,10 +510,6 @@ class ManageHomepage extends Page implements HasForms
         );
     }
 
-    // ──────────────────────────────────────────────
-    // Section Tab Builders
-    // ──────────────────────────────────────────────
-
     /** @return array<int, Tab> */
     private function buildSectionTabs(): array
     {
@@ -623,10 +535,10 @@ class ManageHomepage extends Page implements HasForms
                     Tabs::make("{$key}_locales")
                         ->tabs([
                             Tab::make('العربية (AR)')
-                                ->schema($this->buildSectionFields($key, 'ar'))
+                                ->schema(HomepageFormSchema::fieldsForSection($key, "{$key}.ar"))
                                 ->icon('heroicon-o-language'),
                             Tab::make('English (EN)')
-                                ->schema($this->buildSectionFields($key, 'en'))
+                                ->schema(HomepageFormSchema::fieldsForSection($key, "{$key}.en"))
                                 ->icon('heroicon-o-language'),
                         ]),
                 ]);
@@ -635,504 +547,6 @@ class ManageHomepage extends Page implements HasForms
         return $tabs;
     }
 
-    /** @return array<int, \Filament\Forms\Components\Component> */
-    private function buildSectionFields(string $sectionKey, string $locale): array
-    {
-        $prefix = "{$sectionKey}.{$locale}";
-
-        return match ($sectionKey) {
-            'hero' => $this->heroFields($prefix),
-            'hero_stats' => $this->heroStatsFields($prefix),
-            'academic_faculties' => $this->academicFacultiesFields($prefix),
-            'achievements_highlights' => $this->achievementsHighlightsFields($prefix),
-            'choose_your_path' => $this->chooseYourPathFields($prefix),
-            'university_news' => $this->universityNewsFields($prefix),
-            'research_studies' => $this->researchStudiesFields($prefix),
-            'events_activities' => $this->eventsActivitiesFields($prefix),
-            'medical_facilities_services' => $this->medicalFacilitiesFields($prefix),
-            'bottom_stats' => $this->bottomStatsFields($prefix),
-            'footer' => $this->footerFields($prefix),
-        };
-    }
-
-    // ──────────────────────────────────────────────
-    // Individual Section Field Schemas
-    // ──────────────────────────────────────────────
-
-    /** @return array<int, \Filament\Forms\Components\Component> */
-    private function heroFields(string $prefix): array
-    {
-        return [
-            Section::make('Hero Content')->schema([
-                FileUpload::make("{$prefix}.background_image")
-                    ->label('Background Image')
-                    ->image()
-                    ->directory('homepage/hero')
-                    ->maxSize(5120),
-                TextInput::make("{$prefix}.video_url")
-                    ->label('Video URL')
-                    ->maxLength(2048),
-                TextInput::make("{$prefix}.headline")
-                    ->label('Headline')
-                    ->maxLength(255),
-                Textarea::make("{$prefix}.subheadline")
-                    ->label('Subheadline')
-                    ->rows(3)
-                    ->maxLength(500),
-            ]),
-            Section::make('Call to Action')->schema([
-                TextInput::make("{$prefix}.primary_cta_label")
-                    ->label('Primary CTA Label')
-                    ->maxLength(100),
-                TextInput::make("{$prefix}.primary_cta_url")
-                    ->label('Primary CTA URL')
-                    ->maxLength(2048),
-                TextInput::make("{$prefix}.secondary_cta_label")
-                    ->label('Secondary CTA Label')
-                    ->maxLength(100),
-                TextInput::make("{$prefix}.secondary_cta_url")
-                    ->label('Secondary CTA URL')
-                    ->maxLength(2048),
-            ]),
-        ];
-    }
-
-    /** @return array<int, \Filament\Forms\Components\Component> */
-    private function heroStatsFields(string $prefix): array
-    {
-        return [
-            Repeater::make("{$prefix}.stats")
-                ->label('Statistics')
-                ->schema([
-                    TextInput::make('value')
-                        ->label('Value')
-                        ->required()
-                        ->maxLength(50),
-                    TextInput::make('label')
-                        ->label('Label')
-                        ->required()
-                        ->maxLength(100),
-                    TextInput::make('suffix')
-                        ->label('Suffix')
-                        ->maxLength(20),
-                    TextInput::make('prefix')
-                        ->label('Prefix')
-                        ->maxLength(20),
-                    TextInput::make('icon')
-                        ->label('Icon')
-                        ->maxLength(100),
-                ])
-                ->columns(3)
-                ->collapsible()
-                ->defaultItems(0),
-        ];
-    }
-
-    /** @return array<int, \Filament\Forms\Components\Component> */
-    private function academicFacultiesFields(string $prefix): array
-    {
-        return [
-            Section::make('Section Header')->schema([
-                TextInput::make("{$prefix}.section_title")
-                    ->label('Section Title')
-                    ->maxLength(255),
-                TextInput::make("{$prefix}.subtitle")
-                    ->label('Subtitle')
-                    ->maxLength(500),
-            ]),
-            Repeater::make("{$prefix}.featured_items")
-                ->label('Faculty Cards')
-                ->schema([
-                    TextInput::make('title')
-                        ->label('Title')
-                        ->required()
-                        ->maxLength(255),
-                    Textarea::make('description')
-                        ->label('Description')
-                        ->rows(2)
-                        ->maxLength(500),
-                    TextInput::make('icon')
-                        ->label('Icon')
-                        ->maxLength(100),
-                    TextInput::make('cta_label')
-                        ->label('CTA Label')
-                        ->maxLength(100),
-                    TextInput::make('cta_url')
-                        ->label('CTA URL')
-                        ->maxLength(2048),
-                ])
-                ->columns(2)
-                ->collapsible()
-                ->defaultItems(0),
-        ];
-    }
-
-    /** @return array<int, \Filament\Forms\Components\Component> */
-    private function achievementsHighlightsFields(string $prefix): array
-    {
-        return [
-            Section::make('Section Header')->schema([
-                TextInput::make("{$prefix}.section_title")
-                    ->label('Section Title')
-                    ->maxLength(255),
-                TextInput::make("{$prefix}.subtitle")
-                    ->label('Subtitle')
-                    ->maxLength(500),
-            ]),
-            Repeater::make("{$prefix}.featured_items")
-                ->label('Highlight Cards')
-                ->schema([
-                    TextInput::make('title')
-                        ->label('Title')
-                        ->required()
-                        ->maxLength(255),
-                    Textarea::make('text')
-                        ->label('Text')
-                        ->rows(2)
-                        ->maxLength(500),
-                    TextInput::make('icon')
-                        ->label('Icon')
-                        ->maxLength(100),
-                    TextInput::make('metric')
-                        ->label('Metric')
-                        ->maxLength(100),
-                    TextInput::make('cta_label')
-                        ->label('CTA Label')
-                        ->maxLength(100),
-                    TextInput::make('cta_url')
-                        ->label('CTA URL')
-                        ->maxLength(2048),
-                ])
-                ->columns(2)
-                ->collapsible()
-                ->defaultItems(0),
-        ];
-    }
-
-    /** @return array<int, \Filament\Forms\Components\Component> */
-    private function chooseYourPathFields(string $prefix): array
-    {
-        return [
-            Section::make('Section Header')->schema([
-                TextInput::make("{$prefix}.section_title")
-                    ->label('Section Title')
-                    ->maxLength(255),
-            ]),
-            Repeater::make("{$prefix}.path_items")
-                ->label('Path Cards')
-                ->schema([
-                    TextInput::make('title')
-                        ->label('Title')
-                        ->required()
-                        ->maxLength(255),
-                    TextInput::make('icon')
-                        ->label('Icon Path')
-                        ->maxLength(500),
-                    Repeater::make('links')
-                        ->label('Quick Links')
-                        ->schema([
-                            TextInput::make('label')
-                                ->label('Link Label')
-                                ->required()
-                                ->maxLength(255),
-                        ])
-                        ->defaultItems(0)
-                        ->collapsible(),
-                    TextInput::make('cta_label')
-                        ->label('CTA Label')
-                        ->maxLength(100),
-                    TextInput::make('cta_url')
-                        ->label('CTA URL')
-                        ->maxLength(2048),
-                ])
-                ->columns(2)
-                ->collapsible()
-                ->defaultItems(0),
-        ];
-    }
-
-    /** @return array<int, \Filament\Forms\Components\Component> */
-    private function universityNewsFields(string $prefix): array
-    {
-        return [
-            Section::make('Section Header')->schema([
-                TextInput::make("{$prefix}.section_title")
-                    ->label('Section Title')
-                    ->maxLength(255),
-            ]),
-            Repeater::make("{$prefix}.articles")
-                ->label('News Cards')
-                ->schema([
-                    FileUpload::make('image')
-                        ->label('Image')
-                        ->image()
-                        ->directory('homepage/news'),
-                    TextInput::make('title')
-                        ->label('Title')
-                        ->required()
-                        ->maxLength(255),
-                    Textarea::make('excerpt')
-                        ->label('Excerpt')
-                        ->rows(2)
-                        ->maxLength(500),
-                    TextInput::make('publish_date')
-                        ->label('Publish Date')
-                        ->maxLength(50),
-                    TextInput::make('category')
-                        ->label('Category')
-                        ->maxLength(100),
-                    TextInput::make('cta_url')
-                        ->label('CTA URL')
-                        ->maxLength(2048),
-                ])
-                ->columns(2)
-                ->collapsible()
-                ->defaultItems(0),
-        ];
-    }
-
-    /** @return array<int, \Filament\Forms\Components\Component> */
-    private function researchStudiesFields(string $prefix): array
-    {
-        return [
-            Section::make('Section Header')->schema([
-                TextInput::make("{$prefix}.section_title")
-                    ->label('Section Title')
-                    ->maxLength(255),
-            ]),
-            Repeater::make("{$prefix}.research_items")
-                ->label('Research Cards')
-                ->schema([
-                    FileUpload::make('image')
-                        ->label('Image')
-                        ->image()
-                        ->directory('homepage/research'),
-                    TextInput::make('title')
-                        ->label('Title')
-                        ->required()
-                        ->maxLength(255),
-                    Textarea::make('excerpt')
-                        ->label('Excerpt')
-                        ->rows(2)
-                        ->maxLength(500),
-                    TextInput::make('publish_date')
-                        ->label('Publish Date')
-                        ->maxLength(50),
-                    TextInput::make('category')
-                        ->label('Category')
-                        ->maxLength(100),
-                    TextInput::make('authors')
-                        ->label('Authors')
-                        ->maxLength(500),
-                    TextInput::make('cta_url')
-                        ->label('CTA URL')
-                        ->maxLength(2048),
-                ])
-                ->columns(2)
-                ->collapsible()
-                ->defaultItems(0),
-        ];
-    }
-
-    /** @return array<int, \Filament\Forms\Components\Component> */
-    private function eventsActivitiesFields(string $prefix): array
-    {
-        return [
-            Section::make('Section Header')->schema([
-                TextInput::make("{$prefix}.section_title")
-                    ->label('Section Title')
-                    ->maxLength(255),
-            ]),
-            Repeater::make("{$prefix}.events")
-                ->label('Event Cards')
-                ->schema([
-                    FileUpload::make('image')
-                        ->label('Image')
-                        ->image()
-                        ->directory('homepage/events'),
-                    TextInput::make('title')
-                        ->label('Title')
-                        ->required()
-                        ->maxLength(255),
-                    TextInput::make('date')
-                        ->label('Date')
-                        ->maxLength(50),
-                    TextInput::make('time')
-                        ->label('Time')
-                        ->maxLength(50),
-                    TextInput::make('location')
-                        ->label('Location')
-                        ->maxLength(255),
-                    Textarea::make('description')
-                        ->label('Description')
-                        ->rows(2)
-                        ->maxLength(500),
-                    TextInput::make('cta_url')
-                        ->label('CTA URL')
-                        ->maxLength(2048),
-                ])
-                ->columns(2)
-                ->collapsible()
-                ->defaultItems(0),
-        ];
-    }
-
-    /** @return array<int, \Filament\Forms\Components\Component> */
-    private function medicalFacilitiesFields(string $prefix): array
-    {
-        return [
-            Section::make('Section Header')->schema([
-                TextInput::make("{$prefix}.section_title")
-                    ->label('Section Title')
-                    ->maxLength(255),
-            ]),
-            Repeater::make("{$prefix}.items")
-                ->label('Service Cards')
-                ->schema([
-                    TextInput::make('title')
-                        ->label('Title')
-                        ->required()
-                        ->maxLength(255),
-                    Textarea::make('description')
-                        ->label('Description')
-                        ->rows(2)
-                        ->maxLength(500),
-                    FileUpload::make('image')
-                        ->label('Image')
-                        ->image()
-                        ->directory('homepage/medical'),
-                    TextInput::make('cta_label')
-                        ->label('CTA Label')
-                        ->maxLength(100),
-                    TextInput::make('cta_url')
-                        ->label('CTA URL')
-                        ->maxLength(2048),
-                ])
-                ->columns(2)
-                ->collapsible()
-                ->defaultItems(0),
-        ];
-    }
-
-    /** @return array<int, \Filament\Forms\Components\Component> */
-    private function bottomStatsFields(string $prefix): array
-    {
-        return [
-            Repeater::make("{$prefix}.stats")
-                ->label('Statistics')
-                ->schema([
-                    TextInput::make('value')
-                        ->label('Value')
-                        ->required()
-                        ->maxLength(50),
-                    TextInput::make('label')
-                        ->label('Label')
-                        ->required()
-                        ->maxLength(100),
-                    TextInput::make('suffix')
-                        ->label('Suffix')
-                        ->maxLength(20),
-                    TextInput::make('prefix')
-                        ->label('Prefix')
-                        ->maxLength(20),
-                ])
-                ->columns(2)
-                ->collapsible()
-                ->defaultItems(0),
-        ];
-    }
-
-    /** @return array<int, \Filament\Forms\Components\Component> */
-    private function footerFields(string $prefix): array
-    {
-        return [
-            Section::make('Brand & Contact')->schema([
-                FileUpload::make("{$prefix}.logo")
-                    ->label('Footer Logo')
-                    ->image()
-                    ->directory('homepage/footer'),
-                TextInput::make("{$prefix}.content.contact_phone")
-                    ->label('Contact Phone')
-                    ->tel()
-                    ->maxLength(50),
-                TextInput::make("{$prefix}.content.contact_email")
-                    ->label('Contact Email')
-                    ->email()
-                    ->maxLength(255),
-                Textarea::make("{$prefix}.content.contact_address")
-                    ->label('Contact Address')
-                    ->rows(2)
-                    ->maxLength(500),
-            ]),
-            Repeater::make("{$prefix}.social_links")
-                ->label('Social Links')
-                ->schema([
-                    TextInput::make('platform')
-                        ->label('Platform')
-                        ->required()
-                        ->maxLength(50),
-                    TextInput::make('url')
-                        ->label('URL')
-                        ->required()
-                        ->maxLength(2048),
-                    TextInput::make('icon')
-                        ->label('Icon')
-                        ->maxLength(100),
-                ])
-                ->columns(3)
-                ->collapsible()
-                ->defaultItems(0),
-            Repeater::make("{$prefix}.footer_columns")
-                ->label('Navigation Groups')
-                ->schema([
-                    TextInput::make('title')
-                        ->label('Group Title')
-                        ->required()
-                        ->maxLength(255),
-                    Repeater::make('links')
-                        ->label('Links')
-                        ->schema([
-                            TextInput::make('label')
-                                ->label('Label')
-                                ->required()
-                                ->maxLength(255),
-                            TextInput::make('url')
-                                ->label('URL')
-                                ->required()
-                                ->maxLength(2048),
-                        ])
-                        ->columns(2)
-                        ->defaultItems(0),
-                ])
-                ->collapsible()
-                ->defaultItems(0),
-            Repeater::make("{$prefix}.content.legal_links")
-                ->label('Legal Links')
-                ->schema([
-                    TextInput::make('label')
-                        ->label('Label')
-                        ->required()
-                        ->maxLength(255),
-                    TextInput::make('url')
-                        ->label('URL')
-                        ->required()
-                        ->maxLength(2048),
-                ])
-                ->columns(2)
-                ->collapsible()
-                ->defaultItems(0),
-            Section::make('Copyright')->schema([
-                TextInput::make("{$prefix}.copyright_text")
-                    ->label('Copyright Text')
-                    ->maxLength(500),
-            ]),
-        ];
-    }
-
-    // ──────────────────────────────────────────────
-    // Static Helpers
-    // ──────────────────────────────────────────────
-
     /**
      * Filament FileUpload returns an array of paths inside repeaters.
      * Extract the first path as a string, or null if empty.
@@ -1140,20 +554,12 @@ class ManageHomepage extends Page implements HasForms
     private static function extractFileUploadValue(mixed $value): ?string
     {
         if (is_array($value)) {
-            $first = array_values(array_filter($value, static fn (mixed $v): bool => is_string($v) && $v !== ''))[0] ?? null;
-
-            return $first;
+            return array_values(array_filter($value, static fn (mixed $v): bool => is_string($v) && $v !== ''))[0] ?? null;
         }
-
         return is_string($value) && $value !== '' ? $value : null;
     }
 
-    /**
-     * Authors field is a plain TextInput (comma-separated string) but may arrive
-     * as an array after Livewire re-hydration. Normalise to string[] either way.
-     *
-     * @return array<int, string>
-     */
+    /** @return array<int, string> */
     private static function extractAuthors(mixed $value): array
     {
         if (is_array($value)) {
@@ -1162,14 +568,12 @@ class ManageHomepage extends Page implements HasForms
                 static fn (string $a): bool => $a !== '',
             ));
         }
-
         if (is_string($value) && $value !== '') {
             return array_values(array_filter(
                 array_map('trim', explode(',', $value)),
                 static fn (string $a): bool => $a !== '',
             ));
         }
-
         return [];
     }
 }

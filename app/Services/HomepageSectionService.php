@@ -9,7 +9,6 @@ use App\Contracts\HomepageSectionServiceInterface;
 use App\DTOs\HomepageDTO;
 use App\DTOs\HomepageSectionDataDTO;
 use App\DTOs\HomepageSectionDTO;
-use App\DTOs\HomepageSectionTranslationDTO;
 use App\DTOs\ValidationResultDTO;
 use App\Models\HomepageDraft;
 use App\Models\HomepageSection;
@@ -21,6 +20,15 @@ use Illuminate\Support\Collection;
 /**
  * Orchestrates homepage section CRUD operations, delegating draft reading
  * to HomepageDraftReader and validation to HomepageSectionValidator.
+ *
+ * Index coverage for hot-path queries (verified 2026-04-30):
+ * ──────────────────────────────────────────────────────────
+ * getPublicHomepage():
+ *   → whereIn('key', SECTION_KEYS) + enabled() + orderBy('sort_order')
+ *   → homepage_sections.key has a UNIQUE index (sufficient — max 11 rows)
+ *   → No composite (key, is_enabled) index needed; table is tiny and key is unique
+ *   → with('translations') eager-loads via homepage_section_translations
+ *     which has UNIQUE(section_id, locale) — fully covered
  */
 final class HomepageSectionService implements HomepageSectionServiceInterface
 {
@@ -270,33 +278,7 @@ final class HomepageSectionService implements HomepageSectionServiceInterface
      */
     private function serializeSections(array $sections): array
     {
-        return array_values(array_map(
-            fn (HomepageSectionDTO $section): array => [
-                'id' => $section->id,
-                'key' => $section->key,
-                'sortOrder' => $section->sortOrder,
-                'isEnabled' => $section->isEnabled,
-                'payload' => HomepagePayloadMapper::sectionDataToArray($section->payload),
-                'arabicPayload' => HomepagePayloadMapper::sectionDataToArray($section->arabicPayload ?? $section->payload),
-                'englishPayload' => HomepagePayloadMapper::sectionDataToArray($section->englishPayload ?? $section->payload),
-                'arabicTranslation' => $this->translationToArray($section->arabicTranslation),
-                'englishTranslation' => $this->translationToArray($section->englishTranslation),
-            ],
-            $sections,
-        ));
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function translationToArray(HomepageSectionTranslationDTO $translation): array
-    {
-        return array_filter([
-            'headline' => $translation->headline,
-            'body' => $translation->body,
-            'ctaLabel' => $translation->ctaLabel,
-            'imageAlt' => $translation->imageAlt,
-        ], static fn (mixed $value): bool => $value !== null && $value !== '');
+        return HomepagePayloadMapper::serializeSections($sections);
     }
 
     private function resolveActorId(?int $preferred = null): int

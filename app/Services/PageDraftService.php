@@ -47,6 +47,7 @@ final class PageDraftService
             publishAt: $draft->scheduled_at?->toIso8601String(),
             createdAt: $draft->created_at?->toIso8601String() ?? now()->toIso8601String(),
             updatedAt: $draft->updated_at?->toIso8601String() ?? now()->toIso8601String(),
+            version: (int) ($draft->version ?? 1),
         );
     }
 

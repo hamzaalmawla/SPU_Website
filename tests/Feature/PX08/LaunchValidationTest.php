@@ -91,7 +91,7 @@ class LaunchValidationTest extends TestCase
         // Create homepage sections with translations for both locales
         $sectionKeys = [
             'hero', 'hero_stats', 'academic_faculties', 'achievements_highlights',
-            'university_news', 'research_studies', 'events_activities',
+            'choose_your_path', 'university_news', 'research_studies', 'events_activities',
             'medical_facilities_services', 'bottom_stats', 'footer',
         ];
 

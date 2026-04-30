@@ -51,7 +51,7 @@ class SettingsSeeder extends Seeder
                 'group_key' => 'navigation',
                 'type' => 'json',
                 'locale' => 'en',
-                'value_json' => ['label' => 'Apply Now', 'url' => '/en/admissions', 'target' => null, 'is_enabled' => true],
+                'value_json' => ['label' => 'Apply now', 'url' => '/en/admissions', 'target' => null, 'is_enabled' => true],
                 'value_text' => null,
                 'is_public' => true,
             ],

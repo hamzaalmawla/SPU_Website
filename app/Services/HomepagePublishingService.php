@@ -20,6 +20,7 @@ use App\Models\HomepageDraft;
 use App\Models\HomepageSection;
 use App\Models\HomepageSectionTranslation;
 use App\Support\HomepagePayloadMapper;
+use App\Support\HtmlSanitizer;
 use DateTimeInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -30,6 +31,7 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
         private readonly HomepageSectionServiceInterface $homepageSectionService,
         private readonly CacheServiceInterface $cacheService,
         private readonly AuditServiceInterface $auditService,
+        private readonly HtmlSanitizer $htmlSanitizer,
     ) {}
 
     public function saveDraft(HomepageDraftDataDTO $payload, int $userId, ?int $expectedVersion = null): HomepageDraftDTO
@@ -147,7 +149,9 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
                         'locale' => 'ar',
                     ],
                     [
-                        'payload_json' => $this->sectionPayloadToArray($section->arabicPayload ?? $section->payload),
+                        'payload_json' => $this->sanitizeSectionPayload(
+                            $this->sectionPayloadToArray($section->arabicPayload ?? $section->payload),
+                        ),
                     ],
                 );
 
@@ -157,7 +161,9 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
                         'locale' => 'en',
                     ],
                     [
-                        'payload_json' => $this->sectionPayloadToArray($section->englishPayload ?? $section->payload),
+                        'payload_json' => $this->sanitizeSectionPayload(
+                            $this->sectionPayloadToArray($section->englishPayload ?? $section->payload),
+                        ),
                     ],
                 );
             }
@@ -268,6 +274,7 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
             publishAt: $draft->scheduled_at?->toIso8601String(),
             createdAt: $draft->created_at?->toIso8601String() ?? now()->toIso8601String(),
             updatedAt: $draft->updated_at?->toIso8601String() ?? now()->toIso8601String(),
+            version: (int) ($draft->version ?? 1),
         );
     }
 
@@ -419,17 +426,7 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
      */
     private function serializeSections(array $sections): array
     {
-        return array_values(array_map(fn (HomepageSectionDTO $section): array => [
-            'id' => $section->id,
-            'key' => $section->key,
-            'sortOrder' => $section->sortOrder,
-            'isEnabled' => $section->isEnabled,
-            'payload' => $this->sectionPayloadToArray($section->payload),
-            'arabicPayload' => $this->sectionPayloadToArray($section->arabicPayload ?? $section->payload),
-            'englishPayload' => $this->sectionPayloadToArray($section->englishPayload ?? $section->payload),
-            'arabicTranslation' => $this->translationToArray($section->arabicTranslation),
-            'englishTranslation' => $this->translationToArray($section->englishTranslation),
-        ], $sections));
+        return HomepagePayloadMapper::serializeSections($sections);
     }
 
     /**
@@ -445,12 +442,7 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
      */
     private function translationToArray(HomepageSectionTranslationDTO $translation): array
     {
-        return array_filter([
-            'headline' => $translation->headline,
-            'body' => $translation->body,
-            'ctaLabel' => $translation->ctaLabel,
-            'imageAlt' => $translation->imageAlt,
-        ], static fn (mixed $value): bool => $value !== null && $value !== '');
+        return HomepagePayloadMapper::translationToArray($translation);
     }
 
     private function sectionType(string $key): string
@@ -461,6 +453,28 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
             'footer' => 'footer',
             default => 'listing',
         };
+    }
+
+    /**
+     * Sanitize HTML-containing fields in a section payload array before persistence.
+     *
+     * Targets the string fields that may contain user-supplied rich text (body, summary)
+     * while leaving non-HTML fields (URLs, labels, titles) untouched.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function sanitizeSectionPayload(array $payload): array
+    {
+        $htmlFields = ['body', 'summary'];
+
+        foreach ($htmlFields as $field) {
+            if (isset($payload[$field]) && is_string($payload[$field]) && $payload[$field] !== '') {
+                $payload[$field] = $this->htmlSanitizer->sanitize($payload[$field]);
+            }
+        }
+
+        return $payload;
     }
 
     private function invalidateHomepageCache(): void

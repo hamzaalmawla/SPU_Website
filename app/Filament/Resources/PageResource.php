@@ -6,7 +6,6 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\PageResource\Pages;
 use App\Models\Page;
-use App\Models\PageTranslation;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -46,7 +45,7 @@ class PageResource extends Resource
 
     public static function canAccess(): bool
     {
-        return Gate::allows('manage-pages');
+        return Gate::allows('viewAny', Page::class);
     }
 
     public static function form(Form $form): Form
@@ -78,7 +77,7 @@ class PageResource extends Resource
                     })
                     ->sortable(query: function ($query, string $direction) {
                         $query->orderBy(
-                            PageTranslation::query()
+                            \Illuminate\Support\Facades\DB::table('page_translations')
                                 ->select('title')
                                 ->whereColumn('page_translations.page_id', 'pages.id')
                                 ->limit(1),

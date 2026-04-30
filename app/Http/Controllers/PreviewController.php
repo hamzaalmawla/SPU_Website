@@ -9,8 +9,6 @@ use App\Contracts\PageServiceInterface;
 use App\Contracts\PreviewServiceInterface;
 use App\Contracts\SeoMetadataServiceInterface;
 use App\Contracts\SettingsServiceInterface;
-use App\DTOs\HomepageDTO;
-use App\DTOs\HomepageSectionDTO;
 use App\DTOs\LanguageSwitchLinkDTO;
 use App\DTOs\PageDTO;
 use App\DTOs\PageTranslationDTO;
@@ -56,7 +54,7 @@ final class PreviewController extends Controller
             'locale' => $locale,
             'direction' => $homepage->direction,
             'homepage' => $homepage,
-            'homepageFooterSection' => $this->findSection($homepage, 'footer'),
+            'homepageFooterSection' => $homepage->findSection('footer'),
             'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $locale),
             'settings' => $this->settingsService->getPublicSettings($locale),
             'seo' => $homeShell !== null
@@ -69,17 +67,6 @@ final class PreviewController extends Controller
             'isPreview' => true,
             'preview' => $preview,
         ]);
-    }
-
-    private function findSection(HomepageDTO $homepage, string $key): ?HomepageSectionDTO
-    {
-        foreach ($homepage->sections as $section) {
-            if ($section->key === $key) {
-                return $section;
-            }
-        }
-
-        return null;
     }
 
     private function renderPagePreview(string $locale, PreviewDTO $preview): View

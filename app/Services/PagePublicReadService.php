@@ -16,6 +16,23 @@ use App\Models\PageTranslation;
  * and page-to-DTO mapping.
  *
  * Extracted from PageService to keep each class focused on a single responsibility.
+ *
+ * Index coverage for hot-path queries (verified 2026-04-30):
+ * ──────────────────────────────────────────────────────────
+ * getPublicPageBySlug():
+ *   → where('slug', $slug) + with('translations', 'seoMeta')
+ *   → pages.slug has a UNIQUE index — fully covered for single-slug lookup
+ *   → No composite (slug, status) index needed; slug is unique so the lookup
+ *     returns at most one row, and status is checked in PHP via isPubliclyRenderable()
+ *   → page_translations has UNIQUE(page_id, locale) — eager-load covered
+ *   → page_seo_meta has UNIQUE(page_id, locale) — eager-load covered
+ *
+ * getAdminEditorPayload():
+ *   → findOrFail($pageId) — primary key lookup, always indexed
+ *
+ * Listing/sitemap queries (via idx_public_page_query):
+ *   → Composite index on (status, is_enabled, published_at, id) covers
+ *     public page listing and sitemap generation queries
  */
 final class PagePublicReadService
 {

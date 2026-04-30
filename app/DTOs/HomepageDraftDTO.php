@@ -19,5 +19,6 @@ final readonly class HomepageDraftDTO
         public ?string $publishAt,
         public string $createdAt,
         public string $updatedAt,
+        public int $version = 1,
     ) {}
 }

@@ -17,4 +17,18 @@ final readonly class HomepageDTO
         public string $direction,
         public array $sections,
     ) {}
+
+    /**
+     * Look up a section by its key.
+     */
+    public function findSection(string $key): ?HomepageSectionDTO
+    {
+        foreach ($this->sections as $section) {
+            if ($section->key === $key) {
+                return $section;
+            }
+        }
+
+        return null;
+    }
 }

@@ -76,6 +76,9 @@ final class LaunchValidateCommand extends Command
      */
     private function checkProductionEnvironment(): void
     {
+        $isActualProduction = config('app.env') === 'production';
+        $failStatus = $isActualProduction ? 'FAIL' : 'WARN';
+
         $checks = [
             ['APP_DEBUG', 'false', config('app.debug') === false],
             ['CACHE_STORE', 'redis', config('cache.default') === 'redis'],
@@ -89,7 +92,7 @@ final class LaunchValidateCommand extends Command
         foreach ($checks as [$setting, $expected, $pass]) {
             $this->record(
                 "Production env: {$setting}",
-                $pass ? 'PASS' : 'FAIL',
+                $pass ? 'PASS' : $failStatus,
                 $pass
                     ? "{$setting} is correctly set to {$expected}"
                     : "CRITICAL: {$setting} must be {$expected} in production",
@@ -101,7 +104,7 @@ final class LaunchValidateCommand extends Command
         $hasKey = is_string($appKey) && strlen($appKey) > 10;
         $this->record(
             'Production env: APP_KEY',
-            $hasKey ? 'PASS' : 'FAIL',
+            $hasKey ? 'PASS' : $failStatus,
             $hasKey ? 'APP_KEY is set' : 'CRITICAL: APP_KEY is missing or too short',
         );
 
@@ -110,7 +113,7 @@ final class LaunchValidateCommand extends Command
         $isHttps = is_string($appUrl) && str_starts_with($appUrl, 'https://');
         $this->record(
             'Production env: APP_URL',
-            $isHttps ? 'PASS' : 'FAIL',
+            $isHttps ? 'PASS' : $failStatus,
             $isHttps ? 'APP_URL uses HTTPS' : 'CRITICAL: APP_URL should use HTTPS in production',
         );
     }

@@ -32,6 +32,28 @@ use Illuminate\Support\Facades\DB;
  *
  * The PageServiceInterface contract remains unchanged — this class is the sole
  * implementation bound in AppServiceProvider.
+ *
+ * Index coverage for hot-path queries (verified 2026-04-30):
+ * ──────────────────────────────────────────────────────────
+ * Public reads: delegated to PagePublicReadService (see that class for index docs)
+ *
+ * saveDraft():
+ *   → PageDraft: where('page_id', $id) + whereIn('status', [...]) + latest()
+ *   → Covered by idx_page_draft_lookup: (page_id, status, updated_at)
+ *     from migration 2026_04_30_000002_add_composite_performance_indexes
+ *
+ * publish():
+ *   → Page: find($pageId) — primary key lookup, always indexed
+ *   → PageDraft: where('page_id', $id) + whereIn('status', [...]) + latest('updated_at')
+ *   → Covered by idx_page_draft_lookup
+ *
+ * updateTranslation():
+ *   → PageTranslation: updateOrCreate(['page_id' => ..., 'locale' => ...], ...)
+ *   → page_translations has UNIQUE(page_id, locale) — fully covered
+ *
+ * updateSeo():
+ *   → PageSeoMeta: updateOrCreate(['page_id' => ..., 'locale' => ...], ...)
+ *   → page_seo_meta has UNIQUE(page_id, locale) — fully covered
  */
 final class PageService implements PageServiceInterface
 {
@@ -425,7 +447,7 @@ final class PageService implements PageServiceInterface
 
     private function touchPageCaches(int $pageId): void
     {
-        $this->cacheService->flushTags(['pages', 'seo', 'sitemap', 'navigation', 'settings']);
+        $this->cacheService->flushTags(['pages', 'public-pages', 'public-shell', 'seo', 'sitemap', 'navigation', 'settings']);
     }
 
     private function isPublishable(Page $page): bool

@@ -10,8 +10,10 @@ use App\Models\User;
 /**
  * Authorizes landing-page and homepage-shell actions against the current page model.
  *
- * The current pages table does not expose a page-level faculty scope column, so page
- * management remains editor-only until a later phase introduces a schema-backed scope rule.
+ * The `manage` ability is reserved for full page management (editor-only) and is used
+ * by the `manage-pages` gate. The `viewAny` ability grants list-level access to both
+ * editors and faculty editors. Faculty editors are scoped to pages matching their
+ * `faculty_scope_slug`.
  */
 final class PagePolicy
 {
@@ -51,12 +53,16 @@ final class PagePolicy
             return true;
         }
 
+        if ($user->role_slug === 'faculty_editor') {
+            return $page->faculty_scope_slug === $user->faculty_scope_slug;
+        }
+
         return false;
     }
 
     public function viewAny(User $user): bool
     {
-        return $this->manage($user);
+        return in_array($user->role_slug, ['editor', 'faculty_editor'], true);
     }
 
     public function view(User $user, Page $page): bool

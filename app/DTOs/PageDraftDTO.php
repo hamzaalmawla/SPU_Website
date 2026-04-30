@@ -18,5 +18,6 @@ final readonly class PageDraftDTO
         public ?string $publishAt,
         public string $createdAt,
         public string $updatedAt,
+        public int $version = 1,
     ) {}
 }

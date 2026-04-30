@@ -12,6 +12,15 @@ use App\DTOs\NavigationActionDTO;
 use App\DTOs\NavigationPayloadDTO;
 use App\DTOs\NavigationTreeDTO;
 
+/**
+ * Index coverage for hot-path queries (verified 2026-04-30):
+ * ──────────────────────────────────────────────────────────
+ * NavigationService delegates all menu queries to MenuService.
+ * See MenuService for index documentation on menu_items queries.
+ *
+ * Settings queries (via SettingsService) are covered by
+ * UNIQUE(group_key, key, locale) on the settings table.
+ */
 final class NavigationService implements NavigationServiceInterface
 {
     public function __construct(

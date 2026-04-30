@@ -14,10 +14,48 @@ use App\DTOs\NavigationTreeDTO;
 use App\Models\MenuItem;
 use App\Models\Page;
 use App\Models\PageTranslation;
+use App\Support\HtmlSanitizer;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use InvalidArgumentException;
 
+/**
+ * Orchestrates CMS menu tree management for primary and utility navigation.
+ *
+ * Optimistic locking note (verified 2026-04-30):
+ * ───────────────────────────────────────────────
+ * MenuItem does NOT require a version column for optimistic locking because:
+ * 1. Menu items are edited individually (single-item CRUD), not as a bulk draft payload.
+ * 2. The admin panel uses Filament's built-in form lifecycle — each edit loads the current
+ *    state and saves atomically; there is no long-lived draft that could go stale.
+ * 3. Reorder operations (reorderTree) replace the entire tree sort order in a transaction,
+ *    making partial overwrites impossible.
+ * 4. Concurrent menu editing is extremely rare (typically one admin manages navigation).
+ * If concurrent multi-editor menu editing becomes a requirement in a future phase,
+ * a version column can be added to menu_items at that time.
+ *
+ * Index coverage for hot-path queries (verified 2026-04-30):
+ * ──────────────────────────────────────────────────────────
+ * buildTree() (public navigation rendering):
+ *   → whereNull('parent_id') + where('group_key', $gk) + forLocale($locale)
+ *     + enabled() + orderBy('sort_order')
+ *   → Covered by idx_menu_tree_lookup: (group_key, locale, parent_id, is_enabled, sort_order)
+ *     from migration 2026_04_30_000002_add_composite_performance_indexes
+ *
+ * getAdminTree():
+ *   → Same pattern as buildTree but without enabled() filter
+ *   → idx_menu_tree_lookup still covers the leading columns (group_key, locale, parent_id)
+ *
+ * resolveItemUrl() → pageTarget eager-loaded via with('pageTarget.translations')
+ *   → page_translations has UNIQUE(page_id, locale) — covered
+ *
+ * nextSortOrder():
+ *   → where('group_key', $gk) + where('locale', $locale) + where('parent_id', $pid) + max('sort_order')
+ *   → Covered by idx_menu_tree_lookup leading columns
+ *
+ * Target lookup:
+ *   → Covered by idx_menu_target_lookup: (target_kind, target_id)
+ */
 final class MenuService implements MenuServiceInterface
 {
     private const MAX_DEPTH = 2;
@@ -28,10 +66,15 @@ final class MenuService implements MenuServiceInterface
         'url',
     ];
 
+    private HtmlSanitizer $htmlSanitizer;
+
     public function __construct(
         private readonly CacheServiceInterface $cacheService,
         private readonly AuditServiceInterface $auditService,
-    ) {}
+        ?HtmlSanitizer $htmlSanitizer = null,
+    ) {
+        $this->htmlSanitizer = $htmlSanitizer ?? new HtmlSanitizer();
+    }
 
     public function createItem(MenuItemDataDTO $payload): MenuItemDTO
     {
@@ -49,7 +92,7 @@ final class MenuService implements MenuServiceInterface
             $item = MenuItem::query()->create([
                 'parent_id' => $parent?->getKey(),
                 'type' => $payload->itemType,
-                'label' => $payload->label,
+                'label' => $this->htmlSanitizer->sanitize($payload->label),
                 'locale' => $locale,
                 'target_kind' => $payload->targetType,
                 'target_id' => $payload->targetType === 'page' ? $payload->targetId : null,
@@ -109,7 +152,7 @@ final class MenuService implements MenuServiceInterface
             $item->forceFill([
                 'parent_id' => $parent?->getKey(),
                 'type' => $payload->itemType,
-                'label' => $payload->label,
+                'label' => $this->htmlSanitizer->sanitize($payload->label),
                 'locale' => $locale,
                 'target_kind' => $payload->targetType,
                 'target_id' => $payload->targetType === 'page' ? $payload->targetId : null,

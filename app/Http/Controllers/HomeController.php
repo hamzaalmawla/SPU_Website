@@ -36,7 +36,7 @@ final class HomeController extends Controller
             'locale' => $locale,
             'direction' => $homepage->direction,
             'homepage' => $homepage,
-            'homepageFooterSection' => $this->findSection($homepage, 'footer'),
+            'homepageFooterSection' => $homepage->findSection('footer'),
             'navigation' => $navigation,
             'settings' => $this->settingsService->getPublicSettings($locale),
             'seo' => $homeShell !== null
@@ -50,19 +50,8 @@ final class HomeController extends Controller
         ]);
     }
 
-    private function findSection(HomepageDTO $homepage, string $key): ?HomepageSectionDTO
-    {
-        foreach ($homepage->sections as $section) {
-            if ($section->key === $key) {
-                return $section;
-            }
-        }
-
-        return null;
-    }
-
     private function hasRenderableHomepage(HomepageDTO $homepage): bool
     {
-        return $homepage->sections !== [] && $this->findSection($homepage, 'hero') instanceof HomepageSectionDTO;
+        return $homepage->sections !== [] && $homepage->findSection('hero') instanceof HomepageSectionDTO;
     }
 }

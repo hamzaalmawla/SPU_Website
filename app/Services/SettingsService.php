@@ -22,6 +22,22 @@ use App\Models\Setting;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
+/**
+ * Index coverage for hot-path queries (verified 2026-04-30):
+ * ──────────────────────────────────────────────────────────
+ * getGroup():
+ *   → forGroup($group) + orderBy('key') + orderBy('locale') + optional whereIn('locale', [...])
+ *   → settings has UNIQUE(group_key, key, locale) — fully covered as a composite index
+ *   → group_key also has a standalone index for group-only lookups
+ *
+ * findSetting() (used by jsonSetting/textSetting):
+ *   → where('group_key', $group) + where('key', $key) + whereIn('locale', [$locale, ''])
+ *   → settings has UNIQUE(group_key, key, locale) — fully covered
+ *
+ * updateGroup():
+ *   → updateOrCreate(['group_key' => ..., 'key' => ..., 'locale' => ...], ...)
+ *   → settings has UNIQUE(group_key, key, locale) — fully covered for upsert
+ */
 final class SettingsService implements SettingsServiceInterface
 {
     public function __construct(
