@@ -15,8 +15,11 @@ interface HomepagePublishingServiceInterface
 {
     /**
      * Save homepage draft content.
+     *
+     * @param  int|null  $expectedVersion  When provided, the service checks the current draft version
+     *                                     and throws ConflictException on mismatch (optimistic locking).
      */
-    public function saveDraft(HomepageDraftDataDTO $payload, int $userId): HomepageDraftDTO;
+    public function saveDraft(HomepageDraftDataDTO $payload, int $userId, ?int $expectedVersion = null): HomepageDraftDTO;
 
     /**
      * Publish a saved homepage draft.

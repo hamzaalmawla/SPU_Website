@@ -44,6 +44,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'totp_secret_encrypted',
+        'recovery_codes_encrypted',
     ];
 
     /**
@@ -62,6 +64,10 @@ class User extends Authenticatable
             'last_login_at' => 'datetime',
             'deleted_at' => 'datetime',
             'password' => 'hashed',
+            'totp_secret_encrypted' => 'encrypted',
+            'recovery_codes_encrypted' => 'encrypted:array',
+            'two_factor_enabled' => 'boolean',
+            'two_factor_confirmed_at' => 'datetime',
         ];
     }
 

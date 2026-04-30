@@ -26,6 +26,7 @@ class HomepageDraft extends Model
         'approved_by',
         'scheduled_at',
         'published_at',
+        'version',
     ];
 
     protected function casts(): array
@@ -35,6 +36,7 @@ class HomepageDraft extends Model
             'payload_json' => 'array',
             'scheduled_at' => 'datetime',
             'published_at' => 'datetime',
+            'version' => 'integer',
         ];
     }
 

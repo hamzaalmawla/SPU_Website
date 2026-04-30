@@ -14,6 +14,8 @@ use App\DTOs\HomepageDraftDTO;
 use App\DTOs\HomepageSectionDataDTO;
 use App\DTOs\HomepageSectionDTO;
 use App\DTOs\HomepageSectionTranslationDTO;
+use App\Events\DraftConflictDetected;
+use App\Exceptions\ConflictException;
 use App\Models\HomepageDraft;
 use App\Models\HomepageSection;
 use App\Models\HomepageSectionTranslation;
@@ -30,8 +32,52 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
         private readonly AuditServiceInterface $auditService,
     ) {}
 
-    public function saveDraft(HomepageDraftDataDTO $payload, int $userId): HomepageDraftDTO
+    public function saveDraft(HomepageDraftDataDTO $payload, int $userId, ?int $expectedVersion = null): HomepageDraftDTO
     {
+        // Optimistic locking: check version if expectedVersion is provided
+        if ($expectedVersion !== null) {
+            $currentDraft = HomepageDraft::query()
+                ->where('target_type', 'homepage')
+                ->whereIn('status', ['draft', 'scheduled'])
+                ->latest()
+                ->first();
+
+            if ($currentDraft instanceof HomepageDraft && (int) $currentDraft->version !== $expectedVersion) {
+                $this->auditService->log(
+                    action: 'draft.conflict',
+                    userId: $userId,
+                    entityType: HomepageDraft::class,
+                    entityId: (int) $currentDraft->getKey(),
+                    metadata: [
+                        'expected_version' => $expectedVersion,
+                        'actual_version' => (int) $currentDraft->version,
+                        'entity_type' => 'homepage',
+                    ],
+                );
+
+                DraftConflictDetected::dispatch(
+                    HomepageDraft::class,
+                    (int) $currentDraft->getKey(),
+                    $expectedVersion,
+                    (int) $currentDraft->version,
+                    $userId,
+                );
+
+                throw new ConflictException(
+                    'Draft has been modified by another editor.',
+                    (int) $currentDraft->version,
+                );
+            }
+        }
+
+        // Determine the next version number
+        $latestDraft = HomepageDraft::query()
+            ->where('target_type', 'homepage')
+            ->whereIn('status', ['draft', 'scheduled'])
+            ->latest()
+            ->first();
+        $nextVersion = $latestDraft instanceof HomepageDraft ? ((int) $latestDraft->version) + 1 : 1;
+
         $sections = $this->normalizeSections($payload->sections);
         $draft = HomepageDraft::query()->create([
             'target_type' => 'homepage',
@@ -48,6 +94,7 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
             'approved_by' => null,
             'scheduled_at' => null,
             'published_at' => null,
+            'version' => $nextVersion,
         ]);
 
         $this->auditService->log(

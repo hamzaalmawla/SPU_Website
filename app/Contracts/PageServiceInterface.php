@@ -58,8 +58,11 @@ interface PageServiceInterface
 
     /**
      * Save a draft snapshot for the page editor.
+     *
+     * @param  int|null  $expectedVersion  When provided, the service checks the current draft version
+     *                                     and throws ConflictException on mismatch (optimistic locking).
      */
-    public function saveDraft(int $pageId, PageDraftDataDTO $payload, int $userId): PageDraftDTO;
+    public function saveDraft(int $pageId, PageDraftDataDTO $payload, int $userId, ?int $expectedVersion = null): PageDraftDTO;
 
     /**
      * Publish a page.

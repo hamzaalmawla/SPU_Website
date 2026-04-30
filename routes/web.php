@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Admin\AuthController;
+use App\Http\Controllers\Admin\TwoFactorChallengeController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PreviewController;
@@ -43,5 +44,10 @@ Route::prefix('admin')
         Route::middleware(['admin.auth'])
             ->group(function (): void {
                 Route::post('/auth/logout', [AuthController::class, 'destroy'])->name('logout');
+
+                Route::get('/two-factor-challenge', [TwoFactorChallengeController::class, 'create'])
+                    ->name('two-factor.challenge');
+                Route::post('/two-factor-challenge', [TwoFactorChallengeController::class, 'store'])
+                    ->name('two-factor.verify');
             });
     });
