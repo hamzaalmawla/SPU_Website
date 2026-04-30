@@ -5,9 +5,11 @@ use App\Http\Middleware\CachePublicPages;
 use App\Http\Middleware\LocaleSetterMiddleware;
 use App\Http\Middleware\RedirectContinuityMiddleware;
 use App\Http\Middleware\SecurityHeadersMiddleware;
+use App\Http\Middleware\VerifyWebhookSignature;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Sentry\Laravel\Integration;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -27,10 +29,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'locale' => LocaleSetterMiddleware::class,
             'admin.auth' => AdminAuthMiddleware::class,
             'cache.public' => CachePublicPages::class,
+            'verify.webhook' => VerifyWebhookSignature::class,
         ]);
 
         $middleware->redirectGuestsTo('/admin/login');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        Integration::handles($exceptions);
     })->create();

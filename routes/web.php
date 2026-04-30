@@ -9,6 +9,7 @@ use App\Http\Controllers\PageController;
 use App\Http\Controllers\PreviewController;
 use App\Http\Controllers\PublicContactController;
 use App\Http\Controllers\SitemapController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/ar')->name('root');
@@ -50,4 +51,23 @@ Route::prefix('admin')
                 Route::post('/two-factor-challenge', [TwoFactorChallengeController::class, 'store'])
                     ->name('two-factor.verify');
             });
+    });
+
+/*
+|--------------------------------------------------------------------------
+| Webhook Routes
+|--------------------------------------------------------------------------
+|
+| Webhook routes are excluded from CSRF verification in bootstrap/app.php
+| and instead protected by HMAC-SHA256 signature verification middleware.
+| Add new webhook consumer routes inside this group.
+|
+*/
+Route::prefix('webhook')
+    ->name('webhook.')
+    ->middleware('verify.webhook')
+    ->group(function (): void {
+        Route::post('/incoming', function (Request $request) {
+            return response()->json(['status' => 'received'], 200);
+        })->name('incoming');
     });
