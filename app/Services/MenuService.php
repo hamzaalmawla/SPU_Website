@@ -15,6 +15,8 @@ use App\Models\MenuItem;
 use App\Models\Page;
 use App\Models\PageTranslation;
 use App\Support\HtmlSanitizer;
+use App\Support\UrlSanitizer;
+use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use InvalidArgumentException;
@@ -68,12 +70,16 @@ final class MenuService implements MenuServiceInterface
 
     private HtmlSanitizer $htmlSanitizer;
 
+    private ?AuthFactory $authFactory;
+
     public function __construct(
         private readonly CacheServiceInterface $cacheService,
         private readonly AuditServiceInterface $auditService,
         ?HtmlSanitizer $htmlSanitizer = null,
+        ?AuthFactory $authFactory = null,
     ) {
-        $this->htmlSanitizer = $htmlSanitizer ?? new HtmlSanitizer();
+        $this->htmlSanitizer = $htmlSanitizer ?? new HtmlSanitizer;
+        $this->authFactory = $authFactory;
     }
 
     public function createItem(MenuItemDataDTO $payload): MenuItemDTO
@@ -96,7 +102,7 @@ final class MenuService implements MenuServiceInterface
                 'locale' => $locale,
                 'target_kind' => $payload->targetType,
                 'target_id' => $payload->targetType === 'page' ? $payload->targetId : null,
-                'url' => $payload->targetType === 'url' ? $payload->url : null,
+                'url' => $payload->targetType === 'url' ? $this->sanitizeTargetUrl($payload->url) : null,
                 'target' => $payload->target,
                 'route_name' => $payload->targetType === 'route' ? $payload->routeName : null,
                 'css_token' => $payload->cssToken,
@@ -119,6 +125,7 @@ final class MenuService implements MenuServiceInterface
         $this->invalidateNavigationCaches([$locale]);
         $this->auditService->log(
             action: 'menu.created',
+            userId: $this->currentUserId(),
             entityType: MenuItem::class,
             entityId: (int) $item->getKey(),
             metadata: $this->auditMetadata($item),
@@ -156,7 +163,7 @@ final class MenuService implements MenuServiceInterface
                 'locale' => $locale,
                 'target_kind' => $payload->targetType,
                 'target_id' => $payload->targetType === 'page' ? $payload->targetId : null,
-                'url' => $payload->targetType === 'url' ? $payload->url : null,
+                'url' => $payload->targetType === 'url' ? $this->sanitizeTargetUrl($payload->url) : null,
                 'target' => $payload->target,
                 'route_name' => $payload->targetType === 'route' ? $payload->routeName : null,
                 'css_token' => $payload->cssToken,
@@ -175,6 +182,7 @@ final class MenuService implements MenuServiceInterface
         $this->invalidateNavigationCaches([$originalLocale, $locale]);
         $this->auditService->log(
             action: 'menu.updated',
+            userId: $this->currentUserId(),
             entityType: MenuItem::class,
             entityId: $itemId,
             metadata: [
@@ -205,6 +213,7 @@ final class MenuService implements MenuServiceInterface
         $this->invalidateNavigationCaches($locale !== null ? [$locale] : ['ar', 'en']);
         $this->auditService->log(
             action: 'menu.deleted',
+            userId: $this->currentUserId(),
             entityType: MenuItem::class,
             entityId: $itemId,
             metadata: [
@@ -246,6 +255,7 @@ final class MenuService implements MenuServiceInterface
         $this->invalidateNavigationCaches($locales === [] ? ['ar', 'en'] : $locales);
         $this->auditService->log(
             action: 'menu.reordered',
+            userId: $this->currentUserId(),
             entityType: MenuItem::class,
             metadata: [
                 'tree_type' => $treeType,
@@ -274,6 +284,7 @@ final class MenuService implements MenuServiceInterface
         $this->invalidateNavigationCaches($locale !== null ? [$locale] : ['ar', 'en']);
         $this->auditService->log(
             action: 'menu.toggled',
+            userId: $this->currentUserId(),
             entityType: MenuItem::class,
             entityId: $itemId,
             metadata: [
@@ -626,9 +637,21 @@ final class MenuService implements MenuServiceInterface
             return;
         }
 
-        if (! is_string($payload->url) || $payload->url === '' || preg_match('~^(\/|https?://|mailto:|tel:|#)~i', $payload->url) !== 1) {
+        if ($this->sanitizeTargetUrl($payload->url) === null) {
             throw new InvalidArgumentException('URL menu items require a valid internal or absolute URL.');
         }
+    }
+
+    private function sanitizeTargetUrl(?string $url): ?string
+    {
+        return UrlSanitizer::sanitize($url);
+    }
+
+    private function currentUserId(): ?int
+    {
+        $user = $this->authFactory?->guard((string) config('auth.admin_guard', 'web'))->user();
+
+        return $user !== null ? (int) $user->getAuthIdentifier() : null;
     }
 
     private function parentForPayload(?int $parentId, string $groupKey, string $locale, ?MenuItem $item = null): ?MenuItem

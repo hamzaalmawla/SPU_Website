@@ -15,9 +15,13 @@ use App\DTOs\HomepageDraftDataDTO;
 use App\DTOs\HomepageFeatureItemDTO;
 use App\DTOs\HomepageSectionDataDTO;
 use App\DTOs\HomepageSectionDTO;
+use App\DTOs\HomepageSectionTranslationDTO;
 use App\DTOs\HomepageStatItemDTO;
+use App\DTOs\NavigationActionDTO;
+use App\DTOs\ResearchCardDTO;
 use App\DTOs\SocialLinkDTO;
 use App\Filament\Support\HomepageFormSchema;
+use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Tabs;
@@ -190,10 +194,12 @@ class ManageHomepage extends Page implements HasForms
 
     private function saveDraft(): void
     {
+        Gate::authorize('manage-homepage');
+
         $formData = $this->form->getState();
         $sectionDTOs = $this->buildSectionDTOsFromFormData($formData);
         $draftPayload = new HomepageDraftDataDTO(sections: $sectionDTOs);
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
         $this->publishingService->saveDraft($draftPayload, $user->id);
         Notification::make()->title('Draft saved successfully')->success()->send();
@@ -201,6 +207,8 @@ class ManageHomepage extends Page implements HasForms
 
     private function discardDraft(): void
     {
+        Gate::authorize('manage-homepage');
+
         $deleted = $this->publishingService->discardEditableDraft();
         if ($deleted > 0) {
             Notification::make()->title('Draft discarded')->success()->send();
@@ -211,7 +219,9 @@ class ManageHomepage extends Page implements HasForms
 
     private function openPreview(string $locale): void
     {
-        /** @var \App\Models\User $user */
+        Gate::authorize('manage-homepage');
+
+        /** @var User $user */
         $user = auth()->user();
         $preview = $this->previewService->createToken(
             targetType: 'homepage',
@@ -224,7 +234,9 @@ class ManageHomepage extends Page implements HasForms
 
     private function publishHomepage(): void
     {
-        /** @var \App\Models\User $user */
+        Gate::authorize('manage-homepage');
+
+        /** @var User $user */
         $user = auth()->user();
         $formData = $this->form->getState();
         $sectionDTOs = $this->buildSectionDTOsFromFormData($formData);
@@ -241,7 +253,9 @@ class ManageHomepage extends Page implements HasForms
 
     private function schedulePublish(string $publishAt): void
     {
-        /** @var \App\Models\User $user */
+        Gate::authorize('manage-homepage');
+
+        /** @var User $user */
         $user = auth()->user();
         $formData = $this->form->getState();
         $sectionDTOs = $this->buildSectionDTOsFromFormData($formData);
@@ -262,7 +276,9 @@ class ManageHomepage extends Page implements HasForms
 
     private function unpublishHomepage(): void
     {
-        /** @var \App\Models\User $user */
+        Gate::authorize('manage-homepage');
+
+        /** @var User $user */
         $user = auth()->user();
         $result = $this->publishingService->unpublish('homepage', null, $user->id);
         if ($result) {
@@ -311,7 +327,7 @@ class ManageHomepage extends Page implements HasForms
         ];
     }
 
-    private function payloadToFormArray(HomepageSectionDataDTO $payload, \App\DTOs\HomepageSectionTranslationDTO $translation): array
+    private function payloadToFormArray(HomepageSectionDataDTO $payload, HomepageSectionTranslationDTO $translation): array
     {
         $toArray = fn ($obj): array => json_decode(json_encode($obj), true) ?? [];
 
@@ -370,13 +386,13 @@ class ManageHomepage extends Page implements HasForms
                 sortOrder: $sortOrder,
                 isEnabled: $existingSection?->isEnabled ?? true,
                 payload: $this->formArrayToPayload($sectionData['ar'] ?? []),
-                arabicTranslation: new \App\DTOs\HomepageSectionTranslationDTO(
+                arabicTranslation: new HomepageSectionTranslationDTO(
                     locale: 'ar',
                     headline: $sectionData['ar']['headline'] ?? null,
                     body: $sectionData['ar']['subheadline'] ?? null,
                     ctaLabel: $sectionData['ar']['primary_cta_label'] ?? null,
                 ),
-                englishTranslation: new \App\DTOs\HomepageSectionTranslationDTO(
+                englishTranslation: new HomepageSectionTranslationDTO(
                     locale: 'en',
                     headline: $sectionData['en']['headline'] ?? null,
                     body: $sectionData['en']['subheadline'] ?? null,
@@ -399,13 +415,13 @@ class ManageHomepage extends Page implements HasForms
             imageUrl: $data['image'] ?? null,
             backgroundImageUrl: $data['background_image'] ?? null,
             primaryAction: isset($data['primary_cta_label'])
-                ? new \App\DTOs\NavigationActionDTO(
+                ? new NavigationActionDTO(
                     label: $data['primary_cta_label'],
                     url: $data['primary_cta_url'] ?? '#',
                 )
                 : null,
             secondaryAction: isset($data['secondary_cta_label'])
-                ? new \App\DTOs\NavigationActionDTO(
+                ? new NavigationActionDTO(
                     label: $data['secondary_cta_label'],
                     url: $data['secondary_cta_url'] ?? '#',
                 )
@@ -444,7 +460,7 @@ class ManageHomepage extends Page implements HasForms
                 array_filter($data['articles'] ?? [], static fn (mixed $i): bool => is_array($i)),
             )),
             researchItems: array_values(array_map(
-                static fn (array $item): \App\DTOs\ResearchCardDTO => new \App\DTOs\ResearchCardDTO(
+                static fn (array $item): ResearchCardDTO => new ResearchCardDTO(
                     id: 0,
                     locale: 'ar',
                     title: (string) ($item['title'] ?? ''),
@@ -479,7 +495,7 @@ class ManageHomepage extends Page implements HasForms
                     title: (string) ($col['title'] ?? ''),
                     links: array_values(array_filter(array_map(
                         static fn (mixed $link): ?\App\DTOs\NavigationActionDTO => is_array($link) && isset($link['label'], $link['url'])
-                            ? new \App\DTOs\NavigationActionDTO(label: (string) $link['label'], url: (string) $link['url'])
+                            ? new NavigationActionDTO(label: (string) $link['label'], url: (string) $link['url'])
                             : null,
                         $col['links'] ?? [],
                     ))),
@@ -556,6 +572,7 @@ class ManageHomepage extends Page implements HasForms
         if (is_array($value)) {
             return array_values(array_filter($value, static fn (mixed $v): bool => is_string($v) && $v !== ''))[0] ?? null;
         }
+
         return is_string($value) && $value !== '' ? $value : null;
     }
 
@@ -574,6 +591,7 @@ class ManageHomepage extends Page implements HasForms
                 static fn (string $a): bool => $a !== '',
             ));
         }
+
         return [];
     }
 }

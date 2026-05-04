@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Contracts\TotpAuthenticatorInterface;
 use App\DTOs\TotpEnrollmentDTO;
 use App\Models\User;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Support\Facades\Hash;
 use PragmaRX\Google2FA\Google2FA;
 
 /**
@@ -18,7 +21,7 @@ use PragmaRX\Google2FA\Google2FA;
  * written via forceFill() because they are intentionally excluded from
  * the User model's $fillable array.
  */
-final class TotpAuthenticator
+final class TotpAuthenticator implements TotpAuthenticatorInterface
 {
     private const RECOVERY_CODE_COUNT = 8;
 
@@ -35,15 +38,16 @@ final class TotpAuthenticator
      * user record. Returns a DTO containing the secret, a provisioning URI
      * for QR code display, and the plaintext recovery codes (shown once).
      */
-    public function generateSecret(User $user): TotpEnrollmentDTO
+    public function generateSecret(Authenticatable $user): TotpEnrollmentDTO
     {
+        $user = $this->assertUserModel($user);
         $secret = $this->google2fa->generateSecretKey();
 
         $recoveryCodes = $this->buildRecoveryCodes();
 
         $user->forceFill([
             'totp_secret_encrypted' => $secret,
-            'recovery_codes_encrypted' => $recoveryCodes,
+            'recovery_codes_encrypted' => $this->hashRecoveryCodes($recoveryCodes),
         ])->save();
 
         $qrCodeUrl = $this->google2fa->getQRCodeUrl(
@@ -67,8 +71,12 @@ final class TotpAuthenticator
      *
      * @return bool True when the code is valid.
      */
-    public function verify(User $user, string $code): bool
+    public function verify(Authenticatable $user, string $code): bool
     {
+        if (! $user instanceof User) {
+            return false;
+        }
+
         $secret = $user->totp_secret_encrypted;
 
         if (! is_string($secret) || $secret === '') {
@@ -95,12 +103,13 @@ final class TotpAuthenticator
      *
      * @return list<string> The new recovery codes.
      */
-    public function generateRecoveryCodes(User $user): array
+    public function generateRecoveryCodes(Authenticatable $user): array
     {
+        $user = $this->assertUserModel($user);
         $codes = $this->buildRecoveryCodes();
 
         $user->forceFill([
-            'recovery_codes_encrypted' => $codes,
+            'recovery_codes_encrypted' => $this->hashRecoveryCodes($codes),
         ])->save();
 
         return $codes;
@@ -114,8 +123,12 @@ final class TotpAuthenticator
      *
      * @return bool True when the code was valid and consumed.
      */
-    public function verifyRecoveryCode(User $user, string $code): bool
+    public function verifyRecoveryCode(Authenticatable $user, string $code): bool
     {
+        if (! $user instanceof User) {
+            return false;
+        }
+
         /** @var list<string>|null $storedCodes */
         $storedCodes = $user->recovery_codes_encrypted;
 
@@ -123,9 +136,20 @@ final class TotpAuthenticator
             return false;
         }
 
-        $index = array_search($code, $storedCodes, true);
+        $index = null;
 
-        if ($index === false) {
+        foreach ($storedCodes as $candidateIndex => $storedCode) {
+            if (! is_string($storedCode)) {
+                continue;
+            }
+
+            if ($this->recoveryCodeMatches($code, $storedCode)) {
+                $index = $candidateIndex;
+                break;
+            }
+        }
+
+        if ($index === null) {
             return false;
         }
 
@@ -153,5 +177,37 @@ final class TotpAuthenticator
         }
 
         return $codes;
+    }
+
+    /**
+     * @param  list<string>  $codes
+     * @return list<string>
+     */
+    private function hashRecoveryCodes(array $codes): array
+    {
+        return array_values(array_map(
+            static fn (string $code): string => Hash::make($code),
+            $codes,
+        ));
+    }
+
+    private function recoveryCodeMatches(string $plainCode, string $storedCode): bool
+    {
+        if (hash_equals($storedCode, $plainCode)) {
+            return true;
+        }
+
+        $hashInfo = password_get_info($storedCode);
+
+        return ($hashInfo['algo'] ?? 0) !== 0 && Hash::check($plainCode, $storedCode);
+    }
+
+    private function assertUserModel(Authenticatable $user): User
+    {
+        if (! $user instanceof User) {
+            throw new \InvalidArgumentException('TOTP authentication requires the application user model.');
+        }
+
+        return $user;
     }
 }

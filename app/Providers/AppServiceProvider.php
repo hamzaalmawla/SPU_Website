@@ -19,6 +19,8 @@ use App\Contracts\SeoMetadataServiceInterface;
 use App\Contracts\SettingsServiceInterface;
 use App\Contracts\SitemapServiceInterface;
 use App\Contracts\SlugServiceInterface;
+use App\Contracts\TotpAuthenticatorInterface;
+use App\Http\Responses\LogoutResponse;
 use App\Models\AuditLog;
 use App\Models\MediaAsset;
 use App\Models\MenuItem;
@@ -34,24 +36,24 @@ use App\Services\AuditService;
 use App\Services\AuthService;
 use App\Services\CacheService;
 use App\Services\ContinuityService;
-use App\Services\HomepagePublishingService;
 use App\Services\HomepageDraftReader;
+use App\Services\HomepagePublishingService;
 use App\Services\HomepageSectionService;
 use App\Services\HomepageSectionValidator;
+use App\Services\MediaService;
 use App\Services\MenuService;
 use App\Services\NavigationService;
 use App\Services\PageDraftService;
 use App\Services\PagePublicReadService;
 use App\Services\PageService;
 use App\Services\PageUrlResolver;
-use App\Services\SlugService;
-use App\Services\MediaService;
 use App\Services\PreviewService;
 use App\Services\PreviewTokenStore;
 use App\Services\SeoMetadataService;
 use App\Services\SettingsService;
 use App\Services\SitemapService;
-use App\Http\Responses\LogoutResponse;
+use App\Services\SlugService;
+use App\Services\TotpAuthenticator;
 use App\Support\HtmlSanitizer;
 use Filament\Http\Responses\Auth\Contracts\LogoutResponse as LogoutResponseContract;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -87,8 +89,49 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->enforceProductionSecurityConfiguration();
         $this->registerAuthorization();
         $this->configureRateLimiting();
+    }
+
+    private function enforceProductionSecurityConfiguration(): void
+    {
+        if (! $this->isExplicitProductionEnvironment()) {
+            return;
+        }
+
+        $failures = [];
+
+        if ((bool) config('app.debug')) {
+            $failures[] = 'APP_DEBUG must be false';
+        }
+
+        $appKey = (string) config('app.key');
+
+        if ($appKey === '' || str_contains($appKey, 'REPLACE_WITH')) {
+            $failures[] = 'APP_KEY must be a unique production key';
+        }
+
+        if ((bool) config('session.encrypt') !== true) {
+            $failures[] = 'SESSION_ENCRYPT must be true';
+        }
+
+        if ((bool) config('session.secure') !== true) {
+            $failures[] = 'SESSION_SECURE_COOKIE must be true';
+        }
+
+        if ($failures !== []) {
+            throw new \RuntimeException('Invalid production security configuration: '.implode('; ', $failures));
+        }
+    }
+
+    private function isExplicitProductionEnvironment(): bool
+    {
+        if (! $this->app->environment('production')) {
+            return false;
+        }
+
+        return (string) env('APP_ENV') === 'production' || $this->app->configurationIsCached();
     }
 
     private function registerAuthorization(): void
@@ -121,6 +164,12 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('public-form', function (Request $request): Limit {
             return Limit::perMinute(20)->by('public-form|'.$request->ip());
         });
+
+        RateLimiter::for('two-factor', function (Request $request): Limit {
+            $userId = $request->user()?->getAuthIdentifier();
+
+            return Limit::perMinute(5)->by('two-factor|'.($userId !== null ? (string) $userId : $request->ip()));
+        });
     }
 
     private function registerFoundationBindings(): void
@@ -151,6 +200,7 @@ class AppServiceProvider extends ServiceProvider
             PageServiceInterface::class => PageService::class,
             SettingsServiceInterface::class => SettingsService::class,
             NavigationServiceInterface::class => NavigationService::class,
+            TotpAuthenticatorInterface::class => TotpAuthenticator::class,
         ];
     }
 }

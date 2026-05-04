@@ -6,6 +6,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\PageResource\Pages;
 use App\Models\Page;
+use App\Models\User;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -21,7 +22,10 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Filament resource for managing bilingual landing pages.
@@ -46,6 +50,11 @@ class PageResource extends Resource
     public static function canAccess(): bool
     {
         return Gate::allows('viewAny', Page::class);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return self::scopeQueryToCurrentUser(parent::getEloquentQuery());
     }
 
     public static function form(Form $form): Form
@@ -77,7 +86,7 @@ class PageResource extends Resource
                     })
                     ->sortable(query: function ($query, string $direction) {
                         $query->orderBy(
-                            \Illuminate\Support\Facades\DB::table('page_translations')
+                            DB::table('page_translations')
                                 ->select('title')
                                 ->whereColumn('page_translations.page_id', 'pages.id')
                                 ->limit(1),
@@ -184,7 +193,11 @@ class PageResource extends Resource
                 Section::make('Page Settings')->schema([
                     Select::make('parent_id')
                         ->label('Parent Page')
-                        ->relationship('parent', 'slug')
+                        ->relationship(
+                            'parent',
+                            'slug',
+                            modifyQueryUsing: fn (Builder $query): Builder => self::scopeQueryToCurrentUser($query),
+                        )
                         ->searchable()
                         ->preload()
                         ->placeholder('None (top-level)'),
@@ -358,5 +371,30 @@ class PageResource extends Resource
         return Tab::make('English SEO')
             ->icon('heroicon-o-magnifying-glass')
             ->schema(self::seoFields('en'));
+    }
+
+    private static function scopeQueryToCurrentUser(Builder $query): Builder
+    {
+        $user = auth()->user();
+
+        if (! $user instanceof User) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if (in_array($user->role_slug, ['super_admin', 'editor'], true)) {
+            return $query;
+        }
+
+        if ($user->role_slug !== 'faculty_editor') {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $scope = is_string($user->faculty_scope_slug) ? $user->faculty_scope_slug : '';
+
+        if ($scope === '' || ! Schema::hasColumn('pages', 'faculty_scope_slug')) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where('faculty_scope_slug', $scope);
     }
 }

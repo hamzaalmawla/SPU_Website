@@ -23,6 +23,7 @@ use App\Models\PageDraft;
 use App\Models\PageSeoMeta;
 use App\Models\PageTranslation;
 use App\Support\HtmlSanitizer;
+use App\Support\UrlSanitizer;
 use DateTimeInterface;
 use Illuminate\Support\Facades\DB;
 
@@ -94,7 +95,7 @@ final class PageService implements PageServiceInterface
         return $this->publicReadService->mapPageToDto($page->fresh(['translations', 'seoMeta']));
     }
 
-    public function updateBaseMetadata(int $pageId, PageMetadataDTO $payload): bool
+    public function updateBaseMetadata(int $pageId, PageMetadataDTO $payload, ?int $userId = null): bool
     {
         $page = Page::query()->find($pageId);
 
@@ -117,7 +118,7 @@ final class PageService implements PageServiceInterface
 
         if ($updated) {
             $this->touchPageCaches((int) $page->getKey());
-            $this->auditService->log('page.updated', null, Page::class, (int) $page->getKey(), [
+            $this->auditService->log('page.updated', $userId, Page::class, (int) $page->getKey(), [
                 'field' => 'metadata',
             ]);
         }
@@ -125,24 +126,24 @@ final class PageService implements PageServiceInterface
         return $updated;
     }
 
-    public function updateArabicTranslation(int $pageId, PageTranslationDTO $payload): bool
+    public function updateArabicTranslation(int $pageId, PageTranslationDTO $payload, ?int $userId = null): bool
     {
-        return $this->updateTranslation($pageId, 'ar', $payload);
+        return $this->updateTranslation($pageId, 'ar', $payload, $userId);
     }
 
-    public function updateEnglishTranslation(int $pageId, PageTranslationDTO $payload): bool
+    public function updateEnglishTranslation(int $pageId, PageTranslationDTO $payload, ?int $userId = null): bool
     {
-        return $this->updateTranslation($pageId, 'en', $payload);
+        return $this->updateTranslation($pageId, 'en', $payload, $userId);
     }
 
-    public function updateArabicSeo(int $pageId, PageSeoInputDTO $payload): bool
+    public function updateArabicSeo(int $pageId, PageSeoInputDTO $payload, ?int $userId = null): bool
     {
-        return $this->updateSeo($pageId, 'ar', $payload);
+        return $this->updateSeo($pageId, 'ar', $payload, $userId);
     }
 
-    public function updateEnglishSeo(int $pageId, PageSeoInputDTO $payload): bool
+    public function updateEnglishSeo(int $pageId, PageSeoInputDTO $payload, ?int $userId = null): bool
     {
-        return $this->updateSeo($pageId, 'en', $payload);
+        return $this->updateSeo($pageId, 'en', $payload, $userId);
     }
 
     public function saveDraft(int $pageId, PageDraftDataDTO $payload, int $userId, ?int $expectedVersion = null): PageDraftDTO
@@ -235,8 +236,8 @@ final class PageService implements PageServiceInterface
                     $page,
                     $draft->payload_json,
                     $userId,
-                    fn (int $id, string $locale, PageTranslationDTO $dto): bool => $this->updateTranslation($id, $locale, $dto),
-                    fn (int $id, string $locale, PageSeoInputDTO $dto): bool => $this->updateSeo($id, $locale, $dto),
+                    fn (int $id, string $locale, PageTranslationDTO $dto): bool => $this->updateTranslation($id, $locale, $dto, $userId),
+                    fn (int $id, string $locale, PageSeoInputDTO $dto): bool => $this->updateSeo($id, $locale, $dto, $userId),
                 );
                 $draft->forceFill([
                     'status' => 'published',
@@ -357,7 +358,7 @@ final class PageService implements PageServiceInterface
 
     // ── Private helpers (CRUD + sanitization) ──
 
-    private function updateTranslation(int $pageId, string $locale, PageTranslationDTO $payload): bool
+    private function updateTranslation(int $pageId, string $locale, PageTranslationDTO $payload, ?int $userId = null): bool
     {
         $page = Page::query()->find($pageId);
 
@@ -379,7 +380,7 @@ final class PageService implements PageServiceInterface
                 'overview_cards_payload' => $payload->overviewCardsPayload,
                 'stats_payload' => $payload->statsPayload,
                 'body_payload' => $sanitizedBodyPayload,
-                'cta_payload' => $payload->ctaPayload,
+                'cta_payload' => $this->sanitizeUrlPayload($payload->ctaPayload),
                 'sidebar_payload' => $payload->sidebarPayload,
                 'excerpt' => $payload->excerpt,
                 'body' => $sanitizedBody,
@@ -389,7 +390,7 @@ final class PageService implements PageServiceInterface
         );
 
         $this->touchPageCaches((int) $page->getKey());
-        $this->auditService->log('page.updated', null, Page::class, (int) $page->getKey(), [
+        $this->auditService->log('page.updated', $userId, Page::class, (int) $page->getKey(), [
             'field' => 'translation',
             'locale' => $locale,
         ]);
@@ -397,7 +398,7 @@ final class PageService implements PageServiceInterface
         return $translation->exists;
     }
 
-    private function updateSeo(int $pageId, string $locale, PageSeoInputDTO $payload): bool
+    private function updateSeo(int $pageId, string $locale, PageSeoInputDTO $payload, ?int $userId = null): bool
     {
         $page = Page::query()->find($pageId);
 
@@ -412,14 +413,14 @@ final class PageService implements PageServiceInterface
                 'meta_description' => $payload->metaDescription,
                 'og_title' => $payload->ogTitle,
                 'og_description' => $payload->ogDescription,
-                'og_image_url' => $payload->ogImage,
-                'canonical_url' => $payload->canonicalUrl,
+                'og_image_url' => UrlSanitizer::sanitize($payload->ogImage, ['http', 'https'], true),
+                'canonical_url' => UrlSanitizer::sanitize($payload->canonicalUrl, ['http', 'https'], false),
                 'robots' => $payload->robots,
             ],
         );
 
         $this->touchPageCaches((int) $page->getKey());
-        $this->auditService->log('page.updated', null, Page::class, (int) $page->getKey(), [
+        $this->auditService->log('page.updated', $userId, Page::class, (int) $page->getKey(), [
             'field' => 'seo',
             'locale' => $locale,
         ]);
@@ -448,6 +449,20 @@ final class PageService implements PageServiceInterface
     private function touchPageCaches(int $pageId): void
     {
         $this->cacheService->flushTags(['pages', 'public-pages', 'public-shell', 'seo', 'sitemap', 'navigation', 'settings']);
+    }
+
+    /** @param  array<string, mixed>|null  $payload */
+    private function sanitizeUrlPayload(?array $payload): ?array
+    {
+        if ($payload === null) {
+            return null;
+        }
+
+        if (isset($payload['url']) && is_string($payload['url'])) {
+            $payload['url'] = UrlSanitizer::sanitize($payload['url']);
+        }
+
+        return $payload;
     }
 
     private function isPublishable(Page $page): bool

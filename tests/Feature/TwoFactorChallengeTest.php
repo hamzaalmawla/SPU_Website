@@ -27,7 +27,7 @@ class TwoFactorChallengeTest extends TestCase
     {
         parent::setUp();
 
-        $this->google2fa = new Google2FA();
+        $this->google2fa = new Google2FA;
         $this->authenticator = new TotpAuthenticator($this->google2fa);
     }
 
@@ -106,7 +106,7 @@ class TwoFactorChallengeTest extends TestCase
     public function test_valid_recovery_code_sets_session_flag(): void
     {
         $user = $this->createUserWith2FA();
-        $recoveryCodes = $user->recovery_codes_encrypted;
+        $recoveryCodes = $this->authenticator->generateRecoveryCodes($user);
         $recoveryCode = $recoveryCodes[0];
 
         $this->actingAs($user, 'web');

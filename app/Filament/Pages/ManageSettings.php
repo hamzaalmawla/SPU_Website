@@ -7,7 +7,9 @@ namespace App\Filament\Pages;
 use App\Contracts\SettingsServiceInterface;
 use App\DTOs\SettingsDTO;
 use App\DTOs\SettingValueDTO;
+use App\Models\User;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Component;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Tabs;
@@ -113,7 +115,7 @@ class ManageSettings extends Page implements HasForms
     {
         $formData = $this->form->getState();
 
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
 
         try {
@@ -129,9 +131,11 @@ class ManageSettings extends Page implements HasForms
                 ->success()
                 ->send();
         } catch (\Throwable $e) {
+            report($e);
+
             Notification::make()
                 ->title('Failed to save settings')
-                ->body($e->getMessage())
+                ->body('Please review the submitted settings and try again.')
                 ->danger()
                 ->send();
         }
@@ -449,7 +453,7 @@ class ManageSettings extends Page implements HasForms
             ]);
     }
 
-    /** @return array<int, \Filament\Forms\Components\Component> */
+    /** @return array<int, Component> */
     private function utilityNavigationFields(string $locale): array
     {
         $prefix = "utility_{$locale}";
@@ -487,7 +491,7 @@ class ManageSettings extends Page implements HasForms
             ]);
     }
 
-    /** @return array<int, \Filament\Forms\Components\Component> */
+    /** @return array<int, Component> */
     private function footerFields(string $locale): array
     {
         $prefix = "footer_{$locale}";
@@ -569,7 +573,7 @@ class ManageSettings extends Page implements HasForms
             ]);
     }
 
-    /** @return array<int, \Filament\Forms\Components\Component> */
+    /** @return array<int, Component> */
     private function emergencyNoticeFields(string $locale): array
     {
         $prefix = "emergency_{$locale}";
@@ -612,7 +616,7 @@ class ManageSettings extends Page implements HasForms
             ]);
     }
 
-    /** @return array<int, \Filament\Forms\Components\Component> */
+    /** @return array<int, Component> */
     private function contactFields(string $locale): array
     {
         $prefix = "contact_{$locale}";
@@ -656,7 +660,7 @@ class ManageSettings extends Page implements HasForms
             ]);
     }
 
-    /** @return array<int, \Filament\Forms\Components\Component> */
+    /** @return array<int, Component> */
     private function socialFields(string $locale): array
     {
         $prefix = "social_{$locale}";
@@ -700,7 +704,7 @@ class ManageSettings extends Page implements HasForms
             ]);
     }
 
-    /** @return array<int, \Filament\Forms\Components\Component> */
+    /** @return array<int, Component> */
     private function seoDefaultsFields(string $locale): array
     {
         $prefix = "seo_{$locale}";

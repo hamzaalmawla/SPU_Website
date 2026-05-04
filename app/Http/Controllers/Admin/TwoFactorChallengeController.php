@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Contracts\AuditServiceInterface;
+use App\Contracts\TotpAuthenticatorInterface;
 use App\Http\Controllers\Controller;
-use App\Services\TotpAuthenticator;
+use App\Http\Requests\Auth\TwoFactorChallengeRequest;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Http\RedirectResponse;
@@ -21,8 +23,9 @@ use Illuminate\View\View;
 final class TwoFactorChallengeController extends Controller
 {
     public function __construct(
-        private readonly TotpAuthenticator $authenticator,
+        private readonly TotpAuthenticatorInterface $authenticator,
         private readonly AuthFactory $authFactory,
+        private readonly AuditServiceInterface $auditService,
     ) {}
 
     /**
@@ -47,33 +50,41 @@ final class TwoFactorChallengeController extends Controller
     /**
      * Verify the submitted TOTP or recovery code.
      */
-    public function store(Request $request): RedirectResponse
+    public function store(TwoFactorChallengeRequest $request): RedirectResponse
     {
-        $request->validate([
-            'code' => ['required', 'string'],
-        ]);
-
         $user = $this->resolveUser();
 
         if ($user === null || ! $this->hasTwoFactorEnabled($user)) {
             return redirect('/admin/login');
         }
 
-        $code = trim((string) $request->input('code'));
+        $code = $request->code();
 
         // Try TOTP code first, then recovery code.
-        // TotpAuthenticator accepts Authenticatable instances that are User models.
-        /** @var \App\Models\User $user */
         $verified = $this->authenticator->verify($user, $code)
             || $this->authenticator->verifyRecoveryCode($user, $code);
 
         if (! $verified) {
+            $this->auditService->log(
+                action: 'user.two_factor_failed',
+                userId: (int) $user->getKey(),
+                entityType: 'user',
+                entityId: (int) $user->getKey(),
+            );
+
             return back()->withErrors([
                 'code' => __('The provided two-factor authentication code was invalid.'),
             ]);
         }
 
         $request->session()->put('2fa_verified', true);
+
+        $this->auditService->log(
+            action: 'user.two_factor_verified',
+            userId: (int) $user->getKey(),
+            entityType: 'user',
+            entityId: (int) $user->getKey(),
+        );
 
         return redirect()->intended('/admin');
     }

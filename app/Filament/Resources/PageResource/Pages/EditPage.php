@@ -18,6 +18,7 @@ use Filament\Forms\Components\DateTimePicker;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Gate;
 
 class EditPage extends EditRecord
 {
@@ -37,6 +38,8 @@ class EditPage extends EditRecord
     {
         /** @var Page $page */
         $page = $this->record;
+        Gate::authorize('view', $page);
+
         $page->load(['translations', 'seoMeta']);
 
         $arTranslation = $page->translations->firstWhere('locale', 'ar');
@@ -90,6 +93,8 @@ class EditPage extends EditRecord
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
         /** @var Page $record */
+        Gate::authorize('update', $record);
+
         $this->pageService->updateBaseMetadata(
             $record->id,
             new PageMetadataDTO(
@@ -102,26 +107,31 @@ class EditPage extends EditRecord
                 showInBreadcrumbs: $data['show_in_breadcrumbs'] ?? true,
                 showInNav: $data['show_in_nav'] ?? true,
             ),
+            (int) auth()->id(),
         );
 
         $this->pageService->updateArabicTranslation(
             $record->id,
             self::buildTranslationDTO($data, 'ar'),
+            (int) auth()->id(),
         );
 
         $this->pageService->updateEnglishTranslation(
             $record->id,
             self::buildTranslationDTO($data, 'en'),
+            (int) auth()->id(),
         );
 
         $this->pageService->updateArabicSeo(
             $record->id,
             self::buildSeoDTO($data, 'ar'),
+            (int) auth()->id(),
         );
 
         $this->pageService->updateEnglishSeo(
             $record->id,
             self::buildSeoDTO($data, 'en'),
+            (int) auth()->id(),
         );
 
         return $record->refresh();
@@ -162,6 +172,7 @@ class EditPage extends EditRecord
             ->action(function (): void {
                 /** @var Page $page */
                 $page = $this->record;
+                Gate::authorize('preview', $page);
 
                 /** @var User $user */
                 $user = auth()->user();
@@ -189,6 +200,7 @@ class EditPage extends EditRecord
             ->action(function (): void {
                 /** @var Page $page */
                 $page = $this->record;
+                Gate::authorize('publish', $page);
 
                 /** @var User $user */
                 $user = auth()->user();
@@ -228,6 +240,7 @@ class EditPage extends EditRecord
             ->action(function (array $data): void {
                 /** @var Page $page */
                 $page = $this->record;
+                Gate::authorize('publish', $page);
 
                 /** @var User $user */
                 $user = auth()->user();
@@ -267,6 +280,7 @@ class EditPage extends EditRecord
             ->action(function (): void {
                 /** @var Page $page */
                 $page = $this->record;
+                Gate::authorize('publish', $page);
 
                 /** @var User $user */
                 $user = auth()->user();
@@ -299,6 +313,7 @@ class EditPage extends EditRecord
 
         /** @var Page $page */
         $page = $this->record;
+        Gate::authorize('update', $page);
 
         /** @var User $user */
         $user = auth()->user();

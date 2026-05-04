@@ -6,6 +6,7 @@ namespace App\Filament\Resources\MediaAssetResource\Pages;
 
 use App\Contracts\MediaServiceInterface;
 use App\Filament\Resources\MediaAssetResource;
+use App\Models\MediaAsset;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
@@ -24,7 +25,7 @@ class EditMediaAsset extends EditRecord
 
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
-        /** @var \App\Models\MediaAsset $record */
+        /** @var MediaAsset $record */
         $this->mediaService->updateMetadata($record->id, [
             'title_ar' => $data['title_ar'] ?? null,
             'title_en' => $data['title_en'] ?? null,
@@ -32,7 +33,7 @@ class EditMediaAsset extends EditRecord
             'alt_text_en' => $data['alt_text_en'] ?? null,
             'caption_ar' => $data['caption_ar'] ?? null,
             'caption_en' => $data['caption_en'] ?? null,
-        ]);
+        ], (int) auth()->id());
 
         Notification::make()
             ->title('Media metadata updated')
@@ -48,9 +49,9 @@ class EditMediaAsset extends EditRecord
             Actions\ViewAction::make(),
             Actions\DeleteAction::make()
                 ->action(function (): void {
-                    /** @var \App\Models\MediaAsset $record */
+                    /** @var MediaAsset $record */
                     $record = $this->record;
-                    $this->mediaService->delete($record->id);
+                    $this->mediaService->delete($record->id, (int) auth()->id());
 
                     Notification::make()
                         ->title('Media asset deleted')

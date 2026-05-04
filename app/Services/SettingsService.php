@@ -19,6 +19,7 @@ use App\DTOs\SettingValueDTO;
 use App\DTOs\SocialContactSettingsDTO;
 use App\DTOs\SocialLinkDTO;
 use App\Models\Setting;
+use App\Support\UrlSanitizer;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -125,6 +126,8 @@ final class SettingsService implements SettingsServiceInterface
                     throw new InvalidArgumentException('Settings group updates require SettingValueDTO values.');
                 }
 
+                $value = $this->sanitizeSettingValue($value);
+
                 if ($value->jsonValue === null && $value->textValue === null) {
                     throw new InvalidArgumentException('Each setting update requires either jsonValue or textValue.');
                 }
@@ -211,7 +214,7 @@ final class SettingsService implements SettingsServiceInterface
             (int) config('cache.settings_ttl', 21600),
         );
 
-        return is_string($value) && $value !== '' ? $value : null;
+        return is_string($value) && $value !== '' ? UrlSanitizer::sanitize($value) : null;
     }
 
     public function getStaffAccessUrl(): ?string
@@ -222,7 +225,7 @@ final class SettingsService implements SettingsServiceInterface
             (int) config('cache.settings_ttl', 21600),
         );
 
-        return is_string($value) && $value !== '' ? $value : null;
+        return is_string($value) && $value !== '' ? UrlSanitizer::sanitize($value) : null;
     }
 
     public function getEmergencyNotice(string $locale): EmergencyNoticeDTO
@@ -300,7 +303,7 @@ final class SettingsService implements SettingsServiceInterface
         return new ApplyCtaSettingsDTO(
             locale: $locale,
             label: $this->stringValue($payload, 'label') ?? $this->defaultApplyLabel($locale),
-            url: $this->stringValue($payload, 'url') ?? '/'.$locale,
+            url: UrlSanitizer::sanitize($this->stringValue($payload, 'url')) ?? '/'.$locale,
             target: $this->stringValue($payload, 'target'),
             isEnabled: $this->boolValue($payload, 'is_enabled', true),
         );
@@ -315,7 +318,7 @@ final class SettingsService implements SettingsServiceInterface
             isEnabled: $this->boolValue($payload, 'is_enabled', false),
             title: $this->stringValue($payload, 'title'),
             message: $this->stringValue($payload, 'message'),
-            url: $this->stringValue($payload, 'url'),
+            url: UrlSanitizer::sanitize($this->stringValue($payload, 'url')),
         );
     }
 
@@ -339,8 +342,8 @@ final class SettingsService implements SettingsServiceInterface
             email: $this->stringValue($payload, 'email'),
             brandTitle: $this->stringValue($brandBlock, 'title') ?? $this->stringValue($payload, 'brandTitle') ?? config('app.name', 'SPU'),
             brandSummary: $this->stringValue($brandBlock, 'body') ?? $this->stringValue($brandBlock, 'summary') ?? $this->stringValue($payload, 'brandSummary'),
-            logoUrl: $this->stringValue($brandBlock, 'logoUrl') ?? $this->stringValue($brandBlock, 'logo_url') ?? $this->stringValue($payload, 'logoUrl'),
-            mapEmbedUrl: $this->stringValue($mapEmbed, 'url') ?? $this->stringValue($mapEmbed, 'embedUrl') ?? $this->stringValue($payload, 'mapEmbedUrl'),
+            logoUrl: UrlSanitizer::sanitize($this->stringValue($brandBlock, 'logoUrl') ?? $this->stringValue($brandBlock, 'logo_url') ?? $this->stringValue($payload, 'logoUrl'), ['http', 'https'], true),
+            mapEmbedUrl: UrlSanitizer::sanitize($this->stringValue($mapEmbed, 'url') ?? $this->stringValue($mapEmbed, 'embedUrl') ?? $this->stringValue($payload, 'mapEmbedUrl'), ['https'], false),
             legalLinks: $this->actionList($payload['legalLinks'] ?? ($payload['legal_links'] ?? [])),
         );
     }
@@ -353,7 +356,7 @@ final class SettingsService implements SettingsServiceInterface
         $socialLinks = array_map(
             static fn (array $item): SocialLinkDTO => new SocialLinkDTO(
                 platform: (string) ($item['platform'] ?? $item['label'] ?? 'Social'),
-                url: (string) ($item['url'] ?? '#'),
+                url: UrlSanitizer::sanitize(is_string($item['url'] ?? null) ? $item['url'] : null) ?? '#',
                 isEnabled: (bool) ($item['is_enabled'] ?? ($item['isEnabled'] ?? true)),
             ),
             $this->listValue($socialPayload, 'socialLinks', 'social_links'),
@@ -382,7 +385,7 @@ final class SettingsService implements SettingsServiceInterface
             metaDescription: $this->stringValue($payload, 'meta_description') ?? $this->stringValue($payload, 'metaDescription'),
             ogTitle: $this->stringValue($payload, 'og_title') ?? $this->stringValue($payload, 'ogTitle') ?? $this->stringValue($payload, 'title') ?? config('app.name', 'SPU'),
             ogDescription: $this->stringValue($payload, 'og_description') ?? $this->stringValue($payload, 'ogDescription') ?? $this->stringValue($payload, 'meta_description') ?? $this->stringValue($payload, 'metaDescription'),
-            ogImage: $this->stringValue($payload, 'og_image') ?? $this->stringValue($payload, 'ogImage'),
+            ogImage: UrlSanitizer::sanitize($this->stringValue($payload, 'og_image') ?? $this->stringValue($payload, 'ogImage'), ['http', 'https'], true),
             canonicalUrl: $baseUrl.'/'.$locale,
             hreflang: [
                 ['locale' => 'ar', 'url' => $baseUrl.'/ar'],
@@ -586,7 +589,6 @@ final class SettingsService implements SettingsServiceInterface
     }
 
     /**
-     * @param  mixed  $value
      * @return array<int, NavigationActionDTO>
      */
     private function actionList(mixed $value): array
@@ -607,11 +609,56 @@ final class SettingsService implements SettingsServiceInterface
                 return null;
             }
 
+            $url = UrlSanitizer::sanitize($url);
+
+            if ($url === null) {
+                return null;
+            }
+
             return new NavigationActionDTO(
                 label: $label,
                 url: $url,
                 target: $this->stringValue($item, 'target'),
             );
         }, $value)));
+    }
+
+    private function sanitizeSettingValue(SettingValueDTO $value): SettingValueDTO
+    {
+        return new SettingValueDTO(
+            key: $value->key,
+            type: $value->type,
+            jsonValue: is_array($value->jsonValue) ? $this->sanitizeUrlsRecursively($value->jsonValue) : null,
+            textValue: $this->keyLooksLikeUrl($value->key) ? UrlSanitizer::sanitize($value->textValue) : $value->textValue,
+            isPublic: $value->isPublic,
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>|array<int, mixed>  $payload
+     * @return array<string, mixed>|array<int, mixed>
+     */
+    private function sanitizeUrlsRecursively(array $payload): array
+    {
+        foreach ($payload as $key => $value) {
+            if (is_array($value)) {
+                $payload[$key] = $this->sanitizeUrlsRecursively($value);
+
+                continue;
+            }
+
+            if (is_string($value) && $this->keyLooksLikeUrl((string) $key)) {
+                $payload[$key] = UrlSanitizer::sanitize($value) ?? '';
+            }
+        }
+
+        return $payload;
+    }
+
+    private function keyLooksLikeUrl(string $key): bool
+    {
+        $key = strtolower($key);
+
+        return str_contains($key, 'url') || in_array($key, ['href', 'src'], true);
     }
 }

@@ -10,6 +10,8 @@ use App\DTOs\EventCardDTO;
 use App\DTOs\FooterColumnDTO;
 use App\DTOs\HomepageFeatureItemDTO;
 use App\DTOs\HomepageSectionDataDTO;
+use App\DTOs\HomepageSectionDTO;
+use App\DTOs\HomepageSectionTranslationDTO;
 use App\DTOs\HomepageStatItemDTO;
 use App\DTOs\NavigationActionDTO;
 use App\DTOs\ResearchCardDTO;
@@ -41,13 +43,13 @@ final class HomepagePayloadMapper
                 value: (string) ($item['value'] ?? ''),
                 label: (string) ($item['label'] ?? ''),
                 description: is_string($item['description'] ?? null) ? $item['description'] : null,
-                icon: is_string($item['icon'] ?? null) ? $item['icon'] : null,
+                icon: self::safeAssetUrl(is_string($item['icon'] ?? null) ? $item['icon'] : null),
                 prefix: is_string($item['prefix'] ?? null) ? $item['prefix'] : null,
                 suffix: is_string($item['suffix'] ?? null) ? $item['suffix'] : null,
                 helperText: is_string($item['helperText'] ?? ($item['helper_text'] ?? null))
                     ? (string) ($item['helperText'] ?? $item['helper_text'])
                     : null,
-                url: is_string($item['url'] ?? null) ? $item['url'] : null,
+                url: self::safeUrl(is_string($item['url'] ?? null) ? $item['url'] : null),
                 sortOrder: is_int($item['sortOrder'] ?? null)
                     ? $item['sortOrder']
                     : (is_int($item['sort_order'] ?? null) ? $item['sort_order'] : null),
@@ -71,12 +73,12 @@ final class HomepagePayloadMapper
                 summary: is_string($item['summary'] ?? ($item['shortDescription'] ?? ($item['short_description'] ?? null)))
                     ? (string) ($item['summary'] ?? $item['shortDescription'] ?? $item['short_description'])
                     : null,
-                imageUrl: is_string($item['imageUrl'] ?? ($item['image_url'] ?? null))
+                imageUrl: self::safeAssetUrl(is_string($item['imageUrl'] ?? ($item['image_url'] ?? null))
                     ? (string) ($item['imageUrl'] ?? $item['image_url'])
-                    : null,
-                url: is_string($item['url'] ?? ($item['ctaUrl'] ?? ($item['cta_url'] ?? null)))
+                    : null),
+                url: self::safeUrl(is_string($item['url'] ?? ($item['ctaUrl'] ?? ($item['cta_url'] ?? null)))
                     ? (string) ($item['url'] ?? $item['ctaUrl'] ?? $item['cta_url'])
-                    : null,
+                    : null),
                 tags: is_array($item['tags'] ?? null)
                     ? array_values(array_filter($item['tags'], static fn (mixed $tag): bool => is_string($tag)))
                     : [],
@@ -101,13 +103,13 @@ final class HomepagePayloadMapper
                 title: (string) ($item['title'] ?? ''),
                 slug: (string) ($item['slug'] ?? ''),
                 excerpt: is_string($item['excerpt'] ?? null) ? $item['excerpt'] : null,
-                imageUrl: is_string($item['imageUrl'] ?? ($item['image_url'] ?? null))
+                imageUrl: self::safeAssetUrl(is_string($item['imageUrl'] ?? ($item['image_url'] ?? null))
                     ? (string) ($item['imageUrl'] ?? $item['image_url'])
-                    : null,
+                    : null),
                 publishedAt: is_string($item['publishedAt'] ?? ($item['published_at'] ?? null))
                     ? (string) ($item['publishedAt'] ?? $item['published_at'])
                     : null,
-                url: is_string($item['url'] ?? null) ? $item['url'] : null,
+                url: self::safeUrl(is_string($item['url'] ?? null) ? $item['url'] : null),
                 categoryLabel: is_string($item['categoryLabel'] ?? ($item['category_label'] ?? null))
                     ? (string) ($item['categoryLabel'] ?? $item['category_label'])
                     : null,
@@ -137,13 +139,13 @@ final class HomepagePayloadMapper
                 summary: is_string($item['summary'] ?? ($item['excerpt'] ?? null))
                     ? (string) ($item['summary'] ?? $item['excerpt'])
                     : null,
-                imageUrl: is_string($item['imageUrl'] ?? ($item['image_url'] ?? null))
+                imageUrl: self::safeAssetUrl(is_string($item['imageUrl'] ?? ($item['image_url'] ?? null))
                     ? (string) ($item['imageUrl'] ?? $item['image_url'])
-                    : null,
+                    : null),
                 publishedAt: is_string($item['publishedAt'] ?? ($item['published_at'] ?? null))
                     ? (string) ($item['publishedAt'] ?? $item['published_at'])
                     : null,
-                url: is_string($item['url'] ?? null) ? $item['url'] : null,
+                url: self::safeUrl(is_string($item['url'] ?? null) ? $item['url'] : null),
                 categoryLabel: is_string($item['categoryLabel'] ?? ($item['category_label'] ?? ($item['categoryType'] ?? ($item['category_type'] ?? null))))
                     ? (string) ($item['categoryLabel'] ?? $item['category_label'] ?? $item['categoryType'] ?? $item['category_type'])
                     : null,
@@ -180,10 +182,10 @@ final class HomepagePayloadMapper
                     ? (string) ($item['endsAt'] ?? $item['ends_at'])
                     : null,
                 location: is_string($item['location'] ?? null) ? $item['location'] : null,
-                url: is_string($item['url'] ?? null) ? $item['url'] : null,
-                imageUrl: is_string($item['imageUrl'] ?? ($item['image_url'] ?? null))
+                url: self::safeUrl(is_string($item['url'] ?? null) ? $item['url'] : null),
+                imageUrl: self::safeAssetUrl(is_string($item['imageUrl'] ?? ($item['image_url'] ?? null))
                     ? (string) ($item['imageUrl'] ?? $item['image_url'])
-                    : null,
+                    : null),
                 timeLabel: is_string($item['timeLabel'] ?? ($item['time'] ?? null))
                     ? (string) ($item['timeLabel'] ?? $item['time'])
                     : null,
@@ -244,7 +246,7 @@ final class HomepagePayloadMapper
         return array_values(array_map(
             static fn (array $item): SocialLinkDTO => new SocialLinkDTO(
                 platform: (string) ($item['platform'] ?? $item['label'] ?? 'Social'),
-                url: (string) ($item['url'] ?? '#'),
+                url: self::safeUrl(is_string($item['url'] ?? null) ? $item['url'] : null) ?? '#',
                 isEnabled: (bool) ($item['isEnabled'] ?? ($item['is_enabled'] ?? true)),
             ),
             self::listOfArrays($items),
@@ -262,6 +264,8 @@ final class HomepagePayloadMapper
 
         $label = self::stringValue($payload, 'label');
         $url = self::stringValue($payload, 'url');
+
+        $url = self::safeUrl($url);
 
         if ($label === null || $url === null) {
             return null;
@@ -297,9 +301,9 @@ final class HomepagePayloadMapper
             title: self::stringValue($payload, 'headline') ?? self::stringValue($payload, 'title'),
             summary: self::stringValue($payload, 'summary'),
             body: self::stringValue($payload, 'body'),
-            videoUrl: self::stringValue($payload, 'videoUrl') ?? self::stringValue($payload, 'video_url'),
-            imageUrl: self::stringValue($payload, 'imageUrl') ?? self::stringValue($payload, 'image_url'),
-            backgroundImageUrl: self::stringValue($payload, 'backgroundImageUrl') ?? self::stringValue($payload, 'background_image_url'),
+            videoUrl: self::safeUrl(self::stringValue($payload, 'videoUrl') ?? self::stringValue($payload, 'video_url'), ['http', 'https'], false),
+            imageUrl: self::safeAssetUrl(self::stringValue($payload, 'imageUrl') ?? self::stringValue($payload, 'image_url')),
+            backgroundImageUrl: self::safeAssetUrl(self::stringValue($payload, 'backgroundImageUrl') ?? self::stringValue($payload, 'background_image_url')),
             primaryAction: self::actionFromArray($payload['primaryAction'] ?? $payload['primary_action'] ?? null),
             secondaryAction: self::actionFromArray($payload['secondaryAction'] ?? $payload['secondary_action'] ?? null),
             sectionAction: self::actionFromArray($payload['sectionAction'] ?? $payload['section_action'] ?? null),
@@ -328,9 +332,9 @@ final class HomepagePayloadMapper
             'title' => $data->title,
             'summary' => $data->summary,
             'body' => $data->body,
-            'videoUrl' => $data->videoUrl,
-            'imageUrl' => $data->imageUrl,
-            'backgroundImageUrl' => $data->backgroundImageUrl,
+            'videoUrl' => self::safeUrl($data->videoUrl, ['http', 'https'], false),
+            'imageUrl' => self::safeAssetUrl($data->imageUrl),
+            'backgroundImageUrl' => self::safeAssetUrl($data->backgroundImageUrl),
             'primaryAction' => self::actionToArray($data->primaryAction),
             'secondaryAction' => self::actionToArray($data->secondaryAction),
             'sectionAction' => self::actionToArray($data->sectionAction),
@@ -339,11 +343,11 @@ final class HomepagePayloadMapper
                     'value' => $item->value,
                     'label' => $item->label,
                     'description' => $item->description,
-                    'icon' => $item->icon,
+                    'icon' => self::safeAssetUrl($item->icon),
                     'prefix' => $item->prefix,
                     'suffix' => $item->suffix,
                     'helperText' => $item->helperText,
-                    'url' => $item->url,
+                    'url' => self::safeUrl($item->url),
                     'sortOrder' => $item->sortOrder,
                 ], static fn (mixed $value): bool => $value !== null && $value !== []),
                 $data->stats,
@@ -352,8 +356,8 @@ final class HomepagePayloadMapper
                 static fn (HomepageFeatureItemDTO $item): array => array_filter([
                     'title' => $item->title,
                     'summary' => $item->summary,
-                    'imageUrl' => $item->imageUrl,
-                    'url' => $item->url,
+                    'imageUrl' => self::safeAssetUrl($item->imageUrl),
+                    'url' => self::safeUrl($item->url),
                     'tags' => $item->tags,
                 ], static fn (mixed $value): bool => $value !== null && $value !== []),
                 $data->featuredItems,
@@ -365,9 +369,9 @@ final class HomepagePayloadMapper
                     'title' => $item->title,
                     'slug' => $item->slug,
                     'excerpt' => $item->excerpt,
-                    'imageUrl' => $item->imageUrl,
+                    'imageUrl' => self::safeAssetUrl($item->imageUrl),
                     'publishedAt' => $item->publishedAt,
-                    'url' => $item->url,
+                    'url' => self::safeUrl($item->url),
                     'categoryLabel' => $item->categoryLabel,
                     'badgeTag' => $item->badgeTag,
                 ], static fn (mixed $value): bool => $value !== null && $value !== []),
@@ -380,9 +384,9 @@ final class HomepagePayloadMapper
                     'title' => $item->title,
                     'slug' => $item->slug,
                     'summary' => $item->summary,
-                    'imageUrl' => $item->imageUrl,
+                    'imageUrl' => self::safeAssetUrl($item->imageUrl),
                     'publishedAt' => $item->publishedAt,
-                    'url' => $item->url,
+                    'url' => self::safeUrl($item->url),
                     'categoryLabel' => $item->categoryLabel,
                     'authors' => $item->authors,
                 ], static fn (mixed $value): bool => $value !== null && $value !== []),
@@ -398,8 +402,8 @@ final class HomepagePayloadMapper
                     'startsAt' => $item->startsAt,
                     'endsAt' => $item->endsAt,
                     'location' => $item->location,
-                    'url' => $item->url,
-                    'imageUrl' => $item->imageUrl,
+                    'url' => self::safeUrl($item->url),
+                    'imageUrl' => self::safeAssetUrl($item->imageUrl),
                     'timeLabel' => $item->timeLabel,
                 ], static fn (mixed $value): bool => $value !== null && $value !== []),
                 $data->events,
@@ -425,13 +429,13 @@ final class HomepagePayloadMapper
             'socialLinks' => array_values(array_map(
                 static fn (SocialLinkDTO $item): array => [
                     'platform' => $item->platform,
-                    'url' => $item->url,
+                    'url' => self::safeUrl($item->url) ?? '#',
                     'isEnabled' => $item->isEnabled,
                 ],
                 $data->socialLinks,
             )),
-            'items' => array_values($data->items),
-            'content' => $data->content,
+            'items' => self::sanitizePayloadUrls(array_values($data->items)),
+            'content' => self::sanitizePayloadUrls($data->content),
         ], static fn (mixed $value): bool => $value !== null && $value !== []);
     }
 
@@ -446,13 +450,13 @@ final class HomepagePayloadMapper
      * Consolidates the duplicated serialization logic previously in
      * HomepageSectionService and HomepagePublishingService.
      *
-     * @param  array<int, \App\DTOs\HomepageSectionDTO>  $sections
+     * @param  array<int, HomepageSectionDTO>  $sections
      * @return array<int, array<string, mixed>>
      */
     public static function serializeSections(array $sections): array
     {
         return array_values(array_map(
-            static fn (\App\DTOs\HomepageSectionDTO $section): array => [
+            static fn (HomepageSectionDTO $section): array => [
                 'id' => $section->id,
                 'key' => $section->key,
                 'sortOrder' => $section->sortOrder,
@@ -476,7 +480,7 @@ final class HomepagePayloadMapper
      *
      * @return array<string, mixed>
      */
-    public static function translationToArray(\App\DTOs\HomepageSectionTranslationDTO $translation): array
+    public static function translationToArray(HomepageSectionTranslationDTO $translation): array
     {
         return array_filter([
             'headline' => $translation->headline,
@@ -501,7 +505,7 @@ final class HomepagePayloadMapper
 
         return array_filter([
             'label' => $action->label,
-            'url' => $action->url,
+            'url' => self::safeUrl($action->url),
             'target' => $action->target,
         ], static fn (mixed $value): bool => $value !== null && $value !== '');
     }
@@ -526,5 +530,45 @@ final class HomepagePayloadMapper
         $value = $payload[$key] ?? null;
 
         return is_string($value) && $value !== '' ? $value : null;
+    }
+
+    /**
+     * @param  array<int, string>  $schemes
+     */
+    private static function safeUrl(?string $url, array $schemes = ['http', 'https', 'mailto', 'tel'], bool $allowRelative = true): ?string
+    {
+        return UrlSanitizer::sanitize($url, $schemes, $allowRelative);
+    }
+
+    private static function safeAssetUrl(?string $url): ?string
+    {
+        return UrlSanitizer::sanitize($url, ['http', 'https'], true);
+    }
+
+    private static function sanitizePayloadUrls(mixed $payload): mixed
+    {
+        if (! is_array($payload)) {
+            return $payload;
+        }
+
+        foreach ($payload as $key => $value) {
+            if (is_array($value)) {
+                $payload[$key] = self::sanitizePayloadUrls($value);
+
+                continue;
+            }
+
+            if (! is_string($value)) {
+                continue;
+            }
+
+            $normalizedKey = strtolower((string) $key);
+
+            if (str_contains($normalizedKey, 'url') || in_array($normalizedKey, ['href', 'src'], true)) {
+                $payload[$key] = self::safeUrl($value) ?? '';
+            }
+        }
+
+        return $payload;
     }
 }

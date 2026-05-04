@@ -9,11 +9,13 @@ use App\DTOs\MenuItemDataDTO;
 use App\DTOs\MenuItemDTO;
 use App\DTOs\MenuTreeNodeDTO;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Component;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\Tabs\Tab;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\View;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
@@ -116,6 +118,8 @@ class ManageMenu extends Page implements HasForms
 
     public function switchGroup(string $group): void
     {
+        Gate::authorize('manage-menu');
+
         if (in_array($group, MenuServiceInterface::GROUP_KEYS, true)) {
             $this->activeGroup = $group;
         }
@@ -123,6 +127,8 @@ class ManageMenu extends Page implements HasForms
 
     public function editItem(int $itemId): void
     {
+        Gate::authorize('manage-menu');
+
         $item = $this->findItemInTrees($itemId);
 
         if ($item === null) {
@@ -147,6 +153,8 @@ class ManageMenu extends Page implements HasForms
 
     public function updateItem(int $itemId, array $formData): void
     {
+        Gate::authorize('manage-menu');
+
         $item = $this->findItemInTrees($itemId);
 
         if ($item === null) {
@@ -186,9 +194,11 @@ class ManageMenu extends Page implements HasForms
 
             $this->loadMenuTrees();
         } catch (\Throwable $e) {
+            report($e);
+
             Notification::make()
                 ->title('Failed to update menu item.')
-                ->body($e->getMessage())
+                ->body('Please review the menu item and try again.')
                 ->danger()
                 ->send();
         }
@@ -196,6 +206,8 @@ class ManageMenu extends Page implements HasForms
 
     public function deleteItem(int $itemId): void
     {
+        Gate::authorize('manage-menu');
+
         try {
             $this->menuService->deleteItem($itemId);
 
@@ -206,9 +218,11 @@ class ManageMenu extends Page implements HasForms
 
             $this->loadMenuTrees();
         } catch (\Throwable $e) {
+            report($e);
+
             Notification::make()
                 ->title('Failed to delete menu item.')
-                ->body($e->getMessage())
+                ->body('The menu item could not be deleted.')
                 ->danger()
                 ->send();
         }
@@ -216,6 +230,8 @@ class ManageMenu extends Page implements HasForms
 
     public function toggleItem(int $itemId, bool $enabled): void
     {
+        Gate::authorize('manage-menu');
+
         try {
             $this->menuService->toggleItemState($itemId, $enabled);
 
@@ -226,9 +242,11 @@ class ManageMenu extends Page implements HasForms
 
             $this->loadMenuTrees();
         } catch (\Throwable $e) {
+            report($e);
+
             Notification::make()
                 ->title('Failed to toggle menu item.')
-                ->body($e->getMessage())
+                ->body('The menu item state could not be changed.')
                 ->danger()
                 ->send();
         }
@@ -241,6 +259,8 @@ class ManageMenu extends Page implements HasForms
      */
     public function reorderItems(array $orderedTree): void
     {
+        Gate::authorize('manage-menu');
+
         try {
             $treeNodes = $this->buildTreeNodesFromOrder($orderedTree);
             $this->menuService->reorderTree($this->activeGroup, $treeNodes);
@@ -252,9 +272,11 @@ class ManageMenu extends Page implements HasForms
 
             $this->loadMenuTrees();
         } catch (\Throwable $e) {
+            report($e);
+
             Notification::make()
                 ->title('Failed to reorder menu.')
-                ->body($e->getMessage())
+                ->body('The menu order could not be saved.')
                 ->danger()
                 ->send();
         }
@@ -286,6 +308,8 @@ class ManageMenu extends Page implements HasForms
 
     private function createItem(array $data): void
     {
+        Gate::authorize('manage-menu');
+
         try {
             foreach (['ar', 'en'] as $locale) {
                 $labelKey = "label_{$locale}";
@@ -318,9 +342,11 @@ class ManageMenu extends Page implements HasForms
 
             $this->loadMenuTrees();
         } catch (\Throwable $e) {
+            report($e);
+
             Notification::make()
                 ->title('Failed to create menu item.')
-                ->body($e->getMessage())
+                ->body('Please review the menu item and try again.')
                 ->danger()
                 ->send();
         }
@@ -442,7 +468,7 @@ class ManageMenu extends Page implements HasForms
                         Tab::make("{$groupKey}_ar")
                             ->label('العربية (AR)')
                             ->schema([
-                                \Filament\Forms\Components\View::make('filament.pages.partials.menu-tree')
+                                View::make('filament.pages.partials.menu-tree')
                                     ->viewData([
                                         'group' => $groupKey,
                                         'locale' => 'ar',
@@ -451,7 +477,7 @@ class ManageMenu extends Page implements HasForms
                         Tab::make("{$groupKey}_en")
                             ->label('English (EN)')
                             ->schema([
-                                \Filament\Forms\Components\View::make('filament.pages.partials.menu-tree')
+                                View::make('filament.pages.partials.menu-tree')
                                     ->viewData([
                                         'group' => $groupKey,
                                         'locale' => 'en',
@@ -462,7 +488,7 @@ class ManageMenu extends Page implements HasForms
     }
 
     /**
-     * @return array<int, \Filament\Forms\Components\Component>
+     * @return array<int, Component>
      */
     private function itemFormSchema(): array
     {

@@ -8,6 +8,7 @@ use App\DTOs\TotpEnrollmentDTO;
 use App\Models\User;
 use App\Services\TotpAuthenticator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use PragmaRX\Google2FA\Google2FA;
 use Tests\TestCase;
 
@@ -28,7 +29,7 @@ class TotpAuthenticatorTest extends TestCase
     {
         parent::setUp();
 
-        $this->google2fa = new Google2FA();
+        $this->google2fa = new Google2FA;
         $this->authenticator = new TotpAuthenticator($this->google2fa);
     }
 
@@ -67,7 +68,10 @@ class TotpAuthenticatorTest extends TestCase
 
         $this->assertIsArray($user->recovery_codes_encrypted);
         $this->assertCount(8, $user->recovery_codes_encrypted);
-        $this->assertSame($result->recoveryCodes, $user->recovery_codes_encrypted);
+
+        foreach ($result->recoveryCodes as $index => $plainCode) {
+            $this->assertTrue(Hash::check($plainCode, $user->recovery_codes_encrypted[$index]));
+        }
     }
 
     public function test_generate_secret_returns_valid_qr_code_url(): void
@@ -205,7 +209,10 @@ class TotpAuthenticatorTest extends TestCase
 
         $user->refresh();
 
-        $this->assertSame($secondSet, $user->recovery_codes_encrypted);
+        foreach ($secondSet as $index => $plainCode) {
+            $this->assertTrue(Hash::check($plainCode, $user->recovery_codes_encrypted[$index]));
+        }
+
         $this->assertNotSame($firstSet, $secondSet);
     }
 
@@ -269,9 +276,11 @@ class TotpAuthenticatorTest extends TestCase
         $this->assertCount(7, $remaining);
         $this->assertNotContains($codeToUse, $remaining);
 
-        // All other original codes should still be present.
+        // All other original codes should still be accepted.
         foreach (array_slice($enrollment->recoveryCodes, 1) as $otherCode) {
-            $this->assertContains($otherCode, $remaining);
+            $this->assertTrue(collect($remaining)->contains(
+                static fn (string $storedCode): bool => Hash::check($otherCode, $storedCode),
+            ));
         }
     }
 }

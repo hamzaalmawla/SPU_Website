@@ -45,7 +45,11 @@ final class RedirectContinuityMiddleware
             $currentPath = $this->continuityService->resolveFileContinuity($path);
 
             if ($currentPath !== null) {
-                return new RedirectResponse($this->normalizeDestination($currentPath), 301);
+                $destination = $this->normalizeDestination($currentPath);
+
+                if ($destination !== null) {
+                    return new RedirectResponse($destination, 301);
+                }
             }
         }
 
@@ -107,12 +111,27 @@ final class RedirectContinuityMiddleware
         return $extension !== '' ? 'file' : 'page';
     }
 
-    private function normalizeDestination(string $path): string
+    private function normalizeDestination(string $path): ?string
     {
         if (Str::startsWith($path, ['http://', 'https://'])) {
-            return $path;
+            return $this->isAllowedAbsoluteDestination($path) ? $path : null;
         }
 
         return '/'.ltrim($path, '/');
+    }
+
+    private function isAllowedAbsoluteDestination(string $url): bool
+    {
+        $host = parse_url($url, PHP_URL_HOST);
+
+        if (! is_string($host) || $host === '') {
+            return false;
+        }
+
+        $host = strtolower($host);
+        /** @var array<int, string> $allowedHosts */
+        $allowedHosts = config('continuity.allowed_redirect_hosts', ['spu.edu.sy']);
+
+        return in_array($host, $allowedHosts, true) || str_ends_with($host, '.spu.edu.sy');
     }
 }

@@ -20,12 +20,12 @@ final class MediaServicePlaceholder implements MediaServiceInterface
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function delete(int|string $mediaId): bool
+    public function delete(int|string $mediaId, ?int $userId = null): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function updateMetadata(int|string $mediaId, array $metadata): bool
+    public function updateMetadata(int|string $mediaId, array $metadata, ?int $userId = null): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }

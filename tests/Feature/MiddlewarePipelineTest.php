@@ -60,7 +60,7 @@ class MiddlewarePipelineTest extends TestCase
             ->assertHeader('Referrer-Policy', 'no-referrer')
             ->assertHeader('X-Frame-Options', 'SAMEORIGIN')
             ->assertHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()')
-            ->assertHeader('Content-Security-Policy-Report-Only');
+            ->assertHeader('Content-Security-Policy');
     }
 
     public function test_admin_routes_include_security_headers(): void

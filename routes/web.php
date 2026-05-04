@@ -49,6 +49,7 @@ Route::prefix('admin')
                 Route::get('/two-factor-challenge', [TwoFactorChallengeController::class, 'create'])
                     ->name('two-factor.challenge');
                 Route::post('/two-factor-challenge', [TwoFactorChallengeController::class, 'store'])
+                    ->middleware('throttle:two-factor')
                     ->name('two-factor.verify');
             });
     });

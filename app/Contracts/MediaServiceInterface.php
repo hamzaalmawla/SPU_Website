@@ -18,14 +18,14 @@ interface MediaServiceInterface
      */
     public function upload(array $payload): MediaUploadResultDTO;
 
-    public function delete(int|string $mediaId): bool;
+    public function delete(int|string $mediaId, ?int $userId = null): bool;
 
     /**
      * Update stored media metadata.
      *
      * @param  array<string, mixed>  $metadata
      */
-    public function updateMetadata(int|string $mediaId, array $metadata): bool;
+    public function updateMetadata(int|string $mediaId, array $metadata, ?int $userId = null): bool;
 
     /**
      * @param  array<string, mixed>  $filters

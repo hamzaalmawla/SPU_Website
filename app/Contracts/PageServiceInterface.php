@@ -34,27 +34,27 @@ interface PageServiceInterface
     /**
      * Update non-translatable page metadata.
      */
-    public function updateBaseMetadata(int $pageId, PageMetadataDTO $payload): bool;
+    public function updateBaseMetadata(int $pageId, PageMetadataDTO $payload, ?int $userId = null): bool;
 
     /**
      * Update Arabic page translation payload.
      */
-    public function updateArabicTranslation(int $pageId, PageTranslationDTO $payload): bool;
+    public function updateArabicTranslation(int $pageId, PageTranslationDTO $payload, ?int $userId = null): bool;
 
     /**
      * Update English page translation payload.
      */
-    public function updateEnglishTranslation(int $pageId, PageTranslationDTO $payload): bool;
+    public function updateEnglishTranslation(int $pageId, PageTranslationDTO $payload, ?int $userId = null): bool;
 
     /**
      * Update Arabic SEO payload.
      */
-    public function updateArabicSeo(int $pageId, PageSeoInputDTO $payload): bool;
+    public function updateArabicSeo(int $pageId, PageSeoInputDTO $payload, ?int $userId = null): bool;
 
     /**
      * Update English SEO payload.
      */
-    public function updateEnglishSeo(int $pageId, PageSeoInputDTO $payload): bool;
+    public function updateEnglishSeo(int $pageId, PageSeoInputDTO $payload, ?int $userId = null): bool;
 
     /**
      * Save a draft snapshot for the page editor.

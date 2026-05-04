@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Contracts\AuditServiceInterface;
 use App\Contracts\MediaServiceInterface;
 use App\DTOs\MediaUploadResultDTO;
 use App\DTOs\PaginatedResultDTO;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -39,6 +41,23 @@ final class MediaService implements MediaServiceInterface
 
     private const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024; // 20 MB
 
+    /** @var array<string, list<string>> */
+    private const MIME_EXTENSIONS = [
+        'image/jpeg' => ['jpg', 'jpeg'],
+        'image/png' => ['png'],
+        'image/gif' => ['gif'],
+        'image/webp' => ['webp'],
+        'application/pdf' => ['pdf'],
+        'application/msword' => ['doc'],
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => ['docx'],
+        'application/vnd.ms-excel' => ['xls'],
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => ['xlsx'],
+        'application/vnd.ms-powerpoint' => ['ppt'],
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation' => ['pptx'],
+        'video/mp4' => ['mp4'],
+        'video/webm' => ['webm'],
+    ];
+
     private const MAX_IMAGE_WIDTH = 8000;
 
     private const MAX_IMAGE_HEIGHT = 8000;
@@ -47,8 +66,9 @@ final class MediaService implements MediaServiceInterface
 
     private readonly string $diskName;
 
-    public function __construct()
-    {
+    public function __construct(
+        private readonly AuditServiceInterface $auditService,
+    ) {
         $this->diskName = (string) config('filesystems.default', 'local');
         $this->disk = Storage::disk($this->diskName);
     }
@@ -71,8 +91,9 @@ final class MediaService implements MediaServiceInterface
 
         $directory = (string) ($payload['directory'] ?? 'media');
         $originalName = $file->getClientOriginalName();
-        $extension = $file->getClientOriginalExtension() ?: ($file->guessExtension() ?? '');
-        $filename = pathinfo($originalName, PATHINFO_FILENAME) . '_' . time() . '.' . $extension;
+        $mimeType = $file->getMimeType() ?? 'application/octet-stream';
+        $extension = $this->primaryExtensionForMime($mimeType);
+        $filename = (string) Str::uuid().'.'.$extension;
 
         $storedPath = $this->disk->putFileAs($directory, $file, $filename);
 
@@ -82,7 +103,6 @@ final class MediaService implements MediaServiceInterface
             ]);
         }
 
-        $mimeType = $file->getMimeType() ?? 'application/octet-stream';
         $size = $file->getSize() ?: 0;
 
         $width = null;
@@ -115,10 +135,21 @@ final class MediaService implements MediaServiceInterface
             'uploaded_by' => $payload['uploaded_by'] ?? null,
         ]);
 
+        $this->auditService->log(
+            action: 'media.uploaded',
+            userId: is_numeric($payload['uploaded_by'] ?? null) ? (int) $payload['uploaded_by'] : null,
+            entityType: MediaAsset::class,
+            entityId: (int) $asset->getKey(),
+            metadata: [
+                'mime_type' => $mimeType,
+                'size_bytes' => $size,
+            ],
+        );
+
         return $this->toDto($asset);
     }
 
-    public function delete(int|string $mediaId): bool
+    public function delete(int|string $mediaId, ?int $userId = null): bool
     {
         $asset = MediaAsset::find($mediaId);
 
@@ -126,13 +157,24 @@ final class MediaService implements MediaServiceInterface
             return false;
         }
 
-        return (bool) $asset->delete();
+        $deleted = (bool) $asset->delete();
+
+        if ($deleted) {
+            $this->auditService->log(
+                action: 'media.deleted',
+                userId: $userId,
+                entityType: MediaAsset::class,
+                entityId: (int) $asset->getKey(),
+            );
+        }
+
+        return $deleted;
     }
 
     /**
      * @param  array<string, mixed>  $metadata  Accepts 'title_ar', 'title_en', 'alt_text_ar', 'alt_text_en', 'caption_ar', 'caption_en'
      */
-    public function updateMetadata(int|string $mediaId, array $metadata): bool
+    public function updateMetadata(int|string $mediaId, array $metadata, ?int $userId = null): bool
     {
         $asset = MediaAsset::find($mediaId);
 
@@ -147,7 +189,21 @@ final class MediaService implements MediaServiceInterface
             return true;
         }
 
-        return $asset->update($filtered);
+        $updated = $asset->update($filtered);
+
+        if ($updated) {
+            $this->auditService->log(
+                action: 'media.metadata_updated',
+                userId: $userId,
+                entityType: MediaAsset::class,
+                entityId: (int) $asset->getKey(),
+                metadata: [
+                    'fields' => array_keys($filtered),
+                ],
+            );
+        }
+
+        return $updated;
     }
 
     /**
@@ -195,11 +251,11 @@ final class MediaService implements MediaServiceInterface
         $query = MediaAsset::query();
 
         if (isset($filters['mime_type']) && is_string($filters['mime_type'])) {
-            $query->where('mime_type', 'like', $filters['mime_type'] . '%');
+            $query->where('mime_type', 'like', $filters['mime_type'].'%');
         }
 
         if (isset($filters['search']) && is_string($filters['search']) && $filters['search'] !== '') {
-            $term = '%' . $filters['search'] . '%';
+            $term = '%'.$filters['search'].'%';
             $query->where(function ($q) use ($term): void {
                 $q->where('filename', 'like', $term)
                     ->orWhere('original_name', 'like', $term)
@@ -227,6 +283,15 @@ final class MediaService implements MediaServiceInterface
             ]);
         }
 
+        $clientExtension = strtolower($file->getClientOriginalExtension());
+        $allowedExtensions = self::MIME_EXTENSIONS[$mimeType] ?? [];
+
+        if ($allowedExtensions === [] || ($clientExtension !== '' && ! in_array($clientExtension, $allowedExtensions, true))) {
+            throw ValidationException::withMessages([
+                'file' => ['The uploaded file extension does not match its detected file type.'],
+            ]);
+        }
+
         $size = $file->getSize() ?: 0;
         if ($size > self::MAX_FILE_SIZE_BYTES) {
             $maxMb = self::MAX_FILE_SIZE_BYTES / (1024 * 1024);
@@ -241,11 +306,24 @@ final class MediaService implements MediaServiceInterface
                 [$width, $height] = $dimensions;
                 if ($width > self::MAX_IMAGE_WIDTH || $height > self::MAX_IMAGE_HEIGHT) {
                     throw ValidationException::withMessages([
-                        'file' => ["Image dimensions ({$width}x{$height}) exceed the maximum allowed (" . self::MAX_IMAGE_WIDTH . 'x' . self::MAX_IMAGE_HEIGHT . ').'],
+                        'file' => ["Image dimensions ({$width}x{$height}) exceed the maximum allowed (".self::MAX_IMAGE_WIDTH.'x'.self::MAX_IMAGE_HEIGHT.').'],
                     ]);
                 }
             }
         }
+    }
+
+    private function primaryExtensionForMime(string $mimeType): string
+    {
+        $extensions = self::MIME_EXTENSIONS[$mimeType] ?? [];
+
+        if ($extensions === []) {
+            throw ValidationException::withMessages([
+                'file' => ['The detected file type does not have an approved extension.'],
+            ]);
+        }
+
+        return $extensions[0];
     }
 
     private function toDto(MediaAsset $asset): MediaUploadResultDTO

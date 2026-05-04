@@ -54,7 +54,10 @@ final class PagePolicy
         }
 
         if ($user->role_slug === 'faculty_editor') {
-            return $page->faculty_scope_slug === $user->faculty_scope_slug;
+            $userScope = is_string($user->faculty_scope_slug) ? $user->faculty_scope_slug : '';
+            $pageScope = $page->getAttribute('faculty_scope_slug');
+
+            return $userScope !== '' && is_string($pageScope) && $pageScope === $userScope;
         }
 
         return false;

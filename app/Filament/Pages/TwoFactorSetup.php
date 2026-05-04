@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
+use App\Contracts\TotpAuthenticatorInterface;
 use App\Models\User;
-use App\Services\TotpAuthenticator;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
@@ -53,9 +53,9 @@ class TwoFactorSetup extends Page implements HasForms
 
     public bool $showRecoveryCodes = false;
 
-    private TotpAuthenticator $authenticator;
+    private TotpAuthenticatorInterface $authenticator;
 
-    public function boot(TotpAuthenticator $authenticator): void
+    public function boot(TotpAuthenticatorInterface $authenticator): void
     {
         $this->authenticator = $authenticator;
     }
@@ -146,13 +146,14 @@ class TwoFactorSetup extends Page implements HasForms
             ->icon('heroicon-o-key')
             ->color('warning')
             ->action(function (): void {
-                /** @var User $user */
-                $user = auth()->user();
+                $this->recoveryCodes = [];
+                $this->showRecoveryCodes = false;
 
-                $this->recoveryCodes = is_array($user->recovery_codes_encrypted)
-                    ? $user->recovery_codes_encrypted
-                    : [];
-                $this->showRecoveryCodes = true;
+                Notification::make()
+                    ->title('Recovery codes cannot be displayed')
+                    ->body('For security, existing recovery codes are stored as hashes. Regenerate them to view a new one-time set.')
+                    ->warning()
+                    ->send();
             });
     }
 

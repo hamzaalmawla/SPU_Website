@@ -25,10 +25,9 @@ final class VerifyWebhookSignatureTest extends TestCase
     public function test_valid_signature_allows_request(): void
     {
         $body = json_encode(['event' => 'test', 'data' => ['id' => 1]]);
-        $signature = hash_hmac('sha256', $body, self::TEST_SECRET);
 
         $response = $this->call('POST', '/webhook/incoming', [], [], [], [
-            'HTTP_X_Webhook_Signature' => $signature,
+            ...$this->signedHeaders((string) $body),
             'CONTENT_TYPE' => 'application/json',
         ], $body);
 
@@ -52,7 +51,9 @@ final class VerifyWebhookSignatureTest extends TestCase
         $body = json_encode(['event' => 'test']);
 
         $response = $this->call('POST', '/webhook/incoming', [], [], [], [
-            'HTTP_X_Webhook_Signature' => 'invalid-signature-value',
+            'HTTP_X_WEBHOOK_SIGNATURE' => 'invalid-signature-value',
+            'HTTP_X_WEBHOOK_TIMESTAMP' => (string) now()->getTimestamp(),
+            'HTTP_X_WEBHOOK_NONCE' => 'invalid-signature-nonce',
             'CONTENT_TYPE' => 'application/json',
         ], $body);
 
@@ -62,10 +63,9 @@ final class VerifyWebhookSignatureTest extends TestCase
     public function test_signature_with_wrong_secret_returns_403(): void
     {
         $body = json_encode(['event' => 'test']);
-        $wrongSignature = hash_hmac('sha256', $body, 'wrong-secret');
 
         $response = $this->call('POST', '/webhook/incoming', [], [], [], [
-            'HTTP_X_Webhook_Signature' => $wrongSignature,
+            ...$this->signedHeaders((string) $body, 'wrong-secret'),
             'CONTENT_TYPE' => 'application/json',
         ], $body);
 
@@ -79,7 +79,7 @@ final class VerifyWebhookSignatureTest extends TestCase
         $body = json_encode(['event' => 'test']);
 
         $response = $this->call('POST', '/webhook/incoming', [], [], [], [
-            'HTTP_X_Webhook_Signature' => 'some-signature',
+            ...$this->signedHeaders((string) $body),
             'CONTENT_TYPE' => 'application/json',
         ], $body);
 
@@ -89,13 +89,43 @@ final class VerifyWebhookSignatureTest extends TestCase
     public function test_empty_body_with_valid_signature_succeeds(): void
     {
         $body = '';
-        $signature = hash_hmac('sha256', $body, self::TEST_SECRET);
 
         $response = $this->call('POST', '/webhook/incoming', [], [], [], [
-            'HTTP_X_Webhook_Signature' => $signature,
+            ...$this->signedHeaders($body),
             'CONTENT_TYPE' => 'application/json',
         ], $body);
 
         $response->assertOk();
+    }
+
+    public function test_replayed_nonce_returns_403(): void
+    {
+        $body = json_encode(['event' => 'test']);
+        $headers = $this->signedHeaders((string) $body, nonce: 'replay-nonce');
+
+        $this->call('POST', '/webhook/incoming', [], [], [], [
+            ...$headers,
+            'CONTENT_TYPE' => 'application/json',
+        ], $body)->assertOk();
+
+        $this->call('POST', '/webhook/incoming', [], [], [], [
+            ...$headers,
+            'CONTENT_TYPE' => 'application/json',
+        ], $body)->assertForbidden();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function signedHeaders(string $body, string $secret = self::TEST_SECRET, ?string $nonce = null, ?int $timestamp = null): array
+    {
+        $timestamp ??= now()->getTimestamp();
+        $nonce ??= 'nonce-'.bin2hex(random_bytes(8));
+
+        return [
+            'HTTP_X_WEBHOOK_SIGNATURE' => hash_hmac('sha256', $timestamp.'.'.$body, $secret),
+            'HTTP_X_WEBHOOK_TIMESTAMP' => (string) $timestamp,
+            'HTTP_X_WEBHOOK_NONCE' => $nonce,
+        ];
     }
 }

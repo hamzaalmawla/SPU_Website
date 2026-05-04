@@ -30,27 +30,27 @@ final class PageServicePlaceholder implements PageServiceInterface
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function updateBaseMetadata(int $pageId, PageMetadataDTO $payload): bool
+    public function updateBaseMetadata(int $pageId, PageMetadataDTO $payload, ?int $userId = null): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function updateArabicTranslation(int $pageId, PageTranslationDTO $payload): bool
+    public function updateArabicTranslation(int $pageId, PageTranslationDTO $payload, ?int $userId = null): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function updateEnglishTranslation(int $pageId, PageTranslationDTO $payload): bool
+    public function updateEnglishTranslation(int $pageId, PageTranslationDTO $payload, ?int $userId = null): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function updateArabicSeo(int $pageId, PageSeoInputDTO $payload): bool
+    public function updateArabicSeo(int $pageId, PageSeoInputDTO $payload, ?int $userId = null): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function updateEnglishSeo(int $pageId, PageSeoInputDTO $payload): bool
+    public function updateEnglishSeo(int $pageId, PageSeoInputDTO $payload, ?int $userId = null): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }

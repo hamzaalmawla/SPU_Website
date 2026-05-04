@@ -9,6 +9,7 @@ use App\DTOs\HomepageSectionDataDTO;
 use App\DTOs\ValidationMessageDTO;
 use App\DTOs\ValidationResultDTO;
 use App\Support\HomepagePayloadMapper;
+use App\Support\UrlSanitizer;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
@@ -281,7 +282,7 @@ final class HomepageSectionValidator
                 return;
             }
 
-            if (! is_string($value) || preg_match('~^(\/|https?://|mailto:|tel:|#)~i', $value) !== 1) {
+            if (! is_string($value) || UrlSanitizer::sanitize($value) === null) {
                 $fail('The '.$attribute.' field must be a valid internal or absolute URL.');
             }
         };
@@ -294,7 +295,7 @@ final class HomepageSectionValidator
                 return;
             }
 
-            if (! is_string($value) || preg_match('~^(\/|https?://)~i', $value) !== 1) {
+            if (! is_string($value) || UrlSanitizer::sanitize($value, ['http', 'https'], true) === null) {
                 $fail('The '.$attribute.' field must be an internal asset path or absolute URL.');
             }
         };

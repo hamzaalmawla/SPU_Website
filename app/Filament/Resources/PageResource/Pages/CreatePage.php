@@ -15,6 +15,7 @@ use App\Models\User;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Gate;
 
 class CreatePage extends CreateRecord
 {
@@ -29,6 +30,8 @@ class CreatePage extends CreateRecord
 
     protected function handleRecordCreation(array $data): Model
     {
+        Gate::authorize('create', Page::class);
+
         /** @var User $user */
         $user = auth()->user();
 
@@ -54,30 +57,35 @@ class CreatePage extends CreateRecord
                 showInBreadcrumbs: $data['show_in_breadcrumbs'] ?? true,
                 showInNav: $data['show_in_nav'] ?? true,
             ),
+            $user->id,
         );
 
         // Save Arabic translation
         $this->pageService->updateArabicTranslation(
             $pageDTO->id,
             self::buildTranslationDTO($data, 'ar'),
+            $user->id,
         );
 
         // Save English translation
         $this->pageService->updateEnglishTranslation(
             $pageDTO->id,
             self::buildTranslationDTO($data, 'en'),
+            $user->id,
         );
 
         // Save Arabic SEO
         $this->pageService->updateArabicSeo(
             $pageDTO->id,
             self::buildSeoDTO($data, 'ar'),
+            $user->id,
         );
 
         // Save English SEO
         $this->pageService->updateEnglishSeo(
             $pageDTO->id,
             self::buildSeoDTO($data, 'en'),
+            $user->id,
         );
 
         Notification::make()
