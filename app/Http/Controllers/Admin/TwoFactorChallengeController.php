@@ -39,8 +39,10 @@ final class TwoFactorChallengeController extends Controller
             return redirect('/admin');
         }
 
-        // Already verified — skip challenge.
-        if ($request->session()->get('2fa_verified') === true) {
+        // Already verified for this exact user - skip challenge.
+        if ($request->session()->get('2fa_verified') === true
+            && (int) $request->session()->get('2fa_verified_user_id') === (int) $user->getAuthIdentifier()
+        ) {
             return redirect('/admin');
         }
 
@@ -78,6 +80,7 @@ final class TwoFactorChallengeController extends Controller
         }
 
         $request->session()->put('2fa_verified', true);
+        $request->session()->put('2fa_verified_user_id', (int) $user->getAuthIdentifier());
 
         $this->auditService->log(
             action: 'user.two_factor_verified',

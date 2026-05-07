@@ -14,8 +14,10 @@ use App\Models\HomepageDraft;
 use App\Models\HomepageSection;
 use App\Models\User;
 use App\Support\HomepagePayloadMapper;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * Orchestrates homepage section CRUD operations, delegating draft reading
@@ -80,6 +82,7 @@ final class HomepageSectionService implements HomepageSectionServiceInterface
 
     public function updateSection(string $key, HomepageSectionDataDTO $payload, string $locale): bool
     {
+        $actor = $this->authorizedHomepageActor();
         $this->validator->assertApprovedKey($key);
 
         $validation = $this->validateSectionPayload($key, $payload, $locale);
@@ -97,11 +100,11 @@ final class HomepageSectionService implements HomepageSectionServiceInterface
 
         $sections->put($key, $this->replaceSectionPayload($section, $payload, $locale));
 
-        $draft = $this->persistDraftSnapshot($sections->values()->all(), $this->resolveActorId());
+        $draft = $this->persistDraftSnapshot($sections->values()->all(), (int) $actor->getKey());
 
         $this->auditService->log(
             action: 'homepage.section_updated',
-            userId: $this->currentUserId(),
+            userId: (int) $actor->getKey(),
             entityType: HomepageDraft::class,
             entityId: (int) $draft->getKey(),
             metadata: [
@@ -116,6 +119,7 @@ final class HomepageSectionService implements HomepageSectionServiceInterface
 
     public function toggleSection(string $key, bool $enabled): bool
     {
+        $actor = $this->authorizedHomepageActor();
         $this->validator->assertApprovedKey($key);
 
         $sections = $this->editableSectionsIndexed();
@@ -127,11 +131,11 @@ final class HomepageSectionService implements HomepageSectionServiceInterface
 
         $sections->put($key, $this->withEnabledState($section, $enabled));
 
-        $draft = $this->persistDraftSnapshot($sections->values()->all(), $this->resolveActorId());
+        $draft = $this->persistDraftSnapshot($sections->values()->all(), (int) $actor->getKey());
 
         $this->auditService->log(
             action: 'homepage.section_updated',
-            userId: $this->currentUserId(),
+            userId: (int) $actor->getKey(),
             entityType: HomepageDraft::class,
             entityId: (int) $draft->getKey(),
             metadata: [
@@ -146,6 +150,7 @@ final class HomepageSectionService implements HomepageSectionServiceInterface
 
     public function reorderSections(array $orderedKeys): bool
     {
+        $actor = $this->authorizedHomepageActor();
         $normalizedKeys = array_values(array_filter($orderedKeys, static fn (mixed $key): bool => is_string($key) && $key !== ''));
 
         if (! $this->validator->hasExactApprovedKeySet($normalizedKeys)) {
@@ -167,12 +172,12 @@ final class HomepageSectionService implements HomepageSectionServiceInterface
                 ->sortBy(fn (HomepageSectionDTO $section): int => $section->sortOrder)
                 ->values()
                 ->all(),
-            $this->resolveActorId(),
+            (int) $actor->getKey(),
         );
 
         $this->auditService->log(
             action: 'homepage.section_updated',
-            userId: $this->currentUserId(),
+            userId: (int) $actor->getKey(),
             entityType: HomepageDraft::class,
             entityId: (int) $draft->getKey(),
             metadata: [
@@ -281,31 +286,14 @@ final class HomepageSectionService implements HomepageSectionServiceInterface
         return HomepagePayloadMapper::serializeSections($sections);
     }
 
-    private function resolveActorId(?int $preferred = null): int
-    {
-        if ($preferred !== null) {
-            return $preferred;
-        }
-
-        $currentUserId = $this->currentUserId();
-
-        if ($currentUserId !== null) {
-            return $currentUserId;
-        }
-
-        $fallbackId = User::query()->orderBy('id')->value('id');
-
-        if (is_int($fallbackId)) {
-            return $fallbackId;
-        }
-
-        throw new \RuntimeException('A user record is required before homepage drafts can be saved.');
-    }
-
-    private function currentUserId(): ?int
+    private function authorizedHomepageActor(): User
     {
         $user = $this->authFactory->guard((string) config('auth.admin_guard', 'web'))->user();
 
-        return $user !== null && is_numeric($user->getAuthIdentifier()) ? (int) $user->getAuthIdentifier() : null;
+        if (! $user instanceof User || Gate::forUser($user)->denies('manage-homepage')) {
+            throw new AuthorizationException('This user is not authorized to manage homepage sections.');
+        }
+
+        return $user;
     }
 }

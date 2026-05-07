@@ -75,6 +75,11 @@ final class PageServicePlaceholder implements PageServiceInterface
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
+    public function publishDueScheduled(): int
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
     public function getPublicPageBySlug(string $slug, string $locale): ?PageDTO
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');

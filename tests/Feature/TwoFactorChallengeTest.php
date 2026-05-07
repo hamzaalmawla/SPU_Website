@@ -59,17 +59,31 @@ class TwoFactorChallengeTest extends TestCase
             ->assertRedirect('/admin');
     }
 
-    public function test_challenge_page_redirects_when_already_verified(): void
+    public function test_challenge_page_redirects_when_already_verified_for_current_user(): void
     {
         $user = $this->createUserWith2FA();
 
         $this->actingAs($user, 'web');
 
-        // Simulate already verified session.
         session()->put('2fa_verified', true);
+        session()->put('2fa_verified_user_id', $user->id);
 
         $this->get('/admin/two-factor-challenge')
             ->assertRedirect('/admin');
+    }
+
+    public function test_challenge_page_does_not_accept_verification_for_different_user(): void
+    {
+        $user = $this->createUserWith2FA();
+
+        $this->actingAs($user, 'web');
+
+        session()->put('2fa_verified', true);
+        session()->put('2fa_verified_user_id', $user->id + 1);
+
+        $this->get('/admin/two-factor-challenge')
+            ->assertOk()
+            ->assertSee('Two-Factor Authentication');
     }
 
     // ------------------------------------------------------------------
@@ -88,6 +102,7 @@ class TwoFactorChallengeTest extends TestCase
             ->assertRedirect('/admin');
 
         $this->assertTrue(session('2fa_verified'));
+        $this->assertSame($user->id, session('2fa_verified_user_id'));
     }
 
     public function test_invalid_totp_code_returns_error(): void

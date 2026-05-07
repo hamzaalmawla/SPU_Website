@@ -195,6 +195,7 @@ final class MediaService implements MediaServiceInterface
 
         $allowed = ['title_ar', 'title_en', 'alt_text_ar', 'alt_text_en', 'caption_ar', 'caption_en', 'faculty_scope_slug'];
         $filtered = array_intersect_key($metadata, array_flip($allowed));
+        $filtered = $this->filterAllowedMetadataScope($filtered, $asset, $userId);
 
         if ($filtered === []) {
             return true;
@@ -386,7 +387,11 @@ final class MediaService implements MediaServiceInterface
 
         $user = User::query()->find((int) $payload['uploaded_by']);
 
-        if ($user instanceof User && $user->role_slug === 'faculty_editor' && is_string($user->faculty_scope_slug)) {
+        if ($user instanceof User && $user->role_slug === 'faculty_editor') {
+            if (! is_string($user->faculty_scope_slug) || $user->faculty_scope_slug === '') {
+                throw new AuthorizationException('Faculty editors must have a faculty scope to upload media.');
+            }
+
             return $user->faculty_scope_slug;
         }
 
@@ -419,5 +424,29 @@ final class MediaService implements MediaServiceInterface
         }
 
         return $user;
+    }
+
+    /** @param array<string, mixed> $metadata */
+    private function filterAllowedMetadataScope(array $metadata, MediaAsset $asset, int $userId): array
+    {
+        if (! array_key_exists('faculty_scope_slug', $metadata)) {
+            return $metadata;
+        }
+
+        $user = User::query()->find($userId);
+
+        if (! $user instanceof User) {
+            throw new AuthorizationException('A valid authenticated user is required to manage media.');
+        }
+
+        if ($user->role_slug !== 'faculty_editor') {
+            return $metadata;
+        }
+
+        if ($metadata['faculty_scope_slug'] !== $asset->faculty_scope_slug || $metadata['faculty_scope_slug'] !== $user->faculty_scope_slug) {
+            throw new AuthorizationException('Faculty editors cannot change media faculty scope.');
+        }
+
+        return $metadata;
     }
 }

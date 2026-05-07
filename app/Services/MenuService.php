@@ -843,7 +843,9 @@ final class MenuService implements MenuServiceInterface
             $this->cacheService->forget('navigation.payload.'.$locale);
         }
 
-        $this->cacheService->flushTags(['public-pages', 'public-shell', 'navigation']);
+        if (! $this->cacheService->flushTags(['public-pages', 'public-shell', 'navigation'])) {
+            $this->cacheService->flushAll();
+        }
     }
 
     /**

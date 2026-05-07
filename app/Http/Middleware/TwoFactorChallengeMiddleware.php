@@ -35,8 +35,10 @@ final class TwoFactorChallengeMiddleware
             return $next($request);
         }
 
-        // Skip if already verified in this session.
-        if ($request->session()->get('2fa_verified') === true) {
+        // Skip only when the verification belongs to this authenticated user.
+        if ($request->session()->get('2fa_verified') === true
+            && (int) $request->session()->get('2fa_verified_user_id') === (int) $user->getAuthIdentifier()
+        ) {
             return $next($request);
         }
 

@@ -15,8 +15,12 @@ use App\DTOs\HomepageSectionTranslationDTO;
 use App\DTOs\PreviewDTO;
 use App\DTOs\PreviewPayloadDTO;
 use App\Models\HomepageDraft;
+use App\Models\Page;
 use App\Models\PreviewToken;
+use App\Models\User;
 use App\Support\HomepagePayloadMapper;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * Preview assembly orchestrator.
@@ -37,6 +41,8 @@ final class PreviewService implements PreviewServiceInterface
 
     public function createToken(string $targetType, ?int $targetId, string $locale, int $userId, ?string $device = null): PreviewDTO
     {
+        $this->authorizePreview($targetType, $targetId, $userId);
+
         $result = $this->tokenStore->create($targetType, $targetId, $locale, $userId, $device);
 
         return $this->buildPreviewDto($result['model'], rawToken: $result['raw_token']);
@@ -59,6 +65,35 @@ final class PreviewService implements PreviewServiceInterface
     public function invalidateToken(string $token): bool
     {
         return $this->tokenStore->invalidate($token);
+    }
+
+    private function authorizePreview(string $targetType, ?int $targetId, int $userId): void
+    {
+        $user = User::query()->find($userId);
+
+        if (! $user instanceof User || Gate::forUser($user)->denies('preview-content')) {
+            throw new AuthorizationException('This user is not authorized to create preview tokens.');
+        }
+
+        if ($targetType === 'homepage') {
+            if ($targetId !== null || Gate::forUser($user)->denies('manage-homepage')) {
+                throw new AuthorizationException('This user is not authorized to preview the homepage.');
+            }
+
+            return;
+        }
+
+        if ($targetType === 'page' && $targetId !== null) {
+            $page = Page::query()->find($targetId);
+
+            if (! $page instanceof Page || Gate::forUser($user)->denies('update', $page)) {
+                throw new AuthorizationException('This user is not authorized to preview this page.');
+            }
+
+            return;
+        }
+
+        throw new AuthorizationException('This preview target is not supported.');
     }
 
     // ------------------------------------------------------------------

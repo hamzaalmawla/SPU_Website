@@ -558,11 +558,15 @@ final class SettingsService implements SettingsServiceInterface
             $this->cacheService->forget($this->staffAccessCacheKey());
         }
 
-        $this->cacheService->flushTags(
+        $flushed = $this->cacheService->flushTags(
             in_array($group, ['navigation', 'footer', 'public_shell'], true)
                 ? ['public-pages', 'public-shell', 'settings', 'navigation']
                 : ['settings'],
         );
+
+        if (! $flushed) {
+            $this->cacheService->flushAll();
+        }
     }
 
     /**

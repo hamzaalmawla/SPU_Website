@@ -37,6 +37,11 @@ interface HomepagePublishingServiceInterface
     public function schedulePublish(int $draftId, DateTimeInterface $publishAt, int $userId): bool;
 
     /**
+     * Publish all due scheduled homepage drafts.
+     */
+    public function publishDueScheduled(): int;
+
+    /**
      * Check whether an editable (draft or scheduled) homepage draft exists.
      */
     public function hasEditableDraft(): bool;

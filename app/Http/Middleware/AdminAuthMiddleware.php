@@ -6,6 +6,7 @@ namespace App\Http\Middleware;
 
 use App\Contracts\AuthServiceInterface;
 use Closure;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -33,7 +34,10 @@ final class AdminAuthMiddleware
 
         $user = $this->authFactory->guard($guard)->user();
 
-        if ($user !== null && $this->authService->isLocked($user)) {
+        if ($user === null
+            || $this->authService->isLocked($user)
+            || ! $this->userCanAccessAdmin($user)
+        ) {
             $this->authFactory->guard($guard)->logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
@@ -44,5 +48,12 @@ final class AdminAuthMiddleware
         $this->authService->extendSession();
 
         return $next($request);
+    }
+
+    private function userCanAccessAdmin(Authenticatable $user): bool
+    {
+        return $this->authService->checkRole($user, 'super_admin')
+            || $this->authService->checkRole($user, 'editor')
+            || $this->authService->checkRole($user, 'faculty_editor');
     }
 }

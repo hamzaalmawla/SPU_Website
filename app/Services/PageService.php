@@ -27,6 +27,7 @@ use App\Support\HtmlSanitizer;
 use App\Support\UrlSanitizer;
 use DateTimeInterface;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
@@ -110,6 +111,7 @@ final class PageService implements PageServiceInterface
         }
 
         $this->authorizePageWrite($userId, 'update', $page);
+        $this->assertAllowedFacultyScope($userId, $page, $payload->facultyScopeSlug);
 
         $updated = $page->update([
             'parent_id' => $payload->parentPageId,
@@ -233,15 +235,21 @@ final class PageService implements PageServiceInterface
 
         $this->authorizePageWrite($userId, 'publish', $page);
 
-        if (! $this->isPublishable($page)) {
-            return false;
-        }
-
         $draft = PageDraft::query()
             ->where('page_id', $pageId)
             ->whereIn('status', self::EDITABLE_STATUSES)
             ->latest('updated_at')
             ->first();
+
+        if ($draft instanceof PageDraft && is_array($draft->payload_json)) {
+            $preview = $this->draftService->mapDraftPayloadToPageDto($page, $draft->payload_json, 'ar');
+
+            if (! $this->isPublishableDto($preview)) {
+                return false;
+            }
+        } elseif (! $this->isPublishable($page)) {
+            return false;
+        }
 
         DB::transaction(function () use ($page, $draft, $userId): void {
             if ($draft instanceof PageDraft && is_array($draft->payload_json)) {
@@ -257,6 +265,12 @@ final class PageService implements PageServiceInterface
                     'approved_by' => $userId,
                     'published_at' => now(),
                 ])->save();
+            }
+
+            $page->refresh()->loadMissing('translations');
+
+            if (! $this->isPublishable($page)) {
+                throw new \RuntimeException('The page is not publishable after applying the latest draft.');
             }
 
             $page->forceFill([
@@ -308,33 +322,71 @@ final class PageService implements PageServiceInterface
 
         $this->authorizePageWrite($userId, 'publish', $page);
 
+        $scheduledAt = Carbon::parse($publishAt->format(DateTimeInterface::ATOM));
+
+        if ($scheduledAt->lessThanOrEqualTo(now())) {
+            return false;
+        }
+
         $draft = PageDraft::query()
             ->where('page_id', $pageId)
+            ->whereIn('status', self::EDITABLE_STATUSES)
             ->latest('updated_at')
             ->first();
+
+        if ($draft instanceof PageDraft && is_array($draft->payload_json)) {
+            $preview = $this->draftService->mapDraftPayloadToPageDto($page, $draft->payload_json, 'ar');
+
+            if (! $this->isPublishableDto($preview)) {
+                return false;
+            }
+        } elseif (! $this->isPublishable($page)) {
+            return false;
+        }
 
         if ($draft instanceof PageDraft) {
             $draft->forceFill([
                 'status' => 'scheduled',
                 'updated_by' => $userId,
-                'scheduled_at' => $publishAt,
+                'scheduled_at' => $scheduledAt,
             ])->save();
         }
 
         $updated = $page->update([
             'status' => 'scheduled',
-            'publish_at' => $publishAt,
+            'publish_at' => $scheduledAt,
             'updated_by' => $userId,
         ]);
 
         if ($updated) {
             $this->touchPageCaches((int) $page->getKey());
             $this->auditService->log('page.schedule', $userId, Page::class, (int) $page->getKey(), [
-                'publish_at' => $publishAt->format(DATE_ATOM),
+                'publish_at' => $scheduledAt->format(DATE_ATOM),
             ]);
         }
 
         return $updated;
+    }
+
+    public function publishDueScheduled(): int
+    {
+        $published = 0;
+
+        Page::query()
+            ->where('status', 'scheduled')
+            ->whereNotNull('publish_at')
+            ->where('publish_at', '<=', now())
+            ->orderBy('publish_at')
+            ->get()
+            ->each(function (Page $page) use (&$published): void {
+                $actorId = $this->scheduledPublishActorId($page);
+
+                if ($actorId !== null && $this->publish((int) $page->getKey(), $actorId)) {
+                    $published++;
+                }
+            });
+
+        return $published;
     }
 
     // ── Delegated public reads ──
@@ -469,7 +521,9 @@ final class PageService implements PageServiceInterface
 
     private function touchPageCaches(int $pageId): void
     {
-        $this->cacheService->flushTags(['pages', 'public-pages', 'public-shell', 'seo', 'sitemap', 'navigation', 'settings']);
+        if (! $this->cacheService->flushTags(['pages', 'public-pages', 'public-shell', 'seo', 'sitemap', 'navigation', 'settings'])) {
+            $this->cacheService->flushAll();
+        }
     }
 
     /** @param  array<string, mixed>|null  $payload */
@@ -497,6 +551,14 @@ final class PageService implements PageServiceInterface
         return $page->translations->contains(fn ($t) => ! empty($t->title));
     }
 
+    private function isPublishableDto(PageDTO $page): bool
+    {
+        return $page->metadata->slug !== ''
+            && $page->metadata->template !== ''
+            && $page->metadata->isEnabled
+            && (($page->arabicTranslation?->title ?? '') !== '' || ($page->englishTranslation?->title ?? '') !== '');
+    }
+
     private function authorizePageWrite(int $userId, string $ability, Page $page): void
     {
         $user = User::query()->find($userId);
@@ -513,5 +575,33 @@ final class PageService implements PageServiceInterface
         if (! $user instanceof User || Gate::forUser($user)->denies($ability, Page::class)) {
             throw new AuthorizationException('This user is not authorized to create pages.');
         }
+    }
+
+    private function assertAllowedFacultyScope(int $userId, Page $page, ?string $requestedScope): void
+    {
+        $user = User::query()->find($userId);
+
+        if (! $user instanceof User || $user->role_slug !== 'faculty_editor') {
+            return;
+        }
+
+        if (! is_string($user->faculty_scope_slug) || $user->faculty_scope_slug === '') {
+            throw new AuthorizationException('Faculty editors must have a faculty scope.');
+        }
+
+        if ($requestedScope !== $page->faculty_scope_slug || $requestedScope !== $user->faculty_scope_slug) {
+            throw new AuthorizationException('Faculty editors cannot change page faculty scope.');
+        }
+    }
+
+    private function scheduledPublishActorId(Page $page): ?int
+    {
+        foreach ([$page->approved_by, $page->updated_by, $page->created_by] as $actorId) {
+            if (is_numeric($actorId) && User::query()->whereKey((int) $actorId)->exists()) {
+                return (int) $actorId;
+            }
+        }
+
+        return null;
     }
 }

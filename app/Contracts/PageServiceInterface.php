@@ -80,6 +80,11 @@ interface PageServiceInterface
     public function schedulePublish(int $pageId, DateTimeInterface $publishAt, int $userId): bool;
 
     /**
+     * Publish all due scheduled pages.
+     */
+    public function publishDueScheduled(): int;
+
+    /**
      * Retrieve the public localized page by slug using the documented content precedence rule.
      */
     public function getPublicPageBySlug(string $slug, string $locale): ?PageDTO;

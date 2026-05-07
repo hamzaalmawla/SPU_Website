@@ -8,10 +8,12 @@ use App\Contracts\AuditServiceInterface;
 use App\Contracts\AuthServiceInterface;
 use App\DTOs\LoginCredentialsDTO;
 use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Contracts\Session\Session;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * Framework-backed authentication service for admin access checks.
@@ -48,6 +50,12 @@ final class AuthService implements AuthServiceInterface
             return false;
         }
 
+        if ($user instanceof User && ! $this->canAccessAdmin($user)) {
+            $this->logLoginFailure($user, $email);
+
+            return false;
+        }
+
         $authenticated = $this->authFactory->guard($this->guardName())->attempt([
             'email' => $email,
             'password' => $password,
@@ -66,6 +74,7 @@ final class AuthService implements AuthServiceInterface
         }
 
         $this->clearFailedAttempts($authenticatedUser);
+        $this->clearTwoFactorVerification();
         $this->extendSession();
         $this->auditService->log(
             action: 'user.login',
@@ -118,6 +127,7 @@ final class AuthService implements AuthServiceInterface
         $this->authFactory->guard($this->guardName())->logout();
 
         if ($this->session->isStarted()) {
+            $this->clearTwoFactorVerification();
             $this->session->invalidate();
             $this->session->regenerateToken();
         }
@@ -140,6 +150,10 @@ final class AuthService implements AuthServiceInterface
 
         if (! $user instanceof User || ! $actor instanceof User) {
             return false;
+        }
+
+        if (Gate::forUser($actor)->denies('update', $user)) {
+            throw new AuthorizationException('This user is not authorized to update users.');
         }
 
         $wasLocked = $user->isAccountLocked();
@@ -200,6 +214,20 @@ final class AuthService implements AuthServiceInterface
     private function guardName(): string
     {
         return (string) config('auth.admin_guard', 'web');
+    }
+
+    private function canAccessAdmin(User $user): bool
+    {
+        return in_array($user->role_slug, ['super_admin', 'editor', 'faculty_editor'], true);
+    }
+
+    private function clearTwoFactorVerification(): void
+    {
+        if (! $this->session->isStarted()) {
+            return;
+        }
+
+        $this->session->forget(['2fa_verified', '2fa_verified_user_id']);
     }
 
     private function clearFailedAttempts(User $user): void

@@ -271,6 +271,28 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
         return true;
     }
 
+    public function publishDueScheduled(): int
+    {
+        $published = 0;
+
+        HomepageDraft::query()
+            ->where('target_type', 'homepage')
+            ->where('status', 'scheduled')
+            ->whereNotNull('scheduled_at')
+            ->where('scheduled_at', '<=', now())
+            ->orderBy('scheduled_at')
+            ->get()
+            ->each(function (HomepageDraft $draft) use (&$published): void {
+                $actorId = $this->scheduledPublishActorId($draft);
+
+                if ($actorId !== null && $this->publish((int) $draft->getKey(), $actorId)) {
+                    $published++;
+                }
+            });
+
+        return $published;
+    }
+
     /**
      * @param  array<int, HomepageSectionDTO>  $sections
      */
@@ -520,8 +542,22 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
     {
         foreach (['ar', 'en'] as $locale) {
             $this->cacheService->forget('public_pages:'.sha1($locale.'|'.$locale.'|'));
-            $this->cacheService->flushTags(['public-pages', 'public-shell', 'public-shell:'.$locale]);
+
+            if (! $this->cacheService->flushTags(['public-pages', 'public-shell', 'public-shell:'.$locale])) {
+                $this->cacheService->flushAll();
+            }
         }
+    }
+
+    private function scheduledPublishActorId(HomepageDraft $draft): ?int
+    {
+        foreach ([$draft->approved_by, $draft->updated_by, $draft->created_by] as $actorId) {
+            if (is_numeric($actorId) && User::query()->whereKey((int) $actorId)->exists()) {
+                return (int) $actorId;
+            }
+        }
+
+        return null;
     }
 
     /**

@@ -14,6 +14,8 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Filament custom page for managing TOTP two-factor authentication.
@@ -62,13 +64,19 @@ class TwoFactorSetup extends Page implements HasForms
 
     public static function canAccess(): bool
     {
-        return auth()->check();
+        $user = auth()->user();
+
+        return $user instanceof User
+            && ! $user->isAccountLocked()
+            && in_array($user->role_slug, ['super_admin', 'editor', 'faculty_editor'], true);
     }
 
     public function mount(): void
     {
         /** @var User $user */
         $user = auth()->user();
+
+        abort_unless($user instanceof User && static::canAccess(), 403);
 
         $this->twoFactorEnabled = (bool) $user->two_factor_enabled;
     }
@@ -120,8 +128,9 @@ class TwoFactorSetup extends Page implements HasForms
             ->label('Enable Two-Factor Authentication')
             ->icon('heroicon-o-shield-check')
             ->color('success')
-            ->action(function (): void {
-                $this->startEnrollment();
+            ->form($this->currentPasswordForm())
+            ->action(function (array $data): void {
+                $this->startEnrollment($data);
             });
     }
 
@@ -134,8 +143,9 @@ class TwoFactorSetup extends Page implements HasForms
             ->requiresConfirmation()
             ->modalHeading('Disable Two-Factor Authentication')
             ->modalDescription('Are you sure you want to disable two-factor authentication? This will reduce the security of your account.')
-            ->action(function (): void {
-                $this->disableTwoFactor();
+            ->form($this->currentPasswordForm())
+            ->action(function (array $data): void {
+                $this->disableTwoFactor($data);
             });
     }
 
@@ -166,8 +176,9 @@ class TwoFactorSetup extends Page implements HasForms
             ->requiresConfirmation()
             ->modalHeading('Regenerate Recovery Codes')
             ->modalDescription('This will invalidate your existing recovery codes and generate new ones. Make sure to save the new codes.')
-            ->action(function (): void {
-                $this->regenerateRecoveryCodes();
+            ->form($this->currentPasswordForm())
+            ->action(function (array $data): void {
+                $this->regenerateRecoveryCodes($data);
             });
     }
 
@@ -175,10 +186,11 @@ class TwoFactorSetup extends Page implements HasForms
     // Actions
     // ──────────────────────────────────────────────
 
-    public function startEnrollment(): void
+    public function startEnrollment(array $data = []): void
     {
         /** @var User $user */
         $user = auth()->user();
+        $this->assertCurrentPassword($user, $data);
 
         $enrollment = $this->authenticator->generateSecret($user);
 
@@ -217,10 +229,11 @@ class TwoFactorSetup extends Page implements HasForms
             ->send();
     }
 
-    public function disableTwoFactor(): void
+    public function disableTwoFactor(array $data = []): void
     {
         /** @var User $user */
         $user = auth()->user();
+        $this->assertCurrentPassword($user, $data);
 
         $user->forceFill([
             'two_factor_enabled' => false,
@@ -237,7 +250,7 @@ class TwoFactorSetup extends Page implements HasForms
         $this->recoveryCodes = [];
 
         // Clear the 2FA session flag so it doesn't persist after disabling.
-        session()->forget('2fa_verified');
+        session()->forget(['2fa_verified', '2fa_verified_user_id']);
 
         Notification::make()
             ->title('Two-factor authentication disabled')
@@ -246,10 +259,11 @@ class TwoFactorSetup extends Page implements HasForms
             ->send();
     }
 
-    public function regenerateRecoveryCodes(): void
+    public function regenerateRecoveryCodes(array $data = []): void
     {
         /** @var User $user */
         $user = auth()->user();
+        $this->assertCurrentPassword($user, $data);
 
         $this->recoveryCodes = $this->authenticator->generateRecoveryCodes($user);
         $this->showRecoveryCodes = true;
@@ -259,5 +273,30 @@ class TwoFactorSetup extends Page implements HasForms
             ->body('Your previous recovery codes have been invalidated. Save these new codes securely.')
             ->success()
             ->send();
+    }
+
+    /** @return array<int, TextInput> */
+    private function currentPasswordForm(): array
+    {
+        return [
+            TextInput::make('current_password')
+                ->label('Current password')
+                ->password()
+                ->required()
+                ->revealable()
+                ->autocomplete('current-password'),
+        ];
+    }
+
+    /** @param array<string, mixed> $data */
+    private function assertCurrentPassword(?User $user, array $data): void
+    {
+        $password = $data['current_password'] ?? null;
+
+        if (! $user instanceof User || ! is_string($password) || ! Hash::check($password, (string) $user->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => __('The current password is incorrect.'),
+            ]);
+        }
     }
 }
