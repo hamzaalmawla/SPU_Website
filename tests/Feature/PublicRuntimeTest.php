@@ -404,6 +404,7 @@ class PublicRuntimeTest extends TestCase
             ->assertSeeInOrder(['Preview Homepage Hero', 'Draft Section'])
             ->assertSee('Draft homepage summary')
             ->assertSee('Explore Draft')
+            ->assertSee('/images/slider-1.webp')
             ->assertSee('Draft Faculty')
             ->assertSee('Draft Stat')
             ->assertSee('Draft Feature');

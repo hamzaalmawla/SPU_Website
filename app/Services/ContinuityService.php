@@ -55,7 +55,7 @@ final class ContinuityService implements ContinuityServiceInterface
             $now = now();
 
             $existing = UnresolvedLegacyRequest::query()
-                ->where('url', $request->url)
+                ->where('url_hash', hash('sha256', $request->url))
                 ->where('method', $request->method)
                 ->latest('id')
                 ->first();
@@ -72,6 +72,7 @@ final class ContinuityService implements ContinuityServiceInterface
             } else {
                 UnresolvedLegacyRequest::query()->create([
                     'url' => $request->url,
+                    'url_hash' => hash('sha256', $request->url),
                     'query_string' => $request->queryString,
                     'method' => $request->method,
                     'referrer' => $request->referrer,

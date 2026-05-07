@@ -9,10 +9,13 @@ use App\Contracts\MediaServiceInterface;
 use App\DTOs\MediaUploadResultDTO;
 use App\DTOs\PaginatedResultDTO;
 use App\Models\MediaAsset;
+use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -87,6 +90,8 @@ final class MediaService implements MediaServiceInterface
             ]);
         }
 
+        $this->authorizeMediaClassWrite($payload['uploaded_by'] ?? null, 'create');
+
         $this->validateFile($file);
 
         $directory = (string) ($payload['directory'] ?? 'media');
@@ -133,6 +138,7 @@ final class MediaService implements MediaServiceInterface
             'title_en' => $payload['title_en'] ?? null,
             'path' => $storedPath,
             'uploaded_by' => $payload['uploaded_by'] ?? null,
+            'faculty_scope_slug' => $this->resolveFacultyScopeForUpload($payload),
         ]);
 
         $this->auditService->log(
@@ -156,6 +162,8 @@ final class MediaService implements MediaServiceInterface
         if ($asset === null) {
             return false;
         }
+
+        $this->authorizeMediaWrite($userId, 'delete', $asset);
 
         $deleted = (bool) $asset->delete();
 
@@ -182,7 +190,9 @@ final class MediaService implements MediaServiceInterface
             return false;
         }
 
-        $allowed = ['title_ar', 'title_en', 'alt_text_ar', 'alt_text_en', 'caption_ar', 'caption_en'];
+        $this->authorizeMediaWrite($userId, 'update', $asset);
+
+        $allowed = ['title_ar', 'title_en', 'alt_text_ar', 'alt_text_en', 'caption_ar', 'caption_en', 'faculty_scope_slug'];
         $filtered = array_intersect_key($metadata, array_flip($allowed));
 
         if ($filtered === []) {
@@ -268,6 +278,10 @@ final class MediaService implements MediaServiceInterface
             $query->where('uploaded_by', $filters['uploaded_by']);
         }
 
+        if (isset($filters['faculty_scope_slug']) && is_string($filters['faculty_scope_slug']) && $filters['faculty_scope_slug'] !== '') {
+            $query->where('faculty_scope_slug', $filters['faculty_scope_slug']);
+        }
+
         $query->orderByDesc('created_at');
 
         return $query;
@@ -340,5 +354,51 @@ final class MediaService implements MediaServiceInterface
             altText: $asset->alt_text_ar ?? $asset->alt_text_en,
             caption: $asset->caption_ar ?? $asset->caption_en,
         );
+    }
+
+    private function authorizeMediaClassWrite(mixed $userId, string $ability): void
+    {
+        if (! is_numeric($userId)) {
+            return;
+        }
+
+        $user = User::query()->find((int) $userId);
+
+        if (! $user instanceof User || Gate::forUser($user)->denies($ability, MediaAsset::class)) {
+            throw new AuthorizationException('This user is not authorized to manage media.');
+        }
+    }
+
+    private function authorizeMediaWrite(?int $userId, string $ability, MediaAsset $asset): void
+    {
+        if ($userId === null) {
+            return;
+        }
+
+        $user = User::query()->find($userId);
+
+        if (! $user instanceof User || Gate::forUser($user)->denies($ability, $asset)) {
+            throw new AuthorizationException('This user is not authorized to modify the requested media asset.');
+        }
+    }
+
+    /** @param array<string, mixed> $payload */
+    private function resolveFacultyScopeForUpload(array $payload): ?string
+    {
+        if (isset($payload['faculty_scope_slug']) && is_string($payload['faculty_scope_slug']) && $payload['faculty_scope_slug'] !== '') {
+            return $payload['faculty_scope_slug'];
+        }
+
+        if (! is_numeric($payload['uploaded_by'] ?? null)) {
+            return null;
+        }
+
+        $user = User::query()->find((int) $payload['uploaded_by']);
+
+        if ($user instanceof User && $user->role_slug === 'faculty_editor' && is_string($user->faculty_scope_slug)) {
+            return $user->faculty_scope_slug;
+        }
+
+        return null;
     }
 }

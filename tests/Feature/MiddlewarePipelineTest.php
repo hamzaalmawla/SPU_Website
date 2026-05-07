@@ -54,13 +54,16 @@ class MiddlewarePipelineTest extends TestCase
 
     public function test_public_routes_include_security_headers(): void
     {
-        $this->get('/en')
+        $response = $this->get('/en')
             ->assertOk()
             ->assertHeader('X-Content-Type-Options', 'nosniff')
             ->assertHeader('Referrer-Policy', 'no-referrer')
             ->assertHeader('X-Frame-Options', 'SAMEORIGIN')
             ->assertHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()')
             ->assertHeader('Content-Security-Policy');
+
+        $this->assertStringContainsString("script-src 'self' 'unsafe-inline' 'unsafe-eval'", (string) $response->headers->get('Content-Security-Policy'));
+        $this->assertStringNotContainsString("script-src 'self' 'unsafe-inline' https:", (string) $response->headers->get('Content-Security-Policy'));
     }
 
     public function test_admin_routes_include_security_headers(): void

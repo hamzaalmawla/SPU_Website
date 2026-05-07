@@ -6,6 +6,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\MediaAssetResource\Pages;
 use App\Models\MediaAsset;
+use App\Models\User;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Tabs;
@@ -18,6 +19,7 @@ use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
 
 /**
@@ -43,6 +45,26 @@ class MediaAssetResource extends Resource
     public static function canAccess(): bool
     {
         return Gate::allows('manage-media');
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $user = auth()->user();
+
+        if (! $user instanceof User) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if (in_array($user->role_slug, ['super_admin', 'editor'], true)) {
+            return $query;
+        }
+
+        if ($user->role_slug !== 'faculty_editor' || ! is_string($user->faculty_scope_slug) || $user->faculty_scope_slug === '') {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where('faculty_scope_slug', $user->faculty_scope_slug);
     }
 
     public static function form(Form $form): Form
@@ -119,7 +141,7 @@ class MediaAssetResource extends Resource
                     ])
                     ->query(function ($query, array $data) {
                         if (filled($data['value'] ?? null)) {
-                            $query->where('mime_type', 'like', $data['value'] . '%');
+                            $query->where('mime_type', 'like', $data['value'].'%');
                         }
                     }),
             ])
@@ -199,6 +221,13 @@ class MediaAssetResource extends Resource
                     TextInput::make('caption_ar')
                         ->label('Caption (AR)')
                         ->maxLength(1000),
+
+                    TextInput::make('faculty_scope_slug')
+                        ->label('Faculty Scope Slug')
+                        ->helperText('Optional. Faculty editors only access media matching their scope.')
+                        ->maxLength(255)
+                        ->alphaDash()
+                        ->visible(fn (): bool => in_array(auth()->user()?->role_slug, ['super_admin', 'editor'], true)),
                 ]),
             ]);
     }
@@ -231,13 +260,13 @@ class MediaAssetResource extends Resource
     private static function formatFileSize(int $bytes): string
     {
         if ($bytes >= 1048576) {
-            return round($bytes / 1048576, 1) . ' MB';
+            return round($bytes / 1048576, 1).' MB';
         }
 
         if ($bytes >= 1024) {
-            return round($bytes / 1024, 1) . ' KB';
+            return round($bytes / 1024, 1).' KB';
         }
 
-        return $bytes . ' B';
+        return $bytes.' B';
     }
 }

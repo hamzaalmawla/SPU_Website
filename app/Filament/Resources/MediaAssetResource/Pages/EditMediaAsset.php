@@ -26,14 +26,20 @@ class EditMediaAsset extends EditRecord
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
         /** @var MediaAsset $record */
-        $this->mediaService->updateMetadata($record->id, [
+        $metadata = [
             'title_ar' => $data['title_ar'] ?? null,
             'title_en' => $data['title_en'] ?? null,
             'alt_text_ar' => $data['alt_text_ar'] ?? null,
             'alt_text_en' => $data['alt_text_en'] ?? null,
             'caption_ar' => $data['caption_ar'] ?? null,
             'caption_en' => $data['caption_en'] ?? null,
-        ], (int) auth()->id());
+        ];
+
+        if (array_key_exists('faculty_scope_slug', $data)) {
+            $metadata['faculty_scope_slug'] = $data['faculty_scope_slug'];
+        }
+
+        $this->mediaService->updateMetadata($record->id, $metadata, (int) auth()->id());
 
         Notification::make()
             ->title('Media metadata updated')

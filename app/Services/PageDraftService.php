@@ -87,6 +87,7 @@ final class PageDraftService
             'parent_id' => $metadata->parentPageId,
             'template' => $metadata->template,
             'slug' => $metadata->slug,
+            'faculty_scope_slug' => $metadata->facultyScopeSlug,
             'status' => $metadata->status,
             'is_enabled' => $metadata->isEnabled,
             'show_in_breadcrumbs' => $metadata->showInBreadcrumbs,
@@ -198,6 +199,7 @@ final class PageDraftService
             isEnabled: $this->boolFromDraft($payload, 'isEnabled', (bool) $page->is_enabled),
             showInBreadcrumbs: $this->boolFromDraft($payload, 'showInBreadcrumbs', (bool) $page->show_in_breadcrumbs),
             showInNav: $this->boolFromDraft($payload, 'showInNav', (bool) $page->show_in_nav),
+            facultyScopeSlug: $this->stringFromDraft($payload, 'facultyScopeSlug') ?? (is_string($page->faculty_scope_slug) ? $page->faculty_scope_slug : null),
         );
     }
 
@@ -280,7 +282,7 @@ final class PageDraftService
     /** @return array<string, mixed> */
     private function metadataPayloadToArray(PageMetadataDTO $p): array
     {
-        return ['slug' => $p->slug, 'template' => $p->template, 'isHomepageShell' => $p->isHomepageShell, 'status' => $p->status, 'parentPageId' => $p->parentPageId, 'publishAt' => $p->publishAt, 'contentJson' => $p->contentJson, 'isEnabled' => $p->isEnabled, 'showInBreadcrumbs' => $p->showInBreadcrumbs, 'showInNav' => $p->showInNav];
+        return ['slug' => $p->slug, 'template' => $p->template, 'isHomepageShell' => $p->isHomepageShell, 'status' => $p->status, 'parentPageId' => $p->parentPageId, 'publishAt' => $p->publishAt, 'contentJson' => $p->contentJson, 'isEnabled' => $p->isEnabled, 'showInBreadcrumbs' => $p->showInBreadcrumbs, 'showInNav' => $p->showInNav, 'facultyScopeSlug' => $p->facultyScopeSlug];
     }
 
     /** @return array<string, mixed> */
@@ -299,6 +301,7 @@ final class PageDraftService
     private function stringFromDraft(array $payload, string $key): ?string
     {
         $value = $payload[$key] ?? $payload[$this->toSnakeCase($key)] ?? null;
+
         return is_string($value) && $value !== '' ? $value : null;
     }
 
@@ -306,6 +309,7 @@ final class PageDraftService
     private function boolFromDraft(array $payload, string $key, bool $default): bool
     {
         $value = $payload[$key] ?? $payload[$this->toSnakeCase($key)] ?? null;
+
         return is_bool($value) ? $value : $default;
     }
 
@@ -313,16 +317,18 @@ final class PageDraftService
     private function intFromDraft(array $payload, string $key): ?int
     {
         $value = $payload[$key] ?? $payload[$this->toSnakeCase($key)] ?? null;
+
         return is_int($value) ? $value : null;
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param  array<string, mixed>  $payload
      * @return array<int, array<string, mixed>>|null
      */
     private function listFromDraft(array $payload, string $key): ?array
     {
         $value = $payload[$key] ?? $payload[$this->toSnakeCase($key)] ?? null;
+
         return is_array($value) ? array_values(array_filter($value, static fn (mixed $item): bool => is_array($item))) : null;
     }
 
@@ -340,6 +346,7 @@ final class PageDraftService
         if ('/'.trim($payload['url'], '/') === '/'.$locale.'/home') {
             $payload['url'] = '/'.$locale;
         }
+
         return $payload;
     }
 }

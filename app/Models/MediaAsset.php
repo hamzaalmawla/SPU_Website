@@ -37,6 +37,7 @@ class MediaAsset extends Model
         'webp_path',
         'srcset_json',
         'uploaded_by',
+        'faculty_scope_slug',
     ];
 
     protected function casts(): array

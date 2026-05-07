@@ -24,6 +24,7 @@ class UnresolvedLegacyRequest extends Model
      */
     protected $fillable = [
         'url',
+        'url_hash',
         'query_string',
         'method',
         'referrer',

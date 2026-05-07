@@ -141,6 +141,7 @@ final class PreviewService implements PreviewServiceInterface
             return $this->homepageSectionService->getPublicHomepage($locale);
         }
 
+        $fallbackSections = collect($this->homepageSectionService->getPublicHomepage($locale)->sections)->keyBy('key');
         $approvedSections = [];
 
         foreach ($sections as $section) {
@@ -154,7 +155,13 @@ final class PreviewService implements PreviewServiceInterface
                 continue;
             }
 
-            $approvedSections[$key] = $this->sectionFromDraft($section, $locale);
+            $fallback = $fallbackSections->get($key);
+
+            $approvedSections[$key] = $this->sectionFromDraft(
+                $section,
+                $locale,
+                $fallback instanceof HomepageSectionDTO ? $fallback : null,
+            );
         }
 
         if ($approvedSections === []) {
@@ -175,32 +182,58 @@ final class PreviewService implements PreviewServiceInterface
     // Section / translation mapping helpers
     // ------------------------------------------------------------------
 
-    private function sectionFromDraft(array $payload, string $locale): HomepageSectionDTO
+    private function sectionFromDraft(array $payload, string $locale, ?HomepageSectionDTO $fallback = null): HomepageSectionDTO
     {
+        $fallbackPayload = $fallback instanceof HomepageSectionDTO
+            ? HomepagePayloadMapper::sectionDataToArray($fallback->payload)
+            : [];
+        $fallbackArabicPayload = $fallback instanceof HomepageSectionDTO
+            ? HomepagePayloadMapper::sectionDataToArray($fallback->arabicPayload ?? $fallback->payload)
+            : [];
+        $fallbackEnglishPayload = $fallback instanceof HomepageSectionDTO
+            ? HomepagePayloadMapper::sectionDataToArray($fallback->englishPayload ?? $fallback->payload)
+            : [];
+        $genericPayload = $this->mergeDraftPayload(
+            $fallbackPayload,
+            is_array($payload['payload'] ?? null) ? $payload['payload'] : [],
+        );
         $arabicPayload = $this->sectionDataFromDraft(
             is_array($payload['arabicPayload'] ?? null)
-                ? $payload['arabicPayload']
-                : (is_array($payload['payload'] ?? null) && $locale === 'ar' ? $payload['payload'] : []),
+                ? $this->mergeDraftPayload($fallbackArabicPayload, $payload['arabicPayload'])
+                : ($locale === 'ar' ? $genericPayload : $fallbackArabicPayload),
         );
         $englishPayload = $this->sectionDataFromDraft(
             is_array($payload['englishPayload'] ?? null)
-                ? $payload['englishPayload']
-                : (is_array($payload['payload'] ?? null) && $locale === 'en' ? $payload['payload'] : []),
+                ? $this->mergeDraftPayload($fallbackEnglishPayload, $payload['englishPayload'])
+                : ($locale === 'en' ? $genericPayload : $fallbackEnglishPayload),
         );
 
         return new HomepageSectionDTO(
-            id: (int) ($payload['id'] ?? 0),
+            id: (int) ($payload['id'] ?? $fallback?->id ?? 0),
             key: (string) ($payload['key'] ?? ''),
-            sortOrder: (int) ($payload['sortOrder'] ?? ($payload['sort_order'] ?? 0)),
-            isEnabled: (bool) ($payload['isEnabled'] ?? ($payload['is_enabled'] ?? true)),
+            sortOrder: (int) ($payload['sortOrder'] ?? ($payload['sort_order'] ?? $fallback?->sortOrder ?? 0)),
+            isEnabled: (bool) ($payload['isEnabled'] ?? ($payload['is_enabled'] ?? $fallback?->isEnabled ?? true)),
             payload: $locale === 'en'
-                ? ($this->isEmptySectionPayload($englishPayload) ? $this->sectionDataFromDraft((array) ($payload['payload'] ?? [])) : $englishPayload)
-                : ($this->isEmptySectionPayload($arabicPayload) ? $this->sectionDataFromDraft((array) ($payload['payload'] ?? [])) : $arabicPayload),
+                ? ($this->isEmptySectionPayload($englishPayload) ? $this->sectionDataFromDraft($genericPayload) : $englishPayload)
+                : ($this->isEmptySectionPayload($arabicPayload) ? $this->sectionDataFromDraft($genericPayload) : $arabicPayload),
             arabicTranslation: $this->translationFromDraft((array) ($payload['arabicTranslation'] ?? []), 'ar', $arabicPayload),
             englishTranslation: $this->translationFromDraft((array) ($payload['englishTranslation'] ?? []), 'en', $englishPayload),
             arabicPayload: $arabicPayload,
             englishPayload: $englishPayload,
         );
+    }
+
+    /**
+     * Drafts may only contain editor-exposed fields. Merge them over the
+     * published database payload so preview keeps non-editable presentation data.
+     *
+     * @param  array<string, mixed>  $fallback
+     * @param  array<string, mixed>  $draft
+     * @return array<string, mixed>
+     */
+    private function mergeDraftPayload(array $fallback, array $draft): array
+    {
+        return array_replace_recursive($fallback, $draft);
     }
 
     private function sectionDataFromDraft(array $payload): HomepageSectionDataDTO

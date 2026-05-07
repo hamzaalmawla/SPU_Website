@@ -15,5 +15,6 @@ final readonly class PageShellDataDTO
         public bool $isHomepageShell,
         public string $status = 'draft',
         public ?int $parentPageId = null,
+        public ?string $facultyScopeSlug = null,
     ) {}
 }

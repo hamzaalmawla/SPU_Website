@@ -23,6 +23,7 @@ final class PageFactory extends Factory
             'type' => 'landing',
             'template' => 'default',
             'slug' => $this->faker->unique()->slug(2),
+            'faculty_scope_slug' => null,
             'status' => 'draft',
             'sort_order' => 0,
             'is_enabled' => true,

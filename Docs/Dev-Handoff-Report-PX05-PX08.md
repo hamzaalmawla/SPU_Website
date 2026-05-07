@@ -27,7 +27,7 @@ php artisan serve
 
 Visit http://localhost:8000/ar for the public site, http://localhost:8000/admin for the admin panel.
 
-Admin login: `admin@spu.edu.sy` / `password`
+Admin login uses `ADMIN_EMAIL` and `ADMIN_PASSWORD` from your environment. Do not use placeholder credentials outside local development.
 
 **Important .env changes needed:**
 - Set `CACHE_STORE=array` (or `redis` if you have Redis running). The `database` driver doesn't support cache tags.

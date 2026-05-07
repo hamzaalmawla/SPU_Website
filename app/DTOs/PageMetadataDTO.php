@@ -26,5 +26,6 @@ final readonly class PageMetadataDTO
         public bool $isEnabled = true,
         public bool $showInBreadcrumbs = true,
         public bool $showInNav = false,
+        public ?string $facultyScopeSlug = null,
     ) {}
 }

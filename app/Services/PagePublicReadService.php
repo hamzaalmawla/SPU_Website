@@ -84,6 +84,7 @@ final class PagePublicReadService
                 isEnabled: (bool) $page->is_enabled,
                 showInBreadcrumbs: (bool) $page->show_in_breadcrumbs,
                 showInNav: (bool) $page->show_in_nav,
+                facultyScopeSlug: is_string($page->faculty_scope_slug) ? $page->faculty_scope_slug : null,
             ),
             publishedAt: $page->published_at?->toIso8601String(),
             arabicTranslation: $this->mapTranslation($page, $this->findTranslation($page, 'ar'), 'ar'),

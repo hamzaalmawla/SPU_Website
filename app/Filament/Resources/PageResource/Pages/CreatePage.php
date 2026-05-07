@@ -41,6 +41,7 @@ class CreatePage extends CreateRecord
             isHomepageShell: false,
             status: $data['status'] ?? 'draft',
             parentPageId: $data['parent_id'] ?? null,
+            facultyScopeSlug: $data['faculty_scope_slug'] ?? null,
         );
 
         $pageDTO = $this->pageService->createPageShell($shellData, $user->id);
@@ -56,6 +57,7 @@ class CreatePage extends CreateRecord
                 isEnabled: $data['is_enabled'] ?? true,
                 showInBreadcrumbs: $data['show_in_breadcrumbs'] ?? true,
                 showInNav: $data['show_in_nav'] ?? true,
+                facultyScopeSlug: $data['faculty_scope_slug'] ?? null,
             ),
             $user->id,
         );

@@ -30,6 +30,7 @@ class Page extends Model
         'type',
         'template',
         'slug',
+        'faculty_scope_slug',
         'status',
         'sort_order',
         'is_enabled',

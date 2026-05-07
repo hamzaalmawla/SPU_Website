@@ -18,7 +18,7 @@ final class SecurityHeadersMiddleware
         $response->headers->set('Referrer-Policy', 'no-referrer');
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()');
-        $response->headers->set('Content-Security-Policy', $this->contentSecurityPolicy());
+        $response->headers->set('Content-Security-Policy', $this->contentSecurityPolicy($request));
 
         if (app()->environment('production') && $request->isSecure()) {
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
@@ -27,8 +27,24 @@ final class SecurityHeadersMiddleware
         return $response;
     }
 
-    private function contentSecurityPolicy(): string
+    private function contentSecurityPolicy(Request $request): string
     {
+        if ($request->is('admin') || $request->is('admin/*')) {
+            return implode('; ', [
+                "default-src 'self'",
+                "base-uri 'self'",
+                "object-src 'none'",
+                "frame-ancestors 'self'",
+                "form-action 'self'",
+                "img-src 'self' data: https:",
+                "font-src 'self' data: https:",
+                "style-src 'self' 'unsafe-inline' https:",
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
+                "frame-src 'self' https://www.google.com https://maps.google.com",
+                "connect-src 'self' https:",
+            ]);
+        }
+
         return implode('; ', [
             "default-src 'self'",
             "base-uri 'self'",
@@ -38,9 +54,9 @@ final class SecurityHeadersMiddleware
             "img-src 'self' data: https:",
             "font-src 'self' data: https:",
             "style-src 'self' 'unsafe-inline' https:",
-            "script-src 'self' 'unsafe-inline' https:",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
             "frame-src 'self' https://www.google.com https://maps.google.com",
-            "connect-src 'self' https:",
+            "connect-src 'self'",
         ]);
     }
 }

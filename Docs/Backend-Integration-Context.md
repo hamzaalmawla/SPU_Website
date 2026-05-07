@@ -640,7 +640,7 @@ Content-Type: application/json
 
 **URL:** `/admin`  
 **Auth:** Session-based, separate guard. Login at `/admin/login`.  
-**Seed credentials:** `admin@spu.edu.sy` / `password`
+**Seed credentials:** configured through `ADMIN_EMAIL` and `ADMIN_PASSWORD`; placeholder/default passwords are local-development only.
 
 ### Filament Resources
 | Resource | URL | Roles |
@@ -777,7 +777,7 @@ php artisan serve
 
 - Public site: `http://localhost:8000/ar`
 - Admin panel: `http://localhost:8000/admin`
-- Admin login: `admin@spu.edu.sy` / `password`
+- Admin login: use `ADMIN_EMAIL` and `ADMIN_PASSWORD` from `.env`
 - Run tests: `php artisan test --exclude-group=property`
 - Launch check: `php artisan launch:validate`
 - Cache warm: `php artisan cache:warm`

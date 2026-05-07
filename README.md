@@ -35,7 +35,7 @@ php artisan serve
 | `http://localhost:8000/en` | Public homepage (English) |
 | `http://localhost:8000/admin` | Admin panel |
 
-Admin login: `admin@spu.edu.sy` / `password`
+Admin login uses `ADMIN_EMAIL` and `ADMIN_PASSWORD` from your environment. Local development falls back to `local-development-password` only when `ADMIN_PASSWORD` is unset.
 
 > **Note:** Set `CACHE_STORE=array` in `.env` for local development. The default `database` driver does not support cache tags. Use `redis` in production.
 
@@ -150,11 +150,11 @@ Faculty editors see only pages and media matching their `faculty_scope_slug`.
 - **Public pages:** Cached with locale in the key, bypassed for authenticated users, admin routes, preview flows, and non-GET requests
 - **Invalidation:** Publish/update/delete operations flush the corresponding cache tags immediately for both AR and EN
 - **Headers:** `X-Cache: HIT | MISS | BYPASS` on every public response
-- **TTLs:** Homepage 1h, landing pages 1h, navigation 4h, settings 6h
+- **TTLs:** Public HTML response cache defaults to 5 minutes via `config('cache.public_page_ttl', 300)`; service-level navigation/settings cache TTLs are configured in their services.
 
 ## Testing
 
-3,314 tests, 14,900 assertions, 0 failures.
+Run the current test suite with `php artisan test`. Test counts vary as property and phase-specific coverage changes.
 
 ```bash
 # Full suite

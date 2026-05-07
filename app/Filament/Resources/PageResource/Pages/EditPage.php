@@ -48,6 +48,8 @@ class EditPage extends EditRecord
         $enSeo = $page->seoMeta->firstWhere('locale', 'en');
 
         // Arabic translation fields
+        $data['faculty_scope_slug'] = $page->faculty_scope_slug ?? null;
+
         $data['ar_title'] = $arTranslation?->title ?? '';
         $data['ar_headline'] = $arTranslation?->headline ?? '';
         $data['ar_subheadline'] = $arTranslation?->subheadline ?? '';
@@ -106,6 +108,7 @@ class EditPage extends EditRecord
                 isEnabled: $data['is_enabled'] ?? true,
                 showInBreadcrumbs: $data['show_in_breadcrumbs'] ?? true,
                 showInNav: $data['show_in_nav'] ?? true,
+                facultyScopeSlug: $data['faculty_scope_slug'] ?? (is_string($record->faculty_scope_slug) ? $record->faculty_scope_slug : null),
             ),
             (int) auth()->id(),
         );
@@ -325,6 +328,10 @@ class EditPage extends EditRecord
                 isHomepageShell: false,
                 status: $formData['status'] ?? 'draft',
                 parentPageId: $formData['parent_id'] ?? null,
+                isEnabled: $formData['is_enabled'] ?? true,
+                showInBreadcrumbs: $formData['show_in_breadcrumbs'] ?? true,
+                showInNav: $formData['show_in_nav'] ?? true,
+                facultyScopeSlug: $formData['faculty_scope_slug'] ?? (is_string($page->faculty_scope_slug) ? $page->faculty_scope_slug : null),
             ),
             arabicTranslation: self::buildTranslationDTO($formData, 'ar'),
             englishTranslation: self::buildTranslationDTO($formData, 'en'),

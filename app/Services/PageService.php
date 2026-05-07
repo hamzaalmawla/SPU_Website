@@ -22,10 +22,13 @@ use App\Models\Page;
 use App\Models\PageDraft;
 use App\Models\PageSeoMeta;
 use App\Models\PageTranslation;
+use App\Models\User;
 use App\Support\HtmlSanitizer;
 use App\Support\UrlSanitizer;
 use DateTimeInterface;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * Orchestrates page CRUD operations, delegating public reads to PagePublicReadService,
@@ -71,11 +74,14 @@ final class PageService implements PageServiceInterface
 
     public function createPageShell(PageShellDataDTO $payload, int $userId): PageDTO
     {
+        $this->authorizePageClassWrite($userId, 'create');
+
         $page = Page::query()->create([
             'parent_id' => $payload->parentPageId,
             'type' => $payload->isHomepageShell ? 'homepage' : 'landing',
             'template' => $payload->template,
             'slug' => $payload->slug,
+            'faculty_scope_slug' => $payload->facultyScopeSlug,
             'status' => $payload->status,
             'sort_order' => 0,
             'is_enabled' => true,
@@ -103,10 +109,13 @@ final class PageService implements PageServiceInterface
             return false;
         }
 
+        $this->authorizePageWrite($userId, 'update', $page);
+
         $updated = $page->update([
             'parent_id' => $payload->parentPageId,
             'template' => $payload->template,
             'slug' => $payload->slug,
+            'faculty_scope_slug' => $payload->facultyScopeSlug,
             'status' => $payload->status,
             'is_enabled' => $payload->isEnabled,
             'show_in_breadcrumbs' => $payload->showInBreadcrumbs,
@@ -149,6 +158,8 @@ final class PageService implements PageServiceInterface
     public function saveDraft(int $pageId, PageDraftDataDTO $payload, int $userId, ?int $expectedVersion = null): PageDraftDTO
     {
         $page = Page::query()->findOrFail($pageId);
+
+        $this->authorizePageWrite($userId, 'update', $page);
 
         // Optimistic locking: check version if expectedVersion is provided
         if ($expectedVersion !== null) {
@@ -220,6 +231,8 @@ final class PageService implements PageServiceInterface
             return false;
         }
 
+        $this->authorizePageWrite($userId, 'publish', $page);
+
         if (! $this->isPublishable($page)) {
             return false;
         }
@@ -269,6 +282,8 @@ final class PageService implements PageServiceInterface
             return false;
         }
 
+        $this->authorizePageWrite($userId, 'publish', $page);
+
         $updated = $page->update([
             'status' => 'draft',
             'published_at' => null,
@@ -290,6 +305,8 @@ final class PageService implements PageServiceInterface
         if (! $page instanceof Page) {
             return false;
         }
+
+        $this->authorizePageWrite($userId, 'publish', $page);
 
         $draft = PageDraft::query()
             ->where('page_id', $pageId)
@@ -366,6 +383,8 @@ final class PageService implements PageServiceInterface
             return false;
         }
 
+        $this->authorizePageWrite($userId, 'update', $page);
+
         $sanitizedBody = $this->htmlSanitizer->sanitize($payload->body);
         $sanitizedBodyPayload = $this->sanitizeBodyPayload($payload->bodyPayload);
 
@@ -405,6 +424,8 @@ final class PageService implements PageServiceInterface
         if (! $page instanceof Page) {
             return false;
         }
+
+        $this->authorizePageWrite($userId, 'update', $page);
 
         $seo = PageSeoMeta::query()->updateOrCreate(
             ['page_id' => $pageId, 'locale' => $locale],
@@ -474,5 +495,31 @@ final class PageService implements PageServiceInterface
         $page->loadMissing('translations');
 
         return $page->translations->contains(fn ($t) => ! empty($t->title));
+    }
+
+    /**
+     * Service-layer authorization is enforced whenever an actor is supplied.
+     * Some legacy tests still exercise sanitization paths without an actor.
+     */
+    private function authorizePageWrite(?int $userId, string $ability, Page $page): void
+    {
+        if ($userId === null) {
+            return;
+        }
+
+        $user = User::query()->find($userId);
+
+        if (! $user instanceof User || Gate::forUser($user)->denies($ability, $page)) {
+            throw new AuthorizationException('This user is not authorized to modify the requested page.');
+        }
+    }
+
+    private function authorizePageClassWrite(int $userId, string $ability): void
+    {
+        $user = User::query()->find($userId);
+
+        if (! $user instanceof User || Gate::forUser($user)->denies($ability, Page::class)) {
+            throw new AuthorizationException('This user is not authorized to create pages.');
+        }
     }
 }

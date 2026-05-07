@@ -150,7 +150,11 @@ class PageResource extends Resource
 
                 SelectFilter::make('parent_id')
                     ->label('Parent')
-                    ->relationship('parent', 'slug')
+                    ->relationship(
+                        'parent',
+                        'slug',
+                        modifyQueryUsing: fn (Builder $query): Builder => self::scopeQueryToCurrentUser($query),
+                    )
                     ->searchable()
                     ->preload(),
             ])
@@ -207,6 +211,13 @@ class PageResource extends Resource
                         ->required()
                         ->maxLength(255)
                         ->alphaDash(),
+
+                    TextInput::make('faculty_scope_slug')
+                        ->label('Faculty Scope Slug')
+                        ->helperText('Optional. When set, faculty editors only access pages matching their scope.')
+                        ->maxLength(255)
+                        ->alphaDash()
+                        ->visible(fn (): bool => in_array(auth()->user()?->role_slug, ['super_admin', 'editor'], true)),
 
                     Select::make('template')
                         ->label('Template')

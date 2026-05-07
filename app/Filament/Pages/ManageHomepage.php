@@ -353,7 +353,7 @@ class ManageHomepage extends Page implements HasForms
             'contact_links' => array_map($toArray, $payload->contactLinks),
             'social_links' => array_map($toArray, $payload->socialLinks),
             'content' => is_array($payload->content) ? $payload->content : ($toArray($payload->content) ?: []),
-            'copyright_text' => is_array($payload->content) ? ($payload->content['copyright_text'] ?? null) : null,
+            'copyright_text' => is_array($payload->content) ? ($payload->content['copyrightText'] ?? ($payload->content['copyright_text'] ?? null)) : null,
             'logo' => is_array($payload->content) ? ($payload->content['logo'] ?? null) : null,
         ];
     }
@@ -408,6 +408,17 @@ class ManageHomepage extends Page implements HasForms
 
     private function formArrayToPayload(array $data): HomepageSectionDataDTO
     {
+        $content = is_array($data['content'] ?? null) ? $data['content'] : [];
+        $logo = self::extractFileUploadValue($data['logo'] ?? null);
+
+        if ($logo !== null) {
+            $content['logo'] = $logo;
+        }
+
+        if (($data['copyright_text'] ?? null) !== null && $data['copyright_text'] !== '') {
+            $content['copyrightText'] = (string) $data['copyright_text'];
+        }
+
         return new HomepageSectionDataDTO(
             title: $data['section_title'] ?? $data['headline'] ?? null,
             subtitle: $data['subtitle'] ?? $data['subheadline'] ?? null,
@@ -433,60 +444,64 @@ class ManageHomepage extends Page implements HasForms
                     icon: isset($item['icon']) && $item['icon'] !== '' ? (string) $item['icon'] : null,
                     prefix: isset($item['prefix']) && $item['prefix'] !== '' ? (string) $item['prefix'] : null,
                     suffix: isset($item['suffix']) && $item['suffix'] !== '' ? (string) $item['suffix'] : null,
+                    helperText: self::firstString($item, ['helperText', 'helper_text', 'description']),
+                    sortOrder: is_numeric($item['sortOrder'] ?? ($item['sort_order'] ?? null))
+                        ? (int) ($item['sortOrder'] ?? $item['sort_order'])
+                        : null,
                 ),
                 array_filter($data['stats'] ?? [], static fn (mixed $i): bool => is_array($i)),
             )),
             featuredItems: array_values(array_map(
                 static fn (array $item): HomepageFeatureItemDTO => new HomepageFeatureItemDTO(
                     title: (string) ($item['title'] ?? ''),
-                    summary: isset($item['description']) && $item['description'] !== '' ? (string) $item['description'] : (isset($item['text']) && $item['text'] !== '' ? (string) $item['text'] : null),
-                    imageUrl: self::extractFileUploadValue($item['image'] ?? null),
-                    url: isset($item['cta_url']) && $item['cta_url'] !== '' ? (string) $item['cta_url'] : null,
+                    summary: self::firstString($item, ['description', 'text', 'summary']),
+                    imageUrl: self::extractFileUploadValue($item['image'] ?? ($item['imageUrl'] ?? null)),
+                    url: self::firstString($item, ['cta_url', 'url']),
                 ),
                 array_filter($data['featured_items'] ?? [], static fn (mixed $i): bool => is_array($i)),
             )),
             articles: array_values(array_map(
                 static fn (array $item): ArticleCardDTO => new ArticleCardDTO(
-                    id: 0,
-                    locale: 'ar',
+                    id: (int) ($item['id'] ?? 0),
+                    locale: (string) ($item['locale'] ?? 'ar'),
                     title: (string) ($item['title'] ?? ''),
-                    slug: '',
-                    excerpt: isset($item['excerpt']) && $item['excerpt'] !== '' ? (string) $item['excerpt'] : null,
-                    imageUrl: self::extractFileUploadValue($item['image'] ?? null),
-                    publishedAt: isset($item['publish_date']) && $item['publish_date'] !== '' ? (string) $item['publish_date'] : null,
-                    url: isset($item['cta_url']) && $item['cta_url'] !== '' ? (string) $item['cta_url'] : null,
-                    categoryLabel: isset($item['category']) && $item['category'] !== '' ? (string) $item['category'] : null,
+                    slug: (string) ($item['slug'] ?? ''),
+                    excerpt: self::firstString($item, ['excerpt', 'summary']),
+                    imageUrl: self::extractFileUploadValue($item['image'] ?? ($item['imageUrl'] ?? null)),
+                    publishedAt: self::firstString($item, ['publish_date', 'publishedAt']),
+                    url: self::firstString($item, ['cta_url', 'url']),
+                    categoryLabel: self::firstString($item, ['category', 'categoryLabel']),
                 ),
                 array_filter($data['articles'] ?? [], static fn (mixed $i): bool => is_array($i)),
             )),
             researchItems: array_values(array_map(
                 static fn (array $item): ResearchCardDTO => new ResearchCardDTO(
-                    id: 0,
-                    locale: 'ar',
+                    id: (int) ($item['id'] ?? 0),
+                    locale: (string) ($item['locale'] ?? 'ar'),
                     title: (string) ($item['title'] ?? ''),
-                    slug: '',
-                    summary: isset($item['excerpt']) && $item['excerpt'] !== '' ? (string) $item['excerpt'] : null,
-                    imageUrl: self::extractFileUploadValue($item['image'] ?? null),
-                    publishedAt: isset($item['publish_date']) && $item['publish_date'] !== '' ? (string) $item['publish_date'] : null,
-                    url: isset($item['cta_url']) && $item['cta_url'] !== '' ? (string) $item['cta_url'] : null,
-                    categoryLabel: isset($item['category']) && $item['category'] !== '' ? (string) $item['category'] : null,
+                    slug: (string) ($item['slug'] ?? ''),
+                    summary: self::firstString($item, ['excerpt', 'summary']),
+                    imageUrl: self::extractFileUploadValue($item['image'] ?? ($item['imageUrl'] ?? null)),
+                    publishedAt: self::firstString($item, ['publish_date', 'publishedAt']),
+                    url: self::firstString($item, ['cta_url', 'url']),
+                    categoryLabel: self::firstString($item, ['category', 'categoryLabel']),
                     authors: self::extractAuthors($item['authors'] ?? null),
                 ),
                 array_filter($data['research_items'] ?? [], static fn (mixed $i): bool => is_array($i)),
             )),
             events: array_values(array_map(
                 static fn (array $item): EventCardDTO => new EventCardDTO(
-                    id: 0,
-                    locale: 'ar',
+                    id: (int) ($item['id'] ?? 0),
+                    locale: (string) ($item['locale'] ?? 'ar'),
                     title: (string) ($item['title'] ?? ''),
-                    slug: '',
-                    summary: isset($item['description']) && $item['description'] !== '' ? (string) $item['description'] : null,
-                    startsAt: isset($item['date']) && $item['date'] !== '' ? (string) $item['date'] : null,
+                    slug: (string) ($item['slug'] ?? ''),
+                    summary: self::firstString($item, ['description', 'summary']),
+                    startsAt: self::firstString($item, ['date', 'startsAt']),
                     endsAt: null,
-                    location: isset($item['location']) && $item['location'] !== '' ? (string) $item['location'] : null,
-                    url: isset($item['cta_url']) && $item['cta_url'] !== '' ? (string) $item['cta_url'] : null,
-                    imageUrl: self::extractFileUploadValue($item['image'] ?? null),
-                    timeLabel: isset($item['time']) && $item['time'] !== '' ? (string) $item['time'] : null,
+                    location: self::firstString($item, ['location']),
+                    url: self::firstString($item, ['cta_url', 'url']),
+                    imageUrl: self::extractFileUploadValue($item['image'] ?? ($item['imageUrl'] ?? null)),
+                    timeLabel: self::firstString($item, ['time', 'timeLabel']),
                 ),
                 array_filter($data['events'] ?? [], static fn (mixed $i): bool => is_array($i)),
             )),
@@ -514,16 +529,56 @@ class ManageHomepage extends Page implements HasForms
                 static fn (array $item): SocialLinkDTO => new SocialLinkDTO(
                     platform: (string) ($item['platform'] ?? ''),
                     url: (string) ($item['url'] ?? ''),
-                    isEnabled: (bool) ($item['is_enabled'] ?? true),
+                    isEnabled: (bool) ($item['isEnabled'] ?? ($item['is_enabled'] ?? true)),
                 ),
                 array_filter($data['social_links'] ?? [], static fn (mixed $i): bool => is_array($i)),
             )),
-            items: array_values(array_filter($data['items'] ?? [], static fn (mixed $i): bool => is_array($i))),
-            content: array_filter([
-                'copyright_text' => $data['copyright_text'] ?? null,
-                'logo' => $data['logo'] ?? null,
-            ]),
+            items: self::formItems($data),
+            content: $content,
         );
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private static function formItems(array $data): array
+    {
+        $items = $data['items'] ?? $data['path_items'] ?? $data['featured_items'] ?? [];
+
+        return array_values(array_map(
+            static function (array $item): array {
+                $mapped = $item;
+
+                if (($mapped['imageUrl'] ?? null) === null) {
+                    $image = self::extractFileUploadValue($mapped['image'] ?? null);
+
+                    if ($image !== null) {
+                        $mapped['imageUrl'] = $image;
+                    }
+                }
+
+                if (($mapped['summary'] ?? null) === null) {
+                    $mapped['summary'] = self::firstString($mapped, ['description', 'text']);
+                }
+
+                if (! isset($mapped['action']) && self::firstString($mapped, ['cta_label']) !== null) {
+                    $mapped['action'] = array_filter([
+                        'label' => self::firstString($mapped, ['cta_label']),
+                        'url' => self::firstString($mapped, ['cta_url']) ?? '#',
+                    ]);
+                }
+
+                if (isset($mapped['links']) && is_array($mapped['links'])) {
+                    $mapped['links'] = array_values(array_map(
+                        static fn (mixed $link): mixed => is_array($link) ? ($link['label'] ?? '') : $link,
+                        $mapped['links'],
+                    ));
+                }
+
+                return $mapped;
+            },
+            array_filter($items, static fn (mixed $i): bool => is_array($i)),
+        ));
     }
 
     /** @return array<int, Tab> */
@@ -574,6 +629,20 @@ class ManageHomepage extends Page implements HasForms
         }
 
         return is_string($value) && $value !== '' ? $value : null;
+    }
+
+    /**
+     * @param  array<int, string>  $keys
+     */
+    private static function firstString(array $item, array $keys): ?string
+    {
+        foreach ($keys as $key) {
+            if (isset($item[$key]) && is_string($item[$key]) && $item[$key] !== '') {
+                return $item[$key];
+            }
+        }
+
+        return null;
     }
 
     /** @return array<int, string> */

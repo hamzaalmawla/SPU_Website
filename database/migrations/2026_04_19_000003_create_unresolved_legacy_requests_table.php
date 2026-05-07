@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('unresolved_legacy_requests', function (Blueprint $table): void {
             $table->id();
             $table->string('url', 2048);
+            $table->char('url_hash', 64)->nullable();
             $table->string('query_string', 2048)->nullable();
             $table->string('method', 10)->default('GET');
             $table->string('referrer', 2048)->nullable();
@@ -26,7 +27,7 @@ return new class extends Migration
             $table->timestamp('last_seen_at')->useCurrent();
             $table->timestamp('created_at')->nullable();
 
-            $table->unique(['url', 'method'], 'uq_unresolved_url_method');
+            $table->unique(['url_hash', 'method'], 'uq_unresolved_url_method');
             $table->index(['request_type'], 'idx_request_type');
             $table->index(['last_seen_at'], 'idx_last_seen');
         });
