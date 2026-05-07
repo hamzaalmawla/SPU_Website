@@ -209,7 +209,9 @@ class ManageHomepage extends Page implements HasForms
     {
         Gate::authorize('manage-homepage');
 
-        $deleted = $this->publishingService->discardEditableDraft();
+        /** @var User $user */
+        $user = auth()->user();
+        $deleted = $this->publishingService->discardEditableDraft((int) $user->id);
         if ($deleted > 0) {
             Notification::make()->title('Draft discarded')->success()->send();
         } else {

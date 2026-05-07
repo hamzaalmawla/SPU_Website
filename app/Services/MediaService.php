@@ -90,7 +90,8 @@ final class MediaService implements MediaServiceInterface
             ]);
         }
 
-        $this->authorizeMediaClassWrite($payload['uploaded_by'] ?? null, 'create');
+        $uploaderId = $this->requireNumericUserId($payload['uploaded_by'] ?? null);
+        $this->authorizeMediaClassWrite($uploaderId, 'create');
 
         $this->validateFile($file);
 
@@ -137,13 +138,13 @@ final class MediaService implements MediaServiceInterface
             'title_ar' => $payload['title_ar'] ?? null,
             'title_en' => $payload['title_en'] ?? null,
             'path' => $storedPath,
-            'uploaded_by' => $payload['uploaded_by'] ?? null,
+            'uploaded_by' => $uploaderId,
             'faculty_scope_slug' => $this->resolveFacultyScopeForUpload($payload),
         ]);
 
         $this->auditService->log(
             action: 'media.uploaded',
-            userId: is_numeric($payload['uploaded_by'] ?? null) ? (int) $payload['uploaded_by'] : null,
+            userId: $uploaderId,
             entityType: MediaAsset::class,
             entityId: (int) $asset->getKey(),
             metadata: [
@@ -155,7 +156,7 @@ final class MediaService implements MediaServiceInterface
         return $this->toDto($asset);
     }
 
-    public function delete(int|string $mediaId, ?int $userId = null): bool
+    public function delete(int|string $mediaId, int $userId): bool
     {
         $asset = MediaAsset::find($mediaId);
 
@@ -182,7 +183,7 @@ final class MediaService implements MediaServiceInterface
     /**
      * @param  array<string, mixed>  $metadata  Accepts 'title_ar', 'title_en', 'alt_text_ar', 'alt_text_en', 'caption_ar', 'caption_en'
      */
-    public function updateMetadata(int|string $mediaId, array $metadata, ?int $userId = null): bool
+    public function updateMetadata(int|string $mediaId, array $metadata, int $userId): bool
     {
         $asset = MediaAsset::find($mediaId);
 
@@ -220,9 +221,9 @@ final class MediaService implements MediaServiceInterface
      * @param  array<string, mixed>  $filters  Accepts 'mime_type', 'search', 'uploaded_by', 'per_page', 'page'
      * @return Collection<int, MediaUploadResultDTO>
      */
-    public function list(array $filters = []): Collection
+    public function list(int $userId, array $filters = []): Collection
     {
-        $query = $this->buildListQuery($filters);
+        $query = $this->buildListQuery($filters, $this->authorizedListUser($userId));
 
         return $query->get()->map(fn (MediaAsset $asset): MediaUploadResultDTO => $this->toDto($asset));
     }
@@ -232,9 +233,9 @@ final class MediaService implements MediaServiceInterface
      *
      * @param  array<string, mixed>  $filters  Accepts 'mime_type', 'search', 'uploaded_by'
      */
-    public function listPaginated(array $filters = [], int $page = 1, int $perPage = 20): PaginatedResultDTO
+    public function listPaginated(int $userId, array $filters = [], int $page = 1, int $perPage = 20): PaginatedResultDTO
     {
-        $query = $this->buildListQuery($filters);
+        $query = $this->buildListQuery($filters, $this->authorizedListUser($userId));
 
         $paginator = $query->paginate(perPage: $perPage, page: $page);
 
@@ -256,7 +257,7 @@ final class MediaService implements MediaServiceInterface
      * @param  array<string, mixed>  $filters
      * @return Builder<MediaAsset>
      */
-    private function buildListQuery(array $filters = []): Builder
+    private function buildListQuery(array $filters, User $user): Builder
     {
         $query = MediaAsset::query();
 
@@ -278,7 +279,9 @@ final class MediaService implements MediaServiceInterface
             $query->where('uploaded_by', $filters['uploaded_by']);
         }
 
-        if (isset($filters['faculty_scope_slug']) && is_string($filters['faculty_scope_slug']) && $filters['faculty_scope_slug'] !== '') {
+        if ($user->role_slug === 'faculty_editor') {
+            $query->where('faculty_scope_slug', $user->faculty_scope_slug);
+        } elseif (isset($filters['faculty_scope_slug']) && is_string($filters['faculty_scope_slug']) && $filters['faculty_scope_slug'] !== '') {
             $query->where('faculty_scope_slug', $filters['faculty_scope_slug']);
         }
 
@@ -356,25 +359,17 @@ final class MediaService implements MediaServiceInterface
         );
     }
 
-    private function authorizeMediaClassWrite(mixed $userId, string $ability): void
+    private function authorizeMediaClassWrite(int $userId, string $ability): void
     {
-        if (! is_numeric($userId)) {
-            return;
-        }
-
-        $user = User::query()->find((int) $userId);
+        $user = User::query()->find($userId);
 
         if (! $user instanceof User || Gate::forUser($user)->denies($ability, MediaAsset::class)) {
             throw new AuthorizationException('This user is not authorized to manage media.');
         }
     }
 
-    private function authorizeMediaWrite(?int $userId, string $ability, MediaAsset $asset): void
+    private function authorizeMediaWrite(int $userId, string $ability, MediaAsset $asset): void
     {
-        if ($userId === null) {
-            return;
-        }
-
         $user = User::query()->find($userId);
 
         if (! $user instanceof User || Gate::forUser($user)->denies($ability, $asset)) {
@@ -385,10 +380,6 @@ final class MediaService implements MediaServiceInterface
     /** @param array<string, mixed> $payload */
     private function resolveFacultyScopeForUpload(array $payload): ?string
     {
-        if (isset($payload['faculty_scope_slug']) && is_string($payload['faculty_scope_slug']) && $payload['faculty_scope_slug'] !== '') {
-            return $payload['faculty_scope_slug'];
-        }
-
         if (! is_numeric($payload['uploaded_by'] ?? null)) {
             return null;
         }
@@ -399,6 +390,34 @@ final class MediaService implements MediaServiceInterface
             return $user->faculty_scope_slug;
         }
 
+        if (isset($payload['faculty_scope_slug']) && is_string($payload['faculty_scope_slug']) && $payload['faculty_scope_slug'] !== '') {
+            return $payload['faculty_scope_slug'];
+        }
+
         return null;
+    }
+
+    private function requireNumericUserId(mixed $userId): int
+    {
+        if (! is_numeric($userId)) {
+            throw new AuthorizationException('A valid authenticated user is required to manage media.');
+        }
+
+        return (int) $userId;
+    }
+
+    private function authorizedListUser(int $userId): User
+    {
+        $user = User::query()->find($userId);
+
+        if (! $user instanceof User || Gate::forUser($user)->denies('viewAny', MediaAsset::class)) {
+            throw new AuthorizationException('This user is not authorized to list media assets.');
+        }
+
+        if ($user->role_slug === 'faculty_editor' && (! is_string($user->faculty_scope_slug) || $user->faculty_scope_slug === '')) {
+            throw new AuthorizationException('This user is not authorized to list media assets without a faculty scope.');
+        }
+
+        return $user;
     }
 }

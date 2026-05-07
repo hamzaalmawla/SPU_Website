@@ -254,7 +254,7 @@ final class HomepageSectionService implements HomepageSectionServiceInterface
      */
     private function persistDraftSnapshot(array $sections, int $userId): HomepageDraft
     {
-        return HomepageDraft::query()->create([
+        return HomepageDraft::forceCreate([
             'target_type' => 'homepage',
             'target_id' => null,
             'payload_json' => [

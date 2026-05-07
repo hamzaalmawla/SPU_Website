@@ -62,7 +62,8 @@ class MiddlewarePipelineTest extends TestCase
             ->assertHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()')
             ->assertHeader('Content-Security-Policy');
 
-        $this->assertStringContainsString("script-src 'self' 'unsafe-inline' 'unsafe-eval'", (string) $response->headers->get('Content-Security-Policy'));
+        $this->assertStringContainsString("script-src 'self' 'unsafe-inline'", (string) $response->headers->get('Content-Security-Policy'));
+        $this->assertStringNotContainsString("'unsafe-eval'", (string) $response->headers->get('Content-Security-Policy'));
         $this->assertStringNotContainsString("script-src 'self' 'unsafe-inline' https:", (string) $response->headers->get('Content-Security-Policy'));
     }
 

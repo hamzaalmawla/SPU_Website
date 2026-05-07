@@ -6,10 +6,10 @@ namespace Tests\Unit;
 
 use App\Contracts\AuditServiceInterface;
 use App\Contracts\CacheServiceInterface;
-use App\Contracts\SeoMetadataServiceInterface;
 use App\DTOs\PageTranslationDTO;
 use App\Models\Page;
 use App\Models\PageTranslation;
+use App\Models\User;
 use App\Services\PageDraftService;
 use App\Services\PagePublicReadService;
 use App\Services\PageService;
@@ -54,7 +54,7 @@ final class PageServiceSanitizationTest extends TestCase
             body: '<p>Safe content</p><script>alert("xss")</script>',
         );
 
-        $this->service->updateArabicTranslation($page->id, $payload);
+        $this->service->updateArabicTranslation($page->id, $payload, $this->editor()->id);
 
         $translation = PageTranslation::where('page_id', $page->id)
             ->where('locale', 'ar')
@@ -87,7 +87,7 @@ final class PageServiceSanitizationTest extends TestCase
             ],
         );
 
-        $this->service->updateEnglishTranslation($page->id, $payload);
+        $this->service->updateEnglishTranslation($page->id, $payload, $this->editor()->id);
 
         $translation = PageTranslation::where('page_id', $page->id)
             ->where('locale', 'en')
@@ -116,7 +116,7 @@ final class PageServiceSanitizationTest extends TestCase
             body: null,
         );
 
-        $this->service->updateArabicTranslation($page->id, $payload);
+        $this->service->updateArabicTranslation($page->id, $payload, $this->editor()->id);
 
         $translation = PageTranslation::where('page_id', $page->id)
             ->where('locale', 'ar')
@@ -144,7 +144,7 @@ final class PageServiceSanitizationTest extends TestCase
             ],
         );
 
-        $this->service->updateArabicTranslation($page->id, $payload);
+        $this->service->updateArabicTranslation($page->id, $payload, $this->editor()->id);
 
         $translation = PageTranslation::where('page_id', $page->id)
             ->where('locale', 'ar')
@@ -154,5 +154,10 @@ final class PageServiceSanitizationTest extends TestCase
         $block = $translation->body_payload['blocks'][0];
         $this->assertStringNotContainsString('javascript:', $block['content']);
         $this->assertStringContainsString('Click me', $block['content']);
+    }
+
+    private function editor(): User
+    {
+        return User::factory()->create(['role_slug' => 'editor']);
     }
 }

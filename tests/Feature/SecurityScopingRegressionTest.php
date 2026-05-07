@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Contracts\MediaServiceInterface;
 use App\Contracts\PageServiceInterface;
 use App\DTOs\PageMetadataDTO;
 use App\Filament\Resources\MediaAssetResource;
@@ -106,6 +107,26 @@ final class SecurityScopingRegressionTest extends TestCase
         $asset = $this->createMediaAsset('pharmacy');
 
         $this->assertFalse($user->can('update', $asset));
+    }
+
+    public function test_media_service_list_forces_faculty_editor_scope(): void
+    {
+        $user = User::factory()->create([
+            'role_slug' => 'faculty_editor',
+            'faculty_scope_slug' => 'medicine',
+        ]);
+
+        $matchingAsset = $this->createMediaAsset('medicine');
+        $otherAsset = $this->createMediaAsset('pharmacy');
+
+        $results = app(MediaServiceInterface::class)->list($user->id, [
+            'faculty_scope_slug' => 'pharmacy',
+        ]);
+
+        $ids = $results->pluck('mediaId')->all();
+
+        $this->assertContains($matchingAsset->id, $ids);
+        $this->assertNotContains($otherAsset->id, $ids);
     }
 
     private function createMediaAsset(string $scope): MediaAsset

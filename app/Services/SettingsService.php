@@ -19,8 +19,11 @@ use App\DTOs\SettingValueDTO;
 use App\DTOs\SocialContactSettingsDTO;
 use App\DTOs\SocialLinkDTO;
 use App\Models\Setting;
+use App\Models\User;
 use App\Support\UrlSanitizer;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use InvalidArgumentException;
 
 /**
@@ -115,8 +118,10 @@ final class SettingsService implements SettingsServiceInterface
         return $settings;
     }
 
-    public function updateGroup(SettingsDTO $values, ?int $userId = null): bool
+    public function updateGroup(SettingsDTO $values, int $userId): bool
     {
+        $this->authorizeSettingsUpdate($userId);
+
         $this->assertGroupKey($values->group);
         $locale = $this->normalizeLocaleOrBlank($values->locale);
 
@@ -187,6 +192,15 @@ final class SettingsService implements SettingsServiceInterface
         }
 
         return true;
+    }
+
+    private function authorizeSettingsUpdate(int $userId): void
+    {
+        $user = User::query()->find($userId);
+
+        if (! $user instanceof User || Gate::forUser($user)->denies('manage-settings')) {
+            throw new AuthorizationException('This user is not authorized to update settings.');
+        }
     }
 
     public function getApplyCtaTarget(string $locale): ApplyCtaSettingsDTO

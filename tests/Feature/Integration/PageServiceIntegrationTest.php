@@ -51,7 +51,7 @@ class PageServiceIntegrationTest extends TestCase
                 title: 'من نحن',
                 headline: 'تعرف على الجامعة',
                 body: '<p>محتوى عربي تجريبي</p>',
-            )),
+            ), $this->author()->id),
         );
 
         // Add English translation.
@@ -60,7 +60,7 @@ class PageServiceIntegrationTest extends TestCase
                 title: 'About Us',
                 headline: 'Learn About the University',
                 body: '<p>Sample English content</p>',
-            )),
+            ), $this->author()->id),
         );
 
         // Verify both translations are stored correctly.
@@ -88,7 +88,7 @@ class PageServiceIntegrationTest extends TestCase
                 title: 'Updated English Title',
                 headline: 'Updated English Headline',
                 body: '<p>Updated English body</p>',
-            )),
+            ), $this->author()->id),
         );
 
         $reloaded = $this->pageService()->getAdminEditorPayload($page->id);
@@ -112,7 +112,7 @@ class PageServiceIntegrationTest extends TestCase
                 title: 'عنوان عربي محدث',
                 headline: 'عنوان رئيسي محدث',
                 body: '<p>محتوى عربي محدث</p>',
-            )),
+            ), $this->author()->id),
         );
 
         $reloaded = $this->pageService()->getAdminEditorPayload($page->id);
@@ -213,7 +213,7 @@ class PageServiceIntegrationTest extends TestCase
 
         $this->pageService()->updateEnglishTranslation($page->id, new PageTranslationDTO(
             title: 'No Slug Page',
-        ));
+        ), $this->author()->id);
 
         $this->assertFalse(
             $this->pageService()->publish($page->id, $this->author()->id),
@@ -234,7 +234,7 @@ class PageServiceIntegrationTest extends TestCase
 
         $this->pageService()->updateEnglishTranslation($page->id, new PageTranslationDTO(
             title: 'No Template Page',
-        ));
+        ), $this->author()->id);
 
         $this->assertFalse(
             $this->pageService()->publish($page->id, $this->author()->id),
@@ -291,13 +291,13 @@ class PageServiceIntegrationTest extends TestCase
             title: 'من نحن',
             headline: 'تعرف على الجامعة',
             body: '<p>محتوى عربي تجريبي</p>',
-        ));
+        ), $this->author()->id);
 
         $this->pageService()->updateEnglishTranslation($page->id, new PageTranslationDTO(
             title: 'About Us',
             headline: 'Learn About the University',
             body: '<p>Sample English content</p>',
-        ));
+        ), $this->author()->id);
 
         return $this->pageService()->getAdminEditorPayload($page->id);
     }

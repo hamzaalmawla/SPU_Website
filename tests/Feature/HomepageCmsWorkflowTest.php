@@ -13,6 +13,7 @@ use App\DTOs\HomepageSectionDTO;
 use App\DTOs\HomepageSectionTranslationDTO;
 use App\DTOs\NavigationActionDTO;
 use App\Models\HomepageDraft;
+use App\Models\HomepageSectionTranslation;
 use App\Models\PreviewToken;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
@@ -208,6 +209,59 @@ class HomepageCmsWorkflowTest extends TestCase
 
         $this->assertSame('Published Homepage Hero', $this->heroTitleFromPublicHomepage('en'));
         $this->assertDatabaseHas('audit_logs', ['action' => 'homepage.publish']);
+    }
+
+    public function test_publish_sanitizes_homepage_payload_strings_recursively(): void
+    {
+        $sections = $this->homepageService()->getSections()->all();
+        $updatedSections = $this->replaceSection(
+            $sections,
+            'hero',
+            function (HomepageSectionDTO $section): HomepageSectionDTO {
+                $payload = new HomepageSectionDataDTO(
+                    eyebrow: 'Hero',
+                    subtitle: 'Safe subtitle',
+                    badge: 'Badge',
+                    title: 'Safe title',
+                    summary: '<p>Allowed</p><script>alert(1)</script>',
+                    backgroundImageUrl: '/images/home/test-hero-en.jpg',
+                    videoUrl: '/videos/home/test-hero-en.mp4',
+                    primaryAction: new NavigationActionDTO('Explore', '/en/faculties'),
+                    secondaryAction: new NavigationActionDTO('Apply', '/en/admissions'),
+                    content: ['nested' => ['caption' => '<img src=x onerror=alert(1)>Caption']],
+                );
+
+                return new HomepageSectionDTO(
+                    id: $section->id,
+                    key: $section->key,
+                    sortOrder: $section->sortOrder,
+                    isEnabled: $section->isEnabled,
+                    payload: $section->payload,
+                    arabicTranslation: $section->arabicTranslation,
+                    englishTranslation: $section->englishTranslation,
+                    arabicPayload: $section->arabicPayload,
+                    englishPayload: $payload,
+                );
+            },
+        );
+
+        $draft = $this->publishingService()->saveDraft(
+            new HomepageDraftDataDTO(sections: $updatedSections),
+            $this->author()->id,
+        );
+
+        $this->assertTrue($this->publishingService()->publish($draft->id, $this->author()->id));
+
+        $stored = HomepageSectionTranslation::query()
+            ->where('locale', 'en')
+            ->whereHas('section', fn ($query) => $query->where('key', 'hero'))
+            ->firstOrFail();
+
+        $encodedPayload = json_encode($stored->payload_json, JSON_THROW_ON_ERROR);
+
+        $this->assertStringNotContainsString('<script', $encodedPayload);
+        $this->assertStringNotContainsString('onerror', $encodedPayload);
+        $this->assertStringContainsString('Caption', $encodedPayload);
     }
 
     public function test_unpublish_removes_homepage_from_public_payload_and_logs_audit(): void

@@ -1,0 +1,60 @@
+name: Security CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  app-security:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, dom, fileinfo, mysql, redis
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --ansi
+
+      - name: Composer validate
+        run: composer validate
+
+      - name: Composer audit
+        run: composer audit
+
+      - name: NPM audit
+        run: npm audit --audit-level=high
+
+      - name: Pint
+        continue-on-error: true
+        run: ./vendor/bin/pint --test
+
+      - name: PHPStan
+        continue-on-error: true
+        run: ./vendor/bin/phpstan analyse --memory-limit=1G
+
+      - name: Tests
+        run: php artisan test

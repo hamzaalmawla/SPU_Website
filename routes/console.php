@@ -6,11 +6,14 @@ use App\Support\LegacyImport\OldDatabaseConnection;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Facades\Storage;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
+
+Schedule::command('audit:prune')->dailyAt('02:30')->withoutOverlapping();
 
 Artisan::command('legacy-import:report {module?} {--details}', function (?string $module = null) {
     $logs = MigrationLog::query();

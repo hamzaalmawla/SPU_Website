@@ -54,7 +54,7 @@ final class SecurityHeadersMiddleware
             "img-src 'self' data: https:",
             "font-src 'self' data: https:",
             "style-src 'self' 'unsafe-inline' https:",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+            "script-src 'self' 'unsafe-inline'",
             "frame-src 'self' https://www.google.com https://maps.google.com",
             "connect-src 'self'",
         ]);

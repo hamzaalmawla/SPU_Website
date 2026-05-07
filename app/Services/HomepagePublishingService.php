@@ -19,11 +19,15 @@ use App\Exceptions\ConflictException;
 use App\Models\HomepageDraft;
 use App\Models\HomepageSection;
 use App\Models\HomepageSectionTranslation;
+use App\Models\User;
 use App\Support\HomepagePayloadMapper;
 use App\Support\HtmlSanitizer;
+use App\Support\UrlSanitizer;
 use DateTimeInterface;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 final class HomepagePublishingService implements HomepagePublishingServiceInterface
 {
@@ -36,6 +40,8 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
 
     public function saveDraft(HomepageDraftDataDTO $payload, int $userId, ?int $expectedVersion = null): HomepageDraftDTO
     {
+        $this->authorizeHomepage($userId, 'update');
+
         // Optimistic locking: check version if expectedVersion is provided
         if ($expectedVersion !== null) {
             $currentDraft = HomepageDraft::query()
@@ -81,7 +87,7 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
         $nextVersion = $latestDraft instanceof HomepageDraft ? ((int) $latestDraft->version) + 1 : 1;
 
         $sections = $this->normalizeSections($payload->sections);
-        $draft = HomepageDraft::query()->create([
+        $draft = HomepageDraft::forceCreate([
             'target_type' => 'homepage',
             'target_id' => null,
             'payload_json' => [
@@ -115,6 +121,8 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
 
     public function publish(int $draftId, int $userId): bool
     {
+        $this->authorizeHomepage($userId, 'publish');
+
         $draft = HomepageDraft::query()->find($draftId);
 
         if (! $draft instanceof HomepageDraft || $draft->target_type !== 'homepage') {
@@ -195,6 +203,8 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
 
     public function unpublish(string $targetType, ?int $targetId, int $userId): bool
     {
+        $this->authorizeHomepage($userId, 'publish');
+
         if ($targetType !== 'homepage' || $targetId !== null) {
             return false;
         }
@@ -219,6 +229,8 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
 
     public function schedulePublish(int $draftId, DateTimeInterface $publishAt, int $userId): bool
     {
+        $this->authorizeHomepage($userId, 'publish');
+
         $draft = HomepageDraft::query()->find($draftId);
 
         if (! $draft instanceof HomepageDraft || $draft->target_type !== 'homepage') {
@@ -456,25 +468,52 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
     }
 
     /**
-     * Sanitize HTML-containing fields in a section payload array before persistence.
-     *
-     * Targets the string fields that may contain user-supplied rich text (body, summary)
-     * while leaving non-HTML fields (URLs, labels, titles) untouched.
+     * Sanitize all string content in a section payload array before persistence.
      *
      * @param  array<string, mixed>  $payload
      * @return array<string, mixed>
      */
     private function sanitizeSectionPayload(array $payload): array
     {
-        $htmlFields = ['body', 'summary'];
+        return $this->sanitizePayloadValue($payload);
+    }
 
-        foreach ($htmlFields as $field) {
-            if (isset($payload[$field]) && is_string($payload[$field]) && $payload[$field] !== '') {
-                $payload[$field] = $this->htmlSanitizer->sanitize($payload[$field]);
+    /**
+     * @param  array<string, mixed>|list<mixed>|string|mixed  $value
+     * @return array<string, mixed>|list<mixed>|string|mixed
+     */
+    private function sanitizePayloadValue(mixed $value, ?string $key = null): mixed
+    {
+        if (is_array($value)) {
+            foreach ($value as $childKey => $childValue) {
+                $value[$childKey] = $this->sanitizePayloadValue($childValue, is_string($childKey) ? $childKey : null);
             }
+
+            return $value;
         }
 
-        return $payload;
+        if (! is_string($value) || $value === '') {
+            return $value;
+        }
+
+        if ($this->isUrlPayloadKey($key)) {
+            return UrlSanitizer::sanitize($value);
+        }
+
+        return $this->htmlSanitizer->sanitize($value);
+    }
+
+    private function isUrlPayloadKey(?string $key): bool
+    {
+        if ($key === null) {
+            return false;
+        }
+
+        $normalized = strtolower($key);
+
+        return str_contains($normalized, 'url')
+            || str_contains($normalized, 'href')
+            || str_contains($normalized, 'link');
     }
 
     private function invalidateHomepageCache(): void
@@ -511,8 +550,10 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
      *
      * @return int Number of drafts deleted.
      */
-    public function discardEditableDraft(): int
+    public function discardEditableDraft(int $userId): int
     {
+        $this->authorizeHomepage($userId, 'update');
+
         return HomepageDraft::query()
             ->where('target_type', 'homepage')
             ->whereIn('status', ['draft', 'scheduled'])
@@ -530,5 +571,16 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
             ->first();
 
         return $latestDraft?->status;
+    }
+
+    private function authorizeHomepage(int $userId, string $ability): void
+    {
+        $user = User::query()->find($userId);
+
+        $gateAbility = $ability === 'publish' ? 'publish-content' : 'manage-homepage';
+
+        if (! $user instanceof User || Gate::forUser($user)->denies($gateAbility)) {
+            throw new AuthorizationException('This user is not authorized to manage the homepage.');
+        }
     }
 }

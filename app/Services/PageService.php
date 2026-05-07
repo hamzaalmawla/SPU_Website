@@ -101,7 +101,7 @@ final class PageService implements PageServiceInterface
         return $this->publicReadService->mapPageToDto($page->fresh(['translations', 'seoMeta']));
     }
 
-    public function updateBaseMetadata(int $pageId, PageMetadataDTO $payload, ?int $userId = null): bool
+    public function updateBaseMetadata(int $pageId, PageMetadataDTO $payload, int $userId): bool
     {
         $page = Page::query()->find($pageId);
 
@@ -135,22 +135,22 @@ final class PageService implements PageServiceInterface
         return $updated;
     }
 
-    public function updateArabicTranslation(int $pageId, PageTranslationDTO $payload, ?int $userId = null): bool
+    public function updateArabicTranslation(int $pageId, PageTranslationDTO $payload, int $userId): bool
     {
         return $this->updateTranslation($pageId, 'ar', $payload, $userId);
     }
 
-    public function updateEnglishTranslation(int $pageId, PageTranslationDTO $payload, ?int $userId = null): bool
+    public function updateEnglishTranslation(int $pageId, PageTranslationDTO $payload, int $userId): bool
     {
         return $this->updateTranslation($pageId, 'en', $payload, $userId);
     }
 
-    public function updateArabicSeo(int $pageId, PageSeoInputDTO $payload, ?int $userId = null): bool
+    public function updateArabicSeo(int $pageId, PageSeoInputDTO $payload, int $userId): bool
     {
         return $this->updateSeo($pageId, 'ar', $payload, $userId);
     }
 
-    public function updateEnglishSeo(int $pageId, PageSeoInputDTO $payload, ?int $userId = null): bool
+    public function updateEnglishSeo(int $pageId, PageSeoInputDTO $payload, int $userId): bool
     {
         return $this->updateSeo($pageId, 'en', $payload, $userId);
     }
@@ -375,7 +375,7 @@ final class PageService implements PageServiceInterface
 
     // ── Private helpers (CRUD + sanitization) ──
 
-    private function updateTranslation(int $pageId, string $locale, PageTranslationDTO $payload, ?int $userId = null): bool
+    private function updateTranslation(int $pageId, string $locale, PageTranslationDTO $payload, int $userId): bool
     {
         $page = Page::query()->find($pageId);
 
@@ -417,7 +417,7 @@ final class PageService implements PageServiceInterface
         return $translation->exists;
     }
 
-    private function updateSeo(int $pageId, string $locale, PageSeoInputDTO $payload, ?int $userId = null): bool
+    private function updateSeo(int $pageId, string $locale, PageSeoInputDTO $payload, int $userId): bool
     {
         $page = Page::query()->find($pageId);
 
@@ -497,16 +497,8 @@ final class PageService implements PageServiceInterface
         return $page->translations->contains(fn ($t) => ! empty($t->title));
     }
 
-    /**
-     * Service-layer authorization is enforced whenever an actor is supplied.
-     * Some legacy tests still exercise sanitization paths without an actor.
-     */
-    private function authorizePageWrite(?int $userId, string $ability, Page $page): void
+    private function authorizePageWrite(int $userId, string $ability, Page $page): void
     {
-        if ($userId === null) {
-            return;
-        }
-
         $user = User::query()->find($userId);
 
         if (! $user instanceof User || Gate::forUser($user)->denies($ability, $page)) {

@@ -5,6 +5,7 @@ use App\Http\Middleware\CachePublicPages;
 use App\Http\Middleware\LocaleSetterMiddleware;
 use App\Http\Middleware\RedirectContinuityMiddleware;
 use App\Http\Middleware\SecurityHeadersMiddleware;
+use App\Http\Middleware\TwoFactorChallengeMiddleware;
 use App\Http\Middleware\VerifyWebhookSignature;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -28,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'locale' => LocaleSetterMiddleware::class,
             'admin.auth' => AdminAuthMiddleware::class,
+            'two.factor' => TwoFactorChallengeMiddleware::class,
             'cache.public' => CachePublicPages::class,
             'verify.webhook' => VerifyWebhookSignature::class,
         ]);

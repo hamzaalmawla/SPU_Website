@@ -14,10 +14,13 @@ use App\DTOs\NavigationTreeDTO;
 use App\Models\MenuItem;
 use App\Models\Page;
 use App\Models\PageTranslation;
+use App\Models\User;
 use App\Support\HtmlSanitizer;
 use App\Support\UrlSanitizer;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use InvalidArgumentException;
 
@@ -84,6 +87,8 @@ final class MenuService implements MenuServiceInterface
 
     public function createItem(MenuItemDataDTO $payload): MenuItemDTO
     {
+        $this->authorizeMenu('create', MenuItem::class);
+
         $locale = $this->normalizeLocale($payload->locale);
         $this->assertGroupKey($payload->groupKey);
         $this->assertItemType($payload->itemType, $payload->groupKey);
@@ -141,6 +146,8 @@ final class MenuService implements MenuServiceInterface
         if (! $item instanceof MenuItem) {
             return false;
         }
+
+        $this->authorizeMenu('update', $item);
 
         $locale = $this->normalizeLocale($payload->locale);
         $this->assertGroupKey($payload->groupKey);
@@ -204,6 +211,8 @@ final class MenuService implements MenuServiceInterface
             return false;
         }
 
+        $this->authorizeMenu('delete', $item);
+
         $locale = is_string($item->locale) ? $item->locale : null;
 
         DB::transaction(function () use ($item): void {
@@ -231,6 +240,8 @@ final class MenuService implements MenuServiceInterface
      */
     public function reorderTree(string $treeType, array $tree): bool
     {
+        $this->authorizeMenu('manage', MenuItem::class);
+
         $this->assertTreeType($treeType);
 
         $itemIds = $this->collectTreeItemIds($tree);
@@ -273,6 +284,8 @@ final class MenuService implements MenuServiceInterface
         if (! $item instanceof MenuItem) {
             return false;
         }
+
+        $this->authorizeMenu('update', $item);
 
         $updated = MenuItem::query()->whereKey($itemId)->update(['is_enabled' => $enabled]) > 0;
 
@@ -652,6 +665,16 @@ final class MenuService implements MenuServiceInterface
         $user = $this->authFactory?->guard((string) config('auth.admin_guard', 'web'))->user();
 
         return $user !== null ? (int) $user->getAuthIdentifier() : null;
+    }
+
+    /** @param class-string|MenuItem $subject */
+    private function authorizeMenu(string $ability, string|MenuItem $subject): void
+    {
+        $user = $this->authFactory?->guard((string) config('auth.admin_guard', 'web'))->user();
+
+        if (! $user instanceof User || Gate::forUser($user)->denies($ability, $subject)) {
+            throw new AuthorizationException('This user is not authorized to manage menu items.');
+        }
     }
 
     private function parentForPayload(?int $parentId, string $groupKey, string $locale, ?MenuItem $item = null): ?MenuItem

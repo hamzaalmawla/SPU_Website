@@ -42,7 +42,7 @@ Route::prefix('admin')
             ->middleware('throttle:admin-login')
             ->name('login.attempt');
 
-        Route::middleware(['admin.auth'])
+        Route::middleware(['admin.auth', 'two.factor'])
             ->group(function (): void {
                 Route::post('/auth/logout', [AuthController::class, 'destroy'])->name('logout');
 

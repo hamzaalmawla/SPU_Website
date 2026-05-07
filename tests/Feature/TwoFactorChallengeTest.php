@@ -145,6 +145,16 @@ class TwoFactorChallengeTest extends TestCase
             ->assertRedirect('/admin/login');
     }
 
+    public function test_two_factor_user_is_redirected_from_admin_until_verified(): void
+    {
+        $user = $this->createUserWith2FA();
+
+        $this->actingAs($user, 'web');
+
+        $this->get('/admin')
+            ->assertRedirect(route('admin.two-factor.challenge'));
+    }
+
     // ------------------------------------------------------------------
     // Helpers
     // ------------------------------------------------------------------

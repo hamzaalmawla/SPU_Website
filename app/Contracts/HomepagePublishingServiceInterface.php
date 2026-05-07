@@ -46,7 +46,7 @@ interface HomepagePublishingServiceInterface
      *
      * @return int Number of drafts deleted.
      */
-    public function discardEditableDraft(): int;
+    public function discardEditableDraft(int $userId): int;
 
     /**
      * Return the status string of the latest homepage draft, or null if none exists.

@@ -147,9 +147,12 @@ final class AuthService implements AuthServiceInterface
         $user->fill([
             'name' => $payload['name'] ?? $user->name,
             'email' => $payload['email'] ?? $user->email,
-            'role_slug' => $payload['role_slug'] ?? $user->role_slug,
             'faculty_scope_slug' => $payload['faculty_scope_slug'] ?? null,
         ]);
+
+        if (array_key_exists('role_slug', $payload)) {
+            $user->forceFill(['role_slug' => $payload['role_slug']]);
+        }
 
         if (array_key_exists('password', $payload) && is_string($payload['password']) && $payload['password'] !== '') {
             $user->password = $payload['password'];

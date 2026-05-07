@@ -34,4 +34,19 @@ final class HomepagePublishingServicePlaceholder implements HomepagePublishingSe
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
+
+    public function hasEditableDraft(): bool
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function discardEditableDraft(int $userId): int
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function latestHomepageState(): ?string
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
 }

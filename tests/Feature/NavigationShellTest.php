@@ -9,6 +9,7 @@ use App\Contracts\NavigationServiceInterface;
 use App\DTOs\MenuItemDataDTO;
 use App\DTOs\MenuItemDTO;
 use App\DTOs\MenuTreeNodeDTO;
+use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use InvalidArgumentException;
@@ -23,6 +24,7 @@ class NavigationShellTest extends TestCase
         parent::setUp();
 
         $this->seed(DatabaseSeeder::class);
+        $this->actingAs(User::factory()->create(['role_slug' => 'editor']), 'web');
     }
 
     public function test_primary_navigation_payload_resolves_for_ar_and_en(): void

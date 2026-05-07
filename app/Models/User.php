@@ -30,7 +30,6 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role_slug',
         'role_id',
         'faculty_scope_slug',
         'locale_preference',

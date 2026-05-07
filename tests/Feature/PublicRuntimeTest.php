@@ -313,7 +313,7 @@ class PublicRuntimeTest extends TestCase
 
     public function test_homepage_preview_hydrates_draft_section_payloads(): void
     {
-        HomepageDraft::query()->create([
+        HomepageDraft::forceCreate([
             'target_type' => 'homepage',
             'target_id' => null,
             'payload_json' => [
