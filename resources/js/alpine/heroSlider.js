@@ -1,11 +1,13 @@
 export function createHeroSlider() {
     return {
         currentIndex: 0,
+        heroVisible: false,
         images: [],
         _timer: null,
 
         init() {
             this.images = window.spuHeroImages ?? [];
+            this.heroVisible = true;
             if (this.images.length > 1) {
                 this._timer = setInterval(() => {
                     this.currentIndex = (this.currentIndex + 1) % this.images.length;

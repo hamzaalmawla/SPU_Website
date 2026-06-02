@@ -33,6 +33,27 @@
     display: none !important;
 }
 
+.skip-link {
+    position: fixed;
+    left: 1rem;
+    top: 1rem;
+    z-index: 10000;
+    transform: translateY(-150%);
+    border-radius: 999px;
+    background: #ffffff;
+    color: #202759;
+    padding: 0.75rem 1rem;
+    font-weight: 800;
+    box-shadow: 0 16px 40px rgba(8, 14, 40, 0.16);
+    transition: transform 0.2s ease;
+}
+
+.skip-link:focus {
+    transform: translateY(0);
+    outline: 3px solid #6f1616;
+    outline-offset: 3px;
+}
+
 [dir="rtl"] .fa-chevron-right,
 [dir="rtl"] .fa-chevron-left,
 [dir="rtl"] .fa-arrow-right,

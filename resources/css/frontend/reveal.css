@@ -1,21 +1,68 @@
+/**
+ * Scroll-reveal animation system.
+ */
 
-/* Initial hidden state - minimal properties to reduce initial paint cost */
 .reveal {
     opacity: 0;
 }
 
-/* Visible state - GPU-accelerated properties only */
 .reveal-visible {
     opacity: 1;
-    transition: opacity 0.3s ease-out;
+    transition: opacity 0.6s ease-out;
 }
 
-/* Child items - no initial transform to avoid layout calculations */
+.reveal-up {
+    opacity: 0;
+    transform: translateY(40px);
+}
+
+.reveal-up.reveal-visible {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.7s ease-out, transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reveal-left {
+    opacity: 0;
+    transform: translateX(-50px);
+}
+
+.reveal-left.reveal-visible {
+    opacity: 1;
+    transform: translateX(0);
+    transition: opacity 0.7s ease-out, transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reveal-right {
+    opacity: 0;
+    transform: translateX(50px);
+}
+
+.reveal-right.reveal-visible {
+    opacity: 1;
+    transform: translateX(0);
+    transition: opacity 0.7s ease-out, transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 .reveal .reveal-item {
     opacity: 0;
 }
 
-/* Animate all items simultaneously - no stagger for instant feel */
 .reveal-visible .reveal-item {
     opacity: 1;
+}
+
+.reveal-delay-1 { transition-delay: 0.1s !important; }
+.reveal-delay-2 { transition-delay: 0.2s !important; }
+.reveal-delay-3 { transition-delay: 0.3s !important; }
+
+@media (prefers-reduced-motion: reduce) {
+    .reveal,
+    .reveal-up,
+    .reveal-left,
+    .reveal-right {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+    }
 }

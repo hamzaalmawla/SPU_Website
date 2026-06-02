@@ -1,0 +1,196 @@
+@layer components {
+  .honor-page .container {
+    padding-left: clamp(1.25rem, 9vw, 8.5rem);
+    padding-right: clamp(1.25rem, 9vw, 8.5rem);
+  }
+
+  .honor-filter {
+    display: inline-flex;
+    min-height: 30px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    border: 1px solid rgba(32, 39, 89, 0.14);
+    background: #ffffff;
+    padding: 0 14px;
+    color: #202759;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    transition: border-color 180ms ease, background 180ms ease, color 180ms ease;
+  }
+
+  .honor-filter:hover,
+  .honor-filter--active {
+    border-color: #6f1616;
+    background: #6f1616;
+    color: #ffffff;
+  }
+
+  .honor-select {
+    min-height: 30px;
+    border-radius: 6px;
+    border: 1px solid rgba(32, 39, 89, 0.14);
+    background: #ffffff url("/images/icon-chevron-down-outline.svg") no-repeat right 12px center / 9px 9px;
+    appearance: none;
+    padding: 0 32px 0 14px;
+    color: #202759;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  [dir="rtl"] .honor-select {
+    background-position: left 12px center;
+    padding: 0 14px 0 32px;
+  }
+
+  .honor-view-all {
+    display: inline-flex;
+    min-height: 30px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 5px;
+    background: #202759;
+    padding: 0 34px;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    transition: background 180ms ease, transform 180ms ease;
+  }
+
+  .honor-view-all:hover {
+    background: #6f1616;
+    transform: translateY(-1px);
+  }
+
+  .honor-card {
+    overflow: hidden;
+    border: 1px solid rgba(32, 39, 89, 0.12);
+    background: #ffffff;
+  }
+
+  .honor-card__media {
+    position: relative;
+    aspect-ratio: 1.55 / 1;
+    overflow: hidden;
+    background: rgba(32, 39, 89, 0.06);
+  }
+
+  .honor-card__media img {
+    transition: transform 350ms ease;
+  }
+
+  .honor-card:hover .honor-card__media img {
+    transform: scale(1.045);
+  }
+
+  .honor-card__gpa {
+    position: absolute;
+    right: 7px;
+    bottom: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border-radius: 4px;
+    background: #ffffff;
+    padding: 4px 7px;
+    color: #202759;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.13);
+  }
+
+  [dir="rtl"] .honor-card__gpa {
+    right: auto;
+    left: 7px;
+  }
+
+  .honor-card__body {
+    padding: 18px 20px 22px;
+  }
+
+  .honor-card__name {
+    color: #202759;
+    font-size: 15px;
+    font-weight: 800;
+    line-height: 1.2;
+  }
+
+  .honor-card__semester {
+    color: #6f1616;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .honor-card__rank {
+    color: rgba(32, 39, 89, 0.78);
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.09em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .honor-page-btn {
+    display: inline-flex;
+    width: 30px;
+    height: 30px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(32, 39, 89, 0.14);
+    border-radius: 5px;
+    background: #ffffff;
+    color: #202759;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1;
+    transition: border-color 180ms ease, background 180ms ease, color 180ms ease;
+  }
+
+  .honor-page-btn:hover:not(:disabled),
+  .honor-page-btn--active {
+    border-color: #6f1616;
+    background: #6f1616;
+    color: #ffffff;
+  }
+
+  .honor-page-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+
+  .honor-quote {
+    margin-top: 86px;
+    background: #202759;
+    padding: 42px 28px;
+    text-align: center;
+    color: #ffffff;
+  }
+
+  .honor-quote p {
+    margin: 0 auto;
+    width: 62%;
+    font-size: clamp(1.35rem, 2vw, 1.85rem);
+    font-weight: 800;
+    line-height: 1.26;
+  }
+
+  @media (max-width: 767px) {
+    .honor-view-all {
+      width: 100%;
+    }
+
+    .honor-quote {
+      margin-top: 56px;
+      padding: 34px 22px;
+    }
+
+    .honor-quote p {
+      width: 100%;
+    }
+  }
+}

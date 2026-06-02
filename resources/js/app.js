@@ -1,4 +1,4 @@
-import Alpine from 'alpinejs';
+import Alpine from '@alpinejs/csp';
 
 import { config, dom, library } from '@fortawesome/fontawesome-svg-core';
 import '@fortawesome/fontawesome-svg-core/styles.css';
@@ -17,6 +17,24 @@ import { createCalendarApp }    from './alpine/calendarApp.js';
 import { createMobileNav }      from './alpine/mobileNav.js';
 import { initRevealSections }   from './alpine/scrollReveal.js';
 
+function createPathSlider() {
+    return {
+        slidePaths(direction) {
+            const track = this.$refs.pathsTrack;
+            if (!track) return;
+
+            const firstCard = track.querySelector('.path-card');
+            const cardWidth = firstCard ? firstCard.getBoundingClientRect().width : 292;
+            const distance = Math.round(cardWidth + 24);
+
+            track.scrollBy({
+                left: direction === 'right' ? distance : -distance,
+                behavior: 'smooth',
+            });
+        },
+    };
+}
+
 // Alpine components (x-data="name()")
 Alpine.data('heroSlider',      createHeroSlider);
 Alpine.data('statsCounter',    createStatsCounter);
@@ -25,6 +43,7 @@ Alpine.data('honorPanel',      createHonorPanel);
 Alpine.data('researchSlider',  createResearchSlider);
 Alpine.data('calendarApp',     createCalendarApp);
 Alpine.data('mobileNav',       createMobileNav);
+Alpine.data('pathSlider',      createPathSlider);
 
 window.Alpine = Alpine;
 Alpine.start();

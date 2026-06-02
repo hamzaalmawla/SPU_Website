@@ -20,10 +20,10 @@ function normalizeEvent(event, index) {
         type: event.timeLabel ?? event.type ?? 'Event',
         title: event.title ?? 'Untitled Event',
         description: event.summary ?? event.description ?? '',
-        image: event.image ?? '/images/slider-1.webp',
+        image: event.image ?? event.imageUrl ?? '/images/slider-1.webp',
         link: event.url ?? event.link ?? '#',
         dateKey: parsed.format('YYYY-MM-DD'),
-        dateText: `<span translate="no">${parsed.format('MMM D, YYYY')}</span>`,
+        dateText: parsed.format('MMM D, YYYY'),
     };
 }
 
@@ -38,6 +38,7 @@ export function createCalendarApp() {
         init() {
             const incoming = Array.isArray(window.spuEventsData) ? window.spuEventsData : [];
             this.setEvents(incoming);
+            this.startCarousel();
         },
 
         setEvents(events = []) {
@@ -72,14 +73,24 @@ export function createCalendarApp() {
             const date = dayjs(this.selectedDate);
             const lang = getCurrentLocale();
             if (lang === 'ar') {
-                return `${MONTHS.ar[date.month()]} <span translate="no">${date.date()}</span>, <span translate="no">${date.year()}</span>`;
+                return `${MONTHS.ar[date.month()]} ${date.date()}, ${date.year()}`;
             }
-            return `<span translate="no">${date.format('MMM D, YYYY')}</span>`;
+            return date.format('MMM D, YYYY');
+        },
+
+        get monthLabel() {
+            const lang = getCurrentLocale();
+            return (MONTHS[lang] || MONTHS.en)[this.viewDate.month()];
+        },
+
+        get noEventsLabel() {
+            return getCurrentLocale() === 'ar' ? 'لا توجد فعاليات في هذا التاريخ.' : 'No events on this date.';
         },
 
         get calendarDays() {
             const grouped = this.eventsByDate;
-            const gridStart = this.viewDate.startOf('month');
+            const gridStart = this.viewDate.startOf('month').startOf('week');
+            const today = dayjs().format('YYYY-MM-DD');
 
             return Array.from({ length: CALENDAR_GRID_DAYS }, (_, i) => {
                 const day = gridStart.add(i, 'day');
@@ -88,8 +99,9 @@ export function createCalendarApp() {
 
                 return {
                     date: dateKey,
-                    dayNumber: isCurrentMonth ? `<span translate="no">${day.date()}</span>` : '',
+                    dayNumber: String(day.date()),
                     isCurrentMonth,
+                    isToday: dateKey === today,
                     hasEvent: isCurrentMonth && (grouped[dateKey] || []).length > 0,
                 };
             });

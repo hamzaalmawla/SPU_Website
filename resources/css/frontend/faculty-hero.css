@@ -1,0 +1,193 @@
+/**
+ * Faculty Hero — premium cinematic styles.
+ */
+
+@layer components {
+
+    /* ── Ken Burns slow zoom on the background image ── */
+    @keyframes faculty-hero-zoom {
+        0% {
+            transform: scale(1);
+        }
+
+        100% {
+            transform: scale(1.08);
+        }
+    }
+
+    .faculty-hero__image {
+        animation: faculty-hero-zoom 18s ease-out forwards;
+        will-change: transform;
+    }
+
+    .faculty-hero__image--loading {
+        animation: none;
+        transform: scale(1.12);
+        filter: blur(8px);
+        transition: transform 1.6s cubic-bezier(0.22, 1, 0.36, 1),
+            filter 1.2s ease-out;
+    }
+
+    .faculty-hero__image--ready {
+        transform: scale(1);
+        filter: blur(0);
+    }
+
+    /* ── Subtle animated grain overlay for cinematic depth ── */
+    @keyframes faculty-hero-grain {
+
+        0%,
+        100% {
+            transform: translate(0, 0);
+        }
+
+        10% {
+            transform: translate(-2%, -2%);
+        }
+
+        30% {
+            transform: translate(1%, -1%);
+        }
+
+        50% {
+            transform: translate(-1%, 2%);
+        }
+
+        70% {
+            transform: translate(2%, 1%);
+        }
+
+        90% {
+            transform: translate(-2%, 1%);
+        }
+    }
+
+    .faculty-hero__grain {
+        position: absolute;
+        inset: -50%;
+        width: 200%;
+        height: 200%;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        opacity: 0.03;
+        pointer-events: none;
+        animation: faculty-hero-grain 8s steps(10) infinite;
+        mix-blend-mode: overlay;
+    }
+
+    /* ── Staggered text entrance ── */
+    @keyframes faculty-hero-text-up {
+        from {
+            opacity: 0;
+            transform: translateY(28px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .faculty-hero__reveal {
+        opacity: 0;
+        animation: faculty-hero-text-up 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    .faculty-hero__reveal--d1 {
+        animation-delay: 0.15s;
+    }
+
+    .faculty-hero__reveal--d2 {
+        animation-delay: 0.35s;
+    }
+
+    .faculty-hero__reveal--d3 {
+        animation-delay: 0.55s;
+    }
+
+    .faculty-hero__reveal--d4 {
+        animation-delay: 0.75s;
+    }
+
+    /* ── Accent line that draws in ── */
+    @keyframes faculty-hero-line-draw {
+        from {
+            width: 0;
+        }
+
+        to {
+            width: 4.5rem;
+        }
+    }
+
+    .faculty-hero__accent-line {
+        display: block;
+        height: 3px;
+        width: 0;
+        border-radius: 9999px;
+        animation: faculty-hero-line-draw 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.6s forwards;
+    }
+
+    /* ── Logo glow pulse ── */
+    @keyframes faculty-hero-glow {
+
+        0%,
+        100% {
+            box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4), 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        50% {
+            box-shadow: 0 0 0 8px rgba(255, 255, 255, 0.08), 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+    }
+
+    .faculty-hero__logo-ring {
+        animation: faculty-hero-glow 3s ease-in-out infinite;
+    }
+
+    /* ── Floating stats bar glassmorphism ── */
+    .faculty-hero__stats-bar {
+        background: rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    /* ── Scroll indicator bounce ── */
+    @keyframes faculty-hero-bounce {
+
+        0%,
+        20%,
+        50%,
+        80%,
+        100% {
+            transform: translateY(0) translateX(-50%);
+        }
+
+        40% {
+            transform: translateY(-6px) translateX(-50%);
+        }
+
+        60% {
+            transform: translateY(-3px) translateX(-50%);
+        }
+    }
+
+    .faculty-hero__scroll-hint {
+        animation: faculty-hero-bounce 2.4s ease infinite 2s;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+
+        .faculty-hero__image,
+        .faculty-hero__grain,
+        .faculty-hero__reveal,
+        .faculty-hero__accent-line,
+        .g,
+        .faculty-hero__scroll-hint {
+            animation: none !important;
+            opacity: 1 !important;
+            width: 4.5rem !important;
+            transform: none !important;
+        }
+    }
+}
