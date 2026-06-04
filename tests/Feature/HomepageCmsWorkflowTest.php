@@ -13,9 +13,11 @@ use App\DTOs\HomepageSectionDTO;
 use App\DTOs\HomepageSectionTranslationDTO;
 use App\DTOs\NavigationActionDTO;
 use App\Models\HomepageDraft;
+use App\Models\HomepageSection;
 use App\Models\HomepageSectionTranslation;
 use App\Models\PreviewToken;
 use App\Models\User;
+use App\Support\HomepagePayloadMapper;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
@@ -113,6 +115,25 @@ class HomepageCmsWorkflowTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['action' => 'homepage.draft_saved']);
     }
 
+    public function test_save_draft_normalizes_fixed_sections_on_empty_homepage_install(): void
+    {
+        $this->actingAs($this->author(), 'web');
+
+        HomepageSectionTranslation::query()->delete();
+        HomepageSection::query()->delete();
+
+        $draft = $this->publishingService()->saveDraft(
+            new HomepageDraftDataDTO(sections: []),
+            $this->author()->id,
+        );
+
+        $this->assertCount(11, $draft->payload->homepage?->sections ?? []);
+        $this->assertSame(
+            HomepageSectionServiceInterface::SECTION_KEYS,
+            array_map(static fn (HomepageSectionDTO $section): string => $section->key, $draft->payload->homepage?->sections ?? []),
+        );
+    }
+
     public function test_homepage_preview_token_stays_bound_to_original_draft_snapshot(): void
     {
         $this->actingAs($this->author(), 'web');
@@ -175,6 +196,131 @@ class HomepageCmsWorkflowTest extends TestCase
 
         $this->assertFalse($this->publishingService()->publish($draft->id, $this->author()->id));
         $this->assertSame('Syrian Private University', $this->heroTitleFromPublicHomepage('en'));
+    }
+
+    public function test_editable_draft_missing_section_action_recovers_from_published_payload(): void
+    {
+        $sections = HomepagePayloadMapper::serializeSections($this->homepageService()->getSections()->all());
+
+        foreach ($sections as &$section) {
+            if (! in_array($section['key'] ?? null, ['university_news', 'research_studies'], true)) {
+                continue;
+            }
+
+            unset(
+                $section['payload']['sectionAction'],
+                $section['arabicPayload']['sectionAction'],
+                $section['englishPayload']['sectionAction'],
+            );
+        }
+        unset($section);
+
+        HomepageDraft::forceCreate([
+            'target_type' => 'homepage',
+            'target_id' => null,
+            'payload_json' => ['homepage' => ['sections' => $sections]],
+            'status' => 'draft',
+            'draft_notes' => 'Corrupted editor snapshot',
+            'created_by' => $this->author()->id,
+            'updated_by' => $this->author()->id,
+            'approved_by' => null,
+            'scheduled_at' => null,
+            'published_at' => null,
+        ]);
+
+        $news = $this->homepageService()->getSectionByKey('university_news');
+        $research = $this->homepageService()->getSectionByKey('research_studies');
+
+        $this->assertSame('/en/news', $news?->englishPayload?->sectionAction?->url);
+        $this->assertSame('/en/research', $research?->englishPayload?->sectionAction?->url);
+    }
+
+    public function test_homepage_draft_save_supersedes_older_editable_drafts(): void
+    {
+        $firstDraft = $this->publishingService()->saveDraft(
+            new HomepageDraftDataDTO(sections: $this->homepageService()->getSections()->all()),
+            $this->author()->id,
+        );
+
+        $secondDraft = $this->publishingService()->saveDraft(
+            new HomepageDraftDataDTO(sections: $this->homepageService()->getSections()->all()),
+            $this->author()->id,
+            $firstDraft->version,
+        );
+
+        $this->assertSame($firstDraft->version + 1, $secondDraft->version);
+        $this->assertDatabaseHas('homepage_drafts', [
+            'id' => $firstDraft->id,
+            'status' => 'superseded',
+        ]);
+        $this->assertDatabaseHas('homepage_drafts', [
+            'id' => $secondDraft->id,
+            'status' => 'draft',
+        ]);
+    }
+
+    public function test_save_after_publishing_latest_draft_does_not_conflict_with_superseded_drafts(): void
+    {
+        $firstDraft = $this->publishingService()->saveDraft(
+            new HomepageDraftDataDTO(sections: $this->homepageService()->getSections()->all()),
+            $this->author()->id,
+        );
+
+        $secondDraft = $this->publishingService()->saveDraft(
+            new HomepageDraftDataDTO(sections: $this->homepageService()->getSections()->all()),
+            $this->author()->id,
+            $firstDraft->version,
+        );
+
+        $this->assertTrue($this->publishingService()->publish($secondDraft->id, $this->author()->id));
+
+        $nextDraft = $this->publishingService()->saveDraft(
+            new HomepageDraftDataDTO(sections: $this->homepageService()->getSections()->all()),
+            $this->author()->id,
+            $secondDraft->version,
+        );
+
+        $this->assertSame($secondDraft->version + 1, $nextDraft->version);
+        $this->assertDatabaseHas('homepage_drafts', [
+            'id' => $firstDraft->id,
+            'status' => 'superseded',
+        ]);
+        $this->assertDatabaseHas('homepage_drafts', [
+            'id' => $secondDraft->id,
+            'status' => 'published',
+        ]);
+    }
+
+    public function test_save_with_expected_published_version_ignores_older_editable_draft_residue(): void
+    {
+        $firstDraft = $this->publishingService()->saveDraft(
+            new HomepageDraftDataDTO(sections: $this->homepageService()->getSections()->all()),
+            $this->author()->id,
+        );
+
+        $secondDraft = $this->publishingService()->saveDraft(
+            new HomepageDraftDataDTO(sections: $this->homepageService()->getSections()->all()),
+            $this->author()->id,
+            $firstDraft->version,
+        );
+
+        $this->assertTrue($this->publishingService()->publish($secondDraft->id, $this->author()->id));
+
+        HomepageDraft::query()
+            ->whereKey($firstDraft->id)
+            ->update(['status' => 'draft']);
+
+        $nextDraft = $this->publishingService()->saveDraft(
+            new HomepageDraftDataDTO(sections: $this->homepageService()->getSections()->all()),
+            $this->author()->id,
+            $secondDraft->version,
+        );
+
+        $this->assertSame($secondDraft->version + 1, $nextDraft->version);
+        $this->assertDatabaseHas('homepage_drafts', [
+            'id' => $firstDraft->id,
+            'status' => 'superseded',
+        ]);
     }
 
     public function test_publish_updates_public_homepage_invalidates_cache_and_writes_audit_logs(): void
@@ -270,6 +416,21 @@ class HomepageCmsWorkflowTest extends TestCase
         $this->assertSame([], $this->publicSectionKeys('en'));
         $this->get('/en')->assertNotFound();
         $this->assertDatabaseHas('audit_logs', ['action' => 'homepage.unpublish']);
+    }
+
+    public function test_publish_after_unpublish_reenables_public_homepage(): void
+    {
+        $this->assertTrue($this->publishingService()->unpublish('homepage', null, $this->author()->id));
+        $this->get('/en')->assertNotFound();
+
+        $draft = $this->publishingService()->saveDraft(
+            new HomepageDraftDataDTO(sections: $this->homepageService()->getSections()->all()),
+            $this->author()->id,
+        );
+
+        $this->assertTrue($this->publishingService()->publish($draft->id, $this->author()->id));
+        $this->assertSame(HomepageSectionServiceInterface::SECTION_KEYS, $this->publicSectionKeys('en'));
+        $this->get('/en')->assertOk()->assertSee('Syrian Private University');
     }
 
     public function test_schedule_publish_stores_intent_without_changing_public_state(): void

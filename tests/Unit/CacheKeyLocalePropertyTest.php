@@ -9,6 +9,7 @@ use App\Contracts\CacheServiceInterface;
 use App\Http\Middleware\CachePublicPages;
 use App\Services\MenuService;
 use App\Services\SettingsService;
+use App\Support\HtmlSanitizer;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Http\Request;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -45,7 +46,7 @@ class CacheKeyLocalePropertyTest extends TestCase
         $auditMock = $this->createMock(AuditServiceInterface::class);
 
         $this->settingsService = new SettingsService($cacheMock, $auditMock);
-        $this->menuService = new MenuService($cacheMock, $auditMock);
+        $this->menuService = new MenuService($cacheMock, $auditMock, new HtmlSanitizer());
     }
 
     // ──────────────────────────────────────────────────────────────────────

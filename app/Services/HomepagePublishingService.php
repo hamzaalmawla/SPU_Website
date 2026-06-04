@@ -47,10 +47,13 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
             $currentDraft = HomepageDraft::query()
                 ->where('target_type', 'homepage')
                 ->whereIn('status', ['draft', 'scheduled'])
-                ->latest()
+                ->latest('version')
                 ->first();
 
-            if ($currentDraft instanceof HomepageDraft && (int) $currentDraft->version !== $expectedVersion) {
+            if ($currentDraft instanceof HomepageDraft
+                && (int) $currentDraft->version !== $expectedVersion
+                && ! $this->isOlderEditableDraftResidue((int) $currentDraft->version, $expectedVersion)
+            ) {
                 $this->auditService->log(
                     action: 'draft.conflict',
                     userId: $userId,
@@ -78,13 +81,7 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
             }
         }
 
-        // Determine the next version number
-        $latestDraft = HomepageDraft::query()
-            ->where('target_type', 'homepage')
-            ->whereIn('status', ['draft', 'scheduled'])
-            ->latest()
-            ->first();
-        $nextVersion = $latestDraft instanceof HomepageDraft ? ((int) $latestDraft->version) + 1 : 1;
+        $nextVersion = $this->nextDraftVersion();
 
         $sections = $this->normalizeSections($payload->sections);
         $draft = HomepageDraft::forceCreate([
@@ -104,6 +101,8 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
             'published_at' => null,
             'version' => $nextVersion,
         ]);
+
+        $this->supersedeOtherEditableDrafts((int) $draft->getKey(), $userId);
 
         $this->auditService->log(
             action: 'homepage.draft_saved',
@@ -142,7 +141,7 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
                     [
                         'type' => $this->sectionType($section->key),
                         'sort_order' => $section->sortOrder,
-                        'is_enabled' => $section->isEnabled,
+                        'is_enabled' => true,
                         'schema_version' => 1,
                         'config_json' => [
                             'approved_key' => $section->key,
@@ -183,6 +182,8 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
                 'scheduled_at' => null,
                 'published_at' => now(),
             ])->save();
+
+            $this->supersedeOtherEditableDrafts((int) $draft->getKey(), $userId);
         });
 
         $this->invalidateHomepageCache();
@@ -293,6 +294,17 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
         return $published;
     }
 
+    public function latestEditableDraftVersion(): ?int
+    {
+        $draft = HomepageDraft::query()
+            ->where('target_type', 'homepage')
+            ->whereIn('status', ['draft', 'scheduled'])
+            ->latest()
+            ->first();
+
+        return $draft instanceof HomepageDraft ? (int) $draft->version : null;
+    }
+
     /**
      * @param  array<int, HomepageSectionDTO>  $sections
      */
@@ -324,16 +336,15 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
 
         foreach (HomepageSectionServiceInterface::SECTION_KEYS as $index => $key) {
             $current = $currentSections->get($key);
-
-            if (! $current instanceof HomepageSectionDTO) {
-                continue;
-            }
+            $fallback = $current instanceof HomepageSectionDTO
+                ? $current
+                : $this->emptySection($key, $index + 1);
 
             $provided = $providedByKey->get($key);
 
             $normalized[] = $provided instanceof HomepageSectionDTO
-                ? $this->mergeSection($provided, $current, $index + 1)
-                : $current;
+                ? $this->mergeSection($provided, $fallback, $index + 1)
+                : $fallback;
         }
 
         return array_values($normalized);
@@ -413,6 +424,23 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
             englishTranslation: $provided->englishTranslation,
             arabicPayload: $provided->arabicPayload ?? $fallback->arabicPayload ?? $fallback->payload,
             englishPayload: $provided->englishPayload ?? $fallback->englishPayload ?? $fallback->payload,
+        );
+    }
+
+    private function emptySection(string $key, int $sortOrder): HomepageSectionDTO
+    {
+        $payload = new HomepageSectionDataDTO();
+
+        return new HomepageSectionDTO(
+            id: 0,
+            key: $key,
+            sortOrder: $sortOrder,
+            isEnabled: true,
+            payload: $payload,
+            arabicTranslation: new HomepageSectionTranslationDTO(locale: 'ar'),
+            englishTranslation: new HomepageSectionTranslationDTO(locale: 'en'),
+            arabicPayload: $payload,
+            englishPayload: $payload,
         );
     }
 
@@ -558,6 +586,40 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
         }
 
         return null;
+    }
+
+    private function nextDraftVersion(): int
+    {
+        $latestVersion = HomepageDraft::query()
+            ->where('target_type', 'homepage')
+            ->max('version');
+
+        return is_numeric($latestVersion) ? ((int) $latestVersion) + 1 : 1;
+    }
+
+    private function isOlderEditableDraftResidue(int $currentEditableVersion, int $expectedVersion): bool
+    {
+        if ($currentEditableVersion >= $expectedVersion) {
+            return false;
+        }
+
+        return HomepageDraft::query()
+            ->where('target_type', 'homepage')
+            ->where('version', $expectedVersion)
+            ->exists();
+    }
+
+    private function supersedeOtherEditableDrafts(int $currentDraftId, int $userId): void
+    {
+        HomepageDraft::query()
+            ->where('target_type', 'homepage')
+            ->whereKeyNot($currentDraftId)
+            ->whereIn('status', ['draft', 'scheduled'])
+            ->update([
+                'status' => 'superseded',
+                'updated_by' => $userId,
+                'scheduled_at' => null,
+            ]);
     }
 
     /**

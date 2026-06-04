@@ -31,10 +31,14 @@ final class SitemapService implements SitemapServiceInterface
             ->where('status', 'published')
             ->where('is_enabled', true)
             ->whereNotNull('published_at')
+            ->where(function ($query): void {
+                $query->whereNull('publish_at')
+                    ->orWhere('publish_at', '<=', now());
+            })
             ->orderBy('id')
             ->get();
 
-        $entries = new Collection();
+        $entries = new Collection;
         $baseUrl = rtrim((string) config('app.url', 'http://localhost'), '/');
 
         foreach ($pages as $page) {
@@ -42,7 +46,7 @@ final class SitemapService implements SitemapServiceInterface
 
             $localesWithTranslation = [];
             foreach (['ar', 'en'] as $locale) {
-                if ($page->translations->firstWhere('locale', $locale) !== null) {
+                if ($this->isSitemapRenderable($page, $locale)) {
                     $localesWithTranslation[] = $locale;
                 }
             }
@@ -160,5 +164,34 @@ final class SitemapService implements SitemapServiceInterface
         $segments[] = (string) $page->slug;
 
         return '/'.$locale.'/'.implode('/', array_filter($segments));
+    }
+
+    private function isSitemapRenderable(Page $page, string $locale): bool
+    {
+        if ($page->translations->firstWhere('locale', $locale) === null) {
+            return false;
+        }
+
+        $cursor = $page;
+
+        while ($cursor->parent_id !== null) {
+            $cursor->loadMissing('parent');
+
+            if (! $cursor->parent instanceof Page) {
+                return false;
+            }
+
+            $cursor = $cursor->parent;
+
+            if (! (bool) $cursor->is_enabled || $cursor->status !== 'published' || $cursor->published_at === null) {
+                return false;
+            }
+
+            if ($cursor->publish_at !== null && $cursor->publish_at->isFuture()) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

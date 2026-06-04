@@ -1,34 +1,35 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Two-Factor Authentication</title>
-</head>
-<body>
-    <h1>Two-Factor Authentication</h1>
-    <p>Please enter your authentication code to continue.</p>
+<x-admin.auth.layout :title="__('admin.auth.two_factor_title')">
+    <h2 class="form-heading">{{ __('admin.auth.two_factor_heading') }}</h2>
+    <p class="form-copy">{{ __('admin.auth.two_factor_subheading') }}</p>
 
     @if ($errors->any())
-        <div role="alert">{{ $errors->first() }}</div>
+        <div class="alert" role="alert">{{ $errors->first() }}</div>
     @endif
 
-    <form method="POST" action="{{ route('admin.two-factor.verify') }}">
+    <form method="POST" action="{{ route('admin.two-factor.verify') }}" novalidate>
         @csrf
 
-        <label for="code">Authentication Code</label>
-        <input
-            id="code"
-            name="code"
-            type="text"
-            inputmode="numeric"
-            autocomplete="one-time-code"
-            placeholder="Enter 6-digit code or recovery code"
-            required
-            autofocus
-        >
+        <div class="field">
+            <label for="code">{{ __('admin.auth.code') }}</label>
+            <input
+                id="code"
+                name="code"
+                type="text"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                placeholder="{{ __('admin.auth.code_placeholder') }}"
+                required
+                autofocus
+            >
+            @error('code')
+                <p class="field-error">{{ $message }}</p>
+            @enderror
+        </div>
 
-        <button type="submit">Verify</button>
+        <div class="form-row"></div>
+
+        <button class="primary-button" type="submit">{{ __('admin.auth.verify') }}</button>
     </form>
-</body>
-</html>
+
+    <p class="security-note">{{ __('admin.auth.two_factor_note') }}</p>
+</x-admin.auth.layout>

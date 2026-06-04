@@ -23,7 +23,8 @@ class AdminAuthFlowTest extends TestCase
     {
         $this->get('/admin/login')
             ->assertOk()
-            ->assertSee('Admin Login');
+            ->assertSee('SPU CMS')
+            ->assertSee('الجامعة السورية الخاصة');
     }
 
     /**

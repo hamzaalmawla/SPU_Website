@@ -51,7 +51,7 @@ final class TwoFactorChallengeMiddleware
         }
 
         // Also allow logout so users can escape if needed.
-        if ($request->routeIs('admin.logout')) {
+        if ($request->routeIs('admin.logout') || $request->routeIs('filament.admin.auth.logout')) {
             return $next($request);
         }
 

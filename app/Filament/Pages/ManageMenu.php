@@ -11,14 +11,10 @@ use App\DTOs\MenuTreeNodeDTO;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Component;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Tabs;
-use Filament\Forms\Components\Tabs\Tab;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Forms\Components\View;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Gate;
@@ -57,6 +53,13 @@ class ManageMenu extends Page implements HasForms
     /** @var array<string, array<string, list<MenuItemDTO>>> */
     private array $menuTreeDTOs = [];
 
+    public bool $isEditing = false;
+
+    public ?int $editingItemId = null;
+
+    /** @var array<string, mixed> */
+    public array $editForm = [];
+
     private MenuServiceInterface $menuService;
 
     public function boot(MenuServiceInterface $menuService): void
@@ -72,22 +75,6 @@ class ManageMenu extends Page implements HasForms
     public function mount(): void
     {
         $this->loadMenuTrees();
-    }
-
-    public function form(Form $form): Form
-    {
-        return $form
-            ->schema([
-                Tabs::make('menu_groups')
-                    ->tabs([
-                        $this->buildGroupTab('header', 'Header Navigation'),
-                        $this->buildGroupTab('footer', 'Footer Navigation'),
-                        $this->buildGroupTab('utility', 'Utility Navigation'),
-                    ])
-                    ->persistTabInQueryString('group')
-                    ->columnSpanFull(),
-            ])
-            ->statePath('data');
     }
 
     // ──────────────────────────────────────────────
@@ -122,6 +109,7 @@ class ManageMenu extends Page implements HasForms
 
         if (in_array($group, MenuServiceInterface::GROUP_KEYS, true)) {
             $this->activeGroup = $group;
+            $this->loadMenuTrees($group);
         }
     }
 
@@ -140,15 +128,36 @@ class ManageMenu extends Page implements HasForms
             return;
         }
 
-        $this->dispatch('open-modal', id: 'edit-menu-item', data: [
-            'itemId' => $item->id,
-            'label_ar' => $item->locale === 'ar' ? $item->label : '',
-            'label_en' => $item->locale === 'en' ? $item->label : '',
+        $this->editingItemId = $item->id;
+        $this->editForm = [
+            'label' => $item->label,
+            'locale' => $item->locale ?? 'ar',
+            'group_key' => $item->groupKey,
             'target_type' => $item->targetType,
+            'target_id' => $item->targetId,
             'url' => $item->url ?? '',
+            'parent_id' => $item->parentId,
             'is_enabled' => $item->isEnabled,
             'open_in_new_tab' => $item->openInNewTab,
-        ]);
+        ];
+        $this->isEditing = true;
+    }
+
+    public function cancelEdit(): void
+    {
+        $this->isEditing = false;
+        $this->editingItemId = null;
+        $this->editForm = [];
+    }
+
+    public function updateEditingItem(): void
+    {
+        if ($this->editingItemId === null) {
+            return;
+        }
+
+        $this->updateItem($this->editingItemId, $this->editForm);
+        $this->cancelEdit();
     }
 
     public function updateItem(int $itemId, array $formData): void
@@ -168,14 +177,14 @@ class ManageMenu extends Page implements HasForms
 
         try {
             $payload = new MenuItemDataDTO(
-                label: (string) ($formData['label_ar'] ?? $formData['label_en'] ?? $item->label),
+                label: trim((string) ($formData['label'] ?? $item->label)),
                 itemType: $item->itemType,
                 groupKey: $item->groupKey,
                 locale: $item->locale,
                 targetType: (string) ($formData['target_type'] ?? $item->targetType),
-                parentId: $item->parentId,
+                parentId: isset($formData['parent_id']) && $formData['parent_id'] !== '' ? (int) $formData['parent_id'] : null,
                 targetId: ($formData['target_type'] ?? $item->targetType) === 'page'
-                    ? ($formData['target_id'] ?? $item->targetId)
+                    ? (isset($formData['target_id']) && $formData['target_id'] !== '' ? (int) $formData['target_id'] : $item->targetId)
                     : null,
                 url: ($formData['target_type'] ?? $item->targetType) === 'url'
                     ? (string) ($formData['url'] ?? '')
@@ -257,11 +266,12 @@ class ManageMenu extends Page implements HasForms
      *
      * @param  array<int, array{id: int, children?: array<int, array{id: int}>}>  $orderedTree
      */
-    public function reorderItems(array $orderedTree): void
+    public function reorderItems(array $orderedTree, string $locale): void
     {
         Gate::authorize('manage-menu');
 
         try {
+            $this->assertSubmittedTreeMatchesActiveLocale($orderedTree, $locale);
             $treeNodes = $this->buildTreeNodesFromOrder($orderedTree);
             $this->menuService->reorderTree($this->activeGroup, $treeNodes);
 
@@ -289,6 +299,10 @@ class ManageMenu extends Page implements HasForms
      */
     public function getTreeForGroup(string $group, string $locale): array
     {
+        if (! isset($this->menuTrees[$group][$locale])) {
+            $this->loadMenuTrees($group);
+        }
+
         return $this->menuTrees[$group][$locale] ?? [];
     }
 
@@ -300,6 +314,45 @@ class ManageMenu extends Page implements HasForms
     public function getGroupKeys(): array
     {
         return MenuServiceInterface::GROUP_KEYS;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function getPageTargetOptions(?string $locale = null): array
+    {
+        return $this->menuService->getPageTargetOptions($locale ?? (string) ($this->editForm['locale'] ?? 'ar'));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function getParentOptionsForEdit(): array
+    {
+        $locale = (string) ($this->editForm['locale'] ?? 'ar');
+        $group = (string) ($this->editForm['group_key'] ?? $this->activeGroup);
+        $items = $this->getTreeForGroup($group, $locale);
+
+        return $this->flattenParentOptions($items, $this->editingItemId);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function getParentOptionsForLocale(string $locale): array
+    {
+        return $this->flattenParentOptions($this->getTreeForGroup($this->activeGroup, $locale), null);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function getSharedPageTargetOptions(): array
+    {
+        $arabic = $this->menuService->getPageTargetOptions('ar');
+        $english = $this->menuService->getPageTargetOptions('en');
+
+        return array_intersect_key($arabic, $english);
     }
 
     // ──────────────────────────────────────────────
@@ -325,8 +378,8 @@ class ManageMenu extends Page implements HasForms
                     groupKey: $this->activeGroup,
                     locale: $locale,
                     targetType: (string) ($data['target_type'] ?? 'url'),
-                    parentId: isset($data['parent_id']) && $data['parent_id'] !== '' ? (int) $data['parent_id'] : null,
-                    targetId: ($data['target_type'] ?? 'url') === 'page' ? ($data['target_id'] ?? null) : null,
+                    parentId: isset($data["parent_{$locale}"]) && $data["parent_{$locale}"] !== '' ? (int) $data["parent_{$locale}"] : null,
+                    targetId: ($data['target_type'] ?? 'url') === 'page' && isset($data['target_id']) && $data['target_id'] !== '' ? (int) $data['target_id'] : null,
                     url: ($data['target_type'] ?? 'url') === 'url' ? (string) ($data['url'] ?? '') : null,
                     isEnabled: (bool) ($data['is_enabled'] ?? true),
                     openInNewTab: (bool) ($data['open_in_new_tab'] ?? false),
@@ -352,31 +405,39 @@ class ManageMenu extends Page implements HasForms
         }
     }
 
-    private function loadMenuTrees(): void
+    private function loadMenuTrees(?string $group = null): void
     {
-        $this->menuTrees = [];
-        $this->menuTreeDTOs = [];
+        $group ??= $this->activeGroup;
+
+        if (! in_array($group, MenuServiceInterface::GROUP_KEYS, true)) {
+            $group = 'header';
+        }
 
         $dtoToArray = function (MenuItemDTO $item) use (&$dtoToArray): array {
             return [
                 'id' => $item->id,
+                'parentId' => $item->parentId,
                 'label' => $item->label,
+                'locale' => $item->locale,
+                'groupKey' => $item->groupKey,
                 'targetType' => $item->targetType,
+                'targetId' => $item->targetId,
                 'url' => $item->url,
                 'resolvedUrl' => $item->resolvedUrl,
                 'isEnabled' => $item->isEnabled,
                 'openInNewTab' => $item->openInNewTab,
                 'sortOrder' => $item->sortOrder,
+                'depth' => $item->depth,
                 'children' => array_map($dtoToArray, $item->children),
             ];
         };
 
-        foreach (MenuServiceInterface::GROUP_KEYS as $group) {
-            foreach (['ar', 'en'] as $locale) {
-                $items = $this->loadAdminTreeItems($group, $locale);
-                $this->menuTreeDTOs[$group][$locale] = $items;
-                $this->menuTrees[$group][$locale] = array_map($dtoToArray, $items);
-            }
+        unset($this->menuTrees[$group], $this->menuTreeDTOs[$group]);
+
+        foreach (['ar', 'en'] as $locale) {
+            $items = $this->loadAdminTreeItems($group, $locale);
+            $this->menuTreeDTOs[$group][$locale] = $items;
+            $this->menuTrees[$group][$locale] = array_map($dtoToArray, $items);
         }
     }
 
@@ -396,7 +457,7 @@ class ManageMenu extends Page implements HasForms
         // $menuTreeDTOs is private and not persisted by Livewire between requests.
         // Re-load from DB if empty before searching.
         if ($this->menuTreeDTOs === []) {
-            $this->loadMenuTrees();
+            $this->loadMenuTrees($this->activeGroup);
         }
 
         foreach ($this->menuTreeDTOs as $groups) {
@@ -411,6 +472,101 @@ class ManageMenu extends Page implements HasForms
         // Fallback: load directly from service in case the item is in a group/locale
         // not yet loaded (e.g. after a group switch without a full reload).
         return $this->menuService->findAdminItem($itemId);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $items
+     * @return array<int, string>
+     */
+    private function flattenParentOptions(array $items, ?int $excludedItemId, string $prefix = ''): array
+    {
+        $options = [];
+
+        foreach ($items as $item) {
+            $itemId = (int) $item['id'];
+
+            if ($itemId === $excludedItemId || $this->containsItemId($item['children'] ?? [], $excludedItemId)) {
+                continue;
+            }
+
+            if ((int) ($item['depth'] ?? 0) < self::MAX_DEPTH) {
+                $options[$itemId] = $prefix.(string) $item['label'];
+            }
+
+            if (! empty($item['children'])) {
+                $options += $this->flattenParentOptions($item['children'], $excludedItemId, $prefix.'— ');
+            }
+        }
+
+        return $options;
+    }
+
+    /** @param  list<array<string, mixed>>  $items */
+    private function containsItemId(array $items, ?int $itemId): bool
+    {
+        if ($itemId === null) {
+            return false;
+        }
+
+        foreach ($items as $item) {
+            if ((int) ($item['id'] ?? 0) === $itemId || $this->containsItemId($item['children'] ?? [], $itemId)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** @param  array<int, array{id: int, children?: array<int, array{id: int}>}>  $orderedTree */
+    private function assertSubmittedTreeMatchesActiveLocale(array $orderedTree, string $locale): void
+    {
+        if (! in_array($locale, ['ar', 'en'], true)) {
+            throw new \InvalidArgumentException('Unsupported menu locale.');
+        }
+
+        $allowedIds = $this->collectTreeIds($this->getTreeForGroup($this->activeGroup, $locale));
+        $submittedIds = $this->collectSubmittedTreeIds($orderedTree);
+
+        sort($allowedIds);
+        sort($submittedIds);
+
+        if ($submittedIds !== $allowedIds) {
+            throw new \InvalidArgumentException('Menu order must include every item in the active locale tree.');
+        }
+
+        foreach ($submittedIds as $itemId) {
+            if (! in_array($itemId, $allowedIds, true)) {
+                throw new \InvalidArgumentException('Menu order contains an item outside the active locale tree.');
+            }
+        }
+    }
+
+    /** @param  list<array<string, mixed>>  $items */
+    private function collectTreeIds(array $items): array
+    {
+        $ids = [];
+
+        foreach ($items as $item) {
+            $ids[] = (int) $item['id'];
+            $ids = array_merge($ids, $this->collectTreeIds($item['children'] ?? []));
+        }
+
+        return $ids;
+    }
+
+    /** @param  array<int, array{id: int, children?: array<int, array{id: int}>}>  $orderedTree */
+    private function collectSubmittedTreeIds(array $orderedTree): array
+    {
+        $ids = [];
+
+        foreach ($orderedTree as $node) {
+            $ids[] = (int) $node['id'];
+            if (isset($node['children']) && is_array($node['children'])) {
+                $ids = array_merge($ids, $this->collectSubmittedTreeIds($node['children']));
+            }
+        }
+
+        return array_values(array_unique($ids));
     }
 
     /**
@@ -443,7 +599,15 @@ class ManageMenu extends Page implements HasForms
         foreach ($orderedTree as $sortOrder => $node) {
             $children = [];
 
-            if (isset($node['children']) && is_array($node['children']) && $depth < self::MAX_DEPTH - 1) {
+            if ($depth > self::MAX_DEPTH) {
+                throw new \InvalidArgumentException('Menu order exceeds the maximum depth.');
+            }
+
+            if (isset($node['children']) && is_array($node['children'])) {
+                if ($depth >= self::MAX_DEPTH) {
+                    throw new \InvalidArgumentException('Menu order exceeds the maximum depth.');
+                }
+
                 $children = $this->buildTreeNodesFromOrder($node['children'], $depth + 1);
             }
 
@@ -456,35 +620,6 @@ class ManageMenu extends Page implements HasForms
         }
 
         return $nodes;
-    }
-
-    private function buildGroupTab(string $groupKey, string $label): Tab
-    {
-        return Tab::make($groupKey)
-            ->label($label)
-            ->schema([
-                Tabs::make("{$groupKey}_locales")
-                    ->tabs([
-                        Tab::make("{$groupKey}_ar")
-                            ->label('العربية (AR)')
-                            ->schema([
-                                View::make('filament.pages.partials.menu-tree')
-                                    ->viewData([
-                                        'group' => $groupKey,
-                                        'locale' => 'ar',
-                                    ]),
-                            ]),
-                        Tab::make("{$groupKey}_en")
-                            ->label('English (EN)')
-                            ->schema([
-                                View::make('filament.pages.partials.menu-tree')
-                                    ->viewData([
-                                        'group' => $groupKey,
-                                        'locale' => 'en',
-                                    ]),
-                            ]),
-                    ]),
-            ]);
     }
 
     /**
@@ -515,6 +650,22 @@ class ManageMenu extends Page implements HasForms
                 ->url()
                 ->maxLength(2048)
                 ->visible(fn (callable $get): bool => ($get('target_type') ?? 'url') !== 'page'),
+            Select::make('target_id')
+                ->label('Target Page')
+                ->options(fn (): array => $this->getSharedPageTargetOptions())
+                ->searchable()
+                ->visible(fn (callable $get): bool => ($get('target_type') ?? 'url') === 'page')
+                ->required(fn (callable $get): bool => ($get('target_type') ?? 'url') === 'page'),
+            Select::make('parent_ar')
+                ->label('Parent (AR)')
+                ->options(fn (): array => $this->getParentOptionsForLocale('ar'))
+                ->searchable()
+                ->placeholder('No parent'),
+            Select::make('parent_en')
+                ->label('Parent (EN)')
+                ->options(fn (): array => $this->getParentOptionsForLocale('en'))
+                ->searchable()
+                ->placeholder('No parent'),
             Toggle::make('is_enabled')
                 ->label('Enabled')
                 ->default(true),

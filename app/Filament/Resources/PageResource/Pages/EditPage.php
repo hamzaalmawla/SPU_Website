@@ -13,6 +13,7 @@ use App\DTOs\PageTranslationDTO;
 use App\Filament\Resources\PageResource;
 use App\Models\Page;
 use App\Models\User;
+use App\DTOs\PageDraftDTO;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Notifications\Notification;
@@ -97,45 +98,7 @@ class EditPage extends EditRecord
         /** @var Page $record */
         Gate::authorize('update', $record);
 
-        $this->pageService->updateBaseMetadata(
-            $record->id,
-            new PageMetadataDTO(
-                slug: $data['slug'],
-                template: $data['template'],
-                isHomepageShell: false,
-                status: $data['status'],
-                parentPageId: $data['parent_id'] ?? null,
-                isEnabled: $data['is_enabled'] ?? true,
-                showInBreadcrumbs: $data['show_in_breadcrumbs'] ?? true,
-                showInNav: $data['show_in_nav'] ?? true,
-                facultyScopeSlug: $data['faculty_scope_slug'] ?? (is_string($record->faculty_scope_slug) ? $record->faculty_scope_slug : null),
-            ),
-            (int) auth()->id(),
-        );
-
-        $this->pageService->updateArabicTranslation(
-            $record->id,
-            self::buildTranslationDTO($data, 'ar'),
-            (int) auth()->id(),
-        );
-
-        $this->pageService->updateEnglishTranslation(
-            $record->id,
-            self::buildTranslationDTO($data, 'en'),
-            (int) auth()->id(),
-        );
-
-        $this->pageService->updateArabicSeo(
-            $record->id,
-            self::buildSeoDTO($data, 'ar'),
-            (int) auth()->id(),
-        );
-
-        $this->pageService->updateEnglishSeo(
-            $record->id,
-            self::buildSeoDTO($data, 'en'),
-            (int) auth()->id(),
-        );
+        $this->saveDraftFromFormData($data, 'draft');
 
         return $record->refresh();
     }
@@ -148,7 +111,8 @@ class EditPage extends EditRecord
     {
         return [
             $this->saveDraftAction(),
-            $this->previewAction(),
+            $this->previewAction('ar'),
+            $this->previewAction('en'),
             $this->publishAction(),
             $this->scheduleAction(),
             $this->unpublishAction(),
@@ -166,24 +130,25 @@ class EditPage extends EditRecord
             });
     }
 
-    private function previewAction(): Action
+    private function previewAction(string $locale): Action
     {
-        return Action::make('preview')
-            ->label('Preview')
+        return Action::make("preview_{$locale}")
+            ->label('Preview ('.strtoupper($locale).')')
             ->icon('heroicon-o-eye')
             ->color('info')
-            ->action(function (): void {
+            ->action(function () use ($locale): void {
                 /** @var Page $page */
                 $page = $this->record;
                 Gate::authorize('preview', $page);
 
                 /** @var User $user */
                 $user = auth()->user();
+                $this->saveDraftFromFormData($this->form->getState(), 'draft');
 
                 $preview = $this->previewService->createToken(
                     targetType: 'page',
                     targetId: $page->id,
-                    locale: 'ar',
+                    locale: $locale,
                     userId: $user->id,
                 );
 
@@ -208,6 +173,21 @@ class EditPage extends EditRecord
                 /** @var User $user */
                 $user = auth()->user();
 
+                $formData = $this->form->getState();
+                $validationErrors = $this->publishValidationErrors($formData);
+
+                if ($validationErrors !== []) {
+                    Notification::make()
+                        ->title('Publish failed')
+                        ->body($this->formatValidationErrors($validationErrors))
+                        ->danger()
+                        ->persistent()
+                        ->send();
+
+                    return;
+                }
+
+                $this->saveDraftFromFormData($formData, 'draft');
                 $result = $this->pageService->publish($page->id, $user->id);
 
                 if ($result) {
@@ -218,8 +198,9 @@ class EditPage extends EditRecord
                 } else {
                     Notification::make()
                         ->title('Publish failed')
-                        ->body('Please ensure all required content is filled in.')
+                        ->body('The page could not be published. Check that it is enabled and has both Arabic and English titles.')
                         ->danger()
+                        ->persistent()
                         ->send();
                 }
 
@@ -248,6 +229,21 @@ class EditPage extends EditRecord
                 /** @var User $user */
                 $user = auth()->user();
 
+                $formData = $this->form->getState();
+                $validationErrors = $this->publishValidationErrors($formData);
+
+                if ($validationErrors !== []) {
+                    Notification::make()
+                        ->title('Schedule failed')
+                        ->body($this->formatValidationErrors($validationErrors))
+                        ->danger()
+                        ->persistent()
+                        ->send();
+
+                    return;
+                }
+
+                $this->saveDraftFromFormData($formData, 'scheduled', (string) $data['publish_at']);
                 $result = $this->pageService->schedulePublish(
                     $page->id,
                     new \DateTimeImmutable($data['publish_at']),
@@ -312,8 +308,16 @@ class EditPage extends EditRecord
 
     private function saveDraft(): void
     {
-        $formData = $this->form->getState();
+        $this->saveDraftFromFormData($this->form->getState(), 'draft');
 
+        Notification::make()
+            ->title('Draft saved successfully')
+            ->success()
+            ->send();
+    }
+
+    private function saveDraftFromFormData(array $formData, string $status, ?string $publishAt = null): PageDraftDTO
+    {
         /** @var Page $page */
         $page = $this->record;
         Gate::authorize('update', $page);
@@ -326,8 +330,9 @@ class EditPage extends EditRecord
                 slug: $formData['slug'],
                 template: $formData['template'],
                 isHomepageShell: false,
-                status: $formData['status'] ?? 'draft',
+                status: $status,
                 parentPageId: $formData['parent_id'] ?? null,
+                publishAt: $publishAt,
                 isEnabled: $formData['is_enabled'] ?? true,
                 showInBreadcrumbs: $formData['show_in_breadcrumbs'] ?? true,
                 showInNav: $formData['show_in_nav'] ?? true,
@@ -339,12 +344,41 @@ class EditPage extends EditRecord
             englishSeo: self::buildSeoDTO($formData, 'en'),
         );
 
-        $this->pageService->saveDraft($page->id, $draftPayload, $user->id);
+        return $this->pageService->saveDraft($page->id, $draftPayload, $user->id);
+    }
 
-        Notification::make()
-            ->title('Draft saved successfully')
-            ->success()
-            ->send();
+    /** @return list<string> */
+    private function publishValidationErrors(array $formData): array
+    {
+        $errors = [];
+
+        if (($formData['slug'] ?? '') === '') {
+            $errors[] = 'Slug is required.';
+        }
+
+        if (($formData['template'] ?? '') === '') {
+            $errors[] = 'Template is required.';
+        }
+
+        if (! (bool) ($formData['is_enabled'] ?? true)) {
+            $errors[] = 'The page must be enabled before it can be published.';
+        }
+
+        if (($formData['ar_title'] ?? '') === '') {
+            $errors[] = 'Arabic title is required.';
+        }
+
+        if (($formData['en_title'] ?? '') === '') {
+            $errors[] = 'English title is required.';
+        }
+
+        return $errors;
+    }
+
+    /** @param list<string> $errors */
+    private function formatValidationErrors(array $errors): string
+    {
+        return "Missing or invalid publish fields:\n- ".implode("\n- ", $errors);
     }
 
     // ──────────────────────────────────────────────

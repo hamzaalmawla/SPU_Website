@@ -149,11 +149,7 @@ class MediaAssetResource extends Resource
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
             ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ])
+            ->bulkActions([])
             ->defaultSort('created_at', 'desc');
     }
 
@@ -186,8 +182,9 @@ class MediaAssetResource extends Resource
                         ->label('File')
                         ->required()
                         ->maxSize(20480)
-                        ->directory('media')
-                        ->visibility('public')
+                        ->disk((string) config('filesystems.default', 'local'))
+                        ->directory('media-tmp')
+                        ->visibility('private')
                         ->acceptedFileTypes([
                             'image/jpeg', 'image/png', 'image/gif', 'image/webp',
                             'application/pdf',
@@ -208,6 +205,7 @@ class MediaAssetResource extends Resource
     {
         return Tab::make('العربية (AR)')
             ->icon('heroicon-o-language')
+            ->extraAttributes(['dir' => 'rtl'])
             ->schema([
                 Section::make('Arabic Metadata')->schema([
                     TextInput::make('title_ar')
@@ -236,6 +234,7 @@ class MediaAssetResource extends Resource
     {
         return Tab::make('English (EN)')
             ->icon('heroicon-o-language')
+            ->extraAttributes(['dir' => 'ltr'])
             ->schema([
                 Section::make('English Metadata')->schema([
                     TextInput::make('title_en')

@@ -2,20 +2,23 @@
     /** @var array $item */
     /** @var int $depth */
     /** @var string $locale */
-    $maxDepth = 2;
+    $maxDepth = 3;
 @endphp
 
 <div
     data-menu-item="{{ $item['id'] }}"
+    x-sortable-item="{{ $item['id'] }}"
     @class([
-        'border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 transition',
+        'border rounded-lg transition',
+        'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900' => $item['isEnabled'],
+        'border-dashed border-gray-300 bg-gray-100/80 opacity-75 dark:border-gray-700 dark:bg-gray-950' => !$item['isEnabled'],
         'ml-6' => $depth > 0,
     ])
 >
     <div class="flex items-center justify-between px-3 py-2 gap-3">
         {{-- Drag handle --}}
         <div class="flex items-center gap-2 flex-1 min-w-0">
-            <span data-drag-handle class="cursor-grab text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300" title="Drag to reorder">
+            <span data-drag-handle x-sortable-handle class="cursor-grab text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300" title="Drag to reorder">
                 <x-heroicon-s-bars-2 class="w-4 h-4" />
             </span>
 
@@ -27,6 +30,12 @@
             ])>
                 {{ $item['label'] }}
             </span>
+
+            @if (!($item['isEnabled'] ?? false))
+                <span class="inline-flex items-center rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                    {{ __('admin.menu.disabled') }}
+                </span>
+            @endif
 
             {{-- Target type badge --}}
             <span @class([
@@ -89,7 +98,7 @@
 
     {{-- Children --}}
     @if (!empty($item['children']) && $depth < $maxDepth - 1)
-        <div data-children class="pb-2 px-2 space-y-1">
+        <div data-children x-sortable data-sortable-animation-duration="150" class="pb-2 px-2 space-y-1">
             @foreach ($item['children'] as $child)
                 @include('filament.pages.partials.menu-tree-item', [
                     'item' => $child,

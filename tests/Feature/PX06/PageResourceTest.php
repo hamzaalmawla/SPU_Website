@@ -56,6 +56,26 @@ class PageResourceTest extends TestCase
         $this->assertArrayHasKey('view', $pages);
     }
 
+    public function test_parent_selector_excludes_current_page_and_descendants(): void
+    {
+        $this->actingAs($this->createUser('super_admin'));
+
+        $parent = Page::factory()->create(['slug' => 'parent']);
+        $child = Page::factory()->create(['slug' => 'child', 'parent_id' => $parent->id]);
+        $grandchild = Page::factory()->create(['slug' => 'grandchild', 'parent_id' => $child->id]);
+        $sibling = Page::factory()->create(['slug' => 'sibling']);
+
+        $method = new \ReflectionMethod(PageResource::class, 'scopeParentQueryToCurrentUser');
+        $method->setAccessible(true);
+
+        $ids = $method->invoke(null, Page::query(), $parent)->pluck('id')->all();
+
+        $this->assertNotContains($parent->id, $ids);
+        $this->assertNotContains($child->id, $ids);
+        $this->assertNotContains($grandchild->id, $ids);
+        $this->assertContains($sibling->id, $ids);
+    }
+
     private function createUser(string $role): User
     {
         return User::factory()->create([

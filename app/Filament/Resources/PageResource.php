@@ -54,7 +54,8 @@ class PageResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return self::scopeQueryToCurrentUser(parent::getEloquentQuery());
+        return self::scopeQueryToCurrentUser(parent::getEloquentQuery())
+            ->with(['translations', 'parent']);
     }
 
     public static function form(Form $form): Form
@@ -155,19 +156,16 @@ class PageResource extends Resource
                         'slug',
                         modifyQueryUsing: fn (Builder $query): Builder => self::scopeQueryToCurrentUser($query),
                     )
-                    ->searchable()
-                    ->preload(),
+                    ->searchable(),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
             ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ])
-            ->defaultSort('updated_at', 'desc');
+            ->bulkActions([])
+            ->defaultSort('updated_at', 'desc')
+            ->defaultPaginationPageOption(25)
+            ->paginationPageOptions([10, 25, 50]);
     }
 
     public static function getRelations(): array
@@ -200,10 +198,9 @@ class PageResource extends Resource
                         ->relationship(
                             'parent',
                             'slug',
-                            modifyQueryUsing: fn (Builder $query): Builder => self::scopeQueryToCurrentUser($query),
+                            modifyQueryUsing: fn (Builder $query, ?Page $record = null): Builder => self::scopeParentQueryToCurrentUser($query, $record),
                         )
                         ->searchable()
-                        ->preload()
                         ->placeholder('None (top-level)'),
 
                     TextInput::make('slug')
@@ -238,7 +235,10 @@ class PageResource extends Resource
                             'scheduled' => 'Scheduled',
                         ])
                         ->required()
-                        ->default('draft'),
+                        ->default('draft')
+                        ->disabled()
+                        ->dehydrated(false)
+                        ->helperText('Use the publish and schedule actions to change public state.'),
                 ]),
 
                 Section::make('Visibility')->schema([
@@ -314,6 +314,7 @@ class PageResource extends Resource
     {
         return Tab::make('العربية (AR)')
             ->icon('heroicon-o-language')
+            ->extraAttributes(['dir' => 'rtl'])
             ->schema(self::translationFields('ar'));
     }
 
@@ -321,6 +322,7 @@ class PageResource extends Resource
     {
         return Tab::make('English (EN)')
             ->icon('heroicon-o-language')
+            ->extraAttributes(['dir' => 'ltr'])
             ->schema(self::translationFields('en'));
     }
 
@@ -374,6 +376,7 @@ class PageResource extends Resource
     {
         return Tab::make('Arabic SEO')
             ->icon('heroicon-o-magnifying-glass')
+            ->extraAttributes(['dir' => 'rtl'])
             ->schema(self::seoFields('ar'));
     }
 
@@ -381,6 +384,7 @@ class PageResource extends Resource
     {
         return Tab::make('English SEO')
             ->icon('heroicon-o-magnifying-glass')
+            ->extraAttributes(['dir' => 'ltr'])
             ->schema(self::seoFields('en'));
     }
 
@@ -407,5 +411,47 @@ class PageResource extends Resource
         }
 
         return $query->where('faculty_scope_slug', $scope);
+    }
+
+    private static function scopeParentQueryToCurrentUser(Builder $query, ?Page $record): Builder
+    {
+        $query = self::scopeQueryToCurrentUser($query);
+        $excludedIds = self::invalidParentIds($record);
+
+        if ($excludedIds === []) {
+            return $query;
+        }
+
+        return $query->whereNotIn('id', $excludedIds);
+    }
+
+    /** @return list<int> */
+    private static function invalidParentIds(?Page $record): array
+    {
+        if (! $record instanceof Page || ! $record->exists) {
+            return [];
+        }
+
+        $excludedIds = [(int) $record->getKey()];
+        $frontier = $excludedIds;
+
+        while ($frontier !== []) {
+            $children = Page::query()
+                ->whereIn('parent_id', $frontier)
+                ->pluck('id')
+                ->map(static fn (mixed $id): int => (int) $id)
+                ->all();
+
+            $children = array_values(array_diff($children, $excludedIds));
+
+            if ($children === []) {
+                break;
+            }
+
+            $excludedIds = array_values(array_unique(array_merge($excludedIds, $children)));
+            $frontier = $children;
+        }
+
+        return $excludedIds;
     }
 }

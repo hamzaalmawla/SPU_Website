@@ -82,4 +82,11 @@ interface MenuServiceInterface
      * Find a single menu item by ID for admin editing.
      */
     public function findAdminItem(int $itemId): ?MenuItemDTO;
+
+    /**
+     * Retrieve locale-compatible page targets for menu item forms.
+     *
+     * @return array<int, string>
+     */
+    public function getPageTargetOptions(string $locale): array;
 }

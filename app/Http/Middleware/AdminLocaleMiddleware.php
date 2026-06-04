@@ -12,7 +12,17 @@ final class AdminLocaleMiddleware
 {
     public function handle(Request $request, Closure $next): Response
     {
-        app()->setLocale('en');
+        $locale = $request->session()->get('admin_locale', config('app.locale', 'ar'));
+
+        if (! in_array($locale, ['ar', 'en'], true)) {
+            $locale = 'ar';
+        }
+
+        app()->setLocale($locale);
+        $request->attributes->set('admin_locale', $locale);
+        $request->attributes->set('admin_direction', $locale === 'ar' ? 'rtl' : 'ltr');
+        view()->share('adminLocale', $locale);
+        view()->share('adminDirection', $locale === 'ar' ? 'rtl' : 'ltr');
 
         return $next($request);
     }

@@ -87,14 +87,15 @@ final class HomepageFormSchemaTest extends TestCase
         $fields = HomepageFormSchema::footerFields('data');
 
         // footerFields returns: Section (Brand & Contact), Repeater (Social Links),
-        // Repeater (Navigation Groups), Repeater (Legal Links), Section (Copyright)
-        $this->assertCount(5, $fields);
+        // Repeater (Contact Links), Repeater (Navigation Groups), Repeater (Legal Links), Section (Copyright)
+        $this->assertCount(6, $fields);
 
         $this->assertInstanceOf(Section::class, $fields[0], 'First element should be Brand & Contact Section');
         $this->assertInstanceOf(Repeater::class, $fields[1], 'Second element should be Social Links Repeater');
-        $this->assertInstanceOf(Repeater::class, $fields[2], 'Third element should be Navigation Groups Repeater');
-        $this->assertInstanceOf(Repeater::class, $fields[3], 'Fourth element should be Legal Links Repeater');
-        $this->assertInstanceOf(Section::class, $fields[4], 'Fifth element should be Copyright Section');
+        $this->assertInstanceOf(Repeater::class, $fields[2], 'Third element should be Contact Links Repeater');
+        $this->assertInstanceOf(Repeater::class, $fields[3], 'Fourth element should be Navigation Groups Repeater');
+        $this->assertInstanceOf(Repeater::class, $fields[4], 'Fifth element should be Legal Links Repeater');
+        $this->assertInstanceOf(Section::class, $fields[5], 'Sixth element should be Copyright Section');
     }
 
     // ---------------------------------------------------------------

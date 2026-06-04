@@ -6,7 +6,7 @@
         </x-filament::badge>
     </div>
 
-    <x-filament-panels::form wire:submit="save">
+    <x-filament-panels::form>
         {{ $this->form }}
     </x-filament-panels::form>
 </x-filament-panels::page>

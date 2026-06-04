@@ -19,4 +19,6 @@ interface TotpAuthenticatorInterface
     public function generateRecoveryCodes(Authenticatable $user): array;
 
     public function verifyRecoveryCode(Authenticatable $user, string $code): bool;
+
+    public function disableTwoFactor(Authenticatable $user): bool;
 }

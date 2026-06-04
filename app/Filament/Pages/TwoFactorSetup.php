@@ -198,7 +198,7 @@ class TwoFactorSetup extends Page implements HasForms
         $this->secret = $enrollment->secret;
         $this->recoveryCodes = $enrollment->recoveryCodes;
         $this->showEnrollment = true;
-        $this->showRecoveryCodes = true;
+        $this->showRecoveryCodes = false;
     }
 
     public function confirmEnrollment(): void
@@ -221,6 +221,7 @@ class TwoFactorSetup extends Page implements HasForms
 
         $this->twoFactorEnabled = true;
         $this->showEnrollment = false;
+        $this->showRecoveryCodes = true;
 
         Notification::make()
             ->title('Two-factor authentication enabled')
@@ -235,12 +236,7 @@ class TwoFactorSetup extends Page implements HasForms
         $user = auth()->user();
         $this->assertCurrentPassword($user, $data);
 
-        $user->forceFill([
-            'two_factor_enabled' => false,
-            'two_factor_confirmed_at' => null,
-            'totp_secret_encrypted' => null,
-            'recovery_codes_encrypted' => null,
-        ])->save();
+        $this->authenticator->disableTwoFactor($user);
 
         $this->twoFactorEnabled = false;
         $this->showEnrollment = false;

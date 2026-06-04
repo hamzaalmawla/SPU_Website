@@ -39,7 +39,7 @@ class CreatePage extends CreateRecord
             slug: $data['slug'],
             template: $data['template'],
             isHomepageShell: false,
-            status: $data['status'] ?? 'draft',
+            status: 'draft',
             parentPageId: $data['parent_id'] ?? null,
             facultyScopeSlug: $data['faculty_scope_slug'] ?? null,
         );
@@ -52,7 +52,7 @@ class CreatePage extends CreateRecord
                 slug: $data['slug'],
                 template: $data['template'],
                 isHomepageShell: false,
-                status: $data['status'] ?? 'draft',
+                status: 'draft',
                 parentPageId: $data['parent_id'] ?? null,
                 isEnabled: $data['is_enabled'] ?? true,
                 showInBreadcrumbs: $data['show_in_breadcrumbs'] ?? true,

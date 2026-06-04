@@ -8,6 +8,7 @@ use App\Contracts\AuthServiceInterface;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
@@ -22,6 +23,15 @@ final class AuthController extends Controller
     public function create(): View
     {
         return view('admin.auth.login');
+    }
+
+    public function switchLocale(Request $request, string $locale): RedirectResponse
+    {
+        if (in_array($locale, ['ar', 'en'], true)) {
+            $request->session()->put('admin_locale', $locale);
+        }
+
+        return back();
     }
 
     public function destroy(): RedirectResponse

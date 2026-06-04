@@ -43,7 +43,7 @@ class TwoFactorChallengeTest extends TestCase
 
         $this->get('/admin/two-factor-challenge')
             ->assertOk()
-            ->assertSee('Two-Factor Authentication');
+            ->assertSee('SPU CMS');
     }
 
     public function test_challenge_page_redirects_to_admin_when_2fa_not_enabled(): void
@@ -83,7 +83,7 @@ class TwoFactorChallengeTest extends TestCase
 
         $this->get('/admin/two-factor-challenge')
             ->assertOk()
-            ->assertSee('Two-Factor Authentication');
+            ->assertSee('SPU CMS');
     }
 
     // ------------------------------------------------------------------
@@ -168,6 +168,16 @@ class TwoFactorChallengeTest extends TestCase
 
         $this->get('/admin')
             ->assertRedirect(route('admin.two-factor.challenge'));
+    }
+
+    public function test_two_factor_user_can_use_filament_logout_before_verification(): void
+    {
+        $user = $this->createUserWith2FA();
+
+        $this->actingAs($user, 'web');
+
+        $this->post('/admin/logout')
+            ->assertRedirect('/admin/login');
     }
 
     // ------------------------------------------------------------------

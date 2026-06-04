@@ -132,6 +132,34 @@ class NavigationShellTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['action' => 'menu.deleted']);
     }
 
+    public function test_menu_reorder_rejects_duplicate_item_ids(): void
+    {
+        $first = $this->menuService()->createItem($this->menuPayload('Duplicate First', null, '/en/duplicate-first'));
+        $second = $this->menuService()->createItem($this->menuPayload('Duplicate Second', null, '/en/duplicate-second'));
+
+        $this->assertFalse($this->menuService()->reorderTree('header', [
+            new MenuTreeNodeDTO(itemId: $first->id, sortOrder: 1, depth: 0),
+            new MenuTreeNodeDTO(itemId: $first->id, sortOrder: 2, depth: 0),
+        ]));
+
+        $this->assertDatabaseHas('menu_items', ['id' => $first->id, 'sort_order' => $first->sortOrder]);
+        $this->assertDatabaseHas('menu_items', ['id' => $second->id, 'sort_order' => $second->sortOrder]);
+    }
+
+    public function test_menu_reorder_rejects_mixed_locale_payloads(): void
+    {
+        $english = $this->menuService()->createItem($this->menuPayload('English Reorder', null, '/en/reorder-english'));
+        $arabic = $this->menuService()->createItem($this->menuPayload('Arabic Reorder', null, '/ar/reorder-arabic', 'ar'));
+
+        $this->assertFalse($this->menuService()->reorderTree('header', [
+            new MenuTreeNodeDTO(itemId: $english->id, sortOrder: 1, depth: 0),
+            new MenuTreeNodeDTO(itemId: $arabic->id, sortOrder: 2, depth: 0),
+        ]));
+
+        $this->assertDatabaseHas('menu_items', ['id' => $english->id, 'locale' => 'en', 'parent_id' => null]);
+        $this->assertDatabaseHas('menu_items', ['id' => $arabic->id, 'locale' => 'ar', 'parent_id' => null]);
+    }
+
     private function navigationService(): NavigationServiceInterface
     {
         return app(NavigationServiceInterface::class);
@@ -142,13 +170,13 @@ class NavigationShellTest extends TestCase
         return app(MenuServiceInterface::class);
     }
 
-    private function menuPayload(string $label, ?int $parentId, string $url): MenuItemDataDTO
+    private function menuPayload(string $label, ?int $parentId, string $url, string $locale = 'en'): MenuItemDataDTO
     {
         return new MenuItemDataDTO(
             label: $label,
             itemType: 'header',
             groupKey: 'header',
-            locale: 'en',
+            locale: $locale,
             targetType: 'url',
             parentId: $parentId,
             targetId: null,

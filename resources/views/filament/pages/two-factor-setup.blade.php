@@ -31,20 +31,13 @@
                 </x-slot>
 
                 <div class="space-y-4">
-                    {{-- QR Code URL (rendered as text for the provisioning URI) --}}
                     <div>
                         <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Scan this QR code with your authenticator app:
+                            Add this setup URI in your authenticator app, or enter the secret manually:
                         </p>
-                        <div class="rounded-lg bg-white p-4 inline-block">
-                            <img
-                                src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ urlencode($qrCodeUrl) }}"
-                                alt="QR Code for two-factor authentication setup"
-                                width="200"
-                                height="200"
-                                class="block"
-                            >
-                        </div>
+                        <code class="block max-w-full overflow-x-auto rounded bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm font-mono select-all">
+                            {{ $qrCodeUrl }}
+                        </code>
                     </div>
 
                     {{-- Manual Entry Secret --}}

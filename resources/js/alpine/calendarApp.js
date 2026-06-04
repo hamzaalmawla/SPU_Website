@@ -133,8 +133,10 @@ export function createCalendarApp() {
         nextMonth() { this.changeMonth(1); },
 
         startCarousel() {
-            if (this.selectedDateEvents.length <= 1) return;
             this.stopCarousel();
+
+            if (this.selectedDateEvents.length <= 1) return;
+
             this.carouselInterval = setInterval(() => {
                 this.activeEventIndex = (this.activeEventIndex + 1) % this.selectedDateEvents.length;
             }, 5000);

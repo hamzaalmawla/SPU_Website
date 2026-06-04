@@ -6,6 +6,7 @@ namespace Tests\Feature\Integration;
 
 use App\Contracts\PageServiceInterface;
 use App\DTOs\PageDTO;
+use App\DTOs\PageMetadataDTO;
 use App\DTOs\PageShellDataDTO;
 use App\DTOs\PageTranslationDTO;
 use App\Models\User;
@@ -256,6 +257,75 @@ class PageServiceIntegrationTest extends TestCase
         $this->assertFalse(
             $this->pageService()->publish($page->id, $this->author()->id),
         );
+    }
+
+    public function test_publish_rejects_page_missing_one_locale_title(): void
+    {
+        $page = $this->pageService()->createPageShell(
+            new PageShellDataDTO(
+                slug: 'english-only-page',
+                template: 'landing',
+                isHomepageShell: false,
+                status: 'draft',
+            ),
+            $this->author()->id,
+        );
+
+        $this->pageService()->updateEnglishTranslation($page->id, new PageTranslationDTO(
+            title: 'English Only Page',
+        ), $this->author()->id);
+
+        $this->assertFalse($this->pageService()->publish($page->id, $this->author()->id));
+    }
+
+    public function test_update_metadata_rejects_self_parent(): void
+    {
+        $page = $this->createPageWithTranslations();
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('A page cannot be its own parent.');
+
+        $this->pageService()->updateBaseMetadata($page->id, new PageMetadataDTO(
+            slug: $page->metadata->slug,
+            template: $page->metadata->template,
+            isHomepageShell: $page->metadata->isHomepageShell,
+            status: $page->metadata->status,
+            parentPageId: $page->id,
+        ), $this->author()->id);
+    }
+
+    public function test_update_metadata_rejects_descendant_parent_cycle(): void
+    {
+        $parent = $this->pageService()->createPageShell(
+            new PageShellDataDTO(
+                slug: 'parent-page',
+                template: 'landing',
+                isHomepageShell: false,
+                status: 'draft',
+            ),
+            $this->author()->id,
+        );
+        $child = $this->pageService()->createPageShell(
+            new PageShellDataDTO(
+                slug: 'child-page',
+                template: 'landing',
+                isHomepageShell: false,
+                status: 'draft',
+                parentPageId: $parent->id,
+            ),
+            $this->author()->id,
+        );
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('A page cannot use one of its descendants as parent.');
+
+        $this->pageService()->updateBaseMetadata($parent->id, new PageMetadataDTO(
+            slug: $parent->metadata->slug,
+            template: $parent->metadata->template,
+            isHomepageShell: $parent->metadata->isHomepageShell,
+            status: $parent->metadata->status,
+            parentPageId: $child->id,
+        ), $this->author()->id);
     }
 
     // ──────────────────────────────────────────────────────────────

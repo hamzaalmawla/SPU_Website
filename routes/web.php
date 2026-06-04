@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\TwoFactorChallengeController;
+use App\Http\Middleware\AdminLocaleMiddleware;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PreviewController;
@@ -36,8 +37,12 @@ Route::prefix('{locale}')
 
 Route::prefix('admin')
     ->name('admin.')
+    ->middleware(AdminLocaleMiddleware::class)
     ->group(function (): void {
         Route::get('/login', [AuthController::class, 'create'])->name('login');
+        Route::post('/locale/{locale}', [AuthController::class, 'switchLocale'])
+            ->where(['locale' => 'ar|en'])
+            ->name('locale');
         Route::post('/login', [AuthController::class, 'store'])
             ->middleware('throttle:admin-login')
             ->name('login.attempt');

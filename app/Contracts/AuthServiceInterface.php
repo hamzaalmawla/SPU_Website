@@ -37,6 +37,10 @@ interface AuthServiceInterface
      */
     public function extendSession(): void;
 
+    public function recordFailedTwoFactor(Authenticatable $user): void;
+
+    public function recordSuccessfulTwoFactor(Authenticatable $user): void;
+
     /**
      * Update an admin-managed user account.
      *

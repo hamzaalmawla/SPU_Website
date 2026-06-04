@@ -50,6 +50,25 @@ final class HomepageFormSchema
                     ->image()
                     ->directory('homepage/hero')
                     ->maxSize(5120),
+                Repeater::make("{$prefix}.content.images")
+                    ->label('Hero Carousel Images')
+                    ->schema([
+                        TextInput::make('path')
+                            ->label('Existing Image Path')
+                            ->required()
+                            ->maxLength(2048),
+                    ])
+                    ->columns(1)
+                    ->collapsible()
+                    ->collapsed()
+                    ->defaultItems(0),
+                FileUpload::make("{$prefix}.hero_carousel_uploads")
+                    ->label('Upload New Carousel Images')
+                    ->image()
+                    ->multiple()
+                    ->reorderable()
+                    ->directory('homepage/hero')
+                    ->maxSize(5120),
                 TextInput::make("{$prefix}.video_url")
                     ->label('Video URL')
                     ->maxLength(2048),
@@ -82,6 +101,12 @@ final class HomepageFormSchema
     public static function heroStatsFields(string $prefix): array
     {
         return [
+            Section::make('Section Header')->schema([
+                TextInput::make("{$prefix}.section_title")
+                    ->label('Section Title')
+                    ->required()
+                    ->maxLength(255),
+            ]),
             Repeater::make("{$prefix}.stats")
                 ->label('Statistics')
                 ->schema([
@@ -105,6 +130,7 @@ final class HomepageFormSchema
                 ])
                 ->columns(3)
                 ->collapsible()
+                ->collapsed()
                 ->defaultItems(0),
         ];
     }
@@ -120,6 +146,7 @@ final class HomepageFormSchema
                 TextInput::make("{$prefix}.subtitle")
                     ->label('Subtitle')
                     ->maxLength(500),
+                ...self::sectionActionFields($prefix),
             ]),
             Repeater::make("{$prefix}.featured_items")
                 ->label('Faculty Cards')
@@ -132,18 +159,31 @@ final class HomepageFormSchema
                         ->label('Description')
                         ->rows(2)
                         ->maxLength(500),
+                    FileUpload::make('image')
+                        ->label('Image')
+                        ->image()
+                        ->directory('homepage/faculties'),
                     TextInput::make('icon')
                         ->label('Icon')
                         ->maxLength(100),
+                    TextInput::make('accent')
+                        ->label('Accent Color')
+                        ->maxLength(30),
+                    TextInput::make('metric')
+                        ->label('Metric')
+                        ->maxLength(100),
                     TextInput::make('cta_label')
                         ->label('CTA Label')
+                        ->required()
                         ->maxLength(100),
                     TextInput::make('cta_url')
                         ->label('CTA URL')
+                        ->required()
                         ->maxLength(2048),
                 ])
                 ->columns(2)
                 ->collapsible()
+                ->collapsed()
                 ->defaultItems(0),
         ];
     }
@@ -171,6 +211,10 @@ final class HomepageFormSchema
                         ->label('Text')
                         ->rows(2)
                         ->maxLength(500),
+                    FileUpload::make('image')
+                        ->label('Image')
+                        ->image()
+                        ->directory('homepage/achievements'),
                     TextInput::make('icon')
                         ->label('Icon')
                         ->maxLength(100),
@@ -179,13 +223,16 @@ final class HomepageFormSchema
                         ->maxLength(100),
                     TextInput::make('cta_label')
                         ->label('CTA Label')
+                        ->required()
                         ->maxLength(100),
                     TextInput::make('cta_url')
                         ->label('CTA URL')
+                        ->required()
                         ->maxLength(2048),
                 ])
                 ->columns(2)
                 ->collapsible()
+                ->collapsed()
                 ->defaultItems(0),
         ];
     }
@@ -198,6 +245,7 @@ final class HomepageFormSchema
                 TextInput::make("{$prefix}.section_title")
                     ->label('Section Title')
                     ->maxLength(255),
+                ...self::sectionActionFields($prefix),
             ]),
             Repeater::make("{$prefix}.path_items")
                 ->label('Path Cards')
@@ -216,9 +264,13 @@ final class HomepageFormSchema
                                 ->label('Link Label')
                                 ->required()
                                 ->maxLength(255),
+                            TextInput::make('url')
+                                ->label('Link URL')
+                                ->maxLength(2048),
                         ])
                         ->defaultItems(0)
-                        ->collapsible(),
+                        ->collapsible()
+                        ->collapsed(),
                     TextInput::make('cta_label')
                         ->label('CTA Label')
                         ->maxLength(100),
@@ -228,6 +280,7 @@ final class HomepageFormSchema
                 ])
                 ->columns(2)
                 ->collapsible()
+                ->collapsed()
                 ->defaultItems(0),
         ];
     }
@@ -240,6 +293,7 @@ final class HomepageFormSchema
                 TextInput::make("{$prefix}.section_title")
                     ->label('Section Title')
                     ->maxLength(255),
+                ...self::sectionActionFields($prefix),
             ]),
             Repeater::make("{$prefix}.articles")
                 ->label('News Cards')
@@ -268,6 +322,7 @@ final class HomepageFormSchema
                 ])
                 ->columns(2)
                 ->collapsible()
+                ->collapsed()
                 ->defaultItems(0),
         ];
     }
@@ -280,6 +335,7 @@ final class HomepageFormSchema
                 TextInput::make("{$prefix}.section_title")
                     ->label('Section Title')
                     ->maxLength(255),
+                ...self::sectionActionFields($prefix),
             ]),
             Repeater::make("{$prefix}.research_items")
                 ->label('Research Cards')
@@ -311,6 +367,7 @@ final class HomepageFormSchema
                 ])
                 ->columns(2)
                 ->collapsible()
+                ->collapsed()
                 ->defaultItems(0),
         ];
     }
@@ -354,6 +411,7 @@ final class HomepageFormSchema
                 ])
                 ->columns(2)
                 ->collapsible()
+                ->collapsed()
                 ->defaultItems(0),
         ];
     }
@@ -391,6 +449,29 @@ final class HomepageFormSchema
                 ])
                 ->columns(2)
                 ->collapsible()
+                ->collapsed()
+                ->defaultItems(0),
+            Repeater::make("{$prefix}.stats")
+                ->label('Facility Statistics')
+                ->schema([
+                    TextInput::make('value')
+                        ->label('Value')
+                        ->required()
+                        ->maxLength(50),
+                    TextInput::make('label')
+                        ->label('Label')
+                        ->required()
+                        ->maxLength(100),
+                    TextInput::make('suffix')
+                        ->label('Suffix')
+                        ->maxLength(20),
+                    TextInput::make('prefix')
+                        ->label('Prefix')
+                        ->maxLength(20),
+                ])
+                ->columns(2)
+                ->collapsible()
+                ->collapsed()
                 ->defaultItems(0),
         ];
     }
@@ -399,6 +480,12 @@ final class HomepageFormSchema
     public static function bottomStatsFields(string $prefix): array
     {
         return [
+            Section::make('Section Header')->schema([
+                TextInput::make("{$prefix}.section_title")
+                    ->label('Section Title')
+                    ->required()
+                    ->maxLength(255),
+            ]),
             Repeater::make("{$prefix}.stats")
                 ->label('Statistics')
                 ->schema([
@@ -419,6 +506,7 @@ final class HomepageFormSchema
                 ])
                 ->columns(2)
                 ->collapsible()
+                ->collapsed()
                 ->defaultItems(0),
         ];
     }
@@ -428,6 +516,10 @@ final class HomepageFormSchema
     {
         return [
             Section::make('Brand & Contact')->schema([
+                TextInput::make("{$prefix}.brand_title")
+                    ->label('Brand Title')
+                    ->required()
+                    ->maxLength(255),
                 FileUpload::make("{$prefix}.logo")
                     ->label('Footer Logo')
                     ->image()
@@ -462,6 +554,27 @@ final class HomepageFormSchema
                 ])
                 ->columns(3)
                 ->collapsible()
+                ->collapsed()
+                ->defaultItems(0),
+            Repeater::make("{$prefix}.contact_links")
+                ->label('Contact Links')
+                ->schema([
+                    TextInput::make('type')
+                        ->label('Type')
+                        ->required()
+                        ->maxLength(50),
+                    TextInput::make('label')
+                        ->label('Label')
+                        ->required()
+                        ->maxLength(255),
+                    TextInput::make('value')
+                        ->label('Value')
+                        ->required()
+                        ->maxLength(255),
+                ])
+                ->columns(3)
+                ->collapsible()
+                ->collapsed()
                 ->defaultItems(0),
             Repeater::make("{$prefix}.footer_columns")
                 ->label('Navigation Groups')
@@ -483,9 +596,12 @@ final class HomepageFormSchema
                                 ->maxLength(2048),
                         ])
                         ->columns(2)
+                        ->collapsible()
+                        ->collapsed()
                         ->defaultItems(0),
                 ])
                 ->collapsible()
+                ->collapsed()
                 ->defaultItems(0),
             Repeater::make("{$prefix}.content.legal_links")
                 ->label('Legal Links')
@@ -501,12 +617,26 @@ final class HomepageFormSchema
                 ])
                 ->columns(2)
                 ->collapsible()
+                ->collapsed()
                 ->defaultItems(0),
             Section::make('Copyright')->schema([
                 TextInput::make("{$prefix}.copyright_text")
                     ->label('Copyright Text')
                     ->maxLength(500),
             ]),
+        ];
+    }
+
+    /** @return array<int, \Filament\Forms\Components\Component> */
+    private static function sectionActionFields(string $prefix): array
+    {
+        return [
+            TextInput::make("{$prefix}.section_cta_label")
+                ->label('Section CTA Label')
+                ->maxLength(100),
+            TextInput::make("{$prefix}.section_cta_url")
+                ->label('Section CTA URL')
+                ->maxLength(2048),
         ];
     }
 }

@@ -71,19 +71,12 @@ final class MenuService implements MenuServiceInterface
         'url',
     ];
 
-    private HtmlSanitizer $htmlSanitizer;
-
-    private ?AuthFactory $authFactory;
-
     public function __construct(
         private readonly CacheServiceInterface $cacheService,
         private readonly AuditServiceInterface $auditService,
-        ?HtmlSanitizer $htmlSanitizer = null,
-        ?AuthFactory $authFactory = null,
-    ) {
-        $this->htmlSanitizer = $htmlSanitizer ?? new HtmlSanitizer;
-        $this->authFactory = $authFactory;
-    }
+        private readonly HtmlSanitizer $htmlSanitizer,
+        private readonly ?AuthFactory $authFactory = null,
+    ) {}
 
     public function createItem(MenuItemDataDTO $payload): MenuItemDTO
     {
@@ -248,6 +241,10 @@ final class MenuService implements MenuServiceInterface
         $items = MenuItem::query()->whereIn('id', $itemIds)->get()->keyBy('id');
 
         if ($items->count() !== count($itemIds)) {
+            return false;
+        }
+
+        if ($this->hasMixedLocales($items->pluck('locale')->all())) {
             return false;
         }
 
@@ -788,7 +785,20 @@ final class MenuService implements MenuServiceInterface
             }
         }
 
-        return array_values(array_unique($ids));
+        return $ids;
+    }
+
+    /**
+     * @param  array<int, mixed>  $locales
+     */
+    private function hasMixedLocales(array $locales): bool
+    {
+        $normalizedLocales = array_values(array_unique(array_filter(
+            $locales,
+            static fn (mixed $locale): bool => is_string($locale) && $locale !== '',
+        )));
+
+        return count($normalizedLocales) > 1;
     }
 
     /**
@@ -910,6 +920,26 @@ final class MenuService implements MenuServiceInterface
         $row->loadMissing('children.children', 'pageTarget.translations');
 
         return $this->mapAdminItem($row);
+    }
+
+    public function getPageTargetOptions(string $locale): array
+    {
+        $locale = $this->normalizeLocale($locale);
+
+        return Page::query()
+            ->with(['translations' => fn ($query) => $query->where('locale', $locale)])
+            ->whereHas('translations', fn ($query) => $query->where('locale', $locale))
+            ->orderBy('slug')
+            ->get()
+            ->mapWithKeys(function (Page $page) use ($locale): array {
+                $translation = $this->findTranslation($page, $locale);
+                $title = $translation instanceof PageTranslation && $translation->title !== ''
+                    ? $translation->title
+                    : (string) $page->slug;
+
+                return [(int) $page->getKey() => $title.' ('.$page->slug.')'];
+            })
+            ->all();
     }
 
     /**

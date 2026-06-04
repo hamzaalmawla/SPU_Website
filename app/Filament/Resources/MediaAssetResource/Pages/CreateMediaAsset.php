@@ -33,7 +33,7 @@ class CreateMediaAsset extends CreateRecord
         $filePath = $data['file'] ?? null;
 
         if (is_string($filePath)) {
-            $disk = Storage::disk('public');
+            $disk = Storage::disk((string) config('filesystems.default', 'local'));
             $fullPath = $disk->path($filePath);
 
             if (file_exists($fullPath)) {

@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Tests\Feature\PX06;
 
 use App\Filament\Pages\ManageMenu;
+use App\Models\MenuItem;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
@@ -42,6 +44,98 @@ class ManageMenuTest extends TestCase
     public function test_unauthenticated_user_cannot_access_manage_menu(): void
     {
         $this->assertFalse(ManageMenu::canAccess());
+    }
+
+    public function test_existing_menu_item_can_be_edited(): void
+    {
+        $this->actingAs($this->createUser('super_admin'));
+
+        $item = MenuItem::query()->create([
+            'type' => 'header',
+            'label' => 'Old label',
+            'locale' => 'en',
+            'target_kind' => 'url',
+            'url' => 'https://old.example.com',
+            'group_key' => 'header',
+            'is_enabled' => true,
+            'open_in_new_tab' => false,
+            'sort_order' => 1,
+            'depth' => 0,
+        ]);
+
+        Livewire::test(ManageMenu::class)
+            ->call('editItem', $item->id)
+            ->assertSet('isEditing', true)
+            ->assertSet('editingItemId', $item->id)
+            ->set('editForm.label', 'Updated label')
+            ->set('editForm.target_type', 'url')
+            ->set('editForm.url', 'https://new.example.com')
+            ->set('editForm.is_enabled', false)
+            ->set('editForm.open_in_new_tab', true)
+            ->call('updateEditingItem')
+            ->assertSet('isEditing', false);
+
+        $this->assertDatabaseHas('menu_items', [
+            'id' => $item->id,
+            'label' => 'Updated label',
+            'url' => 'https://new.example.com',
+            'is_enabled' => false,
+            'open_in_new_tab' => true,
+        ]);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'menu.updated',
+            'entity_id' => $item->id,
+        ]);
+    }
+
+    public function test_menu_reorder_is_limited_to_submitted_locale(): void
+    {
+        $this->actingAs($this->createUser('super_admin'));
+
+        $englishFirst = MenuItem::query()->create([
+            'type' => 'header',
+            'label' => 'First',
+            'locale' => 'en',
+            'target_kind' => 'url',
+            'url' => 'https://first.example.com',
+            'group_key' => 'header',
+            'is_enabled' => true,
+            'sort_order' => 1,
+            'depth' => 0,
+        ]);
+        $englishSecond = MenuItem::query()->create([
+            'type' => 'header',
+            'label' => 'Second',
+            'locale' => 'en',
+            'target_kind' => 'url',
+            'url' => 'https://second.example.com',
+            'group_key' => 'header',
+            'is_enabled' => true,
+            'sort_order' => 2,
+            'depth' => 0,
+        ]);
+        $arabicItem = MenuItem::query()->create([
+            'type' => 'header',
+            'label' => 'Arabic',
+            'locale' => 'ar',
+            'target_kind' => 'url',
+            'url' => 'https://arabic.example.com',
+            'group_key' => 'header',
+            'is_enabled' => true,
+            'sort_order' => 1,
+            'depth' => 0,
+        ]);
+
+        Livewire::test(ManageMenu::class)
+            ->call('reorderItems', [
+                ['id' => $englishSecond->id],
+                ['id' => $englishFirst->id],
+            ], 'en');
+
+        $this->assertDatabaseHas('menu_items', ['id' => $englishSecond->id, 'sort_order' => 1, 'locale' => 'en']);
+        $this->assertDatabaseHas('menu_items', ['id' => $englishFirst->id, 'sort_order' => 2, 'locale' => 'en']);
+        $this->assertDatabaseHas('menu_items', ['id' => $arabicItem->id, 'sort_order' => 1, 'locale' => 'ar']);
     }
 
     private function createUser(string $role): User

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Contracts\AuditServiceInterface;
+use App\Contracts\AuthServiceInterface;
 use App\Contracts\TotpAuthenticatorInterface;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\TwoFactorChallengeRequest;
@@ -26,6 +27,7 @@ final class TwoFactorChallengeController extends Controller
         private readonly TotpAuthenticatorInterface $authenticator,
         private readonly AuthFactory $authFactory,
         private readonly AuditServiceInterface $auditService,
+        private readonly AuthServiceInterface $authService,
     ) {}
 
     /**
@@ -67,6 +69,8 @@ final class TwoFactorChallengeController extends Controller
             || $this->authenticator->verifyRecoveryCode($user, $code);
 
         if (! $verified) {
+            $this->authService->recordFailedTwoFactor($user);
+
             $this->auditService->log(
                 action: 'user.two_factor_failed',
                 userId: (int) $user->getKey(),
@@ -79,8 +83,10 @@ final class TwoFactorChallengeController extends Controller
             ]);
         }
 
+        $request->session()->migrate(true);
         $request->session()->put('2fa_verified', true);
         $request->session()->put('2fa_verified_user_id', (int) $user->getAuthIdentifier());
+        $this->authService->recordSuccessfulTwoFactor($user);
 
         $this->auditService->log(
             action: 'user.two_factor_verified',

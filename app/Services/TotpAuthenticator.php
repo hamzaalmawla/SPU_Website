@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Contracts\TotpAuthenticatorInterface;
+use App\Contracts\AuditServiceInterface;
 use App\DTOs\TotpEnrollmentDTO;
 use App\Models\User;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -29,6 +30,7 @@ final class TotpAuthenticator implements TotpAuthenticatorInterface
 
     public function __construct(
         private readonly Google2FA $google2fa,
+        private readonly ?AuditServiceInterface $auditService = null,
     ) {}
 
     /**
@@ -49,6 +51,13 @@ final class TotpAuthenticator implements TotpAuthenticatorInterface
             'totp_secret_encrypted' => $secret,
             'recovery_codes_encrypted' => $this->hashRecoveryCodes($recoveryCodes),
         ])->save();
+
+        $this->auditService?->log(
+            action: 'user.two_factor_enrollment_started',
+            userId: (int) $user->getKey(),
+            entityType: User::class,
+            entityId: (int) $user->getKey(),
+        );
 
         $qrCodeUrl = $this->google2fa->getQRCodeUrl(
             self::APP_NAME,
@@ -90,6 +99,13 @@ final class TotpAuthenticator implements TotpAuthenticatorInterface
                 'two_factor_enabled' => true,
                 'two_factor_confirmed_at' => now(),
             ])->save();
+
+            $this->auditService?->log(
+                action: 'user.two_factor_enabled',
+                userId: (int) $user->getKey(),
+                entityType: User::class,
+                entityId: (int) $user->getKey(),
+            );
         }
 
         return $valid;
@@ -112,7 +128,37 @@ final class TotpAuthenticator implements TotpAuthenticatorInterface
             'recovery_codes_encrypted' => $this->hashRecoveryCodes($codes),
         ])->save();
 
+        $this->auditService?->log(
+            action: 'user.two_factor_recovery_codes_regenerated',
+            userId: (int) $user->getKey(),
+            entityType: User::class,
+            entityId: (int) $user->getKey(),
+        );
+
         return $codes;
+    }
+
+    public function disableTwoFactor(Authenticatable $user): bool
+    {
+        $user = $this->assertUserModel($user);
+
+        $updated = $user->forceFill([
+            'two_factor_enabled' => false,
+            'two_factor_confirmed_at' => null,
+            'totp_secret_encrypted' => null,
+            'recovery_codes_encrypted' => null,
+        ])->save();
+
+        if ($updated) {
+            $this->auditService?->log(
+                action: 'user.two_factor_disabled',
+                userId: (int) $user->getKey(),
+                entityType: User::class,
+                entityId: (int) $user->getKey(),
+            );
+        }
+
+        return (bool) $updated;
     }
 
     /**

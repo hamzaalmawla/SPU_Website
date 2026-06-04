@@ -190,6 +190,9 @@ final class HomepageDraftReader
             ? $payload['englishPayload']
             : ($payloadLocale === 'en' && $genericPayload !== [] ? $genericPayload : $fallbackEnglishPayload);
 
+        $arabicPayloadArray = $this->withMissingDraftPayloadDefaults($arabicPayloadArray, $fallbackArabicPayload);
+        $englishPayloadArray = $this->withMissingDraftPayloadDefaults($englishPayloadArray, $fallbackEnglishPayload);
+
         $arabicPayload = HomepagePayloadMapper::sectionDataFromArray($arabicPayloadArray);
         $englishPayload = HomepagePayloadMapper::sectionDataFromArray($englishPayloadArray);
 
@@ -224,6 +227,26 @@ final class HomepageDraftReader
     private function findTranslation(HomepageSection $section, string $locale): ?HomepageSectionTranslation
     {
         return $section->translations->firstWhere('locale', $locale);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>  $fallback
+     * @return array<string, mixed>
+     */
+    private function withMissingDraftPayloadDefaults(array $payload, array $fallback): array
+    {
+        if (! isset($payload['sectionAction']) && ! isset($payload['section_action'])) {
+            $sectionAction = is_array($fallback['sectionAction'] ?? null)
+                ? $fallback['sectionAction']
+                : (is_array($fallback['section_action'] ?? null) ? $fallback['section_action'] : null);
+
+            if ($sectionAction !== null) {
+                $payload['sectionAction'] = $sectionAction;
+            }
+        }
+
+        return $payload;
     }
 
     /**

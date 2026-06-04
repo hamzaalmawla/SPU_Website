@@ -87,7 +87,6 @@ class UserResource extends Resource
                     ->password()
                     ->minLength(8)
                     ->maxLength(255)
-                    ->dehydrateStateUsing(fn (?string $state): ?string => filled($state) ? bcrypt($state) : null)
                     ->dehydrated(fn (?string $state): bool => filled($state))
                     ->helperText('Leave blank to keep the current password.'),
             ]),

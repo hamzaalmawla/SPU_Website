@@ -76,6 +76,7 @@ final class PageService implements PageServiceInterface
     public function createPageShell(PageShellDataDTO $payload, int $userId): PageDTO
     {
         $this->authorizePageClassWrite($userId, 'create');
+        $this->assertParentIsAllowed(null, $payload->parentPageId);
 
         $page = Page::query()->create([
             'parent_id' => $payload->parentPageId,
@@ -112,6 +113,7 @@ final class PageService implements PageServiceInterface
 
         $this->authorizePageWrite($userId, 'update', $page);
         $this->assertAllowedFacultyScope($userId, $page, $payload->facultyScopeSlug);
+        $this->assertParentIsAllowed($page, $payload->parentPageId);
 
         $updated = $page->update([
             'parent_id' => $payload->parentPageId,
@@ -548,7 +550,12 @@ final class PageService implements PageServiceInterface
 
         $page->loadMissing('translations');
 
-        return $page->translations->contains(fn ($t) => ! empty($t->title));
+        $localesWithTitle = $page->translations
+            ->filter(fn ($translation): bool => in_array((string) $translation->locale, ['ar', 'en'], true) && ! empty($translation->title))
+            ->pluck('locale')
+            ->all();
+
+        return in_array('ar', $localesWithTitle, true) && in_array('en', $localesWithTitle, true);
     }
 
     private function isPublishableDto(PageDTO $page): bool
@@ -556,7 +563,40 @@ final class PageService implements PageServiceInterface
         return $page->metadata->slug !== ''
             && $page->metadata->template !== ''
             && $page->metadata->isEnabled
-            && (($page->arabicTranslation?->title ?? '') !== '' || ($page->englishTranslation?->title ?? '') !== '');
+            && $page->arabicTranslation->title !== ''
+            && $page->englishTranslation->title !== '';
+    }
+
+    private function assertParentIsAllowed(?Page $page, ?int $parentPageId): void
+    {
+        if ($parentPageId === null) {
+            return;
+        }
+
+        if ($page instanceof Page && (int) $page->getKey() === $parentPageId) {
+            throw new \InvalidArgumentException('A page cannot be its own parent.');
+        }
+
+        $ancestorId = $parentPageId;
+        $visited = [];
+
+        while ($ancestorId !== null) {
+            if (in_array($ancestorId, $visited, true)) {
+                throw new \InvalidArgumentException('The selected parent creates a page hierarchy cycle.');
+            }
+
+            $visited[] = $ancestorId;
+
+            if ($page instanceof Page && (int) $page->getKey() === $ancestorId) {
+                throw new \InvalidArgumentException('A page cannot use one of its descendants as parent.');
+            }
+
+            $ancestorId = Page::query()
+                ->whereKey($ancestorId)
+                ->value('parent_id');
+
+            $ancestorId = is_numeric($ancestorId) ? (int) $ancestorId : null;
+        }
     }
 
     private function authorizePageWrite(int $userId, string $ability, Page $page): void

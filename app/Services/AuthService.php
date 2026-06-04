@@ -13,6 +13,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Contracts\Session\Session;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Gate;
 
 /**
@@ -143,6 +144,22 @@ final class AuthService implements AuthServiceInterface
         }
     }
 
+    public function recordFailedTwoFactor(Authenticatable $user): void
+    {
+        if (! $user instanceof User) {
+            return;
+        }
+
+        $this->handleFailedAttempt($user, (string) $user->email);
+    }
+
+    public function recordSuccessfulTwoFactor(Authenticatable $user): void
+    {
+        if ($user instanceof User) {
+            $this->clearFailedAttempts($user);
+        }
+    }
+
     public function updateUser(int $userId, array $payload, int $actorUserId): bool
     {
         $user = User::query()->find($userId);
@@ -156,12 +173,28 @@ final class AuthService implements AuthServiceInterface
             throw new AuthorizationException('This user is not authorized to update users.');
         }
 
+        $requestedRole = array_key_exists('role_slug', $payload) ? (string) $payload['role_slug'] : (string) $user->role_slug;
+        $shouldLock = array_key_exists('is_locked', $payload) ? (bool) $payload['is_locked'] : (bool) $user->is_locked;
+
+        if ($userId === $actorUserId && ($shouldLock || $requestedRole !== 'super_admin')) {
+            throw new AuthorizationException('Super administrators cannot lock or demote their own account.');
+        }
+
+        if ($user->role_slug === 'super_admin'
+            && ($shouldLock || $requestedRole !== 'super_admin')
+            && $this->activeSuperAdminCount() <= 1
+        ) {
+            throw new AuthorizationException('At least one active super administrator must remain.');
+        }
+
         $wasLocked = $user->isAccountLocked();
 
         $user->fill([
             'name' => $payload['name'] ?? $user->name,
             'email' => $payload['email'] ?? $user->email,
-            'faculty_scope_slug' => $payload['faculty_scope_slug'] ?? null,
+            'faculty_scope_slug' => array_key_exists('faculty_scope_slug', $payload)
+                ? $payload['faculty_scope_slug']
+                : $user->faculty_scope_slug,
         ]);
 
         if (array_key_exists('role_slug', $payload)) {
@@ -169,10 +202,9 @@ final class AuthService implements AuthServiceInterface
         }
 
         if (array_key_exists('password', $payload) && is_string($payload['password']) && $payload['password'] !== '') {
-            $user->password = $payload['password'];
+            $user->password = Hash::make($payload['password']);
         }
 
-        $shouldLock = (bool) ($payload['is_locked'] ?? false);
         $user->is_locked = $shouldLock;
         $user->locked_at = $shouldLock ? ($user->locked_at ?? now()) : null;
 
@@ -219,6 +251,17 @@ final class AuthService implements AuthServiceInterface
     private function canAccessAdmin(User $user): bool
     {
         return in_array($user->role_slug, ['super_admin', 'editor', 'faculty_editor'], true);
+    }
+
+    private function activeSuperAdminCount(): int
+    {
+        return User::query()
+            ->where('role_slug', 'super_admin')
+            ->where(function ($query): void {
+                $query->where('is_locked', false)->orWhereNull('is_locked');
+            })
+            ->whereNull('locked_at')
+            ->count();
     }
 
     private function clearTwoFactorVerification(): void

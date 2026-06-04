@@ -40,6 +40,29 @@ class StatsCardCountPropertyTest extends TestCase
         }
     }
 
+    public function test_bottom_stats_uses_compact_blue_band_not_hero_cards(): void
+    {
+        $section = self::makeSection('bottom_stats', [
+            'title' => 'Additional Figures',
+            'stats' => [
+                self::makeStat(['value' => '200', 'label' => 'Hospital Beds', 'suffix' => '+']),
+                self::makeStat(['value' => '80', 'label' => 'Specialist Doctors', 'suffix' => '+']),
+            ],
+        ]);
+
+        $html = view('public.partials.homepage-section', [
+            'section' => $section,
+            'locale' => 'en',
+        ])->render();
+
+        $this->assertStringContainsString('bg-spu-blue', $html);
+        $this->assertStringContainsString('rounded-[28px]', $html);
+        $this->assertStringContainsString('dir="ltr"', $html);
+        $this->assertStringNotContainsString('class="stats-card"', $html);
+        $this->assertStringNotContainsString('stats-shell__grid', $html);
+        $this->assertSame(2, substr_count($html, 'data-value='));
+    }
+
     public static function statsCountProvider(): array
     {
         return array_map(fn ($n) => [$n], range(0, 8));

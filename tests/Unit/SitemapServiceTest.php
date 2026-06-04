@@ -67,7 +67,7 @@ class SitemapServiceTest extends TestCase
                 PageTranslation::create([
                     'page_id' => $page->id,
                     'locale' => $locale,
-                    'title' => 'Test Page ' . $spec['slug'] . ' ' . $locale,
+                    'title' => 'Test Page '.$spec['slug'].' '.$locale,
                 ]);
             }
 
@@ -89,6 +89,19 @@ class SitemapServiceTest extends TestCase
                 $expectedSlugs[] = $spec['slug'];
             }
         }
+
+        $expectedEntryCount = 0;
+        foreach ($pageSpecs as $spec) {
+            if (
+                $spec['status'] === 'published'
+                && $spec['is_enabled'] === true
+                && $spec['published_at'] !== null
+            ) {
+                $expectedEntryCount += count($spec['locales']);
+            }
+        }
+
+        $this->assertCount($expectedEntryCount, $entries);
 
         // Verify: every entry in the sitemap corresponds to a valid published+enabled page
         foreach ($entries as $entry) {
@@ -127,5 +140,67 @@ class SitemapServiceTest extends TestCase
                 );
             }
         }
+    }
+
+    public function test_sitemap_excludes_pages_scheduled_for_future_publication(): void
+    {
+        $page = Page::create([
+            'slug' => 'future-publication-page',
+            'type' => 'landing',
+            'template' => 'default',
+            'status' => 'published',
+            'is_enabled' => true,
+            'is_homepage_shell' => false,
+            'published_at' => now()->subDay(),
+            'publish_at' => now()->addDay(),
+        ]);
+
+        PageTranslation::create([
+            'page_id' => $page->id,
+            'locale' => 'en',
+            'title' => 'Future Publication Page',
+        ]);
+
+        $entries = app(SitemapServiceInterface::class)->generateEntries();
+
+        $this->assertFalse(
+            $entries->contains(static fn ($entry): bool => str_contains($entry->loc, 'future-publication-page')),
+        );
+    }
+
+    public function test_sitemap_excludes_pages_with_unrenderable_ancestors(): void
+    {
+        $parent = Page::create([
+            'slug' => 'disabled-parent-page',
+            'type' => 'landing',
+            'template' => 'default',
+            'status' => 'published',
+            'is_enabled' => false,
+            'is_homepage_shell' => false,
+            'published_at' => now()->subDay(),
+        ]);
+
+        $child = Page::create([
+            'parent_id' => $parent->id,
+            'slug' => 'child-under-disabled-parent',
+            'type' => 'landing',
+            'template' => 'default',
+            'status' => 'published',
+            'is_enabled' => true,
+            'is_homepage_shell' => false,
+            'published_at' => now()->subDay(),
+        ]);
+
+        PageTranslation::create([
+            'page_id' => $child->id,
+            'locale' => 'en',
+            'title' => 'Child Under Disabled Parent',
+        ]);
+
+        $entries = app(SitemapServiceInterface::class)->generateEntries();
+
+        $this->assertFalse(
+            $entries->contains(static fn ($entry): bool => str_contains($entry->loc, 'child-under-disabled-parent')),
+        );
     }
 }

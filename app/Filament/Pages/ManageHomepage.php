@@ -17,9 +17,11 @@ use App\DTOs\HomepageSectionDataDTO;
 use App\DTOs\HomepageSectionDTO;
 use App\DTOs\HomepageSectionTranslationDTO;
 use App\DTOs\HomepageStatItemDTO;
+use App\DTOs\HomepageDraftDTO;
 use App\DTOs\NavigationActionDTO;
 use App\DTOs\ResearchCardDTO;
 use App\DTOs\SocialLinkDTO;
+use App\Exceptions\ConflictException;
 use App\Filament\Support\HomepageFormSchema;
 use App\Models\User;
 use Filament\Actions\Action;
@@ -66,6 +68,8 @@ class ManageHomepage extends Page implements HasForms
 
     /** @var Collection<int, HomepageSectionDTO>|null */
     private ?Collection $sections = null;
+
+    public ?int $draftVersion = null;
 
     public function boot(
         HomepageSectionServiceInterface $sectionService,
@@ -197,12 +201,20 @@ class ManageHomepage extends Page implements HasForms
         Gate::authorize('manage-homepage');
 
         $formData = $this->form->getState();
-        $sectionDTOs = $this->buildSectionDTOsFromFormData($formData);
-        $draftPayload = new HomepageDraftDataDTO(sections: $sectionDTOs);
-        /** @var User $user */
-        $user = auth()->user();
-        $this->publishingService->saveDraft($draftPayload, $user->id);
+        try {
+            $this->saveCurrentDraft($formData);
+        } catch (ConflictException $exception) {
+            $this->notifyDraftConflict($exception);
+
+            return;
+        }
+
         Notification::make()->title('Draft saved successfully')->success()->send();
+    }
+
+    public function save(): void
+    {
+        $this->saveDraft();
     }
 
     private function discardDraft(): void
@@ -225,6 +237,14 @@ class ManageHomepage extends Page implements HasForms
 
         /** @var User $user */
         $user = auth()->user();
+        try {
+            $this->saveCurrentDraft($this->form->getState());
+        } catch (ConflictException $exception) {
+            $this->notifyDraftConflict($exception);
+
+            return;
+        }
+
         $preview = $this->previewService->createToken(
             targetType: 'homepage',
             targetId: null,
@@ -241,15 +261,36 @@ class ManageHomepage extends Page implements HasForms
         /** @var User $user */
         $user = auth()->user();
         $formData = $this->form->getState();
-        $sectionDTOs = $this->buildSectionDTOsFromFormData($formData);
-        $draftPayload = new HomepageDraftDataDTO(sections: $sectionDTOs);
-        $draft = $this->publishingService->saveDraft($draftPayload, $user->id);
+        $validationErrors = $this->publishValidationErrors($formData);
+
+        if ($validationErrors !== []) {
+            Notification::make()
+                ->title('Publish failed')
+                ->body($this->formatValidationErrors($validationErrors))
+                ->danger()
+                ->persistent()
+                ->send();
+
+            return;
+        }
+
+        try {
+            $draft = $this->saveCurrentDraft($formData);
+        } catch (ConflictException $exception) {
+            $this->notifyDraftConflict($exception);
+
+            return;
+        }
+
         $result = $this->publishingService->publish($draft->id, $user->id);
         if ($result) {
             Notification::make()->title('Homepage published successfully')->success()->send();
         } else {
             Notification::make()->title('Publish failed')
-                ->body('Please ensure all required content is filled in.')->danger()->send();
+                ->body('The homepage draft did not pass publish validation. Review required fields in Arabic and English.')
+                ->danger()
+                ->persistent()
+                ->send();
         }
     }
 
@@ -260,9 +301,27 @@ class ManageHomepage extends Page implements HasForms
         /** @var User $user */
         $user = auth()->user();
         $formData = $this->form->getState();
-        $sectionDTOs = $this->buildSectionDTOsFromFormData($formData);
-        $draftPayload = new HomepageDraftDataDTO(sections: $sectionDTOs);
-        $draft = $this->publishingService->saveDraft($draftPayload, $user->id);
+        $validationErrors = $this->publishValidationErrors($formData);
+
+        if ($validationErrors !== []) {
+            Notification::make()
+                ->title('Schedule failed')
+                ->body($this->formatValidationErrors($validationErrors))
+                ->danger()
+                ->persistent()
+                ->send();
+
+            return;
+        }
+
+        try {
+            $draft = $this->saveCurrentDraft($formData);
+        } catch (ConflictException $exception) {
+            $this->notifyDraftConflict($exception);
+
+            return;
+        }
+
         $result = $this->publishingService->schedulePublish(
             $draft->id,
             new \DateTimeImmutable($publishAt),
@@ -307,6 +366,7 @@ class ManageHomepage extends Page implements HasForms
     private function loadSectionData(): void
     {
         $this->sections = $this->sectionService->getSections();
+        $this->draftVersion = $this->publishingService->latestEditableDraftVersion();
 
         $formData = [];
 
@@ -324,39 +384,60 @@ class ManageHomepage extends Page implements HasForms
     private function sectionToFormData(HomepageSectionDTO $section): array
     {
         return [
-            'ar' => $this->payloadToFormArray($section->arabicPayload ?? $section->payload, $section->arabicTranslation),
-            'en' => $this->payloadToFormArray($section->englishPayload ?? $section->payload, $section->englishTranslation),
+            'ar' => $this->payloadToFormArray($section->arabicPayload ?? $section->payload, $section->arabicTranslation, $section->key),
+            'en' => $this->payloadToFormArray($section->englishPayload ?? $section->payload, $section->englishTranslation, $section->key),
         ];
     }
 
-    private function payloadToFormArray(HomepageSectionDataDTO $payload, HomepageSectionTranslationDTO $translation): array
+    private function payloadToFormArray(HomepageSectionDataDTO $payload, HomepageSectionTranslationDTO $translation, string $sectionKey = ''): array
     {
         $toArray = fn ($obj): array => json_decode(json_encode($obj), true) ?? [];
+        $content = is_array($payload->content) ? $payload->content : ($toArray($payload->content) ?: []);
+
+        if (isset($content['legalLinks']) && ! isset($content['legal_links'])) {
+            $content['legal_links'] = $content['legalLinks'];
+        }
+
+        $content = $this->withContactContentAliases($content, $payload->contactLinks);
+        $formContent = $content;
+        $formContent['images'] = self::imagesToFormArray($content['images'] ?? []);
+
+        $items = is_array($payload->items) ? array_map($toArray, $payload->items) : [];
+        $featuredItems = $sectionKey === 'academic_faculties'
+            ? self::itemsToFacultyFormArray($items, $payload->featuredItems)
+            : ($sectionKey === 'achievements_highlights'
+                ? self::itemsToHighlightFormArray($items, $payload->featuredItems)
+                : self::featureItemsToFormArray($payload->featuredItems));
 
         return [
             'headline' => $translation->headline ?? $payload->title,
             'subheadline' => $translation->body ?? $payload->subtitle,
-            'background_image' => $payload->backgroundImageUrl,
+            'background_image' => $payload->backgroundImageUrl ?? $payload->imageUrl,
+            'hero_carousel_uploads' => [],
             'video_url' => $payload->videoUrl,
             'image' => $payload->imageUrl,
             'primary_cta_label' => $payload->primaryAction?->label ?? $translation->ctaLabel,
             'primary_cta_url' => $payload->primaryAction?->url ?? null,
             'secondary_cta_label' => $payload->secondaryAction?->label ?? null,
             'secondary_cta_url' => $payload->secondaryAction?->url ?? null,
+            'section_cta_label' => $payload->sectionAction?->label ?? null,
+            'section_cta_url' => $payload->sectionAction?->url ?? null,
             'section_title' => $payload->title,
             'subtitle' => $payload->subtitle,
-            'items' => is_array($payload->items) ? array_map($toArray, $payload->items) : [],
+            'items' => self::itemsToFormArray($items),
+            'path_items' => $sectionKey === 'choose_your_path' ? self::pathItemsToFormArray($items) : [],
             'stats' => array_map($toArray, $payload->stats),
-            'featured_items' => array_map($toArray, $payload->featuredItems),
-            'articles' => array_map($toArray, $payload->articles),
-            'research_items' => array_map($toArray, $payload->researchItems),
-            'events' => array_map($toArray, $payload->events),
+            'featured_items' => $featuredItems,
+            'articles' => self::articlesToFormArray($payload->articles),
+            'research_items' => self::researchItemsToFormArray($payload->researchItems),
+            'events' => self::eventsToFormArray($payload->events),
             'footer_columns' => array_map($toArray, $payload->footerColumns),
             'contact_links' => array_map($toArray, $payload->contactLinks),
             'social_links' => array_map($toArray, $payload->socialLinks),
-            'content' => is_array($payload->content) ? $payload->content : ($toArray($payload->content) ?: []),
-            'copyright_text' => is_array($payload->content) ? ($payload->content['copyrightText'] ?? ($payload->content['copyright_text'] ?? null)) : null,
-            'logo' => is_array($payload->content) ? ($payload->content['logo'] ?? null) : null,
+            'content' => $formContent,
+            'copyright_text' => $content['copyrightText'] ?? ($content['copyright_text'] ?? null),
+            'logo' => $content['brandBlock']['logoUrl'] ?? ($content['brand_block']['logo_url'] ?? ($content['logo'] ?? null)),
+            'brand_title' => $content['brandBlock']['title'] ?? ($content['brand_block']['title'] ?? null),
         ];
     }
 
@@ -387,7 +468,7 @@ class ManageHomepage extends Page implements HasForms
                 key: $key,
                 sortOrder: $sortOrder,
                 isEnabled: $existingSection?->isEnabled ?? true,
-                payload: $this->formArrayToPayload($sectionData['ar'] ?? []),
+                payload: $this->formArrayToPayload($sectionData['ar'] ?? [], $key),
                 arabicTranslation: new HomepageSectionTranslationDTO(
                     locale: 'ar',
                     headline: $sectionData['ar']['headline'] ?? null,
@@ -400,15 +481,15 @@ class ManageHomepage extends Page implements HasForms
                     body: $sectionData['en']['subheadline'] ?? null,
                     ctaLabel: $sectionData['en']['primary_cta_label'] ?? null,
                 ),
-                arabicPayload: $this->formArrayToPayload($sectionData['ar'] ?? []),
-                englishPayload: $this->formArrayToPayload($sectionData['en'] ?? []),
+                arabicPayload: $this->formArrayToPayload($sectionData['ar'] ?? [], $key),
+                englishPayload: $this->formArrayToPayload($sectionData['en'] ?? [], $key),
             );
         }
 
         return $dtos;
     }
 
-    private function formArrayToPayload(array $data): HomepageSectionDataDTO
+    private function formArrayToPayload(array $data, string $sectionKey = ''): HomepageSectionDataDTO
     {
         $content = is_array($data['content'] ?? null) ? $data['content'] : [];
         $logo = self::extractFileUploadValue($data['logo'] ?? null);
@@ -421,12 +502,72 @@ class ManageHomepage extends Page implements HasForms
             $content['copyrightText'] = (string) $data['copyright_text'];
         }
 
+        if (($data['brand_title'] ?? null) !== null && $data['brand_title'] !== '') {
+            $content['brandBlock']['title'] = (string) $data['brand_title'];
+        }
+
+        if (! isset($content['brandBlock']) && isset($content['brand_block']) && is_array($content['brand_block'])) {
+            $content['brandBlock'] = $content['brand_block'];
+        }
+
+        if ($logo !== null) {
+            $content['brandBlock']['logoUrl'] = $logo;
+        }
+
+        if (! isset($content['legalLinks']) && isset($content['legal_links']) && is_array($content['legal_links'])) {
+            $content['legalLinks'] = $content['legal_links'];
+        }
+
+        $legalLinks = $data['content']['legal_links'] ?? $data['content']['legalLinks'] ?? null;
+
+        if (is_array($legalLinks)) {
+            $content['legalLinks'] = $legalLinks;
+        }
+
+        $contentImages = self::imagePathsFromFormValue($content['images'] ?? []);
+        $uploadedImages = self::imagePathsFromFormValue($data['hero_carousel_uploads'] ?? []);
+        $mergedImages = array_values(array_unique(array_merge($contentImages, $uploadedImages)));
+
+        if ($mergedImages !== []) {
+            $content['images'] = $mergedImages;
+        }
+
+        $contactLinks = is_array($data['contact_links'] ?? null) ? $data['contact_links'] : [];
+
+        foreach ([
+            'phone' => $data['content']['contact_phone'] ?? null,
+            'email' => $data['content']['contact_email'] ?? null,
+            'address' => $data['content']['contact_address'] ?? null,
+        ] as $type => $value) {
+            if (is_string($value) && $value !== '') {
+                $existingIndex = null;
+
+                foreach ($contactLinks as $index => $link) {
+                    if (is_array($link) && strtolower((string) ($link['type'] ?? '')) === $type) {
+                        $existingIndex = $index;
+
+                        break;
+                    }
+                }
+
+                if ($existingIndex !== null) {
+                    $contactLinks[$existingIndex]['value'] = $value;
+                } else {
+                    $contactLinks[] = [
+                        'type' => $type,
+                        'label' => ucfirst($type),
+                        'value' => $value,
+                    ];
+                }
+            }
+        }
+
         return new HomepageSectionDataDTO(
             title: $data['section_title'] ?? $data['headline'] ?? null,
             subtitle: $data['subtitle'] ?? $data['subheadline'] ?? null,
             videoUrl: $data['video_url'] ?? null,
-            imageUrl: $data['image'] ?? null,
-            backgroundImageUrl: $data['background_image'] ?? null,
+            imageUrl: self::extractFileUploadValue($data['image'] ?? null),
+            backgroundImageUrl: self::extractFileUploadValue($data['background_image'] ?? null),
             primaryAction: isset($data['primary_cta_label'])
                 ? new NavigationActionDTO(
                     label: $data['primary_cta_label'],
@@ -439,6 +580,7 @@ class ManageHomepage extends Page implements HasForms
                     url: $data['secondary_cta_url'] ?? '#',
                 )
                 : null,
+            sectionAction: self::formAction($data, 'section_cta_label', 'section_cta_url'),
             stats: array_values(array_map(
                 static fn (array $item): HomepageStatItemDTO => new HomepageStatItemDTO(
                     value: (string) ($item['value'] ?? ''),
@@ -525,7 +667,7 @@ class ManageHomepage extends Page implements HasForms
                     label: (string) ($item['label'] ?? ''),
                     value: (string) ($item['value'] ?? ''),
                 ),
-                array_filter($data['contact_links'] ?? [], static fn (mixed $i): bool => is_array($i)),
+                array_filter($contactLinks, static fn (mixed $i): bool => is_array($i)),
             )),
             socialLinks: array_values(array_map(
                 static fn (array $item): SocialLinkDTO => new SocialLinkDTO(
@@ -535,7 +677,7 @@ class ManageHomepage extends Page implements HasForms
                 ),
                 array_filter($data['social_links'] ?? [], static fn (mixed $i): bool => is_array($i)),
             )),
-            items: self::formItems($data),
+            items: self::formItems($data, $sectionKey),
             content: $content,
         );
     }
@@ -543,9 +685,13 @@ class ManageHomepage extends Page implements HasForms
     /**
      * @return array<int, array<string, mixed>>
      */
-    private static function formItems(array $data): array
+    private static function formItems(array $data, string $sectionKey = ''): array
     {
-        $items = $data['items'] ?? $data['path_items'] ?? $data['featured_items'] ?? [];
+        $items = match ($sectionKey) {
+            'choose_your_path' => $data['path_items'] ?? [],
+            'academic_faculties', 'achievements_highlights' => $data['featured_items'] ?? [],
+            default => self::firstFilledItemSource($data),
+        };
 
         return array_values(array_map(
             static function (array $item): array {
@@ -563,16 +709,21 @@ class ManageHomepage extends Page implements HasForms
                     $mapped['summary'] = self::firstString($mapped, ['description', 'text']);
                 }
 
-                if (! isset($mapped['action']) && self::firstString($mapped, ['cta_label']) !== null) {
+                $ctaLabel = self::firstString($mapped, ['cta_label']) ?? (is_array($mapped['action'] ?? null) ? self::firstString($mapped['action'], ['label']) : null);
+                $ctaUrl = self::firstString($mapped, ['cta_url']) ?? (is_array($mapped['action'] ?? null) ? self::firstString($mapped['action'], ['url']) : null);
+
+                if ($ctaLabel !== null || $ctaUrl !== null) {
                     $mapped['action'] = array_filter([
-                        'label' => self::firstString($mapped, ['cta_label']),
-                        'url' => self::firstString($mapped, ['cta_url']) ?? '#',
+                        'label' => $ctaLabel,
+                        'url' => $ctaUrl ?? '#',
                     ]);
                 }
 
                 if (isset($mapped['links']) && is_array($mapped['links'])) {
                     $mapped['links'] = array_values(array_map(
-                        static fn (mixed $link): mixed => is_array($link) ? ($link['label'] ?? '') : $link,
+                        static fn (mixed $link): mixed => is_array($link) && isset($link['url']) && $link['url'] !== null && $link['url'] !== ''
+                            ? array_filter(['label' => $link['label'] ?? ($link['text'] ?? ''), 'url' => $link['url']])
+                            : (is_array($link) ? ($link['label'] ?? ($link['text'] ?? '')) : $link),
                         $mapped['links'],
                     ));
                 }
@@ -581,6 +732,307 @@ class ManageHomepage extends Page implements HasForms
             },
             array_filter($items, static fn (mixed $i): bool => is_array($i)),
         ));
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private static function firstFilledItemSource(array $data): array
+    {
+        foreach (['path_items', 'featured_items', 'items'] as $key) {
+            if (is_array($data[$key] ?? null) && $data[$key] !== []) {
+                return $data[$key];
+            }
+        }
+
+        return [];
+    }
+
+    /**
+     * @param  array<int, HomepageFeatureItemDTO>  $items
+     * @return array<int, array<string, mixed>>
+     */
+    private static function featureItemsToFormArray(array $items): array
+    {
+        return array_values(array_map(
+            static fn (HomepageFeatureItemDTO $item): array => [
+                'title' => $item->title,
+                'description' => $item->summary,
+                'summary' => $item->summary,
+                'imageUrl' => $item->imageUrl,
+                'cta_label' => $item->url !== null ? 'Learn more' : null,
+                'cta_url' => $item->url,
+                'url' => $item->url,
+            ],
+            $items,
+        ));
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $items
+     * @param  array<int, HomepageFeatureItemDTO>  $fallbackItems
+     * @return array<int, array<string, mixed>>
+     */
+    private static function itemsToFacultyFormArray(array $items, array $fallbackItems): array
+    {
+        if ($items === []) {
+            return self::featureItemsToFormArray($fallbackItems);
+        }
+
+        return array_values(array_map(
+            static fn (array $item): array => array_filter([
+                'title' => $item['title'] ?? '',
+                'description' => self::firstString($item, ['description', 'summary', 'text']),
+                'summary' => self::firstString($item, ['summary', 'description', 'text']),
+                'image' => $item['image'] ?? ($item['imageUrl'] ?? null),
+                'imageUrl' => $item['imageUrl'] ?? ($item['image'] ?? null),
+                'icon' => $item['icon'] ?? null,
+                'accent' => $item['accent'] ?? null,
+                'metric' => $item['metric'] ?? null,
+                'cta_label' => is_array($item['action'] ?? null) ? ($item['action']['label'] ?? null) : null,
+                'cta_url' => is_array($item['action'] ?? null) ? ($item['action']['url'] ?? null) : null,
+                'action' => $item['action'] ?? null,
+            ], static fn (mixed $value): bool => $value !== null && $value !== []),
+            $items,
+        ));
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $items
+     * @param  array<int, HomepageFeatureItemDTO>  $fallbackItems
+     * @return array<int, array<string, mixed>>
+     */
+    private static function itemsToHighlightFormArray(array $items, array $fallbackItems): array
+    {
+        if ($items === []) {
+            return self::featureItemsToFormArray($fallbackItems);
+        }
+
+        return array_values(array_map(
+            static fn (array $item): array => array_filter([
+                'title' => $item['title'] ?? '',
+                'text' => self::firstString($item, ['text', 'summary', 'description']),
+                'description' => self::firstString($item, ['summary', 'description', 'text']),
+                'summary' => self::firstString($item, ['summary', 'description', 'text']),
+                'image' => $item['image'] ?? ($item['imageUrl'] ?? null),
+                'imageUrl' => $item['imageUrl'] ?? ($item['image'] ?? null),
+                'icon' => $item['icon'] ?? null,
+                'metric' => $item['metric'] ?? null,
+                'typeTag' => $item['typeTag'] ?? ($item['type_tag'] ?? null),
+                'meta' => $item['meta'] ?? null,
+                'cta_label' => is_array($item['action'] ?? null) ? ($item['action']['label'] ?? null) : null,
+                'cta_url' => is_array($item['action'] ?? null) ? ($item['action']['url'] ?? null) : null,
+                'action' => $item['action'] ?? null,
+            ], static fn (mixed $value): bool => $value !== null && $value !== []),
+            $items,
+        ));
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $items
+     * @return array<int, array<string, mixed>>
+     */
+    private static function pathItemsToFormArray(array $items): array
+    {
+        return array_values(array_map(
+            static fn (array $item): array => array_filter([
+                'title' => $item['title'] ?? '',
+                'icon' => $item['icon'] ?? null,
+                'links' => array_values(array_map(
+                    static fn (mixed $link): array => is_array($link)
+                        ? ['label' => (string) ($link['label'] ?? ($link['text'] ?? '')), 'url' => $link['url'] ?? null]
+                        : ['label' => (string) $link],
+                    is_array($item['links'] ?? null) ? $item['links'] : [],
+                )),
+                'cta_label' => is_array($item['action'] ?? null) ? ($item['action']['label'] ?? null) : null,
+                'cta_url' => is_array($item['action'] ?? null) ? ($item['action']['url'] ?? null) : null,
+                'action' => $item['action'] ?? null,
+            ], static fn (mixed $value): bool => $value !== null && $value !== []),
+            $items,
+        ));
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $items
+     * @return array<int, array<string, mixed>>
+     */
+    private static function itemsToFormArray(array $items): array
+    {
+        return array_values(array_map(
+            static function (array $item): array {
+                if (isset($item['imageUrl']) && ! isset($item['image'])) {
+                    $item['image'] = $item['imageUrl'];
+                }
+
+                if (is_array($item['action'] ?? null)) {
+                    $item['cta_label'] = $item['action']['label'] ?? ($item['cta_label'] ?? null);
+                    $item['cta_url'] = $item['action']['url'] ?? ($item['cta_url'] ?? null);
+                }
+
+                return $item;
+            },
+            $items,
+        ));
+    }
+
+    /**
+     * @param  array<int, ArticleCardDTO>  $articles
+     * @return array<int, array<string, mixed>>
+     */
+    private static function articlesToFormArray(array $articles): array
+    {
+        return array_values(array_map(
+            static fn (ArticleCardDTO $article): array => [
+                'id' => $article->id,
+                'locale' => $article->locale,
+                'title' => $article->title,
+                'slug' => $article->slug,
+                'excerpt' => $article->excerpt,
+                'image' => $article->imageUrl,
+                'imageUrl' => $article->imageUrl,
+                'publish_date' => $article->publishedAt,
+                'publishedAt' => $article->publishedAt,
+                'category' => $article->categoryLabel,
+                'categoryLabel' => $article->categoryLabel,
+                'cta_url' => $article->url,
+                'url' => $article->url,
+            ],
+            $articles,
+        ));
+    }
+
+    /**
+     * @param  array<int, ResearchCardDTO>  $items
+     * @return array<int, array<string, mixed>>
+     */
+    private static function researchItemsToFormArray(array $items): array
+    {
+        return array_values(array_map(
+            static fn (ResearchCardDTO $item): array => [
+                'id' => $item->id,
+                'locale' => $item->locale,
+                'title' => $item->title,
+                'slug' => $item->slug,
+                'excerpt' => $item->summary,
+                'summary' => $item->summary,
+                'image' => $item->imageUrl,
+                'imageUrl' => $item->imageUrl,
+                'publish_date' => $item->publishedAt,
+                'publishedAt' => $item->publishedAt,
+                'category' => $item->categoryLabel,
+                'categoryLabel' => $item->categoryLabel,
+                'authors' => implode(', ', $item->authors),
+                'cta_url' => $item->url,
+                'url' => $item->url,
+            ],
+            $items,
+        ));
+    }
+
+    /**
+     * @param  array<int, EventCardDTO>  $events
+     * @return array<int, array<string, mixed>>
+     */
+    private static function eventsToFormArray(array $events): array
+    {
+        return array_values(array_map(
+            static fn (EventCardDTO $event): array => [
+                'id' => $event->id,
+                'locale' => $event->locale,
+                'title' => $event->title,
+                'slug' => $event->slug,
+                'description' => $event->summary,
+                'summary' => $event->summary,
+                'date' => $event->startsAt,
+                'startsAt' => $event->startsAt,
+                'time' => $event->timeLabel,
+                'timeLabel' => $event->timeLabel,
+                'location' => $event->location,
+                'image' => $event->imageUrl,
+                'imageUrl' => $event->imageUrl,
+                'cta_url' => $event->url,
+                'url' => $event->url,
+            ],
+            $events,
+        ));
+    }
+
+    /**
+     * @param  array<string, mixed>  $content
+     * @param  array<int, ContactLinkDTO>  $contactLinks
+     * @return array<string, mixed>
+     */
+    private function withContactContentAliases(array $content, array $contactLinks): array
+    {
+        foreach ($contactLinks as $link) {
+            $key = match (strtolower($link->type)) {
+                'phone' => 'contact_phone',
+                'email' => 'contact_email',
+                'address' => 'contact_address',
+                default => null,
+            };
+
+            if ($key !== null && ! isset($content[$key])) {
+                $content[$key] = $link->value;
+            }
+        }
+
+        return $content;
+    }
+
+    /**
+     * @return array<int, array{path: string}>
+     */
+    private static function imagesToFormArray(mixed $images): array
+    {
+        return array_values(array_map(
+            static fn (string $path): array => ['path' => $path],
+            self::imagePathsFromFormValue($images),
+        ));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private static function imagePathsFromFormValue(mixed $value): array
+    {
+        if (! is_array($value)) {
+            return is_string($value) && $value !== '' ? [$value] : [];
+        }
+
+        $paths = [];
+
+        foreach ($value as $item) {
+            if (is_string($item) && $item !== '') {
+                $paths[] = $item;
+
+                continue;
+            }
+
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $path = self::extractFileUploadValue($item['path'] ?? ($item['image'] ?? ($item['url'] ?? null)));
+
+            if ($path !== null) {
+                $paths[] = $path;
+            }
+        }
+
+        return array_values(array_filter($paths, static fn (string $path): bool => $path !== ''));
+    }
+
+    /** @param array<string, mixed> $content */
+    private static function firstContentImage(array $content): ?string
+    {
+        $images = $content['images'] ?? null;
+
+        if (! is_array($images)) {
+            return null;
+        }
+
+        return array_values(array_filter($images, static fn (mixed $image): bool => is_string($image) && $image !== ''))[0] ?? null;
     }
 
     /** @return array<int, Tab> */
@@ -609,15 +1061,74 @@ class ManageHomepage extends Page implements HasForms
                         ->tabs([
                             Tab::make('العربية (AR)')
                                 ->schema(HomepageFormSchema::fieldsForSection($key, "{$key}.ar"))
+                                ->extraAttributes(['dir' => 'rtl'])
                                 ->icon('heroicon-o-language'),
                             Tab::make('English (EN)')
                                 ->schema(HomepageFormSchema::fieldsForSection($key, "{$key}.en"))
+                                ->extraAttributes(['dir' => 'ltr'])
                                 ->icon('heroicon-o-language'),
                         ]),
                 ]);
         }
 
         return $tabs;
+    }
+
+    private function saveCurrentDraft(array $formData): HomepageDraftDTO
+    {
+        /** @var User $user */
+        $user = auth()->user();
+        $sectionDTOs = $this->buildSectionDTOsFromFormData($formData);
+        $draftPayload = new HomepageDraftDataDTO(sections: $sectionDTOs);
+        $draft = $this->publishingService->saveDraft($draftPayload, $user->id, $this->draftVersion);
+        $this->draftVersion = $draft->version;
+
+        return $draft;
+    }
+
+    private function notifyDraftConflict(ConflictException $exception): void
+    {
+        $this->draftVersion = $exception->currentVersion;
+
+        Notification::make()
+            ->title('Draft changed')
+            ->body('The homepage draft changed while this page was open. Refresh the admin page, review the latest draft, then save or publish again.')
+            ->warning()
+            ->persistent()
+            ->send();
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function publishValidationErrors(array $formData): array
+    {
+        $errors = [];
+        $sections = $this->buildSectionDTOsFromFormData($formData);
+
+        foreach ($sections as $section) {
+            foreach (['ar' => $section->arabicPayload ?? $section->payload, 'en' => $section->englishPayload ?? $section->payload] as $locale => $payload) {
+                $result = $this->sectionService->validateSectionPayload($section->key, $payload, $locale);
+
+                if ($result->isValid) {
+                    continue;
+                }
+
+                foreach ($result->errors as $error) {
+                    foreach ($error->messages as $message) {
+                        $errors[] = strtoupper($locale).' '.$section->key.'.'.$error->field.': '.$message;
+                    }
+                }
+            }
+        }
+
+        return array_slice($errors, 0, 12);
+    }
+
+    /** @param list<string> $errors */
+    private function formatValidationErrors(array $errors): string
+    {
+        return "Missing or invalid publish fields:\n- ".implode("\n- ", $errors);
     }
 
     /**
@@ -645,6 +1156,21 @@ class ManageHomepage extends Page implements HasForms
         }
 
         return null;
+    }
+
+    private static function formAction(array $data, string $labelKey, string $urlKey): ?NavigationActionDTO
+    {
+        $label = self::firstString($data, [$labelKey]);
+        $url = self::firstString($data, [$urlKey]);
+
+        if ($label === null && $url === null) {
+            return null;
+        }
+
+        return new NavigationActionDTO(
+            label: $label ?? '',
+            url: $url ?? '#',
+        );
     }
 
     /** @return array<int, string> */

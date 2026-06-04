@@ -47,6 +47,11 @@ class AuditLogResource extends Resource
         return Gate::allows('view-audit-log');
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with('user');
+    }
+
     public static function canCreate(): bool
     {
         return false;
@@ -150,8 +155,7 @@ class AuditLogResource extends Resource
                 SelectFilter::make('user_id')
                     ->label('User')
                     ->relationship('user', 'name')
-                    ->searchable()
-                    ->preload(),
+                    ->searchable(),
 
                 Filter::make('date_range')
                     ->form([
@@ -176,7 +180,9 @@ class AuditLogResource extends Resource
                 Tables\Actions\ViewAction::make(),
             ])
             ->bulkActions([])
-            ->defaultSort('created_at', 'desc');
+            ->defaultSort('created_at', 'desc')
+            ->defaultPaginationPageOption(25)
+            ->paginationPageOptions([10, 25, 50]);
     }
 
     public static function getRelations(): array

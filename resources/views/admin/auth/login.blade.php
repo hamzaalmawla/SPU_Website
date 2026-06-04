@@ -1,32 +1,39 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Admin Login</title>
-</head>
-<body>
-    <h1>Admin Login</h1>
+<x-admin.auth.layout :title="__('admin.auth.login_title')">
+    <h2 class="form-heading">{{ __('admin.auth.login_heading') }}</h2>
+    <p class="form-copy">{{ __('admin.auth.login_subheading') }}</p>
 
     @if ($errors->any())
-        <div role="alert">{{ $errors->first() }}</div>
+        <div class="alert" role="alert">{{ $errors->first() }}</div>
     @endif
 
-    <form method="POST" action="{{ route('admin.login.attempt') }}">
+    <form method="POST" action="{{ route('admin.login.attempt') }}" novalidate>
         @csrf
 
-        <label for="email">Email</label>
-        <input id="email" name="email" type="email" value="{{ old('email') }}" required autofocus>
+        <div class="field">
+            <label for="email">{{ __('admin.auth.email') }}</label>
+            <input id="email" name="email" type="email" value="{{ old('email') }}" autocomplete="username" required autofocus>
+            @error('email')
+                <p class="field-error">{{ $message }}</p>
+            @enderror
+        </div>
 
-        <label for="password">Password</label>
-        <input id="password" name="password" type="password" required>
+        <div class="field">
+            <label for="password">{{ __('admin.auth.password') }}</label>
+            <input id="password" name="password" type="password" autocomplete="current-password" required>
+            @error('password')
+                <p class="field-error">{{ $message }}</p>
+            @enderror
+        </div>
 
-        <label for="remember">
-            <input id="remember" name="remember" type="checkbox" value="1">
-            Remember me
-        </label>
+        <div class="form-row">
+            <label class="remember" for="remember">
+                <input id="remember" name="remember" type="checkbox" value="1" @checked(old('remember'))>
+                {{ __('admin.auth.remember') }}
+            </label>
+        </div>
 
-        <button type="submit">Sign in</button>
+        <button class="primary-button" type="submit">{{ __('admin.auth.sign_in') }}</button>
     </form>
-</body>
-</html>
+
+    <p class="security-note">{{ __('admin.auth.security_note') }}</p>
+</x-admin.auth.layout>

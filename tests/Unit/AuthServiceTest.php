@@ -118,4 +118,33 @@ class AuthServiceTest extends TestCase
             'entity_id' => $user->id,
         ]);
     }
+
+    public function test_update_user_preserves_omitted_lock_and_faculty_scope_fields(): void
+    {
+        $actor = User::factory()->create([
+            'email' => 'super-admin@example.com',
+            'role_slug' => 'super_admin',
+        ]);
+        $user = User::factory()->create([
+            'email' => 'faculty-editor@example.com',
+            'role_slug' => 'faculty_editor',
+            'faculty_scope_slug' => 'medicine',
+            'is_locked' => true,
+            'locked_at' => now(),
+        ]);
+
+        $updated = app(AuthServiceInterface::class)->updateUser($user->id, [
+            'name' => 'Updated Faculty Editor',
+        ], $actor->id);
+
+        $this->assertTrue($updated);
+
+        $user->refresh();
+
+        $this->assertSame('Updated Faculty Editor', $user->name);
+        $this->assertSame('faculty_editor', $user->role_slug);
+        $this->assertSame('medicine', $user->faculty_scope_slug);
+        $this->assertTrue($user->is_locked);
+        $this->assertNotNull($user->locked_at);
+    }
 }

@@ -99,11 +99,25 @@ class ManageSettings extends Page implements HasForms
     private function saveAction(): Action
     {
         return Action::make('save')
-            ->label('Save Settings')
+            ->label('Save Settings Group')
             ->icon('heroicon-o-check')
             ->color('success')
-            ->action(function (): void {
-                $this->saveSettings();
+            ->form([
+                \Filament\Forms\Components\Select::make('group')
+                    ->label('Settings Group')
+                    ->options([
+                        'navigation' => 'Utility Navigation',
+                        'footer' => 'Footer',
+                        'emergency' => 'Emergency Notice',
+                        'contact' => 'Contact',
+                        'social' => 'Social',
+                        'seo' => 'SEO Defaults',
+                    ])
+                    ->placeholder('Choose the group you are editing')
+                    ->required(),
+            ])
+            ->action(function (array $data): void {
+                $this->saveSettings((string) $data['group']);
             });
     }
 
@@ -111,7 +125,7 @@ class ManageSettings extends Page implements HasForms
     // Save Handler
     // ──────────────────────────────────────────────
 
-    private function saveSettings(): void
+    private function saveSettings(string $group): void
     {
         $formData = $this->form->getState();
 
@@ -119,15 +133,18 @@ class ManageSettings extends Page implements HasForms
         $user = auth()->user();
 
         try {
-            $this->saveUtilityNavigation($formData, $user->id);
-            $this->saveFooter($formData, $user->id);
-            $this->saveEmergencyNotice($formData, $user->id);
-            $this->saveContact($formData, $user->id);
-            $this->saveSocial($formData, $user->id);
-            $this->saveSeoDefaults($formData, $user->id);
+            match ($group) {
+                'navigation' => $this->saveUtilityNavigation($formData, $user->id),
+                'footer' => $this->saveFooter($formData, $user->id),
+                'emergency' => $this->saveEmergencyNotice($formData, $user->id),
+                'contact' => $this->saveContact($formData, $user->id),
+                'social' => $this->saveSocial($formData, $user->id),
+                'seo' => $this->saveSeoDefaults($formData, $user->id),
+                default => throw new \InvalidArgumentException('Unsupported settings group.'),
+            };
 
             Notification::make()
-                ->title('Settings saved successfully')
+                ->title('Settings group saved successfully')
                 ->success()
                 ->send();
         } catch (\Throwable $e) {
@@ -139,6 +156,15 @@ class ManageSettings extends Page implements HasForms
                 ->danger()
                 ->send();
         }
+    }
+
+    public function save(): void
+    {
+        Notification::make()
+            ->title('Use the Save Settings Group action')
+            ->body('Choose the settings group to save from the page header action.')
+            ->warning()
+            ->send();
     }
 
     // ──────────────────────────────────────────────
@@ -434,8 +460,10 @@ class ManageSettings extends Page implements HasForms
                 Tabs::make('utility_locales')
                     ->tabs([
                         Tab::make('العربية (AR)')
+                            ->extraAttributes(['dir' => 'rtl'])
                             ->schema($this->utilityNavigationFields('ar')),
                         Tab::make('English (EN)')
+                            ->extraAttributes(['dir' => 'ltr'])
                             ->schema($this->utilityNavigationFields('en')),
                     ]),
 
@@ -484,8 +512,10 @@ class ManageSettings extends Page implements HasForms
                 Tabs::make('footer_locales')
                     ->tabs([
                         Tab::make('العربية (AR)')
+                            ->extraAttributes(['dir' => 'rtl'])
                             ->schema($this->footerFields('ar')),
                         Tab::make('English (EN)')
+                            ->extraAttributes(['dir' => 'ltr'])
                             ->schema($this->footerFields('en')),
                     ]),
             ]);
@@ -553,6 +583,7 @@ class ManageSettings extends Page implements HasForms
                     ])
                     ->columns(2)
                     ->collapsible()
+                    ->collapsed()
                     ->defaultItems(0),
             ]),
         ];
@@ -566,8 +597,10 @@ class ManageSettings extends Page implements HasForms
                 Tabs::make('emergency_locales')
                     ->tabs([
                         Tab::make('العربية (AR)')
+                            ->extraAttributes(['dir' => 'rtl'])
                             ->schema($this->emergencyNoticeFields('ar')),
                         Tab::make('English (EN)')
+                            ->extraAttributes(['dir' => 'ltr'])
                             ->schema($this->emergencyNoticeFields('en')),
                     ]),
             ]);
@@ -609,8 +642,10 @@ class ManageSettings extends Page implements HasForms
                 Tabs::make('contact_locales')
                     ->tabs([
                         Tab::make('العربية (AR)')
+                            ->extraAttributes(['dir' => 'rtl'])
                             ->schema($this->contactFields('ar')),
                         Tab::make('English (EN)')
+                            ->extraAttributes(['dir' => 'ltr'])
                             ->schema($this->contactFields('en')),
                     ]),
             ]);
@@ -641,6 +676,7 @@ class ManageSettings extends Page implements HasForms
                 ])
                 ->columns(3)
                 ->collapsible()
+                ->collapsed()
                 ->defaultItems(0),
         ];
     }
@@ -653,8 +689,10 @@ class ManageSettings extends Page implements HasForms
                 Tabs::make('social_locales')
                     ->tabs([
                         Tab::make('العربية (AR)')
+                            ->extraAttributes(['dir' => 'rtl'])
                             ->schema($this->socialFields('ar')),
                         Tab::make('English (EN)')
+                            ->extraAttributes(['dir' => 'ltr'])
                             ->schema($this->socialFields('en')),
                     ]),
             ]);
@@ -685,6 +723,7 @@ class ManageSettings extends Page implements HasForms
                 ])
                 ->columns(3)
                 ->collapsible()
+                ->collapsed()
                 ->defaultItems(0),
         ];
     }
@@ -697,8 +736,10 @@ class ManageSettings extends Page implements HasForms
                 Tabs::make('seo_locales')
                     ->tabs([
                         Tab::make('العربية (AR)')
+                            ->extraAttributes(['dir' => 'rtl'])
                             ->schema($this->seoDefaultsFields('ar')),
                         Tab::make('English (EN)')
+                            ->extraAttributes(['dir' => 'ltr'])
                             ->schema($this->seoDefaultsFields('en')),
                     ]),
             ]);

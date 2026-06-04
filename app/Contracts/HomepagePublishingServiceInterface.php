@@ -57,4 +57,9 @@ interface HomepagePublishingServiceInterface
      * Return the status string of the latest homepage draft, or null if none exists.
      */
     public function latestHomepageState(): ?string;
+
+    /**
+     * Return the latest editable homepage draft version for optimistic locking.
+     */
+    public function latestEditableDraftVersion(): ?int;
 }
