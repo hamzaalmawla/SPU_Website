@@ -34,7 +34,7 @@
 
                 <div x-ref="facultiesTrack" class="flex h-[390px] w-full snap-x snap-mandatory flex-nowrap gap-6 bg-transparent overflow-x-auto overflow-y-hidden no-scrollbar scroll-smooth overscroll-x-contain px-2 pb-5 items-start z-10">
                     @foreach ($section->payload->items as $item)
-                        <article @mouseenter="activeFaculty = {{ $loop->index }}" @mouseleave="activeFaculty = null" :class="{'opacity-50 grayscale-[0.2]': activeFaculty !== null && activeFaculty !== {{ $loop->index }}, 'opacity-100 scale-[1.02] z-20 shadow-2xl border-transparent': activeFaculty === {{ $loop->index }}, 'opacity-100': activeFaculty === null}" class="faculty-card snap-start w-[292px] h-[380px] hover:cursor-pointer shrink-0 relative bg-white rounded-[24px] border border-gray-100 shadow-[0_10px_30px_rgba(0,0,0,0.03)] flex flex-col items-center text-center transition-all duration-300 group overflow-hidden">
+                        <article @mouseenter="setActiveFaculty({{ $loop->index }})" @mouseleave="clearActiveFaculty()" :class="facultyCardClass({{ $loop->index }})" class="faculty-card snap-start w-[292px] h-[380px] hover:cursor-pointer shrink-0 relative bg-white rounded-[24px] border border-gray-100 shadow-[0_10px_30px_rgba(0,0,0,0.03)] flex flex-col items-center text-center transition-all duration-300 group overflow-hidden">
                             @if (! empty($item['accent']))
                                 <div class="absolute top-0 left-0 w-full h-0 group-hover:h-[6px] z-50 transition-all duration-300 ease-in-out" style="background-color: {{ $item['accent'] }};"></div>
                             @endif

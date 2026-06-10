@@ -36,6 +36,7 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
         private readonly CacheServiceInterface $cacheService,
         private readonly AuditServiceInterface $auditService,
         private readonly HtmlSanitizer $htmlSanitizer,
+        private readonly PreviewTokenStore $previewTokenStore,
     ) {}
 
     public function saveDraft(HomepageDraftDataDTO $payload, int $userId, ?int $expectedVersion = null): HomepageDraftDTO
@@ -103,6 +104,7 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
         ]);
 
         $this->supersedeOtherEditableDrafts((int) $draft->getKey(), $userId);
+        $this->invalidatePreviewTokens('homepage.draft_saved', $userId);
 
         $this->auditService->log(
             action: 'homepage.draft_saved',
@@ -187,6 +189,7 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
         });
 
         $this->invalidateHomepageCache();
+        $this->invalidatePreviewTokens('homepage.publish', $userId);
 
         $this->auditService->log(
             action: 'homepage.publish',
@@ -215,6 +218,7 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
             ->update(['is_enabled' => false]);
 
         $this->invalidateHomepageCache();
+        $this->invalidatePreviewTokens('homepage.unpublish', $userId);
 
         $this->auditService->log(
             action: 'homepage.unpublish',
@@ -652,10 +656,19 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
     {
         $this->authorizeHomepage($userId, 'update');
 
-        return HomepageDraft::query()
+        $deleted = HomepageDraft::query()
             ->where('target_type', 'homepage')
             ->whereIn('status', ['draft', 'scheduled'])
             ->delete();
+
+        if ($deleted > 0) {
+            $this->invalidatePreviewTokens('homepage.draft_discarded', $userId);
+            $this->auditService->log('homepage.draft_discarded', $userId, HomepageDraft::class, metadata: [
+                'deleted_count' => $deleted,
+            ]);
+        }
+
+        return $deleted;
     }
 
     /**
@@ -679,6 +692,20 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
 
         if (! $user instanceof User || Gate::forUser($user)->denies($gateAbility)) {
             throw new AuthorizationException('This user is not authorized to manage the homepage.');
+        }
+    }
+
+    private function invalidatePreviewTokens(string $reason, int $userId): void
+    {
+        $deleted = $this->previewTokenStore->invalidateTarget('homepage');
+
+        if ($deleted > 0) {
+            $this->auditService->log('preview.invalidated', $userId, \App\Models\PreviewToken::class, metadata: [
+                'target_type' => 'homepage',
+                'target_id' => null,
+                'deleted_count' => $deleted,
+                'reason' => $reason,
+            ]);
         }
     }
 }

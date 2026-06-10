@@ -71,6 +71,7 @@ final class PageService implements PageServiceInterface
         private readonly PageDraftService $draftService,
         private readonly PageUrlResolver $urlResolver,
         private readonly HtmlSanitizer $htmlSanitizer,
+        private readonly ?PreviewTokenStore $previewTokenStore = null,
     ) {}
 
     public function createPageShell(PageShellDataDTO $payload, int $userId): PageDTO
@@ -224,6 +225,8 @@ final class PageService implements PageServiceInterface
             'status' => $draft->status,
         ]);
 
+        $this->invalidatePreviewTokens($pageId, $userId, 'page.draft_saved');
+
         return $this->draftService->mapDraftToDto($draft);
     }
 
@@ -243,51 +246,7 @@ final class PageService implements PageServiceInterface
             ->latest('updated_at')
             ->first();
 
-        if ($draft instanceof PageDraft && is_array($draft->payload_json)) {
-            $preview = $this->draftService->mapDraftPayloadToPageDto($page, $draft->payload_json, 'ar');
-
-            if (! $this->isPublishableDto($preview)) {
-                return false;
-            }
-        } elseif (! $this->isPublishable($page)) {
-            return false;
-        }
-
-        DB::transaction(function () use ($page, $draft, $userId): void {
-            if ($draft instanceof PageDraft && is_array($draft->payload_json)) {
-                $this->draftService->applyDraftPayloadToPage(
-                    $page,
-                    $draft->payload_json,
-                    $userId,
-                    fn (int $id, string $locale, PageTranslationDTO $dto): bool => $this->updateTranslation($id, $locale, $dto, $userId),
-                    fn (int $id, string $locale, PageSeoInputDTO $dto): bool => $this->updateSeo($id, $locale, $dto, $userId),
-                );
-                $draft->forceFill([
-                    'status' => 'published',
-                    'approved_by' => $userId,
-                    'published_at' => now(),
-                ])->save();
-            }
-
-            $page->refresh()->loadMissing('translations');
-
-            if (! $this->isPublishable($page)) {
-                throw new \RuntimeException('The page is not publishable after applying the latest draft.');
-            }
-
-            $page->forceFill([
-                'status' => 'published',
-                'published_at' => now(),
-                'publish_at' => $page->publish_at?->isFuture() ? $page->publish_at : now(),
-                'approved_by' => $userId,
-                'updated_by' => $userId,
-            ])->save();
-        });
-
-        $this->touchPageCaches((int) $page->getKey());
-        $this->auditService->log('page.publish', $userId, Page::class, (int) $page->getKey());
-
-        return true;
+        return $this->publishResolvedDraft($page, $draft, $userId);
     }
 
     public function unpublish(int $pageId, int $userId): bool
@@ -308,6 +267,7 @@ final class PageService implements PageServiceInterface
 
         if ($updated) {
             $this->touchPageCaches((int) $page->getKey());
+            $this->invalidatePreviewTokens((int) $page->getKey(), $userId, 'page.unpublish');
             $this->auditService->log('page.unpublish', $userId, Page::class, (int) $page->getKey());
         }
 
@@ -382,8 +342,15 @@ final class PageService implements PageServiceInterface
             ->get()
             ->each(function (Page $page) use (&$published): void {
                 $actorId = $this->scheduledPublishActorId($page);
+                $draft = PageDraft::query()
+                    ->where('page_id', (int) $page->getKey())
+                    ->where('status', 'scheduled')
+                    ->whereNotNull('scheduled_at')
+                    ->where('scheduled_at', '<=', now())
+                    ->orderBy('scheduled_at')
+                    ->first();
 
-                if ($actorId !== null && $this->publish((int) $page->getKey(), $actorId)) {
+                if ($actorId !== null && $this->publishResolvedDraft($page->loadMissing(['translations', 'seoMeta']), $draft, $actorId)) {
                     $published++;
                 }
             });
@@ -401,6 +368,17 @@ final class PageService implements PageServiceInterface
     public function getAdminEditorPayload(int $pageId): PageDTO
     {
         return $this->publicReadService->getAdminEditorPayload($pageId);
+    }
+
+    public function latestEditableDraftVersion(int $pageId): ?int
+    {
+        $draft = PageDraft::query()
+            ->where('page_id', $pageId)
+            ->whereIn('status', self::EDITABLE_STATUSES)
+            ->latest('version')
+            ->first();
+
+        return $draft instanceof PageDraft ? (int) $draft->version : null;
     }
 
     // ── Delegated URL resolution ──
@@ -567,6 +545,58 @@ final class PageService implements PageServiceInterface
             && $page->englishTranslation->title !== '';
     }
 
+    private function publishResolvedDraft(Page $page, ?PageDraft $draft, int $userId): bool
+    {
+        if ($draft instanceof PageDraft && is_array($draft->payload_json)) {
+            $preview = $this->draftService->mapDraftPayloadToPageDto($page, $draft->payload_json, 'ar');
+
+            if (! $this->isPublishableDto($preview)) {
+                return false;
+            }
+        } elseif (! $this->isPublishable($page)) {
+            return false;
+        }
+
+        DB::transaction(function () use ($page, $draft, $userId): void {
+            if ($draft instanceof PageDraft && is_array($draft->payload_json)) {
+                $this->draftService->applyDraftPayloadToPage(
+                    $page,
+                    $draft->payload_json,
+                    $userId,
+                    fn (int $id, string $locale, PageTranslationDTO $dto): bool => $this->updateTranslation($id, $locale, $dto, $userId),
+                    fn (int $id, string $locale, PageSeoInputDTO $dto): bool => $this->updateSeo($id, $locale, $dto, $userId),
+                );
+                $draft->forceFill([
+                    'status' => 'published',
+                    'approved_by' => $userId,
+                    'published_at' => now(),
+                ])->save();
+            }
+
+            $page->refresh()->loadMissing('translations');
+
+            if (! $this->isPublishable($page)) {
+                throw new \RuntimeException('The page is not publishable after applying the selected draft.');
+            }
+
+            $page->forceFill([
+                'status' => 'published',
+                'published_at' => now(),
+                'publish_at' => $page->publish_at?->isFuture() ? $page->publish_at : now(),
+                'approved_by' => $userId,
+                'updated_by' => $userId,
+            ])->save();
+        });
+
+        $this->touchPageCaches((int) $page->getKey());
+        $this->invalidatePreviewTokens((int) $page->getKey(), $userId, 'page.publish');
+        $this->auditService->log('page.publish', $userId, Page::class, (int) $page->getKey(), [
+            'draft_id' => $draft instanceof PageDraft ? (int) $draft->getKey() : null,
+        ]);
+
+        return true;
+    }
+
     private function assertParentIsAllowed(?Page $page, ?int $parentPageId): void
     {
         if ($parentPageId === null) {
@@ -643,5 +673,23 @@ final class PageService implements PageServiceInterface
         }
 
         return null;
+    }
+
+    private function invalidatePreviewTokens(int $pageId, int $userId, string $reason): void
+    {
+        if (! $this->previewTokenStore instanceof PreviewTokenStore) {
+            return;
+        }
+
+        $deleted = $this->previewTokenStore->invalidateTarget('page', $pageId);
+
+        if ($deleted > 0) {
+            $this->auditService->log('preview.invalidated', $userId, \App\Models\PreviewToken::class, metadata: [
+                'target_type' => 'page',
+                'target_id' => $pageId,
+                'deleted_count' => $deleted,
+                'reason' => $reason,
+            ]);
+        }
     }
 }

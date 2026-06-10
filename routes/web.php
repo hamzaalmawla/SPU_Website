@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\TwoFactorChallengeController;
+use App\Http\Controllers\AboutController;
 use App\Http\Middleware\AdminLocaleMiddleware;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PageController;
@@ -23,6 +24,21 @@ Route::prefix('{locale}')
     ->middleware(['locale', 'cache.public'])
     ->group(function (): void {
         Route::get('/', HomeController::class)->name('public.home');
+
+        Route::controller(AboutController::class)
+            ->prefix('about')
+            ->name('public.about.')
+            ->group(function (): void {
+                Route::get('/', 'landing')->name('landing');
+                Route::get('/history', 'history')->name('history');
+                Route::get('/leadership', 'leadership')->name('leadership');
+                Route::get('/central-directorates', 'directorates')->name('central-directorates');
+                Route::get('/directorates', 'directorates')->name('directorates');
+                Route::get('/directorates/staff', 'staffDirectory')->name('directorates.staff');
+                Route::get('/directorates/{directorate}', 'directorateDetail')->name('directorates.show');
+                Route::get('/partnerships', 'partnerships')->name('partnerships');
+                Route::get('/vision-mission', 'visionMission')->name('vision-mission');
+            });
 
         Route::get('/preview', PreviewController::class)->name('preview.show');
 

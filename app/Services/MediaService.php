@@ -72,7 +72,7 @@ final class MediaService implements MediaServiceInterface
     public function __construct(
         private readonly AuditServiceInterface $auditService,
     ) {
-        $this->diskName = (string) config('filesystems.default', 'local');
+        $this->diskName = (string) config('filesystems.media_disk', 'public');
         $this->disk = Storage::disk($this->diskName);
     }
 
@@ -350,7 +350,7 @@ final class MediaService implements MediaServiceInterface
             mediaId: (int) $asset->id,
             disk: $asset->disk,
             path: $asset->path,
-            url: $this->disk->url($asset->path),
+            url: \App\Support\MediaUrlResolver::resolve($asset->path, $asset->disk),
             mimeType: $asset->mime_type,
             size: (int) $asset->size_bytes,
             originalName: $asset->original_name,

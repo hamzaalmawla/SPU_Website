@@ -3,8 +3,8 @@
 @section('content')
     @php
         $displayOrder = [
-            'achievements_highlights' => 3,
-            'academic_faculties' => 4,
+            'academic_faculties' => 3,
+            'achievements_highlights' => 4,
         ];
 
         $homepageSections = collect($homepage->sections)->sortBy(

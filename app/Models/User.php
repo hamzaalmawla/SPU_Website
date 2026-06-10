@@ -32,7 +32,6 @@ class User extends Authenticatable
         'password',
         'role_id',
         'faculty_scope_slug',
-        'locale_preference',
     ];
 
     /**

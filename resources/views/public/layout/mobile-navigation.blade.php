@@ -23,13 +23,13 @@
                                 @click.prevent="toggleDropdown('{{ $loop->index }}')"
                                 aria-label="{{ __('public.toggle_submenu') }}"
                                 class="site-nav-mobile-toggle">
-                            <img src="/images/icon-chevron-down-outline.svg" class="h-2.5 w-2.5 transition-transform duration-200" :class="openMenu === '{{ $loop->index }}' ? 'rotate-180' : ''" alt="">
+                            <img src="/images/icon-chevron-down-outline.svg" class="h-2.5 w-2.5 transition-transform duration-200" :class="mobileChevronClass('{{ $loop->index }}')" alt="">
                         </button>
                     @endif
                 </div>
 
                 @if (!empty($item->children))
-                    <div x-show="openMenu === '{{ $loop->index }}'"
+                    <div x-show="isDropdownOpen('{{ $loop->index }}')"
                          x-transition:enter="transition duration-200 ease-out"
                          x-transition:enter-start="opacity-0 -translate-y-2"
                          x-transition:enter-end="opacity-100 translate-y-0"

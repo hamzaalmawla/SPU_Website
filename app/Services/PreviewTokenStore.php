@@ -86,6 +86,18 @@ final class PreviewTokenStore
             ->delete() > 0;
     }
 
+    public function invalidateTarget(string $targetType, ?int $targetId = null): int
+    {
+        return PreviewToken::query()
+            ->where('target_type', $targetType)
+            ->when(
+                $targetId === null,
+                fn ($query) => $query->whereNull('target_id'),
+                fn ($query) => $query->where('target_id', $targetId),
+            )
+            ->delete();
+    }
+
     /**
      * Produce the HMAC-SHA256 hash used for token storage.
      */

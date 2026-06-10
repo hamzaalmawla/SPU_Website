@@ -36,7 +36,15 @@ export function createCalendarApp() {
         carouselInterval: null,
 
         init() {
-            const incoming = Array.isArray(window.spuEventsData) ? window.spuEventsData : [];
+            let incoming = [];
+
+            try {
+                const parsed = JSON.parse(this.$el.dataset.events || '[]');
+                incoming = Array.isArray(parsed) ? parsed : [];
+            } catch {
+                incoming = [];
+            }
+
             this.setEvents(incoming);
             this.startCarousel();
         },
@@ -67,6 +75,10 @@ export function createCalendarApp() {
 
         get selectedEvent() {
             return this.selectedDateEvents[this.activeEventIndex] || null;
+        },
+
+        get selectedYear() {
+            return this.viewDate.format('YYYY');
         },
 
         get selectedDateLabel() {
@@ -131,6 +143,55 @@ export function createCalendarApp() {
 
         prevMonth() { this.changeMonth(-1); },
         nextMonth() { this.changeMonth(1); },
+
+        selectedEventImage() {
+            return this.selectedEvent?.image || '';
+        },
+
+        selectedEventAlt() {
+            return this.selectedEvent?.title || '';
+        },
+
+        selectedEventLink() {
+            return this.selectedEvent?.link || '#';
+        },
+
+        eventKey(eventItem, index) {
+            return eventItem.id || index;
+        },
+
+        eventDotClass(index) {
+            return this.activeEventIndex === index ? 'w-[24px] bg-[#27316d]' : 'w-[8px] bg-[#d1d5de]';
+        },
+
+        eventDotLabel(index) {
+            return `View event ${index + 1}`;
+        },
+
+        dayButtonClass(day) {
+            const selectedClass = this.selectedDate === day.date ? 'bg-[#27316d]' : 'bg-transparent hover:bg-[#f5f7fc]';
+            const todayClass = day.isToday && this.selectedDate !== day.date ? 'border-2 border-[#27316d]/30' : '';
+
+            return [selectedClass, todayClass].filter(Boolean).join(' ');
+        },
+
+        dayNumberClass(day) {
+            let colorClass = 'text-[#d0d0d0]';
+
+            if (this.selectedDate === day.date) {
+                colorClass = 'text-white';
+            } else if (day.isCurrentMonth) {
+                colorClass = 'text-[#111111]';
+            }
+
+            const todayClass = day.isToday && this.selectedDate !== day.date ? 'text-[#c63030]' : '';
+
+            return [colorClass, todayClass].filter(Boolean).join(' ');
+        },
+
+        showEventMarker(day) {
+            return day.hasEvent && this.selectedDate !== day.date;
+        },
 
         startCarousel() {
             this.stopCarousel();

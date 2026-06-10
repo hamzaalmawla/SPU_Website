@@ -53,10 +53,3 @@
     outline: 3px solid #6f1616;
     outline-offset: 3px;
 }
-
-[dir="rtl"] .fa-chevron-right,
-[dir="rtl"] .fa-chevron-left,
-[dir="rtl"] .fa-arrow-right,
-[dir="rtl"] .fa-arrow-left {
-    transform: scaleX(-1);
-}

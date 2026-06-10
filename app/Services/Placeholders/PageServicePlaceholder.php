@@ -109,4 +109,9 @@ final class PageServicePlaceholder implements PageServiceInterface
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
+
+    public function latestEditableDraftVersion(int $pageId): ?int
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
 }

@@ -15,6 +15,7 @@ import { createHonorPanel }     from './alpine/honorPanel.js';
 import { createResearchSlider } from './alpine/researchSlider.js';
 import { createCalendarApp }    from './alpine/calendarApp.js';
 import { createMobileNav }      from './alpine/mobileNav.js';
+import { createAboutNavigation } from './alpine/aboutNavigation.js';
 import { initRevealSections }   from './alpine/scrollReveal.js';
 
 function createPathSlider() {
@@ -43,6 +44,7 @@ Alpine.data('honorPanel',      createHonorPanel);
 Alpine.data('researchSlider',  createResearchSlider);
 Alpine.data('calendarApp',     createCalendarApp);
 Alpine.data('mobileNav',       createMobileNav);
+Alpine.data('aboutNavigation', createAboutNavigation);
 Alpine.data('pathSlider',      createPathSlider);
 
 window.Alpine = Alpine;

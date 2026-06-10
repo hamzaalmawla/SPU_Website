@@ -1,9 +1,8 @@
 @php($images = $section->payload->content['images'] ?? [])
-<script>window.spuHeroImages = @json($images);</script>
 
-<section x-data="heroSlider()" class="home-hero relative overflow-hidden font-hacen bg-spu-blue text-white z-10">
+<section x-data="heroSlider()" data-images="{{ json_encode($images, JSON_THROW_ON_ERROR) }}" class="home-hero relative overflow-hidden font-hacen bg-spu-blue text-white z-10">
     @foreach ($images as $img)
-        <div x-show="currentIndex === {{ $loop->index }}"
+        <div x-show="isCurrent({{ $loop->index }})"
              x-transition:enter="transition ease-out duration-1000"
              x-transition:enter-start="opacity-0 transform scale-105"
              x-transition:enter-end="opacity-100 transform scale-100"
@@ -22,7 +21,7 @@
         <div class="home-hero__inner">
             <div class="home-hero__content">
                 @if ($section->payload->eyebrow)
-                    <p class="home-hero__eyebrow transition duration-700 ease-out" :class="heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'">
+                    <p class="home-hero__eyebrow transition duration-700 ease-out" :class="visibleClass()">
                         <span class="home-hero__eyebrow-line" aria-hidden="true"></span>
                         <span>{{ $section->payload->eyebrow }}</span>
                     </p>
@@ -32,20 +31,20 @@
                     <span class="home-hero__badge">{{ $section->payload->badge }}</span>
                 @endif
 
-                <h1 class="home-hero__title transition duration-700 ease-out delay-75" :class="heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'">{{ $section->payload->title }}</h1>
+                <h1 class="home-hero__title transition duration-700 ease-out delay-75" :class="visibleClass()">{{ $section->payload->title }}</h1>
 
                 @if ($section->payload->subtitle)
-                    <p class="home-hero__summary transition duration-700 ease-out delay-150" :class="heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'">{{ $section->payload->subtitle }}</p>
+                    <p class="home-hero__summary transition duration-700 ease-out delay-150" :class="visibleClass()">{{ $section->payload->subtitle }}</p>
                 @endif
 
                 @if ($section->payload->summary)
-                    <p class="home-hero__summary transition duration-700 ease-out delay-150" :class="heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'">{{ $section->payload->summary }}</p>
+                    <p class="home-hero__summary transition duration-700 ease-out delay-150" :class="visibleClass()">{{ $section->payload->summary }}</p>
                 @elseif ($section->payload->body)
-                    <p class="home-hero__summary transition duration-700 ease-out delay-150" :class="heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'">{{ $section->payload->body }}</p>
+                    <p class="home-hero__summary transition duration-700 ease-out delay-150" :class="visibleClass()">{{ $section->payload->body }}</p>
                 @endif
 
                 @if ($section->payload->primaryAction || $section->payload->secondaryAction)
-                    <div class="home-hero__actions transition duration-700 ease-out delay-200" :class="heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'">
+                    <div class="home-hero__actions transition duration-700 ease-out delay-200" :class="visibleClass()">
                         @if ($section->payload->primaryAction)
                             <a href="{{ $section->payload->primaryAction->url }}" class="home-hero__primary-btn rounded-[8px]" @if ($section->payload->primaryAction->target) target="{{ $section->payload->primaryAction->target }}" rel="noreferrer" @endif>
                                 <span>{{ $section->payload->primaryAction->label }}</span>

@@ -20,7 +20,7 @@ export function initRevealSections(root = document) {
         });
     }
 
-    root.querySelectorAll('.reveal').forEach((el) => {
+    root.querySelectorAll('.reveal, .reveal-up, .reveal-left, .reveal-right').forEach((el) => {
         if (el.dataset.revealObserved) return;
         revealObserver.observe(el);
         el.dataset.revealObserved = 'true';

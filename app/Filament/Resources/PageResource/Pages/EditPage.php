@@ -10,6 +10,7 @@ use App\DTOs\PageDraftDataDTO;
 use App\DTOs\PageMetadataDTO;
 use App\DTOs\PageSeoInputDTO;
 use App\DTOs\PageTranslationDTO;
+use App\Exceptions\ConflictException;
 use App\Filament\Resources\PageResource;
 use App\Models\Page;
 use App\Models\User;
@@ -29,6 +30,8 @@ class EditPage extends EditRecord
 
     private PreviewServiceInterface $previewService;
 
+    public ?int $draftVersion = null;
+
     public function boot(PageServiceInterface $pageService, PreviewServiceInterface $previewService): void
     {
         $this->pageService = $pageService;
@@ -40,6 +43,7 @@ class EditPage extends EditRecord
         /** @var Page $page */
         $page = $this->record;
         Gate::authorize('view', $page);
+        $this->draftVersion = $this->pageService->latestEditableDraftVersion((int) $page->getKey());
 
         $page->load(['translations', 'seoMeta']);
 
@@ -98,7 +102,11 @@ class EditPage extends EditRecord
         /** @var Page $record */
         Gate::authorize('update', $record);
 
-        $this->saveDraftFromFormData($data, 'draft');
+        try {
+            $this->saveDraftFromFormData($data, 'draft');
+        } catch (ConflictException $exception) {
+            $this->notifyDraftConflict($exception);
+        }
 
         return $record->refresh();
     }
@@ -143,7 +151,13 @@ class EditPage extends EditRecord
 
                 /** @var User $user */
                 $user = auth()->user();
-                $this->saveDraftFromFormData($this->form->getState(), 'draft');
+                try {
+                    $this->saveDraftFromFormData($this->form->getState(), 'draft');
+                } catch (ConflictException $exception) {
+                    $this->notifyDraftConflict($exception);
+
+                    return;
+                }
 
                 $preview = $this->previewService->createToken(
                     targetType: 'page',
@@ -187,7 +201,14 @@ class EditPage extends EditRecord
                     return;
                 }
 
-                $this->saveDraftFromFormData($formData, 'draft');
+                try {
+                    $this->saveDraftFromFormData($formData, 'draft');
+                } catch (ConflictException $exception) {
+                    $this->notifyDraftConflict($exception);
+
+                    return;
+                }
+
                 $result = $this->pageService->publish($page->id, $user->id);
 
                 if ($result) {
@@ -243,7 +264,14 @@ class EditPage extends EditRecord
                     return;
                 }
 
-                $this->saveDraftFromFormData($formData, 'scheduled', (string) $data['publish_at']);
+                try {
+                    $this->saveDraftFromFormData($formData, 'scheduled', (string) $data['publish_at']);
+                } catch (ConflictException $exception) {
+                    $this->notifyDraftConflict($exception);
+
+                    return;
+                }
+
                 $result = $this->pageService->schedulePublish(
                     $page->id,
                     new \DateTimeImmutable($data['publish_at']),
@@ -308,7 +336,13 @@ class EditPage extends EditRecord
 
     private function saveDraft(): void
     {
-        $this->saveDraftFromFormData($this->form->getState(), 'draft');
+        try {
+            $this->saveDraftFromFormData($this->form->getState(), 'draft');
+        } catch (ConflictException $exception) {
+            $this->notifyDraftConflict($exception);
+
+            return;
+        }
 
         Notification::make()
             ->title('Draft saved successfully')
@@ -344,7 +378,22 @@ class EditPage extends EditRecord
             englishSeo: self::buildSeoDTO($formData, 'en'),
         );
 
-        return $this->pageService->saveDraft($page->id, $draftPayload, $user->id);
+        $draft = $this->pageService->saveDraft($page->id, $draftPayload, $user->id, $this->draftVersion);
+        $this->draftVersion = $draft->version;
+
+        return $draft;
+    }
+
+    private function notifyDraftConflict(ConflictException $exception): void
+    {
+        $this->draftVersion = $exception->currentVersion;
+
+        Notification::make()
+            ->title('Draft changed')
+            ->body('This page draft changed while the editor was open. Refresh, review the latest draft, then save or publish again.')
+            ->warning()
+            ->persistent()
+            ->send();
     }
 
     /** @return list<string> */

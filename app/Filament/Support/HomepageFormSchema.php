@@ -9,6 +9,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Illuminate\Container\Container;
 
 /**
  * Extracted form field schemas for the 11 fixed homepage sections.
@@ -48,6 +49,8 @@ final class HomepageFormSchema
                 FileUpload::make("{$prefix}.background_image")
                     ->label('Background Image')
                     ->image()
+                    ->disk(self::mediaDisk())
+                    ->visibility('public')
                     ->directory('homepage/hero')
                     ->maxSize(5120),
                 Repeater::make("{$prefix}.content.images")
@@ -67,6 +70,8 @@ final class HomepageFormSchema
                     ->image()
                     ->multiple()
                     ->reorderable()
+                    ->disk(self::mediaDisk())
+                    ->visibility('public')
                     ->directory('homepage/hero')
                     ->maxSize(5120),
                 TextInput::make("{$prefix}.video_url")
@@ -638,5 +643,16 @@ final class HomepageFormSchema
                 ->label('Section CTA URL')
                 ->maxLength(2048),
         ];
+    }
+
+    private static function mediaDisk(): string
+    {
+        $container = Container::getInstance();
+
+        if ($container->bound('config')) {
+            return (string) $container->make('config')->get('filesystems.media_disk', 'public');
+        }
+
+        return 'public';
     }
 }

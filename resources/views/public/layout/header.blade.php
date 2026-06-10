@@ -20,12 +20,12 @@
         @keydown.escape.window="closeAll()"
         @keydown.window.ctrl.k.prevent="openSearch()"
         @keydown.window.meta.k.prevent="openSearch()"
-        @click.outside="openMenu = null; searchOpen = false; if (window.innerWidth < 1536) { mobileNav = false; }"
-        :class="stickyNav ? 'fixed inset-x-0 top-0 z-50 w-full pt-3' : ''">
+        @click.outside="closeForOutsideClick()"
+        :class="headerClass()">
     <div class="container">
         @include('public.layout.emergency-notice')
 
-        <div class="site-nav-shell" :class="stickyNav ? 'site-nav-shell--sticky' : ''">
+        <div class="site-nav-shell" :class="shellClass()">
             <div class="site-nav-shell__main">
                 <a href="/{{ $locale }}" aria-label="{{ __('public.home') }}" class="site-nav-brand">
                     <img src="/images/logo-spu.png" alt="{{ __('public.spu_logo_alt') }}" class="h-auto w-[9.25rem] sm:w-[11rem] xl:w-[13.5rem]">
@@ -36,8 +36,8 @@
                         @foreach ($navigation->header->items as $item)
                             <li class="site-nav-item"
                                 @if (!empty($item->children))
-                                    @mouseenter="openMenu = '{{ $loop->index }}'"
-                                    @mouseleave="openMenu = null"
+                                    @mouseenter="openDropdown('{{ $loop->index }}')"
+                                    @mouseleave="closeDropdown()"
                                 @endif>
                                 <a href="{{ $item->resolvedUrl ?? '#' }}"
                                    class="site-nav-link {{ $item->isActive ? 'site-nav-link--active' : '' }}"
@@ -50,7 +50,7 @@
                                 </a>
 
                                 @if (!empty($item->children))
-                                    <div x-show="openMenu === '{{ $loop->index }}'"
+                                     <div x-show="isDropdownOpen('{{ $loop->index }}')"
                                          x-transition:enter="transition duration-200 ease-out"
                                          x-transition:enter-start="opacity-0 -translate-y-2 scale-[0.97]"
                                          x-transition:enter-end="opacity-100 translate-y-0 scale-100"
@@ -118,14 +118,14 @@
                                class="w-full rounded-[10px] border border-spu-blue/10 px-3 py-2 text-sm font-semibold text-spu-blue outline-none transition focus:border-spu-red"
                                placeholder="{{ $locale === 'ar' ? 'ابحث عن صفحة...' : 'Search pages...' }}">
                         <div class="mt-2 grid gap-1" x-show="searchResults.length">
-                            <template x-for="item in searchResults" :key="item.url + item.label">
+                            <template x-for="item in searchResults" :key="searchResultKey(item)">
                                 <a :href="item.url"
-                                   @click="searchOpen = false; searchQuery = ''"
+                                    @click="closeSearchResult()"
                                    class="rounded-[8px] px-3 py-2 text-sm font-semibold text-spu-blue transition hover:bg-spu-blue/5"
                                    x-text="item.label"></a>
                             </template>
                         </div>
-                        <p class="mt-2 px-1 text-xs font-semibold text-spu-blue/45" x-show="searchQuery.length > 0 && searchQuery.length < 2">
+                         <p class="mt-2 px-1 text-xs font-semibold text-spu-blue/45" x-show="needsLongerSearchQuery()">
                             {{ $locale === 'ar' ? 'اكتب حرفين على الأقل.' : 'Type at least 2 characters.' }}
                         </p>
                     </div>
@@ -134,7 +134,7 @@
                             @click="toggleMobile()"
                             aria-label="{{ __('public.toggle_navigation') }}"
                             class="site-nav-menu-btn 2xl:hidden">
-                        <img :src="mobileNav ? '/images/icon-close-outline.svg' : '/images/icon-bars-outline.svg'" class="h-5 w-5" alt="">
+                        <img :src="mobileToggleIcon()" class="h-5 w-5" alt="">
                     </button>
                 </div>
             </div>

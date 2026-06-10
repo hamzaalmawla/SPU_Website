@@ -115,4 +115,9 @@ interface PageServiceInterface
      * Resolve the language-switch target URL for a page.
      */
     public function resolveLanguageSwitchTargetUrl(int $pageId, string $targetLocale): ?string;
+
+    /**
+     * Return the latest editable draft version for optimistic locking.
+     */
+    public function latestEditableDraftVersion(int $pageId): ?int;
 }

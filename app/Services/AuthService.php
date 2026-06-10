@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Contracts\AuditServiceInterface;
 use App\Contracts\AuthServiceInterface;
 use App\DTOs\LoginCredentialsDTO;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -198,7 +199,12 @@ final class AuthService implements AuthServiceInterface
         ]);
 
         if (array_key_exists('role_slug', $payload)) {
-            $user->forceFill(['role_slug' => $payload['role_slug']]);
+            $role = Role::query()->where('slug', (string) $payload['role_slug'])->first();
+
+            $user->forceFill([
+                'role_slug' => $payload['role_slug'],
+                'role_id' => $role?->getKey(),
+            ]);
         }
 
         if (array_key_exists('password', $payload) && is_string($payload['password']) && $payload['password'] !== '') {

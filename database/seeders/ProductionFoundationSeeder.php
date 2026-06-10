@@ -16,6 +16,7 @@ class ProductionFoundationSeeder extends Seeder
         $this->call([
             RoleSeeder::class,
             HomepageSectionSeeder::class,
+            AboutSectionSeeder::class,
         ]);
     }
 }

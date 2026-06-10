@@ -1,13 +1,10 @@
 <div class="container">
     <div class="mb-16 grid grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-12">
         <div class="flex flex-col items-start lg:col-span-4">
-            @if ($navigation->footerSettings->logoUrl)
-                <img src="{{ $navigation->footerSettings->logoUrl }}" alt="{{ $navigation->footerSettings->brandTitle ?? $seo->title }}" class="mb-6 h-12 w-auto rounded-xl object-contain">
-            @endif
-            <h2 class="mb-6 text-[24px] font-bold uppercase leading-tight tracking-wider">{{ $navigation->footerSettings->brandTitle ?? $seo->title }}</h2>
-            @if ($navigation->footerSettings->brandSummary)
-                <p class="mb-8 max-w-[320px] text-[16px] leading-[1.6] text-white/70">{{ $navigation->footerSettings->brandSummary }}</p>
-            @endif
+            <h2 class="mb-6 text-[24px] font-bold uppercase leading-tight tracking-wider">{{ $locale === 'ar' ? 'الجامعة السورية الخاصة' : 'SYRIAN PRIVATE UNIVERSITY' }}</h2>
+            <p class="mb-8 max-w-[320px] text-[16px] leading-[1.6] text-white/70">
+                {{ $locale === 'ar' ? 'ملتزمون بتعزيز التميز الأكاديمي والقيادة العالمية من قلب دمشق.' : 'Committed to fostering academic excellence and global leadership from the heart of Damascus.' }}
+            </p>
 
             @if ($navigation->socialContact->socialLinks !== [])
                 <div class="flex items-center gap-6 text-[22px]">
@@ -23,7 +20,7 @@
         </div>
 
         <div class="lg:col-span-2">
-            <h3 class="mb-8 text-[18px] font-bold uppercase tracking-widest text-white/50">{{ __('public.navigation_heading') }}</h3>
+            <h3 class="mb-8 text-[18px] font-bold uppercase tracking-widest text-white/50">{{ $locale === 'ar' ? 'استكشف SPU' : 'EXPLORE SPU' }}</h3>
             <ul class="flex flex-col gap-4">
                 @foreach ($navigation->footer->items as $item)
                     @if ($item->resolvedUrl)
@@ -36,14 +33,12 @@
         </div>
 
         <div class="lg:col-span-3">
-            <h3 class="mb-8 text-[18px] font-bold uppercase tracking-widest text-white/50">{{ __('public.connect_heading') }}</h3>
+            <h3 class="mb-8 text-[18px] font-bold uppercase tracking-widest text-white/50">{{ $locale === 'ar' ? 'التواصل' : 'CONTACT' }}</h3>
             <div class="flex flex-col gap-6">
-                @if ($navigation->footerSettings->address)
-                    <div class="flex items-start gap-4">
-                        <i class="fa-solid fa-map-marker-alt mt-1.5 text-spu-red"></i>
-                        <span class="text-[15px] leading-relaxed text-white/80">{{ $navigation->footerSettings->address }}</span>
-                    </div>
-                @endif
+                <div class="flex items-start gap-4">
+                    <i class="fa-solid fa-map-marker-alt mt-1.5 text-spu-red"></i>
+                    <span class="text-[15px] leading-relaxed text-white/80">{{ $locale === 'ar' ? 'مقر الجامعة الرئيسي، أوتوستراد درعا الدولي، بعد بلدة الكسوة، خيارة دنون، دمشق.' : 'University headquarters, Daraa International Highway, past Al-Kiswa, Khayara Danoun, Damascus.' }}</span>
+                </div>
                 @foreach ($navigation->socialContact->contactLinks as $link)
                     @php($type = strtolower($link->type ?? ''))
                     <div class="flex items-start gap-4">
@@ -67,7 +62,7 @@
     <hr class="mb-8 border-white/10">
 
     <div class="flex flex-col items-center justify-between gap-6 md:flex-row">
-        <p class="text-[14px] text-white/50" translate="no">{{ $navigation->footerSettings->copyrightText }}</p>
+                <p class="text-[14px] text-white/50" translate="no">{{ $locale === 'ar' ? '© 2026 الجامعة السورية الخاصة. التميز في التعليم.' : '© 2026 Syrian Private University. Excellence in Education.' }}</p>
         @if ($navigation->footerSettings->legalLinks !== [])
             <div class="flex flex-wrap items-center justify-center gap-6 text-[14px]">
                 @foreach ($navigation->footerSettings->legalLinks as $link)

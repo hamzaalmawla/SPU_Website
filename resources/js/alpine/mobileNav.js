@@ -25,6 +25,56 @@ export function createMobileNav() {
             this.searchOpen = false;
         },
 
+        closeForOutsideClick() {
+            this.openMenu = null;
+            this.searchOpen = false;
+
+            if (window.innerWidth < 1536) {
+                this.mobileNav = false;
+            }
+        },
+
+        headerClass() {
+            return this.stickyNav ? 'fixed inset-x-0 top-0 z-50 w-full pt-3' : '';
+        },
+
+        shellClass() {
+            return this.stickyNav ? 'site-nav-shell--sticky' : '';
+        },
+
+        openDropdown(id) {
+            this.openMenu = id;
+        },
+
+        closeDropdown() {
+            this.openMenu = null;
+        },
+
+        isDropdownOpen(id) {
+            return this.openMenu === id;
+        },
+
+        mobileToggleIcon() {
+            return this.mobileNav ? '/images/icon-close-outline.svg' : '/images/icon-bars-outline.svg';
+        },
+
+        mobileChevronClass(id) {
+            return this.isDropdownOpen(id) ? 'rotate-180' : '';
+        },
+
+        closeSearchResult() {
+            this.searchOpen = false;
+            this.searchQuery = '';
+        },
+
+        searchResultKey(item) {
+            return `${item.url}${item.label}`;
+        },
+
+        needsLongerSearchQuery() {
+            return this.searchQuery.length > 0 && this.searchQuery.length < 2;
+        },
+
         toggleMobile() {
             this.mobileNav = !this.mobileNav;
             if (!this.mobileNav) this.openMenu = null;

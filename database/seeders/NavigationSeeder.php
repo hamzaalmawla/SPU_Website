@@ -15,6 +15,8 @@ class NavigationSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->normalizeExistingLabels();
+
         foreach ($this->items() as $item) {
             $targetId = null;
 
@@ -48,6 +50,16 @@ class NavigationSeeder extends Seeder
 
             // Seed children if present
             if (! empty($item['children'])) {
+                $desiredChildLabels = array_column($item['children'], 'label');
+
+                MenuItem::query()
+                    ->where('type', $item['type'])
+                    ->where('group_key', $item['group_key'])
+                    ->where('locale', $item['locale'])
+                    ->where('parent_id', $parent->getKey())
+                    ->whereNotIn('label', $desiredChildLabels)
+                    ->update(['is_enabled' => false]);
+
                 foreach ($item['children'] as $childIndex => $child) {
                     $childTargetId = null;
                     if (($child['target_kind'] ?? 'url') === 'page' && ! empty($child['page_slug'])) {
@@ -82,6 +94,16 @@ class NavigationSeeder extends Seeder
         }
     }
 
+    private function normalizeExistingLabels(): void
+    {
+        MenuItem::query()
+            ->where('type', 'header')
+            ->where('group_key', 'header')
+            ->where('locale', 'en')
+            ->where('label', 'Faculties')
+            ->update(['label' => 'Facilities']);
+    }
+
     /**
      * @return array<int, array<string, mixed>>
      */
@@ -105,19 +127,21 @@ class NavigationSeeder extends Seeder
 
         // ── About (sort 1) ──
         $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'عن الجامعة', 'target_kind' => 'page', 'page_slug' => 'about', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 1, 'children' => [
-            ['label' => 'القيادة الجامعية', 'target_kind' => 'url', 'url' => '/ar/about/leadership'],
-            ['label' => 'تاريخنا', 'target_kind' => 'url', 'url' => '/ar/about/history'],
-            ['label' => 'المديريات', 'target_kind' => 'url', 'url' => '/ar/about/directorates'],
+            ['label' => 'التاريخ والتأسيس', 'target_kind' => 'url', 'url' => '/ar/about/history'],
+            ['label' => 'القيادة', 'target_kind' => 'url', 'url' => '/ar/about/leadership'],
+            ['label' => 'المديريات المركزية', 'target_kind' => 'url', 'url' => '/ar/about/directorates'],
+            ['label' => 'دليل الهيئة الأكاديمية', 'target_kind' => 'url', 'url' => '/ar/about/directorates/staff'],
             ['label' => 'الشراكات', 'target_kind' => 'url', 'url' => '/ar/about/partnerships'],
         ]];
         $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'About', 'target_kind' => 'page', 'page_slug' => 'about', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 1, 'children' => [
+            ['label' => 'History & Founding', 'target_kind' => 'url', 'url' => '/en/about/history'],
             ['label' => 'Leadership', 'target_kind' => 'url', 'url' => '/en/about/leadership'],
-            ['label' => 'Our History', 'target_kind' => 'url', 'url' => '/en/about/history'],
-            ['label' => 'Directorates', 'target_kind' => 'url', 'url' => '/en/about/directorates'],
+            ['label' => 'Central Directorates', 'target_kind' => 'url', 'url' => '/en/about/directorates'],
+            ['label' => 'Academic Staff Directory', 'target_kind' => 'url', 'url' => '/en/about/directorates/staff'],
             ['label' => 'Partnerships', 'target_kind' => 'url', 'url' => '/en/about/partnerships'],
         ]];
 
-        // ── Faculties (sort 2) ──
+        // ── Facilities (sort 2) ──
         $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'الكليات', 'target_kind' => 'page', 'page_slug' => 'faculties', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 2, 'children' => [
             ['label' => 'كلية الطب البشري', 'target_kind' => 'url', 'url' => '/ar/faculties/medicine'],
             ['label' => 'كلية طب الأسنان', 'target_kind' => 'url', 'url' => '/ar/faculties/dentistry'],
@@ -127,7 +151,7 @@ class NavigationSeeder extends Seeder
             ['label' => 'كلية هندسة البترول', 'target_kind' => 'url', 'url' => '/ar/faculties/petroleum'],
             ['label' => 'كلية إدارة الأعمال', 'target_kind' => 'url', 'url' => '/ar/faculties/business'],
         ]];
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'Faculties', 'target_kind' => 'page', 'page_slug' => 'faculties', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 2, 'children' => [
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'Facilities', 'target_kind' => 'page', 'page_slug' => 'faculties', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 2, 'children' => [
             ['label' => 'Medicine', 'target_kind' => 'url', 'url' => '/en/faculties/medicine'],
             ['label' => 'Dentistry', 'target_kind' => 'url', 'url' => '/en/faculties/dentistry'],
             ['label' => 'Pharmacy', 'target_kind' => 'url', 'url' => '/en/faculties/pharmacy'],

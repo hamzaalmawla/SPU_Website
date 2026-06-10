@@ -182,9 +182,9 @@ class MediaAssetResource extends Resource
                         ->label('File')
                         ->required()
                         ->maxSize(20480)
-                        ->disk((string) config('filesystems.default', 'local'))
+                        ->disk((string) config('filesystems.media_disk', 'public'))
                         ->directory('media-tmp')
-                        ->visibility('private')
+                        ->visibility('public')
                         ->acceptedFileTypes([
                             'image/jpeg', 'image/png', 'image/gif', 'image/webp',
                             'application/pdf',

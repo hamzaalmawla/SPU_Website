@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Contracts\AuditServiceInterface;
 use App\Contracts\HomepageSectionServiceInterface;
 use App\Contracts\NavigationServiceInterface;
 use App\Contracts\PageServiceInterface;
@@ -33,6 +34,7 @@ final class PreviewService implements PreviewServiceInterface
     private const EDITABLE_STATUSES = ['draft', 'scheduled'];
 
     public function __construct(
+        private readonly AuditServiceInterface $auditService,
         private readonly PageServiceInterface $pageService,
         private readonly HomepageSectionServiceInterface $homepageSectionService,
         private readonly NavigationServiceInterface $navigationService,
@@ -45,6 +47,13 @@ final class PreviewService implements PreviewServiceInterface
 
         $result = $this->tokenStore->create($targetType, $targetId, $locale, $userId, $device);
 
+        $this->auditService->log('preview.created', $userId, PreviewToken::class, (int) $result['model']->getKey(), [
+            'target_type' => $targetType,
+            'target_id' => $targetId,
+            'locale' => $locale,
+            'expires_at' => $result['model']->expires_at?->toIso8601String(),
+        ]);
+
         return $this->buildPreviewDto($result['model'], rawToken: $result['raw_token']);
     }
 
@@ -52,9 +61,17 @@ final class PreviewService implements PreviewServiceInterface
     {
         $previewToken = $this->tokenStore->resolve($token);
 
-        return $previewToken instanceof PreviewToken
-            ? $this->buildPreviewDto($previewToken, $locale, $token)
-            : null;
+        if (! $previewToken instanceof PreviewToken) {
+            return null;
+        }
+
+        $this->auditService->log('preview.resolved', null, PreviewToken::class, (int) $previewToken->getKey(), [
+            'target_type' => $previewToken->target_type,
+            'target_id' => $previewToken->target_id,
+            'locale' => $locale ?? $previewToken->locale,
+        ]);
+
+        return $this->buildPreviewDto($previewToken, $locale, $token);
     }
 
     public function validateToken(string $token): bool
@@ -64,7 +81,17 @@ final class PreviewService implements PreviewServiceInterface
 
     public function invalidateToken(string $token): bool
     {
-        return $this->tokenStore->invalidate($token);
+        $previewToken = $this->tokenStore->resolve($token);
+        $invalidated = $this->tokenStore->invalidate($token);
+
+        if ($invalidated && $previewToken instanceof PreviewToken) {
+            $this->auditService->log('preview.invalidated', null, PreviewToken::class, (int) $previewToken->getKey(), [
+                'target_type' => $previewToken->target_type,
+                'target_id' => $previewToken->target_id,
+            ]);
+        }
+
+        return $invalidated;
     }
 
     private function authorizePreview(string $targetType, ?int $targetId, int $userId): void

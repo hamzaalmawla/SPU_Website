@@ -6,6 +6,7 @@ namespace App\Providers;
 
 use App\Contracts\AuditServiceInterface;
 use App\Contracts\AuthServiceInterface;
+use App\Contracts\AboutPageServiceInterface;
 use App\Contracts\CacheServiceInterface;
 use App\Contracts\ContinuityServiceInterface;
 use App\Contracts\HomepagePublishingServiceInterface;
@@ -14,6 +15,7 @@ use App\Contracts\MediaServiceInterface;
 use App\Contracts\MenuServiceInterface;
 use App\Contracts\NavigationServiceInterface;
 use App\Contracts\PageServiceInterface;
+use App\Contracts\PersonServiceInterface;
 use App\Contracts\PreviewServiceInterface;
 use App\Contracts\SeoMetadataServiceInterface;
 use App\Contracts\SettingsServiceInterface;
@@ -22,10 +24,15 @@ use App\Contracts\SlugServiceInterface;
 use App\Contracts\TotpAuthenticatorInterface;
 use App\Http\Responses\LogoutResponse;
 use App\Models\AuditLog;
+use App\Models\AboutPage;
+use App\Models\Directorate;
 use App\Models\MediaAsset;
 use App\Models\MenuItem;
 use App\Models\Page;
+use App\Models\Partnership;
+use App\Models\Person;
 use App\Models\User;
+use App\Observers\AboutDomainAuditObserver;
 use App\Policies\AuditLogPolicy;
 use App\Policies\HomepagePolicy;
 use App\Policies\MediaAssetPolicy;
@@ -34,6 +41,7 @@ use App\Policies\PagePolicy;
 use App\Policies\UserPolicy;
 use App\Services\AuditService;
 use App\Services\AuthService;
+use App\Services\AboutPageService;
 use App\Services\CacheService;
 use App\Services\ContinuityService;
 use App\Services\HomepageDraftReader;
@@ -47,6 +55,7 @@ use App\Services\PageDraftService;
 use App\Services\PagePublicReadService;
 use App\Services\PageService;
 use App\Services\PageUrlResolver;
+use App\Services\PersonService;
 use App\Services\PreviewService;
 use App\Services\PreviewTokenStore;
 use App\Services\SeoMetadataService;
@@ -90,8 +99,17 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->enforceProductionSecurityConfiguration();
+        $this->registerModelObservers();
         $this->registerAuthorization();
         $this->configureRateLimiting();
+    }
+
+    private function registerModelObservers(): void
+    {
+        AboutPage::observe(AboutDomainAuditObserver::class);
+        Directorate::observe(AboutDomainAuditObserver::class);
+        Partnership::observe(AboutDomainAuditObserver::class);
+        Person::observe(AboutDomainAuditObserver::class);
     }
 
     private function enforceProductionSecurityConfiguration(): void
@@ -186,6 +204,7 @@ class AppServiceProvider extends ServiceProvider
     {
         return [
             CacheServiceInterface::class => CacheService::class,
+            AboutPageServiceInterface::class => AboutPageService::class,
             AuditServiceInterface::class => AuditService::class,
             AuthServiceInterface::class => AuthService::class,
             ContinuityServiceInterface::class => ContinuityService::class,
@@ -198,6 +217,7 @@ class AppServiceProvider extends ServiceProvider
             HomepagePublishingServiceInterface::class => HomepagePublishingService::class,
             PreviewServiceInterface::class => PreviewService::class,
             PageServiceInterface::class => PageService::class,
+            PersonServiceInterface::class => PersonService::class,
             SettingsServiceInterface::class => SettingsService::class,
             NavigationServiceInterface::class => NavigationService::class,
             TotpAuthenticatorInterface::class => TotpAuthenticator::class,

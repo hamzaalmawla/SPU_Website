@@ -542,7 +542,7 @@ final class HomepagePayloadMapper
 
     private static function safeAssetUrl(?string $url): ?string
     {
-        return UrlSanitizer::sanitize($url, ['http', 'https'], true);
+        return MediaUrlResolver::resolve($url);
     }
 
     private static function sanitizePayloadUrls(mixed $payload): mixed

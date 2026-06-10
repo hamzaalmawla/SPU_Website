@@ -224,7 +224,7 @@ final class SettingsService implements SettingsServiceInterface
     {
         $value = $this->cacheService->remember(
             $this->studentPortalCacheKey(),
-            fn (): ?string => $this->textSetting('navigation', 'student_portal_url'),
+            fn (): ?string => $this->textSetting('navigation', 'student_portal_url', null, true),
             (int) config('cache.settings_ttl', 21600),
         );
 
@@ -235,7 +235,7 @@ final class SettingsService implements SettingsServiceInterface
     {
         $value = $this->cacheService->remember(
             $this->staffAccessCacheKey(),
-            fn (): ?string => $this->textSetting('navigation', 'staff_access_url'),
+            fn (): ?string => $this->textSetting('navigation', 'staff_access_url', null, true),
             (int) config('cache.settings_ttl', 21600),
         );
 
@@ -312,7 +312,7 @@ final class SettingsService implements SettingsServiceInterface
 
     private function buildApplyCtaTarget(string $locale): ApplyCtaSettingsDTO
     {
-        $payload = $this->jsonSetting('navigation', 'apply_cta', $locale);
+        $payload = $this->jsonSetting('navigation', 'apply_cta', $locale, true);
 
         return new ApplyCtaSettingsDTO(
             locale: $locale,
@@ -325,7 +325,7 @@ final class SettingsService implements SettingsServiceInterface
 
     private function buildEmergencyNotice(string $locale): EmergencyNoticeDTO
     {
-        $payload = $this->jsonSetting('public_shell', 'emergency_notice', $locale);
+        $payload = $this->jsonSetting('public_shell', 'emergency_notice', $locale, true);
 
         return new EmergencyNoticeDTO(
             locale: $locale,
@@ -338,7 +338,7 @@ final class SettingsService implements SettingsServiceInterface
 
     private function buildFooterSettings(string $locale): FooterSettingsDTO
     {
-        $payload = $this->jsonSetting('footer', 'footer', $locale);
+        $payload = $this->jsonSetting('footer', 'footer', $locale, true);
         $brandBlock = is_array($payload['brandBlock'] ?? ($payload['brand_block'] ?? null))
             ? ($payload['brandBlock'] ?? $payload['brand_block'])
             : [];
@@ -364,8 +364,8 @@ final class SettingsService implements SettingsServiceInterface
 
     private function buildSocialContactSettings(string $locale): SocialContactSettingsDTO
     {
-        $socialPayload = $this->jsonSetting('footer', 'social_contact', $locale);
-        $contactPayload = $this->jsonSetting('footer', 'contact_links', $locale);
+        $socialPayload = $this->jsonSetting('footer', 'social_contact', $locale, true);
+        $contactPayload = $this->jsonSetting('footer', 'contact_links', $locale, true);
 
         $socialLinks = array_map(
             static fn (array $item): SocialLinkDTO => new SocialLinkDTO(
@@ -390,7 +390,7 @@ final class SettingsService implements SettingsServiceInterface
 
     private function buildDefaultSeoSettings(string $locale): PageSeoDTO
     {
-        $payload = $this->jsonSetting('seo', 'default_seo', $locale);
+        $payload = $this->jsonSetting('seo', 'default_seo', $locale, true);
         $baseUrl = rtrim((string) config('app.url', 'http://localhost'), '/');
 
         return new PageSeoDTO(
@@ -412,23 +412,27 @@ final class SettingsService implements SettingsServiceInterface
     /**
      * @return array<string, mixed>|null
      */
-    private function jsonSetting(string $group, string $key, ?string $locale = null): ?array
+    private function jsonSetting(string $group, string $key, ?string $locale = null, bool $publicOnly = false): ?array
     {
-        $setting = $this->findSetting($group, $key, $locale);
+        $setting = $this->findSetting($group, $key, $locale, $publicOnly);
 
         return $setting !== null && is_array($setting->value_json) ? $setting->value_json : null;
     }
 
-    private function textSetting(string $group, string $key, ?string $locale = null): ?string
+    private function textSetting(string $group, string $key, ?string $locale = null, bool $publicOnly = false): ?string
     {
-        return $this->findSetting($group, $key, $locale)?->value_text;
+        return $this->findSetting($group, $key, $locale, $publicOnly)?->value_text;
     }
 
-    private function findSetting(string $group, string $key, ?string $locale = null): ?Setting
+    private function findSetting(string $group, string $key, ?string $locale = null, bool $publicOnly = false): ?Setting
     {
         $query = Setting::query()
             ->where('group_key', $group)
             ->where('key', $key);
+
+        if ($publicOnly) {
+            $query->where('is_public', true);
+        }
 
         if ($locale === null) {
             return $query->orderByDesc('locale')->first();
