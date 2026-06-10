@@ -38,10 +38,10 @@ class AboutSectionSeeder extends Seeder
                     'description' => 'Syrian Private University was established by Republican Decree No. 339 in 2005 and operates with regulations and curricula approved by the Syrian Ministry of Higher Education and Scientific Research.',
                 ],
                 'stats' => [
-                    ['value' => '2005', 'label_ar' => 'سنة التأسيس', 'label_en' => 'Established', 'icon' => '/images/icons/history.svg'],
-                    ['value' => '7', 'label_ar' => 'الكليات', 'label_en' => 'Faculties', 'icon' => '/images/icon-university-outline.svg'],
-                    ['value' => '2009', 'label_ar' => 'أول دفعة خريجين', 'label_en' => 'First graduates', 'icon' => '/images/icon-user-graduate-outline.svg'],
-                    ['value' => '2012', 'label_ar' => 'اعتماد اسم الجامعة', 'label_en' => 'SPU name adopted', 'icon' => '/images/icon-award-outline.svg'],
+                    ['value' => '460+', 'label_ar' => 'أبحاث علمية', 'label_en' => 'Research Papers', 'icon' => '/images/icon-search-outline.svg'],
+                    ['value' => '21', 'label_ar' => 'الأقسام', 'label_en' => 'Departments', 'icon' => '/images/icon-sitemap-outline.svg'],
+                    ['value' => '18', 'label_ar' => 'جوائز أكاديمية', 'label_en' => 'Academic Awards', 'icon' => '/images/icon-award-outline.svg'],
+                    ['value' => '50', 'label_ar' => 'سنوات من التميز', 'label_en' => 'Years Excellence', 'icon' => '/images/icon-history-outline.svg'],
                 ],
                 'story_items' => [
                     ['title_ar' => 'رؤيتنا', 'title_en' => 'Our Vision', 'summary_ar' => 'أن نكون جامعة رائدة تنهض بالتعليم الحديث وتستجيب للاحتياجات المتطورة للمجتمع وسوق العمل.', 'summary_en' => 'To be a leading university that advances modern education and responds to the evolving needs of society and the job market.'],
@@ -56,7 +56,6 @@ class AboutSectionSeeder extends Seeder
                     ['title_ar' => 'مجلس الجامعة', 'title_en' => 'Leadership', 'link' => '/about/leadership'],
                     ['title_ar' => 'المديريات', 'title_en' => 'Directorates', 'link' => '/about/directorates'],
                     ['title_ar' => 'الشراكات', 'title_en' => 'Partnerships', 'link' => '/about/partnerships'],
-                    ['title_ar' => 'الرؤية والرسالة', 'title_en' => 'Vision & Mission', 'link' => '/about/vision-mission'],
                 ],
             ],
             'status' => 'published',
@@ -77,18 +76,6 @@ class AboutSectionSeeder extends Seeder
                 'en' => ['History & Founding', 'History & Founding', 'A university founded to advance academic excellence, professional preparation, and service to society.', [
                     ['eyebrow' => 'Founding Vision', 'title' => 'The beginning of the academic project', 'body' => 'Syrian Private University was established through a commitment to developing higher education and strengthening academic experience in Syria.'],
                     ['eyebrow' => 'Institutional Timeline', 'title' => 'Key milestones', 'items' => ['2005: Founding of Syrian Private University', '2009: First graduates', '2012: Syrian Private University name adopted', '2026: Digital transformation of the website and services.']],
-                ]],
-            ],
-            'vision-mission' => [
-                'ar' => ['الرؤية والرسالة', 'الرؤية والرسالة', 'تعكس الرؤية والرسالة اتجاه الجامعة في التعليم والبحث وخدمة المجتمع.', [
-                    ['title' => 'الرؤية', 'body' => 'أن تكون الجامعة مركزا علميا متميزا محليا وإقليميا وعالميا يواكب تطور المعرفة ويستجيب لاحتياجات المجتمع.'],
-                    ['title' => 'الرسالة', 'body' => 'تقديم تعليم جامعي معتمد وعالي الجودة من خلال مناهج وبرامج تدريبية وكفاءات أكاديمية متخصصة.'],
-                    ['title' => 'القيم', 'body' => 'الجودة، المسؤولية، الانفتاح العلمي، خدمة المجتمع، والنزاهة الأكاديمية.'],
-                ]],
-                'en' => ['Vision & Mission', 'Vision and Mission', 'SPU’s vision and mission guide education, research, and community service.', [
-                    ['title' => 'Vision', 'body' => 'To be a distinguished scientific center locally, regionally, and globally while responding to community needs.'],
-                    ['title' => 'Mission', 'body' => 'To provide accredited, high-quality university education through modern curricula, training programs, and specialized academic expertise.'],
-                    ['title' => 'Values', 'body' => 'Quality, responsibility, scientific openness, community service, and academic integrity.'],
                 ]],
             ],
             'leadership' => [
@@ -183,10 +170,11 @@ class AboutSectionSeeder extends Seeder
     private function seedPartnerships(): void
     {
         $items = [
-            ['association-of-arab-universities', '/images/arab-uni.png', 'https://www.aaru.edu.jo/member-universities/syria/', 'اتحاد الجامعات العربية', 'Association of Arab Universities', 'عضوية أكاديمية', 'Academic Membership'],
-            ['cooperating-universities', '/images/icon-university-outline.svg', 'https://www.spu.edu.sy', 'الجامعات المتعاونة', 'Cooperating Universities', 'اتفاقيات تعاون', 'Cooperation Agreements'],
-            ['coursera', '/images/corsera.png', 'https://www.coursera.org', 'منصة كورسيرا العالمية', 'Coursera', 'تعلم رقمي', 'Digital Learning'],
-            ['world-health-organization', '/images/world-health.png', 'https://www.who.int', 'منظمة الصحة العالمية', 'World Health Organization', 'صحة عامة', 'Public Health'],
+            ['association-of-arab-universities', '/images/arab-uni.png', 'https://www.aaru.edu.jo/member-universities/syria/', 'اتحاد الجامعات العربية', 'Association of Arab Universities', 'عضوية أكاديمية', 'Academic Membership', 'منذ 2020', 'Since 2020', 'تظهر الجامعة السورية الخاصة ضمن الجامعات السورية الأعضاء في اتحاد الجامعات العربية.', 'Syrian Private University appears among Syrian member universities listed by the Association of Arab Universities.'],
+            ['cooperating-universities', '/images/icon-university-outline.svg', 'https://www.spu.edu.sy', 'الجامعات المتعاونة', 'Cooperating Universities', 'اتفاقيات تعاون', 'Cooperation Agreements', 'منذ 2018', 'Since 2018', 'تستهدف الاتفاقيات تبادل الخبرات والجودة التعليمية والبحث العلمي وتبادل الخبرات.', 'The agreements target experience exchange, educational quality, joint research, and student exchange.'],
+            ['coursera', '/images/corsera.png', 'https://www.coursera.org', 'كورسيرا', 'Coursera', 'تعلم رقمي', 'Digital Learning', 'منذ 2023', 'Since 2023', 'بطاقة نموذجية لمسارات التعلم الرقمي وشهادات التطوير المهني التي تكمل البرامج الجامعية.', 'A model card for digital learning paths and professional certificates that can complement university programs.'],
+            ['world-health-organization', '/images/world-health.png', 'https://www.who.int', 'منظمة الصحة العالمية', 'World Health Organization', 'صحة عامة', 'Public Health', 'منذ 2021', 'Since 2021', 'بطاقة نموذجية للتعاون الصحي وبرامج التعليم الطبي المرتبطة بمعايير الصحة والعلوم الحياتية.', 'A model card for health cooperation and medical-education standards connected to health-science programs.'],
+            ['github-education-microsoft', '/images/logo-spu.png', 'https://education.github.com', 'تعليم GitHub ومايكروسوفت', 'GitHub Education and Microsoft', 'التكنولوجيا والذكاء الاصطناعي', 'Technology & AI', 'منذ 2024', 'Since 2024', 'منحة التكنولوجيا المتقدمة لطلاب هندسة الذكاء الاصطناعي تعكس تركيز الجامعة على المهارات التقنية الحديثة.', 'The advanced technology grant for AI Engineering students reflects SPU’s focus on modern technical skills.'],
         ];
 
         foreach ($items as $index => $row) {
@@ -196,8 +184,8 @@ class AboutSectionSeeder extends Seeder
                 'sort_order' => $index + 1,
                 'is_enabled' => true,
             ]);
-            $partnership->translations()->updateOrCreate(['locale' => 'ar'], ['name' => $row[3], 'category' => $row[5], 'status' => 'نشط', 'established_label' => 'مستمر', 'description' => 'شراكة تدعم التعاون العلمي والأكاديمي وتبادل الخبرات.']);
-            $partnership->translations()->updateOrCreate(['locale' => 'en'], ['name' => $row[4], 'category' => $row[6], 'status' => 'Active', 'established_label' => 'Ongoing', 'description' => 'A partnership that supports scientific and academic cooperation and expertise exchange.']);
+            $partnership->translations()->updateOrCreate(['locale' => 'ar'], ['name' => $row[3], 'category' => $row[5], 'status' => 'نشط', 'established_label' => $row[7], 'description' => $row[9]]);
+            $partnership->translations()->updateOrCreate(['locale' => 'en'], ['name' => $row[4], 'category' => $row[6], 'status' => 'Active', 'established_label' => $row[8], 'description' => $row[10]]);
         }
     }
 }

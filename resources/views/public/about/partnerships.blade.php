@@ -5,14 +5,18 @@
         @include('public.about.partials.hero', ['title' => $page->headline, 'summary' => $page->summary, 'image' => $page->heroImage])
         <section class="core-domains-section">
             <div class="container">
-                <h2 class="core-domains-title">{{ $page->headline }}</h2>
                 <div class="partner-goals-grid">
-                    @foreach ([$page->summary, $locale === 'ar' ? 'تبادل الخبرات وتطوير البرامج الأكاديمية.' : 'Exchange expertise and develop academic programs.', $locale === 'ar' ? 'دعم فرص البحث والدراسات العليا.' : 'Support research and postgraduate opportunities.', $locale === 'ar' ? 'تعزيز الحضور العلمي للجامعة.' : 'Strengthen the university academic presence.'] as $goal)
+                    @foreach ([
+                        ['icon' => '+', 'title' => $locale === 'ar' ? 'تبادل الخبرات' : 'Experience Exchange', 'text' => $locale === 'ar' ? 'تبادل الخبرات التعليمية والبحثية مع مؤسسات مرموقة.' : 'Exchange teaching and research experience with reputable institutions.'],
+                        ['icon' => '◇', 'title' => $locale === 'ar' ? 'تطوير الكوادر' : 'Faculty Development', 'text' => $locale === 'ar' ? 'الاستفادة من أساتذة ومحاضرين ذوي خبرة في التعليم والبحث.' : 'Benefit from experienced professors and lecturers in teaching and research.'],
+                        ['icon' => '✓', 'title' => $locale === 'ar' ? 'مسارات الدراسات العليا' : 'Postgraduate Pathways', 'text' => $locale === 'ar' ? 'دعم الخريجين الساعين إلى مسارات الماجستير والدكتوراه.' : 'Support graduates seeking master’s and doctoral study pathways.'],
+                        ['icon' => '○', 'title' => $locale === 'ar' ? 'مواءمة مجتمعية' : 'Community Alignment', 'text' => $locale === 'ar' ? 'ربط مخرجات الجامعة باحتياجات المجتمع والتنمية الاقتصادية والاجتماعية.' : 'Link university outputs with community, economic, and social development needs.'],
+                    ] as $goal)
                         <article class="partner-goal-card reveal reveal-up">
-                            <div class="partner-goal-icon"><i class="fa-solid fa-handshake"></i></div>
+                            <div class="partner-goal-icon" aria-hidden="true">{{ $goal['icon'] }}</div>
                             <div class="partner-goal-content">
-                                <h3>{{ $locale === 'ar' ? 'مجال تعاون' : 'Collaboration Domain' }}</h3>
-                                <p>{{ $goal }}</p>
+                                <h3>{{ $goal['title'] }}</h3>
+                                <p>{{ $goal['text'] }}</p>
                             </div>
                         </article>
                     @endforeach
@@ -20,11 +24,22 @@
             </div>
         </section>
 
-        <section class="bg-section py-20 lg:py-24">
+        <section class="bg-white pb-20 lg:pb-24">
             <div class="container">
                 <div class="filter-bar">
-                    <h2 class="text-3xl font-black text-spu-blue">{{ $locale === 'ar' ? 'الشركاء' : 'Partners' }}</h2>
-                    <div class="filter-buttons"><button type="button" class="filter-btn active">{{ $locale === 'ar' ? 'الكل' : 'All' }}</button></div>
+                    <div class="filter-buttons">
+                        <button type="button" class="filter-btn active">{{ $locale === 'ar' ? 'الكل' : 'All' }}</button>
+                        <button type="button" class="filter-btn">{{ $locale === 'ar' ? 'أكاديمي' : 'Academic' }}</button>
+                        <button type="button" class="filter-btn">{{ $locale === 'ar' ? 'بحثي' : 'Research' }}</button>
+                        <button type="button" class="filter-btn">{{ $locale === 'ar' ? 'سريري' : 'Clinical' }}</button>
+                    </div>
+                    <div class="search-input-wrapper">
+                        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        <input type="search" class="search-input" placeholder="{{ $locale === 'ar' ? 'ابحث عن شريك' : 'Search partners' }}" aria-label="{{ $locale === 'ar' ? 'ابحث عن شريك' : 'Search partners' }}">
+                    </div>
                 </div>
 
                 <div class="partner-grid">
@@ -36,12 +51,34 @@
                             <h2 class="partner-title">{{ $partnership->name }}</h2>
                             <p class="partner-category">{{ $partnership->category }}</p>
                             <p class="partner-desc">{{ $partnership->description }}</p>
-                            @if ($partnership->websiteUrl)<a href="{{ $partnership->websiteUrl }}" class="partner-link" target="_blank" rel="noreferrer">{{ $locale === 'ar' ? 'عرض التفاصيل' : 'View Details' }}</a>@endif
+                            @if ($partnership->websiteUrl)<a href="{{ $partnership->websiteUrl }}" class="partner-link" target="_blank" rel="noreferrer">{{ $locale === 'ar' ? 'عرض التفاصيل' : 'View Details' }} <img src="/images/icon-arrow-right-outline.svg" alt="" class="h-3 w-3 rtl:rotate-180" aria-hidden="true"></a>@endif
                         </div>
                     </article>
                 @endforeach
                 </div>
+
+                @if ($partnerships->count() > 6)
+                    <div class="text-center reveal reveal-up">
+                        <button type="button" class="load-more-btn">
+                            <span>{{ $locale === 'ar' ? 'تحميل المزيد' : 'Load More' }}</span>
+                            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </button>
+                    </div>
+                @endif
+
+                <div class="propose-section reveal reveal-up">
+                    <svg class="propose-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                    <h3 class="propose-title">{{ $locale === 'ar' ? 'هل ترغب بالشراكة مع الجامعة؟' : 'Want to partner with SPU?' }}</h3>
+                    <p class="propose-text">{{ $locale === 'ar' ? 'تواصل معنا لبدء تعاون أكاديمي أو بحثي بأثر مشترك.' : 'Contact us to start an academic or research collaboration with shared impact.' }}</p>
+                    <a href="/{{ $locale }}/about/directorates" class="propose-btn">{{ $locale === 'ar' ? 'إرسال مقترح' : 'Submit Proposal' }}</a>
+                </div>
             </div>
         </section>
+
+        @include('public.about.partials.navigation-section', ['locale' => $locale])
     </div>
 @endsection

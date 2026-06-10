@@ -11,7 +11,7 @@ class EventCardPropertyTest extends TestCase
 {
     use HomepageBladeTestHelpers;
 
-    public function test_events_section_injects_events_data_to_window(): void
+    public function test_events_section_exposes_events_data_without_window_globals(): void
     {
         $events = [
             self::makeEvent(['title' => 'Event Alpha']),
@@ -29,7 +29,9 @@ class EventCardPropertyTest extends TestCase
             'locale' => 'en',
         ])->render();
 
-        $this->assertStringContainsString('window.spuEventsData', $html);
+        $this->assertStringContainsString('data-events=', $html);
+        $this->assertStringContainsString('Event Alpha', $html);
+        $this->assertStringNotContainsString('window.spuEventsData', $html);
         $this->assertStringContainsString('Events Title', $html);
         $this->assertStringContainsString('calendarApp()', $html);
     }

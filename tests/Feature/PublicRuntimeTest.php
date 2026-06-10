@@ -57,8 +57,8 @@ class PublicRuntimeTest extends TestCase
             ->assertSee('About')
             ->assertSee('Student Portal')
             ->assertSee('EXPLORE SPU')
-            ->assertSee('Apply Now')
-            ->assertSee('Contact SPU')
+            ->assertSee('Privacy Policy')
+            ->assertSee('Cookie Policy')
             ->assertDontSee('Connect');
 
         $this->get('/ar')
@@ -70,8 +70,8 @@ class PublicRuntimeTest extends TestCase
 
         $this->get('/en/about')
             ->assertOk()
-            ->assertSee('Apply now')
-            ->assertSee('Navigation')
+            ->assertSee('EXPLORE SPU')
+            ->assertSee('LOCATION')
             ->assertSee('Syrian Private University');
     }
 

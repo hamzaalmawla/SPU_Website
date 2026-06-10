@@ -96,11 +96,6 @@ final class AboutController extends Controller
         ]));
     }
 
-    public function visionMission(Request $request, string $locale): View
-    {
-        return $this->contentPage($request, $locale, 'vision-mission');
-    }
-
     private function contentPage(Request $request, string $locale, string $slug): View
     {
         $page = $this->aboutPageService->getContentPage($slug, $locale);

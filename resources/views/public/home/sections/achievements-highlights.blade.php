@@ -1,18 +1,33 @@
 @php
-    $honorItems = array_map(static function (array $item): array {
+    $decodeHtmlEntities = static function (mixed $value) use (&$decodeHtmlEntities): mixed {
+        if (is_string($value)) {
+            return html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        }
+
+        if (is_array($value)) {
+            return array_map($decodeHtmlEntities, $value);
+        }
+
+        return $value;
+    };
+
+    $honorItems = array_map(static function (array $item) use ($decodeHtmlEntities): array {
         $item['image'] = $item['image'] ?? ($item['imageUrl'] ?? '/images/slider-1.webp');
-        return $item;
+        return $decodeHtmlEntities($item);
     }, $section->payload->items);
+
+    $sectionEyebrow = $decodeHtmlEntities($section->payload->eyebrow);
+    $sectionTitle = $decodeHtmlEntities($section->payload->title);
 @endphp
 
 <section x-data="honorPanel()" data-items="{{ json_encode($honorItems, JSON_THROW_ON_ERROR) }}" class="py-16 bg-white font-hacen relative overflow-hidden reveal">
     <div class="container">
         <div class="flex items-end justify-between mb-12">
             <div>
-                @if ($section->payload->eyebrow)
-                    <p class="text-spu-red font-bold tracking-widest text-xs uppercase mb-2">{{ $section->payload->eyebrow }}</p>
+                @if ($sectionEyebrow)
+                    <p class="text-spu-red font-bold tracking-widest text-xs uppercase mb-2">{{ $sectionEyebrow }}</p>
                 @endif
-                <h2 class="text-3xl lg:text-4xl font-bold text-spu-blue">{{ $section->payload->title }}</h2>
+                <h2 class="text-3xl lg:text-4xl font-bold text-spu-blue">{{ $sectionTitle }}</h2>
             </div>
             <div class="flex gap-3">
                 <button @click="handleManual('prev')" type="button" class="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all"><img src="/images/icon-chevron-left-outline.svg" class="w-4 h-4 rtl:rotate-180" alt="{{ __('public.previous') }}"></button>

@@ -1,6 +1,24 @@
-<section x-data="calendarApp()" data-events="{{ json_encode($section->payload->events, JSON_THROW_ON_ERROR) }}" class="overflow-hidden bg-white py-16 font-hacen lg:py-20">
+@php
+    $decodeHtmlEntities = static function (mixed $value) use (&$decodeHtmlEntities): mixed {
+        if (is_string($value)) {
+            return html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        }
+
+        if (is_array($value)) {
+            return array_map($decodeHtmlEntities, $value);
+        }
+
+        return $value;
+    };
+
+    $events = $decodeHtmlEntities($section->payload->events);
+    $sectionTitle = $decodeHtmlEntities($section->payload->title);
+    $calendarHighlights = $decodeHtmlEntities($section->payload->content['calendarHighlights'] ?? []);
+@endphp
+
+<section x-data="calendarApp()" data-events="{{ json_encode($events, JSON_THROW_ON_ERROR) }}" class="overflow-hidden bg-white py-16 font-hacen lg:py-20">
     <div class="container">
-        <h2 class="mb-8 text-[34px] font-bold tracking-tight text-[#1e2652] sm:mb-10 sm:text-[42px] lg:text-[52px]">{{ $section->payload->title }}</h2>
+        <h2 class="mb-8 text-[34px] font-bold tracking-tight text-[#1e2652] sm:mb-10 sm:text-[42px] lg:text-[52px]">{{ $sectionTitle }}</h2>
 
         <div class="grid grid-cols-1 gap-10 xl:grid-cols-[minmax(0,560px)_minmax(0,1fr)] xl:items-stretch">
             <div @mouseenter="stopCarousel()" @mouseleave="startCarousel()" class="overflow-hidden rounded-[20px] bg-white shadow-[0_18px_40px_rgba(0,0,0,0.22)] h-full flex flex-col relative">
@@ -61,7 +79,7 @@
         </div>
 
         <div class="mt-10">
-            @foreach ($section->payload->content['calendarHighlights'] ?? [] as $highlight)
+            @foreach ($calendarHighlights as $highlight)
                 <div class="inline-block rounded-2xl border border-slate-100 px-5 py-3 mr-4 mb-4">
                     @if (! empty($highlight['label']))<p class="font-medium text-spu-blue">{{ $highlight['label'] }}</p>@endif
                     @if (! empty($highlight['date']))<p class="mt-1 text-sm text-slate-400">{{ $highlight['date'] }}</p>@endif

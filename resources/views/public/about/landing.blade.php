@@ -51,13 +51,6 @@
                             @endforeach
                         </div>
 
-                        <div class="mt-6 lg:ps-12">
-                            <a href="/{{ $locale }}/about/vision-mission" class="inline-flex items-center gap-3 rounded-2xl px-8 pb-5 font-black text-spu-blue transition-all hover:text-spu-red">
-                                <span>{{ $locale === 'ar' ? 'استكشف الرؤية والرسالة' : 'Explore Vision & Mission' }}</span>
-                                <img src="/images/icon-arrow-right-outline.svg" alt="" class="h-4 w-4 rtl:rotate-180" aria-hidden="true">
-                            </a>
-                        </div>
-
                         <div class="grid grid-cols-2 gap-6 bg-section py-4 lg:ps-12">
                             <div class="flex items-start gap-3">
                                 <img src="/images/icon-check-circle-outline.svg" class="mt-1 h-5 w-5 text-spu-red" alt="Check">
@@ -88,7 +81,6 @@
                                 @endif
                                 <div class="mb-3 flex items-center justify-center text-6xl font-normal tracking-tighter">
                                     <span translate="no">{{ $stat['value'] ?? '' }}</span>
-                                    @if (($stat['id'] ?? '') === 'papers')<span>+</span>@endif
                                 </div>
                                 <p class="text-xs font-bold uppercase tracking-[0.2em] text-[#799DD6]">{{ $stat['label'] ?? '' }}</p>
                             </div>

@@ -20,7 +20,10 @@
         </div>
 
         <div class="lg:col-span-2">
-            <h3 class="mb-8 text-[18px] font-bold uppercase tracking-widest text-white/50">{{ $locale === 'ar' ? 'استكشف SPU' : 'EXPLORE SPU' }}</h3>
+            <h3 class="mb-8 text-[18px] font-bold uppercase tracking-widest text-white/50">
+                <span class="sr-only">{{ __('public.navigation_heading') }}</span>
+                <span aria-hidden="true">{{ $locale === 'ar' ? 'استكشف SPU' : 'EXPLORE SPU' }}</span>
+            </h3>
             <ul class="flex flex-col gap-4">
                 @foreach ($navigation->footer->items as $item)
                     @if ($item->resolvedUrl)

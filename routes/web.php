@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\AboutController;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\TwoFactorChallengeController;
-use App\Http\Controllers\AboutController;
-use App\Http\Middleware\AdminLocaleMiddleware;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PreviewController;
 use App\Http\Controllers\PublicContactController;
 use App\Http\Controllers\SitemapController;
+use App\Http\Middleware\AdminLocaleMiddleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -37,7 +37,6 @@ Route::prefix('{locale}')
                 Route::get('/directorates/staff', 'staffDirectory')->name('directorates.staff');
                 Route::get('/directorates/{directorate}', 'directorateDetail')->name('directorates.show');
                 Route::get('/partnerships', 'partnerships')->name('partnerships');
-                Route::get('/vision-mission', 'visionMission')->name('vision-mission');
             });
 
         Route::get('/preview', PreviewController::class)->name('preview.show');

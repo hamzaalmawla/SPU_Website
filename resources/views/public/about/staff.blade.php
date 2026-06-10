@@ -13,7 +13,7 @@
                     </select>
                 </div>
 
-                <div class="staff-grid pb-20">
+                <div class="staff-grid reveal reveal-up reveal-delay-1">
                     @foreach ($people as $person)
                         <article class="staff-card reveal reveal-up">
                             <div class="staff-card-media"><img src="{{ $person->image ?? '/images/medicine-dean.jpg' }}" alt="{{ $person->name }}"></div>
@@ -24,6 +24,21 @@
                         </article>
                     @endforeach
                 </div>
+
+                @if ($people->count() > 9)
+                    <nav class="staff-pagination" aria-label="{{ $locale === 'ar' ? 'ترقيم دليل الهيئة الأكاديمية' : 'Staff pagination' }}">
+                        <button type="button" class="pag-btn pag-arrow" disabled aria-label="{{ $locale === 'ar' ? 'الصفحة السابقة' : 'Previous page' }}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                        </button>
+                        <button type="button" class="pag-btn active" aria-current="page">1</button>
+                        <button type="button" class="pag-btn">2</button>
+                        <button type="button" class="pag-btn pag-arrow" aria-label="{{ $locale === 'ar' ? 'الصفحة التالية' : 'Next page' }}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        </button>
+                    </nav>
+                @else
+                    <div class="pb-20"></div>
+                @endif
             </div>
         </section>
     </div>
