@@ -16,6 +16,8 @@ class Setting extends Model
         'navigation',
         'public_shell',
         'footer',
+        'contact_page',
+        'e_services_page',
         'seo',
     ];
 

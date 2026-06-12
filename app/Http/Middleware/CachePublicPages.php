@@ -74,6 +74,10 @@ final class CachePublicPages
             return true;
         }
 
+        if ($request->route()?->getName() === 'public.contact') {
+            return true;
+        }
+
         return $this->isPreviewRequest($request);
     }
 

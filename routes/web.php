@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\AboutController;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\TwoFactorChallengeController;
+use App\Http\Controllers\EServicesController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PreviewController;
@@ -24,6 +25,7 @@ Route::prefix('{locale}')
     ->middleware(['locale', 'cache.public'])
     ->group(function (): void {
         Route::get('/', HomeController::class)->name('public.home');
+        Route::get('/e-services', EServicesController::class)->name('public.e-services');
 
         Route::controller(AboutController::class)
             ->prefix('about')
@@ -41,7 +43,8 @@ Route::prefix('{locale}')
 
         Route::get('/preview', PreviewController::class)->name('preview.show');
 
-        Route::post('/contact', PublicContactController::class)
+        Route::get('/contact', [PublicContactController::class, 'show'])->name('public.contact');
+        Route::post('/contact', [PublicContactController::class, 'store'])
             ->middleware('throttle:public-form')
             ->name('public.contact.submit');
 

@@ -9,6 +9,8 @@ use App\Contracts\AuthServiceInterface;
 use App\Contracts\AboutPageServiceInterface;
 use App\Contracts\CacheServiceInterface;
 use App\Contracts\ContinuityServiceInterface;
+use App\Contracts\ContactPageServiceInterface;
+use App\Contracts\EServicesPageServiceInterface;
 use App\Contracts\HomepagePublishingServiceInterface;
 use App\Contracts\HomepageSectionServiceInterface;
 use App\Contracts\MediaServiceInterface;
@@ -25,6 +27,7 @@ use App\Contracts\TotpAuthenticatorInterface;
 use App\Http\Responses\LogoutResponse;
 use App\Models\AuditLog;
 use App\Models\AboutPage;
+use App\Models\ContactMessage;
 use App\Models\Directorate;
 use App\Models\MediaAsset;
 use App\Models\MenuItem;
@@ -34,6 +37,7 @@ use App\Models\Person;
 use App\Models\User;
 use App\Observers\AboutDomainAuditObserver;
 use App\Policies\AuditLogPolicy;
+use App\Policies\ContactMessagePolicy;
 use App\Policies\HomepagePolicy;
 use App\Policies\MediaAssetPolicy;
 use App\Policies\MenuItemPolicy;
@@ -44,6 +48,8 @@ use App\Services\AuthService;
 use App\Services\AboutPageService;
 use App\Services\CacheService;
 use App\Services\ContinuityService;
+use App\Services\ContactPageService;
+use App\Services\EServicesPageService;
 use App\Services\HomepageDraftReader;
 use App\Services\HomepagePublishingService;
 use App\Services\HomepageSectionService;
@@ -159,6 +165,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(MenuItem::class, MenuItemPolicy::class);
         Gate::policy(AuditLog::class, AuditLogPolicy::class);
         Gate::policy(MediaAsset::class, MediaAssetPolicy::class);
+        Gate::policy(ContactMessage::class, ContactMessagePolicy::class);
 
         Gate::define('manage-users', [UserPolicy::class, 'manageUsers']);
         Gate::define('manage-settings', [UserPolicy::class, 'manageSettings']);
@@ -208,6 +215,8 @@ class AppServiceProvider extends ServiceProvider
             AuditServiceInterface::class => AuditService::class,
             AuthServiceInterface::class => AuthService::class,
             ContinuityServiceInterface::class => ContinuityService::class,
+            ContactPageServiceInterface::class => ContactPageService::class,
+            EServicesPageServiceInterface::class => EServicesPageService::class,
             SitemapServiceInterface::class => SitemapService::class,
             MediaServiceInterface::class => MediaService::class,
             SlugServiceInterface::class => SlugService::class,

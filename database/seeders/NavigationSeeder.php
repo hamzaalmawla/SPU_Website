@@ -7,6 +7,7 @@ namespace Database\Seeders;
 use App\Models\MenuItem;
 use App\Models\Page;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Seeds navigation trees matching the frontend's navigationMenuItems from layout-content.js.
@@ -92,6 +93,12 @@ class NavigationSeeder extends Seeder
                 }
             }
         }
+
+        Cache::forget('menu.tree.header.ar');
+        Cache::forget('menu.tree.header.en');
+        Cache::forget('navigation.payload.ar');
+        Cache::forget('navigation.payload.en');
+        Cache::flush();
     }
 
     private function normalizeExistingLabels(): void
@@ -186,17 +193,17 @@ class NavigationSeeder extends Seeder
         ]];
 
         // ── E-Services (sort 5) ──
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'الخدمات', 'target_kind' => 'page', 'page_slug' => 'services', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 5, 'children' => [
-            ['label' => 'بوابة الطالب', 'target_kind' => 'url', 'url' => 'https://students.spu.edu.sy', 'target' => '_blank', 'open_in_new_tab' => true],
-            ['label' => 'التسجيل', 'target_kind' => 'url', 'url' => 'https://students.spu.edu.sy/registration', 'target' => '_blank', 'open_in_new_tab' => true],
-            ['label' => 'المكتبة', 'target_kind' => 'url', 'url' => '/ar/student-life#services'],
-            ['label' => 'التقديم الان', 'target_kind' => 'url', 'url' => '/ar/admissions'],
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'الخدمات الإلكترونية', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/ar/e-services', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 5, 'children' => [
+            ['label' => 'بوابة الطالب', 'target_kind' => 'url', 'url' => '/ar/e-services#portal-access'],
+            ['label' => 'التسجيل', 'target_kind' => 'url', 'url' => '/ar/e-services#portal-access'],
+            ['label' => 'وصول المكتبة', 'target_kind' => 'url', 'url' => '/ar/e-services#library'],
+            ['label' => 'الاعتراضات والنماذج', 'target_kind' => 'url', 'url' => '/ar/e-services#appeals-forms'],
         ]];
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'E-Services', 'target_kind' => 'page', 'page_slug' => 'services', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 5, 'children' => [
-            ['label' => 'Student Portal', 'target_kind' => 'url', 'url' => 'https://students.spu.edu.sy', 'target' => '_blank', 'open_in_new_tab' => true],
-            ['label' => 'Registration', 'target_kind' => 'url', 'url' => 'https://students.spu.edu.sy/registration', 'target' => '_blank', 'open_in_new_tab' => true],
-            ['label' => 'Library Access', 'target_kind' => 'url', 'url' => '/en/student-life#services'],
-            ['label' => 'Apply now', 'target_kind' => 'url', 'url' => '/en/admissions'],
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'E-Services', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/en/e-services', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 5, 'children' => [
+            ['label' => 'Student Portal', 'target_kind' => 'url', 'url' => '/en/e-services#portal-access'],
+            ['label' => 'Registration', 'target_kind' => 'url', 'url' => '/en/e-services#portal-access'],
+            ['label' => 'Library Access', 'target_kind' => 'url', 'url' => '/en/e-services#library'],
+            ['label' => 'Appeals & Forms', 'target_kind' => 'url', 'url' => '/en/e-services#appeals-forms'],
         ]];
 
         // ── Research (sort 6) ──
@@ -208,8 +215,14 @@ class NavigationSeeder extends Seeder
         $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'News', 'target_kind' => 'page', 'page_slug' => 'news', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 7, 'children' => []];
 
         // ── Contact (sort 8) ──
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'تواصل معنا', 'target_kind' => 'page', 'page_slug' => 'contact', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 8, 'children' => []];
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'Contact', 'target_kind' => 'page', 'page_slug' => 'contact', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 8, 'children' => []];
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'تواصل معنا', 'target_kind' => 'page', 'page_slug' => 'contact', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 8, 'children' => [
+            ['label' => 'معلومات التواصل', 'target_kind' => 'url', 'url' => '/ar/contact'],
+            ['label' => 'خريطة الحرم الجامعي', 'target_kind' => 'url', 'url' => '/ar/contact#campus-map'],
+        ]];
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'Contact', 'target_kind' => 'page', 'page_slug' => 'contact', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 8, 'children' => [
+            ['label' => 'Contact Information', 'target_kind' => 'url', 'url' => '/en/contact'],
+            ['label' => 'Campus Map', 'target_kind' => 'url', 'url' => '/en/contact#campus-map'],
+        ]];
 
         return $items;
     }

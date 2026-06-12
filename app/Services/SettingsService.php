@@ -164,6 +164,7 @@ final class SettingsService implements SettingsServiceInterface
             )),
             'affects_footer' => $values->group === 'footer',
             'affects_utility_shell' => in_array($values->group, ['navigation', 'public_shell'], true),
+            'affects_contact_page' => $values->group === 'contact_page',
         ];
 
         $this->auditService->log(
@@ -563,7 +564,7 @@ final class SettingsService implements SettingsServiceInterface
         }
 
         $flushed = $this->cacheService->flushTags(
-            in_array($group, ['navigation', 'footer', 'public_shell'], true)
+            in_array($group, ['navigation', 'footer', 'public_shell', 'contact_page', 'e_services_page'], true)
                 ? ['public-pages', 'public-shell', 'settings', 'navigation']
                 : ['settings'],
         );

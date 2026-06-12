@@ -70,6 +70,15 @@
         position: relative;
     }
 
+    .site-nav-item::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        height: 0.75rem;
+    }
+
     .site-nav-link {
         position: relative;
         display: inline-flex;
