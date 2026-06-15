@@ -78,8 +78,8 @@ Latest verified state from this session:
 
 | Verification | Result |
 | --- | --- |
-| `php artisan test` | Passing, 3395 tests and 15159 assertions on full run. |
-| `npm run build` | Passing with no unexpected warnings. |
+| `php artisan test` | Passing, 3407 tests and 15343 assertions on full run. |
+| `npm run build` | Passing with no unexpected warnings after FontAwesome runtime removal. |
 | `php artisan route:list` | Bootstraps routes successfully. |
 | `php artisan test --filter=PageService` | Passing, publish validation covered. |
 | `php artisan test tests/Feature/PublicRuntimeTest.php tests/Feature/HomepageBlade` | Passing, public runtime and homepage Blade covered. |
@@ -91,7 +91,7 @@ Frontend build measurement captured 2026-06-15:
 
 | Artifact | Built Output | Gzip |
 | --- | ---: | ---: |
-| `public/build/js/app.CBkSiQxH.js` | 143.03 kB | 45.24 kB |
+| `public/build/js/app.DqX6Qpgj.js` | 64.59 kB | 21.32 kB |
 | `public/build/js/homepage.hSud3-IL.js` | 15.56 kB | 6.07 kB |
 | `public/build/assets/app.C0Q5iHGS.css` | 198.71 kB | 34.86 kB |
 
@@ -416,36 +416,52 @@ php artisan test tests/Feature/PublicRuntimeTest.php tests/Feature/HomepageBlade
 
 ### C02: Review Remaining FontAwesome Cost
 
-Status: Proposed
+Status: Done
 
 Priority: Medium
 
-Goal: Decide whether remaining FontAwesome runtime usage should be replaced with static SVGs or narrower imports.
+Goal: Decide whether remaining FontAwesome runtime usage should be replaced with static SVGs or narrower imports, then implement only if the measured benefit justifies the change.
 
-Why this matters: `resources/js/app.js` still uses FontAwesome DOM watching. It may be acceptable, but it should be measured before changing.
+Why this matters: `resources/js/app.js` used FontAwesome DOM watching. The runtime was only worth removing after source usage and build-size impact were measured.
 
 Current state:
 
 | Item | State |
 | --- | --- |
 | Global CSS import from `@fortawesome/fontawesome-free` | Not present. |
-| Tree-shaken icon package imports | Present. |
-| `dom.watch()` | Present in `resources/js/app.js`. |
+| Tree-shaken icon package imports | Removed from `resources/js/app.js`. |
+| `dom.watch()` | Removed from `resources/js/app.js`. |
 | Static local SVG image usage | Present across public views. |
 
 Implementation steps:
 
-- [ ] Search public views for actual FontAwesome class usage.
-- [ ] Identify icons that can be replaced with existing `/images/*.svg` assets.
-- [ ] Estimate bundle savings before changing code.
-- [ ] Replace only if measurable benefit exceeds risk.
-- [ ] Run visual checks for nav/footer/icon-heavy areas.
+- [x] Search public views for actual FontAwesome class usage.
+- [x] Identify icons that can be replaced with existing `/images/*.svg` assets.
+- [x] Estimate bundle savings before changing code.
+- [x] Replace only if measurable benefit exceeds risk.
+- [x] Run public rendering checks for nav/footer/icon-heavy areas covered by automated tests.
 
 Acceptance criteria:
 
-- [ ] Decision is evidence-based.
-- [ ] If code changes, no icon disappears in public header/footer/admin auth.
-- [ ] Build remains warning-free.
+- [x] Decision is evidence-based.
+- [x] If code changes, no icon disappears in public header/footer/admin auth.
+- [x] Build remains warning-free.
+
+Completion evidence captured 2026-06-15:
+
+| Evidence | Result |
+| --- | --- |
+| Source usage review | Only `resources/views/public/layout/footer-fallback.blade.php` and `resources/views/public/about/directorates.blade.php` used FontAwesome classes. |
+| Replacement | Public icons now use existing `/images/icon-*.svg` masks/static images or inline SVG; `resources/js/app.js` no longer imports FontAwesome or calls `dom.watch()`. |
+| Dependencies | Removed `@fortawesome/fontawesome-svg-core`, `@fortawesome/free-brands-svg-icons`, and `@fortawesome/free-solid-svg-icons` from `package.json` and `package-lock.json`. |
+| Build measurement | Public app JS changed from 143.03 kB / 45.24 kB gzip to 64.59 kB / 21.32 kB gzip; the 11.27 kB FontAwesome CSS chunk was removed. |
+| Frontend build | `npm run build` passed with no warnings. |
+| Public runtime | `php artisan test tests/Feature/PublicRuntimeTest.php` passed: 14 tests, 79 assertions. |
+| Homepage Blade | `php artisan test tests/Feature/HomepageBlade` passed: 73 tests, 218 assertions. |
+| Public page tests | `php artisan test tests/Feature/ContactPageTest.php tests/Feature/EServicesPageTest.php` passed: 5 tests, 53 assertions. |
+| Admin auth brand check | `php artisan test tests/Feature/AdminAuthFlowTest.php --filter=test_admin_login_page_loads` passed: 1 test, 3 assertions. |
+| Route boot | `php artisan route:list` passed: 67 routes listed. |
+| Full regression | `php artisan test` passed: 3407 tests, 15343 assertions, 176.81s. |
 
 Verification:
 
@@ -1330,7 +1346,7 @@ Reopen criteria:
 | 4 | E01 | Measure architecture hotspots before refactoring. |
 | 5 | E02 | Document Action pattern before adding Actions. |
 | 6 | E03 | Extract one low-risk collaborator only after tests and docs. |
-| 7 | C02 | Optimize FontAwesome only if measured benefit exists. |
+| 7 | C02 | Done: FontAwesome runtime removed after measured benefit. |
 | 8 | I01 | Resolve migration dashboard decision gate. |
 | 9 | J01/J02 | Keep deferred module boundaries explicit. |
 
@@ -1344,7 +1360,7 @@ Reopen criteria:
 | DEC-002 | Is legacy migration scheduled within 6 months? | Product/operations | Open | Blocks migration dashboard work. |
 | DEC-003 | Should Action classes be adopted now or post-launch? | Tech lead | Open | Requires E01 measurement and E02 architecture doc first. |
 | DEC-004 | Should publish return structured validation errors to admin UI? | Product/tech lead | Open | If yes, consider D02 extraction. |
-| DEC-005 | Is remaining FontAwesome runtime cost acceptable? | Frontend owner | Open | Requires C02 measurement. |
+| DEC-005 | Is remaining FontAwesome runtime cost acceptable? | Frontend owner | Resolved | Removed after C02 measurement showed a 23.92 kB gzip reduction in public app JS plus removal of the FontAwesome CSS chunk. |
 
 ---
 

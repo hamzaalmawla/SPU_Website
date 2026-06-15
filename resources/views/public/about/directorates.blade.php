@@ -21,7 +21,11 @@
 
                 <div class="correspondence-box reveal reveal-up reveal-delay-2">
                     <div class="text-spu-red">
-                        <i class="fa-solid fa-circle-info"></i>
+                        <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M12 16v-4"></path>
+                            <path d="M12 8h.01"></path>
+                        </svg>
                     </div>
                     <div>
                         <h3 class="correspondence-title">{{ $locale === 'ar' ? 'المراسلات الإدارية' : 'Administrative Correspondence' }}</h3>

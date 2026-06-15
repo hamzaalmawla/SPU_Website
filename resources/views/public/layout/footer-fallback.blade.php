@@ -11,8 +11,16 @@
                     @foreach ($navigation->socialContact->socialLinks as $link)
                         @continue(! ($link->isEnabled ?? true))
                         @php($platform = strtolower($link->platform ?? ''))
+                        @php($icon = match ($platform) {
+                            'facebook' => '/images/icon-facebook-outline.svg',
+                            'instagram' => '/images/icon-instagram-outline.svg',
+                            'telegram', 'telegram-plane' => '/images/icon-telegram-outline.svg',
+                            'youtube' => '/images/icon-youtube-outline.svg',
+                            'globe', 'website' => '/images/icon-globe-outline.svg',
+                            default => '/images/icon-globe-outline.svg',
+                        })
                         <a href="{{ $link->url }}" target="_blank" rel="noreferrer" class="text-white/80 transition-all hover:scale-110 hover:text-spu-red" aria-label="{{ $link->platform ?? 'Social' }}">
-                            <i class="fa-brands fa-{{ $platform === 'telegram' ? 'telegram-plane' : $platform }}"></i>
+                            <span class="block h-5 w-5 bg-current" aria-hidden="true" style="-webkit-mask: url('{{ $icon }}') center / contain no-repeat; mask: url('{{ $icon }}') center / contain no-repeat;"></span>
                         </a>
                     @endforeach
                 </div>
@@ -39,13 +47,19 @@
             <h3 class="mb-8 text-[18px] font-bold uppercase tracking-widest text-white/50">{{ $locale === 'ar' ? 'التواصل' : 'CONTACT' }}</h3>
             <div class="flex flex-col gap-6">
                 <div class="flex items-start gap-4">
-                    <i class="fa-solid fa-map-marker-alt mt-1.5 text-spu-red"></i>
+                    <span class="mt-1.5 block h-4 w-4 shrink-0 bg-spu-red" aria-hidden="true" style="-webkit-mask: url('/images/icon-map-outline.svg') center / contain no-repeat; mask: url('/images/icon-map-outline.svg') center / contain no-repeat;"></span>
                     <span class="text-[15px] leading-relaxed text-white/80">{{ $locale === 'ar' ? 'مقر الجامعة الرئيسي، أوتوستراد درعا الدولي، بعد بلدة الكسوة، خيارة دنون، دمشق.' : 'University headquarters, Daraa International Highway, past Al-Kiswa, Khayara Danoun, Damascus.' }}</span>
                 </div>
                 @foreach ($navigation->socialContact->contactLinks as $link)
                     @php($type = strtolower($link->type ?? ''))
+                    @php($icon = match ($type) {
+                        'phone' => '/images/icon-phone-outline.svg',
+                        'email' => '/images/icon-envelope-outline.svg',
+                        'address' => '/images/icon-map-outline.svg',
+                        default => '/images/icon-university-outline.svg',
+                    })
                     <div class="flex items-start gap-4">
-                        <i class="{{ match ($type) { 'phone' => 'fa-solid fa-phone-alt', 'email' => 'fa-solid fa-envelope', 'address' => 'fa-solid fa-map-marker-alt', default => 'fa-solid fa-university' } }} mt-1.5 text-spu-red"></i>
+                        <span class="mt-1.5 block h-4 w-4 shrink-0 bg-spu-red" aria-hidden="true" style="-webkit-mask: url('{{ $icon }}') center / contain no-repeat; mask: url('{{ $icon }}') center / contain no-repeat;"></span>
                         <span class="text-[15px] leading-relaxed text-white/80 {{ in_array($type, ['phone', 'email'], true) ? 'ltr' : '' }}">{{ $link->label }}: {{ $link->value }}</span>
                     </div>
                 @endforeach

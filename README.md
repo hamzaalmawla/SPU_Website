@@ -11,7 +11,7 @@ The official website platform for [Syrian Private University](https://spu.edu.sy
 | Database | MySQL 8 |
 | Cache / Queue / Session | Redis |
 | Frontend | Tailwind CSS 4, Alpine.js 3, Vite 7 |
-| Icons | FontAwesome 7 (SVG) |
+| Icons | Static SVG assets / inline SVG |
 | Sanitization | HTMLPurifier 4 |
 | 2FA | Google2FA (TOTP) |
 | Monitoring | Sentry (APM + error tracking) |

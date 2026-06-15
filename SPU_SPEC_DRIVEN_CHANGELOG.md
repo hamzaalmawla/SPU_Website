@@ -8,6 +8,40 @@ It is intentionally scoped to the current homepage/admin foundation and does not
 
 ## 2026-06-15
 
+### C02: FontAwesome Runtime Removal
+
+Status: Completed
+
+Type: Frontend performance implementation with measured bundle reduction
+
+Changed files:
+
+| File | Change |
+| --- | --- |
+| `resources/js/app.js` | Removed FontAwesome imports, library registration, CSS import, and `dom.watch()`. |
+| `resources/views/public/layout/footer-fallback.blade.php` | Replaced FontAwesome icons with existing static SVG masks. |
+| `resources/views/public/about/directorates.blade.php` | Replaced the FontAwesome info icon with inline SVG. |
+| `package.json` | Removed unused FontAwesome dependencies. |
+| `package-lock.json` | Removed FontAwesome packages from the lockfile. |
+| `TODO.md` | Marked the FontAwesome runtime replacement and preview publish invalidation evidence complete. |
+| `SPU_SPEC_DRIVEN_EXECUTION_TODO.md` | Marked C02 complete with implementation and verification evidence. |
+| `SPU_SPEC_DRIVEN_CHANGELOG.md` | Added this C02 changelog entry. |
+
+Completion evidence:
+
+| Check | Result |
+| --- | --- |
+| Source usage review | Only two source Blade files used FontAwesome classes before removal. |
+| Build measurement | Public app JS changed from 143.03 kB / 45.24 kB gzip to 64.59 kB / 21.32 kB gzip. |
+| Removed CSS chunk | The separate 11.27 kB FontAwesome CSS chunk no longer builds. |
+| Frontend build | `npm run build` passed with no warnings. |
+| Public runtime | `php artisan test tests/Feature/PublicRuntimeTest.php` passed: 14 tests, 79 assertions. |
+| Homepage Blade | `php artisan test tests/Feature/HomepageBlade` passed: 73 tests, 218 assertions. |
+| Public page tests | `php artisan test tests/Feature/ContactPageTest.php tests/Feature/EServicesPageTest.php` passed: 5 tests, 53 assertions. |
+| Admin auth brand check | `php artisan test tests/Feature/AdminAuthFlowTest.php --filter=test_admin_login_page_loads` passed: 1 test, 3 assertions. |
+| Route boot | `php artisan route:list` passed: 67 routes listed. |
+| Full regression | `php artisan test` passed: 3407 tests, 15343 assertions, 176.81s. |
+
 ### E06: Homepage Preview Assembler Extraction
 
 Status: Completed
