@@ -93,6 +93,40 @@ class MediaServiceTest extends TestCase
         $this->service->upload(['file' => $file, 'uploaded_by' => $this->actor->id]);
     }
 
+    public function test_upload_rejects_extension_mismatch(): void
+    {
+        $file = UploadedFile::fake()->create('spoofed.png', 100, 'image/jpeg');
+
+        try {
+            $this->service->upload(['file' => $file, 'uploaded_by' => $this->actor->id]);
+
+            $this->fail('Uploads with mismatched MIME type and extension must be rejected.');
+        } catch (ValidationException $exception) {
+            $this->assertSame(
+                ['The uploaded file extension does not match its detected file type.'],
+                $exception->errors()['file'] ?? [],
+            );
+            $this->assertDatabaseCount('media_assets', 0);
+        }
+    }
+
+    public function test_upload_rejects_images_exceeding_dimension_limit(): void
+    {
+        $file = UploadedFile::fake()->image('huge.jpg', 8001, 100);
+
+        try {
+            $this->service->upload(['file' => $file, 'uploaded_by' => $this->actor->id]);
+
+            $this->fail('Images exceeding maximum dimensions must be rejected.');
+        } catch (ValidationException $exception) {
+            $this->assertStringContainsString(
+                'Image dimensions (8001x100) exceed the maximum allowed (8000x8000).',
+                $exception->errors()['file'][0] ?? '',
+            );
+            $this->assertDatabaseCount('media_assets', 0);
+        }
+    }
+
     public function test_upload_requires_file_parameter(): void
     {
         $this->expectException(ValidationException::class);
@@ -127,6 +161,26 @@ class MediaServiceTest extends TestCase
         $this->assertSame('image/webp', $result->mimeType);
     }
 
+    public function test_upload_accepts_office_documents(): void
+    {
+        $documents = [
+            ['document.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+            ['spreadsheet.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+            ['presentation.pptx', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'],
+        ];
+
+        foreach ($documents as [$filename, $mimeType]) {
+            $result = $this->service->upload([
+                'file' => UploadedFile::fake()->create($filename, 200, $mimeType),
+                'uploaded_by' => $this->actor->id,
+            ]);
+
+            $this->assertGreaterThan(0, $result->mediaId);
+            $this->assertSame($mimeType, $result->mimeType);
+            $this->assertSame($filename, $result->originalName);
+        }
+    }
+
     public function test_upload_forces_faculty_editor_scope(): void
     {
         $facultyEditor = User::factory()->create([
@@ -143,6 +197,25 @@ class MediaServiceTest extends TestCase
         $asset = MediaAsset::query()->findOrFail($uploaded->mediaId);
 
         $this->assertSame('medicine', $asset->faculty_scope_slug);
+    }
+
+    public function test_upload_rejects_faculty_editor_without_scope(): void
+    {
+        $facultyEditor = User::factory()->create([
+            'role_slug' => 'faculty_editor',
+            'faculty_scope_slug' => null,
+        ]);
+
+        $this->expectException(AuthorizationException::class);
+
+        try {
+            $this->service->upload([
+                'file' => UploadedFile::fake()->create('faculty.jpg', 200, 'image/jpeg'),
+                'uploaded_by' => $facultyEditor->id,
+            ]);
+        } finally {
+            $this->assertDatabaseCount('media_assets', 0);
+        }
     }
 
     // ── Metadata update ──────────────────────────────────────────────────

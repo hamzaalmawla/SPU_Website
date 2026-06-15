@@ -55,6 +55,7 @@ use App\Services\HomepagePublishingService;
 use App\Services\HomepageSectionService;
 use App\Services\HomepageSectionValidator;
 use App\Services\MediaService;
+use App\Services\MediaFileValidator;
 use App\Services\MenuService;
 use App\Services\NavigationService;
 use App\Services\PageDraftService;
@@ -94,6 +95,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(PreviewTokenStore::class);
         $this->app->singleton(HomepageDraftReader::class);
         $this->app->singleton(HomepageSectionValidator::class);
+        $this->app->singleton(MediaFileValidator::class);
         $this->app->singleton(PagePublicReadService::class);
         $this->app->singleton(PageDraftService::class);
         $this->app->singleton(PageUrlResolver::class);

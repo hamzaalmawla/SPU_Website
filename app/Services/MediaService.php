@@ -25,52 +25,13 @@ use Illuminate\Validation\ValidationException;
  */
 final class MediaService implements MediaServiceInterface
 {
-    /** @var list<string> */
-    private const ALLOWED_MIME_TYPES = [
-        'image/jpeg',
-        'image/png',
-        'image/gif',
-        'image/webp',
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'application/vnd.ms-powerpoint',
-        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-        'video/mp4',
-        'video/webm',
-    ];
-
-    private const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024; // 20 MB
-
-    /** @var array<string, list<string>> */
-    private const MIME_EXTENSIONS = [
-        'image/jpeg' => ['jpg', 'jpeg'],
-        'image/png' => ['png'],
-        'image/gif' => ['gif'],
-        'image/webp' => ['webp'],
-        'application/pdf' => ['pdf'],
-        'application/msword' => ['doc'],
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => ['docx'],
-        'application/vnd.ms-excel' => ['xls'],
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => ['xlsx'],
-        'application/vnd.ms-powerpoint' => ['ppt'],
-        'application/vnd.openxmlformats-officedocument.presentationml.presentation' => ['pptx'],
-        'video/mp4' => ['mp4'],
-        'video/webm' => ['webm'],
-    ];
-
-    private const MAX_IMAGE_WIDTH = 8000;
-
-    private const MAX_IMAGE_HEIGHT = 8000;
-
     private readonly Filesystem $disk;
 
     private readonly string $diskName;
 
     public function __construct(
         private readonly AuditServiceInterface $auditService,
+        private readonly MediaFileValidator $fileValidator,
     ) {
         $this->diskName = (string) config('filesystems.media_disk', 'public');
         $this->disk = Storage::disk($this->diskName);
@@ -93,12 +54,12 @@ final class MediaService implements MediaServiceInterface
         $uploaderId = $this->requireNumericUserId($payload['uploaded_by'] ?? null);
         $this->authorizeMediaClassWrite($uploaderId, 'create');
 
-        $this->validateFile($file);
+        $this->fileValidator->validate($file);
 
         $directory = (string) ($payload['directory'] ?? 'media');
         $originalName = $file->getClientOriginalName();
         $mimeType = $file->getMimeType() ?? 'application/octet-stream';
-        $extension = $this->primaryExtensionForMime($mimeType);
+        $extension = $this->fileValidator->primaryExtensionForMime($mimeType);
         $filename = (string) Str::uuid().'.'.$extension;
 
         $storedPath = $this->disk->putFileAs($directory, $file, $filename);
@@ -289,59 +250,6 @@ final class MediaService implements MediaServiceInterface
         $query->orderByDesc('created_at');
 
         return $query;
-    }
-
-    private function validateFile(UploadedFile $file): void
-    {
-        $mimeType = $file->getMimeType() ?? 'application/octet-stream';
-
-        if (! in_array($mimeType, self::ALLOWED_MIME_TYPES, true)) {
-            throw ValidationException::withMessages([
-                'file' => ["File type '{$mimeType}' is not allowed."],
-            ]);
-        }
-
-        $clientExtension = strtolower($file->getClientOriginalExtension());
-        $allowedExtensions = self::MIME_EXTENSIONS[$mimeType] ?? [];
-
-        if ($allowedExtensions === [] || ($clientExtension !== '' && ! in_array($clientExtension, $allowedExtensions, true))) {
-            throw ValidationException::withMessages([
-                'file' => ['The uploaded file extension does not match its detected file type.'],
-            ]);
-        }
-
-        $size = $file->getSize() ?: 0;
-        if ($size > self::MAX_FILE_SIZE_BYTES) {
-            $maxMb = self::MAX_FILE_SIZE_BYTES / (1024 * 1024);
-            throw ValidationException::withMessages([
-                'file' => ["File size exceeds the maximum allowed size of {$maxMb}MB."],
-            ]);
-        }
-
-        if (str_starts_with($mimeType, 'image/') && $mimeType !== 'image/svg+xml') {
-            $dimensions = @getimagesize($file->getRealPath());
-            if (is_array($dimensions)) {
-                [$width, $height] = $dimensions;
-                if ($width > self::MAX_IMAGE_WIDTH || $height > self::MAX_IMAGE_HEIGHT) {
-                    throw ValidationException::withMessages([
-                        'file' => ["Image dimensions ({$width}x{$height}) exceed the maximum allowed (".self::MAX_IMAGE_WIDTH.'x'.self::MAX_IMAGE_HEIGHT.').'],
-                    ]);
-                }
-            }
-        }
-    }
-
-    private function primaryExtensionForMime(string $mimeType): string
-    {
-        $extensions = self::MIME_EXTENSIONS[$mimeType] ?? [];
-
-        if ($extensions === []) {
-            throw ValidationException::withMessages([
-                'file' => ['The detected file type does not have an approved extension.'],
-            ]);
-        }
-
-        return $extensions[0];
     }
 
     private function toDto(MediaAsset $asset): MediaUploadResultDTO

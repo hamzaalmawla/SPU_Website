@@ -840,6 +840,70 @@ php artisan test
 
 ---
 
+### E05: Extract Media File Validation
+
+Status: Done
+
+Priority: High
+
+Goal: Move security-sensitive uploaded file validation out of `MediaService` into an internal service-layer validator without changing media service contracts.
+
+Why this matters: E01 identified media upload validation as a medium-high risk candidate. It controls MIME allow-listing, extension matching, size limits, and image dimension limits, so tests must lock behavior before extraction.
+
+Implementation steps:
+
+- [x] Add characterization for MIME/extension mismatch rejection.
+- [x] Add characterization for image dimension limit rejection.
+- [x] Add characterization for allowed Office document MIME types.
+- [x] Add characterization for faculty editor upload rejection when scope is missing.
+- [x] Extract MIME, extension, size, and image dimension validation into an internal validator.
+- [x] Keep metadata persistence, storage, faculty scope resolution, authorization, audit logging, and DTO mapping in `MediaService`.
+- [x] Keep `MediaServiceInterface` unchanged.
+- [x] Register the validator as an internal singleton collaborator.
+
+Selected extraction:
+
+| Extraction | Result |
+| --- | --- |
+| `MediaFileValidator` | Added `app/Services/MediaFileValidator.php` for MIME allow-list, extension, size, and image dimension validation. |
+| `MediaService` | Delegates uploaded file validation and primary extension resolution to the validator. Upload persistence, authorization, storage, faculty scoping, audit logging, listing, metadata updates, and DTO mapping remain in `MediaService`. |
+| `AppServiceProvider` | Registers `MediaFileValidator` as an internal singleton collaborator. |
+| Public contracts | No service interface signatures changed. |
+
+Acceptance criteria:
+
+- [x] Disallowed MIME types remain rejected.
+- [x] SVG remains rejected even when UI validation is bypassed.
+- [x] MIME/extension mismatches remain rejected.
+- [x] Oversized files remain rejected.
+- [x] Images over `8000x8000` remain rejected.
+- [x] PDF, WebP, DOCX, XLSX, and PPTX uploads remain accepted.
+- [x] Faculty editor uploads still force scope and reject missing scope.
+- [x] Full regression passes.
+
+Completion evidence captured 2026-06-15:
+
+| Evidence | Result |
+| --- | --- |
+| Environment check | `php -r "echo extension_loaded('gd') ? 'gd loaded' : 'gd missing';"` returned `gd loaded`, so dimension tests are valid in this environment. |
+| Pre-extraction characterization | `php artisan test --filter=Media` passed: 36 tests, 88 assertions. |
+| PHP syntax | `php -l` passed for `MediaFileValidator.php`, `MediaService.php`, and `AppServiceProvider.php`. |
+| Post-extraction media suite | `php artisan test --filter=Media` passed: 36 tests, 88 assertions. |
+| Architecture guard | `php artisan test tests/Feature/ArchitectureGuardTest.php` passed: 5 tests, 6 assertions. |
+| Route boot | `php artisan route:list` passed: 67 routes listed. |
+| Full regression | `php artisan test` passed: 3404 tests, 15187 assertions, 175.12s. |
+
+Verification:
+
+```bash
+php artisan test --filter=Media
+php artisan test tests/Feature/ArchitectureGuardTest.php
+php artisan route:list
+php artisan test
+```
+
+---
+
 ## 14. Workstream F: Admin And Filament Boundaries
 
 ### F01: Keep Filament Workflow Logic Service-Owned

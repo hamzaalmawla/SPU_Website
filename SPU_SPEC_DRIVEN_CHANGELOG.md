@@ -8,6 +8,44 @@ It is intentionally scoped to the current homepage/admin foundation and does not
 
 ## 2026-06-15
 
+### E05: Media File Validator Extraction
+
+Status: Completed
+
+Type: Service-layer validator extraction with upload hardening characterization
+
+Changed files:
+
+| File | Change |
+| --- | --- |
+| `app/Services/MediaFileValidator.php` | Added internal validator for MIME allow-list, extension matching, file size, and image dimension limits. |
+| `app/Services/MediaService.php` | Delegated file validation and primary extension resolution to the validator while retaining upload workflow ownership. |
+| `app/Providers/AppServiceProvider.php` | Registered `MediaFileValidator` as an internal singleton collaborator. |
+| `tests/Unit/MediaServiceTest.php` | Added characterization for extension mismatch, image dimensions, Office document allow-listing, and faculty editor missing-scope rejection. |
+| `SPU_SPEC_DRIVEN_EXECUTION_TODO.md` | Added and completed E05 with implementation and verification evidence. |
+| `SPU_SPEC_DRIVEN_CHANGELOG.md` | Added this E05 changelog entry. |
+
+Architecture boundary:
+
+| Boundary | Result |
+| --- | --- |
+| Public service contracts | Unchanged. |
+| Upload workflow ownership | Authorization, storage, DB persistence, faculty scoping, audit logging, and DTO mapping remain in `MediaService`. |
+| Extracted responsibility | Security-sensitive file validation only. |
+| Out-of-scope modules | No full-site module implementation added. |
+
+Completion evidence:
+
+| Check | Result |
+| --- | --- |
+| Environment check | GD extension loaded, allowing image dimension characterization. |
+| Pre-extraction media suite | `php artisan test --filter=Media` passed: 36 tests, 88 assertions. |
+| PHP syntax | `php -l` passed for `MediaFileValidator.php`, `MediaService.php`, and `AppServiceProvider.php`. |
+| Post-extraction media suite | `php artisan test --filter=Media` passed: 36 tests, 88 assertions. |
+| Architecture guard | `php artisan test tests/Feature/ArchitectureGuardTest.php` passed: 5 tests, 6 assertions. |
+| Route boot | `php artisan route:list` passed: 67 routes listed. |
+| Full regression | `php artisan test` passed: 3404 tests, 15187 assertions, 175.12s. |
+
 ### E04: Page Publishability Validator Extraction
 
 Status: Completed
