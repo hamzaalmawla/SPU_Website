@@ -78,7 +78,7 @@ Latest verified state from this session:
 
 | Verification | Result |
 | --- | --- |
-| `php artisan test` | Passing, 3415 tests and 15513 assertions on full run. |
+| `php artisan test` | Passing, 3418 tests and 15567 assertions on full run. |
 | `npm run build` | Passing with no unexpected warnings after FontAwesome runtime removal. |
 | `php artisan route:list` | Bootstraps routes successfully. |
 | `php artisan test --filter=PageService` | Passing, publish validation covered. |
@@ -1127,7 +1127,7 @@ php artisan test --filter=Media
 
 ### G03: Maintain Preview Token Confidentiality
 
-Status: Ready
+Status: Done
 
 Priority: High
 
@@ -1135,16 +1135,31 @@ Goal: Ensure preview tokens remain protected and draft content does not leak pub
 
 Implementation steps:
 
-- [ ] Keep preview tokens hashed or HMAC-protected at rest.
-- [ ] Invalidate page preview tokens after draft save/publish where current behavior requires it.
-- [ ] Invalidate homepage preview tokens after publish/unpublish where current behavior requires it.
-- [ ] Keep preview cache bypass rules intact.
+- [x] Keep preview tokens hashed or HMAC-protected at rest.
+- [x] Invalidate page preview tokens after draft save/publish where current behavior requires it.
+- [x] Invalidate homepage preview tokens after publish/unpublish where current behavior requires it.
+- [x] Keep preview cache bypass rules intact.
 
 Acceptance criteria:
 
-- [ ] Draft content is not public without preview token.
-- [ ] Preview token remains bound to original snapshot.
-- [ ] Token invalidation behavior remains tested.
+- [x] Draft content is not public without preview token.
+- [x] Preview token remains bound to original snapshot.
+- [x] Token invalidation behavior remains tested.
+
+Completion evidence captured 2026-06-15:
+
+| Evidence | Result |
+| --- | --- |
+| Token storage hardening | `PreviewTokenStore` continues to store only HMAC token hashes and now rejects malformed raw tokens before resolve, validate, or invalidate lookups. |
+| Malformed token rejection | Added `test_malformed_preview_tokens_are_rejected` for short, wrong-length, and invalid-character tokens. |
+| Page token invalidation | Added coverage proving page preview tokens are invalidated after page draft save and page publish operations. |
+| Homepage token invalidation | Extended homepage unpublish coverage to prove homepage preview tokens are invalidated and removed. Existing publish coverage remains in place. |
+| Preview cache bypass | `php artisan test tests/Feature/MiddlewarePipelineTest.php` passed: 13 tests, 75 assertions. |
+| Preview-focused suite | `php artisan test --filter=Preview` passed: 18 tests, 96 assertions. |
+| Homepage workflow | `php artisan test tests/Feature/HomepageCmsWorkflowTest.php` passed: 20 tests, 128 assertions. |
+| Page service integration | `php artisan test tests/Feature/Integration/PageServiceIntegrationTest.php` passed: 20 tests, 82 assertions. |
+| Public runtime | `php artisan test tests/Feature/PublicRuntimeTest.php` passed: 14 tests, 79 assertions. |
+| Full regression | `php artisan test` passed: 3418 tests, 15567 assertions, 173.08s. |
 
 Verification:
 

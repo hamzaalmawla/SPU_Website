@@ -206,6 +206,20 @@ class HomepageCmsWorkflowTest extends TestCase
         ]);
     }
 
+    public function test_malformed_preview_tokens_are_rejected(): void
+    {
+        $preview = $this->previewService()->createToken('homepage', null, 'en', $this->author()->id);
+
+        foreach (['short-token', str_repeat('a', 63), str_repeat('a', 65), str_repeat('!', 64)] as $malformedToken) {
+            $this->assertFalse($this->previewService()->validateToken($malformedToken));
+            $this->assertNull($this->previewService()->resolveToken($malformedToken));
+            $this->assertFalse($this->previewService()->invalidateToken($malformedToken));
+        }
+
+        $this->get('/en/preview?token=short-token')->assertNotFound();
+        $this->assertTrue($this->previewService()->validateToken($preview->token));
+    }
+
     public function test_homepage_preview_token_creation_requires_homepage_management(): void
     {
         $facultyEditor = User::factory()->create([
@@ -484,10 +498,16 @@ class HomepageCmsWorkflowTest extends TestCase
 
     public function test_unpublish_removes_homepage_from_public_payload_and_logs_audit(): void
     {
+        $preview = $this->previewService()->createToken('homepage', null, 'en', $this->author()->id);
+
+        $this->assertTrue($this->previewService()->validateToken($preview->token));
         $this->assertTrue($this->publishingService()->unpublish('homepage', null, $this->author()->id));
+        $this->assertFalse($this->previewService()->validateToken($preview->token));
+        $this->assertFalse($this->storedPreviewTokenExists($preview->token));
         $this->assertSame([], $this->publicSectionKeys('en'));
         $this->get('/en')->assertNotFound();
         $this->assertDatabaseHas('audit_logs', ['action' => 'homepage.unpublish']);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'preview.invalidated']);
     }
 
     public function test_publish_after_unpublish_reenables_public_homepage(): void

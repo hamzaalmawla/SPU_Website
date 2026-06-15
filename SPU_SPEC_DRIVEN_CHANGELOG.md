@@ -8,6 +8,34 @@ It is intentionally scoped to the current homepage/admin foundation and does not
 
 ## 2026-06-15
 
+### G03: Preview Token Confidentiality Hardening
+
+Status: Completed
+
+Type: Security hardening with preview invalidation coverage
+
+Changed files:
+
+| File | Change |
+| --- | --- |
+| `app/Services/PreviewTokenStore.php` | Added raw-token shape validation before resolve, validate, or invalidate lookups; token generation now uses a named 64-character length constant. |
+| `tests/Feature/HomepageCmsWorkflowTest.php` | Added malformed token rejection coverage and extended homepage unpublish coverage to prove preview token invalidation. |
+| `tests/Feature/Integration/PageServiceIntegrationTest.php` | Added page preview token invalidation coverage for draft save and publish operations. |
+| `SPU_SPEC_DRIVEN_EXECUTION_TODO.md` | Marked G03 complete with targeted verification evidence. |
+| `SPU_SPEC_DRIVEN_CHANGELOG.md` | Added this G03 changelog entry. |
+
+Completion evidence:
+
+| Check | Result |
+| --- | --- |
+| Syntax | `php -l app/Services/PreviewTokenStore.php`, `php -l tests/Feature/HomepageCmsWorkflowTest.php`, and `php -l tests/Feature/Integration/PageServiceIntegrationTest.php` passed. |
+| Preview-focused suite | `php artisan test --filter=Preview` passed: 18 tests, 96 assertions. |
+| Homepage workflow | `php artisan test tests/Feature/HomepageCmsWorkflowTest.php` passed: 20 tests, 128 assertions. |
+| Page service integration | `php artisan test tests/Feature/Integration/PageServiceIntegrationTest.php` passed: 20 tests, 82 assertions. |
+| Public runtime | `php artisan test tests/Feature/PublicRuntimeTest.php` passed: 14 tests, 79 assertions. |
+| Middleware pipeline | `php artisan test tests/Feature/MiddlewarePipelineTest.php` passed: 13 tests, 75 assertions. |
+| Full regression | `php artisan test` passed: 3418 tests, 15567 assertions, 173.08s. |
+
 ### D01: Page Publish Safety Characterization
 
 Status: Completed

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Integration;
 
 use App\Contracts\PageServiceInterface;
+use App\Contracts\PreviewServiceInterface;
 use App\DTOs\PageDraftDataDTO;
 use App\DTOs\PageDTO;
 use App\DTOs\PageMetadataDTO;
@@ -13,6 +14,7 @@ use App\DTOs\PageShellDataDTO;
 use App\DTOs\PageTranslationDTO;
 use App\Models\AuditLog;
 use App\Models\Page;
+use App\Models\PreviewToken;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -381,6 +383,44 @@ class PageServiceIntegrationTest extends TestCase
         $this->assertSame('About Us', $reloaded->englishTranslation->title);
     }
 
+    public function test_save_draft_invalidates_existing_page_preview_token(): void
+    {
+        $page = $this->createPageWithTranslations();
+        $preview = $this->previewService()->createToken('page', $page->id, 'en', $this->author()->id);
+
+        $this->assertTrue($this->previewService()->validateToken($preview->token));
+
+        $this->pageService()->saveDraft(
+            $page->id,
+            $this->draftPayloadForPage(
+                $page,
+                englishTranslation: new PageTranslationDTO(title: 'Updated Draft Title'),
+            ),
+            $this->author()->id,
+        );
+
+        $this->assertFalse($this->previewService()->validateToken($preview->token));
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'preview.invalidated',
+            'entity_type' => PreviewToken::class,
+        ]);
+    }
+
+    public function test_publish_invalidates_existing_page_preview_token(): void
+    {
+        $page = $this->createPageWithTranslations();
+        $preview = $this->previewService()->createToken('page', $page->id, 'en', $this->author()->id);
+
+        $this->assertTrue($this->previewService()->validateToken($preview->token));
+        $this->assertTrue($this->pageService()->publish($page->id, $this->author()->id));
+
+        $this->assertFalse($this->previewService()->validateToken($preview->token));
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'preview.invalidated',
+            'entity_type' => PreviewToken::class,
+        ]);
+    }
+
     public function test_failed_draft_publish_keeps_existing_public_page_and_does_not_audit_success(): void
     {
         $page = $this->createPageWithTranslations();
@@ -480,6 +520,11 @@ class PageServiceIntegrationTest extends TestCase
     private function pageService(): PageServiceInterface
     {
         return app(PageServiceInterface::class);
+    }
+
+    private function previewService(): PreviewServiceInterface
+    {
+        return app(PreviewServiceInterface::class);
     }
 
     private function author(): User

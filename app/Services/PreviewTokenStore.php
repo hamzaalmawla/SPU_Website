@@ -20,6 +20,8 @@ final class PreviewTokenStore
 {
     private const EDITABLE_STATUSES = ['draft', 'scheduled'];
 
+    private const RAW_TOKEN_LENGTH = 64;
+
     /**
      * Create a new preview token record with a hashed token value.
      *
@@ -36,7 +38,7 @@ final class PreviewTokenStore
         $this->assertSupportedDevice($device);
         $this->assertSupportedLocale($locale);
 
-        $rawToken = Str::random(64);
+        $rawToken = Str::random(self::RAW_TOKEN_LENGTH);
 
         $token = PreviewToken::query()->create([
             'token_hash' => $this->hashToken($rawToken),
@@ -57,6 +59,10 @@ final class PreviewTokenStore
      */
     public function resolve(string $rawToken): ?PreviewToken
     {
+        if (! $this->isWellFormedRawToken($rawToken)) {
+            return null;
+        }
+
         $previewToken = PreviewToken::query()
             ->where('token_hash', $this->hashToken($rawToken))
             ->where('expires_at', '>', now())
@@ -70,6 +76,10 @@ final class PreviewTokenStore
      */
     public function validate(string $rawToken): bool
     {
+        if (! $this->isWellFormedRawToken($rawToken)) {
+            return false;
+        }
+
         return PreviewToken::query()
             ->where('token_hash', $this->hashToken($rawToken))
             ->where('expires_at', '>', now())
@@ -81,6 +91,10 @@ final class PreviewTokenStore
      */
     public function invalidate(string $rawToken): bool
     {
+        if (! $this->isWellFormedRawToken($rawToken)) {
+            return false;
+        }
+
         return PreviewToken::query()
             ->where('token_hash', $this->hashToken($rawToken))
             ->delete() > 0;
@@ -104,6 +118,12 @@ final class PreviewTokenStore
     public function hashToken(string $token): string
     {
         return hash_hmac('sha256', $token, (string) config('app.key'));
+    }
+
+    private function isWellFormedRawToken(string $rawToken): bool
+    {
+        return strlen($rawToken) === self::RAW_TOKEN_LENGTH
+            && preg_match('/\A[A-Za-z0-9]+\z/', $rawToken) === 1;
     }
 
     // ------------------------------------------------------------------
