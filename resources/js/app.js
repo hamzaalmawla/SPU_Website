@@ -8,52 +8,52 @@ import { faFacebookF, faInstagram, faTelegramPlane, faYoutube } from '@fortaweso
 config.autoAddCss = false;
 library.add(faArrowLeft, faArrowRight, faBars, faCheck, faChevronDown, faChevronLeft, faChevronRight, faEnvelope, faFacebookF, faGlobe, faHandshake, faHistory, faInstagram, faMapMarkerAlt, faPhoneAlt, faSitemap, faTelegramPlane, faTimes, faUniversity, faUserGraduate, faUsers, faYoutube);
 
-import { createHeroSlider }     from './alpine/heroSlider.js';
-import { createStatsCounter }   from './alpine/statsCounter.js';
-import { createFacultiesSlider } from './alpine/facultiesSlider.js';
-import { createHonorPanel }     from './alpine/honorPanel.js';
-import { createResearchSlider } from './alpine/researchSlider.js';
-import { createCalendarApp }    from './alpine/calendarApp.js';
 import { createMobileNav }      from './alpine/mobileNav.js';
 import { createAboutNavigation } from './alpine/aboutNavigation.js';
 import { initRevealSections }   from './alpine/scrollReveal.js';
 
-function createPathSlider() {
-    return {
-        slidePaths(direction) {
-            const track = this.$refs.pathsTrack;
-            if (!track) return;
-
-            const firstCard = track.querySelector('.path-card');
-            const cardWidth = firstCard ? firstCard.getBoundingClientRect().width : 292;
-            const distance = Math.round(cardWidth + 24);
-
-            track.scrollBy({
-                left: direction === 'right' ? distance : -distance,
-                behavior: 'smooth',
-            });
-        },
-    };
-}
-
 // Alpine components (x-data="name()")
-Alpine.data('heroSlider',      createHeroSlider);
-Alpine.data('statsCounter',    createStatsCounter);
-Alpine.data('facultiesSlider', createFacultiesSlider);
-Alpine.data('honorPanel',      createHonorPanel);
-Alpine.data('researchSlider',  createResearchSlider);
-Alpine.data('calendarApp',     createCalendarApp);
 Alpine.data('mobileNav',       createMobileNav);
 Alpine.data('aboutNavigation', createAboutNavigation);
-Alpine.data('pathSlider',      createPathSlider);
 
 window.Alpine = Alpine;
-Alpine.start();
 
-// Init reveal after Alpine has rendered the DOM
-requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-        initRevealSections();
-        dom.watch();
+function whenDomReady() {
+    if (document.readyState !== 'loading') {
+        return Promise.resolve();
+    }
+
+    return new Promise((resolve) => {
+        document.addEventListener('DOMContentLoaded', resolve, { once: true });
     });
+}
+
+async function registerPageComponents() {
+    if (!document.querySelector('[data-homepage]')) {
+        return;
+    }
+
+    const { registerHomepageComponents } = await import('./homepage.js');
+    registerHomepageComponents(Alpine);
+}
+
+function initAfterAlpineStart() {
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            initRevealSections();
+            dom.watch();
+        });
+    });
+}
+
+async function bootAlpine() {
+    await whenDomReady();
+    await registerPageComponents();
+
+    Alpine.start();
+    initAfterAlpineStart();
+}
+
+bootAlpine().catch((error) => {
+    console.error('Failed to initialize public Alpine components.', error);
 });

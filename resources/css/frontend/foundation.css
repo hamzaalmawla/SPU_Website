@@ -18,7 +18,7 @@
  */
 @font-face {
     font-family: 'HacenTunisia';
-    src: url("/fonts/Hacen Tunisia Regular.ttf") format('truetype');
+    src: url("@fonts/Hacen Tunisia Regular.ttf") format('truetype');
     font-weight: normal;
     font-style: normal;
     font-display: swap;
@@ -27,7 +27,7 @@
 
 @font-face {
     font-family: 'HacenTunisia';
-    src: url("/fonts/Hacen Tunisia Bold Regular.ttf") format('truetype');
+    src: url("@fonts/Hacen Tunisia Bold Regular.ttf") format('truetype');
     font-weight: bold;
     font-style: normal;
     font-display: swap;
@@ -134,4 +134,3 @@ body {
     font-feature-settings: inherit;
     text-rendering: inherit;
 }
-

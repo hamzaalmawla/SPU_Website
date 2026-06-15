@@ -37,6 +37,7 @@
         .brand-mark img { width: 4rem; height: 4rem; object-fit: contain; }
         .brand-kicker { margin: 0; color: #f4d58c; font-size: .83rem; letter-spacing: .12em; text-transform: uppercase; }
         .brand-name { margin: .15rem 0 0; font-size: 1.05rem; font-weight: 800; }
+        .brand-name-native { display: block; margin-top: .18rem; font-size: .92rem; font-weight: 700; }
         .brand-panel h1 { margin: 2.4rem 0 1rem; font-size: clamp(2.1rem, 5vw, 4.7rem); line-height: 1; letter-spacing: -.045em; }
         [dir="rtl"] .brand-panel h1 { letter-spacing: 0; line-height: 1.12; }
         .brand-panel p { max-width: 34rem; margin: 0; color: rgba(255, 255, 255, .78); font-size: 1.05rem; line-height: 1.8; }
@@ -71,7 +72,12 @@
                 <img src="{{ asset('images/logo-spu.png') }}" alt="{{ __('admin.auth.logo_alt') }}">
                 <div>
                     <p class="brand-kicker">SPU CMS</p>
-                    <p class="brand-name">{{ __('admin.auth.university_name') }}</p>
+                    <p class="brand-name">
+                        {{ __('admin.auth.university_name') }}
+                        @if ($locale !== 'ar')
+                            <span class="brand-name-native" lang="ar" dir="rtl">الجامعة السورية الخاصة</span>
+                        @endif
+                    </p>
                 </div>
             </div>
             <h1>{{ __('admin.auth.hero_title') }}</h1>

@@ -31,7 +31,7 @@
     min-height: 30px;
     border-radius: 6px;
     border: 1px solid rgba(32, 39, 89, 0.14);
-    background: #ffffff url("/images/icon-chevron-down-outline.svg") no-repeat right 12px center / 9px 9px;
+    background: #ffffff url("@images/icon-chevron-down-outline.svg") no-repeat right 12px center / 9px 9px;
     appearance: none;
     padding: 0 32px 0 14px;
     color: #202759;

@@ -8,7 +8,7 @@
     "require": {
         "php": "^8.2",
         "ezyang/htmlpurifier": "^4.19",
-        "filament/filament": "3.3",
+        "filament/filament": "^3.3",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "pragmarx/google2fa-laravel": "^3.0",

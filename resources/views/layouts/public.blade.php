@@ -23,26 +23,54 @@
             <link rel="alternate" hreflang="{{ $hreflang['locale'] }}" href="{{ $hreflang['url'] }}">
         @endforeach
         <link rel="preconnect" href="https://fonts.bunny.net">
+        @php
+            $publicViteJsEntries = ['resources/js/app.js'];
+            $requestedPublicViteJsEntries = trim($__env->yieldContent('publicViteJsEntries'));
+
+            if ($requestedPublicViteJsEntries !== '') {
+                $decodedPublicViteJsEntries = json_decode($requestedPublicViteJsEntries, true);
+
+                if (is_array($decodedPublicViteJsEntries)) {
+                    $publicViteJsEntries = array_values(array_filter(
+                        $decodedPublicViteJsEntries,
+                        static fn (mixed $entry): bool => is_string($entry) && $entry !== '',
+                    ));
+                }
+            }
+
+            if (! in_array('resources/js/app.js', $publicViteJsEntries, true)) {
+                $publicViteJsEntries[] = 'resources/js/app.js';
+            }
+
+            $publicViteEntries = array_merge(['resources/css/app.css'], $publicViteJsEntries);
+        @endphp
         @if (file_exists(public_path('hot')))
-            @vite(['resources/css/app.css', 'resources/js/app.js'])
+            @vite($publicViteEntries)
         @elseif (file_exists(public_path('build/manifest.json')))
             @php($viteManifest = json_decode((string) file_get_contents(public_path('build/manifest.json')), true))
             @php($cssEntry = $viteManifest['resources/css/app.css'] ?? null)
-            @php($jsEntry = $viteManifest['resources/js/app.js'] ?? null)
+            @php($loadedViteCss = [])
 
             @if (is_array($cssEntry) && ! empty($cssEntry['file']))
                 <link rel="stylesheet" href="{{ asset('build/'.$cssEntry['file']) }}">
+                @php($loadedViteCss[] = $cssEntry['file'])
             @endif
 
-            @if (is_array($jsEntry))
-                @foreach (($jsEntry['css'] ?? []) as $cssFile)
-                    <link rel="stylesheet" href="{{ asset('build/'.$cssFile) }}">
-                @endforeach
+            @foreach ($publicViteJsEntries as $publicViteJsEntry)
+                @php($jsEntry = $viteManifest[$publicViteJsEntry] ?? null)
 
-                @if (! empty($jsEntry['file']))
-                    <script type="module" src="{{ asset('build/'.$jsEntry['file']) }}"></script>
+                @if (is_array($jsEntry))
+                    @foreach (($jsEntry['css'] ?? []) as $cssFile)
+                        @continue(in_array($cssFile, $loadedViteCss, true))
+                        <link rel="stylesheet" href="{{ asset('build/'.$cssFile) }}">
+                        @php($loadedViteCss[] = $cssFile)
+                    @endforeach
+
+                    @if (! empty($jsEntry['file']))
+                        <script type="module" src="{{ asset('build/'.$jsEntry['file']) }}"></script>
+                    @endif
                 @endif
-            @endif
+            @endforeach
         @endif
     </head>
     <body class="min-h-screen antialiased font-hacen">

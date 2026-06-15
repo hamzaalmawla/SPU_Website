@@ -12,7 +12,7 @@
         );
     @endphp
 
-    <div>
+    <div data-homepage>
         @foreach ($homepageSections as $section)
             @continue($section->key === 'footer')
             @continue(! $section->isEnabled)
