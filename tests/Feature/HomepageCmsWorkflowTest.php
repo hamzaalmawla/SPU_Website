@@ -19,6 +19,7 @@ use App\Models\PreviewToken;
 use App\Models\User;
 use App\Support\HomepagePayloadMapper;
 use Database\Seeders\DatabaseSeeder;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Tests\TestCase;
@@ -187,6 +188,34 @@ class HomepageCmsWorkflowTest extends TestCase
             ->assertOk()
             ->assertSee('Snapshot Preview Hero')
             ->assertDontSee('Later Homepage Draft');
+    }
+
+    public function test_preview_token_can_be_invalidated_and_cannot_be_reused(): void
+    {
+        $preview = $this->previewService()->createToken('homepage', null, 'en', $this->author()->id);
+
+        $this->assertTrue($this->previewService()->validateToken($preview->token));
+        $this->assertTrue($this->previewService()->invalidateToken($preview->token));
+        $this->assertFalse($this->previewService()->validateToken($preview->token));
+
+        $this->get($preview->previewUrl)->assertNotFound();
+        $this->assertFalse($this->storedPreviewTokenExists($preview->token));
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'preview.invalidated',
+            'entity_type' => PreviewToken::class,
+        ]);
+    }
+
+    public function test_homepage_preview_token_creation_requires_homepage_management(): void
+    {
+        $facultyEditor = User::factory()->create([
+            'role_slug' => 'faculty_editor',
+            'faculty_scope_slug' => 'medicine',
+        ]);
+
+        $this->expectException(AuthorizationException::class);
+
+        $this->previewService()->createToken('homepage', null, 'en', (int) $facultyEditor->getKey());
     }
 
     public function test_preview_token_creation_rejects_unsupported_locale(): void
@@ -379,7 +408,14 @@ class HomepageCmsWorkflowTest extends TestCase
             $this->author()->id,
         );
 
+        $preview = $this->previewService()->createToken('homepage', null, 'en', $this->author()->id);
+
+        $this->assertTrue($this->previewService()->validateToken($preview->token));
+
         $this->assertTrue($this->publishingService()->publish($draft->id, $this->author()->id));
+
+        $this->assertFalse($this->previewService()->validateToken($preview->token));
+        $this->assertFalse($this->storedPreviewTokenExists($preview->token));
 
         Auth::guard('web')->logout();
 
@@ -390,6 +426,7 @@ class HomepageCmsWorkflowTest extends TestCase
 
         $this->assertSame('Published Homepage Hero', $this->heroTitleFromPublicHomepage('en'));
         $this->assertDatabaseHas('audit_logs', ['action' => 'homepage.publish']);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'preview.invalidated']);
     }
 
     public function test_publish_sanitizes_homepage_payload_strings_recursively(): void
@@ -542,6 +579,13 @@ class HomepageCmsWorkflowTest extends TestCase
             static fn (HomepageSectionDTO $section): string => $section->key,
             $this->homepageService()->getPublicHomepage($locale)->sections,
         ));
+    }
+
+    private function storedPreviewTokenExists(string $token): bool
+    {
+        return PreviewToken::query()
+            ->where('token_hash', hash_hmac('sha256', $token, (string) config('app.key')))
+            ->exists();
     }
 
     private function validHeroPayload(string $locale, string $title): HomepageSectionDataDTO

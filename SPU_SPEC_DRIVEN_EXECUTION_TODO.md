@@ -904,6 +904,75 @@ php artisan test
 
 ---
 
+### E06: Extract Homepage Preview Assembler
+
+Status: Done
+
+Priority: High
+
+Goal: Move homepage preview draft discovery, snapshot fallback, and section assembly out of `PreviewService` while keeping token orchestration and navigation payload assembly in `PreviewService`.
+
+Why this matters: E01 identified homepage preview assembly as the next medium-risk boundary. The behavior is preview/security adjacent because draft content must stay tokenized, snapshot-bound, and excluded from public cache.
+
+Implementation steps:
+
+- [x] Add characterization for manual preview token invalidation and reuse rejection.
+- [x] Add characterization that homepage publish invalidates existing homepage preview tokens.
+- [x] Add characterization that homepage preview token creation requires homepage management permission.
+- [x] Add characterization that faculty editors can create page preview tokens only for scoped pages.
+- [x] Extract homepage preview assembly into a service-layer collaborator.
+- [x] Keep `PreviewServiceInterface` unchanged.
+- [x] Register the collaborator contract in the service container.
+
+Selected extraction:
+
+| Extraction | Result |
+| --- | --- |
+| `HomepagePreviewAssemblerInterface` | Added a contract returning `HomepageDTO` from a locale and optional token snapshot. |
+| `HomepagePreviewAssembler` | Owns homepage preview draft lookup, snapshot interpretation, public fallback loading, fixed-key mapping, and locale direction. |
+| `PreviewService` | Keeps token creation, resolution, validation, invalidation, authorization, page preview delegation, and navigation payload assembly. |
+| `AppServiceProvider` | Binds the new assembler contract to the service implementation. |
+| Public contracts | `PreviewServiceInterface` remains unchanged. |
+
+Acceptance criteria:
+
+- [x] Homepage preview still hydrates draft payloads and locale-specific payloads.
+- [x] Homepage preview remains bound to the original token snapshot.
+- [x] Manual invalidation deletes the token and prevents preview reuse.
+- [x] Homepage publish invalidates existing homepage preview tokens.
+- [x] Faculty editors cannot create homepage preview tokens and remain scoped for page previews.
+- [x] Architecture guard passes with the new contract binding.
+- [x] Full regression passes.
+
+Completion evidence captured 2026-06-15:
+
+| Evidence | Result |
+| --- | --- |
+| Pre-extraction homepage workflow | `php artisan test tests/Feature/HomepageCmsWorkflowTest.php` passed: 19 tests, 110 assertions. |
+| Pre-extraction public runtime | `php artisan test tests/Feature/PublicRuntimeTest.php` passed: 14 tests, 79 assertions. |
+| PHP syntax | `php -l` passed for `HomepagePreviewAssemblerInterface.php`, `HomepagePreviewAssembler.php`, `PreviewService.php`, and `AppServiceProvider.php`. |
+| Post-extraction homepage workflow | `php artisan test tests/Feature/HomepageCmsWorkflowTest.php` passed: 19 tests, 110 assertions. |
+| Post-extraction public runtime | `php artisan test tests/Feature/PublicRuntimeTest.php` passed: 14 tests, 79 assertions. |
+| Architecture guard | `php artisan test tests/Feature/ArchitectureGuardTest.php` passed: 5 tests, 6 assertions. |
+| Preview banner regression | `php artisan test tests/Feature/HomepageBlade/PreviewBannerTest.php` passed: 2 tests, 2 assertions. |
+| Preview route check | `php artisan route:list --path=preview` listed the preview route. |
+| Homepage admin route check | `php artisan route:list --path=admin/manage-homepage` listed the manage-homepage route. |
+| Route boot | `php artisan route:list` passed: 67 routes listed. |
+| Full regression | `php artisan test` passed: 3407 tests, 15271 assertions, 152.82s. |
+
+Verification:
+
+```bash
+php artisan test tests/Feature/HomepageCmsWorkflowTest.php
+php artisan test tests/Feature/PublicRuntimeTest.php
+php artisan test tests/Feature/ArchitectureGuardTest.php
+php artisan test tests/Feature/HomepageBlade/PreviewBannerTest.php
+php artisan route:list
+php artisan test
+```
+
+---
+
 ## 14. Workstream F: Admin And Filament Boundaries
 
 ### F01: Keep Filament Workflow Logic Service-Owned

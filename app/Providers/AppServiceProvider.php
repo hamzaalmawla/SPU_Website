@@ -11,6 +11,7 @@ use App\Contracts\CacheServiceInterface;
 use App\Contracts\ContinuityServiceInterface;
 use App\Contracts\ContactPageServiceInterface;
 use App\Contracts\EServicesPageServiceInterface;
+use App\Contracts\HomepagePreviewAssemblerInterface;
 use App\Contracts\HomepagePublishingServiceInterface;
 use App\Contracts\HomepageSectionServiceInterface;
 use App\Contracts\MediaServiceInterface;
@@ -51,6 +52,7 @@ use App\Services\ContinuityService;
 use App\Services\ContactPageService;
 use App\Services\EServicesPageService;
 use App\Services\HomepageDraftReader;
+use App\Services\HomepagePreviewAssembler;
 use App\Services\HomepagePublishingService;
 use App\Services\HomepageSectionService;
 use App\Services\HomepageSectionValidator;
@@ -226,6 +228,7 @@ class AppServiceProvider extends ServiceProvider
             SlugServiceInterface::class => SlugService::class,
             MenuServiceInterface::class => MenuService::class,
             SeoMetadataServiceInterface::class => SeoMetadataService::class,
+            HomepagePreviewAssemblerInterface::class => HomepagePreviewAssembler::class,
             HomepageSectionServiceInterface::class => HomepageSectionService::class,
             HomepagePublishingServiceInterface::class => HomepagePublishingService::class,
             PreviewServiceInterface::class => PreviewService::class,

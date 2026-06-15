@@ -12,6 +12,7 @@ use App\Models\PageSeoMeta;
 use App\Models\PageTranslation;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -309,6 +310,39 @@ class PublicRuntimeTest extends TestCase
             ->assertOk()
             ->assertSee('Original preview body')
             ->assertDontSee('Newer preview body');
+    }
+
+    public function test_faculty_editor_can_create_preview_tokens_only_for_scoped_pages(): void
+    {
+        $matchingPage = $this->createPage('medicine-preview-shell', [
+            'faculty_scope_slug' => 'medicine',
+        ]);
+        $otherPage = $this->createPage('pharmacy-preview-shell', [
+            'faculty_scope_slug' => 'pharmacy',
+        ]);
+        $facultyEditor = User::factory()->create([
+            'role_slug' => 'faculty_editor',
+            'faculty_scope_slug' => 'medicine',
+        ]);
+
+        $preview = app(PreviewServiceInterface::class)->createToken(
+            'page',
+            (int) $matchingPage->getKey(),
+            'en',
+            (int) $facultyEditor->getKey(),
+        );
+
+        $this->assertSame('page', $preview->targetType);
+        $this->assertSame((int) $matchingPage->getKey(), $preview->targetId);
+
+        $this->expectException(AuthorizationException::class);
+
+        app(PreviewServiceInterface::class)->createToken(
+            'page',
+            (int) $otherPage->getKey(),
+            'en',
+            (int) $facultyEditor->getKey(),
+        );
     }
 
     public function test_homepage_preview_hydrates_draft_section_payloads(): void

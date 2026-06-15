@@ -8,6 +8,48 @@ It is intentionally scoped to the current homepage/admin foundation and does not
 
 ## 2026-06-15
 
+### E06: Homepage Preview Assembler Extraction
+
+Status: Completed
+
+Type: Service-layer assembler extraction with preview invalidation and authorization characterization
+
+Changed files:
+
+| File | Change |
+| --- | --- |
+| `app/Contracts/HomepagePreviewAssemblerInterface.php` | Added a contract for assembling homepage preview DTO payloads from a locale and optional token snapshot. |
+| `app/Services/HomepagePreviewAssembler.php` | Added service-layer assembler for homepage draft lookup, snapshot fallback, public fallback loading, section mapping, and direction resolution. |
+| `app/Services/PreviewService.php` | Delegated homepage preview assembly to the new contract while retaining token lifecycle, authorization, page preview delegation, and navigation assembly. |
+| `app/Providers/AppServiceProvider.php` | Bound `HomepagePreviewAssemblerInterface` to `HomepagePreviewAssembler`. |
+| `tests/Feature/HomepageCmsWorkflowTest.php` | Added manual preview invalidation, homepage publish invalidation, and homepage preview authorization characterization. |
+| `tests/Feature/PublicRuntimeTest.php` | Added faculty editor scoped page preview characterization. |
+| `SPU_SPEC_DRIVEN_EXECUTION_TODO.md` | Added and completed E06 with implementation and verification evidence. |
+| `SPU_SPEC_DRIVEN_CHANGELOG.md` | Added this E06 changelog entry. |
+
+Architecture boundary:
+
+| Boundary | Result |
+| --- | --- |
+| Public preview contract | `PreviewServiceInterface` unchanged. |
+| Preview workflow ownership | Token creation, resolution, validation, invalidation, authorization, page preview delegation, and navigation shell assembly remain in `PreviewService`. |
+| Extracted responsibility | Homepage-only preview draft lookup, snapshot interpretation, fallback loading, section mapping, and locale direction. |
+| Out-of-scope modules | No full-site module implementation added. |
+
+Completion evidence:
+
+| Check | Result |
+| --- | --- |
+| Pre-extraction homepage workflow | `php artisan test tests/Feature/HomepageCmsWorkflowTest.php` passed: 19 tests, 110 assertions. |
+| Pre-extraction public runtime | `php artisan test tests/Feature/PublicRuntimeTest.php` passed: 14 tests, 79 assertions. |
+| PHP syntax | `php -l` passed for `HomepagePreviewAssemblerInterface.php`, `HomepagePreviewAssembler.php`, `PreviewService.php`, and `AppServiceProvider.php`. |
+| Post-extraction homepage workflow | `php artisan test tests/Feature/HomepageCmsWorkflowTest.php` passed: 19 tests, 110 assertions. |
+| Post-extraction public runtime | `php artisan test tests/Feature/PublicRuntimeTest.php` passed: 14 tests, 79 assertions. |
+| Architecture guard | `php artisan test tests/Feature/ArchitectureGuardTest.php` passed: 5 tests, 6 assertions. |
+| Preview banner regression | `php artisan test tests/Feature/HomepageBlade/PreviewBannerTest.php` passed: 2 tests, 2 assertions. |
+| Route checks | `php artisan route:list --path=preview`, `php artisan route:list --path=admin/manage-homepage`, and `php artisan route:list` passed. |
+| Full regression | `php artisan test` passed: 3407 tests, 15271 assertions, 152.82s. |
+
 ### E05: Media File Validator Extraction
 
 Status: Completed

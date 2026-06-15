@@ -5,18 +5,15 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Contracts\AuditServiceInterface;
-use App\Contracts\HomepageSectionServiceInterface;
+use App\Contracts\HomepagePreviewAssemblerInterface;
 use App\Contracts\NavigationServiceInterface;
 use App\Contracts\PageServiceInterface;
 use App\Contracts\PreviewServiceInterface;
-use App\DTOs\HomepageDTO;
 use App\DTOs\PreviewDTO;
 use App\DTOs\PreviewPayloadDTO;
-use App\Models\HomepageDraft;
 use App\Models\Page;
 use App\Models\PreviewToken;
 use App\Models\User;
-use App\Support\HomepageDraftSectionMapper;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
 
@@ -24,16 +21,14 @@ use Illuminate\Support\Facades\Gate;
  * Preview assembly orchestrator.
  *
  * Delegates token lifecycle (create, resolve, validate, invalidate, hash)
- * to PreviewTokenStore and focuses on building preview DTOs from draft content.
+ * to PreviewTokenStore and delegates target-specific draft assembly.
  */
 final class PreviewService implements PreviewServiceInterface
 {
-    private const EDITABLE_STATUSES = ['draft', 'scheduled'];
-
     public function __construct(
         private readonly AuditServiceInterface $auditService,
         private readonly PageServiceInterface $pageService,
-        private readonly HomepageSectionServiceInterface $homepageSectionService,
+        private readonly HomepagePreviewAssemblerInterface $homepagePreviewAssembler,
         private readonly NavigationServiceInterface $navigationService,
         private readonly PreviewTokenStore $tokenStore,
     ) {}
@@ -166,56 +161,7 @@ final class PreviewService implements PreviewServiceInterface
             return $preview->payload;
         }
 
-        return new PreviewPayloadDTO(homepage: $this->buildHomepagePreview($locale, $snapshot));
-    }
-
-    /**
-     * @param  array<string, mixed>|null  $snapshot
-     */
-    private function buildHomepagePreview(string $locale, ?array $snapshot = null): HomepageDTO
-    {
-        $draftHomepage = is_array($snapshot['homepage'] ?? null)
-            ? $snapshot['homepage']
-            : $snapshot;
-
-        if (! is_array($draftHomepage)) {
-            $draft = HomepageDraft::query()
-                ->where('target_type', 'homepage')
-                ->whereIn('status', self::EDITABLE_STATUSES)
-                ->latest('updated_at')
-                ->first();
-
-            if (! $draft instanceof HomepageDraft || ! is_array($draft->payload_json)) {
-                return $this->homepageSectionService->getPublicHomepage($locale);
-            }
-
-            $draftHomepage = is_array($draft->payload_json['homepage'] ?? null)
-                ? $draft->payload_json['homepage']
-                : $draft->payload_json;
-        }
-
-        $sections = is_array($draftHomepage['sections'] ?? null) ? $draftHomepage['sections'] : [];
-
-        if ($sections === []) {
-            return $this->homepageSectionService->getPublicHomepage($locale);
-        }
-
-        $fallbackHomepage = $this->homepageSectionService->getPublicHomepage($locale);
-        $previewSections = HomepageDraftSectionMapper::previewSectionsFromDraft(
-            $sections,
-            $locale,
-            $fallbackHomepage->sections,
-        );
-
-        if ($previewSections === []) {
-            return $fallbackHomepage;
-        }
-
-        return new HomepageDTO(
-            locale: $locale,
-            direction: $locale === 'ar' ? 'rtl' : 'ltr',
-            sections: $previewSections,
-        );
+        return new PreviewPayloadDTO(homepage: $this->homepagePreviewAssembler->build($locale, $snapshot));
     }
 
     // ------------------------------------------------------------------
