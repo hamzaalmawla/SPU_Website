@@ -460,7 +460,7 @@ class HomepageCmsWorkflowTest extends TestCase
                     videoUrl: '/videos/home/test-hero-en.mp4',
                     primaryAction: new NavigationActionDTO('Explore', '/en/faculties'),
                     secondaryAction: new NavigationActionDTO('Apply', '/en/admissions'),
-                    content: ['nested' => ['caption' => '<img src=x onerror=alert(1)>Caption']],
+                    content: ['nested' => ['caption' => '<img src=x onerror=alert(1)>Caption', 'unsafeUrl' => 'javascript:alert(1)']],
                 );
 
                 return new HomepageSectionDTO(
@@ -493,6 +493,7 @@ class HomepageCmsWorkflowTest extends TestCase
 
         $this->assertStringNotContainsString('<script', $encodedPayload);
         $this->assertStringNotContainsString('onerror', $encodedPayload);
+        $this->assertStringNotContainsString('javascript:', $encodedPayload);
         $this->assertStringContainsString('Caption', $encodedPayload);
     }
 

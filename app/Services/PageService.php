@@ -485,19 +485,32 @@ final class PageService implements PageServiceInterface
     /** @param  array<string, mixed>|null  $bodyPayload */
     private function sanitizeBodyPayload(?array $bodyPayload): ?array
     {
-        if ($bodyPayload === null || ! is_array($bodyPayload['blocks'] ?? null)) {
+        if ($bodyPayload === null) {
             return $bodyPayload;
         }
 
-        $bodyPayload['blocks'] = array_map(function (mixed $block): mixed {
-            if (is_array($block) && ($block['type'] ?? null) === 'legacy_html' && ! empty($block['content'])) {
-                $block['content'] = $this->htmlSanitizer->sanitize($block['content']);
+        return $this->sanitizeBodyPayloadValue($bodyPayload);
+    }
+
+    private function sanitizeBodyPayloadValue(mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        $isLegacyHtmlBlock = ($value['type'] ?? null) === 'legacy_html';
+
+        foreach ($value as $key => $childValue) {
+            if ($isLegacyHtmlBlock && $key === 'content' && is_string($childValue) && $childValue !== '') {
+                $value[$key] = $this->htmlSanitizer->sanitize($childValue);
+
+                continue;
             }
 
-            return $block;
-        }, $bodyPayload['blocks']);
+            $value[$key] = $this->sanitizeBodyPayloadValue($childValue);
+        }
 
-        return $bodyPayload;
+        return $value;
     }
 
     private function touchPageCaches(int $pageId): void

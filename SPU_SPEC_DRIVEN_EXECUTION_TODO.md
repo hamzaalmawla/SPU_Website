@@ -78,7 +78,7 @@ Latest verified state from this session:
 
 | Verification | Result |
 | --- | --- |
-| `php artisan test` | Passing, 3418 tests and 15567 assertions on full run. |
+| `php artisan test` | Passing, 3419 tests and 15394 assertions on full run. |
 | `npm run build` | Passing with no unexpected warnings after FontAwesome runtime removal. |
 | `php artisan route:list` | Bootstraps routes successfully. |
 | `php artisan test --filter=PageService` | Passing, publish validation covered. |
@@ -1068,7 +1068,7 @@ php artisan test tests/Feature/AdminAuthFlowTest.php --filter=test_admin_login_p
 
 ### G01: Maintain Sanitization Coverage
 
-Status: Ready
+Status: Done
 
 Priority: High
 
@@ -1076,16 +1076,34 @@ Goal: Ensure user-supplied HTML remains sanitized before public rendering.
 
 Implementation steps:
 
-- [ ] Preserve `HtmlSanitizer` usage in page translation updates.
-- [ ] Preserve recursive homepage payload sanitization on publish.
-- [ ] Add tests before supporting any new rich-text field.
-- [ ] Never render raw CMS HTML unless it has passed the sanitizer path.
+- [x] Preserve `HtmlSanitizer` usage in page translation updates.
+- [x] Preserve recursive homepage payload sanitization on publish.
+- [x] Add tests before supporting any new rich-text field.
+- [x] Never render raw CMS HTML unless it has passed the sanitizer path.
 
 Acceptance criteria:
 
-- [ ] Existing sanitizer tests pass.
-- [ ] Homepage publish sanitizes nested payload strings.
-- [ ] Page body and legacy HTML blocks are sanitized.
+- [x] Existing sanitizer tests pass.
+- [x] Homepage publish sanitizes nested payload strings.
+- [x] Page body and legacy HTML blocks are sanitized.
+
+Completion evidence captured 2026-06-15:
+
+| Evidence | Result |
+| --- | --- |
+| Page storage sanitization | `PageService` now recursively sanitizes nested `legacy_html` block content before storage while leaving non-HTML block content unchanged for escaped rendering. |
+| Homepage publish sanitization | Existing recursive homepage publish sanitizer remains service-owned; coverage now includes unsafe URL-like payload keys. |
+| Raw public rendering review | `resources/views/public/page.blade.php` is the only raw Blade output and sanitizes `legacy_html` through `HtmlSanitizer` at render time as defense in depth. |
+| Syntax | `php -l app/Services/PageService.php`, `php -l tests/Unit/PageServiceSanitizationTest.php`, and `php -l tests/Feature/HomepageCmsWorkflowTest.php` passed. |
+| Sanitizer-focused suite | `php artisan test --filter=Sanitizer` passed: 546 tests, 1562 assertions. |
+| Homepage sanitization workflow | `php artisan test tests/Feature/HomepageCmsWorkflowTest.php --filter=sanitizes` passed: 1 test, 5 assertions. |
+| Page sanitizer unit tests | `php artisan test tests/Unit/PageServiceSanitizationTest.php` passed: 5 tests, 19 assertions. |
+| Homepage workflow | `php artisan test tests/Feature/HomepageCmsWorkflowTest.php` passed: 20 tests, 129 assertions. |
+| Page service filter | `php artisan test --filter=PageService` passed: 25 tests, 101 assertions. |
+| Public runtime | `php artisan test tests/Feature/PublicRuntimeTest.php` passed: 14 tests, 79 assertions. |
+| Frontend build | `npm run build` passed: Vite build completed in 1.47s with no unexpected warnings. |
+| Route boot | `php artisan route:list` passed: 67 routes listed. |
+| Full regression | `php artisan test` passed: 3419 tests, 15394 assertions, 172.04s. |
 
 Verification:
 

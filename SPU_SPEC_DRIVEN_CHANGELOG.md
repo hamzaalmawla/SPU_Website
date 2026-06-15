@@ -8,6 +8,37 @@ It is intentionally scoped to the current homepage/admin foundation and does not
 
 ## 2026-06-15
 
+### G01: Sanitization Coverage Hardening
+
+Status: Completed
+
+Type: Security hardening with storage-time and publish-time sanitization coverage
+
+Changed files:
+
+| File | Change |
+| --- | --- |
+| `app/Services/PageService.php` | Hardened page body payload sanitization to recursively sanitize nested `legacy_html` blocks while leaving non-HTML block content unchanged for escaped rendering. |
+| `tests/Unit/PageServiceSanitizationTest.php` | Added nested `legacy_html` body payload coverage. |
+| `tests/Feature/HomepageCmsWorkflowTest.php` | Extended homepage recursive sanitization coverage to include URL-like payload keys with unsafe `javascript:` values. |
+| `SPU_SPEC_DRIVEN_EXECUTION_TODO.md` | Marked G01 complete with targeted verification evidence. |
+| `SPU_SPEC_DRIVEN_CHANGELOG.md` | Added this G01 changelog entry. |
+
+Completion evidence:
+
+| Check | Result |
+| --- | --- |
+| Syntax | `php -l app/Services/PageService.php`, `php -l tests/Unit/PageServiceSanitizationTest.php`, and `php -l tests/Feature/HomepageCmsWorkflowTest.php` passed. |
+| Sanitizer-focused suite | `php artisan test --filter=Sanitizer` passed: 546 tests, 1562 assertions. |
+| Homepage sanitization workflow | `php artisan test tests/Feature/HomepageCmsWorkflowTest.php --filter=sanitizes` passed: 1 test, 5 assertions. |
+| Page sanitizer unit tests | `php artisan test tests/Unit/PageServiceSanitizationTest.php` passed: 5 tests, 19 assertions. |
+| Homepage workflow | `php artisan test tests/Feature/HomepageCmsWorkflowTest.php` passed: 20 tests, 129 assertions. |
+| Page service filter | `php artisan test --filter=PageService` passed: 25 tests, 101 assertions. |
+| Public runtime | `php artisan test tests/Feature/PublicRuntimeTest.php` passed: 14 tests, 79 assertions. |
+| Frontend build | `npm run build` passed: Vite build completed in 1.47s with no unexpected warnings. |
+| Route boot | `php artisan route:list` passed: 67 routes listed. |
+| Full regression | `php artisan test` passed: 3419 tests, 15394 assertions, 172.04s. |
+
 ### G03: Preview Token Confidentiality Hardening
 
 Status: Completed

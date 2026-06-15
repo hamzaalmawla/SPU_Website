@@ -249,6 +249,8 @@ Do not start with Spec Kit initialization. Do not edit Kiro/Copilot files unless
 
 ### ARCH-P0-001: Resolve Locale Default And Fallback Policy
 
+- [ ] **Task Complete**
+
 Priority: P0.
 Status: Proposed.
 Type: Config, service behavior, tests, documentation follow-up.
@@ -263,6 +265,8 @@ Risk: Visible content language can change.
 Rollback: Revert config/env/test changes and restore previous fallback behavior.
 
 ### ARCH-P0-002: Introduce `PublicationStatus` Enum
+
+- [ ] **Task Complete**
 
 Priority: P0.
 Status: Proposed.
@@ -279,6 +283,8 @@ Rollback: Keep enum internally and expose string values externally.
 
 ### ARCH-P0-003: Split Or Clarify Page Publishing Contract Boundaries
 
+- [ ] **Task Complete**
+
 Priority: P0.
 Status: Proposed.
 Type: Contract design, service refactor, tests.
@@ -293,6 +299,8 @@ Risk: Interface churn across admin resources.
 Rollback: Keep `PageServiceInterface` as documented facade and defer extraction.
 
 ### ARCH-P0-004: Reconcile Publish Events, Cache Invalidation, Preview Tokens, And Audit Logging
+
+- [ ] **Task Complete**
 
 Priority: P0.
 Status: Proposed.
@@ -309,6 +317,8 @@ Rollback: Restore current inline behavior while documenting event classes as ina
 
 ### ARCH-P0-005: Move Or Formalize `app/Support/LegacyImport` DB Side Effects
 
+- [ ] **Task Complete**
+
 Priority: P0.
 Status: Proposed.
 Type: Architecture boundary, service extraction, tests.
@@ -323,6 +333,8 @@ Risk: Import commands may expect model returns.
 Rollback: Temporarily allowlist existing helpers with TODO and owner.
 
 ### ARCH-P0-006: Expand Architecture Guard Coverage
+
+- [ ] **Task Complete**
 
 Priority: P0.
 Status: Proposed.
@@ -339,6 +351,8 @@ Rollback: Narrow patterns or temporary allowlist with task ID.
 
 ### ARCH-P0-007: Neutralize Stale Non-Spec Guidance
 
+- [ ] **Task Complete**
+
 Priority: P0.
 Status: Proposed.
 Type: Documentation governance.
@@ -353,6 +367,8 @@ Risk: Editing historical specs can reduce traceability.
 Rollback: Add historical warning headers instead of rewriting content.
 
 ### ARCH-P0-008: Audit Controllers For Model Usage And Query Leakage
+
+- [ ] **Task Complete**
 
 Priority: P0.
 Status: Proposed.
@@ -369,6 +385,8 @@ Rollback: Narrow scanner patterns.
 
 ### ARCH-P0-009: Audit Contracts For Eloquent Imports And Return Types
 
+- [ ] **Task Complete**
+
 Priority: P0.
 Status: Proposed.
 Type: Architecture audit, tests.
@@ -383,6 +401,8 @@ Risk: Composite arrays need documented exceptions.
 Rollback: Allowlist named composite payload methods with PHPDoc requirements.
 
 ### ARCH-P0-010: Audit Services For Raw Model Returns
+
+- [ ] **Task Complete**
 
 Priority: P0.
 Status: Proposed.
@@ -399,6 +419,8 @@ Rollback: Limit rule to contract implementations first.
 
 ### ARCH-P0-011: Audit Middleware For Eloquent And Domain Logic
 
+- [ ] **Task Complete**
+
 Priority: P0.
 Status: Proposed.
 Type: Architecture audit, middleware tests.
@@ -413,6 +435,8 @@ Risk: Security middleware may need non-domain side effects.
 Rollback: Allowlist security nonce cache behavior with explanation.
 
 ### ARCH-P0-012: Audit Filament For Direct Actions And Workflow Leakage
+
+- [ ] **Task Complete**
 
 Priority: P0.
 Status: Proposed.
@@ -429,6 +453,8 @@ Rollback: Scope guard to Actions and workflow calls, not `$model` declarations.
 
 ### ARCH-P1-001: Standardize Publish Result Semantics
 
+- [ ] **Task Complete**
+
 Priority: P1.
 Status: Proposed.
 Type: Contract behavior, validation DTOs, admin UX.
@@ -443,6 +469,8 @@ Risk: Contract changes can cause UI churn.
 Rollback: Keep publish `bool` and add separate validation methods.
 
 ### ARCH-P1-002: Harden Preview Token Lifecycle Tests
+
+- [ ] **Task Complete**
 
 Priority: P1.
 Status: Proposed.
@@ -459,6 +487,8 @@ Rollback: Keep current behavior and mark gaps as security risks until fixed.
 
 ### ARCH-P1-003: Consolidate Filament Workflow Validation Into Services
 
+- [ ] **Task Complete**
+
 Priority: P1.
 Status: Proposed.
 Type: Admin workflow, service validation.
@@ -473,6 +503,8 @@ Risk: Message mapping can regress admin UX.
 Rollback: Keep UI mapping as presentation layer over service validation.
 
 ### ARCH-P1-004: Add Public Cache Bypass Matrix Tests
+
+- [ ] **Task Complete**
 
 Priority: P1.
 Status: Proposed.
@@ -489,6 +521,8 @@ Rollback: Keep conservative bypass behavior.
 
 ### ARCH-P1-005: Make Quality Gates Enforceable
 
+- [ ] **Task Complete**
+
 Priority: P1.
 Status: Proposed.
 Type: Static analysis, formatting, workflow checks.
@@ -503,6 +537,8 @@ Risk: Gates can block urgent fixes if enabled prematurely.
 Rollback: Temporarily restore `continue-on-error` with dated owner/TODO.
 
 ### ARCH-P1-006: Define Form Request Validation Boundary
+
+- [ ] **Task Complete**
 
 Priority: P1.
 Status: Proposed.
@@ -519,6 +555,8 @@ Rollback: Keep request-level shape validation and migrate business rules increme
 
 ### ARCH-P1-007: Define Policy Authorization Coverage
 
+- [ ] **Task Complete**
+
 Priority: P1.
 Status: Proposed.
 Type: Authorization, RBAC, tests.
@@ -533,6 +571,8 @@ Risk: Tests may expose missing faculty scope logic.
 Rollback: Add explicit denies while filling missing scope behavior.
 
 ### ARCH-P1-008: Define Transaction Boundary Policy
+
+- [ ] **Task Complete**
 
 Priority: P1.
 Status: Proposed.
@@ -549,6 +589,8 @@ Rollback: Restore current transaction layout with explicit known-risk note.
 
 ### ARCH-P1-009: Define Domain Event, Audit, And After-Commit Policy
 
+- [ ] **Task Complete**
+
 Priority: P1.
 Status: Proposed.
 Type: Events, audit, observability.
@@ -563,6 +605,8 @@ Risk: Duplicate audit/cache records.
 Rollback: Keep audit inline and remove unused events from active registration.
 
 ### ARCH-P1-010: Add PHPDoc Array Shapes For Composite Payloads
+
+- [ ] **Task Complete**
 
 Priority: P1.
 Status: Proposed.
@@ -579,6 +623,8 @@ Rollback: Add shapes incrementally to high-risk payloads first.
 
 ### ARCH-P1-011: Patch `Docs/ARCHITECTURE.md` With Accepted Decisions
 
+- [ ] **Task Complete**
+
 Priority: P1.
 Status: Proposed.
 Type: Architecture documentation.
@@ -593,6 +639,8 @@ Risk: Updating docs before code can create stricter rules than implementation sa
 Rollback: Revert documentation patch or mark decisions as proposed.
 
 ### ARCH-P2-001: Introduce Spec Kit Governance
+
+- [ ] **Task Complete**
 
 Priority: P2.
 Status: Proposed.
@@ -609,6 +657,8 @@ Rollback: Remove unused Spec Kit artifacts before they become active.
 
 ### ARCH-P2-002: Bound Foundation Lead Capture Scope
 
+- [ ] **Task Complete**
+
 Priority: P2.
 Status: Proposed.
 Type: Scope control, service/API behavior.
@@ -623,6 +673,8 @@ Risk: Stakeholders may expect CRM behavior.
 Rollback: Keep storage-only contact capture and defer CRM module.
 
 ### ARCH-P2-003: Document Article, Research, And Event Card DTOs As Display Contracts
+
+- [ ] **Task Complete**
 
 Priority: P2.
 Status: Proposed.
@@ -639,6 +691,8 @@ Rollback: Add stronger comments near DTOs or in architecture docs.
 
 ### ARCH-P2-004: Harden Menu And Navigation Tree Tests
 
+- [ ] **Task Complete**
+
 Priority: P2.
 Status: Proposed.
 Type: Navigation workflow tests.
@@ -654,6 +708,8 @@ Rollback: Add tests incrementally around existing behavior first.
 
 ### ARCH-P2-005: Harden Settings Update Cache And Audit Tests
 
+- [ ] **Task Complete**
+
 Priority: P2.
 Status: Proposed.
 Type: Settings workflow tests.
@@ -668,6 +724,8 @@ Risk: Tests may require stable seed data.
 Rollback: Use focused factories/fixtures.
 
 ### ARCH-P2-006: Harden Media Upload DTO Tests
+
+- [ ] **Task Complete**
 
 Priority: P2.
 Status: Proposed.

@@ -108,6 +108,48 @@ final class PageServiceSanitizationTest extends TestCase
     }
 
     #[Test]
+    public function it_sanitizes_nested_legacy_html_blocks_in_body_payload_on_translation_update(): void
+    {
+        $page = Page::factory()->create();
+
+        $payload = new PageTranslationDTO(
+            title: 'Test Page',
+            bodyPayload: [
+                'blocks' => [
+                    [
+                        'type' => 'columns',
+                        'children' => [
+                            [
+                                'type' => 'legacy_html',
+                                'content' => '<p>Nested content</p><script>alert(1)</script><img src=x onerror=alert(1)>',
+                            ],
+                            [
+                                'type' => 'text',
+                                'content' => '<script>Escaped later</script>',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        );
+
+        $this->service->updateEnglishTranslation($page->id, $payload, $this->editor()->id);
+
+        $translation = PageTranslation::where('page_id', $page->id)
+            ->where('locale', 'en')
+            ->first();
+
+        $this->assertNotNull($translation);
+
+        $children = $translation->body_payload['blocks'][0]['children'];
+
+        $this->assertStringContainsString('Nested content', $children[0]['content']);
+        $this->assertStringNotContainsString('<script', $children[0]['content']);
+        $this->assertStringNotContainsString('onerror', $children[0]['content']);
+        $this->assertSame('<script>Escaped later</script>', $children[1]['content']);
+    }
+
+    #[Test]
     public function it_handles_null_body_payload_gracefully(): void
     {
         $page = Page::factory()->create();
