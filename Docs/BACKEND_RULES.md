@@ -82,6 +82,19 @@ Required DTOs for this foundation scope:
 
 ---
 
+## Internal Collaborator Rules
+
+- Public service interfaces remain the only dependency used by controllers and Filament workflow code
+- Action-style classes are internal service-layer collaborators only
+- Do not inject Actions into controllers, middleware, views, or Filament pages/resources
+- Use Actions only for cohesive business workflows that are too large to remain readable inside one service method
+- Use `app/Support/` helpers for pure mapping, normalization, and deterministic payload transformations
+- Support helpers must not authorize users, write database rows, invalidate cache, write audit logs, or publish content
+- Add characterization tests before moving existing private service behavior into an Action or support helper
+- Extract one responsibility at a time and keep public service contracts stable unless a separate approved task changes them
+
+---
+
 ## Controller Rules
 
 - Inject interfaces only

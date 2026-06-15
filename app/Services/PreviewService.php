@@ -10,16 +10,13 @@ use App\Contracts\NavigationServiceInterface;
 use App\Contracts\PageServiceInterface;
 use App\Contracts\PreviewServiceInterface;
 use App\DTOs\HomepageDTO;
-use App\DTOs\HomepageSectionDataDTO;
-use App\DTOs\HomepageSectionDTO;
-use App\DTOs\HomepageSectionTranslationDTO;
 use App\DTOs\PreviewDTO;
 use App\DTOs\PreviewPayloadDTO;
 use App\Models\HomepageDraft;
 use App\Models\Page;
 use App\Models\PreviewToken;
 use App\Models\User;
-use App\Support\HomepagePayloadMapper;
+use App\Support\HomepageDraftSectionMapper;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
 
@@ -203,122 +200,21 @@ final class PreviewService implements PreviewServiceInterface
             return $this->homepageSectionService->getPublicHomepage($locale);
         }
 
-        $fallbackSections = collect($this->homepageSectionService->getPublicHomepage($locale)->sections)->keyBy('key');
-        $approvedSections = [];
+        $fallbackHomepage = $this->homepageSectionService->getPublicHomepage($locale);
+        $previewSections = HomepageDraftSectionMapper::previewSectionsFromDraft(
+            $sections,
+            $locale,
+            $fallbackHomepage->sections,
+        );
 
-        foreach ($sections as $section) {
-            if (! is_array($section)) {
-                continue;
-            }
-
-            $key = is_string($section['key'] ?? null) ? $section['key'] : null;
-
-            if ($key === null || ! in_array($key, HomepageSectionServiceInterface::SECTION_KEYS, true)) {
-                continue;
-            }
-
-            $fallback = $fallbackSections->get($key);
-
-            $approvedSections[$key] = $this->sectionFromDraft(
-                $section,
-                $locale,
-                $fallback instanceof HomepageSectionDTO ? $fallback : null,
-            );
-        }
-
-        if ($approvedSections === []) {
-            return $this->homepageSectionService->getPublicHomepage($locale);
+        if ($previewSections === []) {
+            return $fallbackHomepage;
         }
 
         return new HomepageDTO(
             locale: $locale,
             direction: $locale === 'ar' ? 'rtl' : 'ltr',
-            sections: array_values(array_filter(array_map(
-                static fn (string $key): ?HomepageSectionDTO => $approvedSections[$key] ?? null,
-                HomepageSectionServiceInterface::SECTION_KEYS,
-            ))),
-        );
-    }
-
-    // ------------------------------------------------------------------
-    // Section / translation mapping helpers
-    // ------------------------------------------------------------------
-
-    private function sectionFromDraft(array $payload, string $locale, ?HomepageSectionDTO $fallback = null): HomepageSectionDTO
-    {
-        $fallbackPayload = $fallback instanceof HomepageSectionDTO
-            ? HomepagePayloadMapper::sectionDataToArray($fallback->payload)
-            : [];
-        $fallbackArabicPayload = $fallback instanceof HomepageSectionDTO
-            ? HomepagePayloadMapper::sectionDataToArray($fallback->arabicPayload ?? $fallback->payload)
-            : [];
-        $fallbackEnglishPayload = $fallback instanceof HomepageSectionDTO
-            ? HomepagePayloadMapper::sectionDataToArray($fallback->englishPayload ?? $fallback->payload)
-            : [];
-        $genericPayload = $this->mergeDraftPayload(
-            $fallbackPayload,
-            is_array($payload['payload'] ?? null) ? $payload['payload'] : [],
-        );
-        $arabicPayload = $this->sectionDataFromDraft(
-            is_array($payload['arabicPayload'] ?? null)
-                ? $this->mergeDraftPayload($fallbackArabicPayload, $payload['arabicPayload'])
-                : ($locale === 'ar' ? $genericPayload : $fallbackArabicPayload),
-        );
-        $englishPayload = $this->sectionDataFromDraft(
-            is_array($payload['englishPayload'] ?? null)
-                ? $this->mergeDraftPayload($fallbackEnglishPayload, $payload['englishPayload'])
-                : ($locale === 'en' ? $genericPayload : $fallbackEnglishPayload),
-        );
-
-        return new HomepageSectionDTO(
-            id: (int) ($payload['id'] ?? $fallback?->id ?? 0),
-            key: (string) ($payload['key'] ?? ''),
-            sortOrder: (int) ($payload['sortOrder'] ?? ($payload['sort_order'] ?? $fallback?->sortOrder ?? 0)),
-            isEnabled: (bool) ($payload['isEnabled'] ?? ($payload['is_enabled'] ?? $fallback?->isEnabled ?? true)),
-            payload: $locale === 'en'
-                ? ($this->isEmptySectionPayload($englishPayload) ? $this->sectionDataFromDraft($genericPayload) : $englishPayload)
-                : ($this->isEmptySectionPayload($arabicPayload) ? $this->sectionDataFromDraft($genericPayload) : $arabicPayload),
-            arabicTranslation: $this->translationFromDraft((array) ($payload['arabicTranslation'] ?? []), 'ar', $arabicPayload),
-            englishTranslation: $this->translationFromDraft((array) ($payload['englishTranslation'] ?? []), 'en', $englishPayload),
-            arabicPayload: $arabicPayload,
-            englishPayload: $englishPayload,
-        );
-    }
-
-    /**
-     * Drafts may only contain editor-exposed fields. Merge them over the
-     * published database payload so preview keeps non-editable presentation data.
-     *
-     * @param  array<string, mixed>  $fallback
-     * @param  array<string, mixed>  $draft
-     * @return array<string, mixed>
-     */
-    private function mergeDraftPayload(array $fallback, array $draft): array
-    {
-        return array_replace_recursive($fallback, $draft);
-    }
-
-    private function sectionDataFromDraft(array $payload): HomepageSectionDataDTO
-    {
-        return HomepagePayloadMapper::sectionDataFromArray($payload);
-    }
-
-    private function translationFromDraft(array $payload, string $locale, HomepageSectionDataDTO $fallback): HomepageSectionTranslationDTO
-    {
-        return new HomepageSectionTranslationDTO(
-            locale: $locale,
-            headline: $this->stringFromDraft($payload, 'headline')
-                ?? $this->stringFromDraft($payload, 'title')
-                ?? $fallback->title,
-            body: $this->stringFromDraft($payload, 'body')
-                ?? $this->stringFromDraft($payload, 'summary')
-                ?? $fallback->summary
-                ?? $fallback->body,
-            ctaLabel: $this->stringFromDraft($payload, 'ctaLabel')
-                ?? $this->stringFromDraft($payload, 'cta_label')
-                ?? $fallback->primaryAction?->label
-                ?? $fallback->sectionAction?->label,
-            imageAlt: $this->stringFromDraft($payload, 'imageAlt') ?? $this->stringFromDraft($payload, 'image_alt'),
+            sections: $previewSections,
         );
     }
 
@@ -346,36 +242,4 @@ final class PreviewService implements PreviewServiceInterface
         return trim($this->pageService->resolveLanguageSwitchTargetUrl($payload->page->id, $locale) ?? '', '/');
     }
 
-    private function isEmptySectionPayload(HomepageSectionDataDTO $payload): bool
-    {
-        return $payload->eyebrow === null
-            && $payload->subtitle === null
-            && $payload->badge === null
-            && $payload->title === null
-            && $payload->summary === null
-            && $payload->body === null
-            && $payload->videoUrl === null
-            && $payload->imageUrl === null
-            && $payload->backgroundImageUrl === null
-            && $payload->primaryAction === null
-            && $payload->secondaryAction === null
-            && $payload->sectionAction === null
-            && $payload->stats === []
-            && $payload->featuredItems === []
-            && $payload->articles === []
-            && $payload->researchItems === []
-            && $payload->events === []
-            && $payload->footerColumns === []
-            && $payload->contactLinks === []
-            && $payload->socialLinks === []
-            && $payload->items === []
-            && $payload->content === [];
-    }
-
-    private function stringFromDraft(array $payload, string $key): ?string
-    {
-        $value = $payload[$key] ?? $payload[strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $key) ?? $key)] ?? null;
-
-        return is_string($value) && $value !== '' ? $value : null;
-    }
 }

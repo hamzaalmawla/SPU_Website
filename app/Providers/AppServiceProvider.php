@@ -58,6 +58,7 @@ use App\Services\MediaService;
 use App\Services\MenuService;
 use App\Services\NavigationService;
 use App\Services\PageDraftService;
+use App\Services\PagePublishabilityValidator;
 use App\Services\PagePublicReadService;
 use App\Services\PageService;
 use App\Services\PageUrlResolver;
@@ -96,6 +97,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(PagePublicReadService::class);
         $this->app->singleton(PageDraftService::class);
         $this->app->singleton(PageUrlResolver::class);
+        $this->app->singleton(PagePublishabilityValidator::class);
         $this->app->singleton(LogoutResponseContract::class, LogoutResponse::class);
     }
 

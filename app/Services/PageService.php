@@ -70,6 +70,7 @@ final class PageService implements PageServiceInterface
         private readonly PagePublicReadService $publicReadService,
         private readonly PageDraftService $draftService,
         private readonly PageUrlResolver $urlResolver,
+        private readonly PagePublishabilityValidator $publishabilityValidator,
         private readonly HtmlSanitizer $htmlSanitizer,
         private readonly ?PreviewTokenStore $previewTokenStore = null,
     ) {}
@@ -299,10 +300,10 @@ final class PageService implements PageServiceInterface
         if ($draft instanceof PageDraft && is_array($draft->payload_json)) {
             $preview = $this->draftService->mapDraftPayloadToPageDto($page, $draft->payload_json, 'ar');
 
-            if (! $this->isPublishableDto($preview)) {
+            if (! $this->publishabilityValidator->isPublishableDraft($preview)) {
                 return false;
             }
-        } elseif (! $this->isPublishable($page)) {
+        } elseif (! $this->publishabilityValidator->isPublishablePage($page)) {
             return false;
         }
 
@@ -520,40 +521,15 @@ final class PageService implements PageServiceInterface
         return $payload;
     }
 
-    private function isPublishable(Page $page): bool
-    {
-        if (empty($page->slug) || empty($page->template) || ! (bool) $page->is_enabled) {
-            return false;
-        }
-
-        $page->loadMissing('translations');
-
-        $localesWithTitle = $page->translations
-            ->filter(fn ($translation): bool => in_array((string) $translation->locale, ['ar', 'en'], true) && ! empty($translation->title))
-            ->pluck('locale')
-            ->all();
-
-        return in_array('ar', $localesWithTitle, true) && in_array('en', $localesWithTitle, true);
-    }
-
-    private function isPublishableDto(PageDTO $page): bool
-    {
-        return $page->metadata->slug !== ''
-            && $page->metadata->template !== ''
-            && $page->metadata->isEnabled
-            && $page->arabicTranslation->title !== ''
-            && $page->englishTranslation->title !== '';
-    }
-
     private function publishResolvedDraft(Page $page, ?PageDraft $draft, int $userId): bool
     {
         if ($draft instanceof PageDraft && is_array($draft->payload_json)) {
             $preview = $this->draftService->mapDraftPayloadToPageDto($page, $draft->payload_json, 'ar');
 
-            if (! $this->isPublishableDto($preview)) {
+            if (! $this->publishabilityValidator->isPublishableDraft($preview)) {
                 return false;
             }
-        } elseif (! $this->isPublishable($page)) {
+        } elseif (! $this->publishabilityValidator->isPublishablePage($page)) {
             return false;
         }
 
@@ -575,7 +551,7 @@ final class PageService implements PageServiceInterface
 
             $page->refresh()->loadMissing('translations');
 
-            if (! $this->isPublishable($page)) {
+            if (! $this->publishabilityValidator->isPublishablePage($page)) {
                 throw new \RuntimeException('The page is not publishable after applying the selected draft.');
             }
 

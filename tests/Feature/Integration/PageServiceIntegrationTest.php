@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Tests\Feature\Integration;
 
 use App\Contracts\PageServiceInterface;
+use App\DTOs\PageDraftDataDTO;
 use App\DTOs\PageDTO;
 use App\DTOs\PageMetadataDTO;
+use App\DTOs\PageSeoInputDTO;
 use App\DTOs\PageShellDataDTO;
 use App\DTOs\PageTranslationDTO;
 use App\Models\User;
@@ -151,6 +153,31 @@ class PageServiceIntegrationTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['action' => 'page.publish']);
     }
 
+    public function test_publish_applies_valid_draft_payload(): void
+    {
+        $page = $this->createPageWithTranslations();
+
+        $this->pageService()->saveDraft(
+            $page->id,
+            $this->draftPayloadForPage(
+                $page,
+                arabicTranslation: new PageTranslationDTO(title: 'عنوان المسودة', headline: 'عنوان رئيسي للمسودة'),
+                englishTranslation: new PageTranslationDTO(title: 'Draft Title', headline: 'Draft Headline'),
+            ),
+            $this->author()->id,
+        );
+
+        $this->assertTrue($this->pageService()->publish($page->id, $this->author()->id));
+
+        $published = $this->pageService()->getAdminEditorPayload($page->id);
+
+        $this->assertSame('published', $published->metadata->status);
+        $this->assertSame('عنوان المسودة', $published->arabicTranslation->title);
+        $this->assertSame('عنوان رئيسي للمسودة', $published->arabicTranslation->headline);
+        $this->assertSame('Draft Title', $published->englishTranslation->title);
+        $this->assertSame('Draft Headline', $published->englishTranslation->headline);
+    }
+
     // ──────────────────────────────────────────────────────────────
     //  Draft pages excluded from public queries
     // ──────────────────────────────────────────────────────────────
@@ -278,6 +305,48 @@ class PageServiceIntegrationTest extends TestCase
         $this->assertFalse($this->pageService()->publish($page->id, $this->author()->id));
     }
 
+    public function test_publish_rejects_draft_payload_with_empty_arabic_title(): void
+    {
+        $page = $this->createPageWithTranslations();
+
+        $this->pageService()->saveDraft(
+            $page->id,
+            $this->draftPayloadForPage(
+                $page,
+                arabicTranslation: new PageTranslationDTO(title: ''),
+            ),
+            $this->author()->id,
+        );
+
+        $this->assertFalse($this->pageService()->publish($page->id, $this->author()->id));
+
+        $reloaded = $this->pageService()->getAdminEditorPayload($page->id);
+        $this->assertSame('draft', $reloaded->metadata->status);
+        $this->assertSame('من نحن', $reloaded->arabicTranslation->title);
+        $this->assertSame('About Us', $reloaded->englishTranslation->title);
+    }
+
+    public function test_publish_rejects_draft_payload_with_empty_english_title(): void
+    {
+        $page = $this->createPageWithTranslations();
+
+        $this->pageService()->saveDraft(
+            $page->id,
+            $this->draftPayloadForPage(
+                $page,
+                englishTranslation: new PageTranslationDTO(title: ''),
+            ),
+            $this->author()->id,
+        );
+
+        $this->assertFalse($this->pageService()->publish($page->id, $this->author()->id));
+
+        $reloaded = $this->pageService()->getAdminEditorPayload($page->id);
+        $this->assertSame('draft', $reloaded->metadata->status);
+        $this->assertSame('من نحن', $reloaded->arabicTranslation->title);
+        $this->assertSame('About Us', $reloaded->englishTranslation->title);
+    }
+
     public function test_update_metadata_rejects_self_parent(): void
     {
         $page = $this->createPageWithTranslations();
@@ -370,5 +439,31 @@ class PageServiceIntegrationTest extends TestCase
         ), $this->author()->id);
 
         return $this->pageService()->getAdminEditorPayload($page->id);
+    }
+
+    private function draftPayloadForPage(
+        PageDTO $page,
+        ?PageTranslationDTO $arabicTranslation = null,
+        ?PageTranslationDTO $englishTranslation = null,
+    ): PageDraftDataDTO {
+        return new PageDraftDataDTO(
+            metadata: new PageMetadataDTO(
+                slug: $page->metadata->slug,
+                template: $page->metadata->template,
+                isHomepageShell: $page->metadata->isHomepageShell,
+                status: 'draft',
+                parentPageId: $page->metadata->parentPageId,
+                publishAt: $page->metadata->publishAt,
+                contentJson: $page->metadata->contentJson,
+                isEnabled: $page->metadata->isEnabled,
+                showInBreadcrumbs: $page->metadata->showInBreadcrumbs,
+                showInNav: $page->metadata->showInNav,
+                facultyScopeSlug: $page->metadata->facultyScopeSlug,
+            ),
+            arabicTranslation: $arabicTranslation ?? new PageTranslationDTO(title: $page->arabicTranslation->title),
+            englishTranslation: $englishTranslation ?? new PageTranslationDTO(title: $page->englishTranslation->title),
+            arabicSeo: new PageSeoInputDTO(locale: 'ar', title: 'صفحة اختبار SEO'),
+            englishSeo: new PageSeoInputDTO(locale: 'en', title: 'Test Page SEO'),
+        );
     }
 }

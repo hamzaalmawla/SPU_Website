@@ -13,13 +13,13 @@ use App\DTOs\HomepageDraftDataDTO;
 use App\DTOs\HomepageDraftDTO;
 use App\DTOs\HomepageSectionDataDTO;
 use App\DTOs\HomepageSectionDTO;
-use App\DTOs\HomepageSectionTranslationDTO;
 use App\Events\DraftConflictDetected;
 use App\Exceptions\ConflictException;
 use App\Models\HomepageDraft;
 use App\Models\HomepageSection;
 use App\Models\HomepageSectionTranslation;
 use App\Models\User;
+use App\Support\HomepageDraftSectionMapper;
 use App\Support\HomepagePayloadMapper;
 use App\Support\HtmlSanitizer;
 use App\Support\UrlSanitizer;
@@ -84,7 +84,10 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
 
         $nextVersion = $this->nextDraftVersion();
 
-        $sections = $this->normalizeSections($payload->sections);
+        $sections = HomepageDraftSectionMapper::normalizeForEditableDraft(
+            $payload->sections,
+            $this->homepageSectionService->getSections(),
+        );
         $draft = HomepageDraft::forceCreate([
             'target_type' => 'homepage',
             'target_id' => null,
@@ -329,60 +332,14 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
     }
 
     /**
-     * @param  array<int, HomepageSectionDTO>  $providedSections
-     * @return array<int, HomepageSectionDTO>
-     */
-    private function normalizeSections(array $providedSections): array
-    {
-        $currentSections = $this->homepageSectionService->getSections()->keyBy('key');
-        $providedByKey = collect($providedSections)->keyBy('key');
-        $normalized = [];
-
-        foreach (HomepageSectionServiceInterface::SECTION_KEYS as $index => $key) {
-            $current = $currentSections->get($key);
-            $fallback = $current instanceof HomepageSectionDTO
-                ? $current
-                : $this->emptySection($key, $index + 1);
-
-            $provided = $providedByKey->get($key);
-
-            $normalized[] = $provided instanceof HomepageSectionDTO
-                ? $this->mergeSection($provided, $fallback, $index + 1)
-                : $fallback;
-        }
-
-        return array_values($normalized);
-    }
-
-    /**
      * @return array<int, HomepageSectionDTO>
      */
     private function sectionsFromDraft(HomepageDraft $draft): array
     {
-        $draftHomepage = is_array($draft->payload_json['homepage'] ?? null)
-            ? $draft->payload_json['homepage']
-            : $draft->payload_json;
-        $sections = is_array($draftHomepage['sections'] ?? null) ? $draftHomepage['sections'] : [];
-        $currentSections = $this->homepageSectionService->getSections()->keyBy('key');
-        $normalized = [];
-
-        foreach (HomepageSectionServiceInterface::SECTION_KEYS as $index => $key) {
-            $current = $currentSections->get($key);
-
-            if (! $current instanceof HomepageSectionDTO) {
-                continue;
-            }
-
-            $sectionPayload = collect($sections)->first(
-                static fn (mixed $section): bool => is_array($section) && ($section['key'] ?? null) === $key,
-            );
-
-            $normalized[] = is_array($sectionPayload)
-                ? $this->sectionFromArray($sectionPayload, $current, $index + 1)
-                : $current;
-        }
-
-        return array_values($normalized);
+        return HomepageDraftSectionMapper::sectionsFromStoredDraft(
+            is_array($draft->payload_json) ? $draft->payload_json : [],
+            $this->homepageSectionService->getSections(),
+        );
     }
 
     private function draftIsPublishable(array $sections): bool
@@ -416,76 +373,6 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
         return true;
     }
 
-    private function mergeSection(HomepageSectionDTO $provided, HomepageSectionDTO $fallback, int $defaultSortOrder): HomepageSectionDTO
-    {
-        return new HomepageSectionDTO(
-            id: $provided->id > 0 ? $provided->id : $fallback->id,
-            key: $fallback->key,
-            sortOrder: $provided->sortOrder > 0 ? $provided->sortOrder : ($fallback->sortOrder > 0 ? $fallback->sortOrder : $defaultSortOrder),
-            isEnabled: $provided->isEnabled,
-            payload: $provided->payload,
-            arabicTranslation: $provided->arabicTranslation,
-            englishTranslation: $provided->englishTranslation,
-            arabicPayload: $provided->arabicPayload ?? $fallback->arabicPayload ?? $fallback->payload,
-            englishPayload: $provided->englishPayload ?? $fallback->englishPayload ?? $fallback->payload,
-        );
-    }
-
-    private function emptySection(string $key, int $sortOrder): HomepageSectionDTO
-    {
-        $payload = new HomepageSectionDataDTO();
-
-        return new HomepageSectionDTO(
-            id: 0,
-            key: $key,
-            sortOrder: $sortOrder,
-            isEnabled: true,
-            payload: $payload,
-            arabicTranslation: new HomepageSectionTranslationDTO(locale: 'ar'),
-            englishTranslation: new HomepageSectionTranslationDTO(locale: 'en'),
-            arabicPayload: $payload,
-            englishPayload: $payload,
-        );
-    }
-
-    private function sectionFromArray(array $payload, HomepageSectionDTO $fallback, int $defaultSortOrder): HomepageSectionDTO
-    {
-        $arabicPayload = is_array($payload['arabicPayload'] ?? null)
-            ? $this->sectionPayloadFromArray($payload['arabicPayload'])
-            : ($fallback->arabicPayload ?? $fallback->payload);
-        $englishPayload = is_array($payload['englishPayload'] ?? null)
-            ? $this->sectionPayloadFromArray($payload['englishPayload'])
-            : ($fallback->englishPayload ?? $fallback->payload);
-
-        return new HomepageSectionDTO(
-            id: is_int($payload['id'] ?? null) ? $payload['id'] : $fallback->id,
-            key: is_string($payload['key'] ?? null) ? $payload['key'] : $fallback->key,
-            sortOrder: is_int($payload['sortOrder'] ?? null) ? $payload['sortOrder'] : $defaultSortOrder,
-            isEnabled: is_bool($payload['isEnabled'] ?? null) ? $payload['isEnabled'] : $fallback->isEnabled,
-            payload: $arabicPayload,
-            arabicTranslation: $this->translationFromArray(is_array($payload['arabicTranslation'] ?? null) ? $payload['arabicTranslation'] : [], 'ar', $arabicPayload),
-            englishTranslation: $this->translationFromArray(is_array($payload['englishTranslation'] ?? null) ? $payload['englishTranslation'] : [], 'en', $englishPayload),
-            arabicPayload: $arabicPayload,
-            englishPayload: $englishPayload,
-        );
-    }
-
-    private function sectionPayloadFromArray(array $payload): HomepageSectionDataDTO
-    {
-        return HomepagePayloadMapper::sectionDataFromArray($payload);
-    }
-
-    private function translationFromArray(array $payload, string $locale, HomepageSectionDataDTO $fallback): HomepageSectionTranslationDTO
-    {
-        return new HomepageSectionTranslationDTO(
-            locale: $locale,
-            headline: $this->stringValue($payload, 'headline') ?? $fallback->title,
-            body: $this->stringValue($payload, 'body') ?? $fallback->summary ?? $fallback->body,
-            ctaLabel: $this->stringValue($payload, 'ctaLabel') ?? $fallback->primaryAction?->label ?? $fallback->sectionAction?->label,
-            imageAlt: $this->stringValue($payload, 'imageAlt') ?? $this->stringValue($payload, 'image_alt'),
-        );
-    }
-
     /**
      * @param  array<int, HomepageSectionDTO>  $sections
      * @return array<int, array<string, mixed>>
@@ -501,14 +388,6 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
     private function sectionPayloadToArray(HomepageSectionDataDTO $payload): array
     {
         return HomepagePayloadMapper::sectionDataToArray($payload);
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function translationToArray(HomepageSectionTranslationDTO $translation): array
-    {
-        return HomepagePayloadMapper::translationToArray($translation);
     }
 
     private function sectionType(string $key): string
@@ -624,16 +503,6 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
                 'updated_by' => $userId,
                 'scheduled_at' => null,
             ]);
-    }
-
-    /**
-     * @param  array<string, mixed>|null  $payload
-     */
-    private function stringValue(?array $payload, string $key): ?string
-    {
-        $value = $payload[$key] ?? null;
-
-        return is_string($value) && $value !== '' ? $value : null;
     }
 
     /**

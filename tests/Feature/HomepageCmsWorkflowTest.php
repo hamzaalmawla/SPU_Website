@@ -134,6 +134,41 @@ class HomepageCmsWorkflowTest extends TestCase
         );
     }
 
+    public function test_save_draft_filters_unknown_sections_and_restores_fixed_order(): void
+    {
+        $sections = $this->homepageService()->getSections()->all();
+        $unknownPayload = new HomepageSectionDataDTO(title: 'Legacy Unknown Section');
+        $unknownSection = new HomepageSectionDTO(
+            id: 999,
+            key: 'legacy_unknown',
+            sortOrder: 999,
+            isEnabled: true,
+            payload: $unknownPayload,
+            arabicTranslation: new HomepageSectionTranslationDTO(locale: 'ar', headline: 'Legacy Unknown Section'),
+            englishTranslation: new HomepageSectionTranslationDTO(locale: 'en', headline: 'Legacy Unknown Section'),
+            arabicPayload: $unknownPayload,
+            englishPayload: $unknownPayload,
+        );
+
+        $draft = $this->publishingService()->saveDraft(
+            new HomepageDraftDataDTO(sections: array_merge([$unknownSection], array_reverse($sections))),
+            $this->author()->id,
+        );
+
+        $draftSections = $draft->payload->homepage?->sections ?? [];
+
+        $this->assertSame(
+            HomepageSectionServiceInterface::SECTION_KEYS,
+            array_map(static fn (HomepageSectionDTO $section): string => $section->key, $draftSections),
+        );
+        $this->assertNotContains(
+            'legacy_unknown',
+            array_map(static fn (HomepageSectionDTO $section): string => $section->key, $draftSections),
+        );
+        $this->assertSame('hero', $draftSections[0]->key);
+        $this->assertSame('footer', $draftSections[10]->key);
+    }
+
     public function test_homepage_preview_token_stays_bound_to_original_draft_snapshot(): void
     {
         $this->actingAs($this->author(), 'web');

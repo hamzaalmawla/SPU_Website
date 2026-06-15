@@ -210,7 +210,7 @@ final class PageDraftService
         }
 
         return new PageTranslationDTO(
-            title: $this->stringFromDraft($payload, 'title') ?? $this->publicReadService->defaultPageTitle($page),
+            title: $this->requiredStringFromDraft($payload, 'title', $this->publicReadService->defaultPageTitle($page)),
             navigationLabel: $this->stringFromDraft($payload, 'navigationLabel'),
             headline: $this->stringFromDraft($payload, 'headline'),
             subheadline: $this->stringFromDraft($payload, 'subheadline'),
@@ -303,6 +303,14 @@ final class PageDraftService
         $value = $payload[$key] ?? $payload[$this->toSnakeCase($key)] ?? null;
 
         return is_string($value) && $value !== '' ? $value : null;
+    }
+
+    /** @param array<string, mixed> $payload */
+    private function requiredStringFromDraft(array $payload, string $key, string $default): string
+    {
+        $value = $payload[$key] ?? $payload[$this->toSnakeCase($key)] ?? null;
+
+        return is_string($value) ? $value : $default;
     }
 
     /** @param array<string, mixed> $payload */

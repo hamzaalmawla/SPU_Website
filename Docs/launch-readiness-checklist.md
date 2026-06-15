@@ -99,3 +99,85 @@
 - [ ] Continuity rollback expectations defined
 - [ ] Unresolved continuity spike monitoring in place
 - [ ] `launch:validate` command passes against staging data
+
+## 12. Validation Command Matrix
+
+Use this matrix to select the minimum correct verification set for each change type. Release-critical changes should run the full release-candidate gate even when targeted checks pass.
+
+### 12.1 Quick Local Gates
+
+| Change Type | Required Commands | Completion Evidence |
+| --- | --- | --- |
+| Documentation only | `git diff --check` | No whitespace or conflict-marker errors. |
+| Public Blade only | `php artisan test tests/Feature/HomepageBlade` and `php artisan test tests/Feature/PublicRuntimeTest.php` | Homepage/public render assertions pass. |
+| Vite, CSS, or JavaScript | `npm run build` and `php artisan test tests/Feature/PublicRuntimeTest.php tests/Feature/HomepageBlade` | Build exits 0 with no unexpected warnings; public render assertions pass. |
+| Page publish workflow | `php artisan test --filter=PageService` and `php artisan test tests/Feature/Integration/PageServiceIntegrationTest.php` | Valid and invalid publish paths pass. |
+| Homepage CMS workflow | `php artisan test tests/Feature/HomepageCmsWorkflowTest.php` | Draft, preview, publish, schedule, unpublish, cache, and audit assertions pass. |
+| Admin or Filament boundary | `php artisan test tests/Feature/ArchitectureGuardTest.php` and `php artisan test tests/Feature/PX06` | Architecture guard and role visibility/resource tests pass. |
+| Middleware, provider, or route changes | `php artisan route:list` and `php artisan test tests/Feature/MiddlewarePipelineTest.php` | Laravel boots routes; middleware behavior tests pass. |
+| Media upload or file continuity | `php artisan test --filter=Media` and `php artisan test tests/Feature/PX05/FileContinuityTest.php` | Upload and file continuity assertions pass. |
+| Redirect or SEO continuity | `php artisan test tests/Feature/PX05/RedirectContinuityTest.php`, `php artisan test tests/Feature/PX07/RedirectValidationTest.php`, and `php artisan test tests/Feature/PX07/SeoValidationTest.php` | Redirect, conflict, and SEO validation tests pass. |
+| Security-sensitive change | Relevant targeted tests plus `php artisan test` | Targeted behavior and full regression suite pass. |
+
+### 12.2 Release-Candidate Gate
+
+Run this full gate before approving a launch candidate or merging release-critical work.
+
+```bash
+php artisan test
+npm run build
+php artisan route:list
+php artisan config:cache
+php artisan optimize:clear
+```
+
+Conditional staging gate:
+
+```bash
+php artisan launch:validate --environment=production
+php artisan cache:warm --include-sitemap
+```
+
+Only run the conditional staging gate against an environment with representative data and safe production-like configuration.
+
+### 12.3 Manual Browser Gate
+
+Manual QA is required before public launch even when automated tests pass.
+
+| Page | Viewport | Required Checks |
+| --- | --- | --- |
+| `/ar` | Mobile | RTL layout, mobile menu, hero, sections, sliders, events, footer. |
+| `/ar` | Desktop | Navigation, hero LCP, sliders, reveal animations, footer, no console errors. |
+| `/en` | Mobile | LTR layout, mobile menu, hero, sections, sliders, events, footer. |
+| `/en` | Desktop | Navigation, hero LCP, sliders, reveal animations, footer, no console errors. |
+| Public landing page | Mobile and desktop | Generic shell works without homepage-only JavaScript errors. |
+| `/admin/login` | Mobile and desktop | Bilingual brand, login form, locale switcher, no console errors. |
+
+### 12.4 Evidence Rules
+
+| Evidence Type | Rule |
+| --- | --- |
+| Automated command | Record command, pass/fail result, date, and any warning notes. |
+| Browser QA | Record page, viewport, browser, result, and any screenshots or Lighthouse summary if available. |
+| Staging-only check | Do not mark complete from local results. Staging evidence must come from staging. |
+| Deferred scope | Record the decision gate and owner instead of marking complete. |
+
+## 13. Latest Automated Release Evidence
+
+Evidence date: 2026-06-15
+
+| Gate | Command | Result | Status Impact |
+| --- | --- | --- | --- |
+| Full regression suite | `php artisan test` | Passed: 3395 tests, 15259 assertions, 177.89s. | Automated full-suite gate may be marked complete for this evidence date. |
+| Frontend production build | `npm run build` | Passed: Vite build completed in 1.81s with no unexpected warnings. | Automated frontend-build gate may be marked complete for this evidence date. |
+| Route boot | `php artisan route:list` | Passed: 67 routes listed. | Automated route/provider/controller boot gate may be marked complete for this evidence date. |
+
+Evidence boundaries:
+
+| Boundary | Status |
+| --- | --- |
+| Manual browser QA | Not completed by this evidence. Keep manual browser checks unchecked until performed. |
+| Staging validation | Not completed by this evidence. Keep staging-only checks unchecked until run against staging data. |
+| Rollback review | Not completed by this evidence. Keep rollback checks unchecked until reviewed/tested. |
+| Product sign-off | Not completed by this evidence. Keep product sign-off unchecked until product/design approval. |
+| Security and performance review | Automated tests support confidence but do not replace focused review. Keep review gates unchecked until reviewed. |

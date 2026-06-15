@@ -88,6 +88,44 @@ Public service methods may return:
 
 ---
 
+### Service-Layer Actions And Internal Collaborators
+
+Action-style classes are allowed only as internal service-layer collaborators when a service method has become too large to maintain safely.
+
+They do not create a new application layer. The architectural flow remains:
+
+Request → Middleware → Controller → Service Interface → Service Implementation → Internal service-layer collaborator → Model / Database
+
+Rules:
+- Controllers must never inject or call Action classes directly.
+- Filament pages/resources must never inject or call Action classes directly.
+- Public service interfaces remain the only entry point for controllers and higher layers.
+- Actions live under `app/Actions/` only after this pattern is explicitly needed for business workflows.
+- Actions are owned by services and may be injected into service implementations.
+- Actions may use Eloquent because they are service-layer collaborators.
+- Actions must not return raw Eloquent models from public methods.
+- Actions must return DTOs, bool, scalar values, or typed value objects compatible with the owning service contract.
+- Actions must have one clear workflow responsibility, for example publishing a resolved page draft.
+- Do not create Actions for simple mapping, formatting, or array normalization.
+
+Pure transformation helpers belong in `app/Support/` instead of `app/Actions/`.
+
+Support helper rules:
+- They may normalize arrays, map DTO payloads, sanitize URLs through existing support utilities, or preserve deterministic fallback behavior.
+- They must not write to the database.
+- They must not perform authorization, cache invalidation, audit logging, or publishing workflow decisions.
+- They may be static when they are dependency-free and deterministic, following the existing `HomepagePayloadMapper` pattern.
+- They must have characterization tests before replacing existing service-private behavior.
+
+Extraction requirements:
+- Measure the current service hotspot before extracting.
+- Add characterization tests for current behavior before moving code.
+- Extract one responsibility at a time.
+- Keep the owning service public interface unchanged unless a separate approved task changes it.
+- Run architecture guard and targeted workflow tests after extraction.
+
+---
+
 ### DTOs (Data Transfer Objects)
 
 Located in `app/DTOs/`.

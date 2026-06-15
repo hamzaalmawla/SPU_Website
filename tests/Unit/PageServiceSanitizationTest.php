@@ -11,6 +11,7 @@ use App\Models\Page;
 use App\Models\PageTranslation;
 use App\Models\User;
 use App\Services\PageDraftService;
+use App\Services\PagePublishabilityValidator;
 use App\Services\PagePublicReadService;
 use App\Services\PageService;
 use App\Services\PageUrlResolver;
@@ -40,6 +41,7 @@ final class PageServiceSanitizationTest extends TestCase
             app(PagePublicReadService::class),
             app(PageDraftService::class),
             app(PageUrlResolver::class),
+            app(PagePublishabilityValidator::class),
             app(HtmlSanitizer::class),
         );
     }

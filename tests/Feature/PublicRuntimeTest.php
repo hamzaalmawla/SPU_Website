@@ -417,6 +417,57 @@ class PublicRuntimeTest extends TestCase
             ->assertDontSee('Draft Feature');
     }
 
+    public function test_homepage_preview_prefers_locale_specific_payloads_and_keeps_published_fallbacks(): void
+    {
+        HomepageDraft::forceCreate([
+            'target_type' => 'homepage',
+            'target_id' => null,
+            'payload_json' => [
+                'homepage' => [
+                    'sections' => [
+                        [
+                            'id' => 1,
+                            'key' => 'hero',
+                            'sortOrder' => 1,
+                            'isEnabled' => true,
+                            'payload' => [
+                                'title' => 'Generic Draft Hero',
+                                'summary' => 'Generic draft summary',
+                            ],
+                            'arabicPayload' => [
+                                'title' => 'واجهة عربية تجريبية',
+                                'summary' => 'ملخص عربي تجريبي',
+                            ],
+                            'englishPayload' => [
+                                'title' => 'English Locale Draft Hero',
+                                'summary' => 'English locale draft summary',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'status' => 'draft',
+            'draft_notes' => 'Locale-specific homepage preview test',
+            'created_by' => $this->author()->id,
+            'updated_by' => $this->author()->id,
+        ]);
+
+        $preview = app(PreviewServiceInterface::class)->createToken('homepage', null, 'en', $this->author()->id);
+
+        $this->get($preview->previewUrl)
+            ->assertOk()
+            ->assertSee('English Locale Draft Hero')
+            ->assertSee('English locale draft summary')
+            ->assertSee('/images/slider-1.webp')
+            ->assertDontSee('Generic Draft Hero');
+
+        $this->get('/ar/preview?token='.$preview->token)
+            ->assertOk()
+            ->assertSee('واجهة عربية تجريبية')
+            ->assertSee('ملخص عربي تجريبي')
+            ->assertDontSee('English Locale Draft Hero');
+    }
+
     private function createPage(string $slug, array $overrides = []): Page
     {
         $author = $this->author();
