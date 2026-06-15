@@ -96,4 +96,49 @@ class RedirectValidationTest extends TestCase
         $this->assertTrue((bool) $first->fresh()->is_active);
         $this->assertFalse((bool) $second->fresh()->is_active);
     }
+
+    public function test_command_detects_unsafe_redirect_destinations(): void
+    {
+        LegacyExactRedirect::create([
+            'legacy_path' => '/unsafe-exact',
+            'destination_url' => 'https://evil.example/phishing',
+            'status_code' => 301,
+            'is_active' => true,
+        ]);
+
+        LegacyPatternRule::create([
+            'pattern' => '#^/unsafe-pattern/(.+)$#',
+            'replacement' => 'javascript:alert(1)',
+            'status_code' => 301,
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+
+        $this->artisan('continuity:validate-redirects')
+            ->assertFailed();
+    }
+
+    public function test_fix_flag_deactivates_unsafe_redirect_destinations(): void
+    {
+        $exact = LegacyExactRedirect::create([
+            'legacy_path' => '/fix-unsafe-exact',
+            'destination_url' => 'https://evil.example/phishing',
+            'status_code' => 301,
+            'is_active' => true,
+        ]);
+
+        $pattern = LegacyPatternRule::create([
+            'pattern' => '#^/fix-unsafe-pattern/(.+)$#',
+            'replacement' => 'javascript:alert(1)',
+            'status_code' => 301,
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+
+        $this->artisan('continuity:validate-redirects', ['--fix' => true])
+            ->assertFailed();
+
+        $this->assertFalse((bool) $exact->fresh()->is_active);
+        $this->assertFalse((bool) $pattern->fresh()->is_active);
+    }
 }

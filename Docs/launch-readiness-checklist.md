@@ -168,8 +168,8 @@ Evidence date: 2026-06-15
 
 | Gate | Command | Result | Status Impact |
 | --- | --- | --- | --- |
-| Full regression suite | `php artisan test` | Passed: 3407 tests, 15343 assertions, 176.81s. | Automated full-suite gate may be marked complete for this evidence date. |
-| Frontend production build | `npm run build` | Passed: Vite build completed in 1.37s with no unexpected warnings. Public app JS is 64.59 kB / 21.32 kB gzip. | Automated frontend-build gate may be marked complete for this evidence date. |
+| Full regression suite | `php artisan test` | Passed: 3415 tests, 15513 assertions, 172.39s. | Automated full-suite gate may be marked complete for this evidence date. |
+| Frontend production build | `npm run build` | Passed: Vite build completed in 1.40s with no unexpected warnings. Public app JS is 64.59 kB / 21.32 kB gzip. | Automated frontend-build gate may be marked complete for this evidence date. |
 | Route boot | `php artisan route:list` | Passed: 67 routes listed. | Automated route/provider/controller boot gate may be marked complete for this evidence date. |
 
 Evidence boundaries:

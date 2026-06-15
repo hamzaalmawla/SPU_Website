@@ -11,6 +11,8 @@ use App\DTOs\PageMetadataDTO;
 use App\DTOs\PageSeoInputDTO;
 use App\DTOs\PageShellDataDTO;
 use App\DTOs\PageTranslationDTO;
+use App\Models\AuditLog;
+use App\Models\Page;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -305,6 +307,38 @@ class PageServiceIntegrationTest extends TestCase
         $this->assertFalse($this->pageService()->publish($page->id, $this->author()->id));
     }
 
+    public function test_failed_publish_keeps_incomplete_page_private_without_success_audit(): void
+    {
+        $page = $this->pageService()->createPageShell(
+            new PageShellDataDTO(
+                slug: 'private-incomplete-page',
+                template: 'landing',
+                isHomepageShell: false,
+                status: 'draft',
+            ),
+            $this->author()->id,
+        );
+
+        $this->pageService()->updateEnglishTranslation($page->id, new PageTranslationDTO(
+            title: 'Private Incomplete Page',
+        ), $this->author()->id);
+
+        $this->assertFalse($this->pageService()->publish($page->id, $this->author()->id));
+
+        $reloaded = $this->pageService()->getAdminEditorPayload($page->id);
+
+        $this->assertSame('draft', $reloaded->metadata->status);
+        $this->assertNull($reloaded->publishedAt);
+        $this->assertNull($this->pageService()->getPublicPageBySlug('private-incomplete-page', 'en'));
+        $this->assertNull($this->pageService()->getPublicPageBySlug('private-incomplete-page', 'ar'));
+
+        $this->assertDatabaseMissing('audit_logs', [
+            'action' => 'page.publish',
+            'entity_type' => Page::class,
+            'entity_id' => $page->id,
+        ]);
+    }
+
     public function test_publish_rejects_draft_payload_with_empty_arabic_title(): void
     {
         $page = $this->createPageWithTranslations();
@@ -345,6 +379,48 @@ class PageServiceIntegrationTest extends TestCase
         $this->assertSame('draft', $reloaded->metadata->status);
         $this->assertSame('من نحن', $reloaded->arabicTranslation->title);
         $this->assertSame('About Us', $reloaded->englishTranslation->title);
+    }
+
+    public function test_failed_draft_publish_keeps_existing_public_page_and_does_not_audit_success(): void
+    {
+        $page = $this->createPageWithTranslations();
+
+        $this->assertTrue($this->pageService()->publish($page->id, $this->author()->id));
+
+        $publishAuditCount = AuditLog::query()
+            ->where('action', 'page.publish')
+            ->where('entity_type', Page::class)
+            ->where('entity_id', $page->id)
+            ->count();
+
+        $this->pageService()->saveDraft(
+            $page->id,
+            $this->draftPayloadForPage(
+                $page,
+                arabicTranslation: new PageTranslationDTO(title: 'عنوان مسودة غير صالحة'),
+                englishTranslation: new PageTranslationDTO(title: ''),
+            ),
+            $this->author()->id,
+        );
+
+        $this->assertFalse($this->pageService()->publish($page->id, $this->author()->id));
+
+        $reloaded = $this->pageService()->getAdminEditorPayload($page->id);
+        $publicArabic = $this->pageService()->getPublicPageBySlug('test-page', 'ar');
+        $publicEnglish = $this->pageService()->getPublicPageBySlug('test-page', 'en');
+
+        $this->assertSame('published', $reloaded->metadata->status);
+        $this->assertSame('من نحن', $reloaded->arabicTranslation->title);
+        $this->assertSame('About Us', $reloaded->englishTranslation->title);
+        $this->assertInstanceOf(PageDTO::class, $publicArabic);
+        $this->assertSame('من نحن', $publicArabic->arabicTranslation->title);
+        $this->assertInstanceOf(PageDTO::class, $publicEnglish);
+        $this->assertSame('About Us', $publicEnglish->englishTranslation->title);
+        $this->assertSame($publishAuditCount, AuditLog::query()
+            ->where('action', 'page.publish')
+            ->where('entity_type', Page::class)
+            ->where('entity_id', $page->id)
+            ->count());
     }
 
     public function test_update_metadata_rejects_self_parent(): void

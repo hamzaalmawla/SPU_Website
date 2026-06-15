@@ -132,6 +132,7 @@ final class ContinuityService implements ContinuityServiceInterface
 
         $this->detectDuplicateExactPaths($errors);
         $this->detectConflictingPatterns($errors);
+        $this->detectUnsafeDestinations($errors);
         $this->detectPotentialLoops($errors);
 
         return new ValidationResultDTO(
@@ -311,6 +312,38 @@ final class ContinuityService implements ContinuityServiceInterface
     /**
      * @param  array<int, ValidationMessageDTO>  $errors
      */
+    private function detectUnsafeDestinations(array &$errors): void
+    {
+        foreach (LegacyExactRedirect::query()->active()->get() as $redirect) {
+            $destination = (string) $redirect->destination_url;
+
+            if ($this->isAllowedDestination($destination)) {
+                continue;
+            }
+
+            $errors[] = new ValidationMessageDTO(
+                field: 'legacy_exact_redirects',
+                messages: ["Unsafe redirect destination '{$destination}' (rule {$redirect->getKey()})"],
+            );
+        }
+
+        foreach (LegacyPatternRule::query()->active()->get() as $rule) {
+            $destination = (string) $rule->replacement;
+
+            if ($this->isAllowedDestination($destination)) {
+                continue;
+            }
+
+            $errors[] = new ValidationMessageDTO(
+                field: 'legacy_pattern_rules',
+                messages: ["Unsafe pattern redirect destination '{$destination}' (rule {$rule->getKey()})"],
+            );
+        }
+    }
+
+    /**
+     * @param  array<int, ValidationMessageDTO>  $errors
+     */
     private function detectDuplicateExactPaths(array &$errors): void
     {
         $redirects = LegacyExactRedirect::query()
@@ -409,9 +442,19 @@ final class ContinuityService implements ContinuityServiceInterface
     {
         $parsed = parse_url($url);
 
+        if ($parsed === false) {
+            return false;
+        }
+
+        $scheme = strtolower((string) ($parsed['scheme'] ?? ''));
+
+        if ($scheme !== '' && ! in_array($scheme, ['http', 'https'], true)) {
+            return false;
+        }
+
         // Relative paths are always allowed.
         if (! isset($parsed['host'])) {
-            return true;
+            return $scheme === '';
         }
 
         $host = strtolower($parsed['host']);

@@ -97,6 +97,12 @@ final class ValidateRedirectsCommand extends Command
                 if (preg_match('/\(rule\s+(\d+)\)/', $message, $matches)) {
                     $ruleId = (int) $matches[1];
 
+                    if ($error->field === 'legacy_exact_redirects') {
+                        $deactivated += LegacyExactRedirect::query()
+                            ->whereKey($ruleId)
+                            ->update(['is_active' => false]);
+                    }
+
                     if ($error->field === 'legacy_pattern_rules') {
                         $deactivated += LegacyPatternRule::query()
                             ->where('id', $ruleId)

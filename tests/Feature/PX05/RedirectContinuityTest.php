@@ -34,6 +34,30 @@ class RedirectContinuityTest extends TestCase
         $response->assertStatus(301);
     }
 
+    public function test_exact_match_with_unsafe_external_destination_is_blocked(): void
+    {
+        LegacyExactRedirect::create([
+            'legacy_path' => '/unsafe-external',
+            'destination_url' => 'https://evil.example/phishing',
+            'status_code' => 301,
+            'is_active' => true,
+        ]);
+
+        $this->get('/unsafe-external')->assertNotFound();
+    }
+
+    public function test_exact_match_with_unsafe_scheme_destination_is_blocked(): void
+    {
+        LegacyExactRedirect::create([
+            'legacy_path' => '/unsafe-scheme',
+            'destination_url' => 'javascript:alert(1)',
+            'status_code' => 301,
+            'is_active' => true,
+        ]);
+
+        $this->get('/unsafe-scheme')->assertNotFound();
+    }
+
     public function test_pattern_match_returns_301_redirect(): void
     {
         LegacyPatternRule::create([

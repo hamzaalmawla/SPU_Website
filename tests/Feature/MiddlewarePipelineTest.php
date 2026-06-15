@@ -86,6 +86,40 @@ class MiddlewarePipelineTest extends TestCase
         $this->get('/en')->assertHeader('X-Cache', 'HIT');
     }
 
+    public function test_public_page_cache_is_isolated_by_locale_at_runtime(): void
+    {
+        $this->get('/ar')
+            ->assertOk()
+            ->assertHeader('X-Cache', 'MISS')
+            ->assertSee('كلياتنا الجامعية')
+            ->assertDontSee('Our Faculties');
+
+        $this->get('/en')
+            ->assertOk()
+            ->assertHeader('X-Cache', 'MISS')
+            ->assertSee('Our Faculties')
+            ->assertDontSee('كلياتنا الجامعية');
+
+        $this->get('/ar')
+            ->assertOk()
+            ->assertHeader('X-Cache', 'HIT')
+            ->assertSee('كلياتنا الجامعية')
+            ->assertDontSee('Our Faculties');
+
+        $this->get('/en')
+            ->assertOk()
+            ->assertHeader('X-Cache', 'HIT')
+            ->assertSee('Our Faculties')
+            ->assertDontSee('كلياتنا الجامعية');
+    }
+
+    public function test_non_get_public_requests_bypass_public_page_cache(): void
+    {
+        $this->post('/en/contact', [])
+            ->assertRedirect()
+            ->assertHeader('X-Cache', 'BYPASS');
+    }
+
     /**
      * It bypasses cache for preview requests.
      */

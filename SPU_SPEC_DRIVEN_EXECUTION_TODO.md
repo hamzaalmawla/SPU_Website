@@ -78,7 +78,7 @@ Latest verified state from this session:
 
 | Verification | Result |
 | --- | --- |
-| `php artisan test` | Passing, 3407 tests and 15343 assertions on full run. |
+| `php artisan test` | Passing, 3415 tests and 15513 assertions on full run. |
 | `npm run build` | Passing with no unexpected warnings after FontAwesome runtime removal. |
 | `php artisan route:list` | Bootstraps routes successfully. |
 | `php artisan test --filter=PageService` | Passing, publish validation covered. |
@@ -461,7 +461,7 @@ Completion evidence captured 2026-06-15:
 | Public page tests | `php artisan test tests/Feature/ContactPageTest.php tests/Feature/EServicesPageTest.php` passed: 5 tests, 53 assertions. |
 | Admin auth brand check | `php artisan test tests/Feature/AdminAuthFlowTest.php --filter=test_admin_login_page_loads` passed: 1 test, 3 assertions. |
 | Route boot | `php artisan route:list` passed: 67 routes listed. |
-| Full regression | `php artisan test` passed: 3407 tests, 15343 assertions, 176.81s. |
+| Full regression | `php artisan test` passed: 3415 tests, 15513 assertions, 172.39s. |
 
 Verification:
 
@@ -476,7 +476,7 @@ php artisan test tests/Feature/PublicRuntimeTest.php
 
 ### D01: Preserve Current Page Publish Validation Behavior
 
-Status: Ready
+Status: Done
 
 Priority: High
 
@@ -496,17 +496,28 @@ Implementation rules:
 
 Implementation steps:
 
-- [ ] Keep existing tests green before touching publish logic.
-- [ ] Add characterization tests before extracting publish validation to a new class.
-- [ ] Preserve `PageServiceInterface::publish(int $pageId, int $userId): bool` unless explicitly approved.
-- [ ] Avoid introducing duplicate validators unless the extraction is part of a planned architecture refactor.
+- [x] Keep existing tests green before touching publish logic.
+- [x] Add characterization tests before extracting publish validation to a new class.
+- [x] Preserve `PageServiceInterface::publish(int $pageId, int $userId): bool` unless explicitly approved.
+- [x] Avoid introducing duplicate validators unless the extraction is part of a planned architecture refactor.
 
 Acceptance criteria:
 
-- [ ] Invalid pages cannot become `published`.
-- [ ] Valid pages publish successfully.
-- [ ] Failed publish has no successful audit log.
-- [ ] Failed publish does not leak public content.
+- [x] Invalid pages cannot become `published`.
+- [x] Valid pages publish successfully.
+- [x] Failed publish has no successful audit log.
+- [x] Failed publish does not leak public content.
+
+Completion evidence captured 2026-06-15:
+
+| Evidence | Result |
+| --- | --- |
+| Incomplete page rejection | Added `test_failed_publish_keeps_incomplete_page_private_without_success_audit` to assert failed publish leaves the page draft, public reads return null, and no `page.publish` audit is written. |
+| Invalid draft rejection | Added `test_failed_draft_publish_keeps_existing_public_page_and_does_not_audit_success` to assert a bad draft cannot replace an already-published page or create another publish audit. |
+| Syntax | `php -l tests/Feature/Integration/PageServiceIntegrationTest.php` passed. |
+| Page service integration | `php artisan test tests/Feature/Integration/PageServiceIntegrationTest.php` passed: 18 tests, 75 assertions. |
+| Page service filter | `php artisan test --filter=PageService` passed: 22 tests, 89 assertions. |
+| Full regression | `php artisan test` passed: 3415 tests, 15513 assertions, 172.39s. |
 
 Verification:
 
@@ -1148,7 +1159,7 @@ php artisan test tests/Feature/PublicRuntimeTest.php --filter=preview
 
 ### H01: Keep Locale-Aware Cache Behavior Verified
 
-Status: Ready
+Status: Done
 
 Priority: High
 
@@ -1156,16 +1167,28 @@ Goal: Prevent AR/EN cache contamination and stale public output after publish/up
 
 Implementation steps:
 
-- [ ] Confirm public cache keys include locale.
-- [ ] Confirm admin/authenticated/preview/non-GET requests bypass public cache.
-- [ ] Confirm publish/update/delete invalidates relevant tags or safe fallback flushes.
-- [ ] Keep cache tests updated when tags or keys change.
+- [x] Confirm public cache keys include locale.
+- [x] Confirm admin/authenticated/preview/non-GET requests bypass public cache.
+- [x] Confirm publish/update/delete invalidates relevant tags or safe fallback flushes.
+- [x] Keep cache tests updated when tags or keys change.
 
 Acceptance criteria:
 
-- [ ] AR page never receives EN cached payload, and vice versa.
-- [ ] Preview never uses public cache.
-- [ ] Publish invalidates public output.
+- [x] AR page never receives EN cached payload, and vice versa.
+- [x] Preview never uses public cache.
+- [x] Publish invalidates public output.
+
+Completion evidence captured 2026-06-15:
+
+| Evidence | Result |
+| --- | --- |
+| Runtime locale isolation | Added `test_public_page_cache_is_isolated_by_locale_at_runtime` to assert AR and EN cached homepage HIT responses keep their own localized content. |
+| Runtime non-GET bypass | Added `test_non_get_public_requests_bypass_public_page_cache` to assert public POST traffic receives `X-Cache: BYPASS`. |
+| Middleware pipeline | `php artisan test tests/Feature/MiddlewarePipelineTest.php` passed: 13 tests, 75 assertions. |
+| Cache-focused suite | `php artisan test --filter=Cache` passed: 917 tests, 2092 assertions. |
+| Public runtime | `php artisan test tests/Feature/PublicRuntimeTest.php` passed: 14 tests, 79 assertions. |
+| Route boot | `php artisan route:list` passed: 67 routes listed. |
+| Full regression | `php artisan test` passed: 3415 tests, 15513 assertions, 172.39s. |
 
 Verification:
 
@@ -1208,7 +1231,7 @@ php artisan test tests/Feature/PX07/SeoValidationTest.php
 
 ### H03: Preserve Redirect And File Continuity Foundation
 
-Status: Ready
+Status: Done
 
 Priority: Medium
 
@@ -1216,17 +1239,31 @@ Goal: Keep existing redirect/file continuity tooling stable without expanding in
 
 Implementation steps:
 
-- [ ] Keep exact redirect behavior tested.
-- [ ] Keep pattern redirect behavior tested.
-- [ ] Keep unresolved request logging tested.
-- [ ] Keep file continuity mapping tested.
-- [ ] Do not add migration dashboard code until Phase 3 decision gate is approved.
+- [x] Keep exact redirect behavior tested.
+- [x] Keep pattern redirect behavior tested.
+- [x] Keep unresolved request logging tested.
+- [x] Keep file continuity mapping tested.
+- [x] Do not add migration dashboard code until Phase 3 decision gate is approved.
 
 Acceptance criteria:
 
-- [ ] Redirect tests pass.
-- [ ] File continuity tests pass.
-- [ ] Unsafe external redirects remain blocked by existing continuity rules.
+- [x] Redirect tests pass.
+- [x] File continuity tests pass.
+- [x] Unsafe external redirects remain blocked by existing continuity rules.
+
+Completion evidence captured 2026-06-15:
+
+| Evidence | Result |
+| --- | --- |
+| Runtime unsafe destination blocking | Added tests proving exact redirects to untrusted external hosts and unsafe schemes do not redirect. |
+| Validation unsafe destination detection | `continuity:validate-redirects` now reports unsafe exact and pattern destinations. |
+| Fix behavior | `continuity:validate-redirects --fix` now deactivates unsafe exact and pattern rules. |
+| Redirect continuity | `php artisan test tests/Feature/PX05/RedirectContinuityTest.php` passed: 11 tests, 17 assertions. |
+| File continuity | `php artisan test tests/Feature/PX05/FileContinuityTest.php` passed: 4 tests, 6 assertions. |
+| Redirect validation | `php artisan test tests/Feature/PX07/RedirectValidationTest.php` passed: 6 tests, 10 assertions. |
+| Frontend build | `npm run build` passed: Vite build completed in 1.40s with no unexpected warnings. |
+| Route boot | `php artisan route:list` passed: 67 routes listed. |
+| Full regression | `php artisan test` passed: 3415 tests, 15513 assertions, 172.39s. |
 
 Verification:
 

@@ -8,6 +8,82 @@ It is intentionally scoped to the current homepage/admin foundation and does not
 
 ## 2026-06-15
 
+### D01: Page Publish Safety Characterization
+
+Status: Completed
+
+Type: Publish workflow regression coverage
+
+Changed files:
+
+| File | Change |
+| --- | --- |
+| `tests/Feature/Integration/PageServiceIntegrationTest.php` | Added side-effect coverage for failed publish attempts: incomplete pages stay private without success audit logs, and invalid drafts do not replace existing public pages. |
+| `SPU_SPEC_DRIVEN_EXECUTION_TODO.md` | Marked D01 complete with targeted verification evidence. |
+| `SPU_SPEC_DRIVEN_CHANGELOG.md` | Added this D01 changelog entry. |
+
+Completion evidence:
+
+| Check | Result |
+| --- | --- |
+| Syntax | `php -l tests/Feature/Integration/PageServiceIntegrationTest.php` passed. |
+| Page service integration | `php artisan test tests/Feature/Integration/PageServiceIntegrationTest.php` passed: 18 tests, 75 assertions. |
+| Page service filter | `php artisan test --filter=PageService` passed: 22 tests, 89 assertions. |
+| Full regression | `php artisan test` passed: 3415 tests, 15513 assertions, 172.39s. |
+
+### H03: Unsafe Redirect Validation Hardening
+
+Status: Completed
+
+Type: Continuity security hardening with runtime and command coverage
+
+Changed files:
+
+| File | Change |
+| --- | --- |
+| `app/Services/ContinuityService.php` | Added unsafe destination validation for exact and pattern redirect rules; rejected non-HTTP(S) schemes. |
+| `app/Console/Commands/ValidateRedirectsCommand.php` | Extended `--fix` handling to deactivate unsafe exact redirect rules as well as unsafe pattern rules. |
+| `tests/Feature/PX05/RedirectContinuityTest.php` | Added runtime coverage for untrusted external and unsafe-scheme redirect blocking. |
+| `tests/Feature/PX07/RedirectValidationTest.php` | Added command coverage for detecting and deactivating unsafe exact and pattern redirects. |
+| `SPU_SPEC_DRIVEN_EXECUTION_TODO.md` | Marked H03 complete with implementation and verification evidence. |
+| `SPU_SPEC_DRIVEN_CHANGELOG.md` | Added this H03 changelog entry. |
+
+Completion evidence:
+
+| Check | Result |
+| --- | --- |
+| Syntax | `php -l app/Services/ContinuityService.php` and `php -l app/Console/Commands/ValidateRedirectsCommand.php` passed. |
+| Redirect continuity | `php artisan test tests/Feature/PX05/RedirectContinuityTest.php` passed: 11 tests, 17 assertions. |
+| File continuity | `php artisan test tests/Feature/PX05/FileContinuityTest.php` passed: 4 tests, 6 assertions. |
+| Redirect validation | `php artisan test tests/Feature/PX07/RedirectValidationTest.php` passed: 6 tests, 10 assertions. |
+| Frontend build | `npm run build` passed: Vite build completed in 1.40s with no unexpected warnings. |
+| Route boot | `php artisan route:list` passed: 67 routes listed. |
+| Full regression | `php artisan test` passed: 3415 tests, 15513 assertions, 172.39s. |
+
+### H01: Runtime Cache Locale Isolation Coverage
+
+Status: Completed
+
+Type: Cache behavior regression coverage
+
+Changed files:
+
+| File | Change |
+| --- | --- |
+| `tests/Feature/MiddlewarePipelineTest.php` | Added runtime assertions that AR and EN cached homepage HIT responses do not cross-contaminate, and public POST traffic bypasses cache. |
+| `SPU_SPEC_DRIVEN_EXECUTION_TODO.md` | Marked H01 complete with implementation and verification evidence. |
+| `SPU_SPEC_DRIVEN_CHANGELOG.md` | Added this H01 changelog entry. |
+
+Completion evidence:
+
+| Check | Result |
+| --- | --- |
+| Middleware pipeline | `php artisan test tests/Feature/MiddlewarePipelineTest.php` passed: 13 tests, 75 assertions. |
+| Cache-focused suite | `php artisan test --filter=Cache` passed: 917 tests, 2092 assertions. |
+| Public runtime | `php artisan test tests/Feature/PublicRuntimeTest.php` passed: 14 tests, 79 assertions. |
+| Route boot | `php artisan route:list` passed: 67 routes listed. |
+| Full regression | `php artisan test` passed: 3415 tests, 15513 assertions, 172.39s. |
+
 ### C02: FontAwesome Runtime Removal
 
 Status: Completed
@@ -40,7 +116,7 @@ Completion evidence:
 | Public page tests | `php artisan test tests/Feature/ContactPageTest.php tests/Feature/EServicesPageTest.php` passed: 5 tests, 53 assertions. |
 | Admin auth brand check | `php artisan test tests/Feature/AdminAuthFlowTest.php --filter=test_admin_login_page_loads` passed: 1 test, 3 assertions. |
 | Route boot | `php artisan route:list` passed: 67 routes listed. |
-| Full regression | `php artisan test` passed: 3407 tests, 15343 assertions, 176.81s. |
+| Full regression | `php artisan test` passed: 3415 tests, 15513 assertions, 172.39s. |
 
 ### E06: Homepage Preview Assembler Extraction
 
