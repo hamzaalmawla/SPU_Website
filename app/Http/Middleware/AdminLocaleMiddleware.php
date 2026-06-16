@@ -12,7 +12,7 @@ final class AdminLocaleMiddleware
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $locale = $request->session()->get('admin_locale', config('app.locale', 'ar'));
+        $locale = $request->session()->get('admin_locale', 'ar');
 
         if (! in_array($locale, ['ar', 'en'], true)) {
             $locale = 'ar';

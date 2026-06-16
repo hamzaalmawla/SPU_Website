@@ -23,8 +23,35 @@ class AdminAuthFlowTest extends TestCase
     {
         $this->get('/admin/login')
             ->assertOk()
+            ->assertSee('<html lang="ar" dir="rtl">', false)
             ->assertSee('SPU CMS')
+            ->assertSee('تسجيل دخول الإدارة')
             ->assertSee('الجامعة السورية الخاصة');
+    }
+
+    public function test_admin_login_page_renders_english_ltr_with_arabic_brand_fallback(): void
+    {
+        $this->withSession(['admin_locale' => 'en'])
+            ->get('/admin/login')
+            ->assertOk()
+            ->assertSee('<html lang="en" dir="ltr">', false)
+            ->assertSee('SPU CMS')
+            ->assertSee('Admin sign in')
+            ->assertSee('Syrian Private University')
+            ->assertSee('<span class="brand-name-native" lang="ar" dir="rtl">الجامعة السورية الخاصة</span>', false);
+    }
+
+    public function test_admin_locale_switcher_updates_login_locale(): void
+    {
+        $this->from('/admin/login')
+            ->post('/admin/locale/en')
+            ->assertRedirect('/admin/login')
+            ->assertSessionHas('admin_locale', 'en');
+
+        $this->get('/admin/login')
+            ->assertOk()
+            ->assertSee('<html lang="en" dir="ltr">', false)
+            ->assertSee('Admin sign in');
     }
 
     /**

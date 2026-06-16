@@ -114,9 +114,10 @@ Use this matrix to select the minimum correct verification set for each change t
 | Page publish workflow | `php artisan test --filter=PageService` and `php artisan test tests/Feature/Integration/PageServiceIntegrationTest.php` | Valid and invalid publish paths pass. |
 | Homepage CMS workflow | `php artisan test tests/Feature/HomepageCmsWorkflowTest.php` | Draft, preview, publish, schedule, unpublish, cache, and audit assertions pass. |
 | Admin or Filament boundary | `php artisan test tests/Feature/ArchitectureGuardTest.php` and `php artisan test tests/Feature/PX06` | Architecture guard and role visibility/resource tests pass. |
+| Admin auth, 2FA, or admin locale | `php artisan test tests/Feature/AdminAuthFlowTest.php` and `php artisan test tests/Feature/TwoFactorChallengeTest.php` | Login branding, locale switch, lockout/logout, and 2FA challenge assertions pass. |
 | Middleware, provider, or route changes | `php artisan route:list` and `php artisan test tests/Feature/MiddlewarePipelineTest.php` | Laravel boots routes; middleware behavior tests pass. |
 | Media upload or file continuity | `php artisan test --filter=Media` and `php artisan test tests/Feature/PX05/FileContinuityTest.php` | Upload and file continuity assertions pass. |
-| Redirect or SEO continuity | `php artisan test tests/Feature/PX05/RedirectContinuityTest.php`, `php artisan test tests/Feature/PX07/RedirectValidationTest.php`, and `php artisan test tests/Feature/PX07/SeoValidationTest.php` | Redirect, conflict, and SEO validation tests pass. |
+| Redirect or SEO continuity | `php artisan test tests/Feature/PX05/RedirectContinuityTest.php`, `php artisan test tests/Feature/PX07/RedirectValidationTest.php`, `php artisan test tests/Feature/PX05/SeoRenderingTest.php`, and `php artisan test tests/Feature/PX07/SeoValidationTest.php` | Redirect, conflict, SEO rendering, and SEO validation tests pass. |
 | Security-sensitive change | Relevant targeted tests plus `php artisan test` | Targeted behavior and full regression suite pass. |
 
 ### 12.2 Release-Candidate Gate
@@ -164,13 +165,14 @@ Manual QA is required before public launch even when automated tests pass.
 
 ## 13. Latest Automated Release Evidence
 
-Evidence date: 2026-06-15
+Evidence date: 2026-06-16
 
 | Gate | Command | Result | Status Impact |
 | --- | --- | --- | --- |
-| Full regression suite | `php artisan test` | Passed: 3421 tests, 15451 assertions, 170.16s. | Automated full-suite gate may be marked complete for this evidence date. |
-| Frontend production build | `npm run build` | Passed: Vite build completed in 2.46s with no unexpected warnings. Public app JS is 64.59 kB / 21.32 kB gzip. | Automated frontend-build gate may be marked complete for this evidence date. |
+| Full regression suite | `php artisan test` | Passed: 3425 tests, 15526 assertions, 160.41s. | Automated full-suite gate may be marked complete for this evidence date. |
+| Frontend production build | `npm run build` | Passed: Vite build completed in 1.50s with no unexpected warnings. Public app JS is 64.59 kB / 21.32 kB gzip. | Automated frontend-build gate may be marked complete for this evidence date. |
 | Route boot | `php artisan route:list` | Passed: 67 routes listed. | Automated route/provider/controller boot gate may be marked complete for this evidence date. |
+| Diff hygiene | `git diff --check` | Passed with no output. | Whitespace/conflict-marker gate may be marked complete for this evidence date. |
 
 Evidence boundaries:
 

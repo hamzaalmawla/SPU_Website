@@ -8,7 +8,9 @@ use App\Models\Page;
 use App\Models\PageSeoMeta;
 use App\Models\PageTranslation;
 use App\Models\Setting;
+use Illuminate\Console\Command;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
 use Tests\TestCase;
 
 /**
@@ -85,6 +87,43 @@ class SeoValidationTest extends TestCase
 
         $this->artisan('continuity:validate-seo', ['--format' => 'json'])
             ->assertSuccessful();
+    }
+
+    public function test_command_detects_incomplete_seo_record(): void
+    {
+        $this->seedSeoDefaults();
+
+        $page = Page::create([
+            'slug' => 'incomplete-seo',
+            'status' => 'published',
+            'is_enabled' => true,
+            'published_at' => now(),
+            'template' => 'default',
+            'type' => 'landing',
+        ]);
+
+        PageTranslation::create([
+            'page_id' => $page->id,
+            'locale' => 'ar',
+            'title' => 'صفحة ناقصة SEO',
+        ]);
+
+        PageSeoMeta::create([
+            'page_id' => $page->id,
+            'locale' => 'ar',
+            'robots' => 'index,follow',
+        ]);
+
+        $exitCode = Artisan::call('continuity:validate-seo', ['--locale' => 'ar', '--format' => 'json']);
+        $output = Artisan::output();
+
+        $this->assertSame(Command::FAILURE, $exitCode);
+        $this->assertStringContainsString('missing_meta_title', $output);
+        $this->assertStringContainsString('missing_meta_description', $output);
+        $this->assertStringContainsString('missing_canonical_url', $output);
+        $this->assertStringContainsString('weak_og_title', $output);
+        $this->assertStringContainsString('weak_og_description', $output);
+        $this->assertStringContainsString('missing_og_image', $output);
     }
 
     public function test_command_filters_by_locale(): void

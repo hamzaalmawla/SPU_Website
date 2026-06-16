@@ -48,14 +48,16 @@ final class ArchitectureGuardTest extends TestCase
     }
 
     /**
-     * Filament pages and resources must not import forbidden models
-     * (HomepageDraft, MenuItem, PageTranslation, AuditLog) except for
-     * Filament-required $model property declarations.
+     * Filament pages and resources must not import workflow storage models
+     * except when a Filament Resource declares its required $model property.
      */
     public function test_filament_does_not_import_forbidden_models(): void
     {
         $forbiddenModels = [
+            'AuditLog',
             'HomepageDraft',
+            'MenuItem',
+            'PageDraft',
             'PageTranslation',
         ];
 
@@ -78,15 +80,19 @@ final class ArchitectureGuardTest extends TestCase
                 }
 
                 foreach ($forbiddenModels as $model) {
+                    $declaresResourceModel = $this->declaresFilamentModel($content, $model);
+
                     // Check for "use App\Models\{Model}" imports
                     if (preg_match('/^use\s+App\\\\Models\\\\' . $model . '\b/m', $content)) {
-                        $violations[] = basename($file) . " imports App\\Models\\{$model}";
+                        if (! $declaresResourceModel) {
+                            $violations[] = basename($file) . " imports App\\Models\\{$model}";
+                        }
                     }
 
                     // Check for direct static calls like "HomepageDraft::query()"
                     if (preg_match('/\\\\' . $model . '::/', $content) || preg_match('/\b' . $model . '::/', $content)) {
                         // Allow $model property declarations
-                        if (! preg_match('/\$model\s*=\s*' . $model . '::class/', $content)) {
+                        if (! $declaresResourceModel) {
                             $violations[] = basename($file) . " uses {$model}:: directly";
                         }
                     }
@@ -97,6 +103,65 @@ final class ArchitectureGuardTest extends TestCase
         $this->assertEmpty(
             $violations,
             "Filament files must not import forbidden models:\n" . implode("\n", $violations)
+        );
+    }
+
+    /**
+     * Filament workflow code must use service contracts from app/Contracts.
+     * Concrete service imports, service construction, or resolving concrete
+     * services from the container would bypass the service boundary contract.
+     */
+    public function test_filament_uses_service_contracts_not_concrete_services(): void
+    {
+        $violations = [];
+
+        foreach ($this->filamentFiles() as $file) {
+            $content = file_get_contents($file);
+            if ($content === false) {
+                continue;
+            }
+
+            $importedConcreteServices = [];
+
+            if (preg_match_all('/^use\s+App\\\\Services\\\\([^;]+);/m', $content, $matches)) {
+                foreach ($matches[1] as $service) {
+                    $serviceName = preg_replace('/\s+as\s+\w+$/i', '', $service);
+                    $serviceName = basename(str_replace('\\', '/', $serviceName ?? $service));
+
+                    if ($serviceName !== '') {
+                        $importedConcreteServices[] = $serviceName;
+                    }
+
+                    $violations[] = basename($file) . " imports concrete service App\\Services\\{$service}";
+                }
+            }
+
+            if (preg_match_all('/new\s+([A-Z][A-Za-z0-9_]*Service)\s*\(/', $content, $matches)) {
+                foreach ($matches[1] as $service) {
+                    if (in_array($service, $importedConcreteServices, true)) {
+                        $violations[] = basename($file) . " instantiates concrete service {$service}";
+                    }
+                }
+            }
+
+            if (preg_match('/new\s+\\\\?App\\\\Services\\\\[A-Z][A-Za-z0-9_]*Service\s*\(/', $content) === 1) {
+                $violations[] = basename($file) . ' instantiates a concrete App\\Services class';
+            }
+
+            $serviceClassPattern = '(?:\\\\?App\\\\Services\\\\[A-Z][A-Za-z0-9_]*Service|[A-Z][A-Za-z0-9_]*Service)';
+
+            if (preg_match('/(?:app|resolve)\(\s*' . $serviceClassPattern . '::class\s*\)/', $content) === 1) {
+                $violations[] = basename($file) . ' resolves a concrete service class from the container';
+            }
+
+            if (preg_match('/(?:app\(\s*\)|\$this->app)->make\(\s*' . $serviceClassPattern . '::class\s*\)/', $content) === 1) {
+                $violations[] = basename($file) . ' makes a concrete service class from the container';
+            }
+        }
+
+        $this->assertEmpty(
+            $violations,
+            "Filament workflow code must depend on service interfaces only:\n" . implode("\n", $violations)
         );
     }
 
@@ -198,5 +263,21 @@ final class ArchitectureGuardTest extends TestCase
         }
 
         return $files;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function filamentFiles(): array
+    {
+        return array_merge(
+            $this->phpFilesIn(app_path('Filament/Pages')),
+            $this->phpFilesIn(app_path('Filament/Resources')),
+        );
+    }
+
+    private function declaresFilamentModel(string $content, string $model): bool
+    {
+        return preg_match('/\$model\s*=\s*' . $model . '::class/', $content) === 1;
     }
 }

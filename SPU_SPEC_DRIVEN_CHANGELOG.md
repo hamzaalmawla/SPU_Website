@@ -6,6 +6,117 @@ It is intentionally scoped to the current homepage/admin foundation and does not
 
 ---
 
+## 2026-06-16
+
+### A01: Source-Of-Truth Synchronization
+
+Status: Completed
+
+Type: Governance documentation alignment after foundation hardening
+
+Changed files:
+
+| File | Change |
+| --- | --- |
+| `Docs/launch-readiness-checklist.md` | Added explicit quick gates for admin auth/2FA/admin locale changes and included SEO rendering in the redirect/SEO continuity gate. |
+| `TODO.md` | Aligned P3-ARCH-04 with the actual architecture guard suite, including Filament workflow model constraints, concrete service dependency blocking, contract bindings, homepage keys, controller model imports, and no legacy Kernel. |
+| `SPU_SPEC_DRIVEN_EXECUTION_TODO.md` | Marked A01 complete with source-of-truth synchronization evidence. |
+| `SPU_SPEC_DRIVEN_CHANGELOG.md` | Added this A01 changelog entry. |
+
+Completion evidence:
+
+| Check | Result |
+| --- | --- |
+| Scope alignment | C01 remains manual-browser gated; no full-site module scope was enabled. |
+| Evidence alignment | Completed F01, F02, and H02 entries retain command evidence. |
+| Architecture guard | `php artisan test tests/Feature/ArchitectureGuardTest.php` passed: 6 tests, 7 assertions. |
+| Diff hygiene | `git diff --check` passed with no output. |
+
+### F02: Admin Auth Bilingual Brand Hardening
+
+Status: Completed
+
+Type: Admin auth locale fix with bilingual branding regression coverage
+
+Changed files:
+
+| File | Change |
+| --- | --- |
+| `app/Http/Middleware/AdminLocaleMiddleware.php` | Defaults admin auth locale to `ar` instead of `config('app.locale')`, preserving the project's Arabic default on admin auth screens. |
+| `tests/Feature/AdminAuthFlowTest.php` | Added coverage for Arabic RTL default login rendering, English LTR login rendering with Arabic brand fallback, and admin locale switch persistence. |
+| `SPU_SPEC_DRIVEN_EXECUTION_TODO.md` | Marked F02 complete with targeted verification evidence. |
+| `SPU_SPEC_DRIVEN_CHANGELOG.md` | Added this F02 changelog entry. |
+
+Completion evidence:
+
+| Check | Result |
+| --- | --- |
+| Syntax | `php -l app/Http/Middleware/AdminLocaleMiddleware.php` and `php -l tests/Feature/AdminAuthFlowTest.php` passed. |
+| Admin auth flow | `php artisan test tests/Feature/AdminAuthFlowTest.php` passed: 6 tests, 38 assertions. |
+| Admin middleware subset | `php artisan test tests/Feature/MiddlewarePipelineTest.php --filter=admin` passed: 5 tests, 17 assertions. |
+| Two-factor auth layout | `php artisan test tests/Feature/TwoFactorChallengeTest.php` passed: 11 tests, 27 assertions. |
+| Architecture guard | `php artisan test tests/Feature/ArchitectureGuardTest.php` passed: 6 tests, 7 assertions. |
+| Admin boundary suite | `php artisan test tests/Feature/PX06` passed: 47 tests, 137 assertions. |
+| Frontend build | `npm run build` passed: Vite build completed in 1.50s with no unexpected warnings. |
+| Route boot | `php artisan route:list` passed: 67 routes listed. |
+| Full regression | `php artisan test` passed: 3425 tests, 15526 assertions, 160.41s. |
+| Diff hygiene | `git diff --check` passed with no output. |
+
+### H02: SEO Validation Completeness Hardening
+
+Status: Completed
+
+Type: SEO validation hardening with targeted and property coverage
+
+Changed files:
+
+| File | Change |
+| --- | --- |
+| `app/Console/Commands/ValidateSeoCommand.php` | Reports `missing_canonical_url` when the stored page SEO record lacks a canonical URL, while keeping render-time canonical fallback in `SeoMetadataService`. |
+| `tests/Feature/PX07/SeoValidationTest.php` | Added regression coverage for incomplete SEO records, including missing title, description, canonical URL, weak OG fields, and missing OG image. |
+| `tests/Unit/SeoValidationPropertyTest.php` | Updated property expectations so complete SEO metadata includes a stored canonical URL. |
+| `SPU_SPEC_DRIVEN_EXECUTION_TODO.md` | Marked H02 complete with targeted verification evidence. |
+| `SPU_SPEC_DRIVEN_CHANGELOG.md` | Added this H02 changelog entry. |
+
+Completion evidence:
+
+| Check | Result |
+| --- | --- |
+| Syntax | `php -l app/Console/Commands/ValidateSeoCommand.php`, `php -l tests/Feature/PX07/SeoValidationTest.php`, and `php -l tests/Unit/SeoValidationPropertyTest.php` passed. |
+| SEO rendering and validation | `php artisan test tests/Feature/PX05/SeoRenderingTest.php tests/Feature/PX07/SeoValidationTest.php` passed: 10 tests, 26 assertions. |
+| SEO-focused suite | `php artisan test --filter=Seo` passed: 618 tests, 2481 assertions. |
+| Architecture guard | `php artisan test tests/Feature/ArchitectureGuardTest.php` passed: 6 tests, 7 assertions. |
+| Frontend build | `npm run build` passed: Vite build completed in 1.41s with no unexpected warnings. |
+| Route boot | `php artisan route:list` passed: 67 routes listed. |
+| Full regression | `php artisan test` passed: 3423 tests, 15446 assertions, 158.93s. |
+| Diff hygiene | `git diff --check` passed with no output. |
+
+### F01: Filament Workflow Boundary Guard
+
+Status: Completed
+
+Type: Architecture guard hardening with admin boundary verification
+
+Changed files:
+
+| File | Change |
+| --- | --- |
+| `tests/Feature/ArchitectureGuardTest.php` | Expanded Filament workflow model guard coverage for workflow storage models while preserving Filament Resource `$model` declarations, and added a guard preventing Filament code from importing, constructing, or resolving concrete `App\Services` classes instead of service contracts. |
+| `SPU_SPEC_DRIVEN_EXECUTION_TODO.md` | Marked F01 complete with targeted verification evidence. |
+| `SPU_SPEC_DRIVEN_CHANGELOG.md` | Added this F01 changelog entry. |
+
+Completion evidence:
+
+| Check | Result |
+| --- | --- |
+| Syntax | `php -l tests/Feature/ArchitectureGuardTest.php` passed. |
+| Architecture guard | `php artisan test tests/Feature/ArchitectureGuardTest.php` passed: 6 tests, 7 assertions. |
+| Admin boundary suite | `php artisan test tests/Feature/PX06` passed: 47 tests, 137 assertions. |
+| Frontend build | `npm run build` passed: Vite build completed in 1.42s with no unexpected warnings. |
+| Route boot | `php artisan route:list` passed: 67 routes listed. |
+| Full regression | `php artisan test` passed: 3422 tests, 15308 assertions, 160.19s. |
+| Diff hygiene | `git diff --check` passed with no output. |
+
 ## 2026-06-15
 
 ### G02: Media Upload Hardening

@@ -107,7 +107,7 @@ final class ValidateSeoCommand extends Command
             $issues[] = 'missing_meta_description';
         }
 
-        if (empty($seoMeta->canonical_url) && empty($seo->canonicalUrl)) {
+        if (empty($seoMeta->canonical_url)) {
             $issues[] = 'missing_canonical_url';
         }
 

@@ -58,12 +58,9 @@ class SeoValidationPropertyTest extends TestCase
             if (! $hasDescription) {
                 $expectedIssues[] = 'missing_meta_description';
             }
-            // Note: missing_canonical_url is only flagged when BOTH the SEO record
-            // and the service fallback have no canonical URL. The service always
-            // generates a fallback canonical, so we only expect this flag when
-            // the record has no canonical AND we explicitly test that edge case.
-            // For this property test we focus on meta_title and meta_description
-            // which have no automatic fallback in the SEO record check.
+            if (! $hasCanonical) {
+                $expectedIssues[] = 'missing_canonical_url';
+            }
 
             $cases["iteration_{$i}"] = [$locale, $metaTitle, $metaDescription, $canonicalUrl, $expectedIssues];
         }
