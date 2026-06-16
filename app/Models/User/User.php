@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace App\Models\User;
 
+use App\Models\Homepage\HomepageDraft;
+use App\Models\Page\Page;
+use App\Models\Page\PageDraft;
+use App\Models\Shared\AuditLog;
+use App\Models\Shared\PreviewToken;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\PX06;
 
 use App\Filament\Resources\MediaAssetResource;
-use App\Models\User;
+use App\Models\User\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

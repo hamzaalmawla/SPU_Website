@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use App\Contracts\HomepageSectionServiceInterface;
+use App\Contracts\Homepage\HomepageSectionServiceInterface;
 use App\Filament\Support\HomepageFormSchema;
 use Filament\Forms\Components\Component;
 use Filament\Forms\Components\FileUpload;

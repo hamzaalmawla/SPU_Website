@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Contracts\EServicesPageServiceInterface;
-use App\DTOs\EServicesPageContentDTO;
-use App\Models\User;
+use App\Contracts\Page\EServicesPageServiceInterface;
+use App\DTOs\EServices\EServicesPageContentDTO;
+use App\Models\User\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;

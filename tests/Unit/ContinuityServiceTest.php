@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use App\Contracts\ContinuityServiceInterface;
-use App\DTOs\UnresolvedRequestDTO;
-use App\Models\LegacyExactRedirect;
-use App\Models\LegacyFileInventory;
-use App\Models\LegacyPatternRule;
-use App\Models\UnresolvedLegacyRequest;
+use App\Contracts\Shared\ContinuityServiceInterface;
+use App\DTOs\Legacy\UnresolvedRequestDTO;
+use App\Models\Legacy\LegacyExactRedirect;
+use App\Models\Legacy\LegacyFileInventory;
+use App\Models\Legacy\LegacyPatternRule;
+use App\Models\Page\UnresolvedLegacyRequest;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;

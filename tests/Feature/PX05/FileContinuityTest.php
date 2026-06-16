@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\PX05;
 
-use App\Contracts\ContinuityServiceInterface;
-use App\Models\LegacyFileInventory;
+use App\Contracts\Shared\ContinuityServiceInterface;
+use App\Models\Legacy\LegacyFileInventory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

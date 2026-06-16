@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Contracts\AuthServiceInterface;
-use App\DTOs\LoginCredentialsDTO;
-use App\Models\User;
+use App\Contracts\Auth\AuthServiceInterface;
+use App\DTOs\Auth\LoginCredentialsDTO;
+use App\Models\User\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;

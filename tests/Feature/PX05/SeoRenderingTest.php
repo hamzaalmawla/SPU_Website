@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature\PX05;
 
-use App\Contracts\SeoMetadataServiceInterface;
-use App\Models\Page;
-use App\Models\PageSeoMeta;
-use App\Models\PageTranslation;
-use App\Models\Setting;
+use App\Contracts\Seo\SeoMetadataServiceInterface;
+use App\Models\Page\Page;
+use App\Models\Page\PageSeoMeta;
+use App\Models\Page\PageTranslation;
+use App\Models\Settings\Setting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

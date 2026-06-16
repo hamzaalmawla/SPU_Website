@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use App\Contracts\SitemapServiceInterface;
-use App\Models\Page;
-use App\Models\PageTranslation;
+use App\Contracts\Seo\SitemapServiceInterface;
+use App\Models\Page\Page;
+use App\Models\Page\PageTranslation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;

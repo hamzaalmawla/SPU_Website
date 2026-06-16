@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\DTOs\Settings;
 
+use App\DTOs\Seo\PageSeoDTO;
+
 /**
  * Public settings payload used by the public shell.
  */

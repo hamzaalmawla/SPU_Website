@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Tests\Feature\PX06;
 
 use App\Filament\Pages\ManageHomepage;
-use App\DTOs\HomepageSectionDataDTO;
-use App\DTOs\HomepageSectionTranslationDTO;
-use App\Models\User;
+use App\DTOs\Homepage\HomepageSectionDataDTO;
+use App\DTOs\Homepage\HomepageSectionTranslationDTO;
+use App\Models\User\User;
 use App\Support\HomepagePayloadMapper;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;

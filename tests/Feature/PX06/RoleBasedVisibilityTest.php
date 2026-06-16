@@ -11,7 +11,7 @@ use App\Filament\Resources\AuditLogResource;
 use App\Filament\Resources\MediaAssetResource;
 use App\Filament\Resources\PageResource;
 use App\Filament\Resources\UserResource;
-use App\Models\User;
+use App\Models\User\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

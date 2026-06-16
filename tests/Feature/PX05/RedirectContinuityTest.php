@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\PX05;
 
-use App\Models\LegacyExactRedirect;
-use App\Models\LegacyPatternRule;
-use App\Models\UnresolvedLegacyRequest;
+use App\Models\Legacy\LegacyExactRedirect;
+use App\Models\Legacy\LegacyPatternRule;
+use App\Models\Page\UnresolvedLegacyRequest;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

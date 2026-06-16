@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Feature\PX07;
 
-use App\Models\LegacyExactRedirect;
-use App\Models\LegacyFileInventory;
-use App\Models\LegacyRecordSnapshot;
-use App\Models\Page;
-use App\Models\PageTranslation;
-use App\Models\Setting;
-use App\Models\UnresolvedLegacyRequest;
+use App\Models\Legacy\LegacyExactRedirect;
+use App\Models\Legacy\LegacyFileInventory;
+use App\Models\Legacy\LegacyRecordSnapshot;
+use App\Models\Page\Page;
+use App\Models\Page\PageTranslation;
+use App\Models\Settings\Setting;
+use App\Models\Page\UnresolvedLegacyRequest;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;

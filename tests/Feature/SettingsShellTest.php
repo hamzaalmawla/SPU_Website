@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Contracts\NavigationServiceInterface;
-use App\Contracts\SettingsServiceInterface;
-use App\DTOs\SettingsDTO;
-use App\DTOs\SettingValueDTO;
-use App\Models\User;
+use App\Contracts\Navigation\NavigationServiceInterface;
+use App\Contracts\Settings\SettingsServiceInterface;
+use App\DTOs\Settings\SettingsDTO;
+use App\DTOs\Settings\SettingValueDTO;
+use App\Models\User\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;

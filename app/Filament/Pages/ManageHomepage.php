@@ -653,7 +653,7 @@ class ManageHomepage extends Page implements HasForms
                 static fn (array $col): FooterColumnDTO => new FooterColumnDTO(
                     title: (string) ($col['title'] ?? ''),
                     links: array_values(array_filter(array_map(
-                        static fn (mixed $link): ?\App\DTOs\NavigationActionDTO => is_array($link) && isset($link['label'], $link['url'])
+                        static fn (mixed $link): ?NavigationActionDTO => is_array($link) && isset($link['label'], $link['url'])
                             ? new NavigationActionDTO(label: (string) $link['label'], url: (string) $link['url'])
                             : null,
                         $col['links'] ?? [],

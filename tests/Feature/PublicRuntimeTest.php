@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Contracts\PreviewServiceInterface;
-use App\Models\HomepageDraft;
-use App\Models\Page;
-use App\Models\PageDraft;
-use App\Models\PageSeoMeta;
-use App\Models\PageTranslation;
-use App\Models\User;
+use App\Contracts\Shared\PreviewServiceInterface;
+use App\Models\Homepage\HomepageDraft;
+use App\Models\Page\Page;
+use App\Models\Page\PageDraft;
+use App\Models\Page\PageSeoMeta;
+use App\Models\Page\PageTranslation;
+use App\Models\User\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;

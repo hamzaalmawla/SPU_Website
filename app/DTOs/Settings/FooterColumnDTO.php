@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\DTOs\Settings;
 
+use App\DTOs\Navigation\NavigationActionDTO;
+
 /**
  * Footer link column used by the homepage footer section.
  */

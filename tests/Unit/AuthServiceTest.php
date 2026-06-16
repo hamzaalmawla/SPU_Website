@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use App\Contracts\AuthServiceInterface;
-use App\DTOs\LoginCredentialsDTO;
-use App\Models\AuditLog;
-use App\Models\User;
+use App\Contracts\Auth\AuthServiceInterface;
+use App\DTOs\Auth\LoginCredentialsDTO;
+use App\Models\Shared\AuditLog;
+use App\Models\User\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

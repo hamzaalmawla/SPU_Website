@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Contracts\MediaServiceInterface;
-use App\Contracts\PageServiceInterface;
-use App\DTOs\PageMetadataDTO;
+use App\Contracts\Media\MediaServiceInterface;
+use App\Contracts\Page\PageServiceInterface;
+use App\DTOs\Page\PageMetadataDTO;
 use App\Filament\Resources\MediaAssetResource;
 use App\Filament\Resources\PageResource;
-use App\Models\MediaAsset;
-use App\Models\Page;
-use App\Models\User;
+use App\Models\Media\MediaAsset;
+use App\Models\Page\Page;
+use App\Models\User\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;

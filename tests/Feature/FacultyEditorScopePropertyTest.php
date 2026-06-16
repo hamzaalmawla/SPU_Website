@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Models\Page;
-use App\Models\User;
+use App\Models\Page\Page;
+use App\Models\User\User;
 use App\Policies\PagePolicy;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;

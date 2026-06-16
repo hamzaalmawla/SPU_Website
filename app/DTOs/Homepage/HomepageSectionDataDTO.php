@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\DTOs\Homepage;
 
+use App\DTOs\Navigation\NavigationActionDTO;
+
 /**
  * Structured editor payload for one homepage section.
  *

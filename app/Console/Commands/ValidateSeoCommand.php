@@ -87,7 +87,7 @@ final class ValidateSeoCommand extends Command
     /**
      * @return array<int, string>
      */
-    private function detectIssues(\App\DTOs\PageSeoDTO $seo, Page $page, string $locale): array
+    private function detectIssues(\App\DTOs\Seo\PageSeoDTO $seo, Page $page, string $locale): array
     {
         $issues = [];
 

@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use App\Contracts\AuditServiceInterface;
-use App\Contracts\CacheServiceInterface;
-use App\DTOs\PageTranslationDTO;
-use App\Models\Page;
-use App\Models\PageTranslation;
-use App\Models\User;
-use App\Services\PageDraftService;
-use App\Services\PagePublishabilityValidator;
-use App\Services\PagePublicReadService;
-use App\Services\PageService;
-use App\Services\PageUrlResolver;
+use App\Contracts\Shared\AuditServiceInterface;
+use App\Contracts\Shared\CacheServiceInterface;
+use App\DTOs\Page\PageTranslationDTO;
+use App\Models\Page\Page;
+use App\Models\Page\PageTranslation;
+use App\Models\User\User;
+use App\Services\Page\PageDraftService;
+use App\Services\Page\PagePublishabilityValidator;
+use App\Services\Page\PagePublicReadService;
+use App\Services\Page\PageService;
+use App\Services\Page\PageUrlResolver;
 use App\Support\HtmlSanitizer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use App\Contracts\SettingsServiceInterface;
-use App\DTOs\PageSeoDTO;
-use App\Services\SeoMetadataService;
+use App\Contracts\Settings\SettingsServiceInterface;
+use App\DTOs\Seo\PageSeoDTO;
+use App\Services\Seo\SeoMetadataService;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Support\PropertyTestHelpers;

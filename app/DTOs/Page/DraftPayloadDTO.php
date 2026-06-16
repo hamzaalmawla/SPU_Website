@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\DTOs\Page;
 
+use App\DTOs\Homepage\HomepageDraftDataDTO;
+
 /**
  * Structured persisted draft content separated from rendered preview payloads.
  */

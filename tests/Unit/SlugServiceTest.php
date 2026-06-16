@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use App\Contracts\SlugServiceInterface;
-use App\Models\Page;
+use App\Contracts\Shared\SlugServiceInterface;
+use App\Models\Page\Page;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use RuntimeException;
 use Tests\TestCase;

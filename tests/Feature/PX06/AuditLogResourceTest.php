@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature\PX06;
 
 use App\Filament\Resources\AuditLogResource;
-use App\Models\AuditLog;
-use App\Models\User;
+use App\Models\Shared\AuditLog;
+use App\Models\User\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

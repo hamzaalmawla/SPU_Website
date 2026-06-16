@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature\PX07;
 
-use App\Models\Page;
-use App\Models\PageSeoMeta;
-use App\Models\PageTranslation;
-use App\Models\Setting;
+use App\Models\Page\Page;
+use App\Models\Page\PageSeoMeta;
+use App\Models\Page\PageTranslation;
+use App\Models\Settings\Setting;
 use Illuminate\Console\Command;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;

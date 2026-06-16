@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use App\DTOs\TotpEnrollmentDTO;
-use App\Models\User;
-use App\Services\TotpAuthenticator;
+use App\DTOs\Auth\TotpEnrollmentDTO;
+use App\Models\User\User;
+use App\Services\Auth\TotpAuthenticator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use PragmaRX\Google2FA\Google2FA;

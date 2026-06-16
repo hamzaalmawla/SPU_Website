@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\PX07;
 
-use App\Models\UnresolvedLegacyRequest;
+use App\Models\Page\UnresolvedLegacyRequest;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

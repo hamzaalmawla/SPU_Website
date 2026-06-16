@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\DTOs\Homepage;
 
+use App\DTOs\Page\DraftPayloadDTO;
+
 /**
  * Draft snapshot payload for homepage and landing-page publishing workflows.
  */

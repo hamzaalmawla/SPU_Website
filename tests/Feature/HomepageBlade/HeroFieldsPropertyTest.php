@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\HomepageBlade;
 
-use App\DTOs\NavigationActionDTO;
+use App\DTOs\Navigation\NavigationActionDTO;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Support\HomepageBladeTestHelpers;
 use Tests\TestCase;

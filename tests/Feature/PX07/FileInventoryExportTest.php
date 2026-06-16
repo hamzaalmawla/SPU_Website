@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\PX07;
 
-use App\Models\LegacyFileInventory;
+use App\Models\Legacy\LegacyFileInventory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;

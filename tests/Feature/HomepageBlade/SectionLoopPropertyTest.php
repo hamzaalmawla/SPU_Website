@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\HomepageBlade;
 
-use App\DTOs\HomepageDTO;
+use App\DTOs\Homepage\HomepageDTO;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Database\Seeders\DatabaseSeeder;
 use PHPUnit\Framework\Attributes\DataProvider;

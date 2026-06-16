@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature\PX06;
 
 use App\Filament\Pages\ManageMenu;
-use App\Models\MenuItem;
-use App\Models\User;
+use App\Models\Navigation\MenuItem;
+use App\Models\User\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;

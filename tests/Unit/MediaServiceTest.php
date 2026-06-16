@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use App\Contracts\MediaServiceInterface;
-use App\DTOs\PaginatedResultDTO;
-use App\Models\MediaAsset;
-use App\Models\User;
+use App\Contracts\Media\MediaServiceInterface;
+use App\DTOs\Shared\PaginatedResultDTO;
+use App\Models\Media\MediaAsset;
+use App\Models\User\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;

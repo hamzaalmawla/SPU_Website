@@ -19,6 +19,7 @@ use App\Models\Homepage\HomepageDraft;
 use App\Models\Homepage\HomepageSection;
 use App\Models\Homepage\HomepageSectionTranslation;
 use App\Models\User\User;
+use App\Services\Preview\PreviewTokenStore;
 use App\Support\HomepageDraftSectionMapper;
 use App\Support\HomepagePayloadMapper;
 use App\Support\HtmlSanitizer;
@@ -569,7 +570,7 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
         $deleted = $this->previewTokenStore->invalidateTarget('homepage');
 
         if ($deleted > 0) {
-            $this->auditService->log('preview.invalidated', $userId, \App\Models\PreviewToken::class, metadata: [
+            $this->auditService->log('preview.invalidated', $userId, \App\Models\Shared\PreviewToken::class, metadata: [
                 'target_type' => 'homepage',
                 'target_id' => null,
                 'deleted_count' => $deleted,

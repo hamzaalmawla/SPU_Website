@@ -23,6 +23,7 @@ use App\Models\Page\PageDraft;
 use App\Models\Page\PageSeoMeta;
 use App\Models\Page\PageTranslation;
 use App\Models\User\User;
+use App\Services\Preview\PreviewTokenStore;
 use App\Support\HtmlSanitizer;
 use App\Support\UrlSanitizer;
 use DateTimeInterface;
@@ -673,7 +674,7 @@ final class PageService implements PageServiceInterface
         $deleted = $this->previewTokenStore->invalidateTarget('page', $pageId);
 
         if ($deleted > 0) {
-            $this->auditService->log('preview.invalidated', $userId, \App\Models\PreviewToken::class, metadata: [
+            $this->auditService->log('preview.invalidated', $userId, \App\Models\Shared\PreviewToken::class, metadata: [
                 'target_type' => 'page',
                 'target_id' => $pageId,
                 'deleted_count' => $deleted,

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Models\Career;
 
+use App\Models\Faculty\Department;
+use App\Models\Faculty\Faculty;
+use App\Models\Media\MediaAsset;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

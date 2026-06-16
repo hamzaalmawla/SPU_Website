@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Contracts\ContactPageServiceInterface;
-use App\DTOs\ContactPageContentDTO;
-use App\Models\User;
+use App\Contracts\Page\ContactPageServiceInterface;
+use App\DTOs\Contact\ContactPageContentDTO;
+use App\Models\User\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;

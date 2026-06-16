@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\DTOs\Navigation;
 
+use App\DTOs\Settings\EmergencyNoticeDTO;
+use App\DTOs\Settings\FooterSettingsDTO;
+use App\DTOs\Settings\SocialContactSettingsDTO;
+
 /**
  * Full public navigation payload combining trees, links, and notices.
  */

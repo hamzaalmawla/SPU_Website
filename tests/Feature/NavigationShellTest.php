@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Contracts\MenuServiceInterface;
-use App\Contracts\NavigationServiceInterface;
-use App\DTOs\MenuItemDataDTO;
-use App\DTOs\MenuItemDTO;
-use App\DTOs\MenuTreeNodeDTO;
-use App\Models\User;
+use App\Contracts\Navigation\MenuServiceInterface;
+use App\Contracts\Navigation\NavigationServiceInterface;
+use App\DTOs\Navigation\MenuItemDataDTO;
+use App\DTOs\Navigation\MenuItemDTO;
+use App\DTOs\Navigation\MenuTreeNodeDTO;
+use App\Models\User\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use InvalidArgumentException;

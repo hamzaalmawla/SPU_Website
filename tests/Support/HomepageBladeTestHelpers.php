@@ -4,26 +4,26 @@ declare(strict_types=1);
 
 namespace Tests\Support;
 
-use App\DTOs\ArticleCardDTO;
-use App\DTOs\ContactLinkDTO;
-use App\DTOs\EmergencyNoticeDTO;
-use App\DTOs\EventCardDTO;
-use App\DTOs\FooterColumnDTO;
-use App\DTOs\FooterSettingsDTO;
-use App\DTOs\HomepageDTO;
-use App\DTOs\HomepageSectionDataDTO;
-use App\DTOs\HomepageSectionDTO;
-use App\DTOs\HomepageSectionTranslationDTO;
-use App\DTOs\HomepageStatItemDTO;
-use App\DTOs\LanguageSwitchLinkDTO;
-use App\DTOs\MenuItemDTO;
-use App\DTOs\NavigationActionDTO;
-use App\DTOs\NavigationPayloadDTO;
-use App\DTOs\NavigationTreeDTO;
-use App\DTOs\PageSeoDTO;
-use App\DTOs\ResearchCardDTO;
-use App\DTOs\SocialContactSettingsDTO;
-use App\DTOs\SocialLinkDTO;
+use App\DTOs\Content\ArticleCardDTO;
+use App\DTOs\Contact\ContactLinkDTO;
+use App\DTOs\Settings\EmergencyNoticeDTO;
+use App\DTOs\Content\EventCardDTO;
+use App\DTOs\Settings\FooterColumnDTO;
+use App\DTOs\Settings\FooterSettingsDTO;
+use App\DTOs\Homepage\HomepageDTO;
+use App\DTOs\Homepage\HomepageSectionDataDTO;
+use App\DTOs\Homepage\HomepageSectionDTO;
+use App\DTOs\Homepage\HomepageSectionTranslationDTO;
+use App\DTOs\Homepage\HomepageStatItemDTO;
+use App\DTOs\Navigation\LanguageSwitchLinkDTO;
+use App\DTOs\Navigation\MenuItemDTO;
+use App\DTOs\Navigation\NavigationActionDTO;
+use App\DTOs\Navigation\NavigationPayloadDTO;
+use App\DTOs\Navigation\NavigationTreeDTO;
+use App\DTOs\Seo\PageSeoDTO;
+use App\DTOs\Content\ResearchCardDTO;
+use App\DTOs\Settings\SocialContactSettingsDTO;
+use App\DTOs\Settings\SocialLinkDTO;
 
 trait HomepageBladeTestHelpers
 {

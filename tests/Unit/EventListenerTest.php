@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use App\Contracts\AuditServiceInterface;
-use App\Contracts\CacheServiceInterface;
+use App\Contracts\Shared\AuditServiceInterface;
+use App\Contracts\Shared\CacheServiceInterface;
 use App\Events\DraftConflictDetected;
 use App\Events\HomepagePublished;
 use App\Events\PagePublished;

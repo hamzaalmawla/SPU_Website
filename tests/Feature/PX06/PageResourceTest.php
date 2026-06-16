@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Tests\Feature\PX06;
 
 use App\Filament\Resources\PageResource;
-use App\Models\Page;
-use App\Models\PageTranslation;
-use App\Models\User;
+use App\Models\Page\Page;
+use App\Models\Page\PageTranslation;
+use App\Models\User\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature\PX08;
 
-use App\Models\HomepageSection;
-use App\Models\HomepageSectionTranslation;
-use App\Models\LegacyExactRedirect;
-use App\Models\Page;
-use App\Models\PageTranslation;
+use App\Models\Homepage\HomepageSection;
+use App\Models\Homepage\HomepageSectionTranslation;
+use App\Models\Legacy\LegacyExactRedirect;
+use App\Models\Page\Page;
+use App\Models\Page\PageTranslation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

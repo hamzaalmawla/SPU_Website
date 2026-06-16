@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Contracts\HomepageSectionServiceInterface;
+use App\Contracts\Homepage\HomepageSectionServiceInterface;
 use Tests\TestCase;
 
 /**

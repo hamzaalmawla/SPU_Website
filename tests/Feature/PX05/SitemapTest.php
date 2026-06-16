@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\PX05;
 
-use App\Models\Page;
-use App\Models\PageTranslation;
+use App\Models\Page\Page;
+use App\Models\Page\PageTranslation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
