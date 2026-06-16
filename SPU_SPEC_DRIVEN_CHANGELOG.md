@@ -8,6 +8,32 @@ It is intentionally scoped to the current homepage/admin foundation and does not
 
 ## 2026-06-15
 
+### G02: Media Upload Hardening
+
+Status: Completed
+
+Type: Security hardening with service-layer upload validation coverage
+
+Changed files:
+
+| File | Change |
+| --- | --- |
+| `app/Services/MediaFileValidator.php` | Rejected empty uploads and files without an approved client extension before storage. Existing MIME allowlist, extension mapping, SVG block, size, and dimension checks remain service-owned. |
+| `tests/Unit/MediaServiceTest.php` | Added service-layer coverage for empty file rejection and missing client extension rejection. |
+| `SPU_SPEC_DRIVEN_EXECUTION_TODO.md` | Marked G02 complete with targeted verification evidence. |
+| `SPU_SPEC_DRIVEN_CHANGELOG.md` | Added this G02 changelog entry. |
+
+Completion evidence:
+
+| Check | Result |
+| --- | --- |
+| Syntax | `php -l app/Services/MediaFileValidator.php` and `php -l tests/Unit/MediaServiceTest.php` passed. |
+| Media-focused suite | `php artisan test --filter=Media` passed: 38 tests, 92 assertions. |
+| Media service unit tests | `php artisan test tests/Unit/MediaServiceTest.php` passed: 28 tests, 65 assertions. |
+| Frontend build | `npm run build` passed: Vite build completed in 2.46s with no unexpected warnings. |
+| Route boot | `php artisan route:list` passed: 67 routes listed. |
+| Full regression | `php artisan test` passed: 3421 tests, 15451 assertions, 170.16s. |
+
 ### G01: Sanitization Coverage Hardening
 
 Status: Completed

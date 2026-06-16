@@ -78,7 +78,7 @@ Latest verified state from this session:
 
 | Verification | Result |
 | --- | --- |
-| `php artisan test` | Passing, 3419 tests and 15394 assertions on full run. |
+| `php artisan test` | Passing, 3421 tests and 15451 assertions on full run. |
 | `npm run build` | Passing with no unexpected warnings after FontAwesome runtime removal. |
 | `php artisan route:list` | Bootstraps routes successfully. |
 | `php artisan test --filter=PageService` | Passing, publish validation covered. |
@@ -1116,7 +1116,7 @@ php artisan test tests/Feature/HomepageCmsWorkflowTest.php --filter=sanitizes
 
 ### G02: Maintain Upload Hardening
 
-Status: Ready
+Status: Done
 
 Priority: High
 
@@ -1124,16 +1124,31 @@ Goal: Keep media upload validation safe, especially SVG handling.
 
 Implementation steps:
 
-- [ ] Do not weaken MIME/extension validation in `MediaService`.
-- [ ] Keep SVG blocked or strictly sanitized according to current rule.
-- [ ] Keep authorization scope checks for faculty editors.
-- [ ] Add tests for any new allowed media type.
+- [x] Do not weaken MIME/extension validation in `MediaService`.
+- [x] Keep SVG blocked or strictly sanitized according to current rule.
+- [x] Keep authorization scope checks for faculty editors.
+- [x] Add tests for any new allowed media type.
 
 Acceptance criteria:
 
-- [ ] Unsafe upload types are rejected by service validation.
-- [ ] UI-only validation is not relied upon.
-- [ ] Media tests pass.
+- [x] Unsafe upload types are rejected by service validation.
+- [x] UI-only validation is not relied upon.
+- [x] Media tests pass.
+
+Completion evidence captured 2026-06-15:
+
+| Evidence | Result |
+| --- | --- |
+| Empty upload hardening | `MediaFileValidator` now rejects zero-byte uploads before storage. |
+| Extension hardening | `MediaFileValidator` now rejects files without an approved client extension, in addition to mismatched extensions. |
+| SVG remains blocked | Existing service-layer SVG rejection test still passes when UI validation is bypassed. |
+| Faculty scope checks | Existing media-focused suite keeps faculty editor upload/list/update scoping covered. |
+| Syntax | `php -l app/Services/MediaFileValidator.php` and `php -l tests/Unit/MediaServiceTest.php` passed. |
+| Media-focused suite | `php artisan test --filter=Media` passed: 38 tests, 92 assertions. |
+| Media service unit tests | `php artisan test tests/Unit/MediaServiceTest.php` passed: 28 tests, 65 assertions. |
+| Frontend build | `npm run build` passed: Vite build completed in 2.46s with no unexpected warnings. |
+| Route boot | `php artisan route:list` passed: 67 routes listed. |
+| Full regression | `php artisan test` passed: 3421 tests, 15451 assertions, 170.16s. |
 
 Verification:
 

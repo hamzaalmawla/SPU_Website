@@ -93,6 +93,23 @@ class MediaServiceTest extends TestCase
         $this->service->upload(['file' => $file, 'uploaded_by' => $this->actor->id]);
     }
 
+    public function test_upload_rejects_empty_file(): void
+    {
+        $file = UploadedFile::fake()->create('empty.pdf', 0, 'application/pdf');
+
+        try {
+            $this->service->upload(['file' => $file, 'uploaded_by' => $this->actor->id]);
+
+            $this->fail('Empty uploads must be rejected by service-layer validation.');
+        } catch (ValidationException $exception) {
+            $this->assertSame(
+                ['The uploaded file is empty.'],
+                $exception->errors()['file'] ?? [],
+            );
+            $this->assertDatabaseCount('media_assets', 0);
+        }
+    }
+
     public function test_upload_rejects_extension_mismatch(): void
     {
         $file = UploadedFile::fake()->create('spoofed.png', 100, 'image/jpeg');
@@ -101,6 +118,23 @@ class MediaServiceTest extends TestCase
             $this->service->upload(['file' => $file, 'uploaded_by' => $this->actor->id]);
 
             $this->fail('Uploads with mismatched MIME type and extension must be rejected.');
+        } catch (ValidationException $exception) {
+            $this->assertSame(
+                ['The uploaded file extension does not match its detected file type.'],
+                $exception->errors()['file'] ?? [],
+            );
+            $this->assertDatabaseCount('media_assets', 0);
+        }
+    }
+
+    public function test_upload_rejects_missing_client_extension(): void
+    {
+        $file = UploadedFile::fake()->create('extensionless', 100, 'image/jpeg');
+
+        try {
+            $this->service->upload(['file' => $file, 'uploaded_by' => $this->actor->id]);
+
+            $this->fail('Uploads without an approved client extension must be rejected.');
         } catch (ValidationException $exception) {
             $this->assertSame(
                 ['The uploaded file extension does not match its detected file type.'],

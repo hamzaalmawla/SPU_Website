@@ -31,6 +31,8 @@ final class MediaFileValidator
 
     private const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;
 
+    private const MIN_FILE_SIZE_BYTES = 1;
+
     /** @var array<string, list<string>> */
     private const MIME_EXTENSIONS = [
         'image/jpeg' => ['jpg', 'jpeg'],
@@ -85,7 +87,7 @@ final class MediaFileValidator
         $clientExtension = strtolower($file->getClientOriginalExtension());
         $allowedExtensions = self::MIME_EXTENSIONS[$mimeType] ?? [];
 
-        if ($allowedExtensions === [] || ($clientExtension !== '' && ! in_array($clientExtension, $allowedExtensions, true))) {
+        if ($allowedExtensions === [] || $clientExtension === '' || ! in_array($clientExtension, $allowedExtensions, true)) {
             throw ValidationException::withMessages([
                 'file' => ['The uploaded file extension does not match its detected file type.'],
             ]);
@@ -95,6 +97,12 @@ final class MediaFileValidator
     private function validateSize(UploadedFile $file): void
     {
         $size = $file->getSize() ?: 0;
+
+        if ($size < self::MIN_FILE_SIZE_BYTES) {
+            throw ValidationException::withMessages([
+                'file' => ['The uploaded file is empty.'],
+            ]);
+        }
 
         if ($size > self::MAX_FILE_SIZE_BYTES) {
             $maxMb = self::MAX_FILE_SIZE_BYTES / (1024 * 1024);
