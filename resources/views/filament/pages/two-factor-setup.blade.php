@@ -1,4 +1,6 @@
 <x-filament-panels::page>
+    <script src="{{ asset('js/qrious.min.js') }}"></script>
+
     {{-- Current Status --}}
     <div class="space-y-6">
         @if ($twoFactorEnabled)
@@ -31,6 +33,27 @@
                 </x-slot>
 
                 <div class="space-y-4">
+                    {{-- Visual QR Code Card --}}
+                    <div class="flex flex-col items-center justify-center p-4 bg-white rounded-lg border border-gray-200 dark:border-gray-700 w-fit mx-auto shadow-sm">
+                        <div 
+                            x-data="{
+                                qrUrl: '{{ $qrCodeUrl }}',
+                                init() {
+                                    if (typeof QRious !== 'undefined') {
+                                        new QRious({
+                                            element: this.$refs.canvas,
+                                            value: this.qrUrl,
+                                            size: 200,
+                                            level: 'M'
+                                        });
+                                    }
+                                }
+                            }"
+                        >
+                            <canvas x-ref="canvas" wire:ignore></canvas>
+                        </div>
+                    </div>
+
                     <div>
                         <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Add this setup URI in your authenticator app, or enter the secret manually:

@@ -12,7 +12,7 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table): void {
             $table->text('totp_secret_encrypted')->nullable()->after('password');
-            $table->json('recovery_codes_encrypted')->nullable()->after('totp_secret_encrypted');
+            $table->text('recovery_codes_encrypted')->nullable()->after('totp_secret_encrypted');
             $table->boolean('two_factor_enabled')->default(false)->after('recovery_codes_encrypted');
             $table->timestamp('two_factor_confirmed_at')->nullable()->after('two_factor_enabled');
         });
