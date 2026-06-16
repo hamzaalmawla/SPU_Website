@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services\Placeholders;
 
-use App\Contracts\HomepagePublishingServiceInterface;
-use App\DTOs\HomepageDraftDataDTO;
-use App\DTOs\HomepageDraftDTO;
+use App\Contracts\Homepage\HomepagePublishingServiceInterface;
+use App\DTOs\Homepage\HomepageDraftDataDTO;
+use App\DTOs\Homepage\HomepageDraftDTO;
 use BadMethodCallException;
 use DateTimeInterface;
 

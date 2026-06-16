@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Database\Seeders\LegacyImport;
 
-use App\Models\MediaAsset;
-use App\Models\MenuItem;
-use App\Models\MigrationLog;
+use App\Models\Media\MediaAsset;
+use App\Models\Navigation\MenuItem;
+use App\Models\Shared\MigrationLog;
 
 class ImportLegacyLinksSeeder extends BaseLegacyImportSeeder
 {

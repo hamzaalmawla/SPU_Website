@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\DirectorateResource\Pages;
-use App\Models\Directorate;
+use App\Models\Content\Directorate;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;

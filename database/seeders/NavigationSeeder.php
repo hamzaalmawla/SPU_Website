@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use App\Models\MenuItem;
-use App\Models\Page;
+use App\Models\Navigation\MenuItem;
+use App\Models\Page\Page;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Cache;
 

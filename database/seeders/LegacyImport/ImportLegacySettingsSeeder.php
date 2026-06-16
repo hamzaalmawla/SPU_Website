@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders\LegacyImport;
 
-use App\Models\Setting;
+use App\Models\Settings\Setting;
 use stdClass;
 
 class ImportLegacySettingsSeeder extends BaseLegacyImportSeeder

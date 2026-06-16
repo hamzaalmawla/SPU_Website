@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\Placeholders;
 
-use App\Contracts\SeoMetadataServiceInterface;
-use App\DTOs\PageSeoDTO;
+use App\Contracts\Seo\SeoMetadataServiceInterface;
+use App\DTOs\Seo\PageSeoDTO;
 use BadMethodCallException;
 
 /**

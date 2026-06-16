@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Contracts\HomepageSectionServiceInterface;
-use App\Contracts\NavigationServiceInterface;
-use App\Contracts\PageServiceInterface;
-use App\Contracts\SettingsServiceInterface;
-use App\Contracts\SitemapServiceInterface;
+use App\Contracts\Homepage\HomepageSectionServiceInterface;
+use App\Contracts\Navigation\NavigationServiceInterface;
+use App\Contracts\Page\PageServiceInterface;
+use App\Contracts\Settings\SettingsServiceInterface;
+use App\Contracts\Seo\SitemapServiceInterface;
 use Illuminate\Console\Command;
 
 /**

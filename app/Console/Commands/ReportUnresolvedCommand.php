@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Contracts\ContinuityServiceInterface;
+use App\Contracts\Shared\ContinuityServiceInterface;
 use Illuminate\Console\Command;
 
 final class ReportUnresolvedCommand extends Command

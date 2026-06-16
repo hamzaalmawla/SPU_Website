@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\MediaAssetResource\Pages;
 
-use App\Contracts\MediaServiceInterface;
+use App\Contracts\Media\MediaServiceInterface;
 use App\Filament\Resources\MediaAssetResource;
-use App\Models\MediaAsset;
+use App\Models\Media\MediaAsset;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;

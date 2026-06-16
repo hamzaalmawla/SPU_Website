@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\Placeholders;
 
-use App\Contracts\PreviewServiceInterface;
-use App\DTOs\PreviewDTO;
+use App\Contracts\Shared\PreviewServiceInterface;
+use App\DTOs\Preview\PreviewDTO;
 use BadMethodCallException;
 
 /**

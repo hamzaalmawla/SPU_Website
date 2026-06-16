@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use App\Models\MenuItem;
-use App\Models\User;
+use App\Models\Navigation\MenuItem;
+use App\Models\User\User;
 
 /**
  * Authorizes menu-management actions against the current menu item model.

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Listeners;
 
-use App\Contracts\AuditServiceInterface;
+use App\Contracts\Shared\AuditServiceInterface;
 use App\Events\DraftConflictDetected;
 
 /**

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
-use App\Contracts\ContinuityServiceInterface;
-use App\DTOs\UnresolvedRequestDTO;
+use App\Contracts\Shared\ContinuityServiceInterface;
+use App\DTOs\Legacy\UnresolvedRequestDTO;
 use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;

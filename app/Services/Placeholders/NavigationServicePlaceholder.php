@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services\Placeholders;
 
-use App\Contracts\NavigationServiceInterface;
-use App\DTOs\NavigationPayloadDTO;
-use App\DTOs\NavigationTreeDTO;
+use App\Contracts\Navigation\NavigationServiceInterface;
+use App\DTOs\Navigation\NavigationPayloadDTO;
+use App\DTOs\Navigation\NavigationTreeDTO;
 use BadMethodCallException;
 
 /**

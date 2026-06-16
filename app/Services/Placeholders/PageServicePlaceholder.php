@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Services\Placeholders;
 
-use App\Contracts\PageServiceInterface;
-use App\DTOs\BreadcrumbTrailDTO;
-use App\DTOs\PageDraftDataDTO;
-use App\DTOs\PageDraftDTO;
-use App\DTOs\PageDTO;
-use App\DTOs\PageMetadataDTO;
-use App\DTOs\PageSeoInputDTO;
-use App\DTOs\PageShellDataDTO;
-use App\DTOs\PageTranslationDTO;
-use App\DTOs\PreviewDTO;
+use App\Contracts\Page\PageServiceInterface;
+use App\DTOs\Shared\BreadcrumbTrailDTO;
+use App\DTOs\Page\PageDraftDataDTO;
+use App\DTOs\Page\PageDraftDTO;
+use App\DTOs\Page\PageDTO;
+use App\DTOs\Page\PageMetadataDTO;
+use App\DTOs\Seo\PageSeoInputDTO;
+use App\DTOs\Page\PageShellDataDTO;
+use App\DTOs\Page\PageTranslationDTO;
+use App\DTOs\Preview\PreviewDTO;
 use BadMethodCallException;
 use DateTimeInterface;
 

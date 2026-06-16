@@ -1,0 +1,24 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\DTOs\Media;
+
+/**
+ * Represents normalized media upload output.
+ */
+final readonly class MediaUploadResultDTO
+{
+    public function __construct(
+        public int $mediaId,
+        public string $disk,
+        public string $path,
+        public string $url,
+        public string $mimeType,
+        public int $size,
+        public string $originalName,
+        public ?string $title = null,
+        public ?string $altText = null,
+        public ?string $caption = null,
+    ) {}
+}

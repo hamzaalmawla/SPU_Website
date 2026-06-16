@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-use App\Http\Controllers\AboutController;
+use App\Http\Controllers\Public\AboutController;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\TwoFactorChallengeController;
-use App\Http\Controllers\EServicesController;
-use App\Http\Controllers\HomeController;
-use App\Http\Controllers\PageController;
-use App\Http\Controllers\PreviewController;
-use App\Http\Controllers\PublicContactController;
-use App\Http\Controllers\SitemapController;
+use App\Http\Controllers\Public\EServicesController;
+use App\Http\Controllers\Public\HomeController;
+use App\Http\Controllers\Public\PageController;
+use App\Http\Controllers\Public\PreviewController;
+use App\Http\Controllers\Public\PublicContactController;
+use App\Http\Controllers\Public\SitemapController;
 use App\Http\Middleware\AdminLocaleMiddleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;

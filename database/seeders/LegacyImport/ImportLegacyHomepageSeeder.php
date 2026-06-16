@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Database\Seeders\LegacyImport;
 
-use App\Models\HomepageSection;
-use App\Models\HomepageSectionTranslation;
-use App\Models\MediaAsset;
+use App\Models\Homepage\HomepageSection;
+use App\Models\Homepage\HomepageSectionTranslation;
+use App\Models\Media\MediaAsset;
 
 class ImportLegacyHomepageSeeder extends BaseLegacyImportSeeder
 {

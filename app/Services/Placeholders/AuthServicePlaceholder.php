@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\Placeholders;
 
-use App\Contracts\AuthServiceInterface;
-use App\DTOs\LoginCredentialsDTO;
+use App\Contracts\Auth\AuthServiceInterface;
+use App\DTOs\Auth\LoginCredentialsDTO;
 use BadMethodCallException;
 use Illuminate\Contracts\Auth\Authenticatable;
 

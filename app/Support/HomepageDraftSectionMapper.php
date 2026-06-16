@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Support;
 
-use App\Contracts\HomepageSectionServiceInterface;
-use App\DTOs\HomepageSectionDTO;
-use App\DTOs\HomepageSectionDataDTO;
-use App\DTOs\HomepageSectionTranslationDTO;
+use App\Contracts\Homepage\HomepageSectionServiceInterface;
+use App\DTOs\Homepage\HomepageSectionDTO;
+use App\DTOs\Homepage\HomepageSectionDataDTO;
+use App\DTOs\Homepage\HomepageSectionTranslationDTO;
 
 /**
  * Deterministic mapper for homepage draft section snapshots.

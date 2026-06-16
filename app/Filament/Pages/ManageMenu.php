@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
-use App\Contracts\MenuServiceInterface;
-use App\DTOs\MenuItemDataDTO;
-use App\DTOs\MenuItemDTO;
-use App\DTOs\MenuTreeNodeDTO;
+use App\Contracts\Navigation\MenuServiceInterface;
+use App\DTOs\Navigation\MenuItemDataDTO;
+use App\DTOs\Navigation\MenuItemDTO;
+use App\DTOs\Navigation\MenuTreeNodeDTO;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Component;
 use Filament\Forms\Components\Select;

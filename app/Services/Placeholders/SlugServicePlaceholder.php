@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Placeholders;
 
-use App\Contracts\SlugServiceInterface;
+use App\Contracts\Shared\SlugServiceInterface;
 use BadMethodCallException;
 
 /**

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\MediaAssetResource\Pages;
 
-use App\Contracts\MediaServiceInterface;
+use App\Contracts\Media\MediaServiceInterface;
 use App\Filament\Resources\MediaAssetResource;
-use App\Models\MediaAsset;
-use App\Models\User;
+use App\Models\Media\MediaAsset;
+use App\Models\User\User;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;

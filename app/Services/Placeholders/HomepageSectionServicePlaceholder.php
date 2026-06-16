@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Services\Placeholders;
 
-use App\Contracts\HomepageSectionServiceInterface;
-use App\DTOs\HomepageDTO;
-use App\DTOs\HomepageSectionDataDTO;
-use App\DTOs\HomepageSectionDTO;
-use App\DTOs\ValidationResultDTO;
+use App\Contracts\Homepage\HomepageSectionServiceInterface;
+use App\DTOs\Homepage\HomepageDTO;
+use App\DTOs\Homepage\HomepageSectionDataDTO;
+use App\DTOs\Homepage\HomepageSectionDTO;
+use App\DTOs\Shared\ValidationResultDTO;
 use BadMethodCallException;
 use Illuminate\Support\Collection;
 

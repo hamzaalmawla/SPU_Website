@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\UserResource\Pages;
 
-use App\Contracts\AuthServiceInterface;
+use App\Contracts\Auth\AuthServiceInterface;
 use App\Filament\Resources\UserResource;
-use App\Models\User;
+use App\Models\User\User;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;

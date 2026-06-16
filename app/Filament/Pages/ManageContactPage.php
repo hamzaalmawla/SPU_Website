@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
-use App\Contracts\ContactPageServiceInterface;
-use App\DTOs\ContactPageContentDTO;
-use App\Models\User;
+use App\Contracts\Page\ContactPageServiceInterface;
+use App\DTOs\Contact\ContactPageContentDTO;
+use App\Models\User\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;

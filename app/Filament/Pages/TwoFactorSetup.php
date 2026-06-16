@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
-use App\Contracts\TotpAuthenticatorInterface;
-use App\Models\User;
+use App\Contracts\Auth\TotpAuthenticatorInterface;
+use App\Models\User\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;

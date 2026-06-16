@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use App\Models\User;
+use App\Models\User\User;
 
 /**
  * Authorizes admin user-management actions against the existing users table.

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
-use App\Contracts\SettingsServiceInterface;
-use App\DTOs\SettingsDTO;
-use App\DTOs\SettingValueDTO;
-use App\Models\User;
+use App\Contracts\Settings\SettingsServiceInterface;
+use App\DTOs\Settings\SettingsDTO;
+use App\DTOs\Settings\SettingValueDTO;
+use App\Models\User\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Component;
 use Filament\Forms\Components\Repeater;

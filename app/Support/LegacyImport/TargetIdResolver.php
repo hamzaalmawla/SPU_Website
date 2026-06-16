@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support\LegacyImport;
 
-use App\Models\MigrationLog;
+use App\Models\Shared\MigrationLog;
 
 class TargetIdResolver
 {

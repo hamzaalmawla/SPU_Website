@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Models\MigrationLog;
+use App\Models\Shared\MigrationLog;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 

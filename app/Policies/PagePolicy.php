@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use App\Models\Page;
-use App\Models\User;
+use App\Models\Page\Page;
+use App\Models\User\User;
 
 /**
  * Authorizes landing-page and homepage-shell actions against the current page model.

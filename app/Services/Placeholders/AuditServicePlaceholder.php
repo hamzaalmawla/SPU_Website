@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services\Placeholders;
 
-use App\Contracts\AuditServiceInterface;
-use App\DTOs\AuditLogDTO;
-use App\DTOs\PaginatedResultDTO;
+use App\Contracts\Shared\AuditServiceInterface;
+use App\DTOs\Auth\AuditLogDTO;
+use App\DTOs\Shared\PaginatedResultDTO;
 use BadMethodCallException;
 use Illuminate\Support\Collection;
 

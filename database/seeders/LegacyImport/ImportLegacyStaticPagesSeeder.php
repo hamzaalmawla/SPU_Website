@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Database\Seeders\LegacyImport;
 
-use App\Models\Page;
-use App\Models\PageSeoMeta;
-use App\Models\PageTranslation;
+use App\Models\Page\Page;
+use App\Models\Page\PageSeoMeta;
+use App\Models\Page\PageTranslation;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 

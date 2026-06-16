@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use App\Contracts\HomepageSectionServiceInterface;
-use App\Models\HomepageSection;
+use App\Contracts\Homepage\HomepageSectionServiceInterface;
+use App\Models\Homepage\HomepageSection;
 use Illuminate\Database\Seeder;
 
 class HomepageSectionSeeder extends Seeder

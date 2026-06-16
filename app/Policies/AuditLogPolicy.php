@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use App\Models\AuditLog;
-use App\Models\User;
+use App\Models\Shared\AuditLog;
+use App\Models\User\User;
 
 /**
  * Authorizes audit log viewing actions.

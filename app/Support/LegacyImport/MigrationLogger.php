@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Support\LegacyImport;
 
-use App\Models\MigrationLog;
-use App\Models\MigrationRejection;
+use App\Models\Shared\MigrationLog;
+use App\Models\Shared\MigrationRejection;
 
 class MigrationLogger
 {

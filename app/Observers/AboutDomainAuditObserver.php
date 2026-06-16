@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Observers;
 
-use App\Contracts\AuditServiceInterface;
+use App\Contracts\Shared\AuditServiceInterface;
 use Illuminate\Database\Eloquent\Model;
 
 final class AboutDomainAuditObserver

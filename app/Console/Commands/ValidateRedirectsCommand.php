@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Contracts\ContinuityServiceInterface;
-use App\Models\LegacyExactRedirect;
-use App\Models\LegacyPatternRule;
+use App\Contracts\Shared\ContinuityServiceInterface;
+use App\Models\Legacy\LegacyExactRedirect;
+use App\Models\Legacy\LegacyPatternRule;
 use Illuminate\Console\Command;
 
 final class ValidateRedirectsCommand extends Command

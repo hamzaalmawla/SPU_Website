@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Services\Placeholders;
 
-use App\Contracts\MenuServiceInterface;
-use App\DTOs\MenuItemDataDTO;
-use App\DTOs\MenuItemDTO;
-use App\DTOs\MenuTreeNodeDTO;
-use App\DTOs\NavigationTreeDTO;
+use App\Contracts\Navigation\MenuServiceInterface;
+use App\DTOs\Navigation\MenuItemDataDTO;
+use App\DTOs\Navigation\MenuItemDTO;
+use App\DTOs\Navigation\MenuTreeNodeDTO;
+use App\DTOs\Navigation\NavigationTreeDTO;
 use BadMethodCallException;
 
 /**

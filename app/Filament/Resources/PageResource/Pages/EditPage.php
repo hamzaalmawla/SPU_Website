@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\PageResource\Pages;
 
-use App\Contracts\PageServiceInterface;
-use App\Contracts\PreviewServiceInterface;
-use App\DTOs\PageDraftDataDTO;
-use App\DTOs\PageMetadataDTO;
-use App\DTOs\PageSeoInputDTO;
-use App\DTOs\PageTranslationDTO;
+use App\Contracts\Page\PageServiceInterface;
+use App\Contracts\Shared\PreviewServiceInterface;
+use App\DTOs\Page\PageDraftDataDTO;
+use App\DTOs\Page\PageMetadataDTO;
+use App\DTOs\Seo\PageSeoInputDTO;
+use App\DTOs\Page\PageTranslationDTO;
 use App\Exceptions\ConflictException;
 use App\Filament\Resources\PageResource;
-use App\Models\Page;
-use App\Models\User;
-use App\DTOs\PageDraftDTO;
+use App\Models\Page\Page;
+use App\Models\User\User;
+use App\DTOs\Page\PageDraftDTO;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Notifications\Notification;

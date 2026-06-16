@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\PageResource\Pages;
 
-use App\Contracts\PageServiceInterface;
-use App\DTOs\PageMetadataDTO;
-use App\DTOs\PageSeoInputDTO;
-use App\DTOs\PageShellDataDTO;
-use App\DTOs\PageTranslationDTO;
+use App\Contracts\Page\PageServiceInterface;
+use App\DTOs\Page\PageMetadataDTO;
+use App\DTOs\Seo\PageSeoInputDTO;
+use App\DTOs\Page\PageShellDataDTO;
+use App\DTOs\Page\PageTranslationDTO;
 use App\Filament\Resources\PageResource;
-use App\Models\Page;
-use App\Models\User;
+use App\Models\Page\Page;
+use App\Models\User\User;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;

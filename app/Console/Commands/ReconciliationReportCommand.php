@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Contracts\ContinuityServiceInterface;
-use App\Contracts\SeoMetadataServiceInterface;
-use App\Models\LegacyRecordSnapshot;
-use App\Models\MigrationLog;
-use App\Models\MigrationRejection;
-use App\Models\Page;
+use App\Contracts\Shared\ContinuityServiceInterface;
+use App\Contracts\Seo\SeoMetadataServiceInterface;
+use App\Models\Legacy\LegacyRecordSnapshot;
+use App\Models\Shared\MigrationLog;
+use App\Models\Shared\MigrationRejection;
+use App\Models\Page\Page;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 

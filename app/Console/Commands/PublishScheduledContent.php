@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Contracts\HomepagePublishingServiceInterface;
-use App\Contracts\PageServiceInterface;
+use App\Contracts\Homepage\HomepagePublishingServiceInterface;
+use App\Contracts\Page\PageServiceInterface;
 use Illuminate\Console\Command;
 
 final class PublishScheduledContent extends Command

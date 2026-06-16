@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Services\Placeholders;
 
-use App\Contracts\SettingsServiceInterface;
-use App\DTOs\ApplyCtaSettingsDTO;
-use App\DTOs\EmergencyNoticeDTO;
-use App\DTOs\FooterSettingsDTO;
-use App\DTOs\PageSeoDTO;
-use App\DTOs\PublicSettingsDTO;
-use App\DTOs\SettingsDTO;
-use App\DTOs\SocialContactSettingsDTO;
+use App\Contracts\Settings\SettingsServiceInterface;
+use App\DTOs\Settings\ApplyCtaSettingsDTO;
+use App\DTOs\Settings\EmergencyNoticeDTO;
+use App\DTOs\Settings\FooterSettingsDTO;
+use App\DTOs\Seo\PageSeoDTO;
+use App\DTOs\Settings\PublicSettingsDTO;
+use App\DTOs\Settings\SettingsDTO;
+use App\DTOs\Settings\SocialContactSettingsDTO;
 use BadMethodCallException;
 
 /**

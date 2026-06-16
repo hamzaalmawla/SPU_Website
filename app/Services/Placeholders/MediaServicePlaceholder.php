@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services\Placeholders;
 
-use App\Contracts\MediaServiceInterface;
-use App\DTOs\MediaUploadResultDTO;
-use App\DTOs\PaginatedResultDTO;
+use App\Contracts\Media\MediaServiceInterface;
+use App\DTOs\Media\MediaUploadResultDTO;
+use App\DTOs\Shared\PaginatedResultDTO;
 use BadMethodCallException;
 use Illuminate\Support\Collection;
 

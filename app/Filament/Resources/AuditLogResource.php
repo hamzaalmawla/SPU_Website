@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\AuditLogResource\Pages;
-use App\Models\AuditLog;
+use App\Models\Shared\AuditLog;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;

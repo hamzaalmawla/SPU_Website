@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
-use App\Contracts\AuditServiceInterface;
-use App\Contracts\AuthServiceInterface;
-use App\Contracts\TotpAuthenticatorInterface;
+use App\Contracts\Shared\AuditServiceInterface;
+use App\Contracts\Auth\AuthServiceInterface;
+use App\Contracts\Auth\TotpAuthenticatorInterface;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\TwoFactorChallengeRequest;
 use Illuminate\Contracts\Auth\Authenticatable;

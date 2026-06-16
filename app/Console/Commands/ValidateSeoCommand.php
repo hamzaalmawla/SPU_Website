@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Contracts\SeoMetadataServiceInterface;
-use App\Models\Page;
+use App\Contracts\Seo\SeoMetadataServiceInterface;
+use App\Models\Page\Page;
 use Illuminate\Console\Command;
 
 final class ValidateSeoCommand extends Command

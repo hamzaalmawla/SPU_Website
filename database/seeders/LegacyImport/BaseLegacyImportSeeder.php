@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Database\Seeders\LegacyImport;
 
-use App\Models\LegacyRecordSnapshot;
-use App\Models\MediaAsset;
+use App\Models\Legacy\LegacyRecordSnapshot;
+use App\Models\Media\MediaAsset;
 use App\Support\LegacyImport\DateNormalizer;
 use App\Support\LegacyImport\EmailValidator;
 use App\Support\LegacyImport\HtmlSanitizer;

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Listeners;
 
-use App\Contracts\CacheServiceInterface;
+use App\Contracts\Shared\CacheServiceInterface;
 use App\Events\PagePublished;
 use App\Events\PageUnpublished;
 use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use App\Contracts\HomepageSectionServiceInterface;
-use App\Models\HomepageSection;
-use App\Models\HomepageSectionTranslation;
+use App\Contracts\Homepage\HomepageSectionServiceInterface;
+use App\Models\Homepage\HomepageSection;
+use App\Models\Homepage\HomepageSectionTranslation;
 use Illuminate\Database\Seeder;
 
 /**

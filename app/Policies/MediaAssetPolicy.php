@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use App\Models\MediaAsset;
-use App\Models\User;
+use App\Models\Media\MediaAsset;
+use App\Models\User\User;
 
 /**
  * Authorizes media asset management actions.

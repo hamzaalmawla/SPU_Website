@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Models\AuditLog;
+use App\Models\Shared\AuditLog;
 use Illuminate\Console\Command;
 
 final class PruneAuditLogs extends Command
