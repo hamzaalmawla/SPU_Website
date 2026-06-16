@@ -28,7 +28,7 @@ return new class extends Migration
             $table->string('name');
             $table->text('description')->nullable();
             $table->timestamps();
-            
+
             $table->unique(['complaint_category_id', 'locale'], 'complaint_cat_trans_unique');
         });
 
@@ -39,34 +39,34 @@ return new class extends Migration
             $table->foreignId('complaint_category_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('submitted_by_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('assigned_to_user_id')->nullable()->constrained('users')->nullOnDelete();
-            
+
             // Submitter info (if not logged in)
             $table->string('submitter_name')->nullable();
             $table->string('submitter_email')->nullable();
             $table->string('submitter_phone')->nullable();
             $table->string('submitter_type')->nullable(); // student, faculty, staff, visitor
-            
+
             // Complaint details
             $table->string('subject');
             $table->text('description');
             $table->string('priority')->default('normal'); // low, normal, high, urgent
             $table->string('status')->default('pending'); // pending, in_progress, resolved, closed, rejected
-            
+
             // Resolution
             $table->text('resolution')->nullable();
             $table->timestamp('resolved_at')->nullable();
             $table->foreignId('resolved_by_user_id')->nullable()->constrained('users')->nullOnDelete();
-            
+
             // Feedback
             $table->integer('satisfaction_rating')->nullable(); // 1-5
             $table->text('feedback')->nullable();
-            
+
             // Attachments
             $table->json('attachment_paths')->nullable();
-            
+
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->index(['status', 'priority']);
             $table->index('ticket_number');
             $table->index('submitted_by_user_id');
@@ -84,7 +84,7 @@ return new class extends Migration
             $table->boolean('is_read')->default(false);
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->index(['complaint_id', 'is_internal']);
         });
 
@@ -97,7 +97,7 @@ return new class extends Migration
             $table->foreignId('changed_by_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->text('notes')->nullable();
             $table->timestamp('changed_at');
-            
+
             $table->index('complaint_id');
         });
     }

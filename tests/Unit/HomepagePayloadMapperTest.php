@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use App\DTOs\Content\ArticleCardDTO;
 use App\DTOs\Contact\ContactLinkDTO;
+use App\DTOs\Content\ArticleCardDTO;
 use App\DTOs\Content\EventCardDTO;
-use App\DTOs\Settings\FooterColumnDTO;
+use App\DTOs\Content\ResearchCardDTO;
 use App\DTOs\Homepage\HomepageFeatureItemDTO;
 use App\DTOs\Homepage\HomepageSectionDataDTO;
 use App\DTOs\Homepage\HomepageStatItemDTO;
 use App\DTOs\Navigation\NavigationActionDTO;
-use App\DTOs\Content\ResearchCardDTO;
+use App\DTOs\Settings\FooterColumnDTO;
 use App\DTOs\Settings\SocialLinkDTO;
 use App\Support\HomepagePayloadMapper;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -40,9 +40,6 @@ class HomepagePayloadMapperTest extends TestCase
     //  Property 8 — Round-Trip Equivalence
     // ──────────────────────────────────────────────
 
-    /**
-     * @param HomepageSectionDataDTO $original
-     */
     #[Test]
     #[DataProvider('randomSectionDataProvider')]
     public function section_data_round_trip_preserves_structure(HomepageSectionDataDTO $original): void
@@ -194,7 +191,7 @@ class HomepagePayloadMapperTest extends TestCase
             return null;
         }
 
-        return 'https://example.com/' . self::randomSlugSegment() . '/' . self::randomSlugSegment();
+        return 'https://example.com/'.self::randomSlugSegment().'/'.self::randomSlugSegment();
     }
 
     private static function randomNullableAction(): ?NavigationActionDTO
@@ -205,7 +202,7 @@ class HomepagePayloadMapperTest extends TestCase
 
         return new NavigationActionDTO(
             label: self::randomSentence(),
-            url: 'https://example.com/' . self::randomSlugSegment(),
+            url: 'https://example.com/'.self::randomSlugSegment(),
             target: random_int(0, 1) === 0 ? '_blank' : null,
         );
     }
@@ -223,7 +220,7 @@ class HomepagePayloadMapperTest extends TestCase
                 value: (string) random_int(1, 9999),
                 label: self::randomSentence(),
                 description: self::nullableString(),
-                icon: random_int(0, 2) === 0 ? 'icon-' . self::randomSlugSegment() : null,
+                icon: random_int(0, 2) === 0 ? 'icon-'.self::randomSlugSegment() : null,
                 prefix: random_int(0, 3) === 0 ? '+' : null,
                 suffix: random_int(0, 3) === 0 ? '%' : null,
                 helperText: self::nullableString(),
@@ -332,7 +329,7 @@ class HomepagePayloadMapperTest extends TestCase
         $authors = [];
 
         for ($i = 0; $i < $count; $i++) {
-            $authors[] = 'Dr. ' . self::randomSlugSegment();
+            $authors[] = 'Dr. '.self::randomSlugSegment();
         }
 
         return $authors;
@@ -380,7 +377,7 @@ class HomepagePayloadMapperTest extends TestCase
             for ($j = 0; $j < $linkCount; $j++) {
                 $links[] = new NavigationActionDTO(
                     label: self::randomSentence(),
-                    url: 'https://example.com/' . self::randomSlugSegment(),
+                    url: 'https://example.com/'.self::randomSlugSegment(),
                     target: random_int(0, 2) === 0 ? '_blank' : null,
                 );
             }
@@ -406,8 +403,8 @@ class HomepagePayloadMapperTest extends TestCase
         for ($i = 0; $i < $count; $i++) {
             $type = $types[random_int(0, count($types) - 1)];
             $value = match ($type) {
-                'phone', 'fax' => '+963-' . random_int(100000000, 999999999),
-                'email' => self::randomSlugSegment() . '@example.com',
+                'phone', 'fax' => '+963-'.random_int(100000000, 999999999),
+                'email' => self::randomSlugSegment().'@example.com',
                 default => self::randomSentence(),
             };
 
@@ -433,7 +430,7 @@ class HomepagePayloadMapperTest extends TestCase
         for ($i = 0; $i < $count; $i++) {
             $items[] = new SocialLinkDTO(
                 platform: $platforms[random_int(0, count($platforms) - 1)],
-                url: 'https://' . $platforms[random_int(0, count($platforms) - 1)] . '.com/' . self::randomSlugSegment(),
+                url: 'https://'.$platforms[random_int(0, count($platforms) - 1)].'.com/'.self::randomSlugSegment(),
                 isEnabled: random_int(0, 4) > 0,
             );
         }

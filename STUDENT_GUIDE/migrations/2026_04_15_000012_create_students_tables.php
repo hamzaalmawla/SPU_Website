@@ -23,7 +23,7 @@ return new class extends Migration
             $table->boolean('is_published')->default(true);
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->index(['academic_year', 'is_published']);
             $table->index('gpa');
         });
@@ -49,7 +49,7 @@ return new class extends Migration
             $table->boolean('is_published')->default(false);
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->index(['graduation_year', 'is_published']);
             $table->index('is_featured');
         });

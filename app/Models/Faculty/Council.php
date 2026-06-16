@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models\Faculty;
 
+use App\Models\Person\CouncilMember;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

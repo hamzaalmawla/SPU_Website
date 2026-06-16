@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\PageResource\Pages;
 
 use App\Filament\Resources\PageResource;
+use App\Models\Page\Page;
 use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
 
@@ -14,7 +15,7 @@ class ViewPage extends ViewRecord
 
     protected function mutateFormDataBeforeFill(array $data): array
     {
-        /** @var \App\Models\Page $page */
+        /** @var Page $page */
         $page = $this->record;
         $page->load(['translations', 'seoMeta']);
 

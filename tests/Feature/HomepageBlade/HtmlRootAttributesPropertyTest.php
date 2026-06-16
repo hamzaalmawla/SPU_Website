@@ -19,12 +19,12 @@ class HtmlRootAttributesPropertyTest extends TestCase
         $html = view('layouts.public', $data)->render();
 
         $this->assertMatchesRegularExpression(
-            '/<html\s[^>]*lang="' . preg_quote($locale, '/') . '"/',
+            '/<html\s[^>]*lang="'.preg_quote($locale, '/').'"/',
             $html,
             "Expected lang=\"{$locale}\" on <html>"
         );
         $this->assertMatchesRegularExpression(
-            '/<html\s[^>]*dir="' . preg_quote($direction, '/') . '"/',
+            '/<html\s[^>]*dir="'.preg_quote($direction, '/').'"/',
             $html,
             "Expected dir=\"{$direction}\" on <html>"
         );

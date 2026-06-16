@@ -7,8 +7,8 @@ namespace App\Console\Commands;
 use App\Contracts\Homepage\HomepageSectionServiceInterface;
 use App\Contracts\Navigation\NavigationServiceInterface;
 use App\Contracts\Page\PageServiceInterface;
-use App\Contracts\Settings\SettingsServiceInterface;
 use App\Contracts\Seo\SitemapServiceInterface;
+use App\Contracts\Settings\SettingsServiceInterface;
 use Illuminate\Console\Command;
 
 /**

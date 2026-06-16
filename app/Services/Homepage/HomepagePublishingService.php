@@ -4,20 +4,21 @@ declare(strict_types=1);
 
 namespace App\Services\Homepage;
 
-use App\Contracts\Shared\AuditServiceInterface;
-use App\Contracts\Shared\CacheServiceInterface;
 use App\Contracts\Homepage\HomepagePublishingServiceInterface;
 use App\Contracts\Homepage\HomepageSectionServiceInterface;
-use App\DTOs\Page\DraftPayloadDTO;
+use App\Contracts\Shared\AuditServiceInterface;
+use App\Contracts\Shared\CacheServiceInterface;
 use App\DTOs\Homepage\HomepageDraftDataDTO;
 use App\DTOs\Homepage\HomepageDraftDTO;
 use App\DTOs\Homepage\HomepageSectionDataDTO;
 use App\DTOs\Homepage\HomepageSectionDTO;
+use App\DTOs\Page\DraftPayloadDTO;
 use App\Events\DraftConflictDetected;
 use App\Exceptions\ConflictException;
 use App\Models\Homepage\HomepageDraft;
 use App\Models\Homepage\HomepageSection;
 use App\Models\Homepage\HomepageSectionTranslation;
+use App\Models\Shared\PreviewToken;
 use App\Models\User\User;
 use App\Services\Preview\PreviewTokenStore;
 use App\Support\HomepageDraftSectionMapper;
@@ -570,7 +571,7 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
         $deleted = $this->previewTokenStore->invalidateTarget('homepage');
 
         if ($deleted > 0) {
-            $this->auditService->log('preview.invalidated', $userId, \App\Models\Shared\PreviewToken::class, metadata: [
+            $this->auditService->log('preview.invalidated', $userId, PreviewToken::class, metadata: [
                 'target_type' => 'homepage',
                 'target_id' => null,
                 'deleted_count' => $deleted,

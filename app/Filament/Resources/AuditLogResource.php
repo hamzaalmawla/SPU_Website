@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources;
 
+use App\Contracts\Shared\AuditServiceInterface;
 use App\Filament\Resources\AuditLogResource\Pages;
 use App\Models\Shared\AuditLog;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
@@ -17,6 +19,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
 
 /**
@@ -37,9 +40,9 @@ class AuditLogResource extends Resource
 
     protected static ?int $navigationSort = 11;
 
-    private static function auditService(): \App\Contracts\AuditServiceInterface
+    private static function auditService(): AuditServiceInterface
     {
-        return app(\App\Contracts\AuditServiceInterface::class);
+        return app(AuditServiceInterface::class);
     }
 
     public static function canAccess(): bool
@@ -57,12 +60,12 @@ class AuditLogResource extends Resource
         return false;
     }
 
-    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    public static function canEdit(Model $record): bool
     {
         return false;
     }
 
-    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    public static function canDelete(Model $record): bool
     {
         return false;
     }
@@ -159,9 +162,9 @@ class AuditLogResource extends Resource
 
                 Filter::make('date_range')
                     ->form([
-                        \Filament\Forms\Components\DatePicker::make('from')
+                        DatePicker::make('from')
                             ->label('From'),
-                        \Filament\Forms\Components\DatePicker::make('until')
+                        DatePicker::make('until')
                             ->label('Until'),
                     ])
                     ->query(function (Builder $query, array $data): Builder {

@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Contracts\Shared;
 
+use App\DTOs\Legacy\PatternRuleDTO;
 use App\DTOs\Legacy\RedirectResultDTO;
+use App\DTOs\Legacy\RedirectRuleDTO;
 use App\DTOs\Legacy\UnresolvedRequestDTO;
+use App\DTOs\Media\FileInventoryItemDTO;
 use App\DTOs\Shared\ValidationResultDTO;
 use Illuminate\Support\Collection;
 
@@ -32,14 +35,14 @@ interface ContinuityServiceInterface
     /**
      * Get all exact redirect rules.
      *
-     * @return Collection<int, \App\DTOs\RedirectRuleDTO>
+     * @return Collection<int, RedirectRuleDTO>
      */
     public function getExactRedirects(): Collection;
 
     /**
      * Get all pattern redirect rules ordered by priority.
      *
-     * @return Collection<int, \App\DTOs\PatternRuleDTO>
+     * @return Collection<int, PatternRuleDTO>
      */
     public function getPatternRules(): Collection;
 
@@ -52,14 +55,14 @@ interface ContinuityServiceInterface
      * Get unresolved requests with optional filters.
      *
      * @param  array<string, mixed>  $filters
-     * @return Collection<int, \App\DTOs\UnresolvedRequestDTO>
+     * @return Collection<int, UnresolvedRequestDTO>
      */
     public function getUnresolvedRequests(array $filters = []): Collection;
 
     /**
      * Get file continuity inventory.
      *
-     * @return Collection<int, \App\DTOs\FileInventoryItemDTO>
+     * @return Collection<int, FileInventoryItemDTO>
      */
     public function getFileInventory(): Collection;
 }

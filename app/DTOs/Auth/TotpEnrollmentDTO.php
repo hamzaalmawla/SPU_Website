@@ -13,9 +13,9 @@ namespace App\DTOs\Auth;
 final readonly class TotpEnrollmentDTO
 {
     /**
-     * @param  string        $secret        The TOTP shared secret (base32-encoded).
-     * @param  string        $qrCodeUrl     The otpauth:// provisioning URI for QR display.
-     * @param  list<string>  $recoveryCodes One-time recovery codes for backup access.
+     * @param  string  $secret  The TOTP shared secret (base32-encoded).
+     * @param  string  $qrCodeUrl  The otpauth:// provisioning URI for QR display.
+     * @param  list<string>  $recoveryCodes  One-time recovery codes for backup access.
      */
     public function __construct(
         public string $secret,

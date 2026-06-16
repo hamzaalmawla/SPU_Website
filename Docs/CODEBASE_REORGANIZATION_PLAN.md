@@ -373,7 +373,7 @@ Controllers/
 ## Timeline Estimate
 
 - Phase 1 (DTOs): ~10-15 minutes
-- Phase 2 (Contracts): ~5-10 minutes  
+- Phase 2 (Contracts): ~5-10 minutes
 - Phase 3 (Services): ~10-15 minutes
 - Phase 4 (Models): ~15-20 minutes
 - Phase 5 (Controllers): ~5 minutes

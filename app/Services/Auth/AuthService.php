@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\Auth;
 
-use App\Contracts\Shared\AuditServiceInterface;
 use App\Contracts\Auth\AuthServiceInterface;
+use App\Contracts\Shared\AuditServiceInterface;
 use App\DTOs\Auth\LoginCredentialsDTO;
 use App\Models\User\Role;
 use App\Models\User\User;
@@ -14,8 +14,8 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Contracts\Session\Session;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Hash;
 
 /**
  * Framework-backed authentication service for admin access checks.

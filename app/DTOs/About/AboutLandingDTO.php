@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\DTOs\About;
 
 /**
- * @param array<int, array<string, string>> $stats
- * @param array<int, array<string, string>> $storyItems
- * @param array<int, array<string, string>> $highlights
- * @param array<int, array<string, string>> $subPages
+ * @param  array<int, array<string, string>>  $stats
+ * @param  array<int, array<string, string>>  $storyItems
+ * @param  array<int, array<string, string>>  $highlights
+ * @param  array<int, array<string, string>>  $subPages
  */
 final readonly class AboutLandingDTO
 {

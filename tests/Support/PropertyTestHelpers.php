@@ -51,7 +51,7 @@ trait PropertyTestHelpers
         // Optionally insert a hyphen in the middle
         if ($length > 5 && random_int(0, 1) === 1) {
             $pos = random_int(2, $length - 2);
-            $slug = substr($slug, 0, $pos) . '-' . substr($slug, $pos);
+            $slug = substr($slug, 0, $pos).'-'.substr($slug, $pos);
         }
 
         return $slug;
@@ -69,8 +69,8 @@ trait PropertyTestHelpers
             'meta_description' => random_int(0, 2) > 0 ? self::randomSentence() : null,
             'og_title' => random_int(0, 2) > 0 ? self::randomSentence() : null,
             'og_description' => random_int(0, 2) > 0 ? self::randomSentence() : null,
-            'og_image' => random_int(0, 2) > 0 ? 'https://example.com/images/' . self::randomSlugSegment() . '.jpg' : null,
-            'canonical_url' => random_int(0, 2) > 0 ? null : 'https://example.com/' . self::randomSlugPath(),
+            'og_image' => random_int(0, 2) > 0 ? 'https://example.com/images/'.self::randomSlugSegment().'.jpg' : null,
+            'canonical_url' => random_int(0, 2) > 0 ? null : 'https://example.com/'.self::randomSlugPath(),
             'robots' => random_int(0, 3) > 0 ? null : self::randomRobotsDirective(),
         ];
     }
@@ -88,8 +88,8 @@ trait PropertyTestHelpers
         $exact = [];
         for ($i = 0; $i < $exactCount; $i++) {
             $exact[] = [
-                'legacy_path' => '/' . self::randomSlugPath(),
-                'destination_url' => '/' . self::randomLocale() . '/' . self::randomSlugPath(),
+                'legacy_path' => '/'.self::randomSlugPath(),
+                'destination_url' => '/'.self::randomLocale().'/'.self::randomSlugPath(),
                 'status_code' => [301, 302][random_int(0, 1)],
                 'is_active' => random_int(0, 4) > 0,
             ];
@@ -99,8 +99,8 @@ trait PropertyTestHelpers
         for ($i = 0; $i < $patternCount; $i++) {
             $segment = self::randomSlugSegment();
             $pattern[] = [
-                'pattern' => '#^/' . $segment . '/(.+)$#',
-                'replacement' => '/' . self::randomLocale() . '/' . $segment . '/$1',
+                'pattern' => '#^/'.$segment.'/(.+)$#',
+                'replacement' => '/'.self::randomLocale().'/'.$segment.'/$1',
                 'status_code' => 301,
                 'priority' => ($i + 1) * 100,
                 'is_active' => random_int(0, 4) > 0,
@@ -136,7 +136,7 @@ trait PropertyTestHelpers
             };
 
             $pages[] = [
-                'slug' => self::randomSlugSegment() . '-' . $i,
+                'slug' => self::randomSlugSegment().'-'.$i,
                 'type' => 'landing',
                 'template' => 'default',
                 'status' => $status,

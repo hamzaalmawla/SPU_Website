@@ -76,12 +76,12 @@ class SeoValidationTest extends TestCase
             PageSeoMeta::create([
                 'page_id' => $page->id,
                 'locale' => $locale,
-                'meta_title' => 'Title ' . $locale,
-                'meta_description' => 'Description ' . $locale,
-                'og_title' => 'OG Title ' . $locale,
-                'og_description' => 'OG Description ' . $locale,
+                'meta_title' => 'Title '.$locale,
+                'meta_description' => 'Description '.$locale,
+                'og_title' => 'OG Title '.$locale,
+                'og_description' => 'OG Description '.$locale,
                 'og_image_url' => 'https://example.com/image.jpg',
-                'canonical_url' => 'https://example.com/' . $locale . '/complete-seo',
+                'canonical_url' => 'https://example.com/'.$locale.'/complete-seo',
             ]);
         }
 

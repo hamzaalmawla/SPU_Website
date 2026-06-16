@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Contracts\Shared\AuditServiceInterface;
+use App\DTOs\Shared\PaginatedResultDTO;
 use App\Models\User\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -69,7 +70,7 @@ class AuditServiceTest extends TestCase
 
         $result = $auditService->latestPaginated(page: 1, perPage: 3);
 
-        $this->assertInstanceOf(\App\DTOs\Shared\PaginatedResultDTO::class, $result);
+        $this->assertInstanceOf(PaginatedResultDTO::class, $result);
         $this->assertCount(3, $result->items);
         $this->assertSame(5, $result->total);
         $this->assertSame(1, $result->currentPage);

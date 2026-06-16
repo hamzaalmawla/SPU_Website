@@ -49,7 +49,7 @@ class AuditLogResourceTest extends TestCase
     {
         $this->assertFalse(AuditLogResource::canCreate());
 
-        $auditLog = new AuditLog();
+        $auditLog = new AuditLog;
         $this->assertFalse(AuditLogResource::canEdit($auditLog));
         $this->assertFalse(AuditLogResource::canDelete($auditLog));
     }

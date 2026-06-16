@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Contracts\Page;
 
-use App\DTOs\Contact\ContactPageDTO;
 use App\DTOs\Contact\ContactPageContentDTO;
+use App\DTOs\Contact\ContactPageDTO;
 use App\DTOs\Contact\ContactSubmissionDataDTO;
 
 interface ContactPageServiceInterface

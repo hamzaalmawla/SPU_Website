@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Support;
 
+use Filament\Forms\Components\Component;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
@@ -22,7 +23,7 @@ final class HomepageFormSchema
     /**
      * Dispatch to the correct section field builder by key.
      *
-     * @return array<int, \Filament\Forms\Components\Component>
+     * @return array<int, Component>
      */
     public static function fieldsForSection(string $sectionKey, string $prefix): array
     {
@@ -41,7 +42,7 @@ final class HomepageFormSchema
         };
     }
 
-    /** @return array<int, \Filament\Forms\Components\Component> */
+    /** @return array<int, Component> */
     public static function heroFields(string $prefix): array
     {
         return [
@@ -102,7 +103,7 @@ final class HomepageFormSchema
         ];
     }
 
-    /** @return array<int, \Filament\Forms\Components\Component> */
+    /** @return array<int, Component> */
     public static function heroStatsFields(string $prefix): array
     {
         return [
@@ -140,7 +141,7 @@ final class HomepageFormSchema
         ];
     }
 
-    /** @return array<int, \Filament\Forms\Components\Component> */
+    /** @return array<int, Component> */
     public static function academicFacultiesFields(string $prefix): array
     {
         return [
@@ -193,7 +194,7 @@ final class HomepageFormSchema
         ];
     }
 
-    /** @return array<int, \Filament\Forms\Components\Component> */
+    /** @return array<int, Component> */
     public static function achievementsHighlightsFields(string $prefix): array
     {
         return [
@@ -242,7 +243,7 @@ final class HomepageFormSchema
         ];
     }
 
-    /** @return array<int, \Filament\Forms\Components\Component> */
+    /** @return array<int, Component> */
     public static function chooseYourPathFields(string $prefix): array
     {
         return [
@@ -290,7 +291,7 @@ final class HomepageFormSchema
         ];
     }
 
-    /** @return array<int, \Filament\Forms\Components\Component> */
+    /** @return array<int, Component> */
     public static function universityNewsFields(string $prefix): array
     {
         return [
@@ -332,7 +333,7 @@ final class HomepageFormSchema
         ];
     }
 
-    /** @return array<int, \Filament\Forms\Components\Component> */
+    /** @return array<int, Component> */
     public static function researchStudiesFields(string $prefix): array
     {
         return [
@@ -377,7 +378,7 @@ final class HomepageFormSchema
         ];
     }
 
-    /** @return array<int, \Filament\Forms\Components\Component> */
+    /** @return array<int, Component> */
     public static function eventsActivitiesFields(string $prefix): array
     {
         return [
@@ -421,7 +422,7 @@ final class HomepageFormSchema
         ];
     }
 
-    /** @return array<int, \Filament\Forms\Components\Component> */
+    /** @return array<int, Component> */
     public static function medicalFacilitiesFields(string $prefix): array
     {
         return [
@@ -481,7 +482,7 @@ final class HomepageFormSchema
         ];
     }
 
-    /** @return array<int, \Filament\Forms\Components\Component> */
+    /** @return array<int, Component> */
     public static function bottomStatsFields(string $prefix): array
     {
         return [
@@ -516,7 +517,7 @@ final class HomepageFormSchema
         ];
     }
 
-    /** @return array<int, \Filament\Forms\Components\Component> */
+    /** @return array<int, Component> */
     public static function footerFields(string $prefix): array
     {
         return [
@@ -632,7 +633,7 @@ final class HomepageFormSchema
         ];
     }
 
-    /** @return array<int, \Filament\Forms\Components\Component> */
+    /** @return array<int, Component> */
     private static function sectionActionFields(string $prefix): array
     {
         return [

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Shared;
 
 use App\Contracts\Shared\SlugServiceInterface;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -53,14 +54,14 @@ final class SlugService implements SlugServiceInterface
         }
 
         for ($i = 1; $i <= self::MAX_COLLISION_ATTEMPTS; $i++) {
-            $candidate = $baseSlug . '-' . $i;
+            $candidate = $baseSlug.'-'.$i;
             if (! $this->slugExists($table, $candidate, $ignoreId)) {
                 return $candidate;
             }
         }
 
         throw new RuntimeException(
-            "Unable to generate a unique slug for '{$source}' after " . self::MAX_COLLISION_ATTEMPTS . ' attempts.'
+            "Unable to generate a unique slug for '{$source}' after ".self::MAX_COLLISION_ATTEMPTS.' attempts.'
         );
     }
 
@@ -111,7 +112,7 @@ final class SlugService implements SlugServiceInterface
             throw new RuntimeException("Model class '{$modelClass}' does not exist.");
         }
 
-        /** @var \Illuminate\Database\Eloquent\Model $instance */
+        /** @var Model $instance */
         $instance = new $modelClass;
 
         return $instance->getTable();

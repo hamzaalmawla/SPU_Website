@@ -44,14 +44,14 @@ final class SitemapController extends Controller
                 'User-agent: *',
                 'Allow: /',
                 '',
-                'Sitemap: ' . $sitemapUrl,
+                'Sitemap: '.$sitemapUrl,
             ]);
         } else {
             $content = implode("\n", [
                 'User-agent: *',
                 'Disallow: /',
                 '',
-                'Sitemap: ' . $sitemapUrl,
+                'Sitemap: '.$sitemapUrl,
             ]);
         }
 

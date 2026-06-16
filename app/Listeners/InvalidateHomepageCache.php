@@ -26,8 +26,8 @@ final class InvalidateHomepageCache implements ShouldHandleEventsAfterCommit
     public function handle(HomepagePublished $event): void
     {
         foreach (['ar', 'en'] as $locale) {
-            $this->cacheService->forget('public_pages:' . sha1($locale . '|' . $locale . '|'));
-            $this->cacheService->flushTags(['public-pages', 'public-shell', 'public-shell:' . $locale]);
+            $this->cacheService->forget('public_pages:'.sha1($locale.'|'.$locale.'|'));
+            $this->cacheService->flushTags(['public-pages', 'public-shell', 'public-shell:'.$locale]);
         }
     }
 }

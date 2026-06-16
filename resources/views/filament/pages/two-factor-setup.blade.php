@@ -35,7 +35,7 @@
                 <div class="space-y-4">
                     {{-- Visual QR Code Card --}}
                     <div class="flex flex-col items-center justify-center p-4 bg-white rounded-lg border border-gray-200 dark:border-gray-700 w-fit mx-auto shadow-sm">
-                        <div 
+                        <div
                             x-data="{
                                 qrUrl: '{{ $qrCodeUrl }}',
                                 init() {

@@ -10,11 +10,11 @@ use App\DTOs\Page\PageDraftDataDTO;
 use App\DTOs\Page\PageDraftDTO;
 use App\DTOs\Page\PageDTO;
 use App\DTOs\Page\PageMetadataDTO;
-use App\DTOs\Seo\PageSeoDTO;
-use App\DTOs\Seo\PageSeoInputDTO;
 use App\DTOs\Page\PageTranslationDTO;
 use App\DTOs\Preview\PreviewDTO;
 use App\DTOs\Preview\PreviewPayloadDTO;
+use App\DTOs\Seo\PageSeoDTO;
+use App\DTOs\Seo\PageSeoInputDTO;
 use App\Models\Page\Page;
 use App\Models\Page\PageDraft;
 

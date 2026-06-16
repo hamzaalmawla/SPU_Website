@@ -53,7 +53,7 @@ class SeoMetadataServicePropertyTest extends TestCase
                 ogTitle: 'SPU Default OG',
                 ogDescription: 'Default OG description',
                 ogImage: 'https://spu.edu.sy/images/default-og.jpg',
-                canonicalUrl: 'https://spu.edu.sy/' . $locale,
+                canonicalUrl: 'https://spu.edu.sy/'.$locale,
                 hreflang: [
                     ['locale' => 'ar', 'url' => 'https://spu.edu.sy/ar'],
                     ['locale' => 'en', 'url' => 'https://spu.edu.sy/en'],
@@ -79,7 +79,7 @@ class SeoMetadataServicePropertyTest extends TestCase
 
         for ($i = 0; $i < 120; $i++) {
             $locale = self::randomLocale();
-            $path = '/' . $locale . '/' . self::randomSlugPath();
+            $path = '/'.$locale.'/'.self::randomSlugPath();
             $cases["iteration_{$i}"] = [$path, $locale];
         }
 
@@ -100,7 +100,7 @@ class SeoMetadataServicePropertyTest extends TestCase
 
         // Must contain the correct locale prefix
         $this->assertStringContainsString(
-            '/' . $locale,
+            '/'.$locale,
             $result,
             "Canonical URL must contain locale prefix /{$locale}, got: {$result}"
         );
@@ -117,7 +117,7 @@ class SeoMetadataServicePropertyTest extends TestCase
 
         for ($i = 0; $i < 30; $i++) {
             $locale = self::randomLocale();
-            $cases["homepage_{$i}"] = ['/' . $locale, $locale];
+            $cases["homepage_{$i}"] = ['/'.$locale, $locale];
         }
 
         return $cases;
@@ -129,7 +129,7 @@ class SeoMetadataServicePropertyTest extends TestCase
         $result = $this->seoService->resolveCanonical($path, $locale);
 
         $this->assertMatchesRegularExpression('/^https?:\/\//', $result);
-        $this->assertStringContainsString('/' . $locale, $result);
+        $this->assertStringContainsString('/'.$locale, $result);
     }
 
     // ──────────────────────────────────────────────────────────────────────
@@ -151,11 +151,11 @@ class SeoMetadataServicePropertyTest extends TestCase
 
             if ($localeCount === 1) {
                 $locale = self::randomLocale();
-                $localePathMap[$locale] = '/' . $locale . '/' . self::randomSlugPath();
+                $localePathMap[$locale] = '/'.$locale.'/'.self::randomSlugPath();
             } else {
                 $slug = self::randomSlugPath();
-                $localePathMap['ar'] = '/ar/' . $slug;
-                $localePathMap['en'] = '/en/' . $slug;
+                $localePathMap['ar'] = '/ar/'.$slug;
+                $localePathMap['en'] = '/en/'.$slug;
             }
 
             $cases["iteration_{$i}"] = [$localePathMap];
@@ -253,7 +253,7 @@ class SeoMetadataServicePropertyTest extends TestCase
             $context['robots'] = $seoFields['robots'];
         }
 
-        $path = '/' . $locale . '/' . self::randomSlugPath();
+        $path = '/'.$locale.'/'.self::randomSlugPath();
         $context['path'] = $path;
 
         $result = $this->seoService->buildFallback($locale, $context);

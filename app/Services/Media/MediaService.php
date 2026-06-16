@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Services\Media;
 
-use App\Contracts\Shared\AuditServiceInterface;
 use App\Contracts\Media\MediaServiceInterface;
+use App\Contracts\Shared\AuditServiceInterface;
 use App\DTOs\Media\MediaUploadResultDTO;
 use App\DTOs\Shared\PaginatedResultDTO;
 use App\Models\Media\MediaAsset;
 use App\Models\User\User;
+use App\Support\MediaUrlResolver;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Database\Eloquent\Builder;
@@ -258,7 +259,7 @@ final class MediaService implements MediaServiceInterface
             mediaId: (int) $asset->id,
             disk: $asset->disk,
             path: $asset->path,
-            url: \App\Support\MediaUrlResolver::resolve($asset->path, $asset->disk),
+            url: MediaUrlResolver::resolve($asset->path, $asset->disk),
             mimeType: $asset->mime_type,
             size: (int) $asset->size_bytes,
             originalName: $asset->original_name,

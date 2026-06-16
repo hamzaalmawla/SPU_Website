@@ -11,5 +11,9 @@ use Filament\Resources\Pages\ListRecords;
 class ListDirectorates extends ListRecords
 {
     protected static string $resource = DirectorateResource::class;
-    protected function getHeaderActions(): array { return [Actions\CreateAction::make()]; }
+
+    protected function getHeaderActions(): array
+    {
+        return [Actions\CreateAction::make()];
+    }
 }

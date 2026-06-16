@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Support;
 
 use App\Contracts\Homepage\HomepageSectionServiceInterface;
-use App\DTOs\Homepage\HomepageSectionDTO;
 use App\DTOs\Homepage\HomepageSectionDataDTO;
+use App\DTOs\Homepage\HomepageSectionDTO;
 use App\DTOs\Homepage\HomepageSectionTranslationDTO;
 
 /**
@@ -156,7 +156,7 @@ final class HomepageDraftSectionMapper
 
     private static function emptySection(string $key, int $sortOrder): HomepageSectionDTO
     {
-        $payload = new HomepageSectionDataDTO();
+        $payload = new HomepageSectionDataDTO;
 
         return new HomepageSectionDTO(
             id: 0,

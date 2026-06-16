@@ -23,7 +23,7 @@ return new class extends Migration
             $table->timestamp('migrated_at');
             $table->foreignId('migrated_by')->nullable()->constrained('users');
             $table->timestamps();
-            
+
             $table->index(['batch_name', 'status']);
             $table->index(['source_table', 'source_id']);
             $table->index(['target_table', 'target_id']);

@@ -39,20 +39,20 @@ return [
         'jx_admins' => 'users',
         'jx_admin_category' => 'user_categories',
         'jx_admins_services' => 'user_service_assignments',
-        
+
         // Content
         'jx_items' => 'content_items',
         'jx_categories' => 'categories',
         'jx_site_static_pages' => 'pages',
         'jx_archive' => 'archived_content',
-        
+
         // Homepage
         'jx_home_photos' => 'homepage_media',
-        
+
         // Media
         'jx_docs' => 'documents',
         'jx_logos' => 'logos',
-        
+
         // University Specific
         'jx_members' => 'faculty_members',
         'jx_member_categories' => 'faculty_categories',
@@ -61,23 +61,23 @@ return [
         'jx_councils1' => 'council_members',
         'jx_good_students' => 'honor_students',
         'jx_graduated_students' => 'alumni',
-        
+
         // Support
         'jx_faqs' => 'faqs',
         'jx_complaints' => 'complaints',
         'jx_complaint_cats' => 'complaint_categories',
         'jx_job_sites' => 'job_postings',
-        
+
         // Configuration
         'jx_config' => 'settings',
         'jx_config1' => 'settings',
         'jx_languages' => 'languages',
         'jx_sites' => 'site_sections',
-        
+
         // Reference Data
         'jx_countries' => 'countries',
         'jx_cities' => 'cities',
-        
+
         // Comments
         'jx_items_comments' => 'comments',
     ],
@@ -99,18 +99,18 @@ return [
             'jx_admins',
             'jx_admin_category',
         ],
-        
+
         'batch_2_configuration' => [
             'jx_config',
             'jx_config1',
             'jx_sites',
         ],
-        
+
         'batch_3_content_structure' => [
             'jx_categories',
             'jx_logos',
         ],
-        
+
         'batch_4_content' => [
             'jx_items',
             'jx_site_static_pages',
@@ -118,7 +118,7 @@ return [
             'jx_docs',
             'jx_archive',
         ],
-        
+
         'batch_5_university' => [
             'jx_member_categories',
             'jx_members',
@@ -126,19 +126,19 @@ return [
             'jx_councils',
             'jx_councils1',
         ],
-        
+
         'batch_6_students' => [
             'jx_good_students',
             'jx_graduated_students',
         ],
-        
+
         'batch_7_support' => [
             'jx_faqs',
             'jx_complaint_cats',
             'jx_complaints',
             'jx_job_sites',
         ],
-        
+
         'batch_8_engagement' => [
             'jx_items_comments',
             'jx_admins_services',

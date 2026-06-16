@@ -205,6 +205,6 @@ final class HtmlSanitizer
             // Fall through to temp directory
         }
 
-        return sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'htmlpurifier';
+        return sys_get_temp_dir().DIRECTORY_SEPARATOR.'htmlpurifier';
     }
 }

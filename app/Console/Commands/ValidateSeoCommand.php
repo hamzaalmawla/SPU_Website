@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Contracts\Seo\SeoMetadataServiceInterface;
+use App\DTOs\Seo\PageSeoDTO;
 use App\Models\Page\Page;
 use Illuminate\Console\Command;
 
@@ -78,7 +79,7 @@ final class ValidateSeoCommand extends Command
         }
 
         $this->newLine();
-        $this->info("Checked {$pages->count()} pages across " . count($locales) . ' locale(s).');
+        $this->info("Checked {$pages->count()} pages across ".count($locales).' locale(s).');
         $this->line("Pages with SEO issues: {$payload['pages_with_issues']}");
 
         return $payload['pages_with_issues'] > 0 ? self::FAILURE : self::SUCCESS;
@@ -87,7 +88,7 @@ final class ValidateSeoCommand extends Command
     /**
      * @return array<int, string>
      */
-    private function detectIssues(\App\DTOs\Seo\PageSeoDTO $seo, Page $page, string $locale): array
+    private function detectIssues(PageSeoDTO $seo, Page $page, string $locale): array
     {
         $issues = [];
 

@@ -26,7 +26,7 @@ final class HtmlSanitizerPropertyTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->sanitizer = new HtmlSanitizer();
+        $this->sanitizer = new HtmlSanitizer;
     }
 
     // ──────────────────────────────────────────────────────────────────────
@@ -112,12 +112,12 @@ final class HtmlSanitizerPropertyTest extends TestCase
     private static function randomSafeElement(): string
     {
         $tag = self::ALLOWED_TAGS[random_int(0, count(self::ALLOWED_TAGS) - 1)];
-        $text = 'Content' . random_int(1, 9999);
+        $text = 'Content'.random_int(1, 9999);
 
         return match ($tag) {
             'br' => '<br>',
-            'img' => '<img src="https://example.com/img' . random_int(1, 999) . '.jpg" alt="' . $text . '">',
-            'a' => '<a href="https://example.com/' . random_int(1, 999) . '">' . $text . '</a>',
+            'img' => '<img src="https://example.com/img'.random_int(1, 999).'.jpg" alt="'.$text.'">',
+            'a' => '<a href="https://example.com/'.random_int(1, 999).'">'.$text.'</a>',
             'ul', 'ol' => "<{$tag}><li>{$text}</li></{$tag}>",
             'li' => "<ul><li>{$text}</li></ul>",
             'table' => "<table><tbody><tr><td>{$text}</td></tr></tbody></table>",
@@ -138,15 +138,15 @@ final class HtmlSanitizerPropertyTest extends TestCase
     private static function randomUnsafeElement(): string
     {
         $tag = self::UNSAFE_TAGS[random_int(0, count(self::UNSAFE_TAGS) - 1)];
-        $text = 'Unsafe' . random_int(1, 9999);
+        $text = 'Unsafe'.random_int(1, 9999);
 
         return match ($tag) {
-            'script' => '<script>alert("xss' . random_int(1, 999) . '")</script>',
-            'iframe' => '<iframe src="https://evil.com/' . random_int(1, 999) . '"></iframe>',
+            'script' => '<script>alert("xss'.random_int(1, 999).'")</script>',
+            'iframe' => '<iframe src="https://evil.com/'.random_int(1, 999).'"></iframe>',
             'style' => '<style>body{display:none}</style>',
             'link' => '<link rel="stylesheet" href="https://evil.com/style.css">',
             'meta' => '<meta http-equiv="refresh" content="0;url=https://evil.com">',
-            'input' => '<input type="text" value="' . $text . '">',
+            'input' => '<input type="text" value="'.$text.'">',
             default => "<{$tag}>{$text}</{$tag}>",
         };
     }
@@ -158,13 +158,13 @@ final class HtmlSanitizerPropertyTest extends TestCase
     {
         $attr = self::UNSAFE_ATTRS[random_int(0, count(self::UNSAFE_ATTRS) - 1)];
         $tag = self::ALLOWED_TAGS[random_int(0, count(self::ALLOWED_TAGS) - 1)];
-        $text = 'Handler' . random_int(1, 9999);
+        $text = 'Handler'.random_int(1, 9999);
 
         if ($tag === 'br' || $tag === 'img') {
-            return '<div ' . $attr . '="alert(' . random_int(1, 99) . ')">' . $text . '</div>';
+            return '<div '.$attr.'="alert('.random_int(1, 99).')">'.$text.'</div>';
         }
 
-        return '<' . $tag . ' ' . $attr . '="alert(' . random_int(1, 99) . ')">' . $text . '</' . $tag . '>';
+        return '<'.$tag.' '.$attr.'="alert('.random_int(1, 99).')">'.$text.'</'.$tag.'>';
     }
 
     /**
@@ -257,16 +257,16 @@ final class HtmlSanitizerPropertyTest extends TestCase
             // List with Arabic items
             2 => self::randomArabicList($text),
             // Figure with Arabic caption
-            3 => '<figure><figcaption>' . $text . '</figcaption></figure>',
+            3 => '<figure><figcaption>'.$text.'</figcaption></figure>',
             // Nested structure: div > p with Arabic text
-            4 => '<div><p>' . $text . '</p></div>',
+            4 => '<div><p>'.$text.'</p></div>',
         };
     }
 
     /**
      * Generate a simple tag wrapping Arabic text.
      *
-     * @param list<string> $tags
+     * @param  list<string>  $tags
      */
     private static function randomSimpleArabicTag(array $tags, string $text): string
     {
@@ -286,7 +286,7 @@ final class HtmlSanitizerPropertyTest extends TestCase
 
         for ($i = 0; $i < $itemCount; $i++) {
             $itemText = self::ARABIC_TEXTS[random_int(0, count(self::ARABIC_TEXTS) - 1)];
-            $items .= '<li>' . $itemText . '</li>';
+            $items .= '<li>'.$itemText.'</li>';
         }
 
         return "<{$listTag}>{$items}</{$listTag}>";
@@ -328,10 +328,10 @@ final class HtmlSanitizerPropertyTest extends TestCase
 
                 $normalized = [];
                 foreach ($attrs as $name => $value) {
-                    $normalized[] = $name . '="' . $value . '"';
+                    $normalized[] = $name.'="'.$value.'"';
                 }
 
-                return '<' . $tag . ' ' . implode(' ', $normalized) . $selfClose . '>';
+                return '<'.$tag.' '.implode(' ', $normalized).$selfClose.'>';
             },
             $html
         );
@@ -377,9 +377,9 @@ final class HtmlSanitizerPropertyTest extends TestCase
             self::normalizeAttributeOrder($firstPass),
             self::normalizeAttributeOrder($secondPass),
             "Sanitization must be idempotent: sanitize(sanitize(html)) === sanitize(html).\n"
-            . "Input: " . mb_substr($html, 0, 200) . "\n"
-            . "First pass:  " . mb_substr($firstPass, 0, 200) . "\n"
-            . "Second pass: " . mb_substr($secondPass, 0, 200)
+            .'Input: '.mb_substr($html, 0, 200)."\n"
+            .'First pass:  '.mb_substr($firstPass, 0, 200)."\n"
+            .'Second pass: '.mb_substr($secondPass, 0, 200)
         );
     }
 
@@ -463,9 +463,9 @@ final class HtmlSanitizerPropertyTest extends TestCase
             $originalText,
             $sanitizedText,
             "Sanitization must preserve all Arabic text content.\n"
-            . "Input HTML: " . mb_substr($html, 0, 300) . "\n"
-            . "Original text:  '{$originalText}'\n"
-            . "Sanitized text: '{$sanitizedText}'"
+            .'Input HTML: '.mb_substr($html, 0, 300)."\n"
+            ."Original text:  '{$originalText}'\n"
+            ."Sanitized text: '{$sanitizedText}'"
         );
     }
 
@@ -503,8 +503,8 @@ final class HtmlSanitizerPropertyTest extends TestCase
                     $count,
                     $outputCount,
                     "Allowed tag <{$tag}> appeared {$count} time(s) in input but only {$outputCount} time(s) in output.\n"
-                    . "Input:  " . mb_substr($html, 0, 300) . "\n"
-                    . "Output: " . mb_substr($result, 0, 300)
+                    .'Input:  '.mb_substr($html, 0, 300)."\n"
+                    .'Output: '.mb_substr($result, 0, 300)
                 );
             }
         }
@@ -529,9 +529,9 @@ final class HtmlSanitizerPropertyTest extends TestCase
             $firstPass,
             $secondPass,
             "Valid Arabic HTML must be stable after sanitization (idempotent).\n"
-            . "Input: " . mb_substr($html, 0, 300) . "\n"
-            . "First pass:  " . mb_substr($firstPass, 0, 300) . "\n"
-            . "Second pass: " . mb_substr($secondPass, 0, 300)
+            .'Input: '.mb_substr($html, 0, 300)."\n"
+            .'First pass:  '.mb_substr($firstPass, 0, 300)."\n"
+            .'Second pass: '.mb_substr($secondPass, 0, 300)
         );
     }
 }

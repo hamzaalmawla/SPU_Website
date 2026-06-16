@@ -4,7 +4,13 @@ declare(strict_types=1);
 
 namespace App\DTOs\Homepage;
 
+use App\DTOs\Contact\ContactLinkDTO;
+use App\DTOs\Content\ArticleCardDTO;
+use App\DTOs\Content\EventCardDTO;
+use App\DTOs\Content\ResearchCardDTO;
 use App\DTOs\Navigation\NavigationActionDTO;
+use App\DTOs\Settings\FooterColumnDTO;
+use App\DTOs\Settings\SocialLinkDTO;
 
 /**
  * Structured editor payload for one homepage section.

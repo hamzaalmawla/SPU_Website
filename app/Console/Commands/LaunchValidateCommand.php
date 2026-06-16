@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Contracts\Shared\AuditServiceInterface;
-use App\Contracts\Shared\CacheServiceInterface;
-use App\Contracts\Shared\ContinuityServiceInterface;
 use App\Contracts\Homepage\HomepageSectionServiceInterface;
 use App\Contracts\Page\PageServiceInterface;
 use App\Contracts\Seo\SeoMetadataServiceInterface;
 use App\Contracts\Seo\SitemapServiceInterface;
+use App\Contracts\Shared\AuditServiceInterface;
+use App\Contracts\Shared\CacheServiceInterface;
+use App\Contracts\Shared\ContinuityServiceInterface;
 use Illuminate\Console\Command;
 use Illuminate\Http\Request as HttpRequest;
 

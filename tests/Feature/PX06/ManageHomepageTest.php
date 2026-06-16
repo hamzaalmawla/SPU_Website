@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Feature\PX06;
 
-use App\Filament\Pages\ManageHomepage;
 use App\DTOs\Homepage\HomepageSectionDataDTO;
 use App\DTOs\Homepage\HomepageSectionTranslationDTO;
+use App\Filament\Pages\ManageHomepage;
 use App\Models\User\User;
 use App\Support\HomepagePayloadMapper;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
 use ReflectionMethod;
 use Tests\TestCase;
 
@@ -317,7 +316,7 @@ class ManageHomepageTest extends TestCase
         $method = new ReflectionMethod(ManageHomepage::class, 'formArrayToPayload');
         $method->setAccessible(true);
 
-        return $method->invoke(new ManageHomepage(), $data, $sectionKey);
+        return $method->invoke(new ManageHomepage, $data, $sectionKey);
     }
 
     private function invokePayloadToFormArray(HomepageSectionDataDTO $payload, string $sectionKey): array
@@ -326,7 +325,7 @@ class ManageHomepageTest extends TestCase
         $method->setAccessible(true);
 
         return $method->invoke(
-            new ManageHomepage(),
+            new ManageHomepage,
             $payload,
             new HomepageSectionTranslationDTO(locale: 'en'),
             $sectionKey,

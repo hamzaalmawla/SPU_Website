@@ -6,7 +6,6 @@ namespace Tests\Feature\PX06;
 
 use App\Filament\Resources\PageResource;
 use App\Models\Page\Page;
-use App\Models\Page\PageTranslation;
 use App\Models\User\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;

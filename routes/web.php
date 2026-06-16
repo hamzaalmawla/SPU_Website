@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use App\Http\Controllers\Public\AboutController;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\TwoFactorChallengeController;
+use App\Http\Controllers\Public\AboutController;
 use App\Http\Controllers\Public\EServicesController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\PageController;

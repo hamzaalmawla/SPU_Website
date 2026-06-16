@@ -27,7 +27,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->text('responsibilities')->nullable();
             $table->timestamps();
-            
+
             $table->unique(['council_id', 'locale']);
         });
 
@@ -43,7 +43,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->index(['council_id', 'is_active']);
         });
 
@@ -55,7 +55,7 @@ return new class extends Migration
             $table->string('title')->nullable();
             $table->text('bio')->nullable();
             $table->timestamps();
-            
+
             $table->unique(['council_member_id', 'locale']);
         });
 
@@ -70,7 +70,7 @@ return new class extends Migration
             $table->string('status'); // scheduled, completed, cancelled
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->index(['council_id', 'meeting_date']);
         });
 
@@ -82,7 +82,7 @@ return new class extends Migration
             $table->text('agenda')->nullable();
             $table->text('minutes')->nullable();
             $table->timestamps();
-            
+
             $table->unique(['council_meeting_id', 'locale']);
         });
     }

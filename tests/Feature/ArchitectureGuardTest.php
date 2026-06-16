@@ -36,14 +36,14 @@ final class ArchitectureGuardTest extends TestCase
             // Match "use App\Models\..." imports
             if (preg_match_all('/^use\s+App\\\\Models\\\\(\w+)/m', $content, $matches)) {
                 foreach ($matches[1] as $model) {
-                    $violations[] = basename($file) . " imports App\\Models\\{$model}";
+                    $violations[] = basename($file)." imports App\\Models\\{$model}";
                 }
             }
         }
 
         $this->assertEmpty(
             $violations,
-            "Controllers must not import Eloquent models directly:\n" . implode("\n", $violations)
+            "Controllers must not import Eloquent models directly:\n".implode("\n", $violations)
         );
     }
 
@@ -83,17 +83,17 @@ final class ArchitectureGuardTest extends TestCase
                     $declaresResourceModel = $this->declaresFilamentModel($content, $model);
 
                     // Check for "use App\Models\{Model}" imports
-                    if (preg_match('/^use\s+App\\\\Models\\\\' . $model . '\b/m', $content)) {
+                    if (preg_match('/^use\s+App\\\\Models\\\\'.$model.'\b/m', $content)) {
                         if (! $declaresResourceModel) {
-                            $violations[] = basename($file) . " imports App\\Models\\{$model}";
+                            $violations[] = basename($file)." imports App\\Models\\{$model}";
                         }
                     }
 
                     // Check for direct static calls like "HomepageDraft::query()"
-                    if (preg_match('/\\\\' . $model . '::/', $content) || preg_match('/\b' . $model . '::/', $content)) {
+                    if (preg_match('/\\\\'.$model.'::/', $content) || preg_match('/\b'.$model.'::/', $content)) {
                         // Allow $model property declarations
                         if (! $declaresResourceModel) {
-                            $violations[] = basename($file) . " uses {$model}:: directly";
+                            $violations[] = basename($file)." uses {$model}:: directly";
                         }
                     }
                 }
@@ -102,7 +102,7 @@ final class ArchitectureGuardTest extends TestCase
 
         $this->assertEmpty(
             $violations,
-            "Filament files must not import forbidden models:\n" . implode("\n", $violations)
+            "Filament files must not import forbidden models:\n".implode("\n", $violations)
         );
     }
 
@@ -132,36 +132,36 @@ final class ArchitectureGuardTest extends TestCase
                         $importedConcreteServices[] = $serviceName;
                     }
 
-                    $violations[] = basename($file) . " imports concrete service App\\Services\\{$service}";
+                    $violations[] = basename($file)." imports concrete service App\\Services\\{$service}";
                 }
             }
 
             if (preg_match_all('/new\s+([A-Z][A-Za-z0-9_]*Service)\s*\(/', $content, $matches)) {
                 foreach ($matches[1] as $service) {
                     if (in_array($service, $importedConcreteServices, true)) {
-                        $violations[] = basename($file) . " instantiates concrete service {$service}";
+                        $violations[] = basename($file)." instantiates concrete service {$service}";
                     }
                 }
             }
 
             if (preg_match('/new\s+\\\\?App\\\\Services\\\\[A-Z][A-Za-z0-9_]*Service\s*\(/', $content) === 1) {
-                $violations[] = basename($file) . ' instantiates a concrete App\\Services class';
+                $violations[] = basename($file).' instantiates a concrete App\\Services class';
             }
 
             $serviceClassPattern = '(?:\\\\?App\\\\Services\\\\[A-Z][A-Za-z0-9_]*Service|[A-Z][A-Za-z0-9_]*Service)';
 
-            if (preg_match('/(?:app|resolve)\(\s*' . $serviceClassPattern . '::class\s*\)/', $content) === 1) {
-                $violations[] = basename($file) . ' resolves a concrete service class from the container';
+            if (preg_match('/(?:app|resolve)\(\s*'.$serviceClassPattern.'::class\s*\)/', $content) === 1) {
+                $violations[] = basename($file).' resolves a concrete service class from the container';
             }
 
-            if (preg_match('/(?:app\(\s*\)|\$this->app)->make\(\s*' . $serviceClassPattern . '::class\s*\)/', $content) === 1) {
-                $violations[] = basename($file) . ' makes a concrete service class from the container';
+            if (preg_match('/(?:app\(\s*\)|\$this->app)->make\(\s*'.$serviceClassPattern.'::class\s*\)/', $content) === 1) {
+                $violations[] = basename($file).' makes a concrete service class from the container';
             }
         }
 
         $this->assertEmpty(
             $violations,
-            "Filament workflow code must depend on service interfaces only:\n" . implode("\n", $violations)
+            "Filament workflow code must depend on service interfaces only:\n".implode("\n", $violations)
         );
     }
 
@@ -214,7 +214,7 @@ final class ArchitectureGuardTest extends TestCase
             // Extract the fully qualified interface name
             if (preg_match('/namespace\s+([\w\\\\]+);/', $content, $nsMatch)
                 && preg_match('/interface\s+(\w+)/', $content, $ifMatch)) {
-                $fqcn = $nsMatch[1] . '\\' . $ifMatch[1];
+                $fqcn = $nsMatch[1].'\\'.$ifMatch[1];
 
                 // Check if the container can resolve this interface
                 if (! $this->app->bound($fqcn)) {
@@ -225,7 +225,7 @@ final class ArchitectureGuardTest extends TestCase
 
         $this->assertEmpty(
             $unbound,
-            "All contracts must have bindings in AppServiceProvider:\n" . implode("\n", $unbound)
+            "All contracts must have bindings in AppServiceProvider:\n".implode("\n", $unbound)
         );
     }
 
@@ -278,6 +278,6 @@ final class ArchitectureGuardTest extends TestCase
 
     private function declaresFilamentModel(string $content, string $model): bool
     {
-        return preg_match('/\$model\s*=\s*' . $model . '::class/', $content) === 1;
+        return preg_match('/\$model\s*=\s*'.$model.'::class/', $content) === 1;
     }
 }

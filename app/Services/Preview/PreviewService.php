@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\Preview;
 
-use App\Contracts\Shared\AuditServiceInterface;
 use App\Contracts\Homepage\HomepagePreviewAssemblerInterface;
 use App\Contracts\Navigation\NavigationServiceInterface;
 use App\Contracts\Page\PageServiceInterface;
+use App\Contracts\Shared\AuditServiceInterface;
 use App\Contracts\Shared\PreviewServiceInterface;
 use App\DTOs\Preview\PreviewDTO;
 use App\DTOs\Preview\PreviewPayloadDTO;
@@ -187,5 +187,4 @@ final class PreviewService implements PreviewServiceInterface
 
         return trim($this->pageService->resolveLanguageSwitchTargetUrl($payload->page->id, $locale) ?? '', '/');
     }
-
 }

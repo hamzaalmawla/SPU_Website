@@ -146,7 +146,7 @@ class MediaServiceTest extends TestCase
 
     public function test_upload_rejects_images_exceeding_dimension_limit(): void
     {
-        $file = UploadedFile::fake()->image('huge.jpg', 8001, 100);
+        $file = $this->fakePngWithDimensions('huge.png', 8001, 100);
 
         try {
             $this->service->upload(['file' => $file, 'uploaded_by' => $this->actor->id]);
@@ -159,6 +159,27 @@ class MediaServiceTest extends TestCase
             );
             $this->assertDatabaseCount('media_assets', 0);
         }
+    }
+
+    private function fakePngWithDimensions(string $name, int $width, int $height): UploadedFile
+    {
+        $path = tempnam(sys_get_temp_dir(), 'spu-image-');
+
+        if ($path === false) {
+            $this->fail('Unable to create temporary image fixture.');
+        }
+
+        $chunk = static function (string $type, string $data): string {
+            return pack('N', strlen($data)).$type.$data.pack('N', crc32($type.$data));
+        };
+
+        $png = "\x89PNG\r\n\x1A\n"
+            .$chunk('IHDR', pack('NNCCCCC', $width, $height, 8, 2, 0, 0, 0))
+            .$chunk('IEND', '');
+
+        file_put_contents($path, $png);
+
+        return new UploadedFile($path, $name, 'image/png', null, true);
     }
 
     public function test_upload_requires_file_parameter(): void

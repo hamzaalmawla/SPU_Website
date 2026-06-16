@@ -2,7 +2,7 @@
 
 /**
  * Database Configuration Example for Students
- * 
+ *
  * This shows how to add the old database connection to config/database.php
  */
 
@@ -22,7 +22,7 @@ return [
 
         /**
          * Old SPU Database Connection
-         * 
+         *
          * This connection is used to read data from the old database
          * during the migration process.
          */

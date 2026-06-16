@@ -74,7 +74,7 @@ class LockedAccountPropertyTest extends TestCase
     {
         $localPart = self::randomSlugSegment();
 
-        return $localPart . '@example.com';
+        return $localPart.'@example.com';
     }
 
     // ──────────────────────────────────────────────────────────────────────

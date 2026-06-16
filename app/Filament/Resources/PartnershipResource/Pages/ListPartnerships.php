@@ -11,5 +11,9 @@ use Filament\Resources\Pages\ListRecords;
 class ListPartnerships extends ListRecords
 {
     protected static string $resource = PartnershipResource::class;
-    protected function getHeaderActions(): array { return [Actions\CreateAction::make()]; }
+
+    protected function getHeaderActions(): array
+    {
+        return [Actions\CreateAction::make()];
+    }
 }

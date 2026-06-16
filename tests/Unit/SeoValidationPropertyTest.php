@@ -48,7 +48,7 @@ class SeoValidationPropertyTest extends TestCase
 
             $metaTitle = $hasTitle ? self::randomSentence() : (random_int(0, 1) === 1 ? null : '');
             $metaDescription = $hasDescription ? self::randomSentence() : (random_int(0, 1) === 1 ? null : '');
-            $canonicalUrl = $hasCanonical ? 'https://spu.edu.sy/' . $locale . '/' . self::randomSlugPath() : (random_int(0, 1) === 1 ? null : '');
+            $canonicalUrl = $hasCanonical ? 'https://spu.edu.sy/'.$locale.'/'.self::randomSlugPath() : (random_int(0, 1) === 1 ? null : '');
 
             // Determine which issues should be flagged
             $expectedIssues = [];
@@ -81,7 +81,7 @@ class SeoValidationPropertyTest extends TestCase
     ): void {
         // Create a published, enabled page
         $page = Page::create([
-            'slug' => 'test-seo-' . self::randomSlugSegment(),
+            'slug' => 'test-seo-'.self::randomSlugSegment(),
             'type' => 'landing',
             'template' => 'default',
             'status' => 'published',

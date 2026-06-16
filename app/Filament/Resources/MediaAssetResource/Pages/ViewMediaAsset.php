@@ -122,13 +122,13 @@ class ViewMediaAsset extends ViewRecord
     private static function formatFileSize(int $bytes): string
     {
         if ($bytes >= 1048576) {
-            return round($bytes / 1048576, 1) . ' MB';
+            return round($bytes / 1048576, 1).' MB';
         }
 
         if ($bytes >= 1024) {
-            return round($bytes / 1024, 1) . ' KB';
+            return round($bytes / 1024, 1).' KB';
         }
 
-        return $bytes . ' B';
+        return $bytes.' B';
     }
 }

@@ -21,7 +21,7 @@ final class HtmlSanitizerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->sanitizer = new HtmlSanitizer();
+        $this->sanitizer = new HtmlSanitizer;
     }
 
     // --- Requirement 1.6: Null/empty input ---

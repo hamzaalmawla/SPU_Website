@@ -127,7 +127,7 @@ class FacultyEditorScopePropertyTest extends TestCase
         string $userScope,
         array $pageScopes,
     ): void {
-        $policy = new PagePolicy();
+        $policy = new PagePolicy;
 
         // Create a faculty_editor user with the given scope
         $user = User::factory()->create([
@@ -139,7 +139,7 @@ class FacultyEditorScopePropertyTest extends TestCase
         foreach ($pageScopes as $index => $pageScope) {
             // Create a page and set the faculty_scope_slug attribute
             $page = Page::factory()->create([
-                'slug' => 'scope-test-' . $userScope . '-' . $index . '-' . random_int(1000, 9999),
+                'slug' => 'scope-test-'.$userScope.'-'.$index.'-'.random_int(1000, 9999),
                 'type' => 'landing',
                 'template' => 'default',
                 'status' => 'draft',
@@ -185,7 +185,7 @@ class FacultyEditorScopePropertyTest extends TestCase
         string $userScope,
         array $pageScopes,
     ): void {
-        $policy = new PagePolicy();
+        $policy = new PagePolicy;
 
         $user = User::factory()->create([
             'role_slug' => 'faculty_editor',

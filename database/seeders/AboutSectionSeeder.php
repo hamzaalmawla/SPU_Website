@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use App\Models\Page\AboutPage;
 use App\Models\Content\Directorate;
 use App\Models\Content\Partnership;
+use App\Models\Page\AboutPage;
 use App\Models\Person\Person;
 use Illuminate\Database\Seeder;
 

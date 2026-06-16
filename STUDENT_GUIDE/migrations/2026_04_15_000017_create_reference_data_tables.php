@@ -27,7 +27,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('nationality')->nullable();
             $table->timestamps();
-            
+
             $table->unique(['country_id', 'locale']);
         });
 
@@ -41,7 +41,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->integer('order')->default(0);
             $table->timestamps();
-            
+
             $table->index('country_id');
         });
 
@@ -51,7 +51,7 @@ return new class extends Migration
             $table->string('locale', 2);
             $table->string('name');
             $table->timestamps();
-            
+
             $table->unique(['city_id', 'locale']);
         });
 
@@ -73,7 +73,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('native_name')->nullable();
             $table->timestamps();
-            
+
             $table->unique(['language_id', 'locale']);
         });
     }

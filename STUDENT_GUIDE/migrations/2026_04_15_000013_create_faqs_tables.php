@@ -26,7 +26,7 @@ return new class extends Migration
             $table->string('name');
             $table->text('description')->nullable();
             $table->timestamps();
-            
+
             $table->unique(['faq_category_id', 'locale']);
         });
 
@@ -41,7 +41,7 @@ return new class extends Migration
             $table->integer('helpful_count')->default(0);
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->index(['faq_category_id', 'is_published']);
             $table->index('is_featured');
         });
@@ -54,7 +54,7 @@ return new class extends Migration
             $table->text('answer');
             $table->text('keywords')->nullable(); // For search
             $table->timestamps();
-            
+
             $table->unique(['faq_id', 'locale']);
             $table->fullText(['question', 'answer', 'keywords']);
         });

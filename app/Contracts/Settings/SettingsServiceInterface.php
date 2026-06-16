@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Contracts\Settings;
 
+use App\DTOs\Seo\PageSeoDTO;
 use App\DTOs\Settings\ApplyCtaSettingsDTO;
 use App\DTOs\Settings\EmergencyNoticeDTO;
 use App\DTOs\Settings\FooterSettingsDTO;
-use App\DTOs\Seo\PageSeoDTO;
 use App\DTOs\Settings\PublicSettingsDTO;
 use App\DTOs\Settings\SettingsDTO;
 use App\DTOs\Settings\SocialContactSettingsDTO;

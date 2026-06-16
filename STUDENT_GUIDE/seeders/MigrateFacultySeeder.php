@@ -2,53 +2,53 @@
 
 namespace Database\Seeders;
 
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Carbon\Carbon;
 
 class MigrateFacultySeeder extends Seeder
 {
     private $oldDb;
-    
+
     public function __construct()
     {
         $this->oldDb = DB::connection('old_spu');
     }
-    
+
     public function run(): void
     {
         $this->info('=== MIGRATING FACULTY DATA ===');
-        
+
         DB::beginTransaction();
-        
+
         try {
             // Step 1: Migrate faculty categories
             $this->migrateFacultyCategories();
-            
+
             // Step 2: Migrate faculty members
             $this->migrateFacultyMembers();
-            
+
             // Step 3: Migrate faculty publications
             $this->migrateFacultyPublications();
-            
+
             DB::commit();
             $this->info('=== FACULTY MIGRATION COMPLETE ===');
-            
+
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->error('Migration failed: ' . $e->getMessage());
+            $this->error('Migration failed: '.$e->getMessage());
             throw $e;
         }
     }
-    
+
     private function migrateFacultyCategories(): void
     {
         $this->info('Migrating faculty categories...');
-        
+
         $oldCategories = $this->oldDb->table('jx_member_categories')->get();
         $migrated = 0;
-        
+
         foreach ($oldCategories as $old) {
             try {
                 // Create category
@@ -59,7 +59,7 @@ class MigrateFacultySeeder extends Seeder
                     'created_at' => $old->created_at ?? now(),
                     'updated_at' => now(),
                 ]);
-                
+
                 // Create translations (AR and EN)
                 $translations = [
                     [
@@ -79,39 +79,39 @@ class MigrateFacultySeeder extends Seeder
                         'updated_at' => now(),
                     ],
                 ];
-                
+
                 DB::table('faculty_category_translations')->insert($translations);
-                
+
                 $this->logMigration('jx_member_categories', 'faculty_categories', $old->id, $categoryId, 'success');
                 $migrated++;
-                
+
             } catch (\Exception $e) {
                 $this->logMigration('jx_member_categories', 'faculty_categories', $old->id, null, 'failed', $e->getMessage());
             }
         }
-        
+
         $this->info("✓ Migrated {$migrated} faculty categories");
     }
-    
+
     private function migrateFacultyMembers(): void
     {
         $this->info('Migrating faculty members...');
-        
+
         $oldMembers = $this->oldDb->table('jx_members')->get();
         $migrated = 0;
-        
+
         foreach ($oldMembers as $old) {
             try {
                 // Map old category to new
                 $categoryId = null;
-                if (!empty($old->category_id)) {
+                if (! empty($old->category_id)) {
                     $categoryId = DB::table('migration_logs')
                         ->where('source_table', 'jx_member_categories')
                         ->where('source_id', $old->category_id)
                         ->where('status', 'success')
                         ->value('target_id');
                 }
-                
+
                 // Create member
                 $memberId = DB::table('faculty_members')->insertGetId([
                     'faculty_category_id' => $categoryId,
@@ -126,7 +126,7 @@ class MigrateFacultySeeder extends Seeder
                     'created_at' => $old->created_at ?? now(),
                     'updated_at' => now(),
                 ]);
-                
+
                 // Create translations
                 $translations = [
                     [
@@ -154,27 +154,27 @@ class MigrateFacultySeeder extends Seeder
                         'updated_at' => now(),
                     ],
                 ];
-                
+
                 DB::table('faculty_member_translations')->insert($translations);
-                
+
                 $this->logMigration('jx_members', 'faculty_members', $old->id, $memberId, 'success');
                 $migrated++;
-                
+
             } catch (\Exception $e) {
                 $this->logMigration('jx_members', 'faculty_members', $old->id, null, 'failed', $e->getMessage());
             }
         }
-        
+
         $this->info("✓ Migrated {$migrated} faculty members");
     }
-    
+
     private function migrateFacultyPublications(): void
     {
         $this->info('Migrating faculty publications...');
-        
+
         $oldPublications = $this->oldDb->table('jx_member_items')->get();
         $migrated = 0;
-        
+
         foreach ($oldPublications as $old) {
             try {
                 // Map old member to new
@@ -183,11 +183,11 @@ class MigrateFacultySeeder extends Seeder
                     ->where('source_id', $old->member_id)
                     ->where('status', 'success')
                     ->value('target_id');
-                
-                if (!$memberId) {
+
+                if (! $memberId) {
                     throw new \Exception('Member not found');
                 }
-                
+
                 // Create publication
                 $publicationId = DB::table('faculty_publications')->insertGetId([
                     'faculty_member_id' => $memberId,
@@ -199,7 +199,7 @@ class MigrateFacultySeeder extends Seeder
                     'created_at' => $old->created_at ?? now(),
                     'updated_at' => now(),
                 ]);
-                
+
                 // Create translations
                 $translations = [
                     [
@@ -221,21 +221,21 @@ class MigrateFacultySeeder extends Seeder
                         'updated_at' => now(),
                     ],
                 ];
-                
+
                 DB::table('faculty_publication_translations')->insert($translations);
-                
+
                 $this->logMigration('jx_member_items', 'faculty_publications', $old->id, $publicationId, 'success');
                 $migrated++;
-                
+
             } catch (\Exception $e) {
                 $this->logMigration('jx_member_items', 'faculty_publications', $old->id, null, 'failed', $e->getMessage());
             }
         }
-        
+
         $this->info("✓ Migrated {$migrated} faculty publications");
     }
-    
-    private function logMigration(string $sourceTable, string $targetTable, $sourceId, $targetId, string $status, string $message = null): void
+
+    private function logMigration(string $sourceTable, string $targetTable, $sourceId, $targetId, string $status, ?string $message = null): void
     {
         DB::table('migration_logs')->insert([
             'batch_name' => 'faculty_migration',
@@ -250,12 +250,12 @@ class MigrateFacultySeeder extends Seeder
             'updated_at' => now(),
         ]);
     }
-    
+
     private function info(string $message): void
     {
         echo "[INFO] {$message}\n";
     }
-    
+
     private function error(string $message): void
     {
         echo "[ERROR] {$message}\n";

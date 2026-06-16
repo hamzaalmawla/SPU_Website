@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature\HomepageBlade;
 
 use App\DTOs\Homepage\HomepageDTO;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Database\Seeders\DatabaseSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Support\HomepageBladeTestHelpers;
 use Tests\TestCase;
@@ -28,7 +28,7 @@ class SectionLoopPropertyTest extends TestCase
         $sections = [];
         foreach ($sectionDefs as $def) {
             $sections[] = self::makeSection($def['key'], [
-                'title' => 'Section-' . $def['key'],
+                'title' => 'Section-'.$def['key'],
             ], [
                 'sortOrder' => $def['sortOrder'],
                 'isEnabled' => $def['isEnabled'],
@@ -51,7 +51,7 @@ class SectionLoopPropertyTest extends TestCase
         $mainContent = $mainMatch[1] ?? '';
 
         foreach ($expectedKeys as $key) {
-            $this->assertStringContainsString('Section-' . $key, $mainContent, "Expected section '{$key}' to be rendered in main content");
+            $this->assertStringContainsString('Section-'.$key, $mainContent, "Expected section '{$key}' to be rendered in main content");
         }
 
         // Footer should never appear in main content
@@ -63,13 +63,13 @@ class SectionLoopPropertyTest extends TestCase
         $mainContent = $mainMatch[1] ?? '';
 
         foreach ($sectionDefs as $def) {
-            if (!$def['isEnabled']) {
+            if (! $def['isEnabled']) {
                 // Use exact title match to avoid substring issues (e.g. Section-hero matching Section-hero_stats)
-                $marker = '>Section-' . $def['key'] . '<';
+                $marker = '>Section-'.$def['key'].'<';
                 $this->assertStringNotContainsString($marker, $mainContent, "Disabled section '{$def['key']}' should not appear in main content");
             }
             if ($def['key'] === 'footer') {
-                $this->assertStringNotContainsString('Section-footer', $mainContent, "Footer section should not appear in main content");
+                $this->assertStringNotContainsString('Section-footer', $mainContent, 'Footer section should not appear in main content');
             }
         }
     }

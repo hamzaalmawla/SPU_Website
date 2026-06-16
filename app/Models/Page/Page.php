@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models\Page;
 
+use App\Models\Navigation\MenuItem;
 use App\Models\User\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

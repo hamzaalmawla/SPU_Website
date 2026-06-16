@@ -168,7 +168,7 @@ class SeoRenderingTest extends TestCase
         PageTranslation::create([
             'page_id' => $page->id,
             'locale' => 'ar',
-            'title' => 'صفحة ' . $slug,
+            'title' => 'صفحة '.$slug,
         ]);
 
         return $page;
@@ -185,8 +185,8 @@ class SeoRenderingTest extends TestCase
             'type' => 'landing',
         ]);
 
-        PageTranslation::create(['page_id' => $page->id, 'locale' => 'ar', 'title' => 'صفحة ' . $slug]);
-        PageTranslation::create(['page_id' => $page->id, 'locale' => 'en', 'title' => 'Page ' . $slug]);
+        PageTranslation::create(['page_id' => $page->id, 'locale' => 'ar', 'title' => 'صفحة '.$slug]);
+        PageTranslation::create(['page_id' => $page->id, 'locale' => 'en', 'title' => 'Page '.$slug]);
 
         return $page;
     }

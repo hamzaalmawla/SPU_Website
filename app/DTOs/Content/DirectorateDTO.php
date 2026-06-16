@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\DTOs\Content;
 
 /**
- * @param array<int, string> $services
+ * @param  array<int, string>  $services
  */
 final readonly class DirectorateDTO
 {

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Public;
 
-use App\Contracts\Page\ContactPageServiceInterface;
 use App\Contracts\Navigation\NavigationServiceInterface;
+use App\Contracts\Page\ContactPageServiceInterface;
 use App\Contracts\Seo\SeoMetadataServiceInterface;
 use App\Contracts\Settings\SettingsServiceInterface;
 use App\DTOs\Contact\ContactPageDTO;
@@ -13,10 +13,10 @@ use App\DTOs\Contact\ContactSubmissionDataDTO;
 use App\DTOs\Navigation\LanguageSwitchLinkDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PublicContactRequest;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Contracts\View\View;
 
 final class PublicContactController extends Controller
 {

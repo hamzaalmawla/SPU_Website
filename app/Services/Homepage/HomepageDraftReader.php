@@ -126,7 +126,7 @@ final class HomepageDraftReader
 
     public function emptySection(string $key, int $sortOrder): HomepageSectionDTO
     {
-        $payload = new HomepageSectionDataDTO();
+        $payload = new HomepageSectionDataDTO;
 
         return new HomepageSectionDTO(
             id: 0,

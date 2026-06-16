@@ -25,7 +25,7 @@ return new class extends Migration
             $table->string('name');
             $table->text('description')->nullable();
             $table->timestamps();
-            
+
             $table->unique(['job_category_id', 'locale']);
         });
 
@@ -51,7 +51,7 @@ return new class extends Migration
             $table->timestamp('published_at')->nullable();
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->index(['status', 'application_deadline']);
             $table->index('is_featured');
         });
@@ -68,7 +68,7 @@ return new class extends Migration
             $table->text('benefits')->nullable();
             $table->text('how_to_apply')->nullable();
             $table->timestamps();
-            
+
             $table->unique(['job_posting_id', 'locale']);
         });
 
@@ -78,7 +78,7 @@ return new class extends Migration
             $table->string('application_number')->unique();
             $table->foreignId('job_posting_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
-            
+
             // Applicant info
             $table->string('full_name');
             $table->string('email');
@@ -86,27 +86,27 @@ return new class extends Migration
             $table->date('date_of_birth')->nullable();
             $table->string('nationality')->nullable();
             $table->string('current_location')->nullable();
-            
+
             // Documents
             $table->string('cv_path');
             $table->string('cover_letter_path')->nullable();
             $table->json('additional_documents')->nullable();
-            
+
             // Application details
             $table->text('cover_letter_text')->nullable();
             $table->decimal('expected_salary', 10, 2)->nullable();
             $table->date('available_from')->nullable();
             $table->boolean('requires_visa')->default(false);
-            
+
             // Status
             $table->string('status')->default('submitted'); // submitted, under_review, shortlisted, interviewed, offered, rejected, withdrawn
             $table->text('notes')->nullable();
             $table->foreignId('reviewed_by_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('reviewed_at')->nullable();
-            
+
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->index(['job_posting_id', 'status']);
             $table->index('application_number');
         });
@@ -120,7 +120,7 @@ return new class extends Migration
             $table->foreignId('changed_by_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->text('notes')->nullable();
             $table->timestamp('changed_at');
-            
+
             $table->index('job_application_id');
         });
     }

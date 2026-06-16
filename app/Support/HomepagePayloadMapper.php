@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace App\Support;
 
-use App\DTOs\Content\ArticleCardDTO;
 use App\DTOs\Contact\ContactLinkDTO;
+use App\DTOs\Content\ArticleCardDTO;
 use App\DTOs\Content\EventCardDTO;
-use App\DTOs\Settings\FooterColumnDTO;
+use App\DTOs\Content\ResearchCardDTO;
 use App\DTOs\Homepage\HomepageFeatureItemDTO;
 use App\DTOs\Homepage\HomepageSectionDataDTO;
 use App\DTOs\Homepage\HomepageSectionDTO;
 use App\DTOs\Homepage\HomepageSectionTranslationDTO;
 use App\DTOs\Homepage\HomepageStatItemDTO;
 use App\DTOs\Navigation\NavigationActionDTO;
-use App\DTOs\Content\ResearchCardDTO;
+use App\DTOs\Settings\FooterColumnDTO;
 use App\DTOs\Settings\SocialLinkDTO;
 
 /**

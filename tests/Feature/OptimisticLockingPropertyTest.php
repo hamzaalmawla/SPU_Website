@@ -10,9 +10,9 @@ use App\Contracts\Page\PageServiceInterface;
 use App\DTOs\Homepage\HomepageDraftDataDTO;
 use App\DTOs\Page\PageDraftDataDTO;
 use App\DTOs\Page\PageMetadataDTO;
-use App\DTOs\Seo\PageSeoInputDTO;
 use App\DTOs\Page\PageShellDataDTO;
 use App\DTOs\Page\PageTranslationDTO;
+use App\DTOs\Seo\PageSeoInputDTO;
 use App\Exceptions\ConflictException;
 use App\Models\Homepage\HomepageDraft;
 use App\Models\Page\PageDraft;
@@ -196,7 +196,7 @@ class OptimisticLockingPropertyTest extends TestCase
         // Create a page shell to attach drafts to
         $page = $this->pageService->createPageShell(
             new PageShellDataDTO(
-                slug: 'test-page-' . self::randomSlugSegment(),
+                slug: 'test-page-'.self::randomSlugSegment(),
                 template: 'default',
                 isHomepageShell: false,
                 status: 'draft',
@@ -274,7 +274,7 @@ class OptimisticLockingPropertyTest extends TestCase
     {
         return new PageDraftDataDTO(
             metadata: new PageMetadataDTO(
-                slug: 'test-page-' . self::randomSlugSegment(),
+                slug: 'test-page-'.self::randomSlugSegment(),
                 template: 'default',
                 isHomepageShell: false,
                 status: 'draft',

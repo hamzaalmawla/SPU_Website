@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\DTOs\Settings;
 
+use App\DTOs\Contact\ContactLinkDTO;
+
 /**
  * Localized social and contact settings payload.
  */

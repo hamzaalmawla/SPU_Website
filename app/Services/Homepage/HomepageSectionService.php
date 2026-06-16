@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\Homepage;
 
-use App\Contracts\Shared\AuditServiceInterface;
 use App\Contracts\Homepage\HomepageSectionServiceInterface;
+use App\Contracts\Shared\AuditServiceInterface;
 use App\DTOs\Homepage\HomepageDTO;
 use App\DTOs\Homepage\HomepageSectionDataDTO;
 use App\DTOs\Homepage\HomepageSectionDTO;

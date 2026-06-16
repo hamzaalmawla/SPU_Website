@@ -25,8 +25,11 @@ use Illuminate\Support\Facades\Gate;
 class AboutPageResource extends Resource
 {
     protected static ?string $model = AboutPage::class;
+
     protected static ?string $navigationIcon = 'heroicon-o-building-library';
+
     protected static ?string $navigationGroup = 'About';
+
     protected static ?int $navigationSort = 3;
 
     public static function canAccess(): bool

@@ -6,9 +6,9 @@ namespace App\Http\Controllers\Public;
 
 use App\Contracts\Navigation\NavigationServiceInterface;
 use App\Contracts\Page\PageServiceInterface;
-use App\Contracts\Shared\PreviewServiceInterface;
 use App\Contracts\Seo\SeoMetadataServiceInterface;
 use App\Contracts\Settings\SettingsServiceInterface;
+use App\Contracts\Shared\PreviewServiceInterface;
 use App\DTOs\Navigation\LanguageSwitchLinkDTO;
 use App\DTOs\Page\PageDTO;
 use App\DTOs\Page\PageTranslationDTO;

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services\Navigation;
 
+use App\Contracts\Navigation\MenuServiceInterface;
 use App\Contracts\Shared\AuditServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
-use App\Contracts\Navigation\MenuServiceInterface;
 use App\DTOs\Navigation\MenuItemDataDTO;
 use App\DTOs\Navigation\MenuItemDTO;
 use App\DTOs\Navigation\MenuTreeNodeDTO;

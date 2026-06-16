@@ -25,12 +25,22 @@ use Illuminate\Support\Facades\Gate;
 class DirectorateResource extends Resource
 {
     protected static ?string $model = Directorate::class;
+
     protected static ?string $navigationIcon = 'heroicon-o-squares-2x2';
+
     protected static ?string $navigationGroup = 'About';
+
     protected static ?int $navigationSort = 4;
 
-    public static function canAccess(): bool { return Gate::allows('manage-pages'); }
-    public static function getEloquentQuery(): Builder { return parent::getEloquentQuery()->with('translations'); }
+    public static function canAccess(): bool
+    {
+        return Gate::allows('manage-pages');
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with('translations');
+    }
 
     public static function form(Form $form): Form
     {

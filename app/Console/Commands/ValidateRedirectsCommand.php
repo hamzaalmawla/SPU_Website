@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Contracts\Shared\ContinuityServiceInterface;
+use App\DTOs\Shared\ValidationMessageDTO;
 use App\Models\Legacy\LegacyExactRedirect;
 use App\Models\Legacy\LegacyPatternRule;
 use Illuminate\Console\Command;
@@ -56,7 +57,7 @@ final class ValidateRedirectsCommand extends Command
 
         $this->table(['Source', 'Issue'], $tableRows);
         $this->newLine();
-        $this->line('Total issues: ' . count($tableRows));
+        $this->line('Total issues: '.count($tableRows));
 
         if ($this->option('fix')) {
             $this->newLine();
@@ -71,7 +72,7 @@ final class ValidateRedirectsCommand extends Command
     /**
      * Deactivate rules identified as problematic.
      *
-     * @param  array<int, \App\DTOs\ValidationMessageDTO>  $errors
+     * @param  array<int, ValidationMessageDTO>  $errors
      */
     private function applyFixes(array $errors): int
     {

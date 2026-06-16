@@ -7,6 +7,7 @@ namespace App\Services\Content;
 use App\Contracts\Content\PersonServiceInterface;
 use App\DTOs\Content\PersonDTO;
 use App\Models\Person\Person;
+use App\Services\Page\AboutPageService;
 use Illuminate\Support\Collection;
 
 final class PersonService implements PersonServiceInterface

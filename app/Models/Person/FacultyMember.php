@@ -7,6 +7,7 @@ namespace App\Models\Person;
 use App\Models\Faculty\Department;
 use App\Models\Faculty\Faculty;
 use App\Models\Media\MediaAsset;
+use App\Models\Research\ResearchPublication;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

@@ -25,12 +25,22 @@ use Illuminate\Support\Facades\Gate;
 class PartnershipResource extends Resource
 {
     protected static ?string $model = Partnership::class;
+
     protected static ?string $navigationIcon = 'heroicon-o-link';
+
     protected static ?string $navigationGroup = 'About';
+
     protected static ?int $navigationSort = 2;
 
-    public static function canAccess(): bool { return Gate::allows('manage-pages'); }
-    public static function getEloquentQuery(): Builder { return parent::getEloquentQuery()->with('translations'); }
+    public static function canAccess(): bool
+    {
+        return Gate::allows('manage-pages');
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with('translations');
+    }
 
     public static function form(Form $form): Form
     {

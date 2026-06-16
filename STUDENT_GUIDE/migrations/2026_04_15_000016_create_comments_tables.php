@@ -14,34 +14,34 @@ return new class extends Migration
             $table->morphs('commentable'); // pages, news, events, etc.
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('parent_id')->nullable()->constrained('comments')->cascadeOnDelete();
-            
+
             // Commenter info (if not logged in)
             $table->string('author_name')->nullable();
             $table->string('author_email')->nullable();
             $table->string('author_ip')->nullable();
-            
+
             // Comment content
             $table->text('content');
             $table->string('status')->default('pending'); // pending, approved, rejected, spam
-            
+
             // Moderation
             $table->foreignId('moderated_by_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('moderated_at')->nullable();
             $table->text('moderation_notes')->nullable();
-            
+
             // Engagement
             $table->integer('likes_count')->default(0);
             $table->integer('dislikes_count')->default(0);
             $table->integer('replies_count')->default(0);
-            
+
             // Flags
             $table->boolean('is_pinned')->default(false);
             $table->boolean('is_featured')->default(false);
             $table->integer('reports_count')->default(0);
-            
+
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->index(['commentable_type', 'commentable_id', 'status']);
             $table->index(['parent_id', 'status']);
             $table->index('is_pinned');
@@ -55,7 +55,7 @@ return new class extends Migration
             $table->string('reaction_type'); // like, dislike, love, helpful, etc.
             $table->string('ip_address')->nullable();
             $table->timestamps();
-            
+
             $table->unique(['comment_id', 'user_id', 'reaction_type']);
             $table->index(['comment_id', 'reaction_type']);
         });
@@ -71,7 +71,7 @@ return new class extends Migration
             $table->foreignId('reviewed_by_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('reviewed_at')->nullable();
             $table->timestamps();
-            
+
             $table->index(['comment_id', 'status']);
         });
     }

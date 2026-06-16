@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace App\Services\Placeholders;
 
 use App\Contracts\Page\PageServiceInterface;
-use App\DTOs\Shared\BreadcrumbTrailDTO;
 use App\DTOs\Page\PageDraftDataDTO;
 use App\DTOs\Page\PageDraftDTO;
 use App\DTOs\Page\PageDTO;
 use App\DTOs\Page\PageMetadataDTO;
-use App\DTOs\Seo\PageSeoInputDTO;
 use App\DTOs\Page\PageShellDataDTO;
 use App\DTOs\Page\PageTranslationDTO;
 use App\DTOs\Preview\PreviewDTO;
+use App\DTOs\Seo\PageSeoInputDTO;
+use App\DTOs\Shared\BreadcrumbTrailDTO;
 use BadMethodCallException;
 use DateTimeInterface;
 

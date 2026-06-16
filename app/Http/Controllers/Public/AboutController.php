@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Public;
 
-use App\Contracts\Page\AboutPageServiceInterface;
 use App\Contracts\Navigation\NavigationServiceInterface;
+use App\Contracts\Page\AboutPageServiceInterface;
 use App\Contracts\Seo\SeoMetadataServiceInterface;
 use App\Contracts\Settings\SettingsServiceInterface;
 use App\DTOs\Navigation\LanguageSwitchLinkDTO;

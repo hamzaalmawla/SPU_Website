@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\Seo;
 
-use App\Contracts\Shared\CacheServiceInterface;
 use App\Contracts\Page\PageServiceInterface;
 use App\Contracts\Seo\SeoMetadataServiceInterface;
 use App\Contracts\Seo\SitemapServiceInterface;
+use App\Contracts\Shared\CacheServiceInterface;
 use App\DTOs\Seo\SitemapEntryDTO;
 use App\Models\Page\Page;
 use Illuminate\Support\Collection;

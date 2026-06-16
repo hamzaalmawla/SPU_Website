@@ -25,7 +25,7 @@ return new class extends Migration
             $table->string('name');
             $table->text('description')->nullable();
             $table->timestamps();
-            
+
             $table->unique(['faculty_category_id', 'locale']);
         });
 
@@ -43,7 +43,7 @@ return new class extends Migration
             $table->boolean('is_featured')->default(false);
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->index('is_featured');
         });
 
@@ -58,7 +58,7 @@ return new class extends Migration
             $table->text('specializations')->nullable();
             $table->text('education')->nullable();
             $table->timestamps();
-            
+
             $table->unique(['faculty_member_id', 'locale']);
         });
 
@@ -83,7 +83,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->string('publisher')->nullable();
             $table->timestamps();
-            
+
             $table->unique(['faculty_publication_id', 'locale'], 'faculty_pub_trans_unique');
         });
     }

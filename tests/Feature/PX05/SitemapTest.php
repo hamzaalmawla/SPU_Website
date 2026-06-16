@@ -87,14 +87,14 @@ class SitemapTest extends TestCase
         PageTranslation::create([
             'page_id' => $page->id,
             'locale' => 'ar',
-            'title' => 'صفحة ' . $slug,
+            'title' => 'صفحة '.$slug,
         ]);
 
         if ($bothLocales) {
             PageTranslation::create([
                 'page_id' => $page->id,
                 'locale' => 'en',
-                'title' => 'Page ' . $slug,
+                'title' => 'Page '.$slug,
             ]);
         }
 
@@ -114,7 +114,7 @@ class SitemapTest extends TestCase
         PageTranslation::create([
             'page_id' => $page->id,
             'locale' => 'ar',
-            'title' => 'مسودة ' . $slug,
+            'title' => 'مسودة '.$slug,
         ]);
 
         return $page;
@@ -134,7 +134,7 @@ class SitemapTest extends TestCase
         PageTranslation::create([
             'page_id' => $page->id,
             'locale' => 'ar',
-            'title' => 'معطلة ' . $slug,
+            'title' => 'معطلة '.$slug,
         ]);
 
         return $page;

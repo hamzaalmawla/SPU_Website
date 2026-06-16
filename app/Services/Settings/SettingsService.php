@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace App\Services\Settings;
 
+use App\Contracts\Settings\SettingsServiceInterface;
 use App\Contracts\Shared\AuditServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
-use App\Contracts\Settings\SettingsServiceInterface;
-use App\DTOs\Settings\ApplyCtaSettingsDTO;
 use App\DTOs\Contact\ContactLinkDTO;
-use App\DTOs\Settings\EmergencyNoticeDTO;
-use App\DTOs\Settings\FooterSettingsDTO;
 use App\DTOs\Navigation\NavigationActionDTO;
 use App\DTOs\Seo\PageSeoDTO;
+use App\DTOs\Settings\ApplyCtaSettingsDTO;
+use App\DTOs\Settings\EmergencyNoticeDTO;
+use App\DTOs\Settings\FooterSettingsDTO;
 use App\DTOs\Settings\PublicSettingsDTO;
 use App\DTOs\Settings\SettingsDTO;
 use App\DTOs\Settings\SettingValueDTO;

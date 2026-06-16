@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Contracts\Seo;
 
+use App\DTOs\Seo\SitemapEntryDTO;
 use Illuminate\Support\Collection;
 
 /**
@@ -14,7 +15,7 @@ interface SitemapServiceInterface
     /**
      * Generate sitemap entries for all published, publicly visible pages.
      *
-     * @return Collection<int, \App\DTOs\SitemapEntryDTO>
+     * @return Collection<int, SitemapEntryDTO>
      */
     public function generateEntries(): Collection;
 

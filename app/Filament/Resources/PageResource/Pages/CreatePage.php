@@ -6,9 +6,9 @@ namespace App\Filament\Resources\PageResource\Pages;
 
 use App\Contracts\Page\PageServiceInterface;
 use App\DTOs\Page\PageMetadataDTO;
-use App\DTOs\Seo\PageSeoInputDTO;
 use App\DTOs\Page\PageShellDataDTO;
 use App\DTOs\Page\PageTranslationDTO;
+use App\DTOs\Seo\PageSeoInputDTO;
 use App\Filament\Resources\PageResource;
 use App\Models\Page\Page;
 use App\Models\User\User;

@@ -10,7 +10,9 @@ use App\Models\Legacy\LegacyExactRedirect;
 use App\Models\Legacy\LegacyFileInventory;
 use App\Models\Legacy\LegacyPatternRule;
 use App\Models\Page\UnresolvedLegacyRequest;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Support\PropertyTestHelpers;
@@ -37,9 +39,9 @@ class ContinuityServiceTest extends TestCase
         // The upsert in logUnresolved requires a unique index on (url, method).
         // The production migration uses a prefix index (MySQL-only). For SQLite
         // testing we add a plain unique index so the upsert works correctly.
-        if (\Illuminate\Support\Facades\Schema::hasTable('unresolved_legacy_requests')) {
+        if (Schema::hasTable('unresolved_legacy_requests')) {
             try {
-                \Illuminate\Support\Facades\Schema::table('unresolved_legacy_requests', function (\Illuminate\Database\Schema\Blueprint $table): void {
+                Schema::table('unresolved_legacy_requests', function (Blueprint $table): void {
                     $table->unique(['url', 'method'], 'uq_url_method');
                 });
             } catch (\Throwable) {
@@ -62,8 +64,8 @@ class ContinuityServiceTest extends TestCase
         $cases = [];
 
         for ($i = 0; $i < 110; $i++) {
-            $legacyPath = '/' . self::randomSlugPath();
-            $destination = '/' . self::randomLocale() . '/' . self::randomSlugPath();
+            $legacyPath = '/'.self::randomSlugPath();
+            $destination = '/'.self::randomLocale().'/'.self::randomSlugPath();
             $statusCode = [301, 302][random_int(0, 1)];
             $cases["iteration_{$i}"] = [$legacyPath, $destination, $statusCode];
         }
@@ -110,10 +112,10 @@ class ContinuityServiceTest extends TestCase
             $suffix = self::randomSlugSegment();
             $locale = self::randomLocale();
 
-            $pattern = '#^/' . preg_quote($prefix, '#') . '/(.+)$#';
-            $replacement = '/' . $locale . '/' . $prefix . '/$1';
-            $inputPath = '/' . $prefix . '/' . $suffix;
-            $expectedDestination = '/' . $locale . '/' . $prefix . '/' . $suffix;
+            $pattern = '#^/'.preg_quote($prefix, '#').'/(.+)$#';
+            $replacement = '/'.$locale.'/'.$prefix.'/$1';
+            $inputPath = '/'.$prefix.'/'.$suffix;
+            $expectedDestination = '/'.$locale.'/'.$prefix.'/'.$suffix;
 
             $cases["iteration_{$i}"] = [$pattern, $replacement, $inputPath, $expectedDestination];
         }
@@ -163,10 +165,10 @@ class ContinuityServiceTest extends TestCase
 
             if ($isFile) {
                 $ext = $extensions[random_int(0, count($extensions) - 1)];
-                $path = '/' . self::randomSlugPath() . '.' . $ext;
+                $path = '/'.self::randomSlugPath().'.'.$ext;
                 $expectedType = 'file';
             } else {
-                $path = '/' . self::randomSlugPath();
+                $path = '/'.self::randomSlugPath();
                 $expectedType = 'page';
             }
 
@@ -183,7 +185,7 @@ class ContinuityServiceTest extends TestCase
     ): void {
         $dto = new UnresolvedRequestDTO(
             url: $path,
-            queryString: random_int(0, 1) === 1 ? 'page=' . random_int(1, 100) : null,
+            queryString: random_int(0, 1) === 1 ? 'page='.random_int(1, 100) : null,
             method: 'GET',
             referrer: random_int(0, 1) === 1 ? 'https://google.com' : null,
             resolvedLocale: self::randomLocale(),
@@ -227,7 +229,7 @@ class ContinuityServiceTest extends TestCase
 
             // Generate unique paths for the chain
             for ($j = 0; $j <= $chainLength; $j++) {
-                $paths[] = '/' . self::randomSlugSegment() . '-chain-' . $i . '-' . $j;
+                $paths[] = '/'.self::randomSlugSegment().'-chain-'.$i.'-'.$j;
             }
 
             // Build chain: path[0] -> path[1] -> path[2] -> ...
@@ -305,10 +307,10 @@ class ContinuityServiceTest extends TestCase
         for ($i = 0; $i < 110; $i++) {
             $prefix = self::randomSlugSegment();
             $suffix = self::randomSlugSegment();
-            $path = '/' . $prefix . '/' . $suffix;
+            $path = '/'.$prefix.'/'.$suffix;
 
-            $exactDestination = '/' . self::randomLocale() . '/exact-' . self::randomSlugSegment();
-            $patternDestination = '/' . self::randomLocale() . '/pattern-' . self::randomSlugSegment();
+            $exactDestination = '/'.self::randomLocale().'/exact-'.self::randomSlugSegment();
+            $patternDestination = '/'.self::randomLocale().'/pattern-'.self::randomSlugSegment();
 
             $cases["iteration_{$i}"] = [$path, $exactDestination, $patternDestination];
         }
@@ -334,7 +336,7 @@ class ContinuityServiceTest extends TestCase
         $parts = explode('/', trim($path, '/'));
         $prefix = $parts[0] ?? 'fallback';
         LegacyPatternRule::create([
-            'pattern' => '#^/' . preg_quote($prefix, '#') . '/(.+)$#',
+            'pattern' => '#^/'.preg_quote($prefix, '#').'/(.+)$#',
             'replacement' => $patternDestination,
             'status_code' => 302,
             'priority' => 100,
@@ -364,11 +366,11 @@ class ContinuityServiceTest extends TestCase
 
         for ($i = 0; $i < 110; $i++) {
             $ext = $extensions[random_int(0, count($extensions) - 1)];
-            $legacyPath = '/files/' . self::randomSlugSegment() . '.' . $ext;
+            $legacyPath = '/files/'.self::randomSlugSegment().'.'.$ext;
             $isMapped = random_int(0, 1) === 1;
 
             if ($isMapped) {
-                $currentPath = '/media/' . self::randomSlugSegment() . '.' . $ext;
+                $currentPath = '/media/'.self::randomSlugSegment().'.'.$ext;
                 $status = 'mapped';
             } else {
                 $currentPath = null;
@@ -430,21 +432,21 @@ class ContinuityServiceTest extends TestCase
 
             $duplicates = [];
             for ($d = 0; $d < $duplicateCount; $d++) {
-                $path = '/' . self::randomSlugSegment() . '-dup-' . $i . '-' . $d;
+                $path = '/'.self::randomSlugSegment().'-dup-'.$i.'-'.$d;
                 $duplicates[] = [
                     'legacy_path' => $path,
-                    'destination_url' => '/' . self::randomLocale() . '/' . self::randomSlugSegment(),
+                    'destination_url' => '/'.self::randomLocale().'/'.self::randomSlugSegment(),
                 ];
             }
 
             $conflicts = [];
             for ($c = 0; $c < $conflictCount; $c++) {
                 $segment = self::randomSlugSegment();
-                $pattern = '#^/' . preg_quote($segment, '#') . '-conflict-' . $i . '-' . $c . '/(.+)$#';
+                $pattern = '#^/'.preg_quote($segment, '#').'-conflict-'.$i.'-'.$c.'/(.+)$#';
                 $conflicts[] = [
                     'pattern' => $pattern,
-                    'replacement_a' => '/ar/' . self::randomSlugSegment() . '/$1',
-                    'replacement_b' => '/en/' . self::randomSlugSegment() . '/$1',
+                    'replacement_a' => '/ar/'.self::randomSlugSegment().'/$1',
+                    'replacement_b' => '/en/'.self::randomSlugSegment().'/$1',
                 ];
             }
 
@@ -476,7 +478,7 @@ class ContinuityServiceTest extends TestCase
             // Create a second rule with the same path but different destination
             LegacyExactRedirect::create([
                 'legacy_path' => $dup['legacy_path'],
-                'destination_url' => '/' . self::randomLocale() . '/other-' . self::randomSlugSegment(),
+                'destination_url' => '/'.self::randomLocale().'/other-'.self::randomSlugSegment(),
                 'status_code' => 301,
                 'is_active' => true,
             ]);

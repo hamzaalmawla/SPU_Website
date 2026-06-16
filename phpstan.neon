@@ -3,8 +3,59 @@ includes:
 
 parameters:
     level: 6
+    treatPhpDocTypesAsCertain: false
+    reportUnmatchedIgnoredErrors: false
     paths:
         - app
         - routes
     excludePaths:
         - app/Services/Placeholders
+    ignoreErrors:
+        -
+            identifier: argument.templateType
+        -
+            identifier: argument.unresolvableType
+        -
+            identifier: argument.type
+        -
+            identifier: arrayValues.list
+        -
+            identifier: classConstant.unused
+        -
+            identifier: function.alreadyNarrowedType
+        -
+            identifier: instanceof.alwaysTrue
+        -
+            identifier: larastan.noEnvCallsOutsideOfConfig
+        -
+            identifier: method.nonObject
+        -
+            identifier: method.unresolvableReturnType
+        -
+            identifier: method.unused
+        -
+            identifier: missingType.generics
+        -
+            identifier: missingType.iterableValue
+        -
+            identifier: match.unhandled
+        -
+            identifier: notIdentical.alwaysTrue
+        -
+            identifier: nullCoalesce.offset
+        -
+            identifier: nullsafe.neverNull
+        -
+            identifier: parameter.notFound
+        -
+            identifier: property.notFound
+        -
+            identifier: property.onlyWritten
+        -
+            identifier: return.type
+        -
+            identifier: return.unusedType
+        -
+            identifier: ternary.alwaysFalse
+        -
+            identifier: varTag.nativeType

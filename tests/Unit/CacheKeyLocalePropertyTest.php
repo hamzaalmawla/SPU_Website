@@ -12,6 +12,7 @@ use App\Services\Settings\SettingsService;
 use App\Support\HtmlSanitizer;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Route;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
@@ -46,7 +47,7 @@ class CacheKeyLocalePropertyTest extends TestCase
         $auditMock = $this->createMock(AuditServiceInterface::class);
 
         $this->settingsService = new SettingsService($cacheMock, $auditMock);
-        $this->menuService = new MenuService($cacheMock, $auditMock, new HtmlSanitizer());
+        $this->menuService = new MenuService($cacheMock, $auditMock, new HtmlSanitizer);
     }
 
     // ──────────────────────────────────────────────────────────────────────
@@ -308,7 +309,7 @@ class CacheKeyLocalePropertyTest extends TestCase
     {
         for ($i = 0; $i < 100; $i++) {
             $locale = self::randomLocale();
-            $path = $locale . '/' . self::randomSlugPath();
+            $path = $locale.'/'.self::randomSlugPath();
             yield "public_page_{$i}" => [$locale, $path];
         }
     }
@@ -322,10 +323,10 @@ class CacheKeyLocalePropertyTest extends TestCase
 
         $middleware = new CachePublicPages($cacheMock, $authMock);
 
-        $request = Request::create('/' . $path, 'GET');
+        $request = Request::create('/'.$path, 'GET');
         $request->setRouteResolver(function () use ($locale) {
-            $route = new \Illuminate\Routing\Route('GET', '{locale}/{slug?}', fn () => '');
-            $route->bind(Request::create('/' . $locale));
+            $route = new Route('GET', '{locale}/{slug?}', fn () => '');
+            $route->bind(Request::create('/'.$locale));
             $route->setParameter('locale', $locale);
 
             return $route;
@@ -348,11 +349,11 @@ class CacheKeyLocalePropertyTest extends TestCase
 
         // Verify locale differentiation: different locale produces different key
         $otherLocale = $locale === 'ar' ? 'en' : 'ar';
-        $otherPath = $otherLocale . '/' . self::randomSlugPath();
-        $otherRequest = Request::create('/' . $otherPath, 'GET');
+        $otherPath = $otherLocale.'/'.self::randomSlugPath();
+        $otherRequest = Request::create('/'.$otherPath, 'GET');
         $otherRequest->setRouteResolver(function () use ($otherLocale) {
-            $route = new \Illuminate\Routing\Route('GET', '{locale}/{slug?}', fn () => '');
-            $route->bind(Request::create('/' . $otherLocale));
+            $route = new Route('GET', '{locale}/{slug?}', fn () => '');
+            $route->bind(Request::create('/'.$otherLocale));
             $route->setParameter('locale', $otherLocale);
 
             return $route;

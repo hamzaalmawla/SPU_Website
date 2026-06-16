@@ -12,6 +12,7 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\Component;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\Tabs\Tab;
 use Filament\Forms\Components\Textarea;
@@ -103,7 +104,7 @@ class ManageSettings extends Page implements HasForms
             ->icon('heroicon-o-check')
             ->color('success')
             ->form([
-                \Filament\Forms\Components\Select::make('group')
+                Select::make('group')
                     ->label('Settings Group')
                     ->options([
                         'navigation' => 'Utility Navigation',

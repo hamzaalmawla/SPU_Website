@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\DTOs\About;
 
 /**
- * @param array<int, array<string, mixed>> $sections
+ * @param  array<int, array<string, mixed>>  $sections
  */
 final readonly class AboutContentPageDTO
 {
