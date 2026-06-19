@@ -7,6 +7,7 @@ namespace App\Services\Homepage;
 use App\DTOs\Homepage\HomepageSectionDataDTO;
 use App\DTOs\Homepage\HomepageSectionDTO;
 use App\DTOs\Homepage\HomepageSectionTranslationDTO;
+use App\Enums\PublicationStatus;
 use App\Models\Homepage\HomepageDraft;
 use App\Models\Homepage\HomepageSection;
 use App\Models\Homepage\HomepageSectionTranslation;
@@ -33,8 +34,6 @@ use Illuminate\Support\Collection;
  */
 final class HomepageDraftReader
 {
-    private const EDITABLE_STATUSES = ['draft', 'scheduled'];
-
     /**
      * @param  array<int, string>  $sectionKeys
      */
@@ -42,7 +41,7 @@ final class HomepageDraftReader
     {
         return HomepageDraft::query()
             ->where('target_type', 'homepage')
-            ->whereIn('status', self::EDITABLE_STATUSES)
+            ->whereIn('status', PublicationStatus::editableValues())
             ->latest('updated_at')
             ->first();
     }

@@ -11,6 +11,7 @@ use App\DTOs\Navigation\MenuItemDataDTO;
 use App\DTOs\Navigation\MenuItemDTO;
 use App\DTOs\Navigation\MenuTreeNodeDTO;
 use App\DTOs\Navigation\NavigationTreeDTO;
+use App\Enums\PublicationStatus;
 use App\Models\Navigation\MenuItem;
 use App\Models\Page\Page;
 use App\Models\Page\PageTranslation;
@@ -506,7 +507,7 @@ final class MenuService implements MenuServiceInterface
 
     private function isRenderable(Page $page, string $locale): bool
     {
-        if (! (bool) $page->is_enabled || $page->status !== 'published' || $page->published_at === null) {
+        if (! (bool) $page->is_enabled || $page->status !== PublicationStatus::Published->value || $page->published_at === null) {
             return false;
         }
 
@@ -519,7 +520,7 @@ final class MenuService implements MenuServiceInterface
         }
 
         foreach ($this->ancestorChain($page) as $ancestor) {
-            if (! (bool) $ancestor->is_enabled || $ancestor->status !== 'published' || $ancestor->published_at === null) {
+            if (! (bool) $ancestor->is_enabled || $ancestor->status !== PublicationStatus::Published->value || $ancestor->published_at === null) {
                 return false;
             }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Preview;
 
+use App\Enums\PublicationStatus;
 use App\Models\Homepage\HomepageDraft;
 use App\Models\Page\PageDraft;
 use App\Models\Shared\PreviewToken;
@@ -18,8 +19,6 @@ use Illuminate\Support\Str;
  */
 final class PreviewTokenStore
 {
-    private const EDITABLE_STATUSES = ['draft', 'scheduled'];
-
     private const RAW_TOKEN_LENGTH = 64;
 
     /**
@@ -165,7 +164,7 @@ final class PreviewTokenStore
         if ($targetType === 'homepage') {
             $draft = HomepageDraft::query()
                 ->where('target_type', 'homepage')
-                ->whereIn('status', self::EDITABLE_STATUSES)
+                ->whereIn('status', PublicationStatus::editableValues())
                 ->latest('updated_at')
                 ->first();
 
@@ -177,7 +176,7 @@ final class PreviewTokenStore
         if ($targetType === 'page' && $targetId !== null) {
             $draft = PageDraft::query()
                 ->where('page_id', $targetId)
-                ->whereIn('status', self::EDITABLE_STATUSES)
+                ->whereIn('status', PublicationStatus::editableValues())
                 ->latest('updated_at')
                 ->first();
 

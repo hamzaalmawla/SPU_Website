@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\TwoFactorChallengeController;
+use App\Http\Controllers\Public\AdmissionsController;
 use App\Http\Controllers\Public\AboutController;
 use App\Http\Controllers\Public\EServicesController;
 use App\Http\Controllers\Public\HomeController;
@@ -26,6 +27,16 @@ Route::prefix('{locale}')
     ->group(function (): void {
         Route::get('/', HomeController::class)->name('public.home');
         Route::get('/e-services', EServicesController::class)->name('public.e-services');
+
+        Route::controller(AdmissionsController::class)
+            ->prefix('admissions')
+            ->name('public.admissions.')
+            ->group(function (): void {
+                Route::get('/', 'landing')->name('landing');
+                Route::get('/{section}', 'section')
+                    ->where(['section' => 'requirements|tuition|how-to-apply|faq|calendar|documents|transfer'])
+                    ->name('section');
+            });
 
         Route::controller(AboutController::class)
             ->prefix('about')

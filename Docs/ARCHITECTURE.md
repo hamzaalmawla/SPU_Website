@@ -117,6 +117,13 @@ Support helper rules:
 - They may be static when they are dependency-free and deterministic, following the existing `HomepagePayloadMapper` pattern.
 - They must have characterization tests before replacing existing service-private behavior.
 
+Legacy import exception:
+- `app/Support/LegacyImport/**` is a narrow historical migration exception because it is used by one-off legacy import seeders and import verification commands, not public runtime controllers, Filament workflows, or service contracts.
+- The only approved database-aware helpers in that namespace are `OldDatabaseConnection`, `TargetIdResolver`, and `MigrationLogger`.
+- This exception must not be used as precedent for new Support helpers. New database access belongs in services or service-owned collaborators.
+- No controller, Filament page/resource, middleware, or public service contract may depend on `app/Support/LegacyImport/**`.
+- If legacy import tooling becomes a maintained product workflow, move persistence into explicit legacy import services/contracts and remove this exception.
+
 Extraction requirements:
 - Measure the current service hotspot before extracting.
 - Add characterization tests for current behavior before moving code.

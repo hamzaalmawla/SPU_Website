@@ -10,6 +10,7 @@ use App\DTOs\Homepage\HomepageDTO;
 use App\DTOs\Homepage\HomepageSectionDataDTO;
 use App\DTOs\Homepage\HomepageSectionDTO;
 use App\DTOs\Shared\ValidationResultDTO;
+use App\Enums\PublicationStatus;
 use App\Models\Homepage\HomepageDraft;
 use App\Models\Homepage\HomepageSection;
 use App\Models\User\User;
@@ -267,7 +268,7 @@ final class HomepageSectionService implements HomepageSectionServiceInterface
                     'sections' => $this->serializeSections($sections),
                 ],
             ],
-            'status' => 'draft',
+            'status' => PublicationStatus::Draft->value,
             'draft_notes' => 'Homepage editor snapshot',
             'created_by' => $userId,
             'updated_by' => $userId,

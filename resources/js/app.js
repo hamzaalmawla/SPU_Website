@@ -2,11 +2,19 @@ import Alpine from '@alpinejs/csp';
 
 import { createMobileNav }      from './alpine/mobileNav.js';
 import { createAboutNavigation } from './alpine/aboutNavigation.js';
+import { createAdmissionsFaq }   from './alpine/admissionsFaq.js';
+import { createAdmissionsTabs }  from './alpine/admissionsTabs.js';
+import { createAdmissionsTuition } from './alpine/admissionsTuition.js';
+import { createAdmissionsDocuments } from './alpine/admissionsDocuments.js';
 import { initRevealSections }   from './alpine/scrollReveal.js';
 
 // Alpine components (x-data="name()")
 Alpine.data('mobileNav',       createMobileNav);
 Alpine.data('aboutNavigation', createAboutNavigation);
+Alpine.data('admissionsFaq',   createAdmissionsFaq);
+Alpine.data('admissionsTabs',  createAdmissionsTabs);
+Alpine.data('admissionsTuition', createAdmissionsTuition);
+Alpine.data('admissionsDocuments', createAdmissionsDocuments);
 
 window.Alpine = Alpine;
 

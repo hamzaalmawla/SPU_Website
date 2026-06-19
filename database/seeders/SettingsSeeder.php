@@ -107,7 +107,7 @@ class SettingsSeeder extends Seeder
                         'logoUrl' => '/images/home/footer-logo.png',
                     ],
                     'mapEmbed' => [
-                        'url' => 'https://maps.google.com/?q=Damascus+Syria',
+                        'url' => 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d13346.741280351659!2d36.26129575!3d33.31448835!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1518f99e3f1e1e1f%3A0xe1e1e1e1e1e1e1e1!2sSyrian%20Private%20University!5e0!3m2!1sen!2ssy!4v1712710000000!5m2!1sen!2ssy',
                     ],
                     'legalLinks' => [
                         ['label' => 'سياسة الخصوصية', 'url' => '/ar/about'],
@@ -133,7 +133,7 @@ class SettingsSeeder extends Seeder
                         'logoUrl' => '/images/home/footer-logo.png',
                     ],
                     'mapEmbed' => [
-                        'url' => 'https://maps.google.com/?q=Damascus+Syria',
+                        'url' => 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d13346.741280351659!2d36.26129575!3d33.31448835!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1518f99e3f1e1e1f%3A0xe1e1e1e1e1e1e1e1!2sSyrian%20Private%20University!5e0!3m2!1sen!2ssy',
                     ],
                     'legalLinks' => [
                         ['label' => 'Privacy Policy', 'url' => '/en/about'],

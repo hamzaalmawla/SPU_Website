@@ -23,6 +23,8 @@
             <link rel="alternate" hreflang="{{ $hreflang['locale'] }}" href="{{ $hreflang['url'] }}">
         @endforeach
         <link rel="preconnect" href="https://fonts.bunny.net">
+        <link rel="icon" href="{{ asset('images/single-logo.png') }}" type="image/png">
+        <link rel="manifest" href="{{ asset('site.webmanifest') }}">
         @php
             $publicViteJsEntries = ['resources/js/app.js'];
             $requestedPublicViteJsEntries = trim($__env->yieldContent('publicViteJsEntries'));
@@ -72,6 +74,7 @@
                 @endif
             @endforeach
         @endif
+        @stack('styles')
     </head>
     <body class="min-h-screen antialiased font-hacen">
         @include('public.layout.preview-banner')
@@ -80,5 +83,6 @@
         <main>@yield('content')</main>
 
         @include('public.layout.footer')
+        @stack('scripts')
     </body>
 </html>

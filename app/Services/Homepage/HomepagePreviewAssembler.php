@@ -7,13 +7,12 @@ namespace App\Services\Homepage;
 use App\Contracts\Homepage\HomepagePreviewAssemblerInterface;
 use App\Contracts\Homepage\HomepageSectionServiceInterface;
 use App\DTOs\Homepage\HomepageDTO;
+use App\Enums\PublicationStatus;
 use App\Models\Homepage\HomepageDraft;
 use App\Support\HomepageDraftSectionMapper;
 
 final class HomepagePreviewAssembler implements HomepagePreviewAssemblerInterface
 {
-    private const EDITABLE_STATUSES = ['draft', 'scheduled'];
-
     public function __construct(
         private readonly HomepageSectionServiceInterface $homepageSectionService,
     ) {}
@@ -30,7 +29,7 @@ final class HomepagePreviewAssembler implements HomepagePreviewAssemblerInterfac
         if (! is_array($draftHomepage)) {
             $draft = HomepageDraft::query()
                 ->where('target_type', 'homepage')
-                ->whereIn('status', self::EDITABLE_STATUSES)
+                ->whereIn('status', PublicationStatus::editableValues())
                 ->latest('updated_at')
                 ->first();
 

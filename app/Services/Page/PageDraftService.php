@@ -15,6 +15,7 @@ use App\DTOs\Preview\PreviewDTO;
 use App\DTOs\Preview\PreviewPayloadDTO;
 use App\DTOs\Seo\PageSeoDTO;
 use App\DTOs\Seo\PageSeoInputDTO;
+use App\Enums\PublicationStatus;
 use App\Models\Page\Page;
 use App\Models\Page\PageDraft;
 
@@ -26,8 +27,6 @@ use App\Models\Page\PageDraft;
  */
 final class PageDraftService
 {
-    private const EDITABLE_STATUSES = ['draft', 'scheduled'];
-
     public function __construct(
         private readonly SeoMetadataServiceInterface $seoMetadataService,
         private readonly PagePublicReadService $publicReadService,
@@ -108,7 +107,7 @@ final class PageDraftService
     {
         $draft = PageDraft::query()
             ->where('page_id', $page->getKey())
-            ->whereIn('status', self::EDITABLE_STATUSES)
+            ->whereIn('status', PublicationStatus::editableValues())
             ->latest('updated_at')
             ->first();
 

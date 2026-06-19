@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models\Page;
 
+use App\Enums\PublicationStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -47,7 +48,7 @@ class AboutPage extends Model
     {
         return $query
             ->where('is_enabled', true)
-            ->where('status', 'published')
+            ->where('status', PublicationStatus::Published->value)
             ->whereNotNull('published_at')
             ->where(function (Builder $query): void {
                 $query->whereNull('publish_at')->orWhere('publish_at', '<=', now());

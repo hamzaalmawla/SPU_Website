@@ -9,6 +9,7 @@ use App\Contracts\Seo\SeoMetadataServiceInterface;
 use App\Contracts\Seo\SitemapServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
 use App\DTOs\Seo\SitemapEntryDTO;
+use App\Enums\PublicationStatus;
 use App\Models\Page\Page;
 use Illuminate\Support\Collection;
 
@@ -28,7 +29,7 @@ final class SitemapService implements SitemapServiceInterface
     {
         $pages = Page::query()
             ->with(['translations'])
-            ->where('status', 'published')
+            ->where('status', PublicationStatus::Published->value)
             ->where('is_enabled', true)
             ->whereNotNull('published_at')
             ->where(function ($query): void {
@@ -183,7 +184,7 @@ final class SitemapService implements SitemapServiceInterface
 
             $cursor = $cursor->parent;
 
-            if (! (bool) $cursor->is_enabled || $cursor->status !== 'published' || $cursor->published_at === null) {
+            if (! (bool) $cursor->is_enabled || $cursor->status !== PublicationStatus::Published->value || $cursor->published_at === null) {
                 return false;
             }
 

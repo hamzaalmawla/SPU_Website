@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models\Page;
 
+use App\Enums\PublicationStatus;
 use App\Models\Navigation\MenuItem;
 use App\Models\User\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -120,7 +121,7 @@ class Page extends Model
     public function scopePublished(Builder $query): Builder
     {
         return $query
-            ->where('status', 'published')
+            ->where('status', PublicationStatus::Published->value)
             ->whereNotNull('published_at');
     }
 }

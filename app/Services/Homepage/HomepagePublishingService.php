@@ -13,6 +13,7 @@ use App\DTOs\Homepage\HomepageDraftDTO;
 use App\DTOs\Homepage\HomepageSectionDataDTO;
 use App\DTOs\Homepage\HomepageSectionDTO;
 use App\DTOs\Page\DraftPayloadDTO;
+use App\Enums\PublicationStatus;
 use App\Events\DraftConflictDetected;
 use App\Exceptions\ConflictException;
 use App\Models\Homepage\HomepageDraft;
@@ -49,7 +50,7 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
         if ($expectedVersion !== null) {
             $currentDraft = HomepageDraft::query()
                 ->where('target_type', 'homepage')
-                ->whereIn('status', ['draft', 'scheduled'])
+                ->whereIn('status', PublicationStatus::editableValues())
                 ->latest('version')
                 ->first();
 
@@ -98,7 +99,7 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
                     'sections' => $this->serializeSections($sections),
                 ],
             ],
-            'status' => 'draft',
+            'status' => PublicationStatus::Draft->value,
             'draft_notes' => 'Homepage draft snapshot',
             'created_by' => $userId,
             'updated_by' => $userId,
@@ -183,7 +184,7 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
             }
 
             $draft->forceFill([
-                'status' => 'published',
+                'status' => PublicationStatus::Published->value,
                 'updated_by' => $userId,
                 'approved_by' => $userId,
                 'scheduled_at' => null,
@@ -260,7 +261,7 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
         }
 
         $draft->forceFill([
-            'status' => 'scheduled',
+            'status' => PublicationStatus::Scheduled->value,
             'updated_by' => $userId,
             'approved_by' => $userId,
             'scheduled_at' => $scheduledAt,
@@ -287,7 +288,7 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
 
         HomepageDraft::query()
             ->where('target_type', 'homepage')
-            ->where('status', 'scheduled')
+            ->where('status', PublicationStatus::Scheduled->value)
             ->whereNotNull('scheduled_at')
             ->where('scheduled_at', '<=', now())
             ->orderBy('scheduled_at')
@@ -307,7 +308,7 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
     {
         $draft = HomepageDraft::query()
             ->where('target_type', 'homepage')
-            ->whereIn('status', ['draft', 'scheduled'])
+            ->whereIn('status', PublicationStatus::editableValues())
             ->latest()
             ->first();
 
@@ -499,9 +500,9 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
         HomepageDraft::query()
             ->where('target_type', 'homepage')
             ->whereKeyNot($currentDraftId)
-            ->whereIn('status', ['draft', 'scheduled'])
+            ->whereIn('status', PublicationStatus::editableValues())
             ->update([
-                'status' => 'superseded',
+                'status' => PublicationStatus::Superseded->value,
                 'updated_by' => $userId,
                 'scheduled_at' => null,
             ]);
@@ -514,7 +515,7 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
     {
         return HomepageDraft::query()
             ->where('target_type', 'homepage')
-            ->whereIn('status', ['draft', 'scheduled'])
+            ->whereIn('status', PublicationStatus::editableValues())
             ->exists();
     }
 
@@ -529,7 +530,7 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
 
         $deleted = HomepageDraft::query()
             ->where('target_type', 'homepage')
-            ->whereIn('status', ['draft', 'scheduled'])
+            ->whereIn('status', PublicationStatus::editableValues())
             ->delete();
 
         if ($deleted > 0) {

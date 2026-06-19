@@ -8,6 +8,7 @@ use App\Contracts\Seo\SeoMetadataServiceInterface;
 use App\DTOs\Page\PageDTO;
 use App\DTOs\Page\PageMetadataDTO;
 use App\DTOs\Page\PageTranslationDTO;
+use App\Enums\PublicationStatus;
 use App\Models\Page\Page;
 use App\Models\Page\PageTranslation;
 
@@ -96,7 +97,7 @@ final class PagePublicReadService
 
     public function isPubliclyRenderable(Page $page, string $locale): bool
     {
-        if (! (bool) $page->is_enabled || $page->status !== 'published' || $page->published_at === null) {
+        if (! (bool) $page->is_enabled || $page->status !== PublicationStatus::Published->value || $page->published_at === null) {
             return false;
         }
 
@@ -109,7 +110,7 @@ final class PagePublicReadService
         }
 
         foreach ($this->ancestorChain($page) as $ancestor) {
-            if (! (bool) $ancestor->is_enabled || $ancestor->status !== 'published' || $ancestor->published_at === null) {
+            if (! (bool) $ancestor->is_enabled || $ancestor->status !== PublicationStatus::Published->value || $ancestor->published_at === null) {
                 return false;
             }
 

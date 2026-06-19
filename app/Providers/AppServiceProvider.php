@@ -13,6 +13,7 @@ use App\Contracts\Homepage\HomepageSectionServiceInterface;
 use App\Contracts\Media\MediaServiceInterface;
 use App\Contracts\Navigation\MenuServiceInterface;
 use App\Contracts\Navigation\NavigationServiceInterface;
+use App\Contracts\Page\AdmissionsPageServiceInterface;
 use App\Contracts\Page\AboutPageServiceInterface;
 use App\Contracts\Page\ContactPageServiceInterface;
 use App\Contracts\Page\EServicesPageServiceInterface;
@@ -56,6 +57,7 @@ use App\Services\Media\MediaFileValidator;
 use App\Services\Media\MediaService;
 use App\Services\Navigation\MenuService;
 use App\Services\Navigation\NavigationService;
+use App\Services\Page\AdmissionsPageService;
 use App\Services\Page\AboutPageService;
 use App\Services\Page\ContactPageService;
 use App\Services\Page\EServicesPageService;
@@ -217,6 +219,7 @@ class AppServiceProvider extends ServiceProvider
     {
         return [
             CacheServiceInterface::class => CacheService::class,
+            AdmissionsPageServiceInterface::class => AdmissionsPageService::class,
             AboutPageServiceInterface::class => AboutPageService::class,
             AuditServiceInterface::class => AuditService::class,
             AuthServiceInterface::class => AuthService::class,

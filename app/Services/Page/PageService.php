@@ -16,6 +16,7 @@ use App\DTOs\Page\PageTranslationDTO;
 use App\DTOs\Preview\PreviewDTO;
 use App\DTOs\Seo\PageSeoInputDTO;
 use App\DTOs\Shared\BreadcrumbTrailDTO;
+use App\Enums\PublicationStatus;
 use App\Events\DraftConflictDetected;
 use App\Exceptions\ConflictException;
 use App\Models\Page\Page;
@@ -64,8 +65,6 @@ use Illuminate\Support\Facades\Gate;
  */
 final class PageService implements PageServiceInterface
 {
-    private const EDITABLE_STATUSES = ['draft', 'scheduled'];
-
     public function __construct(
         private readonly AuditServiceInterface $auditService,
         private readonly CacheServiceInterface $cacheService,
@@ -173,7 +172,7 @@ final class PageService implements PageServiceInterface
         if ($expectedVersion !== null) {
             $currentDraft = PageDraft::query()
                 ->where('page_id', $pageId)
-                ->whereIn('status', self::EDITABLE_STATUSES)
+                ->whereIn('status', PublicationStatus::editableValues())
                 ->latest()
                 ->first();
 
@@ -208,7 +207,7 @@ final class PageService implements PageServiceInterface
         // Determine the next version number
         $latestDraft = PageDraft::query()
             ->where('page_id', $pageId)
-            ->whereIn('status', self::EDITABLE_STATUSES)
+            ->whereIn('status', PublicationStatus::editableValues())
             ->latest()
             ->first();
         $nextVersion = $latestDraft instanceof PageDraft ? ((int) $latestDraft->version) + 1 : 1;
@@ -245,7 +244,7 @@ final class PageService implements PageServiceInterface
 
         $draft = PageDraft::query()
             ->where('page_id', $pageId)
-            ->whereIn('status', self::EDITABLE_STATUSES)
+            ->whereIn('status', PublicationStatus::editableValues())
             ->latest('updated_at')
             ->first();
 
@@ -263,7 +262,7 @@ final class PageService implements PageServiceInterface
         $this->authorizePageWrite($userId, 'publish', $page);
 
         $updated = $page->update([
-            'status' => 'draft',
+            'status' => PublicationStatus::Draft->value,
             'published_at' => null,
             'updated_by' => $userId,
         ]);
@@ -295,7 +294,7 @@ final class PageService implements PageServiceInterface
 
         $draft = PageDraft::query()
             ->where('page_id', $pageId)
-            ->whereIn('status', self::EDITABLE_STATUSES)
+            ->whereIn('status', PublicationStatus::editableValues())
             ->latest('updated_at')
             ->first();
 
@@ -311,14 +310,14 @@ final class PageService implements PageServiceInterface
 
         if ($draft instanceof PageDraft) {
             $draft->forceFill([
-                'status' => 'scheduled',
+                'status' => PublicationStatus::Scheduled->value,
                 'updated_by' => $userId,
                 'scheduled_at' => $scheduledAt,
             ])->save();
         }
 
         $updated = $page->update([
-            'status' => 'scheduled',
+            'status' => PublicationStatus::Scheduled->value,
             'publish_at' => $scheduledAt,
             'updated_by' => $userId,
         ]);
@@ -338,7 +337,7 @@ final class PageService implements PageServiceInterface
         $published = 0;
 
         Page::query()
-            ->where('status', 'scheduled')
+            ->where('status', PublicationStatus::Scheduled->value)
             ->whereNotNull('publish_at')
             ->where('publish_at', '<=', now())
             ->orderBy('publish_at')
@@ -347,7 +346,7 @@ final class PageService implements PageServiceInterface
                 $actorId = $this->scheduledPublishActorId($page);
                 $draft = PageDraft::query()
                     ->where('page_id', (int) $page->getKey())
-                    ->where('status', 'scheduled')
+                    ->where('status', PublicationStatus::Scheduled->value)
                     ->whereNotNull('scheduled_at')
                     ->where('scheduled_at', '<=', now())
                     ->orderBy('scheduled_at')
@@ -377,7 +376,7 @@ final class PageService implements PageServiceInterface
     {
         $draft = PageDraft::query()
             ->where('page_id', $pageId)
-            ->whereIn('status', self::EDITABLE_STATUSES)
+            ->whereIn('status', PublicationStatus::editableValues())
             ->latest('version')
             ->first();
 
@@ -558,7 +557,7 @@ final class PageService implements PageServiceInterface
                     fn (int $id, string $locale, PageSeoInputDTO $dto): bool => $this->updateSeo($id, $locale, $dto, $userId),
                 );
                 $draft->forceFill([
-                    'status' => 'published',
+                    'status' => PublicationStatus::Published->value,
                     'approved_by' => $userId,
                     'published_at' => now(),
                 ])->save();
@@ -571,7 +570,7 @@ final class PageService implements PageServiceInterface
             }
 
             $page->forceFill([
-                'status' => 'published',
+                'status' => PublicationStatus::Published->value,
                 'published_at' => now(),
                 'publish_at' => $page->publish_at?->isFuture() ? $page->publish_at : now(),
                 'approved_by' => $userId,

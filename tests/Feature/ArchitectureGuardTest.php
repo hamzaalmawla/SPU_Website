@@ -12,7 +12,13 @@ use Tests\TestCase;
  *
  * These tests prevent architectural drift by asserting that:
  * - Controllers do not import Eloquent models directly
+ * - Controllers do not query the database or inject concrete services
+ * - Contracts do not leak Eloquent types
+ * - Middleware does not query Eloquent or contain domain persistence logic
+ * - DTOs remain final readonly constructor-only data carriers unless allowlisted
+ * - Support helpers remain DB-free except documented legacy import exceptions
  * - Filament pages/resources do not import forbidden models
+ * - Controllers and Filament do not call Actions directly
  * - Homepage section keys match the documented contract
  * - All service contracts have bindings in AppServiceProvider
  */
@@ -44,6 +50,207 @@ final class ArchitectureGuardTest extends TestCase
         $this->assertEmpty(
             $violations,
             "Controllers must not import Eloquent models directly:\n".implode("\n", $violations)
+        );
+    }
+
+    public function test_controllers_do_not_query_database_or_inject_concrete_services(): void
+    {
+        $violations = [];
+
+        foreach ($this->phpFilesIn(app_path('Http/Controllers')) as $file) {
+            $content = file_get_contents($file);
+            if ($content === false) {
+                continue;
+            }
+
+            foreach ($this->databaseUsageViolations($content) as $violation) {
+                $violations[] = $this->relativePath($file).' '.$violation;
+            }
+
+            if (preg_match('/^use\s+App\\Services\\[^;]+;/m', $content) === 1) {
+                $violations[] = $this->relativePath($file).' imports a concrete App\Services class';
+            }
+
+            if (preg_match('/(?:app|resolve)\(\s*\\?App\\Services\\[^:]+::class\s*\)/', $content) === 1) {
+                $violations[] = $this->relativePath($file).' resolves a concrete App\Services class';
+            }
+        }
+
+        $this->assertEmpty(
+            $violations,
+            "Controllers must stay thin and depend on service interfaces only:\n".implode("\n", $violations)
+        );
+    }
+
+    public function test_contracts_do_not_leak_eloquent_or_untyped_methods(): void
+    {
+        $violations = [];
+
+        foreach ($this->phpFilesIn(app_path('Contracts')) as $file) {
+            $content = file_get_contents($file);
+            if ($content === false) {
+                continue;
+            }
+
+            if (preg_match('/^use\s+App\\\\Models\\\\[^;]+;/m', $content) === 1) {
+                $violations[] = $this->relativePath($file).' imports App\Models';
+            }
+
+            if (preg_match('/^use\s+Illuminate\\\\Database\\\\Eloquent\\\\[^;]+;/m', $content) === 1) {
+                $violations[] = $this->relativePath($file).' imports Eloquent types';
+            }
+
+            if (preg_match('/\\\\?App\\\\Models\\\\[A-Za-z0-9_\\\\]+/', $content) === 1) {
+                $violations[] = $this->relativePath($file).' references App\Models in a signature or PHPDoc';
+            }
+
+            if (preg_match('/:\s*(?:\\\\?Illuminate\\\\Database\\\\Eloquent\\\\|\\\\?App\\\\Models\\\\|Model\b|Builder\b)/', $content) === 1) {
+                $violations[] = $this->relativePath($file).' has an Eloquent return type';
+            }
+
+            if (preg_match('/public\s+function\s+\w+\s*\([^)]*\)\s*;/', $content) === 1) {
+                $violations[] = $this->relativePath($file).' has an untyped public method';
+            }
+        }
+
+        $this->assertEmpty(
+            $violations,
+            "Contracts must expose DTO/scalar/bool/collection boundaries, not Eloquent:\n".implode("\n", $violations)
+        );
+    }
+
+    public function test_middleware_does_not_query_eloquent_or_use_models(): void
+    {
+        $violations = [];
+
+        foreach ($this->phpFilesIn(app_path('Http/Middleware')) as $file) {
+            $content = file_get_contents($file);
+            if ($content === false) {
+                continue;
+            }
+
+            if (preg_match('/^use\s+App\\\\Models\\\\[^;]+;/m', $content) === 1) {
+                $violations[] = $this->relativePath($file).' imports App\Models';
+            }
+
+            foreach ($this->databaseUsageViolations($content) as $violation) {
+                $violations[] = $this->relativePath($file).' '.$violation;
+            }
+        }
+
+        $this->assertEmpty(
+            $violations,
+            "Middleware must not contain Eloquent queries or domain persistence logic:\n".implode("\n", $violations)
+        );
+    }
+
+    public function test_dtos_are_final_readonly_constructor_only_except_allowlist(): void
+    {
+        $allowedMethods = [
+            'App\\DTOs\\Homepage\\HomepageDTO' => ['findSection'],
+        ];
+
+        $violations = [];
+
+        foreach ($this->phpFilesIn(app_path('DTOs')) as $file) {
+            $content = file_get_contents($file);
+            if ($content === false) {
+                continue;
+            }
+
+            $fqcn = $this->fqcnFromFile($content);
+
+            if (preg_match('/final\s+readonly\s+class\s+\w+/', $content) !== 1) {
+                $violations[] = $this->relativePath($file).' is not a final readonly class';
+            }
+
+            if (preg_match_all('/public\s+function\s+(\w+)\s*\(/', $content, $matches)) {
+                foreach ($matches[1] as $method) {
+                    if ($method === '__construct') {
+                        continue;
+                    }
+
+                    if ($fqcn !== null && in_array($method, $allowedMethods[$fqcn] ?? [], true)) {
+                        continue;
+                    }
+
+                    $violations[] = $this->relativePath($file).' has non-constructor public method '.$method.'()';
+                }
+            }
+        }
+
+        $this->assertEmpty(
+            $violations,
+            "DTOs must stay final readonly constructor-only data carriers unless allowlisted:\n".implode("\n", $violations)
+        );
+    }
+
+    public function test_support_helpers_do_not_access_database_except_legacy_import_allowlist(): void
+    {
+        $allowedLegacyImportFiles = [
+            'app/Support/LegacyImport/MigrationLogger.php',
+            'app/Support/LegacyImport/OldDatabaseConnection.php',
+            'app/Support/LegacyImport/TargetIdResolver.php',
+        ];
+
+        $violations = [];
+
+        foreach ($this->phpFilesIn(app_path('Support')) as $file) {
+            $content = file_get_contents($file);
+            if ($content === false) {
+                continue;
+            }
+
+            $relativePath = $this->relativePath($file);
+            if (in_array($relativePath, $allowedLegacyImportFiles, true)) {
+                continue;
+            }
+
+            foreach ($this->databaseUsageViolations($content) as $violation) {
+                $violations[] = $relativePath.' '.$violation;
+            }
+
+            if (preg_match('/^use\s+App\\\\Models\\\\[^;]+;/m', $content) === 1) {
+                $violations[] = $relativePath.' imports App\Models';
+            }
+
+            if (preg_match('/^use\s+Illuminate\\\\Database\\\\[^;]+;/m', $content) === 1) {
+                $violations[] = $relativePath.' imports Illuminate\Database';
+            }
+        }
+
+        $this->assertEmpty(
+            $violations,
+            "Support helpers must be DB-free except documented LegacyImport allowlist:\n".implode("\n", $violations)
+        );
+    }
+
+    public function test_controllers_and_filament_do_not_call_actions_directly(): void
+    {
+        $violations = [];
+        $files = array_merge(
+            $this->phpFilesIn(app_path('Http/Controllers')),
+            $this->filamentFiles(),
+        );
+
+        foreach ($files as $file) {
+            $content = file_get_contents($file);
+            if ($content === false) {
+                continue;
+            }
+
+            if (preg_match('/^use\s+App\\\\Actions\\\\[^;]+;/m', $content) === 1) {
+                $violations[] = $this->relativePath($file).' imports App\Actions';
+            }
+
+            if (preg_match('/\\\\?App\\\\Actions\\\\[A-Za-z0-9_\\\\]+/', $content) === 1) {
+                $violations[] = $this->relativePath($file).' references App\Actions directly';
+            }
+        }
+
+        $this->assertEmpty(
+            $violations,
+            "Controllers and Filament must not call Actions directly:\n".implode("\n", $violations)
         );
     }
 
@@ -279,5 +486,51 @@ final class ArchitectureGuardTest extends TestCase
     private function declaresFilamentModel(string $content, string $model): bool
     {
         return preg_match('/\$model\s*=\s*'.$model.'::class/', $content) === 1;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function databaseUsageViolations(string $content): array
+    {
+        $patterns = [
+            '/^use\s+Illuminate\\\\Support\\\\Facades\\\\DB;/m' => 'imports DB facade',
+            '/^use\s+Illuminate\\\\Support\\\\Facades\\\\Schema;/m' => 'imports Schema facade',
+            '/\bDB::/' => 'uses DB facade',
+            '/\bSchema::/' => 'uses Schema facade',
+            '/::query\s*\(/' => 'calls ::query()',
+            '/::where\s*\(/' => 'calls ::where()',
+            '/::find\s*\(/' => 'calls ::find()',
+            '/::create\s*\(/' => 'calls ::create()',
+            '/->save\s*\(/' => 'calls ->save()',
+        ];
+
+        $violations = [];
+
+        foreach ($patterns as $pattern => $message) {
+            if (preg_match($pattern, $content) === 1) {
+                $violations[] = $message;
+            }
+        }
+
+        return $violations;
+    }
+
+    private function fqcnFromFile(string $content): ?string
+    {
+        if (! preg_match('/namespace\s+([\w\\\\]+);/', $content, $namespaceMatch)) {
+            return null;
+        }
+
+        if (! preg_match('/class\s+(\w+)/', $content, $classMatch)) {
+            return null;
+        }
+
+        return $namespaceMatch[1].'\\'.$classMatch[1];
+    }
+
+    private function relativePath(string $file): string
+    {
+        return str_replace('\\', '/', str_replace(base_path().DIRECTORY_SEPARATOR, '', $file));
     }
 }
