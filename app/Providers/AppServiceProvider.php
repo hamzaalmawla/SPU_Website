@@ -13,11 +13,15 @@ use App\Contracts\Homepage\HomepageSectionServiceInterface;
 use App\Contracts\Media\MediaServiceInterface;
 use App\Contracts\Navigation\MenuServiceInterface;
 use App\Contracts\Navigation\NavigationServiceInterface;
+use App\Contracts\News\NewsServiceInterface;
 use App\Contracts\Page\AdmissionsPageServiceInterface;
 use App\Contracts\Page\AboutPageServiceInterface;
+use App\Contracts\Page\CampusLifePageServiceInterface;
 use App\Contracts\Page\ContactPageServiceInterface;
 use App\Contracts\Page\EServicesPageServiceInterface;
+use App\Contracts\Page\FacultyPageServiceInterface;
 use App\Contracts\Page\PageServiceInterface;
+use App\Contracts\Page\VirtualTourPageServiceInterface;
 use App\Contracts\Seo\SeoMetadataServiceInterface;
 use App\Contracts\Seo\SitemapServiceInterface;
 use App\Contracts\Settings\SettingsServiceInterface;
@@ -30,8 +34,13 @@ use App\Http\Responses\LogoutResponse;
 use App\Models\Contact\ContactMessage;
 use App\Models\Content\Directorate;
 use App\Models\Content\Partnership;
+use App\Models\Faculty\Faculty;
+use App\Models\Faculty\FacultyHighlight;
+use App\Models\Faculty\FacultyPage;
 use App\Models\Media\MediaAsset;
 use App\Models\Navigation\MenuItem;
+use App\Models\News\NewsArticle;
+use App\Models\News\NewsCategory;
 use App\Models\Page\AboutPage;
 use App\Models\Page\Page;
 use App\Models\Person\Person;
@@ -40,9 +49,12 @@ use App\Models\User\User;
 use App\Observers\AboutDomainAuditObserver;
 use App\Policies\AuditLogPolicy;
 use App\Policies\ContactMessagePolicy;
+use App\Policies\FacultyDomainPolicy;
 use App\Policies\HomepagePolicy;
 use App\Policies\MediaAssetPolicy;
 use App\Policies\MenuItemPolicy;
+use App\Policies\NewsArticlePolicy;
+use App\Policies\NewsCategoryPolicy;
 use App\Policies\PagePolicy;
 use App\Policies\UserPolicy;
 use App\Services\Auth\AuthService;
@@ -57,15 +69,19 @@ use App\Services\Media\MediaFileValidator;
 use App\Services\Media\MediaService;
 use App\Services\Navigation\MenuService;
 use App\Services\Navigation\NavigationService;
+use App\Services\News\NewsService;
 use App\Services\Page\AdmissionsPageService;
 use App\Services\Page\AboutPageService;
+use App\Services\Page\CampusLifePageService;
 use App\Services\Page\ContactPageService;
 use App\Services\Page\EServicesPageService;
+use App\Services\Page\FacultyPageService;
 use App\Services\Page\PageDraftService;
 use App\Services\Page\PagePublicReadService;
 use App\Services\Page\PagePublishabilityValidator;
 use App\Services\Page\PageService;
 use App\Services\Page\PageUrlResolver;
+use App\Services\Page\VirtualTourPageService;
 use App\Services\Preview\PreviewService;
 use App\Services\Preview\PreviewTokenStore;
 use App\Services\Seo\SeoMetadataService;
@@ -174,12 +190,19 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(AuditLog::class, AuditLogPolicy::class);
         Gate::policy(MediaAsset::class, MediaAssetPolicy::class);
         Gate::policy(ContactMessage::class, ContactMessagePolicy::class);
+        Gate::policy(NewsArticle::class, NewsArticlePolicy::class);
+        Gate::policy(NewsCategory::class, NewsCategoryPolicy::class);
+        Gate::policy(Faculty::class, FacultyDomainPolicy::class);
+        Gate::policy(FacultyPage::class, FacultyDomainPolicy::class);
+        Gate::policy(FacultyHighlight::class, FacultyDomainPolicy::class);
 
         Gate::define('manage-users', [UserPolicy::class, 'manageUsers']);
         Gate::define('manage-settings', [UserPolicy::class, 'manageSettings']);
         Gate::define('manage-homepage', [HomepagePolicy::class, 'manage']);
         Gate::define('manage-pages', [PagePolicy::class, 'manage']);
         Gate::define('manage-menu', [MenuItemPolicy::class, 'manage']);
+        Gate::define('manage-news', [NewsArticlePolicy::class, 'manage']);
+        Gate::define('manage-faculties', [FacultyDomainPolicy::class, 'manage']);
         Gate::define('manage-media', [UserPolicy::class, 'manageMedia']);
         Gate::define('publish-content', [UserPolicy::class, 'publishContent']);
         Gate::define('preview-content', [UserPolicy::class, 'previewContent']);
@@ -221,21 +244,25 @@ class AppServiceProvider extends ServiceProvider
             CacheServiceInterface::class => CacheService::class,
             AdmissionsPageServiceInterface::class => AdmissionsPageService::class,
             AboutPageServiceInterface::class => AboutPageService::class,
+            CampusLifePageServiceInterface::class => CampusLifePageService::class,
             AuditServiceInterface::class => AuditService::class,
             AuthServiceInterface::class => AuthService::class,
             ContinuityServiceInterface::class => ContinuityService::class,
             ContactPageServiceInterface::class => ContactPageService::class,
             EServicesPageServiceInterface::class => EServicesPageService::class,
+            FacultyPageServiceInterface::class => FacultyPageService::class,
             SitemapServiceInterface::class => SitemapService::class,
             MediaServiceInterface::class => MediaService::class,
             SlugServiceInterface::class => SlugService::class,
             MenuServiceInterface::class => MenuService::class,
+            NewsServiceInterface::class => NewsService::class,
             SeoMetadataServiceInterface::class => SeoMetadataService::class,
             HomepagePreviewAssemblerInterface::class => HomepagePreviewAssembler::class,
             HomepageSectionServiceInterface::class => HomepageSectionService::class,
             HomepagePublishingServiceInterface::class => HomepagePublishingService::class,
             PreviewServiceInterface::class => PreviewService::class,
             PageServiceInterface::class => PageService::class,
+            VirtualTourPageServiceInterface::class => VirtualTourPageService::class,
             PersonServiceInterface::class => PersonService::class,
             SettingsServiceInterface::class => SettingsService::class,
             NavigationServiceInterface::class => NavigationService::class,

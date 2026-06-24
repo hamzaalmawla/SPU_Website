@@ -73,12 +73,19 @@ return [
             'source_tables' => ['jx_docs', 'jx_sites'],
             'target_tables' => ['media_assets', 'menu_items'],
         ],
+        'news' => [
+            'enabled' => false,
+            'source_tables' => ['jx_categories', 'jx_items'],
+            'target_tables' => ['news_categories', 'news_category_translations', 'news_articles', 'news_article_translations', 'news_article_seo_meta', 'news_article_attachments', 'media_assets'],
+        ],
     ],
 
     'future_module_map' => [
         'jx_members' => 'faculty_members',
         'jx_councils' => 'councils',
         'jx_member_items' => 'research_publications',
+        'jx_categories' => 'news_articles',
+        'jx_items' => 'news_article_attachments',
         'jx_faqs' => 'faqs',
         'jx_complaint_cats' => 'complaint_categories',
         'jx_complaints' => 'complaints',

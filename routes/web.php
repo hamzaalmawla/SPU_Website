@@ -6,12 +6,16 @@ use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\TwoFactorChallengeController;
 use App\Http\Controllers\Public\AdmissionsController;
 use App\Http\Controllers\Public\AboutController;
+use App\Http\Controllers\Public\CampusLifeController;
 use App\Http\Controllers\Public\EServicesController;
+use App\Http\Controllers\Public\FacultyController;
 use App\Http\Controllers\Public\HomeController;
+use App\Http\Controllers\Public\NewsController;
 use App\Http\Controllers\Public\PageController;
 use App\Http\Controllers\Public\PreviewController;
 use App\Http\Controllers\Public\PublicContactController;
 use App\Http\Controllers\Public\SitemapController;
+use App\Http\Controllers\Public\VirtualTourController;
 use App\Http\Middleware\AdminLocaleMiddleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -27,6 +31,32 @@ Route::prefix('{locale}')
     ->group(function (): void {
         Route::get('/', HomeController::class)->name('public.home');
         Route::get('/e-services', EServicesController::class)->name('public.e-services');
+        Route::get('/virtual-tour', VirtualTourController::class)->name('public.virtual-tour');
+
+        Route::controller(FacultyController::class)
+            ->prefix('faculties')
+            ->name('public.faculties.legacy.')
+            ->group(function (): void {
+                Route::get('/{legacyPath?}', 'redirectLegacy')
+                    ->where('legacyPath', '.*')
+                    ->name('redirect');
+            });
+
+        Route::controller(FacultyController::class)
+            ->prefix('facilities')
+            ->name('public.facilities.')
+            ->group(function (): void {
+                Route::get('/', 'hub')->name('hub');
+                Route::get('/{faculty}', 'faculty')
+                    ->where(['faculty' => 'medicine|dentistry|pharmacy|artificial-intelligence|building-construction-engineering|petroleum|business-administration'])
+                    ->name('show');
+                Route::get('/{faculty}/{subpage}', 'subpage')
+                    ->where([
+                        'faculty' => 'medicine|dentistry|pharmacy|artificial-intelligence|building-construction-engineering|petroleum|business-administration',
+                        'subpage' => 'overview|departments|labs|projects|alumni|valedictorians|training',
+                    ])
+                    ->name('subpage');
+            });
 
         Route::controller(AdmissionsController::class)
             ->prefix('admissions')
@@ -35,6 +65,16 @@ Route::prefix('{locale}')
                 Route::get('/', 'landing')->name('landing');
                 Route::get('/{section}', 'section')
                     ->where(['section' => 'requirements|tuition|how-to-apply|faq|calendar|documents|transfer'])
+                    ->name('section');
+            });
+
+        Route::controller(CampusLifeController::class)
+            ->prefix('campus-life')
+            ->name('public.campus-life.')
+            ->group(function (): void {
+                Route::get('/', 'landing')->name('landing');
+                Route::get('/{section}', 'section')
+                    ->where(['section' => 'services|transport|clubs-activities|career-development|dental|hospital|health-insurance'])
                     ->name('section');
             });
 
@@ -58,6 +98,15 @@ Route::prefix('{locale}')
         Route::post('/contact', [PublicContactController::class, 'store'])
             ->middleware('throttle:public-form')
             ->name('public.contact.submit');
+
+        Route::controller(NewsController::class)
+            ->prefix('news')
+            ->name('public.news.')
+            ->group(function (): void {
+                Route::get('/', 'index')->name('index');
+                Route::get('/articles', 'articles')->name('articles');
+                Route::get('/{article}', 'show')->name('show');
+            });
 
         Route::get('/{slugPath}', PageController::class)
             ->where('slugPath', '.+')

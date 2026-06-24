@@ -17,6 +17,7 @@ class ProductionFoundationSeeder extends Seeder
             RoleSeeder::class,
             HomepageSectionSeeder::class,
             AboutSectionSeeder::class,
+            FacultyModuleSeeder::class,
         ]);
     }
 }

@@ -16,9 +16,10 @@ class NavigationSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->normalizeExistingLabels();
+        $items = $this->items();
+        $this->disableExistingSeededParents($items);
 
-        foreach ($this->items() as $item) {
+        foreach ($items as $item) {
             $targetId = null;
 
             if ($item['target_kind'] === 'page' && $item['page_slug'] !== null) {
@@ -101,14 +102,30 @@ class NavigationSeeder extends Seeder
         Cache::flush();
     }
 
-    private function normalizeExistingLabels(): void
+    /**
+     * Disable stale top-level CMS rows before seeding the frontend source-of-truth menu.
+     * This prevents old labels like "Faculties" from surviving beside "Facilities".
+     *
+     * @param array<int, array<string, mixed>> $items
+     */
+    private function disableExistingSeededParents(array $items): void
     {
-        MenuItem::query()
-            ->where('type', 'header')
-            ->where('group_key', 'header')
-            ->where('locale', 'en')
-            ->where('label', 'Faculties')
-            ->update(['label' => 'Facilities']);
+        collect($items)
+            ->map(fn (array $item): array => [
+                'type' => $item['type'],
+                'group_key' => $item['group_key'],
+                'locale' => $item['locale'],
+            ])
+            ->unique(fn (array $item): string => $item['type'].'|'.$item['group_key'].'|'.($item['locale'] ?? ''))
+            ->each(function (array $item): void {
+                MenuItem::query()
+                    ->where('type', $item['type'])
+                    ->where('group_key', $item['group_key'])
+                    ->where('locale', $item['locale'])
+                    ->whereNull('parent_id')
+                    ->update(['is_enabled' => false]);
+            });
+
     }
 
     /**
@@ -148,48 +165,66 @@ class NavigationSeeder extends Seeder
             ['label' => 'Partnerships', 'target_kind' => 'url', 'url' => '/en/about/partnerships'],
         ]];
 
-        // ── Facilities (sort 2) ──
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'الكليات', 'target_kind' => 'page', 'page_slug' => 'faculties', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 2, 'children' => [
-            ['label' => 'كلية الطب البشري', 'target_kind' => 'url', 'url' => '/ar/faculties/medicine'],
-            ['label' => 'كلية طب الأسنان', 'target_kind' => 'url', 'url' => '/ar/faculties/dentistry'],
-            ['label' => 'كلية الصيدلة', 'target_kind' => 'url', 'url' => '/ar/faculties/pharmacy'],
-            ['label' => 'كلية هندسة الذكاء الاصطناعي', 'target_kind' => 'url', 'url' => '/ar/faculties/ai-engineering'],
-            ['label' => 'كلية هندسة البناء', 'target_kind' => 'url', 'url' => '/ar/faculties/construction'],
-            ['label' => 'كلية هندسة البترول', 'target_kind' => 'url', 'url' => '/ar/faculties/petroleum'],
-            ['label' => 'كلية إدارة الأعمال', 'target_kind' => 'url', 'url' => '/ar/faculties/business'],
+        // ── Faculties (sort 2) ──
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'المرافق', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/ar/facilities', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 2, 'children' => [
+            ['label' => 'كلية الطب البشري', 'target_kind' => 'url', 'url' => '/ar/facilities/medicine'],
+            ['label' => 'كلية طب الأسنان', 'target_kind' => 'url', 'url' => '/ar/facilities/dentistry'],
+            ['label' => 'كلية الصيدلة', 'target_kind' => 'url', 'url' => '/ar/facilities/pharmacy'],
+            ['label' => 'كلية هندسة الذكاء الاصطناعي', 'target_kind' => 'url', 'url' => '/ar/facilities/artificial-intelligence'],
+            ['label' => 'كلية هندسة البناء', 'target_kind' => 'url', 'url' => '/ar/facilities/building-construction-engineering'],
+            ['label' => 'كلية هندسة البترول', 'target_kind' => 'url', 'url' => '/ar/facilities/petroleum'],
+            ['label' => 'كلية إدارة الأعمال', 'target_kind' => 'url', 'url' => '/ar/facilities/business-administration'],
         ]];
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'Facilities', 'target_kind' => 'page', 'page_slug' => 'faculties', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 2, 'children' => [
-            ['label' => 'Medicine', 'target_kind' => 'url', 'url' => '/en/faculties/medicine'],
-            ['label' => 'Dentistry', 'target_kind' => 'url', 'url' => '/en/faculties/dentistry'],
-            ['label' => 'Pharmacy', 'target_kind' => 'url', 'url' => '/en/faculties/pharmacy'],
-            ['label' => 'AI Engineering', 'target_kind' => 'url', 'url' => '/en/faculties/ai-engineering'],
-            ['label' => 'Construction Engineering', 'target_kind' => 'url', 'url' => '/en/faculties/construction'],
-            ['label' => 'Petroleum Engineering', 'target_kind' => 'url', 'url' => '/en/faculties/petroleum'],
-            ['label' => 'Business Administration', 'target_kind' => 'url', 'url' => '/en/faculties/business'],
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'Facilities', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/en/facilities', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 2, 'children' => [
+            ['label' => 'Medicine', 'target_kind' => 'url', 'url' => '/en/facilities/medicine'],
+            ['label' => 'Dentistry', 'target_kind' => 'url', 'url' => '/en/facilities/dentistry'],
+            ['label' => 'Pharmacy', 'target_kind' => 'url', 'url' => '/en/facilities/pharmacy'],
+            ['label' => 'AI Engineering', 'target_kind' => 'url', 'url' => '/en/facilities/artificial-intelligence'],
+            ['label' => 'Construction Engineering', 'target_kind' => 'url', 'url' => '/en/facilities/building-construction-engineering'],
+            ['label' => 'Petroleum Engineering', 'target_kind' => 'url', 'url' => '/en/facilities/petroleum'],
+            ['label' => 'Business Administration', 'target_kind' => 'url', 'url' => '/en/facilities/business-administration'],
         ]];
 
         // ── Admissions (sort 3) ──
         $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'القبول والتسجيل', 'target_kind' => 'page', 'page_slug' => 'admissions', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 3, 'children' => [
-            ['label' => 'شروط القبول', 'target_kind' => 'url', 'url' => '/ar/admissions#requirements'],
-            ['label' => 'الرسوم الدراسية', 'target_kind' => 'url', 'url' => '/ar/admissions#fees'],
-            ['label' => 'دعم القبول', 'target_kind' => 'url', 'url' => '/ar/contact'],
+            ['label' => 'شروط القبول', 'target_kind' => 'url', 'url' => '/ar/admissions/requirements'],
+            ['label' => 'الرسوم الدراسية', 'target_kind' => 'url', 'url' => '/ar/admissions/tuition'],
+            ['label' => 'كيفية التقديم', 'target_kind' => 'url', 'url' => '/ar/admissions/how-to-apply'],
+            ['label' => 'الأسئلة الشائعة', 'target_kind' => 'url', 'url' => '/ar/admissions/faq'],
+            ['label' => 'التقويم الأكاديمي', 'target_kind' => 'url', 'url' => '/ar/admissions/calendar'],
+            ['label' => 'الوثائق المطلوبة', 'target_kind' => 'url', 'url' => '/ar/admissions/documents'],
+            ['label' => 'التحويل والانتقال', 'target_kind' => 'url', 'url' => '/ar/admissions/transfer'],
         ]];
         $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'Admissions', 'target_kind' => 'page', 'page_slug' => 'admissions', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 3, 'children' => [
-            ['label' => 'Admission Requirements', 'target_kind' => 'url', 'url' => '/en/admissions#requirements'],
-            ['label' => 'Tuition Fees', 'target_kind' => 'url', 'url' => '/en/admissions#fees'],
-            ['label' => 'Admissions Support', 'target_kind' => 'url', 'url' => '/en/contact'],
+            ['label' => 'Admission Requirements', 'target_kind' => 'url', 'url' => '/en/admissions/requirements'],
+            ['label' => 'Tuition Fees', 'target_kind' => 'url', 'url' => '/en/admissions/tuition'],
+            ['label' => 'How to Apply', 'target_kind' => 'url', 'url' => '/en/admissions/how-to-apply'],
+            ['label' => 'FAQ', 'target_kind' => 'url', 'url' => '/en/admissions/faq'],
+            ['label' => 'Academic Calendar', 'target_kind' => 'url', 'url' => '/en/admissions/calendar'],
+            ['label' => 'Required Documents', 'target_kind' => 'url', 'url' => '/en/admissions/documents'],
+            ['label' => 'Transfer Students', 'target_kind' => 'url', 'url' => '/en/admissions/transfer'],
         ]];
 
-        // ── Student Life (sort 4) ──
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'الحياة الجامعية', 'target_kind' => 'page', 'page_slug' => 'student-life', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 4, 'children' => [
-            ['label' => 'الخدمات الطلابية', 'target_kind' => 'url', 'url' => '/ar/student-life#services'],
-            ['label' => 'الأنشطة والنوادي', 'target_kind' => 'url', 'url' => '/ar/student-life#activities'],
-            ['label' => 'التقويم الأكاديمي', 'target_kind' => 'url', 'url' => '/ar/student-life#calendar'],
+        // ── Campus Life (sort 4) ──
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'الحياة الجامعية', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/ar/campus-life', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 4, 'children' => [
+            ['label' => 'الجولة الافتراضية', 'target_kind' => 'url', 'url' => '/ar/virtual-tour'],
+            ['label' => 'خدمات الحرم الجامعي', 'target_kind' => 'url', 'url' => '/ar/campus-life/services'],
+            ['label' => 'النقل', 'target_kind' => 'url', 'url' => '/ar/campus-life/transport'],
+            ['label' => 'الصحة والتأمين', 'target_kind' => 'url', 'url' => '/ar/campus-life/health-insurance'],
+            ['label' => 'النوادي والأنشطة', 'target_kind' => 'url', 'url' => '/ar/campus-life/clubs-activities'],
+            ['label' => 'التطوير المهني', 'target_kind' => 'url', 'url' => '/ar/campus-life/career-development'],
+            ['label' => 'المستشفى الجامعي', 'target_kind' => 'url', 'url' => '/ar/campus-life/hospital'],
+            ['label' => 'عيادات الأسنان', 'target_kind' => 'url', 'url' => '/ar/campus-life/dental'],
         ]];
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'Student Life', 'target_kind' => 'page', 'page_slug' => 'student-life', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 4, 'children' => [
-            ['label' => 'Student Services', 'target_kind' => 'url', 'url' => '/en/student-life#services'],
-            ['label' => 'Activities & Clubs', 'target_kind' => 'url', 'url' => '/en/student-life#activities'],
-            ['label' => 'Academic Calendar', 'target_kind' => 'url', 'url' => '/en/student-life#calendar'],
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'Campus Life', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/en/campus-life', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 4, 'children' => [
+            ['label' => 'Virtual Tour', 'target_kind' => 'url', 'url' => '/en/virtual-tour'],
+            ['label' => 'Campus Services', 'target_kind' => 'url', 'url' => '/en/campus-life/services'],
+            ['label' => 'Transport', 'target_kind' => 'url', 'url' => '/en/campus-life/transport'],
+            ['label' => 'Health & Insurance', 'target_kind' => 'url', 'url' => '/en/campus-life/health-insurance'],
+            ['label' => 'Clubs & Activities', 'target_kind' => 'url', 'url' => '/en/campus-life/clubs-activities'],
+            ['label' => 'Career Development', 'target_kind' => 'url', 'url' => '/en/campus-life/career-development'],
+            ['label' => 'University Hospital', 'target_kind' => 'url', 'url' => '/en/campus-life/hospital'],
+            ['label' => 'Dental Clinics', 'target_kind' => 'url', 'url' => '/en/campus-life/dental'],
         ]];
 
         // ── E-Services (sort 5) ──

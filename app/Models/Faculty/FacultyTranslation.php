@@ -12,7 +12,7 @@ class FacultyTranslation extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['faculty_id', 'locale', 'name', 'short_description', 'description'];
+    protected $fillable = ['faculty_id', 'locale', 'name', 'catalog_title', 'short_description', 'description', 'years_label'];
 
     public function faculty(): BelongsTo
     {

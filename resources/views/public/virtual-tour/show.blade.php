@@ -1,0 +1,42 @@
+@extends('layouts.public')
+
+@section('content')
+    @php($content = $page->page)
+
+    <section class="relative min-h-[360px] overflow-hidden font-hacen">
+        <div class="absolute inset-0">
+            <img src="{{ $content['hero']['image'] ?? '/images/slider-4.webp' }}" alt="{{ $content['hero']['imageAlt'] ?? '' }}" class="h-full w-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-spu-blue/90 via-spu-blue/60 to-spu-blue/0"></div>
+            <div class="absolute inset-0 bg-spu-blue/25"></div>
+        </div>
+        <div class="container relative z-10 flex min-h-[360px] items-center justify-center pb-12 pt-32 text-center">
+            <div class="w-full">
+                <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-white/80">{{ $content['hero']['eyebrow'] ?? '' }}</p>
+                <h1 class="mt-3 text-[32px] font-bold leading-tight text-white md:text-[42px]">{{ $content['hero']['title'] ?? '' }}</h1>
+                <p class="mx-auto mt-4 w-full text-sm font-semibold leading-6 text-white/85 md:w-[58%]">{{ $content['hero']['summary'] ?? '' }}</p>
+                <div class="mt-7 flex flex-wrap items-center justify-center gap-3">
+                    <a href="{{ $content['hero']['primaryUrl'] ?? '#tour' }}" class="group inline-flex items-center justify-center gap-2 rounded-[4px] bg-spu-red px-6 py-3 text-xs font-bold text-white shadow-[0_12px_30px_rgba(111,22,22,0.28)] transition hover:-translate-y-0.5 hover:bg-white hover:text-spu-blue"><img src="{{ $content['hero']['primaryIcon'] ?? '' }}" alt="" class="h-4 w-4 brightness-0 invert transition group-hover:brightness-100 group-hover:invert-0" aria-hidden="true"><span>{{ $content['hero']['primaryLabel'] ?? '' }}</span></a>
+                    <a href="{{ $content['hero']['secondaryUrl'] ?? '#facilities' }}" class="inline-flex items-center justify-center gap-2 rounded-[4px] border border-white/20 bg-white/10 px-6 py-3 text-xs font-bold text-white backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-white/18"><img src="{{ $content['hero']['secondaryIcon'] ?? '' }}" alt="" class="h-4 w-4 brightness-0 invert" aria-hidden="true"><span>{{ $content['hero']['secondaryLabel'] ?? '' }}</span></a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="tour" class="bg-white py-14 font-hacen">
+        <div class="container">
+            <div class="text-center"><p class="text-[11px] font-bold uppercase tracking-[0.16em] text-spu-blue/55">{{ $content['tour']['eyebrow'] ?? '' }}</p><h2 class="mt-2 text-[24px] font-bold leading-tight text-spu-blue md:text-[30px]">{{ $content['tour']['title'] ?? '' }}</h2><p class="mx-auto mt-3 w-full text-sm leading-6 text-spu-blue/60 md:w-[48%]">{{ $content['tour']['summary'] ?? '' }}</p></div>
+            <div class="relative mt-8 overflow-hidden rounded-[8px] border border-spu-blue/10 bg-white shadow-[0_18px_60px_rgba(32,39,89,0.16)]">
+                <img src="{{ $content['tour']['image'] ?? '' }}" alt="{{ $content['tour']['imageAlt'] ?? '' }}" class="h-[360px] w-full object-cover md:h-[560px]">
+                <div class="absolute right-4 top-4 flex items-center gap-2 rtl:left-4 rtl:right-auto" aria-label="{{ $content['tour']['controlLabel'] ?? '' }}"><button type="button" class="grid h-8 w-8 place-items-center rounded-[4px] bg-white/90 text-spu-blue shadow-lg transition hover:bg-white" aria-label="{{ $content['tour']['floorLabel'] ?? '' }}"><img src="/images/icon-sitemap-outline.svg" alt="" class="h-4 w-4" aria-hidden="true"></button><button type="button" class="grid h-8 w-8 place-items-center rounded-[4px] bg-white/90 text-spu-blue shadow-lg transition hover:bg-white" aria-label="{{ $content['tour']['fullscreenLabel'] ?? '' }}"><img src="/images/icon-map-outline.svg" alt="" class="h-4 w-4" aria-hidden="true"></button></div>
+                @foreach (($content['tour']['hotspots'] ?? []) as $hotspot)
+                    <button type="button" class="group absolute -translate-x-1/2 -translate-y-1/2" style="left: {{ $hotspot['x'] ?? '50%' }}; top: {{ $hotspot['y'] ?? '50%' }};" aria-label="{{ $hotspot['label'] ?? '' }}"><span class="grid h-7 w-7 place-items-center rounded-full bg-white/95 shadow-[0_8px_24px_rgba(0,0,0,0.2)] ring-4 ring-white/25"><span class="h-2.5 w-2.5 rounded-full bg-spu-red"></span></span><span class="pointer-events-none absolute left-1/2 top-9 hidden -translate-x-1/2 whitespace-nowrap rounded-[4px] bg-spu-blue px-3 py-1.5 text-[11px] font-bold text-white shadow-xl group-hover:block">{{ $hotspot['label'] ?? '' }}</span></button>
+                @endforeach
+                <div class="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-spu-blue/85 px-5 py-2 text-xs font-bold text-white shadow-xl backdrop-blur-sm">{{ $content['tour']['experienceLabel'] ?? '' }}</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="bg-white py-12 font-hacen"><div class="container"><div class="text-center"><p class="text-[11px] font-bold uppercase tracking-[0.16em] text-spu-blue/55">{{ $content['highlights']['eyebrow'] ?? '' }}</p><h2 class="mt-2 text-[24px] font-bold leading-tight text-spu-blue md:text-[30px]">{{ $content['highlights']['title'] ?? '' }}</h2><p class="mx-auto mt-3 w-full text-sm leading-6 text-spu-blue/60 md:w-[56%]">{{ $content['highlights']['summary'] ?? '' }}</p></div><div class="mt-8 grid gap-4 lg:grid-cols-2">@foreach (($content['highlights']['items'] ?? []) as $item)<a href="{{ $item['href'] ?? '#' }}" class="group relative min-h-[210px] overflow-hidden rounded-[8px] bg-spu-blue text-white shadow-[0_16px_42px_rgba(32,39,89,0.14)] {{ ($item['featured'] ?? false) ? 'lg:row-span-2 lg:min-h-[440px]' : '' }}"><img src="{{ $item['image'] ?? '' }}" alt="{{ $item['imageAlt'] ?? '' }}" class="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"><div class="absolute inset-0 bg-gradient-to-t from-spu-blue/95 via-spu-blue/45 to-transparent"></div><div class="absolute inset-x-0 bottom-0 p-5 md:p-7"><h3 class="text-[22px] font-bold leading-tight {{ ($item['featured'] ?? false) ? 'md:text-[28px]' : 'md:text-[24px]' }}">{{ $item['title'] ?? '' }}</h3><p class="mt-2 text-sm leading-6 text-white/82">{{ $item['summary'] ?? '' }}</p><span class="mt-4 inline-flex items-center gap-2 rounded-[4px] bg-spu-red px-4 py-2 text-[11px] font-bold transition group-hover:bg-white group-hover:text-spu-blue"><span>{{ $item['label'] ?? '' }}</span><img src="/images/icon-arrow-right-outline.svg" alt="" class="h-3 w-3 brightness-0 invert rtl:rotate-180" aria-hidden="true"></span></div></a>@endforeach</div></div></section>
+
+    <section id="facilities" class="bg-[#f4f8fd] py-14 font-hacen"><div class="container"><div class="text-center"><p class="text-[11px] font-bold uppercase tracking-[0.16em] text-spu-blue/55">{{ $content['facilities']['eyebrow'] ?? '' }}</p><h2 class="mt-2 text-[24px] font-bold leading-tight text-spu-blue md:text-[30px]">{{ $content['facilities']['title'] ?? '' }}</h2><p class="mx-auto mt-3 w-full text-sm leading-6 text-spu-blue/60 md:w-[56%]">{{ $content['facilities']['summary'] ?? '' }}</p></div><div class="mt-8 grid gap-5 md:grid-cols-3">@foreach (($content['facilities']['items'] ?? []) as $item)<a href="{{ $item['href'] ?? '#' }}" class="group overflow-hidden rounded-[8px] border border-spu-blue/10 bg-white shadow-[0_12px_30px_rgba(32,39,89,0.08)] transition hover:-translate-y-1 hover:shadow-[0_18px_42px_rgba(32,39,89,0.14)]"><div class="relative h-[150px] overflow-hidden"><img src="{{ $item['image'] ?? '' }}" alt="{{ $item['title'] ?? '' }}" class="h-full w-full object-cover transition duration-700 group-hover:scale-105"><div class="absolute inset-0 bg-spu-blue/10"></div></div><div class="p-5 text-center"><div class="mx-auto grid h-12 w-12 place-items-center rounded-[8px] bg-spu-blue/5"><img src="{{ $item['icon'] ?? '' }}" alt="" class="h-6 w-6" aria-hidden="true"></div><h3 class="mt-4 text-[18px] font-bold text-spu-blue">{{ $item['title'] ?? '' }}</h3><p class="mt-2 text-sm leading-6 text-spu-blue/58">{{ $item['summary'] ?? '' }}</p><span class="mt-4 inline-flex items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-[0.08em] text-spu-red"><span>{{ $content['facilities']['detailsLabel'] ?? '' }}</span><img src="/images/icon-arrow-right-outline.svg" alt="" class="h-3 w-3 rtl:rotate-180" aria-hidden="true"></span></div></a>@endforeach</div></div></section>
+@endsection

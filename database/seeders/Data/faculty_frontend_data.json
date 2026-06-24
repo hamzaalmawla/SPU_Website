@@ -1,0 +1,1918 @@
+[
+  {
+    "id": "medicine",
+    "internalSlug": "medicine",
+    "publicSlug": "medicine",
+    "nameEn": "Faculty of Medicine",
+    "nameAr": "كلية الطب البشري",
+    "catalogTitleEn": "Faculty of Medicine",
+    "catalogTitleAr": "كلية الطب البشري",
+    "summaryEn": "Advancing healthcare through rigorous clinical excellence",
+    "summaryAr": "النهوض بالرعاية الصحية من خلال التميز السريري الدقيق",
+    "descriptionEn": "The Faculty of Medicine at SPU aims to graduate highly skilled physicians, combining theoretical knowledge with intensive clinical training in affiliated hospitals.",
+    "descriptionAr": "تعد كلية الطب في الجامعة السورية الخاصة من أعرق الكليات، تهدف لتخريج أطباء بمستوى علمي عالٍ يجمع بين المعرفة النظرية والتدريب السريري المكثف في المشافي المتعاقد معها.",
+    "color": "#bc2428",
+    "yearsEn": "6 Years",
+    "yearsAr": "6 سنوات",
+    "heroImage": "/images/faculities/group-fac-building.jpg",
+    "logo": "/images/tip.png",
+    "gallery": [
+      "/images/faculities/medicen/lab.jpg"
+    ],
+    "tabs": [
+      {
+        "id": "overview",
+        "labelEn": "Overview",
+        "labelAr": "لمحة عن الكلية",
+        "contentEn": "The Faculty of Medicine at SPU aims to graduate highly skilled physicians, combining theoretical knowledge with intensive clinical training in affiliated hospitals.",
+        "contentAr": "تعد كلية الطب في الجامعة السورية الخاصة من أعرق الكليات، تهدف لتخريج أطباء بمستوى علمي عالٍ يجمع بين المعرفة النظرية والتدريب السريري المكثف في المشافي المتعاقد معها."
+      },
+      {
+        "id": "vision",
+        "labelEn": "Our Vision",
+        "labelAr": "رؤيتنا",
+        "contentEn": "Leadership in medical education and scientific research locally and regionally.",
+        "contentAr": "الريادة في التعليم الطبي والبحث العلمي محلياً وإقليمياً، وتحقيق التميز في جودة المخرجات التعليمية الطبية."
+      },
+      {
+        "id": "mission",
+        "labelEn": "Our Mission",
+        "labelAr": "رسالتنا",
+        "contentEn": "Preparing competent doctors committed to professional ethics.",
+        "contentAr": "إعداد أطباء أكفاء ملتزمين بأخلاقيات المهنة، وقادرين على التعلم المستمر والمساهمة في تطوير النظام الصحي في سوريا."
+      },
+      {
+        "id": "objectives",
+        "labelEn": "Objectives",
+        "labelAr": "أهدافنا",
+        "contentEn": "Providing an advanced educational environment and promoting scientific research.",
+        "contentAr": "توفير بيئة تعليمية متطورة، تعزيز البحث العلمي لدى الطلاب، وربط الكلية بالمجتمع عبر تقديم خدمات رعاية صحية متميزة."
+      }
+    ],
+    "dean": {
+      "slug": "ayman-ali",
+      "sectionLabelAr": "رسالة عميد الكلية",
+      "sectionLabelEn": "Dean's Message",
+      "titlePrefixAr": "كلمة",
+      "titlePrefixEn": "The",
+      "nameAr": "أ.د. أيمن علي",
+      "nameEn": "Dr. Ayman Ali",
+      "roleAr": "عميد كلية الطب البشري",
+      "roleEn": "Dean of the Faculty",
+      "image": "/images/about/leadership/medicine-dean.jpg",
+      "messageAr": "نعمل على إعداد خريجين متميزين معرفياً ومهارياً، قادرين على المنافسة في سوق العمل الطبي محلياً ودولياً، مع التركيز على البحث العلمي والأخلاقيات المهنية.",
+      "messageEn": "We work to prepare graduates who are academically and professionally distinguished, capable of competing in the medical labor market with a focus on scientific research.",
+      "ctaAr": "الرؤية الاستراتيجية الكاملة",
+      "ctaEn": "Read Full Strategic Vision"
+    },
+    "stats": [
+      {
+        "value": "+2500",
+        "labelEn": "Scientific Research",
+        "labelAr": "ابحاث علمية ",
+        "icon": "/images/icons/file.svg"
+      },
+      {
+        "value": "256",
+        "labelEn": "Credit Hours",
+        "labelAr": "ساعة معتمدة",
+        "icon": "/images/icons/hours.svg"
+      },
+      {
+        "value": "7",
+        "labelEn": "Academic Departments",
+        "labelAr": "أقسام علمية",
+        "icon": "/images/icons/dept.svg"
+      },
+      {
+        "value": "5",
+        "labelEn": "Training Hospitals",
+        "labelAr": "مشافي تدريبية",
+        "icon": "/images/icons/hospital.svg"
+      }
+    ],
+    "highlights": [
+      {
+        "key": "scientific-research",
+        "value": "+2500",
+        "icon": "/images/icons/file.svg",
+        "url": null,
+        "titleEn": "Scientific Research",
+        "titleAr": "أبحاث علمية"
+      },
+      {
+        "key": "credit-hours",
+        "value": "256",
+        "icon": "/images/icons/hours.svg",
+        "url": null,
+        "titleEn": "Credit Hours",
+        "titleAr": "ساعة معتمدة"
+      },
+      {
+        "key": "academic-departments",
+        "value": "7",
+        "icon": "/images/icons/dept.svg",
+        "url": null,
+        "titleEn": "Academic Departments",
+        "titleAr": "أقسام علمية"
+      },
+      {
+        "key": "training-hospitals",
+        "value": "5",
+        "icon": "/images/icons/hospital.svg",
+        "url": null,
+        "titleEn": "Training Hospitals",
+        "titleAr": "مشافي تدريبية"
+      },
+      {
+        "key": "honor-list",
+        "value": "Top",
+        "icon": "/images/icons/award.svg",
+        "url": "/facilities/medicine/valedictorians",
+        "titleEn": "Honor List",
+        "titleAr": "قائمة الشرف"
+      }
+    ],
+    "labs": [
+      {
+        "slug": "med-lab-1",
+        "image": "/images/slider-3.webp",
+        "titleEn": "Clinical Simulation Laboratory",
+        "titleAr": "مخبر المحاكاة السريرية",
+        "departmentEn": "Medical Education Center",
+        "departmentAr": "مركز التعليم الطبي",
+        "instructorEn": "Dr. Ahmad Mansour",
+        "instructorAr": "د. أحمد منصور",
+        "summaryEn": "Equipped with state-of-the-art patient simulation technology including high-fidelity mannequins, vital signs monitors, and emergency response training equipment for hands-on clinical skill development.",
+        "summaryAr": "مجهز بأحدث تقنيات محاكاة المرضى بما في ذلك نماذج المحاكاة عالية الدقة وشاشات العلامات الحيوية ومعدات تدريب الاستجابة للطوارئ لتطوير المهارات السريرية العملية."
+      },
+      {
+        "slug": "med-lab-2",
+        "image": "/images/slider-2.webp",
+        "titleEn": "Anatomy & Histology Laboratory",
+        "titleAr": "مخبر التشريح والنسج",
+        "departmentEn": "Department of Anatomy",
+        "departmentAr": "قسم التشريح",
+        "instructorEn": "Dr. Khaled Ibrahim",
+        "instructorAr": "د. خالد إبراهيم",
+        "summaryEn": "Features comprehensive anatomical models, microscopic stations for histology study, and digital anatomy tables for detailed visualization of human body systems.",
+        "summaryAr": "يضم نماذج تشريحية شاملة ومحطات مجهرية لدراسة الأنسجة وطاولات تشريح رقمية لتصور تفصيلي لأجهزة الجسم البشرية."
+      },
+      {
+        "slug": "med-lab-3",
+        "image": "/images/slider-4.webp",
+        "titleEn": "Microbiology Research Lab",
+        "titleAr": "مخبر أبحاث الأحياء الدقيقة",
+        "departmentEn": "Department of Microbiology",
+        "departmentAr": "قسم الأحياء الدقيقة",
+        "instructorEn": "Dr. Sara Khalil",
+        "instructorAr": "د. سارة خليل",
+        "summaryEn": "Equipped for culture techniques, pathogen identification, and antimicrobial sensitivity testing with modern biosafety cabinets and sterilization systems.",
+        "summaryAr": "مجهز لتقنيات الزرع والتعرف على مسببات الأمراض واختبار حساسية مضادات المكروبات مع خزائن السلامة البيولوجية الحديثة وأنظمة التعقيم."
+      },
+      {
+        "slug": "med-lab-4",
+        "image": "/images/slider-2.webp",
+        "titleEn": "Physiology & Biochemistry Lab",
+        "titleAr": "مخبر الفيزيولوجيا والكيمياء الحيوية",
+        "departmentEn": "Department of Physiology",
+        "departmentAr": "قسم الفيزيولوجيا",
+        "instructorEn": "Dr. Nada Hassan",
+        "instructorAr": "د. ندى حسن",
+        "summaryEn": "Features equipment for hematology analysis, biochemical assays, and physiological measurements including ECG, EEG, and spirometry systems.",
+        "summaryAr": "يضم معدات لتحليل أمراض الدم والاختبارات الكيميائية الحيوية وقياسات الفيزيولوجيا بما في ذلك أنظمة تخطيط القلب والدماغ وكشف التنفس."
+      },
+      {
+        "slug": "med-lab-5",
+        "image": "/images/slider-3.webp",
+        "titleEn": "Pathology Laboratory",
+        "titleAr": "مخبر علم الأمراض",
+        "departmentEn": "Department of Pathology",
+        "departmentAr": "قسم علم الأمراض",
+        "instructorEn": "Dr. Mohammed Ali",
+        "instructorAr": "د. محمد علي",
+        "summaryEn": "Equipped for tissue processing, slide preparation, and microscopic examination with modern immunohistochemistry and digital pathology systems.",
+        "summaryAr": "مجهز للمعالجة النسيجية وإعداد الشرائح والفحص المجهري مع أنظمة الكيمياء المناعية المرضية والباثولوجيا الرقمية الحديثة."
+      },
+      {
+        "slug": "med-lab-6",
+        "image": "/images/slider-4.webp",
+        "titleEn": "Surgery Training Lab",
+        "titleAr": "مخبر التدريب الجراحي",
+        "departmentEn": "Department of Surgery",
+        "departmentAr": "قسم الجراحة",
+        "instructorEn": "Dr. Youssef Ahmad",
+        "instructorAr": "د. يوسف أحمد",
+        "summaryEn": "Features laparoscopic training boxes, surgical instrumentation stations, and suture practice models for pre-clinical surgical skills development.",
+        "summaryAr": "يضم صناديق التدريب على المنظار البطني ومحطات أدوات الجراحة ونماذج ممارسة الخياطة لتطوير المهارات الجراحية قبل السريرية."
+      }
+    ],
+    "departmentPage": {
+      "facultyEn": "Medicine",
+      "facultyAr": "الطب البشري",
+      "heroImage": "/images/about/leadership/medicine-dean.jpg",
+      "accent": "#bc2428",
+      "summaryEn": "Mock department data for SPU medicine, based on a six-year clinical model with foundational sciences, hospital training, and applied medical practice.",
+      "summaryAr": "بيانات تجريبية لكلية الطب البشري في الجامعة السورية الخاصة، مبنية على نموذج سريري من ست سنوات يجمع العلوم الأساسية والتدريب في المشافي والممارسة الطبية.",
+      "stats": [
+        {
+          "value": "7",
+          "labelEn": "Departments",
+          "labelAr": "أقسام"
+        },
+        {
+          "value": "256",
+          "labelEn": "Credit Hours",
+          "labelAr": "ساعة معتمدة"
+        },
+        {
+          "value": "5",
+          "labelEn": "Training Hospitals",
+          "labelAr": "مشافي تدريبية"
+        }
+      ],
+      "departments": [
+        {
+          "slug": "department-of-anatomy-and-histology",
+          "code": "01",
+          "nameEn": "Department of Anatomy and Histology",
+          "nameAr": "قسم التشريح والنسج",
+          "summaryEn": "Introduces human anatomy, histology, embryology, and lab-based understanding of body systems.",
+          "summaryAr": "يعرف بتشريح الإنسان والنسج وعلم الجنين والفهم المخبري لأجهزة الجسم.",
+          "degreesEn": "MD foundation",
+          "degreesAr": "مرحلة تأسيسية",
+          "tags": [
+            "Anatomy",
+            "Histology",
+            "Lab"
+          ]
+        },
+        {
+          "slug": "department-of-physiology-and-biochemistry",
+          "code": "02",
+          "nameEn": "Department of Physiology and Biochemistry",
+          "nameAr": "قسم الفيزيولوجيا والكيمياء الحيوية",
+          "summaryEn": "Connects body function, metabolism, molecular medicine, and the scientific basis of clinical reasoning.",
+          "summaryAr": "يربط وظائف الجسم والاستقلاب والطب الجزيئي والأساس العلمي للتفكير السريري.",
+          "degreesEn": "MD foundation",
+          "degreesAr": "مرحلة تأسيسية",
+          "tags": [
+            "Physiology",
+            "Biochemistry",
+            "Systems"
+          ]
+        },
+        {
+          "slug": "department-of-pathology-and-microbiology",
+          "code": "03",
+          "nameEn": "Department of Pathology and Microbiology",
+          "nameAr": "قسم الأمراض والأحياء الدقيقة",
+          "summaryEn": "Studies disease mechanisms, infection, immunity, lab diagnosis, and antimicrobial stewardship.",
+          "summaryAr": "يدرس آليات المرض والعدوى والمناعة والتشخيص المخبري وترشيد استخدام المضادات.",
+          "degreesEn": "MD pre-clinical",
+          "degreesAr": "مرحلة ما قبل السريرية",
+          "tags": [
+            "Pathology",
+            "Microbiology",
+            "Immunity"
+          ]
+        },
+        {
+          "slug": "department-of-internal-medicine",
+          "code": "04",
+          "nameEn": "Department of Internal Medicine",
+          "nameAr": "قسم الأمراض الباطنة",
+          "summaryEn": "Develops diagnosis and management skills across cardiology, pulmonology, gastroenterology, and endocrine cases.",
+          "summaryAr": "يطور مهارات التشخيص والتدبير في أمراض القلب والصدر والهضم والغدد وغيرها.",
+          "degreesEn": "MD clinical",
+          "degreesAr": "مرحلة سريرية",
+          "tags": [
+            "Diagnosis",
+            "Cardiology",
+            "Rounds"
+          ]
+        },
+        {
+          "slug": "department-of-general-surgery",
+          "code": "05",
+          "nameEn": "Department of General Surgery",
+          "nameAr": "قسم الجراحة العامة",
+          "summaryEn": "Covers surgical principles, operating room practice, emergency surgery, and postoperative care.",
+          "summaryAr": "يغطي مبادئ الجراحة والعمل في غرف العمليات وجراحة الإسعاف والرعاية بعد العمل الجراحي.",
+          "degreesEn": "MD clinical",
+          "degreesAr": "مرحلة سريرية",
+          "tags": [
+            "Surgery",
+            "OR",
+            "Emergency"
+          ]
+        },
+        {
+          "slug": "department-of-pediatrics",
+          "code": "06",
+          "nameEn": "Department of Pediatrics",
+          "nameAr": "قسم طب الأطفال",
+          "summaryEn": "Focuses on child health, growth, vaccination, common pediatric conditions, and family-centered care.",
+          "summaryAr": "يركز على صحة الطفل والنمو واللقاحات والأمراض الشائعة عند الأطفال والرعاية المتمحورة حول الأسرة.",
+          "degreesEn": "MD clinical",
+          "degreesAr": "مرحلة سريرية",
+          "tags": [
+            "Children",
+            "Growth",
+            "Vaccines"
+          ]
+        },
+        {
+          "slug": "department-of-obstetrics-and-gynecology",
+          "code": "07",
+          "nameEn": "Department of Obstetrics and Gynecology",
+          "nameAr": "قسم التوليد وأمراض النساء",
+          "summaryEn": "Covers maternal health, obstetric care, gynecologic diagnosis, reproductive health, and clinical simulation.",
+          "summaryAr": "يغطي صحة الأم والرعاية التوليدية والتشخيص النسائي والصحة الإنجابية والمحاكاة السريرية.",
+          "degreesEn": "MD clinical",
+          "degreesAr": "مرحلة سريرية",
+          "tags": [
+            "Maternal",
+            "OBGYN",
+            "Simulation"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "dentistry",
+    "internalSlug": "dentistry",
+    "publicSlug": "dentistry",
+    "nameEn": "Faculty of Dentistry",
+    "nameAr": "كلية طب الأسنان",
+    "catalogTitleEn": "Faculty of Dentistry",
+    "catalogTitleAr": "كلية طب الأسنان",
+    "summaryEn": "Innovative approaches to comprehensive oral health.",
+    "summaryAr": "مناهج مبتكرة للرعاية الصحية الفموية الشاملة.",
+    "descriptionEn": "The faculty is distinguished by its modern specialized clinics, allowing students to practice under expert supervision with a focus on dental implants.",
+    "descriptionAr": "تتميز الكلية بعياداتها التخصصية الحديثة التي تتيح للطلاب ممارسة المهنة فعلياً تحت إشراف نخبة من الأساتذة، مع التركيز على أحدث تقنيات زراعة وتقويم الأسنان.",
+    "color": "#1f77b4",
+    "yearsEn": "5 Years",
+    "yearsAr": "5 سنوات",
+    "heroImage": "/images/dental-place.JPG",
+    "logo": "/images/spu-dentistry-logo.png",
+    "gallery": [
+      "/images/faculities/dental/clinic-2.jpg",
+      "/images/faculities/dental/lab.jpg",
+      "/images/faculities/dental/labs.jpg",
+      "/images/faculities/dental/ventom-lab.jpg"
+    ],
+    "tabs": [
+      {
+        "id": "overview",
+        "labelEn": "Overview",
+        "labelAr": "لمحة عن الكلية",
+        "contentEn": "The faculty is distinguished by its modern specialized clinics, allowing students to practice under expert supervision with a focus on dental implants.",
+        "contentAr": "تتميز الكلية بعياداتها التخصصية الحديثة التي تتيح للطلاب ممارسة المهنة فعلياً تحت إشراف نخبة من الأساتذة، مع التركيز على أحدث تقنيات زراعة وتقويم الأسنان."
+      },
+      {
+        "id": "vision",
+        "labelEn": "Our Vision",
+        "labelAr": "رؤيتنا",
+        "contentEn": "To be the distinguished reference center for dental sciences in Syria.",
+        "contentAr": "أن نكون المركز المرجعي المتميز لعلوم طب الأسنان في سوريا."
+      },
+      {
+        "id": "mission",
+        "labelEn": "Our Mission",
+        "labelAr": "رسالتنا",
+        "contentEn": "Providing high-quality academic and practical training.",
+        "contentAr": "تقديم تعليم أكاديمي وتدريبي عالي الجودة يلبي احتياجات سوق العمل الطبي."
+      },
+      {
+        "id": "objectives",
+        "labelEn": "Objectives",
+        "labelAr": "أهدافنا",
+        "contentEn": "Graduating dentists capable of providing best oral care.",
+        "contentAr": "تخريج أطباء أسنان قادرين على تقديم أفضل رعاية فموية ودمج التكنولوجيا في العلاج."
+      }
+    ],
+    "dean": {
+      "slug": "talaat-abu-hatab",
+      "sectionLabelAr": "رسالة عميد الكلية",
+      "sectionLabelEn": "Dean's Message",
+      "titlePrefixAr": "كلمة",
+      "titlePrefixEn": "The",
+      "nameAr": "د. طلعت أبو حطب",
+      "nameEn": "Dr. Talaat Abu Hatab",
+      "roleAr": "عميد كلية طب الأسنان",
+      "roleEn": "Dean of Dentistry Faculty",
+      "image": "/images/about/leadership/dental-dean.jpg",
+      "messageAr": "نلتزم بتوفير بيئة تعليمية تدمج بين العلوم الأساسية والتدريب العملي المتقدم في العيادات التخصصية لضمان كفاءة ممارسة المهنة.",
+      "messageEn": "We are committed to providing an educational environment that integrates basic sciences with advanced practical training in specialized clinics.",
+      "ctaAr": "الرؤية الاستراتيجية الكاملة",
+      "ctaEn": "Read Full Strategic Vision"
+    },
+    "stats": [
+      {
+        "value": "10",
+        "labelEn": "Training Clinics",
+        "labelAr": "عيادات تدريبية",
+        "icon": "/images/icons/clinic.svg"
+      },
+      {
+        "value": "5",
+        "labelEn": "Study Years",
+        "labelAr": "سنوات الدراسة",
+        "icon": "/images/icons/years.svg"
+      },
+      {
+        "value": "187",
+        "labelEn": "Credit Hours",
+        "labelAr": "ساعة معتمدة",
+        "icon": "/images/icons/hours.svg"
+      },
+      {
+        "value": "120",
+        "labelEn": "Dental Chairs",
+        "labelAr": "كراسي طبية",
+        "icon": "/images/icons/chair.svg"
+      }
+    ],
+    "highlights": [
+      {
+        "key": "scientific-research",
+        "value": "+1800",
+        "icon": "/images/icons/file.svg",
+        "url": null,
+        "titleEn": "Scientific Research",
+        "titleAr": "أبحاث علمية"
+      },
+      {
+        "key": "credit-hours",
+        "value": "187",
+        "icon": "/images/icons/hours.svg",
+        "url": null,
+        "titleEn": "Credit Hours",
+        "titleAr": "ساعة معتمدة"
+      },
+      {
+        "key": "specialized-clinics",
+        "value": "10",
+        "icon": "/images/icons/clinic.svg",
+        "url": "/campusLifeDental",
+        "titleEn": "Specialized Clinics",
+        "titleAr": "عيادات تخصصية"
+      },
+      {
+        "key": "dental-chairs",
+        "value": "120",
+        "icon": "/images/icons/chair.svg",
+        "url": "/facilities/dentistry/labs",
+        "titleEn": "Dental Chairs",
+        "titleAr": "كراسي طبية"
+      },
+      {
+        "key": "honor-list",
+        "value": "Top",
+        "icon": "/images/icons/award.svg",
+        "url": "/facilities/dentistry/valedictorians",
+        "titleEn": "Honor List",
+        "titleAr": "قائمة الشرف"
+      }
+    ],
+    "labs": [
+      {
+        "slug": "den-lab-1",
+        "image": "/images/dental-clin-lab.jpg",
+        "titleEn": "Clinical Simulation Lab",
+        "titleAr": "مخبر المحاكاة السريرية",
+        "departmentEn": "Restorative Dentistry",
+        "departmentAr": "قسم المعالجة والترميم",
+        "instructorEn": "Dr. Maya Hasan",
+        "instructorAr": "د. مايا حسن",
+        "summaryEn": "Pre-clinical stations for restorative dentistry, operative procedures, ergonomics, and supervised skill repetition before patient care with phantom heads and dental units.",
+        "summaryAr": "محطات تدريب قبل سريرية للمعالجة والترميم والإجراءات العملية ووضعيات العمل، بإشراف مباشر قبل الانتقال إلى رعاية المرضى مع رؤوس المحاكاة والوحدات السنية."
+      },
+      {
+        "slug": "den-lab-2",
+        "image": "/images/vantom-lab-den.jpg",
+        "titleEn": "Prosthodontics & Dental Materials Lab",
+        "titleAr": "مخبر التعويضات والمواد السنية",
+        "departmentEn": "Prosthodontics Department",
+        "departmentAr": "قسم التعويضات السنية",
+        "instructorEn": "Dr. Tarek Nasser",
+        "instructorAr": "د. طارق Nasser",
+        "summaryEn": "Practical environment for fixed and removable prostheses, occlusion analysis, impression workflows, and material handling with articulators and casting tools.",
+        "summaryAr": "بيئة عملية للتعويضات الثابتة والمتحركة وتحليل الإطباق وسير عمل الطبعات والتعامل مع المواد السنية مع أجهزة الإطباق وأدوات الصب."
+      },
+      {
+        "slug": "den-lab-3",
+        "image": "/images/dental-place.JPG",
+        "titleEn": "Oral Health Training Clinic",
+        "titleAr": "عيادة تدريب صحة الفم",
+        "departmentEn": "Periodontology and Oral Medicine",
+        "departmentAr": "قسم أمراض اللثة وطب الفم",
+        "instructorEn": "Dr. Lina Karam",
+        "instructorAr": "د. لينا كرم",
+        "summaryEn": "Supervised clinical setting connecting preventive dentistry, diagnosis, patient communication, and community oral health service with digital imaging access.",
+        "summaryAr": "بيئة سريرية بإشراف أكاديمي تربط طب الأسنان الوقائي والتشخيص والتواصل مع المرضى وخدمة صحة الفم المجتمعية مع إتاحة التصوير الرقمي."
+      },
+      {
+        "slug": "den-lab-4",
+        "image": "/images/dental-clin-lab.jpg",
+        "titleEn": "Dental Imaging Lab",
+        "titleAr": "مخبر تصوير الأسنان",
+        "departmentEn": "Oral and Maxillofacial Surgery",
+        "departmentAr": "قسم جراحة الفم والفكين",
+        "instructorEn": "Dr. Bassem Darwish",
+        "instructorAr": "د. بسام درويش",
+        "summaryEn": "Equipped with panoramic and intraoral radiographic systems, 3D cone beam CT, and digital imaging workstations for diagnostic accuracy.",
+        "summaryAr": "مجهز بأنظمة التصوير الشعاعي البانورامي والفموي ومنظم الأشعة المخروطي 3D ومحطات عمل التصوير الرقمي للدقة التشخيصية."
+      }
+    ],
+    "departmentPage": null
+  },
+  {
+    "id": "pharmacy",
+    "internalSlug": "pharmacy",
+    "publicSlug": "pharmacy",
+    "nameEn": "Faculty of Pharmacy",
+    "nameAr": "كلية الصيدلة",
+    "catalogTitleEn": "Faculty of Pharmacy",
+    "catalogTitleAr": "كلية الصيدلة",
+    "summaryEn": "Pioneering research in modern pharmaceutical sciences.",
+    "summaryAr": "أبحاث رائدة في العلوم الصيدلانية الحديثة.",
+    "descriptionEn": "Focusing on modern pharmaceutical sciences and their applications.",
+    "descriptionAr": "تركز الكلية على العلوم الدوائية الحديثة وتطبيقاتها في الصناعة والرعاية السريرية، وتضم مختبرات كيميائية وحيوية متطورة.",
+    "color": "#5ebe7b",
+    "yearsEn": "5 Years",
+    "yearsAr": "5 سنوات",
+    "heroImage": "/images/slider-3.webp",
+    "logo": "/images/spu-pharmacy-logo.png",
+    "gallery": [
+      "/images/faculities/pharmacy/lab.jpg",
+      "/images/faculities/pharmacy/hall.jpg"
+    ],
+    "tabs": [
+      {
+        "id": "overview",
+        "labelEn": "Overview",
+        "labelAr": "لمحة عن الكلية",
+        "contentEn": "Focusing on modern pharmaceutical sciences and their applications.",
+        "contentAr": "تركز الكلية على العلوم الدوائية الحديثة وتطبيقاتها في الصناعة والرعاية السريرية، وتضم مختبرات كيميائية وحيوية متطورة."
+      },
+      {
+        "id": "vision",
+        "labelEn": "Our Vision",
+        "labelAr": "رؤيتنا",
+        "contentEn": "Leadership in pharmaceutical sciences.",
+        "contentAr": "الريادة في العلوم الصيدلانية وطنياً ودولياً."
+      },
+      {
+        "id": "mission",
+        "labelEn": "Our Mission",
+        "labelAr": "رسالتنا",
+        "contentEn": "Preparing pharmacists with the skills to elevate the drug system.",
+        "contentAr": "إعداد صيادلة يمتلكون المعرفة والمهارة للارتقاء بالمنظومة الدوائية."
+      },
+      {
+        "id": "objectives",
+        "labelEn": "Objectives",
+        "labelAr": "أهدافنا",
+        "contentEn": "Developing pharmaceutical research.",
+        "contentAr": "تطوير البحث الدوائي وخدمة الرعاية الصحية المجتمعية."
+      }
+    ],
+    "dean": {
+      "slug": "hossam-shahrour",
+      "sectionLabelAr": "رسالة عميد الكلية",
+      "sectionLabelEn": "Dean's Message",
+      "titlePrefixAr": "كلمة",
+      "titlePrefixEn": "The",
+      "nameAr": "أ.د. حسام شحرور",
+      "nameEn": "Dr. Hossam Shahrour",
+      "roleAr": "عميد كلية الصيدلة",
+      "roleEn": "Dean of the Faculty",
+      "image": "/images/about/leadership/pharmacy-dean.jpg",
+      "messageAr": "نهدف إلى تخريج صيادلة ذوي كفاءة عالية في مجال الصناعة الدوائية والتحليل والرعاية الصيدلانية السريرية.",
+      "messageEn": "Our goal is to graduate highly efficient pharmacists in pharmaceutical industry and clinical pharmacy care.",
+      "ctaAr": "الرؤية الاستراتيجية الكاملة",
+      "ctaEn": "Read Full Strategic Vision"
+    },
+    "stats": [
+      {
+        "value": "15",
+        "labelEn": "Specialized Labs",
+        "labelAr": "مختبر تخصصي",
+        "icon": "/images/icons/lab.svg"
+      },
+      {
+        "value": "5",
+        "labelEn": "Study Years",
+        "labelAr": "سنوات الدراسة",
+        "icon": "/images/icons/years.svg"
+      },
+      {
+        "value": "178",
+        "labelEn": "Credit Hours",
+        "labelAr": "ساعة معتمدة",
+        "icon": "/images/icons/hours.svg"
+      },
+      {
+        "value": "Ar / En",
+        "labelEn": "Teaching Language",
+        "labelAr": "لغة التدريس",
+        "icon": "/images/icons/lang.svg"
+      }
+    ],
+    "highlights": [
+      {
+        "key": "scientific-research",
+        "value": "+1200",
+        "icon": "/images/icons/file.svg",
+        "url": null,
+        "titleEn": "Scientific Research",
+        "titleAr": "أبحاث علمية"
+      },
+      {
+        "key": "credit-hours",
+        "value": "178",
+        "icon": "/images/icons/hours.svg",
+        "url": null,
+        "titleEn": "Credit Hours",
+        "titleAr": "ساعة معتمدة"
+      },
+      {
+        "key": "specialized-labs",
+        "value": "15",
+        "icon": "/images/icons/lab.svg",
+        "url": null,
+        "titleEn": "Specialized Labs",
+        "titleAr": "مختبرات تخصصية"
+      },
+      {
+        "key": "training-opportunities",
+        "value": "Active",
+        "icon": "/images/icons/training.svg",
+        "url": null,
+        "titleEn": "Training Opportunities",
+        "titleAr": "فرص تدريبية"
+      },
+      {
+        "key": "honor-list",
+        "value": "Top",
+        "icon": "/images/icons/award.svg",
+        "url": "/facilities/pharmacy/valedictorians",
+        "titleEn": "Honor List",
+        "titleAr": "قائمة الشرف"
+      }
+    ],
+    "labs": [
+      {
+        "slug": "pharm-lab-1",
+        "image": "/images/pharmacy-place.jpg",
+        "titleEn": "Pharmaceutical Chemistry Lab",
+        "titleAr": "مخبر الكيمياء الصيدلية",
+        "departmentEn": "Department of Pharmaceutical Chemistry",
+        "departmentAr": "قسم الكيمياء الصيدلية",
+        "instructorEn": "Dr. Rami Hamdan",
+        "instructorAr": "د. رامي حمدان",
+        "summaryEn": "Equipped for drug synthesis, analytical chemistry techniques, and structure-activity relationship studies with modern spectroscopic instrumentation.",
+        "summaryAr": "مجهز لاصطناع الأدوية وتقنيات الكيمياء التحليلية ودراسات علاقات البنية بالفعالية مع أجهزة التحليل الطيفي الحديثة."
+      },
+      {
+        "slug": "pharm-lab-2",
+        "image": "/images/pharmacy-place.jpg",
+        "titleEn": "Pharmacology & Toxicology Lab",
+        "titleAr": "مخبر علم الأدوية والسموم",
+        "departmentEn": "Department of Pharmacology",
+        "departmentAr": "قسم علم الأدوية",
+        "instructorEn": "Dr. Hala Sheikh",
+        "instructorAr": "د. هالة شيخ",
+        "summaryEn": "Features bioassay systems, drug screening equipment, and toxicology analysis instruments for studying therapeutic drug actions and safety profiles.",
+        "summaryAr": "يضم أنظمة التحليل الحيوي ومعدات فحص الأدوية وأدوات تحليل السموم لدراسة تأثيرات الأدوية العلاجية وآمانها."
+      },
+      {
+        "slug": "pharm-lab-3",
+        "image": "/images/pharmacy-place.jpg",
+        "titleEn": "Pharmaceutics & Quality Control Lab",
+        "titleAr": "مخبر الصيدلانيات ومراقبة الجودة",
+        "departmentEn": "Department of Pharmaceutics",
+        "departmentAr": "قسم الصيدلانيات",
+        "instructorEn": "Dr. Qusai Ahmad",
+        "instructorAr": "د. قسسي أحمد",
+        "summaryEn": "Features dissolution testing, tablet compression, granulation equipment, and quality control instruments for pharmaceutical product development.",
+        "summaryAr": "يضم معدات اختبار الذوبان والضغط اللوحي والتدرج وأدوات مراقبة الجودة لتطوير المنتجات الصيدلانية."
+      },
+      {
+        "slug": "pharm-lab-4",
+        "image": "/images/pharmacy-place.jpg",
+        "titleEn": "Clinical Pharmacy Practice Lab",
+        "titleAr": "مخبر الصيدلة السريرية التطبيقية",
+        "departmentEn": "Department of Clinical Pharmacy",
+        "departmentAr": "قسم الصيدلة السريرية",
+        "instructorEn": "Dr. Yara Mustafa",
+        "instructorAr": "د. يارا مصطفى",
+        "summaryEn": "Simulated pharmacy environment for medication counseling, drug information retrieval, and clinical case discussion with patient simulation scenarios.",
+        "summaryAr": "بيئة صيدلية محاكاة لاستشارات الأدوية واسترجاع معلومات الأدوية ومناقشة الحالات السريرية مع سيناريوهات محاكاة المرضى."
+      },
+      {
+        "slug": "pharm-lab-5",
+        "image": "/images/pharmacy-place.jpg",
+        "titleEn": "Pharmacognosy & Natural Products Lab",
+        "titleAr": "مخبر العقاقير والمنتجات الطبيعية",
+        "departmentEn": "Department of Pharmacognosy",
+        "departmentAr": "قسم العقاقير",
+        "instructorEn": "Dr. Dunia Hassan",
+        "instructorAr": "د. دنيا حسن",
+        "summaryEn": "Equipped for plant extraction, phytochemical analysis, and natural product identification with chromatography and spectroscopy systems.",
+        "summaryAr": "مجهز للاستخلاص النباتي والتحليل الكيميائي النباتي والتعرف على المنتجات الطبيعية مع أنظمة الكروماتوغرافيا والتحليل الطيفي."
+      }
+    ],
+    "departmentPage": {
+      "facultyEn": "Pharmacy",
+      "facultyAr": "الصيدلة",
+      "heroImage": "/images/pharmacy-place.jpg",
+      "accent": "#5ebe7b",
+      "summaryEn": "Mock department data for SPU pharmacy, reflecting drug formulation, quality control, therapeutics, and professional pharmacy practice.",
+      "summaryAr": "بيانات تجريبية لكلية الصيدلة في الجامعة السورية الخاصة، تعكس صياغة الأدوية ومراقبة الجودة والعلاجات والممارسة الصيدلانية المهنية.",
+      "stats": [
+        {
+          "value": "5",
+          "labelEn": "Departments",
+          "labelAr": "أقسام"
+        },
+        {
+          "value": "15",
+          "labelEn": "Specialized Labs",
+          "labelAr": "مختبرات تخصصية"
+        },
+        {
+          "value": "5",
+          "labelEn": "Study Years",
+          "labelAr": "سنوات الدراسة"
+        }
+      ],
+      "departments": [
+        {
+          "slug": "department-of-pharmaceutics",
+          "code": "01",
+          "nameEn": "Department of Pharmaceutics",
+          "nameAr": "قسم الصيدلانيات",
+          "summaryEn": "Covers dosage forms, formulation design, biopharmaceutics, and industrial pharmacy basics.",
+          "summaryAr": "يغطي الأشكال الصيدلانية وتصميم الصيغ والصيدلانيات الحيوية وأساسيات الصناعة الدوائية.",
+          "degreesEn": "BPharm pathway",
+          "degreesAr": "مسار صيدلة",
+          "tags": [
+            "Formulation",
+            "Dosage",
+            "Industry"
+          ]
+        },
+        {
+          "slug": "department-of-pharmaceutical-chemistry",
+          "code": "02",
+          "nameEn": "Department of Pharmaceutical Chemistry",
+          "nameAr": "قسم الكيمياء الصيدلية",
+          "summaryEn": "Studies medicinal chemistry, drug synthesis, structure activity relationships, and analytical methods.",
+          "summaryAr": "يدرس الكيمياء الدوائية واصطناع الأدوية وعلاقات البنية بالفعالية وطرائق التحليل.",
+          "degreesEn": "BPharm pathway",
+          "degreesAr": "مسار صيدلة",
+          "tags": [
+            "Medicinal",
+            "Synthesis",
+            "Analysis"
+          ]
+        },
+        {
+          "slug": "department-of-pharmacology-and-toxicology",
+          "code": "03",
+          "nameEn": "Department of Pharmacology and Toxicology",
+          "nameAr": "قسم علم الأدوية والسموم",
+          "summaryEn": "Focuses on drug action, therapeutic classes, adverse effects, toxicology, and evidence-based medicine.",
+          "summaryAr": "يركز على تأثير الدواء والزمر العلاجية والتأثيرات الجانبية والسموم والطب المبني على الدليل.",
+          "degreesEn": "BPharm pathway",
+          "degreesAr": "مسار صيدلة",
+          "tags": [
+            "Therapeutics",
+            "Safety",
+            "Toxicology"
+          ]
+        },
+        {
+          "slug": "department-of-pharmacognosy",
+          "code": "04",
+          "nameEn": "Department of Pharmacognosy",
+          "nameAr": "قسم العقاقير",
+          "summaryEn": "Explores natural products, medicinal plants, extraction, quality, and phytochemical identification.",
+          "summaryAr": "يستكشف المنتجات الطبيعية والنباتات الطبية والاستخلاص والجودة والتعرف الكيميائي النباتي.",
+          "degreesEn": "BPharm pathway",
+          "degreesAr": "مسار صيدلة",
+          "tags": [
+            "Natural",
+            "Plants",
+            "Quality"
+          ]
+        },
+        {
+          "slug": "department-of-clinical-pharmacy",
+          "code": "05",
+          "nameEn": "Department of Clinical Pharmacy",
+          "nameAr": "قسم الصيدلة السريرية",
+          "summaryEn": "Builds patient counseling, medication review, hospital pharmacy, and safe medication-use skills.",
+          "summaryAr": "يبني مهارات إرشاد المرضى ومراجعة الأدوية والصيدلة المشفوية والاستخدام الآمن للدواء.",
+          "degreesEn": "BPharm pathway",
+          "degreesAr": "مسار صيدلة",
+          "tags": [
+            "Clinical",
+            "Counseling",
+            "Hospital"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "ai-engineering",
+    "internalSlug": "ai-engineering",
+    "publicSlug": "artificial-intelligence",
+    "nameEn": "Faculty of AI Engineering",
+    "nameAr": "كلية هندسة الذكاء الاصطناعي",
+    "catalogTitleEn": "Faculty of Artificial Intelligence Engineering",
+    "catalogTitleAr": "كلية هندسة الذكاء الاصطناعي",
+    "summaryEn": "A technology-focused facility for machine learning, robotics, data systems, and digital innovation.",
+    "summaryAr": "كلية تقنية متخصصة في تعلم الآلة والروبوتات وأنظمة البيانات والابتكار الرقمي.",
+    "descriptionEn": "The first of its kind in Syria, focusing on ML and Robotics.",
+    "descriptionAr": "تعتبر الكلية الأولى من نوعها في سوريا، حيث توفر بيئة برمجية وتقنية متقدمة لدراسة تعلم الآلة، الروبوتات، ومعالجة البيانات الكبيرة.",
+    "color": "#683695",
+    "yearsEn": "5 Years",
+    "yearsAr": "5 سنوات",
+    "heroImage": "/images/faculities/group-fac-building.jpg",
+    "logo": "/images/spu-ai-logo.png",
+    "gallery": [
+      "/images/faculities/ai/car-robot.jpg",
+      "/images/faculities/ai/computer-lab.jpg",
+      "/images/faculities/ai/places.jpg",
+      "/images/faculities/ai/circle.JPG"
+    ],
+    "tabs": [
+      {
+        "id": "overview",
+        "labelEn": "Overview",
+        "labelAr": "لمحة عن الكلية",
+        "contentEn": "The first of its kind in Syria, focusing on ML and Robotics.",
+        "contentAr": "تعتبر الكلية الأولى من نوعها في سوريا، حيث توفر بيئة برمجية وتقنية متقدمة لدراسة تعلم الآلة، الروبوتات، ومعالجة البيانات الكبيرة."
+      },
+      {
+        "id": "vision",
+        "labelEn": "Our Vision",
+        "labelAr": "رؤيتنا",
+        "contentEn": "Leading digital innovation.",
+        "contentAr": "قيادة الابتكار الرقمي والذكاء الاصطناعي."
+      },
+      {
+        "id": "mission",
+        "labelEn": "Our Mission",
+        "labelAr": "رسالتنا",
+        "contentEn": "Building engineers for the 4th Industrial Revolution.",
+        "contentAr": "بناء جيل مهندسين يقودون الثورة الصناعية الرابعة."
+      },
+      {
+        "id": "objectives",
+        "labelEn": "Objectives",
+        "labelAr": "أهدافنا",
+        "contentEn": "Empowering students with cloud tools.",
+        "contentAr": "تمكين الطلاب من أدوات الحوسبة السحابية وهندسة البيانات."
+      }
+    ],
+    "dean": {
+      "slug": "mouhib-alnoukari",
+      "sectionLabelAr": "رسالة عميد الكلية",
+      "sectionLabelEn": "Dean's Message",
+      "titlePrefixAr": "كلمة",
+      "titlePrefixEn": "The",
+      "nameAr": "د. مهيب النقري",
+      "nameEn": "Dr. Mouhib Alnoukari",
+      "roleAr": "عميد كلية هندسة الذكاء الاصطناعي",
+      "roleEn": "Dean of the Faculty",
+      "image": "/images/about/leadership/Ai-dean.jpg",
+      "messageAr": "نحن نؤمن بأن الذكاء الاصطناعي هو المحرك الأساسي للاقتصاد القادم، لذا نعد طلابنا ليكونوا صناع هذا المستقبل الرقمي.",
+      "messageEn": "We believe AI is the core engine of the future economy, preparing our students to be digital makers.",
+      "ctaAr": "الرؤية الاستراتيجية الكاملة",
+      "ctaEn": "Read Full Strategic Vision"
+    },
+    "stats": [
+      {
+        "value": "8",
+        "labelEn": "Software Labs",
+        "labelAr": "مختبرات برمجية",
+        "icon": "/images/icons/software.svg"
+      },
+      {
+        "value": "5",
+        "labelEn": "Study Years",
+        "labelAr": "سنوات الدراسة",
+        "icon": "/images/icons/years.svg"
+      },
+      {
+        "value": "165",
+        "labelEn": "Credit Hours",
+        "labelAr": "ساعة معتمدة",
+        "icon": "/images/icons/hours.svg"
+      },
+      {
+        "value": "40+",
+        "labelEn": "AI Projects",
+        "labelAr": "مشاريع ذكية",
+        "icon": "/images/icons/ai.svg"
+      }
+    ],
+    "highlights": [
+      {
+        "key": "ai-research",
+        "value": "+500",
+        "icon": "/images/icons/file.svg",
+        "url": null,
+        "titleEn": "AI Research",
+        "titleAr": "أبحاث الذكاء"
+      },
+      {
+        "key": "credit-hours",
+        "value": "165",
+        "icon": "/images/icons/hours.svg",
+        "url": null,
+        "titleEn": "Credit Hours",
+        "titleAr": "ساعة معتمدة"
+      },
+      {
+        "key": "smart-labs",
+        "value": "8",
+        "icon": "/images/icons/software.svg",
+        "url": null,
+        "titleEn": "Smart Labs",
+        "titleAr": "مختبرات ذكية"
+      },
+      {
+        "key": "applied-projects",
+        "value": "40+",
+        "icon": "/images/icons/ai.svg",
+        "url": null,
+        "titleEn": "Applied Projects",
+        "titleAr": "مشاريع تطبيقية"
+      },
+      {
+        "key": "honor-list",
+        "value": "Top",
+        "icon": "/images/icons/award.svg",
+        "url": "/facilities/artificial-intelligence/valedictorians",
+        "titleEn": "Honor List",
+        "titleAr": "قائمة الشرف"
+      }
+    ],
+    "labs": [
+      {
+        "slug": "ai-lab-1",
+        "image": "/images/faculities/ai/lab.jpg",
+        "titleEn": "Machine Learning Lab",
+        "titleAr": "مخبر تعلم الآلة",
+        "departmentEn": "Department of AI",
+        "departmentAr": "قسم الذكاء الاصطناعي",
+        "instructorEn": "Dr. Mouhib Alnoukari",
+        "instructorAr": "د. مهيب النقري",
+        "summaryEn": "Equipped with GPU workstations, deep learning frameworks, and data science tools for training and deploying machine learning models.",
+        "summaryAr": "مجهز بمحطات عمل GPU وأطر التعلم العميق وأدوات علم البيانات لتدريب ونشر نماذج تعلم الآلة."
+      },
+      {
+        "slug": "ai-lab-2",
+        "image": "/images/faculities/ai/lab.jpg",
+        "titleEn": "Robotics & Automation Lab",
+        "titleAr": "مخبر الروبوتات والأتمتة",
+        "departmentEn": "Department of Software Engineering",
+        "departmentAr": "قسم هندسة البرمجيات",
+        "instructorEn": "Dr. Omar Khalil",
+        "instructorAr": "د. عمر خليل",
+        "summaryEn": "Features industrial robot arms, autonomous vehicles, and embedded systems platforms for hands-on robotics and automation projects.",
+        "summaryAr": "يضم أذرع الروبوتات الصناعية والمركبات ذاتية التشغيل ومنصات الأنظمة المدمجة لمشاريع الروبوتات والأتمتة العملية."
+      },
+      {
+        "slug": "ai-lab-3",
+        "image": "/images/faculities/ai/lab.jpg",
+        "titleEn": "Data Science & Big Data Lab",
+        "titleAr": "مخبر علم البيانات والبيانات الضخمة",
+        "departmentEn": "Department of Computer Science",
+        "departmentAr": "قسم علوم الحاسوب",
+        "instructorEn": "Dr. Rania Shah",
+        "instructorAr": "د. رانيا شاه",
+        "summaryEn": "High-performance computing clusters, big data frameworks, and visualization tools for processing and analyzing large-scale datasets.",
+        "summaryAr": "عناقيد الحوسبة عالية الأداء وأطر البيانات الضخمة وأدوات التصور لمعالجة وتحليل مجموعات البيانات واسعة النطاق."
+      },
+      {
+        "slug": "ai-lab-4",
+        "image": "/images/faculities/ai/lab.jpg",
+        "titleEn": "Computer Vision & NLP Lab",
+        "titleAr": "مخبر الرؤية الحاسوبية ومعالجة اللغة",
+        "departmentEn": "Department of AI",
+        "departmentAr": "قسم الذكاء الاصطناعي",
+        "instructorEn": "Dr. Yazan Kassab",
+        "instructorAr": "د. يزن كساب",
+        "summaryEn": "Equipped for image processing, object detection, natural language processing, and speech recognition research with specialized AI models.",
+        "summaryAr": "مجهز لمعالجة الصور وكشف الأشياء ومعالجة اللغة الطبيعية والتعرف على الكلام مع نماذج الذكاء الاصطناعي المتخصصة."
+      },
+      {
+        "slug": "ai-lab-5",
+        "image": "/images/faculities/ai/lab.jpg",
+        "titleEn": "Cloud Computing & IoT Lab",
+        "titleAr": "مخبر الحوسبة السحابية وإنترنت الأشياء",
+        "departmentEn": "Department of Information Systems",
+        "departmentAr": "قسم نظم المعلومات",
+        "instructorEn": "Dr. Nisreen Haddadin",
+        "instructorAr": "د. نسرين حدادين",
+        "summaryEn": "Features cloud platforms, container orchestration tools, and IoT sensor networks for developing distributed and connected applications.",
+        "summaryAr": "يضم منصات سحابية وأدوات تنظيم الحاويات وشبكات حساسات إنترنت الأشياء لتطوير التطبيقات الموزعة والمتصل."
+      }
+    ],
+    "departmentPage": {
+      "facultyEn": "Artificial Intelligence",
+      "facultyAr": "الذكاء الاصطناعي",
+      "heroImage": "/images/faculities/ai/lab.jpg",
+      "accent": "#683695",
+      "summaryEn": "Mock academic department data for SPU AI programs, shaped around computing foundations, intelligent systems, and applied software practice.",
+      "summaryAr": "بيانات تجريبية لأقسام كلية الذكاء الاصطناعي في الجامعة السورية الخاصة، مبنية حول الحوسبة والأنظمة الذكية والتطبيق العملي.",
+      "stats": [
+        {
+          "value": "4",
+          "labelEn": "Departments",
+          "labelAr": "أقسام"
+        },
+        {
+          "value": "165",
+          "labelEn": "Credit Hours",
+          "labelAr": "ساعة معتمدة"
+        },
+        {
+          "value": "8",
+          "labelEn": "Software Labs",
+          "labelAr": "مخابر برمجية"
+        }
+      ],
+      "departments": [
+        {
+          "slug": "department-of-computer-science",
+          "code": "01",
+          "nameEn": "Department of Computer Science",
+          "nameAr": "قسم علوم الحاسوب",
+          "summaryEn": "Focuses on algorithms, software engineering, operating systems, databases, and theoretical foundations of computing.",
+          "summaryAr": "يركز على الخوارزميات وهندسة البرمجيات ونظم التشغيل وقواعد البيانات والأسس النظرية للحوسبة.",
+          "degreesEn": "BSc pathway",
+          "degreesAr": "مسار بكالوريوس",
+          "tags": [
+            "Algorithms",
+            "Databases",
+            "Systems"
+          ]
+        },
+        {
+          "slug": "department-of-artificial-intelligence",
+          "code": "02",
+          "nameEn": "Department of Artificial Intelligence",
+          "nameAr": "قسم الذكاء الاصطناعي",
+          "summaryEn": "Covers machine learning, neural networks, computer vision, natural language processing, and cognitive computing.",
+          "summaryAr": "يغطي تعلم الآلة والشبكات العصبونية والرؤية الحاسوبية ومعالجة اللغة الطبيعية والحوسبة المعرفية.",
+          "degreesEn": "BSc pathway",
+          "degreesAr": "مسار بكالوريوس",
+          "tags": [
+            "ML",
+            "Vision",
+            "NLP"
+          ]
+        },
+        {
+          "slug": "department-of-information-systems",
+          "code": "03",
+          "nameEn": "Department of Information Systems",
+          "nameAr": "قسم نظم المعلومات",
+          "summaryEn": "Bridges business and technology through data management, enterprise systems, analytics, and IT strategy.",
+          "summaryAr": "يربط بين الأعمال والتكنولوجيا عبر إدارة البيانات ونظم المؤسسات والتحليلات واستراتيجية تقنية المعلومات.",
+          "degreesEn": "BSc pathway",
+          "degreesAr": "مسار بكالوريوس",
+          "tags": [
+            "Analytics",
+            "ERP",
+            "Data"
+          ]
+        },
+        {
+          "slug": "department-of-software-engineering",
+          "code": "04",
+          "nameEn": "Department of Software Engineering",
+          "nameAr": "قسم هندسة البرمجيات",
+          "summaryEn": "Emphasizes software design, development, testing, maintenance, product delivery, and team-based engineering practice.",
+          "summaryAr": "يركز على تصميم البرمجيات وتطويرها واختبارها وصيانتها وتسليم المنتجات والعمل الهندسي ضمن فرق.",
+          "degreesEn": "BSc pathway",
+          "degreesAr": "مسار بكالوريوس",
+          "tags": [
+            "Design",
+            "Testing",
+            "DevOps"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "Construction",
+    "internalSlug": "construction",
+    "publicSlug": "building-construction-engineering",
+    "nameEn": "Construction Engineering",
+    "nameAr": "كلية هندسة التشييد والبناء",
+    "catalogTitleEn": "Faculty of Building & Construction Engineering",
+    "catalogTitleAr": "كلية هندسة التشييد والبناء",
+    "summaryEn": "Preparing engineers for construction planning, infrastructure, project management, and reconstruction.",
+    "summaryAr": "إعداد مهندسين في تخطيط التشييد والبنى التحتية وإدارة المشاريع وإعادة الإعمار.",
+    "descriptionEn": "Preparing engineers in planning and management.",
+    "descriptionAr": "تعد مهندسين متميزين في تخطيط وإدارة مشاريع التشييد، مع التركيز على التقنيات الحديثة في التصميم وإعادة الإعمار.",
+    "color": "#7f8c8d",
+    "yearsEn": "5 Years",
+    "yearsAr": "5 سنوات",
+    "heroImage": "/images/faculities/group-fac-building.jpg",
+    "logo": "/images/spu-construction-logo.png",
+    "gallery": [
+      "/images/faculities/group-fac-building.jpg",
+      "/images/slider-4.jpg",
+      "/images/campus-feature-01.webp"
+    ],
+    "tabs": [
+      {
+        "id": "overview",
+        "labelEn": "Overview",
+        "labelAr": "لمحة عن الكلية",
+        "contentEn": "Preparing engineers in planning and management.",
+        "contentAr": "تعد مهندسين متميزين في تخطيط وإدارة مشاريع التشييد، مع التركيز على التقنيات الحديثة في التصميم وإعادة الإعمار."
+      },
+      {
+        "id": "vision",
+        "labelEn": "Our Vision",
+        "labelAr": "رؤيتنا",
+        "contentEn": "Excellence in reconstruction engineering.",
+        "contentAr": "التميز في التعليم الهندسي لإعادة الإعمار."
+      },
+      {
+        "id": "mission",
+        "labelEn": "Our Mission",
+        "labelAr": "رسالتنا",
+        "contentEn": "Integrating theory with construction tech.",
+        "contentAr": "توفير بيئة تعليمية تدمج بين النظرية وأحدث تقنيات البناء."
+      },
+      {
+        "id": "objectives",
+        "labelEn": "Objectives",
+        "labelAr": "أهدافنا",
+        "contentEn": "Mastering modern project management.",
+        "contentAr": "إتقان إدارة المشاريع الهندسية الحديثة."
+      }
+    ],
+    "dean": {
+      "slug": "ammar-ghada",
+      "sectionLabelAr": "رسالة عميد الكلية",
+      "sectionLabelEn": "Dean's Message",
+      "titlePrefixAr": "كلمة",
+      "titlePrefixEn": "The",
+      "nameAr": "د. عمار غضة",
+      "nameEn": "Dr. Ammar Ghada",
+      "roleAr": "عميد كلية هندسة التشييد والبناء",
+      "roleEn": "Dean of the Faculty",
+      "image": "/images/uni-main-place.JPG",
+      "messageAr": "نسعى لإعداد مهندسين يمتلكون المعرفة العلمية والمهارات التطبيقية في هندسة التشييد والبناء للمساهمة في إعادة الإعمار.",
+      "messageEn": "We aim to prepare engineers with scientific knowledge to contribute to the reconstruction efforts.",
+      "ctaAr": "الرؤية الاستراتيجية الكاملة",
+      "ctaEn": "Read Full Strategic Vision"
+    },
+    "stats": [
+      {
+        "value": "160",
+        "labelEn": "Training Hours",
+        "labelAr": "ساعات تدريبية",
+        "icon": "/images/icons/training.svg"
+      },
+      {
+        "value": "5",
+        "labelEn": "Study Years",
+        "labelAr": "سنوات الدراسة",
+        "icon": "/images/icons/years.svg"
+      },
+      {
+        "value": "6",
+        "labelEn": "Eng Labs",
+        "labelAr": "مخابر هندسية",
+        "icon": "/images/icons/lab-eng.svg"
+      },
+      {
+        "value": "Full Support",
+        "labelEn": "BIM Software",
+        "labelAr": "برمجيات BIM",
+        "icon": "/images/icons/bim.svg"
+      }
+    ],
+    "highlights": [
+      {
+        "key": "engineering-research",
+        "value": "+300",
+        "icon": "/images/icons/file.svg",
+        "url": null,
+        "titleEn": "Engineering Research",
+        "titleAr": "أبحاث هندسية"
+      },
+      {
+        "key": "training-hours",
+        "value": "160",
+        "icon": "/images/icons/training.svg",
+        "url": null,
+        "titleEn": "Training Hours",
+        "titleAr": "ساعات تدريبية"
+      },
+      {
+        "key": "eng-labs",
+        "value": "6",
+        "icon": "/images/icons/lab-eng.svg",
+        "url": null,
+        "titleEn": "Eng Labs",
+        "titleAr": "مخابر هندسية"
+      },
+      {
+        "key": "bim-tech",
+        "value": "Full",
+        "icon": "/images/icons/bim.svg",
+        "url": null,
+        "titleEn": "BIM Tech",
+        "titleAr": "تقنيات BIM"
+      },
+      {
+        "key": "honor-list",
+        "value": "Top",
+        "icon": "/images/icons/award.svg",
+        "url": "/facilities/building-construction-engineering/valedictorians",
+        "titleEn": "Honor List",
+        "titleAr": "قائمة الشرف"
+      }
+    ],
+    "labs": [
+      {
+        "slug": "construct-lab-1",
+        "image": "/images/slider-3.webp",
+        "titleEn": "Structural Engineering Lab",
+        "titleAr": "مخبر الهندسة الإنشائية",
+        "departmentEn": "Department of Structural Engineering",
+        "departmentAr": "قسم الهندسة الإنشائية",
+        "instructorEn": "Dr. Ammar Ghada",
+        "instructorAr": "د. عمار غضة",
+        "summaryEn": "Features concrete testing equipment, steel tension machines, and structural analysis software for studying building materials and structural behavior.",
+        "summaryAr": "يضم معدات اختبار الخرسانة وآلات شد الفولاذ وبرامج التحليل الإنشائي لدراسة مواد البناء والسلوك الإنشائي."
+      },
+      {
+        "slug": "construct-lab-2",
+        "image": "/images/slider-3.webp",
+        "titleEn": "Construction Materials Lab",
+        "titleAr": "مخبر مواد البناء",
+        "departmentEn": "Department of Building Materials",
+        "departmentAr": "قسم مواد البناء",
+        "instructorEn": "Dr. Hala Kassar",
+        "instructorAr": "د. هالة كصر",
+        "summaryEn": "Equipped for material testing including compression machines, durability assessment tools, and mix design equipment for concrete and asphalt.",
+        "summaryAr": "مجهز لاختبار المواد بما في ذلك آلات الانضغاط وأدوات تقييم المتانة ومعدات تصميم الخلطات للخرسانة والأسفلت."
+      },
+      {
+        "slug": "construct-lab-3",
+        "image": "/images/slider-3.webp",
+        "titleEn": "Surveying & Geomatics Lab",
+        "titleAr": "مخبر المساحة والهندسة الجيوماتيكية",
+        "departmentEn": "Department of Surveying and Infrastructure",
+        "departmentAr": "قسم المساحة والبنى التحتية",
+        "instructorEn": "Dr. Khaldoun Halabi",
+        "instructorAr": "د. خلدون حلبية",
+        "summaryEn": "Features total stations, GPS surveying equipment, GIS software, and drone mapping systems for land surveying and infrastructure planning.",
+        "summaryAr": "يضم المحطات الشاملة ومعدات المسح GPS وبرامج نظم المعلومات الجغرافية وأنظمة رسم الخرائط بالطائرات بدون طيار للمساحة والتخطيط."
+      },
+      {
+        "slug": "construct-lab-4",
+        "image": "/images/slider-3.webp",
+        "titleEn": "BIM & Construction Management Lab",
+        "titleAr": "مخبر BIM وإدارة التشييد",
+        "departmentEn": "Department of Construction Management",
+        "departmentAr": "قسم إدارة التشييد",
+        "instructorEn": "Dr. Rami Hamdan",
+        "instructorAr": "د. رامي حمدان",
+        "summaryEn": "Equipped with BIM software stations, project management tools, and construction scheduling systems for planning and managing construction projects.",
+        "summaryAr": "مجهز بمحطات برامج BIM وأدوات إدارة المشاريع وأنظمة جدولة البناء لتخطيط وإدارة مشاريع التشييد."
+      },
+      {
+        "slug": "construct-lab-5",
+        "image": "/images/slider-3.webp",
+        "titleEn": "Geotechnical Lab",
+        "titleAr": "مخبر الجيوتكنيك",
+        "departmentEn": "Department of Surveying and Infrastructure",
+        "departmentAr": "قسم المساحة والبنى التحتية",
+        "instructorEn": "Dr. Sarah Ahmad",
+        "instructorAr": "د. سارة أحمد",
+        "summaryEn": "Features soil testing equipment, triaxial testing machines, and geotechnical analysis tools for studying ground behavior and foundation design.",
+        "summaryAr": "يضم معدات اختبار التربة وآلات الاختبار الثلاثية وأدوات التحليل الجيوتكنيكي لدراسة سلوك الأرض وتصميم الأساسات."
+      }
+    ],
+    "departmentPage": {
+      "facultyEn": "Building & Construction Engineering",
+      "facultyAr": "هندسة التشييد والبناء",
+      "heroImage": "/images/slider-3.webp",
+      "accent": "#7f8c8d",
+      "summaryEn": "Mock department data for SPU construction engineering, centered on structures, materials, project delivery, and reconstruction needs.",
+      "summaryAr": "بيانات تجريبية لهندسة التشييد والبناء في الجامعة السورية الخاصة، تتمحور حول المنشآت والمواد وتنفيذ المشاريع واحتياجات إعادة الإعمار.",
+      "stats": [
+        {
+          "value": "4",
+          "labelEn": "Departments",
+          "labelAr": "أقسام"
+        },
+        {
+          "value": "160",
+          "labelEn": "Training Hours",
+          "labelAr": "ساعات تدريبية"
+        },
+        {
+          "value": "6",
+          "labelEn": "Engineering Labs",
+          "labelAr": "مخابر هندسية"
+        }
+      ],
+      "departments": [
+        {
+          "slug": "department-of-structural-engineering",
+          "code": "01",
+          "nameEn": "Department of Structural Engineering",
+          "nameAr": "قسم الهندسة الإنشائية",
+          "summaryEn": "Focuses on reinforced concrete, steel structures, analysis, design codes, and seismic performance.",
+          "summaryAr": "يركز على الخرسانة المسلحة والمنشآت المعدنية والتحليل والكودات التصميمية والأداء الزلزالي.",
+          "degreesEn": "BSc pathway",
+          "degreesAr": "مسار بكالوريوس",
+          "tags": [
+            "Concrete",
+            "Steel",
+            "Seismic"
+          ]
+        },
+        {
+          "slug": "department-of-construction-management",
+          "code": "02",
+          "nameEn": "Department of Construction Management",
+          "nameAr": "قسم إدارة التشييد",
+          "summaryEn": "Covers scheduling, cost control, contracts, site management, safety, and quality assurance.",
+          "summaryAr": "يغطي الجدولة وضبط الكلفة والعقود وإدارة الموقع والسلامة وضمان الجودة.",
+          "degreesEn": "BSc pathway",
+          "degreesAr": "مسار بكالوريوس",
+          "tags": [
+            "Cost",
+            "Contracts",
+            "Safety"
+          ]
+        },
+        {
+          "slug": "department-of-building-materials",
+          "code": "03",
+          "nameEn": "Department of Building Materials",
+          "nameAr": "قسم مواد البناء",
+          "summaryEn": "Studies concrete technology, material testing, durability, sustainability, and local construction resources.",
+          "summaryAr": "يدرس تقانة الخرسانة واختبار المواد والمتانة والاستدامة وموارد البناء المحلية.",
+          "degreesEn": "BSc pathway",
+          "degreesAr": "مسار بكالوريوس",
+          "tags": [
+            "Testing",
+            "Durability",
+            "Sustainability"
+          ]
+        },
+        {
+          "slug": "department-of-surveying-and-infrastructure",
+          "code": "04",
+          "nameEn": "Department of Surveying and Infrastructure",
+          "nameAr": "قسم المساحة والبنى التحتية",
+          "summaryEn": "Introduces surveying, roads, utilities, geotechnical basics, and infrastructure coordination.",
+          "summaryAr": "يعرف بالمساحة والطرق والمرافق وأساسيات الجيوتكنيك وتنسيق البنى التحتية.",
+          "degreesEn": "BSc pathway",
+          "degreesAr": "مسار بكالوريوس",
+          "tags": [
+            "Surveying",
+            "Roads",
+            "Utilities"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "petroleum",
+    "internalSlug": "petroleum",
+    "publicSlug": "petroleum",
+    "nameEn": "Petroleum Engineering",
+    "nameAr": "كلية هندسة البترول",
+    "catalogTitleEn": "Faculty of Petroleum Engineering",
+    "catalogTitleAr": "كلية هندسة البترول",
+    "summaryEn": "Provides specialized education in petroleum engineering and energy systems.",
+    "summaryAr": "تقدم تعليماً متخصصاً في هندسة البترول وأنظمة الطاقة.",
+    "descriptionEn": "Providing technical expertise for oil and gas exploration.",
+    "descriptionAr": "تزود الكلية الطلاب بالخبرات التقنية اللازمة لاستكشاف وإنتاج النفط والغاز، مع تدريبات ميدانية في المنشآت الطاقية.",
+    "color": "#0b5759",
+    "yearsEn": "5 Years",
+    "yearsAr": "5 سنوات",
+    "heroImage": "/images/faculities/group-fac-building.jpg",
+    "logo": "/images/spu-petroleum-logo.png",
+    "gallery": [
+      "/images/faculities/petrol/lab-ch.jpg",
+      "/images/faculities/petrol/lab-geo.JPG"
+    ],
+    "tabs": [
+      {
+        "id": "overview",
+        "labelEn": "Overview",
+        "labelAr": "لمحة عن الكلية",
+        "contentEn": "Providing technical expertise for oil and gas exploration.",
+        "contentAr": "تزود الكلية الطلاب بالخبرات التقنية اللازمة لاستكشاف وإنتاج النفط والغاز، مع تدريبات ميدانية في المنشآت الطاقية."
+      },
+      {
+        "id": "vision",
+        "labelEn": "Our Vision",
+        "labelAr": "رؤيتنا",
+        "contentEn": "To be the reference center for energy sciences.",
+        "contentAr": "أن نكون المركز المرجعي لعلوم الطاقة والبترول."
+      },
+      {
+        "id": "mission",
+        "labelEn": "Our Mission",
+        "labelAr": "رسالتنا",
+        "contentEn": "Graduating competent engineers for international sites.",
+        "contentAr": "تخريج مهندسين أكفاء للعمل في المنشآت النفطية الدولية."
+      },
+      {
+        "id": "objectives",
+        "labelEn": "Objectives",
+        "labelAr": "أهدافنا",
+        "contentEn": "Enhancing drilling and reservoir skills.",
+        "contentAr": "تعزيز مهارات الحفر وهندسة المكامن الجوفية."
+      }
+    ],
+    "dean": {
+      "slug": "mahmoud-hadid",
+      "sectionLabelAr": "رسالة عميد الكلية",
+      "sectionLabelEn": "Dean's Message",
+      "titlePrefixAr": "كلمة",
+      "titlePrefixEn": "The",
+      "nameAr": "د. محمود حديد",
+      "nameEn": "Dr. Mahmoud Hadid",
+      "roleAr": "عميد كلية هندسة البترول",
+      "roleEn": "Dean of the Faculty",
+      "image": "/images/about/leadership/petrol-dean.jpg",
+      "messageAr": "نعمل على تزويد طلابنا بالخبرات التقنية اللازمة للعمل في صناعة النفط والغاز مع مراعاة معايير السلامة والبيئة.",
+      "messageEn": "We work to provide students with the technical expertise for the oil industry with safety standards.",
+      "ctaAr": "الرؤية الاستراتيجية الكاملة",
+      "ctaEn": "Read Full Strategic Vision"
+    },
+    "stats": [
+      {
+        "value": "4",
+        "labelEn": "Energy Labs",
+        "labelAr": "مختبرات طاقة",
+        "icon": "/images/icons/oil.svg"
+      },
+      {
+        "value": "5",
+        "labelEn": "Study Years",
+        "labelAr": "سنوات الدراسة",
+        "icon": "/images/icons/years.svg"
+      },
+      {
+        "value": "160",
+        "labelEn": "Credit Hours",
+        "labelAr": "ساعة معتمدة",
+        "icon": "/images/icons/hours.svg"
+      },
+      {
+        "value": "Required",
+        "labelEn": "Field Training",
+        "labelAr": "تدريب ميداني",
+        "icon": "/images/icons/field.svg"
+      }
+    ],
+    "highlights": [
+      {
+        "key": "energy-research",
+        "value": "+450",
+        "icon": "/images/icons/file.svg",
+        "url": null,
+        "titleEn": "Energy Research",
+        "titleAr": "أبحاث طاقة"
+      },
+      {
+        "key": "credit-hours",
+        "value": "160",
+        "icon": "/images/icons/hours.svg",
+        "url": null,
+        "titleEn": "Credit Hours",
+        "titleAr": "ساعة معتمدة"
+      },
+      {
+        "key": "energy-labs",
+        "value": "4",
+        "icon": "/images/icons/oil.svg",
+        "url": null,
+        "titleEn": "Energy Labs",
+        "titleAr": "مختبرات طاقة"
+      },
+      {
+        "key": "field-training",
+        "value": "Done",
+        "icon": "/images/icons/field.svg",
+        "url": null,
+        "titleEn": "Field Training",
+        "titleAr": "تدريب ميداني"
+      },
+      {
+        "key": "honor-list",
+        "value": "Top",
+        "icon": "/images/icons/award.svg",
+        "url": "/facilities/petroleum/valedictorians",
+        "titleEn": "Honor List",
+        "titleAr": "قائمة الشرف"
+      }
+    ],
+    "labs": [
+      {
+        "slug": "petrol-lab-1",
+        "image": "/images/slider-3.webp",
+        "titleEn": "Drilling Engineering Lab",
+        "titleAr": "مخبر هندسة الحفر",
+        "departmentEn": "Department of Drilling Engineering",
+        "departmentAr": "قسم هندسة الحفر",
+        "instructorEn": "Dr. Jean Saad",
+        "instructorAr": "د. جان سعد",
+        "summaryEn": "Equipped with drilling simulator, mud testing equipment, and well control training systems for hands-on drilling operations practice.",
+        "summaryAr": "مجهز بمحاكي الحفر ومعدات اختبار سوائل الحفر وأنظمة تدريب السيطرة على الآبار للممارسة العملية لعمليات الحفر."
+      },
+      {
+        "slug": "petrol-lab-2",
+        "image": "/images/slider-3.webp",
+        "titleEn": "Reservoir Engineering Lab",
+        "titleAr": "مخبر هندسة المكامن",
+        "departmentEn": "Department of Reservoir Engineering",
+        "departmentAr": "قسم هندسة المكامن",
+        "instructorEn": "Dr. Samer Khalil",
+        "instructorAr": "د. سامر خليل",
+        "summaryEn": "Features core analysis equipment, PVT analysis instruments, and reservoir simulation software for studying fluid behavior in porous media.",
+        "summaryAr": "يضم معدات تحليل اللباب وأدوات تحليل الضغط والحجم والحرارة وبرامج محاكاة المكامن لدراسة سلوك السوائل في الوسائط المسامية."
+      },
+      {
+        "slug": "petrol-lab-3",
+        "image": "/images/slider-3.webp",
+        "titleEn": "Production & Processing Lab",
+        "titleAr": "مخبر الإنتاج والمعالجة",
+        "departmentEn": "Department of Petroleum Production",
+        "departmentAr": "قسم إنتاج النفط والغاز",
+        "instructorEn": "Dr. Maher Ahmad",
+        "instructorAr": "د. ماهر أحمد",
+        "summaryEn": "Equipped with separator testing units, flow measurement systems, and production optimization equipment for oil and gas processing training.",
+        "summaryAr": "مجهز بوحدات اختبار الفاصل وأنظمة قياس التدفق ومعدات تحسين الإنتاج للتدريب على معالجة النفط والغاز."
+      },
+      {
+        "slug": "petrol-lab-4",
+        "image": "/images/slider-3.webp",
+        "titleEn": "Petroleum Geology Lab",
+        "titleAr": "مخبر الجيولوجيا البترولية",
+        "departmentEn": "Department of Petroleum Geology",
+        "departmentAr": "قسم الجيولوجيا البترولية",
+        "instructorEn": "Dr. Layla Hassan",
+        "instructorAr": "د. ليلا حسن",
+        "summaryEn": "Features geological modeling tools, seismic analysis software, and rock sample analysis equipment for exploration and reservoir characterization.",
+        "summaryAr": "يضم أدوات النمذجة الجيولوجية وبرامج التحليل الزلزالي ومعدات تحليل عينات الصخور للاستكشاف وتوصيف المكامن."
+      }
+    ],
+    "departmentPage": {
+      "facultyEn": "Petroleum Engineering",
+      "facultyAr": "هندسة البترول",
+      "heroImage": "/images/petroleom-dean.jpg",
+      "accent": "#0b5759",
+      "summaryEn": "Mock department data for SPU petroleum engineering, organized around energy labs, field training, drilling, reservoirs, and production systems.",
+      "summaryAr": "بيانات تجريبية لكلية هندسة البترول في الجامعة السورية الخاصة، منظمة حول مخابر الطاقة والتدريب الميداني والحفر والمكامن وأنظمة الإنتاج.",
+      "stats": [
+        {
+          "value": "4",
+          "labelEn": "Departments",
+          "labelAr": "أقسام"
+        },
+        {
+          "value": "160",
+          "labelEn": "Credit Hours",
+          "labelAr": "ساعة معتمدة"
+        },
+        {
+          "value": "4",
+          "labelEn": "Energy Labs",
+          "labelAr": "مخابر طاقة"
+        }
+      ],
+      "departments": [
+        {
+          "slug": "department-of-drilling-engineering",
+          "code": "01",
+          "nameEn": "Department of Drilling Engineering",
+          "nameAr": "قسم هندسة الحفر",
+          "summaryEn": "Covers drilling systems, well planning, mud engineering, safety, and field operations.",
+          "summaryAr": "يغطي أنظمة الحفر وتخطيط الآبار وهندسة سوائل الحفر والسلامة والعمليات الحقلية.",
+          "degreesEn": "BSc pathway",
+          "degreesAr": "مسار بكالوريوس",
+          "tags": [
+            "Drilling",
+            "Safety",
+            "Wells"
+          ]
+        },
+        {
+          "slug": "department-of-reservoir-engineering",
+          "code": "02",
+          "nameEn": "Department of Reservoir Engineering",
+          "nameAr": "قسم هندسة المكامن",
+          "summaryEn": "Studies reservoir characterization, fluids, simulation, recovery methods, and production forecasting.",
+          "summaryAr": "يدرس توصيف المكامن والموائع والمحاكاة وطرق الاستخلاص وتوقعات الإنتاج.",
+          "degreesEn": "BSc pathway",
+          "degreesAr": "مسار بكالوريوس",
+          "tags": [
+            "Reservoirs",
+            "Simulation",
+            "Recovery"
+          ]
+        },
+        {
+          "slug": "department-of-petroleum-production",
+          "code": "03",
+          "nameEn": "Department of Petroleum Production",
+          "nameAr": "قسم إنتاج النفط والغاز",
+          "summaryEn": "Focuses on well completion, artificial lift, surface facilities, production optimization, and maintenance.",
+          "summaryAr": "يركز على إكمال الآبار والرفع الاصطناعي والمنشآت السطحية وتحسين الإنتاج والصيانة.",
+          "degreesEn": "BSc pathway",
+          "degreesAr": "مسار بكالوريوس",
+          "tags": [
+            "Production",
+            "Facilities",
+            "Lift"
+          ]
+        },
+        {
+          "slug": "department-of-petroleum-geology",
+          "code": "04",
+          "nameEn": "Department of Petroleum Geology",
+          "nameAr": "قسم الجيولوجيا البترولية",
+          "summaryEn": "Introduces sedimentology, geophysics, exploration workflows, mapping, and subsurface interpretation.",
+          "summaryAr": "يعرف بالرسوبيات والجيوفيزياء وسير عمل الاستكشاف والخرائط وتفسير باطن الأرض.",
+          "degreesEn": "BSc pathway",
+          "degreesAr": "مسار بكالوريوس",
+          "tags": [
+            "Geology",
+            "Exploration",
+            "Mapping"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "business",
+    "internalSlug": "business",
+    "publicSlug": "business-administration",
+    "nameEn": "Business Administration",
+    "nameAr": "كلية إدارة الأعمال",
+    "catalogTitleEn": "Faculty of Business Administration",
+    "catalogTitleAr": "كلية إدارة الأعمال",
+    "summaryEn": "Developing visionary leaders for a dynamic global economy.",
+    "summaryAr": "تطوير قادة ذوي رؤية لاقتصاد عالمي ديناميكي.",
+    "descriptionEn": "Qualifying entrepreneurs and business leaders.",
+    "descriptionAr": "تؤهل الكلية رواد أعمال وقادة للمؤسسات، عبر تخصصات مرنة تشمل المحاسبة، التسويق، والتمويل.",
+    "color": "#caa949",
+    "yearsEn": "4 Years",
+    "yearsAr": "4 سنوات",
+    "heroImage": "/images/faculities/group-fac-building.jpg",
+    "logo": "/images/spu-business-logo.png",
+    "gallery": [
+      "/images/faculities/group-fac-building.jpg",
+      "/images/slider-4.jpg",
+      "/images/campus-feature-01.webp"
+    ],
+    "tabs": [
+      {
+        "id": "overview",
+        "labelEn": "Overview",
+        "labelAr": "لمحة عن الكلية",
+        "contentEn": "Qualifying entrepreneurs and business leaders.",
+        "contentAr": "تؤهل الكلية رواد أعمال وقادة للمؤسسات، عبر تخصصات مرنة تشمل المحاسبة، التسويق، والتمويل."
+      },
+      {
+        "id": "vision",
+        "labelEn": "Our Vision",
+        "labelAr": "رؤيتنا",
+        "contentEn": "Leadership in graduating business leaders.",
+        "contentAr": "الريادة في تخريج رواد أعمال وقادة للمؤسسات الاقتصادية."
+      },
+      {
+        "id": "mission",
+        "labelEn": "Our Mission",
+        "labelAr": "رسالتنا",
+        "contentEn": "Linking managerial knowledge with market challenges.",
+        "contentAr": "ربط المعرفة الإدارية بتحديات سوق العمل الفعلي."
+      },
+      {
+        "id": "objectives",
+        "labelEn": "Objectives",
+        "labelAr": "أهدافنا",
+        "contentEn": "Developing strategic planning skills.",
+        "contentAr": "تنمية مهارات التخطيط الاستراتيجي والذكاء المالي."
+      }
+    ],
+    "dean": {
+      "slug": "samar-habib",
+      "sectionLabelAr": "رسالة عميد الكلية",
+      "sectionLabelEn": "Dean's Message",
+      "titlePrefixAr": "كلمة",
+      "titlePrefixEn": "The",
+      "nameAr": "أ.د. سمر حبيب",
+      "nameEn": "Dr. Samar Habib",
+      "roleAr": "عميد كلية إدارة الأعمال",
+      "roleEn": "Dean of the Faculty",
+      "image": "/images/about/leadership/busnins-dean.jpg",
+      "messageAr": "كلية إدارة الأعمال هي حاضنة لقادة المستقبل، نوفر تخصصات مرنة تواكب التطور المتسارع في الأسواق المالية والإدارية.",
+      "messageEn": "The Faculty of Business is an incubator for future leaders, offering flexible specializations.",
+      "ctaAr": "الرؤية الاستراتيجية الكاملة",
+      "ctaEn": "Read Full Strategic Vision"
+    },
+    "stats": [
+      {
+        "value": "5",
+        "labelEn": "Management Depts",
+        "labelAr": "أقسام إدارية",
+        "icon": "/images/icons/business.svg"
+      },
+      {
+        "value": "4",
+        "labelEn": "Study Years",
+        "labelAr": "سنوات الدراسة",
+        "icon": "/images/icons/years.svg"
+      },
+      {
+        "value": "136",
+        "labelEn": "Credit Hours",
+        "labelAr": "ساعة معتمدة",
+        "icon": "/images/icons/hours.svg"
+      },
+      {
+        "value": "Active",
+        "labelEn": "Academic Exchange",
+        "labelAr": "تبادل أكاديمي",
+        "icon": "/images/icons/exchange.svg"
+      }
+    ],
+    "highlights": [
+      {
+        "key": "management-research",
+        "value": "+600",
+        "icon": "/images/icons/file.svg",
+        "url": null,
+        "titleEn": "Management Research",
+        "titleAr": "أبحاث إدارية"
+      },
+      {
+        "key": "credit-hours",
+        "value": "136",
+        "icon": "/images/icons/hours.svg",
+        "url": null,
+        "titleEn": "Credit Hours",
+        "titleAr": "ساعة معتمدة"
+      },
+      {
+        "key": "management-depts",
+        "value": "5",
+        "icon": "/images/icons/business.svg",
+        "url": null,
+        "titleEn": "Management Depts",
+        "titleAr": "أقسام إدارية"
+      },
+      {
+        "key": "academic-exchange",
+        "value": "Active",
+        "icon": "/images/icons/exchange.svg",
+        "url": null,
+        "titleEn": "Academic Exchange",
+        "titleAr": "تبادل أكاديمي"
+      },
+      {
+        "key": "honor-list",
+        "value": "Top",
+        "icon": "/images/icons/award.svg",
+        "url": "/facilities/business-administration/valedictorians",
+        "titleEn": "Honor List",
+        "titleAr": "قائمة الشرف"
+      }
+    ],
+    "labs": [],
+    "departmentPage": {
+      "facultyEn": "Business Administration",
+      "facultyAr": "إدارة الأعمال",
+      "heroImage": "/images/about/leadership/busnins-dean.jpg",
+      "accent": "#caa949",
+      "summaryEn": "Mock department data aligned with SPU business education, management practice, finance, marketing, and organizational leadership.",
+      "summaryAr": "بيانات تجريبية منسجمة مع تعليم إدارة الأعمال في الجامعة السورية الخاصة ومجالات الإدارة والتمويل والتسويق والقيادة المؤسسية.",
+      "stats": [
+        {
+          "value": "5",
+          "labelEn": "Departments",
+          "labelAr": "أقسام"
+        },
+        {
+          "value": "136",
+          "labelEn": "Credit Hours",
+          "labelAr": "ساعة معتمدة"
+        },
+        {
+          "value": "4",
+          "labelEn": "Study Years",
+          "labelAr": "سنوات الدراسة"
+        }
+      ],
+      "departments": [
+        {
+          "slug": "department-of-management",
+          "code": "01",
+          "nameEn": "Department of Management",
+          "nameAr": "قسم الإدارة",
+          "summaryEn": "Builds planning, leadership, operations, entrepreneurship, and organizational decision-making skills.",
+          "summaryAr": "يبني مهارات التخطيط والقيادة والعمليات وريادة الأعمال واتخاذ القرار المؤسسي.",
+          "degreesEn": "BSc pathway",
+          "degreesAr": "مسار بكالوريوس",
+          "tags": [
+            "Leadership",
+            "Operations",
+            "Strategy"
+          ]
+        },
+        {
+          "slug": "department-of-accounting",
+          "code": "02",
+          "nameEn": "Department of Accounting",
+          "nameAr": "قسم المحاسبة",
+          "summaryEn": "Focuses on financial accounting, auditing, taxation, reporting standards, and professional ethics.",
+          "summaryAr": "يركز على المحاسبة المالية والتدقيق والضرائب ومعايير التقارير والأخلاقيات المهنية.",
+          "degreesEn": "BSc pathway",
+          "degreesAr": "مسار بكالوريوس",
+          "tags": [
+            "Audit",
+            "Tax",
+            "Reporting"
+          ]
+        },
+        {
+          "slug": "department-of-finance-and-banking",
+          "code": "03",
+          "nameEn": "Department of Finance and Banking",
+          "nameAr": "قسم التمويل والمصارف",
+          "summaryEn": "Covers corporate finance, banking operations, investment analysis, risk, and financial markets.",
+          "summaryAr": "يغطي تمويل الشركات والعمليات المصرفية وتحليل الاستثمار والمخاطر والأسواق المالية.",
+          "degreesEn": "BSc pathway",
+          "degreesAr": "مسار بكالوريوس",
+          "tags": [
+            "Banking",
+            "Risk",
+            "Markets"
+          ]
+        },
+        {
+          "slug": "department-of-marketing",
+          "code": "04",
+          "nameEn": "Department of Marketing",
+          "nameAr": "قسم التسويق",
+          "summaryEn": "Develops market research, brand strategy, consumer behavior, digital marketing, and campaign planning.",
+          "summaryAr": "يطور مهارات بحوث السوق واستراتيجية العلامة وسلوك المستهلك والتسويق الرقمي وتخطيط الحملات.",
+          "degreesEn": "BSc pathway",
+          "degreesAr": "مسار بكالوريوس",
+          "tags": [
+            "Brand",
+            "Digital",
+            "Research"
+          ]
+        },
+        {
+          "slug": "department-of-business-information-systems",
+          "code": "05",
+          "nameEn": "Department of Business Information Systems",
+          "nameAr": "قسم نظم معلومات الأعمال",
+          "summaryEn": "Connects business workflows with databases, decision support, analytics dashboards, and enterprise platforms.",
+          "summaryAr": "يربط سير عمل الأعمال بقواعد البيانات ودعم القرار ولوحات التحليل ومنصات المؤسسات.",
+          "degreesEn": "BSc pathway",
+          "degreesAr": "مسار بكالوريوس",
+          "tags": [
+            "BI",
+            "Dashboards",
+            "ERP"
+          ]
+        }
+      ]
+    }
+  }
+]

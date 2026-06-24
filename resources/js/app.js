@@ -6,6 +6,8 @@ import { createAdmissionsFaq }   from './alpine/admissionsFaq.js';
 import { createAdmissionsTabs }  from './alpine/admissionsTabs.js';
 import { createAdmissionsTuition } from './alpine/admissionsTuition.js';
 import { createAdmissionsDocuments } from './alpine/admissionsDocuments.js';
+import { createCampusLifeGallery } from './alpine/campusLifeGallery.js';
+import { createCampusLifeReveal } from './alpine/campusLifeReveal.js';
 import { initRevealSections }   from './alpine/scrollReveal.js';
 
 // Alpine components (x-data="name()")
@@ -15,6 +17,8 @@ Alpine.data('admissionsFaq',   createAdmissionsFaq);
 Alpine.data('admissionsTabs',  createAdmissionsTabs);
 Alpine.data('admissionsTuition', createAdmissionsTuition);
 Alpine.data('admissionsDocuments', createAdmissionsDocuments);
+Alpine.data('campusLifeGallery', createCampusLifeGallery);
+Alpine.data('campusLifeReveal', createCampusLifeReveal);
 
 window.Alpine = Alpine;
 

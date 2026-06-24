@@ -20,6 +20,8 @@ class Alumni extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $table = 'alumni';
+
     protected $fillable = [
         'student_identifier',
         'email',

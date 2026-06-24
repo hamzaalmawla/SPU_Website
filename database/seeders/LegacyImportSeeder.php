@@ -17,6 +17,7 @@ use Database\Seeders\LegacyImport\ImportLegacyFaqsSeeder;
 use Database\Seeders\LegacyImport\ImportLegacyHomepageSeeder;
 use Database\Seeders\LegacyImport\ImportLegacyHonorStudentsSeeder;
 use Database\Seeders\LegacyImport\ImportLegacyLinksSeeder;
+use Database\Seeders\LegacyImport\ImportLegacyNewsSeeder;
 use Database\Seeders\LegacyImport\ImportLegacyResearchSeeder;
 use Database\Seeders\LegacyImport\ImportLegacySettingsSeeder;
 use Database\Seeders\LegacyImport\ImportLegacyStaticPagesSeeder;
@@ -36,6 +37,7 @@ class LegacyImportSeeder extends Seeder
             ImportLegacyFacultyMembersSeeder::class,
             ImportLegacyCouncilsSeeder::class,
             ImportLegacyResearchSeeder::class,
+            ImportLegacyNewsSeeder::class,
             ImportLegacyFaqsSeeder::class,
             ImportLegacyComplaintsSeeder::class,
             ImportLegacyCareerLinksSeeder::class,
