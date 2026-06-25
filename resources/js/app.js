@@ -8,6 +8,7 @@ import { createAdmissionsTuition } from './alpine/admissionsTuition.js';
 import { createAdmissionsDocuments } from './alpine/admissionsDocuments.js';
 import { createCampusLifeGallery } from './alpine/campusLifeGallery.js';
 import { createCampusLifeReveal } from './alpine/campusLifeReveal.js';
+import { initStudyPlanPages } from './alpine/studyPlan.js';
 import { initRevealSections }   from './alpine/scrollReveal.js';
 
 // Alpine components (x-data="name()")
@@ -45,6 +46,7 @@ function initAfterAlpineStart() {
     requestAnimationFrame(() => {
         requestAnimationFrame(() => {
             initRevealSections();
+            initStudyPlanPages();
         });
     });
 }

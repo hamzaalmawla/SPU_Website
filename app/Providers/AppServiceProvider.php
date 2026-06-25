@@ -13,12 +13,14 @@ use App\Contracts\Homepage\HomepageSectionServiceInterface;
 use App\Contracts\Media\MediaServiceInterface;
 use App\Contracts\Navigation\MenuServiceInterface;
 use App\Contracts\Navigation\NavigationServiceInterface;
+use App\Contracts\News\NewsAdminWorkflowServiceInterface;
 use App\Contracts\News\NewsServiceInterface;
 use App\Contracts\Page\AdmissionsPageServiceInterface;
 use App\Contracts\Page\AboutPageServiceInterface;
 use App\Contracts\Page\CampusLifePageServiceInterface;
 use App\Contracts\Page\ContactPageServiceInterface;
 use App\Contracts\Page\EServicesPageServiceInterface;
+use App\Contracts\Page\FacultyAdminWorkflowServiceInterface;
 use App\Contracts\Page\FacultyPageServiceInterface;
 use App\Contracts\Page\PageServiceInterface;
 use App\Contracts\Page\VirtualTourPageServiceInterface;
@@ -34,9 +36,13 @@ use App\Http\Responses\LogoutResponse;
 use App\Models\Contact\ContactMessage;
 use App\Models\Content\Directorate;
 use App\Models\Content\Partnership;
+use App\Models\Career\Alumni;
+use App\Models\Career\HonorStudent;
 use App\Models\Faculty\Faculty;
 use App\Models\Faculty\FacultyHighlight;
+use App\Models\Faculty\FacultyLab;
 use App\Models\Faculty\FacultyPage;
+use App\Models\Faculty\FacultyStudentProject;
 use App\Models\Media\MediaAsset;
 use App\Models\Navigation\MenuItem;
 use App\Models\News\NewsArticle;
@@ -69,12 +75,14 @@ use App\Services\Media\MediaFileValidator;
 use App\Services\Media\MediaService;
 use App\Services\Navigation\MenuService;
 use App\Services\Navigation\NavigationService;
+use App\Services\News\NewsAdminWorkflowService;
 use App\Services\News\NewsService;
 use App\Services\Page\AdmissionsPageService;
 use App\Services\Page\AboutPageService;
 use App\Services\Page\CampusLifePageService;
 use App\Services\Page\ContactPageService;
 use App\Services\Page\EServicesPageService;
+use App\Services\Page\FacultyAdminWorkflowService;
 use App\Services\Page\FacultyPageService;
 use App\Services\Page\PageDraftService;
 use App\Services\Page\PagePublicReadService;
@@ -195,6 +203,10 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Faculty::class, FacultyDomainPolicy::class);
         Gate::policy(FacultyPage::class, FacultyDomainPolicy::class);
         Gate::policy(FacultyHighlight::class, FacultyDomainPolicy::class);
+        Gate::policy(FacultyLab::class, FacultyDomainPolicy::class);
+        Gate::policy(FacultyStudentProject::class, FacultyDomainPolicy::class);
+        Gate::policy(Alumni::class, FacultyDomainPolicy::class);
+        Gate::policy(HonorStudent::class, FacultyDomainPolicy::class);
 
         Gate::define('manage-users', [UserPolicy::class, 'manageUsers']);
         Gate::define('manage-settings', [UserPolicy::class, 'manageSettings']);
@@ -250,11 +262,13 @@ class AppServiceProvider extends ServiceProvider
             ContinuityServiceInterface::class => ContinuityService::class,
             ContactPageServiceInterface::class => ContactPageService::class,
             EServicesPageServiceInterface::class => EServicesPageService::class,
+            FacultyAdminWorkflowServiceInterface::class => FacultyAdminWorkflowService::class,
             FacultyPageServiceInterface::class => FacultyPageService::class,
             SitemapServiceInterface::class => SitemapService::class,
             MediaServiceInterface::class => MediaService::class,
             SlugServiceInterface::class => SlugService::class,
             MenuServiceInterface::class => MenuService::class,
+            NewsAdminWorkflowServiceInterface::class => NewsAdminWorkflowService::class,
             NewsServiceInterface::class => NewsService::class,
             SeoMetadataServiceInterface::class => SeoMetadataService::class,
             HomepagePreviewAssemblerInterface::class => HomepagePreviewAssembler::class,

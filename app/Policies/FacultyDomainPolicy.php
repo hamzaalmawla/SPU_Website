@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Models\Career\Alumni;
+use App\Models\Career\HonorStudent;
 use App\Models\Faculty\Faculty;
 use App\Models\Faculty\FacultyHighlight;
+use App\Models\Faculty\FacultyLab;
 use App\Models\Faculty\FacultyPage;
+use App\Models\Faculty\FacultyStudentProject;
 use App\Models\User\User;
 
 final class FacultyDomainPolicy
@@ -62,7 +66,7 @@ final class FacultyDomainPolicy
             return $record->faculty_scope_slug ?? $record->public_slug ?? $record->slug;
         }
 
-        if ($record instanceof FacultyPage || $record instanceof FacultyHighlight) {
+        if ($record instanceof FacultyPage || $record instanceof FacultyHighlight || $record instanceof FacultyLab || $record instanceof FacultyStudentProject || $record instanceof Alumni || $record instanceof HonorStudent) {
             $record->loadMissing('faculty');
 
             return $record->faculty?->faculty_scope_slug ?? $record->faculty?->public_slug ?? $record->faculty?->slug;

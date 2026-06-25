@@ -49,6 +49,22 @@ final class FacultyController extends Controller
         return view('public.faculties.subpage', $this->viewPayload($request, $locale, $page, $this->subpageSeo($locale, $page), $this->languageSwitch($locale, '/'.$page->facultySlug.'/'.$page->subpageSlug)));
     }
 
+    public function studyPlan(Request $request, string $locale, string $faculty): View
+    {
+        $page = $this->facultyPageService->getSubpage($faculty, 'study-plan', $locale);
+        abort_if($page === null, 404);
+
+        return view('public.faculties.subpage', $this->viewPayload($request, $locale, $page, $this->subpageSeo($locale, $page), $this->languageSwitch($locale, '/'.$page->facultySlug.'/study-plan')));
+    }
+
+    public function courseLessons(Request $request, string $locale, string $faculty): View
+    {
+        $page = $this->facultyPageService->getSubpage($faculty, 'study-plan-course', $locale);
+        abort_if($page === null, 404);
+
+        return view('public.faculties.subpage', $this->viewPayload($request, $locale, $page, $this->subpageSeo($locale, $page), $this->languageSwitch($locale, '/'.$page->facultySlug.'/study-plan/course')));
+    }
+
     public function redirectLegacy(Request $request, string $locale, ?string $legacyPath = null): RedirectResponse
     {
         $segments = collect(explode('/', trim((string) $legacyPath, '/')))
@@ -108,11 +124,13 @@ final class FacultyController extends Controller
 
     private function subpageSeo(string $locale, FacultySubpageDTO $page): mixed
     {
+        $subpagePath = $page->subpageSlug === 'study-plan-course' ? 'study-plan/course' : $page->subpageSlug;
+
         return $this->seoMetadataService->buildFallback($locale, [
-            'path' => '/'.$locale.'/facilities/'.$page->facultySlug.'/'.$page->subpageSlug,
+            'path' => '/'.$locale.'/facilities/'.$page->facultySlug.'/'.$subpagePath,
             'locale_paths' => [
-                'ar' => '/ar/facilities/'.$page->facultySlug.'/'.$page->subpageSlug,
-                'en' => '/en/facilities/'.$page->facultySlug.'/'.$page->subpageSlug,
+                'ar' => '/ar/facilities/'.$page->facultySlug.'/'.$subpagePath,
+                'en' => '/en/facilities/'.$page->facultySlug.'/'.$subpagePath,
             ],
             'title' => $page->seoTitle,
             'meta_description' => $page->seoDescription,

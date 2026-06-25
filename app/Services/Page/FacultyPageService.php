@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Page;
 
 use App\Contracts\Page\FacultyPageServiceInterface;
+use App\Contracts\Shared\CacheServiceInterface;
 use App\DTOs\Faculty\FacultyCardDTO;
 use App\DTOs\Faculty\FacultyDetailPageDTO;
 use App\DTOs\Faculty\FacultyHighlightDTO;
@@ -28,7 +29,6 @@ use App\Models\Faculty\FacultyStudentProject;
 use App\Models\Faculty\FacultyStudentProjectTranslation;
 use App\Models\Faculty\FacultyTranslation;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Cache;
 
 final class FacultyPageService implements FacultyPageServiceInterface
 {
@@ -41,11 +41,15 @@ final class FacultyPageService implements FacultyPageServiceInterface
         'business' => 'business-administration',
     ];
 
-    private const SUBPAGE_SLUGS = ['overview', 'departments', 'labs', 'projects', 'alumni', 'valedictorians', 'training'];
+    private const SUBPAGE_SLUGS = ['overview', 'departments', 'study-plan', 'study-plan-course', 'labs', 'projects', 'alumni', 'valedictorians', 'training'];
+
+    public function __construct(
+        private readonly CacheServiceInterface $cacheService,
+    ) {}
 
     public function getHub(string $locale): FacultyHubPageDTO
     {
-        return Cache::remember("public.facilities.hub.{$locale}", now()->addMinutes(30), function () use ($locale): FacultyHubPageDTO {
+        return $this->facilitiesCache()->remember("public.facilities.hub.{$locale}", function () use ($locale): FacultyHubPageDTO {
             $faculties = $this->baseFacultyQuery()->get();
 
             $content = [
@@ -86,21 +90,21 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 seoDescription: (string) $content['hero']['summary'],
                 seoImage: '/images/campus-feature-01.webp',
             );
-        });
+        }, 1800);
     }
 
     public function getFaculty(string $facultySlug, string $locale): ?FacultyDetailPageDTO
     {
         $facultySlug = $this->canonicalFacultySlug($facultySlug);
 
-        return Cache::remember("public.facilities.{$facultySlug}.{$locale}", now()->addMinutes(30), function () use ($facultySlug, $locale): ?FacultyDetailPageDTO {
+        return $this->facilitiesCache()->remember("public.facilities.{$facultySlug}.{$locale}", function () use ($facultySlug, $locale): ?FacultyDetailPageDTO {
             $faculty = $this->facultyByPublicSlug($facultySlug);
 
             if (! $faculty instanceof Faculty) {
                 return null;
             }
 
-            $page = $faculty->pages->firstWhere('slug', 'overview') ?? $faculty->pages->first();
+            $page = $this->pageForFaculty($faculty, 'overview') ?? $this->pageForFaculty($faculty, (string) ($faculty->pages->first()?->slug ?? 'overview'));
             $translation = $page instanceof FacultyPage ? $this->pageTranslation($page, $locale) : null;
             $facultyTranslation = $this->facultyTranslation($faculty, $locale);
             $pagePayload = $page instanceof FacultyPage && is_array($page->payload_json) ? $page->payload_json : [];
@@ -127,18 +131,18 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 seoDescription: (string) ($facultyTranslation->short_description ?? $translation?->summary ?? ''),
                 seoImage: (string) ($faculty->hero_image ?: '/images/uni-main-place.JPG'),
             );
-        });
+        }, 1800);
     }
 
     public function getSubpage(string $facultySlug, string $subpageSlug, string $locale): ?FacultySubpageDTO
     {
-        if (! in_array($subpageSlug, self::SUBPAGE_SLUGS, true) || $subpageSlug === 'study-plan') {
+        if (! in_array($subpageSlug, self::SUBPAGE_SLUGS, true)) {
             return null;
         }
 
         $facultySlug = $this->canonicalFacultySlug($facultySlug);
 
-        return Cache::remember("public.facilities.{$facultySlug}.{$subpageSlug}.{$locale}", now()->addMinutes(30), function () use ($facultySlug, $subpageSlug, $locale): ?FacultySubpageDTO {
+        return $this->facilitiesCache()->remember("public.facilities.{$facultySlug}.{$subpageSlug}.{$locale}", function () use ($facultySlug, $subpageSlug, $locale): ?FacultySubpageDTO {
             $faculty = $this->facultyByPublicSlug($facultySlug);
 
             if (! $faculty instanceof Faculty) {
@@ -149,7 +153,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 return null;
             }
 
-            $page = $faculty->pages->firstWhere('slug', $subpageSlug);
+            $page = $this->pageForFaculty($faculty, $subpageSlug);
 
             if (! $page instanceof FacultyPage) {
                 return null;
@@ -179,7 +183,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 seoDescription: (string) ($translation->summary ?? ''),
                 seoImage: (string) ($page->hero_image ?: $faculty->hero_image ?: '/images/uni-main-place.JPG'),
             );
-        });
+        }, 1800);
     }
 
     public function facultySlugPattern(): string
@@ -204,7 +208,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
             ->whereIn('public_slug', self::FACULTY_SLUGS)
             ->with([
                 'translations',
-                'pages' => fn ($query) => $query->enabled()->with('translations'),
+                'pages' => fn ($query) => $query->enabled()->select(['id', 'faculty_id', 'slug', 'kind', 'hero_image', 'sort_order', 'is_enabled'])->with('translations'),
                 'highlights' => fn ($query) => $query->enabled()->with('translations'),
                 'departments' => fn ($query) => $query->enabled()->with('translations'),
                 'labs' => fn ($query) => $query->enabled()->with('translations'),
@@ -218,6 +222,16 @@ final class FacultyPageService implements FacultyPageServiceInterface
     private function facultyByPublicSlug(string $slug): ?Faculty
     {
         return $this->baseFacultyQuery()->where('public_slug', $this->canonicalFacultySlug($slug))->first();
+    }
+
+    private function pageForFaculty(Faculty $faculty, string $slug): ?FacultyPage
+    {
+        return FacultyPage::query()
+            ->enabled()
+            ->where('faculty_id', $faculty->getKey())
+            ->where('slug', $slug)
+            ->with('translations')
+            ->first();
     }
 
     private function cardDto(Faculty $faculty, string $locale): FacultyCardDTO
@@ -271,6 +285,8 @@ final class FacultyPageService implements FacultyPageServiceInterface
         $labels = [
             'overview' => $locale === 'ar' ? 'لمحة عامة' : 'Overview',
             'departments' => $locale === 'ar' ? 'الأقسام' : 'Departments',
+            'study-plan' => $locale === 'ar' ? 'الخطة الدراسية' : 'Study Plan',
+            'study-plan-course' => $locale === 'ar' ? 'محاضرات المقرر' : 'Course Lessons',
             'labs' => $locale === 'ar' ? 'المخابر' : 'Laboratories',
             'projects' => $locale === 'ar' ? 'المشاريع' : 'Projects',
             'alumni' => $locale === 'ar' ? 'الخريجون' : 'Alumni',
@@ -279,7 +295,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
         ];
 
         return $faculty->pages
-            ->filter(fn (FacultyPage $page): bool => in_array($page->slug, self::SUBPAGE_SLUGS, true))
+            ->filter(fn (FacultyPage $page): bool => in_array($page->slug, self::SUBPAGE_SLUGS, true) && $page->slug !== 'study-plan-course')
             ->filter(fn (FacultyPage $page): bool => $this->isAvailableSubpage($slug, (string) $page->slug))
             ->sortBy('sort_order')
             ->map(fn (FacultyPage $page): FacultyNavigationItemDTO => new FacultyNavigationItemDTO(
@@ -318,6 +334,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'alumni' => $this->alumniItems($faculty, $locale),
             'valedictorians' => $this->honorItems($faculty, $locale),
             'training' => $this->localizedPayloadList((is_array($page->payload_json) ? ($page->payload_json['items'] ?? []) : []), $locale),
+            'study-plan', 'study-plan-course' => [],
             default => [],
         };
     }
@@ -560,6 +577,11 @@ final class FacultyPageService implements FacultyPageServiceInterface
     private function url(string $locale, string $path): string
     {
         return '/'.$locale.'/'.ltrim($path, '/');
+    }
+
+    private function facilitiesCache(): CacheServiceInterface
+    {
+        return $this->cacheService->tags(['facilities', 'public-pages', 'seo', 'sitemap']);
     }
 
     /** @param array<string, mixed> $payload @return array<string, mixed> */

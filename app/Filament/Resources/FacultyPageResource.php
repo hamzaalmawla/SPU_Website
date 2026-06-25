@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources;
 
+use App\Contracts\Page\FacultyAdminWorkflowServiceInterface;
 use App\Filament\Resources\FacultyPageResource\Pages;
-use App\Models\Faculty\Faculty;
 use App\Models\Faculty\FacultyPage;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
@@ -28,7 +28,7 @@ class FacultyPageResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
 
-    protected static ?string $navigationGroup = 'Faculties';
+    protected static ?string $navigationGroup = 'Facilities';
 
     protected static ?int $navigationSort = 2;
 
@@ -53,7 +53,7 @@ class FacultyPageResource extends Resource
     {
         return $form->schema([
             Section::make('Page')->schema([
-                Select::make('faculty_id')->relationship('faculty', 'public_slug')->required()->searchable()->preload()->options(fn (): array => Faculty::query()->orderBy('sort_order')->pluck('public_slug', 'id')->all()),
+                Select::make('faculty_id')->required()->searchable()->preload()->options(fn (): array => app(FacultyAdminWorkflowServiceInterface::class)->facultyOptionsForCurrentUser(auth()->id())),
                 Select::make('slug')->required()->options(['overview' => 'Overview', 'departments' => 'Departments', 'labs' => 'Labs', 'projects' => 'Projects', 'alumni' => 'Alumni', 'valedictorians' => 'Honor List', 'training' => 'Training']),
                 TextInput::make('kind')->required()->maxLength(255),
                 TextInput::make('hero_image')->maxLength(255),

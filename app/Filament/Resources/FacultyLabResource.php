@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\FacultyResource\Pages;
-use App\Models\Faculty\Faculty;
+use App\Contracts\Page\FacultyAdminWorkflowServiceInterface;
+use App\Filament\Resources\FacultyLabResource\Pages;
+use App\Models\Faculty\FacultyLab;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -21,15 +22,15 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
 
-class FacultyResource extends Resource
+class FacultyLabResource extends Resource
 {
-    protected static ?string $model = Faculty::class;
+    protected static ?string $model = FacultyLab::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-academic-cap';
+    protected static ?string $navigationIcon = 'heroicon-o-beaker';
 
     protected static ?string $navigationGroup = 'Facilities';
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 4;
 
     public static function canAccess(): bool
     {
@@ -38,11 +39,11 @@ class FacultyResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery()->with('translations');
+        $query = parent::getEloquentQuery()->with(['faculty', 'translations']);
         $user = auth()->user();
 
         if ($user?->role_slug === 'faculty_editor') {
-            $query->where('faculty_scope_slug', $user->faculty_scope_slug);
+            $query->whereHas('faculty', fn (Builder $facultyQuery): Builder => $facultyQuery->where('faculty_scope_slug', $user->faculty_scope_slug));
         }
 
         return $query;
@@ -51,23 +52,19 @@ class FacultyResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Section::make('Faculty')->schema([
+            Section::make('Lab')->schema([
+                Select::make('faculty_id')->required()->searchable()->preload()->options(fn (): array => app(FacultyAdminWorkflowServiceInterface::class)->facultyOptionsForCurrentUser(auth()->id())),
                 TextInput::make('slug')->required()->alphaDash()->maxLength(255),
-                TextInput::make('public_slug')->required()->alphaDash()->maxLength(255),
-                TextInput::make('faculty_scope_slug')->maxLength(255),
-                TextInput::make('accent_color')->maxLength(20),
-                TextInput::make('hero_image')->maxLength(255),
-                TextInput::make('logo_image')->maxLength(255),
+                TextInput::make('image')->maxLength(255),
                 TextInput::make('sort_order')->numeric()->default(0),
                 Toggle::make('is_enabled')->default(true),
             ])->columns(2),
             Repeater::make('translations')->relationship()->schema([
                 Select::make('locale')->required()->options(['ar' => 'Arabic', 'en' => 'English']),
-                TextInput::make('name')->required()->maxLength(255),
-                TextInput::make('catalog_title')->maxLength(255),
-                TextInput::make('years_label')->maxLength(255),
-                Textarea::make('short_description')->rows(3),
-                Textarea::make('description')->rows(5)->columnSpanFull(),
+                TextInput::make('title')->required()->maxLength(255),
+                TextInput::make('department')->maxLength(255),
+                TextInput::make('instructor')->maxLength(255),
+                Textarea::make('description')->rows(3)->columnSpanFull(),
             ])->columns(2)->minItems(2)->maxItems(2)->columnSpanFull(),
         ]);
     }
@@ -75,16 +72,16 @@ class FacultyResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('public_slug')->searchable()->sortable(),
-            TextColumn::make('translations.name')->label('Names')->listWithLineBreaks()->limit(40),
-            TextColumn::make('faculty_scope_slug')->toggleable(),
+            TextColumn::make('faculty.public_slug')->label('Faculty')->sortable(),
+            TextColumn::make('slug')->searchable()->sortable(),
+            TextColumn::make('translations.title')->label('Titles')->listWithLineBreaks()->limit(40),
             IconColumn::make('is_enabled')->boolean(),
-            TextColumn::make('updated_at')->dateTime()->sortable(),
+            TextColumn::make('sort_order')->sortable(),
         ])->actions([Tables\Actions\EditAction::make()])->bulkActions([]);
     }
 
     public static function getPages(): array
     {
-        return ['index' => Pages\ListFaculties::route('/'), 'create' => Pages\CreateFaculty::route('/create'), 'edit' => Pages\EditFaculty::route('/{record}/edit')];
+        return ['index' => Pages\ListFacultyLabs::route('/'), 'create' => Pages\CreateFacultyLab::route('/create'), 'edit' => Pages\EditFacultyLab::route('/{record}/edit')];
     }
 }

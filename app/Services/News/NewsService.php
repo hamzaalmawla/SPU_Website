@@ -35,7 +35,7 @@ final class NewsService implements NewsServiceInterface
             'per_page' => $perPage,
         ], JSON_THROW_ON_ERROR));
 
-        return $this->cacheService->remember($cacheKey, function () use ($locale, $filters, $page, $perPage): PaginatedResultDTO {
+        return $this->newsCache()->remember($cacheKey, function () use ($locale, $filters, $page, $perPage): PaginatedResultDTO {
         $query = NewsArticle::query()
             ->public()
             ->with(['translations', 'seoMeta', 'coverMedia', 'category.translations'])
@@ -69,7 +69,7 @@ final class NewsService implements NewsServiceInterface
 
     public function getPublicArticle(string $slug, string $locale): ?NewsArticleDTO
     {
-        return $this->cacheService->remember('news:article:'.$locale.':'.$slug, function () use ($slug, $locale): ?NewsArticleDTO {
+        return $this->newsCache()->remember('news:article:'.$locale.':'.$slug, function () use ($slug, $locale): ?NewsArticleDTO {
         $article = NewsArticle::query()
             ->public()
             ->where('slug', $slug)
@@ -110,7 +110,7 @@ final class NewsService implements NewsServiceInterface
 
     public function getLatestArticleCards(string $locale, int $limit = 5, ?string $categoryType = null): Collection
     {
-        return $this->cacheService->remember('news:latest:'.$locale.':'.$limit.':'.($categoryType ?? 'all'), function () use ($locale, $limit, $categoryType): Collection {
+        return $this->newsCache()->remember('news:latest:'.$locale.':'.$limit.':'.($categoryType ?? 'all'), function () use ($locale, $limit, $categoryType): Collection {
         return NewsArticle::query()
             ->public()
             ->with(['translations', 'coverMedia', 'category.translations'])
@@ -129,7 +129,7 @@ final class NewsService implements NewsServiceInterface
 
     public function getRelatedArticleCards(string $slug, string $locale, int $limit = 3): Collection
     {
-        return $this->cacheService->remember('news:related:'.$locale.':'.$slug.':'.$limit, function () use ($slug, $locale, $limit): Collection {
+        return $this->newsCache()->remember('news:related:'.$locale.':'.$slug.':'.$limit, function () use ($slug, $locale, $limit): Collection {
         $article = NewsArticle::query()->public()->where('slug', $slug)->first();
 
         if (! $article instanceof NewsArticle) {
@@ -153,7 +153,7 @@ final class NewsService implements NewsServiceInterface
 
     public function getAdjacentArticleCards(string $slug, string $locale): array
     {
-        return $this->cacheService->remember('news:adjacent:'.$locale.':'.$slug, function () use ($slug, $locale): array {
+        return $this->newsCache()->remember('news:adjacent:'.$locale.':'.$slug, function () use ($slug, $locale): array {
         $article = NewsArticle::query()->public()->where('slug', $slug)->first();
 
         if (! $article instanceof NewsArticle) {
@@ -184,7 +184,7 @@ final class NewsService implements NewsServiceInterface
 
     public function getPublicCategories(string $locale): Collection
     {
-        return $this->cacheService->remember('news:categories:'.$locale, function () use ($locale): Collection {
+        return $this->newsCache()->remember('news:categories:'.$locale, function () use ($locale): Collection {
         return NewsCategory::query()
             ->enabled()
             ->with('translations')
@@ -320,5 +320,10 @@ final class NewsService implements NewsServiceInterface
     private function articleUrl(string $locale, string $slug): string
     {
         return '/'.$locale.'/news/'.$slug;
+    }
+
+    private function newsCache(): CacheServiceInterface
+    {
+        return $this->cacheService->tags(['news', 'public-pages', 'seo', 'sitemap']);
     }
 }

@@ -69,7 +69,7 @@ final class FacultyModuleSeeder extends Seeder
     /** @param array<string, mixed> $faculty */
     private function seedPages(int $facultyId, array $faculty): void
     {
-        $pages = ['overview', 'departments', 'labs', 'projects', 'alumni', 'valedictorians'];
+        $pages = ['overview', 'departments', 'study-plan', 'study-plan-course', 'labs', 'projects', 'alumni', 'valedictorians'];
 
         if ($faculty['public_slug'] === 'business-administration') {
             $pages = array_values(array_diff($pages, ['labs']));
@@ -111,6 +111,10 @@ final class FacultyModuleSeeder extends Seeder
             $payload = $this->pharmacyTrainingPayload();
         }
 
+        if (in_array($slug, ['study-plan', 'study-plan-course'], true)) {
+            $payload = $this->studyPlanPayload($faculty, $slug);
+        }
+
         DB::table('faculty_pages')->updateOrInsert(
             ['faculty_id' => $facultyId, 'slug' => $slug],
             [
@@ -134,6 +138,7 @@ final class FacultyModuleSeeder extends Seeder
     {
         $now = now();
         $labels = $this->subpageLabels($slug);
+        $meta = [];
 
         foreach (['ar', 'en'] as $locale) {
             $summary = $slug === 'overview'
@@ -150,10 +155,17 @@ final class FacultyModuleSeeder extends Seeder
                     : 'Explore the practical training pathway that connects pharmacy students with supervised professional experience in approved teaching environments.';
             }
 
+            if (in_array($slug, ['study-plan', 'study-plan-course'], true)) {
+                $meta = $this->studyPlanRouteMeta($faculty, $slug);
+                $summary = $locale === 'en'
+                    ? (string) ($meta['description'] ?? $this->subpageSummary($slug, $faculty[$locale]['name'], $locale))
+                    : $this->subpageSummary($slug, $faculty[$locale]['name'], $locale);
+            }
+
             DB::table('faculty_page_translations')->updateOrInsert(
                 ['faculty_page_id' => $pageId, 'locale' => $locale],
                 [
-                    'title' => $slug === 'overview' ? $faculty[$locale]['catalog_title'] : $labels[$locale],
+                    'title' => $slug === 'overview' ? $faculty[$locale]['catalog_title'] : ($locale === 'en' ? ($meta['title'] ?? $labels[$locale]) : $labels[$locale]),
                     'summary' => $summary,
                     'body' => $slug === 'overview' ? $faculty[$locale]['description'] : null,
                     'sections_json' => json_encode($slug === 'overview' ? $faculty[$locale]['sections'] : [], JSON_THROW_ON_ERROR),
@@ -365,6 +377,63 @@ final class FacultyModuleSeeder extends Seeder
         ];
     }
 
+    /** @param array<string, mixed> $faculty @return array<string, mixed> */
+    private function studyPlanPayload(array $faculty, string $slug): array
+    {
+        $source = $this->studyPlanFrontendData();
+        $facultyKey = $this->studyPlanFacultyKey((string) $faculty['public_slug']);
+        $plan = $source['studyPlansContent']['faculties'][$facultyKey] ?? null;
+
+        if (! is_array($plan)) {
+            return [];
+        }
+
+        return [
+            'kind' => $slug,
+            'labels' => $source['studyPlansContent']['labels'] ?? [],
+            'legend' => $source['studyPlansContent']['legend'] ?? [],
+            'courseLabels' => $source['courseLessonsContent']['labels'] ?? [],
+            'lessonTypes' => $source['courseLessonsContent']['lessonTypes'] ?? [],
+            'routeMeta' => $this->studyPlanRouteMeta($faculty, $slug),
+            'plan' => $plan,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function studyPlanFrontendData(): array
+    {
+        $json = file_get_contents(database_path('seeders/Data/study_plan_frontend_data.json'));
+
+        if ($json === false) {
+            return [];
+        }
+
+        /** @var array<string, mixed> $data */
+        $data = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+
+        return $data;
+    }
+
+    /** @param array<string, mixed> $faculty @return array<string, mixed> */
+    private function studyPlanRouteMeta(array $faculty, string $slug): array
+    {
+        $source = $this->studyPlanFrontendData();
+        $route = '/facilities/'.$faculty['public_slug'].'/study-plan/'.($slug === 'study-plan-course' ? 'course/' : '');
+        $meta = collect($source['routeMeta'] ?? [])->firstWhere('route', $route);
+
+        return is_array($meta) ? $meta : [];
+    }
+
+    private function studyPlanFacultyKey(string $publicSlug): string
+    {
+        return match ($publicSlug) {
+            'artificial-intelligence' => 'ai-engineering',
+            'business-administration' => 'business',
+            'building-construction-engineering' => 'Construction',
+            default => $publicSlug,
+        };
+    }
+
     /** @param array<string, mixed> $faculty */
     private function seedAlumni(int $facultyId, array $faculty): void
     {
@@ -544,6 +613,8 @@ final class FacultyModuleSeeder extends Seeder
             'alumni' => ['ar' => 'الخريجون', 'en' => 'Alumni'],
             'valedictorians' => ['ar' => 'قائمة الشرف', 'en' => 'Honor List'],
             'training' => ['ar' => 'التدريب والتلمذة المهنية', 'en' => 'Training & Apprenticeship'],
+            'study-plan' => ['ar' => 'الخطة الدراسية', 'en' => 'Study Plan'],
+            'study-plan-course' => ['ar' => 'محاضرات المقرر', 'en' => 'Course Lessons'],
             default => ['ar' => $slug, 'en' => $slug],
         };
     }
@@ -558,6 +629,8 @@ final class FacultyModuleSeeder extends Seeder
                 'alumni' => 'استعرض سجلات خريجي '.$facultyName.'.',
                 'valedictorians' => 'قائمة الشرف والأوائل في '.$facultyName.'.',
                 'training' => 'مسار التدريب العملي لطلبة '.$facultyName.'.',
+                'study-plan' => 'الخطة الدراسية وتسلسل المقررات في '.$facultyName.'.',
+                'study-plan-course' => 'محاضرات ومواد المقررات في '.$facultyName.'.',
                 default => $facultyName,
             };
         }
@@ -569,6 +642,8 @@ final class FacultyModuleSeeder extends Seeder
             'alumni' => 'Browse alumni records for '.$facultyName.'.',
             'valedictorians' => 'Honor list and valedictorians for '.$facultyName.'.',
             'training' => 'Practical training pathway for '.$facultyName.' students.',
+            'study-plan' => 'Study plan and course sequence for '.$facultyName.'.',
+            'study-plan-course' => 'Course lessons and materials for '.$facultyName.'.',
             default => $facultyName,
         };
     }

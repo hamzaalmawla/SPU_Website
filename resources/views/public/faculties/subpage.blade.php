@@ -30,7 +30,11 @@
         $localized = fn (array $item, string $key): string => (string) ($item[$key] ?? $item[$key.ucfirst($locale)] ?? $item[$key.'En'] ?? $item[$key.'Ar'] ?? '');
     @endphp
 
-    @if ($page->subpageSlug === 'training')
+    @if ($page->subpageSlug === 'study-plan')
+        @include('public.faculties.study-plan')
+    @elseif ($page->subpageSlug === 'study-plan-course')
+        @include('public.faculties.course-lessons')
+    @elseif ($page->subpageSlug === 'training')
         @include('public.faculties.training')
     @else
         <section class="relative flex {{ $page->subpageSlug === 'alumni' ? 'min-h-[300px]' : ($page->subpageSlug === 'projects' ? 'min-h-[315px]' : 'min-h-[330px]') }} items-end overflow-hidden pt-28 font-hacen">

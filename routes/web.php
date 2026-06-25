@@ -50,6 +50,12 @@ Route::prefix('{locale}')
                 Route::get('/{faculty}', 'faculty')
                     ->where(['faculty' => 'medicine|dentistry|pharmacy|artificial-intelligence|building-construction-engineering|petroleum|business-administration'])
                     ->name('show');
+                Route::get('/{faculty}/study-plan/course', 'courseLessons')
+                    ->where(['faculty' => 'medicine|dentistry|pharmacy|artificial-intelligence|building-construction-engineering|petroleum|business-administration'])
+                    ->name('study-plan.course');
+                Route::get('/{faculty}/study-plan', 'studyPlan')
+                    ->where(['faculty' => 'medicine|dentistry|pharmacy|artificial-intelligence|building-construction-engineering|petroleum|business-administration'])
+                    ->name('study-plan');
                 Route::get('/{faculty}/{subpage}', 'subpage')
                     ->where([
                         'faculty' => 'medicine|dentistry|pharmacy|artificial-intelligence|building-construction-engineering|petroleum|business-administration',

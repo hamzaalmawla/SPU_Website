@@ -57,7 +57,7 @@ class NewsArticleResource extends Resource
                 Select::make('cover_media_id')->label('Cover Media')->relationship('coverMedia', 'original_name')->searchable()->preload(),
                 Select::make('status')
                     ->required()
-                    ->options(['draft' => 'Draft', 'published' => 'Published', 'scheduled' => 'Scheduled', 'archived' => 'Archived'])
+                    ->options(fn (?NewsArticle $record): array => self::statusOptions($record))
                     ->default('draft'),
                 DateTimePicker::make('published_at'),
                 DateTimePicker::make('scheduled_at'),
@@ -143,5 +143,30 @@ class NewsArticleResource extends Resource
         $scope = is_string($user->faculty_scope_slug) ? $user->faculty_scope_slug : '';
 
         return $scope === '' ? $query->whereRaw('1 = 0') : $query->where('faculty_scope_slug', $scope);
+    }
+
+    /** @return array<string, string> */
+    private static function statusOptions(?NewsArticle $record): array
+    {
+        $all = ['draft' => 'Draft', 'published' => 'Published', 'scheduled' => 'Scheduled', 'archived' => 'Archived'];
+
+        if (self::currentUserCanPublish()) {
+            return $all;
+        }
+
+        $status = is_string($record?->status) ? $record->status : 'draft';
+
+        if (in_array($status, ['published', 'scheduled'], true)) {
+            return [$status => $all[$status]];
+        }
+
+        return ['draft' => 'Draft', 'archived' => 'Archived'];
+    }
+
+    private static function currentUserCanPublish(): bool
+    {
+        $role = auth()->user()?->role_slug;
+
+        return in_array($role, ['super_admin', 'editor'], true);
     }
 }
