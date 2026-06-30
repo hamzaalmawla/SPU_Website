@@ -28,13 +28,21 @@ class DirectorateResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-squares-2x2';
 
-    protected static ?string $navigationGroup = 'About';
-
     protected static ?int $navigationSort = 4;
 
     public static function canAccess(): bool
     {
         return Gate::allows('manage-pages');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('admin.navigation.groups.about');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('admin.navigation.items.directorates');
     }
 
     public static function getEloquentQuery(): Builder

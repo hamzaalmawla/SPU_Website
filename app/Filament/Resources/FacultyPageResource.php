@@ -28,13 +28,23 @@ class FacultyPageResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
 
-    protected static ?string $navigationGroup = 'Facilities';
-
     protected static ?int $navigationSort = 2;
+
+    protected static bool $shouldRegisterNavigation = false;
 
     public static function canAccess(): bool
     {
         return Gate::allows('manage-faculties');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('admin.navigation.groups.facilities');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('admin.navigation.items.faculty_pages');
     }
 
     public static function getEloquentQuery(): Builder

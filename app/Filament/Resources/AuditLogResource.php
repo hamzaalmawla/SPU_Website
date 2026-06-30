@@ -34,10 +34,6 @@ class AuditLogResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
 
-    protected static ?string $navigationLabel = 'Audit Logs';
-
-    protected static ?string $navigationGroup = 'Administration';
-
     protected static ?int $navigationSort = 11;
 
     private static function auditService(): AuditServiceInterface
@@ -48,6 +44,16 @@ class AuditLogResource extends Resource
     public static function canAccess(): bool
     {
         return Gate::allows('view-audit-log');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('admin.navigation.groups.administration');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('admin.navigation.items.audit_logs');
     }
 
     public static function getEloquentQuery(): Builder

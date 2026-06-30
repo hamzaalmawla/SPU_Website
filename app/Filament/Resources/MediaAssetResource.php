@@ -34,10 +34,6 @@ class MediaAssetResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-photo';
 
-    protected static ?string $navigationLabel = 'Media Library';
-
-    protected static ?string $navigationGroup = 'Content';
-
     protected static ?int $navigationSort = 4;
 
     protected static ?string $recordTitleAttribute = 'filename';
@@ -45,6 +41,16 @@ class MediaAssetResource extends Resource
     public static function canAccess(): bool
     {
         return Gate::allows('manage-media');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('admin.navigation.groups.content');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('admin.navigation.items.media_library');
     }
 
     public static function getEloquentQuery(): Builder

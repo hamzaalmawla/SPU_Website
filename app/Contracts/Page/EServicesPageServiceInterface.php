@@ -13,5 +13,8 @@ interface EServicesPageServiceInterface
 
     public function getContent(string $locale): EServicesPageContentDTO;
 
+    /** @param array<string, mixed> $content */
+    public function buildPreviewPage(string $locale, array $content): EServicesPageDTO;
+
     public function updatePage(string $locale, EServicesPageContentDTO $content, int $userId): bool;
 }

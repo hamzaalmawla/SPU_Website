@@ -39,10 +39,6 @@ class PageResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
 
-    protected static ?string $navigationLabel = 'Pages';
-
-    protected static ?string $navigationGroup = 'Content';
-
     protected static ?int $navigationSort = 2;
 
     protected static ?string $recordTitleAttribute = 'slug';
@@ -50,6 +46,16 @@ class PageResource extends Resource
     public static function canAccess(): bool
     {
         return Gate::allows('viewAny', Page::class);
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('admin.navigation.groups.content');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('admin.navigation.items.pages');
     }
 
     public static function getEloquentQuery(): Builder

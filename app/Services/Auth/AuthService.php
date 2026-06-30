@@ -24,6 +24,10 @@ final class AuthService implements AuthServiceInterface
 {
     private const MAX_FAILED_ATTEMPTS = 5;
 
+    private const ADMIN_SESSION_STARTED_AT = 'admin_session_started_at';
+
+    private const ADMIN_SESSION_LAST_ACTIVITY_AT = 'admin_session_last_activity_at';
+
     public function __construct(
         private readonly AuthFactory $authFactory,
         private readonly AuditServiceInterface $auditService,
@@ -142,6 +146,14 @@ final class AuthService implements AuthServiceInterface
     {
         if ($this->session->isStarted()) {
             $this->session->migrate(true);
+
+            $now = now()->getTimestamp();
+
+            if (! $this->session->has(self::ADMIN_SESSION_STARTED_AT)) {
+                $this->session->put(self::ADMIN_SESSION_STARTED_AT, $now);
+            }
+
+            $this->session->put(self::ADMIN_SESSION_LAST_ACTIVITY_AT, $now);
         }
     }
 

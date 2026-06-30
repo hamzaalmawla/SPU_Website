@@ -74,14 +74,12 @@ final class AboutController extends Controller
 
     public function staffDirectory(Request $request, string $locale): View
     {
+        $page = $this->aboutPageService->getStaffDirectoryPage($locale);
+
         return view('public.about.staff', $this->sharedPayload($request, $locale, '/about/directorates/staff', [
+            'page' => $page,
             'people' => $this->aboutPageService->getLeadershipProfiles($locale),
-            'seo' => $this->seo(
-                $locale,
-                '/about/directorates/staff',
-                $locale === 'ar' ? 'دليل الهيئة الأكاديمية' : 'Academic Staff Directory',
-                $locale === 'ar' ? 'دليل أعضاء الهيئة الأكاديمية في الجامعة السورية الخاصة.' : 'Directory of SPU academic staff members.',
-            ),
+            'seo' => $this->seo($locale, '/about/directorates/staff', $page->title, $page->summary),
         ]));
     }
 

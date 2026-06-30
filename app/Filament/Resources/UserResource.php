@@ -31,10 +31,6 @@ class UserResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-users';
 
-    protected static ?string $navigationLabel = 'Users';
-
-    protected static ?string $navigationGroup = 'Administration';
-
     protected static ?int $navigationSort = 10;
 
     protected static ?string $recordTitleAttribute = 'name';
@@ -42,6 +38,16 @@ class UserResource extends Resource
     public static function canAccess(): bool
     {
         return Gate::allows('manage-users');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('admin.navigation.groups.administration');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('admin.navigation.items.users');
     }
 
     public static function form(Form $form): Form

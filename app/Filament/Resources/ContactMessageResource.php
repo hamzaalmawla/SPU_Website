@@ -25,10 +25,6 @@ class ContactMessageResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-envelope';
 
-    protected static ?string $navigationLabel = 'Contact Messages';
-
-    protected static ?string $navigationGroup = 'Contact';
-
     protected static ?int $navigationSort = 2;
 
     protected static ?string $recordTitleAttribute = 'subject';
@@ -36,6 +32,16 @@ class ContactMessageResource extends Resource
     public static function canAccess(): bool
     {
         return Gate::allows('viewAny', ContactMessage::class);
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('admin.navigation.groups.contact');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('admin.navigation.items.contact_messages');
     }
 
     public static function getEloquentQuery(): Builder

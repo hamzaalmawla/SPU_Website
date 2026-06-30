@@ -11,10 +11,12 @@ use App\Http\Middleware\TwoFactorChallengeMiddleware;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationGroup;
 use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
 use Filament\Widgets;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -31,7 +33,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->brandName('Syrian Private University')
+            ->brandName(fn (): string => __('admin.panel.brand'))
             ->authGuard((string) config('auth.admin_guard', 'web'))
             ->login([AuthController::class, 'create'])
             ->colors([
@@ -41,9 +43,27 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
+            ->navigationGroups([
+                NavigationGroup::make(fn (): string => __('admin.navigation.groups.content')),
+                NavigationGroup::make(fn (): string => __('admin.navigation.groups.news')),
+                NavigationGroup::make(fn (): string => __('admin.navigation.groups.facilities')),
+                NavigationGroup::make(fn (): string => __('admin.navigation.groups.about')),
+                NavigationGroup::make(fn (): string => __('admin.navigation.groups.admissions')),
+                NavigationGroup::make(fn (): string => __('admin.navigation.groups.contact')),
+                NavigationGroup::make(fn (): string => __('admin.navigation.groups.e_services')),
+                NavigationGroup::make(fn (): string => __('admin.navigation.groups.administration')),
+            ])
             ->pages([
                 Pages\Dashboard::class,
             ])
+            ->renderHook(
+                PanelsRenderHook::TOPBAR_END,
+                fn (): string => view('filament.admin.locale-switcher')->render(),
+            )
+            ->renderHook(
+                PanelsRenderHook::PAGE_HEADER_WIDGETS_BEFORE,
+                fn (array $scopes): string => view('filament.admin.resource-workspace', ['scopes' => $scopes])->render(),
+            )
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
                 Widgets\AccountWidget::class,
@@ -60,9 +80,9 @@ class AdminPanelProvider extends PanelProvider
                 DispatchServingFilamentEvent::class,
             ])
             ->authMiddleware([
+                AdminLocaleMiddleware::class,
                 AdminAuthMiddleware::class,
                 TwoFactorChallengeMiddleware::class,
-                AdminLocaleMiddleware::class,
             ]);
     }
 }

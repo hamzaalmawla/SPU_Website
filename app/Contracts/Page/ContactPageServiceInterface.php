@@ -14,6 +14,9 @@ interface ContactPageServiceInterface
 
     public function getContent(string $locale): ContactPageContentDTO;
 
+    /** @param array<string, mixed> $content */
+    public function buildPreviewPage(string $locale, array $content): ContactPageDTO;
+
     public function updatePage(string $locale, ContactPageContentDTO $content, int $userId): bool;
 
     public function submit(ContactSubmissionDataDTO $submission): bool;

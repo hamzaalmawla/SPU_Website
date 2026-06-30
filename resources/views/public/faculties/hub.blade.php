@@ -3,6 +3,7 @@
         $hero = $content['hero'] ?? [];
         $facts = $content['facts'] ?? [];
         $model = $content['model'] ?? [];
+        $facultyLinks = collect($content['facultyLinks'] ?? [])->filter(fn ($item) => is_array($item))->values();
         $isAr = $locale === 'ar';
 @endphp
 
@@ -39,13 +40,14 @@
             </div>
 
             <div class="relative flex w-full flex-col gap-4 lg:gap-5">
-                @foreach ($page->faculties as $faculty)
-                    @php($accent = $faculty->accentColor ?: '#202759')
-                    <a href="{{ $faculty->url }}" class="group grid min-h-[80px] w-full grid-cols-[auto_1fr_auto] items-center rounded-[10px] border border-white/70 bg-white px-6 py-4 text-spu-blue shadow-[0_12px_34px_rgba(32,39,89,0.10)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(32,39,89,0.16)] sm:min-h-[90px] sm:px-8" style="background: linear-gradient({{ $isAr ? 'to left' : 'to right' }}, #ffffff 0%, #ffffff 48%, {{ $accent }}24 100%);">
+                @foreach (($facultyLinks->isNotEmpty() ? $facultyLinks : $page->faculties) as $faculty)
+                    @php($isCmsLink = is_array($faculty))
+                    @php($accent = ($isCmsLink ? ($faculty['accentColor'] ?? null) : $faculty->accentColor) ?: '#202759')
+                    <a href="{{ $isCmsLink ? ($faculty['url'] ?? '#') : $faculty->url }}" class="group grid min-h-[80px] w-full grid-cols-[auto_1fr_auto] items-center rounded-[10px] border border-white/70 bg-white px-6 py-4 text-spu-blue shadow-[0_12px_34px_rgba(32,39,89,0.10)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(32,39,89,0.16)] sm:min-h-[90px] sm:px-8" style="background: linear-gradient({{ $isAr ? 'to left' : 'to right' }}, #ffffff 0%, #ffffff 48%, {{ $accent }}24 100%);">
                         <div class="flex h-12 w-12 items-center justify-center rounded-full bg-spu-blue text-lg font-bold text-white sm:h-14 sm:w-14 sm:text-xl">{{ $loop->iteration }}</div>
                         <div class="min-w-0 px-5 {{ $isAr ? 'text-right' : 'text-left' }}">
-                            <h3 class="truncate text-lg font-bold leading-tight text-spu-blue sm:text-xl lg:text-2xl">{{ $faculty->title }}</h3>
-                            <p class="mt-2 line-clamp-1 text-sm leading-6 text-[#46464F] sm:text-[15px]">{{ $faculty->summary }}</p>
+                            <h3 class="truncate text-lg font-bold leading-tight text-spu-blue sm:text-xl lg:text-2xl">{{ $isCmsLink ? ($faculty['title'] ?? '') : $faculty->title }}</h3>
+                            <p class="mt-2 line-clamp-1 text-sm leading-6 text-[#46464F] sm:text-[15px]">{{ $isCmsLink ? ($faculty['summary'] ?? '') : $faculty->summary }}</p>
                         </div>
                         <span class="text-2xl leading-none text-[#46464F] transition group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1">&rarr;</span>
                     </a>

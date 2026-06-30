@@ -10,6 +10,7 @@
         $dean = $content['dean'] ?? [];
         $latestResearch = $content['latestResearch'] ?? [];
         $isAr = $locale === 'ar';
+        $pageTitle = $content['title'] ?? $faculty['name'];
 @endphp
 
     <section class="relative flex min-h-[600px] flex-col justify-center overflow-hidden font-hacen lg:min-h-[700px]">
@@ -24,7 +25,7 @@
                 {{ $isAr ? 'الجامعة السورية الخاصة' : 'Syrian Private University' }}
             </p>
             <h1 class="faculty-hero__reveal faculty-hero__reveal--d2 mt-4 max-w-[800px] text-[clamp(2.2rem,5vw,3.8rem)] font-bold leading-[1.1] tracking-tight text-white">
-                {{ $faculty['name'] }}
+                {{ $pageTitle }}
             </h1>
             <div class="faculty-hero__reveal faculty-hero__reveal--d3 mt-10 flex flex-wrap items-center gap-4">
                 <a href="#overview" class="group inline-flex h-[54px] items-center gap-2.5 rounded-[6px] bg-white px-8 text-sm font-bold uppercase tracking-[1.4px] shadow-[0_4px_24px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(0,0,0,0.18)]" style="color: {{ $accent }}">
@@ -42,7 +43,7 @@
         <div class="faculty-hero__logo-ring flex h-[200px] w-[200px] items-center justify-center rounded-full border-white bg-white md:h-[220px] md:w-[220px]">
             <img src="{{ $faculty['logoImage'] ?? '/images/logo-spu.png' }}" alt="{{ $faculty['title'] }}" class="h-full w-full object-cover transition-all duration-700">
         </div>
-        <p class="mt-4 text-center text-2xl font-bold text-spu-blue">{{ $faculty['nameAr'] ?? $faculty['name'] }}</p>
+        <p class="mt-4 text-center text-2xl font-bold text-spu-blue">{{ $isAr ? ($faculty['nameAr'] ?? $faculty['name']) : ($faculty['nameEn'] ?? $faculty['name']) }}</p>
         <p class="mt-1 text-center text-[11px] font-bold uppercase tracking-[2px] text-slate-400">{{ 'FACULTY OF '.mb_strtoupper($faculty['nameEn'] ?? $faculty['name'], 'UTF-8') }}</p>
     </div>
 
@@ -100,7 +101,7 @@
                     <div class="mt-10">
                         <div class="flex items-center gap-4">
                             <div class="h-[3px] w-10 shrink-0 rounded-full" style="background-color: {{ $accent }}"></div>
-                            <h2 class="text-[clamp(1.6rem,3.5vw,2.4rem)] font-bold leading-tight" style="color: {{ $accent }}">{{ $faculty['name'] }}</h2>
+                            <h2 class="text-[clamp(1.6rem,3.5vw,2.4rem)] font-bold leading-tight" style="color: {{ $accent }}">{{ $pageTitle }}</h2>
                         </div>
                         <div class="mt-6 min-h-[140px] space-y-5">
                             @foreach ($tabs as $tab)
@@ -130,8 +131,8 @@
                         <div class="relative overflow-hidden">
                             <img src="{{ $dean['image'] ?? ($faculty['heroImage'] ?? '/images/uni-main-place.JPG') }}" alt="" class="w-full object-top">
                             <div class="absolute bottom-[10%] rounded-md bg-white px-6 py-4 text-center text-[#1e2652] shadow-2xl shadow-black/10 ltr:left-4 rtl:right-4">
-                                <h5 class="text-[24px] font-bold">{{ $isAr ? ($dean['nameAr'] ?? '') : ($dean['nameEn'] ?? '') }}</h5>
-                                <p class="text-[16px] font-normal">{{ $isAr ? ($dean['roleAr'] ?? 'عميد الكلية') : ($dean['roleEn'] ?? 'Faculty Dean') }}</p>
+                                <h5 class="text-[24px] font-bold">{{ $dean['name'] ?? ($isAr ? ($dean['nameAr'] ?? '') : ($dean['nameEn'] ?? '')) }}</h5>
+                                <p class="text-[16px] font-normal">{{ $dean['role'] ?? ($isAr ? ($dean['roleAr'] ?? 'عميد الكلية') : ($dean['roleEn'] ?? 'Faculty Dean')) }}</p>
                             </div>
                         </div>
                     </div>
@@ -143,10 +144,10 @@
                         </div>
                         <h2 class="mb-8 text-3xl font-bold leading-tight text-slate-900 md:text-5xl">
                             <span>{{ $isAr ? 'كلمة' : 'Message From The' }}</span>
-                            <span style="color: {{ $accent }}">{{ $isAr ? ($dean['roleAr'] ?? 'عميد الكلية') : ($dean['roleEn'] ?? 'Faculty Dean') }}</span>
+                            <span style="color: {{ $accent }}">{{ $dean['role'] ?? ($isAr ? ($dean['roleAr'] ?? 'عميد الكلية') : ($dean['roleEn'] ?? 'Faculty Dean')) }}</span>
                         </h2>
                         <p class="text-lg font-normal leading-relaxed text-[#475467] md:text-2xl">
-                            {{ $isAr ? ($dean['messageAr'] ?? '') : ($dean['messageEn'] ?? '') }}
+                            {{ $dean['message'] ?? ($isAr ? ($dean['messageAr'] ?? '') : ($dean['messageEn'] ?? '')) }}
                         </p>
                     </div>
                 </div>

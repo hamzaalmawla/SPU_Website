@@ -15,7 +15,18 @@ interface AboutPageServiceInterface
 {
     public function getAboutLanding(string $locale): AboutLandingDTO;
 
+    /** @param array<string, mixed> $content */
+    public function buildPreviewAboutLanding(string $locale, array $content): AboutLandingDTO;
+
+    /** @param array<string, mixed> $content */
+    public function buildPreviewContentPage(string $targetKey, string $locale, array $content): ?AboutContentPageDTO;
+
+    /** @return array{translations: array{ar: array<string, mixed>, en: array<string, mixed>}} */
+    public function getEditablePayload(string $targetKey): array;
+
     public function getContentPage(string $slug, string $locale): ?AboutContentPageDTO;
+
+    public function getStaffDirectoryPage(string $locale): AboutContentPageDTO;
 
     /** @return Collection<int, PersonDTO> */
     public function getLeadershipProfiles(string $locale): Collection;

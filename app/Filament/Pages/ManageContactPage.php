@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
+use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Page\ContactPageServiceInterface;
-use App\DTOs\Contact\ContactPageContentDTO;
+use App\Exceptions\ConflictException;
 use App\Models\User\User;
 use Filament\Actions\Action;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Tabs;
@@ -20,18 +22,13 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 
 class ManageContactPage extends Page implements HasForms
 {
     use InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-envelope-open';
-
-    protected static ?string $navigationLabel = 'Contact Page';
-
-    protected static ?string $navigationGroup = 'Contact';
-
-    protected static ?string $title = 'Manage Contact Page';
 
     protected static ?string $slug = 'manage-contact-page';
 
@@ -42,11 +39,18 @@ class ManageContactPage extends Page implements HasForms
     /** @var array<string, mixed> */
     public ?array $data = [];
 
+    public ?int $draftVersion = null;
+
     private ContactPageServiceInterface $contactPageService;
 
-    public function boot(ContactPageServiceInterface $contactPageService): void
-    {
+    private CmsWorkflowServiceInterface $cmsWorkflowService;
+
+    public function boot(
+        ContactPageServiceInterface $contactPageService,
+        CmsWorkflowServiceInterface $cmsWorkflowService,
+    ): void {
         $this->contactPageService = $contactPageService;
+        $this->cmsWorkflowService = $cmsWorkflowService;
     }
 
     public static function canAccess(): bool
@@ -54,11 +58,29 @@ class ManageContactPage extends Page implements HasForms
         return Gate::allows('manage-pages');
     }
 
+    public static function getNavigationGroup(): ?string
+    {
+        return __('admin.navigation.groups.contact');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('admin.navigation.items.contact_page');
+    }
+
+    public function getTitle(): string
+    {
+        return __('admin.pages.manage_contact_page');
+    }
+
     public function mount(): void
     {
+        $draftPayload = $this->cmsWorkflowService->latestEditableDraftPayload('contact');
+        $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion('contact');
+
         $this->form->fill([
-            'ar' => $this->formData('ar'),
-            'en' => $this->formData('en'),
+            'ar' => $this->formData('ar', $draftPayload),
+            'en' => $this->formData('en', $draftPayload),
         ]);
     }
 
@@ -81,11 +103,53 @@ class ManageContactPage extends Page implements HasForms
     {
         return [
             Action::make('save')
-                ->label('Save Contact Page')
+                ->label('Save Draft')
                 ->icon('heroicon-o-check')
-                ->color('success')
+                ->color('gray')
                 ->action(function (): void {
                     $this->save();
+                }),
+            Action::make('preview_ar')
+                ->label('Preview AR')
+                ->icon('heroicon-o-eye')
+                ->color('info')
+                ->action(function (): void {
+                    $this->openPreview('ar');
+                }),
+            Action::make('preview_en')
+                ->label('Preview EN')
+                ->icon('heroicon-o-eye')
+                ->color('info')
+                ->action(function (): void {
+                    $this->openPreview('en');
+                }),
+            Action::make('publish')
+                ->label('Publish')
+                ->icon('heroicon-o-paper-airplane')
+                ->color('success')
+                ->requiresConfirmation()
+                ->action(function (): void {
+                    $this->publish();
+                }),
+            Action::make('schedule')
+                ->label('Schedule')
+                ->icon('heroicon-o-clock')
+                ->color('warning')
+                ->form([
+                    DateTimePicker::make('publish_at')
+                        ->label('Publish At')
+                        ->required()
+                        ->minDate(now())
+                        ->native(false),
+                ])
+                ->action(fn (array $data) => $this->schedule((string) $data['publish_at'])),
+            Action::make('unpublish')
+                ->label('Unpublish')
+                ->icon('heroicon-o-x-circle')
+                ->color('danger')
+                ->requiresConfirmation()
+                ->action(function (): void {
+                    $this->unpublish();
                 }),
         ];
     }
@@ -94,30 +158,122 @@ class ManageContactPage extends Page implements HasForms
     {
         /** @var User $user */
         $user = auth()->user();
-        $state = $this->form->getState();
 
         try {
-            foreach (['ar', 'en'] as $locale) {
-                $this->contactPageService->updatePage(
-                    $locale,
-                    $this->contentFromForm(is_array($state[$locale] ?? null) ? $state[$locale] : []),
-                    (int) $user->id,
-                );
-            }
+            $draft = $this->cmsWorkflowService->saveDraft(
+                'contact',
+                $this->payloadFromForm($this->currentFormData()),
+                (int) $user->id,
+                $this->draftVersion,
+            );
+            $this->draftVersion = $draft->version;
 
             Notification::make()
-                ->title('Contact page saved successfully')
+                ->title('Contact page draft saved')
                 ->success()
+                ->send();
+        } catch (ConflictException $e) {
+            $this->draftVersion = $e->currentVersion;
+
+            Notification::make()
+                ->title('Draft conflict detected')
+                ->body('This contact page draft changed elsewhere. Reload the page before saving again.')
+                ->danger()
+                ->persistent()
                 ->send();
         } catch (\Throwable $e) {
             report($e);
 
             Notification::make()
-                ->title('Failed to save contact page')
-                ->body('Please review the contact page fields and try again.')
+                ->title('Failed to save contact page draft')
                 ->danger()
                 ->send();
         }
+    }
+
+    public function publish(): void
+    {
+        /** @var User $user */
+        $user = auth()->user();
+
+        try {
+            $draft = $this->cmsWorkflowService->saveDraft('contact', $this->payloadFromForm($this->currentFormData()), (int) $user->id, $this->draftVersion);
+            $this->draftVersion = $draft->version;
+            $this->cmsWorkflowService->publish('contact', (int) $user->id);
+
+            Notification::make()->title('Contact page published')->success()->send();
+        } catch (ValidationException $e) {
+            Notification::make()
+                ->title('Publish failed')
+                ->body($this->formatValidationErrors($e->errors()))
+                ->danger()
+                ->persistent()
+                ->send();
+        } catch (\Throwable $e) {
+            report($e);
+            Notification::make()->title('Failed to publish contact page')->danger()->send();
+        }
+    }
+
+    public function openPreview(string $locale): void
+    {
+        /** @var User $user */
+        $user = auth()->user();
+
+        try {
+            $draft = $this->cmsWorkflowService->saveDraft('contact', $this->payloadFromForm($this->form->getState()), (int) $user->id, $this->draftVersion);
+            $this->draftVersion = $draft->version;
+            $preview = $this->cmsWorkflowService->preview('contact', $locale, (int) $user->id);
+
+            $this->redirect($preview->previewUrl);
+        } catch (ConflictException $e) {
+            $this->draftVersion = $e->currentVersion;
+
+            Notification::make()
+                ->title('Draft conflict detected')
+                ->body('This contact page draft changed elsewhere. Reload the page before previewing again.')
+                ->danger()
+                ->persistent()
+                ->send();
+        } catch (\Throwable $e) {
+            report($e);
+            Notification::make()->title('Failed to create contact page preview')->danger()->send();
+        }
+    }
+
+    public function schedule(string $publishAt): void
+    {
+        /** @var User $user */
+        $user = auth()->user();
+
+        try {
+            $draft = $this->cmsWorkflowService->saveDraft('contact', $this->payloadFromForm($this->form->getState()), (int) $user->id, $this->draftVersion);
+            $this->draftVersion = $draft->version;
+            $this->cmsWorkflowService->schedule('contact', new \DateTimeImmutable($publishAt), (int) $user->id);
+
+            Notification::make()->title('Contact page scheduled')->success()->send();
+        } catch (ValidationException $e) {
+            Notification::make()
+                ->title('Schedule failed')
+                ->body($this->formatValidationErrors($e->errors()))
+                ->danger()
+                ->persistent()
+                ->send();
+        } catch (\Throwable $e) {
+            report($e);
+            Notification::make()->title('Failed to schedule contact page')->danger()->send();
+        }
+    }
+
+    public function unpublish(): void
+    {
+        /** @var User $user */
+        $user = auth()->user();
+
+        $result = $this->cmsWorkflowService->unpublish('contact', (int) $user->id);
+        $notification = Notification::make()->title($result ? 'Contact page unpublished' : 'No published contact page found');
+
+        ($result ? $notification->success() : $notification->warning())->send();
     }
 
     private function localeTab(string $locale, string $label): Tab
@@ -179,56 +335,89 @@ class ManageContactPage extends Page implements HasForms
     }
 
     /** @return array<string, mixed> */
-    private function formData(string $locale): array
+    private function formData(string $locale, ?array $draftPayload): array
     {
+        $draftContent = is_array($draftPayload['translations'][$locale] ?? null)
+            ? $draftPayload['translations'][$locale]
+            : null;
+
+        if (is_array($draftContent)) {
+            return $this->contentArrayToFormData($draftContent);
+        }
+
         $content = $this->contactPageService->getContent($locale);
 
-        return [
-            'hero_title' => $content->hero['title'],
-            'hero_bg_image' => $content->hero['bgImage'],
-            'form_title' => $content->form['title'],
-            'field_name_label' => $content->form['fields']['name']['label'],
-            'field_email_label' => $content->form['fields']['email']['label'],
-            'field_subject_label' => $content->form['fields']['subject']['label'],
-            'field_message_label' => $content->form['fields']['message']['label'],
-            'submit_label' => $content->form['submit'],
-            'info_title' => $content->info['title'],
-            'phone_label' => $content->info['callUs']['label'],
-            'phone_value' => $content->info['callUs']['value'],
-            'phone_icon' => $content->info['callUs']['icon'],
-            'address_label' => $content->info['address']['label'],
-            'address_value' => $content->info['address']['value'],
-            'email_label' => $content->info['emailUs']['label'],
-            'email_value' => $content->info['emailUs']['value'],
-            'hours_label' => $content->info['officeHours']['label'],
-            'hours_value' => $content->info['officeHours']['value'],
-            'socials_title' => $content->socialsTitle,
+        return $this->contentArrayToFormData([
+            'hero' => $content->hero,
+            'info' => $content->info,
+            'socialsTitle' => $content->socialsTitle,
             'socials' => $content->socials,
-            'location_title' => $content->location['title'],
-            'location_button' => $content->location['button'],
-            'map_url' => $content->location['mapUrl'],
-            'embed_url' => $content->location['embedUrl'],
-            'seo_title' => $content->seoTitle,
-            'seo_description' => $content->seoDescription,
-            'seo_image' => $content->seoImage,
+            'form' => $content->form,
+            'location' => $content->location,
+            'seo' => [
+                'title' => $content->seoTitle,
+                'description' => $content->seoDescription,
+                'image' => $content->seoImage,
+            ],
+        ]);
+    }
+
+    /** @param array<string, mixed> $content */
+    private function contentArrayToFormData(array $content): array
+    {
+        $hero = is_array($content['hero'] ?? null) ? $content['hero'] : [];
+        $form = is_array($content['form'] ?? null) ? $content['form'] : [];
+        $fields = is_array($form['fields'] ?? null) ? $form['fields'] : [];
+        $info = is_array($content['info'] ?? null) ? $content['info'] : [];
+        $location = is_array($content['location'] ?? null) ? $content['location'] : [];
+        $seo = is_array($content['seo'] ?? null) ? $content['seo'] : [];
+
+        return [
+            'hero_title' => $this->stringValue($hero, 'title'),
+            'hero_bg_image' => $this->stringValue($hero, 'bgImage'),
+            'form_title' => $this->stringValue($form, 'title'),
+            'field_name_label' => $this->stringValue(is_array($fields['name'] ?? null) ? $fields['name'] : [], 'label'),
+            'field_email_label' => $this->stringValue(is_array($fields['email'] ?? null) ? $fields['email'] : [], 'label'),
+            'field_subject_label' => $this->stringValue(is_array($fields['subject'] ?? null) ? $fields['subject'] : [], 'label'),
+            'field_message_label' => $this->stringValue(is_array($fields['message'] ?? null) ? $fields['message'] : [], 'label'),
+            'submit_label' => $this->stringValue($form, 'submit'),
+            'info_title' => $this->stringValue($info, 'title'),
+            'phone_label' => $this->stringValue(is_array($info['callUs'] ?? null) ? $info['callUs'] : [], 'label'),
+            'phone_value' => $this->stringValue(is_array($info['callUs'] ?? null) ? $info['callUs'] : [], 'value'),
+            'phone_icon' => $this->stringValue(is_array($info['callUs'] ?? null) ? $info['callUs'] : [], 'icon'),
+            'address_label' => $this->stringValue(is_array($info['address'] ?? null) ? $info['address'] : [], 'label'),
+            'address_value' => $this->stringValue(is_array($info['address'] ?? null) ? $info['address'] : [], 'value'),
+            'email_label' => $this->stringValue(is_array($info['emailUs'] ?? null) ? $info['emailUs'] : [], 'label'),
+            'email_value' => $this->stringValue(is_array($info['emailUs'] ?? null) ? $info['emailUs'] : [], 'value'),
+            'hours_label' => $this->stringValue(is_array($info['officeHours'] ?? null) ? $info['officeHours'] : [], 'label'),
+            'hours_value' => $this->stringValue(is_array($info['officeHours'] ?? null) ? $info['officeHours'] : [], 'value'),
+            'socials_title' => $this->stringValue($content, 'socialsTitle'),
+            'socials' => array_values(array_filter(is_array($content['socials'] ?? null) ? $content['socials'] : [], static fn (mixed $item): bool => is_array($item))),
+            'location_title' => $this->stringValue($location, 'title'),
+            'location_button' => $this->stringValue($location, 'button'),
+            'map_url' => $this->stringValue($location, 'mapUrl'),
+            'embed_url' => $this->stringValue($location, 'embedUrl'),
+            'seo_title' => $this->stringValue($seo, 'title'),
+            'seo_description' => $this->stringValue($seo, 'description'),
+            'seo_image' => $this->stringValue($seo, 'image'),
         ];
     }
 
     /** @param array<string, mixed> $data */
-    private function contentFromForm(array $data): ContactPageContentDTO
+    private function contentFromForm(array $data): array
     {
-        return new ContactPageContentDTO(
-            hero: ['title' => (string) ($data['hero_title'] ?? ''), 'bgImage' => (string) ($data['hero_bg_image'] ?? '')],
-            info: [
+        return [
+            'hero' => ['title' => (string) ($data['hero_title'] ?? ''), 'bgImage' => (string) ($data['hero_bg_image'] ?? '')],
+            'info' => [
                 'title' => (string) ($data['info_title'] ?? ''),
                 'callUs' => ['label' => (string) ($data['phone_label'] ?? ''), 'value' => (string) ($data['phone_value'] ?? ''), 'icon' => (string) ($data['phone_icon'] ?? '')],
                 'address' => ['label' => (string) ($data['address_label'] ?? ''), 'value' => (string) ($data['address_value'] ?? ''), 'icon' => '/images/icon-map-outline.svg'],
                 'emailUs' => ['label' => (string) ($data['email_label'] ?? ''), 'value' => (string) ($data['email_value'] ?? ''), 'icon' => '/images/icon-envelope-outline.svg'],
                 'officeHours' => ['label' => (string) ($data['hours_label'] ?? ''), 'value' => (string) ($data['hours_value'] ?? ''), 'icon' => '/images/time.svg'],
             ],
-            socialsTitle: (string) ($data['socials_title'] ?? ''),
-            socials: array_values(array_filter(is_array($data['socials'] ?? null) ? $data['socials'] : [], static fn (mixed $item): bool => is_array($item))),
-            form: [
+            'socialsTitle' => (string) ($data['socials_title'] ?? ''),
+            'socials' => array_values(array_filter(is_array($data['socials'] ?? null) ? $data['socials'] : [], static fn (mixed $item): bool => is_array($item))),
+            'form' => [
                 'title' => (string) ($data['form_title'] ?? ''),
                 'fields' => [
                     'name' => ['label' => (string) ($data['field_name_label'] ?? '')],
@@ -238,15 +427,48 @@ class ManageContactPage extends Page implements HasForms
                 ],
                 'submit' => (string) ($data['submit_label'] ?? ''),
             ],
-            location: [
+            'location' => [
                 'title' => (string) ($data['location_title'] ?? ''),
                 'button' => (string) ($data['location_button'] ?? ''),
                 'mapUrl' => (string) ($data['map_url'] ?? ''),
                 'embedUrl' => (string) ($data['embed_url'] ?? ''),
             ],
-            seoTitle: (string) ($data['seo_title'] ?? ''),
-            seoDescription: (string) ($data['seo_description'] ?? ''),
-            seoImage: (string) ($data['seo_image'] ?? ''),
-        );
+            'seo' => [
+                'title' => (string) ($data['seo_title'] ?? ''),
+                'description' => (string) ($data['seo_description'] ?? ''),
+                'image' => (string) ($data['seo_image'] ?? ''),
+            ],
+        ];
+    }
+
+    /** @param array<string, mixed> $state */
+    private function payloadFromForm(array $state): array
+    {
+        return [
+            'translations' => [
+                'ar' => $this->contentFromForm(is_array($state['ar'] ?? null) ? $state['ar'] : []),
+                'en' => $this->contentFromForm(is_array($state['en'] ?? null) ? $state['en'] : []),
+            ],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function currentFormData(): array
+    {
+        return is_array($this->data) ? $this->data : [];
+    }
+
+    /** @param array<string, array<int, string>> $errors */
+    private function formatValidationErrors(array $errors): string
+    {
+        return collect($errors)->flatten()->implode(PHP_EOL);
+    }
+
+    /** @param array<string, mixed> $payload */
+    private function stringValue(array $payload, string $key): string
+    {
+        $value = $payload[$key] ?? '';
+
+        return is_string($value) || is_numeric($value) ? (string) $value : '';
     }
 }

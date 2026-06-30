@@ -4,20 +4,37 @@ declare(strict_types=1);
 
 namespace App\Services\Page;
 
+use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Page\AdmissionsPageServiceInterface;
 use App\DTOs\Admissions\AdmissionsPageDTO;
 use App\DTOs\Admissions\AdmissionsSectionDTO;
 
 final class AdmissionsPageService implements AdmissionsPageServiceInterface
 {
+    public function __construct(
+        private readonly CmsWorkflowServiceInterface $cmsWorkflowService,
+    ) {}
+
     public function getLanding(string $locale): AdmissionsPageDTO
     {
-        $landing = $this->localized($this->landingPayload(), $locale);
+        $landing = $this->publishedLocalizedPayload('admissions.landing', $locale)
+            ?? $this->localized($this->landingPayload(), $locale);
 
+        return $this->landingDto($locale, $this->normalizeUrls($landing, $locale));
+    }
+
+    public function buildPreviewLanding(string $locale, array $landing): AdmissionsPageDTO
+    {
+        return $this->landingDto($locale, $this->normalizeUrls($landing, $locale));
+    }
+
+    /** @param array<string, mixed> $landing */
+    private function landingDto(string $locale, array $landing): AdmissionsPageDTO
+    {
         return new AdmissionsPageDTO(
             locale: $locale,
             direction: $locale === 'ar' ? 'rtl' : 'ltr',
-            landing: $this->normalizeUrls($landing, $locale),
+            landing: $landing,
             seoTitle: $locale === 'ar' ? 'القبول والتسجيل | الجامعة السورية الخاصة' : 'Admissions | Syrian Private University',
             seoDescription: $locale === 'ar'
                 ? 'تعرّف إلى متطلبات القبول وخطوات التقديم والرسوم والدعم المتاح للطلاب الجدد في الجامعة السورية الخاصة.'
@@ -28,14 +45,80 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
 
     public function getSection(string $slug, string $locale): ?AdmissionsSectionDTO
     {
-        $sections = $this->sectionPayloads($locale);
-        $payload = $sections[$slug] ?? null;
+        $payload = $this->publishedLocalizedPayload('admissions.'.$slug, $locale);
+
+        if ($payload === null) {
+            $sections = $this->sectionPayloads($locale);
+            $payload = $sections[$slug] ?? null;
+        }
 
         if ($payload === null) {
             return null;
         }
 
         $section = $this->normalizeUrls($this->localized($payload, $locale), $locale);
+
+        return $this->sectionDto($slug, $locale, $section);
+    }
+
+    public function buildPreviewSection(string $targetKey, string $locale, array $section): ?AdmissionsSectionDTO
+    {
+        $slug = $this->slugFromTargetKey($targetKey);
+
+        if ($slug === null) {
+            return null;
+        }
+
+        return $this->sectionDto($slug, $locale, $this->normalizeUrls($section, $locale));
+    }
+
+    /** @return array{translations: array{ar: array<string, mixed>, en: array<string, mixed>}} */
+    public function getEditablePayload(string $targetKey): array
+    {
+        $published = $this->cmsWorkflowService->getPublishedPayload($targetKey);
+
+        if (is_array($published['translations']['ar'] ?? null) && is_array($published['translations']['en'] ?? null)) {
+            return [
+                'translations' => [
+                    'ar' => $published['translations']['ar'],
+                    'en' => $published['translations']['en'],
+                ],
+            ];
+        }
+
+        if ($targetKey === 'admissions.landing') {
+            return [
+                'translations' => [
+                    'ar' => $this->normalizeUrls($this->localized($this->landingPayload(), 'ar'), 'ar'),
+                    'en' => $this->normalizeUrls($this->localized($this->landingPayload(), 'en'), 'en'),
+                ],
+            ];
+        }
+
+        $slug = $this->slugFromTargetKey($targetKey);
+
+        if ($slug === null) {
+            throw new \InvalidArgumentException('Unsupported admissions target.');
+        }
+
+        $arabicPayload = $this->sectionPayloads('ar')[$slug] ?? null;
+        $englishPayload = $this->sectionPayloads('en')[$slug] ?? null;
+
+        if ($arabicPayload === null || $englishPayload === null) {
+            throw new \InvalidArgumentException('Unsupported admissions target.');
+        }
+
+        return [
+            'translations' => [
+                'ar' => $this->normalizeUrls($this->localized($arabicPayload, 'ar'), 'ar'),
+                'en' => $this->normalizeUrls($this->localized($englishPayload, 'en'), 'en'),
+            ],
+        ];
+    }
+
+    /** @param array<string, mixed> $section */
+    private function sectionDto(string $slug, string $locale, array $section): AdmissionsSectionDTO
+    {
         $title = (string) ($section['title'] ?? ($locale === 'ar' ? 'القبول والتسجيل' : 'Admissions'));
         $description = (string) ($section['seoDescription'] ?? ($locale === 'ar'
             ? 'معلومات تفصيلية حول القبول والتسجيل في الجامعة السورية الخاصة.'
@@ -50,6 +133,26 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
             seoDescription: $description,
             seoImage: (string) ($section['heroImage'] ?? '/images/DSC_1015.JPG'),
         );
+    }
+
+    /** @return array<string, mixed>|null */
+    private function publishedLocalizedPayload(string $targetKey, string $locale): ?array
+    {
+        $published = $this->cmsWorkflowService->getPublishedPayload($targetKey);
+        $localized = is_array($published['translations'][$locale] ?? null)
+            ? $published['translations'][$locale]
+            : null;
+
+        return is_array($localized) ? $localized : null;
+    }
+
+    private function slugFromTargetKey(string $targetKey): ?string
+    {
+        if (! str_starts_with($targetKey, 'admissions.') || $targetKey === 'admissions.landing') {
+            return null;
+        }
+
+        return substr($targetKey, strlen('admissions.'));
     }
 
     /** @return array<string, mixed> */

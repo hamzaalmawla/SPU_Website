@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Page\EServicesPageServiceInterface;
 use App\DTOs\EServices\EServicesPageContentDTO;
 use App\Models\User\User;
@@ -74,5 +75,75 @@ class EServicesPageTest extends TestCase
             'key' => 'content',
             'locale' => 'en',
         ]);
+    }
+
+    public function test_e_services_workflow_draft_does_not_leak_until_published(): void
+    {
+        $service = app(EServicesPageServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $payload = [
+            'translations' => [
+                'ar' => $this->eServicesContentArray($service->getContent('ar'), 'الخدمات المنشورة'),
+                'en' => $this->eServicesContentArray($service->getContent('en'), 'Published E-Services Workflow'),
+            ],
+        ];
+
+        $workflow->saveDraft('e_services', $payload, (int) $author->id);
+
+        $this->get('/en/e-services')
+            ->assertOk()
+            ->assertDontSee('Published E-Services Workflow');
+
+        $this->assertTrue($workflow->publish('e_services', (int) $author->id));
+
+        $this->get('/en/e-services')
+            ->assertOk()
+            ->assertSee('Published E-Services Workflow');
+
+        $this->assertDatabaseHas('cms_target_contents', [
+            'target_key' => 'e_services',
+            'status' => 'published',
+        ]);
+    }
+
+    public function test_e_services_workflow_preview_renders_draft_snapshot(): void
+    {
+        $service = app(EServicesPageServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $payload = [
+            'translations' => [
+                'ar' => $this->eServicesContentArray($service->getContent('ar'), 'معاينة الخدمات'),
+                'en' => $this->eServicesContentArray($service->getContent('en'), 'E-Services Preview Workflow'),
+            ],
+        ];
+
+        $workflow->saveDraft('e_services', $payload, (int) $author->id);
+        $preview = $workflow->preview('e_services', 'en', (int) $author->id);
+
+        $this->get($preview->previewUrl)
+            ->assertOk()
+            ->assertSee('E-Services Preview Workflow')
+            ->assertSee('Preview mode');
+
+        $this->get('/en/e-services')
+            ->assertOk()
+            ->assertDontSee('E-Services Preview Workflow');
+    }
+
+    /** @return array<string, mixed> */
+    private function eServicesContentArray(EServicesPageContentDTO $content, string $title): array
+    {
+        return [
+            'hero' => array_merge($content->hero, ['title' => $title]),
+            'digitalServices' => $content->digitalServices,
+            'supportCards' => $content->supportCards,
+            'seo' => [
+                'title' => $content->seoTitle,
+                'description' => $content->seoDescription,
+                'image' => $content->seoImage,
+            ],
+        ];
     }
 }

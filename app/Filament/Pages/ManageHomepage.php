@@ -47,10 +47,6 @@ class ManageHomepage extends Page implements HasForms
 
     protected static ?string $navigationIcon = 'heroicon-o-home';
 
-    protected static ?string $navigationLabel = 'Homepage';
-
-    protected static ?string $title = 'Manage Homepage';
-
     protected static ?string $slug = 'manage-homepage';
 
     protected static ?int $navigationSort = 1;
@@ -84,6 +80,16 @@ class ManageHomepage extends Page implements HasForms
     public static function canAccess(): bool
     {
         return Gate::allows('manage-homepage');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('admin.navigation.items.homepage');
+    }
+
+    public function getTitle(): string
+    {
+        return __('admin.pages.manage_homepage');
     }
 
     public function mount(): void

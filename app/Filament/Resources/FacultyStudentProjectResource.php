@@ -28,13 +28,21 @@ class FacultyStudentProjectResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rocket-launch';
 
-    protected static ?string $navigationGroup = 'Facilities';
-
     protected static ?int $navigationSort = 5;
 
     public static function canAccess(): bool
     {
         return Gate::allows('manage-faculties');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('admin.navigation.groups.facilities');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('admin.navigation.items.faculty_student_projects');
     }
 
     public static function getEloquentQuery(): Builder

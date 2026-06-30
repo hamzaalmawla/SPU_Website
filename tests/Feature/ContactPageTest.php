@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Page\ContactPageServiceInterface;
 use App\DTOs\Contact\ContactPageContentDTO;
 use App\Models\User\User;
@@ -104,5 +105,78 @@ class ContactPageTest extends TestCase
             'key' => 'content',
             'locale' => 'en',
         ]);
+    }
+
+    public function test_contact_workflow_draft_does_not_leak_until_published(): void
+    {
+        $service = app(ContactPageServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $payload = [
+            'translations' => [
+                'ar' => $this->contactContentArray($service->getContent('ar'), 'تواصل منشور'),
+                'en' => $this->contactContentArray($service->getContent('en'), 'PUBLISHED CONTACT WORKFLOW'),
+            ],
+        ];
+
+        $workflow->saveDraft('contact', $payload, (int) $author->id);
+
+        $this->get('/en/contact')
+            ->assertOk()
+            ->assertDontSee('PUBLISHED CONTACT WORKFLOW');
+
+        $this->assertTrue($workflow->publish('contact', (int) $author->id));
+
+        $this->get('/en/contact')
+            ->assertOk()
+            ->assertSee('PUBLISHED CONTACT WORKFLOW');
+
+        $this->assertDatabaseHas('cms_target_contents', [
+            'target_key' => 'contact',
+            'status' => 'published',
+        ]);
+    }
+
+    public function test_contact_workflow_preview_renders_draft_snapshot(): void
+    {
+        $service = app(ContactPageServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $payload = [
+            'translations' => [
+                'ar' => $this->contactContentArray($service->getContent('ar'), 'معاينة التواصل'),
+                'en' => $this->contactContentArray($service->getContent('en'), 'CONTACT PREVIEW WORKFLOW'),
+            ],
+        ];
+
+        $workflow->saveDraft('contact', $payload, (int) $author->id);
+        $preview = $workflow->preview('contact', 'en', (int) $author->id);
+
+        $this->get($preview->previewUrl)
+            ->assertOk()
+            ->assertSee('CONTACT PREVIEW WORKFLOW')
+            ->assertSee('Preview mode');
+
+        $this->get('/en/contact')
+            ->assertOk()
+            ->assertDontSee('CONTACT PREVIEW WORKFLOW');
+    }
+
+    /** @return array<string, mixed> */
+    private function contactContentArray(ContactPageContentDTO $content, string $title): array
+    {
+        return [
+            'hero' => array_merge($content->hero, ['title' => $title]),
+            'info' => $content->info,
+            'socialsTitle' => $content->socialsTitle,
+            'socials' => $content->socials,
+            'form' => $content->form,
+            'location' => $content->location,
+            'seo' => [
+                'title' => $content->seoTitle,
+                'description' => $content->seoDescription,
+                'image' => $content->seoImage,
+            ],
+        ];
     }
 }

@@ -54,6 +54,40 @@ final class PreviewTokenStore
     }
 
     /**
+     * Create a preview token from an explicit snapshot payload.
+     *
+     * @param  array<string, mixed>|null  $payload
+     * @return array{raw_token: string, model: PreviewToken}
+     */
+    public function createWithPayload(
+        string $targetType,
+        ?int $targetId,
+        string $locale,
+        int $userId,
+        ?array $payload = null,
+        ?string $device = null,
+    ): array {
+        $this->assertSupportedTargetType($targetType);
+        $this->assertSupportedDevice($device);
+        $this->assertSupportedLocale($locale);
+
+        $rawToken = Str::random(self::RAW_TOKEN_LENGTH);
+
+        $token = PreviewToken::query()->create([
+            'token_hash' => $this->hashToken($rawToken),
+            'target_type' => $targetType,
+            'target_id' => $targetId,
+            'locale' => $locale,
+            'device' => $device,
+            'issued_to_user_id' => $userId,
+            'payload_json' => $payload,
+            'expires_at' => now()->addHours(6),
+        ]);
+
+        return ['raw_token' => $rawToken, 'model' => $token];
+    }
+
+    /**
      * Resolve a raw token string to its PreviewToken model, if valid and not expired.
      */
     public function resolve(string $rawToken): ?PreviewToken
@@ -111,6 +145,14 @@ final class PreviewTokenStore
             ->delete();
     }
 
+    public function invalidateCmsTarget(string $targetKey): int
+    {
+        return PreviewToken::query()
+            ->where('target_type', 'cms')
+            ->where('payload_json->target_key', $targetKey)
+            ->delete();
+    }
+
     /**
      * Produce the HMAC-SHA256 hash used for token storage.
      */
@@ -131,7 +173,7 @@ final class PreviewTokenStore
 
     private function assertSupportedTargetType(string $targetType): void
     {
-        if (! in_array($targetType, ['homepage', 'page'], true)) {
+        if (! in_array($targetType, ['homepage', 'page', 'cms'], true)) {
             throw new \InvalidArgumentException('Unsupported preview target type.');
         }
     }

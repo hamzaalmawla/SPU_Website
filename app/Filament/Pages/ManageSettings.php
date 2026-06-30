@@ -37,10 +37,6 @@ class ManageSettings extends Page implements HasForms
 
     protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
 
-    protected static ?string $navigationLabel = 'Settings';
-
-    protected static ?string $title = 'Manage Settings';
-
     protected static ?string $slug = 'manage-settings';
 
     protected static ?int $navigationSort = 5;
@@ -60,6 +56,21 @@ class ManageSettings extends Page implements HasForms
     public static function canAccess(): bool
     {
         return Gate::allows('manage-settings');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('admin.navigation.groups.administration');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('admin.navigation.items.settings');
+    }
+
+    public function getTitle(): string
+    {
+        return __('admin.pages.manage_settings');
     }
 
     public function mount(): void

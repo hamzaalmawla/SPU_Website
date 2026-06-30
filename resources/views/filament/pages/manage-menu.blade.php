@@ -1,5 +1,5 @@
 <x-filament-panels::page>
-    <div class="space-y-6">
+    <x-admin.cms-shell area="menu">
         <div class="flex gap-2 border-b border-gray-200 dark:border-gray-700 pb-2">
             @foreach ($this->getGroupKeys() as $group)
                 <button
@@ -62,7 +62,7 @@
                 @endif
             </div>
         @endforeach
-    </div>
+    </x-admin.cms-shell>
 
     @if ($isEditing)
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/60 px-4 py-6" role="dialog" aria-modal="true">

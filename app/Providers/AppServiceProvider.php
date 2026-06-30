@@ -6,6 +6,8 @@ namespace App\Providers;
 
 use App\Contracts\Auth\AuthServiceInterface;
 use App\Contracts\Auth\TotpAuthenticatorInterface;
+use App\Contracts\Cms\CmsTargetRegistryInterface;
+use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Content\PersonServiceInterface;
 use App\Contracts\Homepage\HomepagePreviewAssemblerInterface;
 use App\Contracts\Homepage\HomepagePublishingServiceInterface;
@@ -15,8 +17,8 @@ use App\Contracts\Navigation\MenuServiceInterface;
 use App\Contracts\Navigation\NavigationServiceInterface;
 use App\Contracts\News\NewsAdminWorkflowServiceInterface;
 use App\Contracts\News\NewsServiceInterface;
-use App\Contracts\Page\AdmissionsPageServiceInterface;
 use App\Contracts\Page\AboutPageServiceInterface;
+use App\Contracts\Page\AdmissionsPageServiceInterface;
 use App\Contracts\Page\CampusLifePageServiceInterface;
 use App\Contracts\Page\ContactPageServiceInterface;
 use App\Contracts\Page\EServicesPageServiceInterface;
@@ -33,11 +35,11 @@ use App\Contracts\Shared\ContinuityServiceInterface;
 use App\Contracts\Shared\PreviewServiceInterface;
 use App\Contracts\Shared\SlugServiceInterface;
 use App\Http\Responses\LogoutResponse;
+use App\Models\Career\Alumni;
+use App\Models\Career\HonorStudent;
 use App\Models\Contact\ContactMessage;
 use App\Models\Content\Directorate;
 use App\Models\Content\Partnership;
-use App\Models\Career\Alumni;
-use App\Models\Career\HonorStudent;
 use App\Models\Faculty\Faculty;
 use App\Models\Faculty\FacultyHighlight;
 use App\Models\Faculty\FacultyLab;
@@ -65,6 +67,8 @@ use App\Policies\PagePolicy;
 use App\Policies\UserPolicy;
 use App\Services\Auth\AuthService;
 use App\Services\Auth\TotpAuthenticator;
+use App\Services\Cms\CmsTargetRegistry;
+use App\Services\Cms\CmsWorkflowService;
 use App\Services\Content\PersonService;
 use App\Services\Homepage\HomepageDraftReader;
 use App\Services\Homepage\HomepagePreviewAssembler;
@@ -77,8 +81,8 @@ use App\Services\Navigation\MenuService;
 use App\Services\Navigation\NavigationService;
 use App\Services\News\NewsAdminWorkflowService;
 use App\Services\News\NewsService;
-use App\Services\Page\AdmissionsPageService;
 use App\Services\Page\AboutPageService;
+use App\Services\Page\AdmissionsPageService;
 use App\Services\Page\CampusLifePageService;
 use App\Services\Page\ContactPageService;
 use App\Services\Page\EServicesPageService;
@@ -259,6 +263,8 @@ class AppServiceProvider extends ServiceProvider
             CampusLifePageServiceInterface::class => CampusLifePageService::class,
             AuditServiceInterface::class => AuditService::class,
             AuthServiceInterface::class => AuthService::class,
+            CmsTargetRegistryInterface::class => CmsTargetRegistry::class,
+            CmsWorkflowServiceInterface::class => CmsWorkflowService::class,
             ContinuityServiceInterface::class => ContinuityService::class,
             ContactPageServiceInterface::class => ContactPageService::class,
             EServicesPageServiceInterface::class => EServicesPageService::class,

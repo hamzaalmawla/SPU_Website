@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="bg-white font-hacen text-spu-blue">
-        @include('public.about.partials.hero', ['title' => $locale === 'ar' ? 'دليل الهيئة الأكاديمية' : 'Academic Staff Directory', 'summary' => $locale === 'ar' ? 'دليل أعضاء الهيئة الأكاديمية في الجامعة السورية الخاصة.' : 'Directory of SPU academic staff members.', 'image' => '/images/about-hero-2.webp'])
+        @include('public.about.partials.hero', ['title' => $page->headline, 'summary' => $page->summary, 'image' => $page->heroImage])
 
         <section class="bg-white font-hacen">
             <div class="container mx-auto px-6">

@@ -80,6 +80,24 @@ class AdminAuthFlowTest extends TestCase
         ]);
     }
 
+    public function test_admin_login_without_remember_me_does_not_create_persistent_remember_token(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'no-remember@example.com',
+            'password' => 'password',
+            'role_slug' => 'super_admin',
+            'remember_token' => null,
+        ]);
+
+        $this->post('/admin/login', [
+            'email' => 'no-remember@example.com',
+            'password' => 'password',
+        ])->assertRedirect('/admin');
+
+        $this->assertAuthenticatedAs($user, 'web');
+        $this->assertNull($user->refresh()->remember_token);
+    }
+
     /**
      * It prevents locked users from logging in even with correct credentials.
      */
@@ -114,6 +132,51 @@ class AdminAuthFlowTest extends TestCase
         ])->assertRedirect();
 
         $this->assertGuest('web');
+    }
+
+    public function test_locked_authenticated_admin_is_logged_out_before_accessing_panel(): void
+    {
+        $user = User::factory()->create([
+            'role_slug' => 'editor',
+            'is_locked' => true,
+            'locked_at' => now(),
+        ]);
+
+        $this->actingAs($user, 'web')
+            ->withSession([
+                'admin_session_started_at' => now()->getTimestamp(),
+                'admin_session_last_activity_at' => now()->getTimestamp(),
+            ])
+            ->get('/admin/manage-settings')
+            ->assertRedirect('/admin/login');
+
+        $this->assertGuest('web');
+    }
+
+    public function test_admin_idle_timeout_logs_out_authenticated_session(): void
+    {
+        config(['auth.admin_session.idle_timeout_minutes' => 5]);
+
+        $user = User::factory()->create([
+            'role_slug' => 'super_admin',
+        ]);
+
+        $this->actingAs($user, 'web')
+            ->withSession([
+                'admin_session_started_at' => now()->subMinutes(10)->getTimestamp(),
+                'admin_session_last_activity_at' => now()->subMinutes(6)->getTimestamp(),
+            ])
+            ->get('/admin/manage-settings')
+            ->assertRedirect('/admin/login');
+
+        $this->assertGuest('web');
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'user.logout',
+            'user_id' => $user->id,
+            'actor_user_id' => $user->id,
+            'entity_type' => User::class,
+            'entity_id' => $user->id,
+        ]);
     }
 
     /**

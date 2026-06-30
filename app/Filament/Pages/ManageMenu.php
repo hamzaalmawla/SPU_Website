@@ -30,10 +30,6 @@ class ManageMenu extends Page implements HasForms
 
     protected static ?string $navigationIcon = 'heroicon-o-bars-3';
 
-    protected static ?string $navigationLabel = 'Menu Builder';
-
-    protected static ?string $title = 'Manage Menus';
-
     protected static ?string $slug = 'manage-menu';
 
     protected static ?int $navigationSort = 3;
@@ -70,6 +66,21 @@ class ManageMenu extends Page implements HasForms
     public static function canAccess(): bool
     {
         return Gate::allows('manage-menu');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('admin.navigation.groups.content');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('admin.navigation.items.menu_builder');
+    }
+
+    public function getTitle(): string
+    {
+        return __('admin.pages.manage_menus');
     }
 
     public function mount(): void

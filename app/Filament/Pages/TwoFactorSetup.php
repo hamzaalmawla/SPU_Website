@@ -29,10 +29,6 @@ class TwoFactorSetup extends Page implements HasForms
 
     protected static ?string $navigationIcon = 'heroicon-o-shield-check';
 
-    protected static ?string $navigationLabel = 'Two-Factor Auth';
-
-    protected static ?string $title = 'Two-Factor Authentication';
-
     protected static ?string $slug = 'two-factor-setup';
 
     protected static ?int $navigationSort = 10;
@@ -69,6 +65,21 @@ class TwoFactorSetup extends Page implements HasForms
         return $user instanceof User
             && ! $user->isAccountLocked()
             && in_array($user->role_slug, ['super_admin', 'editor', 'faculty_editor'], true);
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('admin.navigation.groups.administration');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('admin.navigation.items.two_factor_auth');
+    }
+
+    public function getTitle(): string
+    {
+        return __('admin.pages.two_factor_authentication');
     }
 
     public function mount(): void

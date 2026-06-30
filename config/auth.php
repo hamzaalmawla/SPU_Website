@@ -47,6 +47,11 @@ return [
 
     'admin_guard' => env('AUTH_ADMIN_GUARD', 'web'),
 
+    'admin_session' => [
+        'idle_timeout_minutes' => (int) env('ADMIN_SESSION_IDLE_TIMEOUT_MINUTES', env('SESSION_LIFETIME', 120)),
+        'absolute_timeout_minutes' => (int) env('ADMIN_SESSION_ABSOLUTE_TIMEOUT_MINUTES', 480),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | User Providers

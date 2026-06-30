@@ -14,6 +14,7 @@ interface PreviewServiceInterface
     public const TARGET_TYPES = [
         'homepage',
         'page',
+        'cms',
     ];
 
     /**

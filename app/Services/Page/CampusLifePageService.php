@@ -4,37 +4,123 @@ declare(strict_types=1);
 
 namespace App\Services\Page;
 
+use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Page\CampusLifePageServiceInterface;
 use App\DTOs\CampusLife\CampusLifePageDTO;
 use App\DTOs\CampusLife\CampusLifeSectionDTO;
 
 final class CampusLifePageService implements CampusLifePageServiceInterface
 {
+    public function __construct(
+        private readonly CmsWorkflowServiceInterface $cmsWorkflowService,
+    ) {}
+
     public function getLanding(string $locale): CampusLifePageDTO
     {
-        $landing = $this->normalizeUrls($this->localized($this->landingPayload(), $locale), $locale);
+        $landing = $this->publishedLocalizedPayload('campus_life.landing', $locale)
+            ?? $this->localized($this->landingPayload(), $locale);
+
+        return $this->landingDto($locale, $this->normalizeUrls($landing, $locale));
+    }
+
+    public function buildPreviewLanding(string $locale, array $landing): CampusLifePageDTO
+    {
+        return $this->landingDto($locale, $this->normalizeUrls($landing, $locale));
+    }
+
+    /** @param array<string, mixed> $landing */
+    private function landingDto(string $locale, array $landing): CampusLifePageDTO
+    {
+        $title = (string) ($landing['hero']['title'] ?? ($locale === 'ar' ? 'الحياة الجامعية' : 'Campus Life'));
+        $summary = (string) ($landing['hero']['summary'] ?? ($locale === 'ar'
+            ? 'اكتشف خدمات ومرافق وأنشطة الحياة الجامعية في الجامعة السورية الخاصة.'
+            : 'Discover student services, facilities, and campus activities at Syrian Private University.'));
 
         return new CampusLifePageDTO(
             locale: $locale,
             direction: $locale === 'ar' ? 'rtl' : 'ltr',
             landing: $landing,
-            seoTitle: $locale === 'ar' ? 'الحياة الجامعية | الجامعة السورية الخاصة' : 'Campus Life | Syrian Private University',
-            seoDescription: $locale === 'ar'
-                ? 'اكتشف الخدمات والمرافق والأنشطة الطلابية والحياة المهنية والصحية في الجامعة السورية الخاصة.'
-                : 'Find student services, campus activities, academic guidance, and digital access paths at SPU.',
-            seoImage: '/images/logo-spu.png',
+            seoTitle: $title.' | '.($locale === 'ar' ? 'الجامعة السورية الخاصة' : 'Syrian Private University'),
+            seoDescription: $summary,
+            seoImage: (string) ($landing['hero']['image'] ?? '/images/logo-spu.png'),
         );
+    }
+
+    public function getEditablePayload(string $targetKey): array
+    {
+        if (! str_starts_with($targetKey, 'campus_life.') || $targetKey === 'campus_life.virtual_tour') {
+            throw new \InvalidArgumentException('Unsupported campus life target.');
+        }
+
+        $published = $this->cmsWorkflowService->getPublishedPayload($targetKey);
+
+        if (is_array($published['translations']['ar'] ?? null) && is_array($published['translations']['en'] ?? null)) {
+            return [
+                'translations' => [
+                    'ar' => $published['translations']['ar'],
+                    'en' => $published['translations']['en'],
+                ],
+            ];
+        }
+
+        if ($targetKey === 'campus_life.landing') {
+            return [
+                'translations' => [
+                    'ar' => $this->normalizeUrls($this->localized($this->landingPayload(), 'ar'), 'ar'),
+                    'en' => $this->normalizeUrls($this->localized($this->landingPayload(), 'en'), 'en'),
+                ],
+            ];
+        }
+
+        $slug = $this->slugFromTargetKey($targetKey);
+        $payload = $slug !== null ? ($this->sectionPayloads()[$slug] ?? null) : null;
+
+        if ($payload === null) {
+            throw new \InvalidArgumentException('Unsupported campus life target.');
+        }
+
+        return [
+            'translations' => [
+                'ar' => $this->normalizeUrls($this->localized($payload, 'ar'), 'ar'),
+                'en' => $this->normalizeUrls($this->localized($payload, 'en'), 'en'),
+            ],
+        ];
     }
 
     public function getSection(string $slug, string $locale): ?CampusLifeSectionDTO
     {
-        $payload = $this->sectionPayloads()[$slug] ?? null;
+        $payload = $this->publishedLocalizedPayload('campus_life.'.$slug, $locale);
+
+        if ($payload === null) {
+            $fallback = $this->sectionPayloads()[$slug] ?? null;
+            $payload = is_array($fallback) ? $this->localized($fallback, $locale) : null;
+        }
 
         if ($payload === null) {
             return null;
         }
 
-        $section = $this->normalizeUrls($this->localized($payload, $locale), $locale);
+        return $this->sectionDto($slug, $locale, $this->normalizeUrls($payload, $locale));
+    }
+
+    public function buildPreviewSection(string $targetKey, string $locale, array $section): ?CampusLifeSectionDTO
+    {
+        $slug = $this->slugFromTargetKey($targetKey);
+
+        if ($slug === null) {
+            return null;
+        }
+
+        return $this->sectionDto($slug, $locale, $this->normalizeUrls($section, $locale));
+    }
+
+    /** @param array<string, mixed> $section */
+    private function sectionDto(string $slug, string $locale, array $section): CampusLifeSectionDTO
+    {
+        if (in_array($section['type'] ?? null, ['dental', 'hospital'], true) && is_array($section['schedule'] ?? null)) {
+            $section['today'] = $this->todaySchedule(array_values(array_filter($section['schedule'], static fn (mixed $slot): bool => is_array($slot))));
+        }
+
         $title = (string) ($section['hero']['title'] ?? $section['title'] ?? ($locale === 'ar' ? 'الحياة الجامعية' : 'Campus Life'));
         $description = (string) ($section['seoDescription'] ?? ($locale === 'ar'
             ? 'معلومات عن خدمات ومرافق الحياة الجامعية في الجامعة السورية الخاصة.'
@@ -49,6 +135,15 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
             seoDescription: $description,
             seoImage: (string) ($section['hero']['image'] ?? '/images/logo-spu.png'),
         );
+    }
+
+    private function slugFromTargetKey(string $targetKey): ?string
+    {
+        if (! str_starts_with($targetKey, 'campus_life.') || $targetKey === 'campus_life.landing' || $targetKey === 'campus_life.virtual_tour') {
+            return null;
+        }
+
+        return substr($targetKey, strlen('campus_life.'));
     }
 
     /** @return array<string, mixed> */
@@ -352,6 +447,7 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
 
             if (str_ends_with((string) $key, $suffix)) {
                 $localized[substr((string) $key, 0, -2)] = $value;
+
                 continue;
             }
 
@@ -379,6 +475,7 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
                 $payload[$key] = $this->isList($value)
                     ? array_map(fn (mixed $item): mixed => is_array($item) ? $this->normalizeUrls($item, $locale) : $item, $value)
                     : $this->normalizeUrls($value, $locale);
+
                 continue;
             }
 
@@ -410,5 +507,16 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
         return str_starts_with($url, '/'.$locale.'/') || $url === '/'.$locale
             ? $url
             : '/'.$locale.$url;
+    }
+
+    /** @return array<string, mixed>|null */
+    private function publishedLocalizedPayload(string $targetKey, string $locale): ?array
+    {
+        $published = $this->cmsWorkflowService->getPublishedPayload($targetKey);
+        $localized = is_array($published['translations'][$locale] ?? null)
+            ? $published['translations'][$locale]
+            : null;
+
+        return is_array($localized) ? $localized : null;
     }
 }

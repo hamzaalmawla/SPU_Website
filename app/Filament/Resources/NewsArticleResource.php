@@ -31,8 +31,6 @@ class NewsArticleResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-newspaper';
 
-    protected static ?string $navigationGroup = 'News';
-
     protected static ?int $navigationSort = 2;
 
     protected static ?string $recordTitleAttribute = 'slug';
@@ -40,6 +38,16 @@ class NewsArticleResource extends Resource
     public static function canAccess(): bool
     {
         return Gate::allows('viewAny', NewsArticle::class);
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('admin.navigation.groups.news');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('admin.navigation.items.news_articles');
     }
 
     public static function getEloquentQuery(): Builder

@@ -27,13 +27,21 @@ class NewsCategoryResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-tag';
 
-    protected static ?string $navigationGroup = 'News';
-
     protected static ?int $navigationSort = 1;
 
     public static function canAccess(): bool
     {
         return Gate::allows('viewAny', NewsCategory::class);
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('admin.navigation.groups.news');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('admin.navigation.items.news_categories');
     }
 
     public static function getEloquentQuery(): Builder

@@ -17,5 +17,7 @@ final readonly class PreviewPayloadDTO
         public ?PageDTO $page = null,
         public ?HomepageDTO $homepage = null,
         public ?NavigationPayloadDTO $navigation = null,
+        /** @var array<string, mixed>|null */
+        public ?array $cms = null,
     ) {}
 }

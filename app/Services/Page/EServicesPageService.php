@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Page;
 
+use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Page\EServicesPageServiceInterface;
 use App\Contracts\Settings\SettingsServiceInterface;
 use App\DTOs\EServices\EServicesPageContentDTO;
@@ -14,13 +15,23 @@ use App\DTOs\Settings\SettingValueDTO;
 final class EServicesPageService implements EServicesPageServiceInterface
 {
     public function __construct(
+        private readonly CmsWorkflowServiceInterface $cmsWorkflowService,
         private readonly SettingsServiceInterface $settingsService,
     ) {}
 
     public function getPage(string $locale): EServicesPageDTO
     {
-        $content = $this->getContent($locale);
+        return $this->pageFromContent($locale, $this->getContent($locale));
+    }
 
+    /** @param array<string, mixed> $content */
+    public function buildPreviewPage(string $locale, array $content): EServicesPageDTO
+    {
+        return $this->pageFromContent($locale, $this->contentFromArray($content));
+    }
+
+    private function pageFromContent(string $locale, EServicesPageContentDTO $content): EServicesPageDTO
+    {
         return new EServicesPageDTO(
             locale: $locale,
             direction: $locale === 'ar' ? 'rtl' : 'ltr',
@@ -35,6 +46,15 @@ final class EServicesPageService implements EServicesPageServiceInterface
 
     public function getContent(string $locale): EServicesPageContentDTO
     {
+        $publishedPayload = $this->cmsWorkflowService->getPublishedPayload('e_services');
+        $publishedContent = is_array($publishedPayload['translations'][$locale] ?? null)
+            ? $publishedPayload['translations'][$locale]
+            : null;
+
+        if (is_array($publishedContent)) {
+            return $this->contentFromArray($publishedContent);
+        }
+
         $settings = $this->settingsService->getGroup('e_services_page', $locale);
         $content = collect($settings->values)->firstWhere('key', 'content')?->jsonValue ?? [];
 

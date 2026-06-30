@@ -24,23 +24,21 @@ final class NewsController extends Controller
 
     public function index(Request $request, string $locale): View
     {
-        $title = $locale === 'ar' ? 'الأخبار' : 'News';
-        $description = $locale === 'ar'
-            ? 'تابع آخر أخبار الجامعة السورية الخاصة وإعلاناتها.'
-            : 'Follow the latest Syrian Private University news and announcements.';
+        $page = $this->newsService->getIndexPageContent($locale);
 
         $latest = $this->newsService->getLatestArticleCards($locale, 5, 'news');
         $announcements = $this->newsService->getLatestArticleCards($locale, 3, 'announcement');
         $featured = $this->newsService->getFeaturedArticles($locale, 1)->first() ?? $latest->first() ?? $announcements->first();
 
         return view('public.news.index', $this->sharedPayload($request, $locale, '/news', [
+            'page' => $page,
             'featured' => $featured,
             'lastNews' => $latest,
             'announcements' => $announcements,
             'events' => $this->newsService->getLatestArticleCards($locale, 3),
-            'pageTitle' => $title,
-            'pageDescription' => $description,
-            'seo' => $this->seo($locale, '/news', $title, $description),
+            'pageTitle' => (string) ($page['pageTitle'] ?? ''),
+            'pageDescription' => (string) ($page['pageDescription'] ?? ''),
+            'seo' => $this->seo($locale, '/news', (string) ($page['pageTitle'] ?? ''), (string) ($page['pageDescription'] ?? ''), (string) ($page['heroImage'] ?? '')),
         ]));
     }
 

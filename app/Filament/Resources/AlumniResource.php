@@ -27,13 +27,21 @@ class AlumniResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
 
-    protected static ?string $navigationGroup = 'Facilities';
-
     protected static ?int $navigationSort = 6;
 
     public static function canAccess(): bool
     {
         return Gate::allows('manage-faculties');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('admin.navigation.groups.facilities');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('admin.navigation.items.alumni');
     }
 
     public static function getEloquentQuery(): Builder

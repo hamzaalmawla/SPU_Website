@@ -130,7 +130,7 @@ final class PreviewService implements PreviewServiceInterface
         );
         $navigationPath = $token->target_type === 'homepage'
             ? $locale
-            : $this->pagePreviewPath($payload, $locale);
+            : $this->previewNavigationPath((string) $token->target_type, $payload, $locale);
 
         return new PreviewDTO(
             token: $rawToken ?? '',
@@ -142,6 +142,7 @@ final class PreviewService implements PreviewServiceInterface
                 page: $payload->page,
                 homepage: $payload->homepage,
                 navigation: $this->navigationService->getFullNavigationPayload($locale, $navigationPath),
+                cms: $payload->cms,
             ),
             expiresAt: $token->expires_at?->toIso8601String(),
             device: is_string($token->device) && $token->device !== '' ? $token->device : null,
@@ -159,6 +160,10 @@ final class PreviewService implements PreviewServiceInterface
                 : $this->pageService->buildPreviewPayload($targetId, $locale);
 
             return $preview->payload;
+        }
+
+        if ($targetType === 'cms') {
+            return new PreviewPayloadDTO(cms: $snapshot);
         }
 
         return new PreviewPayloadDTO(homepage: $this->homepagePreviewAssembler->build($locale, $snapshot));
@@ -186,5 +191,33 @@ final class PreviewService implements PreviewServiceInterface
         }
 
         return trim($this->pageService->resolveLanguageSwitchTargetUrl($payload->page->id, $locale) ?? '', '/');
+    }
+
+    private function previewNavigationPath(string $targetType, PreviewPayloadDTO $payload, string $locale): ?string
+    {
+        if ($targetType === 'cms') {
+            return $this->cmsPreviewPath($payload, $locale);
+        }
+
+        return $this->pagePreviewPath($payload, $locale);
+    }
+
+    private function cmsPreviewPath(PreviewPayloadDTO $payload, string $locale): ?string
+    {
+        $targetKey = is_array($payload->cms) ? ($payload->cms['target_key'] ?? null) : null;
+
+        if ($targetKey === 'admissions.landing') {
+            return $locale.'/admissions';
+        }
+
+        if (is_string($targetKey) && str_starts_with($targetKey, 'admissions.')) {
+            return $locale.'/admissions/'.substr($targetKey, strlen('admissions.'));
+        }
+
+        return match ($targetKey) {
+            'contact' => $locale.'/contact',
+            'e_services' => $locale.'/e-services',
+            default => $locale,
+        };
     }
 }

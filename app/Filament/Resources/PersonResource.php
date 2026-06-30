@@ -27,13 +27,21 @@ class PersonResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
 
-    protected static ?string $navigationGroup = 'About';
-
     protected static ?int $navigationSort = 1;
 
     public static function canAccess(): bool
     {
         return Gate::allows('manage-pages');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('admin.navigation.groups.about');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('admin.navigation.items.people');
     }
 
     public static function getEloquentQuery(): Builder

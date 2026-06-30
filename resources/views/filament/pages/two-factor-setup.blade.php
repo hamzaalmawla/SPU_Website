@@ -1,8 +1,7 @@
 <x-filament-panels::page>
     <script src="{{ asset('js/qrious.min.js') }}"></script>
 
-    {{-- Current Status --}}
-    <div class="space-y-6">
+    <x-admin.cms-shell area="security" :locales="[]">
         @if ($twoFactorEnabled)
             <div class="rounded-lg bg-success-50 dark:bg-success-500/10 p-4 ring-1 ring-success-200 dark:ring-success-500/20">
                 <div class="flex items-center gap-2">
@@ -109,5 +108,5 @@
                 </div>
             </x-filament::section>
         @endif
-    </div>
+    </x-admin.cms-shell>
 </x-filament-panels::page>
