@@ -22,7 +22,6 @@ use App\Contracts\Page\AdmissionsPageServiceInterface;
 use App\Contracts\Page\CampusLifePageServiceInterface;
 use App\Contracts\Page\ContactPageServiceInterface;
 use App\Contracts\Page\EServicesPageServiceInterface;
-use App\Contracts\Page\FacultyAdminWorkflowServiceInterface;
 use App\Contracts\Page\FacultyPageServiceInterface;
 use App\Contracts\Page\PageServiceInterface;
 use App\Contracts\Page\VirtualTourPageServiceInterface;
@@ -86,7 +85,6 @@ use App\Services\Page\AdmissionsPageService;
 use App\Services\Page\CampusLifePageService;
 use App\Services\Page\ContactPageService;
 use App\Services\Page\EServicesPageService;
-use App\Services\Page\FacultyAdminWorkflowService;
 use App\Services\Page\FacultyPageService;
 use App\Services\Page\PageDraftService;
 use App\Services\Page\PagePublicReadService;
@@ -268,7 +266,6 @@ class AppServiceProvider extends ServiceProvider
             ContinuityServiceInterface::class => ContinuityService::class,
             ContactPageServiceInterface::class => ContactPageService::class,
             EServicesPageServiceInterface::class => EServicesPageService::class,
-            FacultyAdminWorkflowServiceInterface::class => FacultyAdminWorkflowService::class,
             FacultyPageServiceInterface::class => FacultyPageService::class,
             SitemapServiceInterface::class => SitemapService::class,
             MediaServiceInterface::class => MediaService::class,

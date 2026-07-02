@@ -7,6 +7,23 @@
     $activeDepartmentId = (string) request('department', $departments->first()['id'] ?? '');
     $activeDepartment = $departments->firstWhere('id', $activeDepartmentId) ?? $departments->first();
     $terms = collect($activeDepartment['terms'] ?? [])->filter(fn ($item) => is_array($item))->values();
+    $clientPayload = $studyPayload;
+    $clientPayload['plan'] = [
+        ...$plan,
+        'departments' => $departments->map(function (array $department) use ($activeDepartment): array {
+            if (($department['id'] ?? null) === ($activeDepartment['id'] ?? null)) {
+                return $department;
+            }
+
+            return [
+                'id' => $department['id'] ?? '',
+                'name' => $department['name'] ?? '',
+                'nameAr' => $department['nameAr'] ?? '',
+                'nameEn' => $department['nameEn'] ?? '',
+                'totalCredits' => $department['totalCredits'] ?? null,
+            ];
+        })->values()->all(),
+    ];
     $facultyPlanName = (string) ($plan['faculty'] ?? $faculty['title']);
     $accent = (string) ($plan['accent'] ?? ($faculty['accentColor'] ?? '#202759'));
     $label = fn (string $key): string => (string) ($labels[$key] ?? $labels[$key.'En'] ?? '');
@@ -70,7 +87,7 @@
 @endphp
 
 <div class="font-hacen {{ $isAr ? 'rtl' : '' }}" dir="{{ $direction }}" data-study-plan data-locale="{{ $locale }}" data-faculty-slug="{{ $page->facultySlug }}" style="--accent-color: {{ $accent }}; --accent-color-15: {{ $accent }}26;">
-    <script type="application/json" data-study-plan-payload>{!! json_encode($studyPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_THROW_ON_ERROR) !!}</script>
+    <script type="application/json" data-study-plan-payload>{!! json_encode($clientPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_THROW_ON_ERROR) !!}</script>
 
     <section class="relative flex min-h-[330px] items-center justify-center overflow-hidden pt-28">
         <div class="absolute inset-0">

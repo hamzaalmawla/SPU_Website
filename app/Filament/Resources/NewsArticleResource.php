@@ -21,6 +21,7 @@ use Filament\Tables;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
@@ -108,9 +109,18 @@ class NewsArticleResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('translations.title')->label('Titles')->listWithLineBreaks()->limit(50),
+                TextColumn::make('translations.title')
+                    ->label('Titles')
+                    ->listWithLineBreaks()
+                    ->limit(50)
+                    ->searchable(query: fn (Builder $query, string $search): Builder => $query->orWhereHas(
+                        'translations',
+                        fn (Builder $translationQuery): Builder => $translationQuery
+                            ->where('title', 'like', "%{$search}%")
+                            ->orWhere('excerpt', 'like', "%{$search}%")
+                    )),
                 TextColumn::make('slug')->searchable()->limit(42),
-                TextColumn::make('category.slug')->label('Category')->badge(),
+                TextColumn::make('category.slug')->label('Category')->badge()->searchable(),
                 TextColumn::make('status')->badge()->color(fn (string $state): string => match ($state) {
                     'published' => 'success',
                     'scheduled' => 'warning',
@@ -123,8 +133,16 @@ class NewsArticleResource extends Resource
                 TextColumn::make('updated_at')->dateTime()->sortable(),
             ])
             ->filters([
+                SelectFilter::make('category_type')
+                    ->label('Type')
+                    ->options(['news' => 'News', 'announcement' => 'Announcement'])
+                    ->query(fn (Builder $query, array $data): Builder => filled($data['value'] ?? null)
+                        ? $query->whereHas('category', fn (Builder $categoryQuery): Builder => $categoryQuery->where('type', $data['value']))
+                        : $query),
                 SelectFilter::make('status')->options(['draft' => 'Draft', 'published' => 'Published', 'scheduled' => 'Scheduled', 'archived' => 'Archived']),
                 SelectFilter::make('news_category_id')->label('Category')->relationship('category', 'slug')->searchable(),
+                TernaryFilter::make('is_enabled')->label('Enabled'),
+                TernaryFilter::make('is_featured')->label('Featured'),
             ])
             ->actions([Tables\Actions\EditAction::make()])
             ->bulkActions([])

@@ -10,16 +10,20 @@ use App\Exceptions\ConflictException;
 use App\Models\User\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\Tabs\Tab;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 trait ManagesFacultyHomepage
@@ -67,12 +71,26 @@ trait ManagesFacultyHomepage
         $draftPayload = $this->cmsWorkflowService->latestEditableDraftPayload($targetKey);
         $payload = is_array($draftPayload) ? $draftPayload : $this->facultyPageService->getEditablePayload($targetKey);
         $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey);
+        $studyPlanDepartmentOptions = $this->studyPlanDepartmentOptionsFromPayload($targetKey, $payload);
+        $studyPlanDepartmentId = $this->studyPlanDepartmentIdFromPayload($targetKey, $payload, (string) ($this->data['study_plan_department_id'] ?? ''));
+        $studyPlanTermOptions = $this->studyPlanTermOptionsFromPayload($targetKey, $payload, $studyPlanDepartmentId);
+        $studyPlanTermId = $this->studyPlanTermIdFromPayload($targetKey, $payload, $studyPlanDepartmentId, (string) ($this->data['study_plan_term_id'] ?? ''));
 
         $this->form->fill([
             'target_key' => $targetKey,
-            'ar_content' => is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
-            'en_content' => is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
+            'study_plan_department_id' => $studyPlanDepartmentId,
+            'study_plan_term_id' => $studyPlanTermId,
+            'record_search' => (string) ($this->data['record_search'] ?? ''),
+            'record_department_filter' => (string) ($this->data['record_department_filter'] ?? ''),
+            'record_year_filter' => (string) ($this->data['record_year_filter'] ?? ''),
+            'ar_content' => $this->contentForForm($targetKey, is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [], $studyPlanDepartmentId, $studyPlanTermId),
+            'en_content' => $this->contentForForm($targetKey, is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [], $studyPlanDepartmentId, $studyPlanTermId),
         ]);
+
+        if (is_array($this->data)) {
+            $this->data['study_plan_department_options'] = $studyPlanDepartmentOptions;
+            $this->data['study_plan_term_options'] = $studyPlanTermOptions;
+        }
     }
 
     public function form(Form $form): Form
@@ -86,6 +104,33 @@ trait ManagesFacultyHomepage
                         ->required()
                         ->live()
                         ->afterStateUpdated(fn (?string $state): mixed => is_string($state) && $state !== '' ? $this->loadTarget($state) : null),
+                    Select::make('study_plan_department_id')
+                        ->label('Study Plan Department')
+                        ->options(fn (): array => $this->studyPlanDepartmentOptions())
+                        ->visible(fn (): bool => $this->subpageSlugFromTarget($this->currentTargetKeyForSchema()) === 'study-plan')
+                        ->live()
+                        ->afterStateUpdated(fn (): mixed => $this->loadTarget($this->currentTargetKeyForSchema())),
+                    Select::make('study_plan_term_id')
+                        ->label('Study Plan Term')
+                        ->options(fn (): array => $this->studyPlanTermOptions())
+                        ->visible(fn (): bool => $this->subpageSlugFromTarget($this->currentTargetKeyForSchema()) === 'study-plan')
+                        ->live()
+                        ->afterStateUpdated(fn (): mixed => $this->loadTarget($this->currentTargetKeyForSchema())),
+                    TextInput::make('record_search')
+                        ->label('Search Records')
+                        ->visible(fn (): bool => $this->hasFilterableRecords($this->currentTargetKeyForSchema()))
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(fn (): mixed => $this->loadTarget($this->currentTargetKeyForSchema())),
+                    TextInput::make('record_department_filter')
+                        ->label('Department / Faculty Filter')
+                        ->visible(fn (): bool => $this->hasFilterableRecords($this->currentTargetKeyForSchema()))
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(fn (): mixed => $this->loadTarget($this->currentTargetKeyForSchema())),
+                    TextInput::make('record_year_filter')
+                        ->label('Year Filter')
+                        ->visible(fn (): bool => $this->hasFilterableRecords($this->currentTargetKeyForSchema()))
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(fn (): mixed => $this->loadTarget($this->currentTargetKeyForSchema())),
                 ]),
                 Tabs::make('faculty_homepage_locales')
                     ->tabs([
@@ -325,10 +370,10 @@ trait ManagesFacultyHomepage
             'translations' => [
                 'ar' => $targetKey === $this->defaultTargetKey()
                     ? $this->normalizeContent(is_array($state['ar_content'] ?? null) ? $state['ar_content'] : [])
-                    : $this->normalizeSubpageContent($targetKey, is_array($state['ar_content'] ?? null) ? $state['ar_content'] : []),
+                    : $this->normalizeSubpageContent($targetKey, 'ar', is_array($state['ar_content'] ?? null) ? $state['ar_content'] : []),
                 'en' => $targetKey === $this->defaultTargetKey()
                     ? $this->normalizeContent(is_array($state['en_content'] ?? null) ? $state['en_content'] : [])
-                    : $this->normalizeSubpageContent($targetKey, is_array($state['en_content'] ?? null) ? $state['en_content'] : []),
+                    : $this->normalizeSubpageContent($targetKey, 'en', is_array($state['en_content'] ?? null) ? $state['en_content'] : []),
             ],
         ];
     }
@@ -338,8 +383,26 @@ trait ManagesFacultyHomepage
     {
         $prefix = $locale.'_content';
         $targetKey = $this->currentTargetKeyForSchema();
+        $subpageSlug = $this->subpageSlugFromTarget($targetKey);
 
-        $sections = [
+        $sections = $this->baseSubpageFields($prefix);
+
+        return match ($subpageSlug) {
+            'overview' => [...$sections, ...$this->overviewSubpageFields($prefix)],
+            'departments' => [...$sections, ...$this->departmentsSubpageFields($prefix)],
+            'study-plan' => [...$sections, ...$this->studyPlanSubpageFields($prefix)],
+            'labs' => [...$sections, ...$this->labsSubpageFields($prefix)],
+            'projects' => [...$sections, ...$this->projectsSubpageFields($prefix)],
+            'alumni' => [...$sections, ...$this->alumniSubpageFields($prefix)],
+            'valedictorians' => [...$sections, ...$this->valedictoriansSubpageFields($prefix)],
+            default => throw new \InvalidArgumentException('Unsupported faculty subpage target.'),
+        };
+    }
+
+    /** @return array<int, Section> */
+    private function baseSubpageFields(string $prefix): array
+    {
+        return [
             Section::make('Subpage Content')->schema([
                 TextInput::make($prefix.'.title')->label('Title')->required()->maxLength(180),
                 TextInput::make($prefix.'.heroImage')->label('Hero Image')->maxLength(255),
@@ -347,11 +410,15 @@ trait ManagesFacultyHomepage
                 Textarea::make($prefix.'.body')->label('Body')->rows(4)->columnSpanFull(),
             ])->columns(2),
         ];
+    }
 
-        if (str_ends_with($targetKey, '.overview')) {
-            $sections[] = Section::make('Overview Sections')->schema([
+    /** @return array<int, Section> */
+    private function overviewSubpageFields(string $prefix): array
+    {
+        return [
+            Section::make('Overview Sections')->schema([
                 Repeater::make($prefix.'.sections')
-                    ->label('Sections')
+                    ->label('Narrative Sections')
                     ->schema([
                         TextInput::make('id')->maxLength(80),
                         TextInput::make('title')->maxLength(160),
@@ -362,9 +429,9 @@ trait ManagesFacultyHomepage
                     ->reorderable()
                     ->collapsible()
                     ->columnSpanFull(),
-            ]);
+            ]),
 
-            $sections[] = Section::make('Overview Stats')->schema([
+            Section::make('Overview Stats')->schema([
                 Repeater::make($prefix.'.stats')
                     ->label('Stats')
                     ->schema([
@@ -377,9 +444,9 @@ trait ManagesFacultyHomepage
                     ->reorderable()
                     ->collapsible()
                     ->columnSpanFull(),
-            ]);
+            ]),
 
-            $sections[] = Section::make('Dean Message')->schema([
+            Section::make('Dean Message')->schema([
                 TextInput::make($prefix.'.dean.nameAr')->label('Dean Name AR')->maxLength(160),
                 TextInput::make($prefix.'.dean.nameEn')->label('Dean Name EN')->maxLength(160),
                 TextInput::make($prefix.'.dean.roleAr')->label('Dean Role AR')->maxLength(160),
@@ -387,92 +454,306 @@ trait ManagesFacultyHomepage
                 TextInput::make($prefix.'.dean.image')->label('Dean Image')->maxLength(255),
                 Textarea::make($prefix.'.dean.messageAr')->label('Message AR')->rows(4),
                 Textarea::make($prefix.'.dean.messageEn')->label('Message EN')->rows(4),
-            ])->columns(2);
+            ])->columns(2),
+        ];
+    }
 
-            return $sections;
-        }
-
-        if (str_ends_with($targetKey, '.study_plan')) {
-            $sections[] = Section::make('Study Plan Labels')->schema([
+    /** @return array<int, Section> */
+    private function studyPlanSubpageFields(string $prefix): array
+    {
+        return [
+            Section::make('Study Plan Labels')->schema([
                 TextInput::make($prefix.'.payload.labels.title')->label('Title')->maxLength(160),
                 TextInput::make($prefix.'.payload.labels.home')->label('Home Label')->maxLength(120),
                 TextInput::make($prefix.'.payload.labels.faculties')->label('Facilities Label')->maxLength(120),
                 TextInput::make($prefix.'.payload.labels.empty')->label('Empty Label')->maxLength(160),
-            ])->columns(2);
+                TextInput::make($prefix.'.payload.labels.electiveRequirements')->label('Elective Requirements Label')->maxLength(160),
+                TextInput::make($prefix.'.payload.labels.promotionRequirements')->label('Promotion Requirements Label')->maxLength(160),
+                TextInput::make($prefix.'.payload.labels.viewDetails')->label('Course Details Label')->maxLength(120),
+                TextInput::make($prefix.'.payload.labels.close')->label('Close Label')->maxLength(120),
+            ])->columns(2),
 
-            $sections[] = Section::make('Study Plan Departments')->schema([
+            Section::make('Course Page Labels')->schema([
+                TextInput::make($prefix.'.payload.courseLabels.studyPlan')->label('Study Plan Label')->maxLength(160),
+                TextInput::make($prefix.'.payload.courseLabels.coursePage')->label('Course Page Label')->maxLength(160),
+                TextInput::make($prefix.'.payload.courseLabels.credits')->label('Credits Label')->maxLength(120),
+                TextInput::make($prefix.'.payload.courseLabels.courseType')->label('Course Type Label')->maxLength(120),
+                TextInput::make($prefix.'.payload.courseLabels.requiredStatus')->label('Required Status Label')->maxLength(120),
+                TextInput::make($prefix.'.payload.courseLabels.required')->label('Required Label')->maxLength(120),
+                TextInput::make($prefix.'.payload.courseLabels.elective')->label('Elective Label')->maxLength(120),
+                TextInput::make($prefix.'.payload.courseLabels.prerequisites')->label('Prerequisites Label')->maxLength(120),
+                TextInput::make($prefix.'.payload.courseLabels.opensAfter')->label('Opens After Label')->maxLength(120),
+                TextInput::make($prefix.'.payload.courseLabels.lessons')->label('Lessons Label')->maxLength(120),
+                TextInput::make($prefix.'.payload.courseLabels.all')->label('All Lessons Label')->maxLength(120),
+                TextInput::make($prefix.'.payload.courseLabels.viewPdf')->label('View PDF Label')->maxLength(120),
+                TextInput::make($prefix.'.payload.courseLabels.download')->label('Download Label')->maxLength(120),
+            ])->columns(2),
+
+            Section::make('Study Plan Departments')->schema([
                 TextInput::make($prefix.'.payload.plan.faculty')->label('Plan Faculty Name')->maxLength(180),
                 TextInput::make($prefix.'.payload.plan.heroImage')->label('Plan Hero Image')->maxLength(255),
+                TextInput::make($prefix.'.payload.plan.accent')->label('Plan Accent Color')->maxLength(20),
                 Repeater::make($prefix.'.payload.plan.departments')
                     ->label('Departments')
                     ->schema([
                         TextInput::make('id')->required()->maxLength(80),
                         TextInput::make('name')->required()->maxLength(160),
-                        Repeater::make('terms')
-                            ->label('Terms')
-                            ->schema([
-                                TextInput::make('id')->required()->maxLength(80),
-                                TextInput::make('label')->required()->maxLength(120),
-                                Repeater::make('courses')
-                                    ->label('Courses')
-                                    ->schema([
-                                        TextInput::make('id')->required()->maxLength(80),
-                                        TextInput::make('code')->maxLength(80),
-                                        TextInput::make('title')->required()->maxLength(180),
-                                        TextInput::make('hours')->numeric(),
-                                        TextInput::make('type')->maxLength(80),
-                                    ])
-                                    ->columns(3)
-                                    ->defaultItems(0)
-                                    ->reorderable()
-                                    ->collapsible()
-                                    ->columnSpanFull(),
-                            ])
-                            ->columns(2)
-                            ->defaultItems(0)
-                            ->reorderable()
-                            ->collapsible()
-                            ->columnSpanFull(),
+                        TextInput::make('totalCredits')->numeric(),
+                    ])
+                    ->columns(3)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ])->columns(2),
+
+            Section::make('Study Plan Terms')->schema([
+                Repeater::make($prefix.'.payload.plan.terms')
+                    ->label('Terms')
+                    ->schema([
+                        TextInput::make('departmentId')->required()->label('Department ID')->maxLength(80),
+                        TextInput::make('id')->required()->maxLength(80),
+                        TextInput::make('label')->required()->maxLength(120),
+                    ])
+                    ->columns(3)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]),
+
+            Section::make('Study Plan Courses')->schema([
+                Repeater::make($prefix.'.payload.plan.courses')
+                    ->label('Courses')
+                    ->schema([
+                        TextInput::make('departmentId')->required()->label('Department ID')->maxLength(80),
+                        TextInput::make('termId')->required()->label('Term ID')->maxLength(80),
+                        TextInput::make('id')->required()->maxLength(80),
+                        TextInput::make('code')->maxLength(80),
+                        TextInput::make('title')->required()->maxLength(180),
+                        TextInput::make('credits')->numeric(),
+                        Select::make('type')->options([
+                            'university' => 'University Requirement',
+                            'faculty' => 'Faculty Requirement',
+                            'specialization' => 'Specialization Requirement',
+                        ]),
+                        Toggle::make('required')->label('Required'),
+                        TagsInput::make('prerequisites')->label('Prerequisite Course IDs')->columnSpanFull(),
+                        TextInput::make('instructor.nameAr')->label('Instructor AR')->maxLength(160),
+                        TextInput::make('instructor.nameEn')->label('Instructor EN')->maxLength(160),
+                        TextInput::make('instructor.staffSlug')->label('Instructor Profile Slug')->maxLength(120),
+                        Textarea::make('description')->rows(2)->columnSpanFull(),
+                    ])
+                    ->columns(3)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]),
+
+            Section::make('Course Lessons')->schema([
+                Repeater::make($prefix.'.payload.plan.lessons')
+                    ->label('Lessons')
+                    ->schema([
+                        TextInput::make('courseId')->required()->label('Course ID')->maxLength(80),
+                        TextInput::make('order')->numeric(),
+                        Select::make('type')->options([
+                            'lecture' => 'Lecture',
+                            'practical' => 'Practical',
+                            'seminar' => 'Seminar',
+                        ]),
+                        TextInput::make('title')->required()->maxLength(180),
+                        TextInput::make('pdfUrl')->label('PDF URL')->maxLength(255),
+                        Textarea::make('description')->rows(2)->columnSpanFull(),
+                    ])
+                    ->columns(3)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]),
+
+            Section::make('Electives & Promotion')->schema([
+                Repeater::make($prefix.'.payload.plan.electivePools')
+                    ->label('Elective Pools')
+                    ->schema([
+                        TextInput::make('departmentId')->required()->label('Department ID')->maxLength(80),
+                        TextInput::make('id')->required()->maxLength(80),
+                        TextInput::make('requiredHours')->numeric(),
+                        Textarea::make('description')->rows(2)->columnSpanFull(),
+                    ])
+                    ->columns(3)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+                Repeater::make($prefix.'.payload.plan.promotionRequirements')
+                    ->label('Promotion Requirements')
+                    ->schema([
+                        TextInput::make('departmentId')->required()->label('Department ID')->maxLength(80),
+                        TextInput::make('fromYear')->required()->maxLength(20),
+                        TextInput::make('toYear')->required()->maxLength(20),
+                        TextInput::make('requiredCredits')->numeric(),
+                    ])
+                    ->columns(4)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]),
+
+            Section::make('Legend & Lesson Types')->schema([
+                Repeater::make($prefix.'.payload.legend')
+                    ->label('Course Type Legend')
+                    ->schema([
+                        TextInput::make('id')->required()->maxLength(80),
+                        TextInput::make('label')->required()->maxLength(120),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
                     ->reorderable()
                     ->collapsible()
                     ->columnSpanFull(),
-            ])->columns(2);
+                Repeater::make($prefix.'.payload.lessonTypes')
+                    ->label('Lesson Types')
+                    ->schema([
+                        TextInput::make('id')->required()->maxLength(80),
+                        TextInput::make('label')->required()->maxLength(120),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]),
+        ];
+    }
 
-            return $sections;
-        }
+    /** @return array<int, Section> */
+    private function departmentsSubpageFields(string $prefix): array
+    {
+        return [
+            Section::make('Department Directory')->schema([
+                Repeater::make($prefix.'.items')
+                    ->label('Departments')
+                    ->schema([
+                        TextInput::make('slug')->required()->maxLength(100),
+                        TextInput::make('code')->maxLength(40),
+                        TextInput::make('title')->required()->maxLength(180),
+                        TextInput::make('degrees')->label('Degree / Track')->maxLength(160),
+                        TagsInput::make('tags')->columnSpanFull(),
+                        Textarea::make('summary')->rows(3)->columnSpanFull(),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]),
+        ];
+    }
 
-        $sections[] = Section::make('Subpage Items')->schema([
-            Repeater::make($prefix.'.items')
-                ->label('Items')
-                ->schema([
-                    TextInput::make('slug')->maxLength(100),
-                    TextInput::make('title')->maxLength(180),
-                    TextInput::make('code')->maxLength(40),
-                    TextInput::make('degrees')->maxLength(160),
-                    TextInput::make('department')->maxLength(160),
-                    TextInput::make('instructor')->maxLength(160),
-                    TextInput::make('tag')->maxLength(120),
-                    TextInput::make('team')->maxLength(180),
-                    TextInput::make('supervisor')->maxLength(180),
-                    TextInput::make('graduationYear')->maxLength(20),
-                    TextInput::make('academicYear')->maxLength(40),
-                    TextInput::make('gpa')->maxLength(20),
-                    TextInput::make('semester')->maxLength(80),
-                    TextInput::make('image')->maxLength(255),
-                    TextInput::make('detailRoute')->maxLength(255),
-                    Textarea::make('summary')->rows(2)->columnSpanFull(),
-                ])
-                ->columns(3)
-                ->defaultItems(0)
-                ->reorderable()
-                ->collapsible()
-                ->columnSpanFull(),
-        ]);
+    /** @return array<int, Section> */
+    private function labsSubpageFields(string $prefix): array
+    {
+        return [
+            Section::make('Laboratories')->schema([
+                Repeater::make($prefix.'.items')
+                    ->label('Labs')
+                    ->schema([
+                        TextInput::make('slug')->required()->maxLength(100),
+                        TextInput::make('title')->required()->maxLength(180),
+                        TextInput::make('department')->maxLength(160),
+                        TextInput::make('instructor')->maxLength(160),
+                        TextInput::make('image')->maxLength(255),
+                        Textarea::make('summary')->rows(3)->columnSpanFull(),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]),
+        ];
+    }
 
-        return $sections;
+    /** @return array<int, Section> */
+    private function projectsSubpageFields(string $prefix): array
+    {
+        return [
+            Section::make('Student Projects')->schema([
+                Repeater::make($prefix.'.items')
+                    ->label('Projects')
+                    ->schema([
+                        TextInput::make('slug')->required()->maxLength(100),
+                        TextInput::make('title')->required()->maxLength(180),
+                        TextInput::make('tag')->maxLength(120),
+                        TextInput::make('team')->maxLength(180),
+                        TextInput::make('supervisor')->maxLength(180),
+                        TextInput::make('image')->maxLength(255),
+                        TextInput::make('detailRoute')->maxLength(255),
+                        Textarea::make('summary')->rows(3)->columnSpanFull(),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]),
+        ];
+    }
+
+    /** @return array<int, Section> */
+    private function alumniSubpageFields(string $prefix): array
+    {
+        return [
+            Section::make('Alumni Records')->schema([
+                Repeater::make($prefix.'.items')
+                    ->label('Alumni')
+                    ->schema([
+                        Hidden::make('_cmsKey'),
+                        TextInput::make('title')->label('Graduate Name')->required()->maxLength(180),
+                        TextInput::make('graduationYear')->maxLength(20),
+                        TextInput::make('semester')->maxLength(80),
+                        TextInput::make('department')->maxLength(160),
+                        TextInput::make('faculty')->maxLength(180),
+                        TextInput::make('degree')->maxLength(120),
+                        TextInput::make('academicPhase')->maxLength(120),
+                        TextInput::make('image')->maxLength(255),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]),
+        ];
+    }
+
+    /** @return array<int, Section> */
+    private function valedictoriansSubpageFields(string $prefix): array
+    {
+        return [
+            Section::make('Honor List Records')->schema([
+                Repeater::make($prefix.'.items')
+                    ->label('Honor Students')
+                    ->schema([
+                        Hidden::make('_cmsKey'),
+                        TextInput::make('title')->label('Student Name')->required()->maxLength(180),
+                        TextInput::make('academicYear')->maxLength(40),
+                        TextInput::make('semester')->maxLength(80),
+                        TextInput::make('department')->maxLength(160),
+                        TextInput::make('faculty')->maxLength(180),
+                        TextInput::make('gpa')->maxLength(20),
+                        TextInput::make('image')->maxLength(255),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]),
+        ];
     }
 
     /** @return array<string, mixed> */
@@ -489,36 +770,153 @@ trait ManagesFacultyHomepage
     }
 
     /** @return array<string, mixed> */
-    private function normalizeSubpageContent(string $targetKey, array $content): array
+    private function contentForForm(string $targetKey, array $content, ?string $departmentId = null, ?string $termId = null): array
     {
-        $content['sections'] = $this->listOfArrays($content['sections'] ?? []);
+        $subpageSlug = $this->subpageSlugFromTarget($targetKey);
 
-        if (str_ends_with($targetKey, '.overview')) {
-            $content['stats'] = $this->listOfArrays($content['stats'] ?? []);
-            $content['dean'] = is_array($content['dean'] ?? null) ? $content['dean'] : [];
+        if ($this->hasFilterableRecords($targetKey)) {
+            return $this->filterableRecordContentForForm($targetKey, $content);
+        }
+
+        if ($subpageSlug !== 'study-plan') {
+            return $content;
+        }
+
+        $payload = is_array($content['payload'] ?? null) ? $content['payload'] : [];
+        $plan = is_array($payload['plan'] ?? null) ? $payload['plan'] : [];
+        $departments = $this->listOfArrays($plan['departments'] ?? []);
+        $flatDepartments = [];
+        $terms = [];
+        $courses = [];
+        $lessons = [];
+        $electivePools = [];
+        $promotionRequirements = [];
+
+        $departmentId = $departmentId !== null && $departmentId !== '' ? $departmentId : (string) ($departments[0]['id'] ?? '');
+        $selectedTermId = $termId !== null && $termId !== '' ? $termId : null;
+
+        foreach ($departments as $department) {
+            $currentDepartmentId = (string) ($department['id'] ?? '');
+            $flatDepartments[] = [
+                'id' => $currentDepartmentId,
+                'name' => (string) ($department['name'] ?? ''),
+                'totalCredits' => $department['totalCredits'] ?? null,
+            ];
+
+            if ($currentDepartmentId !== $departmentId) {
+                continue;
+            }
+
+            foreach ($this->listOfArrays($department['electivePools'] ?? []) as $pool) {
+                $electivePools[] = ['departmentId' => $currentDepartmentId, ...$pool];
+            }
+
+            foreach ($this->listOfArrays($department['promotionRequirements'] ?? []) as $requirement) {
+                $promotionRequirements[] = ['departmentId' => $currentDepartmentId, ...$requirement];
+            }
+
+            foreach ($this->listOfArrays($department['terms'] ?? []) as $term) {
+                $termId = (string) ($term['id'] ?? '');
+                $terms[] = [
+                    'departmentId' => $currentDepartmentId,
+                    'id' => $termId,
+                    'label' => (string) ($term['label'] ?? ''),
+                ];
+
+                if ($selectedTermId !== null && $termId !== $selectedTermId) {
+                    continue;
+                }
+
+                foreach ($this->listOfArrays($term['courses'] ?? []) as $course) {
+                    $courseId = (string) ($course['id'] ?? '');
+                    $courseLessons = $this->listOfArrays($course['lessons'] ?? []);
+                    unset($course['lessons']);
+
+                    $courses[] = [
+                        'departmentId' => $currentDepartmentId,
+                        'termId' => $termId,
+                        ...$course,
+                    ];
+
+                    foreach ($courseLessons as $lesson) {
+                        $lessons[] = ['courseId' => $courseId, ...$lesson];
+                    }
+                }
+            }
+        }
+
+        $payload['plan'] = [
+            ...$plan,
+            'departments' => $flatDepartments,
+            'terms' => $terms,
+            'courses' => $courses,
+            'lessons' => $lessons,
+            'electivePools' => $electivePools,
+            'promotionRequirements' => $promotionRequirements,
+        ];
+        $payload['lessonTypes'] = $this->lessonTypesForForm($payload['lessonTypes'] ?? []);
+        $content['payload'] = $payload;
+
+        return $content;
+    }
+
+    /** @return array<string, mixed> */
+    private function filterableRecordContentForForm(string $targetKey, array $content): array
+    {
+        $items = $this->recordItemsWithKeys($this->listOfArrays($content['items'] ?? []));
+
+        if (! $this->hasActiveRecordFilters()) {
+            $content['items'] = $items;
 
             return $content;
         }
 
-        if (str_ends_with($targetKey, '.study_plan')) {
+        $content['items'] = array_values(array_filter($items, fn (array $item): bool => $this->recordMatchesFilters($targetKey, $item)));
+
+        return $content;
+    }
+
+    /** @return array<string, mixed> */
+    private function normalizeSubpageContent(string $targetKey, string $locale, array $content): array
+    {
+        $content['sections'] = $this->listOfArrays($content['sections'] ?? []);
+        $subpageSlug = $this->subpageSlugFromTarget($targetKey);
+
+        if ($subpageSlug === 'overview') {
+            $content['stats'] = $this->listOfArrays($content['stats'] ?? []);
+            $content['dean'] = is_array($content['dean'] ?? null) ? $content['dean'] : [];
+            unset($content['items']);
+
+            return $content;
+        }
+
+        if ($subpageSlug === 'study-plan') {
             $content['payload'] = is_array($content['payload'] ?? null) ? $content['payload'] : [];
             $content['payload']['plan'] = is_array($content['payload']['plan'] ?? null) ? $content['payload']['plan'] : [];
             $content['payload']['labels'] = is_array($content['payload']['labels'] ?? null) ? $content['payload']['labels'] : [];
-            $content['payload']['plan']['departments'] = array_map(function (array $department): array {
-                $department['terms'] = array_map(function (array $term): array {
-                    $term['courses'] = $this->listOfArrays($term['courses'] ?? []);
-
-                    return $term;
-                }, $this->listOfArrays($department['terms'] ?? []));
-
-                return $department;
-            }, $this->listOfArrays($content['payload']['plan']['departments'] ?? []));
+            $content['payload']['courseLabels'] = is_array($content['payload']['courseLabels'] ?? null) ? $content['payload']['courseLabels'] : [];
+            $content['payload']['legend'] = $this->listOfArrays($content['payload']['legend'] ?? []);
+            $content['payload']['lessonTypes'] = $this->keyedItemsById($content['payload']['lessonTypes'] ?? []);
+            $content = $this->mergeStudyPlanDepartmentContent($targetKey, $locale, $content);
             unset($content['items'], $content['stats'], $content['dean']);
 
             return $content;
         }
 
         $content['items'] = $this->listOfArrays($content['items'] ?? []);
+        $content['items'] = array_map(function (array $item) use ($subpageSlug): array {
+            if ($subpageSlug === 'departments') {
+                $item['tags'] = array_values(array_filter(is_array($item['tags'] ?? null) ? $item['tags'] : []));
+            }
+
+            return $item;
+        }, $content['items']);
+
+        if ($this->hasFilterableRecords($targetKey)) {
+            $content = $this->mergeFilterableRecordContent($targetKey, $locale, $content);
+        }
+
+        $content['items'] = array_map(fn (array $item): array => $this->withoutKeys($item, ['_cmsKey']), $content['items']);
         unset($content['stats'], $content['dean']);
 
         return $content;
@@ -548,6 +946,394 @@ trait ManagesFacultyHomepage
         if (! array_key_exists($targetKey, $this->targetOptions())) {
             throw new \InvalidArgumentException('Unsupported faculty CMS target.');
         }
+    }
+
+    private function subpageSlugFromTarget(string $targetKey): string
+    {
+        $parts = explode('.', $targetKey);
+        $slug = (string) ($parts[2] ?? '');
+
+        return $slug === 'study_plan' ? 'study-plan' : $slug;
+    }
+
+    private function hasFilterableRecords(string $targetKey): bool
+    {
+        return in_array($this->subpageSlugFromTarget($targetKey), ['alumni', 'valedictorians'], true);
+    }
+
+    private function hasActiveRecordFilters(): bool
+    {
+        return trim((string) ($this->data['record_search'] ?? '')) !== ''
+            || trim((string) ($this->data['record_department_filter'] ?? '')) !== ''
+            || trim((string) ($this->data['record_year_filter'] ?? '')) !== '';
+    }
+
+    /** @param array<string, mixed> $item */
+    private function recordMatchesFilters(string $targetKey, array $item): bool
+    {
+        $search = trim((string) ($this->data['record_search'] ?? ''));
+        $department = trim((string) ($this->data['record_department_filter'] ?? ''));
+        $year = trim((string) ($this->data['record_year_filter'] ?? ''));
+        $yearKey = $this->subpageSlugFromTarget($targetKey) === 'alumni' ? 'graduationYear' : 'academicYear';
+
+        if ($search !== '' && ! Str::contains(Str::lower($this->recordSearchText($item)), Str::lower($search))) {
+            return false;
+        }
+
+        if ($department !== '' && ! Str::contains(Str::lower((string) ($item['department'] ?? '').' '.(string) ($item['faculty'] ?? '')), Str::lower($department))) {
+            return false;
+        }
+
+        if ($year !== '' && ! Str::contains(Str::lower((string) ($item[$yearKey] ?? '')), Str::lower($year))) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /** @param array<string, mixed> $item */
+    private function recordSearchText(array $item): string
+    {
+        return implode(' ', array_map('strval', array_filter([
+            $item['title'] ?? null,
+            $item['graduationYear'] ?? null,
+            $item['academicYear'] ?? null,
+            $item['semester'] ?? null,
+            $item['department'] ?? null,
+            $item['faculty'] ?? null,
+            $item['degree'] ?? null,
+            $item['academicPhase'] ?? null,
+            $item['gpa'] ?? null,
+        ], static fn (mixed $value): bool => $value !== null && $value !== '')));
+    }
+
+    /** @param array<int, array<string, mixed>> $items @return array<int, array<string, mixed>> */
+    private function recordItemsWithKeys(array $items): array
+    {
+        return array_map(function (array $item, int $index): array {
+            $item['_cmsKey'] = (string) ($item['_cmsKey'] ?? sha1($index.'|'.$this->recordSearchText($item)));
+
+            return $item;
+        }, $items, array_keys($items));
+    }
+
+    /** @param array<string, mixed> $content @return array<string, mixed> */
+    private function mergeFilterableRecordContent(string $targetKey, string $locale, array $content): array
+    {
+        if (! $this->hasActiveRecordFilters()) {
+            return $content;
+        }
+
+        $basePayload = $this->cmsWorkflowService->latestEditableDraftPayload($targetKey) ?? $this->facultyPageService->getEditablePayload($targetKey);
+        $baseContent = is_array($basePayload['translations'][$locale] ?? null) ? $basePayload['translations'][$locale] : [];
+        $baseItems = $this->recordItemsWithKeys($this->listOfArrays($baseContent['items'] ?? []));
+        $editedItems = $this->recordItemsWithKeys($this->listOfArrays($content['items'] ?? []));
+        $editedByKey = collect($editedItems)->keyBy(fn (array $item): string => (string) ($item['_cmsKey'] ?? ''));
+        $seenKeys = [];
+
+        $content['items'] = array_map(function (array $baseItem) use ($targetKey, $editedByKey, &$seenKeys): array {
+            $key = (string) ($baseItem['_cmsKey'] ?? '');
+
+            if ($this->recordMatchesFilters($targetKey, $baseItem)) {
+                $seenKeys[] = $key;
+
+                $editedItem = $editedByKey->get($key);
+
+                if (is_array($editedItem)) {
+                    return $editedItem;
+                }
+            }
+
+            return $baseItem;
+        }, $baseItems);
+
+        foreach ($editedItems as $editedItem) {
+            $key = (string) ($editedItem['_cmsKey'] ?? '');
+
+            if ($key !== '' && in_array($key, $seenKeys, true)) {
+                continue;
+            }
+
+            $content['items'][] = $editedItem;
+        }
+
+        return $content;
+    }
+
+    /** @param array<string, mixed> $payload @return array<string, string> */
+    private function studyPlanDepartmentOptionsFromPayload(string $targetKey, array $payload): array
+    {
+        if ($this->subpageSlugFromTarget($targetKey) !== 'study-plan') {
+            return [];
+        }
+
+        $content = is_array($payload['translations']['en'] ?? null)
+            ? $payload['translations']['en']
+            : (is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : []);
+        $departments = is_array($content['payload']['plan']['departments'] ?? null) ? $content['payload']['plan']['departments'] : [];
+        $options = [];
+
+        foreach ($this->listOfArrays($departments) as $department) {
+            $id = (string) ($department['id'] ?? '');
+
+            if ($id === '') {
+                continue;
+            }
+
+            $options[$id] = (string) ($department['name'] ?? $department['nameEn'] ?? $department['nameAr'] ?? $id);
+        }
+
+        return $options;
+    }
+
+    /** @param array<string, mixed> $payload */
+    private function studyPlanDepartmentIdFromPayload(string $targetKey, array $payload, string $preferred): ?string
+    {
+        $options = $this->studyPlanDepartmentOptionsFromPayload($targetKey, $payload);
+
+        if ($preferred !== '' && array_key_exists($preferred, $options)) {
+            return $preferred;
+        }
+
+        $ids = array_keys($options);
+
+        return $ids === [] ? null : (string) $ids[0];
+    }
+
+    /** @param array<string, mixed> $payload @return array<string, string> */
+    private function studyPlanTermOptionsFromPayload(string $targetKey, array $payload, ?string $departmentId): array
+    {
+        if ($this->subpageSlugFromTarget($targetKey) !== 'study-plan' || $departmentId === null || $departmentId === '') {
+            return [];
+        }
+
+        $content = is_array($payload['translations']['en'] ?? null)
+            ? $payload['translations']['en']
+            : (is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : []);
+        $departments = is_array($content['payload']['plan']['departments'] ?? null) ? $content['payload']['plan']['departments'] : [];
+        $department = collect($this->listOfArrays($departments))->firstWhere('id', $departmentId);
+        $options = [];
+
+        foreach ($this->listOfArrays(is_array($department) ? ($department['terms'] ?? []) : []) as $term) {
+            $id = (string) ($term['id'] ?? '');
+
+            if ($id === '') {
+                continue;
+            }
+
+            $options[$id] = (string) ($term['label'] ?? $id);
+        }
+
+        return $options;
+    }
+
+    /** @param array<string, mixed> $payload */
+    private function studyPlanTermIdFromPayload(string $targetKey, array $payload, ?string $departmentId, string $preferred): ?string
+    {
+        $options = $this->studyPlanTermOptionsFromPayload($targetKey, $payload, $departmentId);
+
+        if ($preferred !== '' && array_key_exists($preferred, $options)) {
+            return $preferred;
+        }
+
+        $ids = array_keys($options);
+
+        return $ids === [] ? null : (string) $ids[0];
+    }
+
+    /** @return array<string, string> */
+    private function studyPlanDepartmentOptions(): array
+    {
+        return is_array($this->data['study_plan_department_options'] ?? null) ? $this->data['study_plan_department_options'] : [];
+    }
+
+    /** @return array<string, string> */
+    private function studyPlanTermOptions(): array
+    {
+        return is_array($this->data['study_plan_term_options'] ?? null) ? $this->data['study_plan_term_options'] : [];
+    }
+
+    /** @param array<string, mixed> $content @return array<string, mixed> */
+    private function mergeStudyPlanDepartmentContent(string $targetKey, string $locale, array $content): array
+    {
+        $basePayload = $this->cmsWorkflowService->latestEditableDraftPayload($targetKey) ?? $this->facultyPageService->getEditablePayload($targetKey);
+        $baseContent = is_array($basePayload['translations'][$locale] ?? null) ? $basePayload['translations'][$locale] : [];
+        $baseContent['payload'] = is_array($baseContent['payload'] ?? null) ? $baseContent['payload'] : [];
+        $baseContent['payload']['plan'] = is_array($baseContent['payload']['plan'] ?? null) ? $baseContent['payload']['plan'] : [];
+        $baseDepartments = $this->listOfArrays($baseContent['payload']['plan']['departments'] ?? []);
+        $selectedDepartmentId = (string) ($this->data['study_plan_department_id'] ?? '');
+        $selectedTermId = (string) ($this->data['study_plan_term_id'] ?? '');
+        $editedPayload = is_array($content['payload'] ?? null) ? $content['payload'] : [];
+        $editedPlan = $this->nestedStudyPlan(is_array($editedPayload['plan'] ?? null) ? $editedPayload['plan'] : []);
+        $editedDepartment = collect($this->listOfArrays($editedPlan['departments'] ?? []))->firstWhere('id', $selectedDepartmentId);
+
+        if (is_array($editedDepartment)) {
+            $replaced = false;
+            $baseDepartments = array_map(function (array $department) use ($editedDepartment, $selectedDepartmentId, $selectedTermId, &$replaced): array {
+                if ((string) ($department['id'] ?? '') !== $selectedDepartmentId) {
+                    return $department;
+                }
+
+                $replaced = true;
+
+                return $this->mergeStudyPlanDepartment($department, $editedDepartment, $selectedTermId);
+            }, $baseDepartments);
+
+            if (! $replaced) {
+                $baseDepartments[] = $editedDepartment;
+            }
+        }
+
+        foreach (['faculty', 'heroImage', 'accent'] as $key) {
+            if (array_key_exists($key, $editedPlan)) {
+                $baseContent['payload']['plan'][$key] = $editedPlan[$key];
+            }
+        }
+
+        $baseContent['payload']['plan']['departments'] = $baseDepartments;
+
+        foreach (['labels', 'courseLabels', 'legend', 'lessonTypes'] as $key) {
+            if (array_key_exists($key, $editedPayload)) {
+                $baseContent['payload'][$key] = $editedPayload[$key];
+            }
+        }
+
+        foreach (['title', 'summary', 'body', 'heroImage', 'sections'] as $key) {
+            if (array_key_exists($key, $content)) {
+                $baseContent[$key] = $content[$key];
+            }
+        }
+
+        return $baseContent;
+    }
+
+    /** @param array<string, mixed> $baseDepartment @param array<string, mixed> $editedDepartment @return array<string, mixed> */
+    private function mergeStudyPlanDepartment(array $baseDepartment, array $editedDepartment, string $selectedTermId): array
+    {
+        if ($selectedTermId === '') {
+            return $editedDepartment;
+        }
+
+        $mergedDepartment = [
+            ...$baseDepartment,
+            ...$this->withoutKeys($editedDepartment, ['terms']),
+        ];
+        $editedTerms = collect($this->listOfArrays($editedDepartment['terms'] ?? []))->keyBy(fn (array $term): string => (string) ($term['id'] ?? ''));
+        $seenTermIds = [];
+        $mergedTerms = array_map(function (array $baseTerm) use ($editedTerms, $selectedTermId, &$seenTermIds): array {
+            $termId = (string) ($baseTerm['id'] ?? '');
+            $editedTerm = $editedTerms->get($termId);
+            $seenTermIds[] = $termId;
+
+            if (! is_array($editedTerm)) {
+                return $baseTerm;
+            }
+
+            if ($termId === $selectedTermId) {
+                return $editedTerm;
+            }
+
+            return [
+                ...$baseTerm,
+                ...$this->withoutKeys($editedTerm, ['courses']),
+            ];
+        }, $this->listOfArrays($baseDepartment['terms'] ?? []));
+
+        foreach ($editedTerms as $termId => $editedTerm) {
+            if (in_array((string) $termId, $seenTermIds, true)) {
+                continue;
+            }
+
+            $mergedTerms[] = $editedTerm;
+        }
+
+        $mergedDepartment['terms'] = $mergedTerms;
+
+        return $mergedDepartment;
+    }
+
+    /** @param array<string, mixed> $plan @return array<string, mixed> */
+    private function nestedStudyPlan(array $plan): array
+    {
+        $terms = collect($this->listOfArrays($plan['terms'] ?? []))->groupBy('departmentId');
+        $courses = collect($this->listOfArrays($plan['courses'] ?? []))->groupBy(fn (array $course): string => (string) ($course['departmentId'] ?? '').'|'.(string) ($course['termId'] ?? ''));
+        $lessons = collect($this->listOfArrays($plan['lessons'] ?? []))->groupBy('courseId');
+        $electivePools = collect($this->listOfArrays($plan['electivePools'] ?? []))->groupBy('departmentId');
+        $promotionRequirements = collect($this->listOfArrays($plan['promotionRequirements'] ?? []))->groupBy('departmentId');
+
+        $departments = array_map(function (array $department) use ($terms, $courses, $lessons, $electivePools, $promotionRequirements): array {
+            $departmentId = (string) ($department['id'] ?? '');
+            $department['electivePools'] = $electivePools->get($departmentId, collect())->map(fn (array $pool): array => $this->withoutKeys($pool, ['departmentId']))->values()->all();
+            $department['promotionRequirements'] = $promotionRequirements->get($departmentId, collect())->map(fn (array $requirement): array => $this->withoutKeys($requirement, ['departmentId']))->values()->all();
+            $department['terms'] = $terms->get($departmentId, collect())->map(function (array $term) use ($departmentId, $courses, $lessons): array {
+                $termId = (string) ($term['id'] ?? '');
+                $term['courses'] = $courses->get($departmentId.'|'.$termId, collect())->map(function (array $course) use ($lessons): array {
+                    $courseId = (string) ($course['id'] ?? '');
+                    $course['prerequisites'] = array_values(array_filter(is_array($course['prerequisites'] ?? null) ? $course['prerequisites'] : []));
+                    $course['instructor'] = is_array($course['instructor'] ?? null) ? $course['instructor'] : [];
+                    $course['lessons'] = $lessons->get($courseId, collect())->map(fn (array $lesson): array => $this->withoutKeys($lesson, ['courseId']))->values()->all();
+
+                    return $this->withoutKeys($course, ['departmentId', 'termId']);
+                })->values()->all();
+
+                return $this->withoutKeys($term, ['departmentId']);
+            })->values()->all();
+
+            return $department;
+        }, $this->listOfArrays($plan['departments'] ?? []));
+
+        unset($plan['terms'], $plan['courses'], $plan['lessons'], $plan['electivePools'], $plan['promotionRequirements']);
+        $plan['departments'] = $departments;
+
+        return $plan;
+    }
+
+    /** @return array<string, array<string, mixed>> */
+    private function keyedItemsById(mixed $items): array
+    {
+        if (! is_array($items)) {
+            return [];
+        }
+
+        $keyed = [];
+
+        foreach ($items as $key => $item) {
+            if (is_array($item)) {
+                $id = (string) ($item['id'] ?? $key);
+                unset($item['id']);
+                $keyed[$id] = $item;
+            }
+        }
+
+        return $keyed;
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function lessonTypesForForm(mixed $items): array
+    {
+        if (! is_array($items)) {
+            return [];
+        }
+
+        $rows = [];
+
+        foreach ($items as $key => $item) {
+            if (is_array($item)) {
+                $rows[] = ['id' => (string) ($item['id'] ?? $key), ...$item];
+            }
+        }
+
+        return $rows;
+    }
+
+    /** @param array<string, mixed> $item @param array<int, string> $keys @return array<string, mixed> */
+    private function withoutKeys(array $item, array $keys): array
+    {
+        foreach ($keys as $key) {
+            unset($item[$key]);
+        }
+
+        return $item;
     }
 
     /** @return array<int, array<string, mixed>> */
