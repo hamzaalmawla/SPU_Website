@@ -116,7 +116,7 @@
         <section class="bg-white pb-14 font-hacen md:pb-16">
             <div class="container">
                 <h2 class="text-[22px] font-bold text-spu-blue md:text-[28px]">{{ $isAr ? 'أخبار ذات صلة' : 'Related News' }}</h2>
-                <div class="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
+                <div class="cms-grid-news mt-6 gap-6">
                     @foreach ($relatedArticles as $related)
                         <article class="overflow-hidden rounded-[6px] border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-md">
                             <a href="{{ $related->url }}" class="block">

@@ -367,6 +367,9 @@ final class FacilitiesWorkflowTest extends TestCase
             ->assertSee('Study Plan Labels')
             ->assertSee('Course Page Labels')
             ->assertSee('Elective Pools')
+            ->assertSee('Study Plan Tree')
+            ->assertSee('Courses In This Term')
+            ->assertSee('Opens Course IDs')
             ->assertSee('Lessons');
     }
 
@@ -518,7 +521,7 @@ final class FacilitiesWorkflowTest extends TestCase
         $this->assertLessThan(500_000, strlen((string) $response->getContent()));
     }
 
-    public function test_artificial_intelligence_study_plan_admin_hydrates_only_selected_department_and_term_graph(): void
+    public function test_artificial_intelligence_study_plan_admin_hydrates_selected_department_as_term_tree(): void
     {
         $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
 
@@ -533,27 +536,24 @@ final class FacilitiesWorkflowTest extends TestCase
             ->set('data.target_key', 'facilities.artificial-intelligence.study_plan')
             ->call('loadTarget', 'facilities.artificial-intelligence.study_plan')
             ->assertSee('Study Plan Department')
-            ->assertSee('Study Plan Term')
-            ->assertSee('Study Plan Courses');
+            ->assertSee('Study Plan Tree')
+            ->assertSee('Courses In This Term')
+            ->assertSee('Prerequisite Course IDs')
+            ->assertSee('Opens Course IDs');
 
         /** @var array<string, mixed> $data */
         $data = $component->get('data');
         $selectedDepartmentId = (string) ($data['study_plan_department_id'] ?? '');
-        $selectedTermId = (string) ($data['study_plan_term_id'] ?? '');
         $options = is_array($data['study_plan_department_options'] ?? null) ? $data['study_plan_department_options'] : [];
-        $termOptions = is_array($data['study_plan_term_options'] ?? null) ? $data['study_plan_term_options'] : [];
         $terms = is_array($data['en_content']['payload']['plan']['terms'] ?? null) ? $data['en_content']['payload']['plan']['terms'] : [];
-        $courses = is_array($data['en_content']['payload']['plan']['courses'] ?? null) ? $data['en_content']['payload']['plan']['courses'] : [];
+        $courses = collect($terms)->flatMap(fn (array $term): array => is_array($term['courses'] ?? null) ? $term['courses'] : [])->all();
 
         $this->assertGreaterThan(1, count($options));
-        $this->assertGreaterThan(1, count($termOptions));
         $this->assertNotSame('', $selectedDepartmentId);
-        $this->assertNotSame('', $selectedTermId);
         $this->assertLessThan($totalTerms, count($terms));
         $this->assertLessThan($totalCourses, count($courses));
-        $this->assertSame([$selectedDepartmentId], collect($terms)->pluck('departmentId')->unique()->values()->all());
-        $this->assertSame([$selectedDepartmentId], collect($courses)->pluck('departmentId')->unique()->values()->all());
-        $this->assertSame([$selectedTermId], collect($courses)->pluck('termId')->unique()->values()->map(fn (mixed $id): string => (string) $id)->all());
+        $this->assertArrayHasKey('courses', $terms[array_key_first($terms)] ?? []);
+        $this->assertArrayHasKey('opensCourseIds', $courses[array_key_first($courses)] ?? []);
     }
 
     public function test_artificial_intelligence_study_plan_admin_save_preserves_unselected_departments(): void
@@ -572,15 +572,9 @@ final class FacilitiesWorkflowTest extends TestCase
         /** @var array<string, mixed> $data */
         $data = $component->get('data');
         $selectedDepartmentId = (string) ($data['study_plan_department_id'] ?? '');
-        $selectedTermId = (string) ($data['study_plan_term_id'] ?? '');
         $untouchedDepartment = $baseDepartments->first(fn (array $department): bool => (string) ($department['id'] ?? '') !== $selectedDepartmentId);
-        $selectedBaseDepartment = $baseDepartments->firstWhere('id', $selectedDepartmentId);
-        $untouchedSelectedDepartmentTerm = collect(is_array($selectedBaseDepartment) ? ($selectedBaseDepartment['terms'] ?? []) : [])
-            ->first(fn (array $term): bool => (string) ($term['id'] ?? '') !== $selectedTermId);
         $this->assertIsArray($untouchedDepartment);
-        $this->assertIsArray($untouchedSelectedDepartmentTerm);
         $untouchedDepartmentId = (string) ($untouchedDepartment['id'] ?? '');
-        $untouchedSelectedDepartmentTermId = (string) ($untouchedSelectedDepartmentTerm['id'] ?? '');
         $selectedDepartmentIndex = collect($data['en_content']['payload']['plan']['departments'] ?? [])
             ->search(fn (array $department): bool => (string) ($department['id'] ?? '') === $selectedDepartmentId);
 
@@ -594,11 +588,46 @@ final class FacilitiesWorkflowTest extends TestCase
         $savedDepartments = collect($draft->payload_json['translations']['en']['payload']['plan']['departments'] ?? []);
         $savedSelectedDepartment = $savedDepartments->firstWhere('id', $selectedDepartmentId);
         $savedUntouchedDepartment = $savedDepartments->firstWhere('id', $untouchedDepartmentId);
-        $savedUntouchedSelectedDepartmentTerm = collect($savedSelectedDepartment['terms'] ?? [])->firstWhere('id', $untouchedSelectedDepartmentTermId);
 
         $this->assertSame('AI Edited Selected Department', $savedSelectedDepartment['name'] ?? null);
         $this->assertSame($untouchedDepartment['terms'] ?? [], $savedUntouchedDepartment['terms'] ?? []);
-        $this->assertSame($untouchedSelectedDepartmentTerm['courses'] ?? [], $savedUntouchedSelectedDepartmentTerm['courses'] ?? []);
+    }
+
+    public function test_artificial_intelligence_study_plan_admin_saves_opens_courses_as_prerequisites(): void
+    {
+        $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
+
+        $component = Livewire::test(ManageArtificialIntelligenceFaculty::class)
+            ->set('data.target_key', 'facilities.artificial-intelligence.study_plan')
+            ->call('loadTarget', 'facilities.artificial-intelligence.study_plan');
+
+        /** @var array<string, mixed> $data */
+        $data = $component->get('data');
+        $termKey = array_key_first($data['en_content']['payload']['plan']['terms'] ?? []);
+        $this->assertNotNull($termKey);
+        $courseKeys = array_keys($data['en_content']['payload']['plan']['terms'][$termKey]['courses'] ?? []);
+        $this->assertGreaterThanOrEqual(2, count($courseKeys));
+        $sourceKey = $courseKeys[0];
+        $targetKey = $courseKeys[1];
+        $sourceId = (string) ($data['en_content']['payload']['plan']['terms'][$termKey]['courses'][$sourceKey]['id'] ?? '');
+        $targetId = (string) ($data['en_content']['payload']['plan']['terms'][$termKey]['courses'][$targetKey]['id'] ?? '');
+
+        $component
+            ->set('data.en_content.payload.plan.terms.'.$termKey.'.courses.'.$sourceKey.'.opensCourseIds', [$targetId])
+            ->call('save');
+
+        $draft = CmsDraft::query()->where('target_key', 'facilities.artificial-intelligence.study_plan')->latest('id')->firstOrFail();
+        $savedCourses = collect($draft->payload_json['translations']['en']['payload']['plan']['departments'] ?? [])
+            ->firstWhere('id', $data['study_plan_department_id'])['terms'] ?? [];
+        $targetCourse = collect($savedCourses)
+            ->flatMap(fn (array $term): array => $term['courses'] ?? [])
+            ->firstWhere('id', $targetId);
+        $sourceCourse = collect($savedCourses)
+            ->flatMap(fn (array $term): array => $term['courses'] ?? [])
+            ->firstWhere('id', $sourceId);
+
+        $this->assertContains($sourceId, $targetCourse['prerequisites'] ?? []);
+        $this->assertArrayNotHasKey('opensCourseIds', $sourceCourse);
     }
 
     public function test_manage_artificial_intelligence_faculty_uses_page_specific_templates(): void

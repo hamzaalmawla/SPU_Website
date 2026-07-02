@@ -10,7 +10,7 @@
         </div>
 
         @if ($section->payload->articles !== [])
-            <div class="grid grid-cols-1 gap-8 pb-10 md:grid-cols-2 xl:grid-cols-4">
+            <div class="cms-grid-news gap-8 pb-10">
                 @foreach ($section->payload->articles as $article)
                     <article class="reveal-item w-full bg-white rounded-[25px] shadow-[0_15px_35px_rgba(0,0,0,0.06)] overflow-hidden flex flex-col group cursor-pointer transition-all duration-500 ease-out hover:-translate-y-2 hover:shadow-[0_25px_60px_rgba(0,0,0,0.12)]">
                         @if ($article->imageUrl)

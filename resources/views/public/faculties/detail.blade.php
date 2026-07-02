@@ -50,7 +50,7 @@
     <div class="bg-white pb-10 pt-6 font-hacen">
         <div class="container">
             <div class="mx-auto max-w-[1100px] overflow-hidden rounded-lg bg-spu-blue shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_8px_10px_-6px_rgba(0,0,0,0.1)]">
-                <div class="grid grid-cols-2 md:grid-cols-4">
+                <div class="cms-grid-stats">
                     @foreach (array_slice($page->stats, 0, 4) as $stat)
                         <div class="relative flex flex-col items-center gap-2 px-6 py-8 text-center">
                             @if (! $loop->first)
@@ -160,7 +160,7 @@
         <section id="stats" class="relative z-20 font-hacen">
             <div class="bg-spu-blue">
                 <div class="container">
-                    <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                    <div class="cms-grid-stats gap-4">
                         @foreach ($page->stats as $stat)
                             <div class="p-8 text-center md:p-10">
                                 @if (! empty($stat['icon']))

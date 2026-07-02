@@ -7,7 +7,7 @@
                     <h2 class="mb-10 text-center text-2xl font-bold text-white lg:text-3xl">{{ $section->payload->title }}</h2>
                 @endif
 
-                <div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4 lg:gap-10">
+                <div class="cms-grid-stats gap-8 lg:gap-10">
                     @foreach ($section->payload->stats as $stat)
                         <article class="flex min-h-[130px] flex-col items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-6 text-center">
                             <div class="mb-3 flex items-baseline justify-center" dir="ltr">

@@ -88,7 +88,7 @@
             <section class="bg-white py-20 font-hacen">
                 <div class="container mx-auto">
                     <p class="mx-auto mb-12 max-w-3xl text-center text-slate-700">{{ $page->summary }}</p>
-                    <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+                    <div class="cms-grid-cards gap-6">
                         @foreach ($page->sections as $section)
                             <article class="reveal reveal-up rounded-2xl border border-slate-100 bg-white p-8 text-center shadow-sm">
                                 <div class="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-spu-blue/5">
@@ -107,7 +107,7 @@
             <section class="bg-section py-24 font-hacen">
                 <div class="container mx-auto">
                     <h2 class="reveal reveal-up mb-12 text-center text-4xl font-black text-spu-blue md:text-5xl">{{ $locale === 'ar' ? 'الأعمدة الاستراتيجية' : 'Strategic Pillars' }}</h2>
-                    <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+                    <div class="cms-grid-compact gap-6">
                         @foreach ($page->sections as $section)
                             <article class="reveal reveal-up rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
                                 <h3 class="mb-3 text-lg font-black text-spu-blue">{{ $section['title'] ?? '' }}</h3>

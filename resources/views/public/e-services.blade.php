@@ -36,9 +36,9 @@
             </div>
 
             <div class="relative z-10">
-                <div class="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3 lg:gap-18 xl:gap-24">
+                <div class="cms-grid-wide gap-10 lg:gap-18 xl:gap-24">
                     @foreach ($page->digitalServices['services'] as $service)
-                        <div class="relative flex h-[314px] w-[397px] flex-col rounded-xl border border-[#94A3B880] bg-white p-8 shadow-[0_4px_20px_rgb(0,0,0,0.03)] transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
+                        <div class="relative flex min-h-[314px] flex-col rounded-xl border border-[#94A3B880] bg-white p-8 shadow-[0_4px_20px_rgb(0,0,0,0.03)] transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
                             <div class="mb-4 flex items-start justify-between">
                                 <h3 class="pr-4 text-[20px] font-bold text-[#1e2756] rtl:pr-0 rtl:pl-4">{{ $service['title'] }}</h3>
                                 <div class="mt-1 text-[#1e2756]">
@@ -65,7 +65,7 @@
 
     <section id="appeals-forms" class="bg-white py-16 font-hacen">
         <div class="container">
-            <div class="grid gap-6 lg:grid-cols-2">
+            <div class="cms-grid-wide gap-6">
                 @foreach ($page->supportCards as $card)
                     <article @if ($card['id'] === 'privacy') id="privacy" @endif class="rounded-[8px] border border-spu-blue/10 bg-white p-6 shadow-[0_12px_34px_rgba(32,39,89,0.08)]">
                         @if ($card['id'] === 'privacy')

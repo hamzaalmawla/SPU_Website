@@ -165,7 +165,7 @@
     <section class="bg-section bg-slate-50 py-24 font-hacen">
         <div class="container">
             <h2 class="mb-16 text-center text-3xl font-bold text-spu-blue">{{ $page['exploreMoreTitle'] ?? ($isAr ? 'استكشف المزيد' : 'Explore More') }}</h2>
-            <div class="mx-auto grid max-w-5xl gap-8 md:grid-cols-2">
+            <div class="cms-grid-wide mx-auto max-w-5xl gap-8">
                 <a id="media-gallery" href="/{{ $locale }}/news/articles" class="group relative flex flex-col items-center gap-6 overflow-hidden rounded-[32px] border border-slate-100 bg-white p-12 text-center text-spu-blue shadow-sm transition-all duration-500 hover:translate-y-[-8px] hover:bg-[#1e2a5e] hover:text-white hover:shadow-2xl">
                     <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 transition-colors group-hover:bg-white/20">
                         <img src="/images/icon-file-outline.svg" alt="" class="h-8 w-8" aria-hidden="true">

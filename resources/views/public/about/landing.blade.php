@@ -73,7 +73,7 @@
 
             <div class="relative mt-20 bg-spu-blue text-white shadow-2xl">
                 <div class="container">
-                    <div class="relative z-10 grid grid-cols-2 gap-0 lg:grid-cols-4">
+                    <div class="cms-grid-stats relative z-10 gap-0">
                         @foreach ($about->stats as $stat)
                             <div class="group py-8 text-center">
                                 @if (! empty($stat['icon']))
@@ -138,7 +138,7 @@
 
                     <div class="w-full min-w-0 flex-1">
                         @if (! $aboutNavigationShouldSlide)
-                            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div class="cms-grid-cards gap-4">
                                 @foreach ($aboutNavigationCards as $subPage)
                                     @include('public.about.partials.navigation-card', ['subPage' => $subPage, 'locale' => $locale])
                                 @endforeach
@@ -148,7 +148,7 @@
                                 <div class="overflow-hidden">
                                     <div class="flex transition-transform duration-500 ease-out" :style="slideStyle()">
                                         @foreach ($aboutNavigationSlides as $slide)
-                                            <div class="grid w-full shrink-0 grid-cols-1 gap-4 sm:grid-cols-2">
+                                            <div class="cms-grid-cards w-full shrink-0 gap-4">
                                                 @foreach ($slide as $subPage)
                                                     @include('public.about.partials.navigation-card', ['subPage' => $subPage, 'locale' => $locale])
                                                 @endforeach

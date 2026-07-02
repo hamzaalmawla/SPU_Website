@@ -21,6 +21,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
@@ -111,7 +112,7 @@ trait ManagesFacultyHomepage
                         ->live()
                         ->afterStateUpdated(fn (): mixed => $this->loadTarget($this->currentTargetKeyForSchema())),
                     Select::make('study_plan_term_id')
-                        ->label('Study Plan Term')
+                        ->label('Open Term Folder')
                         ->options(fn (): array => $this->studyPlanTermOptions())
                         ->visible(fn (): bool => $this->subpageSlugFromTarget($this->currentTargetKeyForSchema()) === 'study-plan')
                         ->live()
@@ -507,69 +508,70 @@ trait ManagesFacultyHomepage
                     ->columnSpanFull(),
             ])->columns(2),
 
-            Section::make('Study Plan Terms')->schema([
+            Section::make('Study Plan Tree')->schema([
                 Repeater::make($prefix.'.payload.plan.terms')
-                    ->label('Terms')
+                    ->label('Term Folders')
                     ->schema([
-                        TextInput::make('departmentId')->required()->label('Department ID')->maxLength(80),
                         TextInput::make('id')->required()->maxLength(80),
                         TextInput::make('label')->required()->maxLength(120),
+                        Repeater::make('courses')
+                            ->label('Courses In This Term')
+                            ->visible(fn (Get $get): bool => (string) $get('id') === (string) ($this->data['study_plan_term_id'] ?? ''))
+                            ->schema([
+                                TextInput::make('id')->required()->label('Course ID')->maxLength(80),
+                                TextInput::make('code')->maxLength(80),
+                                TextInput::make('title')->required()->maxLength(180),
+                                TextInput::make('credits')->numeric(),
+                                Select::make('type')->options([
+                                    'university' => 'University Requirement',
+                                    'faculty' => 'Faculty Requirement',
+                                    'specialization' => 'Specialization Requirement',
+                                ]),
+                                Toggle::make('required')->label('Required'),
+                                TagsInput::make('prerequisites')
+                                    ->label('Prerequisite Course IDs')
+                                    ->helperText('Incoming lines: courses that must be completed before this course.')
+                                    ->columnSpanFull(),
+                                TagsInput::make('opensCourseIds')
+                                    ->label('Opens Course IDs')
+                                    ->helperText('Outgoing lines: courses unlocked by this course. These are saved as prerequisites on the target courses for the public graph.')
+                                    ->columnSpanFull(),
+                                TextInput::make('instructor.nameAr')->label('Instructor AR')->maxLength(160),
+                                TextInput::make('instructor.nameEn')->label('Instructor EN')->maxLength(160),
+                                TextInput::make('instructor.staffSlug')->label('Instructor Profile Slug')->maxLength(120),
+                                Textarea::make('description')->rows(2)->columnSpanFull(),
+                                Repeater::make('lessons')
+                                    ->label('Lessons')
+                                    ->schema([
+                                        TextInput::make('order')->numeric(),
+                                        Select::make('type')->options([
+                                            'lecture' => 'Lecture',
+                                            'practical' => 'Practical',
+                                            'seminar' => 'Seminar',
+                                        ]),
+                                        TextInput::make('title')->required()->maxLength(180),
+                                        TextInput::make('pdfUrl')->label('PDF URL')->maxLength(255),
+                                        Textarea::make('description')->rows(2)->columnSpanFull(),
+                                    ])
+                                    ->columns(3)
+                                    ->defaultItems(0)
+                                    ->reorderable()
+                                    ->collapsible()
+                                    ->collapsed()
+                                    ->columnSpanFull(),
+                            ])
+                            ->columns(3)
+                            ->defaultItems(0)
+                            ->reorderable()
+                            ->collapsible()
+                            ->collapsed()
+                            ->columnSpanFull(),
                     ])
-                    ->columns(3)
+                    ->columns(2)
                     ->defaultItems(0)
                     ->reorderable()
                     ->collapsible()
-                    ->columnSpanFull(),
-            ]),
-
-            Section::make('Study Plan Courses')->schema([
-                Repeater::make($prefix.'.payload.plan.courses')
-                    ->label('Courses')
-                    ->schema([
-                        TextInput::make('departmentId')->required()->label('Department ID')->maxLength(80),
-                        TextInput::make('termId')->required()->label('Term ID')->maxLength(80),
-                        TextInput::make('id')->required()->maxLength(80),
-                        TextInput::make('code')->maxLength(80),
-                        TextInput::make('title')->required()->maxLength(180),
-                        TextInput::make('credits')->numeric(),
-                        Select::make('type')->options([
-                            'university' => 'University Requirement',
-                            'faculty' => 'Faculty Requirement',
-                            'specialization' => 'Specialization Requirement',
-                        ]),
-                        Toggle::make('required')->label('Required'),
-                        TagsInput::make('prerequisites')->label('Prerequisite Course IDs')->columnSpanFull(),
-                        TextInput::make('instructor.nameAr')->label('Instructor AR')->maxLength(160),
-                        TextInput::make('instructor.nameEn')->label('Instructor EN')->maxLength(160),
-                        TextInput::make('instructor.staffSlug')->label('Instructor Profile Slug')->maxLength(120),
-                        Textarea::make('description')->rows(2)->columnSpanFull(),
-                    ])
-                    ->columns(3)
-                    ->defaultItems(0)
-                    ->reorderable()
-                    ->collapsible()
-                    ->columnSpanFull(),
-            ]),
-
-            Section::make('Course Lessons')->schema([
-                Repeater::make($prefix.'.payload.plan.lessons')
-                    ->label('Lessons')
-                    ->schema([
-                        TextInput::make('courseId')->required()->label('Course ID')->maxLength(80),
-                        TextInput::make('order')->numeric(),
-                        Select::make('type')->options([
-                            'lecture' => 'Lecture',
-                            'practical' => 'Practical',
-                            'seminar' => 'Seminar',
-                        ]),
-                        TextInput::make('title')->required()->maxLength(180),
-                        TextInput::make('pdfUrl')->label('PDF URL')->maxLength(255),
-                        Textarea::make('description')->rows(2)->columnSpanFull(),
-                    ])
-                    ->columns(3)
-                    ->defaultItems(0)
-                    ->reorderable()
-                    ->collapsible()
+                    ->collapsed()
                     ->columnSpanFull(),
             ]),
 
@@ -787,8 +789,6 @@ trait ManagesFacultyHomepage
         $departments = $this->listOfArrays($plan['departments'] ?? []);
         $flatDepartments = [];
         $terms = [];
-        $courses = [];
-        $lessons = [];
         $electivePools = [];
         $promotionRequirements = [];
 
@@ -797,15 +797,13 @@ trait ManagesFacultyHomepage
 
         foreach ($departments as $department) {
             $currentDepartmentId = (string) ($department['id'] ?? '');
-            $flatDepartments[] = [
-                'id' => $currentDepartmentId,
-                'name' => (string) ($department['name'] ?? ''),
-                'totalCredits' => $department['totalCredits'] ?? null,
-            ];
+            $flatDepartments[] = $this->withoutKeys($department, ['terms', 'electivePools', 'promotionRequirements']);
 
             if ($currentDepartmentId !== $departmentId) {
                 continue;
             }
+
+            $terms = $this->termsWithOpensCourseIds($this->listOfArrays($department['terms'] ?? []), $selectedTermId);
 
             foreach ($this->listOfArrays($department['electivePools'] ?? []) as $pool) {
                 $electivePools[] = ['departmentId' => $currentDepartmentId, ...$pool];
@@ -814,43 +812,12 @@ trait ManagesFacultyHomepage
             foreach ($this->listOfArrays($department['promotionRequirements'] ?? []) as $requirement) {
                 $promotionRequirements[] = ['departmentId' => $currentDepartmentId, ...$requirement];
             }
-
-            foreach ($this->listOfArrays($department['terms'] ?? []) as $term) {
-                $termId = (string) ($term['id'] ?? '');
-                $terms[] = [
-                    'departmentId' => $currentDepartmentId,
-                    'id' => $termId,
-                    'label' => (string) ($term['label'] ?? ''),
-                ];
-
-                if ($selectedTermId !== null && $termId !== $selectedTermId) {
-                    continue;
-                }
-
-                foreach ($this->listOfArrays($term['courses'] ?? []) as $course) {
-                    $courseId = (string) ($course['id'] ?? '');
-                    $courseLessons = $this->listOfArrays($course['lessons'] ?? []);
-                    unset($course['lessons']);
-
-                    $courses[] = [
-                        'departmentId' => $currentDepartmentId,
-                        'termId' => $termId,
-                        ...$course,
-                    ];
-
-                    foreach ($courseLessons as $lesson) {
-                        $lessons[] = ['courseId' => $courseId, ...$lesson];
-                    }
-                }
-            }
         }
 
         $payload['plan'] = [
             ...$plan,
             'departments' => $flatDepartments,
             'terms' => $terms,
-            'courses' => $courses,
-            'lessons' => $lessons,
             'electivePools' => $electivePools,
             'promotionRequirements' => $promotionRequirements,
         ];
@@ -1180,7 +1147,7 @@ trait ManagesFacultyHomepage
             }, $baseDepartments);
 
             if (! $replaced) {
-                $baseDepartments[] = $editedDepartment;
+                $baseDepartments[] = $this->applyStudyPlanOpensCourseIds($editedDepartment);
             }
         }
 
@@ -1211,7 +1178,7 @@ trait ManagesFacultyHomepage
     private function mergeStudyPlanDepartment(array $baseDepartment, array $editedDepartment, string $selectedTermId): array
     {
         if ($selectedTermId === '') {
-            return $editedDepartment;
+            return $this->applyStudyPlanOpensCourseIds($editedDepartment);
         }
 
         $mergedDepartment = [
@@ -1249,13 +1216,31 @@ trait ManagesFacultyHomepage
 
         $mergedDepartment['terms'] = $mergedTerms;
 
-        return $mergedDepartment;
+        return $this->applyStudyPlanOpensCourseIds($mergedDepartment);
     }
 
     /** @param array<string, mixed> $plan @return array<string, mixed> */
     private function nestedStudyPlan(array $plan): array
     {
-        $terms = collect($this->listOfArrays($plan['terms'] ?? []))->groupBy('departmentId');
+        $rawTerms = $this->listOfArrays($plan['terms'] ?? []);
+        $selectedDepartmentId = (string) ($this->data['study_plan_department_id'] ?? '');
+
+        if ($this->termsContainNestedCourses($rawTerms) && $selectedDepartmentId !== '') {
+            $departments = array_map(function (array $department) use ($rawTerms, $selectedDepartmentId): array {
+                if ((string) ($department['id'] ?? '') === $selectedDepartmentId) {
+                    $department['terms'] = $this->normalizeNestedStudyPlanTerms($rawTerms);
+                }
+
+                return $department;
+            }, $this->listOfArrays($plan['departments'] ?? []));
+
+            unset($plan['terms'], $plan['courses'], $plan['lessons'], $plan['electivePools'], $plan['promotionRequirements']);
+            $plan['departments'] = $departments;
+
+            return $plan;
+        }
+
+        $terms = collect($rawTerms)->groupBy('departmentId');
         $courses = collect($this->listOfArrays($plan['courses'] ?? []))->groupBy(fn (array $course): string => (string) ($course['departmentId'] ?? '').'|'.(string) ($course['termId'] ?? ''));
         $lessons = collect($this->listOfArrays($plan['lessons'] ?? []))->groupBy('courseId');
         $electivePools = collect($this->listOfArrays($plan['electivePools'] ?? []))->groupBy('departmentId');
@@ -1269,7 +1254,7 @@ trait ManagesFacultyHomepage
                 $termId = (string) ($term['id'] ?? '');
                 $term['courses'] = $courses->get($departmentId.'|'.$termId, collect())->map(function (array $course) use ($lessons): array {
                     $courseId = (string) ($course['id'] ?? '');
-                    $course['prerequisites'] = array_values(array_filter(is_array($course['prerequisites'] ?? null) ? $course['prerequisites'] : []));
+                    $course['prerequisites'] = $this->stringList($course['prerequisites'] ?? []);
                     $course['instructor'] = is_array($course['instructor'] ?? null) ? $course['instructor'] : [];
                     $course['lessons'] = $lessons->get($courseId, collect())->map(fn (array $lesson): array => $this->withoutKeys($lesson, ['courseId']))->values()->all();
 
@@ -1286,6 +1271,126 @@ trait ManagesFacultyHomepage
         $plan['departments'] = $departments;
 
         return $plan;
+    }
+
+    /** @param array<int, array<string, mixed>> $terms @return array<int, array<string, mixed>> */
+    private function termsWithOpensCourseIds(array $terms, ?string $selectedTermId = null): array
+    {
+        $openers = [];
+
+        foreach ($terms as $term) {
+            foreach ($this->listOfArrays($term['courses'] ?? []) as $course) {
+                $courseId = (string) ($course['id'] ?? '');
+
+                if ($courseId === '') {
+                    continue;
+                }
+
+                foreach ($this->stringList($course['prerequisites'] ?? []) as $prerequisiteId) {
+                    $openers[$prerequisiteId][] = $courseId;
+                }
+            }
+        }
+
+        return array_map(function (array $term) use ($openers, $selectedTermId): array {
+            $termId = (string) ($term['id'] ?? '');
+
+            if ($selectedTermId !== null && $termId !== $selectedTermId) {
+                return $this->withoutKeys($term, ['courses']);
+            }
+
+            $term['courses'] = array_map(function (array $course) use ($openers): array {
+                $courseId = (string) ($course['id'] ?? '');
+                $course['prerequisites'] = $this->stringList($course['prerequisites'] ?? []);
+                $course['opensCourseIds'] = array_values(array_unique($openers[$courseId] ?? []));
+                $course['lessons'] = $this->listOfArrays($course['lessons'] ?? []);
+
+                return $course;
+            }, $this->listOfArrays($term['courses'] ?? []));
+
+            return $term;
+        }, $terms);
+    }
+
+    /** @param array<int, array<string, mixed>> $terms */
+    private function termsContainNestedCourses(array $terms): bool
+    {
+        foreach ($terms as $term) {
+            if (array_key_exists('courses', $term)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** @param array<int, array<string, mixed>> $terms @return array<int, array<string, mixed>> */
+    private function normalizeNestedStudyPlanTerms(array $terms): array
+    {
+        return array_map(function (array $term): array {
+            $term['courses'] = array_map(function (array $course): array {
+                $course['prerequisites'] = $this->stringList($course['prerequisites'] ?? []);
+                $course['opensCourseIds'] = $this->stringList($course['opensCourseIds'] ?? []);
+                $course['instructor'] = is_array($course['instructor'] ?? null) ? $course['instructor'] : [];
+                $course['lessons'] = $this->listOfArrays($course['lessons'] ?? []);
+
+                return $course;
+            }, $this->listOfArrays($term['courses'] ?? []));
+
+            return $term;
+        }, $terms);
+    }
+
+    /** @param array<string, mixed> $department @return array<string, mixed> */
+    private function applyStudyPlanOpensCourseIds(array $department): array
+    {
+        $normalizedTerms = $this->listOfArrays($department['terms'] ?? []);
+        $courseLocations = [];
+
+        foreach ($normalizedTerms as $termIndex => $term) {
+            foreach ($this->listOfArrays($term['courses'] ?? []) as $courseIndex => $course) {
+                $courseId = (string) ($course['id'] ?? '');
+
+                if ($courseId !== '') {
+                    $courseLocations[$courseId] = [$termIndex, $courseIndex];
+                }
+            }
+        }
+
+        foreach ($normalizedTerms as $term) {
+            foreach ($this->listOfArrays($term['courses'] ?? []) as $course) {
+                $sourceId = (string) ($course['id'] ?? '');
+
+                if ($sourceId === '') {
+                    continue;
+                }
+
+                foreach ($this->stringList($course['opensCourseIds'] ?? []) as $targetId) {
+                    if ($targetId === $sourceId || ! isset($courseLocations[$targetId])) {
+                        continue;
+                    }
+
+                    [$targetTermIndex, $targetCourseIndex] = $courseLocations[$targetId];
+                    $prerequisites = $this->stringList($normalizedTerms[$targetTermIndex]['courses'][$targetCourseIndex]['prerequisites'] ?? []);
+                    $prerequisites[] = $sourceId;
+                    $normalizedTerms[$targetTermIndex]['courses'][$targetCourseIndex]['prerequisites'] = array_values(array_unique($prerequisites));
+                }
+            }
+        }
+
+        $department['terms'] = array_map(function (array $term): array {
+            $term['courses'] = array_map(fn (array $course): array => $this->withoutKeys($course, ['opensCourseIds']), $this->listOfArrays($term['courses'] ?? []));
+
+            return $term;
+        }, $normalizedTerms);
+
+        return $department;
+    }
+
+    /** @return array<int, string> */
+    private function stringList(mixed $items): array
+    {
+        return array_values(array_filter(array_map(static fn (mixed $item): string => trim((string) $item), is_array($items) ? $items : []), static fn (string $item): bool => $item !== ''));
     }
 
     /** @return array<string, array<string, mixed>> */

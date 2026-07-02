@@ -49,7 +49,7 @@
 
     <section class="py-16 font-hacen">
         <div class="container">
-            <div class="grid grid-cols-2 gap-4 md:gap-6 lg:grid-cols-4">
+            <div class="cms-grid-stats gap-4 md:gap-6">
                 @foreach (($landing['stats'] ?? []) as $stat)
                     <div class="group relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-6 text-center shadow-[0_4px_20px_rgba(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] md:p-8">
                         <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-spu-blue/5 text-spu-blue transition-colors duration-300 group-hover:bg-spu-blue group-hover:text-white">
@@ -75,7 +75,7 @@
                 <h2 class="mt-3 text-4xl font-bold leading-tight tracking-tight text-spu-blue md:text-5xl">{{ $landing['features']['title'] ?? '' }}</h2>
                 <p class="mt-5 text-base leading-relaxed text-slate-500">{{ $landing['features']['summary'] ?? '' }}</p>
             </div>
-            <div class="mx-auto mt-16 grid max-w-[1200px] grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div class="cms-grid-cards mx-auto mt-16 max-w-[1200px] gap-6">
                 @foreach (($landing['features']['items'] ?? []) as $feature)
                     <div class="group relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-8 shadow-[0_2px_12px_rgba(0,0,0,0.04)] transition-all duration-400 hover:-translate-y-2 hover:border-spu-blue/10 hover:shadow-[0_20px_50px_rgba(32,39,89,0.1)]">
                         <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-spu-blue via-spu-blue/60 to-spu-red opacity-0 transition-opacity duration-300 group-hover:opacity-100" aria-hidden="true"></div>
@@ -123,7 +123,7 @@
     <section x-data="campusLifeGallery()" class="bg-section py-20 font-hacen lg:py-28">
         <div class="container">
             <div class="mx-auto max-w-[640px] text-center"><p class="text-sm font-bold uppercase tracking-[0.2em] text-spu-red/60">{{ $landing['gallery']['eyebrow'] ?? '' }}</p><h2 class="mt-3 text-4xl font-bold leading-tight tracking-tight text-spu-blue md:text-5xl">{{ $landing['gallery']['title'] ?? '' }}</h2><p class="mt-5 text-base leading-relaxed text-slate-500">{{ $landing['gallery']['summary'] ?? '' }}</p></div>
-            <div class="mx-auto mt-14 grid max-w-[1200px] grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div class="cms-grid-cards mx-auto mt-14 max-w-[1200px] gap-4">
                 @foreach (($landing['gallery']['images'] ?? []) as $image)
                     <button type="button" data-src="{{ $image['src'] ?? '' }}" data-alt="{{ $image['alt'] ?? '' }}" x-on:click="open($event)" class="group relative cursor-pointer overflow-hidden rounded-2xl text-start shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_16px_48px_rgba(0,0,0,0.12)] {{ $loop->first ? 'sm:col-span-2 sm:row-span-2' : '' }}">
                         <img src="{{ $image['src'] ?? '' }}" alt="{{ $image['alt'] ?? '' }}" class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105 {{ $loop->first ? 'min-h-[300px] sm:min-h-[480px]' : 'h-[240px]' }}">
@@ -139,7 +139,7 @@
     </section>
 
     <section class="py-20 font-hacen lg:py-28">
-        <div class="container"><div class="mx-auto max-w-[640px] text-center"><p class="text-sm font-bold uppercase tracking-[0.2em] text-spu-red/60">{{ $landing['portalsHeading']['eyebrow'] ?? '' }}</p><h2 class="mt-3 text-4xl font-bold leading-tight tracking-tight text-spu-blue md:text-5xl">{{ $landing['portalsHeading']['title'] ?? '' }}</h2></div><div class="mx-auto mt-14 grid max-w-[1000px] grid-cols-1 gap-6 md:grid-cols-3">
+        <div class="container"><div class="mx-auto max-w-[640px] text-center"><p class="text-sm font-bold uppercase tracking-[0.2em] text-spu-red/60">{{ $landing['portalsHeading']['eyebrow'] ?? '' }}</p><h2 class="mt-3 text-4xl font-bold leading-tight tracking-tight text-spu-blue md:text-5xl">{{ $landing['portalsHeading']['title'] ?? '' }}</h2></div><div class="cms-grid-cards mx-auto mt-14 max-w-[1000px] gap-6">
             @foreach (($landing['portals'] ?? []) as $portal)
                 <a href="{{ $portal['url'] ?? '#' }}" class="group relative flex flex-col items-center overflow-hidden rounded-2xl border border-slate-100 bg-white p-8 text-center shadow-[0_4px_20px_rgba(0,0,0,0.04)] transition-all duration-400 hover:-translate-y-2 hover:border-spu-blue/10 hover:shadow-[0_20px_50px_rgba(32,39,89,0.1)]"><div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-spu-blue to-spu-red opacity-0 transition-opacity duration-300 group-hover:opacity-100" aria-hidden="true"></div><div class="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-spu-blue/5 text-spu-blue transition-all duration-300 group-hover:bg-spu-blue group-hover:text-white group-hover:shadow-[0_8px_24px_rgba(32,39,89,0.2)]"><img src="{{ $portal['icon'] ?? '' }}" alt="" class="h-6 w-6 brightness-0 invert" aria-hidden="true"></div><h3 class="text-lg font-bold text-spu-blue">{{ $portal['title'] ?? '' }}</h3><p class="mt-2 text-sm leading-relaxed text-slate-500">{{ $portal['summary'] ?? '' }}</p><div class="mt-5 flex h-10 w-10 items-center justify-center rounded-full bg-slate-50 text-spu-blue transition-all duration-300 group-hover:bg-spu-red group-hover:text-white"><img src="/images/icon-arrow-right-outline.svg" alt="" class="h-3.5 w-3.5 rtl:rotate-180" aria-hidden="true"></div></a>
             @endforeach

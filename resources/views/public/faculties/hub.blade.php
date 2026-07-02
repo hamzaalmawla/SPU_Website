@@ -59,7 +59,7 @@
     <section class="relative z-20 bg-white py-14 font-hacen" dir="{{ $direction }}">
         <div class="container">
             <div class="mx-auto max-w-7xl overflow-hidden rounded-[4px] bg-spu-blue shadow-[0_18px_36px_rgba(9,17,68,0.18)]">
-                <div class="grid grid-cols-2 lg:grid-cols-4">
+                <div class="cms-grid-stats">
                     @foreach ($facts as $fact)
                         @php($value = (string) ($fact['value'] ?? ''))
                         <div class="relative flex min-h-[136px] flex-col items-center justify-center px-5 py-9 text-center sm:min-h-[168px]">

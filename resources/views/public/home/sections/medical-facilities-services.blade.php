@@ -58,7 +58,7 @@
 
         @if ($section->payload->stats !== [])
             <div class="bg-spu-blue rounded-[8px] py-12 px-8 shadow-2xl relative overflow-hidden">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 relative z-10">
+                <div class="cms-grid-stats gap-12 relative z-10">
                     @foreach ($section->payload->stats as $stat)
                         <div class="flex flex-col items-center justify-center text-center px-4">
                             <div class="flex items-baseline mb-3">

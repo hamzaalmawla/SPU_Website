@@ -353,8 +353,9 @@
 
 .admissions-timeline {
   position: relative;
+  display: grid;
+  gap: 52px;
   width: min(100%, 1200px);
-  min-height: 940px;
   margin: 0 auto;
 }
 
@@ -370,14 +371,20 @@
 }
 
 .admissions-timeline-step {
-  position: absolute;
-  width: calc(50% - 96px);
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 47px minmax(0, 1fr);
+  column-gap: clamp(32px, 5vw, 72px);
+  align-items: start;
 }
 
-.admissions-timeline-step--1 { top: 42px; right: 0; }
-.admissions-timeline-step--2 { top: 318px; left: 0; }
-.admissions-timeline-step--3 { top: 635px; right: 0; }
-.admissions-timeline-step--4 { top: 810px; left: 0; }
+.admissions-timeline-step:nth-child(odd) .admissions-step-card {
+  grid-column: 3;
+}
+
+.admissions-timeline-step:nth-child(even) .admissions-step-card {
+  grid-column: 1;
+}
 
 .admissions-step-card {
   min-height: 190px;
@@ -426,42 +433,26 @@
 }
 
 .admissions-timeline-marker {
-  position: absolute;
-  top: 76px;
-  left: 50%;
+  position: relative;
   z-index: 2;
   display: grid;
+  grid-column: 2;
+  grid-row: 1;
   place-items: center;
   width: 47px;
   height: 47px;
+  margin-top: 76px;
   border-radius: 999px;
   background: var(--admission-blue);
   color: #ffffff;
   font-size: 18px;
   font-weight: 900;
   line-height: 1;
-  transform: translateX(-50%);
   box-shadow: 0 5px 10px rgba(15, 23, 42, 0.25);
-}
-
-.admissions-timeline-step--2 .admissions-timeline-marker,
-.admissions-timeline-step--3 .admissions-timeline-marker,
-.admissions-timeline-step--4 .admissions-timeline-marker {
-  top: 84px;
 }
 
 .admissions-timeline-step--final .admissions-timeline-marker {
   background: var(--admission-red);
-}
-
-.admissions-timeline-step--1 .admissions-timeline-marker,
-.admissions-timeline-step--3 .admissions-timeline-marker {
-  left: -96px;
-}
-
-.admissions-timeline-step--2 .admissions-timeline-marker,
-.admissions-timeline-step--4 .admissions-timeline-marker {
-  left: calc(100% + 96px);
 }
 
 .admissions-calendar-page {
@@ -756,7 +747,6 @@
   }
 
   .admissions-timeline {
-    min-height: auto;
     display: grid;
     gap: 28px;
     padding-left: 54px;
@@ -776,35 +766,21 @@
     right: 20px;
   }
 
-  .admissions-timeline-step,
-  .admissions-timeline-step--1,
-  .admissions-timeline-step--2,
-  .admissions-timeline-step--3,
-  .admissions-timeline-step--4 {
+  .admissions-timeline-step {
     position: relative;
-    top: auto;
-    right: auto;
-    left: auto;
-    width: 100%;
+    display: block;
   }
 
-  .admissions-timeline-marker,
-  .admissions-timeline-step--1 .admissions-timeline-marker,
-  .admissions-timeline-step--2 .admissions-timeline-marker,
-  .admissions-timeline-step--3 .admissions-timeline-marker,
-  .admissions-timeline-step--4 .admissions-timeline-marker {
+  .admissions-timeline-marker {
+    position: absolute;
     top: 28px;
     left: -34px;
+    margin-top: 0;
   }
 
-  [dir="rtl"] .admissions-timeline-marker,
-  [dir="rtl"] .admissions-timeline-step--1 .admissions-timeline-marker,
-  [dir="rtl"] .admissions-timeline-step--2 .admissions-timeline-marker,
-  [dir="rtl"] .admissions-timeline-step--3 .admissions-timeline-marker,
-  [dir="rtl"] .admissions-timeline-step--4 .admissions-timeline-marker {
+  [dir="rtl"] .admissions-timeline-marker {
     left: auto;
     right: -34px;
-    transform: translateX(50%);
   }
 }
 

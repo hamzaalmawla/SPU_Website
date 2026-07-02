@@ -49,7 +49,7 @@
     <section class="relative z-10 -mt-14 font-hacen">
         <div class="container">
             <div class="relative overflow-hidden rounded-lg bg-spu-blue shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_8px_10px_-6px_rgba(0,0,0,0.1)]">
-                <div class="grid grid-cols-2 md:grid-cols-4">
+                <div class="cms-grid-stats">
                     @foreach (($landing['trustBar'] ?? []) as $item)
                         <div class="relative flex flex-col items-center gap-3 px-6 py-10 text-center">
                             @if (! $loop->first)
@@ -72,7 +72,7 @@
             </div>
             <div class="relative mx-auto mt-16 max-w-[1200px]">
                 <div class="absolute left-[10%] right-[10%] top-[40px] hidden h-[2px] bg-gradient-to-r from-spu-blue via-slate-200 to-slate-200 lg:block" aria-hidden="true"></div>
-                <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5 lg:gap-5">
+                <div class="cms-grid-compact gap-6 lg:gap-5">
                     @foreach (($landing['journey']['steps'] ?? []) as $step)
                         <div class="group relative flex flex-col items-center text-center">
                             <div class="relative z-10 flex h-[56px] w-[56px] items-center justify-center rounded-full text-xl font-bold shadow-md {{ ($step['active'] ?? false) ? 'bg-spu-blue text-white shadow-[0_8px_24px_rgba(32,39,89,0.3)]' : 'border-2 border-slate-200 bg-white text-spu-blue' }}">{{ $step['number'] ?? '' }}</div>
@@ -126,7 +126,7 @@
                 <h2 class="mt-3 text-4xl font-bold leading-tight text-spu-blue md:text-5xl">{{ $landing['resources']['title'] ?? '' }}</h2>
                 <p class="mt-4 text-lg leading-relaxed text-slate-500">{{ $landing['resources']['subtitle'] ?? '' }}</p>
             </div>
-            <div class="mx-auto mt-14 grid max-w-[1100px] grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div class="cms-grid-cards mx-auto mt-14 max-w-[1100px] gap-5">
                 @foreach (($landing['resources']['cards'] ?? []) as $card)
                     <a href="/{{ $locale }}/admissions/{{ $card['slug'] ?? '' }}" class="group relative flex flex-col overflow-hidden rounded-2xl p-7 transition-all duration-300 hover:-translate-y-1 {{ ($card['active'] ?? false) ? 'bg-spu-blue text-white shadow-[0_20px_50px_rgba(32,39,89,0.25)]' : 'bg-white text-spu-blue shadow-[0_4px_24px_rgba(0,0,0,0.06)] hover:shadow-[0_16px_48px_rgba(0,0,0,0.1)]' }}">
                         <div class="flex h-12 w-12 items-center justify-center rounded-xl {{ ($card['active'] ?? false) ? 'bg-white/15' : 'bg-spu-blue/5' }}"><img src="{{ $card['icon'] ?? '' }}" alt="" class="h-5 w-5 {{ ($card['active'] ?? false) ? 'brightness-0 invert' : '' }}" aria-hidden="true"></div>

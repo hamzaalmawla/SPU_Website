@@ -19,7 +19,7 @@
                     @endif
                 </h2>
             </div>
-            <div class="grid w-full min-w-0 flex-1 grid-cols-1 gap-4 sm:grid-cols-2">
+            <div class="cms-grid-compact w-full min-w-0 flex-1 gap-4">
                 @foreach ($aboutNavigationCards as $subPage)
                     @include('public.about.partials.navigation-card', ['subPage' => $subPage, 'locale' => $locale])
                 @endforeach

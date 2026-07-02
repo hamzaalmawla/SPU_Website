@@ -53,7 +53,7 @@
                     @endif
 
                     @if ($page['overviewCards'] !== [])
-                        <div class="mb-8 grid gap-4 sm:grid-cols-2">
+                        <div class="cms-grid-cards mb-8 gap-4">
                             @foreach ($page['overviewCards'] as $card)
                                 <div class="rounded-[18px] border border-slate-100 bg-slate-50 p-5">
                                     <h3 class="text-lg font-bold text-spu-blue">{{ $card['title'] ?? '' }}</h3>
@@ -66,7 +66,7 @@
                     @endif
 
                     @if ($page['stats'] !== [])
-                        <div class="mb-8 grid gap-4 sm:grid-cols-3">
+                        <div class="cms-grid-stats mb-8 gap-4">
                             @foreach ($page['stats'] as $stat)
                                 <div class="rounded-[18px] bg-spu-blue p-5 text-white">
                                     <p class="text-3xl font-black" translate="no">{{ $stat['value'] ?? '' }}</p>

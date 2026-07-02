@@ -31,7 +31,7 @@
                 @endforeach
             </form>
 
-            <div class="mt-8 grid grid-cols-1 gap-7 md:grid-cols-2 xl:grid-cols-3">
+            <div class="cms-grid-news mt-8 gap-7">
                 @foreach ($articles->items as $article)
                     <article id="article-{{ $article->id }}" class="overflow-hidden rounded-[6px] border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-md">
                         <a href="{{ $article->url }}" class="block">

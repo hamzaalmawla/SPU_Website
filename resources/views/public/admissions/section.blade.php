@@ -121,7 +121,7 @@
                 <h2 id="step-by-step-title" class="admissions-page-title">{{ $section['guideTitle'] ?? '' }}</h2>
                 <div class="admissions-timeline">
                     @foreach (($section['steps'] ?? []) as $step)
-                        <article class="admissions-timeline-step admissions-timeline-step--{{ $loop->iteration }} {{ $loop->last ? 'admissions-timeline-step--final' : '' }}">
+                        <article class="admissions-timeline-step {{ $loop->last ? 'admissions-timeline-step--final' : '' }}">
                             <span class="admissions-timeline-marker">{{ $step['number'] ?? '' }}</span>
                             <div class="admissions-step-card">
                                 <h3>{{ $step['title'] ?? '' }}</h3>
@@ -250,7 +250,7 @@
                         @endforeach
                     </div></section>
                 @elseif (($tab['id'] ?? '') === 'granted')
-                    <section class="bg-white py-16 md:py-20" x-show="isTab('granted')"><div class="container mx-auto px-6"><div class="mx-auto max-w-[1010px]"><p class="mb-10 text-center text-sm font-bold leading-7 text-slate-700">{{ $tab['intro'] ?? '' }}</p><div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    <section class="bg-white py-16 md:py-20" x-show="isTab('granted')"><div class="container mx-auto px-6"><div class="mx-auto max-w-[1010px]"><p class="mb-10 text-center text-sm font-bold leading-7 text-slate-700">{{ $tab['intro'] ?? '' }}</p><div class="cms-grid-cards gap-6">
                         @foreach (($tab['items'] ?? []) as $doc)
                             <article class="flex flex-col rounded-lg border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md"><div class="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-spu-blue/10 text-spu-blue"><svg viewBox="0 0 24 24" class="h-5 w-5 fill-none stroke-current stroke-2" aria-hidden="true"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><path d="M14 2v6h6"></path></svg></div><h3 class="mb-2 text-base font-black text-spu-blue">{{ $doc['title'] ?? '' }}</h3><p class="mb-4 flex-1 text-sm leading-6 text-slate-600">{{ $doc['desc'] ?? '' }}</p><span class="inline-block self-start rounded bg-slate-100 px-2.5 py-1 text-[10px] font-black text-slate-600">{{ $doc['availability'] ?? '' }}</span></article>
                         @endforeach
@@ -278,7 +278,7 @@
                 </div>
                 @foreach (($section['tabs'] ?? []) as $tab)
                     <div data-tab-panel="{{ $tab['id'] ?? '' }}" x-show="isActive($el.dataset.tabPanel)">
-                        <section class="mt-20"><h2 class="text-center text-[32px] font-black leading-tight text-spu-blue">{{ $tab['policiesTitle'] ?? '' }}</h2><div class="mt-5 border-t border-slate-200"></div><div class="mt-8 grid gap-12 md:grid-cols-2">
+                        <section class="mt-20"><h2 class="text-center text-[32px] font-black leading-tight text-spu-blue">{{ $tab['policiesTitle'] ?? '' }}</h2><div class="mt-5 border-t border-slate-200"></div><div class="cms-grid-wide mt-8 gap-12">
                             @foreach (($tab['policies'] ?? []) as $policy)
                                 <article class="border-s-2 border-spu-red ps-5"><div class="mb-4 flex items-center gap-2 text-spu-red"><span class="inline-flex h-4 w-4 items-center justify-center" aria-hidden="true">@if (($policy['icon'] ?? '') === 'transfer')<svg viewBox="0 0 20 20" class="h-4 w-4 fill-none stroke-current stroke-2"><path d="M4 6h10"></path><path d="m11 3 3 3-3 3"></path><path d="M16 14H6"></path><path d="m9 11-3 3 3 3"></path></svg>@else<svg viewBox="0 0 20 20" class="h-4 w-4 fill-none stroke-current stroke-2"><path d="m4 10 3 3 9-9"></path><path d="m14 10 2 2-5 5"></path></svg>@endif</span><h3 class="text-lg font-black">{{ $policy['title'] ?? '' }}</h3></div><p class="max-w-[390px] text-sm leading-6 text-black">{{ $policy['desc'] ?? '' }}</p></article>
                             @endforeach
@@ -288,9 +288,9 @@
                                 <div class="flex items-center justify-between gap-4 px-4 py-4 text-sm text-black {{ ! $loop->last ? 'border-b border-slate-200' : '' }}"><span>{{ $documentItem['title'] ?? '' }}</span><span class="rounded px-2 py-1 text-[10px] font-black {{ ($documentItem['required'] ?? false) ? 'bg-red-50 text-spu-red' : 'bg-slate-100 text-slate-700' }}">{{ ($documentItem['required'] ?? false) ? ($section['requiredLabel'] ?? '') : ($section['optionalLabel'] ?? '') }}</span></div>
                             @endforeach
                         </div></section>
-                        <section class="mt-28"><h2 class="text-center text-[32px] font-black leading-tight text-spu-blue">{{ $tab['processTitle'] ?? '' }}</h2><div class="relative mx-auto mt-16 min-h-[430px] max-w-[900px]"><div class="absolute bottom-0 left-1/2 top-0 hidden w-px -translate-x-1/2 bg-slate-300 md:block" aria-hidden="true"></div>
+                        <section class="mt-28"><h2 class="text-center text-[32px] font-black leading-tight text-spu-blue">{{ $tab['processTitle'] ?? '' }}</h2><div class="relative mx-auto mt-16 grid max-w-[900px] gap-14"><div class="absolute bottom-0 left-1/2 top-0 hidden w-px -translate-x-1/2 bg-slate-300 md:block" aria-hidden="true"></div>
                             @foreach (($tab['steps'] ?? []) as $step)
-                                <div class="relative mb-14 grid gap-8 md:grid-cols-2 md:items-center"><div class="hidden md:block {{ $loop->odd ? 'order-1' : 'order-2' }}"></div><span class="absolute left-1/2 top-10 z-10 hidden h-6 w-6 -translate-x-1/2 rounded-full border-4 border-white md:block {{ $loop->first ? 'bg-spu-blue' : 'bg-slate-300' }}" aria-hidden="true"></span><article class="rounded-lg border border-slate-200 bg-white px-8 py-8 {{ $loop->odd ? 'md:order-2 md:ms-16' : 'md:order-1 md:me-16' }}"><h3 class="text-xl font-black text-spu-blue">{{ $step['title'] ?? '' }}</h3><p class="mt-4 text-xs leading-6 text-black">{{ $step['desc'] ?? '' }}</p></article></div>
+                                <div class="relative grid gap-8 md:grid-cols-2 md:items-center"><div class="hidden md:block {{ $loop->odd ? 'order-1' : 'order-2' }}"></div><span class="absolute left-1/2 top-10 z-10 hidden h-6 w-6 -translate-x-1/2 rounded-full border-4 border-white md:block {{ $loop->first ? 'bg-spu-blue' : 'bg-slate-300' }}" aria-hidden="true"></span><article class="rounded-lg border border-slate-200 bg-white px-8 py-8 {{ $loop->odd ? 'md:order-2 md:ms-16' : 'md:order-1 md:me-16' }}"><h3 class="text-xl font-black text-spu-blue">{{ $step['title'] ?? '' }}</h3><p class="mt-4 text-xs leading-6 text-black">{{ $step['desc'] ?? '' }}</p></article></div>
                             @endforeach
                         </div></section>
                     </div>

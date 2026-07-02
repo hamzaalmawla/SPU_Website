@@ -108,7 +108,7 @@
                         <h2 class="text-[30px] font-bold leading-tight text-spu-blue md:text-[38px]">{{ $isAr ? 'الأهداف الأكاديمية' : 'Academic Objectives' }}</h2>
                         <div class="mt-4 h-[3px] w-14 rounded-full" style="background-color: {{ $accent }}"></div>
                         <p class="mt-6 text-[15px] leading-8 text-slate-600">{{ $secondSection['body'] ?? ($subpage['body'] ?? $faculty['description']) }}</p>
-                        <div class="mt-8 grid gap-3 sm:grid-cols-2">
+                        <div class="cms-grid-stats mt-8 gap-3">
                             @foreach (array_slice($stats, 0, 4) as $stat)
                                 <div class="rounded-[8px] border border-slate-100 bg-white p-5 shadow-[0_10px_28px_rgba(9,17,68,0.05)]">
                                     <p class="text-[28px] font-bold leading-none" style="color: {{ $accent }}" dir="ltr">{{ $stat['value'] ?? '' }}</p>
@@ -154,7 +154,7 @@
                     <div class="mx-auto mt-4 h-[2px] w-72 max-w-full rounded-full" style="background-color: {{ $accent }}"></div>
                     <p class="mx-auto mt-7 max-w-[760px] text-[17px] leading-8 text-slate-600">{{ $isAr ? 'استكشف الصفحات الأكاديمية والخدمية المرتبطة بهذه الكلية.' : 'Explore the academic and service pages connected to this faculty.' }}</p>
                 </div>
-                <div class="mx-auto mt-12 grid max-w-[980px] gap-5 md:grid-cols-3">
+                <div class="cms-grid-cards mx-auto mt-12 max-w-[980px] gap-5">
                     @foreach ($page->navigation as $item)
                         <a href="{{ $item->url }}" class="group rounded-[8px] bg-white p-7 text-center shadow-[0_14px_36px_rgba(9,17,68,0.06)] transition-all hover:-translate-y-1">
                             <p class="text-[13px] font-bold uppercase tracking-[0.14em]" style="color: {{ $accent }}">{{ $isAr ? 'استكشف' : 'Explore' }}</p>
@@ -167,7 +167,7 @@
     @elseif ($page->subpageSlug === 'departments')
         <section class="bg-white py-16 font-hacen lg:py-24">
             <div class="container">
-                <div class="mx-auto grid max-w-[1080px] gap-4 sm:grid-cols-3">
+                <div class="cms-grid-stats mx-auto max-w-[1080px] gap-4">
                     <div class="rounded-[8px] bg-section p-6 text-center">
                         <p class="text-3xl font-bold" style="color: {{ $accent }}" dir="ltr">{{ count($page->items) }}</p>
                         <p class="mt-2 text-xs font-bold uppercase tracking-[0.16em] text-spu-blue/45">{{ $isAr ? 'أقسام' : 'Departments' }}</p>
@@ -236,7 +236,7 @@
                         </a>
                     </div>
                 @else
-                    <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-8">
+                    <div class="cms-grid-cards gap-6 lg:gap-8">
                         @forelse ($page->items as $item)
                             <a href="/{{ $locale }}/facilities/{{ $page->facultySlug }}/labs?lab={{ $item['slug'] ?? '' }}" class="group overflow-hidden rounded-[10px] bg-white shadow-[0_4px_20px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(0,0,0,0.15)]">
                                 <div class="relative h-[180px] overflow-hidden">
@@ -263,7 +263,7 @@
     @elseif ($page->subpageSlug === 'projects')
         <section class="bg-white py-16 font-hacen md:py-20">
             <div class="container">
-                <div class="grid grid-cols-1 gap-7 md:grid-cols-2 xl:grid-cols-3">
+                <div class="cms-grid-wide gap-7">
                     @forelse ($page->items as $item)
                         <article id="{{ $item['slug'] ?? 'project-'.$loop->iteration }}" class="overflow-hidden rounded-[6px] border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-md">
                             <div class="relative aspect-[1.72] overflow-hidden bg-slate-100">
@@ -335,7 +335,7 @@
                     </select>
                 </div>
 
-                <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                <div class="cms-grid-compact gap-5">
                     @forelse ($page->items as $item)
                         <article class="overflow-hidden border border-slate-200 bg-white shadow-[0_8px_26px_rgba(15,23,42,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_44px_rgba(15,23,42,0.1)]">
                             <div class="h-[230px] overflow-hidden bg-slate-100">
@@ -373,7 +373,7 @@
                         </select>
                     </div>
                 </div>
-                <div class="mt-9 grid grid-cols-1 gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+                <div class="cms-grid-cards mt-9 gap-x-8 gap-y-12">
                     @forelse ($page->items as $item)
                         <article class="honor-card">
                             <div class="honor-card__media">
