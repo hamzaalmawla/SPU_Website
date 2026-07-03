@@ -7,13 +7,19 @@ namespace Tests\Feature;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Page\FacultyPageServiceInterface;
 use App\Filament\Pages\ManageArtificialIntelligenceFaculty;
+use App\Filament\Pages\ManageBuildingConstructionEngineeringFaculty;
+use App\Filament\Pages\ManageBusinessAdministrationFaculty;
+use App\Filament\Pages\ManageDentistryFaculty;
 use App\Filament\Pages\ManageFacilities;
 use App\Filament\Pages\ManageMedicineFaculty;
+use App\Filament\Pages\ManagePetroleumFaculty;
+use App\Filament\Pages\ManagePharmacyFaculty;
 use App\Models\Cms\CmsDraft;
 use App\Models\User\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 final class FacilitiesWorkflowTest extends TestCase
@@ -454,6 +460,71 @@ final class FacilitiesWorkflowTest extends TestCase
             ->assertSee('Medicine Study Plan CMS Preview')
             ->assertSee('Medicine CMS Plan Faculty')
             ->assertSee('Preview mode');
+    }
+
+    #[DataProvider('remainingFacultyPageProvider')]
+    public function test_remaining_faculty_pages_register_required_targets(string $pageClass, string $facultySlug): void
+    {
+        $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
+
+        Livewire::test($pageClass)
+            ->assertSee('Faculty Identity')
+            ->assertSee('Overview Tabs');
+
+        $expectedTargets = [
+            'facilities.'.$facultySlug,
+            'facilities.'.$facultySlug.'.overview',
+            'facilities.'.$facultySlug.'.departments',
+            'facilities.'.$facultySlug.'.study_plan',
+            'facilities.'.$facultySlug.'.labs',
+            'facilities.'.$facultySlug.'.projects',
+            'facilities.'.$facultySlug.'.alumni',
+            'facilities.'.$facultySlug.'.valedictorians',
+        ];
+
+        $reflection = new \ReflectionClass($pageClass);
+        $method = $reflection->getMethod('targetOptions');
+        $method->setAccessible(true);
+        $targetOptions = $method->invoke($reflection->newInstanceWithoutConstructor());
+
+        $this->assertSame($expectedTargets, array_keys($targetOptions));
+
+        $facilities = app(FacultyPageServiceInterface::class);
+
+        foreach ($expectedTargets as $targetKey) {
+            $payload = $facilities->getEditablePayload($targetKey);
+
+            $this->assertArrayHasKey('translations', $payload);
+        }
+    }
+
+    /** @return iterable<string, array{pageClass: class-string, facultySlug: string}> */
+    public static function remainingFacultyPageProvider(): iterable
+    {
+        yield 'dentistry' => [
+            'pageClass' => ManageDentistryFaculty::class,
+            'facultySlug' => 'dentistry',
+        ];
+
+        yield 'pharmacy' => [
+            'pageClass' => ManagePharmacyFaculty::class,
+            'facultySlug' => 'pharmacy',
+        ];
+
+        yield 'building construction engineering' => [
+            'pageClass' => ManageBuildingConstructionEngineeringFaculty::class,
+            'facultySlug' => 'building-construction-engineering',
+        ];
+
+        yield 'petroleum' => [
+            'pageClass' => ManagePetroleumFaculty::class,
+            'facultySlug' => 'petroleum',
+        ];
+
+        yield 'business administration' => [
+            'pageClass' => ManageBusinessAdministrationFaculty::class,
+            'facultySlug' => 'business-administration',
+        ];
     }
 
     public function test_artificial_intelligence_faculty_workflow_draft_does_not_leak_until_published(): void

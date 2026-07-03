@@ -925,14 +925,6 @@ final class FacultyPageService implements FacultyPageServiceInterface
             return $facultySlug === 'pharmacy';
         }
 
-        if ($subpageSlug === 'labs') {
-            return $facultySlug !== 'business-administration';
-        }
-
-        if ($subpageSlug === 'projects') {
-            return $facultySlug !== 'petroleum';
-        }
-
         return true;
     }
 

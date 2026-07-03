@@ -71,14 +71,6 @@ final class FacultyModuleSeeder extends Seeder
     {
         $pages = ['overview', 'departments', 'study-plan', 'study-plan-course', 'labs', 'projects', 'alumni', 'valedictorians'];
 
-        if ($faculty['public_slug'] === 'business-administration') {
-            $pages = array_values(array_diff($pages, ['labs']));
-        }
-
-        if ($faculty['public_slug'] === 'petroleum') {
-            $pages = array_values(array_diff($pages, ['projects']));
-        }
-
         if ($faculty['public_slug'] === 'pharmacy') {
             $pages[] = 'training';
         }
