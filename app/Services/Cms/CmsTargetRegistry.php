@@ -138,8 +138,15 @@ final class CmsTargetRegistry implements CmsTargetRegistryInterface
     private function researchTargets(): array
     {
         return [
-            $this->target('research.index', 'research', 'admin.cms.targets.research.index', null, null),
-            $this->target('research.publication', 'research', 'admin.cms.targets.research.publication', null, null, 'research.index'),
+            $this->target('research.index', 'research', 'admin.cms.targets.research.index', '/research', 'public.research.index'),
+            $this->target('research.publications', 'research', 'admin.cms.targets.research.publications', '/research/publications', 'public.research.publications.index', 'research.index'),
+            $this->target('research.publication', 'research', 'admin.cms.targets.research.publication', null, 'public.research.publications.show', 'research.publications'),
+            $this->target('research.experts', 'research', 'admin.cms.targets.research.experts', '/research/expert-finder', 'public.research.expert-finder', 'research.index'),
+            $this->target('research.expert_profile', 'research', 'admin.cms.targets.research.expert_profile', null, 'public.research.researchers.show', 'research.experts'),
+            $this->target('research.conferences', 'research', 'admin.cms.targets.research.conferences', '/research/conferences', 'public.research.conferences', 'research.index'),
+            $this->target('research.library', 'research', 'admin.cms.targets.research.library', '/research/library', 'public.research.library', 'research.index'),
+            $this->target('research.office', 'research', 'admin.cms.targets.research.office', '/research/office', 'public.research.office', 'research.index'),
+            $this->target('research.policies', 'research', 'admin.cms.targets.research.policies', '/research/policies', 'public.research.policies', 'research.index'),
         ];
     }
 

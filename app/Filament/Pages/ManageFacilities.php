@@ -7,6 +7,7 @@ namespace App\Filament\Pages;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Page\FacultyPageServiceInterface;
 use App\Exceptions\ConflictException;
+use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
@@ -225,7 +226,7 @@ class ManageFacilities extends Page implements HasForms
         return [
             Section::make('Hero')->schema([
                 TextInput::make($prefix.'.hero.title')->label('Title')->required()->maxLength(160),
-                TextInput::make($prefix.'.hero.image')->label('Hero Image')->required()->maxLength(255),
+                MediaPicker::image($prefix.'.hero.image', 'Hero Image', true),
                 Textarea::make($prefix.'.hero.summary')->label('Summary')->required()->rows(2)->columnSpanFull(),
                 TextInput::make($prefix.'.hero.applyLabel')->label('Apply Label')->required()->maxLength(120),
                 TextInput::make($prefix.'.hero.applyUrl')->label('Apply URL')->required()->maxLength(255),

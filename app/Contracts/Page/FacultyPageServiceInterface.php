@@ -6,6 +6,7 @@ namespace App\Contracts\Page;
 
 use App\DTOs\Faculty\FacultyDetailPageDTO;
 use App\DTOs\Faculty\FacultyHubPageDTO;
+use App\DTOs\Faculty\FacultyProjectDetailPageDTO;
 use App\DTOs\Faculty\FacultySubpageDTO;
 
 interface FacultyPageServiceInterface
@@ -27,6 +28,8 @@ interface FacultyPageServiceInterface
     public function getFaculty(string $facultySlug, string $locale): ?FacultyDetailPageDTO;
 
     public function getSubpage(string $facultySlug, string $subpageSlug, string $locale): ?FacultySubpageDTO;
+
+    public function getProject(string $facultySlug, string $projectSlug, string $locale): ?FacultyProjectDetailPageDTO;
 
     public function canonicalFacultySlug(string $slug): string;
 

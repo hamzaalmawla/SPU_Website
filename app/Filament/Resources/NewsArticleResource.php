@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\NewsArticleResource\Pages;
+use App\Filament\Support\MediaPicker;
 use App\Models\News\NewsArticle;
 use App\Models\User\User;
 use Filament\Forms\Components\DateTimePicker;
@@ -63,7 +64,7 @@ class NewsArticleResource extends Resource
             Section::make('Article')->schema([
                 TextInput::make('slug')->required()->maxLength(255)->alphaDash()->unique(ignoreRecord: true),
                 Select::make('news_category_id')->label('Category')->relationship('category', 'slug')->searchable()->preload(),
-                Select::make('cover_media_id')->label('Cover Media')->relationship('coverMedia', 'original_name')->searchable()->preload(),
+                MediaPicker::assetImage('cover_media_id', 'Cover Media'),
                 Select::make('status')
                     ->required()
                     ->options(fn (?NewsArticle $record): array => self::statusOptions($record))
@@ -90,12 +91,12 @@ class NewsArticleResource extends Resource
                 Textarea::make('meta_description')->rows(2),
                 TextInput::make('og_title')->maxLength(255),
                 Textarea::make('og_description')->rows(2),
-                Select::make('og_image_media_id')->label('OG Image')->relationship('ogImageMedia', 'original_name')->searchable()->preload(),
-                TextInput::make('og_image_url')->maxLength(255),
+                MediaPicker::assetImage('og_image_media_id', 'OG Image'),
+                MediaPicker::image('og_image_url', 'Legacy OG Image URL'),
                 TextInput::make('robots')->default('index,follow')->maxLength(255),
             ])->columns(2)->maxItems(2)->columnSpanFull()->collapsed(),
             Repeater::make('attachments')->relationship()->schema([
-                Select::make('media_asset_id')->label('Media')->relationship('mediaAsset', 'original_name')->searchable()->preload(),
+                MediaPicker::assetAny('media_asset_id', 'Media'),
                 Select::make('kind')->required()->options(['image' => 'Image', 'file' => 'File', 'video' => 'Video'])->default('file'),
                 TextInput::make('label_ar')->maxLength(255),
                 TextInput::make('label_en')->maxLength(255),

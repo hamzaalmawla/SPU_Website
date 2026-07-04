@@ -15,6 +15,8 @@ use App\Filament\Pages\ManageMedicineFaculty;
 use App\Filament\Pages\ManagePetroleumFaculty;
 use App\Filament\Pages\ManagePharmacyFaculty;
 use App\Models\Cms\CmsDraft;
+use App\Models\Faculty\Faculty;
+use App\Models\Faculty\FacultyPage;
 use App\Models\User\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -579,7 +581,55 @@ final class FacilitiesWorkflowTest extends TestCase
             ->assertOk()
             ->assertSee('Published AI Projects CMS')
             ->assertSee('Curated AI Project')
-            ->assertSee('AI Student Team');
+            ->assertSee('AI Student Team')
+            ->assertSee('/en/facilities/artificial-intelligence/projects/curated-ai-project', false);
+
+        $this->get('/en/facilities/artificial-intelligence/projects/curated-ai-project')
+            ->assertOk()
+            ->assertSee('Curated AI Project')
+            ->assertSee('Project Gallery');
+    }
+
+    public function test_faculty_project_cards_link_to_project_detail_page(): void
+    {
+        $this->get('/en/facilities/artificial-intelligence/projects')
+            ->assertOk()
+            ->assertSee('/en/facilities/artificial-intelligence/projects/artificial-intelligence-project-1', false);
+    }
+
+    public function test_faculty_project_detail_page_renders_imported_frontend_layout(): void
+    {
+        $this->get('/en/facilities/artificial-intelligence/projects/artificial-intelligence-project-1')
+            ->assertOk()
+            ->assertSee('AI Diagnosis Support for Rural Health Centers')
+            ->assertSee('Ahmad Al-Masri')
+            ->assertSee('Samar Haddad')
+            ->assertSee('TensorFlow')
+            ->assertSee('Project Gallery')
+            ->assertSee('Related Projects')
+            ->assertSee('Smart Traffic Management System')
+            ->assertSee('View All Projects');
+    }
+
+    #[DataProvider('frontendProjectDetailProvider')]
+    public function test_frontend_project_detail_data_is_imported_for_facility(string $facultySlug, string $projectSlug, string $expectedTitle, string $expectedTechnology): void
+    {
+        $this->get('/en/facilities/'.$facultySlug.'/projects/'.$projectSlug)
+            ->assertOk()
+            ->assertSee($expectedTitle)
+            ->assertSee($expectedTechnology)
+            ->assertSee('Project Gallery')
+            ->assertSee('Related Projects');
+    }
+
+    /** @return iterable<string, array{facultySlug: string, projectSlug: string, expectedTitle: string, expectedTechnology: string}> */
+    public static function frontendProjectDetailProvider(): iterable
+    {
+        yield 'business' => ['business-administration', 'business-administration-project-1', 'Predictive Analytics for Local Economic Trends', 'Tableau'];
+        yield 'construction' => ['building-construction-engineering', 'building-construction-engineering-project-1', 'Structural Health Monitoring Dashboard', 'Arduino'];
+        yield 'dentistry' => ['dentistry', 'dentistry-project-1', 'Digital Impression Analysis System', 'Open3D'];
+        yield 'medicine' => ['medicine', 'medicine-project-1', 'Clinical Appointment Flow Optimizer', 'OptaPlanner'];
+        yield 'pharmacy' => ['pharmacy', 'pharmacy-project-1', 'Evidence-Based Learning Repository', 'Elasticsearch'];
     }
 
     public function test_artificial_intelligence_study_plan_public_payload_is_trimmed_to_active_department(): void
@@ -722,5 +772,24 @@ final class FacilitiesWorkflowTest extends TestCase
             ->assertSee('Student Projects')
             ->assertSee('Supervisor')
             ->assertSee('Team');
+    }
+
+    public function test_registered_faculty_subpage_target_hydrates_when_page_shell_is_missing(): void
+    {
+        $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
+
+        $faculty = Faculty::query()->where('public_slug', 'petroleum')->firstOrFail();
+
+        FacultyPage::query()
+            ->where('faculty_id', $faculty->getKey())
+            ->where('slug', 'projects')
+            ->update(['is_enabled' => false]);
+
+        Livewire::test(ManagePetroleumFaculty::class)
+            ->set('data.target_key', 'facilities.petroleum.projects')
+            ->call('loadTarget', 'facilities.petroleum.projects')
+            ->assertSet('data.en_content.title', 'Projects')
+            ->assertSee('Student Projects')
+            ->assertSee('Supervisor');
     }
 }

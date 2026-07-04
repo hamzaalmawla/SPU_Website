@@ -7,6 +7,7 @@ namespace App\Filament\Pages;
 use App\Contracts\Settings\SettingsServiceInterface;
 use App\DTOs\Settings\SettingsDTO;
 use App\DTOs\Settings\SettingValueDTO;
+use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Component;
@@ -549,10 +550,7 @@ class ManageSettings extends Page implements HasForms
                     ->rows(3)
                     ->maxLength(1000),
 
-                TextInput::make("{$prefix}_logo_url")
-                    ->label('Logo URL')
-                    ->url()
-                    ->maxLength(2048),
+                MediaPicker::image("{$prefix}_logo_url", 'Logo'),
             ]),
 
             Section::make('Contact')->schema([
@@ -782,10 +780,7 @@ class ManageSettings extends Page implements HasForms
                     ->rows(3)
                     ->maxLength(200),
 
-                TextInput::make("{$prefix}_og_image")
-                    ->label('Default OG Image URL')
-                    ->url()
-                    ->maxLength(2048),
+                MediaPicker::image("{$prefix}_og_image", 'Default OG Image'),
 
                 TextInput::make("{$prefix}_robots")
                     ->label('Default Robots Directive')

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\PageResource\Pages;
+use App\Filament\Support\MediaPicker;
 use App\Models\Page\Page;
 use App\Models\User\User;
 use Filament\Forms\Components\RichEditor;
@@ -358,10 +359,7 @@ class PageResource extends Resource
                     ->rows(3)
                     ->maxLength(200),
 
-                TextInput::make("{$prefix}og_image")
-                    ->label('OG Image URL')
-                    ->url()
-                    ->maxLength(2048),
+                MediaPicker::image("{$prefix}og_image", 'OG Image'),
             ]),
 
             Section::make('Advanced')->schema([

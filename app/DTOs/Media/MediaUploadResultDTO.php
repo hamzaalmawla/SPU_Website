@@ -20,5 +20,7 @@ final readonly class MediaUploadResultDTO
         public ?string $title = null,
         public ?string $altText = null,
         public ?string $caption = null,
+        public ?string $checksum = null,
+        public string $mediaType = 'other',
     ) {}
 }

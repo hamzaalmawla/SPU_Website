@@ -7,6 +7,7 @@ namespace App\Filament\Concerns;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Page\FacultyPageServiceInterface;
 use App\Exceptions\ConflictException;
+use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
@@ -284,8 +285,8 @@ trait ManagesFacultyHomepage
                 TextInput::make($prefix.'.faculty.title')->label('Display Title')->maxLength(180),
                 TextInput::make($prefix.'.faculty.yearsLabel')->label('Years Label')->maxLength(80),
                 TextInput::make($prefix.'.faculty.accentColor')->label('Accent Color')->maxLength(20),
-                TextInput::make($prefix.'.faculty.heroImage')->label('Hero Image')->maxLength(255),
-                TextInput::make($prefix.'.faculty.logoImage')->label('Logo Image')->maxLength(255),
+                MediaPicker::image($prefix.'.faculty.heroImage', 'Hero Image'),
+                MediaPicker::image($prefix.'.faculty.logoImage', 'Logo Image'),
                 Textarea::make($prefix.'.faculty.summary')->label('Short Summary')->rows(2)->columnSpanFull(),
                 Textarea::make($prefix.'.faculty.description')->label('Description')->rows(4)->columnSpanFull(),
             ])->columns(2),
@@ -308,7 +309,7 @@ trait ManagesFacultyHomepage
             Section::make('Dean Message')->schema([
                 TextInput::make($prefix.'.dean.name')->label('Dean Name')->maxLength(160),
                 TextInput::make($prefix.'.dean.role')->label('Dean Role')->maxLength(160),
-                TextInput::make($prefix.'.dean.image')->label('Dean Image')->maxLength(255),
+                MediaPicker::image($prefix.'.dean.image', 'Dean Image'),
                 Textarea::make($prefix.'.dean.message')->label('Message')->rows(4)->columnSpanFull(),
             ])->columns(2),
 
@@ -316,7 +317,7 @@ trait ManagesFacultyHomepage
                 Repeater::make($prefix.'.gallery')
                     ->label('Gallery Images')
                     ->schema([
-                        TextInput::make('image')->label('Image')->maxLength(255),
+                        MediaPicker::image('image', 'Image'),
                     ])
                     ->defaultItems(0)
                     ->reorderable()
@@ -330,7 +331,7 @@ trait ManagesFacultyHomepage
                     ->schema([
                         TextInput::make('value')->maxLength(40),
                         TextInput::make('label')->maxLength(120),
-                        TextInput::make('icon')->maxLength(255),
+                        MediaPicker::icon('icon', 'Icon'),
                     ])
                     ->columns(3)
                     ->defaultItems(0)
@@ -347,7 +348,7 @@ trait ManagesFacultyHomepage
                         TextInput::make('type')->maxLength(120),
                         TextInput::make('date')->maxLength(80),
                         TextInput::make('doi')->maxLength(120),
-                        TextInput::make('image')->maxLength(255),
+                        MediaPicker::image('image', 'Image'),
                         TextInput::make('url')->maxLength(255),
                         TextInput::make('cta')->maxLength(120),
                         Textarea::make('summary')->rows(2)->columnSpanFull(),
@@ -406,7 +407,7 @@ trait ManagesFacultyHomepage
         return [
             Section::make('Subpage Content')->schema([
                 TextInput::make($prefix.'.title')->label('Title')->required()->maxLength(180),
-                TextInput::make($prefix.'.heroImage')->label('Hero Image')->maxLength(255),
+                MediaPicker::image($prefix.'.heroImage', 'Hero Image'),
                 Textarea::make($prefix.'.summary')->label('Summary')->rows(2)->columnSpanFull(),
                 Textarea::make($prefix.'.body')->label('Body')->rows(4)->columnSpanFull(),
             ])->columns(2),
@@ -438,7 +439,7 @@ trait ManagesFacultyHomepage
                     ->schema([
                         TextInput::make('value')->maxLength(40),
                         TextInput::make('label')->maxLength(120),
-                        TextInput::make('icon')->maxLength(255),
+                        MediaPicker::icon('icon', 'Icon'),
                     ])
                     ->columns(3)
                     ->defaultItems(0)
@@ -452,7 +453,7 @@ trait ManagesFacultyHomepage
                 TextInput::make($prefix.'.dean.nameEn')->label('Dean Name EN')->maxLength(160),
                 TextInput::make($prefix.'.dean.roleAr')->label('Dean Role AR')->maxLength(160),
                 TextInput::make($prefix.'.dean.roleEn')->label('Dean Role EN')->maxLength(160),
-                TextInput::make($prefix.'.dean.image')->label('Dean Image')->maxLength(255),
+                MediaPicker::image($prefix.'.dean.image', 'Dean Image'),
                 Textarea::make($prefix.'.dean.messageAr')->label('Message AR')->rows(4),
                 Textarea::make($prefix.'.dean.messageEn')->label('Message EN')->rows(4),
             ])->columns(2),
@@ -492,7 +493,7 @@ trait ManagesFacultyHomepage
 
             Section::make('Study Plan Departments')->schema([
                 TextInput::make($prefix.'.payload.plan.faculty')->label('Plan Faculty Name')->maxLength(180),
-                TextInput::make($prefix.'.payload.plan.heroImage')->label('Plan Hero Image')->maxLength(255),
+                MediaPicker::image($prefix.'.payload.plan.heroImage', 'Plan Hero Image'),
                 TextInput::make($prefix.'.payload.plan.accent')->label('Plan Accent Color')->maxLength(20),
                 Repeater::make($prefix.'.payload.plan.departments')
                     ->label('Departments')
@@ -550,7 +551,7 @@ trait ManagesFacultyHomepage
                                             'seminar' => 'Seminar',
                                         ]),
                                         TextInput::make('title')->required()->maxLength(180),
-                                        TextInput::make('pdfUrl')->label('PDF URL')->maxLength(255),
+                                        MediaPicker::document('pdfUrl', 'PDF File'),
                                         Textarea::make('description')->rows(2)->columnSpanFull(),
                                     ])
                                     ->columns(3)
@@ -667,7 +668,7 @@ trait ManagesFacultyHomepage
                         TextInput::make('title')->required()->maxLength(180),
                         TextInput::make('department')->maxLength(160),
                         TextInput::make('instructor')->maxLength(160),
-                        TextInput::make('image')->maxLength(255),
+                        MediaPicker::image('image', 'Image'),
                         Textarea::make('summary')->rows(3)->columnSpanFull(),
                     ])
                     ->columns(2)
@@ -692,7 +693,7 @@ trait ManagesFacultyHomepage
                         TextInput::make('tag')->maxLength(120),
                         TextInput::make('team')->maxLength(180),
                         TextInput::make('supervisor')->maxLength(180),
-                        TextInput::make('image')->maxLength(255),
+                        MediaPicker::image('image', 'Image'),
                         TextInput::make('detailRoute')->maxLength(255),
                         Textarea::make('summary')->rows(3)->columnSpanFull(),
                     ])
@@ -721,7 +722,7 @@ trait ManagesFacultyHomepage
                         TextInput::make('faculty')->maxLength(180),
                         TextInput::make('degree')->maxLength(120),
                         TextInput::make('academicPhase')->maxLength(120),
-                        TextInput::make('image')->maxLength(255),
+                        MediaPicker::image('image', 'Image'),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -747,7 +748,7 @@ trait ManagesFacultyHomepage
                         TextInput::make('department')->maxLength(160),
                         TextInput::make('faculty')->maxLength(180),
                         TextInput::make('gpa')->maxLength(20),
-                        TextInput::make('image')->maxLength(255),
+                        MediaPicker::image('image', 'Image'),
                     ])
                     ->columns(2)
                     ->defaultItems(0)

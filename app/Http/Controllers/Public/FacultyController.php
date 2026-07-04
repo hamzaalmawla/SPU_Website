@@ -10,6 +10,7 @@ use App\Contracts\Seo\SeoMetadataServiceInterface;
 use App\Contracts\Settings\SettingsServiceInterface;
 use App\DTOs\Faculty\FacultyDetailPageDTO;
 use App\DTOs\Faculty\FacultyHubPageDTO;
+use App\DTOs\Faculty\FacultyProjectDetailPageDTO;
 use App\DTOs\Faculty\FacultySubpageDTO;
 use App\DTOs\Navigation\LanguageSwitchLinkDTO;
 use App\Http\Controllers\Controller;
@@ -47,6 +48,14 @@ final class FacultyController extends Controller
         abort_if($page === null, 404);
 
         return view('public.faculties.subpage', $this->viewPayload($request, $locale, $page, $this->subpageSeo($locale, $page), $this->languageSwitch($locale, '/'.$page->facultySlug.'/'.$page->subpageSlug)));
+    }
+
+    public function project(Request $request, string $locale, string $faculty, string $project): View
+    {
+        $page = $this->facultyPageService->getProject($faculty, $project, $locale);
+        abort_if($page === null, 404);
+
+        return view('public.faculties.project-detail', $this->viewPayload($request, $locale, $page, $this->projectSeo($locale, $page), $this->languageSwitch($locale, '/'.$page->facultySlug.'/projects/'.($page->project['slug'] ?? $project))));
     }
 
     public function studyPlan(Request $request, string $locale, string $faculty): View
@@ -131,6 +140,24 @@ final class FacultyController extends Controller
             'locale_paths' => [
                 'ar' => '/ar/facilities/'.$page->facultySlug.'/'.$subpagePath,
                 'en' => '/en/facilities/'.$page->facultySlug.'/'.$subpagePath,
+            ],
+            'title' => $page->seoTitle,
+            'meta_description' => $page->seoDescription,
+            'og_title' => $page->seoTitle,
+            'og_description' => $page->seoDescription,
+            'og_image' => $page->seoImage,
+        ]);
+    }
+
+    private function projectSeo(string $locale, FacultyProjectDetailPageDTO $page): mixed
+    {
+        $projectSlug = (string) ($page->project['slug'] ?? '');
+
+        return $this->seoMetadataService->buildFallback($locale, [
+            'path' => '/'.$locale.'/facilities/'.$page->facultySlug.'/projects/'.$projectSlug,
+            'locale_paths' => [
+                'ar' => '/ar/facilities/'.$page->facultySlug.'/projects/'.$projectSlug,
+                'en' => '/en/facilities/'.$page->facultySlug.'/projects/'.$projectSlug,
             ],
             'title' => $page->seoTitle,
             'meta_description' => $page->seoDescription,

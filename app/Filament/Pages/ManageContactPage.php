@@ -7,6 +7,7 @@ namespace App\Filament\Pages;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Page\ContactPageServiceInterface;
 use App\Exceptions\ConflictException;
+use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
@@ -281,7 +282,7 @@ class ManageContactPage extends Page implements HasForms
         return Tab::make($label)->schema([
             Section::make('Hero')->schema([
                 TextInput::make("{$locale}.hero_title")->label('Hero Title')->required()->maxLength(160),
-                TextInput::make("{$locale}.hero_bg_image")->label('Hero Background Image')->required()->maxLength(255),
+                MediaPicker::image("{$locale}.hero_bg_image", 'Hero Background Image', true),
             ])->columns(2),
 
             Section::make('Form')->schema([
@@ -297,7 +298,7 @@ class ManageContactPage extends Page implements HasForms
                 TextInput::make("{$locale}.info_title")->label('Info Title')->required()->maxLength(160),
                 TextInput::make("{$locale}.phone_label")->label('Phone Label')->required()->maxLength(80),
                 TextInput::make("{$locale}.phone_value")->label('Phone Value')->required()->maxLength(120),
-                TextInput::make("{$locale}.phone_icon")->label('Phone Icon')->required()->maxLength(255),
+                MediaPicker::icon("{$locale}.phone_icon", 'Phone Icon', true),
                 TextInput::make("{$locale}.address_label")->label('Address Label')->required()->maxLength(80),
                 Textarea::make("{$locale}.address_value")->label('Address Value')->required()->rows(3),
                 TextInput::make("{$locale}.email_label")->label('Email Label')->required()->maxLength(80),
@@ -311,7 +312,7 @@ class ManageContactPage extends Page implements HasForms
                 Repeater::make("{$locale}.socials")
                     ->label('Social Links')
                     ->schema([
-                        TextInput::make('icon')->required()->maxLength(255),
+                        MediaPicker::icon('icon', 'Icon', true),
                         TextInput::make('url')->required()->url()->maxLength(255),
                     ])
                     ->columns(2)
@@ -329,7 +330,7 @@ class ManageContactPage extends Page implements HasForms
             Section::make('SEO')->schema([
                 TextInput::make("{$locale}.seo_title")->label('SEO Title')->required()->maxLength(180),
                 Textarea::make("{$locale}.seo_description")->label('SEO Description')->required()->rows(3),
-                TextInput::make("{$locale}.seo_image")->label('SEO Image')->required()->maxLength(255),
+                MediaPicker::image("{$locale}.seo_image", 'SEO Image', true),
             ]),
         ]);
     }

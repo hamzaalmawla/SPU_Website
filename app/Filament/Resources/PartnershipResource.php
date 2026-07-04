@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\PartnershipResource\Pages;
+use App\Filament\Support\MediaPicker;
 use App\Models\Content\Partnership;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Repeater;
@@ -55,7 +56,7 @@ class PartnershipResource extends Resource
         return $form->schema([
             Section::make('Partnership')->schema([
                 TextInput::make('slug')->required()->maxLength(255)->alphaDash(),
-                TextInput::make('logo')->maxLength(255),
+                MediaPicker::image('logo', 'Logo'),
                 TextInput::make('website_url')->url()->maxLength(255),
                 DatePicker::make('signed_at'),
                 TextInput::make('sort_order')->numeric()->default(0),

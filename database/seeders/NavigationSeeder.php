@@ -242,8 +242,20 @@ class NavigationSeeder extends Seeder
         ]];
 
         // ── Research (sort 6) ──
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'البحث العلمي', 'target_kind' => 'page', 'page_slug' => 'research', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 6, 'children' => []];
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'Research', 'target_kind' => 'page', 'page_slug' => 'research', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 6, 'children' => []];
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'البحث العلمي', 'target_kind' => 'page', 'page_slug' => 'research', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 6, 'children' => [
+            ['label' => 'الباحث عن الخبراء', 'target_kind' => 'url', 'url' => '/ar/research/expert-finder'],
+            ['label' => 'المؤتمرات والندوات', 'target_kind' => 'url', 'url' => '/ar/research/conferences'],
+            ['label' => 'مكتبة البحث', 'target_kind' => 'url', 'url' => '/ar/research/library'],
+            ['label' => 'السياسات والأخلاقيات', 'target_kind' => 'url', 'url' => '/ar/research/policies'],
+            ['label' => 'مكتب البحث', 'target_kind' => 'url', 'url' => '/ar/research/office'],
+        ]];
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'Research', 'target_kind' => 'page', 'page_slug' => 'research', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 6, 'children' => [
+            ['label' => 'Expert Finder', 'target_kind' => 'url', 'url' => '/en/research/expert-finder'],
+            ['label' => 'Conferences & Seminars', 'target_kind' => 'url', 'url' => '/en/research/conferences'],
+            ['label' => 'Research Library', 'target_kind' => 'url', 'url' => '/en/research/library'],
+            ['label' => 'Policies & Ethics', 'target_kind' => 'url', 'url' => '/en/research/policies'],
+            ['label' => 'Research Office', 'target_kind' => 'url', 'url' => '/en/research/office'],
+        ]];
 
         // ── News (sort 7) ──
         $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'الأخبار', 'target_kind' => 'page', 'page_slug' => 'news', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 7, 'children' => []];

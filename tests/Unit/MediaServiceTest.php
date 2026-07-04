@@ -6,6 +6,7 @@ namespace Tests\Unit;
 
 use App\Contracts\Media\MediaServiceInterface;
 use App\DTOs\Shared\PaginatedResultDTO;
+use App\Filament\Support\MediaPicker;
 use App\Models\Media\MediaAsset;
 use App\Models\User\User;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -56,6 +57,37 @@ class MediaServiceTest extends TestCase
         $this->assertSame('image/jpeg', $result->mimeType);
         $this->assertNotEmpty($result->path);
         $this->assertSame('photo.jpg', $result->originalName);
+        $this->assertNotEmpty($result->checksum);
+        $this->assertSame('image', $result->mediaType);
+    }
+
+    public function test_uploading_same_file_twice_reuses_existing_asset(): void
+    {
+        $file = UploadedFile::fake()->create('duplicate.pdf', 500, 'application/pdf');
+
+        $first = $this->service->upload(['file' => $file, 'uploaded_by' => $this->actor->id]);
+        $second = $this->service->upload(['file' => $file, 'uploaded_by' => $this->actor->id]);
+
+        $this->assertSame($first->mediaId, $second->mediaId);
+        $this->assertSame($first->path, $second->path);
+        $this->assertDatabaseCount('media_assets', 1);
+    }
+
+    public function test_media_picker_selected_asset_resolves_public_url(): void
+    {
+        $this->actingAs($this->actor);
+
+        $uploaded = $this->service->upload([
+            'file' => UploadedFile::fake()->create('selected.jpg', 200, 'image/jpeg'),
+            'uploaded_by' => $this->actor->id,
+        ]);
+
+        $this->assertSame($uploaded->url, MediaPicker::selectedUrl($uploaded->mediaId));
+    }
+
+    public function test_existing_public_image_url_fallback_is_preserved(): void
+    {
+        $this->assertSame('/images/existing-campus.jpg', \App\Support\MediaUrlResolver::resolve('/images/existing-campus.jpg'));
     }
 
     public function test_upload_rejects_disallowed_mime_type(): void
@@ -182,6 +214,14 @@ class MediaServiceTest extends TestCase
         return new UploadedFile($path, $name, 'image/png', null, true);
     }
 
+    private function fakeFileWithContent(string $name, int $sizeInKilobytes, string $mimeType, string $content): UploadedFile
+    {
+        $file = UploadedFile::fake()->create($name, $sizeInKilobytes, $mimeType);
+        file_put_contents($file->getRealPath(), $content);
+
+        return $file;
+    }
+
     public function test_upload_requires_file_parameter(): void
     {
         $this->expectException(ValidationException::class);
@@ -204,6 +244,32 @@ class MediaServiceTest extends TestCase
 
         $this->assertGreaterThan(0, $result->mediaId);
         $this->assertSame('application/pdf', $result->mimeType);
+        $this->assertSame('pdf', $result->mediaType);
+    }
+
+    public function test_import_public_asset_creates_media_record_without_moving_file(): void
+    {
+        $source = public_path('images/test-import.pdf');
+        $directory = dirname($source);
+
+        if (! is_dir($directory)) {
+            mkdir($directory, 0777, true);
+        }
+
+        file_put_contents($source, '%PDF-1.4 test import');
+
+        try {
+            $result = $this->service->importPublicAsset('images/test-import.pdf', $this->actor->id);
+
+            $this->assertNotNull($result);
+            $this->assertSame('/images/test-import.pdf', $result->path);
+            $this->assertSame('/images/test-import.pdf', $result->url);
+            $this->assertFileExists($source);
+        } finally {
+            if (is_file($source)) {
+                unlink($source);
+            }
+        }
     }
 
     public function test_upload_accepts_webp(): void
@@ -224,9 +290,9 @@ class MediaServiceTest extends TestCase
             ['presentation.pptx', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'],
         ];
 
-        foreach ($documents as [$filename, $mimeType]) {
+        foreach ($documents as $index => [$filename, $mimeType]) {
             $result = $this->service->upload([
-                'file' => UploadedFile::fake()->create($filename, 200, $mimeType),
+                'file' => $this->fakeFileWithContent($filename, 200, $mimeType, 'office-document-'.$index),
                 'uploaded_by' => $this->actor->id,
             ]);
 
@@ -346,8 +412,8 @@ class MediaServiceTest extends TestCase
 
     public function test_list_returns_all_assets(): void
     {
-        $this->service->upload(['file' => UploadedFile::fake()->create('a.jpg', 100, 'image/jpeg'), 'uploaded_by' => $this->actor->id]);
-        $this->service->upload(['file' => UploadedFile::fake()->create('b.png', 100, 'image/png'), 'uploaded_by' => $this->actor->id]);
+        $this->service->upload(['file' => $this->fakeFileWithContent('a.jpg', 100, 'image/jpeg', 'image-a'), 'uploaded_by' => $this->actor->id]);
+        $this->service->upload(['file' => $this->fakeFileWithContent('b.png', 100, 'image/png', 'image-b'), 'uploaded_by' => $this->actor->id]);
 
         $results = $this->service->list($this->actor->id);
 
@@ -403,7 +469,7 @@ class MediaServiceTest extends TestCase
     {
         for ($i = 0; $i < 5; $i++) {
             $this->service->upload([
-                'file' => UploadedFile::fake()->create("file{$i}.jpg", 100, 'image/jpeg'),
+                'file' => $this->fakeFileWithContent("file{$i}.jpg", 100, 'image/jpeg', 'page-file-'.$i),
                 'uploaded_by' => $this->actor->id,
             ]);
         }
@@ -422,7 +488,7 @@ class MediaServiceTest extends TestCase
     {
         for ($i = 0; $i < 5; $i++) {
             $this->service->upload([
-                'file' => UploadedFile::fake()->create("file{$i}.jpg", 100, 'image/jpeg'),
+                'file' => $this->fakeFileWithContent("file{$i}.jpg", 100, 'image/jpeg', 'second-page-file-'.$i),
                 'uploaded_by' => $this->actor->id,
             ]);
         }

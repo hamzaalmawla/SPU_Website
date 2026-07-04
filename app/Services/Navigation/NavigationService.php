@@ -8,6 +8,7 @@ use App\Contracts\Navigation\MenuServiceInterface;
 use App\Contracts\Navigation\NavigationServiceInterface;
 use App\Contracts\Settings\SettingsServiceInterface;
 use App\DTOs\Navigation\LanguageSwitchLinkDTO;
+use App\DTOs\Navigation\MenuItemDTO;
 use App\DTOs\Navigation\NavigationActionDTO;
 use App\DTOs\Navigation\NavigationPayloadDTO;
 use App\DTOs\Navigation\NavigationTreeDTO;
@@ -30,7 +31,7 @@ final class NavigationService implements NavigationServiceInterface
 
     public function getHeaderNavigation(string $locale, ?string $currentPath = null): NavigationTreeDTO
     {
-        return $this->menuService->getHeaderTree($locale, $currentPath);
+        return $this->withResearchDropdown($this->menuService->getHeaderTree($locale, $currentPath), $currentPath);
     }
 
     public function getFooterNavigation(string $locale): NavigationTreeDTO
@@ -101,5 +102,103 @@ final class NavigationService implements NavigationServiceInterface
         }
 
         return implode('/', $segments);
+    }
+
+    private function withResearchDropdown(NavigationTreeDTO $tree, ?string $currentPath): NavigationTreeDTO
+    {
+        return new NavigationTreeDTO(
+            treeType: $tree->treeType,
+            locale: $tree->locale,
+            direction: $tree->direction,
+            items: array_map(
+                fn (MenuItemDTO $item): MenuItemDTO => $this->researchItemWithChildren($item, $tree->locale, $currentPath),
+                $tree->items,
+            ),
+        );
+    }
+
+    private function researchItemWithChildren(MenuItemDTO $item, string $locale, ?string $currentPath): MenuItemDTO
+    {
+        if (! $this->isResearchMenuItem($item, $locale)) {
+            return $item;
+        }
+
+        return new MenuItemDTO(
+            id: $item->id,
+            parentId: $item->parentId,
+            label: $item->label,
+            itemType: $item->itemType,
+            groupKey: $item->groupKey,
+            targetType: $item->targetType,
+            locale: $item->locale,
+            targetId: $item->targetId,
+            url: $item->url,
+            resolvedUrl: $item->resolvedUrl,
+            target: $item->target,
+            routeName: $item->routeName,
+            cssToken: $item->cssToken,
+            icon: $item->icon,
+            isActive: $item->isActive,
+            sortOrder: $item->sortOrder,
+            depth: $item->depth,
+            isEnabled: $item->isEnabled,
+            isUtility: $item->isUtility,
+            openInNewTab: $item->openInNewTab,
+            children: $this->researchDropdownChildren($locale, $currentPath),
+        );
+    }
+
+    private function isResearchMenuItem(MenuItemDTO $item, string $locale): bool
+    {
+        return $item->resolvedUrl === '/'.$locale.'/research'
+            || $item->url === '/'.$locale.'/research'
+            || $item->routeName === 'public.research.index';
+    }
+
+    /** @return array<int, MenuItemDTO> */
+    private function researchDropdownChildren(string $locale, ?string $currentPath): array
+    {
+        return array_map(
+            function (array $item) use ($locale, $currentPath): MenuItemDTO {
+                $url = '/'.$locale.$item['path'];
+
+                return new MenuItemDTO(
+                    id: $item['id'],
+                    parentId: null,
+                    label: $item['label'][$locale],
+                    itemType: 'header',
+                    groupKey: 'header',
+                    targetType: 'url',
+                    locale: $locale,
+                    targetId: null,
+                    url: $url,
+                    resolvedUrl: $url,
+                    target: null,
+                    routeName: null,
+                    cssToken: null,
+                    icon: null,
+                    isActive: $currentPath !== null && trim($currentPath, '/') === trim($url, '/'),
+                    sortOrder: $item['sort'],
+                    depth: 1,
+                    isEnabled: true,
+                    isUtility: false,
+                    openInNewTab: false,
+                    children: [],
+                );
+            },
+            $this->researchDropdownItems(),
+        );
+    }
+
+    /** @return array<int, array{id: int, sort: int, path: string, label: array{ar: string, en: string}}> */
+    private function researchDropdownItems(): array
+    {
+        return [
+            ['id' => -601, 'sort' => 1, 'path' => '/research/expert-finder', 'label' => ['ar' => 'الباحث عن الخبراء', 'en' => 'Expert Finder']],
+            ['id' => -602, 'sort' => 2, 'path' => '/research/conferences', 'label' => ['ar' => 'المؤتمرات والندوات', 'en' => 'Conferences & Seminars']],
+            ['id' => -603, 'sort' => 3, 'path' => '/research/library', 'label' => ['ar' => 'مكتبة البحث', 'en' => 'Research Library']],
+            ['id' => -604, 'sort' => 4, 'path' => '/research/policies', 'label' => ['ar' => 'السياسات والأخلاقيات', 'en' => 'Policies & Ethics']],
+            ['id' => -605, 'sort' => 5, 'path' => '/research/office', 'label' => ['ar' => 'مكتب البحث', 'en' => 'Research Office']],
+        ];
     }
 }

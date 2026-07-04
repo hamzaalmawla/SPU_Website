@@ -30,6 +30,16 @@ final class MediaServicePlaceholder implements MediaServiceInterface
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
+    public function find(int|string $mediaId, int $userId): ?MediaUploadResultDTO
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function importPublicAsset(string $publicRelativePath, ?int $userId = null): ?MediaUploadResultDTO
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
     /**
      * @return Collection<int, MediaUploadResultDTO>
      */

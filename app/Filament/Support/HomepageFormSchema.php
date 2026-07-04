@@ -5,12 +5,10 @@ declare(strict_types=1);
 namespace App\Filament\Support;
 
 use Filament\Forms\Components\Component;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Illuminate\Container\Container;
 
 /**
  * Extracted form field schemas for the 11 fixed homepage sections.
@@ -47,34 +45,16 @@ final class HomepageFormSchema
     {
         return [
             Section::make('Hero Content')->schema([
-                FileUpload::make("{$prefix}.background_image")
-                    ->label('Background Image')
-                    ->image()
-                    ->disk(self::mediaDisk())
-                    ->visibility('public')
-                    ->directory('homepage/hero')
-                    ->maxSize(5120),
+                self::mediaField("{$prefix}.background_image", 'Background Image'),
                 Repeater::make("{$prefix}.content.images")
                     ->label('Hero Carousel Images')
                     ->schema([
-                        TextInput::make('path')
-                            ->label('Existing Image Path')
-                            ->required()
-                            ->maxLength(2048),
+                        self::mediaField('path', 'Image', true),
                     ])
                     ->columns(1)
                     ->collapsible()
                     ->collapsed()
                     ->defaultItems(0),
-                FileUpload::make("{$prefix}.hero_carousel_uploads")
-                    ->label('Upload New Carousel Images')
-                    ->image()
-                    ->multiple()
-                    ->reorderable()
-                    ->disk(self::mediaDisk())
-                    ->visibility('public')
-                    ->directory('homepage/hero')
-                    ->maxSize(5120),
                 TextInput::make("{$prefix}.video_url")
                     ->label('Video URL')
                     ->maxLength(2048),
@@ -130,9 +110,7 @@ final class HomepageFormSchema
                     TextInput::make('prefix')
                         ->label('Prefix')
                         ->maxLength(20),
-                    TextInput::make('icon')
-                        ->label('Icon')
-                        ->maxLength(100),
+                    self::mediaField('icon', 'Icon'),
                 ])
                 ->columns(3)
                 ->collapsible()
@@ -165,13 +143,8 @@ final class HomepageFormSchema
                         ->label('Description')
                         ->rows(2)
                         ->maxLength(500),
-                    FileUpload::make('image')
-                        ->label('Image')
-                        ->image()
-                        ->directory('homepage/faculties'),
-                    TextInput::make('icon')
-                        ->label('Icon')
-                        ->maxLength(100),
+                    self::mediaField('image', 'Image'),
+                    self::mediaField('icon', 'Icon'),
                     TextInput::make('accent')
                         ->label('Accent Color')
                         ->maxLength(30),
@@ -217,13 +190,8 @@ final class HomepageFormSchema
                         ->label('Text')
                         ->rows(2)
                         ->maxLength(500),
-                    FileUpload::make('image')
-                        ->label('Image')
-                        ->image()
-                        ->directory('homepage/achievements'),
-                    TextInput::make('icon')
-                        ->label('Icon')
-                        ->maxLength(100),
+                    self::mediaField('image', 'Image'),
+                    self::mediaField('icon', 'Icon'),
                     TextInput::make('metric')
                         ->label('Metric')
                         ->maxLength(100),
@@ -260,9 +228,7 @@ final class HomepageFormSchema
                         ->label('Title')
                         ->required()
                         ->maxLength(255),
-                    TextInput::make('icon')
-                        ->label('Icon Path')
-                        ->maxLength(500),
+                    self::mediaField('icon', 'Icon'),
                     Repeater::make('links')
                         ->label('Quick Links')
                         ->schema([
@@ -304,10 +270,7 @@ final class HomepageFormSchema
             Repeater::make("{$prefix}.articles")
                 ->label('News Cards')
                 ->schema([
-                    FileUpload::make('image')
-                        ->label('Image')
-                        ->image()
-                        ->directory('homepage/news'),
+                    self::mediaField('image', 'Image'),
                     TextInput::make('title')
                         ->label('Title')
                         ->required()
@@ -346,10 +309,7 @@ final class HomepageFormSchema
             Repeater::make("{$prefix}.research_items")
                 ->label('Research Cards')
                 ->schema([
-                    FileUpload::make('image')
-                        ->label('Image')
-                        ->image()
-                        ->directory('homepage/research'),
+                    self::mediaField('image', 'Image'),
                     TextInput::make('title')
                         ->label('Title')
                         ->required()
@@ -390,10 +350,7 @@ final class HomepageFormSchema
             Repeater::make("{$prefix}.events")
                 ->label('Event Cards')
                 ->schema([
-                    FileUpload::make('image')
-                        ->label('Image')
-                        ->image()
-                        ->directory('homepage/events'),
+                    self::mediaField('image', 'Image'),
                     TextInput::make('title')
                         ->label('Title')
                         ->required()
@@ -442,10 +399,7 @@ final class HomepageFormSchema
                         ->label('Description')
                         ->rows(2)
                         ->maxLength(500),
-                    FileUpload::make('image')
-                        ->label('Image')
-                        ->image()
-                        ->directory('homepage/medical'),
+                    self::mediaField('image', 'Image'),
                     TextInput::make('cta_label')
                         ->label('CTA Label')
                         ->maxLength(100),
@@ -526,10 +480,7 @@ final class HomepageFormSchema
                     ->label('Brand Title')
                     ->required()
                     ->maxLength(255),
-                FileUpload::make("{$prefix}.logo")
-                    ->label('Footer Logo')
-                    ->image()
-                    ->directory('homepage/footer'),
+                self::mediaField("{$prefix}.logo", 'Footer Logo'),
                 TextInput::make("{$prefix}.content.contact_phone")
                     ->label('Contact Phone')
                     ->tel()
@@ -554,9 +505,7 @@ final class HomepageFormSchema
                         ->label('URL')
                         ->required()
                         ->maxLength(2048),
-                    TextInput::make('icon')
-                        ->label('Icon')
-                        ->maxLength(100),
+                    self::mediaField('icon', 'Icon'),
                 ])
                 ->columns(3)
                 ->collapsible()
@@ -646,14 +595,8 @@ final class HomepageFormSchema
         ];
     }
 
-    private static function mediaDisk(): string
+    private static function mediaField(string $name, string $label, bool $required = false): Component
     {
-        $container = Container::getInstance();
-
-        if ($container->bound('config')) {
-            return (string) $container->make('config')->get('filesystems.media_disk', 'public');
-        }
-
-        return 'public';
+        return MediaPicker::lightImage($name, $label, $required);
     }
 }

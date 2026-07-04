@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -57,11 +58,28 @@ final class MediaService implements MediaServiceInterface
 
         $this->fileValidator->validate($file);
 
-        $directory = (string) ($payload['directory'] ?? 'media');
+        $checksum = hash_file('sha256', $file->getRealPath());
         $originalName = $file->getClientOriginalName();
         $mimeType = $file->getMimeType() ?? 'application/octet-stream';
         $extension = $this->fileValidator->primaryExtensionForMime($mimeType);
-        $filename = (string) Str::uuid().'.'.$extension;
+        $mediaType = $this->mediaTypeForMime($mimeType);
+        $facultyScope = $this->resolveFacultyScopeForUpload($payload);
+
+        $existing = $this->findReusableAsset($checksum, $uploaderId, $facultyScope);
+        if ($existing instanceof MediaAsset) {
+            $this->auditService->log(
+                action: 'media.reused',
+                userId: $uploaderId,
+                entityType: MediaAsset::class,
+                entityId: (int) $existing->getKey(),
+                metadata: ['checksum' => $checksum],
+            );
+
+            return $this->toDto($existing);
+        }
+
+        $directory = trim((string) ($payload['directory'] ?? $this->defaultDirectory($mediaType)), '/');
+        $filename = substr($checksum, 0, 40).'.'.$extension;
 
         $storedPath = $this->disk->putFileAs($directory, $file, $filename);
 
@@ -91,6 +109,8 @@ final class MediaService implements MediaServiceInterface
             'mime_type' => $mimeType,
             'extension' => $extension,
             'size_bytes' => $size,
+            'checksum' => $checksum,
+            'media_type' => $mediaType,
             'width' => $width,
             'height' => $height,
             'alt_text_ar' => $payload['alt_text_ar'] ?? null,
@@ -101,7 +121,7 @@ final class MediaService implements MediaServiceInterface
             'title_en' => $payload['title_en'] ?? null,
             'path' => $storedPath,
             'uploaded_by' => $uploaderId,
-            'faculty_scope_slug' => $this->resolveFacultyScopeForUpload($payload),
+            'faculty_scope_slug' => $facultyScope,
         ]);
 
         $this->auditService->log(
@@ -180,6 +200,87 @@ final class MediaService implements MediaServiceInterface
         return $updated;
     }
 
+    public function find(int|string $mediaId, int $userId): ?MediaUploadResultDTO
+    {
+        $asset = MediaAsset::query()->find($mediaId);
+
+        if (! $asset instanceof MediaAsset) {
+            return null;
+        }
+
+        $this->authorizeMediaWrite($userId, 'view', $asset);
+
+        return $this->toDto($asset);
+    }
+
+    public function importPublicAsset(string $publicRelativePath, ?int $userId = null): ?MediaUploadResultDTO
+    {
+        $relativePath = trim(str_replace('\\', '/', $publicRelativePath), '/');
+
+        if ($relativePath === '' || str_contains($relativePath, '..')) {
+            return null;
+        }
+
+        $fullPath = public_path($relativePath);
+
+        if (! is_file($fullPath)) {
+            return null;
+        }
+
+        $mimeType = File::mimeType($fullPath) ?: 'application/octet-stream';
+
+        try {
+            $extension = $this->fileValidator->primaryExtensionForMime($mimeType);
+        } catch (ValidationException) {
+            return null;
+        }
+
+        $checksum = hash_file('sha256', $fullPath);
+        $existing = MediaAsset::query()->where('checksum', $checksum)->first();
+
+        if ($existing instanceof MediaAsset) {
+            return $this->toDto($existing);
+        }
+
+        $width = null;
+        $height = null;
+        if (str_starts_with($mimeType, 'image/') && $mimeType !== 'image/svg+xml') {
+            $dimensions = @getimagesize($fullPath);
+            if (is_array($dimensions)) {
+                $width = $dimensions[0];
+                $height = $dimensions[1];
+            }
+        }
+
+        $asset = MediaAsset::query()->create([
+            'disk' => $this->diskName,
+            'directory' => dirname($relativePath) !== '.' ? dirname($relativePath) : null,
+            'filename' => basename($relativePath),
+            'original_name' => basename($relativePath),
+            'mime_type' => $mimeType,
+            'extension' => $extension,
+            'size_bytes' => filesize($fullPath) ?: 0,
+            'checksum' => $checksum,
+            'media_type' => $this->mediaTypeForMime($mimeType),
+            'width' => $width,
+            'height' => $height,
+            'path' => '/'.$relativePath,
+            'uploaded_by' => $userId,
+        ]);
+
+        if (is_int($userId)) {
+            $this->auditService->log(
+                action: 'media.imported',
+                userId: $userId,
+                entityType: MediaAsset::class,
+                entityId: (int) $asset->getKey(),
+                metadata: ['path' => '/'.$relativePath],
+            );
+        }
+
+        return $this->toDto($asset);
+    }
+
     /**
      * @param  array<string, mixed>  $filters  Accepts 'mime_type', 'search', 'uploaded_by', 'per_page', 'page'
      * @return Collection<int, MediaUploadResultDTO>
@@ -228,6 +329,10 @@ final class MediaService implements MediaServiceInterface
             $query->where('mime_type', 'like', $filters['mime_type'].'%');
         }
 
+        if (isset($filters['media_type']) && is_string($filters['media_type']) && $filters['media_type'] !== '') {
+            $query->where('media_type', $filters['media_type']);
+        }
+
         if (isset($filters['search']) && is_string($filters['search']) && $filters['search'] !== '') {
             $term = '%'.$filters['search'].'%';
             $query->where(function ($q) use ($term): void {
@@ -266,7 +371,37 @@ final class MediaService implements MediaServiceInterface
             title: $asset->title_ar ?? $asset->title_en,
             altText: $asset->alt_text_ar ?? $asset->alt_text_en,
             caption: $asset->caption_ar ?? $asset->caption_en,
+            checksum: is_string($asset->checksum) ? $asset->checksum : null,
+            mediaType: is_string($asset->media_type) ? $asset->media_type : $this->mediaTypeForMime($asset->mime_type),
         );
+    }
+
+    private function findReusableAsset(string $checksum, int $userId, ?string $facultyScope): ?MediaAsset
+    {
+        $user = $this->authorizedListUser($userId);
+        $query = MediaAsset::query()->where('checksum', $checksum);
+
+        if ($user->role_slug === 'faculty_editor') {
+            $query->where('faculty_scope_slug', $facultyScope);
+        }
+
+        return $query->first();
+    }
+
+    private function defaultDirectory(string $mediaType): string
+    {
+        return 'media/'.$mediaType.'/'.now()->format('Y/m');
+    }
+
+    private function mediaTypeForMime(string $mimeType): string
+    {
+        return match (true) {
+            str_starts_with($mimeType, 'image/') => $mimeType === 'image/svg+xml' ? 'icon' : 'image',
+            $mimeType === 'application/pdf' => 'pdf',
+            str_starts_with($mimeType, 'video/') => 'video',
+            str_starts_with($mimeType, 'application/') => 'document',
+            default => 'other',
+        };
     }
 
     private function authorizeMediaClassWrite(int $userId, string $ability): void

@@ -130,7 +130,14 @@ return [
             ],
             'research' => [
                 'index' => 'Research',
+                'publications' => 'Research Publications',
                 'publication' => 'Research Publication',
+                'experts' => 'Expert Finder',
+                'expert_profile' => 'Expert Profile',
+                'conferences' => 'Conferences & Seminars',
+                'library' => 'Research Library',
+                'office' => 'Research Office',
+                'policies' => 'Policies & Ethics',
             ],
         ],
     ],
@@ -144,6 +151,7 @@ return [
             'campus_life' => 'Campus Life',
             'contact' => 'Contact',
             'e_services' => 'E-Services',
+            'research' => 'Research',
             'administration' => 'Administration',
         ],
         'items' => [
@@ -161,6 +169,7 @@ return [
             'campus_life' => 'Campus Life',
             'about' => 'About',
             'news' => 'News',
+            'research' => 'Research',
             'two_factor_auth' => 'Two-Factor Auth',
             'facilities_hub' => 'Facilities Hub',
             'faculty_medicine' => 'Medicine Faculty',
@@ -196,6 +205,7 @@ return [
         'manage_business_administration_faculty' => 'Manage Business Administration Faculty',
         'manage_about' => 'Manage About',
         'manage_news' => 'Manage News',
+        'manage_research' => 'Manage Research',
         'two_factor_authentication' => 'Two-Factor Authentication',
     ],
 ];

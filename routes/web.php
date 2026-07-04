@@ -14,6 +14,7 @@ use App\Http\Controllers\Public\NewsController;
 use App\Http\Controllers\Public\PageController;
 use App\Http\Controllers\Public\PreviewController;
 use App\Http\Controllers\Public\PublicContactController;
+use App\Http\Controllers\Public\ResearchController;
 use App\Http\Controllers\Public\SitemapController;
 use App\Http\Controllers\Public\VirtualTourController;
 use App\Http\Middleware\AdminLocaleMiddleware;
@@ -56,6 +57,12 @@ Route::prefix('{locale}')
                 Route::get('/{faculty}/study-plan', 'studyPlan')
                     ->where(['faculty' => 'medicine|dentistry|pharmacy|artificial-intelligence|building-construction-engineering|petroleum|business-administration'])
                     ->name('study-plan');
+                Route::get('/{faculty}/projects/{project}', 'project')
+                    ->where([
+                        'faculty' => 'medicine|dentistry|pharmacy|artificial-intelligence|building-construction-engineering|petroleum|business-administration',
+                        'project' => '[A-Za-z0-9\-]+',
+                    ])
+                    ->name('projects.show');
                 Route::get('/{faculty}/{subpage}', 'subpage')
                     ->where([
                         'faculty' => 'medicine|dentistry|pharmacy|artificial-intelligence|building-construction-engineering|petroleum|business-administration',
@@ -112,6 +119,45 @@ Route::prefix('{locale}')
                 Route::get('/', 'index')->name('index');
                 Route::get('/articles', 'articles')->name('articles');
                 Route::get('/{article}', 'show')->name('show');
+            });
+
+        Route::controller(ResearchController::class)
+            ->prefix('research')
+            ->name('public.research.')
+            ->group(function (): void {
+                Route::get('/', 'index')->name('index');
+                Route::get('/repository', 'repository')->name('repository');
+                Route::get('/detail', 'legacyDetail')->name('detail');
+                Route::get('/publications', 'publications')->name('publications.index');
+                Route::get('/publications/detail', 'legacyDetail')->name('publications.detail');
+                Route::get('/publications/{slug}', 'publication')
+                    ->where(['slug' => '[A-Za-z0-9\-]+'])
+                    ->name('publications.show');
+                Route::get('/centers', 'centers')->name('centers.index');
+                Route::get('/centers/detail', 'centers')->name('centers.detail');
+                Route::get('/centers/{slug}', 'center')
+                    ->where(['slug' => '[A-Za-z0-9\-]+'])
+                    ->name('centers.show');
+                Route::get('/projects', 'projects')->name('projects.index');
+                Route::get('/projects/detail', 'projects')->name('projects.detail');
+                Route::get('/projects/{slug}', 'project')
+                    ->where(['slug' => '[A-Za-z0-9\-]+'])
+                    ->name('projects.show');
+                Route::get('/themes', 'themes')->name('themes.index');
+                Route::get('/themes/detail', 'themes')->name('themes.detail');
+                Route::get('/themes/{slug}', 'theme')
+                    ->where(['slug' => '[A-Za-z0-9\-]+'])
+                    ->name('themes.show');
+                Route::get('/researchers', 'researchers')->name('researchers.index');
+                Route::get('/researchers/detail', 'researchers')->name('researchers.detail');
+                Route::get('/researchers/{slug}', 'researcher')
+                    ->where(['slug' => '[A-Za-z0-9\-]+'])
+                    ->name('researchers.show');
+                Route::get('/expert-finder', 'expertFinder')->name('expert-finder');
+                Route::get('/conferences', 'conferences')->name('conferences');
+                Route::get('/library', 'library')->name('library');
+                Route::get('/office', 'office')->name('office');
+                Route::get('/policies', 'policies')->name('policies');
             });
 
         Route::get('/{slugPath}', PageController::class)

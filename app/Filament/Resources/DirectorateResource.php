@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\DirectorateResource\Pages;
+use App\Filament\Support\MediaPicker;
 use App\Models\Content\Directorate;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
@@ -55,7 +56,7 @@ class DirectorateResource extends Resource
         return $form->schema([
             Section::make('Directorate')->schema([
                 TextInput::make('slug')->required()->maxLength(255)->alphaDash(),
-                TextInput::make('icon')->maxLength(255),
+                MediaPicker::icon('icon', 'Icon'),
                 TextInput::make('email')->email()->maxLength(255),
                 TextInput::make('location')->maxLength(255),
                 TextInput::make('sort_order')->numeric()->default(0),

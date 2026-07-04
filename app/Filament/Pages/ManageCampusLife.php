@@ -9,6 +9,7 @@ use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Page\CampusLifePageServiceInterface;
 use App\DTOs\Cms\CmsTargetDTO;
 use App\Exceptions\ConflictException;
+use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
@@ -453,7 +454,7 @@ class ManageCampusLife extends Page implements HasForms
         return [
             Section::make('Hero')->schema([
                 TextInput::make($prefix.'.hero.title')->label('Title')->required()->maxLength(160),
-                TextInput::make($prefix.'.hero.image')->label('Hero Image')->required()->maxLength(255),
+                MediaPicker::image($prefix.'.hero.image', 'Hero Image', true),
                 Textarea::make($prefix.'.hero.summary')->label('Summary')->required()->rows(3)->columnSpanFull(),
                 Repeater::make($prefix.'.hero.quickLinks')
                     ->label('Quick Links')
@@ -481,7 +482,7 @@ class ManageCampusLife extends Page implements HasForms
                         TextInput::make('value')->required()->numeric(),
                         TextInput::make('suffix')->maxLength(20),
                         TextInput::make('label')->required()->maxLength(120),
-                        TextInput::make('icon')->required()->maxLength(255)->columnSpanFull(),
+                        MediaPicker::icon('icon', 'Icon', true)->columnSpanFull(),
                     ])
                     ->columns(4)
                     ->defaultItems(0)
@@ -497,7 +498,7 @@ class ManageCampusLife extends Page implements HasForms
                 Repeater::make($prefix.'.features.items')
                     ->label('Cards')
                     ->schema([
-                        TextInput::make('icon')->required()->maxLength(255),
+                        MediaPicker::icon('icon', 'Icon', true),
                         TextInput::make('title')->required()->maxLength(160),
                         Textarea::make('summary')->required()->rows(2)->columnSpanFull(),
                     ])
@@ -518,7 +519,7 @@ class ManageCampusLife extends Page implements HasForms
                         TextInput::make('title')->required()->maxLength(160),
                         TextInput::make('href')->required()->maxLength(255),
                         TextInput::make('link')->required()->maxLength(120),
-                        TextInput::make('image')->required()->maxLength(255),
+                        MediaPicker::image('image', 'Image', true),
                         Select::make('imagePosition')->options(['left' => 'Left', 'right' => 'Right'])->required(),
                         Textarea::make('summary')->required()->rows(2)->columnSpanFull(),
                     ])
@@ -536,7 +537,7 @@ class ManageCampusLife extends Page implements HasForms
                 Repeater::make($prefix.'.gallery.images')
                     ->label('Images')
                     ->schema([
-                        TextInput::make('src')->required()->maxLength(255),
+                        MediaPicker::image('src', 'Image', true),
                         TextInput::make('alt')->required()->maxLength(160),
                     ])
                     ->columns(2)
@@ -553,7 +554,7 @@ class ManageCampusLife extends Page implements HasForms
                     ->label('Portals')
                     ->schema([
                         TextInput::make('title')->required()->maxLength(160),
-                        TextInput::make('icon')->required()->maxLength(255),
+                        MediaPicker::icon('icon', 'Icon', true),
                         TextInput::make('url')->required()->maxLength(255),
                         Textarea::make('summary')->required()->rows(2)->columnSpanFull(),
                     ])
@@ -585,7 +586,7 @@ class ManageCampusLife extends Page implements HasForms
         $sections = [
             Section::make('Hero')->schema([
                 TextInput::make($prefix.'.hero.title')->label('Title')->required()->maxLength(160),
-                TextInput::make($prefix.'.hero.image')->label('Hero Image')->required()->maxLength(255),
+                MediaPicker::image($prefix.'.hero.image', 'Hero Image', true),
                 Textarea::make($prefix.'.hero.summary')->label('Summary')->required()->rows(3)->columnSpanFull(),
                 TextInput::make($prefix.'.hero.cta')->label('CTA Label')->required()->maxLength(120),
                 TextInput::make($prefix.'.hero.ctaUrl')->label('CTA URL')->required()->maxLength(255),
@@ -608,7 +609,7 @@ class ManageCampusLife extends Page implements HasForms
                     ->label($contentLabel)
                     ->schema([
                         TextInput::make('title')->required()->maxLength(160),
-                        TextInput::make('icon')->required()->maxLength(255),
+                        MediaPicker::icon('icon', 'Icon', true),
                         Textarea::make('description')->required()->rows(2)->columnSpanFull(),
                     ])
                     ->columns(2)
@@ -646,7 +647,7 @@ class ManageCampusLife extends Page implements HasForms
                 TextInput::make($prefix.'.emergency.phone')->label('Phone')->required()->maxLength(80),
                 TextInput::make($prefix.'.emergency.callCta')->label('Call CTA')->required()->maxLength(120),
                 TextInput::make($prefix.'.emergency.directionsCta')->label('Directions CTA')->required()->maxLength(120),
-                TextInput::make($prefix.'.emergency.icon')->label('Icon')->required()->maxLength(255),
+                MediaPicker::icon($prefix.'.emergency.icon', 'Icon', true),
             ])->columns(2);
         }
 
@@ -665,7 +666,7 @@ class ManageCampusLife extends Page implements HasForms
         return [
             Section::make('Hero')->schema([
                 TextInput::make($prefix.'.hero.title')->label('Title')->required()->maxLength(160),
-                TextInput::make($prefix.'.hero.image')->label('Hero Image')->required()->maxLength(255),
+                MediaPicker::image($prefix.'.hero.image', 'Hero Image', true),
                 Textarea::make($prefix.'.hero.summary')->label('Summary')->required()->rows(2)->columnSpanFull(),
                 Repeater::make($prefix.'.hero.breadcrumbs')
                     ->label('Breadcrumbs')
@@ -698,7 +699,7 @@ class ManageCampusLife extends Page implements HasForms
                             ->schema([
                                 TextInput::make('number')->maxLength(20),
                                 TextInput::make('title')->required()->maxLength(160),
-                                TextInput::make('icon')->maxLength(255),
+                                MediaPicker::icon('icon', 'Icon'),
                                 Textarea::make('desc')->required()->rows(2)->columnSpanFull(),
                             ])
                             ->columns(3)
@@ -717,11 +718,11 @@ class ManageCampusLife extends Page implements HasForms
                             ->columnSpanFull(),
                         TextInput::make('support.title')->label('Support Title')->maxLength(160),
                         TextInput::make('support.location')->label('Support Location')->maxLength(255),
-                        TextInput::make('support.locationIcon')->label('Location Icon')->maxLength(255),
+                        MediaPicker::icon('support.locationIcon', 'Location Icon'),
                         TextInput::make('support.phone')->label('Support Phone')->maxLength(80),
-                        TextInput::make('support.phoneIcon')->label('Phone Icon')->maxLength(255),
+                        MediaPicker::icon('support.phoneIcon', 'Phone Icon'),
                         TextInput::make('support.email')->label('Support Email')->maxLength(160),
-                        TextInput::make('support.emailIcon')->label('Email Icon')->maxLength(255),
+                        MediaPicker::icon('support.emailIcon', 'Email Icon'),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -744,7 +745,7 @@ class ManageCampusLife extends Page implements HasForms
         return [
             Section::make('Hero')->schema([
                 TextInput::make($prefix.'.hero.title')->label('Title')->required()->maxLength(160),
-                TextInput::make($prefix.'.hero.image')->label('Hero Image')->required()->maxLength(255),
+                MediaPicker::image($prefix.'.hero.image', 'Hero Image', true),
                 TextInput::make($prefix.'.hero.panel.title')->label('Panel Title')->required()->maxLength(160),
                 Textarea::make($prefix.'.hero.panel.summary')->label('Panel Summary')->required()->rows(2)->columnSpanFull(),
                 Repeater::make($prefix.'.hero.breadcrumbs')
@@ -766,7 +767,7 @@ class ManageCampusLife extends Page implements HasForms
                     ->label('Service Cards')
                     ->schema([
                         TextInput::make('id')->required()->maxLength(80),
-                        TextInput::make('icon')->required()->maxLength(255),
+                        MediaPicker::icon('icon', 'Icon', true),
                         TextInput::make('title')->required()->maxLength(160),
                         TextInput::make('link')->required()->maxLength(120),
                         TextInput::make('href')->required()->maxLength(255),
@@ -781,14 +782,14 @@ class ManageCampusLife extends Page implements HasForms
 
             Section::make('Success Panel')->schema([
                 TextInput::make($prefix.'.success.title')->label('Title')->required()->maxLength(160),
-                TextInput::make($prefix.'.success.image')->label('Image')->required()->maxLength(255),
+                MediaPicker::image($prefix.'.success.image', 'Image', true),
                 TextInput::make($prefix.'.success.imageAlt')->label('Image Alt')->required()->maxLength(160),
                 Textarea::make($prefix.'.success.summary')->label('Summary')->required()->rows(3)->columnSpanFull(),
                 Repeater::make($prefix.'.success.badges')
                     ->label('Badges')
                     ->schema([
                         TextInput::make('label')->required()->maxLength(120),
-                        TextInput::make('icon')->required()->maxLength(255),
+                        MediaPicker::icon('icon', 'Icon', true),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -811,7 +812,7 @@ class ManageCampusLife extends Page implements HasForms
         return [
             Section::make('Hero')->schema([
                 TextInput::make($prefix.'.hero.title')->label('Title')->required()->maxLength(160),
-                TextInput::make($prefix.'.hero.image')->label('Hero Image')->required()->maxLength(255),
+                MediaPicker::image($prefix.'.hero.image', 'Hero Image', true),
                 Repeater::make($prefix.'.hero.breadcrumbs')
                     ->label('Breadcrumbs')
                     ->schema([
@@ -837,7 +838,7 @@ class ManageCampusLife extends Page implements HasForms
                         TextInput::make('tag')->required()->maxLength(80),
                         TextInput::make('title')->required()->maxLength(160),
                         TextInput::make('href')->required()->maxLength(255),
-                        TextInput::make('image')->required()->maxLength(255),
+                        MediaPicker::image('image', 'Image', true),
                         Textarea::make('summary')->required()->rows(2)->columnSpanFull(),
                     ])
                     ->columns(3)
@@ -853,7 +854,7 @@ class ManageCampusLife extends Page implements HasForms
                 TextInput::make($prefix.'.activities.announcementUrl')->label('Announcement URL')->required()->maxLength(255),
                 TextInput::make($prefix.'.activities.feature.badge')->label('Badge')->required()->maxLength(120),
                 TextInput::make($prefix.'.activities.feature.title')->label('Feature Title')->required()->maxLength(160),
-                TextInput::make($prefix.'.activities.feature.image')->label('Feature Image')->required()->maxLength(255),
+                MediaPicker::image($prefix.'.activities.feature.image', 'Feature Image', true),
                 TextInput::make($prefix.'.activities.feature.href')->label('Feature URL')->required()->maxLength(255),
                 Textarea::make($prefix.'.activities.feature.summary')->label('Feature Summary')->required()->rows(3)->columnSpanFull(),
             ])->columns(2),
@@ -866,7 +867,7 @@ class ManageCampusLife extends Page implements HasForms
                         TextInput::make('date')->required()->maxLength(120),
                         TextInput::make('title')->required()->maxLength(160),
                         TextInput::make('href')->required()->maxLength(255),
-                        TextInput::make('image')->required()->maxLength(255),
+                        MediaPicker::image('image', 'Image', true),
                         Textarea::make('summary')->required()->rows(2)->columnSpanFull(),
                     ])
                     ->columns(3)
@@ -890,7 +891,7 @@ class ManageCampusLife extends Page implements HasForms
         return [
             Section::make('Hero')->schema([
                 TextInput::make($prefix.'.hero.title')->label('Title')->required()->maxLength(160),
-                TextInput::make($prefix.'.hero.image')->label('Hero Image')->required()->maxLength(255),
+                MediaPicker::image($prefix.'.hero.image', 'Hero Image', true),
                 TextInput::make($prefix.'.hero.imageAlt')->label('Image Alt')->maxLength(160),
                 Repeater::make($prefix.'.hero.breadcrumbs')
                     ->label('Breadcrumbs')
@@ -913,7 +914,7 @@ class ManageCampusLife extends Page implements HasForms
                         TextInput::make('title')->required()->maxLength(160),
                         TextInput::make('cta')->required()->maxLength(120),
                         TextInput::make('href')->required()->maxLength(255),
-                        TextInput::make('icon')->required()->maxLength(255),
+                        MediaPicker::icon('icon', 'Icon', true),
                         Textarea::make('description')->required()->rows(2)->columnSpanFull(),
                     ])
                     ->columns(2)
@@ -925,14 +926,14 @@ class ManageCampusLife extends Page implements HasForms
 
             Section::make('Success Panel')->schema([
                 TextInput::make($prefix.'.success.title')->label('Title')->required()->maxLength(160),
-                TextInput::make($prefix.'.success.image')->label('Image')->required()->maxLength(255),
+                MediaPicker::image($prefix.'.success.image', 'Image', true),
                 TextInput::make($prefix.'.success.imageAlt')->label('Image Alt')->required()->maxLength(160),
                 Textarea::make($prefix.'.success.description')->label('Description')->required()->rows(3)->columnSpanFull(),
                 Repeater::make($prefix.'.success.links')
                     ->label('Links / Badges')
                     ->schema([
                         TextInput::make('label')->required()->maxLength(120),
-                        TextInput::make('icon')->required()->maxLength(255),
+                        MediaPicker::icon('icon', 'Icon', true),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -955,7 +956,7 @@ class ManageCampusLife extends Page implements HasForms
         return [
             Section::make('Hero')->schema([
                 TextInput::make($prefix.'.hero.title')->label('Title')->required()->maxLength(160),
-                TextInput::make($prefix.'.hero.image')->label('Hero Image')->required()->maxLength(255),
+                MediaPicker::image($prefix.'.hero.image', 'Hero Image', true),
                 Repeater::make($prefix.'.hero.breadcrumbs')
                     ->label('Breadcrumbs')
                     ->schema([
@@ -979,7 +980,7 @@ class ManageCampusLife extends Page implements HasForms
                         TextInput::make('id')->required()->maxLength(80),
                         TextInput::make('title')->required()->maxLength(160),
                         TextInput::make('href')->required()->maxLength(255),
-                        TextInput::make('image')->required()->maxLength(255),
+                        MediaPicker::image('image', 'Image', true),
                         Toggle::make('wide')->label('Wide Card'),
                         Textarea::make('access')->required()->rows(2)->columnSpanFull(),
                     ])
@@ -992,14 +993,14 @@ class ManageCampusLife extends Page implements HasForms
 
             Section::make('Support Panel')->schema([
                 TextInput::make($prefix.'.support.title')->label('Title')->required()->maxLength(160),
-                TextInput::make($prefix.'.support.image')->label('Image')->required()->maxLength(255),
+                MediaPicker::image($prefix.'.support.image', 'Image', true),
                 TextInput::make($prefix.'.support.imageAlt')->label('Image Alt')->required()->maxLength(160),
                 Textarea::make($prefix.'.support.summary')->label('Summary')->required()->rows(3)->columnSpanFull(),
                 Repeater::make($prefix.'.support.badges')
                     ->label('Badges')
                     ->schema([
                         TextInput::make('label')->required()->maxLength(120),
-                        TextInput::make('icon')->required()->maxLength(255),
+                        MediaPicker::icon('icon', 'Icon', true),
                     ])
                     ->columns(2)
                     ->defaultItems(0)

@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Filament\Resources\MediaAssetResource\Pages;
 
 use App\Filament\Resources\MediaAssetResource;
+use App\Support\MediaUrlResolver;
 use Filament\Actions;
-use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
 use Filament\Resources\Pages\ViewRecord;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\HtmlString;
 
 class ViewMediaAsset extends ViewRecord
 {
@@ -22,10 +22,11 @@ class ViewMediaAsset extends ViewRecord
         return $infolist->schema([
             Section::make('Preview')
                 ->schema([
-                    ImageEntry::make('path')
+                    TextEntry::make('preview')
                         ->label('Preview')
-                        ->disk(fn ($record): string => $record->disk ?? 'local')
-                        ->height(300)
+                        ->getStateUsing(fn ($record): ?string => self::publicMediaUrl($record->path ?? null, $record->disk ?? null))
+                        ->formatStateUsing(fn (?string $state): HtmlString => self::previewHtml($state))
+                        ->html()
                         ->visible(fn ($record): bool => str_starts_with($record->mime_type ?? '', 'image/')),
 
                     TextEntry::make('mime_type')
@@ -47,6 +48,10 @@ class ViewMediaAsset extends ViewRecord
                     TextEntry::make('mime_type')
                         ->label('MIME Type'),
 
+                    TextEntry::make('media_type')
+                        ->label('Category')
+                        ->badge(),
+
                     TextEntry::make('extension')
                         ->label('Extension'),
 
@@ -54,11 +59,14 @@ class ViewMediaAsset extends ViewRecord
                         ->label('Size')
                         ->formatStateUsing(fn (int $state): string => self::formatFileSize($state)),
 
+                    TextEntry::make('checksum')
+                        ->label('Checksum')
+                        ->copyable()
+                        ->placeholder('—'),
+
                     TextEntry::make('public_url')
                         ->label('URL')
-                        ->getStateUsing(function ($record): string {
-                            return Storage::disk($record->disk ?? 'local')->url($record->path);
-                        })
+                        ->getStateUsing(fn ($record): string => self::publicMediaUrl($record->path ?? null, $record->disk ?? null) ?? '')
                         ->copyable(),
 
                     TextEntry::make('width')
@@ -130,5 +138,36 @@ class ViewMediaAsset extends ViewRecord
         }
 
         return $bytes.' B';
+    }
+
+    private static function configuredDisk(?string $disk): string
+    {
+        $disks = config('filesystems.disks', []);
+
+        if (is_string($disk) && array_key_exists($disk, is_array($disks) ? $disks : [])) {
+            return $disk;
+        }
+
+        return (string) config('filesystems.media_disk', 'public');
+    }
+
+    private static function publicMediaUrl(?string $path, ?string $disk): ?string
+    {
+        $url = MediaUrlResolver::resolve($path, self::configuredDisk($disk));
+
+        if (is_string($url) && str_starts_with($url, '/')) {
+            return url($url);
+        }
+
+        return $url;
+    }
+
+    private static function previewHtml(?string $url): HtmlString
+    {
+        if ($url === null || $url === '') {
+            return new HtmlString('<span>No preview available.</span>');
+        }
+
+        return new HtmlString('<img src="'.e($url).'" alt="" loading="lazy" style="max-width:100%;max-height:300px;border-radius:12px;object-fit:contain;" />');
     }
 }

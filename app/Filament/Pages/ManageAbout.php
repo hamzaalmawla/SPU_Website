@@ -9,6 +9,7 @@ use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Page\AboutPageServiceInterface;
 use App\DTOs\Cms\CmsTargetDTO;
 use App\Exceptions\ConflictException;
+use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
@@ -407,8 +408,8 @@ class ManageAbout extends Page implements HasForms
                 TextInput::make($prefix.'.badge')->label('Badge')->required()->maxLength(120),
                 Textarea::make($prefix.'.quote')->label('Quote')->required()->rows(3)->columnSpanFull(),
                 Textarea::make($prefix.'.description')->label('Description')->required()->rows(3)->columnSpanFull(),
-                TextInput::make($prefix.'.imagePrimary')->label('Primary Image')->required()->maxLength(255),
-                TextInput::make($prefix.'.imageSecondary')->label('Secondary Image')->required()->maxLength(255),
+                MediaPicker::image($prefix.'.imagePrimary', 'Primary Image', true),
+                MediaPicker::image($prefix.'.imageSecondary', 'Secondary Image', true),
             ])->columns(2),
 
             Section::make('Stats')->schema([
@@ -417,7 +418,7 @@ class ManageAbout extends Page implements HasForms
                     ->schema([
                         TextInput::make('value')->required()->maxLength(40),
                         TextInput::make('label')->required()->maxLength(120),
-                        TextInput::make('icon')->maxLength(255),
+                        MediaPicker::icon('icon', 'Icon'),
                     ])
                     ->columns(3)
                     ->defaultItems(0)
@@ -478,7 +479,7 @@ class ManageAbout extends Page implements HasForms
                 TextInput::make($prefix.'.title')->label('Page Title')->required()->maxLength(180),
                 TextInput::make($prefix.'.headline')->label('Headline')->required()->maxLength(255),
                 Textarea::make($prefix.'.summary')->label('Summary')->required()->rows(2)->columnSpanFull(),
-                TextInput::make($prefix.'.heroImage')->label('Hero Image')->required()->maxLength(255),
+                MediaPicker::image($prefix.'.heroImage', 'Hero Image', true),
             ])->columns(2),
         ];
     }
@@ -493,7 +494,7 @@ class ManageAbout extends Page implements HasForms
                 TextInput::make($prefix.'.title')->label('Page Title')->required()->maxLength(180),
                 TextInput::make($prefix.'.headline')->label('Headline')->required()->maxLength(255),
                 Textarea::make($prefix.'.summary')->label('Summary')->required()->rows(2)->columnSpanFull(),
-                TextInput::make($prefix.'.heroImage')->label('Hero Image')->required()->maxLength(255),
+                MediaPicker::image($prefix.'.heroImage', 'Hero Image', true),
             ])->columns(2),
 
             Section::make('Founding Vision')->schema([

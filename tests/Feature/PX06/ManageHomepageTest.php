@@ -10,6 +10,7 @@ use App\Filament\Pages\ManageHomepage;
 use App\Models\User\User;
 use App\Support\HomepagePayloadMapper;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use ReflectionMethod;
 use Tests\TestCase;
 
@@ -52,6 +53,15 @@ class ManageHomepageTest extends TestCase
     public function test_unauthenticated_user_cannot_access_manage_homepage(): void
     {
         $this->assertFalse(ManageHomepage::canAccess());
+    }
+
+    public function test_manage_homepage_renders_without_eager_media_loading(): void
+    {
+        $this->actingAs($this->createUser('super_admin'));
+
+        Livewire::test(ManageHomepage::class)
+            ->assertSee('Hero')
+            ->assertSee('Footer');
     }
 
     public function test_homepage_form_payload_preserves_public_homepage_shape(): void

@@ -9,6 +9,7 @@ use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\News\NewsServiceInterface;
 use App\DTOs\Cms\CmsTargetDTO;
 use App\Exceptions\ConflictException;
+use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
@@ -322,7 +323,7 @@ class ManageNews extends Page implements HasForms
                 TextInput::make($prefix.'.pageTitle')->label('Page Title')->required()->maxLength(160),
                 TextInput::make($prefix.'.heroTitle')->label('Hero Title')->required()->maxLength(160),
                 Textarea::make($prefix.'.pageDescription')->label('Description')->required()->rows(2)->columnSpanFull(),
-                TextInput::make($prefix.'.heroImage')->label('Hero Image')->required()->maxLength(255),
+                MediaPicker::image($prefix.'.heroImage', 'Hero Image', true),
                 Repeater::make($prefix.'.heroLinks')
                     ->label('Hero Links')
                     ->schema([

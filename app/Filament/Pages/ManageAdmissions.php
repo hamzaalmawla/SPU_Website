@@ -9,6 +9,7 @@ use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Page\AdmissionsPageServiceInterface;
 use App\DTOs\Cms\CmsTargetDTO;
 use App\Exceptions\ConflictException;
+use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
@@ -453,7 +454,7 @@ class ManageAdmissions extends Page implements HasForms
         return [
             Section::make('Hero and Labels')->schema([
                 TextInput::make($prefix.'.title')->label('Page Title')->required()->maxLength(180),
-                TextInput::make($prefix.'.hero_image')->label('Hero Image')->required()->maxLength(255),
+                MediaPicker::image($prefix.'.hero_image', 'Hero Image', true),
                 TextInput::make($prefix.'.breadcrumb_home')->label('Breadcrumb Home')->required()->maxLength(80),
                 TextInput::make($prefix.'.breadcrumb_parent')->label('Breadcrumb Parent')->required()->maxLength(120),
                 TextInput::make($prefix.'.breadcrumb_current')->label('Breadcrumb Current')->required()->maxLength(160),
@@ -477,7 +478,7 @@ class ManageAdmissions extends Page implements HasForms
                         Repeater::make('policies')
                             ->label('Policies')
                             ->schema([
-                                TextInput::make('icon')->required()->maxLength(80),
+                                MediaPicker::icon('icon', 'Icon', true),
                                 TextInput::make('title')->required()->maxLength(180),
                                 Textarea::make('desc')->required()->rows(2)->columnSpanFull(),
                             ])
@@ -528,7 +529,7 @@ class ManageAdmissions extends Page implements HasForms
         return [
             Section::make('Hero and Labels')->schema([
                 TextInput::make($prefix.'.title')->label('Page Title')->required()->maxLength(180),
-                TextInput::make($prefix.'.hero_image')->label('Hero Image')->required()->maxLength(255),
+                MediaPicker::image($prefix.'.hero_image', 'Hero Image', true),
                 TextInput::make($prefix.'.breadcrumb_home')->label('Breadcrumb Home')->required()->maxLength(80),
                 TextInput::make($prefix.'.breadcrumb_parent')->label('Breadcrumb Parent')->required()->maxLength(120),
                 TextInput::make($prefix.'.breadcrumb_current')->label('Breadcrumb Current')->required()->maxLength(120),
@@ -553,7 +554,7 @@ class ManageAdmissions extends Page implements HasForms
                         TextInput::make('id')->required()->maxLength(80),
                         TextInput::make('label')->required()->maxLength(120),
                         Textarea::make('desc')->required()->rows(2)->columnSpanFull(),
-                        TextInput::make('download_href')->label('Download URL')->required()->maxLength(255),
+                        MediaPicker::document('download_href', 'Download File', true),
                         TextInput::make('download_size')->label('Download Size')->required()->maxLength(80),
                         Repeater::make('items')
                             ->label('Documents')
@@ -660,7 +661,7 @@ class ManageAdmissions extends Page implements HasForms
         return [
             Section::make('Hero')->schema([
                 TextInput::make($prefix.'.title')->label('Page Title')->required()->maxLength(180),
-                TextInput::make($prefix.'.hero_image')->label('Hero Image')->required()->maxLength(255),
+                MediaPicker::image($prefix.'.hero_image', 'Hero Image', true),
                 TextInput::make($prefix.'.breadcrumb_home')->label('Breadcrumb Home')->required()->maxLength(80),
                 TextInput::make($prefix.'.breadcrumb_parent')->label('Breadcrumb Parent')->required()->maxLength(120),
                 TextInput::make($prefix.'.breadcrumb_current')->label('Breadcrumb Current')->required()->maxLength(120),
@@ -671,7 +672,7 @@ class ManageAdmissions extends Page implements HasForms
                     ->label('Stat Cards')
                     ->schema([
                         TextInput::make('title')->required()->maxLength(160),
-                        TextInput::make('icon')->required()->maxLength(80),
+                        MediaPicker::icon('icon', 'Icon', true),
                         Textarea::make('desc')->required()->rows(2)->columnSpanFull(),
                     ])
                     ->columns(2)
@@ -723,7 +724,7 @@ class ManageAdmissions extends Page implements HasForms
                 TextInput::make($prefix.'.download_title')->label('Download Title')->required()->maxLength(180),
                 Textarea::make($prefix.'.download_desc')->label('Download Description')->required()->rows(2)->columnSpanFull(),
                 TextInput::make($prefix.'.download_button')->label('Download Button')->required()->maxLength(120),
-                TextInput::make($prefix.'.download_href')->label('Download URL')->required()->maxLength(255),
+                MediaPicker::document($prefix.'.download_href', 'Download File', true),
                 TextInput::make($prefix.'.notice_title')->label('Notice Title')->required()->maxLength(180),
                 Textarea::make($prefix.'.notice_desc')->label('Notice Description')->required()->rows(3)->columnSpanFull(),
             ])->columns(2),
@@ -738,7 +739,7 @@ class ManageAdmissions extends Page implements HasForms
         return [
             Section::make('Hero and Search')->schema([
                 TextInput::make($prefix.'.title')->label('Page Title')->required()->maxLength(180),
-                TextInput::make($prefix.'.hero_image')->label('Hero Image')->required()->maxLength(255),
+                MediaPicker::image($prefix.'.hero_image', 'Hero Image', true),
                 TextInput::make($prefix.'.breadcrumb_home')->label('Breadcrumb Home')->required()->maxLength(80),
                 TextInput::make($prefix.'.breadcrumb_parent')->label('Breadcrumb Parent')->required()->maxLength(120),
                 TextInput::make($prefix.'.breadcrumb_current')->label('Breadcrumb Current')->required()->maxLength(120),
@@ -753,7 +754,7 @@ class ManageAdmissions extends Page implements HasForms
                     ->schema([
                         TextInput::make('id')->label('Group ID')->required()->maxLength(100),
                         TextInput::make('title')->label('Group Title')->required()->maxLength(160),
-                        TextInput::make('icon')->label('Icon')->required()->maxLength(255),
+                        MediaPicker::icon('icon', 'Icon', true),
                         Repeater::make('items')
                             ->label('Questions')
                             ->schema([
@@ -783,7 +784,7 @@ class ManageAdmissions extends Page implements HasForms
         return [
             Section::make('Hero and Intro')->schema([
                 TextInput::make($prefix.'.title')->label('Page Title')->required()->maxLength(180),
-                TextInput::make($prefix.'.hero_image')->label('Hero Image')->required()->maxLength(255),
+                MediaPicker::image($prefix.'.hero_image', 'Hero Image', true),
                 TextInput::make($prefix.'.breadcrumb_home')->label('Breadcrumb Home')->required()->maxLength(80),
                 TextInput::make($prefix.'.breadcrumb_parent')->label('Breadcrumb Parent')->required()->maxLength(120),
                 TextInput::make($prefix.'.breadcrumb_current')->label('Breadcrumb Current')->required()->maxLength(120),
@@ -796,7 +797,7 @@ class ManageAdmissions extends Page implements HasForms
                     ->label('Feature Cards')
                     ->schema([
                         TextInput::make('title')->required()->maxLength(160),
-                        TextInput::make('icon')->required()->maxLength(80),
+                        MediaPicker::icon('icon', 'Icon', true),
                         Textarea::make('desc')->required()->rows(2)->columnSpanFull(),
                     ])
                     ->columns(2)
@@ -834,7 +835,7 @@ class ManageAdmissions extends Page implements HasForms
         return [
             Section::make('Hero and Filters')->schema([
                 TextInput::make($prefix.'.title')->label('Page Title')->required()->maxLength(180),
-                TextInput::make($prefix.'.hero_image')->label('Hero Image')->required()->maxLength(255),
+                MediaPicker::image($prefix.'.hero_image', 'Hero Image', true),
                 TextInput::make($prefix.'.breadcrumb_home')->label('Breadcrumb Home')->required()->maxLength(80),
                 TextInput::make($prefix.'.breadcrumb_parent')->label('Breadcrumb Parent')->required()->maxLength(120),
                 TextInput::make($prefix.'.breadcrumb_current')->label('Breadcrumb Current')->required()->maxLength(120),
@@ -878,7 +879,7 @@ class ManageAdmissions extends Page implements HasForms
                 Repeater::make($prefix.'.methods')
                     ->label('Payment Methods')
                     ->schema([
-                        TextInput::make('icon')->required()->maxLength(80),
+                        MediaPicker::icon('icon', 'Icon', true),
                         TextInput::make('title')->required()->maxLength(160),
                         Textarea::make('desc')->required()->rows(2)->columnSpanFull(),
                         Repeater::make('details')
@@ -925,7 +926,7 @@ class ManageAdmissions extends Page implements HasForms
         return [
             Section::make('Hero and Labels')->schema([
                 TextInput::make($prefix.'.title')->label('Page Title')->required()->maxLength(180),
-                TextInput::make($prefix.'.hero_image')->label('Hero Image')->required()->maxLength(255),
+                MediaPicker::image($prefix.'.hero_image', 'Hero Image', true),
                 TextInput::make($prefix.'.breadcrumb_home')->label('Breadcrumb Home')->required()->maxLength(80),
                 TextInput::make($prefix.'.breadcrumb_parent')->label('Breadcrumb Parent')->required()->maxLength(120),
                 TextInput::make($prefix.'.breadcrumb_current')->label('Breadcrumb Current')->required()->maxLength(120),
@@ -1000,8 +1001,8 @@ class ManageAdmissions extends Page implements HasForms
                 TextInput::make($prefix.'.hero_secondary_url')->label('Secondary URL')->required()->maxLength(255),
                 TextInput::make($prefix.'.hero_badge_label')->label('Badge Label')->required()->maxLength(120),
                 TextInput::make($prefix.'.hero_badge_value')->label('Badge Value')->required()->maxLength(120),
-                TextInput::make($prefix.'.hero_campus_image')->label('Campus Image')->required()->maxLength(255),
-                TextInput::make($prefix.'.hero_students_image')->label('Students Image')->required()->maxLength(255),
+                MediaPicker::image($prefix.'.hero_campus_image', 'Campus Image', true),
+                MediaPicker::image($prefix.'.hero_students_image', 'Students Image', true),
                 Repeater::make($prefix.'.hero_checklist_items')
                     ->label('Checklist Items')
                     ->schema([
@@ -1020,7 +1021,7 @@ class ManageAdmissions extends Page implements HasForms
                     ->label('Trust Items')
                     ->schema([
                         TextInput::make('title')->required()->maxLength(160),
-                        TextInput::make('icon')->required()->maxLength(255),
+                        MediaPicker::icon('icon', 'Icon', true),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -1053,7 +1054,7 @@ class ManageAdmissions extends Page implements HasForms
                 TextInput::make($prefix.'.timeline_primary_deadline')->label('Primary Deadline')->required()->maxLength(120),
                 TextInput::make($prefix.'.timeline_primary_deadline_label')->label('Deadline Label')->required()->maxLength(120),
                 Textarea::make($prefix.'.timeline_primary_deadline_desc')->label('Deadline Description')->required()->rows(3)->columnSpanFull(),
-                TextInput::make($prefix.'.timeline_image')->label('Timeline Image')->required()->maxLength(255),
+                MediaPicker::image($prefix.'.timeline_image', 'Timeline Image', true),
                 Repeater::make($prefix.'.timeline_phases')
                     ->label('Timeline Phases')
                     ->schema([
@@ -1077,7 +1078,7 @@ class ManageAdmissions extends Page implements HasForms
                     ->label('Resource Cards')
                     ->schema([
                         TextInput::make('title')->required()->maxLength(160),
-                        TextInput::make('icon')->required()->maxLength(255),
+                        MediaPicker::icon('icon', 'Icon', true),
                         Textarea::make('desc')->required()->rows(2)->columnSpanFull(),
                         TextInput::make('link')->maxLength(120),
                         TextInput::make('slug')->required()->maxLength(80),

@@ -7,6 +7,7 @@ namespace App\Filament\Pages;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Page\EServicesPageServiceInterface;
 use App\Exceptions\ConflictException;
+use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
@@ -276,9 +277,9 @@ class ManageEServicesPage extends Page implements HasForms
                 TextInput::make("{$locale}.hero_eyebrow")->label('Eyebrow')->required()->maxLength(160),
                 TextInput::make("{$locale}.hero_title")->label('Title')->required()->maxLength(180),
                 Textarea::make("{$locale}.hero_summary")->label('Summary')->required()->rows(3)->columnSpanFull(),
-                TextInput::make("{$locale}.image_hero")->label('Hero Image')->required()->maxLength(255),
-                TextInput::make("{$locale}.image_left")->label('Left Background Image')->required()->maxLength(255),
-                TextInput::make("{$locale}.image_right")->label('Right Background Image')->required()->maxLength(255),
+                MediaPicker::image("{$locale}.image_hero", 'Hero Image', true),
+                MediaPicker::image("{$locale}.image_left", 'Left Background Image', true),
+                MediaPicker::image("{$locale}.image_right", 'Right Background Image', true),
             ])->columns(2),
 
             Section::make('Digital Services')->schema([
@@ -288,7 +289,7 @@ class ManageEServicesPage extends Page implements HasForms
                         TextInput::make('id')->required()->maxLength(20),
                         TextInput::make('title')->required()->maxLength(160),
                         Textarea::make('summary')->required()->rows(3)->columnSpanFull(),
-                        TextInput::make('icon')->required()->maxLength(255),
+                        MediaPicker::icon('icon', 'Icon', true),
                         TextInput::make('url')->required()->maxLength(500),
                         TextInput::make('button')->required()->maxLength(80),
                     ])
@@ -314,7 +315,7 @@ class ManageEServicesPage extends Page implements HasForms
             Section::make('SEO')->schema([
                 TextInput::make("{$locale}.seo_title")->label('SEO Title')->required()->maxLength(180),
                 Textarea::make("{$locale}.seo_description")->label('SEO Description')->required()->rows(3),
-                TextInput::make("{$locale}.seo_image")->label('SEO Image')->required()->maxLength(255),
+                MediaPicker::image("{$locale}.seo_image", 'SEO Image', true),
             ]),
         ]);
     }

@@ -13,6 +13,7 @@ use App\Contracts\Page\ContactPageServiceInterface;
 use App\Contracts\Page\EServicesPageServiceInterface;
 use App\Contracts\Page\FacultyPageServiceInterface;
 use App\Contracts\Page\PageServiceInterface;
+use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Contracts\Seo\SeoMetadataServiceInterface;
 use App\Contracts\Settings\SettingsServiceInterface;
 use App\Contracts\Shared\PreviewServiceInterface;
@@ -35,6 +36,7 @@ final class PreviewController extends Controller
         private readonly ContactPageServiceInterface $contactPageService,
         private readonly EServicesPageServiceInterface $eServicesPageService,
         private readonly FacultyPageServiceInterface $facultyPageService,
+        private readonly ResearchPageServiceInterface $researchPageService,
         private readonly PageServiceInterface $pageService,
         private readonly SettingsServiceInterface $settingsService,
         private readonly SeoMetadataServiceInterface $seoMetadataService,
@@ -137,6 +139,34 @@ final class PreviewController extends Controller
             return $this->renderNewsIndexPreview($locale, $preview, $localizedContent);
         }
 
+        if ($targetKey === 'research.publications') {
+            return $this->renderResearchPublicationsPreview($locale, $preview, $localizedContent);
+        }
+
+        if ($targetKey === 'research.index') {
+            return $this->renderResearchLandingPreview($locale, $preview, $localizedContent);
+        }
+
+        if ($targetKey === 'research.experts') {
+            return $this->renderResearchExpertsPreview($locale, $preview, $localizedContent);
+        }
+
+        if ($targetKey === 'research.conferences') {
+            return $this->renderResearchTargetPreview($locale, $preview, $targetKey, $localizedContent, 'public.research.conferences', '/research/conferences');
+        }
+
+        if ($targetKey === 'research.library') {
+            return $this->renderResearchTargetPreview($locale, $preview, $targetKey, $localizedContent, 'public.research.library', '/research/library');
+        }
+
+        if ($targetKey === 'research.office') {
+            return $this->renderResearchTargetPreview($locale, $preview, $targetKey, $localizedContent, 'public.research.office', '/research/office');
+        }
+
+        if ($targetKey === 'research.policies') {
+            return $this->renderResearchTargetPreview($locale, $preview, $targetKey, $localizedContent, 'public.research.policies', '/research/policies');
+        }
+
         if ($targetKey === 'campus_life.landing') {
             return $this->renderCampusLifeLandingPreview($locale, $preview, $localizedContent);
         }
@@ -166,6 +196,110 @@ final class PreviewController extends Controller
             'e_services' => $this->renderEServicesPreview($locale, $preview, $localizedContent),
             default => abort(404),
         };
+    }
+
+    /** @param array<string, mixed> $content */
+    private function renderResearchLandingPreview(string $locale, PreviewDTO $preview, array $content): View
+    {
+        $page = $this->researchPageService->buildPreviewLanding($locale, $content);
+
+        return view('public.research.index', [
+            'locale' => $locale,
+            'direction' => $page->direction,
+            'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $locale.'/research'),
+            'settings' => $this->settingsService->getPublicSettings($locale),
+            'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale),
+            'isPreview' => true,
+            'seo' => $this->seoMetadataService->buildFallback($locale, [
+                'path' => '/'.$locale.'/research',
+                'locale_paths' => ['ar' => '/ar/research', 'en' => '/en/research'],
+                'title' => $page->seoTitle,
+                'meta_description' => $page->seoDescription,
+                'og_title' => $page->seoTitle,
+                'og_description' => $page->seoDescription,
+                'og_image' => $page->seoImage,
+            ]),
+            'page' => $page,
+            'preview' => $preview,
+        ]);
+    }
+
+    /** @param array<string, mixed> $content */
+    private function renderResearchExpertsPreview(string $locale, PreviewDTO $preview, array $content): View
+    {
+        $page = $this->researchPageService->buildPreviewExperts($locale, $content);
+
+        return view('public.research.expert-finder', [
+            'locale' => $locale,
+            'direction' => $page->direction,
+            'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $locale.'/research/expert-finder'),
+            'settings' => $this->settingsService->getPublicSettings($locale),
+            'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale),
+            'isPreview' => true,
+            'seo' => $this->seoMetadataService->buildFallback($locale, [
+                'path' => '/'.$locale.'/research/expert-finder',
+                'locale_paths' => ['ar' => '/ar/research/expert-finder', 'en' => '/en/research/expert-finder'],
+                'title' => $page->seoTitle,
+                'meta_description' => $page->seoDescription,
+                'og_title' => $page->seoTitle,
+                'og_description' => $page->seoDescription,
+                'og_image' => $page->seoImage,
+            ]),
+            'page' => $page,
+            'preview' => $preview,
+        ]);
+    }
+
+    /** @param array<string, mixed> $content */
+    private function renderResearchPublicationsPreview(string $locale, PreviewDTO $preview, array $content): View
+    {
+        $page = $this->researchPageService->buildPreviewPublications($locale, $content);
+
+        return view('public.research.publications.index', [
+            'locale' => $locale,
+            'direction' => $page->direction,
+            'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $locale.'/research/publications'),
+            'settings' => $this->settingsService->getPublicSettings($locale),
+            'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale),
+            'isPreview' => true,
+            'seo' => $this->seoMetadataService->buildFallback($locale, [
+                'path' => '/'.$locale.'/research/publications',
+                'locale_paths' => ['ar' => '/ar/research/publications', 'en' => '/en/research/publications'],
+                'title' => $page->seoTitle,
+                'meta_description' => $page->seoDescription,
+                'og_title' => $page->seoTitle,
+                'og_description' => $page->seoDescription,
+                'og_image' => $page->seoImage,
+            ]),
+            'page' => $page,
+            'preview' => $preview,
+        ]);
+    }
+
+    /** @param array<string, mixed> $content */
+    private function renderResearchTargetPreview(string $locale, PreviewDTO $preview, string $targetKey, array $content, string $view, string $path): View
+    {
+        $page = $this->researchPageService->buildPreviewTarget($targetKey, $locale, $content);
+
+        return view($view, [
+            'locale' => $locale,
+            'direction' => $page->direction,
+            'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $locale.$path),
+            'settings' => $this->settingsService->getPublicSettings($locale),
+            'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale),
+            'isPreview' => true,
+            'seo' => $this->seoMetadataService->buildFallback($locale, [
+                'path' => '/'.$locale.$path,
+                'locale_paths' => ['ar' => '/ar'.$path, 'en' => '/en'.$path],
+                'title' => $page->seoTitle,
+                'meta_description' => $page->seoDescription,
+                'og_title' => $page->seoTitle,
+                'og_description' => $page->seoDescription,
+                'og_image' => $page->seoImage,
+            ]),
+            'page' => $page,
+            'preview' => $preview,
+        ]);
     }
 
     /** @param array<string, mixed> $content */

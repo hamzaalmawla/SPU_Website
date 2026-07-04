@@ -25,6 +25,7 @@ use App\Contracts\Page\EServicesPageServiceInterface;
 use App\Contracts\Page\FacultyPageServiceInterface;
 use App\Contracts\Page\PageServiceInterface;
 use App\Contracts\Page\VirtualTourPageServiceInterface;
+use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Contracts\Seo\SeoMetadataServiceInterface;
 use App\Contracts\Seo\SitemapServiceInterface;
 use App\Contracts\Settings\SettingsServiceInterface;
@@ -92,6 +93,7 @@ use App\Services\Page\PagePublishabilityValidator;
 use App\Services\Page\PageService;
 use App\Services\Page\PageUrlResolver;
 use App\Services\Page\VirtualTourPageService;
+use App\Services\Research\ResearchPageService;
 use App\Services\Preview\PreviewService;
 use App\Services\Preview\PreviewTokenStore;
 use App\Services\Seo\SeoMetadataService;
@@ -281,6 +283,7 @@ class AppServiceProvider extends ServiceProvider
             PageServiceInterface::class => PageService::class,
             VirtualTourPageServiceInterface::class => VirtualTourPageService::class,
             PersonServiceInterface::class => PersonService::class,
+            ResearchPageServiceInterface::class => ResearchPageService::class,
             SettingsServiceInterface::class => SettingsService::class,
             NavigationServiceInterface::class => NavigationService::class,
             TotpAuthenticatorInterface::class => TotpAuthenticator::class,

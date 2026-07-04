@@ -7,6 +7,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\MediaAssetResource\Pages;
 use App\Models\Media\MediaAsset;
 use App\Models\User\User;
+use App\Support\MediaUrlResolver;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Tabs;
@@ -15,12 +16,12 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\HtmlString;
 
 /**
  * Filament resource for managing media assets (upload, search, edit metadata, view).
@@ -91,18 +92,17 @@ class MediaAssetResource extends Resource
     {
         return $table
             ->columns([
-                ImageColumn::make('thumbnail')
+                TextColumn::make('thumbnail')
                     ->label('')
                     ->getStateUsing(function (MediaAsset $record): ?string {
                         if (str_starts_with($record->mime_type, 'image/')) {
-                            return $record->path;
+                            return self::publicMediaUrl($record->path, $record->disk);
                         }
 
                         return null;
                     })
-                    ->disk(fn (MediaAsset $record): string => $record->disk ?? 'local')
-                    ->size(40)
-                    ->circular(),
+                    ->formatStateUsing(fn (?string $state): HtmlString => self::thumbnailHtml($state))
+                    ->html(),
 
                 TextColumn::make('filename')
                     ->label('Filename')
@@ -123,6 +123,17 @@ class MediaAssetResource extends Resource
                         str_starts_with($state, 'image/') => 'success',
                         str_starts_with($state, 'video/') => 'info',
                         str_starts_with($state, 'application/pdf') => 'danger',
+                        default => 'gray',
+                    }),
+
+                TextColumn::make('media_type')
+                    ->label('Category')
+                    ->badge()
+                    ->color(fn (?string $state): string => match ($state) {
+                        'image' => 'success',
+                        'pdf' => 'danger',
+                        'document' => 'warning',
+                        'video' => 'info',
                         default => 'gray',
                     }),
 
@@ -150,6 +161,16 @@ class MediaAssetResource extends Resource
                             $query->where('mime_type', 'like', $data['value'].'%');
                         }
                     }),
+                SelectFilter::make('media_type')
+                    ->label('Category')
+                    ->options([
+                        'image' => 'Images',
+                        'pdf' => 'PDFs',
+                        'document' => 'Documents',
+                        'video' => 'Videos',
+                        'icon' => 'Icons',
+                        'other' => 'Other',
+                    ]),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
@@ -226,6 +247,12 @@ class MediaAssetResource extends Resource
                         ->label('Caption (AR)')
                         ->maxLength(1000),
 
+                    TextInput::make('checksum')
+                        ->label('Checksum')
+                        ->disabled()
+                        ->dehydrated(false)
+                        ->visibleOn(['edit', 'view']),
+
                     TextInput::make('faculty_scope_slug')
                         ->label('Faculty Scope Slug')
                         ->helperText('Optional. Faculty editors only access media matching their scope.')
@@ -254,6 +281,12 @@ class MediaAssetResource extends Resource
                     TextInput::make('caption_en')
                         ->label('Caption (EN)')
                         ->maxLength(1000),
+
+                    TextInput::make('media_type')
+                        ->label('Category')
+                        ->disabled()
+                        ->dehydrated(false)
+                        ->visibleOn(['edit', 'view']),
                 ]),
             ]);
     }
@@ -273,5 +306,36 @@ class MediaAssetResource extends Resource
         }
 
         return $bytes.' B';
+    }
+
+    private static function configuredDisk(?string $disk): string
+    {
+        $disks = config('filesystems.disks', []);
+
+        if (is_string($disk) && array_key_exists($disk, is_array($disks) ? $disks : [])) {
+            return $disk;
+        }
+
+        return (string) config('filesystems.media_disk', 'public');
+    }
+
+    private static function publicMediaUrl(?string $path, ?string $disk): ?string
+    {
+        $url = MediaUrlResolver::resolve($path, self::configuredDisk($disk));
+
+        if (is_string($url) && str_starts_with($url, '/')) {
+            return url($url);
+        }
+
+        return $url;
+    }
+
+    private static function thumbnailHtml(?string $url): HtmlString
+    {
+        if ($url === null || $url === '') {
+            return new HtmlString('<span style="display:inline-flex;width:40px;height:40px;border-radius:9999px;background:#f3f4f6;align-items:center;justify-content:center;color:#9ca3af;">-</span>');
+        }
+
+        return new HtmlString('<img src="'.e($url).'" alt="" loading="lazy" style="width:40px;height:40px;border-radius:9999px;object-fit:cover;" />');
     }
 }

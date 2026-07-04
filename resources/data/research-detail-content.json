@@ -1,0 +1,661 @@
+{
+  "hero": {
+    "titleEn": "Research Publication",
+    "titleAr": "منشور بحثي",
+    "image": "/images/uni-main-place.JPG"
+  },
+  "labels": {
+    "homeEn": "Home",
+    "homeAr": "الرئيسية",
+    "researchEn": "Research",
+    "researchAr": "البحث",
+    "repositoryEn": "Repository",
+    "repositoryAr": "مستودع البحث",
+    "relatedEn": "Related Publications",
+    "relatedAr": "منشورات ذات صلة",
+    "previousEn": "Previous",
+    "previousAr": "السابق",
+    "nextEn": "Next",
+    "nextAr": "التالي",
+    "shareEn": "Share publication",
+    "shareAr": "مشاركة المنشور",
+    "readMoreEn": "Read More",
+    "readMoreAr": "اقرأ المزيد",
+    "categoryEn": "Category",
+    "categoryAr": "الفئة",
+    "authorEn": "Author",
+    "authorAr": "المؤلف",
+    "yearEn": "Year",
+    "yearAr": "السنة",
+    "facultyEn": "Faculty",
+    "facultyAr": "الكلية",
+    "rateEn": "Quartile",
+    "rateAr": "الربع",
+    "linkEn": "View Publication",
+    "linkAr": "عرض المنشور",
+    "typeEn": "Type",
+    "typeAr": "النوع",
+    "themesEn": "Research Themes",
+    "themesAr": "مجالات البحث",
+    "keywordsEn": "Keywords",
+    "keywordsAr": "الكلمات المفتاحية",
+    "viewOnScholarEn": "View on Google Scholar",
+    "viewOnScholarAr": "عرض على Google Scholar",
+    "openAccessEn": "Open Access",
+    "openAccessAr": "وصول مفتوح"
+  },
+  "publications": [
+    {
+      "id": "pub-001",
+      "slug": "machine-learning-pharmaceutical-quality-control",
+      "links": {
+        "local": "/research/publications/machine-learning-pharmaceutical-quality-control/"
+      },
+      "titleEn": "Machine Learning Applications in Pharmaceutical Quality Control",
+      "titleAr": "تطبيقات تعلم الآلة في مراقبة جودة الأدوية",
+      "summaryEn": "This study evaluates machine learning algorithms for real-time pharmaceutical quality monitoring, achieving 94% accuracy in defect detection across tablet production lines.",
+      "summaryAr": "يقيم هذا البحث خوارزميات تعلم الآلة لمراقبة جودة الأدوية في الوقت الفعلي، محققاً دقة 94% في الكشف عن العيوب في خطوط إنتاج الأقراص.",
+      "typeEn": "Research Article",
+      "typeAr": "مقال بحثي",
+      "typeSlug": "research-article",
+      "facultyEn": "Faculty of Pharmacy",
+      "facultyAr": "كلية الصيدلة",
+      "facultySlug": "pharmacy",
+      "authorEn": "Dr. Hossam Shahrour",
+      "authorAr": "د. حسام شحرور",
+      "authorSlug": "hossam-shahrour",
+      "year": "2024",
+      "doi": "10.1234/spu.phar.2024.01",
+      "isOpenAccess": true,
+      "gsIndexed": true,
+      "image": "/images/pharmacy-place.jpg",
+      "themes": [
+        "pharmaceutical-sciences",
+        "ai-ml"
+      ],
+      "keywordsEn": [
+        "machine learning",
+        "quality control",
+        "pharmaceuticals",
+        "computer vision"
+      ],
+      "keywordsAr": [
+        "تعلم الآلة",
+        "مراقبة الجودة",
+        "الأدوية",
+        "الرؤية الحاسوبية"
+      ],
+      "leadEn": "This study evaluates machine learning algorithms for real-time pharmaceutical quality monitoring, achieving 94% accuracy in defect detection across tablet production lines.",
+      "leadAr": "يقيم هذا البحث خوارزميات تعلم الآلة لمراقبة جودة الأدوية في الوقت الفعلي، محققاً دقة 94% في الكشف عن العيوب في خطوط إنتاج الأقراص.",
+      "heroImage": "/images/pharmacy-place.jpg",
+      "paragraphsEn": [
+        "This publication represents ongoing research efforts at Syrian Private University to advance knowledge in this field.",
+        "The study was conducted with institutional support and follows established ethical and methodological standards for academic research."
+      ],
+      "paragraphsAr": [
+        "يمثل هذا المنشور جهود البحث المستمرة في الجامعة السورية الخاصة لتقدم المعرفة في هذا المجال.",
+        "أجريت الدراسة بدعم مؤسسي وتتبع المعايير الأخلاقية والمنهجية المعمول بها للبحث الأكاديمي."
+      ],
+      "keyStatementEn": "SPU continues to support rigorous academic research across all faculties.",
+      "keyStatementAr": "تواصل الجامعة السورية الخاصة دعم البحث الأكاديمي الرصين في جميع الكليات.",
+      "authorHref": "#",
+      "facultyHref": "#",
+      "href": "/research/detail/?id=pub-001",
+      "scholarUrl": "https://scholar.google.com/scholar?q=Machine%20Learning%20Applications%20in%20Pharmaceutical%20Quality%20Control",
+      "scopusUrl": "https://www.scopus.com/results/results.uri?sort=plf-f&src=s&st1=Machine%20Learning%20Applications%20in%20Pharmaceutical%20Quality%20Control",
+      "resolvedThemes": [
+        {
+          "slug": "pharmaceutical-sciences",
+          "labelEn": "Pharmaceutical Sciences",
+          "labelAr": "العلوم الصيدلانية"
+        },
+        {
+          "slug": "ai-ml",
+          "labelEn": "AI & Machine Learning",
+          "labelAr": "الذكاء الاصطناعي وتعلم الآلة"
+        }
+      ],
+      "categoryEn": "Research Article",
+      "categoryAr": "مقال بحثي",
+      "rateEn": "To be verified",
+      "rateAr": "To be verified"
+    },
+    {
+      "id": "pub-002",
+      "slug": "ai-dental-diagnostics",
+      "links": {
+        "local": "/research/publications/ai-dental-diagnostics/"
+      },
+      "titleEn": "AI-Driven Predictive Models for Early Dental Caries Detection",
+      "titleAr": "نماذج تنبؤية مدفوعة بالذكاء الاصطناعي للكشف المبكر عن تسوس الأسنان",
+      "summaryEn": "A convolutional neural network model trained on 12,000 dental radiographs demonstrates superior sensitivity in detecting early-stage caries and reducing diagnostic variability.",
+      "summaryAr": "نموذج شبكة عصبية تلافيفية مدرب على 12000 أشعة سينية للأسنان يظهر حساسية فائقة في الكشف عن التسوس المبكر وتقليل تباين التشخيص.",
+      "typeEn": "Research Article",
+      "typeAr": "مقال بحثي",
+      "typeSlug": "research-article",
+      "facultyEn": "Faculty of Dentistry",
+      "facultyAr": "كلية طب الأسنان",
+      "facultySlug": "dentistry",
+      "authorEn": "Dr. Nabil Haddad",
+      "authorAr": "د. نبيل حداد",
+      "authorSlug": "nabil-haddad",
+      "year": "2024",
+      "doi": "10.1234/spu.dent.2024.02",
+      "isOpenAccess": true,
+      "gsIndexed": true,
+      "image": "/images/research-digital-dentistry.webp",
+      "themes": [
+        "dental-sciences",
+        "ai-ml"
+      ],
+      "keywordsEn": [
+        "deep learning",
+        "dental radiographs",
+        "caries detection",
+        "diagnostic imaging"
+      ],
+      "keywordsAr": [
+        "التعلم العميق",
+        "أشعة الأسنان",
+        "الكشف عن التسوس",
+        "التصوير التشخيصي"
+      ],
+      "leadEn": "A convolutional neural network model trained on 12,000 dental radiographs demonstrates superior sensitivity in detecting early-stage caries and reducing diagnostic variability.",
+      "leadAr": "نموذج شبكة عصبية تلافيفية مدرب على 12000 أشعة سينية للأسنان يظهر حساسية فائقة في الكشف عن التسوس المبكر وتقليل تباين التشخيص.",
+      "heroImage": "/images/research-digital-dentistry.webp",
+      "paragraphsEn": [
+        "This publication represents ongoing research efforts at Syrian Private University to advance knowledge in this field.",
+        "The study was conducted with institutional support and follows established ethical and methodological standards for academic research."
+      ],
+      "paragraphsAr": [
+        "يمثل هذا المنشور جهود البحث المستمرة في الجامعة السورية الخاصة لتقدم المعرفة في هذا المجال.",
+        "أجريت الدراسة بدعم مؤسسي وتتبع المعايير الأخلاقية والمنهجية المعمول بها للبحث الأكاديمي."
+      ],
+      "keyStatementEn": "SPU continues to support rigorous academic research across all faculties.",
+      "keyStatementAr": "تواصل الجامعة السورية الخاصة دعم البحث الأكاديمي الرصين في جميع الكليات.",
+      "authorHref": "#",
+      "facultyHref": "#",
+      "href": "/research/detail/?id=pub-002",
+      "scholarUrl": "https://scholar.google.com/scholar?q=AI-Driven%20Predictive%20Models%20for%20Early%20Dental%20Caries%20Detection",
+      "scopusUrl": "https://www.scopus.com/results/results.uri?sort=plf-f&src=s&st1=AI-Driven%20Predictive%20Models%20for%20Early%20Dental%20Caries%20Detection",
+      "resolvedThemes": [
+        {
+          "slug": "dental-sciences",
+          "labelEn": "Dental Sciences",
+          "labelAr": "علوم طب الأسنان"
+        },
+        {
+          "slug": "ai-ml",
+          "labelEn": "AI & Machine Learning",
+          "labelAr": "الذكاء الاصطناعي وتعلم الآلة"
+        }
+      ],
+      "categoryEn": "Research Article",
+      "categoryAr": "مقال بحثي",
+      "rateEn": "To be verified",
+      "rateAr": "To be verified"
+    },
+    {
+      "id": "pub-003",
+      "slug": "structural-analysis-earthquake-resistant-concrete",
+      "links": {
+        "local": "/research/publications/structural-analysis-earthquake-resistant-concrete/"
+      },
+      "titleEn": "Structural Performance of Fiber-Reinforced Concrete in Seismic Zones",
+      "titleAr": "الأداء الإنشائي للخرسانة المسلحة بالألياف في المناطق الزلزالية",
+      "summaryEn": "Experimental analysis of hybrid fiber-reinforced concrete specimens under cyclic loading reveals improved ductility, energy dissipation, and crack control for seismic applications.",
+      "summaryAr": "يكشف التحليل التجريبي لعينات الخرسانة المسلحة بالألياف الهجينة تحت الحمل الدوري عن تحسن في المطيلية وتبديد الطاقة وسيطرة التشقق للتطبيقات الزلزالية.",
+      "typeEn": "Research Article",
+      "typeAr": "مقال بحثي",
+      "typeSlug": "research-article",
+      "facultyEn": "Faculty of Construction Engineering",
+      "facultyAr": "كلية هندسة التشييد",
+      "facultySlug": "construction",
+      "authorEn": "Dr. Ammar Ghada",
+      "authorAr": "د. عمار غضة",
+      "authorSlug": "ammar-ghada",
+      "year": "2023",
+      "doi": "10.1234/spu.civ.2023.01",
+      "isOpenAccess": true,
+      "gsIndexed": true,
+      "image": "/images/campus-feature-01.webp",
+      "themes": [
+        "structural-engineering",
+        "construction-engineering"
+      ],
+      "keywordsEn": [
+        "fiber-reinforced concrete",
+        "seismic design",
+        "cyclic loading",
+        "structural engineering"
+      ],
+      "keywordsAr": [
+        "الخرسانة المسلحة بالألياف",
+        "التصميم الزلزالي",
+        "الحمل الدوري",
+        "الهندسة الإنشائية"
+      ],
+      "leadEn": "Experimental analysis of hybrid fiber-reinforced concrete specimens under cyclic loading reveals improved ductility, energy dissipation, and crack control for seismic applications.",
+      "leadAr": "يكشف التحليل التجريبي لعينات الخرسانة المسلحة بالألياف الهجينة تحت الحمل الدوري عن تحسن في المطيلية وتبديد الطاقة وسيطرة التشقق للتطبيقات الزلزالية.",
+      "heroImage": "/images/campus-feature-01.webp",
+      "paragraphsEn": [
+        "This publication represents ongoing research efforts at Syrian Private University to advance knowledge in this field.",
+        "The study was conducted with institutional support and follows established ethical and methodological standards for academic research."
+      ],
+      "paragraphsAr": [
+        "يمثل هذا المنشور جهود البحث المستمرة في الجامعة السورية الخاصة لتقدم المعرفة في هذا المجال.",
+        "أجريت الدراسة بدعم مؤسسي وتتبع المعايير الأخلاقية والمنهجية المعمول بها للبحث الأكاديمي."
+      ],
+      "keyStatementEn": "SPU continues to support rigorous academic research across all faculties.",
+      "keyStatementAr": "تواصل الجامعة السورية الخاصة دعم البحث الأكاديمي الرصين في جميع الكليات.",
+      "authorHref": "#",
+      "facultyHref": "#",
+      "href": "/research/detail/?id=pub-003",
+      "scholarUrl": "https://scholar.google.com/scholar?q=Structural%20Performance%20of%20Fiber-Reinforced%20Concrete%20in%20Seismic%20Zones",
+      "scopusUrl": "https://www.scopus.com/results/results.uri?sort=plf-f&src=s&st1=Structural%20Performance%20of%20Fiber-Reinforced%20Concrete%20in%20Seismic%20Zones",
+      "resolvedThemes": [
+        {
+          "slug": "structural-engineering",
+          "labelEn": "Structural Engineering",
+          "labelAr": "الهندسة الإنشائية"
+        },
+        {
+          "slug": "construction-engineering",
+          "labelEn": "Construction Engineering",
+          "labelAr": "هندسة التشييد"
+        }
+      ],
+      "categoryEn": "Research Article",
+      "categoryAr": "مقال بحثي",
+      "rateEn": "To be verified",
+      "rateAr": "To be verified"
+    },
+    {
+      "id": "pub-004",
+      "slug": "deep-learning-reservoir-permeability",
+      "links": {
+        "local": "/research/publications/deep-learning-reservoir-permeability/"
+      },
+      "titleEn": "Deep Learning Framework for Reservoir Permeability Prediction",
+      "titleAr": "إطار التعلم العميق للتنبؤ بنفاذية المكامن",
+      "summaryEn": "A hybrid LSTM-Transformer architecture achieves state-of-the-art results in predicting carbonate reservoir permeability from well log data and core measurements.",
+      "summaryAr": "يحقق هيكل هجين LSTM-Transformer نتائج متقدمة في التنبؤ بنفاذية مكامن الكربونات من بيانات تسجيل الآبار والقياسات الأساسية.",
+      "typeEn": "Research Article",
+      "typeAr": "مقال بحثي",
+      "typeSlug": "research-article",
+      "facultyEn": "Faculty of Petroleum Engineering",
+      "facultyAr": "كلية هندسة البترول",
+      "facultySlug": "petroleum",
+      "authorEn": "Dr. Mahmoud Hadid",
+      "authorAr": "د. محمود حديد",
+      "authorSlug": "mahmoud-hadid",
+      "year": "2023",
+      "doi": "10.1234/spu.pet.2023.01",
+      "isOpenAccess": true,
+      "gsIndexed": true,
+      "image": "/images/slider-3.webp",
+      "themes": [
+        "petroleum-engineering",
+        "ai-ml",
+        "data-science"
+      ],
+      "keywordsEn": [
+        "LSTM",
+        "transformer",
+        "reservoir characterization",
+        "permeability prediction"
+      ],
+      "keywordsAr": [
+        "LSTM",
+        "المحولات",
+        "توصيف المكامن",
+        "التنبؤ بالنفاذية"
+      ],
+      "leadEn": "A hybrid LSTM-Transformer architecture achieves state-of-the-art results in predicting carbonate reservoir permeability from well log data and core measurements.",
+      "leadAr": "يحقق هيكل هجين LSTM-Transformer نتائج متقدمة في التنبؤ بنفاذية مكامن الكربونات من بيانات تسجيل الآبار والقياسات الأساسية.",
+      "heroImage": "/images/slider-3.webp",
+      "paragraphsEn": [
+        "This publication represents ongoing research efforts at Syrian Private University to advance knowledge in this field.",
+        "The study was conducted with institutional support and follows established ethical and methodological standards for academic research."
+      ],
+      "paragraphsAr": [
+        "يمثل هذا المنشور جهود البحث المستمرة في الجامعة السورية الخاصة لتقدم المعرفة في هذا المجال.",
+        "أجريت الدراسة بدعم مؤسسي وتتبع المعايير الأخلاقية والمنهجية المعمول بها للبحث الأكاديمي."
+      ],
+      "keyStatementEn": "SPU continues to support rigorous academic research across all faculties.",
+      "keyStatementAr": "تواصل الجامعة السورية الخاصة دعم البحث الأكاديمي الرصين في جميع الكليات.",
+      "authorHref": "#",
+      "facultyHref": "#",
+      "href": "/research/detail/?id=pub-004",
+      "scholarUrl": "https://scholar.google.com/scholar?q=Deep%20Learning%20Framework%20for%20Reservoir%20Permeability%20Prediction",
+      "scopusUrl": "https://www.scopus.com/results/results.uri?sort=plf-f&src=s&st1=Deep%20Learning%20Framework%20for%20Reservoir%20Permeability%20Prediction",
+      "resolvedThemes": [
+        {
+          "slug": "petroleum-engineering",
+          "labelEn": "Petroleum Engineering",
+          "labelAr": "هندسة البترول"
+        },
+        {
+          "slug": "ai-ml",
+          "labelEn": "AI & Machine Learning",
+          "labelAr": "الذكاء الاصطناعي وتعلم الآلة"
+        },
+        {
+          "slug": "data-science",
+          "labelEn": "Data Science",
+          "labelAr": "علم البيانات"
+        }
+      ],
+      "categoryEn": "Research Article",
+      "categoryAr": "مقال بحثي",
+      "rateEn": "To be verified",
+      "rateAr": "To be verified"
+    },
+    {
+      "id": "pub-005",
+      "slug": "clinical-simulation-training-medical-students",
+      "links": {
+        "local": "/research/publications/clinical-simulation-training-medical-students/"
+      },
+      "titleEn": "Clinical Simulation Training Impact on Medical Student Diagnostic Accuracy",
+      "titleAr": "تأثير تدريب المحاكاة السريرية على دقة تشخيص طلاب الطب",
+      "summaryEn": "Randomized controlled trial involving 180 medical students shows that high-fidelity simulation training significantly improves diagnostic accuracy and clinical reasoning.",
+      "summaryAr": "تجربة سريرية عشوائية تشمل 180 طالب طب تظهر أن تدريب المحاكاة عالي الدقة يحسن بشكل كبير دقة التشخيص والاستدلال السريري.",
+      "typeEn": "Research Article",
+      "typeAr": "مقال بحثي",
+      "typeSlug": "research-article",
+      "facultyEn": "Faculty of Medicine",
+      "facultyAr": "كلية الطب",
+      "facultySlug": "medicine",
+      "authorEn": "Dr. Ayman Ali",
+      "authorAr": "د. أيمن علي",
+      "authorSlug": "ayman-ali",
+      "year": "2024",
+      "doi": "10.1234/spu.med.2024.01",
+      "isOpenAccess": true,
+      "gsIndexed": true,
+      "image": "/images/research-clinical-simulation.webp",
+      "themes": [
+        "medical-education",
+        "clinical-medicine"
+      ],
+      "keywordsEn": [
+        "simulation-based education",
+        "medical students",
+        "diagnostic accuracy",
+        "clinical skills"
+      ],
+      "keywordsAr": [
+        "التعليم القائم على المحاكاة",
+        "طلاب الطب",
+        "دقة التشخيص",
+        "المهارات السريرية"
+      ],
+      "leadEn": "Randomized controlled trial involving 180 medical students shows that high-fidelity simulation training significantly improves diagnostic accuracy and clinical reasoning.",
+      "leadAr": "تجربة سريرية عشوائية تشمل 180 طالب طب تظهر أن تدريب المحاكاة عالي الدقة يحسن بشكل كبير دقة التشخيص والاستدلال السريري.",
+      "heroImage": "/images/research-clinical-simulation.webp",
+      "paragraphsEn": [
+        "This publication represents ongoing research efforts at Syrian Private University to advance knowledge in this field.",
+        "The study was conducted with institutional support and follows established ethical and methodological standards for academic research."
+      ],
+      "paragraphsAr": [
+        "يمثل هذا المنشور جهود البحث المستمرة في الجامعة السورية الخاصة لتقدم المعرفة في هذا المجال.",
+        "أجريت الدراسة بدعم مؤسسي وتتبع المعايير الأخلاقية والمنهجية المعمول بها للبحث الأكاديمي."
+      ],
+      "keyStatementEn": "SPU continues to support rigorous academic research across all faculties.",
+      "keyStatementAr": "تواصل الجامعة السورية الخاصة دعم البحث الأكاديمي الرصين في جميع الكليات.",
+      "authorHref": "#",
+      "facultyHref": "#",
+      "href": "/research/detail/?id=pub-005",
+      "scholarUrl": "https://scholar.google.com/scholar?q=Clinical%20Simulation%20Training%20Impact%20on%20Medical%20Student%20Diagnostic%20Accuracy",
+      "scopusUrl": "https://www.scopus.com/results/results.uri?sort=plf-f&src=s&st1=Clinical%20Simulation%20Training%20Impact%20on%20Medical%20Student%20Diagnostic%20Accuracy",
+      "resolvedThemes": [
+        {
+          "slug": "medical-education",
+          "labelEn": "Medical Education",
+          "labelAr": "التعليم الطبي"
+        },
+        {
+          "slug": "clinical-medicine",
+          "labelEn": "Clinical Medicine",
+          "labelAr": "الطب السريري"
+        }
+      ],
+      "categoryEn": "Research Article",
+      "categoryAr": "مقال بحثي",
+      "rateEn": "To be verified",
+      "rateAr": "To be verified"
+    },
+    {
+      "id": "pub-006",
+      "slug": "arabic-medical-record-nlp",
+      "links": {
+        "local": "/research/publications/arabic-medical-record-nlp/"
+      },
+      "titleEn": "Natural Language Processing for Arabic Medical Record Summarization",
+      "titleAr": "معالجة اللغة الطبيعية لتلخيص السجلات الطبية العربية",
+      "summaryEn": "A BERT-based Arabic NLP pipeline automatically extracts key clinical information from unstructured medical records and generates concise discharge summaries.",
+      "summaryAr": "تستخرج خط أنابيب معالجة اللغة العربية القائم على BERT المعلومات السريرية الرئيسية من السجلات الطبية غير المنظمة وتولد ملخصات خروج موجزة.",
+      "typeEn": "Research Article",
+      "typeAr": "مقال بحثي",
+      "typeSlug": "research-article",
+      "facultyEn": "Faculty of Artificial Intelligence",
+      "facultyAr": "كلية الذكاء الاصطناعي",
+      "facultySlug": "ai",
+      "authorEn": "Dr. Mouhib Alnoukari",
+      "authorAr": "د. محيب النقري",
+      "authorSlug": "mouhib-alnoukari",
+      "year": "2024",
+      "doi": "10.1234/spu.ai.2024.01",
+      "isOpenAccess": true,
+      "gsIndexed": true,
+      "image": "/images/Gemini_Generated_Image_c89yjwc89yjwc89y.webp",
+      "themes": [
+        "ai-ml",
+        "data-science",
+        "clinical-medicine"
+      ],
+      "keywordsEn": [
+        "Arabic NLP",
+        "BERT",
+        "medical records",
+        "clinical summarization"
+      ],
+      "keywordsAr": [
+        "معالجة اللغة العربية",
+        "BERT",
+        "السجلات الطبية",
+        "التلخيص السريري"
+      ],
+      "leadEn": "A BERT-based Arabic NLP pipeline automatically extracts key clinical information from unstructured medical records and generates concise discharge summaries.",
+      "leadAr": "تستخرج خط أنابيب معالجة اللغة العربية القائم على BERT المعلومات السريرية الرئيسية من السجلات الطبية غير المنظمة وتولد ملخصات خروج موجزة.",
+      "heroImage": "/images/Gemini_Generated_Image_c89yjwc89yjwc89y.webp",
+      "paragraphsEn": [
+        "This publication represents ongoing research efforts at Syrian Private University to advance knowledge in this field.",
+        "The study was conducted with institutional support and follows established ethical and methodological standards for academic research."
+      ],
+      "paragraphsAr": [
+        "يمثل هذا المنشور جهود البحث المستمرة في الجامعة السورية الخاصة لتقدم المعرفة في هذا المجال.",
+        "أجريت الدراسة بدعم مؤسسي وتتبع المعايير الأخلاقية والمنهجية المعمول بها للبحث الأكاديمي."
+      ],
+      "keyStatementEn": "SPU continues to support rigorous academic research across all faculties.",
+      "keyStatementAr": "تواصل الجامعة السورية الخاصة دعم البحث الأكاديمي الرصين في جميع الكليات.",
+      "authorHref": "#",
+      "facultyHref": "#",
+      "href": "/research/detail/?id=pub-006",
+      "scholarUrl": "https://scholar.google.com/scholar?q=Natural%20Language%20Processing%20for%20Arabic%20Medical%20Record%20Summarization",
+      "scopusUrl": "https://www.scopus.com/results/results.uri?sort=plf-f&src=s&st1=Natural%20Language%20Processing%20for%20Arabic%20Medical%20Record%20Summarization",
+      "resolvedThemes": [
+        {
+          "slug": "ai-ml",
+          "labelEn": "AI & Machine Learning",
+          "labelAr": "الذكاء الاصطناعي وتعلم الآلة"
+        },
+        {
+          "slug": "data-science",
+          "labelEn": "Data Science",
+          "labelAr": "علم البيانات"
+        },
+        {
+          "slug": "clinical-medicine",
+          "labelEn": "Clinical Medicine",
+          "labelAr": "الطب السريري"
+        }
+      ],
+      "categoryEn": "Research Article",
+      "categoryAr": "مقال بحثي",
+      "rateEn": "To be verified",
+      "rateAr": "To be verified"
+    },
+    {
+      "id": "pub-007",
+      "slug": "business-analytics-healthcare-supply-chain",
+      "links": {
+        "local": "/research/publications/business-analytics-healthcare-supply-chain/"
+      },
+      "titleEn": "Business Analytics for Healthcare Supply Chain Resilience",
+      "titleAr": "تحليلات الأعمال لمرونة سلسلة التوريد الصحية",
+      "summaryEn": "Case study of regional hospital networks demonstrates how predictive analytics can reduce pharmaceutical stockouts and optimize inventory turnover.",
+      "summaryAr": "دراسة حالة لشبكات المستشفيات الإقليمية توضح كيف يمكن للتحليلات التنبؤية تقليل نفاد المخزون الدوائي وتحسين دورة المخزون.",
+      "typeEn": "Journal Paper",
+      "typeAr": "ورقة مجلة",
+      "typeSlug": "journal-paper",
+      "facultyEn": "Faculty of Business Administration",
+      "facultyAr": "كلية إدارة الأعمال",
+      "facultySlug": "business",
+      "authorEn": "Dr. Samar Habib",
+      "authorAr": "د. سمر حبيب",
+      "authorSlug": "samar-habib",
+      "year": "2023",
+      "doi": "10.1234/spu.bus.2023.01",
+      "isOpenAccess": true,
+      "gsIndexed": false,
+      "image": "/images/campus-feature-02.webp",
+      "themes": [
+        "business-administration",
+        "data-science"
+      ],
+      "keywordsEn": [
+        "supply chain",
+        "healthcare management",
+        "predictive analytics",
+        "inventory optimization"
+      ],
+      "keywordsAr": [
+        "سلسلة التوريد",
+        "إدارة الرعاية الصحية",
+        "التحليلات التنبؤية",
+        "تحسين المخزون"
+      ],
+      "leadEn": "Case study of regional hospital networks demonstrates how predictive analytics can reduce pharmaceutical stockouts and optimize inventory turnover.",
+      "leadAr": "دراسة حالة لشبكات المستشفيات الإقليمية توضح كيف يمكن للتحليلات التنبؤية تقليل نفاد المخزون الدوائي وتحسين دورة المخزون.",
+      "heroImage": "/images/campus-feature-02.webp",
+      "paragraphsEn": [
+        "This publication represents ongoing research efforts at Syrian Private University to advance knowledge in this field.",
+        "The study was conducted with institutional support and follows established ethical and methodological standards for academic research."
+      ],
+      "paragraphsAr": [
+        "يمثل هذا المنشور جهود البحث المستمرة في الجامعة السورية الخاصة لتقدم المعرفة في هذا المجال.",
+        "أجريت الدراسة بدعم مؤسسي وتتبع المعايير الأخلاقية والمنهجية المعمول بها للبحث الأكاديمي."
+      ],
+      "keyStatementEn": "SPU continues to support rigorous academic research across all faculties.",
+      "keyStatementAr": "تواصل الجامعة السورية الخاصة دعم البحث الأكاديمي الرصين في جميع الكليات.",
+      "authorHref": "#",
+      "facultyHref": "#",
+      "href": "/research/detail/?id=pub-007",
+      "scholarUrl": "https://scholar.google.com/scholar?q=Business%20Analytics%20for%20Healthcare%20Supply%20Chain%20Resilience",
+      "scopusUrl": "https://www.scopus.com/results/results.uri?sort=plf-f&src=s&st1=Business%20Analytics%20for%20Healthcare%20Supply%20Chain%20Resilience",
+      "resolvedThemes": [
+        {
+          "slug": "business-administration",
+          "labelEn": "Business Administration",
+          "labelAr": "إدارة الأعمال"
+        },
+        {
+          "slug": "data-science",
+          "labelEn": "Data Science",
+          "labelAr": "علم البيانات"
+        }
+      ],
+      "categoryEn": "Journal Paper",
+      "categoryAr": "ورقة مجلة",
+      "rateEn": "To be verified",
+      "rateAr": "To be verified"
+    },
+    {
+      "id": "pub-008",
+      "slug": "renewable-energy-integration-syrian-grid",
+      "links": {
+        "local": "/research/publications/renewable-energy-integration-syrian-grid/"
+      },
+      "titleEn": "Renewable Energy Integration Challenges in the Syrian Power Grid",
+      "titleAr": "تحديات دمج الطاقة المتجددة في الشبكة الكهربائية السورية",
+      "summaryEn": "Technical and economic assessment of solar and wind integration identifies grid stability barriers and proposes phased transition strategies.",
+      "summaryAr": "التقييم التقني والاقتصادي لدمج الطاقة الشمسية والرياح يحدد حواجز استقرار الشبكة ويقترح استراتيجيات انتقال متدرجة.",
+      "typeEn": "Conference Paper",
+      "typeAr": "ورقة مؤتمر",
+      "typeSlug": "conference-paper",
+      "facultyEn": "Faculty of Petroleum Engineering",
+      "facultyAr": "كلية هندسة البترول",
+      "facultySlug": "petroleum",
+      "authorEn": "Dr. Mahmoud Hadid",
+      "authorAr": "د. محمود حديد",
+      "authorSlug": "mahmoud-hadid",
+      "year": "2024",
+      "doi": "10.1234/spu.ene.2024.01",
+      "isOpenAccess": true,
+      "gsIndexed": false,
+      "image": "/images/slider-4.webp",
+      "themes": [
+        "energy-systems",
+        "petroleum-engineering"
+      ],
+      "keywordsEn": [
+        "renewable energy",
+        "grid integration",
+        "power systems",
+        "energy policy"
+      ],
+      "keywordsAr": [
+        "الطاقة المتجددة",
+        "دمج الشبكة",
+        "أنظمة الطاقة",
+        "سياسة الطاقة"
+      ],
+      "leadEn": "Technical and economic assessment of solar and wind integration identifies grid stability barriers and proposes phased transition strategies.",
+      "leadAr": "التقييم التقني والاقتصادي لدمج الطاقة الشمسية والرياح يحدد حواجز استقرار الشبكة ويقترح استراتيجيات انتقال متدرجة.",
+      "heroImage": "/images/slider-4.webp",
+      "paragraphsEn": [
+        "This publication represents ongoing research efforts at Syrian Private University to advance knowledge in this field.",
+        "The study was conducted with institutional support and follows established ethical and methodological standards for academic research."
+      ],
+      "paragraphsAr": [
+        "يمثل هذا المنشور جهود البحث المستمرة في الجامعة السورية الخاصة لتقدم المعرفة في هذا المجال.",
+        "أجريت الدراسة بدعم مؤسسي وتتبع المعايير الأخلاقية والمنهجية المعمول بها للبحث الأكاديمي."
+      ],
+      "keyStatementEn": "SPU continues to support rigorous academic research across all faculties.",
+      "keyStatementAr": "تواصل الجامعة السورية الخاصة دعم البحث الأكاديمي الرصين في جميع الكليات.",
+      "authorHref": "#",
+      "facultyHref": "#",
+      "href": "/research/detail/?id=pub-008",
+      "scholarUrl": "https://scholar.google.com/scholar?q=Renewable%20Energy%20Integration%20Challenges%20in%20the%20Syrian%20Power%20Grid",
+      "scopusUrl": "https://www.scopus.com/results/results.uri?sort=plf-f&src=s&st1=Renewable%20Energy%20Integration%20Challenges%20in%20the%20Syrian%20Power%20Grid",
+      "resolvedThemes": [
+        {
+          "slug": "energy-systems",
+          "labelEn": "Energy Systems",
+          "labelAr": "أنظمة الطاقة"
+        },
+        {
+          "slug": "petroleum-engineering",
+          "labelEn": "Petroleum Engineering",
+          "labelAr": "هندسة البترول"
+        }
+      ],
+      "categoryEn": "Conference Paper",
+      "categoryAr": "ورقة مؤتمر",
+      "rateEn": "To be verified",
+      "rateAr": "To be verified"
+    }
+  ]
+}

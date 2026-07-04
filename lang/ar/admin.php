@@ -130,7 +130,14 @@ return [
             ],
             'research' => [
                 'index' => 'الأبحاث',
+                'publications' => 'المنشورات البحثية',
                 'publication' => 'منشور بحثي',
+                'experts' => 'الباحث عن الخبراء',
+                'expert_profile' => 'ملف خبير',
+                'conferences' => 'المؤتمرات والندوات',
+                'library' => 'مكتبة البحث',
+                'office' => 'مكتب البحث',
+                'policies' => 'السياسات والأخلاقيات',
             ],
         ],
     ],
@@ -144,6 +151,7 @@ return [
             'campus_life' => 'الحياة الجامعية',
             'contact' => 'التواصل',
             'e_services' => 'الخدمات الإلكترونية',
+            'research' => 'البحث العلمي',
             'administration' => 'الإدارة',
         ],
         'items' => [
@@ -161,6 +169,7 @@ return [
             'campus_life' => 'الحياة الجامعية',
             'about' => 'عن الجامعة',
             'news' => 'الأخبار',
+            'research' => 'البحث العلمي',
             'two_factor_auth' => 'المصادقة الثنائية',
             'facilities_hub' => 'مركز المرافق',
             'faculty_medicine' => 'كلية الطب البشري',
@@ -196,6 +205,7 @@ return [
         'manage_business_administration_faculty' => 'إدارة كلية إدارة الأعمال',
         'manage_about' => 'إدارة عن الجامعة',
         'manage_news' => 'إدارة الأخبار',
+        'manage_research' => 'إدارة البحث العلمي',
         'two_factor_authentication' => 'المصادقة الثنائية',
     ],
 ];

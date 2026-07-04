@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\PersonResource\Pages;
+use App\Filament\Support\MediaPicker;
 use App\Models\Person\Person;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
@@ -62,7 +63,7 @@ class PersonResource extends Resource
                     'council' => 'Council Member',
                 ]),
                 TextInput::make('faculty_scope_slug')->maxLength(255),
-                TextInput::make('image')->maxLength(255),
+                MediaPicker::image('image', 'Profile Image'),
                 TextInput::make('email')->email()->maxLength(255),
                 TextInput::make('profile_url')->url()->maxLength(255),
                 TextInput::make('sort_order')->numeric()->default(0),

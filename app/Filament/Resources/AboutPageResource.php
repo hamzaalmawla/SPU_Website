@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\AboutPageResource\Pages;
+use App\Filament\Support\MediaPicker;
 use App\Models\Page\AboutPage;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Repeater;
@@ -56,7 +57,7 @@ class AboutPageResource extends Resource
             Section::make('Page')->schema([
                 TextInput::make('slug')->required()->maxLength(255)->alphaDash(),
                 TextInput::make('template')->required()->maxLength(255),
-                TextInput::make('hero_image')->maxLength(255),
+                MediaPicker::image('hero_image', 'Hero Image'),
                 KeyValue::make('payload_json')->label('Landing Payload JSON')->columnSpanFull(),
                 Select::make('status')->required()->options(['draft' => 'Draft', 'published' => 'Published', 'scheduled' => 'Scheduled'])->default('published'),
                 TextInput::make('sort_order')->numeric()->default(0),

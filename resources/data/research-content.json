@@ -1,0 +1,2709 @@
+{
+  "hero": {
+    "eyebrowEn": "Advancing Knowledge Through Research",
+    "eyebrowAr": "تقدم المعرفة من خلال البحث",
+    "titleEn": "Research at SPU",
+    "titleAr": "البحث في الجامعة السورية الخاصة",
+    "summaryEn": "Syrian Private University supports academic research that expands knowledge, encourages innovation, and contributes to scientific and community development.",
+    "summaryAr": "تدعم الجامعة السورية الخاصة البحث الأكاديمي الذي يوسع المعرفة ويشجع الابتكار ويساهم في التنمية العلمية والمجتمعية.",
+    "cta1En": "Explore Publications",
+    "cta1Ar": "استكشف المنشورات",
+    "cta1Url": "/research/publications/",
+    "cta2En": "Research Centers",
+    "cta2Ar": "مراكز البحث",
+    "cta2Url": "/research/centers/",
+    "backgroundImage": "/images/uni-main-place.JPG"
+  },
+  "stats": [
+    {
+      "value": "250+",
+      "valueAr": "250+",
+      "labelEn": "RECENT PUBLICATIONS",
+      "labelAr": "منشورات حديثة"
+    },
+    {
+      "value": "5",
+      "valueAr": "5",
+      "labelEn": "ACTIVE RESEARCH CENTERS",
+      "labelAr": "مراكز بحث نشطة"
+    },
+    {
+      "value": "12",
+      "valueAr": "12",
+      "labelEn": "RESEARCH AREAS",
+      "labelAr": "مجالات بحثية"
+    },
+    {
+      "value": "Top Tier",
+      "valueAr": "الدرجة الأولى",
+      "labelEn": "GOOGLE SCHOLAR STATUS",
+      "labelAr": "حالة Google Scholar"
+    }
+  ],
+  "featuredPublication": {
+    "sectionTitleEn": "FEATURED PUBLICATION",
+    "sectionTitleAr": "منشور مميز",
+    "eyebrowEn": "FEATURED PUBLICATION",
+    "eyebrowAr": "منشور مميز",
+    "titleEn": "Investigating the Role of AI in Modern Dental Diagnostics",
+    "titleAr": "دراسة دور الذكاء الاصطناعي في تشخيص الأسنان الحديث",
+    "slug": "ai-dental-diagnostics",
+    "links": {
+      "local": "/research/publications/ai-dental-diagnostics/"
+    },
+    "summaryEn": "This study explores the integration of machine learning algorithms in analyzing dental radiographs to improve early detection of caries and periodontal diseases. Results indicate a significant increase in diagnostic accuracy compared to traditional visual inspection.",
+    "summaryAr": "تستكشف هذه الدراسة دمج خوارزميات تعلم الآلة في تحليل الأشعة السينية للأسنان لتحسين الكشف المبكر عن التسوس وأمراض اللثة. تشير النتائج إلى زيادة كبيرة في دقة التشخيص مقارنة بالفحص البصري التقليدي.",
+    "authorLabelEn": "AUTHOR",
+    "authorLabelAr": "المؤلف",
+    "authorNameEn": "Dr. Nabil Haddad",
+    "authorNameAr": "د. نبيل حداد",
+    "affiliationLabelEn": "AFFILIATION",
+    "affiliationLabelAr": "الانتماء",
+    "affiliationEn": "Faculty of Dentistry",
+    "affiliationAr": "كلية طب الأسنان",
+    "publishedLabelEn": "PUBLISHED",
+    "publishedLabelAr": "تاريخ النشر",
+    "dateEn": "October 2023",
+    "dateAr": "أكتوبر 2023",
+    "viewCtaEn": "View Publication",
+    "viewCtaAr": "عرض المنشور",
+    "downloadCtaEn": "Download PDF",
+    "downloadCtaAr": "تحميل PDF",
+    "doiLabelEn": "DIGITAL OBJECT IDENTIFIER",
+    "doiLabelAr": "معرف الكائن الرقمي",
+    "doi": "10.1234/spu.arch.2023.01",
+    "image": "/images/research-digital-dentistry.webp"
+  },
+  "gateway": {
+    "sectionTitleEn": "Research Gateway",
+    "sectionTitleAr": "بوابة البحث",
+    "cards": [
+      {
+        "number": "01",
+        "titleEn": "Research Repository",
+        "titleAr": "مستودع البحث",
+        "summaryEn": "Browse SPU's indexed publications, peer-reviewed journals, and ongoing academic studies.",
+        "summaryAr": "تصفح المنشورات المفهرسة ودوريات المحكمة والدراسات الأكاديمية الجارية في SPU.",
+        "ctaEn": "Explore",
+        "ctaAr": "استكشف",
+        "url": "/research/publications/"
+      },
+      {
+        "number": "02",
+        "titleEn": "Research Centers",
+        "titleAr": "مراكز البحث",
+        "summaryEn": "Explore active research centers, specialized laboratories, and cross disciplinary collaborations.",
+        "summaryAr": "استكشف مراكز البحث النشطة والمختبرات المتخصصة والتعاونات بين التخصصات.",
+        "ctaEn": "Explore",
+        "ctaAr": "استكشف",
+        "url": "/research/centers/"
+      },
+      {
+        "number": "03",
+        "titleEn": "Conferences",
+        "titleAr": "المؤتمرات",
+        "summaryEn": "View scientific conferences, upcoming symposiums, and past proceedings hosted globally.",
+        "summaryAr": "اطلع على المؤتمرات العلمية والندوات القادمة والوقائع السابقة المستضافة عالمياً.",
+        "ctaEn": "Explore",
+        "ctaAr": "استكشف",
+        "url": "/research/conferences/"
+      },
+      {
+        "number": "04",
+        "titleEn": "Research Resources",
+        "titleAr": "موارد البحث",
+        "summaryEn": "Access research guidelines, funding applications, and institutional review board protocols.",
+        "summaryAr": "الوصول إلى إرشادات البحث وطلبات التمويل وبروتوكولات مجلس المراجعة المؤسسي.",
+        "ctaEn": "Explore",
+        "ctaAr": "استكشف",
+        "url": "/research/office/"
+      },
+      {
+        "number": "05",
+        "titleEn": "Expert Finder",
+        "titleAr": "الباحث عن الخبراء",
+        "summaryEn": "Find researchers, faculty experts, and potential academic supervisors within our network.",
+        "summaryAr": "ابحث عن الباحثين والخبراء من أعضاء الهيئة التدريسية والمشرفين الأكاديميين المحتملين.",
+        "ctaEn": "Explore",
+        "ctaAr": "استكشف",
+        "url": "/research/expert-finder/"
+      },
+      {
+        "number": "06",
+        "titleEn": "Research Library",
+        "titleAr": "مكتبة البحث",
+        "summaryEn": "Explore academic references, special collections, and digital archives available to scholars.",
+        "summaryAr": "استكشف المراجع الأكاديمية والمجموعات الخاصة والأرشيفات الرقمية المتاحة للباحثين.",
+        "ctaEn": "Explore",
+        "ctaAr": "استكشف",
+        "url": "/research/library/"
+      }
+    ]
+  },
+  "publications": {
+    "hero": {
+      "titleEn": "Research Repository",
+      "titleAr": "مستودع البحث",
+      "eyebrowEn": "Peer-Reviewed Research",
+      "eyebrowAr": "بحث محكم",
+      "summaryEn": "Browse SPU's indexed publications, peer-reviewed journals, and ongoing academic studies.",
+      "summaryAr": "تصفح المنشورات المفهرسة ودوريات المحكمة والدراسات الأكاديمية الجارية في SPU.",
+      "backgroundImage": "/images/uni-main-place.JPG",
+      "breadcrumbs": [
+        {
+          "labelEn": "Home",
+          "labelAr": "الرئيسية",
+          "url": "/"
+        },
+        {
+          "labelEn": "Research",
+          "labelAr": "البحث",
+          "url": "/research/"
+        },
+        {
+          "labelEn": "Publications",
+          "labelAr": "المنشورات",
+          "url": "/research/publications/"
+        }
+      ]
+    },
+    "filters": {
+      "facultyLabelEn": "Faculty",
+      "facultyLabelAr": "الكلية",
+      "typeLabelEn": "Publication Type",
+      "typeLabelAr": "نوع المنشور",
+      "yearLabelEn": "Year",
+      "yearLabelAr": "السنة",
+      "themeLabelEn": "Research Theme",
+      "themeLabelAr": "المجال البحثي",
+      "searchPlaceholderEn": "Search by title, author, or keyword",
+      "searchPlaceholderAr": "ابحث حسب العنوان أو المؤلف أو الكلمة المفتاحية",
+      "faculties": [
+        {
+          "value": "",
+          "labelEn": "Faculty",
+          "labelAr": "الكلية"
+        },
+        {
+          "value": "medicine",
+          "labelEn": "Medicine",
+          "labelAr": "الطب"
+        },
+        {
+          "value": "dentistry",
+          "labelEn": "Dentistry",
+          "labelAr": "طب الأسنان"
+        },
+        {
+          "value": "pharmacy",
+          "labelEn": "Pharmacy",
+          "labelAr": "الصيدلة"
+        },
+        {
+          "value": "artificial-intelligence",
+          "labelEn": "Artificial Intelligence",
+          "labelAr": "الذكاء الاصطناعي"
+        },
+        {
+          "value": "petroleum",
+          "labelEn": "Petroleum Engineering",
+          "labelAr": "هندسة البترول"
+        },
+        {
+          "value": "construction",
+          "labelEn": "Construction Engineering",
+          "labelAr": "هندسة التشييد"
+        },
+        {
+          "value": "business",
+          "labelEn": "Business Administration",
+          "labelAr": "إدارة الأعمال"
+        }
+      ],
+      "publicationTypes": [
+        {
+          "value": "",
+          "labelEn": "Publication Type",
+          "labelAr": "نوع المنشور"
+        },
+        {
+          "value": "research-article",
+          "labelEn": "Research Article",
+          "labelAr": "مقال بحثي"
+        },
+        {
+          "value": "conference-paper",
+          "labelEn": "Conference Paper",
+          "labelAr": "ورقة مؤتمر"
+        },
+        {
+          "value": "journal-paper",
+          "labelEn": "Journal Paper",
+          "labelAr": "ورقة مجلة"
+        },
+        {
+          "value": "thesis",
+          "labelEn": "Thesis",
+          "labelAr": "أطروحة"
+        },
+        {
+          "value": "book-chapter",
+          "labelEn": "Book Chapter",
+          "labelAr": "فصل كتاب"
+        }
+      ],
+      "years": [
+        {
+          "value": "",
+          "labelEn": "Year",
+          "labelAr": "السنة"
+        },
+        {
+          "value": "2026",
+          "labelEn": "2026",
+          "labelAr": "2026"
+        },
+        {
+          "value": "2025",
+          "labelEn": "2025",
+          "labelAr": "2025"
+        },
+        {
+          "value": "2024",
+          "labelEn": "2024",
+          "labelAr": "2024"
+        },
+        {
+          "value": "2023",
+          "labelEn": "2023",
+          "labelAr": "2023"
+        },
+        {
+          "value": "2022",
+          "labelEn": "2022",
+          "labelAr": "2022"
+        },
+        {
+          "value": "2021",
+          "labelEn": "2021",
+          "labelAr": "2021"
+        }
+      ]
+    },
+    "cardLabels": {
+      "viewPublicationEn": "View Publication",
+      "viewPublicationAr": "عرض المنشور",
+      "downloadPdfEn": "Download PDF",
+      "downloadPdfAr": "تحميل PDF",
+      "openAccessEn": "OA",
+      "openAccessAr": "وصول مفتوح"
+    },
+    "items": [
+      {
+        "id": "pub-001",
+        "slug": "machine-learning-pharmaceutical-quality-control",
+        "links": {
+          "local": "/research/publications/machine-learning-pharmaceutical-quality-control/"
+        },
+        "titleEn": "Machine Learning Applications in Pharmaceutical Quality Control",
+        "titleAr": "تطبيقات تعلم الآلة في مراقبة جودة الأدوية",
+        "summaryEn": "This study evaluates machine learning algorithms for real-time pharmaceutical quality monitoring, achieving 94% accuracy in defect detection across tablet production lines.",
+        "summaryAr": "يقيم هذا البحث خوارزميات تعلم الآلة لمراقبة جودة الأدوية في الوقت الفعلي، محققاً دقة 94% في الكشف عن العيوب في خطوط إنتاج الأقراص.",
+        "typeEn": "Research Article",
+        "typeAr": "مقال بحثي",
+        "typeSlug": "research-article",
+        "facultyEn": "Faculty of Pharmacy",
+        "facultyAr": "كلية الصيدلة",
+        "facultySlug": "pharmacy",
+        "authorEn": "Dr. Hossam Shahrour",
+        "authorAr": "د. حسام شحرور",
+        "authorSlug": "hossam-shahrour",
+        "year": "2024",
+        "doi": "10.1234/spu.phar.2024.01",
+        "isOpenAccess": true,
+        "gsIndexed": true,
+        "image": "/images/pharmacy-place.jpg",
+        "themes": [
+          "pharmaceutical-sciences",
+          "ai-ml"
+        ],
+        "keywordsEn": [
+          "machine learning",
+          "quality control",
+          "pharmaceuticals",
+          "computer vision"
+        ],
+        "keywordsAr": [
+          "تعلم الآلة",
+          "مراقبة الجودة",
+          "الأدوية",
+          "الرؤية الحاسوبية"
+        ]
+      },
+      {
+        "id": "pub-002",
+        "slug": "ai-dental-diagnostics",
+        "links": {
+          "local": "/research/publications/ai-dental-diagnostics/"
+        },
+        "titleEn": "AI-Driven Predictive Models for Early Dental Caries Detection",
+        "titleAr": "نماذج تنبؤية مدفوعة بالذكاء الاصطناعي للكشف المبكر عن تسوس الأسنان",
+        "summaryEn": "A convolutional neural network model trained on 12,000 dental radiographs demonstrates superior sensitivity in detecting early-stage caries and reducing diagnostic variability.",
+        "summaryAr": "نموذج شبكة عصبية تلافيفية مدرب على 12000 أشعة سينية للأسنان يظهر حساسية فائقة في الكشف عن التسوس المبكر وتقليل تباين التشخيص.",
+        "typeEn": "Research Article",
+        "typeAr": "مقال بحثي",
+        "typeSlug": "research-article",
+        "facultyEn": "Faculty of Dentistry",
+        "facultyAr": "كلية طب الأسنان",
+        "facultySlug": "dentistry",
+        "authorEn": "Dr. Nabil Haddad",
+        "authorAr": "د. نبيل حداد",
+        "authorSlug": "nabil-haddad",
+        "year": "2024",
+        "doi": "10.1234/spu.dent.2024.02",
+        "isOpenAccess": true,
+        "gsIndexed": true,
+        "image": "/images/research-digital-dentistry.webp",
+        "themes": [
+          "dental-sciences",
+          "ai-ml"
+        ],
+        "keywordsEn": [
+          "deep learning",
+          "dental radiographs",
+          "caries detection",
+          "diagnostic imaging"
+        ],
+        "keywordsAr": [
+          "التعلم العميق",
+          "أشعة الأسنان",
+          "الكشف عن التسوس",
+          "التصوير التشخيصي"
+        ]
+      },
+      {
+        "id": "pub-003",
+        "slug": "structural-analysis-earthquake-resistant-concrete",
+        "links": {
+          "local": "/research/publications/structural-analysis-earthquake-resistant-concrete/"
+        },
+        "titleEn": "Structural Performance of Fiber-Reinforced Concrete in Seismic Zones",
+        "titleAr": "الأداء الإنشائي للخرسانة المسلحة بالألياف في المناطق الزلزالية",
+        "summaryEn": "Experimental analysis of hybrid fiber-reinforced concrete specimens under cyclic loading reveals improved ductility, energy dissipation, and crack control for seismic applications.",
+        "summaryAr": "يكشف التحليل التجريبي لعينات الخرسانة المسلحة بالألياف الهجينة تحت الحمل الدوري عن تحسن في المطيلية وتبديد الطاقة وسيطرة التشقق للتطبيقات الزلزالية.",
+        "typeEn": "Research Article",
+        "typeAr": "مقال بحثي",
+        "typeSlug": "research-article",
+        "facultyEn": "Faculty of Construction Engineering",
+        "facultyAr": "كلية هندسة التشييد",
+        "facultySlug": "construction",
+        "authorEn": "Dr. Ammar Ghada",
+        "authorAr": "د. عمار غضة",
+        "authorSlug": "ammar-ghada",
+        "year": "2023",
+        "doi": "10.1234/spu.civ.2023.01",
+        "isOpenAccess": true,
+        "gsIndexed": true,
+        "image": "/images/campus-feature-01.webp",
+        "themes": [
+          "structural-engineering",
+          "construction-engineering"
+        ],
+        "keywordsEn": [
+          "fiber-reinforced concrete",
+          "seismic design",
+          "cyclic loading",
+          "structural engineering"
+        ],
+        "keywordsAr": [
+          "الخرسانة المسلحة بالألياف",
+          "التصميم الزلزالي",
+          "الحمل الدوري",
+          "الهندسة الإنشائية"
+        ]
+      },
+      {
+        "id": "pub-004",
+        "slug": "deep-learning-reservoir-permeability",
+        "links": {
+          "local": "/research/publications/deep-learning-reservoir-permeability/"
+        },
+        "titleEn": "Deep Learning Framework for Reservoir Permeability Prediction",
+        "titleAr": "إطار التعلم العميق للتنبؤ بنفاذية المكامن",
+        "summaryEn": "A hybrid LSTM-Transformer architecture achieves state-of-the-art results in predicting carbonate reservoir permeability from well log data and core measurements.",
+        "summaryAr": "يحقق هيكل هجين LSTM-Transformer نتائج متقدمة في التنبؤ بنفاذية مكامن الكربونات من بيانات تسجيل الآبار والقياسات الأساسية.",
+        "typeEn": "Research Article",
+        "typeAr": "مقال بحثي",
+        "typeSlug": "research-article",
+        "facultyEn": "Faculty of Petroleum Engineering",
+        "facultyAr": "كلية هندسة البترول",
+        "facultySlug": "petroleum",
+        "authorEn": "Dr. Mahmoud Hadid",
+        "authorAr": "د. محمود حديد",
+        "authorSlug": "mahmoud-hadid",
+        "year": "2023",
+        "doi": "10.1234/spu.pet.2023.01",
+        "isOpenAccess": true,
+        "gsIndexed": true,
+        "image": "/images/slider-3.webp",
+        "themes": [
+          "petroleum-engineering",
+          "ai-ml",
+          "data-science"
+        ],
+        "keywordsEn": [
+          "LSTM",
+          "transformer",
+          "reservoir characterization",
+          "permeability prediction"
+        ],
+        "keywordsAr": [
+          "LSTM",
+          "المحولات",
+          "توصيف المكامن",
+          "التنبؤ بالنفاذية"
+        ]
+      },
+      {
+        "id": "pub-005",
+        "slug": "clinical-simulation-training-medical-students",
+        "links": {
+          "local": "/research/publications/clinical-simulation-training-medical-students/"
+        },
+        "titleEn": "Clinical Simulation Training Impact on Medical Student Diagnostic Accuracy",
+        "titleAr": "تأثير تدريب المحاكاة السريرية على دقة تشخيص طلاب الطب",
+        "summaryEn": "Randomized controlled trial involving 180 medical students shows that high-fidelity simulation training significantly improves diagnostic accuracy and clinical reasoning.",
+        "summaryAr": "تجربة سريرية عشوائية تشمل 180 طالب طب تظهر أن تدريب المحاكاة عالي الدقة يحسن بشكل كبير دقة التشخيص والاستدلال السريري.",
+        "typeEn": "Research Article",
+        "typeAr": "مقال بحثي",
+        "typeSlug": "research-article",
+        "facultyEn": "Faculty of Medicine",
+        "facultyAr": "كلية الطب",
+        "facultySlug": "medicine",
+        "authorEn": "Dr. Ayman Ali",
+        "authorAr": "د. أيمن علي",
+        "authorSlug": "ayman-ali",
+        "year": "2024",
+        "doi": "10.1234/spu.med.2024.01",
+        "isOpenAccess": true,
+        "gsIndexed": true,
+        "image": "/images/research-clinical-simulation.webp",
+        "themes": [
+          "medical-education",
+          "clinical-medicine"
+        ],
+        "keywordsEn": [
+          "simulation-based education",
+          "medical students",
+          "diagnostic accuracy",
+          "clinical skills"
+        ],
+        "keywordsAr": [
+          "التعليم القائم على المحاكاة",
+          "طلاب الطب",
+          "دقة التشخيص",
+          "المهارات السريرية"
+        ]
+      },
+      {
+        "id": "pub-006",
+        "slug": "arabic-medical-record-nlp",
+        "links": {
+          "local": "/research/publications/arabic-medical-record-nlp/"
+        },
+        "titleEn": "Natural Language Processing for Arabic Medical Record Summarization",
+        "titleAr": "معالجة اللغة الطبيعية لتلخيص السجلات الطبية العربية",
+        "summaryEn": "A BERT-based Arabic NLP pipeline automatically extracts key clinical information from unstructured medical records and generates concise discharge summaries.",
+        "summaryAr": "تستخرج خط أنابيب معالجة اللغة العربية القائم على BERT المعلومات السريرية الرئيسية من السجلات الطبية غير المنظمة وتولد ملخصات خروج موجزة.",
+        "typeEn": "Research Article",
+        "typeAr": "مقال بحثي",
+        "typeSlug": "research-article",
+        "facultyEn": "Faculty of Artificial Intelligence",
+        "facultyAr": "كلية الذكاء الاصطناعي",
+        "facultySlug": "ai",
+        "authorEn": "Dr. Mouhib Alnoukari",
+        "authorAr": "د. محيب النقري",
+        "authorSlug": "mouhib-alnoukari",
+        "year": "2024",
+        "doi": "10.1234/spu.ai.2024.01",
+        "isOpenAccess": true,
+        "gsIndexed": true,
+        "image": "/images/Gemini_Generated_Image_c89yjwc89yjwc89y.webp",
+        "themes": [
+          "ai-ml",
+          "data-science",
+          "clinical-medicine"
+        ],
+        "keywordsEn": [
+          "Arabic NLP",
+          "BERT",
+          "medical records",
+          "clinical summarization"
+        ],
+        "keywordsAr": [
+          "معالجة اللغة العربية",
+          "BERT",
+          "السجلات الطبية",
+          "التلخيص السريري"
+        ]
+      },
+      {
+        "id": "pub-007",
+        "slug": "business-analytics-healthcare-supply-chain",
+        "links": {
+          "local": "/research/publications/business-analytics-healthcare-supply-chain/"
+        },
+        "titleEn": "Business Analytics for Healthcare Supply Chain Resilience",
+        "titleAr": "تحليلات الأعمال لمرونة سلسلة التوريد الصحية",
+        "summaryEn": "Case study of regional hospital networks demonstrates how predictive analytics can reduce pharmaceutical stockouts and optimize inventory turnover.",
+        "summaryAr": "دراسة حالة لشبكات المستشفيات الإقليمية توضح كيف يمكن للتحليلات التنبؤية تقليل نفاد المخزون الدوائي وتحسين دورة المخزون.",
+        "typeEn": "Journal Paper",
+        "typeAr": "ورقة مجلة",
+        "typeSlug": "journal-paper",
+        "facultyEn": "Faculty of Business Administration",
+        "facultyAr": "كلية إدارة الأعمال",
+        "facultySlug": "business",
+        "authorEn": "Dr. Samar Habib",
+        "authorAr": "د. سمر حبيب",
+        "authorSlug": "samar-habib",
+        "year": "2023",
+        "doi": "10.1234/spu.bus.2023.01",
+        "isOpenAccess": true,
+        "gsIndexed": false,
+        "image": "/images/campus-feature-02.webp",
+        "themes": [
+          "business-administration",
+          "data-science"
+        ],
+        "keywordsEn": [
+          "supply chain",
+          "healthcare management",
+          "predictive analytics",
+          "inventory optimization"
+        ],
+        "keywordsAr": [
+          "سلسلة التوريد",
+          "إدارة الرعاية الصحية",
+          "التحليلات التنبؤية",
+          "تحسين المخزون"
+        ]
+      },
+      {
+        "id": "pub-008",
+        "slug": "renewable-energy-integration-syrian-grid",
+        "links": {
+          "local": "/research/publications/renewable-energy-integration-syrian-grid/"
+        },
+        "titleEn": "Renewable Energy Integration Challenges in the Syrian Power Grid",
+        "titleAr": "تحديات دمج الطاقة المتجددة في الشبكة الكهربائية السورية",
+        "summaryEn": "Technical and economic assessment of solar and wind integration identifies grid stability barriers and proposes phased transition strategies.",
+        "summaryAr": "التقييم التقني والاقتصادي لدمج الطاقة الشمسية والرياح يحدد حواجز استقرار الشبكة ويقترح استراتيجيات انتقال متدرجة.",
+        "typeEn": "Conference Paper",
+        "typeAr": "ورقة مؤتمر",
+        "typeSlug": "conference-paper",
+        "facultyEn": "Faculty of Petroleum Engineering",
+        "facultyAr": "كلية هندسة البترول",
+        "facultySlug": "petroleum",
+        "authorEn": "Dr. Mahmoud Hadid",
+        "authorAr": "د. محمود حديد",
+        "authorSlug": "mahmoud-hadid",
+        "year": "2024",
+        "doi": "10.1234/spu.ene.2024.01",
+        "isOpenAccess": true,
+        "gsIndexed": false,
+        "image": "/images/slider-4.webp",
+        "themes": [
+          "energy-systems",
+          "petroleum-engineering"
+        ],
+        "keywordsEn": [
+          "renewable energy",
+          "grid integration",
+          "power systems",
+          "energy policy"
+        ],
+        "keywordsAr": [
+          "الطاقة المتجددة",
+          "دمج الشبكة",
+          "أنظمة الطاقة",
+          "سياسة الطاقة"
+        ]
+      }
+    ],
+    "pagination": {
+      "pages": [
+        "1",
+        "2",
+        "3"
+      ],
+      "current": "1",
+      "previousLabelEn": "Previous",
+      "previousLabelAr": "السابق",
+      "nextLabelEn": "Next",
+      "nextLabelAr": "التالي"
+    }
+  },
+  "centers": {
+    "hero": {
+      "titleEn": "Research Centers & Labs",
+      "titleAr": "مراكز ومخابر البحث",
+      "primaryCtaEn": "EXPLORE CENTERS",
+      "primaryCtaAr": "استكشف المراكز",
+      "secondaryCtaEn": "Contact Research Office",
+      "secondaryCtaAr": "تواصل مع مكتب البحث",
+      "secondaryCtaUrl": "/research/office/",
+      "backgroundImage": "/images/uni-main-place.JPG",
+      "breadcrumbs": [
+        {
+          "labelEn": "Home",
+          "labelAr": "الرئيسية",
+          "url": "/"
+        },
+        {
+          "labelEn": "Research",
+          "labelAr": "البحث",
+          "url": "/research/"
+        },
+        {
+          "labelEn": "Centers",
+          "labelAr": "المراكز",
+          "url": "/research/centers/"
+        }
+      ]
+    },
+    "intro": {
+      "titleEn": "Advancing Research Through Specialized Centers",
+      "titleAr": "تطوير البحث من خلال مراكز متخصصة",
+      "summaryEn": "Our dedicated research centers and laboratories are the nexus of innovation at SPU.\nBringing together world-class faculty, ambitious students, and industry partners to tackle\ncomplex challenges through rigorous, applied methodologies.",
+      "summaryAr": "تمثل مراكز ومخابر البحث المتخصصة محور الابتكار في الجامعة السورية الخاصة، حيث تجمع أعضاء الهيئة التدريسية والطلاب والشركاء لمعالجة التحديات بمنهجيات تطبيقية رصينة.",
+      "highlights": [
+        {
+          "titleEn": "Applied Research",
+          "titleAr": "بحث تطبيقي",
+          "summaryEn": "Translating academic discovery into real-world solutions.",
+          "summaryAr": "تحويل الاكتشاف الأكاديمي إلى حلول عملية.",
+          "icon": "/images/icons/lab.svg"
+        },
+        {
+          "titleEn": "Interdisciplinary Collaboration",
+          "titleAr": "تعاون بين التخصصات",
+          "summaryEn": "Breaking silos to foster cross-departmental innovation.",
+          "summaryAr": "تعزيز الابتكار المشترك بين الأقسام.",
+          "icon": "/images/icons/handshake.svg"
+        },
+        {
+          "titleEn": "Faculty-Led Innovation",
+          "titleAr": "ابتكار تقوده الكليات",
+          "summaryEn": "Guided by renowned experts and academic leaders.",
+          "summaryAr": "بإشراف خبراء وقادة أكاديميين.",
+          "icon": "/images/icons/users.svg"
+        }
+      ]
+    },
+    "laboratories": {
+      "titleEn": "Research Laboratories",
+      "titleAr": "مخابر البحث",
+      "viewDirectoryEn": "View Full Directory",
+      "viewDirectoryAr": "عرض الدليل الكامل",
+      "viewDirectoryUrl": "/research/centers/",
+      "items": [
+        {
+          "id": "lab-001",
+          "slug": "ai-digital-innovation",
+          "facultyEn": "Faculty of Artificial Intelligence",
+          "facultyAr": "كلية الذكاء الاصطناعي",
+          "titleEn": "Artificial Intelligence & Data Science Lab",
+          "titleAr": "مخبر الذكاء الاصطناعي وعلوم البيانات",
+          "summaryEn": "Advancing applied AI research, data science, and intelligent systems to solve complex regional challenges.",
+          "summaryAr": "تطوير أبحاث الذكاء الاصطناعي التطبيقي وعلوم البيانات والأنظمة الذكية لحل التحديات الإقليمية المعقدة.",
+          "directorEn": "Director: Dr. Mouhib Alnoukari",
+          "directorAr": "المدير: د. محيب النقري",
+          "projectsEn": "Projects: 3 Active Projects",
+          "projectsAr": "المشاريع: 3 مشاريع نشطة",
+          "publicationsEn": "Publications: 8 Related Publications",
+          "publicationsAr": "المنشورات: 8 منشورات مرتبطة",
+          "contactEn": "Contact: ai.lab@spu.edu.sy",
+          "contactAr": "التواصل: ai.lab@spu.edu.sy",
+          "ctaEn": "View Center Profile",
+          "ctaAr": "عرض ملف المركز",
+          "ctaUrl": "/research/centers/ai-digital-innovation/",
+          "image": "/images/Gemini_Generated_Image_c89yjwc89yjwc89y.webp"
+        },
+        {
+          "id": "lab-002",
+          "slug": "clinical-research-simulation",
+          "facultyEn": "Faculty of Medicine",
+          "facultyAr": "كلية الطب",
+          "titleEn": "Clinical Research & Simulation Lab",
+          "titleAr": "مختبر البحث السريري والمحاكاة",
+          "summaryEn": "State-of-the-art simulation facilities supporting medical training and clinical research across all health faculties.",
+          "summaryAr": "مرافق محاكاة متطورة تدعم التدريب الطبي والبحث السريري في جميع الكليات الصحية.",
+          "directorEn": "Director: Dr. Ayman Ali",
+          "directorAr": "المدير: د. أيمن علي",
+          "projectsEn": "Projects: 5 Active Projects",
+          "projectsAr": "المشاريع: 5 مشاريع نشطة",
+          "publicationsEn": "Publications: 12 Related Publications",
+          "publicationsAr": "المنشورات: 12 منشور مرتبط",
+          "contactEn": "Contact: clinical.lab@spu.edu.sy",
+          "contactAr": "التواصل: clinical.lab@spu.edu.sy",
+          "ctaEn": "View Center Profile",
+          "ctaAr": "عرض ملف المركز",
+          "ctaUrl": "/research/centers/clinical-research-simulation/",
+          "image": "/images/research-clinical-simulation.webp"
+        },
+        {
+          "id": "lab-003",
+          "slug": "energy-sustainable-systems",
+          "facultyEn": "Faculty of Petroleum Engineering",
+          "facultyAr": "كلية هندسة البترول",
+          "titleEn": "Energy & Sustainable Systems Lab",
+          "titleAr": "مختبر الطاقة والأنظمة المستدامة",
+          "summaryEn": "Exploring petroleum engineering, renewable energy integration, and sustainable construction methodologies.",
+          "summaryAr": "استكشاف هندسة البترول ودمج الطاقة المتجددة ومنهجيات البناء المستدام.",
+          "directorEn": "Director: Dr. Mahmoud Hadid",
+          "directorAr": "المدير: د. محمود حديد",
+          "projectsEn": "Projects: 4 Active Projects",
+          "projectsAr": "المشاريع: 4 مشاريع نشطة",
+          "publicationsEn": "Publications: 7 Related Publications",
+          "publicationsAr": "المنشورات: 7 منشورات مرتبطة",
+          "contactEn": "Contact: energy.lab@spu.edu.sy",
+          "contactAr": "التواصل: energy.lab@spu.edu.sy",
+          "ctaEn": "View Center Profile",
+          "ctaAr": "عرض ملف المركز",
+          "ctaUrl": "/research/centers/energy-sustainable-systems/",
+          "image": "/images/slider-4.webp"
+        }
+      ]
+    },
+    "featuredCenter": {
+      "eyebrowEn": "Center Profile Highlight",
+      "eyebrowAr": "إضاءة على مركز بحثي",
+      "titleEn": "Center for Medical Research & Innovation",
+      "titleAr": "مركز البحث الطبي والابتكار",
+      "summaryEn": "The Center for Medical Research & Innovation serves as the premier hub for clinical trials, biomedical engineering, and translational medicine at SPU. Our mission is to accelerate the pathway from bench-to-bedside, improving patient outcomes through rigorous scientific investigation.",
+      "summaryAr": "يمثل مركز البحث الطبي والابتكار منصة رئيسية للتجارب السريرية والهندسة الطبية الحيوية والطب الانتقالي في SPU. مهمتنا هي تسريع المسار من المختبر إلى سرير المريض، وتحسين النتائج الصحية من خلال التحقيق العلمي الرصين.",
+      "projectsTitleEn": "KEY PROJECTS",
+      "projectsTitleAr": "مشاريع رئيسية",
+      "projects": [
+        {
+          "labelEn": "Genomic Sequencing Initiative",
+          "labelAr": "مبادرة تسلسل الجينوم"
+        },
+        {
+          "labelEn": "Targeted Therapy Trials",
+          "labelAr": "تجارب العلاج المستهدف"
+        }
+      ],
+      "publicationsTitleEn": "RECENT PUBLICATIONS",
+      "publicationsTitleAr": "منشورات حديثة",
+      "publications": [
+        {
+          "labelEn": "Journal of Clinical Medicine (2023)",
+          "labelAr": "مجلة الطب السريري (2023)"
+        },
+        {
+          "labelEn": "Biomedical Advances Review",
+          "labelAr": "مراجعة التقدم الطبي الحيوي"
+        }
+      ],
+      "director": {
+        "nameEn": "Dr. Ayman Ali",
+        "nameAr": "د. أيمن علي",
+        "roleEn": "Center Director",
+        "roleAr": "مدير المركز",
+        "facultyEn": "Faculty of Medicine",
+        "facultyAr": "كلية الطب",
+        "email": "med.research@spu.edu.sy",
+        "ctaEn": "View Center Profile",
+        "ctaAr": "عرض ملف المركز",
+        "ctaurl": "/about/profile.html?id=ayman-ali",
+        "image": "/images/about/leadership/medicine-dean.jpg"
+      }
+    },
+    "items": [
+      {
+        "id": "center-001",
+        "slug": "ai-digital-innovation",
+        "nameEn": "Center for AI & Digital Innovation",
+        "nameAr": "مركز الذكاء الاصطناعي والابتكار الرقمي",
+        "missionEn": "Developing machine learning solutions for healthcare, engineering, and business analytics with industry partnerships.",
+        "missionAr": "تطوير حلول تعلم الآلة للرعاية الصحية والهندسة وتحليلات الأعمال مع شراكات صناعية.",
+        "directorNameEn": "Dr. Mouhib Alnoukari",
+        "directorNameAr": "د. محيب النقري",
+        "facultyEn": "Faculty of Artificial Intelligence",
+        "facultyAr": "كلية الذكاء الاصطناعي",
+        "labs": 3,
+        "projects": 12,
+        "publications": 45,
+        "researchers": 14,
+        "contactEmail": "ai.center@spu.edu.sy",
+        "image": "/images/slider-2.webp"
+      },
+      {
+        "id": "center-002",
+        "slug": "clinical-research-simulation",
+        "nameEn": "Clinical Research & Simulation Lab",
+        "nameAr": "مختبر البحث السريري والمحاكاة",
+        "missionEn": "State-of-the-art simulation facilities supporting medical training and clinical research across all health faculties.",
+        "missionAr": "مرافق محاكاة متطورة تدعم التدريب الطبي والبحث السريري في جميع الكليات الصحية.",
+        "directorNameEn": "Dr. Ayman Ali",
+        "directorNameAr": "د. أيمن علي",
+        "facultyEn": "Faculty of Medicine",
+        "facultyAr": "كلية الطب",
+        "labs": 5,
+        "projects": 15,
+        "publications": 52,
+        "researchers": 22,
+        "contactEmail": "clinical.center@spu.edu.sy",
+        "image": "/images/research-clinical-simulation.webp"
+      },
+      {
+        "id": "center-003",
+        "slug": "energy-sustainable-systems",
+        "nameEn": "Energy & Sustainable Systems Research",
+        "nameAr": "بحث الطاقة والأنظمة المستدامة",
+        "missionEn": "Exploring petroleum engineering, renewable energy integration, and sustainable construction methodologies.",
+        "missionAr": "استكشاف هندسة البترول ودمج الطاقة المتجددة ومنهجيات البناء المستدام.",
+        "directorNameEn": "Dr. Mahmoud Hadid",
+        "directorNameAr": "د. محمود حديد",
+        "facultyEn": "Faculty of Petroleum Engineering",
+        "facultyAr": "كلية هندسة البترول",
+        "labs": 4,
+        "projects": 8,
+        "publications": 31,
+        "researchers": 11,
+        "contactEmail": "energy.center@spu.edu.sy",
+        "image": "/images/slider-4.webp"
+      }
+    ]
+  },
+  "projects": {
+    "hero": {
+      "titleEn": "Research Projects",
+      "titleAr": "مشاريع البحث",
+      "eyebrowEn": "Ongoing & Completed Research",
+      "eyebrowAr": "البحث الجاري والمكتمل",
+      "summaryEn": "Explore innovative research projects across SPU faculties, from initial concept to practical implementation.",
+      "summaryAr": "استكشف مشاريع البحث المبتكرة عبر كليات SPU، من المفهوم الأولي إلى التطبيق العملي.",
+      "backgroundImage": "/images/uni-main-place.JPG",
+      "breadcrumbs": [
+        {
+          "labelEn": "Home",
+          "labelAr": "الرئيسية",
+          "url": "/"
+        },
+        {
+          "labelEn": "Research",
+          "labelAr": "البحث",
+          "url": "/research/"
+        },
+        {
+          "labelEn": "Projects",
+          "labelAr": "المشاريع",
+          "url": "/research/projects/"
+        }
+      ]
+    },
+    "filters": {
+      "statusLabelEn": "Status",
+      "statusLabelAr": "الحالة",
+      "facultyLabelEn": "Faculty",
+      "facultyLabelAr": "الكلية",
+      "themeLabelEn": "Research Theme",
+      "themeLabelAr": "المجال البحثي",
+      "searchPlaceholderEn": "Search projects...",
+      "searchPlaceholderAr": "البحث في المشاريع...",
+      "allFacultiesEn": "All Faculties",
+      "allFacultiesAr": "جميع الكليات",
+      "allThemesEn": "All Themes",
+      "allThemesAr": "جميع المجالات",
+      "faculties": [
+        {
+          "value": "",
+          "labelEn": "All Faculties",
+          "labelAr": "جميع الكليات"
+        },
+        {
+          "value": "medicine",
+          "labelEn": "Medicine",
+          "labelAr": "الطب"
+        },
+        {
+          "value": "dentistry",
+          "labelEn": "Dentistry",
+          "labelAr": "طب الأسنان"
+        },
+        {
+          "value": "pharmacy",
+          "labelEn": "Pharmacy",
+          "labelAr": "الصيدلة"
+        },
+        {
+          "value": "artificial-intelligence",
+          "labelEn": "Artificial Intelligence",
+          "labelAr": "الذكاء الاصطناعي"
+        },
+        {
+          "value": "petroleum",
+          "labelEn": "Petroleum Engineering",
+          "labelAr": "هندسة البترول"
+        },
+        {
+          "value": "construction",
+          "labelEn": "Construction Engineering",
+          "labelAr": "هندسة التشييد"
+        },
+        {
+          "value": "business",
+          "labelEn": "Business Administration",
+          "labelAr": "إدارة الأعمال"
+        }
+      ],
+      "themes": [
+        {
+          "value": "",
+          "labelEn": "All Themes",
+          "labelAr": "جميع المجالات"
+        },
+        {
+          "value": "ai-ml",
+          "labelEn": "AI & Machine Learning",
+          "labelAr": "الذكاء الاصطناعي وتعلم الآلة"
+        },
+        {
+          "value": "pharmaceutical-sciences",
+          "labelEn": "Pharmaceutical Sciences",
+          "labelAr": "العلوم الصيدلانية"
+        },
+        {
+          "value": "clinical-medicine",
+          "labelEn": "Clinical Medicine",
+          "labelAr": "الطب السريري"
+        },
+        {
+          "value": "dental-sciences",
+          "labelEn": "Dental Sciences",
+          "labelAr": "علوم طب الأسنان"
+        },
+        {
+          "value": "petroleum-engineering",
+          "labelEn": "Petroleum Engineering",
+          "labelAr": "هندسة البترول"
+        },
+        {
+          "value": "construction-engineering",
+          "labelEn": "Construction Engineering",
+          "labelAr": "هندسة التشييد"
+        },
+        {
+          "value": "structural-engineering",
+          "labelEn": "Structural Engineering",
+          "labelAr": "الهندسة الإنشائية"
+        }
+      ],
+      "statuses": [
+        {
+          "value": "ongoing",
+          "labelEn": "Ongoing",
+          "labelAr": "جاري"
+        },
+        {
+          "value": "completed",
+          "labelEn": "Completed",
+          "labelAr": "مكتمل"
+        },
+        {
+          "value": "paused",
+          "labelEn": "Paused",
+          "labelAr": "معلق"
+        }
+      ]
+    },
+    "cardLabels": {
+      "viewProjectEn": "View Project",
+      "viewProjectAr": "عرض المشروع",
+      "sinceEn": "Since",
+      "sinceAr": "منذ"
+    },
+    "items": [
+      {
+        "id": "proj-001",
+        "slug": "earthquake-resistant-concrete-syria",
+        "titleEn": "Earthquake-Resistant Concrete Development for Syrian Construction",
+        "titleAr": "تطوير خرسانة مقاومة للزلازل للبناء السوري",
+        "summaryEn": "Developing and testing hybrid fiber-reinforced concrete mixtures optimized for seismic zones in Syria.",
+        "summaryAr": "تطوير واختبار خلطات الخرسانة المسلحة بالألياف الهجينة المحسنة للمناطق الزلزالية في سوريا.",
+        "facultyEn": "Faculty of Construction Engineering",
+        "facultyAr": "كلية هندسة التشييد",
+        "facultySlug": "construction",
+        "themeEn": "Structural Engineering",
+        "themeAr": "الهندسة الإنشائية",
+        "themeSlug": "structural-engineering",
+        "status": "completed",
+        "startYear": "2022",
+        "endYear": "2024",
+        "fundingEn": "Syrian Engineering Association",
+        "fundingAr": "الجمعية السورية للمهندسين",
+        "image": "/images/campus-feature-01.webp"
+      },
+      {
+        "id": "proj-002",
+        "slug": "ai-dental-diagnostics-system",
+        "titleEn": "AI-Powered Dental Caries Detection System",
+        "titleAr": "نظام الكشف عن تسوس الأسنان بالذكاء الاصطناعي",
+        "summaryEn": "Deep learning system for automated early detection of dental caries from panoramic radiographs.",
+        "summaryAr": "نظام التعلم العميق للكشف الآلي المبكر عن تسوس الأسنان من الأشعة البانورامية.",
+        "facultyEn": "Faculty of Dentistry",
+        "facultyAr": "كلية طب الأسنان",
+        "facultySlug": "dentistry",
+        "themeEn": "Dental Sciences",
+        "themeAr": "علوم طب الأسنان",
+        "themeSlug": "dental-sciences",
+        "status": "ongoing",
+        "startYear": "2023",
+        "fundingEn": "University Research Grant",
+        "fundingAr": "منحة بحث جامعية",
+        "image": "/images/research-digital-dentistry.webp"
+      },
+      {
+        "id": "proj-003",
+        "slug": "arabic-clinical-nlp-system",
+        "titleEn": "Arabic Clinical NLP for Medical Records Summarization",
+        "titleAr": "معالجة اللغة الطبيعية العربية لتلخيص السجلات الطبية",
+        "summaryEn": "Developing BERT-based Arabic NLP pipeline for extracting key clinical information from discharge summaries.",
+        "summaryAr": "تطوير خط معالجة اللغة الطبيعية العربي القائم على BERT لاستخراج المعلومات السريرية الرئيسية من ملخصات الخروج.",
+        "facultyEn": "Faculty of Artificial Intelligence",
+        "facultyAr": "كلية الذكاء الاصطناعي",
+        "facultySlug": "ai",
+        "themeEn": "Artificial Intelligence & Machine Learning",
+        "themeAr": "الذكاء الاصطناعي وتعلم الآلة",
+        "themeSlug": "ai-ml",
+        "status": "ongoing",
+        "startYear": "2023",
+        "fundingEn": "SPU Innovation Fund",
+        "fundingAr": "صندوق ابتكار SPU",
+        "image": "/images/Gemini_Generated_Image_c89yjwc89yjwc89y.webp"
+      },
+      {
+        "id": "proj-004",
+        "slug": "pharmaceutical-quality-monitoring",
+        "titleEn": "Real-Time Pharmaceutical Quality Monitoring System",
+        "titleAr": "نظام مراقبة جودة الأدوية في الوقت الفعلي",
+        "summaryEn": "Machine learning pipeline for automated defect detection on pharmaceutical production lines.",
+        "summaryAr": "خط أنابيب تعلم الآلة للكشف الآلي عن العيوب في خطوط إنتاج الأدوية.",
+        "facultyEn": "Faculty of Pharmacy",
+        "facultyAr": "كلية الصيدلة",
+        "facultySlug": "pharmacy",
+        "themeEn": "Pharmaceutical Sciences",
+        "themeAr": "العلوم الصيدلانية",
+        "themeSlug": "pharmaceutical-sciences",
+        "status": "completed",
+        "startYear": "2022",
+        "endYear": "2024",
+        "fundingEn": "Industry Partnership",
+        "fundingAr": "شراكة صناعية",
+        "image": "/images/pharmacy-place.jpg"
+      },
+      {
+        "id": "proj-005",
+        "slug": "reservoir-characterization-ai",
+        "titleEn": "AI Framework for Carbonate Reservoir Permeability Prediction",
+        "titleAr": "إطار الذكاء الاصطناعي للتنبؤ بنفاذية مكامن الكربونات",
+        "summaryEn": "LSTM-Transformer hybrid model for predicting reservoir permeability from well log data.",
+        "summaryAr": "نموذج هجين LSTM-Transformer للتنبؤ بنفاذية المكامن من بيانات تسجيل الآبار.",
+        "facultyEn": "Faculty of Petroleum Engineering",
+        "facultyAr": "كلية هندسة البترول",
+        "facultySlug": "petroleum",
+        "themeEn": "Petroleum Engineering",
+        "themeAr": "هندسة البترول",
+        "themeSlug": "petroleum-engineering",
+        "status": "completed",
+        "startYear": "2021",
+        "endYear": "2024",
+        "fundingEn": "Ministry of Oil",
+        "fundingAr": "وزارة النفط",
+        "image": "/images/slider-3.webp"
+      }
+    ]
+  },
+  "themes": {
+    "hero": {
+      "titleEn": "Research Themes",
+      "titleAr": "مجالات البحث",
+      "eyebrowEn": "Strategic Research Areas",
+      "eyebrowAr": "مجالات البحث الاستراتيجية",
+      "summaryEn": "Explore SPU's strategic research priority themes that drive innovation and scientific advancement across faculties.",
+      "summaryAr": "استكشف مجالات البحث ذات الأولوية الاستراتيجية في SPU التي تدفع الابتكار والتقدم العلمي عبر الكليات.",
+      "backgroundImage": "/images/uni-main-place.JPG",
+      "breadcrumbs": [
+        {
+          "labelEn": "Home",
+          "labelAr": "الرئيسية",
+          "url": "/"
+        },
+        {
+          "labelEn": "Research",
+          "labelAr": "البحث",
+          "url": "/research/"
+        },
+        {
+          "labelEn": "Themes",
+          "labelAr": "المجالات",
+          "url": "/research/themes/"
+        }
+      ]
+    },
+    "items": [
+      {
+        "id": "theme-001",
+        "slug": "ai-ml",
+        "nameEn": "Artificial Intelligence & Machine Learning",
+        "nameAr": "الذكاء الاصطناعي وتعلم الآلة",
+        "descriptionEn": "Advancing AI and ML research for healthcare, engineering, and business applications.",
+        "descriptionAr": "تطوير بحث الذكاء الاصطناعي وتعلم الآلة لتطبيقات الرعاية الصحية والهندسة والأعمال.",
+        "icon": "/images/icons/ai.svg",
+        "publicationCount": 45,
+        "projectCount": 12
+      },
+      {
+        "id": "theme-002",
+        "slug": "pharmaceutical-sciences",
+        "nameEn": "Pharmaceutical Sciences",
+        "nameAr": "العلوم الصيدلانية",
+        "descriptionEn": "Drug development, quality control, and pharmaceutical chemistry research.",
+        "descriptionAr": "تطوير الأدوية ومراقبة الجودة وكيمياء العقاقير.",
+        "icon": "/images/icons/lab.svg",
+        "publicationCount": 38,
+        "projectCount": 8
+      },
+      {
+        "id": "theme-003",
+        "slug": "clinical-medicine",
+        "nameEn": "Clinical Medicine",
+        "nameAr": "الطب السريري",
+        "descriptionEn": "Clinical research, medical education, and healthcare innovation.",
+        "descriptionAr": "البحث السريري والتعليم الطبي والابتكار في الرعاية الصحية.",
+        "icon": "/images/icons/lab.svg",
+        "publicationCount": 52,
+        "projectCount": 15
+      },
+      {
+        "id": "theme-004",
+        "slug": "dental-sciences",
+        "nameEn": "Dental Sciences",
+        "nameAr": "علوم طب الأسنان",
+        "descriptionEn": "Dental research, oral health, and digital dentistry innovations.",
+        "descriptionAr": "بحث طب الأسنان وصحة الفم وابتكارات طب الأسنان الرقمي.",
+        "icon": "/images/icons/lab.svg",
+        "publicationCount": 28,
+        "projectCount": 6
+      },
+      {
+        "id": "theme-005",
+        "slug": "petroleum-engineering",
+        "nameEn": "Petroleum Engineering",
+        "nameAr": "هندسة البترول",
+        "descriptionEn": "Reservoir characterization, drilling technology, and energy sustainability.",
+        "descriptionAr": "توصيف المكامن وتقنيات الحفر واستدامة الطاقة.",
+        "icon": "/images/icons/oil.svg",
+        "publicationCount": 31,
+        "projectCount": 9
+      },
+      {
+        "id": "theme-006",
+        "slug": "construction-engineering",
+        "nameEn": "Construction Engineering",
+        "nameAr": "هندسة التشييد",
+        "descriptionEn": "Structural engineering, earthquake-resistant design, and sustainable construction.",
+        "descriptionAr": "الهندسة الإنشائية والتصميم المقاوم للزلازل والبناء المستدام.",
+        "icon": "/images/icons/lab-eng.svg",
+        "publicationCount": 24,
+        "projectCount": 7
+      },
+      {
+        "id": "theme-007",
+        "slug": "business-administration",
+        "nameEn": "Business Administration",
+        "nameAr": "إدارة الأعمال",
+        "descriptionEn": "Management, strategy, entrepreneurship, and organizational behavior.",
+        "descriptionAr": "الإدارة والاستراتيجية وريادة الأعمال والسلوك التنظيمي.",
+        "icon": "/images/icons/business.svg",
+        "publicationCount": 19,
+        "projectCount": 4
+      },
+      {
+        "id": "theme-008",
+        "slug": "medical-education",
+        "nameEn": "Medical Education",
+        "nameAr": "التعليم الطبي",
+        "descriptionEn": "Simulation-based training, curriculum development, and clinical skills assessment.",
+        "descriptionAr": "التدريب القائم على المحاكاة وتطوير المناهج وتقييم المهارات السريرية.",
+        "icon": "/images/icons/training.svg",
+        "publicationCount": 22,
+        "projectCount": 5
+      },
+      {
+        "id": "theme-009",
+        "slug": "biomedical-engineering",
+        "nameEn": "Biomedical Engineering",
+        "nameAr": "الهندسة الطبية الحيوية",
+        "descriptionEn": "Medical devices, tissue engineering, and biomedical instrumentation.",
+        "descriptionAr": "الأجهزة الطبية وهندسة الأنسجة والأجهزة الطبية الحيوية.",
+        "icon": "/images/icons/lab.svg",
+        "publicationCount": 17,
+        "projectCount": 4
+      },
+      {
+        "id": "theme-010",
+        "slug": "energy-systems",
+        "nameEn": "Energy & Sustainable Systems",
+        "nameAr": "الطاقة والأنظمة المستدامة",
+        "descriptionEn": "Renewable energy, sustainable development, and environmental engineering.",
+        "descriptionAr": "الطاقة المتجددة والتنمية المستدامة وهندسة البيئة.",
+        "icon": "/images/icons/oil.svg",
+        "publicationCount": 26,
+        "projectCount": 8
+      },
+      {
+        "id": "theme-011",
+        "slug": "data-science",
+        "nameEn": "Data Science",
+        "nameAr": "علم البيانات",
+        "descriptionEn": "Big data analytics, statistical modeling, and data-driven decision making.",
+        "descriptionAr": "تحليلات البيانات الضخمة والنمذجة الإحصائية واتخاذ القرارات المبني على البيانات.",
+        "icon": "/images/icons/data.svg",
+        "publicationCount": 33,
+        "projectCount": 10
+      },
+      {
+        "id": "theme-012",
+        "slug": "structural-engineering",
+        "nameEn": "Structural Engineering",
+        "nameAr": "الهندسة الإنشائية",
+        "descriptionEn": "Advanced materials, structural analysis, and infrastructure resilience.",
+        "descriptionAr": "المواد المتقدمة والتحليل الإنشائي ومرونة البنية التحتية.",
+        "icon": "/images/icons/lab-eng.svg",
+        "publicationCount": 20,
+        "projectCount": 6
+      }
+    ]
+  },
+  "researchers": {
+    "hero": {
+      "titleEn": "Research Experts",
+      "titleAr": "خبراء البحث",
+      "eyebrowEn": "Find SPU Researchers",
+      "eyebrowAr": "ابحث عن باحثين في SPU",
+      "summaryEn": "Search and connect with leading academic experts across all SPU faculties and research centers.",
+      "summaryAr": "ابحث وتواصل مع أبرز الخبراء الأكاديميين في جميع كليات ومراكز بحث الجامعة.",
+      "backgroundImage": "/images/uni-main-place.JPG",
+      "breadcrumbs": [
+        {
+          "labelEn": "Home",
+          "labelAr": "الرئيسية",
+          "url": "/"
+        },
+        {
+          "labelEn": "Research",
+          "labelAr": "البحث",
+          "url": "/research/"
+        },
+        {
+          "labelEn": "Researchers",
+          "labelAr": "الباحثين",
+          "url": "/research/researchers/"
+        }
+      ]
+    },
+    "searchPlaceholder": {
+      "en": "Search by name, faculty, department, or expertise keyword...",
+      "ar": "ابحث بالاسم أو الكلية أو القسم أو الكلمة المفتاحية..."
+    },
+    "filters": {
+      "facultyLabelEn": "Faculty",
+      "facultyLabelAr": "الكلية",
+      "expertiseLabelEn": "Research Area",
+      "expertiseLabelAr": "المجال البحثي",
+      "allFacultiesEn": "All Faculties",
+      "allFacultiesAr": "جميع الكليات",
+      "allExpertiseEn": "All Research Areas",
+      "allExpertiseAr": "جميع المجالات البحثية"
+    },
+    "resultsLabel": {
+      "en": "results found",
+      "ar": "نتيجة موجودة"
+    },
+    "viewProfileLabel": {
+      "en": "View Profile",
+      "ar": "عرض الملف الشخصي"
+    },
+    "publicationsLabel": {
+      "en": "Publications",
+      "ar": "منشورات"
+    },
+    "citationsLabel": {
+      "en": "Citations",
+      "ar": "استشهادات"
+    },
+    "faculties": [
+      {
+        "id": "medicine",
+        "nameEn": "Faculty of Medicine",
+        "nameAr": "كلية الطب"
+      },
+      {
+        "id": "dentistry",
+        "nameEn": "Faculty of Dentistry",
+        "nameAr": "كلية طب الأسنان"
+      },
+      {
+        "id": "pharmacy",
+        "nameEn": "Faculty of Pharmacy",
+        "nameAr": "كلية الصيدلة"
+      },
+      {
+        "id": "ai",
+        "nameEn": "Faculty of Artificial Intelligence",
+        "nameAr": "كلية الذكاء الاصطناعي"
+      },
+      {
+        "id": "petroleum",
+        "nameEn": "Faculty of Petroleum Engineering",
+        "nameAr": "كلية هندسة البترول"
+      },
+      {
+        "id": "construction",
+        "nameEn": "Faculty of Construction Engineering",
+        "nameAr": "كلية هندسة التشييد"
+      },
+      {
+        "id": "business",
+        "nameEn": "Faculty of Business Administration",
+        "nameAr": "كلية إدارة الأعمال"
+      }
+    ],
+    "expertiseAreas": [
+      {
+        "id": "ai-ml",
+        "nameEn": "Artificial Intelligence & Machine Learning",
+        "nameAr": "الذكاء الاصطناعي وتعلم الآلة"
+      },
+      {
+        "id": "pharmaceutical-sciences",
+        "nameEn": "Pharmaceutical Sciences",
+        "nameAr": "العلوم الصيدلانية"
+      },
+      {
+        "id": "clinical-medicine",
+        "nameEn": "Clinical Medicine",
+        "nameAr": "الطب السريري"
+      },
+      {
+        "id": "dental-sciences",
+        "nameEn": "Dental Sciences",
+        "nameAr": "علوم طب الأسنان"
+      },
+      {
+        "id": "petroleum-engineering",
+        "nameEn": "Petroleum Engineering",
+        "nameAr": "هندسة البترول"
+      },
+      {
+        "id": "construction-engineering",
+        "nameEn": "Construction Engineering",
+        "nameAr": "هندسة التشييد"
+      },
+      {
+        "id": "business-administration",
+        "nameEn": "Business Administration",
+        "nameAr": "إدارة الأعمال"
+      },
+      {
+        "id": "medical-education",
+        "nameEn": "Medical Education",
+        "nameAr": "التعليم الطبي"
+      },
+      {
+        "id": "data-science",
+        "nameEn": "Data Science",
+        "nameAr": "علم البيانات"
+      }
+    ],
+    "items": [
+      {
+        "id": "ahmad-khaled",
+        "slug": "ahmad-mohammad-al-khaled",
+        "nameEn": "Dr. Ahmad Mohammad Al-Khaled",
+        "nameAr": "د. أحمد محمد الخالد",
+        "titleEn": "Associate Professor",
+        "titleAr": "أستاذ مشارك",
+        "facultyEn": "Faculty of Pharmacy",
+        "facultyAr": "كلية الصيدلة",
+        "facultyId": "pharmacy",
+        "facultySlug": "pharmacy",
+        "departmentEn": "Pharmaceutical Chemistry",
+        "departmentAr": "كيمياء العقاقير",
+        "expertiseEn": [
+          "Pharmaceutical Chemistry",
+          "Drug Design",
+          "Nano Drug Delivery"
+        ],
+        "expertiseAr": [
+          "الكيمياء الدوائية",
+          "تصميم الأدوية",
+          "إيصال الدواء النانوي"
+        ],
+        "expertiseSlugs": [
+          "pharmaceutical-sciences"
+        ],
+        "bioEn": "Dr. Al-Khaled specializes in pharmaceutical chemistry with a focus on novel drug delivery systems and nano-formulations for targeted therapy.",
+        "bioAr": "يتخصص الدكتور الخالد في كيمياء العقاقير مع التركيز على أنظمة إيصال الأدوية الجديدة والصياغات النانوية للعلاج المستهدف.",
+        "email": "ahmad.khaled@spu.edu.sy",
+        "emailPublic": true,
+        "orcidId": "0000-0000-0000-0001",
+        "scholarUrl": "https://scholar.google.com/citations?user=ahmad123",
+        "scopusId": "35798025301",
+        "image": "/images/pharmacy-dean.jpg",
+        "publications": 47,
+        "citations": 1240
+      },
+      {
+        "id": "arwa-khair",
+        "slug": "arwa-khair",
+        "nameEn": "Dr. Arwa Khair",
+        "nameAr": "د. أروى خير",
+        "titleEn": "Vice President for Academic Affairs",
+        "titleAr": "نائب رئيس الجامعة للشؤون العلمية",
+        "facultyEn": "University Administration",
+        "facultyAr": "إدارة الجامعة",
+        "facultyId": "university",
+        "facultySlug": "university",
+        "departmentEn": "Academic Leadership",
+        "departmentAr": "القيادة الأكاديمية",
+        "expertiseEn": [
+          "Academic Leadership",
+          "Curriculum Development"
+        ],
+        "expertiseAr": [
+          "القيادة الأكاديمية",
+          "تطوير المناهج"
+        ],
+        "expertiseSlugs": [
+          "medical-education"
+        ],
+        "bioEn": "Dr. Khair leads academic affairs with a focus on curriculum innovation, accreditation, and faculty development.",
+        "bioAr": "تقود الدكتورة خير الشؤون الأكاديمية مع التركيز على الابتكار في المناهج والاعتماد الأكاديمي وتطوير أعضاء هيئة التدريس.",
+        "email": "arwa.khair@spu.edu.sy",
+        "emailPublic": true,
+        "orcidId": "0000-0000-0000-0002",
+        "scholarUrl": "https://scholar.google.com/citations?user=arwa123",
+        "scopusId": "35798025302",
+        "image": "/images/about/leadership/pre-presendent.jpg",
+        "publications": 32,
+        "citations": 580
+      },
+      {
+        "id": "ayman-ali",
+        "slug": "ayman-ali",
+        "nameEn": "Dr. Ayman Ali",
+        "nameAr": "د. أيمن علي",
+        "titleEn": "Dean of Medicine",
+        "titleAr": "عميد كلية الطب",
+        "facultyEn": "Faculty of Medicine",
+        "facultyAr": "كلية الطب",
+        "facultyId": "medicine",
+        "facultySlug": "medicine",
+        "departmentEn": "Cardiothoracic Surgery",
+        "departmentAr": "جراحة القلب والصدر",
+        "expertiseEn": [
+          "Cardiothoracic Surgery",
+          "Medical Education",
+          "Clinical Research"
+        ],
+        "expertiseAr": [
+          "جراحة القلب والصدر",
+          "التعليم الطبي",
+          "البحث السريري"
+        ],
+        "expertiseSlugs": [
+          "clinical-medicine",
+          "medical-education"
+        ],
+        "bioEn": "Dr. Ali is a renowned cardiothoracic surgeon and medical educator with extensive experience in clinical simulation and surgical training.",
+        "bioAr": "الدكتور علي جراح قلب وصدر معروف ومعلم طبي ذو خبرة واسعة في المحاكاة السريرية والتدريب الجراحي.",
+        "email": "ayman.ali@spu.edu.sy",
+        "emailPublic": true,
+        "orcidId": "0000-0000-0000-0004",
+        "scholarUrl": "https://scholar.google.com/citations?user=ayman123",
+        "scopusId": "35798025304",
+        "image": "/images/about/leadership/medicine-dean.jpg",
+        "publications": 45,
+        "citations": 890
+      },
+      {
+        "id": "talaat-abuhatab",
+        "slug": "talaat-abu-hatab",
+        "nameEn": "Dr. Talaat Abu Hatab",
+        "nameAr": "د. طلعت أبو حطب",
+        "titleEn": "Dean of Dentistry",
+        "titleAr": "عميد كلية طب الأسنان",
+        "facultyEn": "Faculty of Dentistry",
+        "facultyAr": "كلية طب الأسنان",
+        "facultyId": "dentistry",
+        "facultySlug": "dentistry",
+        "departmentEn": "Orthodontics",
+        "departmentAr": "تقويم الأسنان",
+        "expertiseEn": [
+          "Orthodontics",
+          "Pediatric Dentistry",
+          "Dental Sciences"
+        ],
+        "expertiseAr": [
+          "تقويم الأسنان",
+          "طب أسنان الأطفال",
+          "علوم طب الأسنان"
+        ],
+        "expertiseSlugs": [
+          "dental-sciences"
+        ],
+        "bioEn": "Dr. Abu Hatab leads dental education and research with special interest in digital dentistry and orthodontic biomechanics.",
+        "bioAr": "يقود الدكتور أبو حطب التعليم والبحث في طب الأسنان باهتمام خاص بطب الأسنان الرقمي وميكانيكا تقويم الأسنان.",
+        "email": "talaat.abuhatab@spu.edu.sy",
+        "emailPublic": true,
+        "orcidId": "0000-0000-0000-0005",
+        "scholarUrl": "https://scholar.google.com/citations?user=talaat123",
+        "scopusId": "35798025305",
+        "image": "/images/about/leadership/dental-dean.jpg",
+        "publications": 38,
+        "citations": 650
+      },
+      {
+        "id": "hossam-shahrour",
+        "slug": "hossam-shahrour",
+        "nameEn": "Dr. Hossam Shahrour",
+        "nameAr": "د. حسام شحرور",
+        "titleEn": "Dean of Pharmacy",
+        "titleAr": "عميد كلية الصيدلة",
+        "facultyEn": "Faculty of Pharmacy",
+        "facultyAr": "كلية الصيدلة",
+        "facultyId": "pharmacy",
+        "facultySlug": "pharmacy",
+        "departmentEn": "Pharmaceutical Chemistry",
+        "departmentAr": "كيمياء العقاقير",
+        "expertiseEn": [
+          "Pharmaceutical Chemistry",
+          "Drug Design",
+          "Quality Control"
+        ],
+        "expertiseAr": [
+          "الكيمياء الدوائية",
+          "تصميم الأدوية",
+          "مراقبة الجودة"
+        ],
+        "expertiseSlugs": [
+          "pharmaceutical-sciences"
+        ],
+        "bioEn": "Dr. Shahrour leads pharmaceutical research with focus on quality control systems, analytical method development, and drug stability studies.",
+        "bioAr": "يقود الدكتور شحرور البحث الصيدلاني مع التركيز على أنظمة مراقبة الجودة وتطوير الطرق التحليلية ودراسات استقرار الأدوية.",
+        "email": "hossam.shahrour@spu.edu.sy",
+        "emailPublic": true,
+        "orcidId": "0000-0000-0000-0006",
+        "scholarUrl": "https://scholar.google.com/citations?user=hossam123",
+        "scopusId": "35798025306",
+        "image": "/images/about/leadership/pharmacy-dean.jpg",
+        "publications": 52,
+        "citations": 1200
+      },
+      {
+        "id": "mouhib-alnoukari",
+        "slug": "mouhib-alnoukari",
+        "nameEn": "Dr. Mouhib Alnoukari",
+        "nameAr": "د. محيب النقري",
+        "titleEn": "Dean of AI Engineering",
+        "titleAr": "عميد كلية الهندسة",
+        "facultyEn": "Faculty of Artificial Intelligence",
+        "facultyAr": "كلية الذكاء الاصطناعي",
+        "facultyId": "ai",
+        "facultySlug": "ai",
+        "departmentEn": "Artificial Intelligence",
+        "departmentAr": "الذكاء الاصطناعي",
+        "expertiseEn": [
+          "Artificial Intelligence",
+          "Data Science",
+          "Machine Learning"
+        ],
+        "expertiseAr": [
+          "الذكاء الاصطناعي",
+          "علم البيانات",
+          "تعلم الآلة"
+        ],
+        "expertiseSlugs": [
+          "ai-ml",
+          "data-science"
+        ],
+        "bioEn": "Dr. Alnoukari leads AI research with expertise in NLP, computer vision, and intelligent systems for healthcare and engineering applications.",
+        "bioAr": "يقود الدكتور النقري بحث الذكاء الاصطناعي بخبرة في معالجة اللغات الطبيعية والرؤية الحاسوبية والأنظمة الذكية لتطبيقات الرعاية الصحية والهندسة.",
+        "email": "mouhib.alnoukari@spu.edu.sy",
+        "emailPublic": true,
+        "orcidId": "0000-0000-0000-0007",
+        "scholarUrl": "https://scholar.google.com/citations?user=mouhib123",
+        "scopusId": "35798025307",
+        "image": "/images/about/leadership/Ai-dean.jpg",
+        "publications": 42,
+        "citations": 980
+      },
+      {
+        "id": "mahmoud-hadid",
+        "slug": "mahmoud-hadid",
+        "nameEn": "Dr. Mahmoud Hadid",
+        "nameAr": "د. محمود حديد",
+        "titleEn": "Dean of Petroleum Engineering",
+        "titleAr": "عميد كلية هندسة البترول",
+        "facultyEn": "Faculty of Petroleum Engineering",
+        "facultyAr": "كلية هندسة البترول",
+        "facultyId": "petroleum",
+        "facultySlug": "petroleum",
+        "departmentEn": "Reservoir Engineering",
+        "departmentAr": "هندسة المكامن",
+        "expertiseEn": [
+          "Petroleum Engineering",
+          "Reservoir Characterization",
+          "Energy Systems"
+        ],
+        "expertiseAr": [
+          "هندسة البترول",
+          "توصيف المكامن",
+          "أنظمة الطاقة"
+        ],
+        "expertiseSlugs": [
+          "petroleum-engineering",
+          "energy-systems"
+        ],
+        "bioEn": "Dr. Hadid specializes in reservoir engineering with research focus on AI applications, carbonate reservoirs, and energy transition strategies.",
+        "bioAr": "يتخصص الدكتور حديد في هندسة المكامن مع التركيز على تطبيقات الذكاء الاصطناعي ومكامن الكربونات واستراتيجيات التحول الطاقي.",
+        "email": "mahmoud.hadid@spu.edu.sy",
+        "emailPublic": true,
+        "orcidId": "0000-0000-0000-0008",
+        "scholarUrl": "https://scholar.google.com/citations?user=mahmoud123",
+        "scopusId": "35798025308",
+        "image": "/images/about/leadership/petrol-dean.jpg",
+        "publications": 35,
+        "citations": 720
+      },
+      {
+        "id": "samar-habib",
+        "slug": "samar-habib",
+        "nameEn": "Dr. Samar Habib",
+        "nameAr": "د. سمر حبيب",
+        "titleEn": "Dean of Business Administration",
+        "titleAr": "عميدة كلية إدارة الأعمال",
+        "facultyEn": "Faculty of Business Administration",
+        "facultyAr": "كلية إدارة الأعمال",
+        "facultyId": "business",
+        "facultySlug": "business",
+        "departmentEn": "Management",
+        "departmentAr": "الإدارة",
+        "expertiseEn": [
+          "Human Resource Management",
+          "Organizational Behavior",
+          "Business Strategy"
+        ],
+        "expertiseAr": [
+          "إدارة الموارد البشرية",
+          "السلوك التنظيمي",
+          "استراتيجية الأعمال"
+        ],
+        "expertiseSlugs": [
+          "business-administration"
+        ],
+        "bioEn": "Dr. Habib leads business education with research interests in organizational behavior, strategic HRM, and healthcare management.",
+        "bioAr": "تقود الدكتورة حبيب تعليم الأعمال باهتمامات بحثية في السلوك التنظيمي وإدارة الموارد البشرية الاستراتيجية وإدارة الرعاية الصحية.",
+        "email": "samar.habib@spu.edu.sy",
+        "emailPublic": true,
+        "orcidId": "0000-0000-0000-0009",
+        "scholarUrl": "https://scholar.google.com/citations?user=samar123",
+        "scopusId": "35798025309",
+        "image": "/images/about/leadership/busnins-dean.jpg",
+        "publications": 30,
+        "citations": 540
+      },
+      {
+        "id": "ammar-ghada",
+        "slug": "ammar-ghada",
+        "nameEn": "Dr. Ammar Ghada",
+        "nameAr": "د. عمار غضة",
+        "titleEn": "Dean of Construction Engineering",
+        "titleAr": "عميد كلية هندسة التشييد",
+        "facultyEn": "Faculty of Construction Engineering",
+        "facultyAr": "كلية هندسة التشييد",
+        "facultyId": "construction",
+        "facultySlug": "construction",
+        "departmentEn": "Structural Engineering",
+        "departmentAr": "الهندسة الإنشائية",
+        "expertiseEn": [
+          "Structural Engineering",
+          "Earthquake-Resistant Design",
+          "Construction Materials"
+        ],
+        "expertiseAr": [
+          "الهندسة الإنشائية",
+          "التصميم المقاوم للزلازل",
+          "مواد البناء"
+        ],
+        "expertiseSlugs": [
+          "structural-engineering",
+          "construction-engineering"
+        ],
+        "bioEn": "Dr. Ghada leads construction engineering research with focus on earthquake-resistant materials, structural dynamics, and sustainable construction.",
+        "bioAr": "يقود الدكتور غضة بحث هندسة التشييد مع التركيز على المواد المقاومة للزلازل والديناميكا الإنشائية والبناء المستدام.",
+        "email": "ammar.ghada@spu.edu.sy",
+        "emailPublic": true,
+        "orcidId": "0000-0000-0000-0010",
+        "scholarUrl": "https://scholar.google.com/citations?user=ammar123",
+        "scopusId": "35798025310",
+        "image": "/images/uni-main-place.JPG",
+        "publications": 28,
+        "citations": 410
+      }
+    ]
+  },
+  "expertFinder": {
+    "hero": {
+      "titleEn": "Expert Finder",
+      "titleAr": "الباحث عن الخبراء",
+      "eyebrowEn": "Find SPU Researchers",
+      "eyebrowAr": "ابحث عن باحثين في SPU",
+      "summaryEn": "Search and connect with leading academic experts across all SPU faculties and research centers.",
+      "summaryAr": "ابحث وتواصل مع أبرز الخبراء الأكاديميين في جميع كليات ومراكز بحث الجامعة.",
+      "backgroundImage": "/images/uni-main-place.JPG",
+      "breadcrumbs": [
+        {
+          "labelEn": "Home",
+          "labelAr": "الرئيسية",
+          "url": "/"
+        },
+        {
+          "labelEn": "Research",
+          "labelAr": "البحث",
+          "url": "/research/"
+        },
+        {
+          "labelEn": "Expert Finder",
+          "labelAr": "الباحث عن الخبراء",
+          "url": "/research/expert-finder/"
+        }
+      ]
+    },
+    "searchPlaceholder": {
+      "en": "Search by name, faculty, department, or expertise keyword...",
+      "ar": "ابحث بالاسم أو الكلية أو القسم أو الكلمة المفتاحية..."
+    },
+    "filters": {
+      "facultyLabelEn": "Faculty",
+      "facultyLabelAr": "الكلية",
+      "expertiseLabelEn": "Research Area",
+      "expertiseLabelAr": "المجال البحثي",
+      "allFacultiesEn": "All Faculties",
+      "allFacultiesAr": "جميع الكليات",
+      "allExpertiseEn": "All Research Areas",
+      "allExpertiseAr": "جميع المجالات البحثية"
+    },
+    "faculties": [
+      {
+        "id": "medicine",
+        "nameEn": "Faculty of Medicine",
+        "nameAr": "كلية الطب"
+      },
+      {
+        "id": "dentistry",
+        "nameEn": "Faculty of Dentistry",
+        "nameAr": "كلية طب الأسنان"
+      },
+      {
+        "id": "pharmacy",
+        "nameEn": "Faculty of Pharmacy",
+        "nameAr": "كلية الصيدلة"
+      },
+      {
+        "id": "ai",
+        "nameEn": "Faculty of Artificial Intelligence",
+        "nameAr": "كلية الذكاء الاصطناعي"
+      },
+      {
+        "id": "petroleum",
+        "nameEn": "Faculty of Petroleum Engineering",
+        "nameAr": "كلية هندسة البترول"
+      },
+      {
+        "id": "construction",
+        "nameEn": "Faculty of Construction Engineering",
+        "nameAr": "كلية هندسة التشييد"
+      },
+      {
+        "id": "business",
+        "nameEn": "Faculty of Business Administration",
+        "nameAr": "كلية إدارة الأعمال"
+      }
+    ],
+    "expertiseAreas": [
+      {
+        "id": "ai-ml",
+        "nameEn": "Artificial Intelligence & Machine Learning",
+        "nameAr": "الذكاء الاصطناعي وتعلم الآلة"
+      },
+      {
+        "id": "pharmaceutical-sciences",
+        "nameEn": "Pharmaceutical Sciences",
+        "nameAr": "العلوم الصيدلانية"
+      },
+      {
+        "id": "clinical-medicine",
+        "nameEn": "Clinical Medicine",
+        "nameAr": "الطب السريري"
+      },
+      {
+        "id": "dental-sciences",
+        "nameEn": "Dental Sciences",
+        "nameAr": "علوم طب الأسنان"
+      },
+      {
+        "id": "petroleum-engineering",
+        "nameEn": "Petroleum Engineering",
+        "nameAr": "هندسة البترول"
+      },
+      {
+        "id": "construction-engineering",
+        "nameEn": "Construction Engineering",
+        "nameAr": "هندسة التشييد"
+      },
+      {
+        "id": "business-administration",
+        "nameEn": "Business Administration",
+        "nameAr": "إدارة الأعمال"
+      }
+    ],
+    "researchers": [
+      {
+        "id": "ahmad-khaled",
+        "slug": "ahmad-khaled",
+        "nameEn": "Dr. Ahmad Mohammad Al-Khaled",
+        "nameAr": "د. أحمد محمد الخالد",
+        "titleEn": "Associate Professor",
+        "titleAr": "أستاذ مشارك",
+        "facultyEn": "Faculty of Pharmacy",
+        "facultyAr": "كلية الصيدلة",
+        "facultyId": "pharmacy",
+        "expertiseEn": [
+          "Pharmaceutical Chemistry",
+          "Drug Design",
+          "Nano Drug Delivery"
+        ],
+        "expertiseAr": [
+          "الكيمياء الدوائية",
+          "تصميم الأدوية",
+          "إيصال الدواء النانوي"
+        ],
+        "email": "ahmad.khaled@spu.edu.sy",
+        "orcidUrl": "https://orcid.org/0000-0000-0000-0001",
+        "scholarUrl": "https://scholar.google.com/citations?user=ahmad123",
+        "image": "/images/pharmacy-dean.jpg",
+        "publications": 47,
+        "citations": 1240
+      },
+      {
+        "id": "arwa-khair",
+        "slug": "arwa-khair",
+        "nameEn": "Dr. Arwa Khair",
+        "nameAr": "د. أروى خير",
+        "titleEn": "Vice President for Academic Affairs",
+        "titleAr": "نائب رئيس الجامعة للشؤون العلمية",
+        "facultyEn": "University Administration",
+        "facultyAr": "إدارة الجامعة",
+        "facultyId": "university",
+        "expertiseEn": [
+          "Academic Leadership",
+          "Curriculum Development"
+        ],
+        "expertiseAr": [
+          "القيادة الأكاديمية",
+          "تطوير المناهج"
+        ],
+        "email": "arwa.khair@spu.edu.sy",
+        "orcidUrl": "https://orcid.org/0000-0000-0000-0002",
+        "scholarUrl": "https://scholar.google.com/citations?user=arwa123",
+        "image": "/images/about/leadership/pre-presendent.jpg",
+        "publications": 32,
+        "citations": 580
+      },
+      {
+        "id": "ayman-ali",
+        "slug": "ayman-ali",
+        "nameEn": "Dr. Ayman Ali",
+        "nameAr": "د. أيمن علي",
+        "titleEn": "Dean of Medicine",
+        "titleAr": "عميد كلية الطب",
+        "facultyEn": "Faculty of Medicine",
+        "facultyAr": "كلية الطب",
+        "facultyId": "medicine",
+        "expertiseEn": [
+          "Cardiothoracic Surgery",
+          "Medical Education",
+          "Clinical Research"
+        ],
+        "expertiseAr": [
+          "جراحة القلب والصدر",
+          "التعليم الطبي",
+          "البحث السريري"
+        ],
+        "email": "ayman.ali@spu.edu.sy",
+        "orcidUrl": "https://orcid.org/0000-0000-0000-0004",
+        "scholarUrl": "https://scholar.google.com/citations?user=ayman123",
+        "image": "/images/about/leadership/medicine-dean.jpg",
+        "publications": 45,
+        "citations": 890
+      },
+      {
+        "id": "talaat-abuhatab",
+        "slug": "talaat-abuhatab",
+        "nameEn": "Dr. Talaat Abu Hatab",
+        "nameAr": "د. طلعت أبو حطب",
+        "titleEn": "Dean of Dentistry",
+        "titleAr": "عميد كلية طب الأسنان",
+        "facultyEn": "Faculty of Dentistry",
+        "facultyAr": "كلية طب الأسنان",
+        "facultyId": "dentistry",
+        "expertiseEn": [
+          "Orthodontics",
+          "Pediatric Dentistry",
+          "Dental Sciences"
+        ],
+        "expertiseAr": [
+          "تقويم الأسنان",
+          "طب أسنان الأطفال",
+          "علوم طب الأسنان"
+        ],
+        "email": "talaat.abuhatab@spu.edu.sy",
+        "orcidUrl": "https://orcid.org/0000-0000-0000-0005",
+        "scholarUrl": "https://scholar.google.com/citations?user=talaat123",
+        "image": "/images/about/leadership/dental-dean.jpg",
+        "publications": 38,
+        "citations": 650
+      },
+      {
+        "id": "hossam-shahrour",
+        "slug": "hossam-shahrour",
+        "nameEn": "Dr. Hossam Shahrour",
+        "nameAr": "د. حسام شحرور",
+        "titleEn": "Dean of Pharmacy",
+        "titleAr": "عميد كلية الصيدلة",
+        "facultyEn": "Faculty of Pharmacy",
+        "facultyAr": "كلية الصيدلة",
+        "facultyId": "pharmacy",
+        "expertiseEn": [
+          "Pharmaceutical Chemistry",
+          "Drug Design",
+          "Quality Control"
+        ],
+        "expertiseAr": [
+          "الكيمياء الدوائية",
+          "تصميم الأدوية",
+          "مراقبة الجودة"
+        ],
+        "email": "hossam.shahrour@spu.edu.sy",
+        "orcidUrl": "https://orcid.org/0000-0000-0000-0006",
+        "scholarUrl": "https://scholar.google.com/citations?user=hossam123",
+        "image": "/images/about/leadership/pharmacy-dean.jpg",
+        "publications": 52,
+        "citations": 1200
+      },
+      {
+        "id": "mouhib-alnoukari",
+        "slug": "mouhib-alnoukari",
+        "nameEn": "Dr. Mouhib Alnoukari",
+        "nameAr": "د. محيب النقري",
+        "titleEn": "Dean of AI Engineering",
+        "titleAr": "عميد كلية الهندسة",
+        "facultyEn": "Faculty of Artificial Intelligence",
+        "facultyAr": "كلية الذكاء الاصطناعي",
+        "facultyId": "ai",
+        "expertiseEn": [
+          "Artificial Intelligence",
+          "Data Science",
+          "Machine Learning"
+        ],
+        "expertiseAr": [
+          "الذكاء الاصطناعي",
+          "علم البيانات",
+          "تعلم الآلة"
+        ],
+        "email": "mouhib.alnoukari@spu.edu.sy",
+        "orcidUrl": "https://orcid.org/0000-0000-0000-0007",
+        "scholarUrl": "https://scholar.google.com/citations?user=mouhib123",
+        "image": "/images/about/leadership/Ai-dean.jpg",
+        "publications": 42,
+        "citations": 980
+      },
+      {
+        "id": "mahmoud-hadid",
+        "slug": "mahmoud-hadid",
+        "nameEn": "Dr. Mahmoud Hadid",
+        "nameAr": "د. محمود حديد",
+        "titleEn": "Dean of Petroleum Engineering",
+        "titleAr": "عميد كلية هندسة البترول",
+        "facultyEn": "Faculty of Petroleum Engineering",
+        "facultyAr": "كلية هندسة البترول",
+        "facultyId": "petroleum",
+        "expertiseEn": [
+          "Petroleum Engineering",
+          "Reservoir Characterization",
+          "Energy"
+        ],
+        "expertiseAr": [
+          "هندسة البترول",
+          "توصيف المكامن",
+          "الطاقة"
+        ],
+        "email": "mahmoud.hadid@spu.edu.sy",
+        "orcidUrl": "https://orcid.org/0000-0000-0000-0008",
+        "scholarUrl": "https://scholar.google.com/citations?user=mahmoud123",
+        "image": "/images/about/leadership/petrol-dean.jpg",
+        "publications": 35,
+        "citations": 720
+      },
+      {
+        "id": "samar-habib",
+        "slug": "samar-habib",
+        "nameEn": "Dr. Samar Habib",
+        "nameAr": "د. سمر حبيب",
+        "titleEn": "Dean of Business Administration",
+        "titleAr": "عميدة كلية إدارة الأعمال",
+        "facultyEn": "Faculty of Business Administration",
+        "facultyAr": "كلية إدارة الأعمال",
+        "facultyId": "business",
+        "expertiseEn": [
+          "Human Resource Management",
+          "Organizational Behavior",
+          "Business Strategy"
+        ],
+        "expertiseAr": [
+          "إدارة الموارد البشرية",
+          "السلوك التنظيمي",
+          "استراتيجية الأعمال"
+        ],
+        "email": "samar.habib@spu.edu.sy",
+        "orcidUrl": "https://orcid.org/0000-0000-0000-0009",
+        "scholarUrl": "https://scholar.google.com/citations?user=samar123",
+        "image": "/images/about/leadership/busnins-dean.jpg",
+        "publications": 30,
+        "citations": 540
+      },
+      {
+        "id": "ammar-ghada",
+        "slug": "ammar-ghada",
+        "nameEn": "Dr. Ammar Ghada",
+        "nameAr": "د. عمار غضة",
+        "titleEn": "Dean of Construction Engineering",
+        "titleAr": "عميد كلية هندسة التشييد",
+        "facultyEn": "Faculty of Construction Engineering",
+        "facultyAr": "كلية هندسة التشييد",
+        "facultyId": "construction",
+        "expertiseEn": [
+          "Structural Engineering",
+          "Earthquake-Resistant Design",
+          "Construction Materials"
+        ],
+        "expertiseAr": [
+          "الهندسة الإنشائية",
+          "التصميم المقاوم للزلازل",
+          "مواد البناء"
+        ],
+        "email": "ammar.ghada@spu.edu.sy",
+        "orcidUrl": "https://orcid.org/0000-0000-0000-0010",
+        "scholarUrl": "https://scholar.google.com/citations?user=ammar123",
+        "image": "/images/uni-main-place.JPG",
+        "publications": 28,
+        "citations": 410
+      }
+    ],
+    "resultsLabel": {
+      "en": "results found",
+      "ar": "نتيجة موجودة"
+    },
+    "viewProfileLabel": {
+      "en": "View Profile",
+      "ar": "عرض الملف الشخصي"
+    },
+    "publicationsLabel": {
+      "en": "Publications",
+      "ar": "منشورات"
+    },
+    "citationsLabel": {
+      "en": "Citations",
+      "ar": "استشهادات"
+    }
+  },
+  "conferences": {
+    "hero": {
+      "titleEn": "Conferences & Seminars",
+      "titleAr": "المؤتمرات والندوات",
+      "eyebrowEn": "Scientific Events",
+      "eyebrowAr": "الفعاليات العلمية",
+      "summaryEn": "Explore past and upcoming scientific conferences, symposiums, and academic seminars hosted by SPU and our partner institutions.",
+      "summaryAr": "استكشف المؤتمرات والندوات العلمية الماضية والقادمة التي تستضيفها الجامعة السورية الخاصة ومؤسساتنا الشريكة.",
+      "backgroundImage": "/images/uni-main-place.JPG",
+      "breadcrumbs": [
+        {
+          "labelEn": "Home",
+          "labelAr": "الرئيسية",
+          "url": "/"
+        },
+        {
+          "labelEn": "Research",
+          "labelAr": "البحث",
+          "url": "/research/"
+        },
+        {
+          "labelEn": "Conferences",
+          "labelAr": "المؤتمرات",
+          "url": "/research/conferences/"
+        }
+      ]
+    },
+    "upcomingSection": {
+      "titleEn": "Upcoming Events",
+      "titleAr": "الفعاليات القادمة",
+      "viewAllEn": "View All Events",
+      "viewAllAr": "عرض جميع الفعاليات"
+    },
+    "pastSection": {
+      "titleEn": "Past Conferences",
+      "titleAr": "المؤتمرات السابقة",
+      "proceedingsEn": "Proceedings Available",
+      "proceedingsAr": "الوقائع متاحة"
+    },
+    "upcoming": [
+      {
+        "id": "conf-001",
+        "titleEn": "International Conference on AI in Healthcare 2026",
+        "titleAr": "المؤتمر الدولي حول الذكاء الاصطناعي في الرعاية الصحية 2026",
+        "dateEn": "March 15-17, 2026",
+        "dateAr": "15-17 مارس 2026",
+        "locationEn": "Damascus, Syria",
+        "locationAr": "دمشق، سوريا",
+        "descriptionEn": "Join leading experts in artificial intelligence and healthcare professionals for three days of keynote talks, workshops, and panel discussions.",
+        "descriptionAr": "انضم إلى خبراء الذكاء الاصطناعي والمهنيين في مجال الرعاية الصحية لثلاثة أيام من المحاضرات الرئيسية وورش العمل والنقاشات.",
+        "image": "/images/research-clinical-simulation.webp",
+        "registrationUrl": "#",
+        "eventTypeEn": "International Conference",
+        "eventTypeAr": "مؤتمر دولي"
+      },
+      {
+        "id": "conf-002",
+        "titleEn": "Symposium on Pharmaceutical Innovation",
+        "titleAr": "ندوة الابتكار الصيدلاني",
+        "dateEn": "April 22, 2026",
+        "dateAr": "22 أبريل 2026",
+        "locationEn": "SPU Campus, Damascus",
+        "locationAr": "حرم الجامعة، دمشق",
+        "descriptionEn": "A one-day symposium focusing on cutting-edge developments in pharmaceutical sciences, drug delivery, and quality assurance.",
+        "descriptionAr": "ندوة يومية تركز على التطورات المتقدمة في العلوم الصيدلانية وإيصال الدواء وضمان الجودة.",
+        "image": "/images/pharmacy-place.jpg",
+        "registrationUrl": "#",
+        "eventTypeEn": "Symposium",
+        "eventTypeAr": "ندوة"
+      }
+    ],
+    "past": [
+      {
+        "id": "conf-past-001",
+        "titleEn": "Regional Conference on Dental Sciences",
+        "titleAr": "مؤتمر العلوم الطبية السنية الإقليمي",
+        "dateEn": "November 2025",
+        "dateAr": "نوفمبر 2025",
+        "locationEn": "Damascus, Syria",
+        "locationAr": "دمشق، سوريا",
+        "descriptionEn": "Three-day conference featuring presentations from leading dental researchers across the region.",
+        "descriptionAr": "مؤتمر ثلاثة أيام يتضمن عروضاً من أبرز باحثي طب الأسنان في المنطقة.",
+        "image": "/images/research-digital-dentistry.webp",
+        "hasProceedings": true,
+        "proceedingsUrl": "#",
+        "participantsEn": "150+ Participants",
+        "participantsAr": "+150 مشارك"
+      },
+      {
+        "id": "conf-past-002",
+        "titleEn": "Workshop on Machine Learning for Engineers",
+        "titleAr": "ورشة عمل حول تعلم الآلة للمهندسين",
+        "dateEn": "October 2025",
+        "dateAr": "أكتوبر 2025",
+        "locationEn": "SPU Campus, Damascus",
+        "locationAr": "حرم الجامعة، دمشق",
+        "descriptionEn": "Hands-on workshop covering practical applications of ML algorithms in engineering and petroleum domains.",
+        "descriptionAr": "ورشة عمل عملية تغطي التطبيقات العملية لخوارزميات تعلم الآلة في مجالات الهندسة والبترول.",
+        "image": "/images/slider-2.webp",
+        "hasProceedings": false
+      },
+      {
+        "id": "conf-past-003",
+        "titleEn": "Annual Research Forum 2025",
+        "titleAr": "منتدى البحث السنوي 2025",
+        "dateEn": "May 2025",
+        "dateAr": "مايو 2025",
+        "locationEn": "Damascus, Syria",
+        "locationAr": "دمشق، سوريا",
+        "descriptionEn": "University-wide research forum showcasing student and faculty research projects across all disciplines.",
+        "descriptionAr": "منتدى جامعي يعرض مشاريع البحث لطلاب وأعضاء هيئة التدريس في جميع التخصصات.",
+        "image": "/images/uni-main-place.JPG",
+        "hasProceedings": true,
+        "proceedingsUrl": "#",
+        "participantsEn": "300+ Participants",
+        "participantsAr": "+300 مشارك"
+      }
+    ]
+  },
+  "library": {
+    "hero": {
+      "titleEn": "Research Library",
+      "titleAr": "مكتبة البحث",
+      "eyebrowEn": "Academic Resources",
+      "eyebrowAr": "الموارد الأكاديمية",
+      "summaryEn": "Access comprehensive academic resources, e-books, licensed databases, and special collections to support your research journey.",
+      "summaryAr": "الوصول إلى الموارد الأكاديمية الشاملة والكتب الإلكترونية وقواعد البيانات المرخصة والمجموعات الخاصة لدعم رحلة البحث.",
+      "backgroundImage": "/images/uni-main-place.JPG",
+      "breadcrumbs": [
+        {
+          "labelEn": "Home",
+          "labelAr": "الرئيسية",
+          "url": "/"
+        },
+        {
+          "labelEn": "Research",
+          "labelAr": "البحث",
+          "url": "/research/"
+        },
+        {
+          "labelEn": "Library",
+          "labelAr": "المكتبة",
+          "url": "/research/library/"
+        }
+      ]
+    },
+    "resourcesSection": {
+      "titleEn": "Digital Resources",
+      "titleAr": "الموارد الرقمية",
+      "subtitleEn": "Access world-class academic databases and e-resources",
+      "subtitleAr": "الوصول إلى قواعد البيانات الأكاديمية والموارد الإلكترونية العالمية"
+    },
+    "databases": [
+      {
+        "nameEn": "PubMed",
+        "nameAr": "باب ميد",
+        "descriptionEn": "Free search engine accessing primarily the MEDLINE database of references and abstracts on life sciences and biomedical topics.",
+        "descriptionAr": "محرك بحث مجاني يصل أساساً إلى قاعدة بيانات MEDLINE للمراجع والملخصات في علوم الحياة والمواضيع الطبية الحيوية.",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/",
+        "accessTypeEn": "Open Access",
+        "accessTypeAr": "وصول مفتوح"
+      },
+      {
+        "nameEn": "IEEE Xplore",
+        "nameAr": "آي تري إكسبلور",
+        "descriptionEn": "Digital library containing scientific and technical content published by the IEEE and its publishing partners.",
+        "descriptionAr": "مكتبة رقمية تحتوي على المحتوى العلمي والتقني المنشور من قبل IEEE وشركائها الناشرين.",
+        "url": "https://ieeexplore.ieee.org/",
+        "accessTypeEn": "Institutional Subscription",
+        "accessTypeAr": "اشتراك مؤسسي"
+      },
+      {
+        "nameEn": "ScienceDirect",
+        "nameAr": "ساينس دايركت",
+        "descriptionEn": "Full-text scientific database offering journal articles and book chapters from Elsevier publications.",
+        "descriptionAr": "قاعدة بيانات علمية كاملة النص تقدم مقالات المجلات وأفصول الكتب من منشورات Elsevier.",
+        "url": "https://www.sciencedirect.com/",
+        "accessTypeEn": "Institutional Subscription",
+        "accessTypeAr": "اشتراك مؤسسي"
+      }
+    ],
+    "borrowingSection": {
+      "titleEn": "Borrowing Rules",
+      "titleAr": "قواعد الاستعارة",
+      "rules": [
+        {
+          "titleEn": "Loan Period",
+          "titleAr": "فترة الإعارة",
+          "descriptionEn": "Books may be borrowed for up to 14 days with one renewal option available online.",
+          "descriptionAr": "يمكن استعارة الكتب لمدة تصل إلى 14 يوماً مع خيار تجديد واحد متاح عبر الإنترنت."
+        },
+        {
+          "titleEn": "Item Limits",
+          "titleAr": "حدود المواد",
+          "descriptionEn": "Faculty and graduate students may borrow up to 10 items; undergraduates up to 5 items.",
+          "descriptionAr": "يمكن لأعضاء هيئة التدريس وطلاب الدراسات العليا استعارة ما يصل إلى 10 مواد؛ وطلاب البكالوريوس ما يصل إلى 5 مواد."
+        },
+        {
+          "titleEn": "Digital Access",
+          "titleAr": "الوصول الرقمي",
+          "descriptionEn": "Licensed databases are accessible campus-wide and remotely through the university VPN.",
+          "descriptionAr": "قواعد البيانات المرخصة متاحة في الحرم الجامعي وعن بُعد عبر VPN الجامعة."
+        },
+        {
+          "titleEn": "Interlibrary Loan",
+          "titleAr": "الإعارة بين المكتبات",
+          "descriptionEn": "Request materials from partner institutions through the research office support desk.",
+          "descriptionAr": "اطلب المواد من المؤسسات الشريكة من خلال مكتب دعم مكتب البحث."
+        }
+      ]
+    },
+    "specialCollections": {
+      "titleEn": "Special Collections",
+      "titleAr": "المجموعات الخاصة",
+      "items": [
+        {
+          "titleEn": "SPU Thesis Archive",
+          "titleAr": "أرشيف أطروحات SPU",
+          "descriptionEn": "Digital repository of master's and doctoral theses defended at Syrian Private University.",
+          "descriptionAr": "مستودع رقمي لأطروحات الماجستير والدكتوراه التي نوقشت في الجامعة السورية الخاصة."
+        },
+        {
+          "titleEn": "Regional Medical Journals",
+          "titleAr": "المجلات الطبية الإقليمية",
+          "descriptionEn": "Curated collection of peer-reviewed medical journals from the Arab region.",
+          "descriptionAr": "مجموعة منقاة من المجلات الطبية المحكمة من المنطقة العربية."
+        },
+        {
+          "titleEn": "Engineering Standards",
+          "titleAr": "معايير الهندسة",
+          "descriptionEn": "Reference collection of international engineering codes and standards.",
+          "descriptionAr": "مجموعة مرجعية من الأكواد والمعايير الهندسية الدولية."
+        },
+        {
+          "titleEn": "SPU Historical Archives",
+          "titleAr": "أرشيف SPU التاريخي",
+          "descriptionEn": "Documents, photographs, and publications chronicling the university's development.",
+          "descriptionAr": "وثائق وصور ومنشورات توثق تطور الجامعة."
+        }
+      ]
+    },
+    "librarianSection": {
+      "titleEn": "Ask a Librarian",
+      "titleAr": "اسأل أمين المكتبة",
+      "nameEn": "Ms. Rana Saad",
+      "nameAr": "السيدة رنا سعد",
+      "hoursEn": "Sun-Thu: 8:00 AM - 6:00 PM",
+      "hoursAr": "الأحد-الخميس: 8:00 صباحاً - 6:00 مساءً",
+      "email": "library@spu.edu.sy",
+      "phone": "+963 11 9876 543"
+    }
+  },
+  "office": {
+    "hero": {
+      "titleEn": "Research Office",
+      "titleAr": "مكتب البحث",
+      "eyebrowEn": "Research Administration",
+      "eyebrowAr": "إدارة البحث",
+      "summaryEn": "SPU Research Office supports and coordinates research activities across all faculties, fostering innovation and academic excellence.",
+      "summaryAr": "يدعم مكتب البحث في SPU وينسق الأنشطة البحثية عبر جميع الكليات، ويعزز الابتكار والتميز الأكاديمي.",
+      "backgroundImage": "/images/uni-main-place.JPG",
+      "breadcrumbs": [
+        {
+          "labelEn": "Home",
+          "labelAr": "الرئيسية",
+          "url": "/"
+        },
+        {
+          "labelEn": "Research",
+          "labelAr": "البحث",
+          "url": "/research/"
+        },
+        {
+          "labelEn": "Office",
+          "labelAr": "المكتب",
+          "url": "/research/office/"
+        }
+      ]
+    },
+    "leadership": {
+      "titleEn": "Research Leadership",
+      "titleAr": "قيادة البحث",
+      "items": [
+        {
+          "nameEn": "Dr. Arwa Khair",
+          "nameAr": "د. أروى خير",
+          "roleEn": "VP for Academic Affairs",
+          "roleAr": "نائب رئيس الجامعة للشؤون العلمية",
+          "email": "arwa.khair@spu.edu.sy",
+          "image": "/images/about/leadership/pre-presendent.jpg"
+        },
+        {
+          "nameEn": "Dr. Ayman Ali",
+          "nameAr": "د. أيمن علي",
+          "roleEn": "Research Director",
+          "roleAr": "مدير البحث",
+          "email": "ayman.ali@spu.edu.sy",
+          "image": "/images/about/leadership/medicine-dean.jpg"
+        },
+        {
+          "nameEn": "Dr. Mouhib Alnoukari",
+          "nameAr": "د. محيب النقري",
+          "roleEn": "Director of Innovation",
+          "roleAr": "مدير الابتكار",
+          "email": "mouhib.alnoukari@spu.edu.sy",
+          "image": "/images/about/leadership/Ai-dean.jpg"
+        },
+        {
+          "nameEn": "Dr. Hossam Shahrour",
+          "nameAr": "د. حسام شحرور",
+          "roleEn": "Research Ethics Chair",
+          "roleAr": "رئيس لجنة أخلاقيات البحث",
+          "email": "hossam.shahrour@spu.edu.sy",
+          "image": "/images/about/leadership/pharmacy-dean.jpg"
+        }
+      ]
+    },
+    "services": {
+      "titleEn": "Our Services",
+      "titleAr": "خدماتنا",
+      "subtitleEn": "How we support your research journey",
+      "subtitleAr": "كيف ندعم رحلتك البحثية",
+      "items": [
+        {
+          "titleEn": "Grant Support",
+          "titleAr": "دعم المنح",
+          "descriptionEn": "Assistance identifying funding opportunities and preparing competitive grant proposals.",
+          "descriptionAr": "المساعدة في تحديد فرص التمويل وإعداد مقترحات المنح التنافسية."
+        },
+        {
+          "titleEn": "Ethics Review",
+          "titleAr": "المراجعة الأخلاقية",
+          "descriptionEn": "Institutional review board services for human and animal research protocols.",
+          "descriptionAr": "خدمات مجلس المراجعة المؤسسي لبروتوكولات البحث على البشر والحيوانات."
+        },
+        {
+          "titleEn": "Publication Support",
+          "titleAr": "دعم النشر",
+          "descriptionEn": "Guidance on journal selection, manuscript preparation, and open-access compliance.",
+          "descriptionAr": "إرشادات حول اختيار المجلات وإعداد المخطوطات والامتثال للوصول المفتوح."
+        },
+        {
+          "titleEn": "Research Training",
+          "titleAr": "تدريب البحث",
+          "descriptionEn": "Workshops on research methods, data analysis, academic writing, and research integrity.",
+          "descriptionAr": "ورش عمل حول منهجيات البحث وتحليل البيانات والكتابة الأكاديمية ونزاهة البحث."
+        },
+        {
+          "titleEn": "Industry Partnerships",
+          "titleAr": "شراكات الصناعة",
+          "descriptionEn": "Connecting faculty with industry partners for applied research and technology transfer.",
+          "descriptionAr": "ربط أعضاء هيئة التدريس بشركاء الصناعة للبحث التطبيقي ونقل التكنولوجيا."
+        },
+        {
+          "titleEn": "IP & Commercialization",
+          "titleAr": "الملكية الفكرية والتسويق",
+          "descriptionEn": "Support for patent applications, licensing, and commercialization of research outputs.",
+          "descriptionAr": "الدعم لطلبات براءات الاختراع والترخيص وتسويق مخرجات البحث."
+        }
+      ]
+    },
+    "statistics": {
+      "titleEn": "Research at a Glance",
+      "titleAr": "البحث في نظرة",
+      "items": [
+        {
+          "value": "250+",
+          "valueAr": "250+",
+          "labelEn": "Publications",
+          "labelAr": "منشور"
+        },
+        {
+          "value": "45",
+          "valueAr": "45",
+          "labelEn": "Active Projects",
+          "labelAr": "مشروع نشط"
+        },
+        {
+          "value": "120+",
+          "valueAr": "120+",
+          "labelEn": "Researchers",
+          "labelAr": "باحث"
+        },
+        {
+          "value": "15",
+          "valueAr": "15",
+          "labelEn": "Industry Partners",
+          "labelAr": "شريك صناعي"
+        }
+      ]
+    },
+    "contact": {
+      "titleEn": "Contact Research Office",
+      "titleAr": "تواصل مع مكتب البحث",
+      "addressEn": "Syrian Private University",
+      "addressAr": "الجامعة السورية الخاصة",
+      "addressDetailEn": "Main Campus, Damascus-Daraa Highway, Damascus, Syria",
+      "addressDetailAr": "الحرم الرئيسي، طريق دمشق-درعا، دمشق، سوريا",
+      "email": "research.office@spu.edu.sy",
+      "phone": "+963 11 539 7777",
+      "hoursEn": "Sun-Thu: 8:30 AM - 3:30 PM",
+      "hoursAr": "الأحد-الخميس: 8:30 صباحاً - 3:30 مساءً"
+    }
+  },
+  "policies": {
+    "hero": {
+      "titleEn": "Research Policies & Ethics",
+      "titleAr": "سياسات البحث والأخلاقيات",
+      "eyebrowEn": "Research Guidelines",
+      "eyebrowAr": "إرشادات البحث",
+      "summaryEn": "Access SPU research ethics policies, publication guidelines, and research integrity standards.",
+      "summaryAr": "الوصول إلى سياسات أخلاقيات البحث في SPU وإرشادات النشر ومعايير سلامة البحث.",
+      "backgroundImage": "/images/uni-main-place.JPG",
+      "breadcrumbs": [
+        {
+          "labelEn": "Home",
+          "labelAr": "الرئيسية",
+          "url": "/"
+        },
+        {
+          "labelEn": "Research",
+          "labelAr": "البحث",
+          "url": "/research/"
+        },
+        {
+          "labelEn": "Policies",
+          "labelAr": "السياسات",
+          "url": "/research/policies/"
+        }
+      ]
+    },
+    "sections": [
+      {
+        "id": "research-ethics",
+        "titleEn": "Research Ethics",
+        "titleAr": "أخلاقيات البحث",
+        "descriptionEn": "Principles and procedures governing ethical conduct of research involving human participants, animals, and sensitive data.",
+        "descriptionAr": "المبادئ والإجراءات الحاكمة للسلوك الأخلاقي في البحث الذي يشمل المشاركين البشر والحيوانات والبيانات الحساسة.",
+        "documents": [
+          {
+            "titleEn": "Ethics Review Policy",
+            "titleAr": "سياسة المراجعة الأخلاقية",
+            "fileTypeEn": "PDF",
+            "fileTypeAr": "PDF",
+            "url": "#"
+          },
+          {
+            "titleEn": "Informed Consent Guidelines",
+            "titleAr": "إرشادات الموافقة المستنيرة",
+            "fileTypeEn": "PDF",
+            "fileTypeAr": "PDF",
+            "url": "#"
+          },
+          {
+            "titleEn": "Animal Research Protocol",
+            "titleAr": "بروتوكول البحث على الحيوانات",
+            "fileTypeEn": "PDF",
+            "fileTypeAr": "PDF",
+            "url": "#"
+          }
+        ]
+      },
+      {
+        "id": "publication-guidelines",
+        "titleEn": "Publication Guidelines",
+        "titleAr": "إرشادات النشر",
+        "descriptionEn": "Standards for authorship, peer review, open access, and responsible dissemination of research findings.",
+        "descriptionAr": "معايير التأليف والمراجعة الأكاديمية والوصول المفتوح والنشر المسؤول لنتائج البحث.",
+        "documents": [
+          {
+            "titleEn": "Authorship Policy",
+            "titleAr": "سياسة التأليف",
+            "fileTypeEn": "PDF",
+            "fileTypeAr": "PDF",
+            "url": "#"
+          },
+          {
+            "titleEn": "Open Access Policy",
+            "titleAr": "سياسة الوصول المفتوح",
+            "fileTypeEn": "PDF",
+            "fileTypeAr": "PDF",
+            "url": "#"
+          },
+          {
+            "titleEn": "Journal Selection Guide",
+            "titleAr": "دليل اختيار المجلة",
+            "fileTypeEn": "PDF",
+            "fileTypeAr": "PDF",
+            "url": "#"
+          }
+        ]
+      },
+      {
+        "id": "research-integrity",
+        "titleEn": "Research Integrity",
+        "titleAr": "نزاهة البحث",
+        "descriptionEn": "Framework for preventing misconduct, managing conflicts of interest, and ensuring data management best practices.",
+        "descriptionAr": "إطار لمنع السلوك غير الأخلاقي وإدارة تضارب المصالح وضمان أفضل ممارسات إدارة البيانات.",
+        "documents": [
+          {
+            "titleEn": "Misconduct Policy",
+            "titleAr": "سياسة السلوك غير الأخلاقي",
+            "fileTypeEn": "PDF",
+            "fileTypeAr": "PDF",
+            "url": "#"
+          },
+          {
+            "titleEn": "Conflict of Interest Form",
+            "titleAr": "نموذج تضارب المصالح",
+            "fileTypeEn": "PDF",
+            "fileTypeAr": "PDF",
+            "url": "#"
+          },
+          {
+            "titleEn": "Data Management Plan",
+            "titleAr": "خطة إدارة البيانات",
+            "fileTypeEn": "PDF",
+            "fileTypeAr": "PDF",
+            "url": "#"
+          }
+        ]
+      },
+      {
+        "id": "funding-ip",
+        "titleEn": "Funding & Intellectual Property",
+        "titleAr": "التمويل والملكية الفكرية",
+        "descriptionEn": "Guidelines for applying for research grants, managing awards, and protecting intellectual property.",
+        "descriptionAr": "إرشادات للتقدم بطلبات المنح البحثية وإدارة الجوائز وحماية الملكية الفكرية.",
+        "documents": [
+          {
+            "titleEn": "Grant Application Guide",
+            "titleAr": "دليل تقديم طلب المنحة",
+            "fileTypeEn": "PDF",
+            "fileTypeAr": "PDF",
+            "url": "#"
+          },
+          {
+            "titleEn": "IP Policy",
+            "titleAr": "سياسة الملكية الفكرية",
+            "fileTypeEn": "PDF",
+            "fileTypeAr": "PDF",
+            "url": "#"
+          },
+          {
+            "titleEn": "Technology Transfer Framework",
+            "titleAr": "إطار نقل التكنولوجيا",
+            "fileTypeEn": "PDF",
+            "fileTypeAr": "PDF",
+            "url": "#"
+          }
+        ]
+      }
+    ],
+    "contactSection": {
+      "titleEn": "Policy Inquiries",
+      "titleAr": "استفسارات السياسات",
+      "descriptionEn": "For questions about research policies, ethics review, or compliance, please contact the Research Office.",
+      "descriptionAr": "للاستفسارات حول سياسات البحث أو المراجعة الأخلاقية أو الامتثال، يرجى التواصل مع مكتب البحث.",
+      "email": "research.office@spu.edu.sy",
+      "phone": "+963 11 539 7777 ext. 220",
+      "locationEn": "Research Office, Administration Building, 2nd Floor",
+      "locationAr": "مكتب البحث، مبنى الإدارة، الطابق الثاني"
+    }
+  }
+}

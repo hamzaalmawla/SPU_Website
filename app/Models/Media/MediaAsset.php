@@ -27,6 +27,8 @@ class MediaAsset extends Model
         'mime_type',
         'extension',
         'size_bytes',
+        'checksum',
+        'media_type',
         'width',
         'height',
         'alt_text_ar',
