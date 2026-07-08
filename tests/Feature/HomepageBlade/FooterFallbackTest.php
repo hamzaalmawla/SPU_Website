@@ -11,11 +11,11 @@ class FooterFallbackTest extends TestCase
 {
     use HomepageBladeTestHelpers;
 
-    public function test_shared_footer_renders_final_frontend_identity(): void
+    public function test_shared_footer_renders_cms_navigation_identity(): void
     {
         $nav = self::makeNavigation('en', [
             'footerSettings' => self::makeFooterSettings('en', [
-                'brandTitle' => 'Fallback Brand Title',
+                'brandTitle' => 'CMS Brand Title',
             ]),
         ]);
 
@@ -26,8 +26,8 @@ class FooterFallbackTest extends TestCase
 
         $html = view('layouts.public', $data)->render();
 
-        $this->assertStringContainsString('SYRIAN PRIVATE UNIVERSITY', $html);
-        $this->assertStringContainsString('EXPLORE SPU', $html);
-        $this->assertStringNotContainsString('Fallback Brand Title', $html);
+        $this->assertStringContainsString('CMS Brand Title', $html);
+        $this->assertStringContainsString('Excellence in education', $html);
+        $this->assertStringNotContainsString('SYRIAN PRIVATE UNIVERSITY', $html);
     }
 }

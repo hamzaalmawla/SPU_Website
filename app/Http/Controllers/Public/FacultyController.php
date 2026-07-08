@@ -44,7 +44,7 @@ final class FacultyController extends Controller
 
     public function subpage(Request $request, string $locale, string $faculty, string $subpage): View
     {
-        $page = $this->facultyPageService->getSubpage($faculty, $subpage, $locale);
+        $page = $this->facultyPageService->getSubpage($faculty, $subpage, $locale, $request->query());
         abort_if($page === null, 404);
 
         return view('public.faculties.subpage', $this->viewPayload($request, $locale, $page, $this->subpageSeo($locale, $page), $this->languageSwitch($locale, '/'.$page->facultySlug.'/'.$page->subpageSlug)));

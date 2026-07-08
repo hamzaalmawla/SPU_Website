@@ -7,6 +7,7 @@ namespace App\Services\News;
 use App\Contracts\News\NewsAdminWorkflowServiceInterface;
 use App\Contracts\Shared\AuditServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
+use App\Contracts\Shared\SlugServiceInterface;
 use App\Models\News\NewsArticle;
 use App\Models\News\NewsCategory;
 use App\Models\User\User;
@@ -21,9 +22,12 @@ final class NewsAdminWorkflowService implements NewsAdminWorkflowServiceInterfac
     /** @var array<int, string> */
     private const VALID_STATUSES = ['draft', 'published', 'scheduled', 'archived'];
 
+    private const ARTICLE_SLUG_MAX_LENGTH = 80;
+
     public function __construct(
         private readonly AuditServiceInterface $auditService,
         private readonly CacheServiceInterface $cacheService,
+        private readonly SlugServiceInterface $slugService,
     ) {}
 
     public function prepareArticleDataForCreate(array $data, ?int $userId): array
@@ -36,6 +40,7 @@ final class NewsAdminWorkflowService implements NewsAdminWorkflowServiceInterfac
         }
 
         $data['status'] = $status;
+        $data['slug'] = $this->articleSlugForCreate($data);
         $data['created_by'] = $userId;
         $data['updated_by'] = $userId;
 
@@ -68,6 +73,7 @@ final class NewsAdminWorkflowService implements NewsAdminWorkflowServiceInterfac
         }
 
         $data['status'] = $requestedStatus;
+        $data = $this->applyArticleSlugForUpdate($article, $data);
         $data['updated_by'] = $userId;
 
         if ($user instanceof User && $user->role_slug === 'faculty_editor') {
@@ -199,6 +205,70 @@ final class NewsAdminWorkflowService implements NewsAdminWorkflowServiceInterfac
     private function normalizedStatus(mixed $status, string $fallback): string
     {
         return is_string($status) && in_array($status, self::VALID_STATUSES, true) ? $status : $fallback;
+    }
+
+    /** @param array<string, mixed> $data */
+    private function articleSlugForCreate(array $data): string
+    {
+        $source = $this->filledString($data['slug'] ?? null) ?? $this->articleTitleSource($data) ?? 'news-article';
+
+        return $this->slugService->generate($source, NewsArticle::class, 'en', null, self::ARTICLE_SLUG_MAX_LENGTH);
+    }
+
+    /** @param array<string, mixed> $data @return array<string, mixed> */
+    private function applyArticleSlugForUpdate(NewsArticle $article, array $data): array
+    {
+        if (! array_key_exists('slug', $data)) {
+            return $data;
+        }
+
+        $slug = $this->filledString($data['slug'] ?? null);
+
+        if ($slug === null) {
+            unset($data['slug']);
+
+            return $data;
+        }
+
+        if ($slug === $article->getAttribute('slug')) {
+            return $data;
+        }
+
+        $data['slug'] = $this->slugService->generate($slug, NewsArticle::class, 'en', (int) $article->getKey(), self::ARTICLE_SLUG_MAX_LENGTH);
+
+        return $data;
+    }
+
+    /** @param array<string, mixed> $data */
+    private function articleTitleSource(array $data): ?string
+    {
+        $translations = is_array($data['translations'] ?? null) ? $data['translations'] : [];
+        $fallback = null;
+
+        foreach ($translations as $translation) {
+            if (! is_array($translation)) {
+                continue;
+            }
+
+            $title = $this->filledString($translation['title'] ?? null);
+
+            if ($title === null) {
+                continue;
+            }
+
+            if (($translation['locale'] ?? null) === 'en') {
+                return $title;
+            }
+
+            $fallback ??= $title;
+        }
+
+        return $fallback;
+    }
+
+    private function filledString(mixed $value): ?string
+    {
+        return is_string($value) && trim($value) !== '' ? trim($value) : null;
     }
 
     private function canPublish(?User $user): bool

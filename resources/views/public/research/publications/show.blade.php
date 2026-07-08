@@ -26,10 +26,12 @@
         <div class="container mx-auto max-w-[1120px] px-4 sm:px-6">
             <div class="research-detail-grid">
                 <section class="space-y-6">
-                    <div class="rounded-[8px] border border-slate-200 bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)] md:p-8">
-                        <h2 class="text-[13px] font-bold uppercase tracking-[0.12em] text-spu-red">{{ $locale === 'ar' ? 'الملخص' : 'Summary' }}</h2>
-                        <p class="mt-4 text-[15px] leading-8 text-slate-700">{{ $item['lead'] ?? $item['summary'] ?? '' }}</p>
-                    </div>
+                    @if (! empty($item['lead']) || ! empty($item['summary']))
+                        <div class="rounded-[8px] border border-slate-200 bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)] md:p-8">
+                            <h2 class="text-[13px] font-bold uppercase tracking-[0.12em] text-spu-red">{{ $locale === 'ar' ? 'الملخص' : 'Summary' }}</h2>
+                            <p class="mt-4 text-[15px] leading-8 text-slate-700">{{ $item['lead'] ?? $item['summary'] ?? '' }}</p>
+                        </div>
+                    @endif
                     @if (! empty($item['paragraphs']))
                         <div class="rounded-[8px] border border-slate-200 bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)] md:p-8">
                             @foreach ($item['paragraphs'] as $paragraph)
@@ -40,18 +42,26 @@
                     @if (! empty($item['keyStatement']))
                         <blockquote class="rounded-[8px] border-s-4 border-spu-red bg-white p-6 text-[17px] font-bold leading-8 text-spu-blue shadow-[0_8px_24px_rgba(15,23,42,0.04)]">{{ $item['keyStatement'] }}</blockquote>
                     @endif
-                    <div class="rounded-[8px] border border-slate-200 bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
-                        <h2 class="text-[13px] font-bold uppercase tracking-[0.12em] text-spu-red">{{ $locale === 'ar' ? 'الكلمات المفتاحية' : 'Keywords' }}</h2>
-                        <div class="mt-4 flex flex-wrap gap-2">
-                            @foreach (($item['keywords'] ?? []) as $keyword)
-                                <span class="inline-flex rounded-full border border-spu-blue/15 bg-spu-blue/5 px-3.5 py-1.5 text-xs font-semibold text-spu-blue">{{ $keyword }}</span>
-                            @endforeach
+                    @if (! empty($item['keywords']))
+                        <div class="rounded-[8px] border border-slate-200 bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
+                            <h2 class="text-[13px] font-bold uppercase tracking-[0.12em] text-spu-red">{{ $locale === 'ar' ? 'الكلمات المفتاحية' : 'Keywords' }}</h2>
+                            <div class="mt-4 flex flex-wrap gap-2">
+                                @foreach (($item['keywords'] ?? []) as $keyword)
+                                    <span class="inline-flex rounded-full border border-spu-blue/15 bg-spu-blue/5 px-3.5 py-1.5 text-xs font-semibold text-spu-blue">{{ $keyword }}</span>
+                                @endforeach
+                            </div>
                         </div>
-                    </div>
-                    <div class="flex flex-wrap gap-3">
-                        <a href="{{ $item['scholarUrl'] ?? '#' }}" target="_blank" rel="noopener" class="inline-flex h-12 items-center gap-2.5 rounded-[6px] bg-spu-red px-6 text-xs font-bold uppercase tracking-[0.08em] text-white transition hover:bg-spu-red/90 hover:shadow-lg">{{ $locale === 'ar' ? 'عرض على Google Scholar' : 'View on Google Scholar' }}</a>
-                        <a href="{{ $item['scopusUrl'] ?? '#' }}" target="_blank" rel="noopener" class="inline-flex h-12 items-center gap-2.5 rounded-[6px] border border-spu-blue/20 bg-white px-6 text-xs font-bold uppercase tracking-[0.08em] text-spu-blue transition hover:border-spu-blue hover:bg-spu-blue/5">{{ $locale === 'ar' ? 'بحث في Scopus' : 'Search on Scopus' }}</a>
-                    </div>
+                    @endif
+                    @if (! empty($item['scholarUrl']) || ! empty($item['scopusUrl']))
+                        <div class="flex flex-wrap gap-3">
+                            @if (! empty($item['scholarUrl']))
+                                <a href="{{ $item['scholarUrl'] }}" target="_blank" rel="noopener" class="inline-flex h-12 items-center gap-2.5 rounded-[6px] bg-spu-red px-6 text-xs font-bold uppercase tracking-[0.08em] text-white transition hover:bg-spu-red/90 hover:shadow-lg">{{ $locale === 'ar' ? 'عرض على Google Scholar' : 'View on Google Scholar' }}</a>
+                            @endif
+                            @if (! empty($item['scopusUrl']))
+                                <a href="{{ $item['scopusUrl'] }}" target="_blank" rel="noopener" class="inline-flex h-12 items-center gap-2.5 rounded-[6px] border border-spu-blue/20 bg-white px-6 text-xs font-bold uppercase tracking-[0.08em] text-spu-blue transition hover:border-spu-blue hover:bg-spu-blue/5">{{ $locale === 'ar' ? 'بحث في Scopus' : 'Search on Scopus' }}</a>
+                            @endif
+                        </div>
+                    @endif
                     @if (! empty($data['related']))
                         <div class="rounded-[8px] border border-slate-200 bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
                             <h2 class="text-[13px] font-bold uppercase tracking-[0.12em] text-spu-red">{{ $locale === 'ar' ? 'منشورات ذات صلة' : 'Related Publications' }}</h2>
@@ -77,15 +87,21 @@
                 <aside class="rounded-[8px] border border-slate-200 bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)] lg:sticky lg:top-28">
                     <h2 class="text-[13px] font-bold uppercase tracking-[0.12em] text-spu-red">{{ $locale === 'ar' ? 'معلومات المنشور' : 'Publication Info' }}</h2>
                     <dl class="mt-5 divide-y divide-slate-100">
-                        @foreach ([($locale === 'ar' ? 'الفئة' : 'Category') => $item['category'] ?? $item['type'] ?? '', ($locale === 'ar' ? 'المؤلف' : 'Author') => $item['author'] ?? '', ($locale === 'ar' ? 'السنة' : 'Year') => $item['year'] ?? '', ($locale === 'ar' ? 'الكلية' : 'Faculty') => $item['faculty'] ?? '', ($locale === 'ar' ? 'الربع' : 'Quartile') => $item['rate'] ?? 'To be verified', ($locale === 'ar' ? 'النوع' : 'Type') => $item['type'] ?? ''] as $label => $value)
-                            <div class="py-3 first:pt-0"><dt class="text-[11px] font-bold uppercase tracking-wider text-slate-400">{{ $label }}</dt><dd class="mt-1 text-sm font-bold text-spu-blue">{{ $value }}</dd></div>
+                        @foreach ([($locale === 'ar' ? 'الفئة' : 'Category') => $item['category'] ?? $item['type'] ?? '', ($locale === 'ar' ? 'المؤلف' : 'Author') => $item['author'] ?? '', ($locale === 'ar' ? 'السنة' : 'Year') => $item['year'] ?? '', ($locale === 'ar' ? 'الناشر / المجلة' : 'Publisher / Journal') => $item['publisher'] ?? '', ($locale === 'ar' ? 'الكلية' : 'Faculty') => $item['faculty'] ?? '', ($locale === 'ar' ? 'الربع' : 'Quartile') => $item['rate'] ?? '', ($locale === 'ar' ? 'النوع' : 'Type') => $item['type'] ?? ''] as $label => $value)
+                            @if ($value !== '')
+                                <div class="py-3 first:pt-0"><dt class="text-[11px] font-bold uppercase tracking-wider text-slate-400">{{ $label }}</dt><dd class="mt-1 text-sm font-bold text-spu-blue">{{ $value }}</dd></div>
+                            @endif
                         @endforeach
-                        <div class="py-3"><dt class="text-[11px] font-bold uppercase tracking-wider text-slate-400">DOI</dt><dd class="mt-1"><a href="https://doi.org/{{ $item['doi'] ?? '' }}" target="_blank" rel="noopener" class="break-all text-sm font-bold text-spu-blue transition hover:text-spu-red hover:underline">{{ $item['doi'] ?? '' }}</a></dd></div>
-                        <div class="py-3 last:pb-0"><dt class="text-[11px] font-bold uppercase tracking-wider text-slate-400">{{ $locale === 'ar' ? 'مجالات البحث' : 'Research Themes' }}</dt><dd class="mt-2 flex flex-wrap gap-1.5">
-                            @foreach (($item['resolvedThemes'] ?? []) as $theme)
-                                <a href="/{{ $locale }}/research/themes/{{ $theme['slug'] ?? '' }}" class="inline-flex rounded-full border border-spu-blue/15 bg-spu-blue/5 px-2.5 py-1 text-[10px] font-semibold text-spu-blue transition hover:border-spu-blue/40 hover:bg-spu-blue/10">{{ $theme['label'] ?? $theme['slug'] ?? '' }}</a>
-                            @endforeach
-                        </dd></div>
+                        @if (! empty($item['doi']))
+                            <div class="py-3"><dt class="text-[11px] font-bold uppercase tracking-wider text-slate-400">DOI</dt><dd class="mt-1"><a href="https://doi.org/{{ $item['doi'] }}" target="_blank" rel="noopener" class="break-all text-sm font-bold text-spu-blue transition hover:text-spu-red hover:underline">{{ $item['doi'] }}</a></dd></div>
+                        @endif
+                        @if (! empty($item['resolvedThemes']))
+                            <div class="py-3 last:pb-0"><dt class="text-[11px] font-bold uppercase tracking-wider text-slate-400">{{ $locale === 'ar' ? 'مجالات البحث' : 'Research Themes' }}</dt><dd class="mt-2 flex flex-wrap gap-1.5">
+                                @foreach (($item['resolvedThemes'] ?? []) as $theme)
+                                    <a href="/{{ $locale }}/research/themes/{{ $theme['slug'] ?? '' }}" class="inline-flex rounded-full border border-spu-blue/15 bg-spu-blue/5 px-2.5 py-1 text-[10px] font-semibold text-spu-blue transition hover:border-spu-blue/40 hover:bg-spu-blue/10">{{ $theme['label'] ?? $theme['slug'] ?? '' }}</a>
+                                @endforeach
+                            </dd></div>
+                        @endif
                     </dl>
                 </aside>
             </div>

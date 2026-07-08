@@ -11,6 +11,11 @@ class ImportLegacyCitiesSeeder extends BaseLegacyImportSeeder
     public function run(): void
     {
         $module = 'cities';
+
+        if (! $this->shouldRunModule($module)) {
+            return;
+        }
+
         $batch = $this->batchName($module);
         $rows = $this->legacyRows('jx_cities');
 

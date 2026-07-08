@@ -12,5 +12,5 @@ interface SlugServiceInterface
     /**
      * Generate a unique slug from source text.
      */
-    public function generate(string $source, string $modelClass, string $locale = 'ar', ?int $ignoreId = null): string;
+    public function generate(string $source, string $modelClass, string $locale = 'ar', ?int $ignoreId = null, int $maxLength = 200): string;
 }

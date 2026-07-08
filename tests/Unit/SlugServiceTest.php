@@ -151,4 +151,25 @@ class SlugServiceTest extends TestCase
         $this->assertNotEmpty($slug);
         $this->assertMatchesRegularExpression('/^[a-z0-9\-]+$/', $slug);
     }
+
+    public function test_custom_max_length_applies_to_collision_suffixes(): void
+    {
+        $source = 'Syrian Private University announces important registration dates for newly admitted students';
+        $first = $this->service->generate($source, Page::class, 'en', null, 30);
+
+        Page::create([
+            'slug' => $first,
+            'type' => 'landing',
+            'template' => 'default',
+            'status' => 'published',
+            'sort_order' => 0,
+            'is_enabled' => true,
+        ]);
+
+        $second = $this->service->generate($source, Page::class, 'en', null, 30);
+
+        $this->assertLessThanOrEqual(30, strlen($first));
+        $this->assertLessThanOrEqual(30, strlen($second));
+        $this->assertStringEndsWith('-1', $second);
+    }
 }

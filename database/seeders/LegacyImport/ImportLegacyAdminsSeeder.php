@@ -14,6 +14,11 @@ class ImportLegacyAdminsSeeder extends BaseLegacyImportSeeder
     public function run(): void
     {
         $module = 'admins';
+
+        if (! $this->shouldRunModule($module)) {
+            return;
+        }
+
         $batch = $this->batchName($module);
         $rows = $this->legacyRows('jx_admins');
 

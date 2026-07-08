@@ -52,6 +52,10 @@ class ViewMediaAsset extends ViewRecord
                         ->label('Category')
                         ->badge(),
 
+                    TextEntry::make('metadata_status')
+                        ->label('Metadata Status')
+                        ->badge(),
+
                     TextEntry::make('extension')
                         ->label('Extension'),
 
@@ -140,20 +144,9 @@ class ViewMediaAsset extends ViewRecord
         return $bytes.' B';
     }
 
-    private static function configuredDisk(?string $disk): string
-    {
-        $disks = config('filesystems.disks', []);
-
-        if (is_string($disk) && array_key_exists($disk, is_array($disks) ? $disks : [])) {
-            return $disk;
-        }
-
-        return (string) config('filesystems.media_disk', 'public');
-    }
-
     private static function publicMediaUrl(?string $path, ?string $disk): ?string
     {
-        $url = MediaUrlResolver::resolve($path, self::configuredDisk($disk));
+        $url = MediaUrlResolver::resolve($path, $disk);
 
         if (is_string($url) && str_starts_with($url, '/')) {
             return url($url);

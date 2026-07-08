@@ -11,6 +11,11 @@ class ImportLegacyCouncilsSeeder extends BaseLegacyImportSeeder
     public function run(): void
     {
         $module = 'councils';
+
+        if (! $this->shouldRunModule($module)) {
+            return;
+        }
+
         $batch = $this->batchName($module);
 
         $this->importCouncils($module, $batch);

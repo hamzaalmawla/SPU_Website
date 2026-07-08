@@ -33,6 +33,7 @@ class EditMediaAsset extends EditRecord
             'alt_text_en' => $data['alt_text_en'] ?? null,
             'caption_ar' => $data['caption_ar'] ?? null,
             'caption_en' => $data['caption_en'] ?? null,
+            'metadata_status' => $data['metadata_status'] ?? null,
         ];
 
         if (array_key_exists('faculty_scope_slug', $data)) {

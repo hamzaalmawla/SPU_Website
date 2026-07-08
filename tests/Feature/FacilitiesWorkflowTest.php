@@ -14,12 +14,18 @@ use App\Filament\Pages\ManageFacilities;
 use App\Filament\Pages\ManageMedicineFaculty;
 use App\Filament\Pages\ManagePetroleumFaculty;
 use App\Filament\Pages\ManagePharmacyFaculty;
+use App\Models\Career\Alumni;
+use App\Models\Career\AlumniTranslation;
+use App\Models\Career\HonorStudent;
+use App\Models\Career\HonorStudentTranslation;
 use App\Models\Cms\CmsDraft;
 use App\Models\Faculty\Faculty;
 use App\Models\Faculty\FacultyPage;
+use App\Models\Shared\MigrationLog;
 use App\Models\User\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -360,14 +366,15 @@ final class FacilitiesWorkflowTest extends TestCase
             ->set('data.target_key', 'facilities.medicine.alumni')
             ->call('loadTarget', 'facilities.medicine.alumni')
             ->assertSee('Alumni Records')
-            ->assertSee('Graduate Name')
-            ->assertSee('Graduation year');
+            ->assertSee('Search Records')
+            ->assertSee('Year Filter');
 
         Livewire::test(ManageMedicineFaculty::class)
             ->set('data.target_key', 'facilities.medicine.valedictorians')
             ->call('loadTarget', 'facilities.medicine.valedictorians')
             ->assertSee('Honor List Records')
-            ->assertSee('Gpa');
+            ->assertSee('Search Records')
+            ->assertSee('Year Filter');
 
         Livewire::test(ManageMedicineFaculty::class)
             ->set('data.target_key', 'facilities.medicine.study_plan')
@@ -443,6 +450,137 @@ final class FacilitiesWorkflowTest extends TestCase
         $honorData = $honorComponent->get('data');
         $this->assertCount(1, $honorData['en_content']['items'] ?? []);
         $this->assertSame('Filtered Honor Student', $honorData['en_content']['items'][array_key_first($honorData['en_content']['items'])]['title'] ?? null);
+    }
+
+    public function test_manage_medicine_faculty_does_not_load_filterable_students_until_filtered_and_preserves_hidden_rows_on_add(): void
+    {
+        $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
+
+        $facilities = app(FacultyPageServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $payload = $facilities->getEditablePayload('facilities.medicine.alumni');
+        $payload['translations']['en']['items'] = [
+            ['title' => 'Existing Alumni One', 'graduationYear' => '2020', 'faculty' => 'Medicine'],
+            ['title' => 'Existing Alumni Two', 'graduationYear' => '2021', 'faculty' => 'Medicine'],
+        ];
+        $payload['translations']['ar']['items'] = [
+            ['title' => 'الخريج الأول', 'graduationYear' => '2020', 'faculty' => 'الطب'],
+            ['title' => 'الخريج الثاني', 'graduationYear' => '2021', 'faculty' => 'الطب'],
+        ];
+        $workflow->saveDraft('facilities.medicine.alumni', $payload, (int) $author->id);
+
+        $component = Livewire::test(ManageMedicineFaculty::class)
+            ->set('data.target_key', 'facilities.medicine.alumni')
+            ->call('loadTarget', 'facilities.medicine.alumni')
+            ->assertSee('Alumni Records')
+            ->assertSee('Search Records');
+
+        /** @var array<string, mixed> $data */
+        $data = $component->get('data');
+        $this->assertSame([], $data['en_content']['items'] ?? null);
+        $this->assertSame([], $data['ar_content']['items'] ?? null);
+
+        $component
+            ->set('data.en_content.items', [[
+                'title' => 'New Alumni From Empty View',
+                'graduationYear' => '2026',
+                'faculty' => 'Medicine',
+            ]])
+            ->call('save');
+
+        $draft = CmsDraft::query()->where('target_key', 'facilities.medicine.alumni')->latest('id')->firstOrFail();
+        $savedTitles = collect($draft->payload_json['translations']['en']['items'] ?? [])->pluck('title')->all();
+
+        $this->assertCount(3, $savedTitles);
+        $this->assertContains('Existing Alumni One', $savedTitles);
+        $this->assertContains('Existing Alumni Two', $savedTitles);
+        $this->assertContains('New Alumni From Empty View', $savedTitles);
+    }
+
+    public function test_public_faculty_student_lists_are_filterable_searchable_and_paginated(): void
+    {
+        $faculty = Faculty::query()->where('public_slug', 'medicine')->firstOrFail();
+
+        for ($index = 1; $index <= 30; $index++) {
+            $alumni = Alumni::query()->create([
+                'faculty_id' => (int) $faculty->getKey(),
+                'graduation_year' => 2026,
+                'is_enabled' => true,
+            ]);
+            AlumniTranslation::query()->create([
+                'alumni_id' => (int) $alumni->getKey(),
+                'locale' => 'en',
+                'full_name' => 'Imported Alumni '.$index,
+            ]);
+            AlumniTranslation::query()->create([
+                'alumni_id' => (int) $alumni->getKey(),
+                'locale' => 'ar',
+                'full_name' => 'الخريج المستورد '.$index,
+            ]);
+            MigrationLog::query()->create([
+                'module' => 'alumni',
+                'batch_name' => 'test-student-list',
+                'source_table' => 'jx_graduated_students',
+                'source_id' => $index,
+                'target_table' => 'alumni',
+                'target_id' => (int) $alumni->getKey(),
+                'status' => 'success',
+                'message' => 'test',
+                'metadata' => ['legacy_section_id' => $index % 2 === 0 ? 2 : 1],
+            ]);
+
+            $honorStudent = HonorStudent::query()->create([
+                'faculty_id' => (int) $faculty->getKey(),
+                'academic_year' => '2026 / '.$index,
+                'gpa' => 90.00,
+                'sort_order' => $index,
+                'is_enabled' => true,
+            ]);
+            HonorStudentTranslation::query()->create([
+                'honor_student_id' => (int) $honorStudent->getKey(),
+                'locale' => 'en',
+                'full_name' => 'Imported Honor Student '.$index,
+            ]);
+            HonorStudentTranslation::query()->create([
+                'honor_student_id' => (int) $honorStudent->getKey(),
+                'locale' => 'ar',
+                'full_name' => 'طالب الشرف المستورد '.$index,
+            ]);
+            MigrationLog::query()->create([
+                'module' => 'honor_students',
+                'batch_name' => 'test-student-list',
+                'source_table' => 'jx_good_students',
+                'source_id' => $index,
+                'target_table' => 'honor_students',
+                'target_id' => (int) $honorStudent->getKey(),
+                'status' => 'success',
+                'message' => 'test',
+                'metadata' => ['legacy_section_id' => $index % 2 === 0 ? 2 : 1],
+            ]);
+        }
+
+        Cache::flush();
+
+        $facilities = app(FacultyPageServiceInterface::class);
+        $alumniPage = $facilities->getSubpage('medicine', 'alumni', 'en');
+        $honorPage = $facilities->getSubpage('medicine', 'valedictorians', 'en');
+        $secondAlumniPage = $facilities->getSubpage('medicine', 'alumni', 'en', ['page' => 2]);
+        $searchedAlumniPage = $facilities->getSubpage('medicine', 'alumni', 'en', ['q' => 'Imported Alumni 30']);
+        $firstSemesterHonorPage = $facilities->getSubpage('medicine', 'valedictorians', 'en', ['semester' => 'first']);
+        $searchedHonorPage = $facilities->getSubpage('medicine', 'valedictorians', 'en', ['q' => 'Imported Honor Student 30']);
+
+        $this->assertNotNull($alumniPage);
+        $this->assertNotNull($honorPage);
+        $this->assertSame(24, count($alumniPage->items));
+        $this->assertSame(24, count($honorPage->items));
+        $this->assertGreaterThan(24, $alumniPage->pagination['total_items']);
+        $this->assertGreaterThan(24, $honorPage->pagination['total_items']);
+        $this->assertSame(2, $secondAlumniPage?->pagination['current_page']);
+        $this->assertSame(['Imported Alumni 30'], collect($searchedAlumniPage?->items ?? [])->pluck('title')->all());
+        $this->assertSame(['Imported Honor Student 30'], collect($searchedHonorPage?->items ?? [])->pluck('title')->all());
+        $this->assertSame(15, $firstSemesterHonorPage?->pagination['total_items']);
+        $this->assertContains('First Semester', collect($firstSemesterHonorPage?->items ?? [])->pluck('semester')->all());
     }
 
     public function test_medicine_study_plan_preview_renders_cms_labels(): void

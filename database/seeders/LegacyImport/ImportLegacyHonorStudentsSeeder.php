@@ -11,6 +11,11 @@ class ImportLegacyHonorStudentsSeeder extends BaseLegacyImportSeeder
     public function run(): void
     {
         $module = 'honor_students';
+
+        if (! $this->shouldRunModule($module)) {
+            return;
+        }
+
         $batch = $this->batchName($module);
         $rows = $this->legacyRows('jx_good_students');
         $academicYearKeys = $this->legacyAvailableColumns('jx_good_students', ['academic_year', 'date_year', 'study_year', 'semester', 'year']);

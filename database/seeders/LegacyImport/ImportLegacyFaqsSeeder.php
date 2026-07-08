@@ -11,6 +11,11 @@ class ImportLegacyFaqsSeeder extends BaseLegacyImportSeeder
     public function run(): void
     {
         $module = 'faqs';
+
+        if (! $this->shouldRunModule($module)) {
+            return;
+        }
+
         $batch = $this->batchName($module);
         $rows = $this->legacyRows('jx_faqs');
 

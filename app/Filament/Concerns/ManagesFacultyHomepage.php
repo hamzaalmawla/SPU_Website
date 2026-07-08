@@ -834,7 +834,7 @@ trait ManagesFacultyHomepage
         $items = $this->recordItemsWithKeys($this->listOfArrays($content['items'] ?? []));
 
         if (! $this->hasActiveRecordFilters()) {
-            $content['items'] = $items;
+            $content['items'] = [];
 
             return $content;
         }
@@ -988,14 +988,17 @@ trait ManagesFacultyHomepage
     /** @param array<string, mixed> $content @return array<string, mixed> */
     private function mergeFilterableRecordContent(string $targetKey, string $locale, array $content): array
     {
-        if (! $this->hasActiveRecordFilters()) {
-            return $content;
-        }
-
         $basePayload = $this->cmsWorkflowService->latestEditableDraftPayload($targetKey) ?? $this->facultyPageService->getEditablePayload($targetKey);
         $baseContent = is_array($basePayload['translations'][$locale] ?? null) ? $basePayload['translations'][$locale] : [];
         $baseItems = $this->recordItemsWithKeys($this->listOfArrays($baseContent['items'] ?? []));
         $editedItems = $this->recordItemsWithKeys($this->listOfArrays($content['items'] ?? []));
+
+        if (! $this->hasActiveRecordFilters()) {
+            $content['items'] = [...$baseItems, ...$editedItems];
+
+            return $content;
+        }
+
         $editedByKey = collect($editedItems)->keyBy(fn (array $item): string => (string) ($item['_cmsKey'] ?? ''));
         $seenKeys = [];
 

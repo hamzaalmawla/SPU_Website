@@ -12,6 +12,11 @@ class ImportLegacyComplaintsSeeder extends BaseLegacyImportSeeder
     public function run(): void
     {
         $module = 'complaints';
+
+        if (! $this->shouldRunModule($module)) {
+            return;
+        }
+
         $batch = $this->batchName($module);
 
         $this->importComplaintCategories($module, $batch);

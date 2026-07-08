@@ -11,6 +11,11 @@ class ImportLegacyFacultiesSeeder extends BaseLegacyImportSeeder
     public function run(): void
     {
         $module = 'faculties';
+
+        if (! $this->shouldRunModule($module)) {
+            return;
+        }
+
         $batch = $this->batchName($module);
         $definitions = $this->legacyFacultyCatalog();
 

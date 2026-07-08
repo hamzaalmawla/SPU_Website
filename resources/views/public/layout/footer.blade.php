@@ -1,31 +1,12 @@
 @php
     $isArabic = $locale === 'ar';
-    $mapEmbedUrl = $navigation->footerSettings->mapEmbedUrl ?? null;
+    $footerSettings = $navigation->footerSettings;
+    $footerItems = $navigation->footer->items ?? [];
+    $socialLinks = $navigation->socialContact->socialLinks ?? [];
+    $contactLinks = $navigation->socialContact->contactLinks ?? [];
+    $mapEmbedUrl = $footerSettings->mapEmbedUrl ?? null;
     $switchLocale = $isArabic ? 'en' : 'ar';
     $switchUrl = '/' . $switchLocale;
-    $resourceLinks = [
-        ['label_ar' => 'عن الجامعة', 'label_en' => 'About SPU', 'url' => "/{$locale}/about"],
-        ['label_ar' => 'المرافق', 'label_en' => 'Facilities', 'url' => "/{$locale}/facilities"],
-        ['label_ar' => 'القبول', 'label_en' => 'Admissions', 'url' => "/{$locale}/admissions"],
-        ['label_ar' => 'البحث العلمي', 'label_en' => 'Research', 'url' => "/{$locale}/research"],
-        ['label_ar' => 'الحياة الجامعية', 'label_en' => 'Campus Life', 'url' => "/{$locale}/campus-life"],
-        ['label_ar' => 'الخدمات الإلكترونية', 'label_en' => 'E-Services', 'url' => "/{$locale}/e-services"],
-        ['label_ar' => 'الأخبار', 'label_en' => 'News', 'url' => "/{$locale}/news"],
-    ];
-    $bottomLinks = [
-        ['label_ar' => 'سياسة الخصوصية', 'label_en' => 'Privacy Policy', 'url' => "/{$locale}/privacy-policy"],
-        ['label_ar' => 'سياسة ملفات الارتباط', 'label_en' => 'Cookie Policy', 'url' => "/{$locale}/cookie-policy"],
-        ['label_ar' => 'إمكانية الوصول', 'label_en' => 'Accessibility', 'url' => "/{$locale}/accessibility"],
-        ['label_ar' => 'خريطة الموقع', 'label_en' => 'Sitemap', 'url' => "/{$locale}/sitemap"],
-        ['label_ar' => 'بوابة الطالب', 'label_en' => 'Student Portal', 'url' => "/{$locale}/e-services"],
-    ];
-    $socials = [
-        ['label' => 'Website', 'url' => "/{$locale}", 'icon' => '/images/icon-globe-outline.svg'],
-        ['label' => 'Telegram', 'url' => 'https://t.me/spu', 'icon' => '/images/icon-telegram-outline.svg'],
-        ['label' => 'Facebook', 'url' => 'https://facebook.com/spu', 'icon' => '/images/icon-facebook-outline.svg'],
-        ['label' => 'Instagram', 'url' => 'https://instagram.com/spu', 'icon' => '/images/icon-instagram-outline.svg'],
-        ['label' => 'YouTube', 'url' => 'https://youtube.com', 'icon' => '/images/icon-youtube-outline.svg'],
-    ];
 @endphp
 
 <footer id="site-footer" class="overflow-hidden bg-spu-blue pt-16 pb-8 font-hacen text-white">
@@ -33,55 +14,95 @@
         <div class="mb-16 grid grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-12">
             <div class="flex flex-col items-start lg:col-span-4">
                 <h2 class="mb-6 text-[24px] font-bold uppercase leading-tight tracking-wider">
-                    {{ $isArabic ? 'الجامعة السورية الخاصة' : 'SYRIAN PRIVATE UNIVERSITY' }}
+                    {{ $footerSettings->brandTitle }}
                 </h2>
-                <p class="mb-8 max-w-[320px] text-[16px] leading-[1.6] text-white/70">
-                    {{ $isArabic ? 'ملتزمون بتعزيز التميز الأكاديمي والقيادة العالمية من قلب دمشق.' : 'Committed to fostering academic excellence and global leadership from the heart of Damascus.' }}
-                </p>
 
-                <div class="flex items-center gap-6 text-[22px]">
-                    @foreach ($socials as $social)
-                        <a href="{{ $social['url'] }}" @if (str_starts_with($social['url'], 'http')) target="_blank" rel="noreferrer" @endif class="text-white/80 transition-all hover:scale-110 hover:text-spu-red" aria-label="{{ $social['label'] }}">
-                            <img src="{{ $social['icon'] }}" alt="" class="h-5 w-5 brightness-0 invert transition-opacity" aria-hidden="true">
-                        </a>
-                    @endforeach
-                </div>
-            </div>
+                @if ($footerSettings->brandSummary)
+                    <p class="mb-8 max-w-[320px] text-[16px] leading-[1.6] text-white/70">
+                        {{ $footerSettings->brandSummary }}
+                    </p>
+                @endif
 
-            <div class="lg:col-span-2">
-                <h3 class="mb-8 text-[18px] font-bold uppercase tracking-widest text-white/50">
-                    {{ $isArabic ? 'استكشف SPU' : 'EXPLORE SPU' }}
-                </h3>
-                <ul class="flex flex-col gap-4">
-                    @foreach ($resourceLinks as $link)
-                        <li>
-                            <a href="{{ $link['url'] }}" class="text-[16px] text-white/80 transition-colors hover:text-white">
-                                {{ $isArabic ? $link['label_ar'] : $link['label_en'] }}
+                @if ($socialLinks !== [])
+                    <div class="flex items-center gap-6 text-[22px]">
+                        @foreach ($socialLinks as $link)
+                            @continue(! ($link->isEnabled ?? true))
+                            @php($platform = strtolower($link->platform ?? ''))
+                            @php($icon = match ($platform) {
+                                'facebook' => '/images/icon-facebook-outline.svg',
+                                'instagram' => '/images/icon-instagram-outline.svg',
+                                'telegram', 'telegram-plane' => '/images/icon-telegram-outline.svg',
+                                'youtube' => '/images/icon-youtube-outline.svg',
+                                default => '/images/icon-globe-outline.svg',
+                            })
+                            <a href="{{ $link->url }}" target="_blank" rel="noreferrer" class="text-white/80 transition-all hover:scale-110 hover:text-spu-red" aria-label="{{ $link->platform ?? 'Social' }}">
+                                <img src="{{ $icon }}" alt="" class="h-5 w-5 brightness-0 invert transition-opacity" aria-hidden="true">
                             </a>
-                        </li>
-                    @endforeach
-                </ul>
+                        @endforeach
+                    </div>
+                @endif
             </div>
+
+            @if ($footerItems !== [])
+                <div class="lg:col-span-2">
+                    <h3 class="mb-8 text-[18px] font-bold uppercase tracking-widest text-white/50">
+                        {{ $isArabic ? 'استكشف SPU' : 'EXPLORE SPU' }}
+                    </h3>
+                    <ul class="flex flex-col gap-4">
+                        @foreach ($footerItems as $item)
+                            @if ($item->resolvedUrl)
+                                <li>
+                                    <a href="{{ $item->resolvedUrl }}" @if ($item->openInNewTab) target="_blank" rel="noreferrer" @endif class="text-[16px] text-white/80 transition-colors hover:text-white">
+                                        {{ $item->label }}
+                                    </a>
+                                </li>
+                            @endif
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
 
             <div class="lg:col-span-3">
                 <h3 class="mb-8 text-[18px] font-bold uppercase tracking-widest text-white/50">
                     {{ $isArabic ? 'التواصل' : 'CONTACT' }}
                 </h3>
                 <div class="flex flex-col gap-6">
-                    <div class="flex items-start gap-4">
-                        <img src="/images/icon-map-outline.svg" alt="" class="mt-1.5 h-4 w-4 shrink-0 brightness-0 invert" aria-hidden="true">
-                        <span class="text-[15px] leading-relaxed text-white/80">
-                            {{ $isArabic ? 'مقر الجامعة الرئيسي، أوتوستراد درعا الدولي، بعد بلدة الكسوة، خيارة دنون، دمشق.' : 'University headquarters, Daraa International Highway, past Al-Kiswa, Khayara Danoun, Damascus.' }}
-                        </span>
-                    </div>
-                    <div class="flex items-start gap-4">
-                        <img src="/images/icon-phone-outline.svg" alt="" class="mt-1.5 h-4 w-4 shrink-0 brightness-0 invert" aria-hidden="true">
-                        <span class="ltr text-[15px] leading-relaxed text-white/80">+963 11 9860</span>
-                    </div>
-                    <div class="flex items-start gap-4">
-                        <img src="/images/icon-envelope-outline.svg" alt="" class="mt-1.5 h-4 w-4 shrink-0 brightness-0 invert" aria-hidden="true">
-                        <span class="ltr text-[15px] leading-relaxed text-white/80">info@spu.edu.sy</span>
-                    </div>
+                    @if ($footerSettings->address)
+                        <div class="flex items-start gap-4">
+                            <img src="/images/icon-map-outline.svg" alt="" class="mt-1.5 h-4 w-4 shrink-0 brightness-0 invert" aria-hidden="true">
+                            <span class="text-[15px] leading-relaxed text-white/80">
+                                {{ $footerSettings->address }}
+                            </span>
+                        </div>
+                    @endif
+
+                    @if ($footerSettings->phone)
+                        <div class="flex items-start gap-4">
+                            <img src="/images/icon-phone-outline.svg" alt="" class="mt-1.5 h-4 w-4 shrink-0 brightness-0 invert" aria-hidden="true">
+                            <span class="ltr text-[15px] leading-relaxed text-white/80">{{ $footerSettings->phone }}</span>
+                        </div>
+                    @endif
+
+                    @if ($footerSettings->email)
+                        <div class="flex items-start gap-4">
+                            <img src="/images/icon-envelope-outline.svg" alt="" class="mt-1.5 h-4 w-4 shrink-0 brightness-0 invert" aria-hidden="true">
+                            <span class="ltr text-[15px] leading-relaxed text-white/80">{{ $footerSettings->email }}</span>
+                        </div>
+                    @endif
+
+                    @foreach ($contactLinks as $link)
+                        @php($type = strtolower($link->type ?? ''))
+                        @php($icon = match ($type) {
+                            'phone' => '/images/icon-phone-outline.svg',
+                            'email' => '/images/icon-envelope-outline.svg',
+                            'address' => '/images/icon-map-outline.svg',
+                            default => '/images/icon-university-outline.svg',
+                        })
+                        <div class="flex items-start gap-4">
+                            <img src="{{ $icon }}" alt="" class="mt-1.5 h-4 w-4 shrink-0 brightness-0 invert" aria-hidden="true">
+                            <span class="text-[15px] leading-relaxed text-white/80 {{ in_array($type, ['phone', 'email'], true) ? 'ltr' : '' }}">{{ $link->label }}: {{ $link->value }}</span>
+                        </div>
+                    @endforeach
                 </div>
             </div>
 
@@ -101,14 +122,12 @@
 
         <div class="flex flex-col items-center justify-between gap-6 md:flex-row">
             <p class="text-[14px] text-white/50" translate="no">
-                {{ $isArabic ? '© 2026 الجامعة السورية الخاصة. التميز في التعليم.' : '© 2026 Syrian Private University. Excellence in Education.' }}
+                {{ $footerSettings->copyrightText }}
             </p>
 
             <div class="flex flex-wrap items-center justify-center gap-6 text-[14px]">
-                @foreach ($bottomLinks as $link)
-                    <a href="{{ $link['url'] }}" class="text-white/50 transition-colors hover:text-white">
-                        {{ $isArabic ? $link['label_ar'] : $link['label_en'] }}
-                    </a>
+                @foreach ($footerSettings->legalLinks as $link)
+                    <a href="{{ $link->url }}" @if ($link->target) target="{{ $link->target }}" @endif @if ($link->target === '_blank') rel="noreferrer" @endif class="text-white/50 transition-colors hover:text-white">{{ $link->label }}</a>
                 @endforeach
                 <a href="{{ $switchUrl }}" class="text-white/50 transition-colors hover:text-white">
                     {{ $isArabic ? 'English' : 'العربية' }}

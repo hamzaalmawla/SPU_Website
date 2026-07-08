@@ -13,7 +13,12 @@
             @endif
         </div>
         <h2 class="mt-[14px] text-[22px] font-bold leading-tight text-spu-blue transition-colors group-hover:text-spu-red">{{ $publication['title'] ?? '' }}</h2>
-        <p class="mt-[10px] max-w-[500px] text-[16px] leading-[1.75] text-[#263650]">{{ $publication['summary'] ?? '' }}</p>
+        @if (! empty($publication['summary']))
+            <p class="mt-[10px] max-w-[500px] text-[16px] leading-[1.75] text-[#263650]">{{ $publication['summary'] }}</p>
+        @endif
+        @if (! empty($publication['publisher']))
+            <p class="mt-[10px] text-[12px] font-bold uppercase tracking-[0.08em] text-[#6f7280]">{{ $publication['publisher'] }}</p>
+        @endif
         <div class="mt-[20px] flex flex-wrap gap-[8px]">
             <span class="inline-flex h-[27px] min-w-[87px] items-center justify-center rounded-[6px] bg-spu-blue px-4 text-[8px] font-bold text-white transition group-hover:bg-[#171d47]">{{ $locale === 'ar' ? 'عرض المنشور' : 'View Publication' }}</span>
         </div>

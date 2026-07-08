@@ -29,6 +29,9 @@ class MediaAsset extends Model
         'size_bytes',
         'checksum',
         'media_type',
+        'library_scope',
+        'metadata_status',
+        'promoted_from_media_id',
         'width',
         'height',
         'alt_text_ar',
@@ -38,6 +41,9 @@ class MediaAsset extends Model
         'title_ar',
         'title_en',
         'path',
+        'source_path',
+        'reviewed_at',
+        'reviewed_by',
         'webp_path',
         'srcset_json',
         'uploaded_by',
@@ -51,6 +57,7 @@ class MediaAsset extends Model
             'width' => 'integer',
             'height' => 'integer',
             'srcset_json' => 'array',
+            'reviewed_at' => 'datetime',
             'deleted_at' => 'datetime',
         ];
     }
@@ -63,5 +70,10 @@ class MediaAsset extends Model
     public function seoMeta(): HasMany
     {
         return $this->hasMany(PageSeoMeta::class, 'og_image_media_id');
+    }
+
+    public function promotedFrom(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'promoted_from_media_id');
     }
 }

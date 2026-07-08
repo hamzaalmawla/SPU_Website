@@ -12,6 +12,11 @@ class ImportLegacyResearchSeeder extends BaseLegacyImportSeeder
     public function run(): void
     {
         $module = 'research';
+
+        if (! $this->shouldRunModule($module)) {
+            return;
+        }
+
         $batch = $this->batchName($module);
         $allCategories = $this->legacyRows('jx_member_categories');
 

@@ -8,6 +8,10 @@ use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
 use App\DTOs\Research\ResearchDetailPageDTO;
 use App\DTOs\Research\ResearchPageDTO;
+use App\Models\Research\ResearchPublication;
+use App\Models\Research\ResearchPublicationTranslation;
+use App\Models\Shared\MigrationLog;
+use Illuminate\Support\Str;
 
 final class ResearchPageService implements ResearchPageServiceInterface
 {
@@ -41,17 +45,23 @@ final class ResearchPageService implements ResearchPageServiceInterface
         return $this->pageDto($locale, 'repository', $this->localized($data, $locale), '/research/repository', $data['hero'] ?? []);
     }
 
-    public function publications(string $locale): ResearchPageDTO
+    public function publications(string $locale, array $filters = []): ResearchPageDTO
     {
         $cmsContent = $this->publishedLocalizedPayload('research.publications', $locale);
 
         if (is_array($cmsContent)) {
+            $cmsContent = $this->withDatabasePublications($cmsContent, $locale);
+            $cmsContent = $this->withFilteredPublications($cmsContent, $filters);
+
             return $this->pageDto($locale, 'publications', $cmsContent, '/research/publications', $cmsContent['hero'] ?? []);
         }
 
         $data = $this->content()['publications'] ?? [];
+        $localized = $this->localized($data, $locale);
+        $localized = is_array($localized) ? $this->withDatabasePublications($localized, $locale) : [];
+        $localized = $this->withFilteredPublications($localized, $filters);
 
-        return $this->pageDto($locale, 'publications', $this->localized($data, $locale), '/research/publications', $data['hero'] ?? []);
+        return $this->pageDto($locale, 'publications', $localized, '/research/publications', $data['hero'] ?? []);
     }
 
     public function publication(string $locale, string $slug): ?ResearchDetailPageDTO
@@ -60,6 +70,12 @@ final class ResearchPageService implements ResearchPageServiceInterface
 
         if ($cmsPage instanceof ResearchDetailPageDTO) {
             return $cmsPage;
+        }
+
+        $databasePage = $this->databasePublication($locale, $slug);
+
+        if ($databasePage instanceof ResearchDetailPageDTO) {
+            return $databasePage;
         }
 
         $items = $this->detailContent()['publications'] ?? [];
@@ -339,6 +355,28 @@ final class ResearchPageService implements ResearchPageServiceInterface
 
     public function publicationSlugForLegacyId(string $id): ?string
     {
+        if (ctype_digit($id)) {
+            $sourceId = (int) $id;
+            $targetId = MigrationLog::query()
+                ->where('module', 'research')
+                ->where('source_table', 'jx_member_categories')
+                ->where('source_id', $sourceId)
+                ->where('target_table', 'research_publications')
+                ->where('status', 'success')
+                ->value('target_id');
+
+            if (is_numeric($targetId)) {
+                $publication = ResearchPublication::query()
+                    ->enabled()
+                    ->with('translations')
+                    ->find((int) $targetId);
+
+                if ($publication instanceof ResearchPublication) {
+                    return $this->databasePublicationSlug($publication, $sourceId);
+                }
+            }
+        }
+
         foreach ($this->detailContent()['publications'] ?? [] as $publication) {
             if (($publication['id'] ?? null) === $id) {
                 return is_string($publication['slug'] ?? null) ? $publication['slug'] : null;
@@ -510,6 +548,412 @@ final class ResearchPageService implements ResearchPageServiceInterface
             'next' => $next,
             'themes' => $this->content()['themes']['items'] ?? [],
         ], '/research/publications/'.$slug, $item['image'] ?? '/images/uni-main-place.JPG');
+    }
+
+    private function databasePublication(string $locale, string $slug): ?ResearchDetailPageDTO
+    {
+        $items = $this->databasePublicationItems($locale);
+        $item = $this->firstBySlug($items, $slug);
+
+        if ($item === null) {
+            return null;
+        }
+
+        $index = $this->indexBySlug($items, $slug);
+        $previous = $items[($index - 1 + count($items)) % count($items)] ?? null;
+        $next = $items[($index + 1) % count($items)] ?? null;
+        $related = array_slice(array_values(array_filter($items, static fn (array $publication): bool => ($publication['slug'] ?? null) !== $slug)), 0, 3);
+
+        return $this->detailDto($locale, 'publication', $slug, $item, [
+            'item' => $item,
+            'labels' => $this->detailContent()['labels'] ?? [],
+            'related' => $related,
+            'previous' => $previous,
+            'next' => $next,
+            'themes' => $this->content()['themes']['items'] ?? [],
+        ], '/research/publications/'.$slug, $item['image'] ?? '/images/uni-main-place.JPG');
+    }
+
+    /** @param array<string, mixed> $content @return array<string, mixed> */
+    private function withDatabasePublications(array $content, string $locale): array
+    {
+        $databaseItems = $this->databasePublicationItems($locale);
+
+        if ($databaseItems === []) {
+            return $content;
+        }
+
+        $existingItems = $this->arrayList($content['items'] ?? []);
+        $content['items'] = $this->uniqueBySlug([...$databaseItems, ...$existingItems]);
+        $content['filters'] = $this->withDatabasePublicationFilterOptions(is_array($content['filters'] ?? null) ? $content['filters'] : [], $content['items'], $locale);
+
+        return $content;
+    }
+
+    /** @param array<string, mixed> $filters @return array<string, mixed> */
+    private function normalizedPublicationFilters(array $filters): array
+    {
+        return [
+            'q' => $this->filterValue($filters['q'] ?? null),
+            'faculty' => $this->filterValue($filters['faculty'] ?? null),
+            'type' => $this->filterValue($filters['type'] ?? null),
+            'year' => $this->filterValue($filters['year'] ?? null),
+        ];
+    }
+
+    private function filterValue(mixed $value): string
+    {
+        if (! is_scalar($value)) {
+            return '';
+        }
+
+        $value = trim((string) $value);
+
+        return $value === 'all' ? '' : $value;
+    }
+
+    /** @param array<string, mixed> $content @param array<string, mixed> $filters @return array<string, mixed> */
+    private function withFilteredPublications(array $content, array $filters): array
+    {
+        $activeFilters = $this->normalizedPublicationFilters($filters);
+        $items = $this->arrayList($content['items'] ?? []);
+        $content['totalItems'] = count($items);
+        $content['activeFilters'] = $activeFilters;
+
+        if ($activeFilters === ['q' => '', 'faculty' => '', 'type' => '', 'year' => '']) {
+            $content['items'] = $items;
+            $content['resultCount'] = count($items);
+
+            return $content;
+        }
+
+        $content['items'] = array_values(array_filter($items, fn (array $item): bool => $this->publicationMatchesFilters($item, $activeFilters)));
+        $content['resultCount'] = count($content['items']);
+
+        return $content;
+    }
+
+    /** @param array<string, mixed> $item @param array<string, string> $filters */
+    private function publicationMatchesFilters(array $item, array $filters): bool
+    {
+        if ($filters['faculty'] !== '' && $filters['faculty'] !== (string) ($item['facultySlug'] ?? '')) {
+            return false;
+        }
+
+        if ($filters['type'] !== '' && $filters['type'] !== (string) ($item['typeSlug'] ?? '')) {
+            return false;
+        }
+
+        if ($filters['year'] !== '' && $filters['year'] !== (string) ($item['year'] ?? '')) {
+            return false;
+        }
+
+        if ($filters['q'] === '') {
+            return true;
+        }
+
+        $haystack = strtolower(implode(' ', array_filter([
+            $item['title'] ?? null,
+            $item['summary'] ?? null,
+            $item['lead'] ?? null,
+            $item['category'] ?? null,
+            $item['type'] ?? null,
+            $item['faculty'] ?? null,
+            $item['author'] ?? null,
+            $item['publisher'] ?? null,
+            $item['year'] ?? null,
+            implode(' ', array_filter($this->scalarList($item['keywords'] ?? []))),
+        ], static fn (mixed $value): bool => is_scalar($value) && trim((string) $value) !== '')));
+
+        return str_contains($haystack, strtolower($filters['q']));
+    }
+
+    /** @return list<string> */
+    private function scalarList(mixed $items): array
+    {
+        return array_values(array_map(
+            static fn (mixed $item): string => (string) $item,
+            array_filter(is_array($items) ? $items : [], static fn (mixed $item): bool => is_scalar($item) && trim((string) $item) !== '')
+        ));
+    }
+
+    /** @param array<int, array<string, mixed>> $items @return array<string, mixed> */
+    private function withDatabasePublicationFilterOptions(array $filters, array $items, string $locale): array
+    {
+        $years = [];
+        $types = [];
+        $faculties = [];
+
+        foreach ($this->arrayList($filters['years'] ?? []) as $option) {
+            $value = (string) ($option['value'] ?? '');
+
+            if ($value !== '') {
+                $years[$value] = $option;
+            }
+        }
+
+        foreach ($this->arrayList($filters['publicationTypes'] ?? []) as $option) {
+            $value = (string) ($option['value'] ?? '');
+
+            if ($value !== '') {
+                $types[$value] = $option;
+            }
+        }
+
+        foreach ($this->arrayList($filters['faculties'] ?? []) as $option) {
+            $value = (string) ($option['value'] ?? '');
+
+            if ($value !== '') {
+                $faculties[$value] = $option;
+            }
+        }
+
+        foreach ($items as $item) {
+            $year = (string) ($item['year'] ?? '');
+
+            if ($year !== '' && ! isset($years[$year])) {
+                $years[$year] = ['value' => $year, 'label' => $year];
+            }
+
+            $typeSlug = (string) ($item['typeSlug'] ?? '');
+
+            if ($typeSlug !== '' && ! isset($types[$typeSlug])) {
+                $types[$typeSlug] = ['value' => $typeSlug, 'label' => (string) ($item['type'] ?? $typeSlug)];
+            }
+
+            $facultySlug = (string) ($item['facultySlug'] ?? '');
+
+            if ($facultySlug !== '' && ! isset($faculties[$facultySlug])) {
+                $faculties[$facultySlug] = ['value' => $facultySlug, 'label' => (string) ($item['faculty'] ?? $facultySlug)];
+            }
+        }
+
+        if ($years !== []) {
+            krsort($years);
+            $filters['years'] = array_values(['' => ['value' => '', 'label' => $locale === 'ar' ? 'كل السنوات' : 'All Years']] + $years);
+        }
+
+        if ($types !== []) {
+            ksort($types);
+            $filters['publicationTypes'] = array_values(['' => ['value' => '', 'label' => $locale === 'ar' ? 'كل الأنواع' : 'All Types']] + $types);
+        }
+
+        if ($faculties !== []) {
+            ksort($faculties);
+            $filters['faculties'] = array_values(['' => ['value' => '', 'label' => $locale === 'ar' ? 'كل الكليات' : 'All Faculties']] + $faculties);
+        }
+
+        return $filters;
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function databasePublicationItems(string $locale): array
+    {
+        $publications = ResearchPublication::query()
+            ->enabled()
+            ->with('translations')
+            ->orderByDesc('published_at')
+            ->orderBy('sort_order')
+            ->orderByDesc('id')
+            ->get();
+
+        if ($publications->isEmpty()) {
+            return [];
+        }
+
+        $sourceIds = MigrationLog::query()
+            ->where('module', 'research')
+            ->where('source_table', 'jx_member_categories')
+            ->where('target_table', 'research_publications')
+            ->where('status', 'success')
+            ->whereIn('target_id', $publications->pluck('id')->all())
+            ->pluck('source_id', 'target_id')
+            ->map(fn (mixed $sourceId): int => (int) $sourceId)
+            ->all();
+
+        return $publications
+            ->map(fn (ResearchPublication $publication): array => $this->databasePublicationItem($publication, $locale, $sourceIds[(int) $publication->getKey()] ?? null))
+            ->values()
+            ->all();
+    }
+
+    private function databasePublicationItem(ResearchPublication $publication, string $locale, ?int $sourceId): array
+    {
+        $translations = $publication->translations->keyBy('locale');
+        $translation = $translations->get($locale) ?? $translations->get('en') ?? $translations->get('ar');
+        $fallbackTitle = $sourceId !== null ? 'Legacy research publication '.$sourceId : 'Research publication '.$publication->getKey();
+        $title = $translation instanceof ResearchPublicationTranslation ? (string) $translation->title : $fallbackTitle;
+        $metadata = $this->legacyPublicationMetadata($translation instanceof ResearchPublicationTranslation ? $translation->abstract : null);
+        $metadata = $this->withFallbackLegacyPublicationMetadata($metadata, $translations->all());
+        $abstract = $metadata['abstract'] !== '' ? $metadata['abstract'] : ($translation instanceof ResearchPublicationTranslation ? $this->plainText($translation->abstract) : '');
+        $summary = $translation instanceof ResearchPublicationTranslation ? $this->plainText($translation->excerpt) : '';
+        $publisher = $translation instanceof ResearchPublicationTranslation ? $this->plainText($translation->publisher) : '';
+
+        if ($publisher === '') {
+            $publisher = $metadata['publisher'];
+        }
+
+        if ($summary === '' && $abstract !== '') {
+            $summary = Str::limit($abstract, 260);
+        }
+
+        $year = $publication->published_at !== null ? $publication->published_at->format('Y') : '';
+        $externalUrl = is_string($publication->external_url) && filter_var($publication->external_url, FILTER_VALIDATE_URL) !== false
+            ? $publication->external_url
+            : null;
+
+        return [
+            'id' => $sourceId !== null ? 'legacy-'.$sourceId : 'research-publication-'.$publication->getKey(),
+            'slug' => $this->databasePublicationSlug($publication, $sourceId),
+            'title' => $title,
+            'summary' => $summary,
+            'lead' => $summary,
+            'paragraphs' => $abstract !== '' ? [$abstract] : [],
+            'category' => $locale === 'ar' ? 'بحث منشور' : 'Published Research',
+            'type' => $locale === 'ar' ? 'منشور بحثي' : 'Publication',
+            'typeSlug' => 'published-research',
+            'year' => $year,
+            'publisher' => $publisher,
+            'faculty' => '',
+            'author' => $metadata['author'],
+            'doi' => null,
+            'keywords' => $metadata['keywords'],
+            'resolvedThemes' => [],
+            'scholarUrl' => $externalUrl,
+            'scopusUrl' => null,
+            'image' => '/images/uni-main-place.JPG',
+            'isOpenAccess' => $publication->file_media_id !== null,
+        ];
+    }
+
+    private function plainText(?string $value): string
+    {
+        if (! is_string($value) || trim($value) === '') {
+            return '';
+        }
+
+        $value = html_entity_decode(strip_tags($value), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $value = preg_replace('/\s+/u', ' ', $value) ?? $value;
+
+        return trim($value);
+    }
+
+    /** @param array<int, ResearchPublicationTranslation> $translations @return array{author: string, publisher: string, abstract: string, keywords: list<string>} */
+    private function withFallbackLegacyPublicationMetadata(array $metadata, array $translations): array
+    {
+        if ($metadata['author'] !== '' && $metadata['publisher'] !== '' && $metadata['abstract'] !== '' && $metadata['keywords'] !== []) {
+            return $metadata;
+        }
+
+        foreach ($translations as $translation) {
+            if (! $translation instanceof ResearchPublicationTranslation) {
+                continue;
+            }
+
+            $fallback = $this->legacyPublicationMetadata($translation->abstract);
+            $metadata = [
+                'author' => $metadata['author'] !== '' ? $metadata['author'] : $fallback['author'],
+                'publisher' => $metadata['publisher'] !== '' ? $metadata['publisher'] : $fallback['publisher'],
+                'abstract' => $metadata['abstract'] !== '' ? $metadata['abstract'] : $fallback['abstract'],
+                'keywords' => $metadata['keywords'] !== [] ? $metadata['keywords'] : $fallback['keywords'],
+            ];
+        }
+
+        return $metadata;
+    }
+
+    /** @return array{author: string, publisher: string, abstract: string, keywords: list<string>} */
+    private function legacyPublicationMetadata(?string $value): array
+    {
+        $lines = $this->legacyPublicationLines($value);
+
+        return [
+            'author' => $this->legacySectionText($lines, ['author', 'authors', 'author:', 'authors:', 'المؤلف', 'المؤلفون'], ['published in', 'abstract', 'keywords', 'نشر في', 'الملخص', 'الكلمات المفتاحية']),
+            'publisher' => $this->legacySectionText($lines, ['published in', 'published in:', 'publisher', 'publisher:', 'نشر في', 'الناشر'], ['abstract', 'keywords', 'الملخص', 'الكلمات المفتاحية']),
+            'abstract' => $this->legacySectionText($lines, ['abstract', 'abstract:', 'الملخص'], ['keywords', 'الكلمات المفتاحية']),
+            'keywords' => $this->legacyKeywords($this->legacySectionText($lines, ['keywords', 'keywords:', 'key words', 'key words:', 'الكلمات المفتاحية'], [])),
+        ];
+    }
+
+    /** @return list<string> */
+    private function legacyPublicationLines(?string $value): array
+    {
+        if (! is_string($value) || trim($value) === '') {
+            return [];
+        }
+
+        $value = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $value = preg_replace('/<br\s*\/?>/i', "\n", $value) ?? $value;
+        $value = preg_replace('/<\/(p|div|li|h[1-6])>/i', "\n", $value) ?? $value;
+        $value = strip_tags($value);
+        $value = preg_replace('/[ \t]+/u', ' ', $value) ?? $value;
+
+        return array_values(array_filter(
+            array_map(static fn (string $line): string => trim($line), preg_split('/\R/u', $value) ?: []),
+            static fn (string $line): bool => $line !== ''
+        ));
+    }
+
+    /** @param list<string> $lines @param list<string> $startLabels @param list<string> $stopLabels */
+    private function legacySectionText(array $lines, array $startLabels, array $stopLabels): string
+    {
+        $capturing = false;
+        $captured = [];
+
+        foreach ($lines as $line) {
+            $normalized = $this->legacySectionLabel($line);
+
+            if (! $capturing && in_array($normalized, $startLabels, true)) {
+                $capturing = true;
+                continue;
+            }
+
+            if ($capturing && in_array($normalized, $stopLabels, true)) {
+                break;
+            }
+
+            if ($capturing) {
+                $captured[] = $line;
+            }
+        }
+
+        $text = preg_replace('/\s+/u', ' ', implode(' ', $captured)) ?? implode(' ', $captured);
+
+        return trim($text);
+    }
+
+    private function legacySectionLabel(string $line): string
+    {
+        $line = trim($line);
+        $line = preg_replace('/\s+/u', ' ', $line) ?? $line;
+        $line = trim($line, " \t\n\r\0\x0B:：.-");
+
+        return strtolower($line);
+    }
+
+    /** @return list<string> */
+    private function legacyKeywords(string $value): array
+    {
+        if ($value === '') {
+            return [];
+        }
+
+        $parts = preg_split('/[,;،]+/u', $value) ?: [];
+
+        return array_slice(array_values(array_filter(
+            array_map(static fn (string $part): string => trim($part), $parts),
+            static fn (string $part): bool => $part !== ''
+        )), 0, 12);
+    }
+
+    private function databasePublicationSlug(ResearchPublication $publication, ?int $sourceId): string
+    {
+        $translations = $publication->translations->keyBy('locale');
+        $title = (string) (($translations->get('en')?->title ?? null) ?: ($translations->get('ar')?->title ?? null) ?: 'legacy-research-publication');
+        $slug = Str::slug($title);
+        $suffix = (string) ($sourceId ?? $publication->getKey());
+
+        return ($slug !== '' ? $slug : 'legacy-research-publication').'-'.$suffix;
     }
 
     private function cmsResearcher(string $locale, string $slug): ?ResearchDetailPageDTO

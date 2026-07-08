@@ -8,6 +8,7 @@ use App\Models\Legacy\LegacyExactRedirect;
 use App\Models\Legacy\LegacyPatternRule;
 use App\Models\Page\UnresolvedLegacyRequest;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
@@ -90,6 +91,82 @@ class RedirectContinuityTest extends TestCase
             'method' => 'GET',
             'request_type' => 'page',
         ]);
+    }
+
+    public function test_unresolved_legacy_index_request_logs_normalized_metadata(): void
+    {
+        $this->get('/index.php?page=show&ex=2&dir=items&lang=2&ser=4&cat_id=123');
+
+        $record = UnresolvedLegacyRequest::query()->latest('id')->first();
+
+        $this->assertNotNull($record);
+        $this->assertSame('root:items:show', $record->handler);
+        $this->assertSame('unresolved', $record->outcome);
+        $this->assertSame('root', $record->subsite);
+        $this->assertSame(0, $record->old_site_id);
+        $this->assertSame(2, $record->old_language_id);
+        $this->assertSame('en', $record->old_language_symbol);
+        $this->assertSame('4', $record->normalized_json['service'] ?? null);
+    }
+
+    public function test_old_news_query_redirects_to_numeric_public_article_url(): void
+    {
+        $articleId = $this->createLegacyNewsArticle(5362, 3, 'legacy-news-slug');
+
+        $response = $this->get('/index.php?page=show&ex=2&dir=items&lang=1&ser=3&cat_id=5362');
+
+        $response->assertStatus(301);
+        $response->assertRedirect('/ar/news/'.$articleId);
+    }
+
+    public function test_old_news_query_resolution_wins_before_generic_pattern_rule(): void
+    {
+        $articleId = $this->createLegacyNewsArticle(7001, 4, 'legacy-announcement-slug');
+        LegacyPatternRule::create([
+            'pattern' => '#^/index\.php$#',
+            'replacement' => '/ar/generic-legacy-index',
+            'status_code' => 301,
+            'priority' => 1,
+            'is_active' => true,
+        ]);
+
+        $response = $this->get('/index.php?page=show&dir=items&lang=2&Ser=4&cat_id=7001');
+
+        $response->assertStatus(301);
+        $response->assertRedirect('/en/news/'.$articleId);
+    }
+
+    public function test_old_static_page_query_redirects_by_migration_log_mapping(): void
+    {
+        $pageId = $this->createPublishedPage('legacy-community-service');
+        $this->createMigrationLog('static_pages', 'jx_site_static_pages', 12, 'pages', $pageId);
+
+        $response = $this->get('/index.php?page=show&dir=items&item_id=12&lang=2');
+
+        $response->assertStatus(301);
+        $response->assertRedirect('/en/legacy-community-service');
+    }
+
+    public function test_legacy_public_admin_index_is_logged_but_admin_login_still_skips(): void
+    {
+        $this->get('/admin/index.php?page=list&dir=items&service=73&lang=1');
+
+        $this->assertDatabaseHas('unresolved_legacy_requests', [
+            'handler' => 'admin:items:list',
+            'subsite' => 'admin',
+            'old_site_id' => 7,
+        ]);
+
+        LegacyExactRedirect::create([
+            'legacy_path' => '/admin/login',
+            'destination_url' => '/ar/admin-redirect',
+            'status_code' => 301,
+            'is_active' => true,
+        ]);
+
+        $response = $this->get('/admin/login');
+
+        $this->assertNotEquals(301, $response->getStatusCode());
     }
 
     public function test_repeated_unresolved_request_increments_hit_count(): void
@@ -179,5 +256,57 @@ class RedirectContinuityTest extends TestCase
 
         // Should terminate (not hang) and return a redirect to the last valid destination
         $this->assertContains($response->getStatusCode(), [301, 302]);
+    }
+
+    private function createLegacyNewsArticle(int $legacySourceId, int $serviceType, string $slug): int
+    {
+        return (int) DB::table('news_articles')->insertGetId([
+            'slug' => $slug,
+            'status' => 'published',
+            'published_at' => now()->subDay(),
+            'scheduled_at' => null,
+            'is_enabled' => true,
+            'is_featured' => false,
+            'sort_order' => 0,
+            'legacy_source_table' => 'jx_categories',
+            'legacy_source_id' => $legacySourceId,
+            'legacy_service_type' => $serviceType,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    private function createPublishedPage(string $slug, ?int $parentId = null): int
+    {
+        return (int) DB::table('pages')->insertGetId([
+            'parent_id' => $parentId,
+            'type' => 'landing_page',
+            'template' => 'landing-page',
+            'slug' => $slug,
+            'status' => 'published',
+            'sort_order' => 0,
+            'is_enabled' => true,
+            'show_in_breadcrumbs' => true,
+            'show_in_nav' => false,
+            'is_homepage_shell' => false,
+            'published_at' => now()->subDay(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    private function createMigrationLog(string $module, string $sourceTable, int $sourceId, string $targetTable, int $targetId): void
+    {
+        DB::table('migration_logs')->insert([
+            'module' => $module,
+            'batch_name' => 'legacy-query-test',
+            'source_table' => $sourceTable,
+            'source_id' => $sourceId,
+            'target_table' => $targetTable,
+            'target_id' => $targetId,
+            'status' => 'success',
+            'message' => 'Imported.',
+            'created_at' => now(),
+        ]);
     }
 }

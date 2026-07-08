@@ -11,6 +11,11 @@ class ImportLegacyCountriesSeeder extends BaseLegacyImportSeeder
     public function run(): void
     {
         $module = 'countries';
+
+        if (! $this->shouldRunModule($module)) {
+            return;
+        }
+
         $batch = $this->batchName($module);
         $rows = $this->legacyRows('jx_countries');
 

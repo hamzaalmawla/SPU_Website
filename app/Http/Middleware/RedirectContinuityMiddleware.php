@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Contracts\Shared\ContinuityServiceInterface;
+use App\Contracts\Legacy\LegacyUrlNormalizerInterface;
 use App\DTOs\Legacy\UnresolvedRequestDTO;
 use Closure;
 use Illuminate\Http\RedirectResponse;
@@ -22,6 +23,7 @@ final class RedirectContinuityMiddleware
 
     public function __construct(
         private readonly ContinuityServiceInterface $continuityService,
+        private readonly LegacyUrlNormalizerInterface $legacyUrlNormalizer,
     ) {}
 
     /**
@@ -72,6 +74,8 @@ final class RedirectContinuityMiddleware
         }
 
         try {
+            $normalized = $this->legacyUrlNormalizer->normalize($path, $request->getQueryString());
+
             $this->continuityService->logUnresolved(new UnresolvedRequestDTO(
                 url: $request->fullUrl(),
                 queryString: $request->getQueryString(),
@@ -80,6 +84,13 @@ final class RedirectContinuityMiddleware
                 resolvedLocale: app()->getLocale(),
                 requestType: $this->detectRequestType($path),
                 timestamp: now()->toIso8601String(),
+                normalized: $this->legacyUrlNormalizer->toLogPayload($normalized),
+                handler: $normalized->handlerKey,
+                outcome: 'unresolved',
+                subsite: $normalized->subsite->key,
+                oldSiteId: $normalized->subsite->siteId,
+                oldLanguageId: $normalized->language->oldLanguageId,
+                oldLanguageSymbol: $normalized->language->oldSymbol,
             ));
         } catch (\Throwable) {
             // Fire-and-forget: never block the user's 404 response.
@@ -91,6 +102,10 @@ final class RedirectContinuityMiddleware
      */
     private function shouldSkip(string $path): bool
     {
+        if ($path === '/admin/index.php') {
+            return false;
+        }
+
         foreach (self::SKIP_PREFIXES as $prefix) {
             if (str_starts_with($path, $prefix)) {
                 return true;

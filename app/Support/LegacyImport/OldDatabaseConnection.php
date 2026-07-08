@@ -14,9 +14,24 @@ class OldDatabaseConnection
         private readonly DatabaseManager $database,
     ) {}
 
-    public function connection(): ConnectionInterface
+    public function connectionName(): string
     {
         $connectionName = (string) config('old_database.connection_name', 'legacy_mysql');
+
+        if ($connectionName === '') {
+            return 'legacy_mysql';
+        }
+
+        if ($connectionName === (string) config('database.default') && $this->hasDedicatedLegacyConfig()) {
+            return 'legacy_mysql';
+        }
+
+        return $connectionName;
+    }
+
+    public function connection(): ConnectionInterface
+    {
+        $connectionName = $this->connectionName();
         $config = config('old_database.connection', []);
 
         if (is_array($config) && $config !== []) {
@@ -29,5 +44,12 @@ class OldDatabaseConnection
     public function table(string $table): Builder
     {
         return $this->connection()->table($table);
+    }
+
+    private function hasDedicatedLegacyConfig(): bool
+    {
+        $config = config('old_database.connection', []);
+
+        return is_array($config) && $config !== [];
     }
 }

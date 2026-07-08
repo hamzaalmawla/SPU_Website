@@ -59,7 +59,7 @@ class PublicRuntimeTest extends TestCase
             ->assertSee('Student Portal')
             ->assertSee('EXPLORE SPU')
             ->assertSee('Privacy Policy')
-            ->assertSee('Cookie Policy')
+            ->assertSee('Terms of Use')
             ->assertDontSee('Connect');
 
         $this->get('/ar')

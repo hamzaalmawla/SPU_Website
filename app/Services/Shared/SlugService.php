@@ -38,9 +38,10 @@ final class SlugService implements SlugServiceInterface
         'لا' => 'la', 'لأ' => 'la', 'لإ' => 'li', 'لآ' => 'laa',
     ];
 
-    public function generate(string $source, string $modelClass, string $locale = 'ar', ?int $ignoreId = null): string
+    public function generate(string $source, string $modelClass, string $locale = 'ar', ?int $ignoreId = null, int $maxLength = 200): string
     {
-        $slug = $this->toSlug($source, $locale);
+        $maxLength = max(20, min($maxLength, 200));
+        $slug = $this->toSlug($source, $locale, $maxLength);
 
         if ($slug === '') {
             $slug = 'untitled';
@@ -54,7 +55,8 @@ final class SlugService implements SlugServiceInterface
         }
 
         for ($i = 1; $i <= self::MAX_COLLISION_ATTEMPTS; $i++) {
-            $candidate = $baseSlug.'-'.$i;
+            $suffix = '-'.$i;
+            $candidate = $this->limitSlug($baseSlug, $maxLength - strlen($suffix)).$suffix;
             if (! $this->slugExists($table, $candidate, $ignoreId)) {
                 return $candidate;
             }
@@ -65,7 +67,7 @@ final class SlugService implements SlugServiceInterface
         );
     }
 
-    private function toSlug(string $source, string $locale): string
+    private function toSlug(string $source, string $locale, int $maxLength): string
     {
         $text = trim($source);
 
@@ -76,14 +78,16 @@ final class SlugService implements SlugServiceInterface
         // Convert to ASCII-safe slug
         $slug = Str::slug($text);
 
-        // Ensure max length
-        if (mb_strlen($slug) > 200) {
-            $slug = mb_substr($slug, 0, 200);
-            // Trim trailing hyphens from truncation
-            $slug = rtrim($slug, '-');
+        return $this->limitSlug($slug, $maxLength);
+    }
+
+    private function limitSlug(string $slug, int $maxLength): string
+    {
+        if (mb_strlen($slug) <= $maxLength) {
+            return $slug;
         }
 
-        return $slug;
+        return rtrim((string) mb_substr($slug, 0, $maxLength), '-');
     }
 
     private function containsArabic(string $text): bool

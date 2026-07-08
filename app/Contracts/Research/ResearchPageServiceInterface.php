@@ -13,7 +13,8 @@ interface ResearchPageServiceInterface
 
     public function repository(string $locale): ResearchPageDTO;
 
-    public function publications(string $locale): ResearchPageDTO;
+    /** @param array<string, mixed> $filters */
+    public function publications(string $locale, array $filters = []): ResearchPageDTO;
 
     public function publication(string $locale, string $slug): ?ResearchDetailPageDTO;
 

@@ -24,11 +24,20 @@ class LegacyFileInventory extends Model
      */
     protected $fillable = [
         'legacy_path',
+        'source_table',
+        'source_column',
+        'source_id',
         'current_path',
         'media_asset_id',
         'status',
         'mime_type',
         'file_size_bytes',
+        'extension',
+        'checksum_sha256',
+        'checksum_status',
+        'reference_count',
+        'source_references',
+        'last_seen_at',
         'notes',
     ];
 
@@ -40,6 +49,10 @@ class LegacyFileInventory extends Model
         return [
             'media_asset_id' => 'integer',
             'file_size_bytes' => 'integer',
+            'source_id' => 'integer',
+            'reference_count' => 'integer',
+            'source_references' => 'array',
+            'last_seen_at' => 'datetime',
         ];
     }
 
@@ -56,5 +69,10 @@ class LegacyFileInventory extends Model
     public function scopeUnmapped(Builder $query): Builder
     {
         return $query->where('status', 'unmapped');
+    }
+
+    public function scopeByLegacyPath(Builder $query, string $path): Builder
+    {
+        return $query->whereRaw('LOWER(legacy_path) = ?', [mb_strtolower($path)]);
     }
 }

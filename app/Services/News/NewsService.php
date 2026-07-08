@@ -109,7 +109,10 @@ final class NewsService implements NewsServiceInterface
         return $this->newsCache()->remember('news:article:'.$locale.':'.$slug, function () use ($slug, $locale): ?NewsArticleDTO {
             $article = NewsArticle::query()
                 ->public()
-                ->where('slug', $slug)
+                ->when(ctype_digit($slug),
+                    fn (Builder $query): Builder => $query->whereKey((int) $slug),
+                    fn (Builder $query): Builder => $query->where('slug', $slug),
+                )
                 ->with(['translations', 'seoMeta.ogImageMedia', 'coverMedia', 'category.translations', 'attachments.mediaAsset'])
                 ->first();
 
@@ -138,7 +141,7 @@ final class NewsService implements NewsServiceInterface
                     excerpt: $translation->excerpt,
                     imageUrl: $this->mediaUrl($article->coverMedia),
                     publishedAt: $article->published_at?->toDateString(),
-                    url: $this->articleUrl($locale, (string) $article->slug),
+                    url: $this->articleUrl($locale, (int) $article->getKey()),
                     categoryLabel: $category?->name,
                 );
             })
@@ -167,7 +170,7 @@ final class NewsService implements NewsServiceInterface
     public function getRelatedArticleCards(string $slug, string $locale, int $limit = 3): Collection
     {
         return $this->newsCache()->remember('news:related:'.$locale.':'.$slug.':'.$limit, function () use ($slug, $locale, $limit): Collection {
-            $article = NewsArticle::query()->public()->where('slug', $slug)->first();
+            $article = $this->publicArticleByIdentifier($slug);
 
             if (! $article instanceof NewsArticle) {
                 return collect();
@@ -191,7 +194,7 @@ final class NewsService implements NewsServiceInterface
     public function getAdjacentArticleCards(string $slug, string $locale): array
     {
         return $this->newsCache()->remember('news:adjacent:'.$locale.':'.$slug, function () use ($slug, $locale): array {
-            $article = NewsArticle::query()->public()->where('slug', $slug)->first();
+            $article = $this->publicArticleByIdentifier($slug);
 
             if (! $article instanceof NewsArticle) {
                 return ['previous' => null, 'next' => null];
@@ -251,7 +254,7 @@ final class NewsService implements NewsServiceInterface
             body: $includeAttachments ? $translation->body : null,
             imageUrl: $imageUrl,
             publishedAt: $article->published_at?->toDateString(),
-            url: $this->articleUrl($locale, (string) $article->slug),
+            url: $this->articleUrl($locale, (int) $article->getKey()),
             category: $article->category instanceof NewsCategory ? $this->mapCategory($article->category, $locale) : null,
             attachments: $includeAttachments ? $this->mapAttachments($article, $locale) : [],
             metaTitle: $seo?->meta_title,
@@ -276,7 +279,7 @@ final class NewsService implements NewsServiceInterface
             excerpt: $translation->excerpt,
             imageUrl: $this->mediaUrl($article->coverMedia),
             publishedAt: $article->published_at?->toDateString(),
-            url: $this->articleUrl($locale, (string) $article->slug),
+            url: $this->articleUrl($locale, (int) $article->getKey()),
             categoryLabel: $category?->name,
         );
     }
@@ -354,9 +357,20 @@ final class NewsService implements NewsServiceInterface
         return '/storage/'.$path;
     }
 
-    private function articleUrl(string $locale, string $slug): string
+    private function articleUrl(string $locale, int $articleId): string
     {
-        return '/'.$locale.'/news/'.$slug;
+        return '/'.$locale.'/news/'.$articleId;
+    }
+
+    private function publicArticleByIdentifier(string $identifier): ?NewsArticle
+    {
+        return NewsArticle::query()
+            ->public()
+            ->when(ctype_digit($identifier),
+                fn (Builder $query): Builder => $query->whereKey((int) $identifier),
+                fn (Builder $query): Builder => $query->where('slug', $identifier),
+            )
+            ->first();
     }
 
     private function newsCache(): CacheServiceInterface

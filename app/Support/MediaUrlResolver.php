@@ -26,9 +26,13 @@ final class MediaUrlResolver
 
             $diskName = $disk ?? (string) config('filesystems.media_disk', 'public');
 
+            if (! array_key_exists($diskName, config('filesystems.disks', []))) {
+                return UrlSanitizer::sanitize('/'.ltrim($value, '/'), ['http', 'https'], true);
+            }
+
             return UrlSanitizer::sanitize(Storage::disk($diskName)->url($value), ['http', 'https'], true);
         } catch (Throwable) {
-            return UrlSanitizer::sanitize($value, ['http', 'https'], true);
+            return UrlSanitizer::sanitize('/'.ltrim($value, '/'), ['http', 'https'], true);
         }
     }
 }

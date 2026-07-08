@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders\LegacyImport;
 
+use App\Contracts\Shared\SlugServiceInterface;
 use App\Models\News\NewsArticle;
 use App\Models\News\NewsArticleAttachment;
 use App\Models\News\NewsArticleSeoMeta;
@@ -19,6 +20,11 @@ final class ImportLegacyNewsSeeder extends BaseLegacyImportSeeder
     public function run(): void
     {
         $module = 'news';
+
+        if (! $this->shouldRunModule($module)) {
+            return;
+        }
+
         $batch = $this->batchName($module);
         $categories = $this->ensureCategories();
         $imported = 0;
@@ -231,17 +237,9 @@ final class ImportLegacyNewsSeeder extends BaseLegacyImportSeeder
 
     private function uniqueSlug(string $source, int $sourceId): string
     {
-        $base = Str::slug($source);
-        $base = $base !== '' ? $base : 'legacy-news-'.$sourceId;
-        $slug = $base;
-        $counter = 2;
+        $source = trim($source) !== '' ? $source : 'legacy-news-'.$sourceId;
 
-        while (NewsArticle::query()->where('slug', $slug)->exists()) {
-            $slug = $base.'-'.$counter;
-            $counter++;
-        }
-
-        return $slug;
+        return app(SlugServiceInterface::class)->generate($source, NewsArticle::class, 'en', null, 80);
     }
 
     private function facultyScopeForServiceType(int $serviceType): ?string

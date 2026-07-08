@@ -7,6 +7,9 @@ namespace Tests\Feature;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Models\Research\ResearchPublication;
+use App\Models\Research\ResearchPublicationTranslation;
+use App\Models\Shared\MigrationLog;
 use App\Models\User\User;
 use Tests\TestCase;
 
@@ -141,6 +144,33 @@ final class ResearchPublicPagesTest extends TestCase
             ->assertSee('/en/research/publications/ai-dental-diagnostics', false);
 
         $response->assertDontSee('/research/detail/?id=', false);
+    }
+
+    public function test_publication_listing_filters_imported_database_publications(): void
+    {
+        $this->createImportedResearchPublication();
+
+        $this->get('/en/research/publications?q=Kaddar&type=published-research&year=2020')
+            ->assertOk()
+            ->assertSee('Legacy Filter Target')
+            ->assertSee('Kaddar Abir')
+            ->assertSee('Legacy Journal, 2020')
+            ->assertSee('value="Kaddar"', false)
+            ->assertDontSee('AI-Driven Predictive Models for Early Dental Caries Detection');
+    }
+
+    public function test_imported_publication_detail_shows_parsed_legacy_metadata(): void
+    {
+        $this->createImportedResearchPublication();
+
+        $this->get('/en/research/publications/legacy-filter-target-9001')
+            ->assertOk()
+            ->assertSee('Legacy Filter Target')
+            ->assertSee('Kaddar Abir')
+            ->assertSee('Legacy Journal, 2020')
+            ->assertSee('Legacy imported abstract body.')
+            ->assertDontSee('Authors')
+            ->assertDontSee('Published in');
     }
 
     public function test_legacy_query_detail_redirects_to_canonical_publication_route(): void
@@ -371,6 +401,40 @@ final class ResearchPublicPagesTest extends TestCase
                 'scopusUrl' => 'https://www.scopus.com',
             ]],
         ];
+    }
+
+    private function createImportedResearchPublication(): void
+    {
+        $publication = ResearchPublication::query()->create([
+            'faculty_member_id' => null,
+            'category_key' => null,
+            'published_at' => '2020-01-02',
+            'external_url' => null,
+            'file_media_id' => null,
+            'sort_order' => 0,
+            'is_enabled' => true,
+        ]);
+
+        ResearchPublicationTranslation::query()->create([
+            'research_publication_id' => $publication->getKey(),
+            'locale' => 'en',
+            'title' => 'Legacy Filter Target',
+            'excerpt' => null,
+            'abstract' => '<p><strong>Authors</strong></p><p>Kaddar Abir and Prof. Salwa Alcheikh</p><p><strong>Published in</strong></p><p>Legacy Journal, 2020</p><p><strong>Abstract</strong></p><p>Legacy imported abstract body.</p><p><strong>Keywords</strong></p><p>legacy, migration</p>',
+            'publisher' => null,
+        ]);
+
+        MigrationLog::query()->create([
+            'module' => 'research',
+            'batch_name' => 'test-imported-research-publications',
+            'source_table' => 'jx_member_categories',
+            'source_id' => 9001,
+            'target_table' => 'research_publications',
+            'target_id' => $publication->getKey(),
+            'status' => 'success',
+            'message' => 'Test imported research publication.',
+            'metadata' => ['phase' => 'phase6'],
+        ]);
     }
 
     /** @return array<string, mixed> */

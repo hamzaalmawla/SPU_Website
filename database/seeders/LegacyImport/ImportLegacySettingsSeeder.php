@@ -11,6 +11,10 @@ class ImportLegacySettingsSeeder extends BaseLegacyImportSeeder
 {
     public function run(): void
     {
+        if (! $this->shouldRunModule('settings')) {
+            return;
+        }
+
         foreach (['jx_config', 'jx_config1'] as $table) {
             $this->importTable($table);
         }

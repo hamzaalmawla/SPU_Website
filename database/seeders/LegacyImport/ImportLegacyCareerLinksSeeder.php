@@ -11,6 +11,11 @@ class ImportLegacyCareerLinksSeeder extends BaseLegacyImportSeeder
     public function run(): void
     {
         $module = 'career_links';
+
+        if (! $this->shouldRunModule($module)) {
+            return;
+        }
+
         $batch = $this->batchName($module);
         $rows = $this->legacyRows('jx_job_sites');
 

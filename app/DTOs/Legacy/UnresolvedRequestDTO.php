@@ -17,5 +17,12 @@ final readonly class UnresolvedRequestDTO
         public ?string $resolvedLocale,
         public string $requestType,
         public string $timestamp,
+        public ?array $normalized = null,
+        public ?string $handler = null,
+        public ?string $outcome = null,
+        public ?string $subsite = null,
+        public ?int $oldSiteId = null,
+        public ?int $oldLanguageId = null,
+        public ?string $oldLanguageSymbol = null,
     ) {}
 }

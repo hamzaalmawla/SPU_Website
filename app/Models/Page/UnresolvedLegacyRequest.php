@@ -30,6 +30,13 @@ class UnresolvedLegacyRequest extends Model
         'referrer',
         'resolved_locale',
         'request_type',
+        'normalized_json',
+        'handler',
+        'outcome',
+        'subsite',
+        'old_site_id',
+        'old_language_id',
+        'old_language_symbol',
         'user_agent',
         'ip_hash',
         'hit_count',
@@ -44,6 +51,9 @@ class UnresolvedLegacyRequest extends Model
     {
         return [
             'hit_count' => 'integer',
+            'normalized_json' => 'array',
+            'old_site_id' => 'integer',
+            'old_language_id' => 'integer',
             'first_seen_at' => 'datetime',
             'last_seen_at' => 'datetime',
             'created_at' => 'datetime',

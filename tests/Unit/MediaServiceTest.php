@@ -59,18 +59,38 @@ class MediaServiceTest extends TestCase
         $this->assertSame('photo.jpg', $result->originalName);
         $this->assertNotEmpty($result->checksum);
         $this->assertSame('image', $result->mediaType);
+        $this->assertSame('main', $result->libraryScope);
+
+        $this->assertDatabaseHas('media_assets', [
+            'id' => $result->mediaId,
+            'library_scope' => 'main',
+        ]);
     }
 
     public function test_uploading_same_file_twice_reuses_existing_asset(): void
     {
         $file = UploadedFile::fake()->create('duplicate.pdf', 500, 'application/pdf');
 
-        $first = $this->service->upload(['file' => $file, 'uploaded_by' => $this->actor->id]);
-        $second = $this->service->upload(['file' => $file, 'uploaded_by' => $this->actor->id]);
+        $first = $this->service->upload(['file' => $file, 'uploaded_by' => $this->actor->id, 'title_en' => 'Duplicate PDF']);
+        $second = $this->service->upload(['file' => $file, 'uploaded_by' => $this->actor->id, 'title_en' => 'Duplicate PDF']);
 
         $this->assertSame($first->mediaId, $second->mediaId);
         $this->assertSame($first->path, $second->path);
         $this->assertDatabaseCount('media_assets', 1);
+    }
+
+    public function test_uploading_file_matching_legacy_checksum_creates_main_asset(): void
+    {
+        $file = $this->fakeFileWithContent('legacy-copy.pdf', 100, 'application/pdf', 'legacy-copy');
+        $checksum = hash_file('sha256', $file->getRealPath());
+        $this->createLegacyAsset(['checksum' => $checksum, 'path' => 'news/files/legacy-copy.pdf']);
+
+        $uploaded = $this->service->upload(['file' => $file, 'uploaded_by' => $this->actor->id, 'title_en' => 'Legacy Copy']);
+
+        $this->assertSame('main', $uploaded->libraryScope);
+        $this->assertDatabaseCount('media_assets', 2);
+        $this->assertDatabaseHas('media_assets', ['id' => $uploaded->mediaId, 'library_scope' => 'main', 'checksum' => $checksum]);
+        $this->assertDatabaseHas('media_assets', ['library_scope' => 'legacy', 'checksum' => $checksum]);
     }
 
     public function test_media_picker_selected_asset_resolves_public_url(): void
@@ -80,14 +100,72 @@ class MediaServiceTest extends TestCase
         $uploaded = $this->service->upload([
             'file' => UploadedFile::fake()->create('selected.jpg', 200, 'image/jpeg'),
             'uploaded_by' => $this->actor->id,
+            'title_en' => 'Selected Image',
         ]);
 
         $this->assertSame($uploaded->url, MediaPicker::selectedUrl($uploaded->mediaId));
     }
 
+    public function test_media_picker_legacy_search_is_explicit_and_non_preloaded(): void
+    {
+        $this->actingAs($this->actor);
+
+        $this->service->upload([
+            'file' => $this->fakeFileWithContent('clean.jpg', 100, 'image/jpeg', 'clean-picker'),
+            'uploaded_by' => $this->actor->id,
+            'title_en' => 'Clean Picker Image',
+        ]);
+        $legacy = $this->createLegacyAsset(['filename' => 'legacy-picker.jpg', 'path' => 'news/images/legacy-picker.jpg']);
+        $options = new \ReflectionMethod(MediaPicker::class, 'options');
+        $options->setAccessible(true);
+
+        /** @var array<int|string, string> $mainResults */
+        $mainResults = $options->invoke(null, 'image', 'legacy-picker');
+        /** @var array<int|string, string> $emptyLegacyResults */
+        $emptyLegacyResults = $options->invoke(null, 'image', '', 'legacy');
+        /** @var array<int|string, string> $legacyResults */
+        $legacyResults = $options->invoke(null, 'image', 'legacy-picker', 'legacy');
+
+        $this->assertSame([], $mainResults);
+        $this->assertSame([], $emptyLegacyResults);
+        $this->assertArrayHasKey($legacy->id, $legacyResults);
+    }
+
+    public function test_media_picker_can_promote_explicit_legacy_selection(): void
+    {
+        $this->actingAs($this->actor);
+        $legacy = $this->createLegacyAsset(['filename' => 'legacy-promote.jpg', 'path' => 'news/images/legacy-promote.jpg']);
+        $promote = new \ReflectionMethod(MediaPicker::class, 'promoteLegacyOption');
+        $promote->setAccessible(true);
+
+        $mediaId = $promote->invoke(null, $legacy->id, [
+            'title_en' => 'Picker Promoted Legacy Image',
+            'alt_text_en' => 'Legacy image promoted from picker',
+        ]);
+
+        $this->assertIsInt($mediaId);
+        $this->assertDatabaseHas('media_assets', [
+            'id' => $mediaId,
+            'library_scope' => 'main',
+            'promoted_from_media_id' => $legacy->id,
+        ]);
+        $this->assertDatabaseHas('media_assets', [
+            'id' => $legacy->id,
+            'library_scope' => 'legacy',
+            'deleted_at' => null,
+        ]);
+    }
+
     public function test_existing_public_image_url_fallback_is_preserved(): void
     {
         $this->assertSame('/images/existing-campus.jpg', \App\Support\MediaUrlResolver::resolve('/images/existing-campus.jpg'));
+    }
+
+    public function test_unconfigured_legacy_disk_path_resolves_as_public_path(): void
+    {
+        config()->set('filesystems.disks.legacy', null);
+
+        $this->assertSame('/news/images/legacy.jpg', \App\Support\MediaUrlResolver::resolve('news/images/legacy.jpg', 'legacy'));
     }
 
     public function test_upload_rejects_disallowed_mime_type(): void
@@ -236,11 +314,55 @@ class MediaServiceTest extends TestCase
         $this->service->upload(['file' => UploadedFile::fake()->create('document.pdf', 500, 'application/pdf')]);
     }
 
+    public function test_upload_requires_title_for_main_media(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        try {
+            $this->service->upload([
+                'file' => UploadedFile::fake()->create('untitled.pdf', 100, 'application/pdf'),
+                'uploaded_by' => $this->actor->id,
+            ]);
+        } finally {
+            $this->assertDatabaseCount('media_assets', 0);
+        }
+    }
+
+    public function test_cms_image_upload_requires_alt_text_when_requested(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        try {
+            $this->service->upload([
+                'file' => UploadedFile::fake()->create('missing-alt.jpg', 100, 'image/jpeg'),
+                'uploaded_by' => $this->actor->id,
+                'title_en' => 'Missing Alt Image',
+                'require_alt_text' => true,
+            ]);
+        } finally {
+            $this->assertDatabaseCount('media_assets', 0);
+        }
+    }
+
+    public function test_cms_image_upload_accepts_required_alt_text(): void
+    {
+        $result = $this->service->upload([
+            'file' => UploadedFile::fake()->create('with-alt.jpg', 100, 'image/jpeg'),
+            'uploaded_by' => $this->actor->id,
+            'title_en' => 'Image With Alt',
+            'alt_text_en' => 'Students walking on campus',
+            'require_alt_text' => true,
+        ]);
+
+        $this->assertGreaterThan(0, $result->mediaId);
+        $this->assertSame('reviewed', $result->metadataStatus);
+    }
+
     public function test_upload_accepts_pdf(): void
     {
         $file = UploadedFile::fake()->create('document.pdf', 500, 'application/pdf');
 
-        $result = $this->service->upload(['file' => $file, 'uploaded_by' => $this->actor->id]);
+        $result = $this->service->upload(['file' => $file, 'uploaded_by' => $this->actor->id, 'title_en' => 'Document']);
 
         $this->assertGreaterThan(0, $result->mediaId);
         $this->assertSame('application/pdf', $result->mimeType);
@@ -272,11 +394,35 @@ class MediaServiceTest extends TestCase
         }
     }
 
+    public function test_import_public_legacy_news_asset_is_classified_as_legacy(): void
+    {
+        $source = public_path('news/files/test-import.pdf');
+        $directory = dirname($source);
+
+        if (! is_dir($directory)) {
+            mkdir($directory, 0777, true);
+        }
+
+        file_put_contents($source, '%PDF-1.4 legacy import');
+
+        try {
+            $result = $this->service->importPublicAsset('news/files/test-import.pdf', $this->actor->id);
+
+            $this->assertNotNull($result);
+            $this->assertSame('legacy', $result->libraryScope);
+            $this->assertSame('/news/files/test-import.pdf', $result->sourcePath);
+        } finally {
+            if (is_file($source)) {
+                unlink($source);
+            }
+        }
+    }
+
     public function test_upload_accepts_webp(): void
     {
         $file = UploadedFile::fake()->create('image.webp', 200, 'image/webp');
 
-        $result = $this->service->upload(['file' => $file, 'uploaded_by' => $this->actor->id]);
+        $result = $this->service->upload(['file' => $file, 'uploaded_by' => $this->actor->id, 'title_en' => 'WebP Image']);
 
         $this->assertGreaterThan(0, $result->mediaId);
         $this->assertSame('image/webp', $result->mimeType);
@@ -294,6 +440,7 @@ class MediaServiceTest extends TestCase
             $result = $this->service->upload([
                 'file' => $this->fakeFileWithContent($filename, 200, $mimeType, 'office-document-'.$index),
                 'uploaded_by' => $this->actor->id,
+                'title_en' => 'Office Document '.$index,
             ]);
 
             $this->assertGreaterThan(0, $result->mediaId);
@@ -313,6 +460,7 @@ class MediaServiceTest extends TestCase
             'file' => UploadedFile::fake()->create('faculty.jpg', 200, 'image/jpeg'),
             'uploaded_by' => $facultyEditor->id,
             'faculty_scope_slug' => 'pharmacy',
+            'title_en' => 'Faculty Image',
         ]);
 
         $asset = MediaAsset::query()->findOrFail($uploaded->mediaId);
@@ -344,7 +492,7 @@ class MediaServiceTest extends TestCase
     public function test_update_metadata_changes_allowed_fields(): void
     {
         $file = UploadedFile::fake()->create('test.jpg', 200, 'image/jpeg');
-        $uploaded = $this->service->upload(['file' => $file, 'uploaded_by' => $this->actor->id]);
+        $uploaded = $this->service->upload(['file' => $file, 'uploaded_by' => $this->actor->id, 'title_en' => 'Metadata Test']);
 
         $result = $this->service->updateMetadata($uploaded->mediaId, [
             'title_ar' => 'عنوان جديد',
@@ -367,7 +515,7 @@ class MediaServiceTest extends TestCase
     public function test_update_metadata_ignores_disallowed_fields(): void
     {
         $file = UploadedFile::fake()->create('test.jpg', 200, 'image/jpeg');
-        $uploaded = $this->service->upload(['file' => $file, 'uploaded_by' => $this->actor->id]);
+        $uploaded = $this->service->upload(['file' => $file, 'uploaded_by' => $this->actor->id, 'title_en' => 'Ignored Fields Test']);
 
         $originalPath = MediaAsset::find($uploaded->mediaId)->path;
 
@@ -393,7 +541,7 @@ class MediaServiceTest extends TestCase
     public function test_delete_soft_deletes_asset(): void
     {
         $file = UploadedFile::fake()->create('delete-me.jpg', 100, 'image/jpeg');
-        $uploaded = $this->service->upload(['file' => $file, 'uploaded_by' => $this->actor->id]);
+        $uploaded = $this->service->upload(['file' => $file, 'uploaded_by' => $this->actor->id, 'title_en' => 'Delete Test']);
 
         $result = $this->service->delete($uploaded->mediaId, $this->actor->id);
 
@@ -412,8 +560,8 @@ class MediaServiceTest extends TestCase
 
     public function test_list_returns_all_assets(): void
     {
-        $this->service->upload(['file' => $this->fakeFileWithContent('a.jpg', 100, 'image/jpeg', 'image-a'), 'uploaded_by' => $this->actor->id]);
-        $this->service->upload(['file' => $this->fakeFileWithContent('b.png', 100, 'image/png', 'image-b'), 'uploaded_by' => $this->actor->id]);
+        $this->service->upload(['file' => $this->fakeFileWithContent('a.jpg', 100, 'image/jpeg', 'image-a'), 'uploaded_by' => $this->actor->id, 'title_en' => 'Image A']);
+        $this->service->upload(['file' => $this->fakeFileWithContent('b.png', 100, 'image/png', 'image-b'), 'uploaded_by' => $this->actor->id, 'title_en' => 'Image B']);
 
         $results = $this->service->list($this->actor->id);
 
@@ -422,8 +570,8 @@ class MediaServiceTest extends TestCase
 
     public function test_list_filters_by_mime_type(): void
     {
-        $this->service->upload(['file' => UploadedFile::fake()->create('photo.jpg', 100, 'image/jpeg'), 'uploaded_by' => $this->actor->id]);
-        $this->service->upload(['file' => UploadedFile::fake()->create('doc.pdf', 100, 'application/pdf'), 'uploaded_by' => $this->actor->id]);
+        $this->service->upload(['file' => UploadedFile::fake()->create('photo.jpg', 100, 'image/jpeg'), 'uploaded_by' => $this->actor->id, 'title_en' => 'Photo']);
+        $this->service->upload(['file' => UploadedFile::fake()->create('doc.pdf', 100, 'application/pdf'), 'uploaded_by' => $this->actor->id, 'title_en' => 'Document']);
 
         $images = $this->service->list($this->actor->id, ['mime_type' => 'image/']);
 
@@ -454,6 +602,7 @@ class MediaServiceTest extends TestCase
         $uploaded = $this->service->upload([
             'file' => UploadedFile::fake()->create('temp.jpg', 100, 'image/jpeg'),
             'uploaded_by' => $this->actor->id,
+            'title_en' => 'Temporary Image',
         ]);
 
         $this->service->delete($uploaded->mediaId, $this->actor->id);
@@ -461,6 +610,109 @@ class MediaServiceTest extends TestCase
         $results = $this->service->list($this->actor->id);
 
         $this->assertCount(0, $results);
+    }
+
+    public function test_normal_list_excludes_legacy_assets_by_default(): void
+    {
+        $this->service->upload(['file' => $this->fakeFileWithContent('main.jpg', 100, 'image/jpeg', 'main-list'), 'uploaded_by' => $this->actor->id, 'title_en' => 'Main List Image']);
+        $this->createLegacyAsset(['filename' => 'legacy.jpg', 'path' => 'news/images/legacy.jpg']);
+
+        $results = $this->service->list($this->actor->id);
+
+        $this->assertCount(1, $results);
+        $this->assertSame('main', $results->first()->libraryScope);
+    }
+
+    public function test_explicit_legacy_archive_query_includes_legacy_assets(): void
+    {
+        $legacy = $this->createLegacyAsset(['filename' => 'legacy-search.jpg', 'path' => 'news/images/legacy-search.jpg']);
+        $this->service->upload(['file' => $this->fakeFileWithContent('main-search.jpg', 100, 'image/jpeg', 'main-search'), 'uploaded_by' => $this->actor->id, 'title_en' => 'Main Search Image']);
+
+        $results = $this->service->list($this->actor->id, ['library_scope' => 'legacy', 'search' => 'legacy-search']);
+
+        $this->assertCount(1, $results);
+        $this->assertSame($legacy->id, $results->first()->mediaId);
+        $this->assertSame('legacy', $results->first()->libraryScope);
+    }
+
+    public function test_promoting_legacy_asset_creates_main_asset_without_deleting_original(): void
+    {
+        $legacy = $this->createLegacyAsset([
+            'checksum' => hash('sha256', 'promote-me'),
+            'filename' => 'promote-me.jpg',
+            'path' => 'news/images/promote-me.jpg',
+            'mime_type' => 'image/jpeg',
+            'media_type' => 'image',
+        ]);
+
+        $promoted = $this->service->promoteLegacyAsset($legacy->id, [
+            'title_en' => 'Promoted Asset',
+            'alt_text_en' => 'Promoted asset alt text',
+            'metadata_status' => 'reviewed',
+        ], $this->actor->id);
+
+        $this->assertSame('main', $promoted->libraryScope);
+        $this->assertSame('reviewed', $promoted->metadataStatus);
+        $this->assertSame($legacy->id, $promoted->promotedFromMediaId);
+        $this->assertSame('news/images/promote-me.jpg', $promoted->sourcePath);
+        $this->assertDatabaseHas('media_assets', ['id' => $legacy->id, 'library_scope' => 'legacy', 'deleted_at' => null]);
+        $this->assertDatabaseHas('media_assets', ['id' => $promoted->mediaId, 'library_scope' => 'main', 'promoted_from_media_id' => $legacy->id]);
+    }
+
+    public function test_promoting_legacy_image_requires_alt_text(): void
+    {
+        $legacy = $this->createLegacyAsset([
+            'checksum' => hash('sha256', 'promote-missing-alt'),
+            'filename' => 'promote-missing-alt.jpg',
+            'path' => 'news/images/promote-missing-alt.jpg',
+            'mime_type' => 'image/jpeg',
+            'media_type' => 'image',
+        ]);
+
+        $this->expectException(ValidationException::class);
+
+        try {
+            $this->service->promoteLegacyAsset($legacy->id, [
+                'title_en' => 'Promotion Missing Alt',
+            ], $this->actor->id);
+        } finally {
+            $this->assertDatabaseCount('media_assets', 1);
+            $this->assertDatabaseHas('media_assets', ['id' => $legacy->id, 'library_scope' => 'legacy', 'deleted_at' => null]);
+        }
+    }
+
+    public function test_promoting_legacy_asset_reuses_existing_main_asset_by_checksum(): void
+    {
+        $checksum = hash('sha256', 'already-main');
+        $legacy = $this->createLegacyAsset([
+            'checksum' => $checksum,
+            'filename' => 'legacy-main.pdf',
+            'path' => 'news/files/legacy-main.pdf',
+            'mime_type' => 'application/pdf',
+            'media_type' => 'pdf',
+            'extension' => 'pdf',
+        ]);
+        $main = MediaAsset::query()->create([
+            'disk' => 'public',
+            'directory' => 'media/pdf',
+            'filename' => 'main.pdf',
+            'original_name' => 'main.pdf',
+            'mime_type' => 'application/pdf',
+            'extension' => 'pdf',
+            'size_bytes' => 100,
+            'checksum' => $checksum,
+            'media_type' => 'pdf',
+            'library_scope' => 'main',
+            'metadata_status' => 'reviewed',
+            'title_en' => 'Existing Main',
+            'path' => 'media/pdf/main.pdf',
+        ]);
+
+        $promoted = $this->service->promoteLegacyAsset($legacy->id, ['title_en' => 'Ignored New Title'], $this->actor->id);
+
+        $this->assertSame($main->id, $promoted->mediaId);
+        $this->assertDatabaseCount('media_assets', 2);
+        $this->assertDatabaseHas('media_assets', ['id' => $legacy->id, 'library_scope' => 'legacy', 'deleted_at' => null]);
     }
 
     // ── Paginated list ───────────────────────────────────────────────────
@@ -471,6 +723,7 @@ class MediaServiceTest extends TestCase
             $this->service->upload([
                 'file' => $this->fakeFileWithContent("file{$i}.jpg", 100, 'image/jpeg', 'page-file-'.$i),
                 'uploaded_by' => $this->actor->id,
+                'title_en' => 'Page File '.$i,
             ]);
         }
 
@@ -490,6 +743,7 @@ class MediaServiceTest extends TestCase
             $this->service->upload([
                 'file' => $this->fakeFileWithContent("file{$i}.jpg", 100, 'image/jpeg', 'second-page-file-'.$i),
                 'uploaded_by' => $this->actor->id,
+                'title_en' => 'Second Page File '.$i,
             ]);
         }
 
@@ -502,8 +756,8 @@ class MediaServiceTest extends TestCase
 
     public function test_list_paginated_applies_filters(): void
     {
-        $this->service->upload(['file' => UploadedFile::fake()->create('photo.jpg', 100, 'image/jpeg'), 'uploaded_by' => $this->actor->id]);
-        $this->service->upload(['file' => UploadedFile::fake()->create('doc.pdf', 100, 'application/pdf'), 'uploaded_by' => $this->actor->id]);
+        $this->service->upload(['file' => UploadedFile::fake()->create('photo.jpg', 100, 'image/jpeg'), 'uploaded_by' => $this->actor->id, 'title_en' => 'Paginated Photo']);
+        $this->service->upload(['file' => UploadedFile::fake()->create('doc.pdf', 100, 'application/pdf'), 'uploaded_by' => $this->actor->id, 'title_en' => 'Paginated Document']);
 
         $result = $this->service->listPaginated($this->actor->id, ['mime_type' => 'image/'], 1, 10);
 
@@ -519,5 +773,27 @@ class MediaServiceTest extends TestCase
         $this->assertSame(0, $result->total);
         $this->assertSame(1, $result->currentPage);
         $this->assertSame(1, $result->lastPage);
+    }
+
+    /** @param array<string, mixed> $overrides */
+    private function createLegacyAsset(array $overrides = []): MediaAsset
+    {
+        $path = (string) ($overrides['path'] ?? 'news/images/legacy.jpg');
+
+        return MediaAsset::query()->create(array_merge([
+            'disk' => 'legacy',
+            'directory' => dirname($path) !== '.' ? dirname($path) : null,
+            'filename' => basename($path),
+            'original_name' => basename($path),
+            'mime_type' => 'image/jpeg',
+            'extension' => pathinfo($path, PATHINFO_EXTENSION) ?: 'jpg',
+            'size_bytes' => 100,
+            'checksum' => hash('sha256', $path),
+            'media_type' => 'image',
+            'library_scope' => 'legacy',
+            'metadata_status' => 'missing',
+            'path' => $path,
+            'source_path' => $path,
+        ], $overrides));
     }
 }

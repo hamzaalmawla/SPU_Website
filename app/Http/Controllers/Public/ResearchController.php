@@ -37,7 +37,13 @@ final class ResearchController extends Controller
 
     public function publications(Request $request, string $locale): View
     {
-        return $this->renderPage($request, $locale, $this->researchPageService->publications($locale), 'public.research.publications.index', '/research/publications');
+        return $this->renderPage(
+            $request,
+            $locale,
+            $this->researchPageService->publications($locale, $request->only(['q', 'faculty', 'type', 'year'])),
+            'public.research.publications.index',
+            '/research/publications'
+        );
     }
 
     public function publication(Request $request, string $locale, string $slug): View

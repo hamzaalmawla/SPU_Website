@@ -24,8 +24,11 @@
             'projects', 'alumni', 'valedictorians' => null,
             default => $subpage['summary'] ?? null,
         };
-        $alumniYears = collect($page->items)->pluck('graduationYear')->filter()->unique()->values();
-        $alumniDepartments = collect($page->items)->pluck('department')->filter()->unique()->values();
+        $filters = $page->filters ?? [];
+        $filterOptions = $page->filterOptions ?? [];
+        $pagination = $page->pagination ?? ['current_page' => 1, 'total_pages' => 1, 'total_items' => count($page->items), 'from' => count($page->items) > 0 ? 1 : 0, 'to' => count($page->items)];
+        $studentListUrl = '/'.$locale.'/facilities/'.$page->facultySlug.'/'.$page->subpageSlug;
+        $pageUrl = fn (int $pageNumber): string => request()->fullUrlWithQuery(['page' => $pageNumber]);
         $training = $page->subpageSlug === 'training' ? ($subpage['payload'] ?? []) : [];
         $localized = fn (array $item, string $key): string => (string) ($item[$key] ?? $item[$key.ucfirst($locale)] ?? $item[$key.'En'] ?? $item[$key.'Ar'] ?? '');
     @endphp
@@ -311,31 +314,41 @@
     @elseif ($page->subpageSlug === 'alumni')
         <section class="bg-white py-12 font-hacen">
             <div class="container">
-                <div class="mb-8 flex flex-wrap items-center gap-4">
-                    <a href="/{{ $locale }}/facilities/{{ $page->facultySlug }}/alumni" class="inline-flex h-9 items-center justify-center rounded-[6px] bg-spu-red px-4 text-[11px] font-bold uppercase tracking-[0.08em] text-white transition-colors hover:bg-spu-blue">{{ $isAr ? 'الكل' : 'All' }}</a>
-                    <select class="h-9 min-w-[150px] rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue">
-                        <option>{{ $isAr ? 'سنة التخرج' : 'Graduation Year' }}</option>
-                        @foreach ($alumniYears as $year)
-                            <option>{{ $year }}</option>
+                <form method="GET" action="{{ $studentListUrl }}" class="mb-8 flex flex-wrap items-center gap-4">
+                    <input type="search" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="{{ $isAr ? 'ابحث عن اسم الطالب' : 'Search student name' }}" class="h-9 min-w-[220px] rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue">
+                    <select name="year" onchange="this.form.submit()" class="h-9 min-w-[150px] rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue">
+                        <option value="">{{ $isAr ? 'سنة التخرج' : 'Graduation Year' }}</option>
+                        @foreach (($filterOptions['years'] ?? []) as $year)
+                            <option value="{{ $year }}" @selected(($filters['year'] ?? '') === (string) $year)>{{ $year }}</option>
                         @endforeach
                     </select>
-                    <select class="h-9 min-w-[150px] rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue">
-                        <option>{{ $isAr ? 'القسم' : 'Department' }}</option>
-                        @foreach ($alumniDepartments as $department)
-                            <option>{{ $department }}</option>
+                    <select name="department" onchange="this.form.submit()" class="h-9 min-w-[150px] rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue">
+                        <option value="">{{ $isAr ? 'القسم' : 'Department' }}</option>
+                        @foreach (($filterOptions['departments'] ?? []) as $department)
+                            <option value="{{ $department }}" @selected(($filters['department'] ?? '') === (string) $department)>{{ $department }}</option>
                         @endforeach
                     </select>
-                    <select class="h-9 min-w-[150px] rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue">
-                        <option>{{ $isAr ? 'الكلية' : 'Faculty' }}</option>
-                        <option>{{ $faculty['title'] }}</option>
+                    <select name="faculty" onchange="this.form.submit()" class="h-9 min-w-[150px] rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue">
+                        <option value="">{{ $isAr ? 'الكلية' : 'Faculty' }}</option>
+                        @foreach (($filterOptions['faculties'] ?? []) as $facultyOption)
+                            <option value="{{ $facultyOption }}" @selected(($filters['faculty'] ?? '') === (string) $facultyOption)>{{ $facultyOption }}</option>
+                        @endforeach
                     </select>
-                    <select class="h-9 min-w-[150px] rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue">
-                        <option>{{ $isAr ? 'المرحلة الأكاديمية' : 'Academic Phase' }}</option>
-                        <option>{{ $isAr ? 'خريج' : 'Graduate' }}</option>
+                    <select name="academic_phase" onchange="this.form.submit()" class="h-9 min-w-[150px] rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue">
+                        <option value="">{{ $isAr ? 'المرحلة الأكاديمية' : 'Academic Phase' }}</option>
+                        @foreach (($filterOptions['academicPhases'] ?? []) as $phase)
+                            <option value="{{ $phase }}" @selected(($filters['academic_phase'] ?? '') === (string) $phase)>{{ $phase }}</option>
+                        @endforeach
                     </select>
-                </div>
+                    <button type="submit" class="inline-flex h-9 items-center justify-center rounded-[6px] bg-spu-red px-4 text-[11px] font-bold uppercase tracking-[0.08em] text-white transition-colors hover:bg-spu-blue">{{ $isAr ? 'بحث' : 'Search' }}</button>
+                    <a href="{{ $studentListUrl }}" class="inline-flex h-9 items-center justify-center rounded-[6px] border border-slate-200 px-4 text-[11px] font-bold uppercase tracking-[0.08em] text-spu-blue transition-colors hover:border-spu-blue">{{ $isAr ? 'الكل' : 'All' }}</a>
+                </form>
 
-                <div class="cms-grid-compact gap-5">
+                <p class="mb-5 text-[12px] font-semibold text-slate-500">
+                    {{ $isAr ? 'عرض' : 'Showing' }} {{ $pagination['from'] ?? 0 }}-{{ $pagination['to'] ?? 0 }} {{ $isAr ? 'من' : 'of' }} {{ $pagination['total_items'] ?? count($page->items) }}
+                </p>
+
+                <div class="grid gap-5" style="grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 24rem));">
                     @forelse ($page->items as $item)
                         <article class="overflow-hidden border border-slate-200 bg-white shadow-[0_8px_26px_rgba(15,23,42,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_44px_rgba(15,23,42,0.1)]">
                             <div class="h-[230px] overflow-hidden bg-slate-100">
@@ -352,30 +365,65 @@
                         <p class="text-sm font-semibold text-slate-500">{{ $isAr ? 'لا توجد سجلات منشورة حالياً.' : 'No published records are available yet.' }}</p>
                     @endforelse
                 </div>
+
+                @if (($pagination['total_pages'] ?? 1) > 1)
+                    <nav class="mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="{{ $isAr ? 'ترقيم الصفحات' : 'Pagination' }}">
+                        @for ($pageNumber = 1; $pageNumber <= (int) $pagination['total_pages']; $pageNumber++)
+                            <a href="{{ $pageUrl($pageNumber) }}" class="inline-flex h-9 min-w-9 items-center justify-center rounded-[4px] border px-3 text-[12px] font-bold transition {{ (int) ($pagination['current_page'] ?? 1) === $pageNumber ? 'border-spu-red bg-spu-red text-white' : 'border-slate-200 text-spu-blue hover:border-spu-blue' }}">{{ $pageNumber }}</a>
+                        @endfor
+                    </nav>
+                @endif
             </div>
         </section>
     @elseif ($page->subpageSlug === 'valedictorians')
         <section class="honor-page bg-white py-14 font-hacen md:py-18">
             <div class="container">
-                <div class="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+                <form method="GET" action="{{ $studentListUrl }}" class="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
                     <div class="flex flex-wrap items-center gap-3">
-                        <button type="button" class="honor-filter honor-filter--active">{{ $isAr ? 'كل الفصول' : 'All Semesters' }}</button>
-                        <button type="button" class="honor-filter">{{ $isAr ? 'الفصل الأول' : 'First Semester' }}</button>
-                        <button type="button" class="honor-filter">{{ $isAr ? 'الفصل الثاني' : 'Second Semester' }}</button>
-                        <select class="honor-select">
-                            <option>{{ $isAr ? 'القسم' : 'Department' }}</option>
-                            @foreach (collect($page->items)->pluck('department')->filter()->unique() as $department)
-                                <option>{{ $department }}</option>
+                        <input type="search" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="{{ $isAr ? 'ابحث عن اسم الطالب' : 'Search student name' }}" class="honor-select min-w-[220px]">
+                        <select name="semester" onchange="this.form.submit()" class="honor-select">
+                            <option value="">{{ $isAr ? 'كل الفصول' : 'All Semesters' }}</option>
+                            @foreach (($filterOptions['semesters'] ?? []) as $semester)
+                                <option value="{{ $semester['key'] }}" @selected(($filters['semester'] ?? '') === (string) $semester['key'])>{{ $semester['label'] }}</option>
                             @endforeach
                         </select>
-                        <select class="honor-select">
-                            <option>{{ $page->items[0]['academicYear'] ?? '2025-2026' }}</option>
+                        <select name="department" onchange="this.form.submit()" class="honor-select">
+                            <option value="">{{ $isAr ? 'القسم' : 'Department' }}</option>
+                            @foreach (($filterOptions['departments'] ?? []) as $department)
+                                <option value="{{ $department }}" @selected(($filters['department'] ?? '') === (string) $department)>{{ $department }}</option>
+                            @endforeach
                         </select>
+                        <select name="year" onchange="this.form.submit()" class="honor-select">
+                            <option value="">{{ $isAr ? 'السنة' : 'Year' }}</option>
+                            @foreach (($filterOptions['years'] ?? []) as $year)
+                                <option value="{{ $year }}" @selected(($filters['year'] ?? '') === (string) $year)>{{ $year }}</option>
+                            @endforeach
+                        </select>
+                        <button type="submit" class="honor-filter honor-filter--active">{{ $isAr ? 'بحث' : 'Search' }}</button>
+                        <a href="{{ $studentListUrl }}" class="honor-filter">{{ $isAr ? 'الكل' : 'All' }}</a>
                     </div>
-                </div>
-                <div class="cms-grid-cards mt-9 gap-x-8 gap-y-12">
+                </form>
+                <p class="mt-5 text-[12px] font-semibold text-slate-500">
+                    {{ $isAr ? 'عرض' : 'Showing' }} {{ $pagination['from'] ?? 0 }}-{{ $pagination['to'] ?? 0 }} {{ $isAr ? 'من' : 'of' }} {{ $pagination['total_items'] ?? count($page->items) }}
+                </p>
+                <div class="mt-9 grid gap-x-8 gap-y-12" style="grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 24rem));">
                     @forelse ($page->items as $item)
-                        <article class="honor-card">
+                        @php($isMemorial = (bool) ($item['isMemorial'] ?? false))
+                        <article class="honor-card" @if ($isMemorial) style="position: relative; border-color: rgba(236, 214, 160, 0.95); background: linear-gradient(180deg, #fffdf7 0%, #ffffff 54%); box-shadow: 0 14px 34px rgba(111, 22, 22, 0.10);" @endif>
+                            @if ($isMemorial)
+                                <span aria-hidden="true" style="position: absolute; top: 10px; right: 10px; z-index: 3; display: inline-flex; gap: 2px; opacity: 0.95; filter: drop-shadow(0 4px 8px rgba(32, 39, 89, 0.14));">
+                                    <svg width="50" height="26" viewBox="0 0 50 26" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">
+                                        <circle cx="13" cy="11" r="5" fill="#fffaf0" stroke="#ecd6a0" stroke-width="1"/>
+                                        <circle cx="8" cy="15" r="5" fill="#fffaf0" stroke="#ecd6a0" stroke-width="1"/>
+                                        <circle cx="18" cy="15" r="5" fill="#fffaf0" stroke="#ecd6a0" stroke-width="1"/>
+                                        <circle cx="10" cy="21" r="5" fill="#fffaf0" stroke="#ecd6a0" stroke-width="1"/>
+                                        <circle cx="16" cy="21" r="5" fill="#fffaf0" stroke="#ecd6a0" stroke-width="1"/>
+                                        <circle cx="13" cy="17" r="2" fill="#d8a928"/>
+                                        <path d="M25 17C31 8 39 7 46 11" stroke="#8cae84" stroke-width="2" stroke-linecap="round"/>
+                                        <path d="M35 10C36 15 32 17 28 17C29 13 31 11 35 10Z" fill="#8cae84"/>
+                                    </svg>
+                                </span>
+                            @endif
                             <div class="honor-card__media">
                                 <img src="{{ $item['image'] ?? '/images/unkown.jpeg' }}" alt="{{ $item['title'] ?? '' }}" class="h-full w-full object-cover">
                                 <div class="honor-card__gpa">
@@ -383,12 +431,48 @@
                                     <span dir="ltr">{{ $item['gpa'] ?? '' }}</span>
                                 </div>
                             </div>
-                            <div class="honor-card__body">
-                                <h3 class="honor-card__name">{{ $item['title'] ?? '' }}</h3>
-                                <p class="mt-2 text-[10px] font-bold uppercase tracking-[0.08em] text-spu-blue/45">{{ $item['faculty'] ?? $faculty['title'] }}</p>
-                                <div class="mt-6 flex items-center justify-between gap-5">
-                                    <span class="honor-card__semester">{{ $item['semester'] ?? ($isAr ? 'الفصل الثاني' : 'Second Semester') }}</span>
-                                    <span class="honor-card__rank">{{ $isAr ? 'قائمة الشرف' : 'Honor List' }}</span>
+                            <div class="honor-card__body" @if ($isMemorial) style="position: relative; overflow: hidden;" @endif>
+                                @if ($isMemorial)
+                                    <span aria-hidden="true" style="position: absolute; right: -12px; bottom: -8px; z-index: 1; width: 78%; max-width: 270px; opacity: 0.30; pointer-events: none;">
+                                        <svg viewBox="0 0 260 110" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">
+                                            <path d="M8 95C46 78 72 64 101 41C119 27 139 13 169 9" stroke="#24304f" stroke-width="1.35" stroke-linecap="round"/>
+                                            <path d="M52 74C43 58 48 47 62 38C67 54 63 67 52 74Z" fill="#fffdf7" stroke="#24304f" stroke-width="1.05"/>
+                                            <path d="M71 64C84 53 98 53 111 63C96 72 83 72 71 64Z" fill="#fffdf7" stroke="#24304f" stroke-width="1.05"/>
+                                            <path d="M105 39C97 24 103 13 117 5C121 21 116 32 105 39Z" fill="#fffdf7" stroke="#24304f" stroke-width="1.05"/>
+                                            <path d="M135 25C150 17 164 19 176 32C159 38 146 35 135 25Z" fill="#fffdf7" stroke="#24304f" stroke-width="1.05"/>
+                                            <path d="M178 10C190 4 202 7 211 18C197 22 187 20 178 10Z" fill="#fffdf7" stroke="#24304f" stroke-width="1.05"/>
+                                            <path d="M37 82C42 76 48 73 56 73" stroke="#24304f" stroke-width="1" stroke-linecap="round"/>
+                                            <path d="M86 55C91 45 98 39 108 37" stroke="#24304f" stroke-width="1" stroke-linecap="round"/>
+                                            <path d="M124 31C135 31 143 35 150 43" stroke="#24304f" stroke-width="1" stroke-linecap="round"/>
+                                            <path d="M165 12C174 18 179 27 181 39" stroke="#24304f" stroke-width="1" stroke-linecap="round"/>
+                                            <g transform="translate(42 51)">
+                                                <path d="M18 16C4 12 0 3 4 -8C15 -2 20 6 18 16Z" fill="#ffffff" stroke="#24304f" stroke-width="1"/>
+                                                <path d="M18 16C12 2 16 -7 27 -12C31 1 27 10 18 16Z" fill="#ffffff" stroke="#24304f" stroke-width="1"/>
+                                                <path d="M18 16C24 2 33 -1 43 5C36 16 27 20 18 16Z" fill="#ffffff" stroke="#24304f" stroke-width="1"/>
+                                                <path d="M18 16C31 20 35 29 30 39C18 33 14 25 18 16Z" fill="#ffffff" stroke="#24304f" stroke-width="1"/>
+                                                <path d="M18 16C7 25 -2 24 -9 15C2 8 11 8 18 16Z" fill="#ffffff" stroke="#24304f" stroke-width="1"/>
+                                                <circle cx="18" cy="16" r="2.2" fill="#d8a928"/>
+                                            </g>
+                                            <g transform="translate(115 15) scale(0.82)">
+                                                <path d="M18 16C5 12 1 4 5 -7C15 -1 20 7 18 16Z" fill="#ffffff" stroke="#24304f" stroke-width="1"/>
+                                                <path d="M18 16C12 4 15 -6 26 -11C31 1 27 10 18 16Z" fill="#ffffff" stroke="#24304f" stroke-width="1"/>
+                                                <path d="M18 16C25 4 34 1 43 8C35 18 26 20 18 16Z" fill="#ffffff" stroke="#24304f" stroke-width="1"/>
+                                                <path d="M18 16C29 21 33 29 27 38C17 32 14 24 18 16Z" fill="#ffffff" stroke="#24304f" stroke-width="1"/>
+                                                <path d="M18 16C7 24 -2 22 -8 13C3 8 11 9 18 16Z" fill="#ffffff" stroke="#24304f" stroke-width="1"/>
+                                                <circle cx="18" cy="16" r="2.2" fill="#d8a928"/>
+                                            </g>
+                                            <path d="M217 17C229 10 240 11 250 21" stroke="#24304f" stroke-width="1" stroke-linecap="round"/>
+                                            <path d="M224 17C228 27 223 34 213 38C212 27 216 21 224 17Z" fill="#fffdf7" stroke="#24304f" stroke-width="1"/>
+                                        </svg>
+                                    </span>
+                                @endif
+                                <div @if ($isMemorial) style="position: relative; z-index: 2;" @endif>
+                                    <h3 class="honor-card__name">{{ $item['title'] ?? '' }}</h3>
+                                    <p class="mt-2 text-[10px] font-bold uppercase tracking-[0.08em] text-spu-blue/45">{{ $item['faculty'] ?? $faculty['title'] }}</p>
+                                    <div class="mt-6 flex items-center justify-between gap-5">
+                                        <span class="honor-card__semester">{{ $item['semester'] ?? ($isAr ? 'الفصل الثاني' : 'Second Semester') }}</span>
+                                        <span class="honor-card__rank">{{ $isAr ? 'قائمة الشرف' : 'Honor List' }}</span>
+                                    </div>
                                 </div>
                             </div>
                         </article>
@@ -396,6 +480,14 @@
                         <p class="text-sm font-semibold text-slate-500">{{ $isAr ? 'لا توجد سجلات منشورة حالياً.' : 'No published records are available yet.' }}</p>
                     @endforelse
                 </div>
+
+                @if (($pagination['total_pages'] ?? 1) > 1)
+                    <nav class="mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="{{ $isAr ? 'ترقيم الصفحات' : 'Pagination' }}">
+                        @for ($pageNumber = 1; $pageNumber <= (int) $pagination['total_pages']; $pageNumber++)
+                            <a href="{{ $pageUrl($pageNumber) }}" class="inline-flex h-9 min-w-9 items-center justify-center rounded-[4px] border px-3 text-[12px] font-bold transition {{ (int) ($pagination['current_page'] ?? 1) === $pageNumber ? 'border-spu-red bg-spu-red text-white' : 'border-slate-200 text-spu-blue hover:border-spu-blue' }}">{{ $pageNumber }}</a>
+                        @endfor
+                    </nav>
+                @endif
             </div>
         </section>
     @endif

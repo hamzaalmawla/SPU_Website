@@ -12,6 +12,10 @@ class ImportLegacyHomepageSeeder extends BaseLegacyImportSeeder
 {
     public function run(): void
     {
+        if (! $this->shouldRunModule('homepage')) {
+            return;
+        }
+
         $this->importHomePhotos();
         $this->importLogos();
     }
@@ -93,31 +97,24 @@ class ImportLegacyHomepageSeeder extends BaseLegacyImportSeeder
 
     private function importMediaAsset(string $path, object $row, ?string $titleFallback): MediaAsset
     {
-        $filename = basename($path);
-        $directory = dirname($path);
+        $media = $this->legacyMediaAsset($path, null, [
+            'original_name' => $this->cleanedString($row, ['original_name', 'title', 'name']) ?? basename($path),
+            'size_bytes' => $this->normalizedInteger($this->rowValue($row, ['size', 'file_size'])) ?? 0,
+            'width' => $this->normalizedInteger($this->rowValue($row, 'width')),
+            'height' => $this->normalizedInteger($this->rowValue($row, 'height')),
+            'alt_text_ar' => $this->cleanedString($row, ['alt_ar', 'alt', 'title_ar']),
+            'alt_text_en' => $this->cleanedString($row, ['alt_en', 'title_en']),
+            'caption_ar' => $this->cleanedString($row, ['caption_ar', 'caption']),
+            'caption_en' => $this->cleanedString($row, ['caption_en']),
+            'title_ar' => $this->cleanedString($row, ['title_ar', 'title']) ?? $titleFallback,
+            'title_en' => $this->cleanedString($row, ['title_en']),
+        ]);
 
-        return MediaAsset::query()->updateOrCreate(
-            ['disk' => 'legacy', 'path' => $path],
-            [
-                'directory' => $directory !== '.' ? $directory : null,
-                'filename' => $filename,
-                'original_name' => $this->cleanedString($row, ['original_name', 'title', 'name']) ?? $filename,
-                'mime_type' => $this->guessMimeType($path),
-                'extension' => strtolower((string) pathinfo($path, PATHINFO_EXTENSION)) ?: null,
-                'size_bytes' => $this->normalizedInteger($this->rowValue($row, ['size', 'file_size'])) ?? 0,
-                'width' => $this->normalizedInteger($this->rowValue($row, 'width')),
-                'height' => $this->normalizedInteger($this->rowValue($row, 'height')),
-                'alt_text_ar' => $this->cleanedString($row, ['alt_ar', 'alt', 'title_ar']),
-                'alt_text_en' => $this->cleanedString($row, ['alt_en', 'title_en']),
-                'caption_ar' => $this->cleanedString($row, ['caption_ar', 'caption']),
-                'caption_en' => $this->cleanedString($row, ['caption_en']),
-                'title_ar' => $this->cleanedString($row, ['title_ar', 'title']) ?? $titleFallback,
-                'title_en' => $this->cleanedString($row, ['title_en']),
-                'webp_path' => null,
-                'srcset_json' => null,
-                'uploaded_by' => null,
-            ],
-        );
+        if (! $media instanceof MediaAsset) {
+            throw new \RuntimeException('Unable to create legacy homepage media asset.');
+        }
+
+        return $media;
     }
 
     private function resolveHomepageSectionKey(?string $value): ?string

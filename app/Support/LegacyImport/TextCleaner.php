@@ -13,6 +13,7 @@ class TextCleaner
         }
 
         $cleaned = $this->stripInvisibleCharacters($value);
+        $cleaned = str_replace("\u{00A0}", ' ', $cleaned);
         $cleaned = str_replace(["\r\n", "\r"], "\n", $cleaned);
         $cleaned = preg_replace('/[ \t]+/u', ' ', $cleaned) ?? $cleaned;
         $cleaned = preg_replace('/\n{3,}/u', "\n\n", $cleaned) ?? $cleaned;

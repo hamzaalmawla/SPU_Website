@@ -62,7 +62,11 @@ class NewsArticleResource extends Resource
     {
         return $form->schema([
             Section::make('Article')->schema([
-                TextInput::make('slug')->required()->maxLength(255)->alphaDash()->unique(ignoreRecord: true),
+                TextInput::make('slug')
+                    ->maxLength(80)
+                    ->alphaDash()
+                    ->unique(ignoreRecord: true)
+                    ->helperText('Leave blank on create to generate a short canonical URL slug from the title.'),
                 Select::make('news_category_id')->label('Category')->relationship('category', 'slug')->searchable()->preload(),
                 MediaPicker::assetImage('cover_media_id', 'Cover Media'),
                 Select::make('status')

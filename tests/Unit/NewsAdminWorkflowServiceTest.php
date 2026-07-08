@@ -45,6 +45,83 @@ final class NewsAdminWorkflowServiceTest extends TestCase
         $this->assertSame((int) $user->getKey(), $data['updated_by']);
     }
 
+    public function test_article_create_generates_short_slug_from_title_when_blank(): void
+    {
+        $user = User::factory()->create(['role_slug' => 'editor']);
+
+        $data = $this->service->prepareArticleDataForCreate([
+            'slug' => '',
+            'status' => 'draft',
+            'translations' => [
+                ['locale' => 'ar', 'title' => 'عنوان عربي'],
+                ['locale' => 'en', 'title' => 'Syrian Private University announces important registration dates for newly admitted students and orientation week'],
+            ],
+        ], (int) $user->getKey());
+
+        $this->assertIsString($data['slug']);
+        $this->assertLessThanOrEqual(80, strlen($data['slug']));
+        $this->assertMatchesRegularExpression('/^[a-z0-9\-]+$/', $data['slug']);
+        $this->assertStringStartsWith('syrian-private-university-announces', $data['slug']);
+    }
+
+    public function test_article_create_generates_unique_short_slug(): void
+    {
+        NewsArticle::query()->create([
+            'slug' => 'same-news-title',
+            'status' => 'draft',
+            'is_enabled' => true,
+        ]);
+
+        $data = $this->service->prepareArticleDataForCreate([
+            'slug' => '',
+            'status' => 'draft',
+            'translations' => [
+                ['locale' => 'en', 'title' => 'Same News Title'],
+            ],
+        ], null);
+
+        $this->assertSame('same-news-title-1', $data['slug']);
+    }
+
+    public function test_article_update_keeps_existing_slug_when_title_changes(): void
+    {
+        $user = User::factory()->create(['role_slug' => 'editor']);
+        $article = NewsArticle::query()->create([
+            'slug' => 'stable-news-slug',
+            'status' => 'draft',
+            'is_enabled' => true,
+        ]);
+
+        $data = $this->service->prepareArticleDataForUpdate((int) $article->getKey(), [
+            'slug' => 'stable-news-slug',
+            'status' => 'draft',
+            'translations' => [
+                ['locale' => 'en', 'title' => 'A completely different headline should not rewrite the canonical URL'],
+            ],
+        ], (int) $user->getKey());
+
+        $this->assertSame('stable-news-slug', $data['slug']);
+    }
+
+    public function test_article_update_normalizes_changed_slug_to_short_unique_slug(): void
+    {
+        $user = User::factory()->create(['role_slug' => 'editor']);
+        $article = NewsArticle::query()->create([
+            'slug' => 'old-news-slug',
+            'status' => 'draft',
+            'is_enabled' => true,
+        ]);
+
+        $data = $this->service->prepareArticleDataForUpdate((int) $article->getKey(), [
+            'slug' => 'This is a new and extremely long canonical slug manually requested by the editor for a public university news article',
+            'status' => 'draft',
+        ], (int) $user->getKey());
+
+        $this->assertNotSame('old-news-slug', $data['slug']);
+        $this->assertLessThanOrEqual(80, strlen($data['slug']));
+        $this->assertMatchesRegularExpression('/^[a-z0-9\-]+$/', $data['slug']);
+    }
+
     public function test_faculty_editor_cannot_change_status_of_public_article(): void
     {
         $user = User::factory()->create([

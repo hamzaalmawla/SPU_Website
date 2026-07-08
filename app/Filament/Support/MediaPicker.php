@@ -105,7 +105,10 @@ final class MediaPicker
                     ->helperText('Existing URL/path values keep working. Use Choose / Upload for Media Library files.')
                     ->required($required)
                     ->maxLength(2048)
-                    ->suffixAction(self::chooseOrUploadAction($statePath, $mediaIdPath, $type))
+                    ->suffixActions([
+                        self::chooseOrUploadAction($statePath, $mediaIdPath, $type),
+                        self::clearAction($statePath, $mediaIdPath),
+                    ])
                     ->dehydrated(true),
 
                 Placeholder::make($statePath.'_preview')
@@ -128,7 +131,10 @@ final class MediaPicker
                     ->required($required)
                     ->readOnly()
                     ->maxLength(2048)
-                    ->suffixAction(self::chooseOrUploadAction($statePath, $mediaIdPath, $type))
+                    ->suffixActions([
+                        self::chooseOrUploadAction($statePath, $mediaIdPath, $type),
+                        self::clearAction($statePath, $mediaIdPath),
+                    ])
                     ->dehydrated(true),
             ]);
     }
@@ -141,13 +147,22 @@ final class MediaPicker
             ->modalHeading('Choose or upload media')
             ->form([
                 Select::make('media_id')
-                    ->label('Choose existing file')
-                    ->helperText('Search by filename or title. Leave empty if uploading a new file below.')
+                    ->label('Choose existing main library file')
+                    ->helperText('Search clean media by filename or title. Legacy assets are not included here.')
                     ->searchable()
                     ->native(false)
                     ->preload(false)
                     ->options(fn (): array => self::options($type))
                     ->getSearchResultsUsing(fn (string $search): array => self::options($type, $search))
+                    ->getOptionLabelUsing(fn (mixed $value): ?string => self::optionLabel($value)),
+                Select::make('legacy_media_id')
+                    ->label('Promote from legacy archive')
+                    ->helperText('Optional. Search legacy filename, title, or path, then promote it into the Main Media Library.')
+                    ->searchable()
+                    ->native(false)
+                    ->preload(false)
+                    ->options(fn (): array => [])
+                    ->getSearchResultsUsing(fn (string $search): array => self::options($type, $search, 'legacy'))
                     ->getOptionLabelUsing(fn (mixed $value): ?string => self::optionLabel($value)),
                 FileUpload::make('file')
                     ->label('Upload new file')
@@ -156,18 +171,34 @@ final class MediaPicker
                     ->visibility('public')
                     ->acceptedFileTypes(self::acceptedFileTypes($type))
                     ->maxSize(20480),
-                TextInput::make('title_ar')->label('Title (AR)')->maxLength(255),
-                TextInput::make('title_en')->label('Title (EN)')->maxLength(255),
-                TextInput::make('alt_text_ar')->label('Alt Text (AR)')->maxLength(500)->visible($type === 'image'),
-                TextInput::make('alt_text_en')->label('Alt Text (EN)')->maxLength(500)->visible($type === 'image'),
+                TextInput::make('title_ar')
+                    ->label('Title (AR)')
+                    ->maxLength(255)
+                    ->required(fn (Get $get): bool => self::requiresUploadOrPromotionMetadata($get) && ! self::filledString($get('title_en'))),
+                TextInput::make('title_en')
+                    ->label('Title (EN)')
+                    ->maxLength(255)
+                    ->required(fn (Get $get): bool => self::requiresUploadOrPromotionMetadata($get) && ! self::filledString($get('title_ar'))),
+                TextInput::make('alt_text_ar')
+                    ->label('Alt Text (AR)')
+                    ->maxLength(500)
+                    ->visible(self::isImageType($type))
+                    ->required(fn (Get $get): bool => self::isImageType($type) && self::requiresUploadOrPromotionMetadata($get) && ! self::filledString($get('alt_text_en'))),
+                TextInput::make('alt_text_en')
+                    ->label('Alt Text (EN)')
+                    ->maxLength(500)
+                    ->visible(self::isImageType($type))
+                    ->required(fn (Get $get): bool => self::isImageType($type) && self::requiresUploadOrPromotionMetadata($get) && ! self::filledString($get('alt_text_ar'))),
             ])
-            ->action(function (array $data, Set $set) use ($statePath, $mediaIdPath): void {
+            ->action(function (array $data, Set $set) use ($statePath, $mediaIdPath, $type): void {
                 $mediaId = null;
 
                 if (self::uploadedPath($data['file'] ?? null) !== null) {
-                    $mediaId = self::uploadOption($data);
+                    $mediaId = self::uploadOption($data, $type);
                 } elseif (is_numeric($data['media_id'] ?? null)) {
                     $mediaId = (int) $data['media_id'];
+                } elseif (is_numeric($data['legacy_media_id'] ?? null)) {
+                    $mediaId = self::promoteLegacyOption((int) $data['legacy_media_id'], $data);
                 }
 
                 if ($mediaId === null) {
@@ -216,17 +247,43 @@ final class MediaPicker
                     ->visibility('public')
                     ->acceptedFileTypes(self::acceptedFileTypes($type))
                     ->maxSize(20480),
-                TextInput::make('title_ar')->label('Title (AR)')->maxLength(255),
-                TextInput::make('title_en')->label('Title (EN)')->maxLength(255),
-                TextInput::make('alt_text_ar')->label('Alt Text (AR)')->maxLength(500)->visible($type === 'image'),
-                TextInput::make('alt_text_en')->label('Alt Text (EN)')->maxLength(500)->visible($type === 'image'),
+                TextInput::make('title_ar')
+                    ->label('Title (AR)')
+                    ->maxLength(255)
+                    ->required(fn (Get $get): bool => ! self::filledString($get('title_en'))),
+                TextInput::make('title_en')
+                    ->label('Title (EN)')
+                    ->maxLength(255)
+                    ->required(fn (Get $get): bool => ! self::filledString($get('title_ar'))),
+                TextInput::make('alt_text_ar')
+                    ->label('Alt Text (AR)')
+                    ->maxLength(500)
+                    ->visible(self::isImageType($type))
+                    ->required(fn (Get $get): bool => self::isImageType($type) && ! self::filledString($get('alt_text_en'))),
+                TextInput::make('alt_text_en')
+                    ->label('Alt Text (EN)')
+                    ->maxLength(500)
+                    ->visible(self::isImageType($type))
+                    ->required(fn (Get $get): bool => self::isImageType($type) && ! self::filledString($get('alt_text_ar'))),
             ])
-            ->createOptionUsing(fn (array $data): int => self::uploadOption($data))
+            ->createOptionUsing(fn (array $data): int => self::uploadOption($data, $type))
             ->dehydrated(true);
     }
 
+    private static function clearAction(string $statePath, string $mediaIdPath): FormAction
+    {
+        return FormAction::make('clear_media')
+            ->label('Clear')
+            ->icon('heroicon-o-x-mark')
+            ->color('gray')
+            ->action(function (Set $set) use ($statePath, $mediaIdPath): void {
+                $set($mediaIdPath, null);
+                $set($statePath, null);
+            });
+    }
+
     /** @return array<int|string, string> */
-    private static function options(string $type, string $search = ''): array
+    private static function options(string $type, string $search = '', string $libraryScope = 'main'): array
     {
         $userId = auth()->id();
 
@@ -234,13 +291,20 @@ final class MediaPicker
             return [];
         }
 
-        $filters = ['per_page' => 50];
+        if ($libraryScope === 'legacy' && trim($search) === '') {
+            return [];
+        }
+
+        $filters = [
+            'library_scope' => $libraryScope,
+            'per_page' => 50,
+        ];
 
         if ($search !== '') {
             $filters['search'] = $search;
         }
 
-        if ($type === 'image') {
+        if (self::isImageType($type)) {
             $filters['mime_type'] = 'image/';
         } elseif ($type === 'document') {
             $filters['mime_type'] = 'application/';
@@ -275,7 +339,7 @@ final class MediaPicker
     }
 
     /** @param array<string, mixed> $data */
-    private static function uploadOption(array $data): int
+    private static function uploadOption(array $data, string $type): int
     {
         $filePath = self::uploadedPath($data['file'] ?? null);
         $userId = auth()->id();
@@ -305,10 +369,31 @@ final class MediaPicker
             'title_en' => $data['title_en'] ?? null,
             'alt_text_ar' => $data['alt_text_ar'] ?? null,
             'alt_text_en' => $data['alt_text_en'] ?? null,
+            'require_alt_text' => self::isImageType($type),
             'uploaded_by' => (int) $userId,
         ]);
 
         $disk->delete($filePath);
+
+        return $result->mediaId;
+    }
+
+    /** @param array<string, mixed> $data */
+    private static function promoteLegacyOption(int $mediaId, array $data): int
+    {
+        $userId = auth()->id();
+
+        if (! is_numeric($userId)) {
+            throw new \RuntimeException('An authenticated user is required to promote legacy media.');
+        }
+
+        $result = app(MediaServiceInterface::class)->promoteLegacyAsset($mediaId, [
+            'title_ar' => $data['title_ar'] ?? null,
+            'title_en' => $data['title_en'] ?? null,
+            'alt_text_ar' => $data['alt_text_ar'] ?? null,
+            'alt_text_en' => $data['alt_text_en'] ?? null,
+            'metadata_status' => 'reviewed',
+        ], (int) $userId);
 
         return $result->mediaId;
     }
@@ -324,6 +409,21 @@ final class MediaPicker
         }
 
         return null;
+    }
+
+    private static function requiresUploadOrPromotionMetadata(Get $get): bool
+    {
+        return self::uploadedPath($get('file')) !== null || is_numeric($get('legacy_media_id'));
+    }
+
+    private static function isImageType(string $type): bool
+    {
+        return in_array($type, ['image', 'icon'], true);
+    }
+
+    private static function filledString(mixed $value): bool
+    {
+        return is_string($value) && trim($value) !== '';
     }
 
     private static function labelFor(MediaUploadResultDTO $media): string
@@ -365,7 +465,7 @@ final class MediaPicker
         ];
 
         return match ($type) {
-            'image' => $images,
+            'image', 'icon' => $images,
             'document' => $documents,
             default => [...$images, ...$documents, 'video/mp4', 'video/webm'],
         };

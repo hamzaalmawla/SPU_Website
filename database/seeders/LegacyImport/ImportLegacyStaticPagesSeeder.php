@@ -15,6 +15,11 @@ class ImportLegacyStaticPagesSeeder extends BaseLegacyImportSeeder
     public function run(): void
     {
         $module = 'static_pages';
+
+        if (! $this->shouldRunModule($module)) {
+            return;
+        }
+
         $batch = $this->batchName($module);
 
         foreach ($this->legacyRows('jx_site_static_pages') as $row) {

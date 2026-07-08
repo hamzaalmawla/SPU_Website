@@ -32,7 +32,7 @@ return [
             'evidence_url' => 'https://www.spu.edu.sy/alumni/index.php?page=list&ex=2&dir=graduated_students&lang=1&d=4',
         ],
         5 => [
-            'canonical_slug' => 'computer-and-informatics-engineering',
+            'canonical_slug' => 'ai-engineering',
             'legacy_alumni_category_id' => 4662,
             'legacy_service_type' => 52,
             'ar_name' => 'كلية هندسة الحاسوب والمعلوماتية',
@@ -40,7 +40,7 @@ return [
             'evidence_url' => 'https://www.spu.edu.sy/alumni/index.php?page=list&ex=2&dir=graduated_students&lang=1&d=5',
         ],
         6 => [
-            'canonical_slug' => 'petroleum-engineering',
+            'canonical_slug' => 'petroleum',
             'legacy_alumni_category_id' => 4665,
             'legacy_service_type' => 62,
             'ar_name' => 'كلية هندسة البترول',
@@ -48,7 +48,7 @@ return [
             'evidence_url' => 'https://www.spu.edu.sy/alumni/index.php?page=list&ex=2&dir=graduated_students&lang=1&d=6',
         ],
         7 => [
-            'canonical_slug' => 'administrative-sciences',
+            'canonical_slug' => 'business',
             'legacy_alumni_category_id' => 4666,
             'legacy_service_type' => 72,
             'ar_name' => 'كلية العلوم الإدارية',

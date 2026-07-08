@@ -32,6 +32,13 @@ interface MediaServiceInterface
     public function importPublicAsset(string $publicRelativePath, ?int $userId = null): ?MediaUploadResultDTO;
 
     /**
+     * Promote a legacy archive asset into the main media library without moving or deleting the original.
+     *
+     * @param  array<string, mixed>  $metadata
+     */
+    public function promoteLegacyAsset(int|string $mediaId, array $metadata, int $userId): MediaUploadResultDTO;
+
+    /**
      * @param  array<string, mixed>  $filters
      * @return Collection<int, MediaUploadResultDTO>
      */

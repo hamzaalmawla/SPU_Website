@@ -12,6 +12,10 @@ class ImportLegacyLinksSeeder extends BaseLegacyImportSeeder
 {
     public function run(): void
     {
+        if (! $this->shouldRunModule('links')) {
+            return;
+        }
+
         $this->importDocs();
         $this->importSites();
     }
@@ -36,31 +40,26 @@ class ImportLegacyLinksSeeder extends BaseLegacyImportSeeder
                 continue;
             }
 
-            $media = MediaAsset::query()->updateOrCreate(
-                ['disk' => 'legacy', 'path' => $path],
-                [
-                    'directory' => dirname($path) !== '.' ? dirname($path) : null,
-                    'filename' => basename($path),
-                    'original_name' => $this->cleanedString($row, ['title', 'name']) ?? basename($path),
-                    'mime_type' => $this->guessMimeType($path),
-                    'extension' => strtolower((string) pathinfo($path, PATHINFO_EXTENSION)) ?: null,
-                    'size_bytes' => $this->normalizedInteger($this->rowValue($row, ['size', 'file_size'])) ?? 0,
-                    'width' => null,
-                    'height' => null,
-                    'alt_text_ar' => null,
-                    'alt_text_en' => null,
-                    'caption_ar' => null,
-                    'caption_en' => null,
-                    'title_ar' => $this->cleanedString($row, ['title_ar', 'title']),
-                    'title_en' => $this->cleanedString($row, ['title_en']),
-                    'webp_path' => null,
-                    'srcset_json' => null,
-                    'uploaded_by' => null,
-                ],
-            );
+            $media = $this->importDocumentMediaAsset($path, $row);
 
             $this->migrationLogger()->log($module, $batch, 'jx_docs', $sourceId, 'media_assets', (int) $media->getKey(), 'success', 'Imported legacy document asset.', null);
         }
+    }
+
+    private function importDocumentMediaAsset(string $path, object $row): MediaAsset
+    {
+        $media = $this->legacyMediaAsset($path, null, [
+            'original_name' => $this->cleanedString($row, ['title', 'name']) ?? basename($path),
+            'size_bytes' => $this->normalizedInteger($this->rowValue($row, ['size', 'file_size'])) ?? 0,
+            'title_ar' => $this->cleanedString($row, ['title_ar', 'title']),
+            'title_en' => $this->cleanedString($row, ['title_en']),
+        ]);
+
+        if (! $media instanceof MediaAsset) {
+            throw new \RuntimeException('Unable to create legacy document media asset.');
+        }
+
+        return $media;
     }
 
     private function importSites(): void

@@ -27,7 +27,8 @@ interface FacultyPageServiceInterface
 
     public function getFaculty(string $facultySlug, string $locale): ?FacultyDetailPageDTO;
 
-    public function getSubpage(string $facultySlug, string $subpageSlug, string $locale): ?FacultySubpageDTO;
+    /** @param array<string, mixed> $filters */
+    public function getSubpage(string $facultySlug, string $subpageSlug, string $locale, array $filters = []): ?FacultySubpageDTO;
 
     public function getProject(string $facultySlug, string $projectSlug, string $locale): ?FacultyProjectDetailPageDTO;
 

@@ -22,5 +22,9 @@ final readonly class MediaUploadResultDTO
         public ?string $caption = null,
         public ?string $checksum = null,
         public string $mediaType = 'other',
+        public string $libraryScope = 'main',
+        public string $metadataStatus = 'missing',
+        public ?int $promotedFromMediaId = null,
+        public ?string $sourcePath = null,
     ) {}
 }

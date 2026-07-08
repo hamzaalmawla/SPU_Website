@@ -10,13 +10,16 @@ use App\Models\User\User;
 use App\Support\MediaUrlResolver;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\Tabs\Tab;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -62,6 +65,8 @@ class MediaAssetResource extends Resource
         if (! $user instanceof User) {
             return $query->whereRaw('1 = 0');
         }
+
+        $query->where('library_scope', 'main');
 
         if (in_array($user->role_slug, ['super_admin', 'editor'], true)) {
             return $query;
@@ -137,6 +142,16 @@ class MediaAssetResource extends Resource
                         default => 'gray',
                     }),
 
+                TextColumn::make('metadata_status')
+                    ->label('Metadata')
+                    ->badge()
+                    ->color(fn (?string $state): string => match ($state) {
+                        'reviewed' => 'success',
+                        'auto_generated' => 'warning',
+                        'missing' => 'danger',
+                        default => 'gray',
+                    }),
+
                 TextColumn::make('size_bytes')
                     ->label('Size')
                     ->formatStateUsing(fn (int $state): string => self::formatFileSize($state))
@@ -171,6 +186,15 @@ class MediaAssetResource extends Resource
                         'icon' => 'Icons',
                         'other' => 'Other',
                     ]),
+                SelectFilter::make('metadata_status')
+                    ->label('Metadata Status')
+                    ->options(self::metadataStatusOptions()),
+                Filter::make('missing_title')
+                    ->label('Missing Title')
+                    ->query(fn (Builder $query): Builder => $query->whereNull('title_ar')->whereNull('title_en')),
+                Filter::make('missing_image_alt')
+                    ->label('Images Missing Alt Text')
+                    ->query(fn (Builder $query): Builder => $query->where('media_type', 'image')->whereNull('alt_text_ar')->whereNull('alt_text_en')),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
@@ -237,7 +261,8 @@ class MediaAssetResource extends Resource
                 Section::make('Arabic Metadata')->schema([
                     TextInput::make('title_ar')
                         ->label('Title (AR)')
-                        ->maxLength(255),
+                        ->maxLength(255)
+                        ->required(fn (Get $get): bool => ! self::filledString($get('title_en'))),
 
                     TextInput::make('alt_text_ar')
                         ->label('Alt Text (AR)')
@@ -272,7 +297,8 @@ class MediaAssetResource extends Resource
                 Section::make('English Metadata')->schema([
                     TextInput::make('title_en')
                         ->label('Title (EN)')
-                        ->maxLength(255),
+                        ->maxLength(255)
+                        ->required(fn (Get $get): bool => ! self::filledString($get('title_ar'))),
 
                     TextInput::make('alt_text_en')
                         ->label('Alt Text (EN)')
@@ -286,6 +312,13 @@ class MediaAssetResource extends Resource
                         ->label('Category')
                         ->disabled()
                         ->dehydrated(false)
+                        ->visibleOn(['edit', 'view']),
+
+                    Select::make('metadata_status')
+                        ->label('Metadata Status')
+                        ->options(self::metadataStatusOptions())
+                        ->default('missing')
+                        ->required()
                         ->visibleOn(['edit', 'view']),
                 ]),
             ]);
@@ -308,26 +341,25 @@ class MediaAssetResource extends Resource
         return $bytes.' B';
     }
 
-    private static function configuredDisk(?string $disk): string
-    {
-        $disks = config('filesystems.disks', []);
-
-        if (is_string($disk) && array_key_exists($disk, is_array($disks) ? $disks : [])) {
-            return $disk;
-        }
-
-        return (string) config('filesystems.media_disk', 'public');
-    }
-
     private static function publicMediaUrl(?string $path, ?string $disk): ?string
     {
-        $url = MediaUrlResolver::resolve($path, self::configuredDisk($disk));
+        $url = MediaUrlResolver::resolve($path, $disk);
 
         if (is_string($url) && str_starts_with($url, '/')) {
             return url($url);
         }
 
         return $url;
+    }
+
+    /** @return array<string, string> */
+    private static function metadataStatusOptions(): array
+    {
+        return [
+            'missing' => 'Missing',
+            'auto_generated' => 'Auto Generated',
+            'reviewed' => 'Reviewed',
+        ];
     }
 
     private static function thumbnailHtml(?string $url): HtmlString
@@ -337,5 +369,10 @@ class MediaAssetResource extends Resource
         }
 
         return new HtmlString('<img src="'.e($url).'" alt="" loading="lazy" style="width:40px;height:40px;border-radius:9999px;object-fit:cover;" />');
+    }
+
+    private static function filledString(mixed $value): bool
+    {
+        return is_string($value) && trim($value) !== '';
     }
 }

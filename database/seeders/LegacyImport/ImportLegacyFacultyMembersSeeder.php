@@ -11,6 +11,11 @@ class ImportLegacyFacultyMembersSeeder extends BaseLegacyImportSeeder
     public function run(): void
     {
         $module = 'faculty_members';
+
+        if (! $this->shouldRunModule($module)) {
+            return;
+        }
+
         $batch = $this->batchName($module);
         $rows = $this->legacyRows('jx_members');
         $sourceTable = 'jx_members';

@@ -30,6 +30,7 @@ use App\Models\Faculty\FacultyPageTranslation;
 use App\Models\Faculty\FacultyStudentProject;
 use App\Models\Faculty\FacultyStudentProjectTranslation;
 use App\Models\Faculty\FacultyTranslation;
+use App\Models\Shared\MigrationLog;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -45,6 +46,10 @@ final class FacultyPageService implements FacultyPageServiceInterface
     ];
 
     private const SUBPAGE_SLUGS = ['overview', 'departments', 'study-plan', 'study-plan-course', 'labs', 'projects', 'alumni', 'valedictorians', 'training'];
+
+    private const STUDENT_LIST_PER_PAGE = 24;
+
+    private const MEMORIAL_HONOR_SOURCE_IDS = [134, 359, 390, 898, 1118];
 
     public function __construct(
         private readonly CacheServiceInterface $cacheService,
@@ -188,15 +193,17 @@ final class FacultyPageService implements FacultyPageServiceInterface
         );
     }
 
-    public function getSubpage(string $facultySlug, string $subpageSlug, string $locale): ?FacultySubpageDTO
+    public function getSubpage(string $facultySlug, string $subpageSlug, string $locale, array $filters = []): ?FacultySubpageDTO
     {
         if (! in_array($subpageSlug, self::SUBPAGE_SLUGS, true)) {
             return null;
         }
 
         $facultySlug = $this->canonicalFacultySlug($facultySlug);
+        $filters = $this->studentListFilters($filters);
+        $filterKey = md5((string) json_encode($filters));
 
-        return $this->facilitiesCache()->remember("public.facilities.{$facultySlug}.{$subpageSlug}.{$locale}", function () use ($facultySlug, $subpageSlug, $locale): ?FacultySubpageDTO {
+        return $this->facilitiesCache()->remember("public.facilities.{$facultySlug}.{$subpageSlug}.{$locale}.{$filterKey}", function () use ($facultySlug, $subpageSlug, $locale, $filters): ?FacultySubpageDTO {
             $faculty = $this->facultyByPublicSlug($facultySlug);
 
             if (! $faculty instanceof Faculty) {
@@ -209,7 +216,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
 
             $content = $this->publishedLocalizedPayload($this->targetKeyForSubpage($this->publicSlug($faculty), $subpageSlug), $locale);
 
-            return $this->facultySubpageDto($faculty, $subpageSlug, $locale, $content);
+            return $this->facultySubpageDto($faculty, $subpageSlug, $locale, $content, $filters);
         }, 1800);
     }
 
@@ -236,7 +243,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
     }
 
     /** @param array<string, mixed>|null $cmsContent */
-    private function facultySubpageDto(Faculty $faculty, string $subpageSlug, string $locale, ?array $cmsContent = null): ?FacultySubpageDTO
+    private function facultySubpageDto(Faculty $faculty, string $subpageSlug, string $locale, ?array $cmsContent = null, array $filters = []): ?FacultySubpageDTO
     {
         $page = $this->pageForFaculty($faculty, $subpageSlug);
 
@@ -270,6 +277,15 @@ final class FacultyPageService implements FacultyPageServiceInterface
             }
         }
 
+        $filterOptions = [];
+        $pagination = $this->emptyPagination(count($items));
+
+        if ($this->isStudentListSubpage($subpageSlug)) {
+            $filterOptions = $this->studentFilterOptions($items, $subpageSlug);
+            $items = $this->filteredStudentItems($items, $subpageSlug, $filters);
+            [$items, $pagination] = $this->paginatedStudentItems($items, $filters);
+        }
+
         return new FacultySubpageDTO(
             locale: $locale,
             direction: $this->direction($locale),
@@ -278,6 +294,9 @@ final class FacultyPageService implements FacultyPageServiceInterface
             faculty: $this->facultyPayload($faculty, $locale),
             page: $pageData,
             items: $items,
+            filters: $filters,
+            filterOptions: $filterOptions,
+            pagination: $pagination,
             navigation: $this->navigation($faculty, $locale, $subpageSlug),
             highlights: $this->highlights($faculty, $locale),
             seoTitle: $this->stringOrDefault($cmsContent['seoTitle'] ?? null, (string) ($pageData['title'] ?? $this->subpageTitle($subpageSlug, $locale)).' | '.(string) $this->facultyTranslation($faculty, $locale)->name),
@@ -612,8 +631,8 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 'departments' => fn ($query) => $query->enabled()->with('translations'),
                 'labs' => fn ($query) => $query->enabled()->with('translations'),
                 'studentProjects' => fn ($query) => $query->enabled()->with('translations'),
-                'alumni' => fn ($query) => $query->enabled()->with(['translations', 'department.translations'])->orderByDesc('graduation_year')->limit(24),
-                'honorStudents' => fn ($query) => $query->enabled()->with(['translations', 'department.translations'])->limit(24),
+                'alumni' => fn ($query) => $query->enabled()->with(['translations', 'department.translations'])->orderByDesc('graduation_year'),
+                'honorStudents' => fn ($query) => $query->enabled()->with(['translations', 'department.translations']),
             ])
             ->orderBy('sort_order');
     }
@@ -1012,9 +1031,13 @@ final class FacultyPageService implements FacultyPageServiceInterface
     /** @return array<int, array<string, mixed>> */
     private function alumniItems(Faculty $faculty, string $locale): array
     {
-        return $faculty->alumni->map(function (Alumni $alumni) use ($faculty, $locale): array {
+        $metadataByTargetId = $this->migrationMetadataByTargetId('alumni', $faculty->alumni->pluck('id')->all());
+
+        return $faculty->alumni->map(function (Alumni $alumni) use ($faculty, $locale, $metadataByTargetId): array {
             $translation = $this->alumniTranslation($alumni, $locale);
             $department = $alumni->department instanceof Department ? $this->departmentTranslation($alumni->department, $locale)->name : null;
+            $metadata = $metadataByTargetId[(int) $alumni->getKey()] ?? [];
+            $semesterKey = $this->semesterKey($metadata['legacy_section_id'] ?? null);
 
             return [
                 'title' => (string) $translation->full_name,
@@ -1022,7 +1045,8 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 'department' => $department,
                 'faculty' => $this->facultyTranslation($faculty, $locale)->name,
                 'degree' => $alumni->degree,
-                'semester' => $locale === 'ar' ? 'الفصل الثاني' : 'Second Semester',
+                'semester' => $this->semesterLabel($semesterKey, $locale),
+                'semesterKey' => $semesterKey,
                 'academicPhase' => $locale === 'ar' ? 'خريج' : 'Graduate',
                 'image' => '/images/unkown.jpeg',
             ];
@@ -1032,20 +1056,228 @@ final class FacultyPageService implements FacultyPageServiceInterface
     /** @return array<int, array<string, mixed>> */
     private function honorItems(Faculty $faculty, string $locale): array
     {
-        return $faculty->honorStudents->map(function (HonorStudent $student) use ($faculty, $locale): array {
+        $metadataByTargetId = $this->migrationMetadataByTargetId('honor_students', $faculty->honorStudents->pluck('id')->all());
+
+        return $faculty->honorStudents->map(function (HonorStudent $student) use ($faculty, $locale, $metadataByTargetId): array {
             $translation = $this->honorTranslation($student, $locale);
             $department = $student->department instanceof Department ? $this->departmentTranslation($student->department, $locale)->name : null;
+            $metadata = $metadataByTargetId[(int) $student->getKey()] ?? [];
+            $semesterKey = $this->semesterKey($metadata['legacy_section_id'] ?? null);
 
             return [
                 'title' => (string) $translation->full_name,
                 'academicYear' => $student->academic_year,
                 'department' => $department,
                 'gpa' => $student->gpa,
-                'semester' => $locale === 'ar' ? 'الفصل الثاني' : 'Second Semester',
+                'semester' => $this->semesterLabel($semesterKey, $locale),
+                'semesterKey' => $semesterKey,
                 'faculty' => $this->facultyTranslation($faculty, $locale)->name,
                 'image' => '/images/unkown.jpeg',
+                'isMemorial' => $this->isMemorialHonorStudent($metadata),
             ];
         })->values()->all();
+    }
+
+    /** @param array<string, mixed> $metadata */
+    private function isMemorialHonorStudent(array $metadata): bool
+    {
+        return in_array((int) ($metadata['source_id'] ?? 0), self::MEMORIAL_HONOR_SOURCE_IDS, true);
+    }
+
+    /** @param array<int, mixed> $targetIds @return array<int, array<string, mixed>> */
+    private function migrationMetadataByTargetId(string $targetTable, array $targetIds): array
+    {
+        $targetIds = array_values(array_filter(array_map('intval', $targetIds)));
+
+        if ($targetIds === []) {
+            return [];
+        }
+
+        return MigrationLog::query()
+            ->where('target_table', $targetTable)
+            ->where('status', 'success')
+            ->whereIn('target_id', $targetIds)
+            ->get(['target_id', 'source_id', 'metadata'])
+            ->mapWithKeys(fn (MigrationLog $log): array => [(int) $log->target_id => ['source_id' => (int) $log->source_id, ...(is_array($log->metadata) ? $log->metadata : [])]])
+            ->all();
+    }
+
+    private function semesterKey(mixed $legacySectionId): ?string
+    {
+        return match ((string) $legacySectionId) {
+            '1' => 'first',
+            '2' => 'second',
+            default => null,
+        };
+    }
+
+    private function semesterLabel(?string $semesterKey, string $locale): ?string
+    {
+        return match ($semesterKey) {
+            'first' => $locale === 'ar' ? 'الفصل الأول' : 'First Semester',
+            'second' => $locale === 'ar' ? 'الفصل الثاني' : 'Second Semester',
+            default => null,
+        };
+    }
+
+    private function isStudentListSubpage(string $subpageSlug): bool
+    {
+        return in_array($subpageSlug, ['alumni', 'valedictorians'], true);
+    }
+
+    /** @param array<string, mixed> $filters @return array{q: string, year: string, department: string, faculty: string, semester: string, academic_phase: string, page: int} */
+    private function studentListFilters(array $filters): array
+    {
+        $search = $this->filterString($filters['q'] ?? $filters['search'] ?? '');
+
+        return [
+            'q' => mb_substr($search, 0, 120),
+            'year' => mb_substr($this->filterString($filters['year'] ?? ''), 0, 40),
+            'department' => mb_substr($this->filterString($filters['department'] ?? ''), 0, 160),
+            'faculty' => mb_substr($this->filterString($filters['faculty'] ?? ''), 0, 180),
+            'semester' => in_array($filters['semester'] ?? '', ['first', 'second'], true) ? (string) $filters['semester'] : '',
+            'academic_phase' => mb_substr($this->filterString($filters['academic_phase'] ?? ''), 0, 120),
+            'page' => max(1, min(500, (int) ($filters['page'] ?? 1))),
+        ];
+    }
+
+    private function filterString(mixed $value): string
+    {
+        return is_scalar($value) ? trim((string) $value) : '';
+    }
+
+    /** @param array<int, array<string, mixed>> $items @return array<string, mixed> */
+    private function studentFilterOptions(array $items, string $subpageSlug): array
+    {
+        return [
+            'years' => collect($items)
+                ->map(fn (array $item): ?string => $subpageSlug === 'alumni'
+                    ? $this->nullableString($item['graduationYear'] ?? null)
+                    : $this->academicYearFilterValue($item['academicYear'] ?? null))
+                ->filter()
+                ->unique()
+                ->sortDesc()
+                ->values()
+                ->all(),
+            'departments' => collect($items)->pluck('department')->filter()->unique()->sort()->values()->all(),
+            'faculties' => collect($items)->pluck('faculty')->filter()->unique()->sort()->values()->all(),
+            'semesters' => collect($items)
+                ->filter(fn (array $item): bool => is_string($item['semesterKey'] ?? null) && is_string($item['semester'] ?? null))
+                ->map(fn (array $item): array => ['key' => (string) $item['semesterKey'], 'label' => (string) $item['semester']])
+                ->unique('key')
+                ->values()
+                ->all(),
+            'academicPhases' => collect($items)->pluck('academicPhase')->filter()->unique()->values()->all(),
+        ];
+    }
+
+    /** @param array<int, array<string, mixed>> $items @param array<string, mixed> $filters @return array<int, array<string, mixed>> */
+    private function filteredStudentItems(array $items, string $subpageSlug, array $filters): array
+    {
+        return collect($items)
+            ->filter(function (array $item) use ($subpageSlug, $filters): bool {
+                if ($filters['q'] !== '' && ! str_contains(mb_strtolower($this->studentSearchText($item)), mb_strtolower((string) $filters['q']))) {
+                    return false;
+                }
+
+                if ($filters['year'] !== '') {
+                    $itemYear = $subpageSlug === 'alumni'
+                        ? $this->nullableString($item['graduationYear'] ?? null)
+                        : $this->academicYearFilterValue($item['academicYear'] ?? null);
+
+                    if ($itemYear !== (string) $filters['year']) {
+                        return false;
+                    }
+                }
+
+                if ($filters['department'] !== '' && (string) ($item['department'] ?? '') !== (string) $filters['department']) {
+                    return false;
+                }
+
+                if ($filters['faculty'] !== '' && (string) ($item['faculty'] ?? '') !== (string) $filters['faculty']) {
+                    return false;
+                }
+
+                if ($filters['semester'] !== '' && (string) ($item['semesterKey'] ?? '') !== (string) $filters['semester']) {
+                    return false;
+                }
+
+                return $filters['academic_phase'] === '' || (string) ($item['academicPhase'] ?? '') === (string) $filters['academic_phase'];
+            })
+            ->values()
+            ->all();
+    }
+
+    /** @param array<int, array<string, mixed>> $items @param array<string, mixed> $filters @return array{0: array<int, array<string, mixed>>, 1: array<string, mixed>} */
+    private function paginatedStudentItems(array $items, array $filters): array
+    {
+        $total = count($items);
+        $totalPages = max(1, (int) ceil($total / self::STUDENT_LIST_PER_PAGE));
+        $currentPage = min((int) $filters['page'], $totalPages);
+        $offset = ($currentPage - 1) * self::STUDENT_LIST_PER_PAGE;
+
+        return [
+            array_slice($items, $offset, self::STUDENT_LIST_PER_PAGE),
+            [
+                'current_page' => $currentPage,
+                'per_page' => self::STUDENT_LIST_PER_PAGE,
+                'total_items' => $total,
+                'total_pages' => $totalPages,
+                'from' => $total === 0 ? 0 : $offset + 1,
+                'to' => min($total, $offset + self::STUDENT_LIST_PER_PAGE),
+            ],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function emptyPagination(int $total): array
+    {
+        return [
+            'current_page' => 1,
+            'per_page' => $total,
+            'total_items' => $total,
+            'total_pages' => 1,
+            'from' => $total > 0 ? 1 : 0,
+            'to' => $total,
+        ];
+    }
+
+    /** @param array<string, mixed> $item */
+    private function studentSearchText(array $item): string
+    {
+        return implode(' ', array_map('strval', array_filter([
+            $item['title'] ?? null,
+            $item['graduationYear'] ?? null,
+            $item['academicYear'] ?? null,
+            $item['department'] ?? null,
+            $item['faculty'] ?? null,
+            $item['degree'] ?? null,
+            $item['gpa'] ?? null,
+        ], static fn (mixed $value): bool => $value !== null && $value !== '')));
+    }
+
+    private function academicYearFilterValue(mixed $academicYear): ?string
+    {
+        $value = $this->nullableString($academicYear);
+
+        if ($value === null) {
+            return null;
+        }
+
+        $parts = array_map('trim', explode('/', $value));
+
+        return $parts[0] !== '' ? $parts[0] : $value;
+    }
+
+    private function nullableString(mixed $value): ?string
+    {
+        if (! is_scalar($value)) {
+            return null;
+        }
+
+        $value = trim((string) $value);
+
+        return $value !== '' ? $value : null;
     }
 
     private function subpageTitle(string $subpageSlug, string $locale): string

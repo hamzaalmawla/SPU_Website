@@ -6,6 +6,7 @@ namespace App\Services\Shared;
 
 use App\Contracts\Shared\CacheServiceInterface;
 use App\Contracts\Shared\ContinuityServiceInterface;
+use App\Contracts\Legacy\LegacyQueryRedirectResolverInterface;
 use App\DTOs\Legacy\PatternRuleDTO;
 use App\DTOs\Legacy\RedirectResultDTO;
 use App\DTOs\Legacy\RedirectRuleDTO;
@@ -28,6 +29,7 @@ final class ContinuityService implements ContinuityServiceInterface
 
     public function __construct(
         private readonly CacheServiceInterface $cacheService,
+        private readonly LegacyQueryRedirectResolverInterface $legacyQueryRedirectResolver,
     ) {}
 
     public function resolveRedirect(string $path, ?string $queryString = null): ?RedirectResultDTO
@@ -66,6 +68,13 @@ final class ContinuityService implements ContinuityServiceInterface
                     'referrer' => $request->referrer,
                     'resolved_locale' => $request->resolvedLocale,
                     'request_type' => $request->requestType,
+                    'normalized_json' => $request->normalized,
+                    'handler' => $request->handler,
+                    'outcome' => $request->outcome,
+                    'subsite' => $request->subsite,
+                    'old_site_id' => $request->oldSiteId,
+                    'old_language_id' => $request->oldLanguageId,
+                    'old_language_symbol' => $request->oldLanguageSymbol,
                     'hit_count' => $existing->hit_count + 1,
                     'last_seen_at' => $now,
                 ])->save();
@@ -78,6 +87,13 @@ final class ContinuityService implements ContinuityServiceInterface
                     'referrer' => $request->referrer,
                     'resolved_locale' => $request->resolvedLocale,
                     'request_type' => $request->requestType,
+                    'normalized_json' => $request->normalized,
+                    'handler' => $request->handler,
+                    'outcome' => $request->outcome,
+                    'subsite' => $request->subsite,
+                    'old_site_id' => $request->oldSiteId,
+                    'old_language_id' => $request->oldLanguageId,
+                    'old_language_symbol' => $request->oldLanguageSymbol,
                     'hit_count' => 1,
                     'first_seen_at' => $now,
                     'last_seen_at' => $now,
@@ -197,6 +213,7 @@ final class ContinuityService implements ContinuityServiceInterface
             $visited[] = $currentPath;
 
             $result = $this->resolveExactMatch($currentPath)
+                ?? $this->resolveLegacyQueryMatch($currentPath, $hop === 0 ? $queryString : null)
                 ?? $this->resolvePatternMatch($currentPath);
 
             if ($result === null) {
@@ -215,6 +232,15 @@ final class ContinuityService implements ContinuityServiceInterface
         }
 
         return $lastResult;
+    }
+
+    private function resolveLegacyQueryMatch(string $path, ?string $queryString): ?RedirectResultDTO
+    {
+        if ($queryString === null || trim($queryString) === '') {
+            return null;
+        }
+
+        return $this->legacyQueryRedirectResolver->resolve($path, $queryString);
     }
 
     private function resolveExactMatch(string $path): ?RedirectResultDTO

@@ -40,7 +40,7 @@ final class MediaService implements MediaServiceInterface
     }
 
     /**
-     * @param  array<string, mixed>  $payload  Expects 'file' (UploadedFile), optional 'directory', 'title_ar', 'title_en', 'alt_text_ar', 'alt_text_en', 'caption_ar', 'caption_en', 'uploaded_by'
+     * @param  array<string, mixed>  $payload  Expects 'file' (UploadedFile), optional 'directory', 'title_ar', 'title_en', 'alt_text_ar', 'alt_text_en', 'caption_ar', 'caption_en', 'uploaded_by', 'require_alt_text'
      */
     public function upload(array $payload): MediaUploadResultDTO
     {
@@ -64,6 +64,8 @@ final class MediaService implements MediaServiceInterface
         $extension = $this->fileValidator->primaryExtensionForMime($mimeType);
         $mediaType = $this->mediaTypeForMime($mimeType);
         $facultyScope = $this->resolveFacultyScopeForUpload($payload);
+
+        $this->validateCleanUploadMetadata($mediaType, $payload);
 
         $existing = $this->findReusableAsset($checksum, $uploaderId, $facultyScope);
         if ($existing instanceof MediaAsset) {
@@ -111,6 +113,8 @@ final class MediaService implements MediaServiceInterface
             'size_bytes' => $size,
             'checksum' => $checksum,
             'media_type' => $mediaType,
+            'library_scope' => 'main',
+            'metadata_status' => $this->metadataStatusForPayload($mediaType, $payload),
             'width' => $width,
             'height' => $height,
             'alt_text_ar' => $payload['alt_text_ar'] ?? null,
@@ -120,6 +124,7 @@ final class MediaService implements MediaServiceInterface
             'title_ar' => $payload['title_ar'] ?? null,
             'title_en' => $payload['title_en'] ?? null,
             'path' => $storedPath,
+            'source_path' => null,
             'uploaded_by' => $uploaderId,
             'faculty_scope_slug' => $facultyScope,
         ]);
@@ -175,12 +180,26 @@ final class MediaService implements MediaServiceInterface
 
         $this->authorizeMediaWrite($userId, 'update', $asset);
 
-        $allowed = ['title_ar', 'title_en', 'alt_text_ar', 'alt_text_en', 'caption_ar', 'caption_en', 'faculty_scope_slug'];
+        $allowed = ['title_ar', 'title_en', 'alt_text_ar', 'alt_text_en', 'caption_ar', 'caption_en', 'metadata_status', 'faculty_scope_slug'];
         $filtered = array_intersect_key($metadata, array_flip($allowed));
         $filtered = $this->filterAllowedMetadataScope($filtered, $asset, $userId);
 
         if ($filtered === []) {
             return true;
+        }
+
+        if (isset($filtered['metadata_status']) && ! $this->isValidMetadataStatus($filtered['metadata_status'])) {
+            throw ValidationException::withMessages([
+                'metadata_status' => ['The selected metadata status is invalid.'],
+            ]);
+        }
+
+        if (! isset($filtered['metadata_status'])) {
+            $merged = array_merge($asset->only(['title_ar', 'title_en', 'alt_text_ar', 'alt_text_en']), $filtered);
+            $filtered['metadata_status'] = $this->metadataStatusForPayload(
+                is_string($asset->media_type) ? $asset->media_type : $this->mediaTypeForMime($asset->mime_type),
+                $merged,
+            );
         }
 
         $updated = $asset->update($filtered);
@@ -236,7 +255,11 @@ final class MediaService implements MediaServiceInterface
         }
 
         $checksum = hash_file('sha256', $fullPath);
-        $existing = MediaAsset::query()->where('checksum', $checksum)->first();
+        $libraryScope = $this->libraryScopeForPublicPath($relativePath);
+        $existing = MediaAsset::query()
+            ->where('checksum', $checksum)
+            ->where('library_scope', $libraryScope)
+            ->first();
 
         if ($existing instanceof MediaAsset) {
             return $this->toDto($existing);
@@ -262,9 +285,12 @@ final class MediaService implements MediaServiceInterface
             'size_bytes' => filesize($fullPath) ?: 0,
             'checksum' => $checksum,
             'media_type' => $this->mediaTypeForMime($mimeType),
+            'library_scope' => $libraryScope,
+            'metadata_status' => 'missing',
             'width' => $width,
             'height' => $height,
             'path' => '/'.$relativePath,
+            'source_path' => $libraryScope === 'legacy' ? '/'.$relativePath : null,
             'uploaded_by' => $userId,
         ]);
 
@@ -279,6 +305,91 @@ final class MediaService implements MediaServiceInterface
         }
 
         return $this->toDto($asset);
+    }
+
+    /**
+     * @param  array<string, mixed>  $metadata
+     */
+    public function promoteLegacyAsset(int|string $mediaId, array $metadata, int $userId): MediaUploadResultDTO
+    {
+        $legacyAsset = MediaAsset::query()->find($mediaId);
+
+        if (! $legacyAsset instanceof MediaAsset || $legacyAsset->library_scope !== 'legacy') {
+            throw ValidationException::withMessages([
+                'media_id' => ['A legacy media asset is required for promotion.'],
+            ]);
+        }
+
+        $this->authorizeMediaWrite($userId, 'view', $legacyAsset);
+        $this->authorizeMediaClassWrite($userId, 'create');
+
+        if (isset($metadata['metadata_status']) && ! $this->isValidMetadataStatus($metadata['metadata_status'])) {
+            throw ValidationException::withMessages([
+                'metadata_status' => ['The selected metadata status is invalid.'],
+            ]);
+        }
+
+        $promotionMetadata = $this->promotionMetadata($legacyAsset, $metadata);
+
+        if (is_string($legacyAsset->checksum) && $legacyAsset->checksum !== '') {
+            $existing = MediaAsset::query()
+                ->where('library_scope', 'main')
+                ->where('checksum', $legacyAsset->checksum)
+                ->first();
+
+            if ($existing instanceof MediaAsset) {
+                $this->auditService->log(
+                    action: 'media.promotion_reused',
+                    userId: $userId,
+                    entityType: MediaAsset::class,
+                    entityId: (int) $existing->getKey(),
+                    metadata: [
+                        'legacy_media_id' => (int) $legacyAsset->getKey(),
+                        'checksum' => $legacyAsset->checksum,
+                    ],
+                );
+
+                return $this->toDto($existing);
+            }
+        }
+
+        $promoted = MediaAsset::query()->create(array_merge([
+            'disk' => $legacyAsset->disk,
+            'directory' => $legacyAsset->directory,
+            'filename' => $legacyAsset->filename,
+            'original_name' => $legacyAsset->original_name,
+            'mime_type' => $legacyAsset->mime_type,
+            'extension' => $legacyAsset->extension,
+            'size_bytes' => $legacyAsset->size_bytes,
+            'checksum' => $legacyAsset->checksum,
+            'media_type' => is_string($legacyAsset->media_type) ? $legacyAsset->media_type : $this->mediaTypeForMime($legacyAsset->mime_type),
+            'library_scope' => 'main',
+            'metadata_status' => $this->promotionMetadataStatus($metadata),
+            'promoted_from_media_id' => (int) $legacyAsset->getKey(),
+            'width' => $legacyAsset->width,
+            'height' => $legacyAsset->height,
+            'path' => $legacyAsset->path,
+            'source_path' => $legacyAsset->source_path ?: $legacyAsset->path,
+            'webp_path' => $legacyAsset->webp_path,
+            'srcset_json' => $legacyAsset->srcset_json,
+            'uploaded_by' => $userId,
+            'faculty_scope_slug' => $legacyAsset->faculty_scope_slug,
+            'reviewed_at' => ($metadata['metadata_status'] ?? null) === 'reviewed' ? now() : null,
+            'reviewed_by' => ($metadata['metadata_status'] ?? null) === 'reviewed' ? $userId : null,
+        ], $promotionMetadata));
+
+        $this->auditService->log(
+            action: 'media.promoted',
+            userId: $userId,
+            entityType: MediaAsset::class,
+            entityId: (int) $promoted->getKey(),
+            metadata: [
+                'legacy_media_id' => (int) $legacyAsset->getKey(),
+                'source_path' => $promoted->source_path,
+            ],
+        );
+
+        return $this->toDto($promoted);
     }
 
     /**
@@ -324,6 +435,15 @@ final class MediaService implements MediaServiceInterface
     private function buildListQuery(array $filters, User $user): Builder
     {
         $query = MediaAsset::query();
+        $libraryScope = isset($filters['library_scope']) && is_string($filters['library_scope'])
+            ? $filters['library_scope']
+            : 'main';
+
+        if (in_array($libraryScope, ['main', 'legacy'], true)) {
+            $query->where('library_scope', $libraryScope);
+        } else {
+            $query->where('library_scope', 'main');
+        }
 
         if (isset($filters['mime_type']) && is_string($filters['mime_type'])) {
             $query->where('mime_type', 'like', $filters['mime_type'].'%');
@@ -333,14 +453,29 @@ final class MediaService implements MediaServiceInterface
             $query->where('media_type', $filters['media_type']);
         }
 
+        if (isset($filters['metadata_status']) && is_string($filters['metadata_status']) && $filters['metadata_status'] !== '') {
+            $query->where('metadata_status', $filters['metadata_status']);
+        }
+
         if (isset($filters['search']) && is_string($filters['search']) && $filters['search'] !== '') {
             $term = '%'.$filters['search'].'%';
             $query->where(function ($q) use ($term): void {
                 $q->where('filename', 'like', $term)
                     ->orWhere('original_name', 'like', $term)
                     ->orWhere('title_ar', 'like', $term)
-                    ->orWhere('title_en', 'like', $term);
+                    ->orWhere('title_en', 'like', $term)
+                    ->orWhere('path', 'like', $term);
             });
+        }
+
+        if (($filters['missing_title'] ?? false) === true) {
+            $query->whereNull('title_ar')->whereNull('title_en');
+        }
+
+        if (($filters['missing_image_alt'] ?? false) === true) {
+            $query->where('media_type', 'image')
+                ->whereNull('alt_text_ar')
+                ->whereNull('alt_text_en');
         }
 
         if (isset($filters['uploaded_by'])) {
@@ -373,13 +508,19 @@ final class MediaService implements MediaServiceInterface
             caption: $asset->caption_ar ?? $asset->caption_en,
             checksum: is_string($asset->checksum) ? $asset->checksum : null,
             mediaType: is_string($asset->media_type) ? $asset->media_type : $this->mediaTypeForMime($asset->mime_type),
+            libraryScope: is_string($asset->library_scope) ? $asset->library_scope : 'main',
+            metadataStatus: is_string($asset->metadata_status) ? $asset->metadata_status : 'missing',
+            promotedFromMediaId: is_numeric($asset->promoted_from_media_id) ? (int) $asset->promoted_from_media_id : null,
+            sourcePath: is_string($asset->source_path) ? $asset->source_path : null,
         );
     }
 
     private function findReusableAsset(string $checksum, int $userId, ?string $facultyScope): ?MediaAsset
     {
         $user = $this->authorizedListUser($userId);
-        $query = MediaAsset::query()->where('checksum', $checksum);
+        $query = MediaAsset::query()
+            ->where('checksum', $checksum)
+            ->where('library_scope', 'main');
 
         if ($user->role_slug === 'faculty_editor') {
             $query->where('faculty_scope_slug', $facultyScope);
@@ -402,6 +543,115 @@ final class MediaService implements MediaServiceInterface
             str_starts_with($mimeType, 'application/') => 'document',
             default => 'other',
         };
+    }
+
+    private function libraryScopeForPublicPath(string $relativePath): string
+    {
+        $path = trim(str_replace('\\', '/', $relativePath), '/');
+
+        return str_starts_with($path, 'news/images/') || str_starts_with($path, 'news/files/')
+            ? 'legacy'
+            : 'main';
+    }
+
+    /** @param array<string, mixed> $payload */
+    private function validateCleanUploadMetadata(string $mediaType, array $payload): void
+    {
+        if (! $this->filledString($payload['title_ar'] ?? null) && ! $this->filledString($payload['title_en'] ?? null)) {
+            throw ValidationException::withMessages([
+                'title' => ['A title is required for main media uploads.'],
+            ]);
+        }
+
+        if ($mediaType === 'image' && ($payload['require_alt_text'] ?? false) === true) {
+            if (! $this->filledString($payload['alt_text_ar'] ?? null) && ! $this->filledString($payload['alt_text_en'] ?? null)) {
+                throw ValidationException::withMessages([
+                    'alt_text' => ['Alt text is required for CMS image uploads.'],
+                ]);
+            }
+        }
+    }
+
+    /** @param array<string, mixed> $payload */
+    private function metadataStatusForPayload(string $mediaType, array $payload): string
+    {
+        $hasTitle = $this->filledString($payload['title_ar'] ?? null) || $this->filledString($payload['title_en'] ?? null);
+
+        if (! $hasTitle) {
+            return 'missing';
+        }
+
+        if ($mediaType === 'image') {
+            $hasAlt = $this->filledString($payload['alt_text_ar'] ?? null) || $this->filledString($payload['alt_text_en'] ?? null);
+
+            return $hasAlt ? 'reviewed' : 'missing';
+        }
+
+        return 'reviewed';
+    }
+
+    /** @param array<string, mixed> $metadata */
+    private function promotionMetadata(MediaAsset $legacyAsset, array $metadata): array
+    {
+        $titleAr = $this->stringOrNull($metadata['title_ar'] ?? null) ?? $legacyAsset->title_ar;
+        $titleEn = $this->stringOrNull($metadata['title_en'] ?? null) ?? $legacyAsset->title_en;
+
+        if (! $this->filledString($titleAr) && ! $this->filledString($titleEn)) {
+            throw ValidationException::withMessages([
+                'title' => ['A title is required to promote a legacy media asset.'],
+            ]);
+        }
+
+        $altTextAr = $this->stringOrNull($metadata['alt_text_ar'] ?? null) ?? $legacyAsset->alt_text_ar;
+        $altTextEn = $this->stringOrNull($metadata['alt_text_en'] ?? null) ?? $legacyAsset->alt_text_en;
+
+        $mediaType = is_string($legacyAsset->media_type) ? $legacyAsset->media_type : $this->mediaTypeForMime($legacyAsset->mime_type);
+
+        if ($mediaType === 'image' && ! $this->filledString($altTextAr) && ! $this->filledString($altTextEn)) {
+            throw ValidationException::withMessages([
+                'alt_text' => ['Alt text is required to promote a legacy image asset.'],
+            ]);
+        }
+
+        return [
+            'title_ar' => $titleAr,
+            'title_en' => $titleEn,
+            'alt_text_ar' => $altTextAr,
+            'alt_text_en' => $altTextEn,
+            'caption_ar' => $this->stringOrNull($metadata['caption_ar'] ?? null) ?? $legacyAsset->caption_ar,
+            'caption_en' => $this->stringOrNull($metadata['caption_en'] ?? null) ?? $legacyAsset->caption_en,
+        ];
+    }
+
+    /** @param array<string, mixed> $metadata */
+    private function promotionMetadataStatus(array $metadata): string
+    {
+        $status = $metadata['metadata_status'] ?? null;
+
+        if ($status === 'reviewed') {
+            return 'reviewed';
+        }
+
+        if ($status === 'auto_generated') {
+            return 'auto_generated';
+        }
+
+        return 'auto_generated';
+    }
+
+    private function isValidMetadataStatus(mixed $status): bool
+    {
+        return in_array($status, ['missing', 'auto_generated', 'reviewed'], true);
+    }
+
+    private function stringOrNull(mixed $value): ?string
+    {
+        return is_string($value) && trim($value) !== '' ? $value : null;
+    }
+
+    private function filledString(mixed $value): bool
+    {
+        return is_string($value) && trim($value) !== '';
     }
 
     private function authorizeMediaClassWrite(int $userId, string $ability): void

@@ -67,6 +67,17 @@ abstract class BaseLegacyImportSeeder extends Seeder
         return $module.'-'.now()->format('YmdHis');
     }
 
+    protected function shouldRunModule(string $module): bool
+    {
+        if (filter_var(config("old_database.modules.{$module}.enabled", false), FILTER_VALIDATE_BOOL)) {
+            return true;
+        }
+
+        $this->command?->warn("Legacy import module [{$module}] is disabled; skipping without writing target rows.");
+
+        return false;
+    }
+
     protected function alreadyImported(string $sourceTable, int|string|null $sourceId, string $targetTable): bool
     {
         if (! is_numeric($sourceId)) {
@@ -78,9 +89,10 @@ abstract class BaseLegacyImportSeeder extends Seeder
 
     protected function legacyTableExists(string $table): bool
     {
-        $this->legacyConnection()->connection();
+        $legacyConnection = $this->legacyConnection();
+        $legacyConnection->connection();
 
-        return Schema::connection((string) config('old_database.connection_name', 'legacy_mysql'))->hasTable($table);
+        return Schema::connection($legacyConnection->connectionName())->hasTable($table);
     }
 
     protected function legacyTableHasColumn(string $table, string $column): bool
@@ -89,9 +101,10 @@ abstract class BaseLegacyImportSeeder extends Seeder
             return false;
         }
 
-        $this->legacyConnection()->connection();
+        $legacyConnection = $this->legacyConnection();
+        $legacyConnection->connection();
 
-        return Schema::connection((string) config('old_database.connection_name', 'legacy_mysql'))->hasColumn($table, $column);
+        return Schema::connection($legacyConnection->connectionName())->hasColumn($table, $column);
     }
 
     /**
@@ -462,48 +475,91 @@ abstract class BaseLegacyImportSeeder extends Seeder
         };
     }
 
-    protected function legacyMediaAssetId(
-        ?string $path,
-        ?string $directoryPrefix = null,
-        ?string $titleAr = null,
-        ?string $titleEn = null,
-    ): ?int {
+    protected function mediaTypeForMime(string $mimeType): string
+    {
+        return match (true) {
+            str_starts_with($mimeType, 'image/') => $mimeType === 'image/svg+xml' ? 'icon' : 'image',
+            $mimeType === 'application/pdf' => 'pdf',
+            str_starts_with($mimeType, 'video/') => 'video',
+            str_starts_with($mimeType, 'application/') => 'document',
+            default => 'other',
+        };
+    }
+
+    protected function normalizedLegacyMediaPath(?string $path, ?string $directoryPrefix = null): ?string
+    {
         $cleanPath = $this->textCleaner()->clean((string) $path);
 
         if ($cleanPath === null || $cleanPath === '') {
             return null;
         }
 
-        $normalizedPath = str_replace('\\', '/', $cleanPath);
+        $normalizedPath = ltrim(trim(str_replace('\\', '/', $cleanPath)), '/');
 
         if ($directoryPrefix !== null && ! str_contains($normalizedPath, '/')) {
             $normalizedPath = trim($directoryPrefix, '/').'/'.$normalizedPath;
         }
 
-        $media = MediaAsset::query()->updateOrCreate(
-            ['disk' => 'legacy', 'path' => $normalizedPath],
-            [
-                'directory' => dirname($normalizedPath) !== '.' ? dirname($normalizedPath) : null,
-                'filename' => basename($normalizedPath),
-                'original_name' => basename($cleanPath),
-                'mime_type' => $this->guessMimeType($normalizedPath),
-                'extension' => strtolower((string) pathinfo($normalizedPath, PATHINFO_EXTENSION)) ?: null,
-                'size_bytes' => 0,
-                'width' => null,
-                'height' => null,
-                'alt_text_ar' => null,
-                'alt_text_en' => null,
-                'caption_ar' => null,
-                'caption_en' => null,
-                'title_ar' => $titleAr,
-                'title_en' => $titleEn,
-                'webp_path' => null,
-                'srcset_json' => null,
-                'uploaded_by' => null,
-            ],
-        );
+        return $normalizedPath !== '' ? $normalizedPath : null;
+    }
 
-        return (int) $media->getKey();
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    protected function legacyMediaAsset(?string $path, ?string $directoryPrefix = null, array $attributes = []): ?MediaAsset
+    {
+        $normalizedPath = $this->normalizedLegacyMediaPath($path, $directoryPrefix);
+
+        if ($normalizedPath === null) {
+            return null;
+        }
+
+        $mimeType = $this->guessMimeType($normalizedPath);
+
+        $values = array_merge([
+            'directory' => dirname($normalizedPath) !== '.' ? dirname($normalizedPath) : null,
+            'filename' => basename($normalizedPath),
+            'original_name' => basename($normalizedPath),
+            'mime_type' => $mimeType,
+            'extension' => strtolower((string) pathinfo($normalizedPath, PATHINFO_EXTENSION)) ?: null,
+            'size_bytes' => 0,
+            'checksum' => null,
+            'width' => null,
+            'height' => null,
+            'alt_text_ar' => null,
+            'alt_text_en' => null,
+            'caption_ar' => null,
+            'caption_en' => null,
+            'title_ar' => null,
+            'title_en' => null,
+            'webp_path' => null,
+            'srcset_json' => null,
+            'uploaded_by' => null,
+        ], $attributes, [
+            'media_type' => $this->mediaTypeForMime($mimeType),
+            'library_scope' => 'legacy',
+            'metadata_status' => 'missing',
+            'source_path' => $normalizedPath,
+        ]);
+
+        return MediaAsset::query()->updateOrCreate(
+            ['disk' => 'legacy', 'path' => $normalizedPath],
+            $values,
+        );
+    }
+
+    protected function legacyMediaAssetId(
+        ?string $path,
+        ?string $directoryPrefix = null,
+        ?string $titleAr = null,
+        ?string $titleEn = null,
+    ): ?int {
+        $media = $this->legacyMediaAsset($path, $directoryPrefix, [
+            'title_ar' => $titleAr,
+            'title_en' => $titleEn,
+        ]);
+
+        return $media instanceof MediaAsset ? (int) $media->getKey() : null;
     }
 
     /**

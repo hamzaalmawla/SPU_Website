@@ -11,6 +11,11 @@ class ImportLegacyAlumniSeeder extends BaseLegacyImportSeeder
     public function run(): void
     {
         $module = 'alumni';
+
+        if (! $this->shouldRunModule($module)) {
+            return;
+        }
+
         $batch = $this->batchName($module);
         $rows = $this->legacyRows('jx_graduated_students');
         $facultyKeys = $this->legacyAvailableColumns('jx_graduated_students', ['department_id', 'faculty_id', 'category_id', 'cat_id']);
