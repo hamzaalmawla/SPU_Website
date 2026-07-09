@@ -11,6 +11,7 @@ use App\Contracts\Settings\SettingsServiceInterface;
 use App\DTOs\Navigation\LanguageSwitchLinkDTO;
 use App\Http\Controllers\Controller;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 final class AboutController extends Controller
@@ -35,6 +36,21 @@ final class AboutController extends Controller
     public function history(Request $request, string $locale): View
     {
         return $this->contentPage($request, $locale, 'history');
+    }
+
+    public function content(Request $request, string $locale, string $section): View
+    {
+        return $this->contentPage($request, $locale, $section);
+    }
+
+    public function redirectUniversityCouncil(string $locale): RedirectResponse
+    {
+        return redirect('/'.$locale.'/about/leadership', 301);
+    }
+
+    public function redirectPartnershipAlias(string $locale): RedirectResponse
+    {
+        return redirect('/'.$locale.'/about/partnerships', 301);
     }
 
     public function leadership(Request $request, string $locale): View

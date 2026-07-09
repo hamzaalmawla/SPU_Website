@@ -57,6 +57,55 @@ final class CampusLifeController extends Controller
         ]);
     }
 
+    public function careerJobBoard(Request $request, string $locale): View
+    {
+        $page = $this->campusLifePageService->getCareerJobBoard($locale);
+
+        return view('public.campus-life.job-board', [
+            'locale' => $locale,
+            'direction' => $page->direction,
+            'navigation' => $this->navigationService->getFullNavigationPayload($locale, $request->path()),
+            'settings' => $this->settingsService->getPublicSettings($locale),
+            'languageSwitch' => $this->languageSwitchLinks($locale, '/career-development/jobs'),
+            'isPreview' => false,
+            'seo' => $this->sectionSeo($locale, $page),
+            'page' => $page,
+        ]);
+    }
+
+    public function careerJobDetail(Request $request, string $locale, string $job): View
+    {
+        $page = $this->campusLifePageService->getCareerJobDetail($job, $locale);
+        abort_if($page === null, 404);
+
+        return view('public.campus-life.job-detail', [
+            'locale' => $locale,
+            'direction' => $page->direction,
+            'navigation' => $this->navigationService->getFullNavigationPayload($locale, $request->path()),
+            'settings' => $this->settingsService->getPublicSettings($locale),
+            'languageSwitch' => $this->languageSwitchLinks($locale, '/career-development/jobs/'.$job),
+            'isPreview' => false,
+            'seo' => $this->sectionSeo($locale, $page),
+            'page' => $page,
+        ]);
+    }
+
+    public function careerJobApplication(Request $request, string $locale): View
+    {
+        $page = $this->campusLifePageService->getCareerJobApplication($locale);
+
+        return view('public.campus-life.job-application', [
+            'locale' => $locale,
+            'direction' => $page->direction,
+            'navigation' => $this->navigationService->getFullNavigationPayload($locale, $request->path()),
+            'settings' => $this->settingsService->getPublicSettings($locale),
+            'languageSwitch' => $this->languageSwitchLinks($locale, '/career-development/jobs/apply'),
+            'isPreview' => false,
+            'seo' => $this->sectionSeo($locale, $page),
+            'page' => $page,
+        ]);
+    }
+
     private function landingSeo(string $locale, CampusLifePageDTO $page): mixed
     {
         return $this->seoMetadataService->buildFallback($locale, [

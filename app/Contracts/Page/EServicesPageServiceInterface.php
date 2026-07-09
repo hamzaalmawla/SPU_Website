@@ -11,6 +11,8 @@ interface EServicesPageServiceInterface
 {
     public function getPage(string $locale): EServicesPageDTO;
 
+    public function getSuggestionsComplaintsPage(string $locale): EServicesPageDTO;
+
     public function getContent(string $locale): EServicesPageContentDTO;
 
     /** @param array<string, mixed> $content */

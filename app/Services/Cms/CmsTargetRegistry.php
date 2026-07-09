@@ -56,6 +56,11 @@ final class CmsTargetRegistry implements CmsTargetRegistryInterface
             $this->target('about.directorates', 'about', 'admin.cms.targets.about.directorates', '/about/directorates', 'public.about.directorates', 'about.landing'),
             $this->target('about.directorates_staff', 'about', 'admin.cms.targets.about.directorates_staff', '/about/directorates/staff', 'public.about.directorates.staff', 'about.directorates'),
             $this->target('about.partnerships', 'about', 'admin.cms.targets.about.partnerships', '/about/partnerships', 'public.about.partnerships', 'about.landing'),
+            $this->target('about.quality-policy', 'about', 'admin.cms.targets.about.quality-policy', '/about/quality-policy', 'public.about.content', 'about.landing'),
+            $this->target('about.ethical-charter', 'about', 'admin.cms.targets.about.ethical-charter', '/about/ethical-charter', 'public.about.content', 'about.landing'),
+            $this->target('about.organizational-structure', 'about', 'admin.cms.targets.about.organizational-structure', '/about/organizational-structure', 'public.about.content', 'about.landing'),
+            $this->target('about.accreditation', 'about', 'admin.cms.targets.about.accreditation', '/about/accreditation', 'public.about.content', 'about.landing'),
+            $this->target('about.why-spu', 'about', 'admin.cms.targets.about.why-spu', '/about/why-spu', 'public.about.content', 'about.landing'),
         ];
     }
 
@@ -185,12 +190,12 @@ final class CmsTargetRegistry implements CmsTargetRegistryInterface
     /** @return array<int, string> */
     private function admissionsSectionSlugs(): array
     {
-        return ['requirements', 'tuition', 'how-to-apply', 'faq', 'calendar', 'documents', 'transfer'];
+        return ['requirements', 'tuition', 'how-to-apply', 'faq', 'calendar', 'documents', 'transfer', 'filling-vacancies', 'graduation-exams'];
     }
 
     /** @return array<int, string> */
     private function campusLifeSectionSlugs(): array
     {
-        return ['services', 'transport', 'clubs-activities', 'career-development', 'dental', 'hospital', 'health-insurance'];
+        return ['services', 'transport', 'clubs-activities', 'career-development', 'dental', 'hospital', 'health-insurance', 'damascus-research-pub', 'rules-regulations', 'general-rules', 'exam-instructions', 'exam-penalties'];
     }
 }

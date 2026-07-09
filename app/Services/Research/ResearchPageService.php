@@ -314,6 +314,38 @@ final class ResearchPageService implements ResearchPageServiceInterface
         return $this->pageDto($locale, 'conferences', $this->localized($data, $locale), '/research/conferences', $data['hero'] ?? []);
     }
 
+    public function conferenceRegistration(string $locale, ?string $eventId): ResearchPageDTO
+    {
+        $conferences = $this->conferences($locale);
+        $data = $conferences->data;
+        $events = [...$this->arrayList($data['upcoming'] ?? []), ...$this->arrayList($data['past'] ?? [])];
+        $registerEvent = null;
+
+        foreach ($events as $event) {
+            if (($event['id'] ?? null) === $eventId) {
+                $registerEvent = $event;
+                break;
+            }
+        }
+
+        if (is_array($registerEvent)) {
+            $registerEvent['formId'] = (string) ($registerEvent['formId'] ?? (($registerEvent['id'] ?? '') === 'conf-002' ? 'symposium-registration' : 'conference-registration'));
+        }
+
+        $data['registerEvent'] = $registerEvent;
+
+        return new ResearchPageDTO(
+            locale: $locale,
+            direction: $conferences->direction,
+            type: 'conference-registration',
+            data: $data,
+            seoTitle: (is_array($registerEvent) ? (string) ($registerEvent['title'] ?? '') : ($locale === 'ar' ? 'التسجيل' : 'Register')).' | '.($locale === 'ar' ? 'الجامعة السورية الخاصة' : 'Syrian Private University'),
+            seoDescription: is_array($registerEvent) ? (string) ($registerEvent['description'] ?? '') : ($locale === 'ar' ? 'التسجيل في فعاليات البحث العلمي.' : 'Register for SPU research events.'),
+            seoImage: is_array($registerEvent) ? (string) ($registerEvent['image'] ?? '/images/uni-main-place.JPG') : '/images/uni-main-place.JPG',
+            path: '/'.$locale.'/research/conferences/register',
+        );
+    }
+
     public function library(string $locale): ResearchPageDTO
     {
         $cmsContent = $this->publishedLocalizedPayload('research.library', $locale);

@@ -53,7 +53,7 @@ final class AboutPageService implements AboutPageServiceInterface
 
     public function getEditablePayload(string $targetKey): array
     {
-        if (! in_array($targetKey, ['about.landing', 'about.history', 'about.leadership', 'about.directorates', 'about.partnerships', 'about.directorates_staff'], true)) {
+        if (! in_array($targetKey, ['about.landing', 'about.history', 'about.leadership', 'about.directorates', 'about.partnerships', 'about.directorates_staff', 'about.quality-policy', 'about.ethical-charter', 'about.organizational-structure', 'about.accreditation', 'about.why-spu'], true)) {
             throw new \InvalidArgumentException('Unsupported about target.');
         }
 
@@ -98,6 +98,17 @@ final class AboutPageService implements AboutPageServiceInterface
             ];
         }
 
+        $fallback = $this->importedContentPayload($slug);
+
+        if ($fallback !== null) {
+            return [
+                'translations' => [
+                    'ar' => $this->localizedImportedPayload($fallback, 'ar'),
+                    'en' => $this->localizedImportedPayload($fallback, 'en'),
+                ],
+            ];
+        }
+
         $page = AboutPage::query()
             ->public()
             ->where('slug', $slug)
@@ -118,6 +129,12 @@ final class AboutPageService implements AboutPageServiceInterface
 
         if ($published !== null) {
             return $this->contentPageDto($slug, $locale, $published);
+        }
+
+        $fallback = $this->importedContentPayload($slug);
+
+        if ($fallback !== null) {
+            return $this->contentPageDto($slug, $locale, $this->localizedImportedPayload($fallback, $locale));
         }
 
         $page = AboutPage::query()
@@ -342,8 +359,129 @@ final class AboutPageService implements AboutPageServiceInterface
             'directorates' => 'directorates',
             'directorates_staff' => 'directorates_staff',
             'partnerships' => 'partnerships',
+            'quality-policy' => 'quality-policy',
+            'ethical-charter' => 'ethical-charter',
+            'organizational-structure' => 'organizational-structure',
+            'accreditation' => 'accreditation',
+            'why-spu' => 'why-spu',
             default => null,
         };
+    }
+
+    /** @return array<string, mixed>|null */
+    private function importedContentPayload(string $slug): ?array
+    {
+        return match ($slug) {
+            'quality-policy' => [
+                'titleEn' => 'Quality Policy at SPU',
+                'titleAr' => 'سياسة الجودة في الجامعة السورية الخاصة',
+                'headlineEn' => 'Quality Policy at SPU',
+                'headlineAr' => 'سياسة الجودة في الجامعة السورية الخاصة',
+                'summaryEn' => 'SPU is committed to a comprehensive quality policy that supports continuous improvement across academic, administrative, and research activities.',
+                'summaryAr' => 'تلتزم الجامعة السورية الخاصة بسياسة جودة شاملة تدعم التحسين المستمر في الأنشطة الأكاديمية والإدارية والبحثية.',
+                'heroImage' => '/images/about/hero-img.jpg',
+                'sections' => [
+                    ['titleEn' => 'Academic Excellence', 'titleAr' => 'التميز الأكاديمي', 'bodyEn' => 'Continuous review and development of curricula to meet evolving educational standards and labor market requirements.', 'bodyAr' => 'المراجعة والتطوير المستمر للمناهج لتلبية المعايير التعليمية المتطورة ومتطلبات سوق العمل.'],
+                    ['titleEn' => 'Administrative Efficiency', 'titleAr' => 'الكفاءة الإدارية', 'bodyEn' => 'Streamlined administrative processes with clear procedures, accountability, and regular performance evaluation.', 'bodyAr' => 'عمليات إدارية مبسطة مع إجراءات واضحة ومساءلة وتقييم دوري للأداء.'],
+                    ['titleEn' => 'Student Satisfaction', 'titleAr' => 'رضا الطلاب', 'bodyEn' => 'Regular assessment of student feedback to improve services, learning environments, and support systems.', 'bodyAr' => 'تقييم منتظم لملاحظات الطلاب لتحسين الخدمات وبيئات التعلم وأنظمة الدعم.'],
+                    ['titleEn' => 'Continuous Improvement', 'titleAr' => 'التحسين المستمر', 'bodyEn' => 'Adoption of best practices and innovative approaches to enhance institutional performance and outcomes.', 'bodyAr' => 'اعتماد أفضل الممارسات والأساليب المبتكرة لتعزيز الأداء المؤسسي والنتائج.'],
+                ],
+            ],
+            'ethical-charter' => [
+                'titleEn' => 'Ethical Charter of SPU',
+                'titleAr' => 'الميثاق الأخلاقي للجامعة السورية الخاصة',
+                'headlineEn' => 'Ethical Charter of SPU',
+                'headlineAr' => 'الميثاق الأخلاقي للجامعة السورية الخاصة',
+                'summaryEn' => 'The Ethical Charter defines the values and principles that guide students, faculty, administrators, and staff.',
+                'summaryAr' => 'يحدد الميثاق الأخلاقي القيم والمبادئ التي توجه الطلاب وأعضاء الهيئة التدريسية والإداريين والموظفين.',
+                'heroImage' => '/images/about/hero-img.jpg',
+                'sections' => [
+                    ['titleEn' => 'Academic Integrity', 'titleAr' => 'النزاهة الأكاديمية', 'bodyEn' => 'Honesty and fairness in all academic work, including teaching, research, examinations, and grading.', 'bodyAr' => 'الصدق والإنصاف في جميع الأعمال الأكاديمية، بما في ذلك التدريس والبحث والامتحانات والتصحيح.'],
+                    ['titleEn' => 'Transparency', 'titleAr' => 'الشفافية', 'bodyEn' => 'Open communication and clear disclosure of policies, procedures, and decisions affecting the university community.', 'bodyAr' => 'التواصل المفتوح والإفصاح الواضح عن السياسات والإجراءات والقرارات التي تؤثر على مجتمع الجامعة.'],
+                    ['titleEn' => 'Respect & Diversity', 'titleAr' => 'الاحترام والتنوع', 'bodyEn' => 'Respect for the dignity, rights, and diversity of all individuals regardless of background, belief, or affiliation.', 'bodyAr' => 'احترام كرامة وحقوق وتنوع جميع الأفراد بغض النظر عن خلفياتهم أو معتقداتهم أو انتماءاتهم.'],
+                    ['titleEn' => 'Social Responsibility', 'titleAr' => 'المسؤولية الاجتماعية', 'bodyEn' => 'Commitment to serving the community and contributing to societal development through knowledge and expertise.', 'bodyAr' => 'الالتزام بخدمة المجتمع والمساهمة في التنمية المجتمعية من خلال المعرفة والخبرة.'],
+                ],
+            ],
+            'organizational-structure' => [
+                'titleEn' => 'Organizational Structure of SPU',
+                'titleAr' => 'الهيكل التنظيمي للجامعة السورية الخاصة',
+                'headlineEn' => 'Organizational Structure of SPU',
+                'headlineAr' => 'الهيكل التنظيمي للجامعة السورية الخاصة',
+                'summaryEn' => 'SPU operates within a defined structure that supports governance, clear authority, and academic and administrative services.',
+                'summaryAr' => 'تعمل الجامعة السورية الخاصة ضمن هيكل محدد يدعم الحوكمة ووضوح الصلاحيات والخدمات الأكاديمية والإدارية.',
+                'heroImage' => '/images/about/hero-img.jpg',
+                'sections' => [
+                    ['titleEn' => 'University Council', 'titleAr' => 'مجلس الجامعة', 'bodyEn' => 'The highest governing body responsible for strategic direction, policy approval, and institutional oversight.', 'bodyAr' => 'أعلى هيئة حاكمة مسؤولة عن التوجه الاستراتيجي واعتماد السياسات والإشراف المؤسسي.'],
+                    ['titleEn' => 'University President', 'titleAr' => 'رئيس الجامعة', 'bodyEn' => 'The chief executive officer who leads the university\'s academic and administrative operations.', 'bodyAr' => 'الرئيس التنفيذي الذي يقود العمليات الأكاديمية والإدارية للجامعة.'],
+                    ['titleEn' => 'Vice Presidents', 'titleAr' => 'نواب الرئيس', 'bodyEn' => 'Senior administrators overseeing academic affairs, administrative affairs, research, and student development.', 'bodyAr' => 'إداريون كبار يشرفون على الشؤون الأكاديمية والإدارية والبحث العلمي وتطوير الطلاب.'],
+                    ['titleEn' => 'Faculties & Directorates', 'titleAr' => 'الكليات والمديريات', 'bodyEn' => 'Academic faculties deliver degree programs while central directorates provide administrative and support services.', 'bodyAr' => 'تقدم الكليات الأكاديمية برامج الدرجات العلمية بينما تقدم المديريات المركزية الخدمات الإدارية والداعمة.'],
+                ],
+            ],
+            'accreditation' => [
+                'titleEn' => 'Accreditation & Quality Assurance',
+                'titleAr' => 'الاعتماد وضمان الجودة',
+                'headlineEn' => 'Accreditation & Quality Assurance',
+                'headlineAr' => 'الاعتماد وضمان الجودة',
+                'summaryEn' => 'SPU holds official accreditation from the Syrian Ministry of Higher Education and Scientific Research, with licensed academic programs and ongoing quality review.',
+                'summaryAr' => 'تحصل الجامعة السورية الخاصة على الاعتماد الرسمي من وزارة التعليم العالي والبحث العلمي، مع برامج أكاديمية مرخصة ومراجعة جودة مستمرة.',
+                'heroImage' => '/images/about/hero-img.jpg',
+                'sections' => [
+                    ['titleEn' => 'Program Licensing', 'titleAr' => 'ترخيص البرامج', 'bodyEn' => 'Every academic program is licensed after review of curriculum, faculty qualifications, facilities, and learning outcomes.', 'bodyAr' => 'كل برنامج أكاديمي مرخص بعد مراجعة المنهاج ومؤهلات أعضاء الهيئة التدريسية والمرافق ومخرجات التعلم.'],
+                    ['titleEn' => 'Periodic Review', 'titleAr' => 'المراجعة الدورية', 'bodyEn' => 'Programs undergo periodic review cycles to ensure continued compliance with national standards and best practices.', 'bodyAr' => 'تخضع البرامج لدورات مراجعة دورية لضمان الامتثال المستمر للمعايير الوطنية وأفضل الممارسات.'],
+                    ['titleEn' => 'Faculty Qualifications', 'titleAr' => 'مؤهلات أعضاء الهيئة التدريسية', 'bodyEn' => 'Faculty appointment and promotion follow transparent criteria approved by the Ministry.', 'bodyAr' => 'يتبع تعيين وترقية أعضاء الهيئة التدريسية معايير شفافة معتمدة من الوزارة.'],
+                    ['titleEn' => 'Student Assessment', 'titleAr' => 'تقييم الطلاب', 'bodyEn' => 'Assessment methods adhere to university-wide standards, examination regulations, and transparent grading policies.', 'bodyAr' => 'تلتزم طرق التقييم بمعايير الجامعة وأنظمة الامتحانات وسياسات التصحيح الشفافة.'],
+                ],
+            ],
+            'why-spu' => [
+                'titleEn' => 'Why Choose Syrian Private University?',
+                'titleAr' => 'لماذا تختار الجامعة السورية الخاصة؟',
+                'headlineEn' => 'Why Choose Syrian Private University?',
+                'headlineAr' => 'لماذا تختار الجامعة السورية الخاصة؟',
+                'summaryEn' => 'SPU offers a distinctive educational experience built on accreditation, clinical excellence, research, and student support.',
+                'summaryAr' => 'تقدم الجامعة السورية الخاصة تجربة تعليمية متميزة قائمة على الاعتماد والتميز السريري والبحث العلمي ودعم الطلاب.',
+                'heroImage' => '/images/about/hero-img.jpg',
+                'sections' => [
+                    ['titleEn' => 'Accredited Programs', 'titleAr' => 'برامج معتمدة', 'bodyEn' => 'All SPU programs are licensed and periodically reviewed.', 'bodyAr' => 'جميع برامج SPU مرخصة وتخضع للمراجعة الدورية.'],
+                    ['titleEn' => 'Clinical Excellence', 'titleAr' => 'التميز السريري', 'bodyEn' => 'SPU operates a university hospital and dental clinics that serve the community and train students.', 'bodyAr' => 'تدير SPU مستشفى جامعياً وعيادات سنية تخدم المجتمع وتدرب الطلاب.'],
+                    ['titleEn' => 'Research & Innovation', 'titleAr' => 'البحث والابتكار', 'bodyEn' => 'Active research centers and publications support academic development.', 'bodyAr' => 'تدعم مراكز البحث والمنشورات النشطة التطوير الأكاديمي.'],
+                    ['titleEn' => 'Student Support', 'titleAr' => 'دعم الطلاب', 'bodyEn' => 'Comprehensive services include advising, career development, insurance, transport, and activities.', 'bodyAr' => 'تشمل الخدمات الشاملة الإرشاد والتطوير المهني والتأمين والنقل والأنشطة.'],
+                ],
+            ],
+            default => null,
+        };
+    }
+
+    /** @param array<string, mixed> $payload @return array<string, mixed> */
+    private function localizedImportedPayload(array $payload, string $locale): array
+    {
+        $localized = [];
+
+        foreach ($payload as $key => $value) {
+            if (str_ends_with((string) $key, 'En') || str_ends_with((string) $key, 'Ar')) {
+                continue;
+            }
+
+            $localized[(string) $key] = is_array($value) ? $this->localizedImportedList($value, $locale) : $value;
+        }
+
+        $suffix = $locale === 'ar' ? 'Ar' : 'En';
+        foreach ($payload as $key => $value) {
+            if (str_ends_with((string) $key, $suffix)) {
+                $localized[lcfirst(substr((string) $key, 0, -2))] = $value;
+            }
+        }
+
+        return $localized;
+    }
+
+    /** @param array<int|string, mixed> $items @return array<int|string, mixed> */
+    private function localizedImportedList(array $items, string $locale): array
+    {
+        if (array_is_list($items)) {
+            return array_map(fn (mixed $item): mixed => is_array($item) ? $this->localizedImportedPayload($item, $locale) : $item, $items);
+        }
+
+        return $this->localizedImportedPayload($items, $locale);
     }
 
     /** @return array<string, mixed> */

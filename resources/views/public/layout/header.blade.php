@@ -1,17 +1,18 @@
 @php
     $searchItems = [];
+    $appendSearchItems = function (array $items) use (&$appendSearchItems, &$searchItems): void {
+        foreach ($items as $item) {
+            if ($item->resolvedUrl) {
+                $searchItems[] = ['label' => $item->label, 'url' => $item->resolvedUrl];
+            }
 
-    foreach ($navigation->header->items as $navItem) {
-        if ($navItem->resolvedUrl) {
-            $searchItems[] = ['label' => $navItem->label, 'url' => $navItem->resolvedUrl];
-        }
-
-        foreach ($navItem->children as $child) {
-            if ($child->resolvedUrl) {
-                $searchItems[] = ['label' => $child->label, 'url' => $child->resolvedUrl];
+            if (!empty($item->children)) {
+                $appendSearchItems($item->children);
             }
         }
-    }
+    };
+
+    $appendSearchItems($navigation->header->items);
 @endphp
 
 <header id="site-header" class="absolute top-0 z-50 w-full pt-3 font-hacen"
@@ -59,12 +60,38 @@
                                          x-transition:leave-end="opacity-0 -translate-y-1 scale-[0.97]"
                                          style="display: none;"
                                          class="site-nav-dropdown">
+                                        @php
+                                            $flatDividerRendered = false;
+                                            $hasRenderedGroup = false;
+                                        @endphp
                                         @foreach ($item->children as $child)
-                                            <a href="{{ $child->resolvedUrl ?? '#' }}"
-                                               class="site-nav-dropdown-link"
-                                               @if ($child->openInNewTab ?? false) target="_blank" rel="noreferrer" @endif>
-                                                {{ $child->label }}
-                                            </a>
+                                            @if (!empty($child->children))
+                                                @php $hasRenderedGroup = true; @endphp
+                                                <div class="site-nav-dropdown-group">
+                                                    <a href="{{ $child->resolvedUrl ?? '#' }}"
+                                                       class="site-nav-dropdown-group-header"
+                                                       @if ($child->openInNewTab ?? false) target="_blank" rel="noreferrer" @endif>
+                                                        {{ $child->label }}
+                                                    </a>
+                                                    @foreach ($child->children as $featured)
+                                                        <a href="{{ $featured->resolvedUrl ?? '#' }}"
+                                                           class="site-nav-dropdown-featured"
+                                                           @if ($featured->openInNewTab ?? false) target="_blank" rel="noreferrer" @endif>
+                                                            {{ $featured->label }}
+                                                        </a>
+                                                    @endforeach
+                                                </div>
+                                            @else
+                                                @if ($hasRenderedGroup && ! $flatDividerRendered)
+                                                    <div class="my-2 border-t border-spu-blue/10"></div>
+                                                    @php $flatDividerRendered = true; @endphp
+                                                @endif
+                                                <a href="{{ $child->resolvedUrl ?? '#' }}"
+                                                   class="site-nav-dropdown-link"
+                                                   @if ($child->openInNewTab ?? false) target="_blank" rel="noreferrer" @endif>
+                                                    {{ $child->label }}
+                                                </a>
+                                            @endif
                                         @endforeach
                                     </div>
                                 @endif

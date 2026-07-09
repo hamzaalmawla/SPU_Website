@@ -116,6 +116,17 @@ final class ResearchController extends Controller
         return $this->renderPage($request, $locale, $this->researchPageService->conferences($locale), 'public.research.conferences', '/research/conferences');
     }
 
+    public function conferenceRegistration(Request $request, string $locale): View
+    {
+        return $this->renderPage(
+            $request,
+            $locale,
+            $this->researchPageService->conferenceRegistration($locale, is_string($request->query('event')) ? (string) $request->query('event') : null),
+            'public.research.conference-registration',
+            '/research/conferences/register'
+        );
+    }
+
     public function library(Request $request, string $locale): View
     {
         return $this->renderPage($request, $locale, $this->researchPageService->library($locale), 'public.research.library', '/research/library');

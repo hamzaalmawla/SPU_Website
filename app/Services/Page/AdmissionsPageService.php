@@ -242,6 +242,8 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
             'calendar' => $this->calendarPayload(),
             'documents' => $this->documentsPayload(),
             'transfer' => $this->transferPayload(),
+            'filling-vacancies' => $this->fillingVacanciesPayload(),
+            'graduation-exams' => $this->graduationExamsPayload(),
         ];
     }
 
@@ -632,6 +634,67 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
             })
             ->values()
             ->all();
+    }
+
+    /** @return array<string, mixed> */
+    private function fillingVacanciesPayload(): array
+    {
+        return [
+            'type' => 'simple-cards',
+            'heroImage' => '/images/admission/front-img.jpg',
+            'breadcrumbHomeEn' => 'Home',
+            'breadcrumbHomeAr' => 'الرئيسية',
+            'breadcrumbParentEn' => 'Admissions',
+            'breadcrumbParentAr' => 'القبول والتسجيل',
+            'breadcrumbCurrentEn' => 'Filling Vacancies',
+            'breadcrumbCurrentAr' => 'ملء الشواغر',
+            'titleEn' => 'Filling Vacant Seats',
+            'titleAr' => 'ملء الشواغر',
+            'introEn' => 'SPU offers the opportunity to apply for vacant seats in certain faculties after the initial enrollment period has closed. This process allows qualified students who missed the regular admission cycle to secure a place in their desired program, subject to availability.',
+            'introAr' => 'تتيح الجامعة السورية الخاصة فرصة التقديم على المقاعد الشاغرة في بعض الكليات بعد انتهاء فترة التسجيل الأولي. تتيح هذه العملية للطلاب المؤهلين الذين فاتتهم دورة القبول العادية تأمين مقعد في البرنامج الذي يرغبون فيه، حسب التوفر.',
+            'cardsTitleEn' => 'Vacancy Application Requirements',
+            'cardsTitleAr' => 'متطلبات التقديم على الشواغر',
+            'cards' => [
+                ['titleEn' => 'Eligibility', 'titleAr' => 'الأهلية', 'bodyEn' => 'Applicants must meet the same academic requirements as regular admission candidates, including minimum high school GPA and faculty-specific prerequisites.', 'bodyAr' => 'يجب أن يستوفي المتقدمون نفس المتطلبات الأكاديمية لمرشحي القبول العادي، بما في ذلك الحد الأدنى لمعدل الثانوية العامة والمتطلبات الخاصة بكل كلية.'],
+                ['titleEn' => 'Available Faculties', 'titleAr' => 'الكليات المتاحة', 'bodyEn' => 'Vacant seats vary by faculty and academic year. The list of faculties with open seats is announced after the regular enrollment period ends.', 'bodyAr' => 'تختلف المقاعد الشاغرة حسب الكلية والعام الأكاديمي. يتم الإعلان عن قائمة الكليات ذات المقاعد الشاغرة بعد انتهاء فترة التسجيل العادي.'],
+                ['titleEn' => 'Application Period', 'titleAr' => 'فترة التقديم', 'bodyEn' => 'Applications for vacant seats are accepted during a specified period announced on the official university website and through university announcements.', 'bodyAr' => 'يتم استقبال طلبات ملء الشواغر خلال فترة محددة تعلن على الموقع الرسمي للجامعة وعبر إعلانات الجامعة.'],
+                ['titleEn' => 'Required Documents', 'titleAr' => 'الوثائق المطلوبة', 'bodyEn' => 'Applicants must submit all standard admission documents along with a vacancy application form available from the Admissions Office.', 'bodyAr' => 'يجب على المتقدمين تقديم جميع وثائق القبول القياسية بالإضافة إلى نموذج طلب الشواغر المتاح من مكتب القبول والتسجيل.'],
+            ],
+            'seoDescriptionEn' => 'Apply for vacant seats at SPU after the initial enrollment period. Check eligibility, required documents, and application process.',
+            'seoDescriptionAr' => 'التقديم على المقاعد الشاغرة في الجامعة السورية الخاصة بعد فترة التسجيل الأولي، مع الأهلية والوثائق المطلوبة وآلية التقديم.',
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function graduationExamsPayload(): array
+    {
+        return [
+            'type' => 'simple-steps',
+            'heroImage' => '/images/admission/front-img.jpg',
+            'breadcrumbHomeEn' => 'Home',
+            'breadcrumbHomeAr' => 'الرئيسية',
+            'breadcrumbParentEn' => 'Admissions',
+            'breadcrumbParentAr' => 'القبول والتسجيل',
+            'breadcrumbCurrentEn' => 'Graduation & National Exams',
+            'breadcrumbCurrentAr' => 'التخرج والامتحانات الوطنية',
+            'titleEn' => 'Graduation & National Examinations',
+            'titleAr' => 'التخرج والامتحانات الوطنية',
+            'intro' => [
+                ['en' => 'SPU follows the graduation requirements and national examination regulations set by the Syrian Ministry of Higher Education and Scientific Research. Students must fulfill all academic, administrative, and financial obligations before being cleared for graduation.', 'ar' => 'تتبع الجامعة السورية الخاصة متطلبات التخرج وأنظمة الامتحانات الوطنية التي وضعتها وزارة التعليم العالي والبحث العلمي. يجب على الطلاب استيفاء جميع الالتزامات الأكاديمية والإدارية والمالية قبل الموافقة على تخرجهم.'],
+                ['en' => 'In addition to faculty-specific graduation requirements, certain programs require students to pass national examinations administered by the Ministry. These exams assess graduate competency and may be required for professional licensing.', 'ar' => 'بالإضافة إلى متطلبات التخرج الخاصة بكل كلية، تتطلب بعض البرامج اجتياز امتحانات وطنية تديرها الوزارة. تقيم هذه الامتحانات كفاءة الخريجين وقد تكون شرطا للترخيص المهني.'],
+            ],
+            'stepsTitleEn' => 'Graduation Clearance Steps',
+            'stepsTitleAr' => 'خطوات استكمال التخرج',
+            'steps' => [
+                ['titleEn' => 'Complete Course Requirements', 'titleAr' => 'استكمال متطلبات المساقات', 'bodyEn' => 'Successfully pass all required courses, credit hours, and practical training as specified by the faculty study plan.', 'bodyAr' => 'اجتياز جميع المساقات المطلوبة والساعات المعتمدة والتدريب العملي بنجاح حسب الخطة الدراسية للكلية.'],
+                ['titleEn' => 'Clear Financial Obligations', 'titleAr' => 'تسوية الالتزامات المالية', 'bodyEn' => 'Settle all tuition fees and any outstanding financial dues to the university.', 'bodyAr' => 'تسديد جميع الرسوم الدراسية وأي مستحقات مالية متبقية للجامعة.'],
+                ['titleEn' => 'Submit Graduation Documents', 'titleAr' => 'تقديم وثائق التخرج', 'bodyEn' => 'Submit all required graduation documents including the graduation notice, academic status document, and other forms to the faculty administration.', 'bodyAr' => 'تقديم جميع وثائق التخرج المطلوبة بما في ذلك إشعار التخرج ووثيقة الحالة الأكاديمية والنماذج الأخرى إلى إدارة الكلية.'],
+                ['titleEn' => 'National Examinations', 'titleAr' => 'الامتحانات الوطنية', 'bodyEn' => 'Pass the national examinations required for certain professional programs as mandated by the Ministry of Higher Education.', 'bodyAr' => 'اجتياز الامتحانات الوطنية المطلوبة لبعض البرامج المهنية وفقاً لما تحدده وزارة التعليم العالي.'],
+                ['titleEn' => 'Graduation Approval', 'titleAr' => 'الموافقة على التخرج', 'bodyEn' => 'Upon fulfilling all requirements, the faculty council recommends graduation and the university issues the official graduation certificate and transcript.', 'bodyAr' => 'عند استيفاء جميع المتطلبات، يوصي مجلس الكلية بالتخرج وتصدر الجامعة شهادة التخرج الرسمية وكشف الدرجات.'],
+            ],
+            'seoDescriptionEn' => 'Learn about SPU graduation requirements, national examinations, and the steps to complete your degree.',
+            'seoDescriptionAr' => 'تعرف إلى متطلبات التخرج والامتحانات الوطنية وخطوات استكمال الدرجة في الجامعة السورية الخاصة.',
+        ];
     }
 
     private function localized(mixed $value, string $locale): mixed

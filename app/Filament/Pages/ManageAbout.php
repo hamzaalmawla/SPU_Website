@@ -142,7 +142,7 @@ class ManageAbout extends Page implements HasForms
     {
         $this->assertAboutTarget($targetKey);
 
-        if (! in_array($targetKey, ['about.landing', 'about.history', 'about.leadership', 'about.directorates', 'about.directorates_staff', 'about.partnerships'], true)) {
+        if (! in_array($targetKey, ['about.landing', 'about.history', 'about.leadership', 'about.directorates', 'about.directorates_staff', 'about.partnerships', 'about.quality-policy', 'about.ethical-charter', 'about.organizational-structure'], true)) {
             $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey);
             $this->form->fill([
                 'target_key' => $targetKey,
@@ -158,6 +158,12 @@ class ManageAbout extends Page implements HasForms
                 'en_directorates_staff' => [],
                 'ar_partnerships' => [],
                 'en_partnerships' => [],
+                'ar_quality_policy' => [],
+                'en_quality_policy' => [],
+                'ar_ethical_charter' => [],
+                'en_ethical_charter' => [],
+                'ar_organizational_structure' => [],
+                'en_organizational_structure' => [],
             ]);
 
             return;
@@ -181,6 +187,12 @@ class ManageAbout extends Page implements HasForms
             'en_directorates_staff' => $targetKey === 'about.directorates_staff' && is_array($payload['translations']['en'] ?? null) ? $this->contentShellFormData($payload['translations']['en']) : [],
             'ar_partnerships' => $targetKey === 'about.partnerships' && is_array($payload['translations']['ar'] ?? null) ? $this->contentShellFormData($payload['translations']['ar']) : [],
             'en_partnerships' => $targetKey === 'about.partnerships' && is_array($payload['translations']['en'] ?? null) ? $this->contentShellFormData($payload['translations']['en']) : [],
+            'ar_quality_policy' => $targetKey === 'about.quality-policy' && is_array($payload['translations']['ar'] ?? null) ? $this->importedContentFormData($payload['translations']['ar']) : [],
+            'en_quality_policy' => $targetKey === 'about.quality-policy' && is_array($payload['translations']['en'] ?? null) ? $this->importedContentFormData($payload['translations']['en']) : [],
+            'ar_ethical_charter' => $targetKey === 'about.ethical-charter' && is_array($payload['translations']['ar'] ?? null) ? $this->importedContentFormData($payload['translations']['ar']) : [],
+            'en_ethical_charter' => $targetKey === 'about.ethical-charter' && is_array($payload['translations']['en'] ?? null) ? $this->importedContentFormData($payload['translations']['en']) : [],
+            'ar_organizational_structure' => $targetKey === 'about.organizational-structure' && is_array($payload['translations']['ar'] ?? null) ? $this->importedContentFormData($payload['translations']['ar']) : [],
+            'en_organizational_structure' => $targetKey === 'about.organizational-structure' && is_array($payload['translations']['en'] ?? null) ? $this->importedContentFormData($payload['translations']['en']) : [],
         ]);
     }
 
@@ -356,6 +368,17 @@ class ManageAbout extends Page implements HasForms
             ];
         }
 
+        if (in_array($state['target_key'] ?? null, ['about.quality-policy', 'about.ethical-charter', 'about.organizational-structure'], true)) {
+            $stateKey = $this->importedContentStateKey((string) $state['target_key']);
+
+            return [
+                'translations' => [
+                    'ar' => $this->importedContentPayloadFromForm(is_array($state['ar_'.$stateKey] ?? null) ? $state['ar_'.$stateKey] : []),
+                    'en' => $this->importedContentPayloadFromForm(is_array($state['en_'.$stateKey] ?? null) ? $state['en_'.$stateKey] : []),
+                ],
+            ];
+        }
+
         throw new \InvalidArgumentException('This about subpage form will be structured next. Select the About landing page for now.');
     }
 
@@ -386,6 +409,10 @@ class ManageAbout extends Page implements HasForms
 
         if ($this->targetKeyForSchema() === 'about.partnerships') {
             return $this->contentShellFields($locale, 'partnerships');
+        }
+
+        if (in_array($this->targetKeyForSchema(), ['about.quality-policy', 'about.ethical-charter', 'about.organizational-structure'], true)) {
+            return $this->importedContentFields($locale, $this->importedContentStateKey($this->targetKeyForSchema()));
         }
 
         if ($this->targetKeyForSchema() !== 'about.landing') {
@@ -481,6 +508,35 @@ class ManageAbout extends Page implements HasForms
                 Textarea::make($prefix.'.summary')->label('Summary')->required()->rows(2)->columnSpanFull(),
                 MediaPicker::image($prefix.'.heroImage', 'Hero Image', true),
             ])->columns(2),
+        ];
+    }
+
+    /** @return array<int, Section> */
+    private function importedContentFields(string $locale, string $stateKey): array
+    {
+        $prefix = $locale.'_'.$stateKey;
+
+        return [
+            Section::make('Hero')->schema([
+                TextInput::make($prefix.'.title')->label('Page Title')->required()->maxLength(180),
+                TextInput::make($prefix.'.headline')->label('Headline')->required()->maxLength(255),
+                Textarea::make($prefix.'.summary')->label('Summary')->required()->rows(2)->columnSpanFull(),
+                MediaPicker::image($prefix.'.heroImage', 'Hero Image', true),
+            ])->columns(2),
+
+            Section::make('Content Cards')->schema([
+                Repeater::make($prefix.'.sections')
+                    ->label('Cards')
+                    ->schema([
+                        TextInput::make('title')->required()->maxLength(180),
+                        Textarea::make('body')->required()->rows(3)->columnSpanFull(),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]),
         ];
     }
 
@@ -694,6 +750,43 @@ class ManageAbout extends Page implements HasForms
             'heroImage' => (string) ($data['heroImage'] ?? ''),
             'sections' => [],
         ];
+    }
+
+    /** @return array<string, mixed> */
+    private function importedContentFormData(array $payload): array
+    {
+        return [
+            ...$this->contentShellFormData($payload),
+            'sections' => $this->listValue($payload, 'sections'),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function importedContentPayloadFromForm(array $data): array
+    {
+        return [
+            'title' => (string) ($data['title'] ?? ''),
+            'headline' => (string) ($data['headline'] ?? ''),
+            'summary' => (string) ($data['summary'] ?? ''),
+            'heroImage' => (string) ($data['heroImage'] ?? ''),
+            'sections' => collect($this->listValue($data, 'sections'))
+                ->map(static fn (array $section): array => [
+                    'title' => (string) ($section['title'] ?? ''),
+                    'body' => (string) ($section['body'] ?? ''),
+                ])
+                ->values()
+                ->all(),
+        ];
+    }
+
+    private function importedContentStateKey(string $targetKey): string
+    {
+        return match ($targetKey) {
+            'about.quality-policy' => 'quality_policy',
+            'about.ethical-charter' => 'ethical_charter',
+            'about.organizational-structure' => 'organizational_structure',
+            default => throw new \InvalidArgumentException('Unsupported about content target.'),
+        };
     }
 
     private function targetKeyForSchema(): string

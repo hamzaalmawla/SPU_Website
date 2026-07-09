@@ -50,49 +50,7 @@ class NavigationSeeder extends Seeder
                 ]
             );
 
-            // Seed children if present
-            if (! empty($item['children'])) {
-                $desiredChildLabels = array_column($item['children'], 'label');
-
-                MenuItem::query()
-                    ->where('type', $item['type'])
-                    ->where('group_key', $item['group_key'])
-                    ->where('locale', $item['locale'])
-                    ->where('parent_id', $parent->getKey())
-                    ->whereNotIn('label', $desiredChildLabels)
-                    ->update(['is_enabled' => false]);
-
-                foreach ($item['children'] as $childIndex => $child) {
-                    $childTargetId = null;
-                    if (($child['target_kind'] ?? 'url') === 'page' && ! empty($child['page_slug'])) {
-                        $childTargetId = Page::query()->where('slug', $child['page_slug'])->value('id');
-                    }
-
-                    MenuItem::query()->updateOrCreate(
-                        [
-                            'type' => $item['type'],
-                            'group_key' => $item['group_key'],
-                            'locale' => $item['locale'],
-                            'label' => $child['label'],
-                            'parent_id' => $parent->getKey(),
-                        ],
-                        [
-                            'target_kind' => $child['target_kind'] ?? 'url',
-                            'target_id' => $childTargetId,
-                            'url' => $child['url'] ?? null,
-                            'target' => $child['target'] ?? null,
-                            'route_name' => null,
-                            'css_token' => null,
-                            'icon' => null,
-                            'is_enabled' => true,
-                            'is_utility' => false,
-                            'open_in_new_tab' => $child['open_in_new_tab'] ?? false,
-                            'sort_order' => $childIndex + 1,
-                            'depth' => 1,
-                        ]
-                    );
-                }
-            }
+            $this->syncChildren($parent, $item['children'] ?? []);
         }
 
         Cache::forget('menu.tree.header.ar');
@@ -100,6 +58,60 @@ class NavigationSeeder extends Seeder
         Cache::forget('navigation.payload.ar');
         Cache::forget('navigation.payload.en');
         Cache::flush();
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $children
+     */
+    private function syncChildren(MenuItem $parent, array $children): void
+    {
+        $desiredChildLabels = array_values(array_filter(array_column($children, 'label'), 'is_string'));
+
+        $staleChildren = MenuItem::query()
+            ->where('type', $parent->type)
+            ->where('group_key', $parent->group_key)
+            ->where('locale', $parent->locale)
+            ->where('parent_id', $parent->getKey());
+
+        if ($desiredChildLabels === []) {
+            $staleChildren->update(['is_enabled' => false]);
+        } else {
+            $staleChildren->whereNotIn('label', $desiredChildLabels)->update(['is_enabled' => false]);
+        }
+
+        foreach ($children as $childIndex => $child) {
+            $childTargetId = null;
+
+            if (($child['target_kind'] ?? 'url') === 'page' && ! empty($child['page_slug'])) {
+                $childTargetId = Page::query()->where('slug', $child['page_slug'])->value('id');
+            }
+
+            $childItem = MenuItem::query()->updateOrCreate(
+                [
+                    'type' => $parent->type,
+                    'group_key' => $parent->group_key,
+                    'locale' => $parent->locale,
+                    'label' => $child['label'],
+                    'parent_id' => $parent->getKey(),
+                ],
+                [
+                    'target_kind' => $child['target_kind'] ?? 'url',
+                    'target_id' => $childTargetId,
+                    'url' => $child['url'] ?? null,
+                    'target' => $child['target'] ?? null,
+                    'route_name' => null,
+                    'css_token' => null,
+                    'icon' => null,
+                    'is_enabled' => true,
+                    'is_utility' => false,
+                    'open_in_new_tab' => $child['open_in_new_tab'] ?? false,
+                    'sort_order' => $childIndex + 1,
+                    'depth' => ((int) $parent->depth) + 1,
+                ]
+            );
+
+            $this->syncChildren($childItem, $child['children'] ?? []);
+        }
     }
 
     /**
@@ -156,6 +168,11 @@ class NavigationSeeder extends Seeder
             ['label' => 'المديريات المركزية', 'target_kind' => 'url', 'url' => '/ar/about/directorates'],
             ['label' => 'دليل الهيئة الأكاديمية', 'target_kind' => 'url', 'url' => '/ar/about/directorates/staff'],
             ['label' => 'الشراكات', 'target_kind' => 'url', 'url' => '/ar/about/partnerships'],
+            ['label' => 'سياسة الجودة', 'target_kind' => 'url', 'url' => '/ar/about/quality-policy'],
+            ['label' => 'الميثاق الأخلاقي', 'target_kind' => 'url', 'url' => '/ar/about/ethical-charter'],
+            ['label' => 'الهيكل التنظيمي', 'target_kind' => 'url', 'url' => '/ar/about/organizational-structure'],
+            ['label' => 'الاعتمادية', 'target_kind' => 'url', 'url' => '/ar/about/accreditation'],
+            ['label' => 'لماذا SPU', 'target_kind' => 'url', 'url' => '/ar/about/why-spu'],
         ]];
         $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'About', 'target_kind' => 'page', 'page_slug' => 'about', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 1, 'children' => [
             ['label' => 'History & Founding', 'target_kind' => 'url', 'url' => '/en/about/history'],
@@ -163,6 +180,11 @@ class NavigationSeeder extends Seeder
             ['label' => 'Central Directorates', 'target_kind' => 'url', 'url' => '/en/about/directorates'],
             ['label' => 'Academic Staff Directory', 'target_kind' => 'url', 'url' => '/en/about/directorates/staff'],
             ['label' => 'Partnerships', 'target_kind' => 'url', 'url' => '/en/about/partnerships'],
+            ['label' => 'Quality Policy', 'target_kind' => 'url', 'url' => '/en/about/quality-policy'],
+            ['label' => 'Ethical Charter', 'target_kind' => 'url', 'url' => '/en/about/ethical-charter'],
+            ['label' => 'Organizational Structure', 'target_kind' => 'url', 'url' => '/en/about/organizational-structure'],
+            ['label' => 'Accreditation', 'target_kind' => 'url', 'url' => '/en/about/accreditation'],
+            ['label' => 'Why SPU', 'target_kind' => 'url', 'url' => '/en/about/why-spu'],
         ]];
 
         // ── Faculties (sort 2) ──
@@ -190,88 +212,164 @@ class NavigationSeeder extends Seeder
             ['label' => 'شروط القبول', 'target_kind' => 'url', 'url' => '/ar/admissions/requirements'],
             ['label' => 'الرسوم الدراسية', 'target_kind' => 'url', 'url' => '/ar/admissions/tuition'],
             ['label' => 'كيفية التقديم', 'target_kind' => 'url', 'url' => '/ar/admissions/how-to-apply'],
-            ['label' => 'الأسئلة الشائعة', 'target_kind' => 'url', 'url' => '/ar/admissions/faq'],
+            ['label' => 'التحويل والطلاب الدوليون', 'target_kind' => 'url', 'url' => '/ar/admissions/transfer'],
             ['label' => 'التقويم الأكاديمي', 'target_kind' => 'url', 'url' => '/ar/admissions/calendar'],
-            ['label' => 'الوثائق المطلوبة', 'target_kind' => 'url', 'url' => '/ar/admissions/documents'],
-            ['label' => 'التحويل والانتقال', 'target_kind' => 'url', 'url' => '/ar/admissions/transfer'],
+            ['label' => 'الوثائق وقوائم التحقق', 'target_kind' => 'url', 'url' => '/ar/admissions/documents'],
+            ['label' => 'ملء الشواغر', 'target_kind' => 'url', 'url' => '/ar/admissions/filling-vacancies'],
+            ['label' => 'التخرج والامتحانات الوطنية', 'target_kind' => 'url', 'url' => '/ar/admissions/graduation-exams'],
+            ['label' => 'الأسئلة الشائعة', 'target_kind' => 'url', 'url' => '/ar/admissions/faq'],
         ]];
         $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'Admissions', 'target_kind' => 'page', 'page_slug' => 'admissions', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 3, 'children' => [
             ['label' => 'Admission Requirements', 'target_kind' => 'url', 'url' => '/en/admissions/requirements'],
-            ['label' => 'Tuition Fees', 'target_kind' => 'url', 'url' => '/en/admissions/tuition'],
+            ['label' => 'Tuition & Fees', 'target_kind' => 'url', 'url' => '/en/admissions/tuition'],
             ['label' => 'How to Apply', 'target_kind' => 'url', 'url' => '/en/admissions/how-to-apply'],
-            ['label' => 'FAQ', 'target_kind' => 'url', 'url' => '/en/admissions/faq'],
+            ['label' => 'Transfer & International', 'target_kind' => 'url', 'url' => '/en/admissions/transfer'],
             ['label' => 'Academic Calendar', 'target_kind' => 'url', 'url' => '/en/admissions/calendar'],
-            ['label' => 'Required Documents', 'target_kind' => 'url', 'url' => '/en/admissions/documents'],
-            ['label' => 'Transfer Students', 'target_kind' => 'url', 'url' => '/en/admissions/transfer'],
+            ['label' => 'Documents & Checklists', 'target_kind' => 'url', 'url' => '/en/admissions/documents'],
+            ['label' => 'Filling Vacancies', 'target_kind' => 'url', 'url' => '/en/admissions/filling-vacancies'],
+            ['label' => 'Graduation & National Exams', 'target_kind' => 'url', 'url' => '/en/admissions/graduation-exams'],
+            ['label' => 'FAQs', 'target_kind' => 'url', 'url' => '/en/admissions/faq'],
         ]];
 
-        // ── Campus Life (sort 4) ──
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'الحياة الجامعية', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/ar/campus-life', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 4, 'children' => [
-            ['label' => 'الجولة الافتراضية', 'target_kind' => 'url', 'url' => '/ar/virtual-tour'],
+        // ── Research (sort 4) ──
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'البحث العلمي', 'target_kind' => 'page', 'page_slug' => 'research', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 4, 'children' => $this->researchChildren('ar')];
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'Research', 'target_kind' => 'page', 'page_slug' => 'research', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 4, 'children' => $this->researchChildren('en')];
+
+        // ── Campus Life (sort 5) ──
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'الحياة الجامعية', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/ar/campus-life', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 5, 'children' => [
             ['label' => 'خدمات الحرم الجامعي', 'target_kind' => 'url', 'url' => '/ar/campus-life/services'],
             ['label' => 'النقل', 'target_kind' => 'url', 'url' => '/ar/campus-life/transport'],
             ['label' => 'الصحة والتأمين', 'target_kind' => 'url', 'url' => '/ar/campus-life/health-insurance'],
             ['label' => 'النوادي والأنشطة', 'target_kind' => 'url', 'url' => '/ar/campus-life/clubs-activities'],
             ['label' => 'التطوير المهني', 'target_kind' => 'url', 'url' => '/ar/campus-life/career-development'],
+            ['label' => 'لوحة الوظائف', 'target_kind' => 'url', 'url' => '/ar/campus-life/career-development/jobs'],
             ['label' => 'المستشفى الجامعي', 'target_kind' => 'url', 'url' => '/ar/campus-life/hospital'],
             ['label' => 'عيادات الأسنان', 'target_kind' => 'url', 'url' => '/ar/campus-life/dental'],
+            ['label' => 'منشورات مركز دمشق للأبحاث', 'target_kind' => 'url', 'url' => '/ar/campus-life/damascus-research-pub'],
+            ['label' => 'أنظمة وتعليمات', 'target_kind' => 'url', 'url' => '/ar/campus-life/rules-regulations'],
+            ['label' => 'قواعد وتعليمات عامة', 'target_kind' => 'url', 'url' => '/ar/campus-life/general-rules'],
+            ['label' => 'التعليمات الامتحانية', 'target_kind' => 'url', 'url' => '/ar/campus-life/exam-instructions'],
+            ['label' => 'العقوبات الامتحانية', 'target_kind' => 'url', 'url' => '/ar/campus-life/exam-penalties'],
         ]];
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'Campus Life', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/en/campus-life', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 4, 'children' => [
-            ['label' => 'Virtual Tour', 'target_kind' => 'url', 'url' => '/en/virtual-tour'],
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'Campus Life', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/en/campus-life', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 5, 'children' => [
             ['label' => 'Campus Services', 'target_kind' => 'url', 'url' => '/en/campus-life/services'],
             ['label' => 'Transport', 'target_kind' => 'url', 'url' => '/en/campus-life/transport'],
             ['label' => 'Health & Insurance', 'target_kind' => 'url', 'url' => '/en/campus-life/health-insurance'],
             ['label' => 'Clubs & Activities', 'target_kind' => 'url', 'url' => '/en/campus-life/clubs-activities'],
             ['label' => 'Career Development', 'target_kind' => 'url', 'url' => '/en/campus-life/career-development'],
+            ['label' => 'Job Board', 'target_kind' => 'url', 'url' => '/en/campus-life/career-development/jobs'],
             ['label' => 'University Hospital', 'target_kind' => 'url', 'url' => '/en/campus-life/hospital'],
             ['label' => 'Dental Clinics', 'target_kind' => 'url', 'url' => '/en/campus-life/dental'],
+            ['label' => 'Damascus Research Center', 'target_kind' => 'url', 'url' => '/en/campus-life/damascus-research-pub'],
+            ['label' => 'Rules & Regulations', 'target_kind' => 'url', 'url' => '/en/campus-life/rules-regulations'],
+            ['label' => 'General Rules', 'target_kind' => 'url', 'url' => '/en/campus-life/general-rules'],
+            ['label' => 'Exam Instructions', 'target_kind' => 'url', 'url' => '/en/campus-life/exam-instructions'],
+            ['label' => 'Exam Penalties', 'target_kind' => 'url', 'url' => '/en/campus-life/exam-penalties'],
         ]];
 
-        // ── E-Services (sort 5) ──
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'الخدمات الإلكترونية', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/ar/e-services', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 5, 'children' => [
-            ['label' => 'بوابة الطالب', 'target_kind' => 'url', 'url' => '/ar/e-services#portal-access'],
-            ['label' => 'التسجيل', 'target_kind' => 'url', 'url' => '/ar/e-services#portal-access'],
-            ['label' => 'وصول المكتبة', 'target_kind' => 'url', 'url' => '/ar/e-services#library'],
-            ['label' => 'الاعتراضات والنماذج', 'target_kind' => 'url', 'url' => '/ar/e-services#appeals-forms'],
+        // ── E-Services (sort 6) ──
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'الخدمات الإلكترونية', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/ar/e-services', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 6, 'children' => [
+            ['label' => 'بوابة الطالب', 'target_kind' => 'url', 'url' => 'https://students.spu.edu.sy', 'open_in_new_tab' => true],
+            ['label' => 'المكتبة الإلكترونية', 'target_kind' => 'url', 'url' => '/ar/e-services#library'],
+            ['label' => 'دعم تكنولوجيا المعلومات', 'target_kind' => 'url', 'url' => '/ar/e-services#it-support'],
+            ['label' => 'البريد الإلكتروني للموظفين', 'target_kind' => 'url', 'url' => 'https://staff.spu.edu.sy', 'open_in_new_tab' => true],
+            ['label' => 'الاقتراحات والشكاوى', 'target_kind' => 'url', 'url' => '/ar/e-services/suggestions-complaints'],
         ]];
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'E-Services', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/en/e-services', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 5, 'children' => [
-            ['label' => 'Student Portal', 'target_kind' => 'url', 'url' => '/en/e-services#portal-access'],
-            ['label' => 'Registration', 'target_kind' => 'url', 'url' => '/en/e-services#portal-access'],
-            ['label' => 'Library Access', 'target_kind' => 'url', 'url' => '/en/e-services#library'],
-            ['label' => 'Appeals & Forms', 'target_kind' => 'url', 'url' => '/en/e-services#appeals-forms'],
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'E-Services', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/en/e-services', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 6, 'children' => [
+            ['label' => 'Student Portal', 'target_kind' => 'url', 'url' => 'https://students.spu.edu.sy', 'open_in_new_tab' => true],
+            ['label' => 'E-Library', 'target_kind' => 'url', 'url' => '/en/e-services#library'],
+            ['label' => 'IT Support', 'target_kind' => 'url', 'url' => '/en/e-services#it-support'],
+            ['label' => 'Staff Email', 'target_kind' => 'url', 'url' => 'https://staff.spu.edu.sy', 'open_in_new_tab' => true],
+            ['label' => 'Suggestions & Complaints', 'target_kind' => 'url', 'url' => '/en/e-services/suggestions-complaints'],
         ]];
 
-        // ── Research (sort 6) ──
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'البحث العلمي', 'target_kind' => 'page', 'page_slug' => 'research', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 6, 'children' => [
-            ['label' => 'الباحث عن الخبراء', 'target_kind' => 'url', 'url' => '/ar/research/expert-finder'],
-            ['label' => 'المؤتمرات والندوات', 'target_kind' => 'url', 'url' => '/ar/research/conferences'],
-            ['label' => 'مكتبة البحث', 'target_kind' => 'url', 'url' => '/ar/research/library'],
-            ['label' => 'السياسات والأخلاقيات', 'target_kind' => 'url', 'url' => '/ar/research/policies'],
-            ['label' => 'مكتب البحث', 'target_kind' => 'url', 'url' => '/ar/research/office'],
+        // ── News (sort 7) ──
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'الأخبار', 'target_kind' => 'page', 'page_slug' => 'news', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 7, 'children' => [
+            ['label' => 'الأخبار', 'target_kind' => 'url', 'url' => '/ar/news/articles'],
+            ['label' => 'الإعلانات', 'target_kind' => 'url', 'url' => '/ar/news/announcements'],
+            ['label' => 'تقويم الفعاليات', 'target_kind' => 'url', 'url' => '/ar/news/events'],
+            ['label' => 'معرض الوسائط', 'target_kind' => 'url', 'url' => '/ar/news/gallery'],
         ]];
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'Research', 'target_kind' => 'page', 'page_slug' => 'research', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 6, 'children' => [
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'News', 'target_kind' => 'page', 'page_slug' => 'news', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 7, 'children' => [
+            ['label' => 'News', 'target_kind' => 'url', 'url' => '/en/news/articles'],
+            ['label' => 'Announcements', 'target_kind' => 'url', 'url' => '/en/news/announcements'],
+            ['label' => 'Events Calendar', 'target_kind' => 'url', 'url' => '/en/news/events'],
+            ['label' => 'Media Gallery', 'target_kind' => 'url', 'url' => '/en/news/gallery'],
+        ]];
+
+        // ── Contact (sort 8) ──
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'تواصل معنا', 'target_kind' => 'page', 'page_slug' => 'contact', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 8, 'children' => []];
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'Contact', 'target_kind' => 'page', 'page_slug' => 'contact', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 8, 'children' => []];
+
+        return $items;
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function researchChildren(string $locale): array
+    {
+        if ($locale === 'ar') {
+            return [
+                ['label' => 'المنشورات البحثية', 'target_kind' => 'url', 'url' => '/ar/research/publications', 'children' => [
+                    ['label' => 'تطبيقات تعلم الآلة في مراقبة جودة الأدوية', 'target_kind' => 'url', 'url' => '/ar/research/publications/machine-learning-pharmaceutical-quality-control'],
+                    ['label' => 'نماذج الذكاء الاصطناعي للكشف المبكر عن تسوس الأسنان', 'target_kind' => 'url', 'url' => '/ar/research/publications/ai-dental-diagnostics'],
+                    ['label' => 'إطار التعلم العميق للتنبؤ بنفاذية المكامن', 'target_kind' => 'url', 'url' => '/ar/research/publications/deep-learning-reservoir-permeability'],
+                ]],
+                ['label' => 'الباحثون', 'target_kind' => 'url', 'url' => '/ar/research/researchers', 'children' => [
+                    ['label' => 'د. مهيب النقري - الذكاء الاصطناعي', 'target_kind' => 'url', 'url' => '/ar/research/researchers/mouhib-alnoukari'],
+                    ['label' => 'د. أيمن علي - الطب', 'target_kind' => 'url', 'url' => '/ar/research/researchers/ayman-ali'],
+                    ['label' => 'د. محمود حديد - هندسة البترول', 'target_kind' => 'url', 'url' => '/ar/research/researchers/mahmoud-hadid'],
+                ]],
+                ['label' => 'مجالات البحث', 'target_kind' => 'url', 'url' => '/ar/research/themes', 'children' => [
+                    ['label' => 'الذكاء الاصطناعي وتعلم الآلة', 'target_kind' => 'url', 'url' => '/ar/research/themes/ai-ml'],
+                    ['label' => 'العلوم الصيدلانية', 'target_kind' => 'url', 'url' => '/ar/research/themes/pharmaceutical-sciences'],
+                    ['label' => 'الطب السريري', 'target_kind' => 'url', 'url' => '/ar/research/themes/clinical-medicine'],
+                ]],
+                ['label' => 'مشاريع البحث', 'target_kind' => 'url', 'url' => '/ar/research/projects', 'children' => [
+                    ['label' => 'نظام الكشف عن تسوس الأسنان بالذكاء الاصطناعي', 'target_kind' => 'url', 'url' => '/ar/research/projects/ai-dental-diagnostics-system'],
+                    ['label' => 'إطار NLP العربي للسجلات الطبية', 'target_kind' => 'url', 'url' => '/ar/research/projects/arabic-clinical-nlp-system'],
+                ]],
+                ['label' => 'مراكز البحث', 'target_kind' => 'url', 'url' => '/ar/research/centers', 'children' => [
+                    ['label' => 'مركز الذكاء الاصطناعي والابتكار الرقمي', 'target_kind' => 'url', 'url' => '/ar/research/centers/ai-digital-innovation'],
+                    ['label' => 'مختبر البحث السريري والمحاكاة', 'target_kind' => 'url', 'url' => '/ar/research/centers/clinical-research-simulation'],
+                ]],
+                ['label' => 'الباحث عن الخبراء', 'target_kind' => 'url', 'url' => '/ar/research/expert-finder'],
+                ['label' => 'المؤتمرات والندوات', 'target_kind' => 'url', 'url' => '/ar/research/conferences'],
+                ['label' => 'مكتبة البحث', 'target_kind' => 'url', 'url' => '/ar/research/library'],
+                ['label' => 'السياسات والأخلاقيات', 'target_kind' => 'url', 'url' => '/ar/research/policies'],
+                ['label' => 'مكتب البحث', 'target_kind' => 'url', 'url' => '/ar/research/office'],
+            ];
+        }
+
+        return [
+            ['label' => 'Publications', 'target_kind' => 'url', 'url' => '/en/research/publications', 'children' => [
+                ['label' => 'Machine Learning in Pharmaceutical Quality Control', 'target_kind' => 'url', 'url' => '/en/research/publications/machine-learning-pharmaceutical-quality-control'],
+                ['label' => 'AI for Early Dental Caries Detection', 'target_kind' => 'url', 'url' => '/en/research/publications/ai-dental-diagnostics'],
+                ['label' => 'Deep Learning for Reservoir Permeability', 'target_kind' => 'url', 'url' => '/en/research/publications/deep-learning-reservoir-permeability'],
+            ]],
+            ['label' => 'Researchers', 'target_kind' => 'url', 'url' => '/en/research/researchers', 'children' => [
+                ['label' => 'Dr. Mouhib Alnoukari - AI', 'target_kind' => 'url', 'url' => '/en/research/researchers/mouhib-alnoukari'],
+                ['label' => 'Dr. Ayman Ali - Medicine', 'target_kind' => 'url', 'url' => '/en/research/researchers/ayman-ali'],
+                ['label' => 'Dr. Mahmoud Hadid - Petroleum', 'target_kind' => 'url', 'url' => '/en/research/researchers/mahmoud-hadid'],
+            ]],
+            ['label' => 'Research Themes', 'target_kind' => 'url', 'url' => '/en/research/themes', 'children' => [
+                ['label' => 'Artificial Intelligence & Machine Learning', 'target_kind' => 'url', 'url' => '/en/research/themes/ai-ml'],
+                ['label' => 'Pharmaceutical Sciences', 'target_kind' => 'url', 'url' => '/en/research/themes/pharmaceutical-sciences'],
+                ['label' => 'Clinical Medicine', 'target_kind' => 'url', 'url' => '/en/research/themes/clinical-medicine'],
+            ]],
+            ['label' => 'Research Projects', 'target_kind' => 'url', 'url' => '/en/research/projects', 'children' => [
+                ['label' => 'AI Dental Caries Detection System', 'target_kind' => 'url', 'url' => '/en/research/projects/ai-dental-diagnostics-system'],
+                ['label' => 'Arabic Clinical NLP System', 'target_kind' => 'url', 'url' => '/en/research/projects/arabic-clinical-nlp-system'],
+            ]],
+            ['label' => 'Research Centers', 'target_kind' => 'url', 'url' => '/en/research/centers', 'children' => [
+                ['label' => 'Center for AI & Digital Innovation', 'target_kind' => 'url', 'url' => '/en/research/centers/ai-digital-innovation'],
+                ['label' => 'Clinical Research & Simulation Lab', 'target_kind' => 'url', 'url' => '/en/research/centers/clinical-research-simulation'],
+            ]],
             ['label' => 'Expert Finder', 'target_kind' => 'url', 'url' => '/en/research/expert-finder'],
             ['label' => 'Conferences & Seminars', 'target_kind' => 'url', 'url' => '/en/research/conferences'],
             ['label' => 'Research Library', 'target_kind' => 'url', 'url' => '/en/research/library'],
             ['label' => 'Policies & Ethics', 'target_kind' => 'url', 'url' => '/en/research/policies'],
             ['label' => 'Research Office', 'target_kind' => 'url', 'url' => '/en/research/office'],
-        ]];
-
-        // ── News (sort 7) ──
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'الأخبار', 'target_kind' => 'page', 'page_slug' => 'news', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 7, 'children' => []];
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'News', 'target_kind' => 'page', 'page_slug' => 'news', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 7, 'children' => []];
-
-        // ── Contact (sort 8) ──
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'تواصل معنا', 'target_kind' => 'page', 'page_slug' => 'contact', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 8, 'children' => [
-            ['label' => 'معلومات التواصل', 'target_kind' => 'url', 'url' => '/ar/contact'],
-            ['label' => 'خريطة الحرم الجامعي', 'target_kind' => 'url', 'url' => '/ar/contact#campus-map'],
-        ]];
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'Contact', 'target_kind' => 'page', 'page_slug' => 'contact', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 8, 'children' => [
-            ['label' => 'Contact Information', 'target_kind' => 'url', 'url' => '/en/contact'],
-            ['label' => 'Campus Map', 'target_kind' => 'url', 'url' => '/en/contact#campus-map'],
-        ]];
-
-        return $items;
+        ];
     }
 
     /**

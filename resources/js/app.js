@@ -8,6 +8,8 @@ import { createAdmissionsTuition } from './alpine/admissionsTuition.js';
 import { createAdmissionsDocuments } from './alpine/admissionsDocuments.js';
 import { createCampusLifeGallery } from './alpine/campusLifeGallery.js';
 import { createCampusLifeReveal } from './alpine/campusLifeReveal.js';
+import { registerDynamicFormStore } from './alpine/dynamicFormStore.js';
+import { createDynamicFormShell, createDynamicFormView } from './alpine/dynamicFormView.js';
 import { initStudyPlanPages } from './alpine/studyPlan.js';
 import { initRevealSections }   from './alpine/scrollReveal.js';
 
@@ -20,6 +22,9 @@ Alpine.data('admissionsTuition', createAdmissionsTuition);
 Alpine.data('admissionsDocuments', createAdmissionsDocuments);
 Alpine.data('campusLifeGallery', createCampusLifeGallery);
 Alpine.data('campusLifeReveal', createCampusLifeReveal);
+Alpine.data('dynamicFormShell', createDynamicFormShell);
+Alpine.data('dynamicFormView', createDynamicFormView);
+registerDynamicFormStore(Alpine);
 
 window.Alpine = Alpine;
 

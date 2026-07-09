@@ -16,6 +16,12 @@ interface CampusLifePageServiceInterface
 
     public function getSection(string $slug, string $locale): ?CampusLifeSectionDTO;
 
+    public function getCareerJobBoard(string $locale): CampusLifeSectionDTO;
+
+    public function getCareerJobDetail(string $slug, string $locale): ?CampusLifeSectionDTO;
+
+    public function getCareerJobApplication(string $locale): CampusLifeSectionDTO;
+
     /** @param array<string, mixed> $section */
     public function buildPreviewSection(string $targetKey, string $locale, array $section): ?CampusLifeSectionDTO;
 

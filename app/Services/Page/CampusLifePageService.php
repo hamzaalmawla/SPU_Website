@@ -103,6 +103,31 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
         return $this->sectionDto($slug, $locale, $this->normalizeUrls($payload, $locale));
     }
 
+    public function getCareerJobBoard(string $locale): CampusLifeSectionDTO
+    {
+        return $this->sectionDto('career-development/jobs', $locale, $this->normalizeUrls($this->localized($this->jobBoardPayload(), $locale), $locale));
+    }
+
+    public function getCareerJobDetail(string $slug, string $locale): ?CampusLifeSectionDTO
+    {
+        $payload = $this->localized($this->jobBoardPayload(), $locale);
+        $jobs = array_values(array_filter($payload['jobs'] ?? [], static fn (mixed $job): bool => is_array($job)));
+        $job = collect($jobs)->firstWhere('slug', $slug);
+
+        if (! is_array($job)) {
+            return null;
+        }
+
+        $payload['job'] = $job;
+
+        return $this->sectionDto('career-development/jobs/'.$slug, $locale, $this->normalizeUrls($payload, $locale));
+    }
+
+    public function getCareerJobApplication(string $locale): CampusLifeSectionDTO
+    {
+        return $this->sectionDto('career-development/jobs/apply', $locale, $this->normalizeUrls($this->localized($this->jobApplicationPayload(), $locale), $locale));
+    }
+
     public function buildPreviewSection(string $targetKey, string $locale, array $section): ?CampusLifeSectionDTO
     {
         $slug = $this->slugFromTargetKey($targetKey);
@@ -235,6 +260,212 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
             'dental' => $this->dentalPayload(),
             'hospital' => $this->hospitalPayload(),
             'health-insurance' => $this->healthInsurancePayload(),
+            'damascus-research-pub' => $this->simpleInfoPayload(
+                type: 'damascus-research-pub',
+                titleEn: 'Damascus Research Center Publications',
+                titleAr: 'منشورات مركز دمشق للأبحاث والدراسات',
+                overviewTitleEn: 'Research Publications & Studies',
+                overviewTitleAr: 'المنشورات والدراسات البحثية',
+                summaryEn: 'The Damascus Research Center for Studies and Research at SPU produces academic publications, studies, and research papers that contribute to the scientific community and support evidence-based decision-making.',
+                summaryAr: 'ينتج مركز دمشق للأبحاث والدراسات في SPU منشورات أكاديمية ودراسات وأوراقاً بحثية تساهم في المجتمع العلمي وتدعم صنع القرار المبني على الأدلة.',
+                items: [
+                    ['titleEn' => 'Academic Journals', 'titleAr' => 'المجلات الأكاديمية', 'bodyEn' => 'Peer-reviewed journals published regularly covering medicine, engineering, pharmacy, dentistry, and business administration.', 'bodyAr' => 'مجلات محكمة تصدر بانتظام تغطي الطب والهندسة والصيدلة وطب الأسنان والعلوم الإدارية.'],
+                    ['titleEn' => 'Research Papers', 'titleAr' => 'الأوراق البحثية', 'bodyEn' => 'Original research conducted by SPU faculty and researchers, indexed in academic databases and available through the university library.', 'bodyAr' => 'أبحاث أصلية يجريها أعضاء هيئة التدريس والباحثون في SPU، مفهرسة في قواعد البيانات الأكاديمية ومتاحة عبر مكتبة الجامعة.'],
+                    ['titleEn' => 'Conference Proceedings', 'titleAr' => 'وقائع المؤتمرات', 'bodyEn' => 'Documentation of research presented at local and international conferences organized or hosted by SPU.', 'bodyAr' => 'توثيق للأبحاث المقدمة في المؤتمرات المحلية والدولية التي تنظمها أو تستضيفها SPU.'],
+                    ['titleEn' => 'Specialized Studies', 'titleAr' => 'الدراسات المتخصصة', 'bodyEn' => 'In-depth studies on topics relevant to Syrian society and regional development priorities.', 'bodyAr' => 'دراسات معمقة حول مواضيع ذات صلة بالمجتمع السوري وأولويات التنمية الإقليمية.'],
+                ],
+            ),
+            'rules-regulations' => $this->simpleInfoPayload(
+                type: 'rules-regulations',
+                titleEn: 'Rules & Regulations',
+                titleAr: 'أنظمة وتعليمات',
+                overviewTitleEn: 'University Regulations',
+                overviewTitleAr: 'أنظمة الجامعة',
+                summaryEn: 'SPU operates under rules and regulations that govern academic, administrative, and student conduct, ensuring a structured, fair, and transparent university environment.',
+                summaryAr: 'تعمل الجامعة السورية الخاصة بموجب أنظمة وتعليمات تحكم السلوك الأكاديمي والإداري والطلابي، بما يضمن بيئة جامعية منظمة وعادلة وشفافة.',
+                items: [
+                    ['titleEn' => 'Academic Regulations', 'titleAr' => 'الأنظمة الأكاديمية', 'bodyEn' => 'Rules governing course registration, attendance, examinations, grading, progression, and graduation requirements across all faculties.', 'bodyAr' => 'قواعد تنظم تسجيل المساقات والحضور والامتحانات والتقييم والترقي ومتطلبات التخرج في جميع الكليات.'],
+                    ['titleEn' => 'Student Conduct', 'titleAr' => 'سلوك الطلاب', 'bodyEn' => 'Standards of behavior expected from all students, including campus etiquette and use of university facilities.', 'bodyAr' => 'معايير السلوك المتوقعة من جميع الطلاب، بما في ذلك آداب الحرم الجامعي واستخدام مرافق الجامعة.'],
+                    ['titleEn' => 'Administrative Procedures', 'titleAr' => 'الإجراءات الإدارية', 'bodyEn' => 'Policies related to enrollment, leave of absence, transfer, document requests, and other administrative processes.', 'bodyAr' => 'سياسات تتعلق بالتسجيل والإجازة الدراسية والتحويل وطلب الوثائق والعمليات الإدارية الأخرى.'],
+                    ['titleEn' => 'Faculty & Staff Regulations', 'titleAr' => 'أنظمة أعضاء الهيئة التدريسية والموظفين', 'bodyEn' => 'Employment policies, academic freedom guidelines, workload expectations, and professional development opportunities.', 'bodyAr' => 'سياسات التوظيف وإرشادات الحرية الأكاديمية وتوقعات عبء العمل وفرص التطوير المهني.'],
+                ],
+            ),
+            'general-rules' => $this->simpleInfoPayload(
+                type: 'general-rules',
+                titleEn: 'General Rules & Instructions',
+                titleAr: 'قواعد وتعليمات عامة',
+                overviewTitleEn: 'General Rules & Instructions',
+                overviewTitleAr: 'قواعد وتعليمات عامة',
+                summaryEn: 'This page outlines general rules and instructions that students must follow during enrollment at SPU to maintain a productive and respectful academic environment.',
+                summaryAr: 'توضح هذه الصفحة القواعد والتعليمات العامة التي يجب على الطلاب اتباعها أثناء تسجيلهم في الجامعة السورية الخاصة للحفاظ على بيئة أكاديمية منتظمة ومحترمة.',
+                items: [
+                    ['titleEn' => 'Attendance', 'titleAr' => 'الحضور', 'bodyEn' => 'Students are required to attend lectures, tutorials, laboratory sessions, and clinical training as specified in each course syllabus.', 'bodyAr' => 'يطلب من الطلاب حضور المحاضرات والدروس العملية والجلسات المخبرية والتدريب السريري حسبما هو محدد في توصيف كل مساق.'],
+                    ['titleEn' => 'Identification Cards', 'titleAr' => 'بطاقات التعريف', 'bodyEn' => 'All students must carry their university ID cards while on campus and present them upon request.', 'bodyAr' => 'يجب على جميع الطلاب حمل بطاقات التعريف الجامعية أثناء التواجد في الحرم الجامعي وإبرازها عند الطلب.'],
+                    ['titleEn' => 'Use of Facilities', 'titleAr' => 'استخدام المرافق', 'bodyEn' => 'University facilities must be used responsibly and in accordance with posted guidelines.', 'bodyAr' => 'يجب استخدام مرافق الجامعة بمسؤولية ووفقاً للإرشادات المعلنة.'],
+                    ['titleEn' => 'Academic Honesty', 'titleAr' => 'النزاهة الأكاديمية', 'bodyEn' => 'Plagiarism, cheating, and any form of academic dishonesty are prohibited and subject to disciplinary action.', 'bodyAr' => 'الانتحال والغش وأي شكل من أشكال عدم النزاهة الأكاديمية ممنوع ويخضع لإجراءات تأديبية.'],
+                    ['titleEn' => 'Communication', 'titleAr' => 'التواصل', 'bodyEn' => 'Students must use official SPU email addresses for university-related communication and check them regularly.', 'bodyAr' => 'يجب على الطلاب استخدام البريد الإلكتروني الرسمي للجامعة في الاتصالات المتعلقة بالجامعة والتحقق منه بانتظام.'],
+                ],
+            ),
+            'exam-instructions' => $this->simpleInfoPayload(
+                type: 'exam-instructions',
+                titleEn: 'Exam Instructions',
+                titleAr: 'التعليمات الامتحانية',
+                overviewTitleEn: 'Examination Rules & Instructions',
+                overviewTitleAr: 'قواعد وتعليمات الامتحانات',
+                summaryEn: 'The following examination instructions apply to all SPU students and help ensure a fair and orderly examination process.',
+                summaryAr: 'تنطبق تعليمات الامتحان التالية على جميع طلاب الجامعة السورية الخاصة وتساعد في ضمان عملية امتحانية عادلة ومنظمة.',
+                items: [
+                    ['titleEn' => 'Arrival Time', 'titleAr' => 'وقت الحضور', 'bodyEn' => 'Students must arrive at least 15 minutes before the scheduled exam time. Late arrivals may not be admitted.', 'bodyAr' => 'يجب على الطلاب الحضور قبل 15 دقيقة على الأقل من موعد الامتحان المحدد. قد لا يسمح للمتأخرين بالدخول.'],
+                    ['titleEn' => 'Identification', 'titleAr' => 'إثبات الهوية', 'bodyEn' => 'Students must present their valid university ID card before entering the examination hall.', 'bodyAr' => 'يجب على الطلاب إبراز بطاقة التعريف الجامعية الصالحة قبل دخول قاعة الامتحان.'],
+                    ['titleEn' => 'Permitted Materials', 'titleAr' => 'المواد المسموح بها', 'bodyEn' => 'Only approved writing tools and faculty-approved calculators are permitted. Phones and electronic devices must be placed outside or in designated areas.', 'bodyAr' => 'يسمح فقط بأدوات الكتابة المعتمدة والآلات الحاسبة الموافق عليها من الكلية. يجب وضع الهواتف والأجهزة الإلكترونية خارج القاعة أو في الأماكن المخصصة.'],
+                    ['titleEn' => 'Exam Conduct', 'titleAr' => 'السلوك الامتحاني', 'bodyEn' => 'Unauthorized communication or any form of cheating leads to immediate dismissal and disciplinary action.', 'bodyAr' => 'يؤدي التواصل غير المصرح به أو أي شكل من أشكال الغش إلى الإخراج الفوري وإجراءات تأديبية.'],
+                    ['titleEn' => 'Submission', 'titleAr' => 'التسليم', 'bodyEn' => 'Students must submit the exam paper to the invigilator before leaving the hall.', 'bodyAr' => 'يجب على الطلاب تسليم ورقة الامتحان للمراقب قبل مغادرة القاعة.'],
+                ],
+            ),
+            'exam-penalties' => $this->simpleInfoPayload(
+                type: 'exam-penalties',
+                titleEn: 'Exam Penalties',
+                titleAr: 'العقوبات الامتحانية',
+                overviewTitleEn: 'Penalties for Examination Violations',
+                overviewTitleAr: 'العقوبات المترتبة على المخالفات الامتحانية',
+                summaryEn: 'SPU enforces penalties for examination violations to maintain academic integrity and fairness. Severity depends on the nature and recurrence of the violation.',
+                summaryAr: 'تفرض الجامعة السورية الخاصة عقوبات على المخالفات الامتحانية للحفاظ على النزاهة الأكاديمية والعدالة. تعتمد شدة العقوبة على طبيعة المخالفة وتكرارها.',
+                items: [
+                    ['titleEn' => 'First Violation', 'titleAr' => 'المخالفة الأولى', 'bodyEn' => 'Verbal warning and deduction of 25% of the exam mark for the course.', 'bodyAr' => 'إنذار شفهي وخصم 25% من علامة الامتحان للمساق.'],
+                    ['titleEn' => 'Second Violation', 'titleAr' => 'المخالفة الثانية', 'bodyEn' => 'Final written warning, deduction of 50% of the exam mark, and referral to the Faculty Council.', 'bodyAr' => 'إنذار كتابي نهائي وخصم 50% من علامة الامتحان والإحالة إلى مجلس الكلية.'],
+                    ['titleEn' => 'Cheating', 'titleAr' => 'الغش', 'bodyEn' => 'Immediate disqualification from the exam, a grade of zero for the course, and possible suspension.', 'bodyAr' => 'الحرمان الفوري من الامتحان ودرجة صفر في المساق مع إمكانية الفصل المؤقت.'],
+                    ['titleEn' => 'Impersonation', 'titleAr' => 'انتحال الشخصية', 'bodyEn' => 'Immediate expulsion from the university for both parties involved in impersonation.', 'bodyAr' => 'الفصل الفوري من الجامعة لكل من الطرفين المتورطين في انتحال الشخصية.'],
+                    ['titleEn' => 'Repeated Offenses', 'titleAr' => 'المخالفات المتكررة', 'bodyEn' => 'Accumulated violations may lead to suspension for one or more semesters or permanent dismissal.', 'bodyAr' => 'قد تؤدي المخالفات المتراكمة إلى الفصل لفصل دراسي واحد أو أكثر أو الفصل النهائي.'],
+                ],
+            ),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function jobApplicationPayload(): array
+    {
+        return [
+            'type' => 'job-application',
+            'hero' => [
+                'image' => '/images/uni-main-place.JPG',
+                'titleEn' => 'Apply for Job',
+                'titleAr' => 'التقديم على الوظيفة',
+                'breadcrumbs' => $this->breadcrumbs('Apply for Job', 'التقديم على الوظيفة', '/campus-life/career-development/jobs/apply'),
+            ],
+            'info' => [
+                'titleEn' => 'Application Information',
+                'titleAr' => 'معلومات التقديم',
+                'summaryEn' => 'Please fill in all required fields accurately. You will be able to review your data before final submission.',
+                'summaryAr' => 'يرجى ملء جميع الحقول المطلوبة بدقة. ستتمكن من مراجعة بياناتك قبل الإرسال النهائي.',
+            ],
+            'seoDescriptionEn' => 'Submit a job application to Syrian Private University through the official career development form.',
+            'seoDescriptionAr' => 'قدّم طلب توظيف إلى الجامعة السورية الخاصة عبر نموذج التطوير المهني الرسمي.',
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function jobBoardPayload(): array
+    {
+        return [
+            'type' => 'job-board',
+            'hero' => [
+                'titleEn' => 'Job Board',
+                'titleAr' => 'لوحة الوظائف',
+                'summaryEn' => 'Explore current openings across academic, administrative, technical, and support roles at Syrian Private University.',
+                'summaryAr' => 'استكشف الفرص المتاحة حالياً في الأدوار الأكاديمية والإدارية والتقنية وخدمات الدعم في الجامعة السورية الخاصة.',
+                'image' => '/images/career-development-hero.webp',
+                'breadcrumbs' => $this->breadcrumbs('Job Board', 'لوحة الوظائف', '/campus-life/career-development/jobs'),
+            ],
+            'labels' => [
+                'categoryEn' => 'Category', 'categoryAr' => 'الفئة',
+                'typeEn' => 'Job Type', 'typeAr' => 'نوع الوظيفة',
+                'searchEn' => 'Search by title, department, or keyword...', 'searchAr' => 'ابحث حسب العنوان أو القسم أو الكلمة المفتاحية...',
+                'showingEn' => 'Showing', 'showingAr' => 'عرض',
+                'positionsEn' => 'positions', 'positionsAr' => 'وظيفة',
+                'learnMoreEn' => 'Learn More', 'learnMoreAr' => 'اعرف المزيد',
+                'applyEn' => 'Apply Now', 'applyAr' => 'قدّم الآن',
+                'overviewEn' => 'Job Overview', 'overviewAr' => 'نظرة عامة على الوظيفة',
+                'requirementsEn' => 'Requirements', 'requirementsAr' => 'المتطلبات',
+                'responsibilitiesEn' => 'Key Responsibilities', 'responsibilitiesAr' => 'المسؤوليات الرئيسية',
+                'benefitsEn' => 'What We Offer', 'benefitsAr' => 'ما نقدمه',
+                'backEn' => 'Back to Job Board', 'backAr' => 'العودة إلى لوحة الوظائف',
+            ],
+            'categories' => [
+                ['id' => 'all', 'labelEn' => 'All Categories', 'labelAr' => 'كل الفئات'],
+                ['id' => 'academic', 'labelEn' => 'Academic', 'labelAr' => 'أكاديمي'],
+                ['id' => 'administrative', 'labelEn' => 'Administrative', 'labelAr' => 'إداري'],
+                ['id' => 'driver', 'labelEn' => 'Driver', 'labelAr' => 'سائق'],
+                ['id' => 'technical', 'labelEn' => 'Technical', 'labelAr' => 'تقني'],
+                ['id' => 'medical', 'labelEn' => 'Medical', 'labelAr' => 'طبي'],
+            ],
+            'types' => [
+                ['id' => 'all', 'labelEn' => 'All Types', 'labelAr' => 'كل الأنواع'],
+                ['id' => 'full-time', 'labelEn' => 'Full-time', 'labelAr' => 'دوام كامل'],
+                ['id' => 'part-time', 'labelEn' => 'Part-time', 'labelAr' => 'دوام جزئي'],
+                ['id' => 'contract', 'labelEn' => 'Contract', 'labelAr' => 'عقد'],
+            ],
+            'jobs' => [
+                $this->job('lecturer-computer-science', 'academic', 'full-time', 'Lecturer in Computer Science', 'محاضر في علوم الحاسوب', 'Faculty of Artificial Intelligence', 'كلية الذكاء الاصطناعي', 'Deliver undergraduate courses in algorithms, data structures, and software engineering.', 'تدريس مواد جامعية في الخوارزميات وهياكل البيانات وهندسة البرمجيات.', '2026-06-20'),
+                $this->job('research-assistant', 'academic', 'contract', 'Research Assistant', 'مساعد باحث', 'Scientific Research Directorate', 'مديرية البحث العلمي', 'Support faculty-led research projects in data collection, analysis, and publication preparation.', 'دعم مشاريع البحث التي يقودها أعضاء الهيئة التدريسية في جمع البيانات وتحليلها وإعداد المنشورات.', '2026-06-18'),
+                $this->job('administrative-coordinator', 'administrative', 'full-time', 'Administrative Coordinator', 'منسق إداري', 'Central Administration', 'الإدارة المركزية', 'Coordinate schedules, meetings, and documentation across university administrative units.', 'تنسيق الجداول والاجتماعات والوثائق بين الوحدات الإدارية في الجامعة.', '2026-06-15'),
+                $this->job('admissions-officer', 'administrative', 'full-time', 'Admissions Officer', 'موظف قبول وتسجيل', 'Admissions & Registration', 'قبول وتسجيل', 'Guide prospective students through the admissions process and maintain accurate records.', 'توجيه الطلاب المحتملين خلال عملية القبول والحفاظ على السجلات الدقيقة.', '2026-06-12'),
+                $this->job('campus-bus-driver', 'driver', 'full-time', 'Campus Bus Driver', 'سائق حافلة الجامعة', 'Transport Services', 'خدمات النقل', 'Operate university shuttle buses safely along designated student and staff routes.', 'تشغيل حافلات النقل الجامعي بأمان على الطرق المخصصة للطلاب والموظفين.', '2026-06-10'),
+                $this->job('it-support-specialist', 'technical', 'full-time', 'IT Support Specialist', 'أخصائي دعم تقنية المعلومات', 'IT Services Directorate', 'مديرية خدمات تقنية المعلومات', 'Provide hardware, software, and network support to faculty, staff, and computer labs.', 'تقديم الدعم للأجهزة والبرمجيات والشبكات لأعضاء الهيئة التدريسية والموظفين والمختبرات الحاسوبية.', '2026-06-08'),
+                $this->job('laboratory-technician', 'technical', 'contract', 'Laboratory Technician', 'فني مختبر', 'Faculty of Dentistry', 'كلية طب الأسنان', 'Maintain dental lab equipment, prepare materials, and support clinical training sessions.', 'صيانة معدات مختبر الأسنان وإعداد المواد ودعم جلسات التدريب السريري.', '2026-06-05'),
+                $this->job('dental-clinic-supervisor', 'medical', 'part-time', 'Dental Clinic Supervisor', 'مشرف العيادات السنية', 'University Dental Clinics', 'عيادات الجامعة السنية', 'Oversee daily clinic operations, patient scheduling, and quality of care in the dental clinics.', 'الإشراف على العمليات اليومية وجدولة المرضى وجودة الرعاية في العيادات السنية.', '2026-06-01'),
+            ],
+            'seoDescriptionEn' => 'Explore current job openings across academic, administrative, technical, and support roles at Syrian Private University.',
+            'seoDescriptionAr' => 'استكشف فرص العمل الحالية في الجامعة السورية الخاصة.',
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function job(string $slug, string $category, string $type, string $titleEn, string $titleAr, string $departmentEn, string $departmentAr, string $summaryEn, string $summaryAr, string $postedDate): array
+    {
+        return [
+            'slug' => $slug,
+            'category' => $category,
+            'type' => $type,
+            'titleEn' => $titleEn,
+            'titleAr' => $titleAr,
+            'departmentEn' => $departmentEn,
+            'departmentAr' => $departmentAr,
+            'locationEn' => 'Damascus Campus',
+            'locationAr' => 'حرم دمشق',
+            'shortDescriptionEn' => $summaryEn,
+            'shortDescriptionAr' => $summaryAr,
+            'overviewEn' => [$summaryEn, 'This role supports SPU academic and service excellence through professional, student-centered work.'],
+            'overviewAr' => [$summaryAr, 'يدعم هذا الدور تميز الجامعة الأكاديمي والخدمي من خلال عمل مهني يركز على الطلاب.'],
+            'responsibilitiesEn' => ['Deliver assigned duties with accuracy and professionalism.', 'Coordinate with relevant university departments.', 'Maintain records, reports, and service quality standards.'],
+            'responsibilitiesAr' => ['تنفيذ المهام بدقة ومهنية.', 'التنسيق مع الجهات الجامعية المعنية.', 'الحفاظ على السجلات والتقارير ومعايير جودة الخدمة.'],
+            'requirementsEn' => ['Relevant academic or professional qualification.', 'Strong communication skills in Arabic and English.', 'Commitment to university policies and service standards.'],
+            'requirementsAr' => ['مؤهل أكاديمي أو مهني مناسب.', 'مهارات تواصل قوية بالعربية والإنجليزية.', 'الالتزام بسياسات الجامعة ومعايير الخدمة.'],
+            'benefitsEn' => ['Professional university environment.', 'Development and training opportunities.', 'Competitive package based on role and experience.'],
+            'benefitsAr' => ['بيئة جامعية مهنية.', 'فرص تطوير وتدريب.', 'حزمة تنافسية حسب الدور والخبرة.'],
+            'postedDate' => $postedDate,
+        ];
+    }
+
+    /** @param array<int, array<string, string>> $items @return array<string, mixed> */
+    private function simpleInfoPayload(string $type, string $titleEn, string $titleAr, string $overviewTitleEn, string $overviewTitleAr, string $summaryEn, string $summaryAr, array $items): array
+    {
+        return [
+            'type' => 'simple-info',
+            'hero' => [
+                'image' => '/images/admissions-hero-campus.webp',
+                'titleEn' => $titleEn,
+                'titleAr' => $titleAr,
+                'breadcrumbs' => $this->breadcrumbs($titleEn, $titleAr, '/campus-life/'.$type),
+            ],
+            'overview' => [
+                'titleEn' => $overviewTitleEn,
+                'titleAr' => $overviewTitleAr,
+                'summaryEn' => $summaryEn,
+                'summaryAr' => $summaryAr,
+            ],
+            'items' => $items,
+            'seoDescriptionEn' => $summaryEn,
+            'seoDescriptionAr' => $summaryAr,
         ];
     }
 

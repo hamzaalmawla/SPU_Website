@@ -2193,9 +2193,10 @@
         "descriptionEn": "Join leading experts in artificial intelligence and healthcare professionals for three days of keynote talks, workshops, and panel discussions.",
         "descriptionAr": "انضم إلى خبراء الذكاء الاصطناعي والمهنيين في مجال الرعاية الصحية لثلاثة أيام من المحاضرات الرئيسية وورش العمل والنقاشات.",
         "image": "/images/research-clinical-simulation.webp",
-        "registrationUrl": "#",
+        "registrationUrl": "/research/conferences/register?event=conf-001",
         "eventTypeEn": "International Conference",
-        "eventTypeAr": "مؤتمر دولي"
+        "eventTypeAr": "مؤتمر دولي",
+        "formId": "conference-registration"
       },
       {
         "id": "conf-002",
@@ -2208,9 +2209,10 @@
         "descriptionEn": "A one-day symposium focusing on cutting-edge developments in pharmaceutical sciences, drug delivery, and quality assurance.",
         "descriptionAr": "ندوة يومية تركز على التطورات المتقدمة في العلوم الصيدلانية وإيصال الدواء وضمان الجودة.",
         "image": "/images/pharmacy-place.jpg",
-        "registrationUrl": "#",
+        "registrationUrl": "/research/conferences/register?event=conf-002",
         "eventTypeEn": "Symposium",
-        "eventTypeAr": "ندوة"
+        "eventTypeAr": "ندوة",
+        "formId": "symposium-registration"
       }
     ],
     "past": [

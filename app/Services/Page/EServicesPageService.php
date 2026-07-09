@@ -24,6 +24,42 @@ final class EServicesPageService implements EServicesPageServiceInterface
         return $this->pageFromContent($locale, $this->getContent($locale));
     }
 
+    public function getSuggestionsComplaintsPage(string $locale): EServicesPageDTO
+    {
+        $isArabic = $locale === 'ar';
+
+        return new EServicesPageDTO(
+            locale: $locale,
+            direction: $isArabic ? 'rtl' : 'ltr',
+            hero: [
+                'eyebrow' => $isArabic ? 'الخدمات الإلكترونية' : 'E-Services',
+                'title' => $isArabic ? 'الاقتراحات والشكاوى' : 'Suggestions & Complaints',
+                'summary' => $isArabic ? 'شاركنا ملاحظاتك واقتراحاتك أو مخاوفك للمساعدة في تحسين خدمات الجامعة وتجربة الطلاب.' : 'Share your feedback, suggestions, or concerns to help us improve university services and student experience.',
+                'imageHero' => '/images/slider-3.webp',
+                'imageLeft' => '',
+                'imageRight' => '',
+            ],
+            digitalServices: [
+                'formTitle' => $isArabic ? 'قدّم طلبك' : 'Submit Your Request',
+                'requestTypes' => [
+                    ['value' => 'suggestion', 'label' => $isArabic ? 'اقتراح' : 'Suggestion'],
+                    ['value' => 'complaint', 'label' => $isArabic ? 'شكوى' : 'Complaint'],
+                    ['value' => 'inquiry', 'label' => $isArabic ? 'استفسار' : 'Inquiry'],
+                ],
+                'infoTitle' => $isArabic ? 'نقدّر ملاحظاتك' : 'We Value Your Feedback',
+                'infoBody' => $isArabic ? 'تساعدنا آراؤك في تحديد فرص التحسين وضمان تلبية خدمات الجامعة لتوقعات الطلاب. تتم مراجعة كل رسالة بعناية من قبل القسم المعني.' : 'Your opinions help us identify opportunities for improvement and ensure that university services meet student expectations. Every submission is reviewed carefully by the relevant department.',
+                'cards' => [
+                    ['title' => $isArabic ? 'السرية' : 'Confidentiality', 'body' => $isArabic ? 'يتم التعامل مع جميع المعلومات بسرية ومشاركتها فقط مع القسم المسؤول.' : 'All submitted information is handled confidentially and shared only with the responsible department.'],
+                    ['title' => $isArabic ? 'مدة الرد' : 'Response Time', 'body' => $isArabic ? 'يمكنك توقع رد خلال 3 إلى 5 أيام عمل بعد التقديم.' : 'You can expect a response within 3-5 business days after submission.'],
+                ],
+            ],
+            supportCards: [],
+            seoTitle: ($isArabic ? 'الاقتراحات والشكاوى' : 'Suggestions & Complaints').' | '.($isArabic ? 'الجامعة السورية الخاصة' : 'Syrian Private University'),
+            seoDescription: $isArabic ? 'قدّم اقتراحاتك أو شكاواك لتحسين خدمات الجامعة السورية الخاصة.' : 'Submit suggestions, complaints, or inquiries to help improve Syrian Private University services.',
+            seoImage: '/images/slider-3.webp',
+        );
+    }
+
     /** @param array<string, mixed> $content */
     public function buildPreviewPage(string $locale, array $content): EServicesPageDTO
     {

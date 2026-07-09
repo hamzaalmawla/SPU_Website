@@ -47,6 +47,8 @@ interface ResearchPageServiceInterface
 
     public function conferences(string $locale): ResearchPageDTO;
 
+    public function conferenceRegistration(string $locale, ?string $eventId): ResearchPageDTO;
+
     public function library(string $locale): ResearchPageDTO;
 
     public function office(string $locale): ResearchPageDTO;

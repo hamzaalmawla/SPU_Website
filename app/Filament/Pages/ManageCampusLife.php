@@ -163,6 +163,16 @@ class ManageCampusLife extends Page implements HasForms
                 'en_hospital' => [],
                 'ar_health_insurance' => [],
                 'en_health_insurance' => [],
+                'ar_damascus_research_pub' => [],
+                'en_damascus_research_pub' => [],
+                'ar_rules_regulations' => [],
+                'en_rules_regulations' => [],
+                'ar_general_rules' => [],
+                'en_general_rules' => [],
+                'ar_exam_instructions' => [],
+                'en_exam_instructions' => [],
+                'ar_exam_penalties' => [],
+                'en_exam_penalties' => [],
             ]);
 
             return;
@@ -190,6 +200,16 @@ class ManageCampusLife extends Page implements HasForms
             'en_hospital' => $targetKey === 'campus_life.hospital' && is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
             'ar_health_insurance' => $targetKey === 'campus_life.health-insurance' && is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
             'en_health_insurance' => $targetKey === 'campus_life.health-insurance' && is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
+            'ar_damascus_research_pub' => $targetKey === 'campus_life.damascus-research-pub' && is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
+            'en_damascus_research_pub' => $targetKey === 'campus_life.damascus-research-pub' && is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
+            'ar_rules_regulations' => $targetKey === 'campus_life.rules-regulations' && is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
+            'en_rules_regulations' => $targetKey === 'campus_life.rules-regulations' && is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
+            'ar_general_rules' => $targetKey === 'campus_life.general-rules' && is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
+            'en_general_rules' => $targetKey === 'campus_life.general-rules' && is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
+            'ar_exam_instructions' => $targetKey === 'campus_life.exam-instructions' && is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
+            'en_exam_instructions' => $targetKey === 'campus_life.exam-instructions' && is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
+            'ar_exam_penalties' => $targetKey === 'campus_life.exam-penalties' && is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
+            'en_exam_penalties' => $targetKey === 'campus_life.exam-penalties' && is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
         ]);
     }
 
@@ -321,6 +341,7 @@ class ManageCampusLife extends Page implements HasForms
             'campus_life.dental',
             'campus_life.hospital',
             'campus_life.health-insurance',
+            ...$this->simpleInfoTargetKeys(),
         ];
     }
 
@@ -399,6 +420,17 @@ class ManageCampusLife extends Page implements HasForms
             ];
         }
 
+        if (in_array($state['target_key'] ?? null, $this->simpleInfoTargetKeys(), true)) {
+            $stateKey = $this->simpleInfoStateKey((string) $state['target_key']);
+
+            return [
+                'translations' => [
+                    'ar' => $this->normalizeSimpleInfoPayload(is_array($state['ar_'.$stateKey] ?? null) ? $state['ar_'.$stateKey] : []),
+                    'en' => $this->normalizeSimpleInfoPayload(is_array($state['en_'.$stateKey] ?? null) ? $state['en_'.$stateKey] : []),
+                ],
+            ];
+        }
+
         throw new \InvalidArgumentException('This campus life target form will be structured next. Select an editable Campus Life target for now.');
     }
 
@@ -437,6 +469,10 @@ class ManageCampusLife extends Page implements HasForms
 
         if ($this->targetKeyForSchema() === 'campus_life.health-insurance') {
             return $this->healthInsuranceFields($locale);
+        }
+
+        if (in_array($this->targetKeyForSchema(), $this->simpleInfoTargetKeys(), true)) {
+            return $this->simpleInfoFields($locale, $this->simpleInfoStateKey($this->targetKeyForSchema()));
         }
 
         if ($this->targetKeyForSchema() !== 'campus_life.landing') {
@@ -573,6 +609,50 @@ class ManageCampusLife extends Page implements HasForms
                 TextInput::make($prefix.'.cta.secondaryLabel')->label('Secondary Label')->required()->maxLength(120),
                 TextInput::make($prefix.'.cta.secondaryUrl')->label('Secondary URL')->required()->maxLength(255),
             ])->columns(2),
+        ];
+    }
+
+    /** @return array<int, Section> */
+    private function simpleInfoFields(string $locale, string $stateKey): array
+    {
+        $prefix = $locale.'_'.$stateKey;
+
+        return [
+            Section::make('Hero')->schema([
+                TextInput::make($prefix.'.hero.title')->label('Title')->required()->maxLength(180),
+                MediaPicker::image($prefix.'.hero.image', 'Hero Image', true),
+                Repeater::make($prefix.'.hero.breadcrumbs')
+                    ->label('Breadcrumbs')
+                    ->schema([
+                        TextInput::make('label')->required()->maxLength(120),
+                        TextInput::make('href')->required()->maxLength(255),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ])->columns(2),
+
+            Section::make('Overview')->schema([
+                TextInput::make($prefix.'.overview.title')->label('Title')->required()->maxLength(180),
+                Textarea::make($prefix.'.overview.summary')->label('Summary')->required()->rows(3)->columnSpanFull(),
+                Textarea::make($prefix.'.seoDescription')->label('SEO Description')->rows(2)->columnSpanFull(),
+            ])->columns(2),
+
+            Section::make('Information Cards')->schema([
+                Repeater::make($prefix.'.items')
+                    ->label('Cards')
+                    ->schema([
+                        TextInput::make('title')->required()->maxLength(180),
+                        Textarea::make('body')->required()->rows(3)->columnSpanFull(),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]),
         ];
     }
 
@@ -1020,6 +1100,30 @@ class ManageCampusLife extends Page implements HasForms
         return is_string($this->data['target_key'] ?? null) && $this->data['target_key'] !== '' ? $this->data['target_key'] : 'campus_life.landing';
     }
 
+    /** @return array<int, string> */
+    private function simpleInfoTargetKeys(): array
+    {
+        return [
+            'campus_life.damascus-research-pub',
+            'campus_life.rules-regulations',
+            'campus_life.general-rules',
+            'campus_life.exam-instructions',
+            'campus_life.exam-penalties',
+        ];
+    }
+
+    private function simpleInfoStateKey(string $targetKey): string
+    {
+        return match ($targetKey) {
+            'campus_life.damascus-research-pub' => 'damascus_research_pub',
+            'campus_life.rules-regulations' => 'rules_regulations',
+            'campus_life.general-rules' => 'general_rules',
+            'campus_life.exam-instructions' => 'exam_instructions',
+            'campus_life.exam-penalties' => 'exam_penalties',
+            default => throw new \InvalidArgumentException('Unsupported campus life info target.'),
+        };
+    }
+
     /** @return array<string, mixed> */
     private function normalizeLandingPayload(array $payload): array
     {
@@ -1114,6 +1218,22 @@ class ManageCampusLife extends Page implements HasForms
 
             return $section;
         }, $this->listOfArrays($payload['sections'] ?? []));
+
+        return $payload;
+    }
+
+    /** @return array<string, mixed> */
+    private function normalizeSimpleInfoPayload(array $payload): array
+    {
+        $payload['type'] = 'simple-info';
+        $payload['hero']['breadcrumbs'] = $this->listOfArrays($payload['hero']['breadcrumbs'] ?? []);
+        $payload['items'] = collect($this->listOfArrays($payload['items'] ?? []))
+            ->map(static fn (array $item): array => [
+                'title' => (string) ($item['title'] ?? ''),
+                'body' => (string) ($item['body'] ?? ''),
+            ])
+            ->values()
+            ->all();
 
         return $payload;
     }

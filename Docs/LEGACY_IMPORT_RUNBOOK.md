@@ -101,6 +101,8 @@ php artisan legacy-import:phase6-pages --write --approve=phase6-pages --batch=ph
 php artisan legacy-import:phase6-settings-mapping
 php artisan legacy-import:phase6-settings --input=legacy-import-exports/phase6-settings/20260706_152803_phase6_settings_mapping_safe_mappings.csv --batch=phase6-settings-dry-run
 php artisan legacy-import:phase6-settings --input=legacy-import-exports/phase6-settings/20260706_152803_phase6_settings_mapping_safe_mappings.csv --write --approve=phase6-settings --batch=phase6-settings-approval
+php artisan legacy-import:locations
+php artisan legacy-import:locations --write --approve=phase6-locations --batch=phase6-locations-20260708
 php artisan legacy-import:news-review
 php artisan legacy-import:news-slug-plan --limit=50
 php artisan legacy-import:news-slug-plan --all --json --output=storage/app/legacy-news-slug-plan.json
@@ -724,6 +726,35 @@ Latest Phase 6 settings mapping baseline:
 - Source rows logged: `16`.
 - Rerun duplicate check: `16` skipped as `already_imported`.
 - Refreshed settings candidate packet: `storage/app/private/legacy-import-exports/phase6-candidates/20260706_225104_phase6_candidates_settings.md`.
+
+## Phase 6 Reference Location Import
+
+Import legacy countries and cities as disabled reference records after a clean dry-run:
+
+```bash
+php artisan legacy-import:locations --batch=phase6-locations-dry-run
+php artisan legacy-import:locations --write --approve=phase6-locations --batch=phase6-locations-20260708
+```
+
+Rules:
+
+- dry-run is the default and writes nothing
+- write mode requires `--approve=phase6-locations`
+- imported countries/cities are disabled unless `--enable` is explicitly supplied
+- AR/EN names are imported from legacy `ar_name` and `en_name`, with same-row fallback if one locale is missing
+- legacy IDs and unsupported French country names are preserved in migration log metadata
+- reruns skip already imported source rows by `migration_logs`
+
+Latest Phase 6 location import baseline:
+
+- Dry-run: `107` countries and `15` cities importable, `0` skipped.
+- Import write batch: `phase6-locations-20260708`.
+- Imported disabled countries: `107`.
+- Imported country translations: `214`.
+- Imported disabled cities: `15`.
+- Imported city translations: `30`.
+- Migration success logs: `122`.
+- Rerun duplicate check: `122` skipped as `already_imported`.
 
 ## Safety Rules
 

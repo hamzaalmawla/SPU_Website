@@ -191,6 +191,10 @@ class ManageAdmissions extends Page implements HasForms
             'en_documents' => $targetKey === 'admissions.documents' && is_array($payload['translations']['en'] ?? null) ? $this->documentsFormData($payload['translations']['en']) : [],
             'ar_transfer' => $targetKey === 'admissions.transfer' && is_array($payload['translations']['ar'] ?? null) ? $this->transferFormData($payload['translations']['ar']) : [],
             'en_transfer' => $targetKey === 'admissions.transfer' && is_array($payload['translations']['en'] ?? null) ? $this->transferFormData($payload['translations']['en']) : [],
+            'ar_filling_vacancies' => $targetKey === 'admissions.filling-vacancies' && is_array($payload['translations']['ar'] ?? null) ? $this->simplePageFormData($payload['translations']['ar']) : [],
+            'en_filling_vacancies' => $targetKey === 'admissions.filling-vacancies' && is_array($payload['translations']['en'] ?? null) ? $this->simplePageFormData($payload['translations']['en']) : [],
+            'ar_graduation_exams' => $targetKey === 'admissions.graduation-exams' && is_array($payload['translations']['ar'] ?? null) ? $this->simplePageFormData($payload['translations']['ar']) : [],
+            'en_graduation_exams' => $targetKey === 'admissions.graduation-exams' && is_array($payload['translations']['en'] ?? null) ? $this->simplePageFormData($payload['translations']['en']) : [],
         ]);
     }
 
@@ -390,6 +394,17 @@ class ManageAdmissions extends Page implements HasForms
             ];
         }
 
+        if (in_array($state['target_key'] ?? null, ['admissions.filling-vacancies', 'admissions.graduation-exams'], true)) {
+            $stateKey = $this->simplePageStateKey((string) $state['target_key']);
+
+            return [
+                'translations' => [
+                    'ar' => $this->simplePagePayloadFromForm((string) $state['target_key'], is_array($state['ar_'.$stateKey] ?? null) ? $state['ar_'.$stateKey] : []),
+                    'en' => $this->simplePagePayloadFromForm((string) $state['target_key'], is_array($state['en_'.$stateKey] ?? null) ? $state['en_'.$stateKey] : []),
+                ],
+            ];
+        }
+
         throw new \InvalidArgumentException('This admissions subpage form will be structured next. Select the Admissions hub page for now.');
     }
 
@@ -434,6 +449,10 @@ class ManageAdmissions extends Page implements HasForms
             return $this->transferFields($locale);
         }
 
+        if (in_array($this->targetKeyForSchema(), ['admissions.filling-vacancies', 'admissions.graduation-exams'], true)) {
+            return $this->simplePageFields($locale, $this->simplePageStateKey($this->targetKeyForSchema()));
+        }
+
         return [
             Section::make('Subpage Schema Pending')
                 ->description('We are converting Admissions one page at a time. The hub page is editable now; this subpage will get its own correct structured form next.')
@@ -443,6 +462,62 @@ class ManageAdmissions extends Page implements HasForms
                         ->default('Structured form pending for this subpage')
                         ->disabled(),
                 ]),
+        ];
+    }
+
+    /** @return array<int, Section> */
+    private function simplePageFields(string $locale, string $stateKey): array
+    {
+        $prefix = $locale.'_'.$stateKey;
+
+        return [
+            Section::make('Hero and Intro')->schema([
+                TextInput::make($prefix.'.title')->label('Page Title')->required()->maxLength(180),
+                MediaPicker::image($prefix.'.heroImage', 'Hero Image', true),
+                TextInput::make($prefix.'.breadcrumbHome')->label('Breadcrumb Home')->required()->maxLength(80),
+                TextInput::make($prefix.'.breadcrumbParent')->label('Breadcrumb Parent')->required()->maxLength(120),
+                TextInput::make($prefix.'.breadcrumbCurrent')->label('Breadcrumb Current')->required()->maxLength(160),
+                Textarea::make($prefix.'.seoDescription')->label('SEO Description')->rows(2)->columnSpanFull(),
+                Repeater::make($prefix.'.intro')
+                    ->label('Intro Paragraphs')
+                    ->schema([
+                        Textarea::make('paragraph')->required()->rows(3)->columnSpanFull(),
+                    ])
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ])->columns(2),
+
+            Section::make('Cards')->schema([
+                TextInput::make($prefix.'.cardsTitle')->label('Cards Title')->maxLength(180),
+                Repeater::make($prefix.'.cards')
+                    ->label('Cards')
+                    ->schema([
+                        TextInput::make('title')->required()->maxLength(180),
+                        Textarea::make('body')->required()->rows(3)->columnSpanFull(),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]),
+
+            Section::make('Steps')->schema([
+                TextInput::make($prefix.'.stepsTitle')->label('Steps Title')->maxLength(180),
+                Repeater::make($prefix.'.steps')
+                    ->label('Steps')
+                    ->schema([
+                        TextInput::make('title')->required()->maxLength(180),
+                        Textarea::make('body')->required()->rows(3)->columnSpanFull(),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]),
         ];
     }
 
@@ -1753,6 +1828,82 @@ class ManageAdmissions extends Page implements HasForms
             'notesTitle' => (string) ($data['notes_title'] ?? ''),
             'notesDesc' => (string) ($data['notes_desc'] ?? ''),
         ];
+    }
+
+    /** @return array<string, mixed> */
+    private function simplePageFormData(array $payload): array
+    {
+        $intro = $payload['intro'] ?? [];
+
+        if (is_string($intro) && trim($intro) !== '') {
+            $intro = [['paragraph' => $intro]];
+        } elseif (is_array($intro)) {
+            $intro = collect($intro)
+                ->map(static fn (mixed $paragraph): array => ['paragraph' => is_string($paragraph) || is_numeric($paragraph) ? (string) $paragraph : ''])
+                ->filter(static fn (array $paragraph): bool => trim((string) $paragraph['paragraph']) !== '')
+                ->values()
+                ->all();
+        } else {
+            $intro = [];
+        }
+
+        return [
+            'title' => $this->stringValue($payload, 'title'),
+            'heroImage' => $this->stringValue($payload, 'heroImage'),
+            'breadcrumbHome' => $this->stringValue($payload, 'breadcrumbHome'),
+            'breadcrumbParent' => $this->stringValue($payload, 'breadcrumbParent'),
+            'breadcrumbCurrent' => $this->stringValue($payload, 'breadcrumbCurrent'),
+            'seoDescription' => $this->stringValue($payload, 'seoDescription'),
+            'intro' => $intro,
+            'cardsTitle' => $this->stringValue($payload, 'cardsTitle'),
+            'cards' => $this->listValue($payload, 'cards'),
+            'stepsTitle' => $this->stringValue($payload, 'stepsTitle'),
+            'steps' => $this->listValue($payload, 'steps'),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function simplePagePayloadFromForm(string $targetKey, array $data): array
+    {
+        return [
+            'type' => $targetKey === 'admissions.filling-vacancies' ? 'simple-cards' : 'simple-steps',
+            'heroImage' => (string) ($data['heroImage'] ?? ''),
+            'breadcrumbHome' => (string) ($data['breadcrumbHome'] ?? ''),
+            'breadcrumbParent' => (string) ($data['breadcrumbParent'] ?? ''),
+            'breadcrumbCurrent' => (string) ($data['breadcrumbCurrent'] ?? ''),
+            'title' => (string) ($data['title'] ?? ''),
+            'intro' => collect($this->listValue($data, 'intro'))
+                ->map(static fn (array $paragraph): string => (string) ($paragraph['paragraph'] ?? ''))
+                ->filter(static fn (string $paragraph): bool => trim($paragraph) !== '')
+                ->values()
+                ->all(),
+            'cardsTitle' => (string) ($data['cardsTitle'] ?? ''),
+            'cards' => collect($this->listValue($data, 'cards'))
+                ->map(static fn (array $card): array => [
+                    'title' => (string) ($card['title'] ?? ''),
+                    'body' => (string) ($card['body'] ?? ''),
+                ])
+                ->values()
+                ->all(),
+            'stepsTitle' => (string) ($data['stepsTitle'] ?? ''),
+            'steps' => collect($this->listValue($data, 'steps'))
+                ->map(static fn (array $step): array => [
+                    'title' => (string) ($step['title'] ?? ''),
+                    'body' => (string) ($step['body'] ?? ''),
+                ])
+                ->values()
+                ->all(),
+            'seoDescription' => (string) ($data['seoDescription'] ?? ''),
+        ];
+    }
+
+    private function simplePageStateKey(string $targetKey): string
+    {
+        return match ($targetKey) {
+            'admissions.filling-vacancies' => 'filling_vacancies',
+            'admissions.graduation-exams' => 'graduation_exams',
+            default => throw new \InvalidArgumentException('Unsupported admissions simple page target.'),
+        };
     }
 
     private function targetKeyForSchema(): string

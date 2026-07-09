@@ -111,6 +111,50 @@ final class AboutWorkflowTest extends TestCase
             ->assertDontSee('Subpage Schema Pending');
     }
 
+    public function test_imported_about_pages_render_redirects_and_have_curated_editors(): void
+    {
+        $this->get('/en/about/university-council')->assertRedirect('/en/about/leadership');
+        $this->get('/en/about/partnership')->assertRedirect('/en/about/partnerships');
+
+        foreach ([
+            'about.quality-policy' => ['path' => '/en/about/quality-policy', 'state' => 'en_quality_policy', 'title' => 'Quality Policy at SPU'],
+            'about.ethical-charter' => ['path' => '/en/about/ethical-charter', 'state' => 'en_ethical_charter', 'title' => 'Ethical Charter of SPU'],
+            'about.organizational-structure' => ['path' => '/en/about/organizational-structure', 'state' => 'en_organizational_structure', 'title' => 'Organizational Structure of SPU'],
+        ] as $targetKey => $case) {
+            $this->get($case['path'])
+                ->assertOk()
+                ->assertSee($case['title']);
+        }
+
+        $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
+
+        foreach ([
+            'about.quality-policy' => 'en_quality_policy',
+            'about.ethical-charter' => 'en_ethical_charter',
+            'about.organizational-structure' => 'en_organizational_structure',
+        ] as $targetKey => $stateKey) {
+            $component = Livewire::test(ManageAbout::class)
+                ->set('data.target_key', $targetKey)
+                ->call('loadTarget', $targetKey)
+                ->assertSee('Content Cards')
+                ->assertDontSee('Subpage Schema Pending');
+
+            /** @var array<string, mixed> $data */
+            $data = $component->get('data');
+            $sections = is_array($data[$stateKey]['sections'] ?? null) ? $data[$stateKey]['sections'] : [];
+            $sections[] = ['title' => 'Curated Imported About Card', 'body' => 'Saved through the imported about editor.'];
+
+            $component
+                ->set('data.'.$stateKey.'.sections', $sections)
+                ->call('save');
+
+            $draft = CmsDraft::query()->where('target_key', $targetKey)->latest('id')->firstOrFail();
+            $sectionTitles = collect($draft->payload_json['translations']['en']['sections'] ?? [])->pluck('title')->all();
+
+            $this->assertContains('Curated Imported About Card', $sectionTitles);
+        }
+    }
+
     public function test_about_history_workflow_draft_does_not_leak_until_published(): void
     {
         $about = app(AboutPageServiceInterface::class);

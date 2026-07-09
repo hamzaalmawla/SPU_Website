@@ -65,5 +65,48 @@
             @if (($content['type'] ?? '') === 'cards')<div class="mt-20 md:mt-24"><h3 class="mb-8 text-center text-[38px] font-bold text-spu-blue md:mb-10 md:text-[48px]">{{ $content['title'] ?? '' }}</h3><div class="cms-grid-compact gap-4 md:gap-5">@foreach (($content['items'] ?? []) as $item)<div class="rounded-[8px] border border-[#DCE1ED] bg-white p-5 shadow-[0px_4px_12px_0px_rgba(51,51,51,0.06)]"><div class="mb-4 flex items-center justify-between gap-3"><h4 class="mb-2 text-[19px] font-bold text-spu-blue">{{ $item['title'] ?? '' }}</h4><img src="{{ $item['icon'] ?? '' }}" class="h-6 w-6 object-contain" aria-hidden="true" alt=""></div><p class="text-sm leading-relaxed text-[#5B6277]">{{ $item['desc'] ?? '' }}</p></div>@endforeach</div></div>@endif
             @if (($content['type'] ?? '') === 'documents')<div class="mt-20 md:mt-24"><h3 class="mb-10 text-[38px] font-bold text-spu-blue md:text-[44px] {{ $locale === 'ar' ? 'text-right' : 'text-left' }}">{{ $content['title'] ?? '' }}</h3><div class="grid items-stretch gap-8 lg:grid-cols-[1.8fr_1fr]"><div class="rounded-[8px] border border-[#C3C6D14D] px-6 py-12 shadow-[4px_0_12px_0_rgba(51,51,51,0.08)]"><ul class="space-y-3 text-[#3C435D]">@foreach (($content['list'] ?? []) as $item)<li class="flex items-start gap-3"><img src="/images/icon-check-circle-outline.svg" class="mt-1 h-5 w-5 shrink-0" aria-hidden="true" alt=""><span>{{ $item }}</span></li>@endforeach</ul></div><aside class="flex flex-col justify-between rounded-[12px] bg-spu-blue px-6 py-7 text-white shadow-lg"><h4 class="mb-4 border-b border-[#A7C8FF4D] pb-1 text-[26px] font-bold">{{ $content['support']['title'] ?? '' }}</h4><p class="mb-3 flex items-center gap-3 text-white/90"><img src="{{ $content['support']['locationIcon'] ?? '' }}" class="h-5 w-5 brightness-0 invert" aria-hidden="true" alt=""><span>{{ $content['support']['location'] ?? '' }}</span></p><p class="mb-2 flex items-center gap-3"><img src="{{ $content['support']['phoneIcon'] ?? '' }}" class="h-5 w-5 brightness-0 invert" aria-hidden="true" alt=""><a href="tel:{{ $content['support']['phone'] ?? '' }}">{{ $content['support']['phone'] ?? '' }}</a></p><p class="flex items-center gap-3"><img src="{{ $content['support']['emailIcon'] ?? '' }}" class="h-5 w-5 brightness-0 invert" aria-hidden="true" alt=""><a href="mailto:{{ $content['support']['email'] ?? '' }}">{{ $content['support']['email'] ?? '' }}</a></p></aside></div></div>@endif
         @endforeach</div></section>
+    @elseif ($type === 'simple-info')
+        <section class="relative overflow-hidden font-hacen">
+            <img src="{{ $hero['image'] ?? '/images/admissions-hero-campus.webp' }}" alt="{{ $hero['title'] ?? '' }}" class="h-[320px] w-full object-cover md:h-[380px]">
+            <div class="absolute inset-0 bg-gradient-to-t from-spu-blue/85 via-spu-blue/55 to-spu-blue/0"></div>
+            <div class="absolute inset-0">
+                <div class="container flex h-full flex-col items-center justify-center text-center text-white">
+                    <nav class="flex flex-wrap items-center justify-center gap-2 text-xs font-semibold text-white/85">
+                        @foreach ($breadcrumbs as $crumb)
+                            <span class="inline-flex items-center gap-2">
+                                <a href="{{ $crumb['href'] ?? '#' }}" class="transition hover:text-white">{{ $crumb['label'] ?? '' }}</a>
+                                @if (! $loop->last)
+                                    <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-2.5 w-2.5 brightness-0 invert rtl:rotate-180" aria-hidden="true">
+                                @endif
+                            </span>
+                        @endforeach
+                    </nav>
+                    <h1 class="mt-3 text-4xl font-bold leading-tight md:text-5xl">{{ $hero['title'] ?? '' }}</h1>
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-white py-16 font-hacen md:py-20">
+            <div class="container mx-auto max-w-6xl px-6">
+                <div class="mx-auto mb-12 max-w-3xl text-center">
+                    <h2 class="text-3xl font-black text-spu-blue md:text-4xl">{{ $section['overview']['title'] ?? ($hero['title'] ?? '') }}</h2>
+                    @if (! empty($section['overview']['summary']))
+                        <p class="mt-5 text-base font-bold leading-8 text-slate-700">{{ $section['overview']['summary'] }}</p>
+                    @endif
+                </div>
+
+                <div class="cms-grid-cards gap-6">
+                    @foreach (($section['items'] ?? []) as $item)
+                        <article class="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+                            <div class="mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-spu-blue/5">
+                                <img src="/images/icon-check-circle-outline.svg" alt="" class="h-6 w-6" aria-hidden="true">
+                            </div>
+                            <h3 class="mb-3 text-xl font-black text-spu-blue">{{ $item['title'] ?? '' }}</h3>
+                            <p class="text-sm font-bold leading-7 text-slate-700">{{ $item['body'] ?? '' }}</p>
+                        </article>
+                    @endforeach
+                </div>
+            </div>
+        </section>
     @endif
 @endsection

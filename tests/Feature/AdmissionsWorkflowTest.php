@@ -173,6 +173,48 @@ final class AdmissionsWorkflowTest extends TestCase
             ->assertDontSee('Subpage Schema Pending');
     }
 
+    public function test_imported_admissions_pages_render_redirects_and_have_curated_editors(): void
+    {
+        $this->get('/en/admissions/study-system')->assertRedirect('/en/admissions/documents');
+        $this->get('/en/admissions/academic-warnings')->assertRedirect('/en/admissions/documents');
+
+        foreach ([
+            'admissions.filling-vacancies' => ['path' => '/en/admissions/filling-vacancies', 'state' => 'en_filling_vacancies', 'title' => 'Filling Vacant Seats'],
+            'admissions.graduation-exams' => ['path' => '/en/admissions/graduation-exams', 'state' => 'en_graduation_exams', 'title' => 'Graduation & National Examinations'],
+        ] as $targetKey => $case) {
+            $this->get($case['path'])
+                ->assertOk()
+                ->assertSee($case['title']);
+        }
+
+        $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
+
+        foreach ([
+            'admissions.filling-vacancies' => 'en_filling_vacancies',
+            'admissions.graduation-exams' => 'en_graduation_exams',
+        ] as $targetKey => $stateKey) {
+            $component = Livewire::test(ManageAdmissions::class)
+                ->set('data.target_key', $targetKey)
+                ->call('loadTarget', $targetKey)
+                ->assertSee('Hero and Intro')
+                ->assertDontSee('Subpage Schema Pending');
+
+            /** @var array<string, mixed> $data */
+            $data = $component->get('data');
+            $cards = is_array($data[$stateKey]['cards'] ?? null) ? $data[$stateKey]['cards'] : [];
+            $cards[] = ['title' => 'Curated Imported Admissions Card', 'body' => 'Saved through the imported admissions editor.'];
+
+            $component
+                ->set('data.'.$stateKey.'.cards', $cards)
+                ->call('save');
+
+            $draft = CmsDraft::query()->where('target_key', $targetKey)->latest('id')->firstOrFail();
+            $cardTitles = collect($draft->payload_json['translations']['en']['cards'] ?? [])->pluck('title')->all();
+
+            $this->assertContains('Curated Imported Admissions Card', $cardTitles);
+        }
+    }
+
     public function test_manage_admissions_requirements_uses_curated_editor_and_saves_payload(): void
     {
         $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');

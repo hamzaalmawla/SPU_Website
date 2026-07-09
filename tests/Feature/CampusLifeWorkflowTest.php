@@ -345,6 +345,51 @@ final class CampusLifeWorkflowTest extends TestCase
             ->assertDontSee('Virtual Tour');
     }
 
+    public function test_imported_campus_life_pages_render_and_have_curated_editors(): void
+    {
+        foreach ([
+            'campus_life.damascus-research-pub' => ['path' => '/en/campus-life/damascus-research-pub', 'state' => 'en_damascus_research_pub', 'title' => 'Damascus Research Center Publications'],
+            'campus_life.rules-regulations' => ['path' => '/en/campus-life/rules-regulations', 'state' => 'en_rules_regulations', 'title' => 'Rules & Regulations'],
+            'campus_life.general-rules' => ['path' => '/en/campus-life/general-rules', 'state' => 'en_general_rules', 'title' => 'General Rules & Instructions'],
+            'campus_life.exam-instructions' => ['path' => '/en/campus-life/exam-instructions', 'state' => 'en_exam_instructions', 'title' => 'Exam Instructions'],
+            'campus_life.exam-penalties' => ['path' => '/en/campus-life/exam-penalties', 'state' => 'en_exam_penalties', 'title' => 'Exam Penalties'],
+        ] as $targetKey => $case) {
+            $this->get($case['path'])
+                ->assertOk()
+                ->assertSee($case['title']);
+        }
+
+        $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
+
+        foreach ([
+            'campus_life.damascus-research-pub' => 'en_damascus_research_pub',
+            'campus_life.rules-regulations' => 'en_rules_regulations',
+            'campus_life.general-rules' => 'en_general_rules',
+            'campus_life.exam-instructions' => 'en_exam_instructions',
+            'campus_life.exam-penalties' => 'en_exam_penalties',
+        ] as $targetKey => $stateKey) {
+            $component = Livewire::test(ManageCampusLife::class)
+                ->set('data.target_key', $targetKey)
+                ->call('loadTarget', $targetKey)
+                ->assertSee('Information Cards')
+                ->assertDontSee('Target Schema Pending');
+
+            /** @var array<string, mixed> $data */
+            $data = $component->get('data');
+            $items = is_array($data[$stateKey]['items'] ?? null) ? $data[$stateKey]['items'] : [];
+            $items[] = ['title' => 'Curated Imported Campus Life Card', 'body' => 'Saved through the imported campus life editor.'];
+
+            $component
+                ->set('data.'.$stateKey.'.items', $items)
+                ->call('save');
+
+            $draft = CmsDraft::query()->where('target_key', $targetKey)->latest('id')->firstOrFail();
+            $itemTitles = collect($draft->payload_json['translations']['en']['items'] ?? [])->pluck('title')->all();
+
+            $this->assertContains('Curated Imported Campus Life Card', $itemTitles);
+        }
+    }
+
     public function test_manage_campus_life_services_uses_curated_editor_and_saves_payload(): void
     {
         $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');

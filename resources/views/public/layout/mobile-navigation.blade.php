@@ -38,13 +38,41 @@
                          x-transition:leave-end="opacity-0 -translate-y-1"
                          style="display: none;"
                          class="site-nav-mobile-children">
+                        @php
+                            $flatDividerRendered = false;
+                            $hasRenderedGroup = false;
+                        @endphp
                         @foreach ($item->children as $child)
-                            <a href="{{ $child->resolvedUrl ?? '#' }}"
-                               @click="closeAll()"
-                               class="site-nav-mobile-child"
-                               @if ($child->openInNewTab ?? false) target="_blank" rel="noreferrer" @endif>
-                                {{ $child->label }}
-                            </a>
+                            @if (!empty($child->children))
+                                @php $hasRenderedGroup = true; @endphp
+                                <div class="site-nav-mobile-group">
+                                    <a href="{{ $child->resolvedUrl ?? '#' }}"
+                                       @click="closeAll()"
+                                       class="site-nav-mobile-group-header"
+                                       @if ($child->openInNewTab ?? false) target="_blank" rel="noreferrer" @endif>
+                                        {{ $child->label }}
+                                    </a>
+                                    @foreach ($child->children as $featured)
+                                        <a href="{{ $featured->resolvedUrl ?? '#' }}"
+                                           @click="closeAll()"
+                                           class="site-nav-mobile-child site-nav-mobile-featured"
+                                           @if ($featured->openInNewTab ?? false) target="_blank" rel="noreferrer" @endif>
+                                            {{ $featured->label }}
+                                        </a>
+                                    @endforeach
+                                </div>
+                            @else
+                                @if ($hasRenderedGroup && ! $flatDividerRendered)
+                                    <div class="my-2 border-t border-spu-blue/10"></div>
+                                    @php $flatDividerRendered = true; @endphp
+                                @endif
+                                <a href="{{ $child->resolvedUrl ?? '#' }}"
+                                   @click="closeAll()"
+                                   class="site-nav-mobile-child"
+                                   @if ($child->openInNewTab ?? false) target="_blank" rel="noreferrer" @endif>
+                                    {{ $child->label }}
+                                </a>
+                            @endif
                         @endforeach
                     </div>
                 @endif

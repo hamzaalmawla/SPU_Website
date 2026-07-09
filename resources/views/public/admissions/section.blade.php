@@ -298,5 +298,52 @@
                 <section class="mt-20 border-s-4 border-spu-red ps-6"><div class="flex gap-5"><span class="mt-1 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-spu-red text-sm font-black text-white" aria-hidden="true">i</span><div><h2 class="mb-3 text-xl font-black text-spu-blue">{{ $section['notesTitle'] ?? '' }}</h2><p class="max-w-[900px] text-sm leading-5 text-black">{{ $section['notesDesc'] ?? '' }}</p></div></div></section>
             </div></section>
         </div>
+    @else
+        <div class="bg-white font-hacen" dir="{{ $direction }}" data-page-name="admissions-{{ $slug }}" data-page-content>
+            @include('public.admissions.partials.hero', compact('homeUrl', 'parentUrl', 'homeLabel', 'parentLabel', 'currentLabel', 'heroImage', 'title', 'compactHero'))
+
+            <section class="bg-white py-16 md:py-20">
+                <div class="container mx-auto max-w-5xl px-6">
+                    @if (! empty($section['intro']))
+                        <div class="mx-auto mb-12 max-w-3xl text-center text-base font-bold leading-8 text-slate-700">
+                            @if (is_array($section['intro']))
+                                @foreach ($section['intro'] as $paragraph)
+                                    <p class="mb-4 last:mb-0">{{ $paragraph }}</p>
+                                @endforeach
+                            @else
+                                <p>{{ $section['intro'] }}</p>
+                            @endif
+                        </div>
+                    @endif
+
+                    @if (! empty($section['cards']))
+                        <h2 class="mb-8 text-center text-3xl font-black text-spu-blue md:text-4xl">{{ $section['cardsTitle'] ?? $title }}</h2>
+                        <div class="cms-grid-cards gap-6">
+                            @foreach ($section['cards'] as $card)
+                                <article class="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+                                    <h3 class="mb-3 text-xl font-black text-spu-blue">{{ $card['title'] ?? '' }}</h3>
+                                    <p class="text-sm font-bold leading-7 text-slate-700">{{ $card['body'] ?? '' }}</p>
+                                </article>
+                            @endforeach
+                        </div>
+                    @endif
+
+                    @if (! empty($section['steps']))
+                        <h2 class="mb-10 text-center text-3xl font-black text-spu-blue md:text-4xl">{{ $section['stepsTitle'] ?? $title }}</h2>
+                        <div class="space-y-6">
+                            @foreach ($section['steps'] as $step)
+                                <article class="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm">
+                                    <div class="mb-3 flex items-center gap-4">
+                                        <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-spu-red text-sm font-black text-white">{{ $loop->iteration }}</span>
+                                        <h3 class="text-xl font-black text-spu-blue">{{ $step['title'] ?? '' }}</h3>
+                                    </div>
+                                    <p class="text-sm font-bold leading-7 text-slate-700">{{ $step['body'] ?? '' }}</p>
+                                </article>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+            </section>
+        </div>
     @endif
 @endsection

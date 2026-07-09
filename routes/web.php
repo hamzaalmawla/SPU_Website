@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\TwoFactorChallengeController;
 use App\Http\Controllers\Public\AdmissionsController;
 use App\Http\Controllers\Public\AboutController;
 use App\Http\Controllers\Public\CampusLifeController;
+use App\Http\Controllers\Public\DynamicFormSubmissionController;
 use App\Http\Controllers\Public\EServicesController;
 use App\Http\Controllers\Public\FacultyController;
 use App\Http\Controllers\Public\HomeController;
@@ -32,6 +33,10 @@ Route::prefix('{locale}')
     ->group(function (): void {
         Route::get('/', HomeController::class)->name('public.home');
         Route::get('/e-services', EServicesController::class)->name('public.e-services');
+        Route::get('/e-services/suggestions-complaints', [EServicesController::class, 'suggestionsComplaints'])->name('public.e-services.suggestions-complaints');
+        Route::post('/e-services/suggestions-complaints', [EServicesController::class, 'storeSuggestionsComplaints'])
+            ->middleware('throttle:public-form')
+            ->name('public.e-services.suggestions-complaints.submit');
         Route::get('/virtual-tour', VirtualTourController::class)->name('public.virtual-tour');
 
         Route::controller(FacultyController::class)
@@ -76,8 +81,10 @@ Route::prefix('{locale}')
             ->name('public.admissions.')
             ->group(function (): void {
                 Route::get('/', 'landing')->name('landing');
+                Route::get('/study-system', 'redirectToDocuments')->name('study-system.redirect');
+                Route::get('/academic-warnings', 'redirectToDocuments')->name('academic-warnings.redirect');
                 Route::get('/{section}', 'section')
-                    ->where(['section' => 'requirements|tuition|how-to-apply|faq|calendar|documents|transfer'])
+                    ->where(['section' => 'requirements|tuition|how-to-apply|faq|calendar|documents|transfer|filling-vacancies|graduation-exams'])
                     ->name('section');
             });
 
@@ -86,8 +93,13 @@ Route::prefix('{locale}')
             ->name('public.campus-life.')
             ->group(function (): void {
                 Route::get('/', 'landing')->name('landing');
+                Route::get('/career-development/jobs', 'careerJobBoard')->name('career-development.jobs');
+                Route::get('/career-development/jobs/apply', 'careerJobApplication')->name('career-development.jobs.apply');
+                Route::get('/career-development/jobs/{job}', 'careerJobDetail')
+                    ->where(['job' => '[A-Za-z0-9\-]+'])
+                    ->name('career-development.jobs.show');
                 Route::get('/{section}', 'section')
-                    ->where(['section' => 'services|transport|clubs-activities|career-development|dental|hospital|health-insurance'])
+                    ->where(['section' => 'services|transport|clubs-activities|career-development|dental|hospital|health-insurance|damascus-research-pub|rules-regulations|general-rules|exam-instructions|exam-penalties'])
                     ->name('section');
             });
 
@@ -96,13 +108,18 @@ Route::prefix('{locale}')
             ->name('public.about.')
             ->group(function (): void {
                 Route::get('/', 'landing')->name('landing');
+                Route::get('/university-council', 'redirectUniversityCouncil')->name('university-council.redirect');
                 Route::get('/history', 'history')->name('history');
                 Route::get('/leadership', 'leadership')->name('leadership');
                 Route::get('/central-directorates', 'directorates')->name('central-directorates');
                 Route::get('/directorates', 'directorates')->name('directorates');
                 Route::get('/directorates/staff', 'staffDirectory')->name('directorates.staff');
                 Route::get('/directorates/{directorate}', 'directorateDetail')->name('directorates.show');
+                Route::get('/partnership', 'redirectPartnershipAlias')->name('partnership.redirect');
                 Route::get('/partnerships', 'partnerships')->name('partnerships');
+                Route::get('/{section}', 'content')
+                    ->where(['section' => 'quality-policy|ethical-charter|organizational-structure|accreditation|why-spu'])
+                    ->name('content');
             });
 
         Route::get('/preview', PreviewController::class)->name('preview.show');
@@ -111,6 +128,11 @@ Route::prefix('{locale}')
         Route::post('/contact', [PublicContactController::class, 'store'])
             ->middleware('throttle:public-form')
             ->name('public.contact.submit');
+
+        Route::post('/forms/{form}/submissions', DynamicFormSubmissionController::class)
+            ->where(['form' => 'conference-registration|symposium-registration|activity-registration|job-application'])
+            ->middleware('throttle:public-form')
+            ->name('public.forms.submit');
 
         Route::controller(NewsController::class)
             ->prefix('news')
@@ -154,6 +176,7 @@ Route::prefix('{locale}')
                     ->where(['slug' => '[A-Za-z0-9\-]+'])
                     ->name('researchers.show');
                 Route::get('/expert-finder', 'expertFinder')->name('expert-finder');
+                Route::get('/conferences/register', 'conferenceRegistration')->name('conferences.register');
                 Route::get('/conferences', 'conferences')->name('conferences');
                 Route::get('/library', 'library')->name('library');
                 Route::get('/office', 'office')->name('office');

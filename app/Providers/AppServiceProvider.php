@@ -9,6 +9,7 @@ use App\Contracts\Auth\TotpAuthenticatorInterface;
 use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Content\PersonServiceInterface;
+use App\Contracts\Form\DynamicFormSubmissionServiceInterface;
 use App\Contracts\Homepage\HomepagePreviewAssemblerInterface;
 use App\Contracts\Homepage\HomepagePublishingServiceInterface;
 use App\Contracts\Homepage\HomepageSectionServiceInterface;
@@ -24,6 +25,7 @@ use App\Contracts\Legacy\LegacyGeneratedUrlInventoryServiceInterface;
 use App\Contracts\Legacy\LegacyIntegrityInspectionServiceInterface;
 use App\Contracts\Legacy\LegacyInternalLinkExtractionServiceInterface;
 use App\Contracts\Legacy\LegacyImportInspectionServiceInterface;
+use App\Contracts\Legacy\LegacyLocationImportServiceInterface;
 use App\Contracts\Legacy\LegacyMappingProposalServiceInterface;
 use App\Contracts\Legacy\LegacyPhaseSixCandidateServiceInterface;
 use App\Contracts\Legacy\LegacyPhaseSixApprovalServiceInterface;
@@ -84,6 +86,7 @@ use App\Models\Faculty\FacultyHighlight;
 use App\Models\Faculty\FacultyLab;
 use App\Models\Faculty\FacultyPage;
 use App\Models\Faculty\FacultyStudentProject;
+use App\Models\Form\DynamicFormSubmission;
 use App\Models\Media\MediaAsset;
 use App\Models\Navigation\MenuItem;
 use App\Models\News\NewsArticle;
@@ -96,6 +99,7 @@ use App\Models\User\User;
 use App\Observers\AboutDomainAuditObserver;
 use App\Policies\AuditLogPolicy;
 use App\Policies\ContactMessagePolicy;
+use App\Policies\DynamicFormSubmissionPolicy;
 use App\Policies\FacultyDomainPolicy;
 use App\Policies\HomepagePolicy;
 use App\Policies\MediaAssetPolicy;
@@ -109,6 +113,7 @@ use App\Services\Auth\TotpAuthenticator;
 use App\Services\Cms\CmsTargetRegistry;
 use App\Services\Cms\CmsWorkflowService;
 use App\Services\Content\PersonService;
+use App\Services\Form\DynamicFormSubmissionService;
 use App\Services\Homepage\HomepageDraftReader;
 use App\Services\Homepage\HomepagePreviewAssembler;
 use App\Services\Homepage\HomepagePublishingService;
@@ -126,6 +131,7 @@ use App\Services\Legacy\LegacyGeneratedUrlInventoryService;
 use App\Services\Legacy\LegacyIntegrityInspectionService;
 use App\Services\Legacy\LegacyInternalLinkExtractionService;
 use App\Services\Legacy\LegacyImportInspectionService;
+use App\Services\Legacy\LegacyLocationImportService;
 use App\Services\Legacy\LegacyMappingProposalService;
 use App\Services\Legacy\LegacyPhaseSixCandidateService;
 use App\Services\Legacy\LegacyPhaseSixApprovalService;
@@ -280,6 +286,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(AuditLog::class, AuditLogPolicy::class);
         Gate::policy(MediaAsset::class, MediaAssetPolicy::class);
         Gate::policy(ContactMessage::class, ContactMessagePolicy::class);
+        Gate::policy(DynamicFormSubmission::class, DynamicFormSubmissionPolicy::class);
         Gate::policy(NewsArticle::class, NewsArticlePolicy::class);
         Gate::policy(NewsCategory::class, NewsCategoryPolicy::class);
         Gate::policy(Faculty::class, FacultyDomainPolicy::class);
@@ -345,6 +352,7 @@ class AppServiceProvider extends ServiceProvider
             CmsWorkflowServiceInterface::class => CmsWorkflowService::class,
             ContinuityServiceInterface::class => ContinuityService::class,
             ContactPageServiceInterface::class => ContactPageService::class,
+            DynamicFormSubmissionServiceInterface::class => DynamicFormSubmissionService::class,
             EServicesPageServiceInterface::class => EServicesPageService::class,
             FacultyPageServiceInterface::class => FacultyPageService::class,
             SitemapServiceInterface::class => SitemapService::class,
@@ -368,6 +376,7 @@ class AppServiceProvider extends ServiceProvider
             LegacyInternalLinkExtractionServiceInterface::class => LegacyInternalLinkExtractionService::class,
             LegacyImportBatchServiceInterface::class => LegacyImportBatchService::class,
             LegacyImportInspectionServiceInterface::class => LegacyImportInspectionService::class,
+            LegacyLocationImportServiceInterface::class => LegacyLocationImportService::class,
             LegacyMappingProposalServiceInterface::class => LegacyMappingProposalService::class,
             LegacyPhaseSixCandidateServiceInterface::class => LegacyPhaseSixCandidateService::class,
             LegacyPhaseSixApprovalServiceInterface::class => LegacyPhaseSixApprovalService::class,

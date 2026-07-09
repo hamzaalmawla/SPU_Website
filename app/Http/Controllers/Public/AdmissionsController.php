@@ -13,6 +13,7 @@ use App\DTOs\Admissions\AdmissionsSectionDTO;
 use App\DTOs\Navigation\LanguageSwitchLinkDTO;
 use App\Http\Controllers\Controller;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 final class AdmissionsController extends Controller
@@ -55,6 +56,11 @@ final class AdmissionsController extends Controller
             'seo' => $this->sectionSeo($locale, $page),
             'page' => $page,
         ]);
+    }
+
+    public function redirectToDocuments(string $locale): RedirectResponse
+    {
+        return redirect('/'.$locale.'/admissions/documents', 301);
     }
 
     private function landingSeo(string $locale, AdmissionsPageDTO $page): mixed

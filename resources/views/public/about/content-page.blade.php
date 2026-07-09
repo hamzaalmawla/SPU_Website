@@ -82,6 +82,32 @@
             </section>
 
             @include('public.about.partials.navigation-section', ['locale' => $locale])
+        @elseif (in_array($page->slug, ['quality-policy', 'ethical-charter', 'organizational-structure', 'accreditation', 'why-spu'], true))
+            @include('public.about.partials.hero', ['title' => $page->headline, 'summary' => $page->summary, 'image' => $page->heroImage])
+
+            <section class="bg-white py-20 font-hacen">
+                <div class="container mx-auto px-6">
+                    @if ($page->summary !== '')
+                        <p class="mx-auto mb-12 max-w-3xl text-center text-base font-bold leading-8 text-slate-700">{{ $page->summary }}</p>
+                    @endif
+
+                    <div class="cms-grid-cards gap-6">
+                        @foreach ($page->sections as $section)
+                            <article class="reveal reveal-up rounded-2xl border border-slate-100 bg-white p-8 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+                                <div class="mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-spu-blue/5">
+                                    <img src="/images/icon-check-circle-outline.svg" alt="" class="h-7 w-7">
+                                </div>
+                                <h2 class="mb-3 text-xl font-black text-spu-blue">{{ $section['title'] ?? '' }}</h2>
+                                @if (! empty($section['body']))
+                                    <p class="text-sm font-bold leading-7 text-slate-700">{{ $section['body'] }}</p>
+                                @endif
+                            </article>
+                        @endforeach
+                    </div>
+                </div>
+            </section>
+
+            @include('public.about.partials.navigation-section', ['locale' => $locale])
         @else
             @include('public.about.partials.hero', ['title' => $page->headline, 'summary' => $page->summary, 'image' => $page->heroImage])
 
