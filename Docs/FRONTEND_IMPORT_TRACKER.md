@@ -86,7 +86,7 @@ Frontend files:
 | Done | Filament edit forms support imported pages. |
 | Done | Public Blade views render imported page shapes. |
 | Done | Navigation seeder matches frontend additions. |
-| Partial | SEO, sitemap, preview, publish, and cache behavior verified. Route registration, Blade compilation, and existing publish/preview workflow tests pass; full sitemap/SEO audit still pending. |
+| Done | SEO, sitemap, preview, publish, and cache behavior verified. Route registration, Blade compilation, existing publish/preview workflow tests, launch validation, redirect validation, and SEO metadata validation pass. |
 | Done | Dynamic form backend implemented. |
 | Done | Frontend dynamic form store/view registered in Vite and submits to Laravel with CSRF, validation errors, uploads, and success state. |
 | Done | Reusable dynamic-form Blade component added for backend-rendered frontend-compatible form pages. |
@@ -116,5 +116,8 @@ Frontend files:
 | Passed | `php artisan migrate:status --path="database\migrations\2026_07_09_000001_create_dynamic_form_submissions_table.php"` shows migration as ran. |
 | Passed | `php artisan test "tests\Feature\MissingFrontendPagesTest.php"` |
 | Passed | `php artisan test "tests\Feature\MissingFrontendPagesTest.php" "tests\Feature\HeaderNavigationRenderingTest.php" "tests\Feature\DynamicFormPageRenderingTest.php" "tests\Feature\DynamicFormSubmissionTest.php"` |
+| Passed | `php artisan continuity:validate-redirects` |
+| Passed | `php artisan continuity:validate-seo` after reseeding `LandingPageSeeder`; 8 published pages / 2 locales / 0 issues. |
+| Passed | `php artisan launch:validate`; warnings remain for unmapped file-continuity inventory and local cache tag support with `CACHE_STORE=database`. |
 
 `npm run build` emitted a non-fatal unresolved runtime asset warning for `/images/admissions-hero-campus.webp`.

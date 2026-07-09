@@ -19,6 +19,7 @@ class LandingPageSeeder extends Seeder
     {
         $admin = User::query()->where('role_slug', 'super_admin')->firstOrFail();
         $baseUrl = rtrim((string) config('app.url', 'http://localhost'), '/');
+        $defaultOgImage = $baseUrl.'/images/about-hero-1.webp';
 
         foreach ($this->pages() as $index => $definition) {
             $page = Page::query()->updateOrCreate(
@@ -81,7 +82,7 @@ class LandingPageSeeder extends Seeder
                         'og_title' => $translation['title'],
                         'og_description' => $translation['excerpt'],
                         'og_image_media_id' => null,
-                        'og_image_url' => null,
+                        'og_image_url' => $definition['og_image_url'] ?? $defaultOgImage,
                         'canonical_url' => $baseUrl.'/'.$locale.'/'.$definition['slug'],
                         'robots' => 'index,follow',
                         'hreflang_payload' => [
@@ -95,7 +96,7 @@ class LandingPageSeeder extends Seeder
     }
 
     /**
-     * @return array<int, array{slug: string, type: string, layout_key: string, show_in_nav: bool, translations: array<string, array<string, mixed>>}>
+     * @return array<int, array{slug: string, type: string, layout_key: string, show_in_nav: bool, og_image_url?: string, translations: array<string, array<string, mixed>>}>
      */
     private function pages(): array
     {
@@ -105,6 +106,7 @@ class LandingPageSeeder extends Seeder
                 'type' => 'homepage',
                 'layout_key' => 'homepage',
                 'show_in_nav' => false,
+                'og_image_url' => $this->imageUrl('/images/slider-1.webp'),
                 'translations' => $this->translations('الرئيسية', 'Home', 'واجهة رئيسية للجامعة', 'University homepage shell'),
             ],
             [
@@ -112,6 +114,7 @@ class LandingPageSeeder extends Seeder
                 'type' => 'landing_page',
                 'layout_key' => 'landing-page',
                 'show_in_nav' => true,
+                'og_image_url' => $this->imageUrl('/images/about-hero-1.webp'),
                 'translations' => $this->translations('عن الجامعة', 'About', 'مقدمة تعريفية قابلة للإدارة', 'Managed institutional overview'),
             ],
             [
@@ -119,6 +122,7 @@ class LandingPageSeeder extends Seeder
                 'type' => 'landing_page',
                 'layout_key' => 'landing-page',
                 'show_in_nav' => true,
+                'og_image_url' => $this->imageUrl('/images/faculities/group-fac-building.jpg'),
                 'translations' => $this->translations('الكليات', 'Faculties', 'صفحة تمهيدية للكليات', 'Faculty landing shell'),
             ],
             [
@@ -126,6 +130,7 @@ class LandingPageSeeder extends Seeder
                 'type' => 'landing_page',
                 'layout_key' => 'landing-page',
                 'show_in_nav' => true,
+                'og_image_url' => $this->imageUrl('/images/research-applied-ai.webp'),
                 'translations' => $this->translations('البحث العلمي', 'Research', 'مدخل أولي لمحتوى البحث', 'Research landing shell'),
             ],
             [
@@ -133,6 +138,7 @@ class LandingPageSeeder extends Seeder
                 'type' => 'landing_page',
                 'layout_key' => 'landing-page',
                 'show_in_nav' => true,
+                'og_image_url' => $this->imageUrl('/images/news/first-webo.jpeg'),
                 'translations' => $this->translations('الأخبار', 'News', 'منطقة أخبار أولية', 'News landing shell'),
             ],
             [
@@ -140,6 +146,7 @@ class LandingPageSeeder extends Seeder
                 'type' => 'landing_page',
                 'layout_key' => 'landing-page',
                 'show_in_nav' => true,
+                'og_image_url' => $this->imageUrl('/images/news/football-compitition.jpeg'),
                 'translations' => $this->translations('الفعاليات', 'Events', 'منطقة فعاليات تمهيدية', 'Events landing shell'),
             ],
             [
@@ -147,6 +154,7 @@ class LandingPageSeeder extends Seeder
                 'type' => 'landing_page',
                 'layout_key' => 'landing-page',
                 'show_in_nav' => true,
+                'og_image_url' => $this->imageUrl('/images/admissions-hero-campus.webp'),
                 'translations' => $this->translations('القبول والتسجيل', 'Admissions', 'قالب أولي لمسار القبول', 'Admissions landing shell'),
             ],
             [
@@ -154,9 +162,15 @@ class LandingPageSeeder extends Seeder
                 'type' => 'landing_page',
                 'layout_key' => 'landing-page',
                 'show_in_nav' => true,
+                'og_image_url' => $this->imageUrl('/images/slider-3.webp'),
                 'translations' => $this->translations('اتصل بنا', 'Contact', 'صفحة تواصل أولية', 'Contact landing shell'),
             ],
         ];
+    }
+
+    private function imageUrl(string $path): string
+    {
+        return rtrim((string) config('app.url', 'http://localhost'), '/').$path;
     }
 
     /**
