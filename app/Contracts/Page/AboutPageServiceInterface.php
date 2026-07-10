@@ -38,4 +38,7 @@ interface AboutPageServiceInterface
 
     /** @return Collection<int, PartnershipDTO> */
     public function getPartnerships(string $locale): Collection;
+
+    /** @return array<int, array<string, string>> */
+    public function getAboutSubPages(string $locale): array;
 }

@@ -15,21 +15,21 @@
 
         <div class="container relative z-10 pb-10 text-center text-white">
             <nav class="mb-3 flex items-center justify-center gap-2 text-[11px] font-semibold text-white/74">
-                <a href="/{{ $locale }}" class="transition-colors hover:text-white">{{ $isAr ? 'الرئيسية' : 'Home' }}</a>
+                <a href="/{{ $locale }}" class="transition-colors hover:text-white">{{ __('public.home') }}</a>
                 <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-2 w-2 rtl:rotate-180" aria-hidden="true">
-                <a href="/{{ $locale }}/news/articles" class="transition-colors hover:text-white">{{ $isAr ? 'الأخبار' : 'News' }}</a>
+                <a href="/{{ $locale }}/news/articles" class="transition-colors hover:text-white">{{ __('public.news') }}</a>
                 <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-2 w-2 rtl:rotate-180" aria-hidden="true">
-                <span>{{ $isAr ? 'صفحة الخبر' : 'News Article Page' }}</span>
+                <span>{{ __('public.news_article_page') }}</span>
             </nav>
 
-            <h1 class="text-[30px] font-bold leading-tight md:text-[40px]">{{ $isAr ? 'صفحة الخبر' : 'News Article Page' }}</h1>
+            <h1 class="text-[30px] font-bold leading-tight md:text-[40px]">{{ __('public.news_article_page') }}</h1>
         </div>
     </section>
 
     <article class="bg-white py-8 font-hacen md:py-10">
         <div class="container">
             <header class="mx-auto text-center">
-                <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-spu-red">{{ $article->category?->name ?: ($isAr ? 'أخبار الجامعة' : 'University News') }}</p>
+                <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-spu-red">{{ $article->category?->name ?: __('public.university_news') }}</p>
                 <h1 class="mt-3 text-[24px] font-bold leading-tight text-spu-blue md:text-[30px]">{{ $article->title }}</h1>
                 @if ($article->excerpt)
                     <p class="mx-auto mt-3 text-[13px] font-semibold leading-6 text-slate-500">{{ $article->excerpt }}</p>
@@ -40,9 +40,9 @@
                         <span translate="no">{{ $article->publishedAt }}</span>
                         <span class="h-1 w-1 rounded-full bg-slate-300" aria-hidden="true"></span>
                     @endif
-                    <span>{{ $isAr ? 'فريق أخبار الجامعة' : 'SPU News Desk' }}</span>
+                    <span>{{ __('public.spu_news_desk') }}</span>
                     <span class="h-1 w-1 rounded-full bg-slate-300" aria-hidden="true"></span>
-                    <span>{{ $isAr ? '3 دقائق قراءة' : '3 min read' }}</span>
+                    <span>{{ __('public.min_read') }}</span>
                 </div>
             </header>
 
@@ -60,18 +60,18 @@
                 @endif
 
                 <div class="my-7 border-l-4 border-spu-red bg-slate-50 px-5 py-4 text-[14px] font-bold leading-7 text-spu-blue rtl:border-l-0 rtl:border-r-4">
-                    {{ $isAr ? 'تواصل الجامعة توثيق التقدم الأكاديمي والتفاعل المجتمعي عبر الأخبار الرسمية.' : 'The university continues to document academic progress and community engagement through official news updates.' }}
+                    {{ __('public.news_quote') }}
                 </div>
             </div>
 
             @if ($article->attachments !== [])
                 <section class="mx-auto mt-9 rounded-[6px] border border-slate-200 bg-slate-50 p-6">
-                    <h2 class="text-[20px] font-bold text-spu-blue">{{ $isAr ? 'المرفقات' : 'Attachments' }}</h2>
+                    <h2 class="text-[20px] font-bold text-spu-blue">{{ __('public.attachments') }}</h2>
                     <div class="mt-5 grid gap-3">
                         @foreach ($article->attachments as $attachment)
                             @if ($attachment->url)
                                 <a href="{{ $attachment->url }}" class="flex items-center justify-between rounded-[4px] bg-white px-4 py-3 text-[12px] font-bold text-spu-blue shadow-sm transition hover:text-spu-red">
-                                    <span>{{ $attachment->label ?: ($isAr ? 'مرفق' : 'Attachment') }}</span>
+                                    <span>{{ $attachment->label ?: __('public.attachment') }}</span>
                                     <span>{{ strtoupper($attachment->kind) }}</span>
                                 </a>
                             @endif
@@ -91,7 +91,7 @@
                 @endif
 
                 <div class="flex items-center justify-center gap-3">
-                    <span class="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">{{ $isAr ? 'مشاركة الخبر' : 'Share article' }}</span>
+                    <span class="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">{{ __('public.share_article') }}</span>
                     <a href="https://www.facebook.com/SPUpage.sy/?ref=bookmarks" class="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 transition hover:border-spu-blue" aria-label="Facebook">
                         <img src="/images/icon-facebook-outline.svg" alt="" class="h-3.5 w-3.5" aria-hidden="true">
                     </a>

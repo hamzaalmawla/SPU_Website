@@ -132,7 +132,7 @@
 
             <section class="bg-section py-24 font-hacen">
                 <div class="container mx-auto">
-                    <h2 class="reveal reveal-up mb-12 text-center text-4xl font-black text-spu-blue md:text-5xl">{{ $locale === 'ar' ? 'الأعمدة الاستراتيجية' : 'Strategic Pillars' }}</h2>
+                    <h2 class="reveal reveal-up mb-12 text-center text-4xl font-black text-spu-blue md:text-5xl">{{ __('public.strategic_pillars') }}</h2>
                     <div class="cms-grid-compact gap-6">
                         @foreach ($page->sections as $section)
                             <article class="reveal reveal-up rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">

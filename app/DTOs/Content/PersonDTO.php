@@ -8,6 +8,7 @@ final readonly class PersonDTO
 {
     public function __construct(
         public int $id,
+        public string $slug,
         public string $name,
         public string $role,
         public ?string $category,

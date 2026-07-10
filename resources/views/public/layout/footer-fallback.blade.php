@@ -1,9 +1,9 @@
 <div class="container">
     <div class="mb-16 grid grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-12">
         <div class="flex flex-col items-start lg:col-span-4">
-            <h2 class="mb-6 text-[24px] font-bold uppercase leading-tight tracking-wider">{{ $locale === 'ar' ? 'الجامعة السورية الخاصة' : 'SYRIAN PRIVATE UNIVERSITY' }}</h2>
+            <h2 class="mb-6 text-[24px] font-bold uppercase leading-tight tracking-wider">{{ $navigation->footerSettings->brandTitle ?? __('public.university_name') }}</h2>
             <p class="mb-8 max-w-[320px] text-[16px] leading-[1.6] text-white/70">
-                {{ $locale === 'ar' ? 'ملتزمون بتعزيز التميز الأكاديمي والقيادة العالمية من قلب دمشق.' : 'Committed to fostering academic excellence and global leadership from the heart of Damascus.' }}
+                {{ $navigation->footerSettings->brandSummary ?? __('public.footer_mission') }}
             </p>
 
             @if ($navigation->socialContact->socialLinks !== [])
@@ -30,7 +30,7 @@
         <div class="lg:col-span-2">
             <h3 class="mb-8 text-[18px] font-bold uppercase tracking-widest text-white/50">
                 <span class="sr-only">{{ __('public.navigation_heading') }}</span>
-                <span aria-hidden="true">{{ $locale === 'ar' ? 'استكشف SPU' : 'EXPLORE SPU' }}</span>
+                <span aria-hidden="true">{{ __('public.footer_explore') }}</span>
             </h3>
             <ul class="flex flex-col gap-4">
                 @foreach ($navigation->footer->items as $item)
@@ -44,11 +44,11 @@
         </div>
 
         <div class="lg:col-span-3">
-            <h3 class="mb-8 text-[18px] font-bold uppercase tracking-widest text-white/50">{{ $locale === 'ar' ? 'التواصل' : 'CONTACT' }}</h3>
+            <h3 class="mb-8 text-[18px] font-bold uppercase tracking-widest text-white/50">{{ __('public.footer_contact') }}</h3>
             <div class="flex flex-col gap-6">
                 <div class="flex items-start gap-4">
                     <span class="mt-1.5 block h-4 w-4 shrink-0 bg-spu-red" aria-hidden="true" style="-webkit-mask: url('/images/icon-map-outline.svg') center / contain no-repeat; mask: url('/images/icon-map-outline.svg') center / contain no-repeat;"></span>
-                    <span class="text-[15px] leading-relaxed text-white/80">{{ $locale === 'ar' ? 'مقر الجامعة الرئيسي، أوتوستراد درعا الدولي، بعد بلدة الكسوة، خيارة دنون، دمشق.' : 'University headquarters, Daraa International Highway, past Al-Kiswa, Khayara Danoun, Damascus.' }}</span>
+                    <span class="text-[15px] leading-relaxed text-white/80">{{ $navigation->footerSettings->address ?? '' }}</span>
                 </div>
                 @foreach ($navigation->socialContact->contactLinks as $link)
                     @php($type = strtolower($link->type ?? ''))
@@ -79,7 +79,7 @@
     <hr class="mb-8 border-white/10">
 
     <div class="flex flex-col items-center justify-between gap-6 md:flex-row">
-                <p class="text-[14px] text-white/50" translate="no">{{ $locale === 'ar' ? '© 2026 الجامعة السورية الخاصة. التميز في التعليم.' : '© 2026 Syrian Private University. Excellence in Education.' }}</p>
+                <p class="text-[14px] text-white/50" translate="no">{{ $navigation->footerSettings->copyrightText ?? '' }}</p>
         @if ($navigation->footerSettings->legalLinks !== [])
             <div class="flex flex-wrap items-center justify-center gap-6 text-[14px]">
                 @foreach ($navigation->footerSettings->legalLinks as $link)

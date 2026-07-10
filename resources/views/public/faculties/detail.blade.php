@@ -22,18 +22,18 @@
         <div class="container relative z-10 pb-40 pt-40">
             <div class="faculty-hero__accent-line mb-8" style="background: linear-gradient(90deg, #fff 0%, #{{ $accentHex }}99 100%);"></div>
             <p class="faculty-hero__reveal faculty-hero__reveal--d1 text-sm font-bold uppercase tracking-[0.25em] text-white/70">
-                {{ $isAr ? 'الجامعة السورية الخاصة' : 'Syrian Private University' }}
+                {{ __('public.university_name') }}
             </p>
             <h1 class="faculty-hero__reveal faculty-hero__reveal--d2 mt-4 max-w-[800px] text-[clamp(2.2rem,5vw,3.8rem)] font-bold leading-[1.1] tracking-tight text-white">
                 {{ $pageTitle }}
             </h1>
             <div class="faculty-hero__reveal faculty-hero__reveal--d3 mt-10 flex flex-wrap items-center gap-4">
                 <a href="#overview" class="group inline-flex h-[54px] items-center gap-2.5 rounded-[6px] bg-white px-8 text-sm font-bold uppercase tracking-[1.4px] shadow-[0_4px_24px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(0,0,0,0.18)]" style="color: {{ $accent }}">
-                    <span>{{ $isAr ? 'استكشف البرامج' : 'Explore Programs' }}</span>
+                    <span>{{ __('public.explore_programs') }}</span>
                     <img src="/images/icon-arrow-right-outline.svg" alt="" class="h-3 w-3 transition-transform duration-300 group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1" aria-hidden="true">
                 </a>
                 <a href="/{{ $locale }}/admissions/how-to-apply" class="inline-flex h-[54px] items-center rounded-[6px] border border-white/30 bg-white/8 px-8 text-sm font-bold uppercase tracking-[1.4px] text-white backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-white/50 hover:bg-white/15">
-                    {{ $isAr ? 'القبول والتسجيل' : 'Admissions' }}
+                    {{ __('public.admissions') }}
                 </a>
             </div>
         </div>
@@ -112,7 +112,7 @@
                         </div>
                         <div class="mt-8 border-t border-slate-100 pt-6">
                             <a href="/{{ $locale }}/facilities/{{ $page->slug }}/overview" class="group inline-flex items-center gap-3 transition-all" style="color: {{ $accent }}">
-                                <span class="text-base font-bold">{{ $isAr ? 'اقرأ المزيد' : 'Read More' }}</span>
+                                <span class="text-base font-bold">{{ __('public.read_more') }}</span>
                                 <img src="/images/icon-arrow-right-outline.svg" alt="" class="h-4 w-4 transition-transform duration-300 group-hover:translate-x-2 rtl:rotate-180 rtl:group-hover:-translate-x-2" aria-hidden="true">
                             </a>
                         </div>
@@ -132,7 +132,7 @@
                             <img src="{{ $dean['image'] ?? ($faculty['heroImage'] ?? '/images/uni-main-place.JPG') }}" alt="" class="w-full object-top">
                             <div class="absolute bottom-[10%] rounded-md bg-white px-6 py-4 text-center text-[#1e2652] shadow-2xl shadow-black/10 ltr:left-4 rtl:right-4">
                                 <h5 class="text-[24px] font-bold">{{ $dean['name'] ?? ($isAr ? ($dean['nameAr'] ?? '') : ($dean['nameEn'] ?? '')) }}</h5>
-                                <p class="text-[16px] font-normal">{{ $dean['role'] ?? ($isAr ? ($dean['roleAr'] ?? 'عميد الكلية') : ($dean['roleEn'] ?? 'Faculty Dean')) }}</p>
+                                <p class="text-[16px] font-normal">{{ $dean['role'] ?? ($isAr ? ($dean['roleAr'] ?? __('public.faculty_dean')) : ($dean['roleEn'] ?? __('public.faculty_dean'))) }}</p>
                             </div>
                         </div>
                     </div>
@@ -140,10 +140,10 @@
                     <div class="relative w-full lg:w-1/2">
                         <div class="absolute -top-12 mb-6 inline-flex items-center gap-3 lg:-top-16">
                             <div class="h-px w-10" style="background-color: {{ $accent }}"></div>
-                            <span class="text-[12px] font-black uppercase tracking-[0.4em]" style="color: {{ $accent }}">{{ $isAr ? 'رسالة العميد' : 'Dean Message' }}</span>
+                            <span class="text-[12px] font-black uppercase tracking-[0.4em]" style="color: {{ $accent }}">{{ __('public.dean_message') }}</span>
                         </div>
                         <h2 class="mb-8 text-3xl font-bold leading-tight text-slate-900 md:text-5xl">
-                            <span>{{ $isAr ? 'كلمة' : 'Message From The' }}</span>
+                            <span>{{ __('public.message_from') }}</span>
                             <span style="color: {{ $accent }}">{{ $dean['role'] ?? ($isAr ? ($dean['roleAr'] ?? 'عميد الكلية') : ($dean['roleEn'] ?? 'Faculty Dean')) }}</span>
                         </h2>
                         <p class="text-lg font-normal leading-relaxed text-[#475467] md:text-2xl">
@@ -183,8 +183,8 @@
             <div class="container">
                 <div class="grid items-end gap-8 lg:grid-cols-[0.82fr_1fr]">
                     <div>
-                        <p class="text-[12px] font-bold uppercase tracking-[0.28em]" style="color: {{ $accent }}">Faculty Research</p>
-                        <h2 class="mt-4 max-w-[680px] text-[32px] font-bold leading-tight text-spu-blue md:text-[44px]">Latest Research</h2>
+                        <p class="text-[12px] font-bold uppercase tracking-[0.28em]" style="color: {{ $accent }}">{{ __('public.faculty_research') }}</p>
+                        <h2 class="mt-4 max-w-[680px] text-[32px] font-bold leading-tight text-spu-blue md:text-[44px]">{{ __('public.latest_research') }}</h2>
                         <div class="mt-4 h-[3px] w-16 rounded-full" style="background-color: {{ $accent }}"></div>
                     </div>
                 </div>
@@ -207,7 +207,7 @@
                                 <div class="mt-7 flex flex-wrap items-center justify-between gap-4 border-t border-white pt-5">
                                     <span class="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">{{ $featured['doi'] ?? '' }}</span>
                                     <a href="{{ $featured['url'] ?? '#' }}" class="inline-flex items-center gap-2 text-sm font-bold transition-all hover:gap-3" style="color: {{ $accent }}">
-                                        <span>{{ $featured['cta'] ?? ($isAr ? 'عرض المشروع' : 'View Project') }}</span>
+                                        <span>{{ $featured['cta'] ?? __('public.view_project') }}</span>
                                         <img src="/images/icon-arrow-right-outline.svg" alt="" class="h-3.5 w-3.5 rtl:rotate-180" aria-hidden="true">
                                     </a>
                                 </div>
@@ -231,7 +231,7 @@
                                             <p class="mt-3 line-clamp-2 text-sm leading-7 text-slate-600">{{ $item['summary'] ?? '' }}</p>
                                         </div>
                                         <a href="{{ $item['url'] ?? '#' }}" class="mt-5 inline-flex items-center gap-2 text-sm font-bold transition-all hover:gap-3" style="color: {{ $accent }}">
-                                            <span>{{ $item['cta'] ?? ($isAr ? 'عرض المشروع' : 'View Project') }}</span>
+                                            <span>{{ $item['cta'] ?? __('public.view_project') }}</span>
                                             <img src="/images/icon-arrow-right-outline.svg" alt="" class="h-3.5 w-3.5 rtl:rotate-180" aria-hidden="true">
                                         </a>
                                     </div>

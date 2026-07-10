@@ -46,7 +46,7 @@
             @if ($footerItems !== [])
                 <div class="lg:col-span-2">
                     <h3 class="mb-8 text-[18px] font-bold uppercase tracking-widest text-white/50">
-                        {{ $isArabic ? 'استكشف SPU' : 'EXPLORE SPU' }}
+                        {{ __('public.footer_explore') }}
                     </h3>
                     <ul class="flex flex-col gap-4">
                         @foreach ($footerItems as $item)
@@ -64,7 +64,7 @@
 
             <div class="lg:col-span-3">
                 <h3 class="mb-8 text-[18px] font-bold uppercase tracking-widest text-white/50">
-                    {{ $isArabic ? 'التواصل' : 'CONTACT' }}
+                    {{ __('public.footer_contact') }}
                 </h3>
                 <div class="flex flex-col gap-6">
                     @if ($footerSettings->address)
@@ -109,7 +109,7 @@
             @if ($mapEmbedUrl)
                 <div class="flex flex-col items-start lg:col-span-3 lg:items-end">
                     <h3 class="mb-8 w-full text-left text-[18px] font-bold uppercase tracking-widest text-white/50 {{ $isArabic ? 'lg:text-right' : 'lg:text-left' }}">
-                        {{ $isArabic ? 'الموقع' : 'LOCATION' }}
+                        {{ __('public.footer_location') }}
                     </h3>
                     <div class="group h-[180px] w-full overflow-hidden rounded-[12px] border border-white/10 shadow-2xl">
                         <iframe src="{{ $mapEmbedUrl }}" class="h-full w-full grayscale-[0.3] opacity-80 transition-all duration-700 group-hover:grayscale-0 group-hover:opacity-100" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>

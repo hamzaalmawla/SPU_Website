@@ -19,6 +19,7 @@ class PersonTranslation extends Model
         'role',
         'bio',
         'quote',
+        'education',
     ];
 
     public function person(): BelongsTo

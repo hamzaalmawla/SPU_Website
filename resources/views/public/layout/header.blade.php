@@ -143,7 +143,7 @@
                                x-model="searchQuery"
                                type="search"
                                class="w-full rounded-[10px] border border-spu-blue/10 px-3 py-2 text-sm font-semibold text-spu-blue outline-none transition focus:border-spu-red"
-                               placeholder="{{ $locale === 'ar' ? 'ابحث عن صفحة...' : 'Search pages...' }}">
+                               placeholder="{{ __('public.search_placeholder') }}">
                         <div class="mt-2 grid gap-1" x-show="searchResults.length">
                             <template x-for="item in searchResults" :key="searchResultKey(item)">
                                 <a :href="item.url"
@@ -153,7 +153,7 @@
                             </template>
                         </div>
                          <p class="mt-2 px-1 text-xs font-semibold text-spu-blue/45" x-show="needsLongerSearchQuery()">
-                            {{ $locale === 'ar' ? 'اكتب حرفين على الأقل.' : 'Type at least 2 characters.' }}
+                             {{ __('public.search_hint') }}
                         </p>
                     </div>
 

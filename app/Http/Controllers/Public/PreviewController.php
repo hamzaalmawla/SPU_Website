@@ -505,6 +505,7 @@ final class PreviewController extends Controller
                 ]),
                 'page' => $page,
                 'people' => $this->aboutPageService->getLeadershipProfiles($locale),
+                'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale),
                 'preview' => $preview,
             ]);
         }
@@ -528,6 +529,7 @@ final class PreviewController extends Controller
                 ]),
                 'page' => $page,
                 'directorates' => $this->aboutPageService->getDirectorates($locale),
+                'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale),
                 'preview' => $preview,
             ]);
         }
@@ -551,6 +553,7 @@ final class PreviewController extends Controller
                 ]),
                 'page' => $page,
                 'people' => $this->aboutPageService->getLeadershipProfiles($locale),
+                'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale),
                 'preview' => $preview,
             ]);
         }
@@ -574,6 +577,7 @@ final class PreviewController extends Controller
                 ]),
                 'page' => $page,
                 'partnerships' => $this->aboutPageService->getPartnerships($locale),
+                'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale),
                 'preview' => $preview,
             ]);
         }
@@ -595,6 +599,7 @@ final class PreviewController extends Controller
                 'og_image' => $page->heroImage,
             ]),
             'page' => $page,
+            'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale),
             'preview' => $preview,
         ]);
     }

@@ -479,20 +479,6 @@ class ManageAbout extends Page implements HasForms
                     ->collapsible()
                     ->columnSpanFull(),
             ]),
-
-            Section::make('Navigation Cards')->schema([
-                Repeater::make($prefix.'.subPages')
-                    ->label('Sub Pages')
-                    ->schema([
-                        TextInput::make('title')->required()->maxLength(160),
-                        TextInput::make('link')->required()->maxLength(255),
-                    ])
-                    ->columns(2)
-                    ->defaultItems(0)
-                    ->reorderable()
-                    ->collapsible()
-                    ->columnSpanFull(),
-            ]),
         ];
     }
 
@@ -620,7 +606,6 @@ class ManageAbout extends Page implements HasForms
             'stats' => $this->listValue($payload, 'stats'),
             'storyItems' => $this->listValue($payload, 'storyItems'),
             'highlights' => $this->listValue($payload, 'highlights'),
-            'subPages' => $this->listValue($payload, 'subPages'),
         ];
     }
 
@@ -653,13 +638,6 @@ class ManageAbout extends Page implements HasForms
                 ->all(),
             'highlights' => collect($this->listValue($data, 'highlights'))
                 ->map(static fn (array $item): array => ['title' => (string) ($item['title'] ?? '')])
-                ->values()
-                ->all(),
-            'subPages' => collect($this->listValue($data, 'subPages'))
-                ->map(static fn (array $item): array => [
-                    'title' => (string) ($item['title'] ?? ''),
-                    'link' => (string) ($item['link'] ?? ''),
-                ])
                 ->values()
                 ->all(),
         ];

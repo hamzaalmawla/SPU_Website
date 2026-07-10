@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Public;
 
 use App\Contracts\Navigation\NavigationServiceInterface;
 use App\Contracts\Page\AboutPageServiceInterface;
+use App\Contracts\Page\ProfilePageServiceInterface;
 use App\Contracts\Seo\SeoMetadataServiceInterface;
 use App\Contracts\Settings\SettingsServiceInterface;
 use App\DTOs\Navigation\LanguageSwitchLinkDTO;
@@ -18,6 +19,7 @@ final class AboutController extends Controller
 {
     public function __construct(
         private readonly AboutPageServiceInterface $aboutPageService,
+        private readonly ProfilePageServiceInterface $profilePageService,
         private readonly NavigationServiceInterface $navigationService,
         private readonly SettingsServiceInterface $settingsService,
         private readonly SeoMetadataServiceInterface $seoMetadataService,
@@ -61,6 +63,7 @@ final class AboutController extends Controller
         return view('public.about.leadership', $this->sharedPayload($request, $locale, '/about/leadership', [
             'page' => $page,
             'people' => $this->aboutPageService->getLeadershipProfiles($locale),
+            'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale),
             'seo' => $this->seo($locale, '/about/leadership', $page->title, $page->summary),
         ]));
     }
@@ -73,6 +76,7 @@ final class AboutController extends Controller
         return view('public.about.directorates', $this->sharedPayload($request, $locale, '/about/directorates', [
             'page' => $page,
             'directorates' => $this->aboutPageService->getDirectorates($locale),
+            'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale),
             'seo' => $this->seo($locale, '/about/directorates', $page->title, $page->summary),
         ]));
     }
@@ -95,6 +99,7 @@ final class AboutController extends Controller
         return view('public.about.staff', $this->sharedPayload($request, $locale, '/about/directorates/staff', [
             'page' => $page,
             'people' => $this->aboutPageService->getLeadershipProfiles($locale),
+            'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale),
             'seo' => $this->seo($locale, '/about/directorates/staff', $page->title, $page->summary),
         ]));
     }
@@ -107,7 +112,19 @@ final class AboutController extends Controller
         return view('public.about.partnerships', $this->sharedPayload($request, $locale, '/about/partnerships', [
             'page' => $page,
             'partnerships' => $this->aboutPageService->getPartnerships($locale),
+            'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale),
             'seo' => $this->seo($locale, '/about/partnerships', $page->title, $page->summary),
+        ]));
+    }
+
+    public function profile(Request $request, string $locale, string $slug): View
+    {
+        $profile = $this->profilePageService->getProfile($locale, $slug);
+        abort_if($profile === null, 404);
+
+        return view('public.about.profile', $this->sharedPayload($request, $locale, '/about/profile/'.$slug, [
+            'profile' => $profile,
+            'seo' => $this->seo($locale, '/about/profile/'.$slug, $profile->seoTitle, $profile->seoDescription),
         ]));
     }
 
@@ -118,6 +135,7 @@ final class AboutController extends Controller
 
         return view('public.about.content-page', $this->sharedPayload($request, $locale, '/about/'.$slug, [
             'page' => $page,
+            'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale),
             'seo' => $this->seo($locale, '/about/'.$slug, $page->title, $page->summary),
         ]));
     }

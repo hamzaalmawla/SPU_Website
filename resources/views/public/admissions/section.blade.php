@@ -140,7 +140,7 @@
             <section class="admissions-search-band">
                 <div class="admissions-shell">
                     <label class="admissions-search">
-                        <span class="sr-only">{{ $section['searchLabel'] ?? ($locale === 'ar' ? 'ابحث في أسئلة القبول' : 'Search admissions questions') }}</span>
+                        <span class="sr-only">{{ $section['searchLabel'] ?? __('public.search_admissions') }}</span>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
                         <input type="search" x-model="search" placeholder="{{ $section['searchPlaceholder'] ?? '' }}">
                     </label>

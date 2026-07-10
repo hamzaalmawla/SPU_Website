@@ -6,11 +6,11 @@
         <section class="core-domains-section">
             <div class="container">
                 <div class="partner-goals-grid">
-                    @foreach ([
-                        ['icon' => '+', 'title' => $locale === 'ar' ? 'تبادل الخبرات' : 'Experience Exchange', 'text' => $locale === 'ar' ? 'تبادل الخبرات التعليمية والبحثية مع مؤسسات مرموقة.' : 'Exchange teaching and research experience with reputable institutions.'],
-                        ['icon' => '◇', 'title' => $locale === 'ar' ? 'تطوير الكوادر' : 'Faculty Development', 'text' => $locale === 'ar' ? 'الاستفادة من أساتذة ومحاضرين ذوي خبرة في التعليم والبحث.' : 'Benefit from experienced professors and lecturers in teaching and research.'],
-                        ['icon' => '✓', 'title' => $locale === 'ar' ? 'مسارات الدراسات العليا' : 'Postgraduate Pathways', 'text' => $locale === 'ar' ? 'دعم الخريجين الساعين إلى مسارات الماجستير والدكتوراه.' : 'Support graduates seeking master’s and doctoral study pathways.'],
-                        ['icon' => '○', 'title' => $locale === 'ar' ? 'مواءمة مجتمعية' : 'Community Alignment', 'text' => $locale === 'ar' ? 'ربط مخرجات الجامعة باحتياجات المجتمع والتنمية الاقتصادية والاجتماعية.' : 'Link university outputs with community, economic, and social development needs.'],
+                @foreach ([
+                        ['icon' => '+', 'title' => __('public.experience_exchange'), 'text' => __('public.experience_exchange_desc')],
+                        ['icon' => '◇', 'title' => __('public.faculty_development'), 'text' => __('public.faculty_development_desc')],
+                        ['icon' => '✓', 'title' => __('public.postgraduate_pathways'), 'text' => __('public.postgraduate_pathways_desc')],
+                        ['icon' => '○', 'title' => __('public.community_alignment'), 'text' => __('public.community_alignment_desc')],
                     ] as $goal)
                         <article class="partner-goal-card reveal reveal-up">
                             <div class="partner-goal-icon" aria-hidden="true">{{ $goal['icon'] }}</div>
@@ -28,10 +28,10 @@
             <div class="container">
                 <div class="filter-bar">
                     <div class="filter-buttons">
-                        <button type="button" class="filter-btn active">{{ $locale === 'ar' ? 'الكل' : 'All' }}</button>
-                        <button type="button" class="filter-btn">{{ $locale === 'ar' ? 'أكاديمي' : 'Academic' }}</button>
-                        <button type="button" class="filter-btn">{{ $locale === 'ar' ? 'بحثي' : 'Research' }}</button>
-                        <button type="button" class="filter-btn">{{ $locale === 'ar' ? 'سريري' : 'Clinical' }}</button>
+                        <button type="button" class="filter-btn active">{{ __('public.all') }}</button>
+                        <button type="button" class="filter-btn">{{ __('public.academic') }}</button>
+                        <button type="button" class="filter-btn">{{ __('public.research_filter') }}</button>
+                        <button type="button" class="filter-btn">{{ __('public.clinical') }}</button>
                     </div>
                     <div class="search-input-wrapper">
                         <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

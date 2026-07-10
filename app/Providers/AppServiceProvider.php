@@ -65,6 +65,7 @@ use App\Contracts\Page\ContactPageServiceInterface;
 use App\Contracts\Page\EServicesPageServiceInterface;
 use App\Contracts\Page\FacultyPageServiceInterface;
 use App\Contracts\Page\PageServiceInterface;
+use App\Contracts\Page\ProfilePageServiceInterface;
 use App\Contracts\Page\VirtualTourPageServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Contracts\Seo\SeoMetadataServiceInterface;
@@ -176,6 +177,7 @@ use App\Services\Page\PagePublicReadService;
 use App\Services\Page\PagePublishabilityValidator;
 use App\Services\Page\PageService;
 use App\Services\Page\PageUrlResolver;
+use App\Services\Page\ProfilePageService;
 use App\Services\Page\VirtualTourPageService;
 use App\Services\Research\ResearchPageService;
 use App\Services\Preview\PreviewService;
@@ -407,6 +409,7 @@ class AppServiceProvider extends ServiceProvider
             HomepagePublishingServiceInterface::class => HomepagePublishingService::class,
             PreviewServiceInterface::class => PreviewService::class,
             PageServiceInterface::class => PageService::class,
+            ProfilePageServiceInterface::class => ProfilePageService::class,
             VirtualTourPageServiceInterface::class => VirtualTourPageService::class,
             PersonServiceInterface::class => PersonService::class,
             ResearchPageServiceInterface::class => ResearchPageService::class,

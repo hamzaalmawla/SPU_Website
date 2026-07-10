@@ -120,6 +120,9 @@ Route::prefix('{locale}')
                 Route::get('/{section}', 'content')
                     ->where(['section' => 'quality-policy|ethical-charter|organizational-structure|accreditation|why-spu'])
                     ->name('content');
+                Route::get('/profile/{slug}', 'profile')
+                    ->where(['slug' => '[A-Za-z0-9\-]+'])
+                    ->name('profile');
             });
 
         Route::get('/preview', PreviewController::class)->name('preview.show');

@@ -9,11 +9,11 @@
     <section class="bg-white pb-10 pt-28 font-hacen md:pb-14 md:pt-32" dir="{{ $direction }}">
         <div class="container mx-auto">
             <nav class="mb-6 flex flex-wrap items-center justify-center gap-2 text-[11px] font-semibold text-slate-500" aria-label="Breadcrumb">
-                <a href="/{{ $locale }}" class="transition hover:text-spu-blue">{{ $locale === 'ar' ? 'الرئيسية' : 'Home' }}</a>
+                <a href="/{{ $locale }}" class="transition hover:text-spu-blue">{{ __('public.home') }}</a>
                 <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-2.5 w-2.5 rtl:rotate-180" aria-hidden="true">
-                <a href="/{{ $locale }}/research" class="transition hover:text-spu-blue">{{ $locale === 'ar' ? 'البحث' : 'Research' }}</a>
+                <a href="/{{ $locale }}/research" class="transition hover:text-spu-blue">{{ __('public.research') }}</a>
                 <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-2.5 w-2.5 rtl:rotate-180" aria-hidden="true">
-                <a href="/{{ $locale }}/research/publications" class="transition hover:text-spu-blue">{{ $locale === 'ar' ? 'المنشورات' : 'Publications' }}</a>
+                <a href="/{{ $locale }}/research/publications" class="transition hover:text-spu-blue">{{ __('public.publications') }}</a>
             </nav>
             <figure class="mx-auto container overflow-hidden rounded-[8px]">
                 <img src="{{ $item['image'] ?? '/images/uni-main-place.JPG' }}" alt="{{ $item['title'] ?? '' }}" class="mx-auto h-[220px] w-[80%] object-cover object-top md:h-[400px]">
@@ -28,7 +28,7 @@
                 <section class="space-y-6">
                     @if (! empty($item['lead']) || ! empty($item['summary']))
                         <div class="rounded-[8px] border border-slate-200 bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)] md:p-8">
-                            <h2 class="text-[13px] font-bold uppercase tracking-[0.12em] text-spu-red">{{ $locale === 'ar' ? 'الملخص' : 'Summary' }}</h2>
+                            <h2 class="text-[13px] font-bold uppercase tracking-[0.12em] text-spu-red">{{ __('public.summary') }}</h2>
                             <p class="mt-4 text-[15px] leading-8 text-slate-700">{{ $item['lead'] ?? $item['summary'] ?? '' }}</p>
                         </div>
                     @endif
@@ -44,7 +44,7 @@
                     @endif
                     @if (! empty($item['keywords']))
                         <div class="rounded-[8px] border border-slate-200 bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
-                            <h2 class="text-[13px] font-bold uppercase tracking-[0.12em] text-spu-red">{{ $locale === 'ar' ? 'الكلمات المفتاحية' : 'Keywords' }}</h2>
+                            <h2 class="text-[13px] font-bold uppercase tracking-[0.12em] text-spu-red">{{ __('public.keywords') }}</h2>
                             <div class="mt-4 flex flex-wrap gap-2">
                                 @foreach (($item['keywords'] ?? []) as $keyword)
                                     <span class="inline-flex rounded-full border border-spu-blue/15 bg-spu-blue/5 px-3.5 py-1.5 text-xs font-semibold text-spu-blue">{{ $keyword }}</span>
@@ -55,16 +55,16 @@
                     @if (! empty($item['scholarUrl']) || ! empty($item['scopusUrl']))
                         <div class="flex flex-wrap gap-3">
                             @if (! empty($item['scholarUrl']))
-                                <a href="{{ $item['scholarUrl'] }}" target="_blank" rel="noopener" class="inline-flex h-12 items-center gap-2.5 rounded-[6px] bg-spu-red px-6 text-xs font-bold uppercase tracking-[0.08em] text-white transition hover:bg-spu-red/90 hover:shadow-lg">{{ $locale === 'ar' ? 'عرض على Google Scholar' : 'View on Google Scholar' }}</a>
+                                <a href="{{ $item['scholarUrl'] }}" target="_blank" rel="noopener" class="inline-flex h-12 items-center gap-2.5 rounded-[6px] bg-spu-red px-6 text-xs font-bold uppercase tracking-[0.08em] text-white transition hover:bg-spu-red/90 hover:shadow-lg">{{ __('public.view_on_google_scholar') }}</a>
                             @endif
                             @if (! empty($item['scopusUrl']))
-                                <a href="{{ $item['scopusUrl'] }}" target="_blank" rel="noopener" class="inline-flex h-12 items-center gap-2.5 rounded-[6px] border border-spu-blue/20 bg-white px-6 text-xs font-bold uppercase tracking-[0.08em] text-spu-blue transition hover:border-spu-blue hover:bg-spu-blue/5">{{ $locale === 'ar' ? 'بحث في Scopus' : 'Search on Scopus' }}</a>
+                                <a href="{{ $item['scopusUrl'] }}" target="_blank" rel="noopener" class="inline-flex h-12 items-center gap-2.5 rounded-[6px] border border-spu-blue/20 bg-white px-6 text-xs font-bold uppercase tracking-[0.08em] text-spu-blue transition hover:border-spu-blue hover:bg-spu-blue/5">{{ __('public.search_on_scopus') }}</a>
                             @endif
                         </div>
                     @endif
                     @if (! empty($data['related']))
                         <div class="rounded-[8px] border border-slate-200 bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
-                            <h2 class="text-[13px] font-bold uppercase tracking-[0.12em] text-spu-red">{{ $locale === 'ar' ? 'منشورات ذات صلة' : 'Related Publications' }}</h2>
+                            <h2 class="text-[13px] font-bold uppercase tracking-[0.12em] text-spu-red">{{ __('public.related_publications') }}</h2>
                             <div class="mt-5 grid gap-4 sm:grid-cols-3">
                                 @foreach ($data['related'] as $related)
                                     <a href="/{{ $locale }}/research/publications/{{ $related['slug'] ?? '' }}" class="group rounded-[8px] border border-slate-100 p-4 transition hover:border-spu-blue/20 hover:shadow-[0_4px_12px_rgba(32,39,89,0.06)]">
@@ -75,19 +75,19 @@
                             </div>
                         </div>
                     @endif
-                    <nav class="flex flex-wrap justify-between gap-4" aria-label="{{ $locale === 'ar' ? 'منشورات أخرى' : 'Other publications' }}">
+                    <nav class="flex flex-wrap justify-between gap-4" aria-label="{{ __('public.publications') }}">
                         @if (! empty($data['previous']))
-                            <a href="/{{ $locale }}/research/publications/{{ $data['previous']['slug'] }}" class="text-sm font-bold text-spu-blue hover:text-spu-red">{{ $locale === 'ar' ? 'السابق' : 'Previous' }}: {{ $data['previous']['title'] }}</a>
+                            <a href="/{{ $locale }}/research/publications/{{ $data['previous']['slug'] }}" class="text-sm font-bold text-spu-blue hover:text-spu-red">{{ __('public.previous') }}: {{ $data['previous']['title'] }}</a>
                         @endif
                         @if (! empty($data['next']))
-                            <a href="/{{ $locale }}/research/publications/{{ $data['next']['slug'] }}" class="text-sm font-bold text-spu-blue hover:text-spu-red">{{ $locale === 'ar' ? 'التالي' : 'Next' }}: {{ $data['next']['title'] }}</a>
+                            <a href="/{{ $locale }}/research/publications/{{ $data['next']['slug'] }}" class="text-sm font-bold text-spu-blue hover:text-spu-red">{{ __('public.next') }}: {{ $data['next']['title'] }}</a>
                         @endif
                     </nav>
                 </section>
                 <aside class="rounded-[8px] border border-slate-200 bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)] lg:sticky lg:top-28">
-                    <h2 class="text-[13px] font-bold uppercase tracking-[0.12em] text-spu-red">{{ $locale === 'ar' ? 'معلومات المنشور' : 'Publication Info' }}</h2>
+                    <h2 class="text-[13px] font-bold uppercase tracking-[0.12em] text-spu-red">{{ __('public.publication_info') }}</h2>
                     <dl class="mt-5 divide-y divide-slate-100">
-                        @foreach ([($locale === 'ar' ? 'الفئة' : 'Category') => $item['category'] ?? $item['type'] ?? '', ($locale === 'ar' ? 'المؤلف' : 'Author') => $item['author'] ?? '', ($locale === 'ar' ? 'السنة' : 'Year') => $item['year'] ?? '', ($locale === 'ar' ? 'الناشر / المجلة' : 'Publisher / Journal') => $item['publisher'] ?? '', ($locale === 'ar' ? 'الكلية' : 'Faculty') => $item['faculty'] ?? '', ($locale === 'ar' ? 'الربع' : 'Quartile') => $item['rate'] ?? '', ($locale === 'ar' ? 'النوع' : 'Type') => $item['type'] ?? ''] as $label => $value)
+                        @foreach ([__('public.category') => $item['category'] ?? $item['type'] ?? '', __('public.author') => $item['author'] ?? '', __('public.year_label') => $item['year'] ?? '', __('public.publisher') => $item['publisher'] ?? '', __('public.faculty') => $item['faculty'] ?? '', __('public.quartile') => $item['rate'] ?? '', __('public.type') => $item['type'] ?? ''] as $label => $value)
                             @if ($value !== '')
                                 <div class="py-3 first:pt-0"><dt class="text-[11px] font-bold uppercase tracking-wider text-slate-400">{{ $label }}</dt><dd class="mt-1 text-sm font-bold text-spu-blue">{{ $value }}</dd></div>
                             @endif
@@ -96,7 +96,7 @@
                             <div class="py-3"><dt class="text-[11px] font-bold uppercase tracking-wider text-slate-400">DOI</dt><dd class="mt-1"><a href="https://doi.org/{{ $item['doi'] }}" target="_blank" rel="noopener" class="break-all text-sm font-bold text-spu-blue transition hover:text-spu-red hover:underline">{{ $item['doi'] }}</a></dd></div>
                         @endif
                         @if (! empty($item['resolvedThemes']))
-                            <div class="py-3 last:pb-0"><dt class="text-[11px] font-bold uppercase tracking-wider text-slate-400">{{ $locale === 'ar' ? 'مجالات البحث' : 'Research Themes' }}</dt><dd class="mt-2 flex flex-wrap gap-1.5">
+                            <div class="py-3 last:pb-0"><dt class="text-[11px] font-bold uppercase tracking-wider text-slate-400">{{ __('public.research_themes') }}</dt><dd class="mt-2 flex flex-wrap gap-1.5">
                                 @foreach (($item['resolvedThemes'] ?? []) as $theme)
                                     <a href="/{{ $locale }}/research/themes/{{ $theme['slug'] ?? '' }}" class="inline-flex rounded-full border border-spu-blue/15 bg-spu-blue/5 px-2.5 py-1 text-[10px] font-semibold text-spu-blue transition hover:border-spu-blue/40 hover:bg-spu-blue/10">{{ $theme['label'] ?? $theme['slug'] ?? '' }}</a>
                                 @endforeach

@@ -15,13 +15,13 @@
 
                 <div class="staff-grid reveal reveal-up reveal-delay-1">
                     @foreach ($people as $person)
-                        <article class="staff-card reveal reveal-up">
+                        <a href="/{{ $locale }}/about/profile/{{ $person->slug }}" class="staff-card reveal reveal-up block transition hover:-translate-y-1 hover:shadow-lg">
                             <div class="staff-card-media"><img src="{{ $person->image ?? '/images/medicine-dean.jpg' }}" alt="{{ $person->name }}"></div>
                             <div class="staff-card-body">
                                 <h2 class="staff-card-name">{{ $person->name }}</h2>
                                 <p class="staff-card-role">{{ $person->role }}</p>
                             </div>
-                        </article>
+                        </a>
                     @endforeach
                 </div>
 

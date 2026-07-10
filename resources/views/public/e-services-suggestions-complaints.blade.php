@@ -12,9 +12,9 @@
         </div>
         <div class="z-[100] mx-auto w-full max-w-[1180px] px-4 pb-10 text-center text-white sm:px-6 lg:px-0">
             <nav class="mb-3 flex items-center justify-center gap-2 text-[11px] font-semibold text-white/74">
-                <a href="/{{ $locale }}" class="transition-colors hover:text-white">{{ $locale === 'ar' ? 'الرئيسية' : 'Home' }}</a>
+                <a href="/{{ $locale }}" class="transition-colors hover:text-white">{{ __('public.home') }}</a>
                 <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-2 w-2 rtl:rotate-180" aria-hidden="true">
-                <a href="/{{ $locale }}/e-services" class="transition-colors hover:text-white">{{ $locale === 'ar' ? 'الخدمات الإلكترونية' : 'E-Services' }}</a>
+                <a href="/{{ $locale }}/e-services" class="transition-colors hover:text-white">{{ __('public.e_services') }}</a>
                 <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-2 w-2 rtl:rotate-180" aria-hidden="true">
                 <span>{{ $page->hero['title'] ?? '' }}</span>
             </nav>
@@ -36,18 +36,18 @@
                     @endif
 
                     <div class="grid gap-5 sm:grid-cols-2">
-                        <label class="block"><span class="text-xs font-bold uppercase tracking-wide text-gray-700">{{ $locale === 'ar' ? 'الاسم الكامل' : 'Full Name' }} *</span><input name="name" value="{{ old('name') }}" required class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-spu-red focus:ring-2 focus:ring-spu-red/10"></label>
-                        <label class="block"><span class="text-xs font-bold uppercase tracking-wide text-gray-700">{{ $locale === 'ar' ? 'البريد الإلكتروني' : 'Email' }} *</span><input name="email" type="email" value="{{ old('email') }}" required class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-spu-red focus:ring-2 focus:ring-spu-red/10"></label>
-                        <label class="block"><span class="text-xs font-bold uppercase tracking-wide text-gray-700">{{ $locale === 'ar' ? 'نوع الطلب' : 'Request Type' }} *</span><select name="request_type" required class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-spu-red focus:ring-2 focus:ring-spu-red/10">@foreach (($form['requestTypes'] ?? []) as $type)<option value="{{ $type['value'] ?? '' }}" @selected(old('request_type') === ($type['value'] ?? ''))>{{ $type['label'] ?? '' }}</option>@endforeach</select></label>
-                        <label class="block"><span class="text-xs font-bold uppercase tracking-wide text-gray-700">{{ $locale === 'ar' ? 'الموضوع' : 'Subject' }} *</span><input name="subject" value="{{ old('subject') }}" required class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-spu-red focus:ring-2 focus:ring-spu-red/10"></label>
-                        <label class="block sm:col-span-2"><span class="text-xs font-bold uppercase tracking-wide text-gray-700">{{ $locale === 'ar' ? 'الرسالة' : 'Message' }} *</span><textarea name="message" rows="7" required class="mt-1 w-full resize-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-spu-red focus:ring-2 focus:ring-spu-red/10">{{ old('message') }}</textarea></label>
+                        <label class="block"><span class="text-xs font-bold uppercase tracking-wide text-gray-700">{{ __('public.full_name') }} *</span><input name="name" value="{{ old('name') }}" required class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-spu-red focus:ring-2 focus:ring-spu-red/10"></label>
+                        <label class="block"><span class="text-xs font-bold uppercase tracking-wide text-gray-700">{{ __('public.email_label') }} *</span><input name="email" type="email" value="{{ old('email') }}" required class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-spu-red focus:ring-2 focus:ring-spu-red/10"></label>
+                        <label class="block"><span class="text-xs font-bold uppercase tracking-wide text-gray-700">{{ __('public.request_type') }} *</span><select name="request_type" required class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-spu-red focus:ring-2 focus:ring-spu-red/10">@foreach (($form['requestTypes'] ?? []) as $type)<option value="{{ $type['value'] ?? '' }}" @selected(old('request_type') === ($type['value'] ?? ''))>{{ $type['label'] ?? '' }}</option>@endforeach</select></label>
+                        <label class="block"><span class="text-xs font-bold uppercase tracking-wide text-gray-700">{{ __('public.subject') }} *</span><input name="subject" value="{{ old('subject') }}" required class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-spu-red focus:ring-2 focus:ring-spu-red/10"></label>
+                        <label class="block sm:col-span-2"><span class="text-xs font-bold uppercase tracking-wide text-gray-700">{{ __('public.message_label') }} *</span><textarea name="message" rows="7" required class="mt-1 w-full resize-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-spu-red focus:ring-2 focus:ring-spu-red/10">{{ old('message') }}</textarea></label>
                     </div>
 
                     @if ($errors->any())
-                        <div class="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">{{ $locale === 'ar' ? 'يرجى مراجعة الحقول المطلوبة.' : 'Please review the required fields.' }}</div>
+                        <div class="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">{{ __('public.error_review_fields') }}</div>
                     @endif
 
-                    <button type="submit" class="mt-6 w-full rounded-lg bg-spu-red px-8 py-4 font-bold text-white transition-all hover:bg-spu-red/90 hover:shadow-lg">{{ $locale === 'ar' ? 'إرسال الطلب' : 'Submit Request' }}</button>
+                    <button type="submit" class="mt-6 w-full rounded-lg bg-spu-red px-8 py-4 font-bold text-white transition-all hover:bg-spu-red/90 hover:shadow-lg">{{ __('public.submit_request') }}</button>
                 </form>
 
                 <aside class="space-y-4 lg:sticky lg:top-24 lg:self-start">

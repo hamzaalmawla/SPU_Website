@@ -155,7 +155,7 @@
                 <div class="text-center">
                     <h2 class="text-[30px] font-bold leading-tight text-spu-blue md:text-[38px]">{{ $isAr ? 'مسارات الكلية' : 'Faculty Pathways' }}</h2>
                     <div class="mx-auto mt-4 h-[2px] w-72 max-w-full rounded-full" style="background-color: {{ $accent }}"></div>
-                    <p class="mx-auto mt-7 max-w-[760px] text-[17px] leading-8 text-slate-600">{{ $isAr ? 'استكشف الصفحات الأكاديمية والخدمية المرتبطة بهذه الكلية.' : 'Explore the academic and service pages connected to this faculty.' }}</p>
+                    <p class="mx-auto mt-7 max-w-[760px] text-[17px] leading-8 text-slate-600">{{ __('public.explore_pages_desc') }}</p>
                 </div>
                 <div class="cms-grid-cards mx-auto mt-12 max-w-[980px] gap-5">
                     @foreach ($page->navigation as $item)

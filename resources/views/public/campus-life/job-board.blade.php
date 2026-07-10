@@ -16,7 +16,7 @@
                     <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-2.5 w-2.5 rtl:rotate-180" aria-hidden="true">
                     <a href="/{{ $locale }}/campus-life" class="transition hover:text-spu-blue">{{ $locale === 'ar' ? 'الحياة الجامعية' : 'Campus Life' }}</a>
                     <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-2.5 w-2.5 rtl:rotate-180" aria-hidden="true">
-                    <a href="/{{ $locale }}/campus-life/career-development" class="transition hover:text-spu-blue">{{ $locale === 'ar' ? 'التطوير المهني' : 'Career Development' }}</a>
+                    <a href="/{{ $locale }}/campus-life/career-development" class="transition hover:text-spu-blue">{{ __('public.career_development') }}</a>
                     <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-2.5 w-2.5 rtl:rotate-180" aria-hidden="true">
                     <span>{{ $hero['title'] ?? '' }}</span>
                 </nav>

@@ -19,11 +19,15 @@ class Person extends Model
     protected $fillable = [
         'slug',
         'category',
+        'title',
+        'position',
         'faculty_scope_slug',
         'email',
         'phone',
+        'office_location',
         'image',
         'profile_url',
+        'social_links',
         'sort_order',
         'is_enabled',
     ];
@@ -31,6 +35,7 @@ class Person extends Model
     protected function casts(): array
     {
         return [
+            'social_links' => 'array',
             'sort_order' => 'integer',
             'is_enabled' => 'boolean',
             'deleted_at' => 'datetime',
@@ -40,6 +45,11 @@ class Person extends Model
     public function translations(): HasMany
     {
         return $this->hasMany(PersonTranslation::class)->orderBy('locale');
+    }
+
+    public function educations(): HasMany
+    {
+        return $this->hasMany(PersonEducation::class)->orderBy('sort_order');
     }
 
     public function scopeEnabled(Builder $query): Builder

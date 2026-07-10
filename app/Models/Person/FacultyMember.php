@@ -20,10 +20,13 @@ class FacultyMember extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'slug',
         'faculty_id',
         'department_id',
         'email',
         'phone',
+        'office_location',
+        'social_links',
         'photo_media_id',
         'cv_media_id',
         'sort_order',
@@ -33,6 +36,7 @@ class FacultyMember extends Model
     protected function casts(): array
     {
         return [
+            'social_links' => 'array',
             'sort_order' => 'integer',
             'is_enabled' => 'boolean',
             'deleted_at' => 'datetime',
@@ -72,6 +76,11 @@ class FacultyMember extends Model
     public function researchPublications(): HasMany
     {
         return $this->hasMany(ResearchPublication::class)->orderByDesc('published_at');
+    }
+
+    public function educations(): HasMany
+    {
+        return $this->hasMany(FacultyMemberEducation::class)->orderBy('sort_order');
     }
 
     public function scopeEnabled(Builder $query): Builder

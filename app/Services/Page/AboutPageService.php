@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Page;
 
+use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Page\AboutPageServiceInterface;
 use App\DTOs\About\AboutContentPageDTO;
@@ -25,6 +26,7 @@ final class AboutPageService implements AboutPageServiceInterface
 {
     public function __construct(
         private readonly CmsWorkflowServiceInterface $cmsWorkflowService,
+        private readonly CmsTargetRegistryInterface $targetRegistry,
     ) {}
 
     public function getAboutLanding(string $locale): AboutLandingDTO
@@ -203,12 +205,19 @@ final class AboutPageService implements AboutPageServiceInterface
         );
     }
 
+    /** @return array<int, array<string, string>> */
+    public function getAboutSubPages(string $locale): array
+    {
+        return $this->buildAboutNavigationCards($locale);
+    }
+
     public function mapPerson(Person $person, string $locale): PersonDTO
     {
         $translation = $this->personTranslation($person, $locale);
 
         return new PersonDTO(
             id: (int) $person->getKey(),
+            slug: (string) $person->slug,
             name: (string) $translation->name,
             role: (string) $translation->role,
             category: $person->category,
@@ -288,7 +297,7 @@ final class AboutPageService implements AboutPageServiceInterface
             stats: $this->listValue($content, 'stats'),
             storyItems: $this->listValue($content, 'storyItems'),
             highlights: $this->listValue($content, 'highlights'),
-            subPages: $this->listValue($content, 'subPages'),
+            subPages: $this->buildAboutNavigationCards($locale),
         );
     }
 
@@ -600,6 +609,19 @@ final class AboutPageService implements AboutPageServiceInterface
         return $page->translations->firstWhere('locale', $locale)
             ?? $page->translations->firstWhere('locale', 'ar')
             ?? $page->translations->first();
+    }
+
+    /** @return array<int, array{title: string, link: string}> */
+    private function buildAboutNavigationCards(string $locale): array
+    {
+        return $this->targetRegistry->forArea('about')
+            ->filter(fn (\App\DTOs\Cms\CmsTargetDTO $target): bool => $target->key !== 'about.landing' && $target->publicPath !== null)
+            ->values()
+            ->map(fn (\App\DTOs\Cms\CmsTargetDTO $target): array => [
+                'title' => __($target->labelKey),
+                'link' => $target->publicPath,
+            ])
+            ->all();
     }
 
     private function personTranslation(Person $person, string $locale): PersonTranslation
