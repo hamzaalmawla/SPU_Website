@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\TwoFactorChallengeController;
-use App\Http\Controllers\Public\AdmissionsController;
 use App\Http\Controllers\Public\AboutController;
+use App\Http\Controllers\Public\AdmissionsController;
 use App\Http\Controllers\Public\CampusLifeController;
 use App\Http\Controllers\Public\DynamicFormSubmissionController;
 use App\Http\Controllers\Public\EServicesController;
@@ -120,8 +120,11 @@ Route::prefix('{locale}')
                 Route::get('/{section}', 'content')
                     ->where(['section' => 'quality-policy|ethical-charter|organizational-structure|accreditation|why-spu'])
                     ->name('content');
-                Route::get('/profile/{slug}', 'profile')
-                    ->where(['slug' => '[A-Za-z0-9\-]+'])
+                Route::get('/profile/{source}/{slug}', 'profile')
+                    ->where([
+                        'source' => 'person|faculty-member',
+                        'slug' => '[A-Za-z0-9\-]+',
+                    ])
                     ->name('profile');
             });
 

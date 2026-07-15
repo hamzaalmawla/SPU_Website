@@ -28,7 +28,7 @@
     <section class="font-hacen" dir="{{ $direction }}">
         <div class="relative h-[450px] overflow-hidden">
             <div class="absolute inset-0">
-                <img src="/images/DSC_1596.JPG" alt="" class="h-full w-full object-cover object-center">
+                <img src="/images/about-hero-1.webp" alt="" class="h-full w-full object-cover object-center">
                 <div class="absolute inset-0 bg-gradient-to-b from-[rgba(32,39,89,0.4)] to-[rgba(32,39,89,0.6)]"></div>
             </div>
         </div>

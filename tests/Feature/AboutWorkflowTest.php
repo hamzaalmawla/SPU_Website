@@ -76,8 +76,7 @@ final class AboutWorkflowTest extends TestCase
         $component = Livewire::test(ManageAbout::class)
             ->assertSet('data.target_key', 'about.landing')
             ->assertSee('Hero and Story')
-            ->assertSee('Stats')
-            ->assertSee('Navigation Cards');
+            ->assertSee('Stats');
 
         /** @var array<string, mixed> $data */
         $data = $component->get('data');

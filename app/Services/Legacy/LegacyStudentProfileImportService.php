@@ -6,6 +6,7 @@ namespace App\Services\Legacy;
 
 use App\Contracts\Legacy\LegacyCleanedRowServiceInterface;
 use App\Contracts\Legacy\LegacyStudentProfileImportServiceInterface;
+use App\Contracts\Shared\CacheServiceInterface;
 use App\DTOs\Legacy\LegacyCleanedRowDTO;
 use App\DTOs\Legacy\LegacyStudentProfileImportResultDTO;
 use App\Models\Career\Alumni;
@@ -38,6 +39,7 @@ final class LegacyStudentProfileImportService implements LegacyStudentProfileImp
     public function __construct(
         private readonly OldDatabaseConnection $oldDatabase,
         private readonly LegacyCleanedRowServiceInterface $cleanedRowService,
+        private readonly CacheServiceInterface $cacheService,
     ) {}
 
     public function import(string $lane, bool $write = false, ?string $approval = null, ?string $batch = null, bool $enable = false): LegacyStudentProfileImportResultDTO
@@ -67,6 +69,8 @@ final class LegacyStudentProfileImportService implements LegacyStudentProfileImp
 
                 continue;
             }
+
+            $row = $this->applySourceOverrides($lane, $sourceId, $row);
 
             if ($this->alreadyProcessed($definition['module'], $definition['source_table'], $definition['target_table'], $sourceId)) {
                 $this->countSkip($skipReasonCounts, 'already_processed');
@@ -137,6 +141,10 @@ final class LegacyStudentProfileImportService implements LegacyStudentProfileImp
             $importedRows++;
         }
 
+        if ($importedRows > 0 && ! $this->cacheService->flushTags(['facilities', 'public-pages', 'seo', 'sitemap'])) {
+            $this->cacheService->flushAll();
+        }
+
         return new LegacyStudentProfileImportResultDTO(
             lane: $lane,
             written: $write,
@@ -160,6 +168,19 @@ final class LegacyStudentProfileImportService implements LegacyStudentProfileImp
         }
 
         return $lane;
+    }
+
+    private function applySourceOverrides(string $lane, int $sourceId, object $row): object
+    {
+        $overrides = config("legacy_student_profile_overrides.{$lane}.{$sourceId}", []);
+
+        if (! is_array($overrides) || $overrides === []) {
+            return $row;
+        }
+
+        $overrides = array_intersect_key($overrides, array_flip(['ar_name', 'en_name', 'grade']));
+
+        return (object) array_replace((array) $row, $overrides);
     }
 
     private function alreadyProcessed(string $module, string $sourceTable, string $targetTable, int $sourceId): bool

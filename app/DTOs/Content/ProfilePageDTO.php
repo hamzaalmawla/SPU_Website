@@ -23,6 +23,7 @@ final readonly class ProfilePageDTO
         public ?string $image,
         public ?string $bio,
         public ?string $quote,
+        /** @var array<int, string>|null */
         public ?array $specializations,
         public ?string $officeLocation,
         public ?array $socialLinks,

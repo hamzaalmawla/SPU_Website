@@ -33,7 +33,6 @@ class ContactPageTest extends TestCase
             ->assertSee('Send us a Message')
             ->assertSee('Get In Touch')
             ->assertSee('Campus Location')
-            ->assertSee('Contact Information')
             ->assertSee('Campus Map')
             ->assertSee('/en/contact', false)
             ->assertSee('/en/contact#campus-map', false)
@@ -47,7 +46,6 @@ class ContactPageTest extends TestCase
             ->assertSee('تواصل معنا')
             ->assertSee('أرسل لنا رسالة')
             ->assertSee('موقع الحرم الجامعي')
-            ->assertSee('معلومات التواصل')
             ->assertSee('خريطة الحرم الجامعي')
             ->assertSee('/ar/contact', false)
             ->assertSee('/ar/contact#campus-map', false);

@@ -5,24 +5,26 @@ declare(strict_types=1);
 namespace App\Filament\Resources\PersonResource\Pages;
 
 use App\Filament\Resources\PersonResource;
-use Filament\Infolards\Components\Section;
-use Filament\Infolards\Components\TextEntry;
+use App\Models\Person\Person;
+use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Pages\ViewRecord;
 
 class ViewPerson extends ViewRecord
 {
     protected static string $resource = PersonResource::class;
 
-    public function infolades(): array
+    public function infolist(Infolist $infolist): Infolist
     {
-        /** @var \App\Models\Person\Person $record */
+        /** @var Person $record */
         $record = $this->record;
         $translation = $record->translations->firstWhere('locale', 'ar')
             ?? $record->translations->firstWhere('locale', 'en')
             ?? $record->translations->first();
 
-        return [
-            Section::make('Basic Information', [
+        return $infolist->schema([
+            Section::make('Basic Information')->schema([
                 TextEntry::make('slug'),
                 TextEntry::make('category'),
                 TextEntry::make('title'),
@@ -34,10 +36,10 @@ class ViewPerson extends ViewRecord
                 TextEntry::make('office_location')->label('Office'),
                 TextEntry::make('faculty_scope_slug')->label('Faculty Scope'),
             ])->columns(2),
-            Section::make('Biography', [
+            Section::make('Biography')->schema([
                 TextEntry::make('bio')->label('Bio')->state($translation?->bio ?? '-')->prose(),
                 TextEntry::make('quote')->label('Quote')->state($translation?->quote ?? '-')->prose(),
             ]),
-        ];
+        ]);
     }
 }

@@ -23,7 +23,7 @@
                             <blockquote class="staff-quote mt-8 max-w-xl text-[0.95rem] font-medium leading-[1.8] text-gray-600">
                                 {{ $rector->quote ?: ($locale === 'ar' ? 'تتمثل رؤيتنا في بناء بيئة أكاديمية لا تكتفي بالسعي إلى التميز في البحث والتعليم، بل تساهم في التنمية المستدامة للمجتمع وتمكين طلابنا من قيادة المستقبل.' : 'Our vision is to foster an academic environment that not only pursues excellence in research and education but also actively contributes to the sustainable development of our society. We are committed to empowering our students to become the leaders and innovators of tomorrow.') }}
                             </blockquote>
-                            <a href="/{{ $locale }}/about/profile/{{ $rector->slug }}" class="mt-10 inline-flex items-center gap-3 text-xs font-black uppercase tracking-[0.14em] text-spu-blue transition hover:text-spu-red">
+                            <a href="{{ route('public.about.profile', ['locale' => $locale, 'source' => 'person', 'slug' => $rector->slug]) }}" class="mt-10 inline-flex items-center gap-3 text-xs font-black uppercase tracking-[0.14em] text-spu-blue transition hover:text-spu-red">
                                 <span>{{ $locale === 'ar' ? 'اقرأ الملف الكامل' : 'Read Full Profile' }}</span>
                                 <img src="/images/icon-arrow-right-outline.svg" alt="" class="h-3 w-3 rtl:rotate-180" aria-hidden="true">
                             </a>
@@ -36,7 +36,7 @@
                     <div class="section-title-wrapper"><h2 class="section-title">{{ $locale === 'ar' ? 'نواب رئيس الجامعة' : 'Vice Presidents' }}</h2></div>
                     <div class="vp-grid">
                         @foreach ($vicePresidents as $person)
-                            <a href="/{{ $locale }}/about/profile/{{ $person->slug }}" class="vp-card reveal reveal-up block transition hover:-translate-y-1 hover:shadow-lg">
+                            <a href="{{ route('public.about.profile', ['locale' => $locale, 'source' => 'person', 'slug' => $person->slug]) }}" class="vp-card reveal reveal-up block transition hover:-translate-y-1 hover:shadow-lg">
                                 <div class="vp-card-media"><img src="{{ $person->image ?? '/images/medicine-dean.jpg' }}" alt="{{ $person->name }}"></div>
                                 <div class="vp-card-body">
                                     <h3 class="mb-2 text-lg font-black leading-tight text-spu-blue">{{ $person->name }}</h3>
@@ -59,7 +59,7 @@
                         </button>
                         <div class="deans-grid">
                             @foreach ($deans->take(3) as $person)
-                                <a href="/{{ $locale }}/about/profile/{{ $person->slug }}" class="dean-card reveal reveal-up block transition hover:-translate-y-1 hover:shadow-lg">
+                                <a href="{{ route('public.about.profile', ['locale' => $locale, 'source' => 'person', 'slug' => $person->slug]) }}" class="dean-card reveal reveal-up block transition hover:-translate-y-1 hover:shadow-lg">
                                     <div class="dean-card-media"><img src="{{ $person->image ?? '/images/medicine-dean.jpg' }}" alt="{{ $person->name }}"></div>
                                     <div class="dean-card-body">
                                         <h3 class="mb-2 text-lg font-black leading-tight text-spu-blue">{{ $person->name }}</h3>

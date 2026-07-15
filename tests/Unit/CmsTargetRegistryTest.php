@@ -54,6 +54,8 @@ class CmsTargetRegistryTest extends TestCase
             'admissions.calendar',
             'admissions.documents',
             'admissions.transfer',
+            'admissions.filling-vacancies',
+            'admissions.graduation-exams',
         ], $registry->forArea('admissions')->pluck('key')->all());
 
         $this->assertContains('campus_life.virtual_tour', $registry->forArea('campus_life')->pluck('key')->all());

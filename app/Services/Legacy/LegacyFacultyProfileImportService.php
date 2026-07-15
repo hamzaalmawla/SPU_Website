@@ -6,6 +6,7 @@ namespace App\Services\Legacy;
 
 use App\Contracts\Legacy\LegacyCleanedRowServiceInterface;
 use App\Contracts\Legacy\LegacyFacultyProfileImportServiceInterface;
+use App\Contracts\Shared\SlugServiceInterface;
 use App\DTOs\Legacy\LegacyCleanedRowDTO;
 use App\DTOs\Legacy\LegacyFacultyProfileImportResultDTO;
 use App\Models\Faculty\Faculty;
@@ -35,6 +36,7 @@ final class LegacyFacultyProfileImportService implements LegacyFacultyProfileImp
     public function __construct(
         private readonly OldDatabaseConnection $oldDatabase,
         private readonly LegacyCleanedRowServiceInterface $cleanedRowService,
+        private readonly SlugServiceInterface $slugService,
     ) {}
 
     public function import(bool $write = false, ?string $approval = null, ?string $batch = null, bool $enable = false): LegacyFacultyProfileImportResultDTO
@@ -179,6 +181,7 @@ final class LegacyFacultyProfileImportService implements LegacyFacultyProfileImp
     {
         return DB::transaction(function () use ($row, $cleaned, $facultyId, $names, $enable): int {
             $member = FacultyMember::query()->create([
+                'slug' => $this->slugService->generate($names['ar'] ?? $names['en'] ?? 'faculty-member', FacultyMember::class),
                 'faculty_id' => $facultyId,
                 'department_id' => null,
                 'email' => $this->email($cleaned),
@@ -238,7 +241,10 @@ final class LegacyFacultyProfileImportService implements LegacyFacultyProfileImp
             return null;
         }
 
-        return [$value];
+        $items = preg_split('/[,;|،\r\n]+/u', $value) ?: [];
+        $items = array_values(array_unique(array_filter(array_map('trim', $items))));
+
+        return $items !== [] ? $items : null;
     }
 
     private function visible(object $row): bool

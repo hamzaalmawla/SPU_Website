@@ -9,47 +9,50 @@ use App\Contracts\Auth\TotpAuthenticatorInterface;
 use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Content\PersonServiceInterface;
+use App\Contracts\Content\ProfileAdminServiceInterface;
 use App\Contracts\Form\DynamicFormSubmissionServiceInterface;
 use App\Contracts\Homepage\HomepagePreviewAssemblerInterface;
 use App\Contracts\Homepage\HomepagePublishingServiceInterface;
 use App\Contracts\Homepage\HomepageSectionServiceInterface;
-use App\Contracts\Legacy\LegacyCleanedRowServiceInterface;
 use App\Contracts\Legacy\LegacyClassificationReportServiceInterface;
-use App\Contracts\Legacy\LegacyDecisionPlanServiceInterface;
-use App\Contracts\Legacy\LegacyFacultyProfileImportServiceInterface;
-use App\Contracts\Legacy\LegacyImportBatchServiceInterface;
+use App\Contracts\Legacy\LegacyCleanedRowServiceInterface;
 use App\Contracts\Legacy\LegacyCleaningInspectionServiceInterface;
 use App\Contracts\Legacy\LegacyContentCleaningServiceInterface;
+use App\Contracts\Legacy\LegacyDecisionPlanServiceInterface;
+use App\Contracts\Legacy\LegacyFacultyProfileImportServiceInterface;
 use App\Contracts\Legacy\LegacyFileInventoryServiceInterface;
 use App\Contracts\Legacy\LegacyGeneratedUrlInventoryServiceInterface;
-use App\Contracts\Legacy\LegacyIntegrityInspectionServiceInterface;
-use App\Contracts\Legacy\LegacyInternalLinkExtractionServiceInterface;
+use App\Contracts\Legacy\LegacyImportBatchServiceInterface;
 use App\Contracts\Legacy\LegacyImportInspectionServiceInterface;
-use App\Contracts\Legacy\LegacyLocationImportServiceInterface;
-use App\Contracts\Legacy\LegacyMappingProposalServiceInterface;
-use App\Contracts\Legacy\LegacyPhaseSixCandidateServiceInterface;
-use App\Contracts\Legacy\LegacyPhaseSixApprovalServiceInterface;
-use App\Contracts\Legacy\LegacyPhaseSixMenuLinkImportServiceInterface;
-use App\Contracts\Legacy\LegacyPhaseSixPageImportServiceInterface;
-use App\Contracts\Legacy\LegacyPhaseSixSettingsImportServiceInterface;
-use App\Contracts\Legacy\LegacyPhaseSixSettingsMappingServiceInterface;
-use App\Contracts\Legacy\LegacyStudentProfileImportServiceInterface;
 use App\Contracts\Legacy\LegacyImportModuleRegistryInterface;
 use App\Contracts\Legacy\LegacyImportModuleRunnerInterface;
 use App\Contracts\Legacy\LegacyImportRunnerServiceInterface;
+use App\Contracts\Legacy\LegacyIntegrityInspectionServiceInterface;
+use App\Contracts\Legacy\LegacyInternalLinkExtractionServiceInterface;
+use App\Contracts\Legacy\LegacyLocationImportServiceInterface;
+use App\Contracts\Legacy\LegacyMappingProposalServiceInterface;
+use App\Contracts\Legacy\LegacyNewsImportReviewServiceInterface;
+use App\Contracts\Legacy\LegacyNewsImportServiceInterface;
+use App\Contracts\Legacy\LegacyNewsSlugCleanupApplyServiceInterface;
+use App\Contracts\Legacy\LegacyNewsSlugCleanupPlannerServiceInterface;
+use App\Contracts\Legacy\LegacyPhaseSixApprovalServiceInterface;
+use App\Contracts\Legacy\LegacyPhaseSixCandidateServiceInterface;
+use App\Contracts\Legacy\LegacyPhaseSixMenuLinkImportServiceInterface;
+use App\Contracts\Legacy\LegacyPhaseSixPageImportServiceInterface;
+use App\Contracts\Legacy\LegacyPhaseSixRestoreServiceInterface;
+use App\Contracts\Legacy\LegacyPhaseSixSettingsImportServiceInterface;
+use App\Contracts\Legacy\LegacyPhaseSixSettingsMappingServiceInterface;
+use App\Contracts\Legacy\LegacyQuarantineExportServiceInterface;
+use App\Contracts\Legacy\LegacyQuarantineSummaryServiceInterface;
 use App\Contracts\Legacy\LegacyQueryModuleResolverInterface;
 use App\Contracts\Legacy\LegacyQueryRedirectResolverInterface;
 use App\Contracts\Legacy\LegacyQueryResolverRegistryInterface;
-use App\Contracts\Legacy\LegacyQuarantineExportServiceInterface;
-use App\Contracts\Legacy\LegacyQuarantineSummaryServiceInterface;
 use App\Contracts\Legacy\LegacyRedirectEvidenceServiceInterface;
-use App\Contracts\Legacy\LegacyReviewCandidateReportServiceInterface;
 use App\Contracts\Legacy\LegacyResearchPublicationImportServiceInterface;
+use App\Contracts\Legacy\LegacyReviewCandidateReportServiceInterface;
 use App\Contracts\Legacy\LegacyStagingReviewServiceInterface;
 use App\Contracts\Legacy\LegacyStagingSummaryServiceInterface;
-use App\Contracts\Legacy\LegacyNewsSlugCleanupApplyServiceInterface;
-use App\Contracts\Legacy\LegacyNewsSlugCleanupPlannerServiceInterface;
-use App\Contracts\Legacy\LegacyNewsImportReviewServiceInterface;
+use App\Contracts\Legacy\LegacyStudentProfileImportServiceInterface;
 use App\Contracts\Legacy\LegacyUrlContinuityInventoryServiceInterface;
 use App\Contracts\Legacy\LegacyUrlContinuityTriageServiceInterface;
 use App\Contracts\Legacy\LegacyUrlNormalizerInterface;
@@ -94,6 +97,7 @@ use App\Models\News\NewsArticle;
 use App\Models\News\NewsCategory;
 use App\Models\Page\AboutPage;
 use App\Models\Page\Page;
+use App\Models\Person\FacultyMember;
 use App\Models\Person\Person;
 use App\Models\Shared\AuditLog;
 use App\Models\User\User;
@@ -114,47 +118,50 @@ use App\Services\Auth\TotpAuthenticator;
 use App\Services\Cms\CmsTargetRegistry;
 use App\Services\Cms\CmsWorkflowService;
 use App\Services\Content\PersonService;
+use App\Services\Content\ProfileAdminService;
 use App\Services\Form\DynamicFormSubmissionService;
 use App\Services\Homepage\HomepageDraftReader;
 use App\Services\Homepage\HomepagePreviewAssembler;
 use App\Services\Homepage\HomepagePublishingService;
 use App\Services\Homepage\HomepageSectionService;
 use App\Services\Homepage\HomepageSectionValidator;
-use App\Services\Legacy\LegacyCleanedRowService;
 use App\Services\Legacy\LegacyClassificationReportService;
-use App\Services\Legacy\LegacyDecisionPlanService;
-use App\Services\Legacy\LegacyFacultyProfileImportService;
-use App\Services\Legacy\LegacyImportBatchService;
+use App\Services\Legacy\LegacyCleanedRowService;
 use App\Services\Legacy\LegacyCleaningInspectionService;
 use App\Services\Legacy\LegacyContentCleaningService;
+use App\Services\Legacy\LegacyDecisionPlanService;
+use App\Services\Legacy\LegacyFacultyProfileImportService;
 use App\Services\Legacy\LegacyFileInventoryService;
 use App\Services\Legacy\LegacyGeneratedUrlInventoryService;
-use App\Services\Legacy\LegacyIntegrityInspectionService;
-use App\Services\Legacy\LegacyInternalLinkExtractionService;
+use App\Services\Legacy\LegacyImportBatchService;
 use App\Services\Legacy\LegacyImportInspectionService;
-use App\Services\Legacy\LegacyLocationImportService;
-use App\Services\Legacy\LegacyMappingProposalService;
-use App\Services\Legacy\LegacyPhaseSixCandidateService;
-use App\Services\Legacy\LegacyPhaseSixApprovalService;
-use App\Services\Legacy\LegacyPhaseSixMenuLinkImportService;
-use App\Services\Legacy\LegacyPhaseSixPageImportService;
-use App\Services\Legacy\LegacyPhaseSixSettingsImportService;
-use App\Services\Legacy\LegacyPhaseSixSettingsMappingService;
-use App\Services\Legacy\LegacyStudentProfileImportService;
 use App\Services\Legacy\LegacyImportModuleRegistry;
 use App\Services\Legacy\LegacyImportRunnerService;
-use App\Services\Legacy\LegacyQueryRedirectResolver;
-use App\Services\Legacy\LegacyQueryResolverRegistry;
-use App\Services\Legacy\LegacyQuarantineExportService;
-use App\Services\Legacy\LegacyQuarantineSummaryService;
-use App\Services\Legacy\LegacyRedirectEvidenceService;
-use App\Services\Legacy\LegacyReviewCandidateReportService;
-use App\Services\Legacy\LegacyResearchPublicationImportService;
-use App\Services\Legacy\LegacyStagingReviewService;
-use App\Services\Legacy\LegacyStagingSummaryService;
+use App\Services\Legacy\LegacyIntegrityInspectionService;
+use App\Services\Legacy\LegacyInternalLinkExtractionService;
+use App\Services\Legacy\LegacyLocationImportService;
+use App\Services\Legacy\LegacyMappingProposalService;
+use App\Services\Legacy\LegacyNewsImportReviewService;
+use App\Services\Legacy\LegacyNewsImportService;
 use App\Services\Legacy\LegacyNewsSlugCleanupApplyService;
 use App\Services\Legacy\LegacyNewsSlugCleanupPlannerService;
-use App\Services\Legacy\LegacyNewsImportReviewService;
+use App\Services\Legacy\LegacyPhaseSixApprovalService;
+use App\Services\Legacy\LegacyPhaseSixCandidateService;
+use App\Services\Legacy\LegacyPhaseSixMenuLinkImportService;
+use App\Services\Legacy\LegacyPhaseSixPageImportService;
+use App\Services\Legacy\LegacyPhaseSixRestoreService;
+use App\Services\Legacy\LegacyPhaseSixSettingsImportService;
+use App\Services\Legacy\LegacyPhaseSixSettingsMappingService;
+use App\Services\Legacy\LegacyQuarantineExportService;
+use App\Services\Legacy\LegacyQuarantineSummaryService;
+use App\Services\Legacy\LegacyQueryRedirectResolver;
+use App\Services\Legacy\LegacyQueryResolverRegistry;
+use App\Services\Legacy\LegacyRedirectEvidenceService;
+use App\Services\Legacy\LegacyResearchPublicationImportService;
+use App\Services\Legacy\LegacyReviewCandidateReportService;
+use App\Services\Legacy\LegacyStagingReviewService;
+use App\Services\Legacy\LegacyStagingSummaryService;
+use App\Services\Legacy\LegacyStudentProfileImportService;
 use App\Services\Legacy\LegacyUrlContinuityInventoryService;
 use App\Services\Legacy\LegacyUrlContinuityTriageService;
 use App\Services\Legacy\LegacyUrlNormalizer;
@@ -179,9 +186,9 @@ use App\Services\Page\PageService;
 use App\Services\Page\PageUrlResolver;
 use App\Services\Page\ProfilePageService;
 use App\Services\Page\VirtualTourPageService;
-use App\Services\Research\ResearchPageService;
 use App\Services\Preview\PreviewService;
 use App\Services\Preview\PreviewTokenStore;
+use App\Services\Research\ResearchPageService;
 use App\Services\Seo\SeoMetadataService;
 use App\Services\Seo\SitemapService;
 use App\Services\Settings\SettingsService;
@@ -292,6 +299,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(NewsArticle::class, NewsArticlePolicy::class);
         Gate::policy(NewsCategory::class, NewsCategoryPolicy::class);
         Gate::policy(Faculty::class, FacultyDomainPolicy::class);
+        Gate::policy(FacultyMember::class, FacultyDomainPolicy::class);
         Gate::policy(FacultyPage::class, FacultyDomainPolicy::class);
         Gate::policy(FacultyHighlight::class, FacultyDomainPolicy::class);
         Gate::policy(FacultyLab::class, FacultyDomainPolicy::class);
@@ -380,10 +388,12 @@ class AppServiceProvider extends ServiceProvider
             LegacyImportInspectionServiceInterface::class => LegacyImportInspectionService::class,
             LegacyLocationImportServiceInterface::class => LegacyLocationImportService::class,
             LegacyMappingProposalServiceInterface::class => LegacyMappingProposalService::class,
+            LegacyNewsImportServiceInterface::class => LegacyNewsImportService::class,
             LegacyPhaseSixCandidateServiceInterface::class => LegacyPhaseSixCandidateService::class,
             LegacyPhaseSixApprovalServiceInterface::class => LegacyPhaseSixApprovalService::class,
             LegacyPhaseSixMenuLinkImportServiceInterface::class => LegacyPhaseSixMenuLinkImportService::class,
             LegacyPhaseSixPageImportServiceInterface::class => LegacyPhaseSixPageImportService::class,
+            LegacyPhaseSixRestoreServiceInterface::class => LegacyPhaseSixRestoreService::class,
             LegacyPhaseSixSettingsImportServiceInterface::class => LegacyPhaseSixSettingsImportService::class,
             LegacyPhaseSixSettingsMappingServiceInterface::class => LegacyPhaseSixSettingsMappingService::class,
             LegacyStudentProfileImportServiceInterface::class => LegacyStudentProfileImportService::class,
@@ -412,6 +422,7 @@ class AppServiceProvider extends ServiceProvider
             ProfilePageServiceInterface::class => ProfilePageService::class,
             VirtualTourPageServiceInterface::class => VirtualTourPageService::class,
             PersonServiceInterface::class => PersonService::class,
+            ProfileAdminServiceInterface::class => ProfileAdminService::class,
             ResearchPageServiceInterface::class => ResearchPageService::class,
             SettingsServiceInterface::class => SettingsService::class,
             NavigationServiceInterface::class => NavigationService::class,

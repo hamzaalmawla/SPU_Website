@@ -93,10 +93,11 @@ class ImportLegacyFacultyMembersSeeder extends BaseLegacyImportSeeder
             $isEnabled = $this->normalizedLegacyVisibility($row, true);
 
             try {
-                $memberId = DB::transaction(function () use ($row, $facultyId, $email, $sortOrder, $isEnabled, $nameAr, $nameEn): int {
+                $memberId = DB::transaction(function () use ($row, $sourceId, $facultyId, $email, $sortOrder, $isEnabled, $nameAr, $nameEn): int {
                     $timestamp = now();
 
                     $memberId = DB::table('faculty_members')->insertGetId([
+                        'slug' => $this->slugFrom($row, ['en_name', 'ar_name'], 'faculty-member').'-'.$sourceId,
                         'faculty_id' => $facultyId,
                         'department_id' => null,
                         'email' => $email,

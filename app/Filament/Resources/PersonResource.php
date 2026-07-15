@@ -54,7 +54,7 @@ class PersonResource extends Resource
     {
         return $form->schema([
             Section::make('Profile')->schema([
-                TextInput::make('slug')->required()->maxLength(255)->alphaDash(),
+                TextInput::make('slug')->required()->maxLength(255)->alphaDash()->unique(ignoreRecord: true),
                 Select::make('category')->required()->options([
                     'rector' => 'Rector',
                     'vice_president' => 'Vice President',
@@ -80,22 +80,27 @@ class PersonResource extends Resource
                 TextInput::make('social_links.researchgate')->label('ResearchGate URL')->url()->maxLength(255),
                 TextInput::make('social_links.twitter')->label('Twitter/X URL')->url()->maxLength(255),
             ])->columns(2)->collapsible(),
-            Repeater::make('translations')->relationship()->schema([
-                Select::make('locale')->required()->options(['ar' => 'Arabic', 'en' => 'English']),
+            Repeater::make('translations')->schema([
+                Select::make('locale')->required()->options(['ar' => 'Arabic', 'en' => 'English'])->disableOptionsWhenSelectedInSiblingRepeaterItems(),
                 TextInput::make('name')->required()->maxLength(255),
                 TextInput::make('role')->required()->maxLength(255),
                 Textarea::make('bio')->rows(4),
                 Textarea::make('quote')->rows(3),
-            ])->columns(2)->minItems(2)->maxItems(2)->columnSpanFull(),
+            ])->columns(2)->default([['locale' => 'ar'], ['locale' => 'en']])->minItems(2)->maxItems(2)->columnSpanFull(),
             Section::make('Education')->schema([
-                Repeater::make('educations')->relationship()->schema([
-                    TextInput::make('degree')->required()->maxLength(255),
-                    TextInput::make('institution')->maxLength(255),
-                    TextInput::make('field_of_study')->maxLength(255),
-                    TextInput::make('year_start')->numeric()->minValue(1900)->maxValue(2100),
-                    TextInput::make('year_end')->numeric()->minValue(1900)->maxItems(2100),
-                    Textarea::make('description')->rows(2),
+                Repeater::make('educations')->schema([
+                    TextInput::make('id')->hidden(),
+                    TextInput::make('sort_order')->numeric()->default(0),
                     Toggle::make('is_enabled')->default(true),
+                    Repeater::make('translations')->schema([
+                        Select::make('locale')->required()->options(['ar' => 'Arabic', 'en' => 'English'])->disableOptionsWhenSelectedInSiblingRepeaterItems(),
+                        TextInput::make('degree')->required()->maxLength(255),
+                        TextInput::make('institution')->maxLength(255),
+                        TextInput::make('field_of_study')->maxLength(255),
+                        TextInput::make('year_start')->numeric()->minValue(1900)->maxValue(2100),
+                        TextInput::make('year_end')->numeric()->minValue(1900)->maxValue(2100)->gte('year_start'),
+                        Textarea::make('description')->rows(2),
+                    ])->columns(2)->default([['locale' => 'ar'], ['locale' => 'en']])->minItems(2)->maxItems(2)->columnSpanFull(),
                 ])->columns(2)->defaultItems(0)->addActionLabel('Add Education')->columnSpanFull(),
             ])->collapsible()->columnSpanFull(),
         ]);

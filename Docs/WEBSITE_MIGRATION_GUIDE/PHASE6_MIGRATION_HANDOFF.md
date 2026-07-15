@@ -88,6 +88,17 @@ Imported distinct legacy source records:
 
 Total distinct migrated legacy source records: `9,846`.
 
+### Unified Replay
+
+Phase 6 can now be reconstructed through one approval-gated command after the structural foundation has been seeded:
+
+```bash
+php artisan migrate:fresh --seed
+php artisan legacy-import:phase6-restore --write --approve=phase6-restore --batch=phase6-restore-YYYYMMDD
+```
+
+The command rebuilds the review prerequisites for static pages, menu links, and settings, and then restores all completed lanes including news and research publications. It is intentionally not called by `DatabaseSeeder`; external legacy imports must never run implicitly during deployment, tests, or ordinary seeding.
+
 Classified migration scope: `38,689` rows.
 
 Overall migrated percentage: `25.45%`.

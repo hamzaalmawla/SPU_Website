@@ -9,7 +9,7 @@
     <section class="font-hacen" dir="{{ $direction }}">
         <div class="relative h-[450px] overflow-hidden">
             <div class="absolute inset-0">
-                <img src="/images/DSC_1596.JPG" alt="" class="h-full w-full object-cover object-center">
+                <img src="/images/about-hero-1.webp" alt="" class="h-full w-full object-cover object-center">
                 <div class="absolute inset-0 bg-gradient-to-b from-[rgba(32,39,89,0.4)] to-[rgba(32,39,89,0.6)]"></div>
             </div>
         </div>
@@ -178,7 +178,7 @@
                     @endif
                 </aside>
 
-                <main class="flex flex-col gap-10">
+                <div class="flex flex-col gap-10">
                     @if ($profile->bio !== null && $profile->bio !== '')
                         <div class="rounded-2xl border border-spu-blue/[0.08] bg-white p-6 shadow-[0_4px_24px_rgba(32,39,89,0.06)] md:p-10">
                             <h2 class="mb-5 flex flex-wrap items-center justify-between gap-2 border-b border-spu-blue/[0.08] pb-3 text-lg font-bold text-spu-blue">{{ $isAr ? 'نبذة مهنية' : 'Professional Biography' }}</h2>
@@ -279,7 +279,7 @@
                             </div>
                         </div>
                     @endif
-                </main>
+                </div>
             </div>
         </div>
     </section>

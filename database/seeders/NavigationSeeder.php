@@ -61,7 +61,7 @@ class NavigationSeeder extends Seeder
     }
 
     /**
-     * @param array<int, array<string, mixed>> $children
+     * @param  array<int, array<string, mixed>>  $children
      */
     private function syncChildren(MenuItem $parent, array $children): void
     {
@@ -118,7 +118,7 @@ class NavigationSeeder extends Seeder
      * Disable stale top-level CMS rows before seeding the frontend source-of-truth menu.
      * This prevents old labels like "Faculties" from surviving beside "Facilities".
      *
-     * @param array<int, array<string, mixed>> $items
+     * @param  array<int, array<string, mixed>>  $items
      */
     private function disableExistingSeededParents(array $items): void
     {
@@ -269,16 +269,20 @@ class NavigationSeeder extends Seeder
 
         // ── E-Services (sort 6) ──
         $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'الخدمات الإلكترونية', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/ar/e-services', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 6, 'children' => [
+            ['label' => 'بوابة الخدمات', 'target_kind' => 'url', 'url' => '/ar/e-services#portal-access'],
             ['label' => 'بوابة الطالب', 'target_kind' => 'url', 'url' => 'https://students.spu.edu.sy', 'open_in_new_tab' => true],
             ['label' => 'المكتبة الإلكترونية', 'target_kind' => 'url', 'url' => '/ar/e-services#library'],
             ['label' => 'دعم تكنولوجيا المعلومات', 'target_kind' => 'url', 'url' => '/ar/e-services#it-support'],
+            ['label' => 'الاعتراضات والنماذج', 'target_kind' => 'url', 'url' => '/ar/e-services#appeals-forms'],
             ['label' => 'البريد الإلكتروني للموظفين', 'target_kind' => 'url', 'url' => 'https://staff.spu.edu.sy', 'open_in_new_tab' => true],
             ['label' => 'الاقتراحات والشكاوى', 'target_kind' => 'url', 'url' => '/ar/e-services/suggestions-complaints'],
         ]];
         $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'E-Services', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/en/e-services', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 6, 'children' => [
+            ['label' => 'Service Portal', 'target_kind' => 'url', 'url' => '/en/e-services#portal-access'],
             ['label' => 'Student Portal', 'target_kind' => 'url', 'url' => 'https://students.spu.edu.sy', 'open_in_new_tab' => true],
             ['label' => 'E-Library', 'target_kind' => 'url', 'url' => '/en/e-services#library'],
             ['label' => 'IT Support', 'target_kind' => 'url', 'url' => '/en/e-services#it-support'],
+            ['label' => 'Appeals & Forms', 'target_kind' => 'url', 'url' => '/en/e-services#appeals-forms'],
             ['label' => 'Staff Email', 'target_kind' => 'url', 'url' => 'https://staff.spu.edu.sy', 'open_in_new_tab' => true],
             ['label' => 'Suggestions & Complaints', 'target_kind' => 'url', 'url' => '/en/e-services/suggestions-complaints'],
         ]];
@@ -298,8 +302,16 @@ class NavigationSeeder extends Seeder
         ]];
 
         // ── Contact (sort 8) ──
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'تواصل معنا', 'target_kind' => 'page', 'page_slug' => 'contact', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 8, 'children' => []];
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'Contact', 'target_kind' => 'page', 'page_slug' => 'contact', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 8, 'children' => []];
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'تواصل معنا', 'target_kind' => 'page', 'page_slug' => 'contact', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 8, 'children' => [
+            ['label' => 'نموذج التواصل', 'target_kind' => 'url', 'url' => '/ar/contact#contact-form'],
+            ['label' => 'معلومات التواصل', 'target_kind' => 'url', 'url' => '/ar/contact#contact-info'],
+            ['label' => 'خريطة الحرم الجامعي', 'target_kind' => 'url', 'url' => '/ar/contact#campus-map'],
+        ]];
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'Contact', 'target_kind' => 'page', 'page_slug' => 'contact', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 8, 'children' => [
+            ['label' => 'Contact Form', 'target_kind' => 'url', 'url' => '/en/contact#contact-form'],
+            ['label' => 'Contact Information', 'target_kind' => 'url', 'url' => '/en/contact#contact-info'],
+            ['label' => 'Campus Map', 'target_kind' => 'url', 'url' => '/en/contact#campus-map'],
+        ]];
 
         return $items;
     }

@@ -40,6 +40,31 @@ OLD_DB_ALLOW_BROAD_IMPORT=false
 OLD_PUBLIC_ROOT=/path/to/legacy/public/root
 ```
 
+## Phase 6 Restore
+
+Production deployments must run schema migrations with `php artisan migrate --force`. Never run `migrate:fresh` against a production database because it drops all managed content before rebuilding the schema.
+
+For a new local environment or an explicitly approved disaster-recovery database, rebuild the foundation and replay every completed Phase 6 lane with:
+
+```bash
+php artisan migrate:fresh --seed
+php artisan legacy-import:phase6-restore
+php artisan legacy-import:phase6-restore --write --approve=phase6-restore --batch=phase6-restore-YYYYMMDD
+```
+
+The first restore invocation is a dry run. The approved write invocation rebuilds classification, mapping, staging, and approval prerequisites before restoring these lanes in one workflow:
+
+- locations, disabled for review
+- alumni and honor students, enabled according to legacy visibility
+- faculty profiles, disabled for review
+- research publications, enabled
+- news and announcements, preserving legacy visibility
+- static pages, disabled drafts
+- footer menu links, disabled
+- reviewed safe settings, live
+
+The restore is idempotent through migration logs and applies version-controlled source corrections before cleaning and duplicate detection. It requires the configured legacy database to remain available. Database backups remain the authoritative production disaster-recovery mechanism; this command is a controlled reconstruction tool, not a replacement for backups.
+
 ## Run Manual Imports
 
 Run one module at a time.

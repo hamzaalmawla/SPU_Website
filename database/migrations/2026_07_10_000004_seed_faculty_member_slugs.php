@@ -3,9 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 return new class extends Migration
@@ -13,18 +11,26 @@ return new class extends Migration
     public function up(): void
     {
         $members = DB::table('faculty_members')
-            ->join('faculty_member_translations', 'faculty_members.id', '=', 'faculty_member_translations.faculty_member_id')
-            ->where('faculty_member_translations.locale', 'ar')
-            ->select('faculty_members.id', 'faculty_member_translations.full_name')
+            ->whereNull('slug')
+            ->select('id')
             ->get();
 
         foreach ($members as $member) {
-            $slug = Str::slug($member->full_name);
+            $name = DB::table('faculty_member_translations')
+                ->where('faculty_member_id', $member->id)
+                ->orderByRaw("CASE locale WHEN 'ar' THEN 0 WHEN 'en' THEN 1 ELSE 2 END")
+                ->value('full_name');
+
+            $slug = Str::slug(is_string($name) ? $name : '');
+            if ($slug === '') {
+                $slug = 'faculty-member-'.$member->id;
+            }
+
             $originalSlug = $slug;
             $counter = 1;
 
             while (DB::table('faculty_members')->where('slug', $slug)->exists()) {
-                $slug = $originalSlug . '-' . $counter;
+                $slug = $originalSlug.'-'.$counter;
                 $counter++;
             }
 
@@ -34,6 +40,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        DB::table('faculty_members')->update(['slug' => null]);
+        // Data backfills are intentionally retained during rollback.
     }
 };

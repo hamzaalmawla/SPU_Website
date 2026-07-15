@@ -19,6 +19,7 @@
 
     <section class="relative w-full overflow-hidden bg-white pt-24 pb-32" id="portal-access">
         <span id="library" class="sr-only"></span>
+        <span id="it-support" class="sr-only"></span>
         <div class="relative z-10 pb-20 text-center">
             <h2 class="text-4xl font-bold text-[#1e2756] md:text-[40px]">{{ $page->digitalServices['title'] }}</h2>
         </div>

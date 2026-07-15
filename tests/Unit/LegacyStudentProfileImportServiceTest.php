@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit;
 
 use App\Contracts\Legacy\LegacyStudentProfileImportServiceInterface;
+use App\Contracts\Shared\CacheServiceInterface;
 use App\Models\Career\Alumni;
 use App\Models\Career\AlumniTranslation;
 use App\Models\Career\HonorStudent;
@@ -77,6 +78,16 @@ final class LegacyStudentProfileImportServiceTest extends TestCase
 
     public function test_alumni_write_imports_disabled_without_photo_and_logs_metadata(): void
     {
+        $cacheService = $this->createMock(CacheServiceInterface::class);
+        $cacheService->expects($this->once())
+            ->method('flushTags')
+            ->with(['facilities', 'public-pages', 'seo', 'sitemap'])
+            ->willReturn(false);
+        $cacheService->expects($this->once())
+            ->method('flushAll')
+            ->willReturn(true);
+        $this->app->instance(CacheServiceInterface::class, $cacheService);
+
         $service = app(LegacyStudentProfileImportServiceInterface::class);
 
         $first = $service->import('alumni', write: true, approval: 'phase6-alumni', batch: 'student-test');
@@ -89,13 +100,27 @@ final class LegacyStudentProfileImportServiceTest extends TestCase
         $this->assertSame(2, AlumniTranslation::query()->count());
 
         $log = MigrationLog::query()->where('status', 'success')->firstOrFail();
+        $metadata = $log->metadata;
+        $this->assertIsArray($metadata);
 
-        $this->assertSame('old-photo.jpg', $log->metadata['legacy_photo']);
-        $this->assertSame(1, $log->metadata['legacy_section_id']);
+        $this->assertSame('old-photo.jpg', $metadata['legacy_photo']);
+        $this->assertSame(1, $metadata['legacy_section_id']);
     }
 
     public function test_honor_students_write_imports_disabled_without_photo(): void
     {
+        config()->set('legacy_student_profile_overrides.honor_students', [
+            20 => [
+                'ar_name' => 'ياسمين نبيل المولا',
+                'en_name' => null,
+                'grade' => '89.60',
+            ],
+            21 => [
+                'ar_name' => 'ياسمين نبيل المولا',
+                'en_name' => null,
+            ],
+        ]);
+
         $result = app(LegacyStudentProfileImportServiceInterface::class)->import(
             'honor_students',
             write: true,
@@ -107,6 +132,11 @@ final class LegacyStudentProfileImportServiceTest extends TestCase
         $this->assertSame(1, $result->duplicateSkippedRows);
         $this->assertSame(1, HonorStudent::query()->where('is_enabled', false)->whereNull('photo_media_id')->count());
         $this->assertSame('2024 / 1', HonorStudent::query()->value('academic_year'));
+        $this->assertSame('89.60', HonorStudent::query()->value('gpa'));
+        $this->assertSame(
+            ['ياسمين نبيل المولا', 'ياسمين نبيل المولا'],
+            HonorStudent::query()->firstOrFail()->translations()->orderBy('locale')->pluck('full_name')->all(),
+        );
     }
 
     private function createLegacyStudentTable(string $table): void

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models\Person;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -41,7 +42,7 @@ class PersonEducation extends Model
         return $this->hasMany(PersonEducationTranslation::class)->orderBy('locale');
     }
 
-    public function scopeEnabled($query)
+    public function scopeEnabled(Builder $query): Builder
     {
         return $query->where('is_enabled', true);
     }

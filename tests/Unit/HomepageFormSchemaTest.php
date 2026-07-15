@@ -7,14 +7,14 @@ namespace Tests\Unit;
 use App\Contracts\Homepage\HomepageSectionServiceInterface;
 use App\Filament\Support\HomepageFormSchema;
 use Filament\Forms\Components\Component;
-use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 /**
  * Unit tests for HomepageFormSchema.
@@ -72,7 +72,7 @@ final class HomepageFormSchemaTest extends TestCase
         // Flatten all child components from both sections
         $childTypes = $this->flattenChildTypes($fields);
 
-        $this->assertContains(FileUpload::class, $childTypes, 'heroFields should contain a FileUpload component');
+        $this->assertContains(Grid::class, $childTypes, 'heroFields should contain a MediaPicker grid');
         $this->assertContains(TextInput::class, $childTypes, 'heroFields should contain TextInput components');
         $this->assertContains(Textarea::class, $childTypes, 'heroFields should contain a Textarea component');
     }

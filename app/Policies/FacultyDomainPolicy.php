@@ -11,6 +11,7 @@ use App\Models\Faculty\FacultyHighlight;
 use App\Models\Faculty\FacultyLab;
 use App\Models\Faculty\FacultyPage;
 use App\Models\Faculty\FacultyStudentProject;
+use App\Models\Person\FacultyMember;
 use App\Models\User\User;
 
 final class FacultyDomainPolicy
@@ -22,7 +23,8 @@ final class FacultyDomainPolicy
 
     public function create(User $user): bool
     {
-        return $user->role_slug === 'editor';
+        return $user->role_slug === 'editor'
+            || ($user->role_slug === 'faculty_editor' && is_string($user->faculty_scope_slug) && $user->faculty_scope_slug !== '');
     }
 
     public function delete(User $user, mixed $record): bool
@@ -66,7 +68,7 @@ final class FacultyDomainPolicy
             return $record->faculty_scope_slug ?? $record->public_slug ?? $record->slug;
         }
 
-        if ($record instanceof FacultyPage || $record instanceof FacultyHighlight || $record instanceof FacultyLab || $record instanceof FacultyStudentProject || $record instanceof Alumni || $record instanceof HonorStudent) {
+        if ($record instanceof FacultyPage || $record instanceof FacultyHighlight || $record instanceof FacultyLab || $record instanceof FacultyStudentProject || $record instanceof Alumni || $record instanceof HonorStudent || $record instanceof FacultyMember) {
             $record->loadMissing('faculty');
 
             return $record->faculty?->faculty_scope_slug ?? $record->faculty?->public_slug ?? $record->faculty?->slug;

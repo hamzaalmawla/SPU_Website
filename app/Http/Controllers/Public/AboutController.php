@@ -117,14 +117,16 @@ final class AboutController extends Controller
         ]));
     }
 
-    public function profile(Request $request, string $locale, string $slug): View
+    public function profile(Request $request, string $locale, string $source, string $slug): View
     {
-        $profile = $this->profilePageService->getProfile($locale, $slug);
+        $profile = $this->profilePageService->getProfile($locale, $source, $slug);
         abort_if($profile === null, 404);
 
-        return view('public.about.profile', $this->sharedPayload($request, $locale, '/about/profile/'.$slug, [
+        $path = '/about/profile/'.$source.'/'.$slug;
+
+        return view('public.about.profile', $this->sharedPayload($request, $locale, $path, [
             'profile' => $profile,
-            'seo' => $this->seo($locale, '/about/profile/'.$slug, $profile->seoTitle, $profile->seoDescription),
+            'seo' => $this->seo($locale, $path, $profile->seoTitle, $profile->seoDescription, $profile->seoImage),
         ]));
     }
 
@@ -153,7 +155,7 @@ final class AboutController extends Controller
         ], $payload);
     }
 
-    private function seo(string $locale, string $path, string $title, string $description): mixed
+    private function seo(string $locale, string $path, string $title, string $description, ?string $image = null): mixed
     {
         return $this->seoMetadataService->buildFallback($locale, [
             'path' => '/'.$locale.$path,
@@ -162,7 +164,7 @@ final class AboutController extends Controller
             'meta_description' => $description,
             'og_title' => $title,
             'og_description' => $description,
-            'og_image' => '/images/about-hero-1.webp',
+            'og_image' => $image ?? '/images/about-hero-1.webp',
         ]);
     }
 

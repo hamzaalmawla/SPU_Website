@@ -15,7 +15,7 @@
 
                 <div class="staff-grid reveal reveal-up reveal-delay-1">
                     @foreach ($people as $person)
-                        <a href="/{{ $locale }}/about/profile/{{ $person->slug }}" class="staff-card reveal reveal-up block transition hover:-translate-y-1 hover:shadow-lg">
+                        <a href="{{ route('public.about.profile', ['locale' => $locale, 'source' => 'person', 'slug' => $person->slug]) }}" class="staff-card reveal reveal-up block transition hover:-translate-y-1 hover:shadow-lg">
                             <div class="staff-card-media"><img src="{{ $person->image ?? '/images/medicine-dean.jpg' }}" alt="{{ $person->name }}"></div>
                             <div class="staff-card-body">
                                 <h2 class="staff-card-name">{{ $person->name }}</h2>
