@@ -190,4 +190,324 @@
             transform: none !important;
         }
     }
+
+    /* ═══════════════════════════════════════════════════
+       FACULTY HUB PAGE — Figma-faithful styles
+       ═══════════════════════════════════════════════════ */
+
+    /* Apply Now shimmer sweep */
+    .fac-hub-btn-primary {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .fac-hub-btn-primary::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+            105deg,
+            transparent 35%,
+            rgba(255, 255, 255, 0.16) 50%,
+            transparent 65%
+        );
+        transform: translateX(-120%);
+        transition: transform 0.55s ease;
+        pointer-events: none;
+    }
+
+    .fac-hub-btn-primary:hover::after {
+        transform: translateX(120%);
+    }
+
+    /* Faculty cascade cards — staggered slide-in from right */
+    @keyframes fac-card-in {
+        from { opacity: 0; transform: translateX(40px); }
+        to   { opacity: 1; transform: translateX(0);    }
+    }
+
+    @keyframes fac-card-in-rtl {
+        from { opacity: 0; transform: translateX(-40px); }
+        to   { opacity: 1; transform: translateX(0);     }
+    }
+
+    .fac-hub-card {
+        opacity: 0;
+        animation: fac-card-in 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        /* transition for hover effects */
+        will-change: background, box-shadow;
+    }
+
+    [dir='rtl'] .fac-hub-card {
+        animation-name: fac-card-in-rtl;
+    }
+
+    /* Stagger delays for up to 9 cards */
+    .fac-hub-card:nth-child(1)  { animation-delay: 0.08s; }
+    .fac-hub-card:nth-child(2)  { animation-delay: 0.14s; }
+    .fac-hub-card:nth-child(3)  { animation-delay: 0.20s; }
+    .fac-hub-card:nth-child(4)  { animation-delay: 0.26s; }
+    .fac-hub-card:nth-child(5)  { animation-delay: 0.32s; }
+    .fac-hub-card:nth-child(6)  { animation-delay: 0.38s; }
+    .fac-hub-card:nth-child(7)  { animation-delay: 0.44s; }
+    .fac-hub-card:nth-child(8)  { animation-delay: 0.50s; }
+    .fac-hub-card:nth-child(9)  { animation-delay: 0.56s; }
+
+    /* Number badge — no border-radius; square flush badge */
+    .fac-hub-card__badge {
+        flex-shrink: 0;
+    }
+
+    /* Arrow dash stretches on hover */
+    .fac-hub-card__dash {
+        transition: width 0.3s ease, background-color 0.3s ease;
+    }
+
+    /* Model bento cards */
+    .fac-hub-model-card {
+        transition:
+            transform   0.35s cubic-bezier(0.22, 1, 0.36, 1),
+            box-shadow  0.35s ease,
+            border-color 0.35s ease;
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+        .fac-hub-card,
+        .fac-hub-btn-primary::after,
+        .fac-hub-card__dash {
+            animation: none !important;
+            opacity: 1 !important;
+            transform: none !important;
+            transition: none !important;
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════
+       FACULTY EXPLORER GRID — entrance + hover polish
+       ═══════════════════════════════════════════════════ */
+    @keyframes fac-explorer-in {
+        from { opacity: 0; transform: translateY(26px); }
+        to   { opacity: 1; transform: translateY(0);    }
+    }
+
+    .fac-hub-explorer-card {
+        opacity: 0;
+        animation: fac-explorer-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    .fac-hub-explorer-card:nth-child(1) { animation-delay: 0.06s; }
+    .fac-hub-explorer-card:nth-child(2) { animation-delay: 0.12s; }
+    .fac-hub-explorer-card:nth-child(3) { animation-delay: 0.18s; }
+    .fac-hub-explorer-card:nth-child(4) { animation-delay: 0.24s; }
+    .fac-hub-explorer-card:nth-child(5) { animation-delay: 0.30s; }
+    .fac-hub-explorer-card:nth-child(6) { animation-delay: 0.36s; }
+    .fac-hub-explorer-card:nth-child(7) { animation-delay: 0.42s; }
+    .fac-hub-explorer-card:nth-child(8) { animation-delay: 0.48s; }
+    .fac-hub-explorer-card:nth-child(9) { animation-delay: 0.54s; }
+
+    /* Accent ring + bar honour the per-card --accent variable */
+    .fac-hub-explorer-card:hover {
+        border-color: var(--accent, #1e2652);
+        box-shadow: 0 22px 50px rgba(17, 26, 63, 0.12);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .fac-hub-explorer-card {
+            animation: none !important;
+            opacity: 1 !important;
+            transform: none !important;
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════
+       FACULTY STAIRCASE — cards step down like stairs
+       Uses margin-top (reflow) rather than transform so the
+       grid rows keep their natural spacing with no overlap.
+       ═══════════════════════════════════════════════════ */
+    .fac-stairs {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .fac-stairs > * {
+        align-self: start;
+    }
+
+    @media (min-width: 640px) {
+        .fac-stairs {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.75rem;
+        }
+
+        /* descend the right-hand card in every 2-col row */
+        .fac-stairs > *:nth-child(even) {
+            margin-top: 40px;
+        }
+    }
+
+    @media (min-width: 1024px) {
+        .fac-stairs {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+
+        /* descend the middle and last card of every 3-col row */
+        .fac-stairs > *:nth-child(3n + 2) {
+            margin-top: 44px;
+        }
+
+        .fac-stairs > *:nth-child(3n + 3) {
+            margin-top: 88px;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .fac-stairs > * {
+            margin-top: 0 !important;
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════
+       ACADEMIC FACILITIES HUB HERO — diagonal split gallery
+       ═══════════════════════════════════════════════════ */
+
+    /* Stacked panoramic gallery layers — cross-fade on hover via Alpine */
+    .fac-gallery__layer {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0;
+        transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        will-change: opacity;
+    }
+
+    [x-cloak] { display: none !important; }
+
+    /* Sleek metallic diagonal divider line */
+    .fac-hub-divider {
+        position: absolute;
+        top: -10%;
+        bottom: -10%;
+        width: 2px;
+        background: linear-gradient(
+            180deg,
+            transparent 0%,
+            rgba(226, 184, 100, 0.0) 8%,
+            rgba(226, 184, 100, 0.65) 50%,
+            rgba(226, 184, 100, 0.0) 92%,
+            transparent 100%
+        );
+        box-shadow: 0 0 14px rgba(226, 184, 100, 0.35);
+        z-index: 1;
+        pointer-events: none;
+    }
+
+    /* Hero entrance reveals */
+    @keyframes fac-hub-hero-up {
+        from { opacity: 0; transform: translateY(26px); }
+        to   { opacity: 1; transform: translateY(0);    }
+    }
+
+    .fac-hub-hero__reveal {
+        opacity: 0;
+        animation: fac-hub-hero-up 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    .fac-hub-hero__reveal--d1 { animation-delay: 0.15s; }
+    .fac-hub-hero__reveal--d2 { animation-delay: 0.32s; }
+    .fac-hub-hero__reveal--d3 { animation-delay: 0.85s; }
+
+    @keyframes fac-hub-hero-line-draw {
+        from { width: 0; }
+        to   { width: 4rem; }
+    }
+
+    .fac-hub-hero__accent-line {
+        animation: fac-hub-hero-line-draw 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.55s forwards;
+    }
+
+    /* Scene caption subtle pulse */
+    .fac-hub-scene-caption {
+        animation: fac-hub-hero-up 0.8s ease 1.1s both;
+    }
+
+    /* Floating faculty list card polish */
+    .fac-hub-card {
+        will-change: background, box-shadow, transform;
+        transition:
+            background 0.3s ease,
+            color      0.3s ease,
+            transform  0.3s cubic-bezier(0.22, 1, 0.36, 1),
+            box-shadow 0.3s ease,
+            opacity    0.3s ease;
+    }
+
+    .fac-hub-card__icon {
+        transition: background-color 0.3s ease;
+    }
+
+    .fac-hub-card__num {
+        transition: opacity 0.3s ease;
+    }
+
+    /* Floating glass stats bar */
+    .fac-hub-stats-bar {
+        background: rgba(30, 38, 82, 0.62);
+        backdrop-filter: blur(22px) saturate(180%);
+        -webkit-backdrop-filter: blur(22px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.10);
+    }
+
+    .fac-hub-stats-bar > * {
+        position: relative;
+    }
+
+    .fac-hub-stats-bar > * + *::before {
+        content: '';
+        position: absolute;
+        inset-block: 16%;
+        inset-inline-start: 0;
+        width: 1px;
+        background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.16), transparent);
+    }
+
+    @media (max-width: 767px) {
+        .fac-hub-stats-bar > *:nth-child(2n + 1)::after {
+            content: '';
+            position: absolute;
+            inset-inline: 14%;
+            inset-block-end: 0;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.10);
+        }
+    }
+
+    /* Staircase list — cards descend like stairs, same width, indented from beginning edge */
+    .fac-hub-stairs .fac-hub-card--stair {
+        transition:
+            background 0.3s ease,
+            color      0.3s ease,
+            transform  0.4s cubic-bezier(0.22, 1, 0.36, 1),
+            box-shadow 0.3s ease,
+            opacity    0.3s ease,
+            margin     0.4s ease;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .fac-hub-hero__reveal,
+        .fac-hub-hero__accent-line,
+        .fac-hub-scene-caption,
+        .fac-gallery__layer,
+        .fac-hub-stairs .fac-hub-card--stair {
+            animation: none !important;
+            opacity: 1 !important;
+            transform: none !important;
+            transition: none !important;
+        }
+        .fac-gallery__layer { opacity: 0; }
+    }
 }

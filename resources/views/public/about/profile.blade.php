@@ -23,7 +23,7 @@
                 </div>
 
                 <div class="flex-1">
-                    <h1 class="text-[1.875rem] font-bold leading-tight text-white/90">{{ $profile->name }}</h1>
+                    <h1 class="text-[1.875rem] mb-4 font-bold leading-tight text-white/90">{{ $profile->name }}</h1>
 
                     <div class="my-1 flex flex-wrap items-center gap-2">
                         @if ($profile->position !== null)

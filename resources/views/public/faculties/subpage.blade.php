@@ -150,23 +150,15 @@
             </section>
         @endif
 
-        <section class="bg-section py-16 font-hacen lg:py-20">
-            <div class="container">
-                <div class="text-center">
-                    <h2 class="text-[30px] font-bold leading-tight text-spu-blue md:text-[38px]">{{ $isAr ? 'مسارات الكلية' : 'Faculty Pathways' }}</h2>
-                    <div class="mx-auto mt-4 h-[2px] w-72 max-w-full rounded-full" style="background-color: {{ $accent }}"></div>
-                    <p class="mx-auto mt-7 max-w-[760px] text-[17px] leading-8 text-slate-600">{{ __('public.explore_pages_desc') }}</p>
-                </div>
-                <div class="cms-grid-cards mx-auto mt-12 max-w-[980px] gap-5">
-                    @foreach ($page->navigation as $item)
-                        <a href="{{ $item->url }}" class="group rounded-[8px] bg-white p-7 text-center shadow-[0_14px_36px_rgba(9,17,68,0.06)] transition-all hover:-translate-y-1">
-                            <p class="text-[13px] font-bold uppercase tracking-[0.14em]" style="color: {{ $accent }}">{{ $isAr ? 'استكشف' : 'Explore' }}</p>
-                            <h3 class="mt-4 text-xl font-bold text-spu-blue">{{ $item->label }}</h3>
-                        </a>
-                    @endforeach
-                </div>
-            </div>
-        </section>
+        @include('public.faculties.partials.navigation-section', [
+            'navSectionId' => 'faculty-pathways',
+            'navHeadingAr' => 'مسارات',
+            'navHighlightAr' => 'الكلية',
+            'navHeadingEn' => 'Faculty',
+            'navHighlightEn' => 'Pathways',
+            'navCards' => $page->navigation,
+            'locale' => $locale,
+        ])
     @elseif ($page->subpageSlug === 'departments')
         <section class="bg-white py-16 font-hacen lg:py-24">
             <div class="container">
