@@ -850,10 +850,16 @@ final class FacultyPageService implements FacultyPageServiceInterface
             ->filter(fn (mixed $item): bool => is_array($item) && isset($item['slug']))
             ->keyBy('slug');
 
-        return $faculty->departments->map(function (Department $department) use ($locale, $departmentPayloads): array {
+        $studyPlanUrl = $this->url($locale, "/facilities/{$this->publicSlug($faculty)}/study-plan");
+        $studyPlanDepartmentIds = $this->studyPlanDepartmentMap($faculty, $locale);
+
+        return $faculty->departments->map(function (Department $department) use ($locale, $departmentPayloads, $studyPlanUrl, $studyPlanDepartmentIds): array {
             $translation = $this->departmentTranslation($department, $locale);
             $payload = $departmentPayloads->get((string) $department->slug, []);
             $localeSuffix = ucfirst($locale);
+            $autoDepartmentId = $studyPlanDepartmentIds[(string) $department->slug] ?? null;
+            $explicitDepartmentId = is_array($payload) ? trim((string) ($payload['studyPlanDepartmentId'] ?? '')) : '';
+            $departmentId = $explicitDepartmentId !== '' ? $explicitDepartmentId : $autoDepartmentId;
 
             return [
                 'slug' => (string) $department->slug,
@@ -862,8 +868,131 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 'summary' => (string) ($translation->description ?? ''),
                 'degrees' => is_array($payload) ? ($payload['degrees'.$localeSuffix] ?? null) : null,
                 'tags' => is_array($payload) && is_array($payload['tags'] ?? null) ? $payload['tags'] : [],
+                'studyPlanDepartmentId' => $departmentId,
+                'studyPlanUrl' => $departmentId !== null && $departmentId !== ''
+                    ? $studyPlanUrl.'?department='.urlencode($departmentId)
+                    : $studyPlanUrl,
             ];
         })->values()->all();
+    }
+
+    /**
+     * Resolve a mapping of department slug to the matching study-plan department tab id.
+     *
+     * The study plan payload stores a flat departments list whose names rarely line up
+     * exactly with the department translations stored in the database (e.g. the AI
+     * faculty exposes a "Department of Artificial Intelligence" in the database while
+     * its study plan ships an "Artificial Intelligence & Data Science" tab). Token based
+     * matching is therefore used: significant tokens of each department name are scored
+     * against every study-plan department tab and the highest-scoring tab wins. Ties
+     * fall back to plan order, and an unmistakable miss falls back to the first tab so
+     * the deep link still lands inside the study plan.
+     *
+     * @return array<string, string>
+     */
+    private function studyPlanDepartmentMap(Faculty $faculty, string $locale): array
+    {
+        $studyPlanPage = $this->pageForFaculty($faculty, 'study-plan');
+
+        if (! $studyPlanPage instanceof FacultyPage || ! is_array($studyPlanPage->payload_json)) {
+            return [];
+        }
+
+        $payload = $studyPlanPage->payload_json;
+        $plan = is_array($payload['plan'] ?? null) ? $payload['plan'] : [];
+        $planDepartments = collect($plan['departments'] ?? [])
+            ->filter(fn (mixed $item): bool => is_array($item) && isset($item['id']))
+            ->values();
+
+        if ($planDepartments->isEmpty()) {
+            return [];
+        }
+
+        $studyPlanFallbackId = (string) ($planDepartments->first()['id'] ?? '');
+
+        return $faculty->departments->mapWithKeys(function (Department $department) use ($planDepartments, $studyPlanFallbackId): array {
+            $planId = $this->matchStudyPlanDepartment($department, $planDepartments);
+
+            return [
+                (string) $department->slug => $planId !== '' ? $planId : $studyPlanFallbackId,
+            ];
+        })->all();
+    }
+
+    /**
+     * Score a department against every study-plan department tab on both Arabic and English
+     * token overlap and return the best matching tab id.
+     *
+     * @param  \Illuminate\Support\Collection<int, array<string, mixed>>  $planDepartments
+     */
+    private function matchStudyPlanDepartment(Department $department, Collection $planDepartments): string
+    {
+        $arTokens = $this->significantTokens((string) $this->departmentTranslation($department, 'ar')->name);
+        $enTokens = $this->significantTokens((string) $this->departmentTranslation($department, 'en')->name);
+
+        if ($arTokens === [] && $enTokens === []) {
+            return '';
+        }
+
+        $bestId = '';
+        $bestScore = 0.0;
+
+        foreach ($planDepartments as $planDepartment) {
+            if (! is_array($planDepartment)) {
+                continue;
+            }
+
+            $planArTokens = $this->significantTokens((string) ($planDepartment['nameAr'] ?? ''));
+            $planEnTokens = $this->significantTokens((string) ($planDepartment['nameEn'] ?? ''));
+
+            $score = max(
+                $this->tokenScore($enTokens, $planEnTokens),
+                $this->tokenScore($arTokens, $planArTokens),
+            );
+
+            if ($score > $bestScore) {
+                $bestScore = $score;
+                $bestId = (string) ($planDepartment['id'] ?? '');
+            }
+        }
+
+        return $bestScore >= 0.5 ? $bestId : '';
+    }
+
+    /** @param  array<int, string>  $needles  @param  array<int, string>  $haystack */
+    private function tokenScore(array $needles, array $haystack): float
+    {
+        if ($needles === []) {
+            return 0.0;
+        }
+
+        $intersection = count(array_intersect($needles, $haystack));
+
+        return (float) $intersection / (float) count($needles);
+    }
+
+    /** @return array<int, string> */
+    private function significantTokens(string $name): array
+    {
+        if ($name === '') {
+            return [];
+        }
+
+        $stopwords = [
+            'the', 'and', 'of', 'for', 'in', 'on', 'with', 'to', 'a', 'an', 'department', 'dept',
+            'قسم', 'اله', 'ال', 'و', 'في', 'من',
+        ];
+
+        $tokens = preg_split('/[\s\-&\/,]+/u', mb_strtolower(trim($name))) ?: [];
+        $tokens = array_filter(
+            $tokens,
+            static fn (mixed $token): bool => is_string($token)
+                && $token !== ''
+                && ! in_array($token, $stopwords, true)
+                && mb_strlen($token) > 1,
+        );
+
+        return array_values(array_unique($tokens));
     }
 
     /** @return array<int, array<string, mixed>> */

@@ -92,6 +92,7 @@ trait ManagesFacultyHomepage
         if (is_array($this->data)) {
             $this->data['study_plan_department_options'] = $studyPlanDepartmentOptions;
             $this->data['study_plan_term_options'] = $studyPlanTermOptions;
+            $this->data['department_study_plan_options'] = $this->departmentStudyPlanOptionsFromTarget($targetKey);
         }
     }
 
@@ -644,6 +645,12 @@ trait ManagesFacultyHomepage
                         TextInput::make('code')->maxLength(40),
                         TextInput::make('title')->required()->maxLength(180),
                         TextInput::make('degrees')->label('Degree / Track')->maxLength(160),
+                        Select::make('studyPlanDepartmentId')
+                            ->label('Study Plan Tab')
+                            ->options(fn (): array => $this->departmentStudyPlanOptions())
+                            ->searchable()
+                            ->placeholder('Auto-match')
+                            ->helperText('Pick a Study Plan tab this department links to. Leave on "Auto-match" to let the system guess from the department name.'),
                         TagsInput::make('tags')->columnSpanFull(),
                         Textarea::make('summary')->rows(3)->columnSpanFull(),
                     ])
@@ -1122,6 +1129,96 @@ trait ManagesFacultyHomepage
     private function studyPlanTermOptions(): array
     {
         return is_array($this->data['study_plan_term_options'] ?? null) ? $this->data['study_plan_term_options'] : [];
+    }
+
+    /**
+     * Resolve the Study Plan department options that should be presented per department row in the
+     * departments subpage editor. They are loaded from the matching faculty's study_plan target draft
+     * or published payload, regardless of the current departments subpage being edited.
+     *
+     * @return array<string, string> Map of study-plan department tab id => bilingual label.
+     */
+    private function departmentStudyPlanOptionsFromTarget(string $targetKey): array
+    {
+        if ($this->subpageSlugFromTarget($targetKey) !== 'departments') {
+            return [];
+        }
+
+        $studyPlanTargetKey = $this->studyPlanTargetKeyFromDepartmentsTarget($targetKey);
+
+        if ($studyPlanTargetKey === null) {
+            return [];
+        }
+
+        $draft = $this->cmsWorkflowService->latestEditableDraftPayload($studyPlanTargetKey);
+        $payload = is_array($draft) ? $draft : null;
+
+        if ($payload === null) {
+            try {
+                $payload = $this->facultyPageService->getEditablePayload($studyPlanTargetKey);
+            } catch (\Throwable $error) {
+                report($error);
+
+                return [];
+            }
+        }
+
+        $content = is_array($payload['translations']['en'] ?? null)
+            ? $payload['translations']['en']
+            : (is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : []);
+
+        return $this->studyPlanLabelsFromContent($content);
+    }
+
+    /** @return array<string, string> */
+    private function departmentStudyPlanOptions(): array
+    {
+        return is_array($this->data['department_study_plan_options'] ?? null) ? $this->data['department_study_plan_options'] : [];
+    }
+
+    private function studyPlanTargetKeyFromDepartmentsTarget(string $targetKey): ?string
+    {
+        if (! str_starts_with($targetKey, 'facilities.')) {
+            return null;
+        }
+
+        $parts = explode('.', $targetKey);
+
+        if (count($parts) < 3 || $parts[2] !== 'departments') {
+            return null;
+        }
+
+        $parts[2] = 'study_plan';
+
+        return implode('.', $parts);
+    }
+
+    /** @param array<string, mixed> $content @return array<string, string> */
+    private function studyPlanLabelsFromContent(array $content): array
+    {
+        $departments = is_array($content['payload']['plan']['departments'] ?? null) ? $content['payload']['plan']['departments'] : [];
+        $options = [];
+
+        foreach ($this->listOfArrays($departments) as $department) {
+            $id = (string) ($department['id'] ?? '');
+
+            if ($id === '') {
+                continue;
+            }
+
+            $enLabel = trim((string) ($department['nameEn'] ?? $department['name'] ?? ''));
+            $arLabel = trim((string) ($department['nameAr'] ?? $department['name'] ?? ''));
+
+            if ($enLabel !== '' && $arLabel !== '') {
+                $label = $enLabel.' — '.$arLabel;
+            } else {
+                $label = $enLabel !== '' ? $enLabel : ($arLabel !== '' ? $arLabel : $id);
+            }
+
+            $options[$id] = $label;
+        }
+
+        return $options;
     }
 
     /** @param array<string, mixed> $content @return array<string, mixed> */

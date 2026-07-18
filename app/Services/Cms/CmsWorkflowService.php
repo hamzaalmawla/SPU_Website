@@ -382,12 +382,20 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
 
     private function latestEditableDraft(string $targetKey): ?CmsDraft
     {
-        $draft = CmsDraft::query()
+        $draftId = CmsDraft::query()
             ->where('target_key', $targetKey)
             ->whereIn('status', PublicationStatus::editableValues())
             ->latest('updated_at')
             ->latest('id')
-            ->first();
+            ->value('id');
+
+        $id = $draftId !== null ? (int) $draftId : null;
+
+        if ($id === null) {
+            return null;
+        }
+
+        $draft = CmsDraft::query()->find($id);
 
         return $draft instanceof CmsDraft ? $draft : null;
     }

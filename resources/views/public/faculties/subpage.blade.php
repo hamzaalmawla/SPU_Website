@@ -195,7 +195,7 @@
                                     @endforelse
                                 </div>
                             </div>
-                            <a href="/{{ $locale }}/admissions" class="inline-flex h-11 items-center justify-center rounded-[6px] px-5 text-sm font-bold text-white transition-all hover:-translate-y-0.5" style="background-color: {{ $accent }}">{{ $isAr ? 'القبول' : 'Admissions' }}</a>
+                            <a href="{{ $item['studyPlanUrl'] ?? ('/'.$locale.'/facilities/'.$page->facultySlug.'/study-plan') }}" class="inline-flex h-11 items-center justify-center rounded-[6px] px-5 text-sm font-bold text-white transition-all hover:-translate-y-0.5" style="background-color: {{ $accent }}">{{ $isAr ? 'الخطة الدراسية' : 'Study Plan' }}</a>
                         </article>
                     @empty
                         <p class="p-8 text-center text-slate-500">{{ $isAr ? 'لا توجد أقسام منشورة حالياً.' : 'No published departments are available yet.' }}</p>
