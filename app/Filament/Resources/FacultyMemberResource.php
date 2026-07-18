@@ -129,6 +129,7 @@ class FacultyMemberResource extends Resource
             TextColumn::make('translations.position')->label('Position')->limit(20),
             TextColumn::make('faculty.translations.name')->label('Faculty')->limit(30),
             IconColumn::make('is_enabled')->boolean(),
+            TextColumn::make('publication_status')->badge()->sortable(),
             TextColumn::make('updated_at')->dateTime()->sortable(),
         ])->actions([
             Tables\Actions\EditAction::make(),

@@ -214,6 +214,10 @@ final class PreviewService implements PreviewServiceInterface
             return $locale.'/admissions/'.substr($targetKey, strlen('admissions.'));
         }
 
+        if (is_string($targetKey) && str_starts_with($targetKey, 'e_services.')) {
+            return $locale.'/e-services/'.substr($targetKey, strlen('e_services.'));
+        }
+
         return match ($targetKey) {
             'contact' => $locale.'/contact',
             'e_services' => $locale.'/e-services',

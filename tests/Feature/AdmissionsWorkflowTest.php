@@ -184,8 +184,11 @@ final class AdmissionsWorkflowTest extends TestCase
         ] as $targetKey => $case) {
             $this->get($case['path'])
                 ->assertOk()
-                ->assertSee($case['title']);
+                ->assertSee($case['title'])
+                ->assertSee('/images/admission/front-img.jpg');
         }
+
+        $this->assertFileExists(public_path('images/admission/front-img.jpg'));
 
         $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
 

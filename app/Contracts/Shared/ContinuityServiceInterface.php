@@ -20,7 +20,11 @@ interface ContinuityServiceInterface
     /**
      * Resolve a redirect for the given request path. Returns null if no match.
      */
-    public function resolveRedirect(string $path, ?string $queryString = null): ?RedirectResultDTO;
+    public function resolveRedirect(
+        string $path,
+        ?string $queryString = null,
+        ?string $preferredLocale = null,
+    ): ?RedirectResultDTO;
 
     /**
      * Resolve a legacy file path to a current delivery URL. Returns null if no match.

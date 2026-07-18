@@ -23,9 +23,13 @@ final readonly class AboutLandingDTO
         public string $badge,
         public string $imagePrimary,
         public string $imageSecondary,
+        public string $imageOverview,
         public array $stats,
         public array $storyItems,
         public array $highlights,
         public array $subPages,
+        public string $seoTitle,
+        public string $seoDescription,
+        public string $seoImage,
     ) {}
 }

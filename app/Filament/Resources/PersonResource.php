@@ -64,7 +64,10 @@ class PersonResource extends Resource
                 ]),
                 TextInput::make('title')->maxLength(255)->placeholder('Prof., Dr., etc.'),
                 TextInput::make('position')->maxLength(255)->placeholder('Rector, Dean, etc.'),
-                TextInput::make('faculty_scope_slug')->maxLength(255),
+                Select::make('faculty_scope_slug')
+                    ->label('Faculty')
+                    ->options(self::facultyOptions())
+                    ->searchable(),
                 MediaPicker::image('image', 'Profile Image'),
                 TextInput::make('email')->email()->maxLength(255),
                 TextInput::make('phone')->maxLength(255),
@@ -111,9 +114,20 @@ class PersonResource extends Resource
         return $table->columns([
             TextColumn::make('slug')->searchable()->sortable(),
             TextColumn::make('category')->badge()->sortable(),
+            TextColumn::make('faculty_scope_slug')->label('Faculty')->badge()->sortable(),
             TextColumn::make('translations.name')->label('Names')->listWithLineBreaks()->limit(40),
             IconColumn::make('is_enabled')->boolean(),
+            TextColumn::make('publication_status')->badge()->sortable(),
             TextColumn::make('updated_at')->dateTime()->sortable(),
+        ])->filters([
+            Tables\Filters\SelectFilter::make('category')->options([
+                'rector' => 'Rector',
+                'vice_president' => 'Vice President',
+                'dean' => 'Dean',
+                'director' => 'Director',
+                'council' => 'Council Member',
+            ]),
+            Tables\Filters\SelectFilter::make('faculty_scope_slug')->label('Faculty')->options(self::facultyOptions()),
         ])->actions([
             Tables\Actions\EditAction::make(),
             Tables\Actions\ViewAction::make(),
@@ -127,6 +141,20 @@ class PersonResource extends Resource
             'create' => Pages\CreatePerson::route('/create'),
             'edit' => Pages\EditPerson::route('/{record}/edit'),
             'view' => Pages\ViewPerson::route('/{record}'),
+        ];
+    }
+
+    /** @return array<string, string> */
+    private static function facultyOptions(): array
+    {
+        return [
+            'medicine' => 'Medicine',
+            'dentistry' => 'Dentistry',
+            'pharmacy' => 'Pharmacy',
+            'artificial-intelligence' => 'Artificial Intelligence Engineering',
+            'building-construction-engineering' => 'Building and Construction Engineering',
+            'petroleum' => 'Petroleum Engineering',
+            'business-administration' => 'Business Administration',
         ];
     }
 }

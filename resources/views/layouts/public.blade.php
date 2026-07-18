@@ -5,24 +5,34 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <title>{{ $seo->title }}</title>
-        <meta name="robots" content="{{ $seo->robots ?? 'index,follow' }}">
+        <meta name="robots" content="{{ ($isPreview ?? false) ? 'noindex,nofollow,noarchive' : ($seo->robots ?? 'index,follow') }}">
         @if ($seo->metaDescription)
             <meta name="description" content="{{ $seo->metaDescription }}">
         @endif
         <meta property="og:locale" content="{{ $locale }}">
+        <meta property="og:type" content="website">
+        <meta property="og:site_name" content="{{ config('app.name', 'Syrian Private University') }}">
+        @if ($seo->canonicalUrl)<meta property="og:url" content="{{ $seo->canonicalUrl }}">@endif
         <meta property="og:title" content="{{ $seo->ogTitle ?? $seo->title }}">
         @if ($seo->ogDescription)
             <meta property="og:description" content="{{ $seo->ogDescription }}">
         @endif
         @if ($seo->ogImage)
-            <meta property="og:image" content="{{ $seo->ogImage }}">
+            <meta property="og:image" content="{{ str_starts_with($seo->ogImage, 'http://') || str_starts_with($seo->ogImage, 'https://') ? $seo->ogImage : url($seo->ogImage) }}">
         @endif
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:title" content="{{ $seo->ogTitle ?? $seo->title }}">
+        @if ($seo->ogDescription)<meta name="twitter:description" content="{{ $seo->ogDescription }}">@endif
+        @if ($seo->ogImage)<meta name="twitter:image" content="{{ str_starts_with($seo->ogImage, 'http://') || str_starts_with($seo->ogImage, 'https://') ? $seo->ogImage : url($seo->ogImage) }}">@endif
         @if ($seo->canonicalUrl)
             <link rel="canonical" href="{{ $seo->canonicalUrl }}">
         @endif
         @foreach ($seo->hreflang as $hreflang)
             <link rel="alternate" hreflang="{{ $hreflang['locale'] }}" href="{{ $hreflang['url'] }}">
         @endforeach
+        @if (isset($structuredData) && is_array($structuredData))
+            <script type="application/ld+json">{!! json_encode($structuredData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}</script>
+        @endif
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link rel="icon" href="{{ asset('images/single-logo.png') }}" type="image/png">
         <link rel="manifest" href="{{ asset('site.webmanifest') }}">
@@ -76,12 +86,14 @@
             @endforeach
         @endif
         @stack('styles')
+        @stack('head')
     </head>
     <body class="min-h-screen antialiased font-hacen">
+        <a class="skip-link" href="#main-content">{{ $locale === 'ar' ? 'انتقل إلى المحتوى الرئيسي' : 'Skip to main content' }}</a>
         @include('public.layout.preview-banner')
         @include('public.layout.header')
 
-        <main>@yield('content')</main>
+        <main id="main-content" tabindex="-1">@yield('content')</main>
 
         @include('public.layout.footer')
         @stack('scripts')

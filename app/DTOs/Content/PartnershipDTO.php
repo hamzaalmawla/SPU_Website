@@ -8,6 +8,9 @@ final readonly class PartnershipDTO
 {
     public function __construct(
         public int $id,
+        public string $slug,
+        public string $categoryKey,
+        public string $statusKey,
         public string $name,
         public string $category,
         public string $status,

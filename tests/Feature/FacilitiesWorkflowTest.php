@@ -130,6 +130,51 @@ final class FacilitiesWorkflowTest extends TestCase
         $this->assertContains('Curated Faculty Button', $facultyButtonTitles);
     }
 
+    public function test_published_facilities_hub_renders_cms_buttons_and_featured_model_card(): void
+    {
+        $facilities = app(FacultyPageServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $payload = $facilities->getEditablePayload('facilities.landing');
+        $links = $payload['translations']['en']['facultyLinks'];
+        $firstLink = $links[0];
+        $secondLink = $links[1];
+
+        $links[0] = array_merge($secondLink, [
+            'title' => 'CMS Dentistry First',
+            'summary' => 'CMS dentistry summary.',
+            'accentColor' => '#123456',
+        ]);
+        $links[1] = array_merge($firstLink, [
+            'title' => 'CMS Medicine Second',
+            'summary' => 'CMS medicine summary.',
+            'accentColor' => '#654321',
+        ]);
+        $payload['translations']['en']['facultyLinks'] = $links;
+
+        foreach ($payload['translations']['en']['model']['cards'] as $index => $card) {
+            $payload['translations']['en']['model']['cards'][$index]['featured'] = $index === 1;
+        }
+
+        $workflow->saveDraft('facilities.landing', $payload, (int) $author->id);
+        $this->assertTrue($workflow->publish('facilities.landing', (int) $author->id));
+
+        $this->get('/en/facilities')
+            ->assertOk()
+            ->assertSeeInOrder(['CMS Dentistry First', 'CMS Medicine Second'])
+            ->assertSee('CMS dentistry summary.')
+            ->assertSee('--accent: #123456;', false)
+            ->assertSee('href="#faculties-overview"', false)
+            ->assertSee('id="faculties-overview"', false)
+            ->assertDontSee('#faculties-explorer', false)
+            ->assertSeeInOrder([
+                'data-featured="false"',
+                'Clinical Learning',
+                'data-featured="true"',
+                'Applied Education',
+            ], false);
+    }
+
     public function test_medicine_faculty_workflow_draft_does_not_leak_until_published(): void
     {
         $facilities = app(FacultyPageServiceInterface::class);
@@ -929,5 +974,19 @@ final class FacilitiesWorkflowTest extends TestCase
             ->assertSet('data.en_content.title', 'Projects')
             ->assertSee('Student Projects')
             ->assertSee('Supervisor');
+    }
+
+    public function test_reference_faculty_and_project_queries_redirect_to_canonical_routes(): void
+    {
+        $this->get('/en/facilities?id=ai-engineering')
+            ->assertRedirect('/en/facilities/artificial-intelligence');
+
+        $this->get('/en/facilities?id=Construction')
+            ->assertRedirect('/en/facilities/building-construction-engineering');
+
+        $this->get('/en/projects/detail?id=artificial-intelligence-project-1')
+            ->assertRedirect('/en/facilities/artificial-intelligence/projects/artificial-intelligence-project-1');
+
+        $this->get('/en/projects/detail?id=missing-project')->assertNotFound();
     }
 }

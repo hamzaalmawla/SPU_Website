@@ -9,4 +9,6 @@ use App\DTOs\Content\ProfilePageDTO;
 interface ProfilePageServiceInterface
 {
     public function getProfile(string $locale, string $source, string $slug): ?ProfilePageDTO;
+
+    public function resolveLegacyProfile(string $locale, string $identifier): ?ProfilePageDTO;
 }

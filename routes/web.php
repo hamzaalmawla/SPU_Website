@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\TwoFactorChallengeController;
 use App\Http\Controllers\Public\AboutController;
 use App\Http\Controllers\Public\AdmissionsController;
+use App\Http\Controllers\Public\BrowserLocaleRedirectController;
 use App\Http\Controllers\Public\CampusLifeController;
 use App\Http\Controllers\Public\DynamicFormSubmissionController;
 use App\Http\Controllers\Public\EServicesController;
@@ -22,10 +23,14 @@ use App\Http\Middleware\AdminLocaleMiddleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/ar')->name('root');
+Route::get('/', BrowserLocaleRedirectController::class)->name('root');
 
 Route::get('/sitemap.xml', [SitemapController::class, 'sitemap'])->name('sitemap');
 Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
+
+Route::get('/{referencePath}', BrowserLocaleRedirectController::class)
+    ->where('referencePath', '(?:about|admissions|research|campus-life|e-services|news|contact|facilities|projects|virtual-tour)(?:/.*)?')
+    ->name('reference.locale');
 
 Route::prefix('{locale}')
     ->where(['locale' => 'ar|en'])
@@ -33,6 +38,9 @@ Route::prefix('{locale}')
     ->group(function (): void {
         Route::get('/', HomeController::class)->name('public.home');
         Route::get('/e-services', EServicesController::class)->name('public.e-services');
+        Route::get('/e-services/{detail}', [EServicesController::class, 'detail'])
+            ->where(['detail' => 'library|staff-email|it-support'])
+            ->name('public.e-services.detail');
         Route::get('/e-services/suggestions-complaints', [EServicesController::class, 'suggestionsComplaints'])->name('public.e-services.suggestions-complaints');
         Route::post('/e-services/suggestions-complaints', [EServicesController::class, 'storeSuggestionsComplaints'])
             ->middleware('throttle:public-form')
@@ -109,6 +117,7 @@ Route::prefix('{locale}')
             ->group(function (): void {
                 Route::get('/', 'landing')->name('landing');
                 Route::get('/university-council', 'redirectUniversityCouncil')->name('university-council.redirect');
+                Route::get('/vision-mission', 'visionMission')->name('vision-mission');
                 Route::get('/history', 'history')->name('history');
                 Route::get('/leadership', 'leadership')->name('leadership');
                 Route::get('/central-directorates', 'directorates')->name('central-directorates');
@@ -117,6 +126,7 @@ Route::prefix('{locale}')
                 Route::get('/directorates/{directorate}', 'directorateDetail')->name('directorates.show');
                 Route::get('/partnership', 'redirectPartnershipAlias')->name('partnership.redirect');
                 Route::get('/partnerships', 'partnerships')->name('partnerships');
+                Route::get('/profile', 'redirectLegacyProfile')->name('profile.legacy');
                 Route::get('/{section}', 'content')
                     ->where(['section' => 'quality-policy|ethical-charter|organizational-structure|accreditation|why-spu'])
                     ->name('content');
@@ -146,6 +156,13 @@ Route::prefix('{locale}')
             ->group(function (): void {
                 Route::get('/', 'index')->name('index');
                 Route::get('/articles', 'articles')->name('articles');
+                Route::get('/announcements', 'announcements')->name('announcements');
+                Route::get('/events', 'events')->name('events');
+                Route::get('/events-list', 'eventsList')->name('events-list');
+                Route::get('/events-list/register', 'eventRegistration')->name('events-list.register');
+                Route::get('/events-list/past', 'pastEvent')->name('events-list.past');
+                Route::get('/gallery', 'gallery')->name('gallery');
+                Route::get('/article', 'redirectLegacyArticle')->name('article.legacy');
                 Route::get('/{article}', 'show')->name('show');
             });
 
@@ -188,6 +205,9 @@ Route::prefix('{locale}')
                 Route::get('/office', 'office')->name('office');
                 Route::get('/policies', 'policies')->name('policies');
             });
+
+        Route::get('/projects/detail', [FacultyController::class, 'redirectLegacyProject'])
+            ->name('public.projects.detail.legacy');
 
         Route::get('/{slugPath}', PageController::class)
             ->where('slugPath', '.+')

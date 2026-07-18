@@ -43,10 +43,11 @@ class NavigationShellTest extends TestCase
         $ar = $this->navigationService()->getFullNavigationPayload('ar', 'ar/about');
         $en = $this->navigationService()->getFullNavigationPayload('en', 'en/about');
 
-        $this->assertSame('بوابة الطالب', $ar->utility->items[0]->label);
-        $this->assertSame('Student Portal', $en->utility->items[0]->label);
-        $this->assertSame('https://students.spu.edu.sy', $en->studentPortalUrl);
-        $this->assertSame('https://staff.spu.edu.sy', $en->staffAccessUrl);
+        $this->assertSame('مساعدة وصول الطلاب', $ar->utility->items[0]->label);
+        $this->assertSame('Student Access Help', $en->utility->items[0]->label);
+        $this->assertSame('/en/e-services/it-support', $en->utility->items[0]->resolvedUrl);
+        $this->assertSame('/e-services/it-support', $en->studentPortalUrl);
+        $this->assertSame('/e-services/staff-email', $en->staffAccessUrl);
         $this->assertSame('Apply now', $en->applyCta?->label);
     }
 
@@ -57,9 +58,18 @@ class NavigationShellTest extends TestCase
 
         $this->assertSame('الجامعة الخاصة السورية', $ar->footerSettings->brandTitle);
         $this->assertSame('Syrian Private University', $en->footerSettings->brandTitle);
-        $this->assertCount(2, $en->footerSettings->legalLinks);
-        $this->assertNotEmpty($en->socialContact->socialLinks);
+        $this->assertSame([], $en->footerSettings->legalLinks);
+        $this->assertSame([], $en->socialContact->socialLinks);
         $this->assertNotEmpty($en->socialContact->contactLinks);
+    }
+
+    public function test_footer_language_switch_preserves_the_current_page(): void
+    {
+        $html = $this->get('/en/about')->assertOk()->getContent();
+        $footerPosition = strpos($html, 'id="site-footer"');
+
+        $this->assertNotFalse($footerPosition);
+        $this->assertStringContainsString('href="/ar/about"', substr($html, $footerPosition));
     }
 
     public function test_menu_depth_greater_than_two_is_rejected(): void

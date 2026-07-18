@@ -7,8 +7,8 @@ namespace App\DTOs\Form;
 use Illuminate\Http\UploadedFile;
 
 /**
- * @param array<string, mixed> $payload
- * @param array<string, UploadedFile> $files
+ * @param  array<string, mixed>  $payload
+ * @param  array<string, UploadedFile>  $files
  */
 final readonly class DynamicFormSubmissionDataDTO
 {
@@ -19,5 +19,7 @@ final readonly class DynamicFormSubmissionDataDTO
         public array $files,
         public ?string $ipAddress,
         public ?string $userAgent,
+        public ?string $eventSource = null,
+        public ?string $eventId = null,
     ) {}
 }

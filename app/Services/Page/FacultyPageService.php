@@ -10,6 +10,7 @@ use App\Contracts\Shared\CacheServiceInterface;
 use App\DTOs\Faculty\FacultyCardDTO;
 use App\DTOs\Faculty\FacultyDetailPageDTO;
 use App\DTOs\Faculty\FacultyHighlightDTO;
+use App\DTOs\Faculty\FacultyHubCardDTO;
 use App\DTOs\Faculty\FacultyHubPageDTO;
 use App\DTOs\Faculty\FacultyNavigationItemDTO;
 use App\DTOs\Faculty\FacultyProjectDetailPageDTO;
@@ -312,7 +313,20 @@ final class FacultyPageService implements FacultyPageServiceInterface
 
     public function canonicalFacultySlug(string $slug): string
     {
-        return self::FACULTY_SLUG_ALIASES[$slug] ?? $slug;
+        $normalized = strtolower(trim($slug));
+
+        return self::FACULTY_SLUG_ALIASES[$normalized] ?? $normalized;
+    }
+
+    public function resolveLegacyProjectUrl(string $projectId, string $locale): ?string
+    {
+        foreach ($this->frontendProjectData() as $facultySlug => $projects) {
+            if (collect($projects)->contains(fn (array $project): bool => ($project['id'] ?? null) === $projectId)) {
+                return '/'.$locale.'/facilities/'.$facultySlug.'/projects/'.rawurlencode($projectId);
+            }
+        }
+
+        return null;
     }
 
     public function subpageSlugPattern(): string
@@ -330,11 +344,83 @@ final class FacultyPageService implements FacultyPageServiceInterface
             locale: $locale,
             direction: $this->direction($locale),
             content: $content,
-            faculties: $faculties->map(fn (Faculty $faculty): FacultyCardDTO => $this->cardDto($faculty, $locale))->values(),
+            faculties: $this->hubCards($locale, $content, $faculties),
             seoTitle: (string) ($content['hero']['title'] ?? ($locale === 'ar' ? 'الكليات | الجامعة السورية الخاصة' : 'Faculties | Syrian Private University')),
             seoDescription: (string) ($content['hero']['summary'] ?? ''),
             seoImage: (string) ($content['hero']['image'] ?? '/images/campus-feature-01.webp'),
         );
+    }
+
+    /**
+     * @param  array<string, mixed>  $content
+     * @param  Collection<int, Faculty>  $faculties
+     * @return Collection<int, FacultyHubCardDTO>
+     */
+    private function hubCards(string $locale, array $content, Collection $faculties): Collection
+    {
+        $facultyLinks = $this->arrayList($content['facultyLinks'] ?? []);
+
+        if ($facultyLinks === []) {
+            return $faculties
+                ->map(fn (Faculty $faculty): FacultyHubCardDTO => $this->hubCardDto($faculty, $locale))
+                ->values();
+        }
+
+        $facultiesBySlug = collect();
+
+        foreach ($faculties as $faculty) {
+            $facultiesBySlug->put($this->publicSlug($faculty), $faculty);
+            $facultiesBySlug->put($this->canonicalFacultySlug($this->publicSlug($faculty)), $faculty);
+        }
+
+        return collect($facultyLinks)
+            ->map(function (array $link) use ($facultiesBySlug, $locale): FacultyHubCardDTO {
+                $url = (string) ($link['url'] ?? '#');
+                $slug = $this->facultySlugFromUrl($url);
+                $faculty = $slug !== '' ? $facultiesBySlug->get($slug) : null;
+                $fallback = $faculty instanceof Faculty ? $this->hubCardDto($faculty, $locale) : null;
+
+                return new FacultyHubCardDTO(
+                    slug: $fallback?->slug ?? $slug,
+                    title: (string) ($link['title'] ?? $fallback?->title ?? ''),
+                    summary: (string) ($link['summary'] ?? $fallback?->summary ?? ''),
+                    url: $url,
+                    heroImage: $fallback?->heroImage,
+                    logoImage: $fallback?->logoImage,
+                    accentColor: isset($link['accentColor']) && is_string($link['accentColor'])
+                        ? $link['accentColor']
+                        : $fallback?->accentColor,
+                );
+            })
+            ->values();
+    }
+
+    private function hubCardDto(Faculty $faculty, string $locale): FacultyHubCardDTO
+    {
+        $card = $this->cardDto($faculty, $locale);
+
+        return new FacultyHubCardDTO(
+            slug: $card->slug,
+            title: $card->title,
+            summary: $card->summary,
+            url: $card->url,
+            heroImage: $card->heroImage,
+            logoImage: $card->logoImage,
+            accentColor: $card->accentColor,
+        );
+    }
+
+    private function facultySlugFromUrl(string $url): string
+    {
+        $path = parse_url($url, PHP_URL_PATH);
+
+        if (! is_string($path)) {
+            return '';
+        }
+
+        $slug = basename(rtrim($path, '/'));
+
+        return $this->canonicalFacultySlug(rawurldecode($slug));
     }
 
     /** @return array<string, mixed> */
@@ -1326,7 +1412,11 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'body' => (string) ($translation?->body ?? $facultyTranslation->description ?? ''),
         ]];
 
-        $sections = is_array($translation?->sections_json) ? $translation->sections_json : [];
+        $sections = $translation?->getAttribute('sections_json');
+
+        if (! is_iterable($sections)) {
+            return $tabs;
+        }
 
         foreach ($sections as $index => $section) {
             if (! is_array($section) || empty($section['body'])) {

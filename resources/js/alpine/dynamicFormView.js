@@ -1,7 +1,10 @@
 export function createDynamicFormShell() {
     return {
         init() {
-            this.$store.dynamicForm.open(this.$el.dataset.formId, this.$el.dataset.locale);
+            this.$store.dynamicForm.open(this.$el.dataset.formId, this.$el.dataset.locale, null, {
+                eventSource: this.$el.dataset.eventSource || '',
+                eventId: this.$el.dataset.eventId || '',
+            });
         },
     };
 }

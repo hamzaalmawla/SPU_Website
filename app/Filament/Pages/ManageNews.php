@@ -18,6 +18,7 @@ use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\Tabs\Tab;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -142,7 +143,7 @@ class ManageNews extends Page implements HasForms
     {
         $this->assertNewsTarget($targetKey);
 
-        if ($targetKey !== 'news.index') {
+        if (! in_array($targetKey, ['news.index', 'news.announcements', 'news.events', 'news.gallery'], true)) {
             $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey);
             $this->form->fill([
                 'target_key' => $targetKey,
@@ -156,6 +157,36 @@ class ManageNews extends Page implements HasForms
         $draftPayload = $this->cmsWorkflowService->latestEditableDraftPayload($targetKey);
         $payload = is_array($draftPayload) ? $draftPayload : $this->newsService->getEditablePayload($targetKey);
         $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey);
+
+        if ($targetKey === 'news.announcements') {
+            $this->form->fill([
+                'target_key' => $targetKey,
+                'ar_target' => is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
+                'en_target' => is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
+            ]);
+
+            return;
+        }
+
+        if ($targetKey === 'news.events') {
+            $this->form->fill([
+                'target_key' => $targetKey,
+                'ar_events' => is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
+                'en_events' => is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
+            ]);
+
+            return;
+        }
+
+        if ($targetKey === 'news.gallery') {
+            $this->form->fill([
+                'target_key' => $targetKey,
+                'ar_gallery' => is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
+                'en_gallery' => is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
+            ]);
+
+            return;
+        }
 
         $this->form->fill([
             'target_key' => $targetKey,
@@ -294,6 +325,33 @@ class ManageNews extends Page implements HasForms
             ];
         }
 
+        if (($state['target_key'] ?? null) === 'news.announcements') {
+            return [
+                'translations' => [
+                    'ar' => is_array($state['ar_target'] ?? null) ? $this->normalizeAnnouncementsPayload($state['ar_target']) : [],
+                    'en' => is_array($state['en_target'] ?? null) ? $this->normalizeAnnouncementsPayload($state['en_target']) : [],
+                ],
+            ];
+        }
+
+        if (($state['target_key'] ?? null) === 'news.events') {
+            return [
+                'translations' => [
+                    'ar' => is_array($state['ar_events'] ?? null) ? $this->normalizeEventsPayload($state['ar_events']) : [],
+                    'en' => is_array($state['en_events'] ?? null) ? $this->normalizeEventsPayload($state['en_events']) : [],
+                ],
+            ];
+        }
+
+        if (($state['target_key'] ?? null) === 'news.gallery') {
+            return [
+                'translations' => [
+                    'ar' => is_array($state['ar_gallery'] ?? null) ? $this->normalizeGalleryPayload($state['ar_gallery']) : [],
+                    'en' => is_array($state['en_gallery'] ?? null) ? $this->normalizeGalleryPayload($state['en_gallery']) : [],
+                ],
+            ];
+        }
+
         throw new \InvalidArgumentException('This news target form will be structured next. Select the News landing page for now.');
     }
 
@@ -306,25 +364,96 @@ class ManageNews extends Page implements HasForms
     /** @return array<int, Section> */
     private function payloadFields(string $locale): array
     {
-        if ($this->targetKeyForSchema() !== 'news.index') {
-            return [
-                Section::make('Target Schema Pending')
-                    ->description('The News landing page is editable now. Article archive records stay in News Articles; this target will get its own curated shell only if needed.')
-                    ->schema([
-                        TextInput::make($locale.'_target_pending')->label('Status')->default('Structured form pending for this news target')->disabled(),
-                    ]),
-            ];
-        }
-
-        $prefix = $locale.'_index';
+        $announcementPrefix = $locale.'_target';
+        $eventsPrefix = $locale.'_events';
+        $galleryPrefix = $locale.'_gallery';
+        $indexPrefix = $locale.'_index';
 
         return [
+            Section::make('Announcement Page')
+                ->schema([
+                    TextInput::make($announcementPrefix.'.pageTitle')->label('Page Title')->required()->maxLength(160),
+                    Textarea::make($announcementPrefix.'.pageDescription')->label('Description')->required()->rows(2)->columnSpanFull(),
+                    MediaPicker::image($announcementPrefix.'.heroImage', 'Hero Image', true),
+                    TextInput::make($announcementPrefix.'.featuredLabel')->label('Featured Label')->required()->maxLength(120),
+                    TextInput::make($announcementPrefix.'.allCategoriesLabel')->label('All Categories Label')->required()->maxLength(120),
+                    TextInput::make($announcementPrefix.'.readMoreLabel')->label('Read More Label')->required()->maxLength(120),
+                    TextInput::make($announcementPrefix.'.downloadLabel')->label('Download Label')->required()->maxLength(120),
+                    Textarea::make($announcementPrefix.'.emptyState')->label('Empty State')->required()->rows(2)->columnSpanFull(),
+                ])
+                ->columns(2)
+                ->visible(fn (): bool => $this->targetKeyForSchema() === 'news.announcements'),
+            Section::make('Events Catalog')
+                ->schema([
+                    TextInput::make($eventsPrefix.'.title')->label('Page Title')->required()->maxLength(160),
+                    Textarea::make($eventsPrefix.'.summary')->label('Page Summary')->required()->rows(2)->columnSpanFull(),
+                    MediaPicker::image($eventsPrefix.'.heroImage', 'Hero Image', true),
+                    TextInput::make($eventsPrefix.'.calendarTitle')->label('Calendar Title')->required()->maxLength(160),
+                    TextInput::make($eventsPrefix.'.upcomingTitle')->label('Upcoming Title')->required()->maxLength(160),
+                    TextInput::make($eventsPrefix.'.pastTitle')->label('Past Title')->required()->maxLength(160),
+                    TextInput::make($eventsPrefix.'.allCategoriesLabel')->label('All Categories Label')->required()->maxLength(120),
+                    TextInput::make($eventsPrefix.'.registerLabel')->label('Register Label')->required()->maxLength(120),
+                    TextInput::make($eventsPrefix.'.detailsLabel')->label('Details Label')->required()->maxLength(120),
+                    TextInput::make($eventsPrefix.'.freeLabel')->label('Free Label')->required()->maxLength(80),
+                    TextInput::make($eventsPrefix.'.spotsLeftLabel')->label('Spots Left Label')->required()->maxLength(120),
+                    Textarea::make($eventsPrefix.'.emptyLabel')->label('Empty State')->required()->rows(2),
+                    TextInput::make($eventsPrefix.'.registrationTitle')->label('Registration Title')->required()->maxLength(160),
+                    Textarea::make($eventsPrefix.'.registrationInfo')->label('Registration Information')->required()->rows(2),
+                    TextInput::make($eventsPrefix.'.notFoundTitle')->label('Not Found Title')->required()->maxLength(160),
+                    Textarea::make($eventsPrefix.'.notFoundText')->label('Not Found Text')->required()->rows(2),
+                    TextInput::make($eventsPrefix.'.backLabel')->label('Back Label')->required()->maxLength(120),
+                    TextInput::make($eventsPrefix.'.highlightsLabel')->label('Highlights Label')->required()->maxLength(120),
+                    TextInput::make($eventsPrefix.'.speakersLabel')->label('Speakers Label')->required()->maxLength(120),
+                    TextInput::make($eventsPrefix.'.resultsLabel')->label('Results Label')->required()->maxLength(120),
+                    TextInput::make($eventsPrefix.'.galleryLabel')->label('Gallery Label')->required()->maxLength(120),
+                    Repeater::make($eventsPrefix.'.categories')->label('Categories')->schema([
+                        TextInput::make('id')->required()->maxLength(80),
+                        TextInput::make('label')->required()->maxLength(120),
+                    ])->columns(2)->reorderable()->collapsible()->columnSpanFull(),
+                    Repeater::make($eventsPrefix.'.upcoming')->label('Upcoming Events')->schema($this->eventFields(false))->reorderable()->collapsible()->columnSpanFull(),
+                    Repeater::make($eventsPrefix.'.past')->label('Past Events')->schema($this->eventFields(true))->reorderable()->collapsible()->columnSpanFull(),
+                ])
+                ->columns(2)
+                ->visible(fn (): bool => $this->targetKeyForSchema() === 'news.events'),
+            Section::make('Media Gallery')
+                ->schema([
+                    TextInput::make($galleryPrefix.'.title')->label('Page Title')->required()->maxLength(160),
+                    Textarea::make($galleryPrefix.'.summary')->label('Page Summary')->required()->rows(2)->columnSpanFull(),
+                    MediaPicker::image($galleryPrefix.'.heroImage', 'Hero Image', true),
+                    TextInput::make($galleryPrefix.'.allLabel')->label('All Images Label')->required()->maxLength(120),
+                    TextInput::make($galleryPrefix.'.latestLabel')->label('Latest Label')->required()->maxLength(120),
+                    Textarea::make($galleryPrefix.'.emptyLabel')->label('Empty State')->required()->rows(2),
+                    TextInput::make($galleryPrefix.'.openLabel')->label('Open Image Label')->required()->maxLength(120),
+                    TextInput::make($galleryPrefix.'.closeLabel')->label('Close Viewer Label')->required()->maxLength(120),
+                    TextInput::make($galleryPrefix.'.previousLabel')->label('Previous Image Label')->required()->maxLength(120),
+                    TextInput::make($galleryPrefix.'.nextLabel')->label('Next Image Label')->required()->maxLength(120),
+                    Repeater::make($galleryPrefix.'.categories')->label('Gallery Categories')->schema([
+                        TextInput::make('id')->required()->maxLength(80),
+                        TextInput::make('label')->required()->maxLength(120),
+                    ])->columns(2)->reorderable()->collapsible()->columnSpanFull(),
+                    Repeater::make($galleryPrefix.'.items')->label('Gallery Images')->schema([
+                        TextInput::make('id')->required()->maxLength(80),
+                        MediaPicker::assetImage('mediaId', 'Gallery Image', true),
+                        TextInput::make('categoryId')->required()->maxLength(80),
+                        TextInput::make('categoryLabel')->required()->maxLength(120),
+                        TextInput::make('dateLabel')->required()->maxLength(120),
+                        Select::make('featured')->options(['0' => 'No', '1' => 'Yes'])->required(),
+                    ])->columns(2)->reorderable()->collapsible()->columnSpanFull(),
+                ])
+                ->columns(2)
+                ->visible(fn (): bool => $this->targetKeyForSchema() === 'news.gallery'),
+            Section::make('Target Schema Pending')
+                ->description('The selected News target does not have its curated editor yet.')
+                ->schema([
+                    TextInput::make($locale.'_target_pending')->label('Status')->default('Structured form pending for this news target')->disabled(),
+                ])
+                ->visible(fn (): bool => ! in_array($this->targetKeyForSchema(), ['news.index', 'news.announcements', 'news.events', 'news.gallery'], true)),
             Section::make('Hero')->schema([
-                TextInput::make($prefix.'.pageTitle')->label('Page Title')->required()->maxLength(160),
-                TextInput::make($prefix.'.heroTitle')->label('Hero Title')->required()->maxLength(160),
-                Textarea::make($prefix.'.pageDescription')->label('Description')->required()->rows(2)->columnSpanFull(),
-                MediaPicker::image($prefix.'.heroImage', 'Hero Image', true),
-                Repeater::make($prefix.'.heroLinks')
+                TextInput::make($indexPrefix.'.pageTitle')->label('Page Title')->required()->maxLength(160),
+                TextInput::make($indexPrefix.'.heroTitle')->label('Hero Title')->required()->maxLength(160),
+                Textarea::make($indexPrefix.'.pageDescription')->label('Description')->required()->rows(2)->columnSpanFull(),
+                MediaPicker::image($indexPrefix.'.heroImage', 'Hero Image', true),
+                Repeater::make($indexPrefix.'.heroLinks')
                     ->label('Hero Links')
                     ->schema([
                         TextInput::make('id')->required()->maxLength(80),
@@ -335,30 +464,30 @@ class ManageNews extends Page implements HasForms
                     ->reorderable()
                     ->collapsible()
                     ->columnSpanFull(),
-            ])->columns(2),
+            ])->columns(2)->visible(fn (): bool => $this->targetKeyForSchema() === 'news.index'),
 
             Section::make('Sections')->schema([
-                TextInput::make($prefix.'.lastNewsTitle')->label('Last News Title')->required()->maxLength(160),
-                TextInput::make($prefix.'.lastNewsViewAllLabel')->label('Last News View All')->required()->maxLength(160),
-                TextInput::make($prefix.'.announcementsTitle')->label('Announcements Title')->required()->maxLength(160),
-                TextInput::make($prefix.'.announcementsViewAllLabel')->label('Announcements View All')->required()->maxLength(160),
-                TextInput::make($prefix.'.eventsTitle')->label('Events Title')->required()->maxLength(160),
-                TextInput::make($prefix.'.eventsViewAllLabel')->label('Events View All')->required()->maxLength(160),
-                TextInput::make($prefix.'.exploreMoreTitle')->label('Explore More Title')->required()->maxLength(160),
-            ])->columns(2),
+                TextInput::make($indexPrefix.'.lastNewsTitle')->label('Last News Title')->required()->maxLength(160),
+                TextInput::make($indexPrefix.'.lastNewsViewAllLabel')->label('Last News View All')->required()->maxLength(160),
+                TextInput::make($indexPrefix.'.announcementsTitle')->label('Announcements Title')->required()->maxLength(160),
+                TextInput::make($indexPrefix.'.announcementsViewAllLabel')->label('Announcements View All')->required()->maxLength(160),
+                TextInput::make($indexPrefix.'.eventsTitle')->label('Events Title')->required()->maxLength(160),
+                TextInput::make($indexPrefix.'.eventsViewAllLabel')->label('Events View All')->required()->maxLength(160),
+                TextInput::make($indexPrefix.'.exploreMoreTitle')->label('Explore More Title')->required()->maxLength(160),
+            ])->columns(2)->visible(fn (): bool => $this->targetKeyForSchema() === 'news.index'),
 
             Section::make('Cards and Labels')->schema([
-                TextInput::make($prefix.'.archiveTitle')->label('Archive Card Title')->required()->maxLength(160),
-                TextInput::make($prefix.'.archiveCta')->label('Archive Card CTA')->required()->maxLength(120),
-                TextInput::make($prefix.'.announcementsCardTitle')->label('Announcements Card Title')->required()->maxLength(160),
-                TextInput::make($prefix.'.announcementsCardCta')->label('Announcements Card CTA')->required()->maxLength(120),
-                TextInput::make($prefix.'.readMoreLabel')->label('Read More Label')->required()->maxLength(80),
-                TextInput::make($prefix.'.viewDetailsLabel')->label('View Details Label')->required()->maxLength(80),
-                TextInput::make($prefix.'.newLabel')->label('New Badge')->required()->maxLength(80),
-                TextInput::make($prefix.'.newsFallbackCategory')->label('News Fallback Category')->required()->maxLength(120),
-                TextInput::make($prefix.'.universityNewsFallbackCategory')->label('University News Fallback Category')->required()->maxLength(120),
-                Textarea::make($prefix.'.emptyAnnouncements')->label('Empty Announcements Text')->required()->rows(2)->columnSpanFull(),
-            ])->columns(2),
+                TextInput::make($indexPrefix.'.archiveTitle')->label('Archive Card Title')->required()->maxLength(160),
+                TextInput::make($indexPrefix.'.archiveCta')->label('Archive Card CTA')->required()->maxLength(120),
+                TextInput::make($indexPrefix.'.announcementsCardTitle')->label('Announcements Card Title')->required()->maxLength(160),
+                TextInput::make($indexPrefix.'.announcementsCardCta')->label('Announcements Card CTA')->required()->maxLength(120),
+                TextInput::make($indexPrefix.'.readMoreLabel')->label('Read More Label')->required()->maxLength(80),
+                TextInput::make($indexPrefix.'.viewDetailsLabel')->label('View Details Label')->required()->maxLength(80),
+                TextInput::make($indexPrefix.'.newLabel')->label('New Badge')->required()->maxLength(80),
+                TextInput::make($indexPrefix.'.newsFallbackCategory')->label('News Fallback Category')->required()->maxLength(120),
+                TextInput::make($indexPrefix.'.universityNewsFallbackCategory')->label('University News Fallback Category')->required()->maxLength(120),
+                Textarea::make($indexPrefix.'.emptyAnnouncements')->label('Empty Announcements Text')->required()->rows(2)->columnSpanFull(),
+            ])->columns(2)->visible(fn (): bool => $this->targetKeyForSchema() === 'news.index'),
         ];
     }
 
@@ -373,6 +502,73 @@ class ManageNews extends Page implements HasForms
         $payload['title'] = (string) ($payload['pageTitle'] ?? ($payload['title'] ?? ''));
         $payload['headline'] = (string) ($payload['heroTitle'] ?? ($payload['headline'] ?? ''));
         $payload['summary'] = (string) ($payload['pageDescription'] ?? ($payload['summary'] ?? ''));
+
+        return $payload;
+    }
+
+    /** @return array<string, mixed> */
+    private function normalizeAnnouncementsPayload(array $payload): array
+    {
+        $payload['title'] = (string) ($payload['pageTitle'] ?? '');
+        $payload['headline'] = (string) ($payload['pageTitle'] ?? '');
+        $payload['summary'] = (string) ($payload['pageDescription'] ?? '');
+
+        return $payload;
+    }
+
+    /** @return array<int, mixed> */
+    private function eventFields(bool $past): array
+    {
+        $fields = [
+            TextInput::make('id')->required()->maxLength(80),
+            TextInput::make('title')->required()->maxLength(200),
+            Textarea::make('summary')->required()->rows(2)->columnSpanFull(),
+            DateTimePicker::make('startsAt')->required()->seconds(false),
+            DateTimePicker::make('endsAt')->seconds(false),
+            TextInput::make('dateLabel')->required()->maxLength(120),
+            TextInput::make('timeLabel')->required()->maxLength(120),
+            TextInput::make('location')->required()->maxLength(200),
+            TextInput::make('categoryId')->required()->maxLength(80),
+            TextInput::make('categoryLabel')->required()->maxLength(120),
+            MediaPicker::image('image', 'Image', true),
+        ];
+
+        if (! $past) {
+            $fields[] = Select::make('formId')->options([
+                'conference-registration' => 'Conference Registration',
+                'activity-registration' => 'Activity Registration',
+            ])->required();
+            $fields[] = TextInput::make('capacity')->numeric()->minValue(0)->required();
+            $fields[] = TextInput::make('registered')->numeric()->minValue(0)->required();
+            $fields[] = Select::make('featured')->options(['0' => 'No', '1' => 'Yes'])->required();
+
+            return $fields;
+        }
+
+        $fields[] = TextInput::make('participants')->maxLength(120);
+        $fields[] = TagsInput::make('highlights')->columnSpanFull();
+        $fields[] = Repeater::make('speakers')->schema([
+            TextInput::make('name')->required()->maxLength(160),
+            TextInput::make('title')->required()->maxLength(200),
+        ])->columns(2)->columnSpanFull();
+        $fields[] = Textarea::make('results')->rows(2)->columnSpanFull();
+        $fields[] = TagsInput::make('gallery')->columnSpanFull();
+
+        return $fields;
+    }
+
+    /** @return array<string, mixed> */
+    private function normalizeEventsPayload(array $payload): array
+    {
+        $payload['headline'] = (string) ($payload['title'] ?? '');
+
+        return $payload;
+    }
+
+    /** @return array<string, mixed> */
+    private function normalizeGalleryPayload(array $payload): array
+    {
+        $payload['headline'] = (string) ($payload['title'] ?? '');
 
         return $payload;
     }

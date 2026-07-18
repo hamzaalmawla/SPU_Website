@@ -9,6 +9,12 @@ use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Page\AboutPageServiceInterface;
 use App\DTOs\About\AboutContentPageDTO;
 use App\DTOs\About\AboutLandingDTO;
+use App\DTOs\About\AboutVisionMissionDTO;
+use App\DTOs\About\LeadershipDirectoryDTO;
+use App\DTOs\About\PartnershipDirectoryDTO;
+use App\DTOs\About\StaffDirectoryDTO;
+use App\DTOs\About\StaffDirectoryItemDTO;
+use App\DTOs\Cms\CmsTargetDTO;
 use App\DTOs\Content\DirectorateDTO;
 use App\DTOs\Content\PartnershipDTO;
 use App\DTOs\Content\PersonDTO;
@@ -16,14 +22,24 @@ use App\Models\Content\Directorate;
 use App\Models\Content\DirectorateTranslation;
 use App\Models\Content\Partnership;
 use App\Models\Content\PartnershipTranslation;
+use App\Models\Faculty\Faculty;
+use App\Models\Faculty\FacultyTranslation;
+use App\Models\Media\MediaAsset;
 use App\Models\Page\AboutPage;
 use App\Models\Page\AboutPageTranslation;
+use App\Models\Person\FacultyMember;
+use App\Models\Person\FacultyMemberTranslation;
 use App\Models\Person\Person;
 use App\Models\Person\PersonTranslation;
+use App\Support\MediaUrlResolver;
 use Illuminate\Support\Collection;
 
 final class AboutPageService implements AboutPageServiceInterface
 {
+    private const STAFF_PER_PAGE = 9;
+
+    private const PARTNERSHIPS_PER_PAGE = 6;
+
     public function __construct(
         private readonly CmsWorkflowServiceInterface $cmsWorkflowService,
         private readonly CmsTargetRegistryInterface $targetRegistry,
@@ -53,9 +69,31 @@ final class AboutPageService implements AboutPageServiceInterface
         return $this->landingDto($locale, $content);
     }
 
+    public function getVisionMission(string $locale): AboutVisionMissionDTO
+    {
+        $published = $this->publishedLocalizedPayload('about.vision-mission', $locale);
+
+        if ($published !== null) {
+            return $this->visionMissionDto($locale, $published);
+        }
+
+        $page = AboutPage::query()
+            ->public()
+            ->where('slug', 'vision-mission')
+            ->with('translations')
+            ->firstOrFail();
+
+        return $this->visionMissionDto($locale, $this->contentPayloadFromPage($page, $locale));
+    }
+
+    public function buildPreviewVisionMission(string $locale, array $content): AboutVisionMissionDTO
+    {
+        return $this->visionMissionDto($locale, $content);
+    }
+
     public function getEditablePayload(string $targetKey): array
     {
-        if (! in_array($targetKey, ['about.landing', 'about.history', 'about.leadership', 'about.directorates', 'about.partnerships', 'about.directorates_staff', 'about.quality-policy', 'about.ethical-charter', 'about.organizational-structure', 'about.accreditation', 'about.why-spu'], true)) {
+        if (! in_array($targetKey, ['about.landing', 'about.vision-mission', 'about.history', 'about.leadership', 'about.directorates', 'about.partnerships', 'about.directorates_staff', 'about.quality-policy', 'about.ethical-charter', 'about.organizational-structure', 'about.accreditation', 'about.why-spu'], true)) {
             throw new \InvalidArgumentException('Unsupported about target.');
         }
 
@@ -170,25 +208,156 @@ final class AboutPageService implements AboutPageServiceInterface
         return $this->contentPageDto('directorates_staff', $locale, $published ?? $this->staffDirectoryPayload($locale));
     }
 
+    public function getStaffDirectory(
+        string $locale,
+        ?string $requestedFaculty = null,
+        int $requestedPage = 1,
+    ): StaffDirectoryDTO {
+        $facultyLabels = $this->staffFacultyLabels($locale);
+        $people = Person::query()
+            ->public()
+            ->whereIn('category', ['rector', 'vice_president', 'dean', 'council'])
+            ->with('translations')
+            ->orderBy('sort_order')
+            ->get()
+            ->map(function (Person $person) use ($locale, $facultyLabels): StaffDirectoryItemDTO {
+                $translation = $this->personTranslation($person, $locale);
+                $facultySlug = is_string($person->faculty_scope_slug) && $person->faculty_scope_slug !== ''
+                    ? $person->faculty_scope_slug
+                    : null;
+
+                return new StaffDirectoryItemDTO(
+                    sourceType: 'person',
+                    slug: (string) $person->slug,
+                    name: (string) $translation->name,
+                    role: (string) $translation->role,
+                    image: $person->image,
+                    facultySlug: $facultySlug,
+                    facultyName: $facultySlug !== null ? ($facultyLabels[$facultySlug] ?? null) : null,
+                );
+            });
+        $facultyMembers = FacultyMember::query()
+            ->public()
+            ->with(['translations', 'faculty.translations', 'photoMedia'])
+            ->orderBy('sort_order')
+            ->get()
+            ->map(function (FacultyMember $member) use ($locale, $facultyLabels): ?StaffDirectoryItemDTO {
+                $translation = $this->facultyMemberTranslation($member, $locale);
+
+                if (! $translation instanceof FacultyMemberTranslation) {
+                    return null;
+                }
+
+                $facultySlug = $member->faculty instanceof Faculty
+                    ? (string) ($member->faculty->faculty_scope_slug ?: $member->faculty->public_slug ?: $member->faculty->slug)
+                    : null;
+
+                return new StaffDirectoryItemDTO(
+                    sourceType: 'faculty-member',
+                    slug: (string) $member->slug,
+                    name: (string) $translation->full_name,
+                    role: (string) ($translation->position ?: $translation->title ?: ''),
+                    image: $member->photoMedia instanceof MediaAsset
+                        ? MediaUrlResolver::resolve($member->photoMedia->path, $member->photoMedia->disk)
+                        : null,
+                    facultySlug: $facultySlug,
+                    facultyName: $facultySlug !== null ? ($facultyLabels[$facultySlug] ?? null) : null,
+                );
+            })
+            ->filter(fn (?StaffDirectoryItemDTO $item): bool => $item !== null)
+            ->values();
+        $allItems = $people->concat($facultyMembers)->values();
+        $availableFacultySlugs = $allItems
+            ->pluck('facultySlug')
+            ->filter(fn (mixed $slug): bool => is_string($slug) && $slug !== '')
+            ->unique()
+            ->values();
+        $facultyFilters = collect($facultyLabels)
+            ->filter(fn (string $label, string $slug): bool => $availableFacultySlugs->contains($slug))
+            ->map(fn (string $label, string $slug): array => ['slug' => $slug, 'label' => $label])
+            ->values()
+            ->all();
+        $activeFaculty = is_string($requestedFaculty) && $availableFacultySlugs->contains($requestedFaculty)
+            ? $requestedFaculty
+            : '';
+        $filteredItems = $activeFaculty !== ''
+            ? $allItems->filter(fn (StaffDirectoryItemDTO $item): bool => $item->facultySlug === $activeFaculty)->values()
+            : $allItems;
+        $totalItems = $filteredItems->count();
+        $totalPages = max(1, (int) ceil($totalItems / self::STAFF_PER_PAGE));
+        $currentPage = min(max($requestedPage, 1), $totalPages);
+
+        return new StaffDirectoryDTO(
+            items: $filteredItems->slice(($currentPage - 1) * self::STAFF_PER_PAGE, self::STAFF_PER_PAGE)->values(),
+            facultyFilters: $facultyFilters,
+            activeFaculty: $activeFaculty,
+            currentPage: $currentPage,
+            totalPages: $totalPages,
+            totalItems: $totalItems,
+            perPage: self::STAFF_PER_PAGE,
+        );
+    }
+
     public function getLeadershipProfiles(string $locale): Collection
     {
         return $this->mapPersons(
-            Person::query()->enabled()->with('translations')->orderBy('sort_order')->get(),
+            Person::query()->public()->with('translations')->orderBy('sort_order')->get(),
             $locale,
+        );
+    }
+
+    public function getLeadershipDirectory(string $locale, ?string $requestedFaculty = null): LeadershipDirectoryDTO
+    {
+        $people = $this->getLeadershipProfiles($locale);
+        $deanFacultySlugs = $people
+            ->filter(fn (PersonDTO $person): bool => $person->category === 'dean' && $person->facultySlug !== null)
+            ->pluck('facultySlug')
+            ->filter(fn (mixed $slug): bool => is_string($slug) && $slug !== '')
+            ->unique()
+            ->values();
+        $facultyFilters = Faculty::query()
+            ->enabled()
+            ->with('translations')
+            ->orderBy('sort_order')
+            ->get()
+            ->map(function (Faculty $faculty) use ($locale, $deanFacultySlugs): ?array {
+                $slug = (string) ($faculty->public_slug ?: $faculty->slug);
+                $scopeSlug = (string) ($faculty->faculty_scope_slug ?: $slug);
+
+                if (! $deanFacultySlugs->contains($slug) && ! $deanFacultySlugs->contains($scopeSlug)) {
+                    return null;
+                }
+
+                $translation = $this->facultyTranslation($faculty, $locale);
+
+                return ['slug' => $scopeSlug, 'label' => (string) $translation->name];
+            })
+            ->filter(fn (?array $filter): bool => $filter !== null)
+            ->values()
+            ->all();
+        $validSlugs = collect($facultyFilters)->pluck('slug');
+        $activeFaculty = is_string($requestedFaculty) && $validSlugs->contains($requestedFaculty)
+            ? $requestedFaculty
+            : '';
+
+        return new LeadershipDirectoryDTO(
+            people: $people,
+            facultyFilters: $facultyFilters,
+            activeFaculty: $activeFaculty,
         );
     }
 
     public function getDirectorates(string $locale): Collection
     {
         return $this->mapDirectorates(
-            Directorate::query()->enabled()->with('translations')->orderBy('sort_order')->get(),
+            Directorate::query()->public()->with('translations')->orderBy('sort_order')->get(),
             $locale,
         );
     }
 
     public function getDirectorate(string $slug, string $locale): ?DirectorateDTO
     {
-        $directorate = Directorate::query()->enabled()->where('slug', $slug)->with('translations')->first();
+        $directorate = Directorate::query()->public()->where('slug', $slug)->with('translations')->first();
 
         if (! $directorate instanceof Directorate) {
             return null;
@@ -197,18 +366,60 @@ final class AboutPageService implements AboutPageServiceInterface
         return $this->mapDirectorate($directorate, $locale);
     }
 
-    public function getPartnerships(string $locale): Collection
-    {
-        return $this->mapPartnerships(
-            Partnership::query()->enabled()->with('translations')->orderBy('sort_order')->get(),
+    public function getPartnerships(
+        string $locale,
+        ?string $requestedCategory = null,
+        ?string $requestedQuery = null,
+        int $requestedPage = 1,
+    ): PartnershipDirectoryDTO {
+        $categoryLabels = [
+            'academic' => $locale === 'ar' ? 'أكاديمي' : 'Academic',
+            'research' => $locale === 'ar' ? 'بحثي' : 'Research',
+            'clinical' => $locale === 'ar' ? 'طبي وسريري' : 'Clinical',
+        ];
+        $activeCategory = is_string($requestedCategory) && array_key_exists($requestedCategory, $categoryLabels)
+            ? $requestedCategory
+            : '';
+        $query = trim((string) $requestedQuery);
+        $partnerships = $this->mapPartnerships(
+            Partnership::query()->public()->with('translations')->orderBy('sort_order')->get(),
             $locale,
+        )->filter(function (PartnershipDTO $partnership) use ($activeCategory, $query): bool {
+            if ($activeCategory !== '' && $partnership->categoryKey !== $activeCategory) {
+                return false;
+            }
+
+            if ($query === '') {
+                return true;
+            }
+
+            return mb_stripos(implode(' ', [
+                $partnership->name,
+                $partnership->category,
+                $partnership->description,
+                (string) $partnership->scope,
+            ]), $query) !== false;
+        })->values();
+        $totalItems = $partnerships->count();
+        $totalPages = max(1, (int) ceil($totalItems / self::PARTNERSHIPS_PER_PAGE));
+        $currentPage = min(max($requestedPage, 1), $totalPages);
+
+        return new PartnershipDirectoryDTO(
+            items: $partnerships->slice(($currentPage - 1) * self::PARTNERSHIPS_PER_PAGE, self::PARTNERSHIPS_PER_PAGE)->values(),
+            categories: collect($categoryLabels)->map(fn (string $label, string $key): array => ['key' => $key, 'label' => $label])->values()->all(),
+            activeCategory: $activeCategory,
+            query: $query,
+            currentPage: $currentPage,
+            totalPages: $totalPages,
+            totalItems: $totalItems,
+            perPage: self::PARTNERSHIPS_PER_PAGE,
         );
     }
 
     /** @return array<int, array<string, string>> */
-    public function getAboutSubPages(string $locale): array
+    public function getAboutSubPages(string $locale, ?string $excludeTargetKey = null): array
     {
-        return $this->buildAboutNavigationCards($locale);
+        return $this->buildAboutNavigationCards($locale, $excludeTargetKey);
     }
 
     public function mapPerson(Person $person, string $locale): PersonDTO
@@ -267,6 +478,9 @@ final class AboutPageService implements AboutPageServiceInterface
 
             return new PartnershipDTO(
                 id: (int) $partnership->getKey(),
+                slug: (string) $partnership->slug,
+                categoryKey: (string) ($partnership->category_key ?? ''),
+                statusKey: (string) ($partnership->status_key ?? 'active'),
                 name: (string) $translation->name,
                 category: (string) ($translation->category ?? ''),
                 status: (string) ($translation->status ?? ''),
@@ -293,11 +507,15 @@ final class AboutPageService implements AboutPageServiceInterface
             description: (string) ($content['description'] ?? ''),
             badge: (string) ($content['badge'] ?? ($content['title'] ?? '')),
             imagePrimary: (string) ($content['imagePrimary'] ?? '/images/about-hero-1.webp'),
-            imageSecondary: (string) ($content['imageSecondary'] ?? '/images/about-hero-2.webp'),
+            imageSecondary: (string) ($content['imageSecondary'] ?? '/images/about-hero-2.jpg'),
+            imageOverview: (string) ($content['imageOverview'] ?? '/images/about/hero-img.jpg'),
             stats: $this->listValue($content, 'stats'),
             storyItems: $this->listValue($content, 'storyItems'),
             highlights: $this->listValue($content, 'highlights'),
             subPages: $this->buildAboutNavigationCards($locale),
+            seoTitle: (string) ($content['seoTitle'] ?? ($content['title'] ?? '')),
+            seoDescription: (string) ($content['seoDescription'] ?? ($content['summary'] ?? '')),
+            seoImage: (string) ($content['seoImage'] ?? ($content['imagePrimary'] ?? '/images/about-hero-1.webp')),
         );
     }
 
@@ -315,11 +533,15 @@ final class AboutPageService implements AboutPageServiceInterface
             'description' => (string) ($payload[$locale]['description'] ?? ''),
             'badge' => (string) ($payload[$locale]['badge'] ?? $translation->title),
             'imagePrimary' => (string) ($payload['images']['primary'] ?? '/images/about-hero-1.webp'),
-            'imageSecondary' => (string) ($payload['images']['secondary'] ?? '/images/about-hero-2.webp'),
-            'stats' => $this->localizedArray(is_array($payload['stats'] ?? null) ? $payload['stats'] : [], $locale),
-            'storyItems' => $this->localizedArray(is_array($payload['story_items'] ?? null) ? $payload['story_items'] : [], $locale),
-            'highlights' => $this->localizedArray(is_array($payload['highlights'] ?? null) ? $payload['highlights'] : [], $locale),
-            'subPages' => $this->localizedArray(is_array($payload['sub_pages'] ?? null) ? $payload['sub_pages'] : [], $locale),
+            'imageSecondary' => (string) ($payload['images']['secondary'] ?? '/images/about-hero-2.jpg'),
+            'imageOverview' => (string) ($payload['images']['overview'] ?? '/images/about/hero-img.jpg'),
+            'stats' => $this->localizedArray($this->listValue($payload, 'stats'), $locale),
+            'storyItems' => $this->localizedArray($this->listValue($payload, 'story_items'), $locale),
+            'highlights' => $this->localizedArray($this->listValue($payload, 'highlights'), $locale),
+            'subPages' => $this->localizedArray($this->listValue($payload, 'sub_pages'), $locale),
+            'seoTitle' => (string) $translation->title,
+            'seoDescription' => (string) ($translation->summary ?? ''),
+            'seoImage' => (string) ($payload['images']['primary'] ?? '/images/about-hero-1.webp'),
         ];
     }
 
@@ -335,6 +557,58 @@ final class AboutPageService implements AboutPageServiceInterface
             summary: (string) ($content['summary'] ?? ''),
             heroImage: (string) ($content['heroImage'] ?? '/images/about-hero-2.webp'),
             sections: is_array($content['sections'] ?? null) ? $content['sections'] : [],
+            badge: (string) ($content['badge'] ?? ''),
+            intro: collect(is_array($content['intro'] ?? null) ? $content['intro'] : [])
+                ->map(static fn (mixed $paragraph): string => is_string($paragraph)
+                    ? $paragraph
+                    : (is_array($paragraph) && is_string($paragraph['value'] ?? null) ? $paragraph['value'] : ''))
+                ->filter()
+                ->values()
+                ->all(),
+            stats: $this->listValue($content, 'stats'),
+            contentImage: (string) ($content['contentImage'] ?? ''),
+            seoTitle: (string) ($content['seoTitle'] ?? ($content['title'] ?? '')),
+            seoDescription: (string) ($content['seoDescription'] ?? ($content['summary'] ?? '')),
+            seoImage: (string) ($content['seoImage'] ?? ($content['heroImage'] ?? '/images/about/hero-img.jpg')),
+        );
+    }
+
+    /** @param array<string, mixed> $content */
+    private function visionMissionDto(string $locale, array $content): AboutVisionMissionDTO
+    {
+        $sections = is_array($content['sections'] ?? null) ? $content['sections'] : [];
+        $title = (string) ($content['title'] ?? '');
+        $summary = (string) ($content['summary'] ?? '');
+        $heroImage = (string) ($content['heroImage'] ?? '/images/about/hero-img.jpg');
+        $cards = collect($this->listValue($sections, 'cards'))
+            ->map(static fn (array $card): array => [
+                'icon' => (string) ($card['icon'] ?? ''),
+                'title' => (string) ($card['title'] ?? ''),
+                'body' => (string) ($card['body'] ?? ''),
+            ])
+            ->values()
+            ->all();
+        $pillars = collect($this->listValue($sections, 'pillars'))
+            ->map(static fn (array $pillar): array => [
+                'title' => (string) ($pillar['title'] ?? ''),
+                'summary' => (string) ($pillar['summary'] ?? ''),
+            ])
+            ->values()
+            ->all();
+
+        return new AboutVisionMissionDTO(
+            locale: $locale,
+            direction: $locale === 'ar' ? 'rtl' : 'ltr',
+            title: $title,
+            summary: $summary,
+            heroImage: $heroImage,
+            cardsTitle: (string) ($sections['cardsTitle'] ?? ($locale === 'ar' ? 'توجه الجامعة' : 'Our Direction')),
+            cards: $cards,
+            pillarsTitle: (string) ($sections['pillarsTitle'] ?? ($locale === 'ar' ? 'الأعمدة الاستراتيجية' : 'Strategic Pillars')),
+            pillars: $pillars,
+            seoTitle: (string) ($content['seoTitle'] ?? $title),
+            seoDescription: (string) ($content['seoDescription'] ?? $summary),
+            seoImage: (string) ($content['seoImage'] ?? $heroImage),
         );
     }
 
@@ -349,13 +623,19 @@ final class AboutPageService implements AboutPageServiceInterface
             'headline' => (string) ($translation->headline ?: $translation->title),
             'summary' => (string) ($translation->summary ?? ''),
             'heroImage' => (string) ($page->hero_image ?: '/images/about-hero-2.webp'),
+            'seoTitle' => (string) $translation->title,
+            'seoDescription' => (string) ($translation->summary ?? ''),
+            'seoImage' => (string) ($page->hero_image ?: '/images/about-hero-2.webp'),
+            'badge' => '',
+            'intro' => [],
+            'stats' => [],
+            'contentImage' => $slug === 'history' ? '/images/uni-main-place.JPG' : '',
             'sections' => $slug === 'history'
                 ? $this->historySections($locale)
                 : (is_array($translation->sections_json) ? $translation->sections_json : []),
         ];
     }
 
-    /** @return array<string, mixed>|null */
     private function slugFromTargetKey(string $targetKey): ?string
     {
         if (! str_starts_with($targetKey, 'about.') || $targetKey === 'about.landing') {
@@ -364,6 +644,7 @@ final class AboutPageService implements AboutPageServiceInterface
 
         return match (substr($targetKey, strlen('about.'))) {
             'history' => 'history',
+            'vision-mission' => 'vision-mission',
             'leadership' => 'leadership',
             'directorates' => 'directorates',
             'directorates_staff' => 'directorates_staff',
@@ -389,6 +670,13 @@ final class AboutPageService implements AboutPageServiceInterface
                 'summaryEn' => 'SPU is committed to a comprehensive quality policy that supports continuous improvement across academic, administrative, and research activities.',
                 'summaryAr' => 'تلتزم الجامعة السورية الخاصة بسياسة جودة شاملة تدعم التحسين المستمر في الأنشطة الأكاديمية والإدارية والبحثية.',
                 'heroImage' => '/images/about/hero-img.jpg',
+                'badgeEn' => 'Commitment to Excellence',
+                'badgeAr' => 'الالتزام بالتميز',
+                'intro' => [
+                    ['valueEn' => 'SPU treats quality as a continuous institutional responsibility across teaching, administration, research, and student services.', 'valueAr' => 'تتعامل الجامعة السورية الخاصة مع الجودة بوصفها مسؤولية مؤسسية مستمرة تشمل التعليم والإدارة والبحث العلمي وخدمات الطلاب.'],
+                    ['valueEn' => 'Academic and administrative processes are reviewed against approved regulations, measurable objectives, and feedback from the university community.', 'valueAr' => 'تُراجع العمليات الأكاديمية والإدارية وفق الأنظمة المعتمدة والأهداف القابلة للقياس وملاحظات مجتمع الجامعة.'],
+                    ['valueEn' => 'Improvement priorities are translated into practical actions that strengthen learning outcomes and institutional performance.', 'valueAr' => 'تتحول أولويات التحسين إلى إجراءات عملية تعزز مخرجات التعلم والأداء المؤسسي.'],
+                ],
                 'sections' => [
                     ['titleEn' => 'Academic Excellence', 'titleAr' => 'التميز الأكاديمي', 'bodyEn' => 'Continuous review and development of curricula to meet evolving educational standards and labor market requirements.', 'bodyAr' => 'المراجعة والتطوير المستمر للمناهج لتلبية المعايير التعليمية المتطورة ومتطلبات سوق العمل.'],
                     ['titleEn' => 'Administrative Efficiency', 'titleAr' => 'الكفاءة الإدارية', 'bodyEn' => 'Streamlined administrative processes with clear procedures, accountability, and regular performance evaluation.', 'bodyAr' => 'عمليات إدارية مبسطة مع إجراءات واضحة ومساءلة وتقييم دوري للأداء.'],
@@ -404,6 +692,13 @@ final class AboutPageService implements AboutPageServiceInterface
                 'summaryEn' => 'The Ethical Charter defines the values and principles that guide students, faculty, administrators, and staff.',
                 'summaryAr' => 'يحدد الميثاق الأخلاقي القيم والمبادئ التي توجه الطلاب وأعضاء الهيئة التدريسية والإداريين والموظفين.',
                 'heroImage' => '/images/about/hero-img.jpg',
+                'badgeEn' => 'Integrity & Ethics',
+                'badgeAr' => 'النزاهة والأخلاق',
+                'intro' => [
+                    ['valueEn' => 'The charter defines shared expectations for responsible conduct throughout the university community.', 'valueAr' => 'يحدد الميثاق التوقعات المشتركة للسلوك المسؤول في جميع مكونات مجتمع الجامعة.'],
+                    ['valueEn' => 'It promotes honesty in learning and research, fairness in decisions, and respect in professional relationships.', 'valueAr' => 'ويعزز الصدق في التعلم والبحث والإنصاف في القرارات والاحترام في العلاقات المهنية.'],
+                    ['valueEn' => 'These principles guide daily practice and support a safe, inclusive, and accountable academic environment.', 'valueAr' => 'توجه هذه المبادئ الممارسة اليومية وتدعم بيئة أكاديمية آمنة وشاملة وخاضعة للمساءلة.'],
+                ],
                 'sections' => [
                     ['titleEn' => 'Academic Integrity', 'titleAr' => 'النزاهة الأكاديمية', 'bodyEn' => 'Honesty and fairness in all academic work, including teaching, research, examinations, and grading.', 'bodyAr' => 'الصدق والإنصاف في جميع الأعمال الأكاديمية، بما في ذلك التدريس والبحث والامتحانات والتصحيح.'],
                     ['titleEn' => 'Transparency', 'titleAr' => 'الشفافية', 'bodyEn' => 'Open communication and clear disclosure of policies, procedures, and decisions affecting the university community.', 'bodyAr' => 'التواصل المفتوح والإفصاح الواضح عن السياسات والإجراءات والقرارات التي تؤثر على مجتمع الجامعة.'],
@@ -419,6 +714,12 @@ final class AboutPageService implements AboutPageServiceInterface
                 'summaryEn' => 'SPU operates within a defined structure that supports governance, clear authority, and academic and administrative services.',
                 'summaryAr' => 'تعمل الجامعة السورية الخاصة ضمن هيكل محدد يدعم الحوكمة ووضوح الصلاحيات والخدمات الأكاديمية والإدارية.',
                 'heroImage' => '/images/about/hero-img.jpg',
+                'badgeEn' => 'Institutional Framework',
+                'badgeAr' => 'الإطار المؤسسي',
+                'intro' => [
+                    ['valueEn' => 'SPU organizes academic and administrative responsibilities through defined governance and operational levels.', 'valueAr' => 'تنظم الجامعة السورية الخاصة المسؤوليات الأكاديمية والإدارية من خلال مستويات حوكمة وتشغيل محددة.'],
+                    ['valueEn' => 'The structure clarifies accountability while connecting university leadership, faculties, and central directorates.', 'valueAr' => 'يوضح الهيكل خطوط المساءلة ويربط قيادة الجامعة بالكليات والمديريات المركزية.'],
+                ],
                 'sections' => [
                     ['titleEn' => 'University Council', 'titleAr' => 'مجلس الجامعة', 'bodyEn' => 'The highest governing body responsible for strategic direction, policy approval, and institutional oversight.', 'bodyAr' => 'أعلى هيئة حاكمة مسؤولة عن التوجه الاستراتيجي واعتماد السياسات والإشراف المؤسسي.'],
                     ['titleEn' => 'University President', 'titleAr' => 'رئيس الجامعة', 'bodyEn' => 'The chief executive officer who leads the university\'s academic and administrative operations.', 'bodyAr' => 'الرئيس التنفيذي الذي يقود العمليات الأكاديمية والإدارية للجامعة.'],
@@ -434,6 +735,16 @@ final class AboutPageService implements AboutPageServiceInterface
                 'summaryEn' => 'SPU holds official accreditation from the Syrian Ministry of Higher Education and Scientific Research, with licensed academic programs and ongoing quality review.',
                 'summaryAr' => 'تحصل الجامعة السورية الخاصة على الاعتماد الرسمي من وزارة التعليم العالي والبحث العلمي، مع برامج أكاديمية مرخصة ومراجعة جودة مستمرة.',
                 'heroImage' => '/images/about/hero-img.jpg',
+                'badgeEn' => 'National Accreditation',
+                'badgeAr' => 'الاعتماد الوطني',
+                'intro' => [
+                    ['valueEn' => 'Syrian Private University was established by Republican Decree No. 339 of 2005 and operates under the oversight of the Ministry of Higher Education and Scientific Research.', 'valueAr' => 'أُحدثت الجامعة السورية الخاصة بالمرسوم الجمهوري رقم 339 لعام 2005، وتعمل بإشراف وزارة التعليم العالي والبحث العلمي.'],
+                    ['valueEn' => 'Academic programs and institutional regulations are published only after the applicable licensing and approval requirements are met.', 'valueAr' => 'تُطرح البرامج الأكاديمية والأنظمة المؤسسية بعد استيفاء متطلبات الترخيص والاعتماد المعمول بها.'],
+                ],
+                'stats' => [
+                    ['value' => '2005', 'labelEn' => 'Year Established', 'labelAr' => 'سنة الإحداث'],
+                    ['value' => '339', 'labelEn' => 'Republican Decree', 'labelAr' => 'المرسوم الجمهوري'],
+                ],
                 'sections' => [
                     ['titleEn' => 'Program Licensing', 'titleAr' => 'ترخيص البرامج', 'bodyEn' => 'Every academic program is licensed after review of curriculum, faculty qualifications, facilities, and learning outcomes.', 'bodyAr' => 'كل برنامج أكاديمي مرخص بعد مراجعة المنهاج ومؤهلات أعضاء الهيئة التدريسية والمرافق ومخرجات التعلم.'],
                     ['titleEn' => 'Periodic Review', 'titleAr' => 'المراجعة الدورية', 'bodyEn' => 'Programs undergo periodic review cycles to ensure continued compliance with national standards and best practices.', 'bodyAr' => 'تخضع البرامج لدورات مراجعة دورية لضمان الامتثال المستمر للمعايير الوطنية وأفضل الممارسات.'],
@@ -449,11 +760,18 @@ final class AboutPageService implements AboutPageServiceInterface
                 'summaryEn' => 'SPU offers a distinctive educational experience built on accreditation, clinical excellence, research, and student support.',
                 'summaryAr' => 'تقدم الجامعة السورية الخاصة تجربة تعليمية متميزة قائمة على الاعتماد والتميز السريري والبحث العلمي ودعم الطلاب.',
                 'heroImage' => '/images/about/hero-img.jpg',
+                'badgeEn' => 'Choose Your Path',
+                'badgeAr' => 'اختر مسارك',
+                'intro' => [
+                    ['valueEn' => 'SPU combines licensed academic programs with practical learning, student support, and connections to professional practice.', 'valueAr' => 'تجمع الجامعة السورية الخاصة بين البرامج الأكاديمية المرخصة والتعليم التطبيقي ودعم الطلاب والارتباط بالممارسة المهنية.'],
+                ],
                 'sections' => [
                     ['titleEn' => 'Accredited Programs', 'titleAr' => 'برامج معتمدة', 'bodyEn' => 'All SPU programs are licensed and periodically reviewed.', 'bodyAr' => 'جميع برامج SPU مرخصة وتخضع للمراجعة الدورية.'],
                     ['titleEn' => 'Clinical Excellence', 'titleAr' => 'التميز السريري', 'bodyEn' => 'SPU operates a university hospital and dental clinics that serve the community and train students.', 'bodyAr' => 'تدير SPU مستشفى جامعياً وعيادات سنية تخدم المجتمع وتدرب الطلاب.'],
                     ['titleEn' => 'Research & Innovation', 'titleAr' => 'البحث والابتكار', 'bodyEn' => 'Active research centers and publications support academic development.', 'bodyAr' => 'تدعم مراكز البحث والمنشورات النشطة التطوير الأكاديمي.'],
                     ['titleEn' => 'Student Support', 'titleAr' => 'دعم الطلاب', 'bodyEn' => 'Comprehensive services include advising, career development, insurance, transport, and activities.', 'bodyAr' => 'تشمل الخدمات الشاملة الإرشاد والتطوير المهني والتأمين والنقل والأنشطة.'],
+                    ['titleEn' => 'Campus & Facilities', 'titleAr' => 'الحرم الجامعي والمرافق', 'bodyEn' => 'Learning spaces, laboratories, clinics, and digital services support academic and practical study.', 'bodyAr' => 'تدعم القاعات والمختبرات والعيادات والخدمات الرقمية الدراسة الأكاديمية والتطبيقية.'],
+                    ['titleEn' => 'Community Engagement', 'titleAr' => 'المشاركة المجتمعية', 'bodyEn' => 'Academic and service activities connect university expertise with community needs.', 'bodyAr' => 'تربط الأنشطة الأكاديمية والخدمية خبرات الجامعة باحتياجات المجتمع.'],
                 ],
             ],
             default => null,
@@ -526,26 +844,24 @@ final class AboutPageService implements AboutPageServiceInterface
             'timeline' => $locale === 'ar'
                 ? [
                     ['year' => '2005', 'title' => 'تأسيس SPU', 'body' => 'افتتحت الجامعة أبوابها رسميا، وأسست كلياتها الأساسية، ووضعت قاعدة لمنهج أكاديمي شامل.'],
-                    ['year' => '2010', 'title' => 'التوسع الأكاديمي', 'body' => 'إطلاق برامج اختصاصية جديدة وافتتاح مختبرات بحثية وتعليمية متقدمة.'],
-                    ['year' => '2016', 'title' => 'تطوير التعليم التطبيقي', 'body' => 'تحول استراتيجي نحو التعلم الخبروي وبناء شراكات عملية وبرامج تدريب ميداني متينة.'],
-                    ['year' => '2026', 'title' => 'التحول الرقمي', 'body' => 'التوجه نحو دمج التقنيات التعليمية المتقدمة ومنصات التعاون الرقمي العالمية.'],
+                    ['year' => '2009', 'title' => 'تخريج الدفعة الأولى', 'body' => 'شهدت الجامعة تخريج أول دفعة من طلابها بعد استكمال متطلبات البرامج الأكاديمية.'],
+                    ['year' => '2012', 'title' => 'اعتماد اسم الجامعة السورية الخاصة', 'body' => 'اعتمد اسم الجامعة السورية الخاصة ضمن مسارها المؤسسي والأكاديمي.'],
                 ]
                 : [
                     ['year' => '2005', 'title' => 'Founding of SPU', 'body' => 'The university officially opened its doors, establishing core faculties and laying the groundwork for a comprehensive academic curriculum.'],
-                    ['year' => '2010', 'title' => 'Academic Expansion', 'body' => 'Introduction of new specialized degree programs and the inauguration of state-of-the-art research laboratories.'],
-                    ['year' => '2016', 'title' => 'Applied Learning Development', 'body' => 'Strategic shift towards experiential learning, fostering deep industry partnerships and establishing robust internship programs.'],
-                    ['year' => '2026', 'title' => 'Digital Transformation', 'body' => 'Looking ahead to full integration of advanced educational technologies and global digital collaborative platforms.'],
+                    ['year' => '2009', 'title' => 'First Graduating Class', 'body' => 'The university celebrated its first graduating class after students completed their academic program requirements.'],
+                    ['year' => '2012', 'title' => 'Syrian Private University Name Adopted', 'body' => 'The Syrian Private University name was adopted as part of the institution’s academic development.'],
                 ],
             'narratives' => $locale === 'ar'
                 ? [
-                    ['title' => 'النمو الأكاديمي', 'eyebrow' => 'توسع المناهج', 'body' => 'تطور العرض الأكاديمي عبر السنوات ليشمل طيفا واسعا من الاختصاصات من الهندسة والطب إلى الأعمال والعلوم الإنسانية، ضمن معايير اعتماد صارمة والتزام بالدراسات البينية.'],
-                    ['title' => 'التعليم التطبيقي', 'eyebrow' => 'تميز عملي', 'body' => 'شكّل الانتقال من التعليم النظري إلى المنهجية التطبيقية محطة مهمة، عبر الاستثمار في مرافق سريرية وورش هندسية ومراكز محاكاة أعمال تتيح للطلاب بناء هويتهم المهنية قبل التخرج.'],
-                    ['title' => 'المساهمة المجتمعية', 'eyebrow' => 'أثر اجتماعي', 'body' => 'خارج حدود الحرم الجامعي، رسخت الجامعة دورها كشريك مدني فاعل من خلال العيادات الطبية والبحث التطبيقي وبرامج خدمة المجتمع.'],
+                    ['title' => 'النمو الأكاديمي', 'eyebrow' => 'تطور البرامج', 'body' => 'واصلت الجامعة تطوير برامجها الطبية والهندسية والإدارية بما ينسجم مع أنظمة وزارة التعليم العالي والبحث العلمي واحتياجات الطلاب.'],
+                    ['title' => 'التعليم التطبيقي', 'eyebrow' => 'تعلم مهني', 'body' => 'تجمع البرامج بين المعرفة الأكاديمية والتدريب العملي في المختبرات والعيادات والمشروعات التعليمية وفق طبيعة كل اختصاص.'],
+                    ['title' => 'خدمة المجتمع', 'eyebrow' => 'مسؤولية مؤسسية', 'body' => 'ترتبط رسالة الجامعة بإعداد خريجين مؤهلين ودعم الأنشطة العلمية والخدمية التي تستجيب لاحتياجات المجتمع.'],
                 ]
                 : [
-                    ['title' => 'Academic Growth', 'eyebrow' => 'Curriculum Expansion', 'body' => 'Over the decades, the academic portfolio has evolved to encompass a diverse range of disciplines, from engineering and medicine to business and the humanities. This growth has been guided by rigorous accreditation standards and a commitment to interdisciplinary studies, ensuring a holistic educational experience.'],
-                    ['title' => 'Applied Learning', 'eyebrow' => 'Practical Excellence', 'body' => 'The transition from theoretical instruction to applied methodology marked a significant milestone. Investments in clinical facilities, engineering workshops, and business simulation centers have transformed the campus into a dynamic environment where students actively construct their professional identities before graduation.'],
-                    ['title' => 'Community Contribution', 'eyebrow' => 'Social Impact', 'body' => 'Beyond the campus borders, the university has established itself as a vital civic partner. Through free medical clinics, public policy research, and community extension programs, the institution continually reinvests its intellectual capital back into the society it was founded to serve.'],
+                    ['title' => 'Academic Growth', 'eyebrow' => 'Program Development', 'body' => 'SPU has continued developing its medical, engineering, and administrative programs in line with Ministry regulations and student needs.'],
+                    ['title' => 'Applied Learning', 'eyebrow' => 'Professional Preparation', 'body' => 'Programs combine academic knowledge with practical training in laboratories, clinics, and educational projects according to each discipline.'],
+                    ['title' => 'Community Service', 'eyebrow' => 'Institutional Responsibility', 'body' => 'The university’s mission connects graduate preparation with scientific and service activities responsive to community needs.'],
                 ],
             'legacyTitle' => $locale === 'ar' ? 'استمرار الإرث' : 'Continuing the Legacy',
             'legacyBody' => $locale === 'ar'
@@ -612,12 +928,12 @@ final class AboutPageService implements AboutPageServiceInterface
     }
 
     /** @return array<int, array{title: string, link: string}> */
-    private function buildAboutNavigationCards(string $locale): array
+    private function buildAboutNavigationCards(string $locale, ?string $excludeTargetKey = null): array
     {
         return $this->targetRegistry->forArea('about')
-            ->filter(fn (\App\DTOs\Cms\CmsTargetDTO $target): bool => $target->key !== 'about.landing' && $target->publicPath !== null)
+            ->filter(fn (CmsTargetDTO $target): bool => $target->key !== 'about.landing' && $target->key !== $excludeTargetKey && $target->publicPath !== null)
             ->values()
-            ->map(fn (\App\DTOs\Cms\CmsTargetDTO $target): array => [
+            ->map(fn (CmsTargetDTO $target): array => [
                 'title' => __($target->labelKey),
                 'link' => $target->publicPath,
             ])
@@ -629,6 +945,36 @@ final class AboutPageService implements AboutPageServiceInterface
         return $person->translations->firstWhere('locale', $locale)
             ?? $person->translations->firstWhere('locale', 'ar')
             ?? $person->translations->first();
+    }
+
+    private function facultyTranslation(Faculty $faculty, string $locale): FacultyTranslation
+    {
+        return $faculty->translations->firstWhere('locale', $locale)
+            ?? $faculty->translations->firstWhere('locale', 'ar')
+            ?? $faculty->translations->first();
+    }
+
+    private function facultyMemberTranslation(FacultyMember $member, string $locale): ?FacultyMemberTranslation
+    {
+        return $member->translations->firstWhere('locale', $locale)
+            ?? $member->translations->firstWhere('locale', 'ar')
+            ?? $member->translations->firstWhere('locale', 'en');
+    }
+
+    /** @return array<string, string> */
+    private function staffFacultyLabels(string $locale): array
+    {
+        return Faculty::query()
+            ->enabled()
+            ->with('translations')
+            ->orderBy('sort_order')
+            ->get()
+            ->mapWithKeys(function (Faculty $faculty) use ($locale): array {
+                $slug = (string) ($faculty->faculty_scope_slug ?: $faculty->public_slug ?: $faculty->slug);
+
+                return [$slug => (string) $this->facultyTranslation($faculty, $locale)->name];
+            })
+            ->all();
     }
 
     private function directorateTranslation(Directorate $directorate, string $locale): DirectorateTranslation

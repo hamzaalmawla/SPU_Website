@@ -12,6 +12,7 @@ export function registerDynamicFormStore(Alpine) {
         submitError: '',
         currentStep: 0,
         completedSteps: [],
+        context: {},
 
         get schema() {
             return this.activeFormId ? getFormSchema(this.activeFormId) : null;
@@ -33,7 +34,7 @@ export function registerDynamicFormStore(Alpine) {
             return this.currentStepSchema?.fields || [];
         },
 
-        open(formId, locale, initialData) {
+        open(formId, locale, initialData, context) {
             this.activeFormId = formId;
             this.locale = locale || document.documentElement.lang || 'ar';
             this.formData = {};
@@ -44,6 +45,7 @@ export function registerDynamicFormStore(Alpine) {
             this.submitError = '';
             this.currentStep = 0;
             this.completedSteps = [];
+            this.context = context || {};
 
             const form = this.schema;
             if (!form) return;
@@ -71,6 +73,7 @@ export function registerDynamicFormStore(Alpine) {
             this.submitError = '';
             this.currentStep = 0;
             this.completedSteps = [];
+            this.context = {};
         },
 
         fields() {
@@ -181,6 +184,8 @@ export function registerDynamicFormStore(Alpine) {
                 if (!Object.prototype.hasOwnProperty.call(this.files, key)) body.append(key, this.formData[key]);
             });
             Object.keys(this.files).forEach((key) => body.append(key, this.files[key]));
+            if (this.context.eventSource) body.append('event_source', this.context.eventSource);
+            if (this.context.eventId) body.append('event_id', this.context.eventId);
 
             try {
                 const response = await fetch(`/${this.locale}/forms/${this.activeFormId}/submissions`, {

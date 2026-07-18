@@ -9,8 +9,8 @@ use Illuminate\Support\Collection;
 final readonly class FacultyHubPageDTO
 {
     /**
-     * @param Collection<int, FacultyCardDTO> $faculties
-     * @param array<string, mixed> $content
+     * @param  Collection<int, FacultyHubCardDTO>  $faculties
+     * @param  array<string, mixed>  $content
      */
     public function __construct(
         public string $locale,

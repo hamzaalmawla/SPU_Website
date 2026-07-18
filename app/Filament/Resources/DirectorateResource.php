@@ -62,13 +62,13 @@ class DirectorateResource extends Resource
                 TextInput::make('sort_order')->numeric()->default(0),
                 Toggle::make('is_enabled')->default(true),
             ])->columns(2),
-            Repeater::make('translations')->relationship()->schema([
-                Select::make('locale')->required()->options(['ar' => 'Arabic', 'en' => 'English']),
+            Repeater::make('translations')->schema([
+                Select::make('locale')->required()->options(['ar' => 'Arabic', 'en' => 'English'])->disableOptionsWhenSelectedInSiblingRepeaterItems(),
                 TextInput::make('title')->required()->maxLength(255),
                 Textarea::make('summary')->rows(3),
                 Textarea::make('description')->rows(5),
                 TagsInput::make('services_json')->label('Services')->columnSpanFull(),
-            ])->columns(2)->minItems(2)->maxItems(2)->columnSpanFull(),
+            ])->columns(2)->default([['locale' => 'ar'], ['locale' => 'en']])->minItems(2)->maxItems(2)->columnSpanFull(),
         ]);
     }
 
@@ -78,6 +78,7 @@ class DirectorateResource extends Resource
             TextColumn::make('slug')->searchable()->sortable(),
             TextColumn::make('translations.title')->label('Titles')->listWithLineBreaks()->limit(40),
             IconColumn::make('is_enabled')->boolean(),
+            TextColumn::make('publication_status')->badge()->sortable(),
             TextColumn::make('updated_at')->dateTime()->sortable(),
         ])->actions([Tables\Actions\EditAction::make()])->bulkActions([]);
     }

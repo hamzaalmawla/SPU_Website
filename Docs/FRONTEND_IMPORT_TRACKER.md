@@ -2,6 +2,38 @@
 
 This tracker records frontend additions from `C:\Users\hamza\Spu-Website\Spu-Website` that must be implemented in the Laravel backend without losing scope.
 
+The project is now in full-site completion scope. A route is not `Done` unless its specialized behavior, backend data flow, CMS workflow, assets, AR/EN presentation, accessibility, and tests are complete where applicable. Route existence or static markup alone does not establish parity.
+
+## Full-Site Parity Backlog
+
+The 175-page reference inventory remains the route baseline. Counts are provisional until every path has a dedicated implementation, approved redirect, or documented retirement decision.
+
+| Status | Priority | Area | Work item |
+|---|---|---|---|
+| Done | P0 | Governance | `AGENTS.MD` now defines full-site completion, reference parity, and production readiness as mandatory scope. |
+| Done | P0 | Dynamic forms | Guard schema-dependent markup so closing a successful form cannot dereference a null schema. |
+| Done | P0 | Homepage News | Render each homepage news card as a keyboard-accessible link to its article DTO URL. |
+| Done | P0 | Locale switching | Reuse contextual language-switch DTOs in the footer so switching locale preserves the current page. |
+| Done | P0 | Browser locale | Bare-domain requests now negotiate AR/EN from the browser `Accept-Language` preference while explicit locale URLs remain authoritative. |
+| Done | P0 | Shared runtime | Removed generic-page slug/template metadata, ported the missing admissions hero, corrected the dormant footer-logo seed, and restored the reference header stacking level. |
+| Done | P0 | Route inventory | Reconciled all 175 effective reference pages in `Docs/FRONTEND_ROUTE_PARITY_MATRIX.md`: 43 complete, 7 redirects, 118 partial, and 7 missing. |
+| Done | P0 | Route compatibility | Added browser-locale negotiation for approved unprefixed deep links and canonical compatibility for reference profile, article, facilities hub, and shared project-detail query URLs. |
+| Done | P0 | Legacy HTML continuity | Added exact locale-aware redirects for all 175 approved physical reference files, including query preservation, nested `index.html` paths, and renamed Campus Life/E-Services aliases. |
+| Done | P0 | Announcements | Added dedicated route precedence, announcement-only data queries, category filtering, pagination, CMS editor, protected preview, publication workflow, and landing-page links. |
+| Done | P0 | Events | Added dedicated calendar, listing, registration, and past-detail routes backed by one bilingual CMS catalog, with filtering, capacity and duplicate enforcement, confirmation mail, preview/publish workflows, and scheduled CMS publication. |
+| Done | P0 | News navigation | Announcements, Events, and Gallery now use dedicated routes before the article wildcard. |
+| Done | P1 | About | Completed all approved About routes with bilingual curated editors, entity draft/preview/publish/schedule workflows, publication-aware profiles/directories, Partnerships controls/proposal flow, verified content cleanup, assets, SEO/sitemap, accessibility, and focused tests. |
+| Done | P1 | E-Services | Added dedicated bilingual Library, Staff Email, and IT Support pages with independent CMS workflows, safe verified destinations, contact integration, navigation, SEO/sitemap, continuity, and tests. |
+| Done | P1 | News Gallery | Added bilingual Media Library curation, filters, featured selection, pagination, keyboard-accessible image viewing, preview/publish workflows, media readiness checks, and cache invalidation. |
+| Pending | P1 | Facilities | Implement faculty research pages for all seven faculties and restore functional galleries and project pagination. |
+| Pending | P1 | Research | Implement project, researcher, and expert-finder filtering and complete scholarly metadata. |
+| Pending | P1 | Campus Life | Restore job-board filtering, selected-job application context, sharing, pagination, and related jobs. |
+| Pending | P1 | Virtual Tour | Restore scene switching, drag/touch/zoom, hotspots, autoplay, thumbnails, fullscreen, and CMS-managed scenes. |
+| Pending | P2 | Shared UX | Normalize RTL sliders, dynamic reveal observation, calendar initial date, counters, keyboard behavior, and reduced motion. |
+| Pending | P0 | Legacy continuity | Inventory and import old-production query/document URLs beyond the complete 175-file approved reference alias set. |
+| Pending | P2 | Production content | Remove fake/sample contact data, broken settings assets, placeholders, and developer-facing public metadata. |
+| Pending | P2 | Production gate | Verify clean dependency installation, full tests, frontend build, queues, scheduler, cache, storage, security headers, monitoring, SEO, and launch checks. |
+
 ## Reported Content Pages
 
 | Status | Area | Frontend route | Backend target |
@@ -36,7 +68,7 @@ This tracker records frontend additions from `C:\Users\hamza\Spu-Website\Spu-Web
 | Done | Research | `/research/conferences/register?event=conf-001` | Backend-rendered frontend-compatible page using `conference-registration` dynamic form. |
 | Done | Research | `/research/conferences/register?event=conf-002` | Backend-rendered frontend-compatible page using `symposium-registration` dynamic form. |
 | Done | E-Services | `/e-services/suggestions-complaints/` | Backend-rendered form page added; submissions store through contact message service. |
-| Blocked | News | `/news/events-list/register/` | Frontend dynamic-form page exists, but Laravel does not yet have the matching events-list/register route and backend event dataset. Do not wire to unrelated data. |
+| Done | News | `/news/events-list/register/` | Dedicated route, shared bilingual event catalog, server-validated event context, capacity and duplicate enforcement, queued confirmation mail, and CMS workflow implemented. |
 
 ## URL Compatibility
 

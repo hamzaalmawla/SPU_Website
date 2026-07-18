@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace App\Services\Cms;
 
+use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\DTOs\Cms\CmsTargetDTO;
 use Illuminate\Support\Collection;
 
 final class CmsTargetRegistry implements CmsTargetRegistryInterface
 {
+    public function __construct(
+        private readonly AboutEntityCmsServiceInterface $aboutEntityCmsService,
+    ) {}
+
     /** @return Collection<int, CmsTargetDTO> */
     public function all(): Collection
     {
@@ -35,7 +40,8 @@ final class CmsTargetRegistry implements CmsTargetRegistryInterface
 
     public function find(string $key): ?CmsTargetDTO
     {
-        return $this->all()->first(fn (CmsTargetDTO $target): bool => $target->key === $key);
+        return $this->all()->first(fn (CmsTargetDTO $target): bool => $target->key === $key)
+            ?? $this->aboutEntityCmsService->resolveTarget($key);
     }
 
     /** @return array<int, CmsTargetDTO> */
@@ -51,6 +57,7 @@ final class CmsTargetRegistry implements CmsTargetRegistryInterface
     {
         return [
             $this->target('about.landing', 'about', 'admin.cms.targets.about.landing', '/about', 'public.about.landing'),
+            $this->target('about.vision-mission', 'about', 'admin.cms.targets.about.vision-mission', '/about/vision-mission', 'public.about.vision-mission', 'about.landing'),
             $this->target('about.history', 'about', 'admin.cms.targets.about.history', '/about/history', 'public.about.history', 'about.landing'),
             $this->target('about.leadership', 'about', 'admin.cms.targets.about.leadership', '/about/leadership', 'public.about.leadership', 'about.landing'),
             $this->target('about.directorates', 'about', 'admin.cms.targets.about.directorates', '/about/directorates', 'public.about.directorates', 'about.landing'),
@@ -125,6 +132,9 @@ final class CmsTargetRegistry implements CmsTargetRegistryInterface
     {
         return [
             $this->target('e_services', 'e_services', 'admin.cms.targets.e_services', '/e-services', 'public.e-services'),
+            $this->target('e_services.library', 'e_services', 'admin.cms.targets.e_services_pages.library', '/e-services/library', 'public.e-services.detail', 'e_services'),
+            $this->target('e_services.staff-email', 'e_services', 'admin.cms.targets.e_services_pages.staff_email', '/e-services/staff-email', 'public.e-services.detail', 'e_services'),
+            $this->target('e_services.it-support', 'e_services', 'admin.cms.targets.e_services_pages.it_support', '/e-services/it-support', 'public.e-services.detail', 'e_services'),
             $this->target('contact', 'contact', 'admin.cms.targets.contact', '/contact', 'public.contact'),
         ];
     }
@@ -135,6 +145,9 @@ final class CmsTargetRegistry implements CmsTargetRegistryInterface
         return [
             $this->target('news.index', 'news', 'admin.cms.targets.news.index', '/news', 'public.news.index'),
             $this->target('news.articles', 'news', 'admin.cms.targets.news.articles', '/news/articles', 'public.news.articles', 'news.index'),
+            $this->target('news.announcements', 'news', 'admin.cms.targets.news.announcements', '/news/announcements', 'public.news.announcements', 'news.index'),
+            $this->target('news.events', 'news', 'admin.cms.targets.news.events', '/news/events-list', 'public.news.events-list', 'news.index'),
+            $this->target('news.gallery', 'news', 'admin.cms.targets.news.gallery', '/news/gallery', 'public.news.gallery', 'news.index'),
             $this->target('news.article', 'news', 'admin.cms.targets.news.article', null, 'public.news.show', 'news.index'),
         ];
     }

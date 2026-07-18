@@ -1,22 +1,35 @@
 @extends('layouts.public')
 
 @section('content')
+    @php
+        $people = $directory->people;
+        $rector = $people->firstWhere('category', 'rector');
+        $vicePresidents = $people->where('category', 'vice_president')->values();
+        $deans = $people->where('category', 'dean')->values();
+    @endphp
+
     <div class="bg-[#faf9fb] font-hacen text-spu-blue">
         @include('public.about.partials.hero', ['title' => $page->headline, 'summary' => '', 'image' => $page->heroImage])
 
-        <section class="bg-[#faf9fb] py-16 lg:py-24">
+        <section class="bg-[#faf9fb] py-16 lg:py-24"
+                 x-data="leadershipDirectory()"
+                 data-initial-faculty="{{ $directory->activeFaculty }}"
+                 data-dean-count="{{ $deans->count() }}"
+                 data-of-label="{{ $locale === 'ar' ? 'من' : 'of' }}">
             <div class="container">
                 <div class="filter-container">
                     <label for="leadership-faculty-filter" class="filter-label">{{ $locale === 'ar' ? 'عرض حسب الكلية' : 'View by Faculty' }}</label>
-                    <select id="leadership-faculty-filter" class="filter-dropdown">
-                        <option>{{ $locale === 'ar' ? 'كل القيادات' : 'All Leadership' }}</option>
+                    <select id="leadership-faculty-filter" class="filter-dropdown" x-model="faculty" @change="changeFaculty()">
+                        <option value="">{{ $locale === 'ar' ? 'جميع أعضاء المجلس' : 'All Leadership' }}</option>
+                        @foreach ($directory->facultyFilters as $filter)
+                            <option value="{{ $filter['slug'] }}" @selected($directory->activeFaculty === $filter['slug'])>{{ $filter['label'] }}</option>
+                        @endforeach
                     </select>
                 </div>
 
-                @php($rector = $people->firstWhere('category', 'rector'))
                 @if ($rector)
-                    <article class="staff-spotlight reveal reveal-up mx-auto mb-16 max-w-6xl">
-                        <div class="staff-spotlight-media"><img src="{{ $rector->image ?? '/images/medicine-dean.jpg' }}" alt="{{ $rector->name }}"></div>
+                    <article class="staff-spotlight reveal reveal-up mx-auto mb-16 max-w-6xl" x-show="showInstitutional()">
+                        <div class="staff-spotlight-media">@if ($rector->image)<img src="{{ $rector->image }}" alt="{{ $rector->name }}">@else<div class="flex h-full items-center justify-center bg-slate-100"><img src="/images/icon-user-graduate-outline.svg" alt="" class="h-20 w-20 opacity-30" aria-hidden="true"></div>@endif</div>
                         <div class="staff-spotlight-content">
                             <p class="mb-5 text-xs font-black uppercase tracking-[0.15em] text-spu-red">{{ $rector->role }}</p>
                             <h2 class="text-3xl font-black leading-tight text-spu-blue md:text-4xl">{{ $rector->name }}</h2>
@@ -31,36 +44,49 @@
                     </article>
                 @endif
 
-                @php($vicePresidents = $people->where('category', 'vice_president'))
                 @if ($vicePresidents->isNotEmpty())
-                    <div class="section-title-wrapper"><h2 class="section-title">{{ $locale === 'ar' ? 'نواب رئيس الجامعة' : 'Vice Presidents' }}</h2></div>
-                    <div class="vp-grid">
-                        @foreach ($vicePresidents as $person)
-                            <a href="{{ route('public.about.profile', ['locale' => $locale, 'source' => 'person', 'slug' => $person->slug]) }}" class="vp-card reveal reveal-up block transition hover:-translate-y-1 hover:shadow-lg">
-                                <div class="vp-card-media"><img src="{{ $person->image ?? '/images/medicine-dean.jpg' }}" alt="{{ $person->name }}"></div>
-                                <div class="vp-card-body">
-                                    <h3 class="mb-2 text-lg font-black leading-tight text-spu-blue">{{ $person->name }}</h3>
-                                    <p class="text-[0.68rem] font-black uppercase tracking-[0.1em] text-spu-red">{{ $person->role }}</p>
-                                    @if ($person->bio)
-                                        <p class="mt-6 text-sm leading-7 text-slate-600">{{ $person->bio }}</p>
-                                    @endif
-                                </div>
-                            </a>
-                        @endforeach
+                    <div x-show="showInstitutional()">
+                        <div class="section-title-wrapper"><h2 class="section-title">{{ $locale === 'ar' ? 'نواب رئيس الجامعة' : 'Vice Presidents' }}</h2></div>
+                        <div class="vp-grid">
+                            @foreach ($vicePresidents as $person)
+                                <a href="{{ route('public.about.profile', ['locale' => $locale, 'source' => 'person', 'slug' => $person->slug]) }}" class="vp-card reveal reveal-up block transition hover:-translate-y-1 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-blue">
+                                    <div class="vp-card-media">@if ($person->image)<img src="{{ $person->image }}" alt="{{ $person->name }}">@else<div class="flex h-full items-center justify-center bg-slate-100"><img src="/images/icon-user-graduate-outline.svg" alt="" class="h-16 w-16 opacity-30" aria-hidden="true"></div>@endif</div>
+                                    <div class="vp-card-body">
+                                        <h3 class="mb-2 text-lg font-black leading-tight text-spu-blue">{{ $person->name }}</h3>
+                                        <p class="text-[0.68rem] font-black uppercase tracking-[0.1em] text-spu-red">{{ $person->role }}</p>
+                                        @if ($person->bio)
+                                            <p class="mt-6 text-sm leading-7 text-slate-600">{{ $person->bio }}</p>
+                                        @endif
+                                    </div>
+                                </a>
+                            @endforeach
+                        </div>
                     </div>
                 @endif
 
-                @php($deans = $people->where('category', 'dean'))
                 @if ($deans->isNotEmpty())
                     <div class="section-title-wrapper"><h2 class="section-title">{{ $locale === 'ar' ? 'عمداء الكليات' : 'Faculty Deans' }}</h2></div>
-                    <div class="deans-carousel-wrapper">
-                        <button type="button" class="carousel-nav-btn" aria-label="{{ __('public.previous') }}">
+                    <div class="deans-carousel-wrapper"
+                         role="region"
+                         aria-roledescription="carousel"
+                         aria-label="{{ $locale === 'ar' ? 'عمداء الكليات' : 'Faculty Deans' }}"
+                         tabindex="0"
+                         @keydown.left.prevent="handleArrowLeft()"
+                         @keydown.right.prevent="handleArrowRight()"
+                         @touchstart.passive="startTouch($event)"
+                         @touchend.passive="endTouch($event)">
+                        <button type="button" class="carousel-nav-btn disabled:cursor-not-allowed disabled:opacity-30" @click="previousDean()" :disabled="previousDisabled()" :aria-disabled="previousDisabled()" aria-controls="leadership-deans" aria-label="{{ __('public.previous') }}">
                             <img src="/images/icon-chevron-left-outline.svg" alt="" class="h-5 w-5 rtl:rotate-180" aria-hidden="true">
                         </button>
-                        <div class="deans-grid">
-                            @foreach ($deans->take(3) as $person)
-                                <a href="{{ route('public.about.profile', ['locale' => $locale, 'source' => 'person', 'slug' => $person->slug]) }}" class="dean-card reveal reveal-up block transition hover:-translate-y-1 hover:shadow-lg">
-                                    <div class="dean-card-media"><img src="{{ $person->image ?? '/images/medicine-dean.jpg' }}" alt="{{ $person->name }}"></div>
+                        <div id="leadership-deans" class="deans-grid" aria-live="polite">
+                            @foreach ($deans as $person)
+                                <a href="{{ route('public.about.profile', ['locale' => $locale, 'source' => 'person', 'slug' => $person->slug]) }}"
+                                   class="dean-card reveal reveal-up block transition hover:-translate-y-1 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-blue"
+                                   x-show="deanVisible({{ $loop->index }}, '{{ $person->facultySlug }}')"
+                                   :inert="! deanVisible({{ $loop->index }}, '{{ $person->facultySlug }}')"
+                                   role="group"
+                                   aria-label="{{ ($loop->index + 1).' '.($locale === 'ar' ? 'من' : 'of').' '.$deans->count().': '.$person->name }}">
+                                    <div class="dean-card-media">@if ($person->image)<img src="{{ $person->image }}" alt="{{ $person->name }}">@else<div class="flex h-full items-center justify-center bg-slate-100"><img src="/images/icon-user-graduate-outline.svg" alt="" class="h-16 w-16 opacity-30" aria-hidden="true"></div>@endif</div>
                                     <div class="dean-card-body">
                                         <h3 class="mb-2 text-lg font-black leading-tight text-spu-blue">{{ $person->name }}</h3>
                                         <p class="text-[0.68rem] font-black uppercase tracking-[0.1em] text-spu-red">{{ $person->role }}</p>
@@ -68,10 +94,11 @@
                                 </a>
                             @endforeach
                         </div>
-                        <button type="button" class="carousel-nav-btn" aria-label="{{ __('public.next') }}">
+                        <button type="button" class="carousel-nav-btn disabled:cursor-not-allowed disabled:opacity-30" @click="nextDean()" :disabled="nextDisabled()" :aria-disabled="nextDisabled()" aria-controls="leadership-deans" aria-label="{{ __('public.next') }}">
                             <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-5 w-5 rtl:rotate-180" aria-hidden="true">
                         </button>
                     </div>
+                    <p class="mt-5 text-center text-xs font-bold text-slate-500" aria-live="polite" x-text="statusText()"></p>
                 @endif
             </div>
         </section>

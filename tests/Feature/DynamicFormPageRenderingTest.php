@@ -26,6 +26,7 @@ final class DynamicFormPageRenderingTest extends TestCase
             ->assertSee('Apply for Job')
             ->assertSee('Application Information')
             ->assertSee('x-data="dynamicFormShell()"', false)
+            ->assertSee('x-if="$store.dynamicForm.schema"', false)
             ->assertSee('data-form-id="job-application"', false)
             ->assertDontSee('Event Not Found');
     }

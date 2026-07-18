@@ -74,7 +74,11 @@ final class CachePublicPages
             return true;
         }
 
-        if ($request->route()?->getName() === 'public.contact') {
+        if (in_array($request->route()?->getName(), [
+            'public.contact',
+            'public.news.events-list.register',
+            'public.research.conferences.register',
+        ], true)) {
             return true;
         }
 

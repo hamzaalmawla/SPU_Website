@@ -82,6 +82,7 @@ return [
             'homepage' => 'Homepage',
             'about' => [
                 'landing' => 'About',
+                'vision-mission' => 'Vision and Mission',
                 'history' => 'History',
                 'leadership' => 'Leadership',
                 'directorates' => 'Directorates',
@@ -134,10 +135,18 @@ return [
                 'exam-penalties' => 'Exam Penalties',
             ],
             'e_services' => 'E-Services',
+            'e_services_pages' => [
+                'library' => 'E-Library',
+                'staff_email' => 'Staff Email Guidance',
+                'it_support' => 'IT Support',
+            ],
             'contact' => 'Contact',
             'news' => [
                 'index' => 'News Center',
                 'articles' => 'News Archive',
+                'announcements' => 'Announcements',
+                'events' => 'Events',
+                'gallery' => 'Media Gallery',
                 'article' => 'News Article',
             ],
             'research' => [

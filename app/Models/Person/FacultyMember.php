@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models\Person;
 
+use App\Enums\PublicationStatus;
 use App\Models\Faculty\Department;
 use App\Models\Faculty\Faculty;
 use App\Models\Media\MediaAsset;
@@ -31,6 +32,8 @@ class FacultyMember extends Model
         'cv_media_id',
         'sort_order',
         'is_enabled',
+        'publication_status',
+        'published_at',
     ];
 
     protected function casts(): array
@@ -39,6 +42,7 @@ class FacultyMember extends Model
             'social_links' => 'array',
             'sort_order' => 'integer',
             'is_enabled' => 'boolean',
+            'published_at' => 'datetime',
             'deleted_at' => 'datetime',
         ];
     }
@@ -86,5 +90,14 @@ class FacultyMember extends Model
     public function scopeEnabled(Builder $query): Builder
     {
         return $query->where('is_enabled', true);
+    }
+
+    public function scopePublic(Builder $query): Builder
+    {
+        return $query
+            ->where('is_enabled', true)
+            ->where('publication_status', PublicationStatus::Published->value)
+            ->whereNotNull('published_at')
+            ->where('published_at', '<=', now());
     }
 }

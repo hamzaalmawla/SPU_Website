@@ -11,6 +11,7 @@ use App\Contracts\Settings\SettingsServiceInterface;
 use App\DTOs\Navigation\LanguageSwitchLinkDTO;
 use App\Http\Controllers\Controller;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 final class NewsController extends Controller
@@ -35,7 +36,7 @@ final class NewsController extends Controller
             'featured' => $featured,
             'lastNews' => $latest,
             'announcements' => $announcements,
-            'events' => $this->newsService->getLatestArticleCards($locale, 3),
+            'events' => $this->newsService->listNewsEvents($locale)->take(3)->values(),
             'pageTitle' => (string) ($page['pageTitle'] ?? ''),
             'pageDescription' => (string) ($page['pageDescription'] ?? ''),
             'seo' => $this->seo($locale, '/news', (string) ($page['pageTitle'] ?? ''), (string) ($page['pageDescription'] ?? ''), (string) ($page['heroImage'] ?? '')),
@@ -63,6 +64,107 @@ final class NewsController extends Controller
         ]));
     }
 
+    public function announcements(Request $request, string $locale): View
+    {
+        $page = $this->newsService->getAnnouncementsPageContent($locale);
+        $featured = $this->newsService->getFeaturedArticles($locale, 1, 'announcement')->first();
+        $featuredId = $featured?->id;
+
+        return view('public.news.announcements', $this->sharedPayload($request, $locale, '/news/announcements', [
+            'page' => $page,
+            'featured' => $featured,
+            'announcements' => $this->newsService->listPublicArticles($locale, [
+                'category' => $request->query('category'),
+                'categoryType' => 'announcement',
+                'excludeId' => $featuredId,
+            ], max(1, (int) $request->query('page', 1)), 4),
+            'categories' => $this->newsService->getPublicCategories($locale, 'announcement'),
+            'activeCategory' => is_string($request->query('category')) ? (string) $request->query('category') : null,
+            'seo' => $this->seo(
+                $locale,
+                '/news/announcements',
+                (string) $page['pageTitle'],
+                (string) $page['pageDescription'],
+                (string) $page['heroImage'],
+            ),
+        ]));
+    }
+
+    public function events(Request $request, string $locale): View
+    {
+        $page = $this->newsService->getEventsPageContent($locale);
+        $calendar = $this->newsService->getNewsEventCalendar($locale, is_string($request->query('month')) ? $request->query('month') : null);
+
+        return view('public.news.events-calendar', $this->sharedPayload($request, $locale, '/news/events', [
+            'page' => $page,
+            'month' => $calendar['month'],
+            'monthLabel' => $calendar['monthLabel'],
+            'previousMonth' => $calendar['previousMonth'],
+            'nextMonth' => $calendar['nextMonth'],
+            'events' => $calendar['events'],
+            'days' => $calendar['days'],
+            'seo' => $this->seo($locale, '/news/events', (string) $page['calendarTitle'], (string) $page['summary'], (string) $page['heroImage']),
+        ]));
+    }
+
+    public function eventsList(Request $request, string $locale): View
+    {
+        $page = $this->newsService->getEventsPageContent($locale);
+        $category = is_string($request->query('category')) && $request->query('category') !== '' ? $request->query('category') : null;
+
+        return view('public.news.events-list', $this->sharedPayload($request, $locale, '/news/events-list', [
+            'page' => $page,
+            'activeCategory' => $category,
+            'upcomingEvents' => $this->newsService->listNewsEvents($locale, false, $category),
+            'pastEvents' => $this->newsService->listNewsEvents($locale, true),
+            'seo' => $this->seo($locale, '/news/events-list', (string) $page['title'], (string) $page['summary'], (string) $page['heroImage']),
+        ]));
+    }
+
+    public function eventRegistration(Request $request, string $locale): View
+    {
+        $page = $this->newsService->getEventsPageContent($locale);
+        $eventId = is_string($request->query('event')) ? $request->query('event') : '';
+        $event = $this->newsService->findNewsEvent($eventId, $locale, false);
+        $event = $event?->isRegisterable === true ? $event : null;
+        $switchPath = '/news/events-list/register'.($eventId !== '' ? '?event='.rawurlencode($eventId) : '');
+
+        return view('public.news.event-registration', $this->sharedPayload($request, $locale, $switchPath, [
+            'page' => $page,
+            'event' => $event,
+            'seo' => $this->seo($locale, '/news/events-list/register', (string) $page['registrationTitle'], (string) $page['registrationInfo'], null, 'noindex,follow'),
+        ]));
+    }
+
+    public function pastEvent(Request $request, string $locale): View
+    {
+        $page = $this->newsService->getEventsPageContent($locale);
+        $eventId = is_string($request->query('event')) ? $request->query('event') : '';
+        $event = $this->newsService->findNewsEvent($eventId, $locale, true);
+        $switchPath = '/news/events-list/past'.($eventId !== '' ? '?event='.rawurlencode($eventId) : '');
+
+        return view('public.news.past-event', $this->sharedPayload($request, $locale, $switchPath, [
+            'page' => $page,
+            'event' => $event,
+            'seo' => $this->seo($locale, '/news/events-list/past', $event?->title ?? (string) $page['notFoundTitle'], $event?->summary ?? (string) $page['notFoundText'], $event?->imageUrl),
+        ]));
+    }
+
+    public function gallery(Request $request, string $locale): View
+    {
+        $category = is_string($request->query('category')) && $request->query('category') !== '' ? $request->query('category') : null;
+        $listing = $this->newsService->getGalleryListing($locale, $category, max(1, (int) $request->query('page', 1)), 8);
+        $page = $listing['page'];
+
+        return view('public.news.gallery', $this->sharedPayload($request, $locale, '/news/gallery', [
+            'page' => $page,
+            'featured' => $listing['featured'],
+            'galleryItems' => $listing['items'],
+            'activeCategory' => $category,
+            'seo' => $this->seo($locale, '/news/gallery', (string) $page['title'], (string) $page['summary'], (string) $page['heroImage']),
+        ]));
+    }
+
     public function show(Request $request, string $locale, string $article): View
     {
         $newsArticle = $this->newsService->getPublicArticle($article, $locale);
@@ -81,6 +183,17 @@ final class NewsController extends Controller
                 $newsArticle->robots,
             ),
         ]));
+    }
+
+    public function redirectLegacyArticle(Request $request, string $locale): RedirectResponse
+    {
+        $identifier = $request->query('id');
+        abort_unless(is_string($identifier) && trim($identifier) !== '', 404);
+
+        $article = $this->newsService->getPublicArticle(trim($identifier), $locale);
+        abort_if($article === null, 404);
+
+        return redirect($article->url, 301);
     }
 
     /** @param array<string, mixed> $payload @return array<string, mixed> */

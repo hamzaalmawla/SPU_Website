@@ -5,7 +5,19 @@
 @endphp
 
 @if ($aboutNavigationCards->isNotEmpty())
-    <section id="about-navigation" class="relative rounded-md bg-section py-20 font-hacen lg:py-28" @if ($aboutNavigationShouldSlide) x-data="aboutNavigation()" data-slide-count="{{ $aboutNavigationSlides->count() }}" @endif>
+    <section id="about-navigation"
+             class="relative rounded-md bg-section py-20 font-hacen lg:py-28"
+             role="region"
+             aria-label="{{ $locale === 'ar' ? 'روابط صفحات عن الجامعة' : 'Related About pages' }}"
+             @if ($aboutNavigationShouldSlide)
+                 x-data="aboutNavigation()"
+                 data-slide-count="{{ $aboutNavigationSlides->count() }}"
+                 tabindex="0"
+                  @keydown.left.prevent="onArrowLeft()"
+                  @keydown.right.prevent="onArrowRight()"
+                  @pointerdown.passive="startSwipe($event)"
+                  @pointerup.passive="endSwipe($event)"
+             @endif>
         <div class="container relative z-10">
             <div class="flex flex-col items-start gap-14 lg:flex-row lg:items-center lg:gap-20">
                 <div class="w-full shrink-0 lg:w-[38%]">
@@ -28,9 +40,12 @@
                     @else
                         <div>
                             <div class="overflow-hidden">
-                                <div class="flex transition-transform duration-500 ease-out" :style="slideStyle()">
+                                <div id="about-navigation-track" class="flex transition-transform duration-500 ease-out motion-reduce:transition-none" :style="slideStyle()">
                                     @foreach ($aboutNavigationSlides as $slide)
-                                        <div class="cms-grid-cards w-full shrink-0 gap-4">
+                                        <div class="cms-grid-cards w-full shrink-0 gap-4"
+                                             :aria-hidden="activeSlide !== {{ $loop->index }}"
+                                              :inert="activeSlide !== {{ $loop->index }}"
+                                              style="touch-action: pan-y;">
                                             @foreach ($slide as $subPage)
                                                 @include('public.about.partials.navigation-card', ['subPage' => $subPage, 'locale' => $locale])
                                             @endforeach
@@ -43,22 +58,25 @@
                                 <div class="flex items-center gap-2">
                                     @foreach ($aboutNavigationSlides as $slideIndex => $slide)
                                         <button type="button"
-                                                class="h-1.5 rounded-full transition-all duration-300"
-                                                :class="dotClass({{ $slideIndex }})"
-                                                @click="goToSlide({{ $slideIndex }})"
-                                                aria-label="{{ ($locale === 'ar' ? 'انتقل إلى مجموعة البطاقات ' : 'Go to navigation card group ') . ($slideIndex + 1) }}"></button>
+                                                 class="h-1.5 rounded-full transition-all duration-300"
+                                                 :class="dotClass({{ $slideIndex }})"
+                                                 @click="goToSlide({{ $slideIndex }})"
+                                                 :aria-current="activeSlide === {{ $slideIndex }} ? 'true' : null"
+                                                 aria-controls="about-navigation-track"
+                                                 aria-label="{{ ($locale === 'ar' ? 'انتقل إلى مجموعة البطاقات ' : 'Go to navigation card group ') . ($slideIndex + 1) }}"></button>
                                     @endforeach
                                 </div>
 
                                 <div class="flex items-center gap-3">
-                                    <button type="button" class="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white transition-colors hover:bg-slate-50" @click="previousSlide()" aria-label="{{ $locale === 'ar' ? 'السابق' : 'Previous' }}">
+                                    <button type="button" class="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white transition-colors hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-spu-blue" @click="previousSlide()" aria-controls="about-navigation-track" aria-label="{{ $locale === 'ar' ? 'السابق' : 'Previous' }}">
                                         <img src="/images/icon-chevron-left-outline.svg" alt="" class="h-3.5 w-3.5 rtl:rotate-180" aria-hidden="true">
                                     </button>
-                                    <button type="button" class="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white transition-colors hover:bg-slate-50" @click="nextSlide()" aria-label="{{ $locale === 'ar' ? 'التالي' : 'Next' }}">
+                                    <button type="button" class="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white transition-colors hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-spu-blue" @click="nextSlide()" aria-controls="about-navigation-track" aria-label="{{ $locale === 'ar' ? 'التالي' : 'Next' }}">
                                         <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-3.5 w-3.5 rtl:rotate-180" aria-hidden="true">
                                     </button>
                                 </div>
                             </div>
+                            <p class="sr-only" aria-live="polite" x-text="'{{ $locale === 'ar' ? 'مجموعة' : 'Group' }} ' + (activeSlide + 1) + ' {{ $locale === 'ar' ? 'من' : 'of' }} ' + (maxSlide + 1)"></p>
                         </div>
                     @endif
                 </div>

@@ -12,7 +12,6 @@
                         <div class="directorate-number">{{ str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT) }}</div>
                         <div class="directorate-info">
                             <h2 class="directorate-title">{{ $directorate->title }}</h2>
-                            @if ($directorate->location)<div class="directorate-category">{{ $directorate->location }}</div>@endif
                             <p class="directorate-desc">{{ $directorate->summary }}</p>
                         </div>
                     </a>
@@ -29,7 +28,7 @@
                     </div>
                     <div>
                         <h3 class="correspondence-title">{{ $locale === 'ar' ? 'المراسلات الإدارية' : 'Administrative Correspondence' }}</h3>
-                        <p class="correspondence-text">{{ $page->summary }}</p>
+                        <p class="correspondence-text">{{ $locale === 'ar' ? 'تُوجّه المراسلات المتعلقة بكل مديرية عبر بيانات التواصل المنشورة في صفحتها أو من خلال نموذج التواصل العام.' : 'Correspondence for each directorate can be sent through its published contact details or the university contact form.' }}</p>
                     </div>
                 </div>
 

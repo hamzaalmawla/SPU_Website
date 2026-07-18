@@ -31,19 +31,26 @@ class EServicesPageTest extends TestCase
             ->assertSee('DIGITAL CAMPUS GATEWAY')
             ->assertSee('University E-Services')
             ->assertSee('Digital Services')
-            ->assertSee('Student Portal')
-            ->assertSee('Appeals & Forms')
+            ->assertSee('Student Access Help')
+            ->assertSee('Service Guidance')
             ->assertSee('/en/e-services#portal-access', false)
-            ->assertSee('/en/e-services#library', false)
+            ->assertSee('/en/e-services/library', false)
+            ->assertSee('/en/e-services/staff-email', false)
+            ->assertSee('/en/e-services/it-support', false)
             ->assertSee('/en/e-services#appeals-forms', false)
             ->assertSee('services-card-icon')
+            ->assertDontSee('students.spu.edu.sy')
+            ->assertDontSee('my.spu.edu.sy')
             ->assertDontSee('$store.servicesPage', false);
 
         $this->get('/ar/e-services')
             ->assertOk()
             ->assertSee('بوابة الحرم الجامعي الرقمية')
             ->assertSee('الخدمات الإلكترونية الجامعية')
-            ->assertSee('/ar/e-services#portal-access', false);
+            ->assertSee('/ar/e-services#portal-access', false)
+            ->assertSee('/ar/e-services/library', false)
+            ->assertSee('/ar/e-services/staff-email', false)
+            ->assertSee('/ar/e-services/it-support', false);
     }
 
     public function test_e_services_page_content_is_cms_managed(): void

@@ -46,6 +46,7 @@ class NewsCardPropertyTest extends TestCase
             'excerpt' => 'Article excerpt text',
             'publishedAt' => 'March 15, 2026',
             'categoryLabel' => 'Campus',
+            'url' => '/en/news/full-article',
         ]);
 
         $section = self::makeSection('university_news', [
@@ -62,6 +63,7 @@ class NewsCardPropertyTest extends TestCase
         $this->assertStringContainsString('Article excerpt text', $html);
         $this->assertStringContainsString('March 15, 2026', $html);
         $this->assertStringContainsString('Campus', $html);
+        $this->assertStringContainsString('href="/en/news/full-article"', $html);
     }
 
     public function test_news_card_omits_optional_fields_when_null(): void

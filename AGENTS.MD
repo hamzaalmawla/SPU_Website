@@ -4,28 +4,22 @@
 Syrian Private University Website (spu.edu.sy)
 
 ## Current Build Scope
-This repository is currently focused on the **homepage + admin panel foundation only**.
+This repository is in **full-site completion and production-readiness scope**.
 
 In scope:
-- public homepage
-- public navigation shell
-- generic bilingual landing-page builder
-- admin panel / CMS foundation
-- homepage draft / preview / publish workflow
-- menu builder
-- settings
-- media library
-- audit logging
-- AR / EN support
-- RTL / LTR support
+- complete migration of every approved page and feature from the reference frontend
+- public homepage and navigation shell
+- About, Admissions, Campus Life, Contact, E-Services, Facilities, News, Events, Research, and Virtual Tour
+- faculty pages, subpages, profiles, projects, galleries, study plans, and research pages
+- dynamic forms, registrations, applications, filtering, search, pagination, and detail flows
+- admin panel and CMS coverage for all managed content
+- draft / preview / publish workflows, scheduling, cache invalidation, and audit logging
+- menu builder, settings, media library, SEO metadata, redirects, and legacy URL continuity
+- AR / EN support and RTL / LTR behavior across every public and admin feature
+- responsive, accessible, secure, observable, and production-ready behavior
+- route, content, visual, interaction, and asset parity with the approved reference frontend
 
-Out of scope for this phase:
-- full Facilities module
-- full Research repository
-- full News module
-- full Events module
-- full Admissions module
-- full Contact / CRM system beyond optional foundation-level lead capture
+No approved reference page or existing public module is out of scope. Features that are absent from both the requirements and the approved reference frontend still require explicit product approval.
 
 ---
 
@@ -35,12 +29,14 @@ Out of scope for this phase:
 - MySQL 8
 - Redis
 - Filament v3
-- Meilisearch optional in this phase only if minimal search is actually needed
+- Meilisearch remains optional and should be introduced only when a real search requirement justifies it
 
 ---
 
 ## Source of Truth
-- Requirements: **SPU_Requirements_v5_1**
+- Product and backend requirements: **SPU_Requirements_v5_1**, except its obsolete foundation-only phase restriction
+- Approved frontend parity reference: `C:\Users\hamza\Spu-Website\Spu-Website`
+- Laravel production implementation: this repository, `C:\Users\hamza\SPU_Website`
 - Architecture: MVC + Service Layer
 - Supporting rules:
   - ARCHITECTURE.md
@@ -48,7 +44,26 @@ Out of scope for this phase:
   - STYLEGUIDE.md
   - WORKFLOW.md
 
-If any older prompt, document, or generated code conflicts with v5.1 scope, v5.1 wins.
+The full-site scope in this file supersedes older foundation-only phase restrictions. Requirements remain authoritative for business rules, while the approved reference frontend is authoritative for page inventory, content structure, visual intent, and interaction parity. Reference frontend code must not override the Laravel architecture and security rules in this file.
+
+---
+
+## Full-Site Migration Rules (CRITICAL)
+
+- Every approved reference path must have one of:
+  - a dedicated functional Laravel implementation
+  - an explicitly approved redirect
+  - a documented retirement decision
+- Known reference pages must not silently fall through to a generic catch-all when they require specialized behavior.
+- Visible controls must be functional. Do not ship inert filters, pagination, search, tabs, buttons, sliders, hotspots, or form actions.
+- Migration includes behavior and data flow, not markup alone.
+- CMS-managed pages must include the appropriate admin editor, authorization, validation, draft, preview, publish, cache, and audit behavior.
+- Public pages must use DTOs and service contracts and must not query Eloquent directly.
+- Port required assets into the Laravel public/media system and verify that every rendered asset resolves.
+- Preserve or redirect published legacy URLs, including query-based and `.html` URLs, when continuity data or imported content depends on them.
+- Match the reference frontend in AR and EN, including responsive behavior, keyboard interaction, reduced motion, and RTL scrolling.
+- Replace sample, placeholder, fake, and developer-facing public content before production release.
+- Track parity work in `Docs/FRONTEND_IMPORT_TRACKER.md` with route, backend, CMS, interaction, asset, test, and QA status.
 
 ---
 
@@ -95,8 +110,8 @@ When generating code:
 - ALWAYS generate full imports and namespaces
 - ALWAYS follow DTO return rules
 - ALWAYS validate against acceptance criteria
-- ALWAYS keep output within the current sprint scope
-- NEVER silently expand into full-site architecture when the task is foundation-only
+- ALWAYS complete the assigned parity slice end-to-end across backend, CMS, public rendering, and tests
+- NEVER represent a reference feature with placeholder markup or non-functional controls
 
 ---
 
@@ -107,7 +122,7 @@ When generating code:
 - All managed content must support AR / EN
 - Arabic UI/content must support RTL
 - English UI/content must support LTR
-- Do NOT use the old global polymorphic translation model in this phase
+- Do NOT use the old global polymorphic translation model
 - Use explicit locale-specific storage where applicable:
   - `page_translations`
   - `homepage_section_translations`
@@ -120,7 +135,7 @@ When generating code:
 
 Roles:
 - `super_admin` → full access
-- `editor` → homepage / pages / menu / media / settings within allowed scope
+- `editor` → all global content modules / pages / menu / media / settings within granted permissions
 - `faculty_editor` → scoped content access only, using the ownership model defined by the current schema (`faculty_scope_slug` if applicable)
 
 Rules:
@@ -195,8 +210,11 @@ Rules:
 - ❌ Using concrete classes instead of interfaces in controller-level code
 - ❌ Returning raw models from public service methods
 - ❌ Old homepage keys in new homepage code
-- ❌ Reintroducing the old polymorphic translation model for this foundation scope
-- ❌ Drifting into full-site implementation when the task is homepage/admin foundation only
+- ❌ Reintroducing the old polymorphic translation model
+- ❌ Shipping known reference pages through generic placeholders when dedicated behavior is required
+- ❌ Inert or decorative-only controls that imply unavailable functionality
+- ❌ Broken asset references, fake production content, or publicly visible developer metadata
+- ❌ Declaring parity based only on route existence or static markup
 
 ---
 
@@ -212,3 +230,13 @@ A task is complete ONLY if:
 - Scope has not drifted beyond the assigned prompt/task
 - No raw model returns exist in public service interfaces
 - No draft content is publicly exposed
+- Relevant reference routes, content, interactions, and responsive states are matched
+- AR and EN behavior is verified, including RTL / LTR and locale-preserving navigation
+- Every visible control works with keyboard and pointer input
+- Required assets resolve without build or runtime 404s
+- SEO, canonical, hreflang, and structured metadata are present where applicable
+- Legacy URLs are redirected or explicitly documented as retired
+- No placeholder, sample, fake, or developer-facing content is publicly exposed
+- Targeted tests and the relevant module suite pass
+- Frontend production build and PHP production dependency installation pass
+- Production configuration, queues, cache, storage, scheduler, security headers, and observability requirements are verified before release

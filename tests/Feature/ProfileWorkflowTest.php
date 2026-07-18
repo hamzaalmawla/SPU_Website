@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Contracts\Cms\AboutEntityCmsServiceInterface;
+use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Content\ProfileAdminServiceInterface;
 use App\Contracts\Page\ProfilePageServiceInterface;
 use App\DTOs\Content\EducationDataDTO;
@@ -51,11 +53,16 @@ final class ProfileWorkflowTest extends TestCase
         $this->assertNotNull($person->id);
         $this->assertDatabaseHas('person_educations', ['person_id' => $person->id, 'is_enabled' => true]);
         $this->assertDatabaseHas('person_education_translations', ['locale' => 'en', 'degree' => 'PhD']);
+        $this->get('/en/about/profile/person/profile-person')->assertNotFound();
+        $this->publishPerson((int) $person->id);
 
         $this->get('/en/about/profile/person/profile-person')
             ->assertOk()
             ->assertSee('English Profile')
             ->assertSee('PhD');
+
+        $this->get('/en/about/profile?slug=profile-person')
+            ->assertRedirect('/en/about/profile/person/profile-person');
     }
 
     public function test_shared_public_shell_assets_are_present(): void
@@ -76,8 +83,10 @@ final class ProfileWorkflowTest extends TestCase
 
     public function test_profile_sources_do_not_collide_when_slugs_match(): void
     {
-        $this->adminService->createPerson($this->personData('shared-profile'), (int) $this->admin->getKey());
-        $this->adminService->createFacultyMember($this->facultyMemberData('shared-profile'), (int) $this->admin->getKey());
+        $person = $this->adminService->createPerson($this->personData('shared-profile'), (int) $this->admin->getKey());
+        $member = $this->adminService->createFacultyMember($this->facultyMemberData('shared-profile'), (int) $this->admin->getKey());
+        $this->publishPerson((int) $person->id);
+        $this->publishFacultyMember((int) $member->id);
 
         $this->get('/en/about/profile/person/shared-profile')
             ->assertOk()
@@ -86,6 +95,22 @@ final class ProfileWorkflowTest extends TestCase
         $this->get('/en/about/profile/faculty-member/shared-profile')
             ->assertOk()
             ->assertSee('English Faculty Member');
+    }
+
+    public function test_managed_faculty_member_appears_in_staff_directory_with_canonical_profile_link(): void
+    {
+        $faculty = Faculty::query()->where('public_slug', 'medicine')->firstOrFail();
+        $member = $this->adminService->createFacultyMember(
+            $this->facultyMemberData('directory-member', (int) $faculty->getKey()),
+            (int) $this->admin->getKey(),
+        );
+        $this->get('/en/about/profile/faculty-member/directory-member')->assertNotFound();
+        $this->publishFacultyMember((int) $member->id);
+
+        $this->get('/en/about/directorates/staff?faculty=medicine')
+            ->assertOk()
+            ->assertSee('English Faculty Member')
+            ->assertSee('/en/about/profile/faculty-member/directory-member', false);
     }
 
     public function test_missing_profile_and_education_translations_are_handled_without_errors(): void
@@ -108,6 +133,7 @@ final class ProfileWorkflowTest extends TestCase
             ->where('faculty_member_id', $memberData->id)
             ->where('locale', 'en')
             ->update(['specializations' => [['name' => 'Applied AI'], 'Digital Health', ['name' => 'Applied AI']]]);
+        $this->publishFacultyMember((int) $memberData->id);
 
         $profile = app(ProfilePageServiceInterface::class)->getProfile('en', 'faculty-member', 'specialist');
 
@@ -136,6 +162,7 @@ final class ProfileWorkflowTest extends TestCase
                 'title' => 'Publication '.$index,
             ]);
         }
+        $this->publishFacultyMember((int) $memberData->id);
 
         $profile = app(ProfilePageServiceInterface::class)->getProfile('en', 'faculty-member', 'researcher');
 
@@ -338,5 +365,23 @@ final class ProfileWorkflowTest extends TestCase
             'metadata_status' => 'missing',
             'path' => $path,
         ]);
+    }
+
+    private function publishPerson(int $personId): void
+    {
+        $targetKey = 'entity.person.'.$personId;
+        $payload = app(AboutEntityCmsServiceInterface::class)->getStoredData($targetKey)?->payload;
+        $this->assertIsArray($payload);
+        app(CmsWorkflowServiceInterface::class)->saveDraft($targetKey, $payload, (int) $this->admin->getKey());
+        $this->assertTrue(app(CmsWorkflowServiceInterface::class)->publish($targetKey, (int) $this->admin->getKey()));
+    }
+
+    private function publishFacultyMember(int $memberId): void
+    {
+        $targetKey = 'entity.faculty-member.'.$memberId;
+        $payload = app(AboutEntityCmsServiceInterface::class)->getStoredData($targetKey)?->payload;
+        $this->assertIsArray($payload);
+        app(CmsWorkflowServiceInterface::class)->saveDraft($targetKey, $payload, (int) $this->admin->getKey());
+        $this->assertTrue(app(CmsWorkflowServiceInterface::class)->publish($targetKey, (int) $this->admin->getKey()));
     }
 }

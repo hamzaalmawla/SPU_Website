@@ -39,7 +39,7 @@
         </section>
 
         <section class="py-16 lg:py-20">
-            <div class="container grid gap-8 lg:grid-cols-[1.45fr,0.75fr]">
+            <div class="container grid gap-8 {{ $page['sidebar'] ? 'lg:grid-cols-[1.45fr,0.75fr]' : '' }}">
                 <article class="rounded-[28px] bg-white p-8 shadow-[0_18px_48px_rgba(20,30,70,0.08)] ring-1 ring-slate-100">
                     @if ($page['hero'])
                         <div class="mb-8 rounded-[22px] bg-[#edf2fa] p-6">
@@ -91,16 +91,8 @@
                     </div>
                 </article>
 
-                <aside class="space-y-6">
-                    <div class="rounded-[28px] bg-[#edf2fa] p-6 shadow-[0_12px_32px_rgba(20,30,70,0.06)]">
-                        <p class="text-xs font-bold uppercase tracking-[0.22em] text-spu-red">{{ __('public.page_shell') }}</p>
-                        <dl class="mt-4 space-y-3 text-sm text-[#55627c]">
-                            <div class="flex items-center justify-between gap-4"><dt>Slug</dt><dd class="font-bold text-spu-blue">{{ $page['slug'] }}</dd></div>
-                            <div class="flex items-center justify-between gap-4"><dt>Template</dt><dd class="font-bold text-spu-blue">{{ $page['template'] }}</dd></div>
-                        </dl>
-                    </div>
-
-                    @if ($page['sidebar'])
+                @if ($page['sidebar'])
+                    <aside class="space-y-6">
                         <div class="rounded-[28px] bg-white p-6 shadow-[0_12px_32px_rgba(20,30,70,0.06)] ring-1 ring-slate-100">
                             @if (! empty($page['sidebar']['title']))
                                 <h2 class="text-lg font-bold text-spu-blue">{{ $page['sidebar']['title'] }}</h2>
@@ -109,8 +101,8 @@
                                 <p class="mt-3 text-sm leading-7 text-[#55627c]">{{ $page['sidebar']['body'] }}</p>
                             @endif
                         </div>
-                    @endif
-                </aside>
+                    </aside>
+                @endif
             </div>
         </section>
     </div>

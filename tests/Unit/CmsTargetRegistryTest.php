@@ -62,6 +62,20 @@ class CmsTargetRegistryTest extends TestCase
         $this->assertContains('campus_life.health-insurance', $registry->forArea('campus_life')->pluck('key')->all());
     }
 
+    public function test_e_services_landing_and_detail_targets_are_registered_independently(): void
+    {
+        $registry = app(CmsTargetRegistryInterface::class);
+
+        $this->assertSame([
+            'e_services',
+            'e_services.library',
+            'e_services.staff-email',
+            'e_services.it-support',
+        ], $registry->forArea('e_services')->pluck('key')->all());
+        $this->assertSame('e_services', $registry->find('e_services.library')?->parentKey);
+        $this->assertSame('/e-services/staff-email', $registry->find('e_services.staff-email')?->publicPath);
+    }
+
     public function test_target_labels_are_translated_in_arabic_and_english(): void
     {
         $targets = app(CmsTargetRegistryInterface::class)->all();

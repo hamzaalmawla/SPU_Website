@@ -5,8 +5,6 @@
     $socialLinks = $navigation->socialContact->socialLinks ?? [];
     $contactLinks = $navigation->socialContact->contactLinks ?? [];
     $mapEmbedUrl = $footerSettings->mapEmbedUrl ?? null;
-    $switchLocale = $isArabic ? 'en' : 'ar';
-    $switchUrl = '/' . $switchLocale;
 @endphp
 
 <footer id="site-footer" class="overflow-hidden bg-spu-blue pt-16 pb-8 font-hacen text-white">
@@ -129,9 +127,13 @@
                 @foreach ($footerSettings->legalLinks as $link)
                     <a href="{{ $link->url }}" @if ($link->target) target="{{ $link->target }}" @endif @if ($link->target === '_blank') rel="noreferrer" @endif class="text-white/50 transition-colors hover:text-white">{{ $link->label }}</a>
                 @endforeach
-                <a href="{{ $switchUrl }}" class="text-white/50 transition-colors hover:text-white">
-                    {{ $isArabic ? 'English' : 'العربية' }}
-                </a>
+                @foreach ($languageSwitch as $switchLink)
+                    @if (! $switchLink->isCurrent)
+                        <a href="{{ $switchLink->url }}" class="text-white/50 transition-colors hover:text-white" data-language-switch>
+                            {{ $switchLink->label }}
+                        </a>
+                    @endif
+                @endforeach
             </div>
         </div>
     </div>

@@ -20,7 +20,10 @@ final class DynamicFormSubmissionRequest extends FormRequest
     /** @return array<string, array<int, string>> */
     public function rules(): array
     {
-        return app(DynamicFormSubmissionServiceInterface::class)->validationRules($this->formId());
+        return array_merge(app(DynamicFormSubmissionServiceInterface::class)->validationRules($this->formId()), [
+            'event_source' => ['nullable', 'string', 'in:news-events'],
+            'event_id' => ['nullable', 'required_with:event_source', 'string', 'max:80'],
+        ]);
     }
 
     public function withValidator(Validator $validator): void
@@ -38,6 +41,9 @@ final class DynamicFormSubmissionRequest extends FormRequest
     {
         $payload = $this->validated();
         $files = [];
+        $eventSource = is_string($payload['event_source'] ?? null) ? $payload['event_source'] : null;
+        $eventId = is_string($payload['event_id'] ?? null) ? $payload['event_id'] : null;
+        unset($payload['event_source'], $payload['event_id']);
 
         foreach ($payload as $field => $value) {
             if ($value instanceof UploadedFile) {
@@ -53,6 +59,8 @@ final class DynamicFormSubmissionRequest extends FormRequest
             files: $files,
             ipAddress: $this->ip(),
             userAgent: $this->userAgent(),
+            eventSource: $eventSource,
+            eventId: $eventId,
         );
     }
 

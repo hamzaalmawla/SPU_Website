@@ -6,7 +6,9 @@ namespace App\Services\Media;
 
 use App\Contracts\Media\MediaServiceInterface;
 use App\Contracts\Shared\AuditServiceInterface;
+use App\Contracts\Shared\CacheServiceInterface;
 use App\DTOs\Media\MediaUploadResultDTO;
+use App\DTOs\Media\PublicMediaAssetDTO;
 use App\DTOs\Shared\PaginatedResultDTO;
 use App\Models\Media\MediaAsset;
 use App\Models\User\User;
@@ -16,10 +18,9 @@ use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -34,6 +35,7 @@ final class MediaService implements MediaServiceInterface
     public function __construct(
         private readonly AuditServiceInterface $auditService,
         private readonly MediaFileValidator $fileValidator,
+        private readonly CacheServiceInterface $cacheService,
     ) {
         $this->diskName = (string) config('filesystems.media_disk', 'public');
         $this->disk = Storage::disk($this->diskName);
@@ -162,6 +164,7 @@ final class MediaService implements MediaServiceInterface
                 entityType: MediaAsset::class,
                 entityId: (int) $asset->getKey(),
             );
+            $this->invalidatePublicMediaCache();
         }
 
         return $deleted;
@@ -214,9 +217,85 @@ final class MediaService implements MediaServiceInterface
                     'fields' => array_keys($filtered),
                 ],
             );
+            $this->invalidatePublicMediaCache();
         }
 
         return $updated;
+    }
+
+    public function resolvePublicImages(array $mediaIds, string $locale): Collection
+    {
+        $ids = array_values(array_unique(array_filter($mediaIds, static fn (mixed $id): bool => is_int($id) && $id > 0)));
+
+        if ($ids === []) {
+            return collect();
+        }
+
+        $assets = MediaAsset::query()
+            ->whereIn('id', $ids)
+            ->where('library_scope', 'main')
+            ->where('media_type', 'image')
+            ->where('metadata_status', 'reviewed')
+            ->get()
+            ->keyBy(fn (MediaAsset $asset): int => (int) $asset->getKey());
+
+        return collect($ids)
+            ->map(function (int $id) use ($assets, $locale): ?PublicMediaAssetDTO {
+                $asset = $assets->get($id);
+
+                if (! $asset instanceof MediaAsset) {
+                    return null;
+                }
+
+                $requestedSuffix = $locale === 'ar' ? 'ar' : 'en';
+                $fallbackSuffix = $requestedSuffix === 'ar' ? 'en' : 'ar';
+                $title = $this->localizedMediaValue($asset, 'title', $requestedSuffix, $fallbackSuffix);
+                $altText = $this->localizedMediaValue($asset, 'alt_text', $requestedSuffix, $fallbackSuffix);
+
+                if ($title === null || $altText === null) {
+                    return null;
+                }
+
+                $path = is_string($asset->webp_path) && $asset->webp_path !== '' ? $asset->webp_path : $asset->path;
+                $url = MediaUrlResolver::resolve($path, $asset->disk);
+
+                return is_string($url) && $url !== '' ? new PublicMediaAssetDTO(
+                    mediaId: $id,
+                    url: $url,
+                    title: $title,
+                    altText: $altText,
+                    caption: $this->localizedMediaValue($asset, 'caption', $requestedSuffix, $fallbackSuffix),
+                    width: is_int($asset->width) ? $asset->width : null,
+                    height: is_int($asset->height) ? $asset->height : null,
+                    srcset: is_array($asset->srcset_json) ? $asset->srcset_json : [],
+                ) : null;
+            })
+            ->filter(fn (mixed $asset): bool => $asset instanceof PublicMediaAssetDTO)
+            ->values();
+    }
+
+    public function publicImagesArePublishable(array $mediaIds): bool
+    {
+        $ids = array_values(array_unique(array_filter($mediaIds, static fn (mixed $id): bool => is_int($id) && $id > 0)));
+
+        if ($ids === []) {
+            return false;
+        }
+
+        return MediaAsset::query()
+            ->whereIn('id', $ids)
+            ->where('library_scope', 'main')
+            ->where('media_type', 'image')
+            ->where('metadata_status', 'reviewed')
+            ->whereNotNull('title_ar')
+            ->where('title_ar', '<>', '')
+            ->whereNotNull('title_en')
+            ->where('title_en', '<>', '')
+            ->whereNotNull('alt_text_ar')
+            ->where('alt_text_ar', '<>', '')
+            ->whereNotNull('alt_text_en')
+            ->where('alt_text_en', '<>', '')
+            ->count() === count($ids);
     }
 
     public function find(int|string $mediaId, int $userId): ?MediaUploadResultDTO
@@ -652,6 +731,19 @@ final class MediaService implements MediaServiceInterface
     private function filledString(mixed $value): bool
     {
         return is_string($value) && trim($value) !== '';
+    }
+
+    private function localizedMediaValue(MediaAsset $asset, string $field, string $requestedSuffix, string $fallbackSuffix): ?string
+    {
+        return $this->stringOrNull($asset->getAttribute($field.'_'.$requestedSuffix))
+            ?? $this->stringOrNull($asset->getAttribute($field.'_'.$fallbackSuffix));
+    }
+
+    private function invalidatePublicMediaCache(): void
+    {
+        if (! $this->cacheService->flushTags(['media', 'news', 'public-pages', 'public-shell', 'seo'])) {
+            $this->cacheService->flushAll();
+        }
     }
 
     private function authorizeMediaClassWrite(int $userId, string $ability): void

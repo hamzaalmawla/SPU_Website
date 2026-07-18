@@ -10,7 +10,13 @@ use App\Contracts\Seo\SitemapServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
 use App\DTOs\Seo\SitemapEntryDTO;
 use App\Enums\PublicationStatus;
+use App\Models\Cms\CmsTargetContent;
+use App\Models\Content\Directorate;
+use App\Models\Page\AboutPage;
 use App\Models\Page\Page;
+use App\Models\Person\FacultyMember;
+use App\Models\Person\Person;
+use App\Models\Settings\Setting;
 use Illuminate\Support\Collection;
 
 final class SitemapService implements SitemapServiceInterface
@@ -73,7 +79,123 @@ final class SitemapService implements SitemapServiceInterface
             }
         }
 
-        return $entries;
+        $this->appendAboutEntries($entries, $baseUrl);
+        $this->appendEServicesEntries($entries, $baseUrl);
+
+        return $entries->unique(fn (SitemapEntryDTO $entry): string => $entry->loc)->values();
+    }
+
+    /** @param Collection<int, SitemapEntryDTO> $entries */
+    private function appendEServicesEntries(Collection $entries, string $baseUrl): void
+    {
+        $targets = [
+            '/e-services' => ['target' => 'e_services', 'group' => 'e_services_page'],
+            '/e-services/library' => ['target' => 'e_services.library', 'group' => 'e_services_library_page'],
+            '/e-services/staff-email' => ['target' => 'e_services.staff-email', 'group' => 'e_services_staff_email_page'],
+            '/e-services/it-support' => ['target' => 'e_services.it-support', 'group' => 'e_services_it_support_page'],
+        ];
+
+        foreach ($targets as $path => $source) {
+            $locales = collect(['ar', 'en'])
+                ->filter(fn (string $locale): bool => $this->isEServicesSitemapRenderable($source['target'], $source['group'], $locale))
+                ->values();
+            if ($locales->isEmpty()) {
+                continue;
+            }
+
+            $alternates = $locales->map(fn (string $locale): array => [
+                'locale' => $locale,
+                'url' => $baseUrl.'/'.$locale.$path,
+            ])->all();
+            $updatedAt = Setting::query()->where('group_key', $source['group'])->max('updated_at')
+                ?? CmsTargetContent::query()->where('target_key', $source['target'])->value('updated_at')
+                ?? now()->toW3cString();
+
+            foreach ($locales as $locale) {
+                $entries->push(new SitemapEntryDTO(
+                    loc: $baseUrl.'/'.$locale.$path,
+                    lastmod: (string) $updatedAt,
+                    changefreq: null,
+                    priority: null,
+                    alternates: $alternates,
+                ));
+            }
+        }
+    }
+
+    private function isEServicesSitemapRenderable(string $targetKey, string $settingsGroup, string $locale): bool
+    {
+        $published = CmsTargetContent::query()
+            ->where('target_key', $targetKey)
+            ->where('status', PublicationStatus::Published->value)
+            ->value('payload_json');
+        if (is_string($published)) {
+            $published = json_decode($published, true);
+        }
+        if (is_array($published)
+            && is_array($published['translations'][$locale] ?? null)
+            && $published['translations'][$locale] !== []) {
+            return true;
+        }
+
+        return Setting::query()
+            ->where('group_key', $settingsGroup)
+            ->where('key', 'content')
+            ->where('locale', $locale)
+            ->where('is_public', true)
+            ->exists();
+    }
+
+    /** @param Collection<int, SitemapEntryDTO> $entries */
+    private function appendAboutEntries(Collection $entries, string $baseUrl): void
+    {
+        if (! AboutPage::query()->exists()) {
+            return;
+        }
+
+        $updatedAt = AboutPage::query()->max('updated_at');
+        $lastmod = is_string($updatedAt) ? $updatedAt : now()->toW3cString();
+        $paths = [
+            '/about',
+            '/about/vision-mission',
+            '/about/history',
+            '/about/leadership',
+            '/about/directorates',
+            '/about/directorates/staff',
+            '/about/partnerships',
+            '/about/accreditation',
+            '/about/why-spu',
+            '/about/quality-policy',
+            '/about/ethical-charter',
+            '/about/organizational-structure',
+        ];
+
+        foreach (Directorate::query()->public()->pluck('slug') as $slug) {
+            $paths[] = '/about/directorates/'.$slug;
+        }
+        foreach (Person::query()->public()->pluck('slug') as $slug) {
+            $paths[] = '/about/profile/person/'.$slug;
+        }
+        foreach (FacultyMember::query()->public()->pluck('slug') as $slug) {
+            $paths[] = '/about/profile/faculty-member/'.$slug;
+        }
+
+        foreach (array_unique($paths) as $path) {
+            $alternates = collect(['ar', 'en'])->map(fn (string $locale): array => [
+                'locale' => $locale,
+                'url' => $baseUrl.'/'.$locale.$path,
+            ])->all();
+
+            foreach (['ar', 'en'] as $locale) {
+                $entries->push(new SitemapEntryDTO(
+                    loc: $baseUrl.'/'.$locale.$path,
+                    lastmod: $lastmod,
+                    changefreq: null,
+                    priority: null,
+                    alternates: $alternates,
+                ));
+            }
+        }
     }
 
     public function renderXml(): string

@@ -52,4 +52,13 @@ final class HeaderNavigationRenderingTest extends TestCase
             ->assertSee('الإعلانات')
             ->assertSee('معرض الوسائط');
     }
+
+    public function test_header_uses_the_reference_stacking_level(): void
+    {
+        $this->get('/en')
+            ->assertOk()
+            ->assertSee('id="site-header" class="absolute top-0 z-[200]', false);
+
+        $this->assertStringContainsString('z-[200]', (string) file_get_contents(resource_path('js/alpine/mobileNav.js')));
+    }
 }

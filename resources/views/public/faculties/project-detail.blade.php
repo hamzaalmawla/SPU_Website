@@ -150,7 +150,7 @@
                     @if (! empty($project['supervisor']))
                         <div class="rounded-[6px] border border-slate-200 bg-white p-6 shadow-sm">
                             <h3 class="text-[13px] font-bold uppercase tracking-[0.04em] text-slate-400">{{ $supervisorLabel }}</h3>
-                            <a href="/" class="mt-3 flex items-center gap-3 transition hover:opacity-80">
+                            <a href="/{{ $locale }}" class="mt-3 flex items-center gap-3 transition hover:opacity-80">
                                 <div class="flex h-10 w-10 items-center justify-center rounded-full bg-spu-blue text-[12px] font-bold text-white">{{ $initials((string) $project['supervisor']) }}</div>
                                 <div>
                                     <p class="text-[13px] font-bold text-spu-blue">{{ $project['supervisor'] }}</p>

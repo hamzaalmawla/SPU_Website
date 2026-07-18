@@ -5,12 +5,16 @@ declare(strict_types=1);
 namespace App\Services\News;
 
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Media\MediaServiceInterface;
 use App\Contracts\News\NewsServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
 use App\DTOs\Content\ArticleCardDTO;
+use App\DTOs\Media\PublicMediaAssetDTO;
 use App\DTOs\News\NewsArticleDTO;
 use App\DTOs\News\NewsAttachmentDTO;
 use App\DTOs\News\NewsCategoryDTO;
+use App\DTOs\News\NewsEventDTO;
+use App\DTOs\News\NewsGalleryItemDTO;
 use App\DTOs\Shared\PaginatedResultDTO;
 use App\Models\Media\MediaAsset;
 use App\Models\News\NewsArticle;
@@ -19,6 +23,7 @@ use App\Models\News\NewsArticleSeoMeta;
 use App\Models\News\NewsArticleTranslation;
 use App\Models\News\NewsCategory;
 use App\Models\News\NewsCategoryTranslation;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -27,6 +32,7 @@ final class NewsService implements NewsServiceInterface
     public function __construct(
         private readonly CacheServiceInterface $cacheService,
         private readonly CmsWorkflowServiceInterface $cmsWorkflowService,
+        private readonly MediaServiceInterface $mediaService,
     ) {}
 
     public function getIndexPageContent(string $locale): array
@@ -39,9 +45,120 @@ final class NewsService implements NewsServiceInterface
         return $this->normalizeIndexPageContent($content, $locale);
     }
 
+    public function getAnnouncementsPageContent(string $locale): array
+    {
+        return $this->publishedLocalizedPayload('news.announcements', $locale) ?? $this->announcementsPageFallback($locale);
+    }
+
+    public function buildPreviewAnnouncementsPage(string $locale, array $content): array
+    {
+        return $this->normalizeAnnouncementsPageContent($content, $locale);
+    }
+
+    public function getEventsPageContent(string $locale): array
+    {
+        return $this->publishedLocalizedPayload('news.events', $locale) ?? $this->eventsPageFallback($locale);
+    }
+
+    public function buildPreviewEventsPage(string $locale, array $content): array
+    {
+        return $this->normalizeEventsPageContent($content, $locale);
+    }
+
+    public function listNewsEvents(string $locale, bool $past = false, ?string $category = null): Collection
+    {
+        return $this->mapNewsEvents($this->getEventsPageContent($locale), $locale, $past, $category);
+    }
+
+    public function listPreviewNewsEvents(string $locale, array $content, bool $past = false, ?string $category = null): Collection
+    {
+        return $this->mapNewsEvents($this->normalizeEventsPageContent($content, $locale), $locale, $past, $category);
+    }
+
+    /** @param array<string, mixed> $content @return Collection<int, NewsEventDTO> */
+    private function mapNewsEvents(array $content, string $locale, bool $past, ?string $category): Collection
+    {
+        $key = $past ? 'past' : 'upcoming';
+        $events = $content[$key] ?? [];
+
+        return collect(is_array($events) ? $events : [])
+            ->filter(fn (mixed $event): bool => is_array($event) && ($category === null || ($event['categoryId'] ?? null) === $category))
+            ->map(fn (array $event): NewsEventDTO => $this->mapNewsEvent($event, $locale, $past))
+            ->sortBy(fn (NewsEventDTO $event): string => $event->startsAt)
+            ->values();
+    }
+
+    public function findNewsEvent(string $eventId, string $locale, ?bool $past = null): ?NewsEventDTO
+    {
+        $sets = $past === null ? [false, true] : [$past];
+
+        foreach ($sets as $isPast) {
+            $event = $this->listNewsEvents($locale, $isPast)
+                ->first(fn (NewsEventDTO $event): bool => hash_equals($event->id, $eventId));
+
+            if ($event instanceof NewsEventDTO) {
+                return $event;
+            }
+        }
+
+        return null;
+    }
+
+    public function getNewsEventCalendar(string $locale, ?string $month = null): array
+    {
+        $events = $this->listNewsEvents($locale);
+        $selectedMonth = is_string($month) && preg_match('/^\d{4}-\d{2}$/', $month) === 1
+            ? $month
+            : substr($events->first()?->startsAt ?? now()->format('Y-m'), 0, 7);
+
+        $monthDate = CarbonImmutable::createFromFormat('Y-m-d', $selectedMonth.'-01')->startOfMonth();
+        $gridStart = $monthDate->startOfWeek(CarbonImmutable::SUNDAY);
+        $days = [];
+
+        for ($offset = 0; $offset < 42; $offset++) {
+            $date = $gridStart->addDays($offset);
+            $dateString = $date->toDateString();
+            $days[] = [
+                'date' => $dateString,
+                'day' => $date->day,
+                'inMonth' => $date->month === $monthDate->month,
+                'events' => $events->filter(fn (NewsEventDTO $event): bool => str_starts_with($event->startsAt, $dateString))->values(),
+            ];
+        }
+
+        return [
+            'month' => $selectedMonth,
+            'monthLabel' => $monthDate->locale($locale)->translatedFormat('F Y'),
+            'previousMonth' => $monthDate->subMonth()->format('Y-m'),
+            'nextMonth' => $monthDate->addMonth()->format('Y-m'),
+            'events' => $events->filter(fn (NewsEventDTO $event): bool => str_starts_with($event->startsAt, $selectedMonth))->values(),
+            'days' => $days,
+        ];
+    }
+
+    public function getGalleryPageContent(string $locale): array
+    {
+        return $this->publishedLocalizedPayload('news.gallery', $locale) ?? $this->galleryPageFallback($locale);
+    }
+
+    public function buildPreviewGalleryPage(string $locale, array $content): array
+    {
+        return $this->normalizeGalleryPageContent($content, $locale);
+    }
+
+    public function getGalleryListing(string $locale, ?string $category = null, int $page = 1, int $perPage = 8): array
+    {
+        return $this->galleryListingFromContent($this->getGalleryPageContent($locale), $locale, $category, $page, $perPage);
+    }
+
+    public function buildPreviewGalleryListing(string $locale, array $content, ?string $category = null, int $page = 1, int $perPage = 8): array
+    {
+        return $this->galleryListingFromContent($this->normalizeGalleryPageContent($content, $locale), $locale, $category, $page, $perPage);
+    }
+
     public function getEditablePayload(string $targetKey): array
     {
-        if ($targetKey !== 'news.index') {
+        if (! in_array($targetKey, ['news.index', 'news.announcements', 'news.events', 'news.gallery'], true)) {
             throw new \InvalidArgumentException('Unsupported news target.');
         }
 
@@ -56,10 +173,17 @@ final class NewsService implements NewsServiceInterface
             ];
         }
 
+        $fallback = match ($targetKey) {
+            'news.index' => fn (string $locale): array => $this->indexPageFallback($locale),
+            'news.announcements' => fn (string $locale): array => $this->announcementsPageFallback($locale),
+            'news.events' => fn (string $locale): array => $this->eventsPageFallback($locale),
+            'news.gallery' => fn (string $locale): array => $this->galleryPageFallback($locale),
+        };
+
         return [
             'translations' => [
-                'ar' => $this->indexPageFallback('ar'),
-                'en' => $this->indexPageFallback('en'),
+                'ar' => $fallback('ar'),
+                'en' => $fallback('en'),
             ],
         ];
     }
@@ -79,6 +203,10 @@ final class NewsService implements NewsServiceInterface
                 ->when(is_string($filters['category'] ?? null) && $filters['category'] !== '', function (Builder $query) use ($filters): void {
                     $query->whereHas('category', fn (Builder $categoryQuery): Builder => $categoryQuery->where('slug', $filters['category']));
                 })
+                ->when(is_string($filters['categoryType'] ?? null) && $filters['categoryType'] !== '', function (Builder $query) use ($filters): void {
+                    $query->whereHas('category', fn (Builder $categoryQuery): Builder => $categoryQuery->where('type', $filters['categoryType']));
+                })
+                ->when(is_int($filters['excludeId'] ?? null), fn (Builder $query): Builder => $query->whereKeyNot($filters['excludeId']))
                 ->when(is_string($filters['search'] ?? null) && trim((string) $filters['search']) !== '', function (Builder $query) use ($filters): void {
                     $search = trim((string) $filters['search']);
                     $query->whereHas('translations', function (Builder $translationQuery) use ($search): void {
@@ -120,11 +248,14 @@ final class NewsService implements NewsServiceInterface
         }, 300);
     }
 
-    public function getFeaturedArticles(string $locale, int $limit = 3): Collection
+    public function getFeaturedArticles(string $locale, int $limit = 3, ?string $categoryType = null): Collection
     {
         return NewsArticle::query()
             ->public()
             ->where('is_featured', true)
+            ->when($categoryType !== null, function (Builder $query) use ($categoryType): void {
+                $query->whereHas('category', fn (Builder $categoryQuery): Builder => $categoryQuery->where('type', $categoryType));
+            })
             ->with(['translations', 'coverMedia', 'category.translations'])
             ->orderByDesc('published_at')
             ->limit($limit)
@@ -222,13 +353,19 @@ final class NewsService implements NewsServiceInterface
         }, 300);
     }
 
-    public function getPublicCategories(string $locale): Collection
+    public function getPublicCategories(string $locale, ?string $type = null): Collection
     {
-        return $this->newsCache()->remember('news:categories:'.$locale, function () use ($locale): Collection {
+        return $this->newsCache()->remember('news:categories:'.$locale.':'.($type ?? 'all'), function () use ($locale, $type): Collection {
             return NewsCategory::query()
                 ->enabled()
                 ->with('translations')
-                ->whereHas('articles', fn (Builder $query): Builder => $query->public())
+                ->when($type !== null, fn (Builder $query): Builder => $query->where('type', $type))
+                ->whereHas('articles', fn (Builder $query): Builder => $query
+                    ->where('status', 'published')
+                    ->where('is_enabled', true)
+                    ->where(function (Builder $articleQuery): void {
+                        $articleQuery->whereNull('published_at')->orWhere('published_at', '<=', now());
+                    }))
                 ->orderBy('sort_order')
                 ->orderBy('id')
                 ->get()
@@ -386,7 +523,16 @@ final class NewsService implements NewsServiceInterface
             ? $published['translations'][$locale]
             : null;
 
-        return is_array($localized) ? $this->normalizeIndexPageContent($localized, $locale) : null;
+        if (! is_array($localized)) {
+            return null;
+        }
+
+        return match ($targetKey) {
+            'news.announcements' => $this->normalizeAnnouncementsPageContent($localized, $locale),
+            'news.events' => $this->normalizeEventsPageContent($localized, $locale),
+            'news.gallery' => $this->normalizeGalleryPageContent($localized, $locale),
+            default => $this->normalizeIndexPageContent($localized, $locale),
+        };
     }
 
     /** @return array<string, mixed> */
@@ -426,6 +572,338 @@ final class NewsService implements NewsServiceInterface
             'newsFallbackCategory' => $isAr ? 'أخبار' : 'News',
             'universityNewsFallbackCategory' => $isAr ? 'أخبار الجامعة' : 'University News',
         ], $locale);
+    }
+
+    /** @return array<string, mixed> */
+    private function announcementsPageFallback(string $locale): array
+    {
+        $isAr = $locale === 'ar';
+
+        return $this->normalizeAnnouncementsPageContent([
+            'pageTitle' => $isAr ? 'الإعلانات' : 'Announcements',
+            'pageDescription' => $isAr ? 'تابع الإعلانات الأكاديمية والإدارية الرسمية للجامعة.' : 'Follow official academic and administrative university announcements.',
+            'heroImage' => '/images/slider-1.webp',
+            'featuredLabel' => $isAr ? 'إعلان مميز' : 'Priority Announcement',
+            'allCategoriesLabel' => $isAr ? 'كل التصنيفات' : 'All Categories',
+            'readMoreLabel' => $isAr ? 'قراءة الإعلان' : 'Read Full Announcement',
+            'downloadLabel' => $isAr ? 'تحميل المرفق' : 'Download Attachment',
+            'emptyState' => $isAr ? 'لا توجد إعلانات منشورة حالياً.' : 'No announcements are currently published.',
+        ], $locale);
+    }
+
+    /** @param array<string, mixed> $content @return array<string, mixed> */
+    private function normalizeAnnouncementsPageContent(array $content, string $locale): array
+    {
+        $fallback = [
+            'pageTitle' => $locale === 'ar' ? 'الإعلانات' : 'Announcements',
+            'pageDescription' => '',
+            'heroImage' => '/images/slider-1.webp',
+            'featuredLabel' => $locale === 'ar' ? 'إعلان مميز' : 'Priority Announcement',
+            'allCategoriesLabel' => $locale === 'ar' ? 'كل التصنيفات' : 'All Categories',
+            'readMoreLabel' => $locale === 'ar' ? 'قراءة الإعلان' : 'Read Full Announcement',
+            'downloadLabel' => $locale === 'ar' ? 'تحميل المرفق' : 'Download Attachment',
+            'emptyState' => $locale === 'ar' ? 'لا توجد إعلانات منشورة حالياً.' : 'No announcements are currently published.',
+        ];
+
+        foreach ($fallback as $key => $value) {
+            $candidate = $content[$key] ?? $value;
+            $fallback[$key] = is_string($candidate) || is_numeric($candidate) ? (string) $candidate : $value;
+        }
+
+        $fallback['title'] = $fallback['pageTitle'];
+        $fallback['headline'] = $fallback['pageTitle'];
+        $fallback['summary'] = $fallback['pageDescription'];
+
+        return $fallback;
+    }
+
+    /** @return array<string, mixed> */
+    private function eventsPageFallback(string $locale): array
+    {
+        $path = resource_path('data/news-events-content.json');
+        $decoded = is_file($path) ? json_decode((string) file_get_contents($path), true) : [];
+        $content = is_array($decoded['translations'][$locale] ?? null) ? $decoded['translations'][$locale] : [];
+
+        return $this->normalizeEventsPageContent($content, $locale);
+    }
+
+    /** @param array<string, mixed> $content @return array<string, mixed> */
+    private function normalizeEventsPageContent(array $content, string $locale): array
+    {
+        $isAr = $locale === 'ar';
+        $defaults = [
+            'title' => $isAr ? 'فعاليات الجامعة' : 'University Events',
+            'headline' => $isAr ? 'فعاليات الجامعة' : 'University Events',
+            'summary' => '',
+            'heroImage' => '/images/uni-main-place.JPG',
+            'calendarTitle' => $isAr ? 'تقويم الفعاليات' : 'Events Calendar',
+            'upcomingTitle' => $isAr ? 'الفعاليات القادمة' : 'Upcoming Events',
+            'pastTitle' => $isAr ? 'الفعاليات السابقة' : 'Past Events',
+            'allCategoriesLabel' => $isAr ? 'جميع الفعاليات' : 'All Events',
+            'registerLabel' => $isAr ? 'سجل الآن' : 'Register Now',
+            'detailsLabel' => $isAr ? 'عرض التفاصيل' : 'View Details',
+            'freeLabel' => $isAr ? 'مجاني' : 'Free',
+            'spotsLeftLabel' => $isAr ? 'أماكن متبقية' : 'spots left',
+            'emptyLabel' => $isAr ? 'لا توجد فعاليات ضمن هذا التصنيف.' : 'No events match this category.',
+            'registrationTitle' => $isAr ? 'التسجيل في الفعالية' : 'Event Registration',
+            'registrationInfo' => '',
+            'notFoundTitle' => $isAr ? 'الفعالية غير موجودة' : 'Event Not Found',
+            'notFoundText' => '',
+            'backLabel' => $isAr ? 'العودة إلى الفعاليات' : 'Back to Events',
+            'highlightsLabel' => $isAr ? 'أبرز محاور الفعالية' : 'Event Highlights',
+            'speakersLabel' => $isAr ? 'المتحدثون' : 'Speakers',
+            'resultsLabel' => $isAr ? 'النتائج والإنجازات' : 'Results and Achievements',
+            'galleryLabel' => $isAr ? 'معرض الصور' : 'Photo Gallery',
+        ];
+
+        foreach ($defaults as $key => $value) {
+            $candidate = $content[$key] ?? $value;
+            $defaults[$key] = is_string($candidate) || is_numeric($candidate) ? (string) $candidate : $value;
+        }
+
+        $defaults['categories'] = array_values(array_filter(
+            is_array($content['categories'] ?? null) ? $content['categories'] : [],
+            static fn (mixed $category): bool => is_array($category) && is_string($category['id'] ?? null) && is_string($category['label'] ?? null),
+        ));
+        $defaults['upcoming'] = $this->normalizeEventRecords($content['upcoming'] ?? [], false);
+        $defaults['past'] = $this->normalizeEventRecords($content['past'] ?? [], true);
+
+        return $defaults;
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function normalizeEventRecords(mixed $records, bool $past): array
+    {
+        if (! is_array($records)) {
+            return [];
+        }
+
+        $allowedForms = ['conference-registration', 'activity-registration'];
+        $normalized = [];
+        $seen = [];
+
+        foreach ($records as $record) {
+            if (! is_array($record)) {
+                continue;
+            }
+
+            $id = trim((string) ($record['id'] ?? ''));
+            $title = trim((string) ($record['title'] ?? ''));
+            $startsAt = trim((string) ($record['startsAt'] ?? ''));
+
+            if ($id === '' || $title === '' || $startsAt === '' || isset($seen[$id]) || strtotime($startsAt) === false) {
+                continue;
+            }
+
+            $seen[$id] = true;
+            $formId = is_string($record['formId'] ?? null) && in_array($record['formId'], $allowedForms, true) ? $record['formId'] : null;
+            $capacity = is_numeric($record['capacity'] ?? null) ? max(0, (int) $record['capacity']) : null;
+            $registered = is_numeric($record['registered'] ?? null) ? max(0, (int) $record['registered']) : 0;
+
+            $normalized[] = array_merge($record, [
+                'id' => $id,
+                'title' => $title,
+                'startsAt' => $startsAt,
+                'formId' => $past ? null : $formId,
+                'capacity' => $capacity,
+                'registered' => $capacity === null ? $registered : min($capacity, $registered),
+            ]);
+        }
+
+        return $normalized;
+    }
+
+    /** @param array<string, mixed> $event */
+    private function mapNewsEvent(array $event, string $locale, bool $past): NewsEventDTO
+    {
+        $speakers = collect(is_array($event['speakers'] ?? null) ? $event['speakers'] : [])
+            ->filter(fn (mixed $speaker): bool => is_array($speaker))
+            ->map(fn (array $speaker): array => ['name' => (string) ($speaker['name'] ?? ''), 'title' => (string) ($speaker['title'] ?? '')])
+            ->values()
+            ->all();
+        $formId = is_string($event['formId'] ?? null) ? $event['formId'] : null;
+        $capacity = is_int($event['capacity'] ?? null) ? $event['capacity'] : null;
+        $registered = (int) ($event['registered'] ?? 0);
+        $remainingCapacity = $capacity === null ? null : max(0, $capacity - $registered);
+        $isRegisterable = ! $past && $formId !== null && ($remainingCapacity === null || $remainingCapacity > 0);
+        $id = (string) $event['id'];
+
+        return new NewsEventDTO(
+            id: $id,
+            locale: $locale,
+            title: (string) $event['title'],
+            summary: (string) ($event['summary'] ?? ''),
+            startsAt: (string) $event['startsAt'],
+            endsAt: is_string($event['endsAt'] ?? null) ? $event['endsAt'] : null,
+            dateLabel: (string) ($event['dateLabel'] ?? ''),
+            timeLabel: (string) ($event['timeLabel'] ?? ''),
+            location: (string) ($event['location'] ?? ''),
+            categoryId: (string) ($event['categoryId'] ?? ''),
+            categoryLabel: (string) ($event['categoryLabel'] ?? ''),
+            imageUrl: (string) ($event['image'] ?? '/images/uni-main-place.JPG'),
+            isPast: $past,
+            isFeatured: (bool) ($event['featured'] ?? false),
+            formId: $formId,
+            capacity: $capacity,
+            registered: $registered,
+            remainingCapacity: $remainingCapacity,
+            isRegisterable: $isRegisterable,
+            registrationUrl: $isRegisterable ? '/'.$locale.'/news/events-list/register?event='.rawurlencode($id) : null,
+            detailUrl: $past ? '/'.$locale.'/news/events-list/past?event='.rawurlencode($id) : '/'.$locale.'/news/events-list#'.rawurlencode($id),
+            participants: is_string($event['participants'] ?? null) ? $event['participants'] : null,
+            highlights: array_values(array_filter(is_array($event['highlights'] ?? null) ? $event['highlights'] : [], 'is_string')),
+            speakers: $speakers,
+            results: is_string($event['results'] ?? null) ? $event['results'] : null,
+            gallery: array_values(array_filter(is_array($event['gallery'] ?? null) ? $event['gallery'] : [], 'is_string')),
+        );
+    }
+
+    /** @return array<string, mixed> */
+    private function galleryPageFallback(string $locale): array
+    {
+        $path = resource_path('data/news-gallery-content.json');
+        $decoded = is_file($path) ? json_decode((string) file_get_contents($path), true) : [];
+        $content = is_array($decoded['translations'][$locale] ?? null) ? $decoded['translations'][$locale] : [];
+
+        return $this->normalizeGalleryPageContent($content, $locale);
+    }
+
+    /** @param array<string, mixed> $content @return array<string, mixed> */
+    private function normalizeGalleryPageContent(array $content, string $locale): array
+    {
+        $isAr = $locale === 'ar';
+        $defaults = [
+            'title' => $isAr ? 'معرض الوسائط' : 'Media Gallery',
+            'headline' => $isAr ? 'معرض الوسائط' : 'Media Gallery',
+            'summary' => '',
+            'heroImage' => '/images/slider-1.webp',
+            'allLabel' => $isAr ? 'كل الصور' : 'All Images',
+            'latestLabel' => $isAr ? 'عرض الأحدث' : 'Showing Latest',
+            'emptyLabel' => $isAr ? 'لا توجد صور ضمن هذا التصنيف.' : 'No gallery images match this category.',
+            'openLabel' => $isAr ? 'فتح الصورة' : 'Open image',
+            'closeLabel' => $isAr ? 'إغلاق عارض الصور' : 'Close image viewer',
+            'previousLabel' => $isAr ? 'الصورة السابقة' : 'Previous image',
+            'nextLabel' => $isAr ? 'الصورة التالية' : 'Next image',
+        ];
+
+        foreach ($defaults as $key => $value) {
+            $candidate = $content[$key] ?? $value;
+            $defaults[$key] = is_string($candidate) || is_numeric($candidate) ? (string) $candidate : $value;
+        }
+
+        $defaults['categories'] = array_values(array_filter(
+            is_array($content['categories'] ?? null) ? $content['categories'] : [],
+            static fn (mixed $category): bool => is_array($category)
+                && is_string($category['id'] ?? null)
+                && trim($category['id']) !== ''
+                && is_string($category['label'] ?? null)
+                && trim($category['label']) !== '',
+        ));
+        $defaults['items'] = $this->normalizeGalleryRecords($content['items'] ?? []);
+
+        return $defaults;
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function normalizeGalleryRecords(mixed $records): array
+    {
+        if (! is_array($records)) {
+            return [];
+        }
+
+        $normalized = [];
+        $seen = [];
+
+        foreach ($records as $record) {
+            if (! is_array($record)) {
+                continue;
+            }
+
+            $id = trim((string) ($record['id'] ?? ''));
+            $mediaId = is_numeric($record['mediaId'] ?? null) ? (int) $record['mediaId'] : null;
+            $imageUrl = is_string($record['imageUrl'] ?? null) ? trim($record['imageUrl']) : '';
+
+            if ($id === '' || isset($seen[$id]) || ($mediaId === null && $imageUrl === '')) {
+                continue;
+            }
+
+            $seen[$id] = true;
+            $normalized[] = array_merge($record, [
+                'id' => $id,
+                'mediaId' => $mediaId,
+                'imageUrl' => $imageUrl,
+                'categoryId' => trim((string) ($record['categoryId'] ?? '')),
+                'categoryLabel' => trim((string) ($record['categoryLabel'] ?? '')),
+                'dateLabel' => trim((string) ($record['dateLabel'] ?? '')),
+                'featured' => (bool) ($record['featured'] ?? false),
+            ]);
+        }
+
+        return $normalized;
+    }
+
+    /** @param array<string, mixed> $content @return array{page: array<string, mixed>, featured: NewsGalleryItemDTO|null, items: PaginatedResultDTO} */
+    private function galleryListingFromContent(array $content, string $locale, ?string $category, int $page, int $perPage): array
+    {
+        $records = is_array($content['items'] ?? null) ? $content['items'] : [];
+        $mediaIds = collect($records)
+            ->map(fn (mixed $record): ?int => is_array($record) && is_int($record['mediaId'] ?? null) ? $record['mediaId'] : null)
+            ->filter(fn (?int $id): bool => $id !== null)
+            ->values()
+            ->all();
+        $media = $this->mediaService->resolvePublicImages($mediaIds, $locale)
+            ->keyBy(fn (PublicMediaAssetDTO $asset): int => $asset->mediaId);
+
+        $items = collect($records)
+            ->map(function (array $record) use ($media): ?NewsGalleryItemDTO {
+                $asset = is_int($record['mediaId'] ?? null) ? $media->get($record['mediaId']) : null;
+                $title = $asset instanceof PublicMediaAssetDTO ? $asset->title : trim((string) ($record['title'] ?? ''));
+                $altText = $asset instanceof PublicMediaAssetDTO ? $asset->altText : trim((string) ($record['altText'] ?? ''));
+                $imageUrl = $asset instanceof PublicMediaAssetDTO ? $asset->url : trim((string) ($record['imageUrl'] ?? ''));
+
+                if ($title === '' || $altText === '' || $imageUrl === '') {
+                    return null;
+                }
+
+                return new NewsGalleryItemDTO(
+                    id: (string) $record['id'],
+                    title: $title,
+                    altText: $altText,
+                    caption: $asset instanceof PublicMediaAssetDTO ? $asset->caption : (is_string($record['caption'] ?? null) ? $record['caption'] : null),
+                    imageUrl: $imageUrl,
+                    categoryId: (string) ($record['categoryId'] ?? ''),
+                    categoryLabel: (string) ($record['categoryLabel'] ?? ''),
+                    dateLabel: (string) ($record['dateLabel'] ?? ''),
+                    isFeatured: (bool) ($record['featured'] ?? false),
+                    mediaId: $asset instanceof PublicMediaAssetDTO ? $asset->mediaId : null,
+                    width: $asset instanceof PublicMediaAssetDTO ? $asset->width : null,
+                    height: $asset instanceof PublicMediaAssetDTO ? $asset->height : null,
+                );
+            })
+            ->filter(fn (mixed $item): bool => $item instanceof NewsGalleryItemDTO)
+            ->when($category !== null, fn (Collection $items): Collection => $items->filter(fn (NewsGalleryItemDTO $item): bool => $item->categoryId === $category))
+            ->values();
+
+        $featured = $items->first(fn (NewsGalleryItemDTO $item): bool => $item->isFeatured) ?? $items->first();
+        $regular = $featured instanceof NewsGalleryItemDTO
+            ? $items->reject(fn (NewsGalleryItemDTO $item): bool => $item->id === $featured->id)->values()
+            : $items;
+        $perPage = max(1, min(24, $perPage));
+        $total = $regular->count();
+        $lastPage = max(1, (int) ceil($total / $perPage));
+        $currentPage = min(max(1, $page), $lastPage);
+
+        return [
+            'page' => $content,
+            'featured' => $featured instanceof NewsGalleryItemDTO ? $featured : null,
+            'items' => new PaginatedResultDTO(
+                items: $regular->slice(($currentPage - 1) * $perPage, $perPage)->values(),
+                total: $total,
+                currentPage: $currentPage,
+                perPage: $perPage,
+                lastPage: $lastPage,
+            ),
+        ];
     }
 
     /** @param array<string, mixed> $content @return array<string, mixed> */

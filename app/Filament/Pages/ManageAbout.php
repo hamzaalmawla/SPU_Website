@@ -142,12 +142,14 @@ class ManageAbout extends Page implements HasForms
     {
         $this->assertAboutTarget($targetKey);
 
-        if (! in_array($targetKey, ['about.landing', 'about.history', 'about.leadership', 'about.directorates', 'about.directorates_staff', 'about.partnerships', 'about.quality-policy', 'about.ethical-charter', 'about.organizational-structure'], true)) {
+        if (! in_array($targetKey, ['about.landing', 'about.vision-mission', 'about.history', 'about.leadership', 'about.directorates', 'about.directorates_staff', 'about.partnerships', 'about.quality-policy', 'about.ethical-charter', 'about.organizational-structure', 'about.accreditation', 'about.why-spu'], true)) {
             $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey);
             $this->form->fill([
                 'target_key' => $targetKey,
                 'ar_landing' => [],
                 'en_landing' => [],
+                'ar_vision_mission' => [],
+                'en_vision_mission' => [],
                 'ar_history' => [],
                 'en_history' => [],
                 'ar_leadership' => [],
@@ -164,6 +166,10 @@ class ManageAbout extends Page implements HasForms
                 'en_ethical_charter' => [],
                 'ar_organizational_structure' => [],
                 'en_organizational_structure' => [],
+                'ar_accreditation' => [],
+                'en_accreditation' => [],
+                'ar_why_spu' => [],
+                'en_why_spu' => [],
             ]);
 
             return;
@@ -177,6 +183,8 @@ class ManageAbout extends Page implements HasForms
             'target_key' => $targetKey,
             'ar_landing' => $targetKey === 'about.landing' && is_array($payload['translations']['ar'] ?? null) ? $this->landingFormData($payload['translations']['ar']) : [],
             'en_landing' => $targetKey === 'about.landing' && is_array($payload['translations']['en'] ?? null) ? $this->landingFormData($payload['translations']['en']) : [],
+            'ar_vision_mission' => $targetKey === 'about.vision-mission' && is_array($payload['translations']['ar'] ?? null) ? $this->visionMissionFormData($payload['translations']['ar']) : [],
+            'en_vision_mission' => $targetKey === 'about.vision-mission' && is_array($payload['translations']['en'] ?? null) ? $this->visionMissionFormData($payload['translations']['en']) : [],
             'ar_history' => $targetKey === 'about.history' && is_array($payload['translations']['ar'] ?? null) ? $this->historyFormData($payload['translations']['ar']) : [],
             'en_history' => $targetKey === 'about.history' && is_array($payload['translations']['en'] ?? null) ? $this->historyFormData($payload['translations']['en']) : [],
             'ar_leadership' => $targetKey === 'about.leadership' && is_array($payload['translations']['ar'] ?? null) ? $this->contentShellFormData($payload['translations']['ar']) : [],
@@ -193,6 +201,10 @@ class ManageAbout extends Page implements HasForms
             'en_ethical_charter' => $targetKey === 'about.ethical-charter' && is_array($payload['translations']['en'] ?? null) ? $this->importedContentFormData($payload['translations']['en']) : [],
             'ar_organizational_structure' => $targetKey === 'about.organizational-structure' && is_array($payload['translations']['ar'] ?? null) ? $this->importedContentFormData($payload['translations']['ar']) : [],
             'en_organizational_structure' => $targetKey === 'about.organizational-structure' && is_array($payload['translations']['en'] ?? null) ? $this->importedContentFormData($payload['translations']['en']) : [],
+            'ar_accreditation' => $targetKey === 'about.accreditation' && is_array($payload['translations']['ar'] ?? null) ? $this->importedContentFormData($payload['translations']['ar']) : [],
+            'en_accreditation' => $targetKey === 'about.accreditation' && is_array($payload['translations']['en'] ?? null) ? $this->importedContentFormData($payload['translations']['en']) : [],
+            'ar_why_spu' => $targetKey === 'about.why-spu' && is_array($payload['translations']['ar'] ?? null) ? $this->importedContentFormData($payload['translations']['ar']) : [],
+            'en_why_spu' => $targetKey === 'about.why-spu' && is_array($payload['translations']['en'] ?? null) ? $this->importedContentFormData($payload['translations']['en']) : [],
         ]);
     }
 
@@ -332,6 +344,15 @@ class ManageAbout extends Page implements HasForms
             ];
         }
 
+        if (($state['target_key'] ?? null) === 'about.vision-mission') {
+            return [
+                'translations' => [
+                    'ar' => $this->visionMissionPayloadFromForm(is_array($state['ar_vision_mission'] ?? null) ? $state['ar_vision_mission'] : []),
+                    'en' => $this->visionMissionPayloadFromForm(is_array($state['en_vision_mission'] ?? null) ? $state['en_vision_mission'] : []),
+                ],
+            ];
+        }
+
         if (($state['target_key'] ?? null) === 'about.leadership') {
             return [
                 'translations' => [
@@ -368,7 +389,7 @@ class ManageAbout extends Page implements HasForms
             ];
         }
 
-        if (in_array($state['target_key'] ?? null, ['about.quality-policy', 'about.ethical-charter', 'about.organizational-structure'], true)) {
+        if (in_array($state['target_key'] ?? null, ['about.quality-policy', 'about.ethical-charter', 'about.organizational-structure', 'about.accreditation', 'about.why-spu'], true)) {
             $stateKey = $this->importedContentStateKey((string) $state['target_key']);
 
             return [
@@ -391,6 +412,10 @@ class ManageAbout extends Page implements HasForms
     /** @return array<int, Section> */
     private function payloadFields(string $locale): array
     {
+        if ($this->targetKeyForSchema() === 'about.vision-mission') {
+            return $this->visionMissionFields($locale);
+        }
+
         if ($this->targetKeyForSchema() === 'about.history') {
             return $this->historyFields($locale);
         }
@@ -411,7 +436,7 @@ class ManageAbout extends Page implements HasForms
             return $this->contentShellFields($locale, 'partnerships');
         }
 
-        if (in_array($this->targetKeyForSchema(), ['about.quality-policy', 'about.ethical-charter', 'about.organizational-structure'], true)) {
+        if (in_array($this->targetKeyForSchema(), ['about.quality-policy', 'about.ethical-charter', 'about.organizational-structure', 'about.accreditation', 'about.why-spu'], true)) {
             return $this->importedContentFields($locale, $this->importedContentStateKey($this->targetKeyForSchema()));
         }
 
@@ -437,6 +462,10 @@ class ManageAbout extends Page implements HasForms
                 Textarea::make($prefix.'.description')->label('Description')->required()->rows(3)->columnSpanFull(),
                 MediaPicker::image($prefix.'.imagePrimary', 'Primary Image', true),
                 MediaPicker::image($prefix.'.imageSecondary', 'Secondary Image', true),
+                MediaPicker::image($prefix.'.imageOverview', 'Overview Image', true),
+                TextInput::make($prefix.'.seoTitle')->label('SEO Title')->required()->maxLength(180),
+                Textarea::make($prefix.'.seoDescription')->label('SEO Description')->required()->rows(2)->columnSpanFull(),
+                MediaPicker::image($prefix.'.seoImage', 'Social Image', true),
             ])->columns(2),
 
             Section::make('Stats')->schema([
@@ -459,6 +488,7 @@ class ManageAbout extends Page implements HasForms
                     ->label('Story Items')
                     ->schema([
                         TextInput::make('title')->required()->maxLength(160),
+                        Textarea::make('summary')->required()->rows(2)->columnSpanFull(),
                         Textarea::make('summary')->required()->rows(2)->columnSpanFull(),
                     ])
                     ->columns(2)
@@ -483,6 +513,56 @@ class ManageAbout extends Page implements HasForms
     }
 
     /** @return array<int, Section> */
+    private function visionMissionFields(string $locale): array
+    {
+        $prefix = $locale.'_vision_mission';
+
+        return [
+            Section::make('Hero and SEO')->schema([
+                TextInput::make($prefix.'.title')->label('Page Title')->required()->maxLength(180),
+                Textarea::make($prefix.'.summary')->label('Summary')->required()->rows(3)->columnSpanFull(),
+                MediaPicker::image($prefix.'.heroImage', 'Hero Image', true),
+                TextInput::make($prefix.'.seoTitle')->label('SEO Title')->required()->maxLength(180),
+                Textarea::make($prefix.'.seoDescription')->label('SEO Description')->required()->rows(2)->columnSpanFull(),
+                MediaPicker::image($prefix.'.seoImage', 'Social Image', true),
+            ])->columns(2),
+
+            Section::make('Vision, Mission and Values')->schema([
+                TextInput::make($prefix.'.cardsTitle')->label('Accessible Section Title')->required()->maxLength(180),
+                Repeater::make($prefix.'.cards')
+                    ->label('Cards')
+                    ->schema([
+                        MediaPicker::icon('icon', 'Icon', true),
+                        TextInput::make('title')->required()->maxLength(180),
+                        Textarea::make('body')->required()->rows(3)->columnSpanFull(),
+                    ])
+                    ->columns(2)
+                    ->minItems(1)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]),
+
+            Section::make('Strategic Pillars')->schema([
+                TextInput::make($prefix.'.pillarsTitle')->label('Section Title')->required()->maxLength(180),
+                Repeater::make($prefix.'.pillars')
+                    ->label('Pillars')
+                    ->schema([
+                        TextInput::make('title')->required()->maxLength(180),
+                        Textarea::make('summary')->required()->rows(3)->columnSpanFull(),
+                    ])
+                    ->columns(2)
+                    ->minItems(1)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]),
+        ];
+    }
+
+    /** @return array<int, Section> */
     private function contentShellFields(string $locale, string $stateKey): array
     {
         $prefix = $locale.'_'.$stateKey;
@@ -493,6 +573,9 @@ class ManageAbout extends Page implements HasForms
                 TextInput::make($prefix.'.headline')->label('Headline')->required()->maxLength(255),
                 Textarea::make($prefix.'.summary')->label('Summary')->required()->rows(2)->columnSpanFull(),
                 MediaPicker::image($prefix.'.heroImage', 'Hero Image', true),
+                TextInput::make($prefix.'.seoTitle')->label('SEO Title')->required()->maxLength(180),
+                Textarea::make($prefix.'.seoDescription')->label('SEO Description')->required()->rows(2)->columnSpanFull(),
+                MediaPicker::image($prefix.'.seoImage', 'Social Image', true),
             ])->columns(2),
         ];
     }
@@ -508,7 +591,26 @@ class ManageAbout extends Page implements HasForms
                 TextInput::make($prefix.'.headline')->label('Headline')->required()->maxLength(255),
                 Textarea::make($prefix.'.summary')->label('Summary')->required()->rows(2)->columnSpanFull(),
                 MediaPicker::image($prefix.'.heroImage', 'Hero Image', true),
+                TextInput::make($prefix.'.badge')->label('Eyebrow / Badge')->required()->maxLength(120),
+                TextInput::make($prefix.'.seoTitle')->label('SEO Title')->required()->maxLength(180),
+                Textarea::make($prefix.'.seoDescription')->label('SEO Description')->required()->rows(2)->columnSpanFull(),
+                MediaPicker::image($prefix.'.seoImage', 'Social Image', true),
             ])->columns(2),
+
+            Section::make('Introduction')->schema([
+                Repeater::make($prefix.'.intro')
+                    ->schema([Textarea::make('paragraph')->required()->rows(3)->columnSpanFull()])
+                    ->defaultItems(0)->reorderable()->collapsible()->columnSpanFull(),
+            ]),
+
+            Section::make('Facts')->schema([
+                Repeater::make($prefix.'.stats')
+                    ->schema([
+                        TextInput::make('value')->required()->maxLength(40),
+                        TextInput::make('label')->required()->maxLength(120),
+                    ])
+                    ->columns(2)->defaultItems(0)->reorderable()->collapsible()->columnSpanFull(),
+            ]),
 
             Section::make('Content Cards')->schema([
                 Repeater::make($prefix.'.sections')
@@ -537,6 +639,10 @@ class ManageAbout extends Page implements HasForms
                 TextInput::make($prefix.'.headline')->label('Headline')->required()->maxLength(255),
                 Textarea::make($prefix.'.summary')->label('Summary')->required()->rows(2)->columnSpanFull(),
                 MediaPicker::image($prefix.'.heroImage', 'Hero Image', true),
+                MediaPicker::image($prefix.'.contentImage', 'Founding Image', true),
+                TextInput::make($prefix.'.seoTitle')->label('SEO Title')->required()->maxLength(180),
+                Textarea::make($prefix.'.seoDescription')->label('SEO Description')->required()->rows(2)->columnSpanFull(),
+                MediaPicker::image($prefix.'.seoImage', 'Social Image', true),
             ])->columns(2),
 
             Section::make('Founding Vision')->schema([
@@ -603,6 +709,10 @@ class ManageAbout extends Page implements HasForms
             'badge' => $this->stringValue($payload, 'badge'),
             'imagePrimary' => $this->stringValue($payload, 'imagePrimary'),
             'imageSecondary' => $this->stringValue($payload, 'imageSecondary'),
+            'imageOverview' => $this->stringValue($payload, 'imageOverview'),
+            'seoTitle' => $this->stringValue($payload, 'seoTitle') ?: $this->stringValue($payload, 'title'),
+            'seoDescription' => $this->stringValue($payload, 'seoDescription') ?: $this->stringValue($payload, 'summary'),
+            'seoImage' => $this->stringValue($payload, 'seoImage') ?: $this->stringValue($payload, 'imagePrimary'),
             'stats' => $this->listValue($payload, 'stats'),
             'storyItems' => $this->listValue($payload, 'storyItems'),
             'highlights' => $this->listValue($payload, 'highlights'),
@@ -621,6 +731,10 @@ class ManageAbout extends Page implements HasForms
             'badge' => (string) ($data['badge'] ?? ''),
             'imagePrimary' => (string) ($data['imagePrimary'] ?? ''),
             'imageSecondary' => (string) ($data['imageSecondary'] ?? ''),
+            'imageOverview' => (string) ($data['imageOverview'] ?? ''),
+            'seoTitle' => (string) ($data['seoTitle'] ?? ''),
+            'seoDescription' => (string) ($data['seoDescription'] ?? ''),
+            'seoImage' => (string) ($data['seoImage'] ?? ''),
             'stats' => collect($this->listValue($data, 'stats'))
                 ->map(static fn (array $stat): array => [
                     'value' => (string) ($stat['value'] ?? ''),
@@ -637,9 +751,64 @@ class ManageAbout extends Page implements HasForms
                 ->values()
                 ->all(),
             'highlights' => collect($this->listValue($data, 'highlights'))
-                ->map(static fn (array $item): array => ['title' => (string) ($item['title'] ?? '')])
+                ->map(static fn (array $item): array => [
+                    'title' => (string) ($item['title'] ?? ''),
+                    'summary' => (string) ($item['summary'] ?? ''),
+                ])
                 ->values()
                 ->all(),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function visionMissionFormData(array $payload): array
+    {
+        $sections = is_array($payload['sections'] ?? null) ? $payload['sections'] : [];
+
+        return [
+            'title' => $this->stringValue($payload, 'title'),
+            'summary' => $this->stringValue($payload, 'summary'),
+            'heroImage' => $this->stringValue($payload, 'heroImage'),
+            'seoTitle' => $this->stringValue($payload, 'seoTitle') ?: $this->stringValue($payload, 'title'),
+            'seoDescription' => $this->stringValue($payload, 'seoDescription') ?: $this->stringValue($payload, 'summary'),
+            'seoImage' => $this->stringValue($payload, 'seoImage') ?: $this->stringValue($payload, 'heroImage'),
+            'cardsTitle' => $this->stringValue($sections, 'cardsTitle'),
+            'cards' => $this->listValue($sections, 'cards'),
+            'pillarsTitle' => $this->stringValue($sections, 'pillarsTitle'),
+            'pillars' => $this->listValue($sections, 'pillars'),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function visionMissionPayloadFromForm(array $data): array
+    {
+        return [
+            'title' => (string) ($data['title'] ?? ''),
+            'headline' => (string) ($data['title'] ?? ''),
+            'summary' => (string) ($data['summary'] ?? ''),
+            'heroImage' => (string) ($data['heroImage'] ?? ''),
+            'seoTitle' => (string) ($data['seoTitle'] ?? ''),
+            'seoDescription' => (string) ($data['seoDescription'] ?? ''),
+            'seoImage' => (string) ($data['seoImage'] ?? ''),
+            'sections' => [
+                'cardsTitle' => (string) ($data['cardsTitle'] ?? ''),
+                'cards' => collect($this->listValue($data, 'cards'))
+                    ->map(static fn (array $card): array => [
+                        'icon' => (string) ($card['icon'] ?? ''),
+                        'title' => (string) ($card['title'] ?? ''),
+                        'body' => (string) ($card['body'] ?? ''),
+                    ])
+                    ->values()
+                    ->all(),
+                'pillarsTitle' => (string) ($data['pillarsTitle'] ?? ''),
+                'pillars' => collect($this->listValue($data, 'pillars'))
+                    ->map(static fn (array $pillar): array => [
+                        'title' => (string) ($pillar['title'] ?? ''),
+                        'summary' => (string) ($pillar['summary'] ?? ''),
+                    ])
+                    ->values()
+                    ->all(),
+            ],
         ];
     }
 
@@ -653,6 +822,10 @@ class ManageAbout extends Page implements HasForms
             'headline' => $this->stringValue($payload, 'headline'),
             'summary' => $this->stringValue($payload, 'summary'),
             'heroImage' => $this->stringValue($payload, 'heroImage'),
+            'contentImage' => $this->stringValue($payload, 'contentImage') ?: '/images/uni-main-place.JPG',
+            'seoTitle' => $this->stringValue($payload, 'seoTitle') ?: $this->stringValue($payload, 'title'),
+            'seoDescription' => $this->stringValue($payload, 'seoDescription') ?: $this->stringValue($payload, 'summary'),
+            'seoImage' => $this->stringValue($payload, 'seoImage') ?: $this->stringValue($payload, 'heroImage'),
             'foundingTitle' => $this->stringValue($sections, 'foundingTitle'),
             'quote' => $this->stringValue($sections, 'quote'),
             'body' => collect(is_array($sections['body'] ?? null) ? $sections['body'] : [])
@@ -676,6 +849,10 @@ class ManageAbout extends Page implements HasForms
             'headline' => (string) ($data['headline'] ?? ''),
             'summary' => (string) ($data['summary'] ?? ''),
             'heroImage' => (string) ($data['heroImage'] ?? ''),
+            'contentImage' => (string) ($data['contentImage'] ?? ''),
+            'seoTitle' => (string) ($data['seoTitle'] ?? ''),
+            'seoDescription' => (string) ($data['seoDescription'] ?? ''),
+            'seoImage' => (string) ($data['seoImage'] ?? ''),
             'sections' => [
                 'foundingTitle' => (string) ($data['foundingTitle'] ?? ''),
                 'quote' => (string) ($data['quote'] ?? ''),
@@ -715,6 +892,9 @@ class ManageAbout extends Page implements HasForms
             'headline' => $this->stringValue($payload, 'headline'),
             'summary' => $this->stringValue($payload, 'summary'),
             'heroImage' => $this->stringValue($payload, 'heroImage'),
+            'seoTitle' => $this->stringValue($payload, 'seoTitle') ?: $this->stringValue($payload, 'title'),
+            'seoDescription' => $this->stringValue($payload, 'seoDescription') ?: $this->stringValue($payload, 'summary'),
+            'seoImage' => $this->stringValue($payload, 'seoImage') ?: $this->stringValue($payload, 'heroImage'),
         ];
     }
 
@@ -726,6 +906,9 @@ class ManageAbout extends Page implements HasForms
             'headline' => (string) ($data['headline'] ?? ''),
             'summary' => (string) ($data['summary'] ?? ''),
             'heroImage' => (string) ($data['heroImage'] ?? ''),
+            'seoTitle' => (string) ($data['seoTitle'] ?? ''),
+            'seoDescription' => (string) ($data['seoDescription'] ?? ''),
+            'seoImage' => (string) ($data['seoImage'] ?? ''),
             'sections' => [],
         ];
     }
@@ -735,6 +918,14 @@ class ManageAbout extends Page implements HasForms
     {
         return [
             ...$this->contentShellFormData($payload),
+            'badge' => $this->stringValue($payload, 'badge'),
+            'intro' => collect(is_array($payload['intro'] ?? null) ? $payload['intro'] : [])->map(static fn (mixed $paragraph): array => [
+                'paragraph' => is_string($paragraph) ? $paragraph : (is_array($paragraph) && is_string($paragraph['value'] ?? null) ? $paragraph['value'] : ''),
+            ])->filter(static fn (array $item): bool => $item['paragraph'] !== '')->values()->all(),
+            'stats' => $this->listValue($payload, 'stats'),
+            'seoTitle' => $this->stringValue($payload, 'seoTitle') ?: $this->stringValue($payload, 'title'),
+            'seoDescription' => $this->stringValue($payload, 'seoDescription') ?: $this->stringValue($payload, 'summary'),
+            'seoImage' => $this->stringValue($payload, 'seoImage') ?: $this->stringValue($payload, 'heroImage'),
             'sections' => $this->listValue($payload, 'sections'),
         ];
     }
@@ -747,6 +938,12 @@ class ManageAbout extends Page implements HasForms
             'headline' => (string) ($data['headline'] ?? ''),
             'summary' => (string) ($data['summary'] ?? ''),
             'heroImage' => (string) ($data['heroImage'] ?? ''),
+            'badge' => (string) ($data['badge'] ?? ''),
+            'intro' => collect($this->listValue($data, 'intro'))->map(static fn (array $item): string => (string) ($item['paragraph'] ?? ''))->filter()->values()->all(),
+            'stats' => collect($this->listValue($data, 'stats'))->map(static fn (array $stat): array => ['value' => (string) ($stat['value'] ?? ''), 'label' => (string) ($stat['label'] ?? '')])->values()->all(),
+            'seoTitle' => (string) ($data['seoTitle'] ?? ''),
+            'seoDescription' => (string) ($data['seoDescription'] ?? ''),
+            'seoImage' => (string) ($data['seoImage'] ?? ''),
             'sections' => collect($this->listValue($data, 'sections'))
                 ->map(static fn (array $section): array => [
                     'title' => (string) ($section['title'] ?? ''),
@@ -763,6 +960,8 @@ class ManageAbout extends Page implements HasForms
             'about.quality-policy' => 'quality_policy',
             'about.ethical-charter' => 'ethical_charter',
             'about.organizational-structure' => 'organizational_structure',
+            'about.accreditation' => 'accreditation',
+            'about.why-spu' => 'why_spu',
             default => throw new \InvalidArgumentException('Unsupported about content target.'),
         };
     }

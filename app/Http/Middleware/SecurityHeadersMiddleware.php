@@ -20,6 +20,12 @@ final class SecurityHeadersMiddleware
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()');
         $response->headers->set('Content-Security-Policy', $this->contentSecurityPolicy($request));
 
+        if ($request->is('*/preview')) {
+            $response->headers->set('Cache-Control', 'private, no-store, max-age=0');
+            $response->headers->set('Pragma', 'no-cache');
+            $response->headers->set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+        }
+
         if (app()->environment('production') && $request->isSecure()) {
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
         }

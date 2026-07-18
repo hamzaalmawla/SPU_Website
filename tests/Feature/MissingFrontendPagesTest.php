@@ -72,4 +72,13 @@ final class MissingFrontendPagesTest extends TestCase
     {
         $this->assertDatabaseCount('dynamic_form_submissions', 0);
     }
+
+    public function test_generic_pages_do_not_expose_internal_slug_or_template_metadata(): void
+    {
+        $this->get('/en/events')
+            ->assertOk()
+            ->assertDontSee('Page Shell')
+            ->assertDontSee('<dt>Slug</dt>', false)
+            ->assertDontSee('<dt>Template</dt>', false);
+    }
 }

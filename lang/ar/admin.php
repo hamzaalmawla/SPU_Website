@@ -82,6 +82,7 @@ return [
             'homepage' => 'الصفحة الرئيسية',
             'about' => [
                 'landing' => 'عن الجامعة',
+                'vision-mission' => 'الرؤية والرسالة',
                 'history' => 'تاريخ الجامعة',
                 'leadership' => 'القيادة',
                 'directorates' => 'المديريات',
@@ -134,10 +135,18 @@ return [
                 'exam-penalties' => 'العقوبات الامتحانية',
             ],
             'e_services' => 'الخدمات الإلكترونية',
+            'e_services_pages' => [
+                'library' => 'المكتبة الإلكترونية',
+                'staff_email' => 'إرشادات بريد الموظفين',
+                'it_support' => 'دعم تكنولوجيا المعلومات',
+            ],
             'contact' => 'التواصل',
             'news' => [
                 'index' => 'مركز الأخبار',
                 'articles' => 'أرشيف الأخبار',
+                'announcements' => 'الإعلانات',
+                'events' => 'الفعاليات',
+                'gallery' => 'معرض الوسائط',
                 'article' => 'مقال إخباري',
             ],
             'research' => [

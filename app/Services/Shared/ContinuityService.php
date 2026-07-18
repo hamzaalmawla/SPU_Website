@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services\Shared;
 
+use App\Contracts\Legacy\LegacyQueryRedirectResolverInterface;
 use App\Contracts\Shared\CacheServiceInterface;
 use App\Contracts\Shared\ContinuityServiceInterface;
-use App\Contracts\Legacy\LegacyQueryRedirectResolverInterface;
 use App\DTOs\Legacy\PatternRuleDTO;
 use App\DTOs\Legacy\RedirectResultDTO;
 use App\DTOs\Legacy\RedirectRuleDTO;
@@ -32,9 +32,18 @@ final class ContinuityService implements ContinuityServiceInterface
         private readonly LegacyQueryRedirectResolverInterface $legacyQueryRedirectResolver,
     ) {}
 
-    public function resolveRedirect(string $path, ?string $queryString = null): ?RedirectResultDTO
-    {
+    public function resolveRedirect(
+        string $path,
+        ?string $queryString = null,
+        ?string $preferredLocale = null,
+    ): ?RedirectResultDTO {
         $normalizedPath = '/'.ltrim($path, '/');
+
+        $referenceAlias = $this->resolveReferenceHtmlAlias($normalizedPath, $queryString, $preferredLocale);
+
+        if ($referenceAlias !== null) {
+            return $referenceAlias;
+        }
 
         return $this->followRedirectChain($normalizedPath, $queryString);
     }
@@ -150,6 +159,7 @@ final class ContinuityService implements ContinuityServiceInterface
         $this->detectConflictingPatterns($errors);
         $this->detectUnsafeDestinations($errors);
         $this->detectPotentialLoops($errors);
+        $this->detectInvalidReferenceHtmlAliases($errors);
 
         return new ValidationResultDTO(
             isValid: $errors === [],
@@ -192,6 +202,41 @@ final class ContinuityService implements ContinuityServiceInterface
                 mediaAssetId: $entry->media_asset_id !== null ? (int) $entry->media_asset_id : null,
                 status: (string) $entry->status,
             ));
+    }
+
+    private function resolveReferenceHtmlAlias(
+        string $path,
+        ?string $queryString,
+        ?string $preferredLocale,
+    ): ?RedirectResultDTO {
+        $explicitLocale = null;
+        $aliasPath = $path;
+
+        if (preg_match('#^/(ar|en)(/.*)$#', $path, $matches) === 1) {
+            $explicitLocale = $matches[1];
+            $aliasPath = $matches[2];
+        }
+
+        /** @var array<string, string> $aliases */
+        $aliases = config('reference_html_aliases', []);
+        $destination = $aliases[$aliasPath] ?? null;
+
+        if (! is_string($destination)) {
+            return null;
+        }
+
+        $locale = $explicitLocale ?? (in_array($preferredLocale, ['ar', 'en'], true) ? $preferredLocale : 'ar');
+        $localizedDestination = '/'.$locale.($destination === '/' ? '' : '/'.ltrim($destination, '/'));
+
+        if ($queryString !== null && $queryString !== '') {
+            $localizedDestination .= '?'.$queryString;
+        }
+
+        return new RedirectResultDTO(
+            statusCode: $explicitLocale === null ? 302 : 301,
+            destinationUrl: $localizedDestination,
+            matchType: 'reference_html_alias',
+        );
     }
 
     /**
@@ -455,6 +500,49 @@ final class ContinuityService implements ContinuityServiceInterface
                 $visited[] = $current;
                 $current = $pathMap[$current];
             }
+        }
+    }
+
+    /**
+     * @param  array<int, ValidationMessageDTO>  $errors
+     */
+    private function detectInvalidReferenceHtmlAliases(array &$errors): void
+    {
+        $aliases = config('reference_html_aliases', []);
+
+        if (! is_array($aliases)) {
+            $errors[] = new ValidationMessageDTO(
+                field: 'reference_html_aliases',
+                messages: ['Reference HTML aliases must be an array.'],
+            );
+
+            return;
+        }
+
+        foreach ($aliases as $source => $destination) {
+            $validSource = is_string($source)
+                && str_starts_with($source, '/')
+                && str_ends_with($source, '.html')
+                && ! str_contains($source, '\\')
+                && preg_match('/[\x00-\x1F\x7F]/', $source) !== 1;
+            $validDestination = is_string($destination)
+                && str_starts_with($destination, '/')
+                && ! str_starts_with($destination, '//')
+                && ! str_contains($destination, '\\')
+                && parse_url($destination, PHP_URL_SCHEME) === null
+                && parse_url($destination, PHP_URL_HOST) === null
+                && parse_url($destination, PHP_URL_QUERY) === null
+                && parse_url($destination, PHP_URL_FRAGMENT) === null
+                && preg_match('/[\x00-\x1F\x7F]/', $destination) !== 1;
+
+            if ($validSource && $validDestination) {
+                continue;
+            }
+
+            $errors[] = new ValidationMessageDTO(
+                field: 'reference_html_aliases',
+                messages: ["Unsafe reference alias '{$source}' => '{$destination}'."],
+            );
         }
     }
 

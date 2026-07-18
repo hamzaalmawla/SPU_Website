@@ -17,7 +17,7 @@
             <div class="grid gap-16 lg:grid-cols-2">
                 <div id="contact-form" class="space-y-8 scroll-mt-32">
                     <h2 class="text-3xl font-bold text-spu-blue">{{ $contact->form['title'] }}</h2>
-                    
+
                     @if (session('contact_status'))
                         <div class="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-bold text-green-800">
                             {{ session('contact_status') }}
@@ -44,7 +44,7 @@
 
                         <div class="space-y-2">
                             <label for="contact-subject" class="text-sm font-medium text-slate-600">{{ $contact->form['fields']['subject']['label'] }}</label>
-                            <input id="contact-subject" name="subject" type="text" value="{{ old('subject') }}" required
+                            <input id="contact-subject" name="subject" type="text" value="{{ old('subject', $prefilledSubject ?? '') }}" required
                                 class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 outline-none transition-all focus:border-spu-red/50 focus:ring-4 focus:ring-spu-red/5">
                             @error('subject')<p class="text-xs font-bold text-spu-red">{{ $message }}</p>@enderror
                         </div>

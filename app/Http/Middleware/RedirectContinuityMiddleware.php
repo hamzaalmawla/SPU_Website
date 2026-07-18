@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
-use App\Contracts\Shared\ContinuityServiceInterface;
 use App\Contracts\Legacy\LegacyUrlNormalizerInterface;
+use App\Contracts\Shared\ContinuityServiceInterface;
 use App\DTOs\Legacy\UnresolvedRequestDTO;
 use Closure;
 use Illuminate\Http\RedirectResponse;
@@ -37,10 +37,34 @@ final class RedirectContinuityMiddleware
             return $next($request);
         }
 
-        $result = $this->continuityService->resolveRedirect($path, $request->getQueryString());
+        if (! $request->isMethodSafe()) {
+            return $next($request);
+        }
+
+        $acceptLanguage = $request->headers->get('Accept-Language');
+        $preferredLocale = is_string($acceptLanguage) && trim($acceptLanguage) !== ''
+            ? ($request->getPreferredLanguage(['ar', 'en']) ?? 'ar')
+            : 'ar';
+        $queryString = $request->getQueryString();
+        $result = $this->continuityService->resolveRedirect($path, $queryString, $preferredLocale);
 
         if ($result !== null) {
-            return new RedirectResponse($result->destinationUrl, $result->statusCode);
+            $response = new RedirectResponse($result->destinationUrl, $result->statusCode);
+
+            if ($result->matchType === 'reference_html_alias') {
+                $hasExplicitLocale = preg_match('#^/(ar|en)(?:/|$)#', $path) === 1;
+
+                if (! $hasExplicitLocale) {
+                    $response->headers->set('Vary', 'Accept-Language');
+                }
+
+                $response->headers->set(
+                    'Cache-Control',
+                    ! $hasExplicitLocale || $queryString !== null ? 'no-store, private' : 'public, max-age=86400',
+                );
+            }
+
+            return $response;
         }
 
         if ($this->detectRequestType($path) === 'file') {

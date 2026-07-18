@@ -12,7 +12,8 @@
         @if ($section->payload->articles !== [])
             <div class="cms-grid-news gap-8 pb-10">
                 @foreach ($section->payload->articles as $article)
-                    <article class="reveal-item w-full bg-white rounded-[25px] shadow-[0_15px_35px_rgba(0,0,0,0.06)] overflow-hidden flex flex-col group cursor-pointer transition-all duration-500 ease-out hover:-translate-y-2 hover:shadow-[0_25px_60px_rgba(0,0,0,0.12)]">
+                    <article class="reveal-item w-full">
+                    <a href="{{ $article->url }}" class="h-full bg-white rounded-[25px] shadow-[0_15px_35px_rgba(0,0,0,0.06)] overflow-hidden flex flex-col group transition-all duration-500 ease-out hover:-translate-y-2 hover:shadow-[0_25px_60px_rgba(0,0,0,0.12)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-red">
                         @if ($article->imageUrl)
                             <div class="relative h-[210px] overflow-hidden">
                                 <img src="{{ $article->imageUrl }}" alt="{{ $article->title }}" loading="lazy" decoding="async" width="400" height="210" class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110">
@@ -31,6 +32,7 @@
                                 <p class="text-gray-700 text-[14px] leading-[1.6] line-clamp-3">{{ $article->excerpt }}</p>
                             @endif
                         </div>
+                    </a>
                     </article>
                 @endforeach
             </div>

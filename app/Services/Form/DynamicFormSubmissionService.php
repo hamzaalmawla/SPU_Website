@@ -5,14 +5,21 @@ declare(strict_types=1);
 namespace App\Services\Form;
 
 use App\Contracts\Form\DynamicFormSubmissionServiceInterface;
+use App\Contracts\News\NewsServiceInterface;
 use App\DTOs\Form\DynamicFormSubmissionDataDTO;
+use App\DTOs\News\NewsEventDTO;
+use App\Mail\EventRegistrationReceived;
 use App\Models\Form\DynamicFormSubmission;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 final class DynamicFormSubmissionService implements DynamicFormSubmissionServiceInterface
 {
+    public function __construct(private readonly NewsServiceInterface $newsService) {}
+
     /** @return array<int, string> */
     public function allowedFormIds(): array
     {
@@ -84,6 +91,12 @@ final class DynamicFormSubmissionService implements DynamicFormSubmissionService
             throw new \InvalidArgumentException('Unsupported dynamic form.');
         }
 
+        $payload = $data->payload;
+
+        if ($data->eventSource !== null) {
+            $payload['_context'] = $this->validatedEventContext($data);
+        }
+
         $files = [];
 
         foreach ($data->files as $field => $file) {
@@ -97,16 +110,64 @@ final class DynamicFormSubmissionService implements DynamicFormSubmissionService
         DynamicFormSubmission::query()->create([
             'form_id' => $data->formId,
             'locale' => $data->locale,
-            'applicant_name' => $this->applicantName($data->payload),
-            'applicant_email' => is_string($data->payload['email'] ?? null) ? $data->payload['email'] : null,
+            'applicant_name' => $this->applicantName($payload),
+            'applicant_email' => is_string($payload['email'] ?? null) ? $payload['email'] : null,
             'status' => 'new',
-            'payload_json' => $data->payload,
+            'payload_json' => $payload,
             'files_json' => $files,
             'ip_address' => $data->ipAddress,
             'user_agent' => $data->userAgent,
         ]);
 
+        if (is_array($payload['_context'] ?? null) && is_string($payload['email'] ?? null)) {
+            Mail::to($payload['email'])->queue(new EventRegistrationReceived(
+                applicantName: $this->applicantName($payload) ?? $payload['email'],
+                eventTitle: (string) ($payload['_context']['event_title'] ?? ''),
+                contentLocale: $data->locale,
+            ));
+        }
+
         return true;
+    }
+
+    /** @return array{source: string, event_id: string, event_title: string} */
+    private function validatedEventContext(DynamicFormSubmissionDataDTO $data): array
+    {
+        $event = $data->eventSource === 'news-events' && $data->eventId !== null
+            ? $this->newsService->findNewsEvent($data->eventId, $data->locale, false)
+            : null;
+
+        if (! $event instanceof NewsEventDTO || ! $event->isRegisterable || $event->formId !== $data->formId) {
+            throw ValidationException::withMessages(['event_id' => ['The selected event is not open for this registration form.']]);
+        }
+
+        $email = is_string($data->payload['email'] ?? null) ? mb_strtolower(trim($data->payload['email'])) : '';
+        $registrations = DynamicFormSubmission::query()
+            ->whereIn('form_id', ['conference-registration', 'activity-registration'])
+            ->where('applicant_email', $email)
+            ->get();
+
+        if ($registrations->contains(fn (DynamicFormSubmission $submission): bool => ($submission->payload_json['_context']['source'] ?? null) === 'news-events'
+            && ($submission->payload_json['_context']['event_id'] ?? null) === $event->id)) {
+            throw ValidationException::withMessages(['email' => ['This email is already registered for the selected event.']]);
+        }
+
+        $submittedCount = DynamicFormSubmission::query()
+            ->whereIn('form_id', ['conference-registration', 'activity-registration'])
+            ->get()
+            ->filter(fn (DynamicFormSubmission $submission): bool => ($submission->payload_json['_context']['source'] ?? null) === 'news-events'
+                && ($submission->payload_json['_context']['event_id'] ?? null) === $event->id)
+            ->count();
+
+        if ($event->capacity !== null && $event->registered + $submittedCount >= $event->capacity) {
+            throw ValidationException::withMessages(['event_id' => ['The selected event has reached capacity.']]);
+        }
+
+        return [
+            'source' => 'news-events',
+            'event_id' => $event->id,
+            'event_title' => $event->title,
+        ];
     }
 
     /** @return array<string, string|int|null> */

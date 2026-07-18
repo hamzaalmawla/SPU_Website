@@ -27,8 +27,17 @@ final class FacultyController extends Controller
         private readonly SeoMetadataServiceInterface $seoMetadataService,
     ) {}
 
-    public function hub(Request $request, string $locale): View
+    public function hub(Request $request, string $locale): View|RedirectResponse
     {
+        $legacyFaculty = $request->query('id');
+
+        if (is_string($legacyFaculty) && trim($legacyFaculty) !== '') {
+            $faculty = $this->facultyPageService->getFaculty($legacyFaculty, $locale);
+            abort_if($faculty === null, 404);
+
+            return redirect('/'.$locale.'/facilities/'.$faculty->slug, 301);
+        }
+
         $page = $this->facultyPageService->getHub($locale);
 
         return view('public.facilities.index', $this->viewPayload($request, $locale, $page, $this->hubSeo($locale, $page), $this->languageSwitch($locale, '')));
@@ -78,16 +87,26 @@ final class FacultyController extends Controller
     {
         $segments = collect(explode('/', trim((string) $legacyPath, '/')))
             ->filter(fn (string $segment): bool => $segment !== '')
-            ->values();
-
-        if ($segments->isNotEmpty()) {
-            $segments[0] = $this->facultyPageService->canonicalFacultySlug((string) $segments[0]);
-        }
+            ->values()
+            ->map(fn (string $segment, int $index): string => $index === 0
+                ? $this->facultyPageService->canonicalFacultySlug($segment)
+                : $segment);
 
         $target = '/'.$locale.'/facilities'.($segments->isNotEmpty() ? '/'.$segments->implode('/') : '');
         $query = $request->getQueryString();
 
         return redirect()->to($query ? $target.'?'.$query : $target, 301);
+    }
+
+    public function redirectLegacyProject(Request $request, string $locale): RedirectResponse
+    {
+        $projectId = $request->query('id');
+        abort_unless(is_string($projectId) && trim($projectId) !== '', 404);
+
+        $target = $this->facultyPageService->resolveLegacyProjectUrl(trim($projectId), $locale);
+        abort_if($target === null, 404);
+
+        return redirect($target, 301);
     }
 
     /** @return array<string, mixed> */

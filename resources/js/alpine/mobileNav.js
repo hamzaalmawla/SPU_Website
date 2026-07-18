@@ -35,7 +35,7 @@ export function createMobileNav() {
         },
 
         headerClass() {
-            return this.stickyNav ? 'fixed inset-x-0 top-0 z-50 w-full pt-3' : '';
+            return this.stickyNav ? 'fixed inset-x-0 top-0 z-[200] w-full pt-3' : '';
         },
 
         shellClass() {

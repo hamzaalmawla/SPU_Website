@@ -34,6 +34,8 @@ interface FacultyPageServiceInterface
 
     public function canonicalFacultySlug(string $slug): string;
 
+    public function resolveLegacyProjectUrl(string $projectId, string $locale): ?string;
+
     public function facultySlugPattern(): string;
 
     public function subpageSlugPattern(): string;

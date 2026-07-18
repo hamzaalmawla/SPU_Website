@@ -31,13 +31,25 @@ final class AboutController extends Controller
 
         return view('public.about.landing', $this->sharedPayload($request, $locale, '/about', [
             'about' => $about,
-            'seo' => $this->seo($locale, '/about', $about->title, $about->summary),
+            'seo' => $this->seo($locale, '/about', $about->seoTitle, $about->seoDescription, $about->seoImage),
         ]));
     }
 
     public function history(Request $request, string $locale): View
     {
         return $this->contentPage($request, $locale, 'history');
+    }
+
+    public function visionMission(Request $request, string $locale): View
+    {
+        $page = $this->aboutPageService->getVisionMission($locale);
+        $path = '/about/vision-mission';
+
+        return view('public.about.vision-mission', $this->sharedPayload($request, $locale, $path, [
+            'page' => $page,
+            'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale, 'about.vision-mission'),
+            'seo' => $this->seo($locale, $path, $page->seoTitle, $page->seoDescription, $page->seoImage),
+        ]));
     }
 
     public function content(Request $request, string $locale, string $section): View
@@ -59,11 +71,17 @@ final class AboutController extends Controller
     {
         $page = $this->aboutPageService->getContentPage('leadership', $locale);
         abort_if($page === null, 404);
+        $requestedFaculty = $request->query('faculty');
+        $directory = $this->aboutPageService->getLeadershipDirectory(
+            $locale,
+            is_string($requestedFaculty) ? $requestedFaculty : null,
+        );
+        $languagePath = '/about/leadership'.($directory->activeFaculty !== '' ? '?faculty='.rawurlencode($directory->activeFaculty) : '');
 
-        return view('public.about.leadership', $this->sharedPayload($request, $locale, '/about/leadership', [
+        return view('public.about.leadership', $this->sharedPayload($request, $locale, $languagePath, [
             'page' => $page,
-            'people' => $this->aboutPageService->getLeadershipProfiles($locale),
-            'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale),
+            'directory' => $directory,
+            'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale, 'about.leadership'),
             'seo' => $this->seo($locale, '/about/leadership', $page->title, $page->summary),
         ]));
     }
@@ -76,7 +94,7 @@ final class AboutController extends Controller
         return view('public.about.directorates', $this->sharedPayload($request, $locale, '/about/directorates', [
             'page' => $page,
             'directorates' => $this->aboutPageService->getDirectorates($locale),
-            'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale),
+            'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale, 'about.directorates'),
             'seo' => $this->seo($locale, '/about/directorates', $page->title, $page->summary),
         ]));
     }
@@ -88,6 +106,7 @@ final class AboutController extends Controller
 
         return view('public.about.directorate-detail', $this->sharedPayload($request, $locale, '/about/directorates/'.$directorate, [
             'directorate' => $item,
+            'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale, 'about.directorates'),
             'seo' => $this->seo($locale, '/about/directorates/'.$directorate, $item->title, $item->summary),
         ]));
     }
@@ -95,11 +114,23 @@ final class AboutController extends Controller
     public function staffDirectory(Request $request, string $locale): View
     {
         $page = $this->aboutPageService->getStaffDirectoryPage($locale);
+        $requestedFaculty = $request->query('faculty');
+        $requestedPage = $request->query('page');
+        $directory = $this->aboutPageService->getStaffDirectory(
+            $locale,
+            is_string($requestedFaculty) ? $requestedFaculty : null,
+            is_string($requestedPage) && ctype_digit($requestedPage) ? (int) $requestedPage : 1,
+        );
+        $query = array_filter([
+            'faculty' => $directory->activeFaculty !== '' ? $directory->activeFaculty : null,
+            'page' => $directory->currentPage > 1 ? $directory->currentPage : null,
+        ], fn (mixed $value): bool => $value !== null);
+        $languagePath = '/about/directorates/staff'.($query !== [] ? '?'.http_build_query($query) : '');
 
-        return view('public.about.staff', $this->sharedPayload($request, $locale, '/about/directorates/staff', [
+        return view('public.about.staff', $this->sharedPayload($request, $locale, $languagePath, [
             'page' => $page,
-            'people' => $this->aboutPageService->getLeadershipProfiles($locale),
-            'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale),
+            'directory' => $directory,
+            'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale, 'about.directorates_staff'),
             'seo' => $this->seo($locale, '/about/directorates/staff', $page->title, $page->summary),
         ]));
     }
@@ -108,11 +139,26 @@ final class AboutController extends Controller
     {
         $page = $this->aboutPageService->getContentPage('partnerships', $locale);
         abort_if($page === null, 404);
+        $requestedCategory = $request->query('category');
+        $requestedQuery = $request->query('q');
+        $requestedPage = $request->query('page');
+        $directory = $this->aboutPageService->getPartnerships(
+            $locale,
+            is_string($requestedCategory) ? $requestedCategory : null,
+            is_string($requestedQuery) ? $requestedQuery : null,
+            is_string($requestedPage) && ctype_digit($requestedPage) ? (int) $requestedPage : 1,
+        );
+        $query = array_filter([
+            'category' => $directory->activeCategory !== '' ? $directory->activeCategory : null,
+            'q' => $directory->query !== '' ? $directory->query : null,
+            'page' => $directory->currentPage > 1 ? $directory->currentPage : null,
+        ], fn (mixed $value): bool => $value !== null);
+        $languagePath = '/about/partnerships'.($query !== [] ? '?'.http_build_query($query) : '');
 
-        return view('public.about.partnerships', $this->sharedPayload($request, $locale, '/about/partnerships', [
+        return view('public.about.partnerships', $this->sharedPayload($request, $locale, $languagePath, [
             'page' => $page,
-            'partnerships' => $this->aboutPageService->getPartnerships($locale),
-            'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale),
+            'directory' => $directory,
+            'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale, 'about.partnerships'),
             'seo' => $this->seo($locale, '/about/partnerships', $page->title, $page->summary),
         ]));
     }
@@ -130,6 +176,18 @@ final class AboutController extends Controller
         ]));
     }
 
+    public function redirectLegacyProfile(Request $request, string $locale): RedirectResponse
+    {
+        $identifier = $request->query('slug', $request->query('id'));
+        abort_unless(is_string($identifier) && trim($identifier) !== '', 404);
+
+        $profile = $this->profilePageService->resolveLegacyProfile($locale, trim($identifier));
+        abort_if($profile === null, 404);
+        $source = $profile->sourceType === 'faculty_member' ? 'faculty-member' : 'person';
+
+        return redirect('/'.$locale.'/about/profile/'.$source.'/'.$profile->slug, 301);
+    }
+
     private function contentPage(Request $request, string $locale, string $slug): View
     {
         $page = $this->aboutPageService->getContentPage($slug, $locale);
@@ -137,14 +195,16 @@ final class AboutController extends Controller
 
         return view('public.about.content-page', $this->sharedPayload($request, $locale, '/about/'.$slug, [
             'page' => $page,
-            'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale),
-            'seo' => $this->seo($locale, '/about/'.$slug, $page->title, $page->summary),
+            'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale, 'about.'.$slug),
+            'seo' => $this->seo($locale, '/about/'.$slug, $page->seoTitle, $page->seoDescription, $page->seoImage),
         ]));
     }
 
     /** @param array<string, mixed> $payload @return array<string, mixed> */
     private function sharedPayload(Request $request, string $locale, string $path, array $payload): array
     {
+        $seo = $payload['seo'] ?? null;
+
         return array_merge([
             'locale' => $locale,
             'direction' => $locale === 'ar' ? 'rtl' : 'ltr',
@@ -152,6 +212,20 @@ final class AboutController extends Controller
             'settings' => $this->settingsService->getPublicSettings($locale),
             'languageSwitch' => $this->languageSwitchLinks($locale, $path),
             'isPreview' => false,
+            'structuredData' => [
+                '@context' => 'https://schema.org',
+                '@type' => 'WebPage',
+                'name' => is_object($seo) && isset($seo->title) ? $seo->title : config('app.name', 'SPU'),
+                'url' => is_object($seo) && isset($seo->canonicalUrl) ? $seo->canonicalUrl : url('/'.$locale.$path),
+                'inLanguage' => $locale,
+                'breadcrumb' => [
+                    '@type' => 'BreadcrumbList',
+                    'itemListElement' => [
+                        ['@type' => 'ListItem', 'position' => 1, 'name' => $locale === 'ar' ? 'الرئيسية' : 'Home', 'item' => url('/'.$locale)],
+                        ['@type' => 'ListItem', 'position' => 2, 'name' => $locale === 'ar' ? 'عن الجامعة' : 'About', 'item' => url('/'.$locale.'/about')],
+                    ],
+                ],
+            ],
         ], $payload);
     }
 

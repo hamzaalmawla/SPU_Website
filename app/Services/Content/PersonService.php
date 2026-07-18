@@ -18,7 +18,7 @@ final class PersonService implements PersonServiceInterface
 
     public function getPerson(int $id, string $locale): ?PersonDTO
     {
-        $person = Person::query()->enabled()->with('translations')->find($id);
+        $person = Person::query()->public()->with('translations')->find($id);
 
         return $person instanceof Person ? $this->aboutPageService->mapPerson($person, $locale) : null;
     }
@@ -26,7 +26,7 @@ final class PersonService implements PersonServiceInterface
     public function getPersonsByFaculty(string $facultySlug, string $locale): Collection
     {
         return Person::query()
-            ->enabled()
+            ->public()
             ->where('faculty_scope_slug', $facultySlug)
             ->with('translations')
             ->orderBy('sort_order')
@@ -38,7 +38,7 @@ final class PersonService implements PersonServiceInterface
     public function getPersonsByRole(string $role, string $locale): Collection
     {
         return Person::query()
-            ->enabled()
+            ->public()
             ->where('category', $role)
             ->with('translations')
             ->orderBy('sort_order')
@@ -50,7 +50,7 @@ final class PersonService implements PersonServiceInterface
     public function searchPersons(string $query, string $locale): Collection
     {
         return Person::query()
-            ->enabled()
+            ->public()
             ->whereHas('translations', function ($builder) use ($query): void {
                 $builder->where('name', 'like', '%'.$query.'%')->orWhere('role', 'like', '%'.$query.'%');
             })

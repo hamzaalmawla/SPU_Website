@@ -18,6 +18,9 @@ class Setting extends Model
         'footer',
         'contact_page',
         'e_services_page',
+        'e_services_library_page',
+        'e_services_staff_email_page',
+        'e_services_it_support_page',
         'seo',
     ];
 

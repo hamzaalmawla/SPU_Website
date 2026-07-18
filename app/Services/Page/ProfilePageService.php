@@ -33,10 +33,23 @@ final class ProfilePageService implements ProfilePageServiceInterface
         };
     }
 
+    public function resolveLegacyProfile(string $locale, string $identifier): ?ProfilePageDTO
+    {
+        foreach (['person', 'faculty-member'] as $source) {
+            $profile = $this->getProfile($locale, $source, $identifier);
+
+            if ($profile instanceof ProfilePageDTO) {
+                return $profile;
+            }
+        }
+
+        return null;
+    }
+
     private function resolvePersonProfile(string $locale, string $slug): ?ProfilePageDTO
     {
         $person = Person::query()
-            ->enabled()
+            ->public()
             ->where('slug', $slug)
             ->with([
                 'translations' => fn ($query) => $query->whereIn('locale', $this->fallbackLocales($locale)),
@@ -63,7 +76,7 @@ final class ProfilePageService implements ProfilePageServiceInterface
             title: $person->title,
             position: $person->position ?? $translation->role,
             category: $person->category,
-            facultyName: $person->faculty_scope_slug,
+            facultyName: $this->personFacultyName($person, $locale),
             departmentName: null,
             email: $person->email,
             phone: $person->phone,
@@ -88,7 +101,7 @@ final class ProfilePageService implements ProfilePageServiceInterface
     private function resolveFacultyMemberProfile(string $locale, string $slug): ?ProfilePageDTO
     {
         $member = FacultyMember::query()
-            ->enabled()
+            ->public()
             ->where('slug', $slug)
             ->with([
                 'translations' => fn ($query) => $query->whereIn('locale', $this->fallbackLocales($locale)),
@@ -151,6 +164,32 @@ final class ProfilePageService implements ProfilePageServiceInterface
         return $person->translations->firstWhere('locale', $locale)
             ?? $person->translations->firstWhere('locale', 'ar')
             ?? $person->translations->firstWhere('locale', 'en');
+    }
+
+    private function personFacultyName(Person $person, string $locale): ?string
+    {
+        if (! is_string($person->faculty_scope_slug) || $person->faculty_scope_slug === '') {
+            return null;
+        }
+
+        $faculty = Faculty::query()
+            ->where(function ($query) use ($person): void {
+                $query->where('faculty_scope_slug', $person->faculty_scope_slug)
+                    ->orWhere('public_slug', $person->faculty_scope_slug)
+                    ->orWhere('slug', $person->faculty_scope_slug);
+            })
+            ->with('translations')
+            ->first();
+
+        if (! $faculty instanceof Faculty) {
+            return null;
+        }
+
+        $translation = $faculty->translations->firstWhere('locale', $locale)
+            ?? $faculty->translations->firstWhere('locale', 'ar')
+            ?? $faculty->translations->firstWhere('locale', 'en');
+
+        return is_string($translation?->name) ? $translation->name : null;
     }
 
     private function facultyTranslation(FacultyMember $member, string $locale): ?FacultyMemberTranslation

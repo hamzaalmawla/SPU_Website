@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Contracts\Media;
 
 use App\DTOs\Media\MediaUploadResultDTO;
+use App\DTOs\Media\PublicMediaAssetDTO;
 use App\DTOs\Shared\PaginatedResultDTO;
 use Illuminate\Support\Collection;
 
@@ -50,4 +51,13 @@ interface MediaServiceInterface
      * @param  array<string, mixed>  $filters
      */
     public function listPaginated(int $userId, array $filters = [], int $page = 1, int $perPage = 20): PaginatedResultDTO;
+
+    /**
+     * @param  array<int, int>  $mediaIds
+     * @return Collection<int, PublicMediaAssetDTO>
+     */
+    public function resolvePublicImages(array $mediaIds, string $locale): Collection;
+
+    /** @param array<int, int> $mediaIds */
+    public function publicImagesArePublishable(array $mediaIds): bool;
 }

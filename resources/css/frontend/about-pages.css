@@ -537,16 +537,26 @@
     color: #fff;
 }
 
+.filter-btn:focus-visible,
+.partner-link:focus-visible,
+.propose-btn:focus-visible,
+.search-submit:focus-visible {
+    outline: 3px solid #6f1616;
+    outline-offset: 3px;
+}
+
 .search-input-wrapper {
     position: relative;
-    width: 300px;
+    display: flex;
+    width: min(100%, 390px);
 }
 
 .search-input {
-    width: 100%;
+    min-width: 0;
+    flex: 1;
     padding: 0.6rem 1rem 0.6rem 2.5rem;
     border: 1px solid rgba(32, 39, 89, 0.12);
-    border-radius: 6px;
+    border-radius: 6px 0 0 6px;
     outline: none;
     background: #faf9fb;
     color: #202759;
@@ -568,6 +578,48 @@
 
 [dir="rtl"] .search-input { padding: 0.6rem 2.5rem 0.6rem 1rem; }
 [dir="rtl"] .search-icon { right: 0.75rem; left: auto; }
+
+.search-submit {
+    padding: 0.6rem 1rem;
+    border: 1px solid #202759;
+    border-radius: 0 6px 6px 0;
+    background: #202759;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 900;
+}
+
+[dir="rtl"] .search-input { border-radius: 0 6px 6px 0; }
+[dir="rtl"] .search-submit { border-radius: 6px 0 0 6px; }
+
+.partner-results-status {
+    margin: -2.5rem 0 2rem;
+    color: #64748b;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.partner-scope {
+    margin: -1rem 0 1.5rem;
+    color: #475569;
+    font-size: 0.8rem;
+    line-height: 1.6;
+}
+
+.partner-empty-state {
+    grid-column: 1 / -1;
+    padding: 4rem 2rem;
+    border: 1px dashed rgba(32, 39, 89, 0.2);
+    text-align: center;
+}
+
+.partner-empty-state h2 {
+    color: #202759;
+    font-size: 1.5rem;
+    font-weight: 900;
+}
+
+.partner-empty-state p { margin: 0.75rem 0 1.5rem; color: #64748b; }
 
 .partner-grid {
     display: grid;
@@ -924,16 +976,22 @@
     .staff-spotlight,
     .vp-grid,
     .deans-grid,
-    .partner-grid,
-    .partner-goals-grid,
     .staff-grid {
         grid-template-columns: 1fr;
     }
+
+    .partner-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
     .staff-spotlight-content { padding: 3rem 2rem; }
 }
 
 @media (max-width: 768px) {
+    .partner-grid,
+    .partner-goals-grid { grid-template-columns: 1fr; }
+
+    .filter-bar { align-items: stretch; }
+    .filter-buttons { width: 100%; }
+    .search-input-wrapper { width: 100%; }
     .about-subpage-hero,
     .history-subpage-hero,
     .vision-subpage-hero,

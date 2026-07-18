@@ -30,6 +30,12 @@ final class PublicContactController extends Controller
     public function show(Request $request, string $locale): View
     {
         $contact = $this->contactPageService->getPage($locale);
+        $prefilledSubject = match ($request->query('topic')) {
+            'partnership' => $locale === 'ar' ? 'مقترح شراكة مع الجامعة السورية الخاصة' : 'Partnership proposal for SPU',
+            'directorate' => $locale === 'ar' ? 'استفسار موجه إلى إحدى مديريات الجامعة' : 'Directorate inquiry',
+            'it-support' => $locale === 'ar' ? 'طلب مساعدة تقنية' : 'IT support request',
+            default => '',
+        };
 
         return view('public.contact', [
             'locale' => $locale,
@@ -40,6 +46,7 @@ final class PublicContactController extends Controller
             'isPreview' => false,
             'seo' => $this->seo($locale, $contact),
             'contact' => $contact,
+            'prefilledSubject' => $prefilledSubject,
         ]);
     }
 

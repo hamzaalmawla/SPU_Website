@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Public;
 
+use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Navigation\NavigationServiceInterface;
 use App\Contracts\News\NewsServiceInterface;
 use App\Contracts\Page\AboutPageServiceInterface;
@@ -17,6 +18,7 @@ use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Contracts\Seo\SeoMetadataServiceInterface;
 use App\Contracts\Settings\SettingsServiceInterface;
 use App\Contracts\Shared\PreviewServiceInterface;
+use App\DTOs\About\PartnershipDirectoryDTO;
 use App\DTOs\Navigation\LanguageSwitchLinkDTO;
 use App\DTOs\Page\PageDTO;
 use App\DTOs\Page\PageTranslationDTO;
@@ -41,6 +43,7 @@ final class PreviewController extends Controller
         private readonly SettingsServiceInterface $settingsService,
         private readonly SeoMetadataServiceInterface $seoMetadataService,
         private readonly NavigationServiceInterface $navigationService,
+        private readonly AboutEntityCmsServiceInterface $aboutEntityCmsService,
     ) {}
 
     public function __invoke(Request $request, string $locale): View
@@ -119,6 +122,11 @@ final class PreviewController extends Controller
 
         $targetKey = $snapshot['target_key'] ?? null;
         $payload = is_array($snapshot['payload'] ?? null) ? $snapshot['payload'] : [];
+
+        if (is_string($targetKey) && str_starts_with($targetKey, 'entity.')) {
+            return $this->renderAboutEntityPreview($locale, $preview, $targetKey, $payload);
+        }
+
         $localizedContent = is_array($payload['translations'][$locale] ?? null) ? $payload['translations'][$locale] : null;
 
         abort_if(! is_array($localizedContent), 404);
@@ -137,6 +145,18 @@ final class PreviewController extends Controller
 
         if ($targetKey === 'news.index') {
             return $this->renderNewsIndexPreview($locale, $preview, $localizedContent);
+        }
+
+        if ($targetKey === 'news.announcements') {
+            return $this->renderNewsAnnouncementsPreview($locale, $preview, $localizedContent);
+        }
+
+        if ($targetKey === 'news.events') {
+            return $this->renderNewsEventsPreview($locale, $preview, $localizedContent);
+        }
+
+        if ($targetKey === 'news.gallery') {
+            return $this->renderNewsGalleryPreview($locale, $preview, $localizedContent);
         }
 
         if ($targetKey === 'research.publications') {
@@ -191,11 +211,139 @@ final class PreviewController extends Controller
             return $this->renderAdmissionsSectionPreview($locale, $preview, $targetKey, $localizedContent);
         }
 
+        if (is_string($targetKey) && str_starts_with($targetKey, 'e_services.')) {
+            return $this->renderEServicesDetailPreview($locale, $preview, $targetKey, $localizedContent);
+        }
+
         return match ($targetKey) {
             'contact' => $this->renderContactPreview($locale, $preview, $localizedContent),
             'e_services' => $this->renderEServicesPreview($locale, $preview, $localizedContent),
             default => abort(404),
         };
+    }
+
+    /** @param array<string, mixed> $payload */
+    private function renderAboutEntityPreview(string $locale, PreviewDTO $preview, string $targetKey, array $payload): View
+    {
+        if (str_starts_with($targetKey, 'entity.faculty-member.')) {
+            $profile = $this->aboutEntityCmsService->buildFacultyMemberPreview($payload, $locale);
+            abort_if($profile === null, 404);
+
+            return view('public.about.profile', [
+                'locale' => $locale,
+                'direction' => $locale === 'ar' ? 'rtl' : 'ltr',
+                'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $profile->path),
+                'settings' => $this->settingsService->getPublicSettings($locale),
+                'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale),
+                'isPreview' => true,
+                'profile' => $profile,
+                'seo' => $this->seoMetadataService->buildFallback($locale, [
+                    'path' => $profile->path,
+                    'locale_paths' => ['ar' => '/ar/about/profile/faculty-member/'.$profile->slug, 'en' => '/en/about/profile/faculty-member/'.$profile->slug],
+                    'title' => $profile->seoTitle,
+                    'meta_description' => $profile->seoDescription,
+                    'og_title' => $profile->seoTitle,
+                    'og_description' => $profile->seoDescription,
+                    'og_image' => $profile->seoImage,
+                    'robots' => 'noindex,nofollow',
+                ]),
+                'preview' => $preview,
+            ]);
+        }
+
+        if (str_starts_with($targetKey, 'entity.person.')) {
+            $profile = $this->aboutEntityCmsService->buildPersonPreview($payload, $locale);
+            abort_if($profile === null, 404);
+
+            return view('public.about.profile', [
+                'locale' => $locale,
+                'direction' => $locale === 'ar' ? 'rtl' : 'ltr',
+                'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $profile->path),
+                'settings' => $this->settingsService->getPublicSettings($locale),
+                'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale),
+                'isPreview' => true,
+                'profile' => $profile,
+                'seo' => $this->seoMetadataService->buildFallback($locale, [
+                    'path' => $profile->path,
+                    'locale_paths' => ['ar' => '/ar/about/profile/person/'.$profile->slug, 'en' => '/en/about/profile/person/'.$profile->slug],
+                    'title' => $profile->seoTitle,
+                    'meta_description' => $profile->seoDescription,
+                    'og_title' => $profile->seoTitle,
+                    'og_description' => $profile->seoDescription,
+                    'og_image' => $profile->seoImage,
+                    'robots' => 'noindex,nofollow',
+                ]),
+                'preview' => $preview,
+            ]);
+        }
+
+        if (str_starts_with($targetKey, 'entity.directorate.')) {
+            $directorate = $this->aboutEntityCmsService->buildDirectoratePreview($payload, $locale);
+            abort_if($directorate === null, 404);
+            $path = '/'.$locale.'/about/directorates/'.$directorate->slug;
+
+            return view('public.about.directorate-detail', [
+                'locale' => $locale,
+                'direction' => $locale === 'ar' ? 'rtl' : 'ltr',
+                'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $path),
+                'settings' => $this->settingsService->getPublicSettings($locale),
+                'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale),
+                'isPreview' => true,
+                'directorate' => $directorate,
+                'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale),
+                'seo' => $this->seoMetadataService->buildFallback($locale, [
+                    'path' => $path,
+                    'locale_paths' => ['ar' => '/ar/about/directorates/'.$directorate->slug, 'en' => '/en/about/directorates/'.$directorate->slug],
+                    'title' => $directorate->title,
+                    'meta_description' => $directorate->summary,
+                    'robots' => 'noindex,nofollow',
+                ]),
+                'preview' => $preview,
+            ]);
+        }
+
+        if (str_starts_with($targetKey, 'entity.partnership.')) {
+            $partnership = $this->aboutEntityCmsService->buildPartnershipPreview($payload, $locale);
+            $page = $this->aboutPageService->getContentPage('partnerships', $locale);
+            abort_if($partnership === null || $page === null, 404);
+            $directory = $this->aboutPageService->getPartnerships($locale);
+            $partnerships = $directory->items
+                ->reject(fn ($item): bool => $item->id === $partnership->id)
+                ->push($partnership)
+                ->values();
+            $directory = new PartnershipDirectoryDTO(
+                items: $partnerships,
+                categories: $directory->categories,
+                activeCategory: '',
+                query: '',
+                currentPage: 1,
+                totalPages: 1,
+                totalItems: $partnerships->count(),
+                perPage: max($partnerships->count(), 1),
+            );
+
+            return view('public.about.partnerships', [
+                'locale' => $locale,
+                'direction' => $locale === 'ar' ? 'rtl' : 'ltr',
+                'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $locale.'/about/partnerships'),
+                'settings' => $this->settingsService->getPublicSettings($locale),
+                'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale),
+                'isPreview' => true,
+                'page' => $page,
+                'directory' => $directory,
+                'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale),
+                'seo' => $this->seoMetadataService->buildFallback($locale, [
+                    'path' => '/'.$locale.'/about/partnerships',
+                    'locale_paths' => ['ar' => '/ar/about/partnerships', 'en' => '/en/about/partnerships'],
+                    'title' => $page->title,
+                    'meta_description' => $page->summary,
+                    'robots' => 'noindex,nofollow',
+                ]),
+                'preview' => $preview,
+            ]);
+        }
+
+        abort(404);
     }
 
     /** @param array<string, mixed> $content */
@@ -464,7 +612,7 @@ final class PreviewController extends Controller
             'featured' => $featured,
             'lastNews' => $latest,
             'announcements' => $announcements,
-            'events' => $this->newsService->getLatestArticleCards($locale, 3),
+            'events' => $this->newsService->listNewsEvents($locale)->take(3)->values(),
             'pageTitle' => (string) ($page['pageTitle'] ?? ''),
             'pageDescription' => (string) ($page['pageDescription'] ?? ''),
             'seo' => $this->seoMetadataService->buildFallback($locale, [
@@ -481,8 +629,126 @@ final class PreviewController extends Controller
     }
 
     /** @param array<string, mixed> $content */
+    private function renderNewsAnnouncementsPreview(string $locale, PreviewDTO $preview, array $content): View
+    {
+        $page = $this->newsService->buildPreviewAnnouncementsPage($locale, $content);
+        $featured = $this->newsService->getFeaturedArticles($locale, 1, 'announcement')->first();
+
+        return view('public.news.announcements', [
+            'locale' => $locale,
+            'direction' => $locale === 'ar' ? 'rtl' : 'ltr',
+            'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $locale.'/news/announcements'),
+            'settings' => $this->settingsService->getPublicSettings($locale),
+            'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale),
+            'isPreview' => true,
+            'page' => $page,
+            'featured' => $featured,
+            'announcements' => $this->newsService->listPublicArticles($locale, [
+                'categoryType' => 'announcement',
+                'excludeId' => $featured?->id,
+            ], 1, 4),
+            'categories' => $this->newsService->getPublicCategories($locale, 'announcement'),
+            'activeCategory' => null,
+            'seo' => $this->seoMetadataService->buildFallback($locale, [
+                'path' => '/'.$locale.'/news/announcements',
+                'locale_paths' => ['ar' => '/ar/news/announcements', 'en' => '/en/news/announcements'],
+                'title' => (string) $page['pageTitle'],
+                'meta_description' => (string) $page['pageDescription'],
+                'og_title' => (string) $page['pageTitle'],
+                'og_description' => (string) $page['pageDescription'],
+                'og_image' => (string) $page['heroImage'],
+            ]),
+            'preview' => $preview,
+        ]);
+    }
+
+    /** @param array<string, mixed> $content */
+    private function renderNewsEventsPreview(string $locale, PreviewDTO $preview, array $content): View
+    {
+        $page = $this->newsService->buildPreviewEventsPage($locale, $content);
+
+        return view('public.news.events-list', [
+            'locale' => $locale,
+            'direction' => $locale === 'ar' ? 'rtl' : 'ltr',
+            'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $locale.'/news/events-list'),
+            'settings' => $this->settingsService->getPublicSettings($locale),
+            'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale),
+            'isPreview' => true,
+            'page' => $page,
+            'activeCategory' => null,
+            'upcomingEvents' => $this->newsService->listPreviewNewsEvents($locale, $content),
+            'pastEvents' => $this->newsService->listPreviewNewsEvents($locale, $content, true),
+            'seo' => $this->seoMetadataService->buildFallback($locale, [
+                'path' => '/'.$locale.'/news/events-list',
+                'locale_paths' => ['ar' => '/ar/news/events-list', 'en' => '/en/news/events-list'],
+                'title' => (string) $page['title'],
+                'meta_description' => (string) $page['summary'],
+                'og_title' => (string) $page['title'],
+                'og_description' => (string) $page['summary'],
+                'og_image' => (string) $page['heroImage'],
+            ]),
+            'preview' => $preview,
+        ]);
+    }
+
+    /** @param array<string, mixed> $content */
+    private function renderNewsGalleryPreview(string $locale, PreviewDTO $preview, array $content): View
+    {
+        $listing = $this->newsService->buildPreviewGalleryListing($locale, $content);
+        $page = $listing['page'];
+
+        return view('public.news.gallery', [
+            'locale' => $locale,
+            'direction' => $locale === 'ar' ? 'rtl' : 'ltr',
+            'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $locale.'/news/gallery'),
+            'settings' => $this->settingsService->getPublicSettings($locale),
+            'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale),
+            'isPreview' => true,
+            'page' => $page,
+            'featured' => $listing['featured'],
+            'galleryItems' => $listing['items'],
+            'activeCategory' => null,
+            'seo' => $this->seoMetadataService->buildFallback($locale, [
+                'path' => '/'.$locale.'/news/gallery',
+                'locale_paths' => ['ar' => '/ar/news/gallery', 'en' => '/en/news/gallery'],
+                'title' => (string) $page['title'],
+                'meta_description' => (string) $page['summary'],
+                'og_title' => (string) $page['title'],
+                'og_description' => (string) $page['summary'],
+                'og_image' => (string) $page['heroImage'],
+            ]),
+            'preview' => $preview,
+        ]);
+    }
+
+    /** @param array<string, mixed> $content */
     private function renderAboutContentPreview(string $locale, PreviewDTO $preview, string $targetKey, array $content): View
     {
+        if ($targetKey === 'about.vision-mission') {
+            $page = $this->aboutPageService->buildPreviewVisionMission($locale, $content);
+
+            return view('public.about.vision-mission', [
+                'locale' => $locale,
+                'direction' => $page->direction,
+                'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $locale.'/about/vision-mission'),
+                'settings' => $this->settingsService->getPublicSettings($locale),
+                'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale),
+                'isPreview' => true,
+                'seo' => $this->seoMetadataService->buildFallback($locale, [
+                    'path' => '/'.$locale.'/about/vision-mission',
+                    'locale_paths' => ['ar' => '/ar/about/vision-mission', 'en' => '/en/about/vision-mission'],
+                    'title' => $page->seoTitle,
+                    'meta_description' => $page->seoDescription,
+                    'og_title' => $page->seoTitle,
+                    'og_description' => $page->seoDescription,
+                    'og_image' => $page->seoImage,
+                ]),
+                'page' => $page,
+                'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale, 'about.vision-mission'),
+                'preview' => $preview,
+            ]);
+        }
+
         $page = $this->aboutPageService->buildPreviewContentPage($targetKey, $locale, $content);
         abort_if($page === null, 404);
 
@@ -504,7 +770,7 @@ final class PreviewController extends Controller
                     'og_image' => $page->heroImage,
                 ]),
                 'page' => $page,
-                'people' => $this->aboutPageService->getLeadershipProfiles($locale),
+                'directory' => $this->aboutPageService->getLeadershipDirectory($locale),
                 'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale),
                 'preview' => $preview,
             ]);
@@ -552,7 +818,7 @@ final class PreviewController extends Controller
                     'og_image' => $page->heroImage,
                 ]),
                 'page' => $page,
-                'people' => $this->aboutPageService->getLeadershipProfiles($locale),
+                'directory' => $this->aboutPageService->getStaffDirectory($locale),
                 'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale),
                 'preview' => $preview,
             ]);
@@ -576,7 +842,7 @@ final class PreviewController extends Controller
                     'og_image' => $page->heroImage,
                 ]),
                 'page' => $page,
-                'partnerships' => $this->aboutPageService->getPartnerships($locale),
+                'directory' => $this->aboutPageService->getPartnerships($locale),
                 'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale),
                 'preview' => $preview,
             ]);
@@ -738,6 +1004,35 @@ final class PreviewController extends Controller
         ]);
     }
 
+    /** @param array<string, mixed> $content */
+    private function renderEServicesDetailPreview(string $locale, PreviewDTO $preview, string $targetKey, array $content): View
+    {
+        $slug = substr($targetKey, strlen('e_services.'));
+        $page = $this->eServicesPageService->buildDetailPreviewPage($locale, $slug, $content);
+        $path = '/'.$locale.'/e-services/'.$slug;
+
+        return view('public.e-services-detail', [
+            'locale' => $locale,
+            'direction' => $page->direction,
+            'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, ltrim($path, '/')),
+            'settings' => $this->settingsService->getPublicSettings($locale),
+            'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale),
+            'isPreview' => true,
+            'seo' => $this->seoMetadataService->buildFallback($locale, [
+                'path' => $path,
+                'locale_paths' => ['ar' => '/ar/e-services/'.$slug, 'en' => '/en/e-services/'.$slug],
+                'title' => $page->seoTitle,
+                'meta_description' => $page->seoDescription,
+                'og_title' => $page->seoTitle,
+                'og_description' => $page->seoDescription,
+                'og_image' => $page->seoImage,
+                'robots' => 'noindex,nofollow',
+            ]),
+            'page' => $page,
+            'preview' => $preview,
+        ]);
+    }
+
     private function resolvePreviewToken(Request $request): ?string
     {
         foreach ([(string) $request->query('token'), (string) $request->query('preview_token'), (string) $request->header('X-Preview-Token')] as $candidate) {
@@ -760,8 +1055,6 @@ final class PreviewController extends Controller
 
         return [
             'id' => $page->id,
-            'slug' => $page->metadata->slug,
-            'template' => $page->metadata->template,
             'title' => $translation->title,
             'navigationLabel' => $translation->navigationLabel,
             'headline' => $translation->headline,

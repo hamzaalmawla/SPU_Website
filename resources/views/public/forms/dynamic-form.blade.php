@@ -1,4 +1,6 @@
 <div x-data="dynamicFormView()" x-cloak>
+    <template x-if="$store.dynamicForm.schema">
+    <div>
     <div x-show="$store.dynamicForm.submitted" class="rounded-2xl border border-green-200 bg-green-50 p-8 text-center">
         <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
             <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
@@ -76,4 +78,6 @@
             </button>
         </form>
     </div>
+    </div>
+    </template>
 </div>

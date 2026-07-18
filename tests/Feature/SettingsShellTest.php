@@ -30,8 +30,8 @@ class SettingsShellTest extends TestCase
 
         $this->assertSame('Apply now', $settings->applyCta->label);
         $this->assertSame('/en/admissions', $settings->applyCta->url);
-        $this->assertSame('https://students.spu.edu.sy', $settings->studentPortalUrl);
-        $this->assertSame('https://staff.spu.edu.sy', $settings->staffAccessUrl);
+        $this->assertSame('/e-services/it-support', $settings->studentPortalUrl);
+        $this->assertSame('/e-services/staff-email', $settings->staffAccessUrl);
     }
 
     public function test_emergency_notice_payload_resolves_when_configured(): void
@@ -113,8 +113,8 @@ class SettingsShellTest extends TestCase
 
         $this->assertSame('Syrian Private University', $footer->brandTitle);
         $this->assertNotNull($footer->logoUrl);
-        $this->assertCount(2, $footer->legalLinks);
-        $this->assertNotEmpty($social->socialLinks);
+        $this->assertSame([], $footer->legalLinks);
+        $this->assertSame([], $social->socialLinks);
         $this->assertNotEmpty($social->contactLinks);
         $this->assertSame('Syrian Private University', $navigation->footerSettings->brandTitle);
     }

@@ -56,8 +56,6 @@ final class PageController extends Controller
 
         return [
             'id' => $page->id,
-            'slug' => $page->metadata->slug,
-            'template' => $page->metadata->template,
             'title' => $translation->title,
             'navigationLabel' => $translation->navigationLabel,
             'headline' => $translation->headline,

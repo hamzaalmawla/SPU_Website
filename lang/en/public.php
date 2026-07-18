@@ -105,6 +105,9 @@ return [
     'gpa' => 'GPA',
     'second_semester' => 'Second Semester',
     'honor_list' => 'Honor List',
+    'facilities_eyebrow' => 'Seven faculties. Endless pathways.',
+    'facilities_subheading' => 'Choose the faculty that fits your ambition. Every academic path blends applied learning, research, and professional experience.',
+    'learn_more' => 'Learn More',
 
     // E-Services Form
     'full_name' => 'Full Name',

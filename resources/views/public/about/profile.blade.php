@@ -9,7 +9,7 @@
     <section class="font-hacen" dir="{{ $direction }}">
         <div class="relative h-[450px] overflow-hidden">
             <div class="absolute inset-0">
-                <img src="/images/about-hero-1.webp" alt="" class="h-full w-full object-cover object-center">
+                <img src="/images/about/hero-img.jpg" alt="" class="h-full w-full object-cover object-center" aria-hidden="true">
                 <div class="absolute inset-0 bg-gradient-to-b from-[rgba(32,39,89,0.4)] to-[rgba(32,39,89,0.6)]"></div>
             </div>
         </div>
@@ -18,7 +18,11 @@
             <div class="relative -mt-[6.5rem] flex flex-col gap-6 border-b border-spu-blue/10 md:flex-row md:items-center md:gap-8">
                 <div class="shrink-0">
                     <div class="h-[160px] w-[160px] overflow-hidden rounded-full border-[6px] border-white bg-[#f6f8fc] shadow-[0_8px_32px_rgba(32,39,89,0.2)] md:h-[260px] md:w-[260px]">
-                        <img src="{{ $profile->image ?? '/images/uni-main-place.JPG' }}" alt="{{ $profile->name }}" class="h-full w-full object-cover">
+                        @if ($profile->image)
+                            <img src="{{ $profile->image }}" alt="{{ $profile->name }}" class="h-full w-full object-cover">
+                        @else
+                            <div class="flex h-full w-full items-center justify-center bg-slate-100"><img src="/images/icon-user-graduate-outline.svg" alt="" class="h-20 w-20 opacity-30" aria-hidden="true"></div>
+                        @endif
                     </div>
                 </div>
 
@@ -58,8 +62,8 @@
 
                     <div class="flex flex-wrap items-center gap-3">
                         @if ($profile->email !== null)
-                            <a href="mailto:{{ $profile->email }}" class="flex h-10 w-10 items-center justify-center rounded-[10px] bg-spu-blue/[0.06] text-spu-blue transition-all hover:-translate-y-0.5 hover:bg-spu-blue hover:text-white" title="Email">
-                                <img src="/images/icon-envelope-outline.svg" alt="Email" class="h-4 w-4">
+                            <a href="mailto:{{ $profile->email }}" class="flex h-10 w-10 items-center justify-center rounded-[10px] bg-spu-blue/[0.06] text-spu-blue transition-all hover:-translate-y-0.5 hover:bg-spu-blue hover:text-white" aria-label="{{ $isAr ? 'البريد الإلكتروني' : 'Email' }}">
+                                <img src="/images/icon-envelope-outline.svg" alt="" class="h-4 w-4" aria-hidden="true">
                             </a>
                         @endif
 
@@ -105,7 +109,7 @@
                                         <img src="/images/icon-envelope-outline.svg" alt="" class="h-4 w-4">
                                     </div>
                                     <div class="flex flex-col gap-0.5">
-                                        <span class="text-xs text-spu-blue/50">Email</span>
+                                        <span class="text-xs text-spu-blue/50">{{ $isAr ? 'البريد الإلكتروني' : 'Email' }}</span>
                                         <a href="mailto:{{ $profile->email }}" class="break-all text-sm font-semibold text-spu-red hover:text-spu-blue hover:underline">{{ $profile->email }}</a>
                                     </div>
                                 </div>
@@ -191,7 +195,7 @@
                     @if ($profile->quote !== null && $profile->quote !== '')
                         <div class="rounded-2xl border border-spu-blue/[0.08] bg-white p-6 shadow-[0_4px_24px_rgba(32,39,89,0.06)] md:p-10">
                             <h2 class="mb-5 flex flex-wrap items-center justify-between gap-2 border-b border-spu-blue/[0.08] pb-3 text-lg font-bold text-spu-blue">{{ $isAr ? 'مقولته' : 'Quote' }}</h2>
-                            <blockquote class="border-l-4 border-spu-red pl-6 text-[0.9375rem] italic leading-[1.8] text-spu-blue/75">
+                            <blockquote class="border-s-4 border-spu-red ps-6 text-[0.9375rem] italic leading-[1.8] text-spu-blue/75">
                                 {{ $profile->quote }}
                             </blockquote>
                         </div>
@@ -256,11 +260,9 @@
                             </h2>
                             <div class="flex flex-col gap-5">
                                 @foreach ($profile->publications as $publication)
-                                    @php
-                                        $publicationHref = $publication['externalUrl'] ?? '#';
-                                    @endphp
+                                    @php($publicationHref = $publication['externalUrl'] ?? null)
                                     <div class="group rounded-xl border border-spu-blue/[0.06] bg-spu-blue/[0.03] p-5 transition-all hover:-translate-y-0.5 hover:border-spu-blue/[0.15] hover:bg-white hover:shadow-[0_8px_24px_rgba(32,39,89,0.1)]">
-                                        <a href="{{ $publicationHref }}" target="{{ $publicationHref !== '#' ? '_blank' : '_self' }}" rel="noopener" class="mb-3 block">
+                                        @if ($publicationHref)<a href="{{ $publicationHref }}" target="_blank" rel="noopener noreferrer" class="mb-3 block">@else<div class="mb-3">@endif
                                             <div class="mb-2 flex items-start justify-between gap-4">
                                                 <h4 class="flex-1 text-[0.9375rem] font-semibold leading-[1.5] text-spu-blue transition-colors group-hover:text-spu-red">{{ $publication['title'] }}</h4>
                                                 @if (!empty($publication['year']))
@@ -270,7 +272,7 @@
                                             @if (!empty($publication['publisher']))
                                                 <p class="text-sm italic text-spu-blue/60">{{ $publication['publisher'] }}</p>
                                             @endif
-                                        </a>
+                                        @if ($publicationHref)</a>@else</div>@endif
                                         @if (!empty($publication['excerpt']))
                                             <p class="text-sm text-spu-blue/50">{{ \Illuminate\Support\Str::limit($publication['excerpt'], 150) }}</p>
                                         @endif

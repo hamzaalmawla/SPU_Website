@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Mail\EventRegistrationReceived;
 use App\Models\Form\DynamicFormSubmission;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -95,5 +97,52 @@ final class DynamicFormSubmissionTest extends TestCase
         $this->assertArrayHasKey('cvFile', $submission->files_json ?? []);
 
         Storage::disk('local')->assertExists($submission->files_json['cvFile']['path']);
+    }
+
+    public function test_news_event_registration_stores_server_validated_context(): void
+    {
+        Mail::fake();
+
+        $payload = [
+            'fullName' => 'Event Applicant',
+            'email' => 'event@example.com',
+            'affiliation' => 'SPU',
+            'role' => 'attendee',
+            'event_source' => 'news-events',
+            'event_id' => 'evt-001',
+        ];
+
+        $this->postJson('/en/forms/conference-registration/submissions', $payload)->assertCreated();
+
+        $submission = DynamicFormSubmission::query()->firstOrFail();
+        $this->assertSame('news-events', $submission->payload_json['_context']['source'] ?? null);
+        $this->assertSame('evt-001', $submission->payload_json['_context']['event_id'] ?? null);
+        $this->assertSame('Annual Research Symposium & Innovation Showcase', $submission->payload_json['_context']['event_title'] ?? null);
+        Mail::assertQueued(EventRegistrationReceived::class, fn (EventRegistrationReceived $mail): bool => $mail->hasTo('event@example.com') && $mail->eventTitle === 'Annual Research Symposium & Innovation Showcase');
+
+        $this->postJson('/en/forms/conference-registration/submissions', $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('email');
+    }
+
+    public function test_news_event_registration_rejects_wrong_form_and_past_event(): void
+    {
+        $activity = [
+            'fullName' => 'Event Applicant',
+            'email' => 'event@example.com',
+            'event_source' => 'news-events',
+            'event_id' => 'evt-001',
+        ];
+
+        $this->postJson('/en/forms/activity-registration/submissions', $activity)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('event_id');
+
+        $conference = $activity + ['affiliation' => 'SPU', 'role' => 'attendee'];
+        $conference['event_id'] = 'evt-past-001';
+
+        $this->postJson('/en/forms/conference-registration/submissions', $conference)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('event_id');
     }
 }

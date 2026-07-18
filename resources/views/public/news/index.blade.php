@@ -103,7 +103,7 @@
         <div class="container">
             <div class="mb-12 flex items-center justify-between gap-4">
                 <h2 class="text-5xl font-bold text-[#202759]">{{ $page['announcementsTitle'] ?? ($isAr ? 'الإعلانات' : 'Announcements') }}</h2>
-                <a href="/{{ $locale }}/news/articles?category=announcements" class="rounded border border-slate-300 px-8 py-2 text-sm font-bold text-[#202759] transition-colors hover:bg-slate-50">{{ $page['announcementsViewAllLabel'] ?? ($isAr ? 'عرض كافة الإعلانات' : 'View All Announcements') }}</a>
+                <a href="/{{ $locale }}/news/announcements" class="rounded border border-slate-300 px-8 py-2 text-sm font-bold text-[#202759] transition-colors hover:bg-slate-50">{{ $page['announcementsViewAllLabel'] ?? ($isAr ? 'عرض كافة الإعلانات' : 'View All Announcements') }}</a>
             </div>
 
             <div class="grid items-stretch gap-8 lg:grid-cols-12">
@@ -117,18 +117,16 @@
                         <div class="relative flex-grow space-y-12 pb-10">
                             <div class="absolute bottom-12 left-[7px] top-2 w-[2px] bg-white/20 rtl:left-auto rtl:right-[7px]"></div>
                             @foreach ($events as $event)
-                                <a href="{{ $event->url ?? '#' }}" class="relative block pl-10 rtl:pl-0 rtl:pr-10">
+                                <a href="{{ $event->detailUrl }}" class="relative block pl-10 rtl:pl-0 rtl:pr-10">
                                     <div class="absolute left-0 top-1.5 z-10 h-4 w-4 rounded-full border-2 border-white bg-[#1e2a5e] rtl:left-auto rtl:right-0"></div>
-                                    @if ($event->publishedAt)
-                                        <p class="mb-2 text-[12px] font-bold uppercase tracking-widest text-white/60" translate="no">{{ $event->publishedAt }}</p>
-                                    @endif
+                                    <p class="mb-2 text-[12px] font-bold uppercase tracking-widest text-white/60" translate="no">{{ $event->dateLabel }}</p>
                                     <h4 class="mb-2 text-xl font-bold">{{ $event->title }}</h4>
-                                    <p class="text-[13px] uppercase tracking-wide text-white/50">{{ $event->categoryLabel ?: ($page['universityNewsFallbackCategory'] ?? ($isAr ? 'أخبار الجامعة' : 'University News')) }}</p>
+                                    <p class="text-[13px] uppercase tracking-wide text-white/50">{{ $event->categoryLabel }}</p>
                                 </a>
                             @endforeach
                         </div>
 
-                        <a href="/{{ $locale }}/news/articles" class="mt-auto block w-full rounded-lg border border-white py-4 text-center text-sm font-bold transition-colors hover:bg-white/10">{{ $page['eventsViewAllLabel'] ?? ($isAr ? 'عرض تفاصيل كافة الفعاليات' : 'View All Events Details') }}</a>
+                        <a href="/{{ $locale }}/news/events-list" class="mt-auto block w-full rounded-lg border border-white py-4 text-center text-sm font-bold transition-colors hover:bg-white/10">{{ $page['eventsViewAllLabel'] ?? ($isAr ? 'عرض تفاصيل كافة الفعاليات' : 'View All Events Details') }}</a>
                     </div>
                 </div>
 
@@ -166,7 +164,7 @@
         <div class="container">
             <h2 class="mb-16 text-center text-3xl font-bold text-spu-blue">{{ $page['exploreMoreTitle'] ?? ($isAr ? 'استكشف المزيد' : 'Explore More') }}</h2>
             <div class="cms-grid-wide mx-auto max-w-5xl gap-8">
-                <a id="media-gallery" href="/{{ $locale }}/news/articles" class="group relative flex flex-col items-center gap-6 overflow-hidden rounded-[32px] border border-slate-100 bg-white p-12 text-center text-spu-blue shadow-sm transition-all duration-500 hover:translate-y-[-8px] hover:bg-[#1e2a5e] hover:text-white hover:shadow-2xl">
+                <a id="media-gallery" href="/{{ $locale }}/news/gallery" class="group relative flex flex-col items-center gap-6 overflow-hidden rounded-[32px] border border-slate-100 bg-white p-12 text-center text-spu-blue shadow-sm transition-all duration-500 hover:translate-y-[-8px] hover:bg-[#1e2a5e] hover:text-white hover:shadow-2xl">
                     <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 transition-colors group-hover:bg-white/20">
                         <img src="/images/icon-file-outline.svg" alt="" class="h-8 w-8" aria-hidden="true">
                     </div>
@@ -176,7 +174,7 @@
                     </div>
                 </a>
 
-                <a id="press-room" href="/{{ $locale }}/news/articles?category=announcements" class="group relative flex flex-col items-center gap-6 overflow-hidden rounded-[32px] border border-slate-100 bg-white p-12 text-center text-spu-blue shadow-sm transition-all duration-500 hover:translate-y-[-8px] hover:bg-[#1e2a5e] hover:text-white hover:shadow-2xl">
+                <a id="press-room" href="/{{ $locale }}/news/announcements" class="group relative flex flex-col items-center gap-6 overflow-hidden rounded-[32px] border border-slate-100 bg-white p-12 text-center text-spu-blue shadow-sm transition-all duration-500 hover:translate-y-[-8px] hover:bg-[#1e2a5e] hover:text-white hover:shadow-2xl">
                     <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 transition-colors group-hover:bg-white/20">
                         <img src="/images/icon-book-outline.svg" alt="" class="h-8 w-8" aria-hidden="true">
                     </div>

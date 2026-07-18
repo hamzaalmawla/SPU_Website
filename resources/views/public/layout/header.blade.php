@@ -15,7 +15,7 @@
     $appendSearchItems($navigation->header->items);
 @endphp
 
-<header id="site-header" class="absolute top-0 z-50 w-full pt-3 font-hacen"
+<header id="site-header" class="absolute top-0 z-[200] w-full pt-3 font-hacen"
         x-data="mobileNav()"
         data-search-items="{{ json_encode($searchItems, JSON_THROW_ON_ERROR) }}"
         @keydown.escape.window="closeAll()"
@@ -112,7 +112,7 @@
 
                     @foreach ($languageSwitch as $switchLink)
                         @if (!$switchLink->isCurrent)
-                            <a href="{{ $switchLink->url }}" class="site-nav-lang">
+                            <a href="{{ $switchLink->url }}" class="site-nav-lang" data-language-switch>
                                 <img src="/images/ic_outline-language.svg" alt="{{ __('public.language') }}" class="h-[1rem] w-[1rem]">
                                 <span>{{ $switchLink->label }}</span>
                             </a>

@@ -163,6 +163,7 @@ class NavigationSeeder extends Seeder
 
         // ── About (sort 1) ──
         $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'عن الجامعة', 'target_kind' => 'page', 'page_slug' => 'about', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 1, 'children' => [
+            ['label' => 'الرؤية والرسالة', 'target_kind' => 'url', 'url' => '/ar/about/vision-mission'],
             ['label' => 'التاريخ والتأسيس', 'target_kind' => 'url', 'url' => '/ar/about/history'],
             ['label' => 'القيادة', 'target_kind' => 'url', 'url' => '/ar/about/leadership'],
             ['label' => 'المديريات المركزية', 'target_kind' => 'url', 'url' => '/ar/about/directorates'],
@@ -175,6 +176,7 @@ class NavigationSeeder extends Seeder
             ['label' => 'لماذا SPU', 'target_kind' => 'url', 'url' => '/ar/about/why-spu'],
         ]];
         $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'About', 'target_kind' => 'page', 'page_slug' => 'about', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 1, 'children' => [
+            ['label' => 'Vision and Mission', 'target_kind' => 'url', 'url' => '/en/about/vision-mission'],
             ['label' => 'History & Founding', 'target_kind' => 'url', 'url' => '/en/about/history'],
             ['label' => 'Leadership', 'target_kind' => 'url', 'url' => '/en/about/leadership'],
             ['label' => 'Central Directorates', 'target_kind' => 'url', 'url' => '/en/about/directorates'],
@@ -270,20 +272,20 @@ class NavigationSeeder extends Seeder
         // ── E-Services (sort 6) ──
         $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'الخدمات الإلكترونية', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/ar/e-services', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 6, 'children' => [
             ['label' => 'بوابة الخدمات', 'target_kind' => 'url', 'url' => '/ar/e-services#portal-access'],
-            ['label' => 'بوابة الطالب', 'target_kind' => 'url', 'url' => 'https://students.spu.edu.sy', 'open_in_new_tab' => true],
-            ['label' => 'المكتبة الإلكترونية', 'target_kind' => 'url', 'url' => '/ar/e-services#library'],
-            ['label' => 'دعم تكنولوجيا المعلومات', 'target_kind' => 'url', 'url' => '/ar/e-services#it-support'],
-            ['label' => 'الاعتراضات والنماذج', 'target_kind' => 'url', 'url' => '/ar/e-services#appeals-forms'],
-            ['label' => 'البريد الإلكتروني للموظفين', 'target_kind' => 'url', 'url' => 'https://staff.spu.edu.sy', 'open_in_new_tab' => true],
+            ['label' => 'مساعدة وصول الطلاب', 'target_kind' => 'url', 'url' => '/ar/e-services/it-support'],
+            ['label' => 'المكتبة الإلكترونية', 'target_kind' => 'url', 'url' => '/ar/e-services/library'],
+            ['label' => 'دعم تكنولوجيا المعلومات', 'target_kind' => 'url', 'url' => '/ar/e-services/it-support'],
+            ['label' => 'إرشادات الخدمات', 'target_kind' => 'url', 'url' => '/ar/e-services#appeals-forms'],
+            ['label' => 'البريد الإلكتروني للموظفين', 'target_kind' => 'url', 'url' => '/ar/e-services/staff-email'],
             ['label' => 'الاقتراحات والشكاوى', 'target_kind' => 'url', 'url' => '/ar/e-services/suggestions-complaints'],
         ]];
         $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'E-Services', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/en/e-services', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 6, 'children' => [
             ['label' => 'Service Portal', 'target_kind' => 'url', 'url' => '/en/e-services#portal-access'],
-            ['label' => 'Student Portal', 'target_kind' => 'url', 'url' => 'https://students.spu.edu.sy', 'open_in_new_tab' => true],
-            ['label' => 'E-Library', 'target_kind' => 'url', 'url' => '/en/e-services#library'],
-            ['label' => 'IT Support', 'target_kind' => 'url', 'url' => '/en/e-services#it-support'],
-            ['label' => 'Appeals & Forms', 'target_kind' => 'url', 'url' => '/en/e-services#appeals-forms'],
-            ['label' => 'Staff Email', 'target_kind' => 'url', 'url' => 'https://staff.spu.edu.sy', 'open_in_new_tab' => true],
+            ['label' => 'Student Access Help', 'target_kind' => 'url', 'url' => '/en/e-services/it-support'],
+            ['label' => 'E-Library', 'target_kind' => 'url', 'url' => '/en/e-services/library'],
+            ['label' => 'IT Support', 'target_kind' => 'url', 'url' => '/en/e-services/it-support'],
+            ['label' => 'Service Guidance', 'target_kind' => 'url', 'url' => '/en/e-services#appeals-forms'],
+            ['label' => 'Staff Email', 'target_kind' => 'url', 'url' => '/en/e-services/staff-email'],
             ['label' => 'Suggestions & Complaints', 'target_kind' => 'url', 'url' => '/en/e-services/suggestions-complaints'],
         ]];
 
@@ -403,10 +405,10 @@ class NavigationSeeder extends Seeder
     private function utilityItems(): array
     {
         return [
-            ['type' => 'utility', 'group_key' => 'utility', 'locale' => 'ar', 'label' => 'بوابة الطالب', 'target_kind' => 'url', 'page_slug' => null, 'url' => 'https://students.spu.edu.sy', 'target' => '_blank', 'icon' => 'heroicon-o-academic-cap', 'is_utility' => true, 'open_in_new_tab' => true, 'sort_order' => 1, 'children' => []],
-            ['type' => 'utility', 'group_key' => 'utility', 'locale' => 'ar', 'label' => 'بوابة الموظفين', 'target_kind' => 'url', 'page_slug' => null, 'url' => 'https://staff.spu.edu.sy', 'target' => '_blank', 'icon' => 'heroicon-o-briefcase', 'is_utility' => true, 'open_in_new_tab' => true, 'sort_order' => 2, 'children' => []],
-            ['type' => 'utility', 'group_key' => 'utility', 'locale' => 'en', 'label' => 'Student Portal', 'target_kind' => 'url', 'page_slug' => null, 'url' => 'https://students.spu.edu.sy', 'target' => '_blank', 'icon' => 'heroicon-o-academic-cap', 'is_utility' => true, 'open_in_new_tab' => true, 'sort_order' => 1, 'children' => []],
-            ['type' => 'utility', 'group_key' => 'utility', 'locale' => 'en', 'label' => 'Staff Access', 'target_kind' => 'url', 'page_slug' => null, 'url' => 'https://staff.spu.edu.sy', 'target' => '_blank', 'icon' => 'heroicon-o-briefcase', 'is_utility' => true, 'open_in_new_tab' => true, 'sort_order' => 2, 'children' => []],
+            ['type' => 'utility', 'group_key' => 'utility', 'locale' => 'ar', 'label' => 'مساعدة وصول الطلاب', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/ar/e-services/it-support', 'target' => null, 'icon' => 'heroicon-o-academic-cap', 'is_utility' => true, 'open_in_new_tab' => false, 'sort_order' => 1, 'children' => []],
+            ['type' => 'utility', 'group_key' => 'utility', 'locale' => 'ar', 'label' => 'بوابة الموظفين', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/ar/e-services/staff-email', 'target' => null, 'icon' => 'heroicon-o-briefcase', 'is_utility' => true, 'open_in_new_tab' => false, 'sort_order' => 2, 'children' => []],
+            ['type' => 'utility', 'group_key' => 'utility', 'locale' => 'en', 'label' => 'Student Access Help', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/en/e-services/it-support', 'target' => null, 'icon' => 'heroicon-o-academic-cap', 'is_utility' => true, 'open_in_new_tab' => false, 'sort_order' => 1, 'children' => []],
+            ['type' => 'utility', 'group_key' => 'utility', 'locale' => 'en', 'label' => 'Staff Access', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/en/e-services/staff-email', 'target' => null, 'icon' => 'heroicon-o-briefcase', 'is_utility' => true, 'open_in_new_tab' => false, 'sort_order' => 2, 'children' => []],
         ];
     }
 }

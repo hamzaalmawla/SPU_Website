@@ -6,6 +6,7 @@ namespace App\Providers;
 
 use App\Contracts\Auth\AuthServiceInterface;
 use App\Contracts\Auth\TotpAuthenticatorInterface;
+use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Content\PersonServiceInterface;
@@ -115,6 +116,7 @@ use App\Policies\PagePolicy;
 use App\Policies\UserPolicy;
 use App\Services\Auth\AuthService;
 use App\Services\Auth\TotpAuthenticator;
+use App\Services\Cms\AboutEntityCmsService;
 use App\Services\Cms\CmsTargetRegistry;
 use App\Services\Cms\CmsWorkflowService;
 use App\Services\Content\PersonService;
@@ -353,6 +355,7 @@ class AppServiceProvider extends ServiceProvider
     {
         return [
             CacheServiceInterface::class => CacheService::class,
+            AboutEntityCmsServiceInterface::class => AboutEntityCmsService::class,
             AdmissionsPageServiceInterface::class => AdmissionsPageService::class,
             AboutPageServiceInterface::class => AboutPageService::class,
             CampusLifePageServiceInterface::class => CampusLifePageService::class,

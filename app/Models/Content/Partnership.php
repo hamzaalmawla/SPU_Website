@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models\Content;
 
+use App\Enums\PublicationStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,7 +15,7 @@ class Partnership extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['slug', 'logo', 'website_url', 'signed_at', 'sort_order', 'is_enabled'];
+    protected $fillable = ['slug', 'category_key', 'status_key', 'logo', 'website_url', 'signed_at', 'sort_order', 'is_enabled', 'publication_status', 'published_at'];
 
     protected function casts(): array
     {
@@ -22,6 +23,7 @@ class Partnership extends Model
             'signed_at' => 'date',
             'sort_order' => 'integer',
             'is_enabled' => 'boolean',
+            'published_at' => 'datetime',
             'deleted_at' => 'datetime',
         ];
     }
@@ -34,5 +36,14 @@ class Partnership extends Model
     public function scopeEnabled(Builder $query): Builder
     {
         return $query->where('is_enabled', true);
+    }
+
+    public function scopePublic(Builder $query): Builder
+    {
+        return $query
+            ->where('is_enabled', true)
+            ->where('publication_status', PublicationStatus::Published->value)
+            ->whereNotNull('published_at')
+            ->where('published_at', '<=', now());
     }
 }

@@ -4,38 +4,44 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\FacultyMemberResource\Pages;
 
-use App\Contracts\Content\ProfileAdminServiceInterface;
+use App\Contracts\Cms\AboutEntityCmsServiceInterface;
+use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\DTOs\Cms\AboutEntityCmsDataDTO;
 use App\Filament\Resources\FacultyMemberResource;
-use App\Filament\Support\ProfileFormDataMapper;
 use App\Models\Person\FacultyMember;
 use App\Models\User\User;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Gate;
 
 class CreateFacultyMember extends CreateRecord
 {
     protected static string $resource = FacultyMemberResource::class;
 
-    private ProfileAdminServiceInterface $profileAdminService;
+    private AboutEntityCmsServiceInterface $aboutEntityCmsService;
 
-    public function boot(ProfileAdminServiceInterface $profileAdminService): void
+    private CmsWorkflowServiceInterface $cmsWorkflowService;
+
+    public function boot(AboutEntityCmsServiceInterface $aboutEntityCmsService, CmsWorkflowServiceInterface $cmsWorkflowService): void
     {
-        $this->profileAdminService = $profileAdminService;
+        $this->aboutEntityCmsService = $aboutEntityCmsService;
+        $this->cmsWorkflowService = $cmsWorkflowService;
     }
 
     protected function handleRecordCreation(array $data): Model
     {
-        Gate::authorize('create', FacultyMember::class);
-
         $user = auth()->user();
         abort_unless($user instanceof User, 403);
 
-        $created = $this->profileAdminService->createFacultyMember(
-            ProfileFormDataMapper::facultyMemberFromArray($data),
+        $prepared = $this->aboutEntityCmsService->prepareDraft(
+            new AboutEntityCmsDataDTO('faculty-member', null, $data),
+            (int) $user->getKey(),
+        );
+        $this->cmsWorkflowService->saveDraft(
+            $prepared->targetKey ?? throw new \RuntimeException('Faculty member draft target was not created.'),
+            $prepared->payload,
             (int) $user->getKey(),
         );
 
-        return FacultyMember::query()->findOrFail($created->id);
+        return FacultyMember::query()->findOrFail($prepared->entityId);
     }
 }

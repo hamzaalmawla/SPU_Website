@@ -26,7 +26,7 @@
                     <h2 class="reveal reveal-up mb-16 text-center text-4xl font-black text-spu-blue md:text-5xl">{{ $history['foundingTitle'] }}</h2>
                     <div class="history-vision-grid">
                         <div class="history-vision-image reveal reveal-left">
-                            <img src="/images/about-hero-1.webp" alt="{{ $history['foundingTitle'] }}" class="h-full w-full object-cover">
+                            <img src="{{ $page->contentImage ?: '/images/uni-main-place.JPG' }}" alt="{{ $history['foundingTitle'] }}" class="h-full w-full object-cover">
                         </div>
                         <div class="reveal reveal-right">
                             <blockquote class="history-quote mb-12 text-2xl font-black leading-relaxed text-slate-950">{{ $history['quote'] }}</blockquote>
@@ -87,10 +87,19 @@
 
             <section class="bg-white py-20 font-hacen">
                 <div class="container mx-auto px-6">
-                    @if ($page->summary !== '')
-                        <p class="mx-auto mb-12 max-w-3xl text-center text-base font-bold leading-8 text-slate-700">{{ $page->summary }}</p>
+                    @if ($page->badge !== '')
+                        <p class="mb-4 text-center text-xs font-black uppercase tracking-[0.2em] text-spu-red">{{ $page->badge }}</p>
                     @endif
-
+                    <div class="mx-auto mb-14 grid max-w-4xl gap-5 text-base font-bold leading-8 text-slate-700">
+                        @forelse ($page->intro as $paragraph)<p>{{ $paragraph }}</p>@empty<p>{{ $page->summary }}</p>@endforelse
+                    </div>
+                    @if ($page->stats !== [])
+                        <div class="cms-grid-stats mb-16 gap-4 rounded-2xl bg-spu-blue p-6 text-white">
+                            @foreach ($page->stats as $stat)
+                                <div class="text-center"><strong class="block text-3xl">{{ $stat['value'] ?? '' }}</strong><span class="text-xs font-bold uppercase tracking-wider text-white/70">{{ $stat['label'] ?? '' }}</span></div>
+                            @endforeach
+                        </div>
+                    @endif
                     <div class="cms-grid-cards gap-6">
                         @foreach ($page->sections as $section)
                             <article class="reveal reveal-up rounded-2xl border border-slate-100 bg-white p-8 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
