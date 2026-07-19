@@ -7,8 +7,8 @@ namespace App\DTOs\Legacy;
 final readonly class LegacyQuarantineExportResultDTO
 {
     /**
-     * @param array<string, int> $moduleCounts
-     * @param array<string, int> $reasonCounts
+     * @param  array<string, int>  $moduleCounts
+     * @param  array<string, int>  $reasonCounts
      */
     public function __construct(
         public string $disk,

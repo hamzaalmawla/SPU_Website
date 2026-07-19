@@ -4,7 +4,8 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "test": "node --test tests/js/motionDirection.test.js tests/js/homepageComponents.test.js tests/js/scrollReveal.test.js tests/js/studyPlan.test.js tests/js/virtualTour.test.js"
     },
     "dependencies": {
         "@alpinejs/csp": "^3.15.12",

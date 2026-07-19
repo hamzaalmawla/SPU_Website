@@ -70,7 +70,7 @@ final class LegacyQuarantineExportService implements LegacyQuarantineExportServi
     /** @return array<string, mixed> */
     private function exportRow(MigrationRejection $rejection): array
     {
-        $summary = is_array($rejection->raw_summary) ? $rejection->raw_summary : [];
+        $summary = $rejection->raw_summary ?? [];
 
         return [
             'id' => $rejection->id,

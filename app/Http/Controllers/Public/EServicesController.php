@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Public;
 
+use App\Contracts\Form\DynamicFormSubmissionServiceInterface;
 use App\Contracts\Navigation\NavigationServiceInterface;
-use App\Contracts\Page\ContactPageServiceInterface;
 use App\Contracts\Page\EServicesPageServiceInterface;
 use App\Contracts\Seo\SeoMetadataServiceInterface;
 use App\Contracts\Settings\SettingsServiceInterface;
-use App\DTOs\Contact\ContactSubmissionDataDTO;
 use App\DTOs\EServices\EServicesDetailPageDTO;
 use App\DTOs\EServices\EServicesPageDTO;
 use App\DTOs\Navigation\LanguageSwitchLinkDTO;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\DynamicFormSubmissionRequest;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,7 +22,7 @@ final class EServicesController extends Controller
 {
     public function __construct(
         private readonly EServicesPageServiceInterface $eServicesPageService,
-        private readonly ContactPageServiceInterface $contactPageService,
+        private readonly DynamicFormSubmissionServiceInterface $submissionService,
         private readonly NavigationServiceInterface $navigationService,
         private readonly SettingsServiceInterface $settingsService,
         private readonly SeoMetadataServiceInterface $seoMetadataService,
@@ -78,31 +78,9 @@ final class EServicesController extends Controller
         ]);
     }
 
-    public function storeSuggestionsComplaints(Request $request, string $locale): RedirectResponse
+    public function storeSuggestionsComplaints(DynamicFormSubmissionRequest $request, string $locale): RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:120'],
-            'email' => ['required', 'string', 'email:rfc', 'max:255'],
-            'request_type' => ['required', 'string', 'in:suggestion,complaint,inquiry'],
-            'subject' => ['required', 'string', 'max:180'],
-            'message' => ['required', 'string', 'max:5000'],
-        ]);
-
-        $typeLabel = match ((string) $validated['request_type']) {
-            'suggestion' => $locale === 'ar' ? 'اقتراح' : 'Suggestion',
-            'complaint' => $locale === 'ar' ? 'شكوى' : 'Complaint',
-            default => $locale === 'ar' ? 'استفسار' : 'Inquiry',
-        };
-
-        $this->contactPageService->submit(new ContactSubmissionDataDTO(
-            locale: $locale,
-            name: (string) $validated['name'],
-            email: (string) $validated['email'],
-            subject: '['.$typeLabel.'] '.(string) $validated['subject'],
-            message: (string) $validated['message'],
-            ipAddress: $request->ip(),
-            userAgent: $request->userAgent(),
-        ));
+        $this->submissionService->submit($request->toDto('suggestions-complaints', $locale));
 
         return redirect()
             ->route('public.e-services.suggestions-complaints', ['locale' => $locale])

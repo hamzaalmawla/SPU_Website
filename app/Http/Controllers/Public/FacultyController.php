@@ -55,8 +55,20 @@ final class FacultyController extends Controller
     {
         $page = $this->facultyPageService->getSubpage($faculty, $subpage, $locale, $request->query());
         abort_if($page === null, 404);
+        $query = match ($page->subpageSlug) {
+            'alumni', 'valedictorians' => $this->studentDirectoryQuery($request, $page),
+            'projects', 'research' => $this->paginationQuery($request, $page),
+            'labs' => $this->labQuery($request, $page),
+            default => [],
+        };
 
-        return view('public.faculties.subpage', $this->viewPayload($request, $locale, $page, $this->subpageSeo($locale, $page), $this->languageSwitch($locale, '/'.$page->facultySlug.'/'.$page->subpageSlug)));
+        return view('public.faculties.subpage', $this->viewPayload(
+            $request,
+            $locale,
+            $page,
+            $this->subpageSeo($locale, $page, $query),
+            $this->languageSwitch($locale, '/'.$page->facultySlug.'/'.$page->subpageSlug, $query),
+        ));
     }
 
     public function project(Request $request, string $locale, string $faculty, string $project): View
@@ -69,18 +81,30 @@ final class FacultyController extends Controller
 
     public function studyPlan(Request $request, string $locale, string $faculty): View
     {
-        $page = $this->facultyPageService->getSubpage($faculty, 'study-plan', $locale);
+        $page = $this->facultyPageService->getSubpage($faculty, 'study-plan', $locale, $request->query());
         abort_if($page === null, 404);
 
-        return view('public.faculties.subpage', $this->viewPayload($request, $locale, $page, $this->subpageSeo($locale, $page), $this->languageSwitch($locale, '/'.$page->facultySlug.'/study-plan')));
+        return view('public.faculties.subpage', $this->viewPayload(
+            $request,
+            $locale,
+            $page,
+            $this->subpageSeo($locale, $page, $page->filters),
+            $this->languageSwitch($locale, '/'.$page->facultySlug.'/study-plan', $page->filters),
+        ));
     }
 
     public function courseLessons(Request $request, string $locale, string $faculty): View
     {
-        $page = $this->facultyPageService->getSubpage($faculty, 'study-plan-course', $locale);
+        $page = $this->facultyPageService->getSubpage($faculty, 'study-plan-course', $locale, $request->query());
         abort_if($page === null, 404);
 
-        return view('public.faculties.subpage', $this->viewPayload($request, $locale, $page, $this->subpageSeo($locale, $page), $this->languageSwitch($locale, '/'.$page->facultySlug.'/study-plan/course')));
+        return view('public.faculties.subpage', $this->viewPayload(
+            $request,
+            $locale,
+            $page,
+            $this->subpageSeo($locale, $page, $page->filters),
+            $this->languageSwitch($locale, '/'.$page->facultySlug.'/study-plan/course', $page->filters),
+        ));
     }
 
     public function redirectLegacy(Request $request, string $locale, ?string $legacyPath = null): RedirectResponse
@@ -150,15 +174,16 @@ final class FacultyController extends Controller
         ]);
     }
 
-    private function subpageSeo(string $locale, FacultySubpageDTO $page): mixed
+    private function subpageSeo(string $locale, FacultySubpageDTO $page, array $query = []): mixed
     {
         $subpagePath = $page->subpageSlug === 'study-plan-course' ? 'study-plan/course' : $page->subpageSlug;
+        $queryString = $query !== [] ? '?'.http_build_query($query, '', '&', PHP_QUERY_RFC3986) : '';
 
         return $this->seoMetadataService->buildFallback($locale, [
-            'path' => '/'.$locale.'/facilities/'.$page->facultySlug.'/'.$subpagePath,
+            'path' => '/'.$locale.'/facilities/'.$page->facultySlug.'/'.$subpagePath.$queryString,
             'locale_paths' => [
-                'ar' => '/ar/facilities/'.$page->facultySlug.'/'.$subpagePath,
-                'en' => '/en/facilities/'.$page->facultySlug.'/'.$subpagePath,
+                'ar' => '/ar/facilities/'.$page->facultySlug.'/'.$subpagePath.$queryString,
+                'en' => '/en/facilities/'.$page->facultySlug.'/'.$subpagePath.$queryString,
             ],
             'title' => $page->seoTitle,
             'meta_description' => $page->seoDescription,
@@ -187,11 +212,65 @@ final class FacultyController extends Controller
     }
 
     /** @return array<int, LanguageSwitchLinkDTO> */
-    private function languageSwitch(string $locale, string $suffix): array
+    private function languageSwitch(string $locale, string $suffix, array $query = []): array
     {
+        $queryString = $query !== [] ? '?'.http_build_query($query, '', '&', PHP_QUERY_RFC3986) : '';
+
         return [
-            new LanguageSwitchLinkDTO('ar', 'AR', '/ar/facilities'.$suffix, $locale === 'ar'),
-            new LanguageSwitchLinkDTO('en', 'EN', '/en/facilities'.$suffix, $locale === 'en'),
+            new LanguageSwitchLinkDTO('ar', 'AR', '/ar/facilities'.$suffix.$queryString, $locale === 'ar'),
+            new LanguageSwitchLinkDTO('en', 'EN', '/en/facilities'.$suffix.$queryString, $locale === 'en'),
         ];
+    }
+
+    /** @return array<string, int> */
+    private function paginationQuery(Request $request, FacultySubpageDTO $page): array
+    {
+        $requestedPage = $request->query('page');
+
+        if (! is_scalar($requestedPage) || filter_var($requestedPage, FILTER_VALIDATE_INT) === false || (int) $requestedPage < 1) {
+            return [];
+        }
+
+        $currentPage = (int) ($page->pagination['current_page'] ?? 1);
+
+        return ['page' => $currentPage];
+    }
+
+    /** @return array<string, int|string> */
+    private function studentDirectoryQuery(Request $request, FacultySubpageDTO $page): array
+    {
+        $query = [];
+        $search = (string) ($page->filters['q'] ?? '');
+        $year = (string) ($page->filters['year'] ?? '');
+        $semester = (string) ($page->filters['semester'] ?? '');
+        $years = is_array($page->filterOptions['years'] ?? null) ? $page->filterOptions['years'] : [];
+        $semesters = collect(is_array($page->filterOptions['semesters'] ?? null) ? $page->filterOptions['semesters'] : [])
+            ->pluck('key')
+            ->all();
+
+        if ($search !== '') {
+            $query['q'] = $search;
+        }
+
+        if ($year !== '' && in_array($year, array_map('strval', $years), true)) {
+            $query['year'] = $year;
+        }
+
+        if ($semester !== '' && in_array($semester, $semesters, true)) {
+            $query['semester'] = $semester;
+        }
+
+        return [...$query, ...$this->paginationQuery($request, $page)];
+    }
+
+    /** @return array<string, int|string> */
+    private function labQuery(Request $request, FacultySubpageDTO $page): array
+    {
+        $selectedLab = $page->detail['item'] ?? null;
+        $query = is_array($selectedLab) && is_string($selectedLab['slug'] ?? null)
+            ? ['lab' => $selectedLab['slug']]
+            : [];
+
+        return [...$query, ...$this->paginationQuery($request, $page)];
     }
 }

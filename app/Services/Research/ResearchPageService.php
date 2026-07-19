@@ -8,13 +8,21 @@ use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
 use App\DTOs\Research\ResearchDetailPageDTO;
 use App\DTOs\Research\ResearchPageDTO;
+use App\Enums\PublicationStatus;
 use App\Models\Research\ResearchPublication;
 use App\Models\Research\ResearchPublicationTranslation;
 use App\Models\Shared\MigrationLog;
+use App\Support\MediaUrlResolver;
 use Illuminate\Support\Str;
 
 final class ResearchPageService implements ResearchPageServiceInterface
 {
+    private const PUBLICATIONS_PER_PAGE = 6;
+
+    private const PROJECTS_PER_PAGE = 6;
+
+    private const RESEARCHERS_PER_PAGE = 10;
+
     /** @var array<string, mixed>|null */
     private ?array $content = null;
 
@@ -30,19 +38,31 @@ final class ResearchPageService implements ResearchPageServiceInterface
         $cmsContent = $this->publishedLocalizedPayload('research.index', $locale);
 
         if (is_array($cmsContent)) {
+            $cmsContent = $this->sanitizeLandingContent($cmsContent);
+
             return $this->pageDto($locale, 'landing', $cmsContent, '/research', $cmsContent['hero'] ?? []);
         }
 
         $data = $this->localized($this->content(), $locale);
+        $data = is_array($data) ? $this->sanitizeLandingContent($data) : [];
 
         return $this->pageDto($locale, 'landing', $data, '/research', $data['hero'] ?? []);
     }
 
-    public function repository(string $locale): ResearchPageDTO
+    public function repository(string $locale, array $filters = []): ResearchPageDTO
     {
-        $data = $this->content()['publications'] ?? [];
+        $publications = $this->publications($locale, $filters);
 
-        return $this->pageDto($locale, 'repository', $this->localized($data, $locale), '/research/repository', $data['hero'] ?? []);
+        return new ResearchPageDTO(
+            locale: $publications->locale,
+            direction: $publications->direction,
+            type: 'repository',
+            data: $publications->data,
+            seoTitle: $publications->seoTitle,
+            seoDescription: $publications->seoDescription,
+            seoImage: $publications->seoImage,
+            path: '/'.$locale.'/research/repository',
+        );
     }
 
     public function publications(string $locale, array $filters = []): ResearchPageDTO
@@ -62,6 +82,32 @@ final class ResearchPageService implements ResearchPageServiceInterface
         $localized = $this->withFilteredPublications($localized, $filters);
 
         return $this->pageDto($locale, 'publications', $localized, '/research/publications', $data['hero'] ?? []);
+    }
+
+    public function facultyPublications(string $facultySlug, string $locale): ResearchPageDTO
+    {
+        $page = $this->publications($locale);
+        $data = $page->data;
+        $canonicalFacultySlug = $this->canonicalFacultySlug($facultySlug);
+        $items = $this->publicPublicationItems($locale);
+        $data['items'] = array_values(array_filter(
+            $items,
+            fn (array $item): bool => $this->canonicalFacultySlug((string) ($item['facultySlug'] ?? '')) === $canonicalFacultySlug,
+        ));
+        $data['totalItems'] = count($data['items']);
+        $data['resultCount'] = count($data['items']);
+        unset($data['pagination'], $data['activeFilters']);
+
+        return new ResearchPageDTO(
+            locale: $page->locale,
+            direction: $page->direction,
+            type: 'faculty-publications',
+            data: $data,
+            seoTitle: $page->seoTitle,
+            seoDescription: $page->seoDescription,
+            seoImage: $page->seoImage,
+            path: '/facilities/'.$canonicalFacultySlug.'/research',
+        );
     }
 
     public function publication(string $locale, string $slug): ?ResearchDetailPageDTO
@@ -88,8 +134,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
         $index = $this->indexBySlug($items, $slug);
         $previous = $items[($index - 1 + count($items)) % count($items)] ?? null;
         $next = $items[($index + 1) % count($items)] ?? null;
-        $sameFaculty = array_values(array_filter($items, static fn (array $publication): bool =>
-            ($publication['slug'] ?? null) !== $slug && ($publication['facultyEn'] ?? null) === ($item['facultyEn'] ?? null)
+        $sameFaculty = array_values(array_filter($items, static fn (array $publication): bool => ($publication['slug'] ?? null) !== $slug && ($publication['facultyEn'] ?? null) === ($item['facultyEn'] ?? null)
         ));
         $fallback = array_values(array_filter($items, static fn (array $publication): bool => ($publication['slug'] ?? null) !== $slug));
         $related = array_slice($this->uniqueBySlug([...$sameFaculty, ...$fallback]), 0, 3);
@@ -106,7 +151,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
 
     public function getEditablePayload(string $targetKey): array
     {
-        if (! in_array($targetKey, ['research.index', 'research.publications', 'research.experts', 'research.conferences', 'research.library', 'research.office', 'research.policies'], true)) {
+        if (! in_array($targetKey, ['research.index', 'research.publications', 'research.centers', 'research.projects', 'research.themes', 'research.experts', 'research.conferences', 'research.library', 'research.office', 'research.policies'], true)) {
             throw new \InvalidArgumentException('Unsupported research target.');
         }
 
@@ -126,6 +171,9 @@ final class ResearchPageService implements ResearchPageServiceInterface
                 'ar' => match ($targetKey) {
                     'research.index' => $this->editableLandingContent('ar'),
                     'research.publications' => $this->editablePublicationsContent('ar'),
+                    'research.centers' => $this->editableCentersContent('ar'),
+                    'research.projects' => $this->editableProjectsContent('ar'),
+                    'research.themes' => $this->editableThemesContent('ar'),
                     'research.experts' => $this->editableExpertsContent('ar'),
                     'research.conferences' => $this->editableTargetContent('conferences', 'ar'),
                     'research.library' => $this->editableTargetContent('library', 'ar'),
@@ -135,6 +183,9 @@ final class ResearchPageService implements ResearchPageServiceInterface
                 'en' => match ($targetKey) {
                     'research.index' => $this->editableLandingContent('en'),
                     'research.publications' => $this->editablePublicationsContent('en'),
+                    'research.centers' => $this->editableCentersContent('en'),
+                    'research.projects' => $this->editableProjectsContent('en'),
+                    'research.themes' => $this->editableThemesContent('en'),
                     'research.experts' => $this->editableExpertsContent('en'),
                     'research.conferences' => $this->editableTargetContent('conferences', 'en'),
                     'research.library' => $this->editableTargetContent('library', 'en'),
@@ -147,6 +198,8 @@ final class ResearchPageService implements ResearchPageServiceInterface
 
     public function buildPreviewLanding(string $locale, array $content): ResearchPageDTO
     {
+        $content = $this->sanitizeLandingContent($content);
+
         return $this->pageDto($locale, 'landing', $content, '/research', $content['hero'] ?? []);
     }
 
@@ -166,10 +219,18 @@ final class ResearchPageService implements ResearchPageServiceInterface
     {
         [$type, $path] = match ($targetKey) {
             'research.conferences' => ['conferences', '/research/conferences'],
+            'research.centers' => ['centers', '/research/centers'],
+            'research.themes' => ['themes', '/research/themes'],
             'research.library' => ['library', '/research/library'],
             'research.office' => ['office', '/research/office'],
             'research.policies' => ['policies', '/research/policies'],
             default => throw new \InvalidArgumentException('Unsupported research preview target.'),
+        };
+
+        $content = match ($targetKey) {
+            'research.conferences' => $this->normalizedConferencesContent($content),
+            'research.policies' => $this->normalizedPoliciesContent($content),
+            default => $content,
         };
 
         return $this->pageDto($locale, $type, $content, $path, $content['hero'] ?? []);
@@ -177,42 +238,103 @@ final class ResearchPageService implements ResearchPageServiceInterface
 
     public function centers(string $locale): ResearchPageDTO
     {
-        $data = $this->content()['centers'] ?? [];
+        $data = $this->publishedLocalizedPayload('research.centers', $locale);
 
-        return $this->pageDto($locale, 'centers', $this->localized($data, $locale), '/research/centers', $data['hero'] ?? []);
+        if (! is_array($data)) {
+            $source = $this->content()['centers'] ?? [];
+            $data = $this->localized($source, $locale);
+        }
+
+        $data = is_array($data) ? $this->normalizedCentersContent($data) : [];
+
+        return $this->pageDto($locale, 'centers', $data, '/research/centers', is_array($data['hero'] ?? null) ? $data['hero'] : []);
     }
 
     public function center(string $locale, string $slug): ?ResearchDetailPageDTO
     {
-        $centers = $this->content()['centers']['items'] ?? [];
-        $item = $this->firstBySlug($centers, $slug);
+        return $this->centerFromContent($locale, $this->centers($locale)->data, $slug);
+    }
+
+    public function buildPreviewCenter(string $locale, array $content, string $slug): ?ResearchDetailPageDTO
+    {
+        return $this->centerFromContent($locale, $this->normalizedCentersContent($content), $slug);
+    }
+
+    /** @param array<string, mixed> $content */
+    private function centerFromContent(string $locale, array $content, string $slug): ?ResearchDetailPageDTO
+    {
+        $item = $this->firstBySlug($this->arrayList($content['items'] ?? []), $slug);
 
         if ($item === null) {
             return null;
         }
 
         $facultySlug = $this->facultySlugFromCenter($item);
-        $publications = array_values(array_filter($this->content()['publications']['items'] ?? [], static fn (array $publication): bool => ($publication['facultySlug'] ?? '') === $facultySlug));
-        $projects = array_values(array_filter($this->content()['projects']['items'] ?? [], static fn (array $project): bool => ($project['facultySlug'] ?? '') === $facultySlug));
+        $publicationSlugs = $this->scalarList($item['publicationSlugs'] ?? []);
+        $projectSlugs = $this->scalarList($item['projectSlugs'] ?? []);
+        $researcherSlugs = $this->scalarList($item['researcherSlugs'] ?? []);
+        $publications = array_values(array_filter(
+            $this->publicPublicationItems($locale),
+            fn (array $publication): bool => $publicationSlugs !== []
+                ? in_array((string) ($publication['slug'] ?? ''), $publicationSlugs, true)
+                : $this->canonicalFacultySlug((string) ($publication['facultySlug'] ?? '')) === $facultySlug,
+        ));
+        $projects = array_values(array_filter(
+            $this->publicProjectItems($locale),
+            fn (array $project): bool => $projectSlugs !== []
+                ? in_array((string) ($project['slug'] ?? ''), $projectSlugs, true)
+                : $this->canonicalFacultySlug((string) ($project['facultySlug'] ?? '')) === $facultySlug,
+        ));
+        $researchers = array_values(array_filter(
+            $this->publicResearcherItems($locale),
+            fn (array $researcher): bool => $researcherSlugs !== []
+                ? in_array((string) ($researcher['slug'] ?? ''), $researcherSlugs, true)
+                : $this->canonicalFacultySlug((string) ($researcher['facultySlug'] ?? $researcher['facultyId'] ?? '')) === $facultySlug,
+        ));
 
         return $this->detailDto($locale, 'center', $slug, $item, [
             'item' => $item,
             'publications' => array_slice($publications, 0, 4),
             'projects' => array_slice($projects, 0, 3),
-            'faculty' => $this->content()['researchers']['items'] ?? [],
+            'faculty' => $researchers,
         ], '/research/centers/'.$slug, $item['image'] ?? '/images/uni-main-place.JPG');
     }
 
-    public function projects(string $locale): ResearchPageDTO
+    public function projects(string $locale, array $filters = []): ResearchPageDTO
     {
-        $data = $this->content()['projects'] ?? [];
+        $localized = $this->publishedLocalizedPayload('research.projects', $locale);
 
-        return $this->pageDto($locale, 'projects', $this->localized($data, $locale), '/research/projects', $data['hero'] ?? []);
+        if (! is_array($localized)) {
+            $localized = $this->localized($this->content()['projects'] ?? [], $locale);
+        }
+
+        $localized = is_array($localized) ? $this->normalizedProjectsContent($localized) : [];
+        $localized = $this->withFilteredProjects($localized, $filters);
+
+        return $this->pageDto($locale, 'projects', $localized, '/research/projects', is_array($localized['hero'] ?? null) ? $localized['hero'] : []);
     }
 
     public function project(string $locale, string $slug): ?ResearchDetailPageDTO
     {
-        $item = $this->firstBySlug($this->content()['projects']['items'] ?? [], $slug);
+        return $this->projectFromContent($locale, ['items' => $this->publicProjectItems($locale)], $slug);
+    }
+
+    public function buildPreviewProjects(string $locale, array $content, array $filters = []): ResearchPageDTO
+    {
+        $content = $this->withFilteredProjects($this->normalizedProjectsContent($content), $filters);
+
+        return $this->pageDto($locale, 'projects', $content, '/research/projects', $content['hero'] ?? []);
+    }
+
+    public function buildPreviewProject(string $locale, array $content, string $slug): ?ResearchDetailPageDTO
+    {
+        return $this->projectFromContent($locale, $this->normalizedProjectsContent($content), $slug);
+    }
+
+    /** @param array<string, mixed> $content */
+    private function projectFromContent(string $locale, array $content, string $slug): ?ResearchDetailPageDTO
+    {
+        $item = $this->firstBySlug($this->arrayList($content['items'] ?? []), $slug);
 
         if ($item === null) {
             return null;
@@ -223,21 +345,46 @@ final class ResearchPageService implements ResearchPageServiceInterface
 
     public function themes(string $locale): ResearchPageDTO
     {
-        $data = $this->content()['themes'] ?? [];
+        $data = $this->publishedLocalizedPayload('research.themes', $locale);
 
-        return $this->pageDto($locale, 'themes', $this->localized($data, $locale), '/research/themes', $data['hero'] ?? []);
+        if (! is_array($data)) {
+            $data = $this->localized($this->content()['themes'] ?? [], $locale);
+        }
+
+        $data = is_array($data) ? $this->normalizedThemesContent($data) : [];
+
+        return $this->pageDto($locale, 'themes', $data, '/research/themes', is_array($data['hero'] ?? null) ? $data['hero'] : []);
     }
 
     public function theme(string $locale, string $slug): ?ResearchDetailPageDTO
     {
-        $item = $this->firstBySlug($this->content()['themes']['items'] ?? [], $slug);
+        return $this->themeFromContent($locale, $this->themes($locale)->data, $slug);
+    }
+
+    public function buildPreviewTheme(string $locale, array $content, string $slug): ?ResearchDetailPageDTO
+    {
+        return $this->themeFromContent($locale, $this->normalizedThemesContent($content), $slug);
+    }
+
+    /** @param array<string, mixed> $content */
+    private function themeFromContent(string $locale, array $content, string $slug): ?ResearchDetailPageDTO
+    {
+        $item = $this->firstBySlug($this->arrayList($content['items'] ?? []), $slug);
 
         if ($item === null) {
             return null;
         }
 
-        $publications = array_values(array_filter($this->content()['publications']['items'] ?? [], static fn (array $publication): bool => in_array($slug, $publication['themes'] ?? [], true)));
-        $projects = array_values(array_filter($this->content()['projects']['items'] ?? [], static fn (array $project): bool => ($project['themeSlug'] ?? '') === $slug));
+        $publications = array_values(array_filter(
+            $this->publicPublicationItems($locale),
+            fn (array $publication): bool => in_array($slug, $this->scalarList($publication['themes'] ?? []), true),
+        ));
+        $projects = array_values(array_filter(
+            $this->publicProjectItems($locale),
+            static fn (array $project): bool => ($project['themeSlug'] ?? '') === $slug,
+        ));
+        $item['publicationCount'] = count($publications);
+        $item['projectCount'] = count($projects);
 
         return $this->detailDto($locale, 'theme', $slug, $item, [
             'item' => $item,
@@ -246,19 +393,21 @@ final class ResearchPageService implements ResearchPageServiceInterface
         ], '/research/themes/'.$slug, '/images/uni-main-place.JPG');
     }
 
-    public function researchers(string $locale): ResearchPageDTO
+    public function researchers(string $locale, array $filters = []): ResearchPageDTO
     {
         $cmsContent = $this->publishedLocalizedPayload('research.experts', $locale);
 
         if (is_array($cmsContent)) {
             $cmsContent = $this->normalizedCmsExpertsContent($cmsContent);
 
-            return $this->pageDto($locale, 'researchers', $cmsContent, '/research/researchers', $cmsContent['hero'] ?? []);
+            return $this->pageDto($locale, 'researchers', $this->withFilteredResearchers($cmsContent, $filters), '/research/researchers', $cmsContent['hero'] ?? []);
         }
 
         $data = $this->content()['researchers'] ?? [];
 
-        return $this->pageDto($locale, 'researchers', $this->localized($data, $locale), '/research/researchers', $data['hero'] ?? []);
+        $localized = $this->localized($data, $locale);
+
+        return $this->pageDto($locale, 'researchers', is_array($localized) ? $this->withFilteredResearchers($localized, $filters) : [], '/research/researchers', $data['hero'] ?? []);
     }
 
     public function researcher(string $locale, string $slug): ?ResearchDetailPageDTO
@@ -285,20 +434,22 @@ final class ResearchPageService implements ResearchPageServiceInterface
         ], '/research/researchers/'.$slug, $item['image'] ?? '/images/uni-main-place.JPG');
     }
 
-    public function expertFinder(string $locale): ResearchPageDTO
+    public function expertFinder(string $locale, array $filters = []): ResearchPageDTO
     {
         $cmsContent = $this->publishedLocalizedPayload('research.experts', $locale);
 
         if (is_array($cmsContent)) {
             $cmsContent = $this->normalizedCmsExpertsContent($cmsContent);
 
-            return $this->pageDto($locale, 'expert-finder', $cmsContent, '/research/expert-finder', $cmsContent['hero'] ?? []);
+            return $this->pageDto($locale, 'expert-finder', $this->withFilteredResearchers($cmsContent, $filters, false), '/research/expert-finder', $cmsContent['hero'] ?? []);
         }
 
         $data = $this->content()['expertFinder'] ?? [];
         $data['items'] = $data['researchers'] ?? [];
 
-        return $this->pageDto($locale, 'expert-finder', $this->localized($data, $locale), '/research/expert-finder', $data['hero'] ?? []);
+        $localized = $this->localized($data, $locale);
+
+        return $this->pageDto($locale, 'expert-finder', is_array($localized) ? $this->withFilteredResearchers($localized, $filters, false) : [], '/research/expert-finder', $data['hero'] ?? []);
     }
 
     public function conferences(string $locale): ResearchPageDTO
@@ -306,12 +457,16 @@ final class ResearchPageService implements ResearchPageServiceInterface
         $cmsContent = $this->publishedLocalizedPayload('research.conferences', $locale);
 
         if (is_array($cmsContent)) {
+            $cmsContent = $this->normalizedConferencesContent($cmsContent);
+
             return $this->pageDto($locale, 'conferences', $cmsContent, '/research/conferences', $cmsContent['hero'] ?? []);
         }
 
         $data = $this->content()['conferences'] ?? [];
+        $data = $this->localized($data, $locale);
+        $data = is_array($data) ? $this->normalizedConferencesContent($data) : [];
 
-        return $this->pageDto($locale, 'conferences', $this->localized($data, $locale), '/research/conferences', $data['hero'] ?? []);
+        return $this->pageDto($locale, 'conferences', $data, '/research/conferences', $data['hero'] ?? []);
     }
 
     public function conferenceRegistration(string $locale, ?string $eventId): ResearchPageDTO
@@ -377,12 +532,16 @@ final class ResearchPageService implements ResearchPageServiceInterface
         $cmsContent = $this->publishedLocalizedPayload('research.policies', $locale);
 
         if (is_array($cmsContent)) {
+            $cmsContent = $this->normalizedPoliciesContent($cmsContent);
+
             return $this->pageDto($locale, 'policies', $cmsContent, '/research/policies', $cmsContent['hero'] ?? []);
         }
 
         $data = $this->content()['policies'] ?? [];
+        $data = $this->localized($data, $locale);
+        $data = is_array($data) ? $this->normalizedPoliciesContent($data) : [];
 
-        return $this->pageDto($locale, 'policies', $this->localized($data, $locale), '/research/policies', $data['hero'] ?? []);
+        return $this->pageDto($locale, 'policies', $data, '/research/policies', $data['hero'] ?? []);
     }
 
     public function publicationSlugForLegacyId(string $id): ?string
@@ -452,6 +611,30 @@ final class ResearchPageService implements ResearchPageServiceInterface
     private function editablePublicationsContent(string $locale): array
     {
         return $this->localized($this->publicationCmsSource(), $locale);
+    }
+
+    /** @return array<string, mixed> */
+    private function editableCentersContent(string $locale): array
+    {
+        $content = $this->localized($this->content()['centers'] ?? [], $locale);
+
+        return is_array($content) ? $this->normalizedCentersContent($content) : [];
+    }
+
+    /** @return array<string, mixed> */
+    private function editableProjectsContent(string $locale): array
+    {
+        $content = $this->localized($this->content()['projects'] ?? [], $locale);
+
+        return is_array($content) ? $this->normalizedProjectsContent($content) : [];
+    }
+
+    /** @return array<string, mixed> */
+    private function editableThemesContent(string $locale): array
+    {
+        $content = $this->localized($this->content()['themes'] ?? [], $locale);
+
+        return is_array($content) ? $this->normalizedThemesContent($content) : [];
     }
 
     /** @return array<string, mixed> */
@@ -556,7 +739,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
             return null;
         }
 
-        $items = $this->arrayList($content['items'] ?? []);
+        $items = array_map(fn (array $item): array => $this->sanitizePublication($item), $this->arrayList($content['items'] ?? []));
         $item = $this->firstBySlug($items, $slug);
 
         if ($item === null) {
@@ -566,8 +749,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
         $index = $this->indexBySlug($items, $slug);
         $previous = $items[($index - 1 + count($items)) % count($items)] ?? null;
         $next = $items[($index + 1) % count($items)] ?? null;
-        $sameFaculty = array_values(array_filter($items, static fn (array $publication): bool =>
-            ($publication['slug'] ?? null) !== $slug && ($publication['facultySlug'] ?? null) === ($item['facultySlug'] ?? null)
+        $sameFaculty = array_values(array_filter($items, static fn (array $publication): bool => ($publication['slug'] ?? null) !== $slug && ($publication['facultySlug'] ?? null) === ($item['facultySlug'] ?? null)
         ));
         $fallback = array_values(array_filter($items, static fn (array $publication): bool => ($publication['slug'] ?? null) !== $slug));
         $related = array_slice($this->uniqueBySlug([...$sameFaculty, ...$fallback]), 0, 3);
@@ -627,9 +809,10 @@ final class ResearchPageService implements ResearchPageServiceInterface
     {
         return [
             'q' => $this->filterValue($filters['q'] ?? null),
-            'faculty' => $this->filterValue($filters['faculty'] ?? null),
+            'faculty' => $this->canonicalFacultySlug($this->filterValue($filters['faculty'] ?? null)),
             'type' => $this->filterValue($filters['type'] ?? null),
             'year' => $this->filterValue($filters['year'] ?? null),
+            'page' => $this->filterPage($filters['page'] ?? null),
         ];
     }
 
@@ -652,15 +835,8 @@ final class ResearchPageService implements ResearchPageServiceInterface
         $content['totalItems'] = count($items);
         $content['activeFilters'] = $activeFilters;
 
-        if ($activeFilters === ['q' => '', 'faculty' => '', 'type' => '', 'year' => '']) {
-            $content['items'] = $items;
-            $content['resultCount'] = count($items);
-
-            return $content;
-        }
-
-        $content['items'] = array_values(array_filter($items, fn (array $item): bool => $this->publicationMatchesFilters($item, $activeFilters)));
-        $content['resultCount'] = count($content['items']);
+        $filtered = array_values(array_filter($items, fn (array $item): bool => $this->publicationMatchesFilters($item, $activeFilters)));
+        $content = $this->withPagination($content, $filtered, $activeFilters, self::PUBLICATIONS_PER_PAGE);
 
         return $content;
     }
@@ -668,7 +844,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
     /** @param array<string, mixed> $item @param array<string, string> $filters */
     private function publicationMatchesFilters(array $item, array $filters): bool
     {
-        if ($filters['faculty'] !== '' && $filters['faculty'] !== (string) ($item['facultySlug'] ?? '')) {
+        if ($filters['faculty'] !== '' && $filters['faculty'] !== $this->canonicalFacultySlug((string) ($item['facultySlug'] ?? ''))) {
             return false;
         }
 
@@ -698,6 +874,127 @@ final class ResearchPageService implements ResearchPageServiceInterface
         ], static fn (mixed $value): bool => is_scalar($value) && trim((string) $value) !== '')));
 
         return str_contains($haystack, strtolower($filters['q']));
+    }
+
+    /** @param array<string, mixed> $content @param array<string, mixed> $filters @return array<string, mixed> */
+    private function withFilteredProjects(array $content, array $filters): array
+    {
+        $activeFilters = [
+            'q' => $this->filterValue($filters['q'] ?? null),
+            'status' => $this->filterValue($filters['status'] ?? null),
+            'faculty' => $this->canonicalFacultySlug($this->filterValue($filters['faculty'] ?? null)),
+            'theme' => $this->filterValue($filters['theme'] ?? null),
+            'page' => $this->filterPage($filters['page'] ?? null),
+        ];
+        $items = $this->arrayList($content['items'] ?? []);
+        $filtered = array_values(array_filter($items, function (array $item) use ($activeFilters): bool {
+            if ($activeFilters['status'] !== '' && $activeFilters['status'] !== (string) ($item['status'] ?? '')) {
+                return false;
+            }
+
+            if ($activeFilters['faculty'] !== '' && $activeFilters['faculty'] !== $this->canonicalFacultySlug((string) ($item['facultySlug'] ?? ''))) {
+                return false;
+            }
+
+            if ($activeFilters['theme'] !== '' && $activeFilters['theme'] !== (string) ($item['themeSlug'] ?? '')) {
+                return false;
+            }
+
+            if ($activeFilters['q'] === '') {
+                return true;
+            }
+
+            return $this->containsSearchTerm([
+                $item['title'] ?? null,
+                $item['summary'] ?? null,
+                $item['faculty'] ?? null,
+                $item['theme'] ?? null,
+            ], $activeFilters['q']);
+        }));
+
+        return $this->withPagination($content, $filtered, $activeFilters, self::PROJECTS_PER_PAGE);
+    }
+
+    /** @param array<string, mixed> $content @param array<string, mixed> $filters @return array<string, mixed> */
+    private function withFilteredResearchers(array $content, array $filters, bool $withExpertise = true): array
+    {
+        $activeFilters = [
+            'q' => $this->filterValue($filters['q'] ?? null),
+            'faculty' => $this->canonicalFacultySlug($this->filterValue($filters['faculty'] ?? null)),
+            'expertise' => $withExpertise ? $this->filterValue($filters['expertise'] ?? null) : '',
+            'page' => $this->filterPage($filters['page'] ?? null),
+        ];
+        $items = $this->arrayList($content['items'] ?? $content['researchers'] ?? []);
+        $filtered = array_values(array_filter($items, function (array $item) use ($activeFilters): bool {
+            $facultySlug = (string) ($item['facultySlug'] ?? $item['facultyId'] ?? '');
+            if ($activeFilters['faculty'] !== '' && $activeFilters['faculty'] !== $this->canonicalFacultySlug($facultySlug)) {
+                return false;
+            }
+
+            $expertiseSlugs = $this->scalarList($item['expertiseSlugs'] ?? []);
+            if ($activeFilters['expertise'] !== '' && ! in_array($activeFilters['expertise'], $expertiseSlugs, true)) {
+                return false;
+            }
+
+            if ($activeFilters['q'] === '') {
+                return true;
+            }
+
+            return $this->containsSearchTerm([
+                $item['name'] ?? null,
+                $item['faculty'] ?? null,
+                $item['department'] ?? null,
+                ...$this->scalarList($item['expertise'] ?? []),
+            ], $activeFilters['q']);
+        }));
+
+        $content['items'] = $items;
+
+        return $this->withPagination($content, $filtered, $activeFilters, self::RESEARCHERS_PER_PAGE);
+    }
+
+    /** @param array<int, mixed> $values */
+    private function containsSearchTerm(array $values, string $term): bool
+    {
+        $haystack = mb_strtolower(implode(' ', array_map(
+            static fn (mixed $value): string => is_scalar($value) ? (string) $value : '',
+            $values,
+        )));
+
+        return str_contains($haystack, mb_strtolower($term));
+    }
+
+    /**
+     * @param  array<string, mixed>  $content
+     * @param  array<int, array<string, mixed>>  $items
+     * @param  array<string, mixed>  $activeFilters
+     * @return array<string, mixed>
+     */
+    private function withPagination(array $content, array $items, array $activeFilters, int $perPage): array
+    {
+        $total = count($items);
+        $totalPages = max(1, (int) ceil($total / $perPage));
+        $currentPage = min((int) $activeFilters['page'], $totalPages);
+        $offset = ($currentPage - 1) * $perPage;
+        $activeFilters['page'] = $currentPage;
+        $content['items'] = array_slice($items, $offset, $perPage);
+        $content['resultCount'] = $total;
+        $content['activeFilters'] = $activeFilters;
+        $content['pagination'] = [
+            'current_page' => $currentPage,
+            'per_page' => $perPage,
+            'total_items' => $total,
+            'total_pages' => $totalPages,
+            'from' => $total === 0 ? 0 : $offset + 1,
+            'to' => min($total, $offset + $perPage),
+        ];
+
+        return $content;
+    }
+
+    private function filterPage(mixed $value): int
+    {
+        return is_scalar($value) ? max(1, min(500, (int) $value)) : 1;
     }
 
     /** @return list<string> */
@@ -783,7 +1080,19 @@ final class ResearchPageService implements ResearchPageServiceInterface
     {
         $publications = ResearchPublication::query()
             ->enabled()
-            ->with('translations')
+            ->whereNotNull('published_at')
+            ->whereDate('published_at', '<=', today())
+            ->where(function ($query): void {
+                $query->whereNull('faculty_member_id')
+                    ->orWhereHas('facultyMember', function ($memberQuery): void {
+                        $memberQuery
+                            ->where('is_enabled', true)
+                            ->where('publication_status', PublicationStatus::Published->value)
+                            ->whereNotNull('published_at')
+                            ->where('published_at', '<=', now());
+                    });
+            })
+            ->with(['translations', 'facultyMember.faculty.translations', 'fileMedia', 'files.mediaAsset'])
             ->orderByDesc('published_at')
             ->orderBy('sort_order')
             ->orderByDesc('id')
@@ -833,6 +1142,10 @@ final class ResearchPageService implements ResearchPageServiceInterface
         $externalUrl = is_string($publication->external_url) && filter_var($publication->external_url, FILTER_VALIDATE_URL) !== false
             ? $publication->external_url
             : null;
+        $faculty = $publication->facultyMember?->faculty;
+        $facultyTranslation = $faculty?->translations->firstWhere('locale', $locale)
+            ?? $faculty?->translations->firstWhere('locale', 'en')
+            ?? $faculty?->translations->firstWhere('locale', 'ar');
 
         return [
             'id' => $sourceId !== null ? 'legacy-'.$sourceId : 'research-publication-'.$publication->getKey(),
@@ -846,7 +1159,8 @@ final class ResearchPageService implements ResearchPageServiceInterface
             'typeSlug' => 'published-research',
             'year' => $year,
             'publisher' => $publisher,
-            'faculty' => '',
+            'faculty' => (string) ($facultyTranslation?->name ?? ''),
+            'facultySlug' => $faculty !== null ? $this->canonicalFacultySlug((string) ($faculty->public_slug ?: $faculty->slug)) : '',
             'author' => $metadata['author'],
             'doi' => null,
             'keywords' => $metadata['keywords'],
@@ -855,7 +1169,303 @@ final class ResearchPageService implements ResearchPageServiceInterface
             'scopusUrl' => null,
             'image' => '/images/uni-main-place.JPG',
             'isOpenAccess' => $publication->file_media_id !== null,
+            'downloads' => $this->publicationDownloads($publication, $locale),
         ];
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function publicPublicationItems(string $locale): array
+    {
+        $content = $this->publishedLocalizedPayload('research.publications', $locale);
+
+        if (! is_array($content)) {
+            $localized = $this->localized($this->content()['publications'] ?? [], $locale);
+            $content = is_array($localized) ? $localized : [];
+        }
+
+        $content = $this->withDatabasePublications($content, $locale);
+
+        return array_map(
+            fn (array $item): array => $this->sanitizePublication($item),
+            $this->arrayList($content['items'] ?? []),
+        );
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function publicProjectItems(string $locale): array
+    {
+        $content = $this->publishedLocalizedPayload('research.projects', $locale);
+
+        if (! is_array($content)) {
+            $localized = $this->localized($this->content()['projects'] ?? [], $locale);
+            $content = is_array($localized) ? $localized : [];
+        }
+
+        return $this->normalizedProjectsContent($content)['items'];
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function publicResearcherItems(string $locale): array
+    {
+        $content = $this->publishedLocalizedPayload('research.experts', $locale);
+
+        if (is_array($content)) {
+            $content = $this->normalizedCmsExpertsContent($content);
+
+            return $this->arrayList($content['researchers'] ?? $content['items'] ?? []);
+        }
+
+        $localized = $this->localized($this->content()['researchers'] ?? [], $locale);
+
+        return is_array($localized) ? $this->arrayList($localized['items'] ?? []) : [];
+    }
+
+    /** @param array<string, mixed> $content @return array<string, mixed> */
+    private function normalizedCentersContent(array $content): array
+    {
+        $content['hero'] = is_array($content['hero'] ?? null) ? $content['hero'] : [];
+        $content['intro'] = is_array($content['intro'] ?? null) ? $content['intro'] : [];
+        $content['hero']['summary'] = $content['hero']['summary'] ?? $content['intro']['summary'] ?? '';
+        $content['hero']['breadcrumbs'] = $this->arrayList($content['hero']['breadcrumbs'] ?? []);
+        $content['intro']['highlights'] = $this->arrayList($content['intro']['highlights'] ?? []);
+        $content['laboratories'] = is_array($content['laboratories'] ?? null) ? $content['laboratories'] : [];
+        $content['laboratories']['items'] = $this->arrayList($content['laboratories']['items'] ?? []);
+        $content['items'] = array_map(function (array $item): array {
+            $item['facultySlug'] = $this->facultySlugFromCenter($item);
+            $item['publicationSlugs'] = $this->scalarList($item['publicationSlugs'] ?? []);
+            $item['projectSlugs'] = $this->scalarList($item['projectSlugs'] ?? []);
+            $item['researcherSlugs'] = $this->scalarList($item['researcherSlugs'] ?? []);
+
+            foreach (['labs', 'projects', 'publications', 'researchers'] as $field) {
+                $item[$field] = is_numeric($item[$field] ?? null) ? max(0, (int) $item[$field]) : 0;
+            }
+
+            return $item;
+        }, $this->arrayList($content['items'] ?? []));
+
+        return $content;
+    }
+
+    /** @param array<string, mixed> $content @return array<string, mixed> */
+    private function normalizedProjectsContent(array $content): array
+    {
+        $content['hero'] = is_array($content['hero'] ?? null) ? $content['hero'] : [];
+        $content['hero']['breadcrumbs'] = $this->arrayList($content['hero']['breadcrumbs'] ?? []);
+        $content['filters'] = is_array($content['filters'] ?? null) ? $content['filters'] : [];
+
+        foreach (['statuses', 'faculties', 'themes'] as $optionGroup) {
+            $content['filters'][$optionGroup] = array_map(function (array $option) use ($optionGroup): array {
+                if ($optionGroup === 'faculties') {
+                    $option['value'] = $this->canonicalFacultySlug(trim((string) ($option['value'] ?? '')));
+                }
+
+                return $option;
+            }, $this->arrayList($content['filters'][$optionGroup] ?? []));
+        }
+
+        $content['cardLabels'] = is_array($content['cardLabels'] ?? null) ? $content['cardLabels'] : [];
+        $content['items'] = array_map(function (array $item): array {
+            $item['id'] = strtolower(trim((string) ($item['id'] ?? '')));
+            $item['slug'] = strtolower(trim((string) ($item['slug'] ?? '')));
+            $item['facultySlug'] = $this->canonicalFacultySlug(strtolower(trim((string) ($item['facultySlug'] ?? ''))));
+            $item['themeSlug'] = strtolower(trim((string) ($item['themeSlug'] ?? '')));
+            $item['status'] = strtolower(trim((string) ($item['status'] ?? '')));
+
+            return $item;
+        }, $this->arrayList($content['items'] ?? []));
+
+        return $content;
+    }
+
+    /** @param array<string, mixed> $content @return array<string, mixed> */
+    private function normalizedThemesContent(array $content): array
+    {
+        $content['hero'] = is_array($content['hero'] ?? null) ? $content['hero'] : [];
+        $content['hero']['breadcrumbs'] = $this->arrayList($content['hero']['breadcrumbs'] ?? []);
+        $content['items'] = array_map(static function (array $item): array {
+            $item['id'] = strtolower(trim((string) ($item['id'] ?? '')));
+            $item['slug'] = strtolower(trim((string) ($item['slug'] ?? '')));
+            $item['publicationCount'] = is_numeric($item['publicationCount'] ?? null) ? max(0, (int) $item['publicationCount']) : 0;
+            $item['projectCount'] = is_numeric($item['projectCount'] ?? null) ? max(0, (int) $item['projectCount']) : 0;
+
+            return $item;
+        }, $this->arrayList($content['items'] ?? []));
+
+        return $content;
+    }
+
+    /** @return array<int, array{label: string, url: string, type: string}> */
+    private function publicationDownloads(ResearchPublication $publication, string $locale): array
+    {
+        $downloads = [];
+        $media = $publication->fileMedia;
+
+        if ($media !== null) {
+            $url = MediaUrlResolver::resolve($media->path, $media->disk);
+
+            if ($url !== null) {
+                $downloads[] = [
+                    'label' => $locale === 'ar' ? 'ملف المنشور' : 'Publication file',
+                    'url' => $url,
+                    'type' => strtoupper((string) ($media->extension ?: 'FILE')),
+                ];
+            }
+        }
+
+        foreach ($publication->files as $file) {
+            $fileMedia = $file->mediaAsset;
+
+            if ($fileMedia === null) {
+                continue;
+            }
+
+            $url = MediaUrlResolver::resolve($fileMedia->path, $fileMedia->disk);
+
+            if ($url === null || collect($downloads)->contains('url', $url)) {
+                continue;
+            }
+
+            $downloads[] = [
+                'label' => (string) ($file->label ?: ($locale === 'ar' ? 'ملف إضافي' : 'Additional file')),
+                'url' => $url,
+                'type' => strtoupper((string) ($fileMedia->extension ?: 'FILE')),
+            ];
+        }
+
+        return $downloads;
+    }
+
+    /** @param array<string, mixed> $item @return array<string, mixed> */
+    private function sanitizePublication(array $item): array
+    {
+        $doi = trim((string) ($item['doi'] ?? ''));
+
+        if (! $this->isPublishableDoi($doi)) {
+            $item['doi'] = null;
+        }
+
+        $rate = trim((string) ($item['rate'] ?? ''));
+        if ($rate !== '' && str_contains(mb_strtolower($rate), 'verify')) {
+            $item['rate'] = null;
+        }
+
+        foreach (['scholarUrl', 'scopusUrl'] as $field) {
+            $url = $item[$field] ?? null;
+
+            if (! is_string($url) || filter_var($url, FILTER_VALIDATE_URL) === false || parse_url($url, PHP_URL_SCHEME) !== 'https') {
+                $item[$field] = null;
+            }
+        }
+
+        $downloads = array_values(array_filter(
+            $this->arrayList($item['downloads'] ?? []),
+            fn (array $download): bool => $this->isSafePublicResourceUrl($download['url'] ?? null),
+        ));
+        $item['downloads'] = $downloads;
+
+        if ($doi === '' || ! $this->isPublishableDoi($doi)) {
+            $item['isOpenAccess'] = $downloads !== [];
+        }
+
+        return $item;
+    }
+
+    /** @param array<string, mixed> $content @return array<string, mixed> */
+    private function sanitizeLandingContent(array $content): array
+    {
+        $featured = is_array($content['featuredPublication'] ?? null) ? $content['featuredPublication'] : [];
+        $doi = trim((string) ($featured['doi'] ?? ''));
+
+        if (! $this->isPublishableDoi($doi)) {
+            $featured['doi'] = null;
+        }
+
+        $content['featuredPublication'] = $featured;
+
+        return $content;
+    }
+
+    /** @param array<string, mixed> $content @return array<string, mixed> */
+    private function normalizedConferencesContent(array $content): array
+    {
+        $content['upcoming'] = array_map(function (array $event): array {
+            if (! $this->isSafePublicResourceUrl($event['registrationUrl'] ?? null)) {
+                $id = trim((string) ($event['id'] ?? ''));
+                $event['registrationUrl'] = $id === '' ? null : '/research/conferences/register?event='.rawurlencode($id);
+            }
+
+            return $event;
+        }, $this->arrayList($content['upcoming'] ?? []));
+
+        $content['past'] = array_map(function (array $event): array {
+            if (! $this->isSafePublicResourceUrl($event['proceedingsUrl'] ?? null)) {
+                $event['proceedingsUrl'] = null;
+            }
+
+            return $event;
+        }, $this->arrayList($content['past'] ?? []));
+
+        return $content;
+    }
+
+    /** @param array<string, mixed> $content @return array<string, mixed> */
+    private function normalizedPoliciesContent(array $content): array
+    {
+        $content['sections'] = array_map(function (array $section): array {
+            $section['documents'] = array_map(function (array $document): array {
+                if (! $this->isSafePublicResourceUrl($document['url'] ?? null)) {
+                    $document['url'] = null;
+                }
+
+                return $document;
+            }, $this->arrayList($section['documents'] ?? []));
+
+            return $section;
+        }, $this->arrayList($content['sections'] ?? []));
+
+        return $content;
+    }
+
+    private function isPublishableDoi(string $doi): bool
+    {
+        return $doi !== ''
+            && ! str_starts_with($doi, '10.1234/')
+            && preg_match('~^10\.\d{4,9}/\S+$~', $doi) === 1;
+    }
+
+    private function isSafePublicResourceUrl(mixed $url): bool
+    {
+        if (! is_string($url) || $url === '' || $url === '#') {
+            return false;
+        }
+
+        if (str_starts_with($url, '/')) {
+            return ! str_starts_with($url, '//');
+        }
+
+        if (filter_var($url, FILTER_VALIDATE_URL) === false) {
+            return false;
+        }
+
+        if (parse_url($url, PHP_URL_SCHEME) === 'https') {
+            return true;
+        }
+
+        $appUrl = (string) config('app.url');
+
+        return parse_url($url, PHP_URL_SCHEME) === parse_url($appUrl, PHP_URL_SCHEME)
+            && parse_url($url, PHP_URL_HOST) === parse_url($appUrl, PHP_URL_HOST)
+            && parse_url($url, PHP_URL_PORT) === parse_url($appUrl, PHP_URL_PORT);
+    }
+
+    private function canonicalFacultySlug(string $slug): string
+    {
+        return match ($slug) {
+            'ai', 'ai-engineering' => 'artificial-intelligence',
+            'construction' => 'building-construction-engineering',
+            'business' => 'business-administration',
+            default => $slug,
+        };
     }
 
     private function plainText(?string $value): string
@@ -937,6 +1547,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
 
             if (! $capturing && in_array($normalized, $startLabels, true)) {
                 $capturing = true;
+
                 continue;
             }
 
@@ -1115,6 +1726,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
     private function detailDto(string $locale, string $type, string $slug, array $item, array $data, string $path, string $image): ResearchDetailPageDTO
     {
         $localizedItem = $this->localized($item, $locale);
+        $localizedItem = $type === 'publication' && is_array($localizedItem) ? $this->sanitizePublication($localizedItem) : $localizedItem;
         $title = (string) ($localizedItem['title'] ?? $localizedItem['name'] ?? ($locale === 'ar' ? 'البحث' : 'Research'));
         $description = (string) ($localizedItem['summary'] ?? $localizedItem['mission'] ?? $localizedItem['description'] ?? $title);
 
@@ -1151,6 +1763,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
         foreach ($value as $key => $item) {
             if (! is_string($key)) {
                 $localized[$key] = $this->localized($item, $locale);
+
                 continue;
             }
 
@@ -1591,16 +2204,23 @@ final class ResearchPageService implements ResearchPageServiceInterface
     /** @param array<string, mixed> $center */
     private function facultySlugFromCenter(array $center): string
     {
-        $faculty = strtolower((string) ($center['facultyEn'] ?? ''));
+        $explicitSlug = $this->canonicalFacultySlug(trim((string) ($center['facultySlug'] ?? '')));
+
+        if ($explicitSlug !== '') {
+            return $explicitSlug;
+        }
+
+        $faculty = strtolower((string) ($center['facultyEn'] ?? $center['faculty'] ?? ''));
 
         return match (true) {
-            str_contains($faculty, 'artificial') => 'ai',
-            str_contains($faculty, 'medicine') => 'medicine',
+            ($center['slug'] ?? null) === 'ai-digital-innovation', str_contains($faculty, 'artificial') => 'artificial-intelligence',
+            ($center['slug'] ?? null) === 'clinical-research-simulation', str_contains($faculty, 'medicine') => 'medicine',
             str_contains($faculty, 'dentistry') => 'dentistry',
             str_contains($faculty, 'pharmacy') => 'pharmacy',
             str_contains($faculty, 'petroleum') => 'petroleum',
-            str_contains($faculty, 'construction') => 'construction',
-            str_contains($faculty, 'business') => 'business',
+            ($center['slug'] ?? null) === 'energy-sustainable-systems' => 'petroleum',
+            str_contains($faculty, 'construction') => 'building-construction-engineering',
+            str_contains($faculty, 'business') => 'business-administration',
             default => '',
         };
     }

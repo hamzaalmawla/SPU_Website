@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\DTOs\Legacy;
 
 /**
- * @param array<int, string> $warnings
- * @param array<int, string> $sampleMissingPaths
- * @param array<int, string> $checksumFailedPaths
- * @param array<int, string> $unexpectedErrorPaths
- * @param array<int, string> $brokenSymlinkPaths
+ * @param  array<int, string>  $warnings
+ * @param  array<int, string>  $sampleMissingPaths
+ * @param  array<int, string>  $checksumFailedPaths
+ * @param  array<int, string>  $unexpectedErrorPaths
+ * @param  array<int, string>  $brokenSymlinkPaths
  */
 final readonly class LegacyFileInventoryScanResultDTO
 {

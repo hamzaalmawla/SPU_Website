@@ -4,13 +4,18 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use Database\Seeders\DatabaseSeeder;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Research\ResearchPageServiceInterface;
+use App\Filament\Pages\ManageResearch;
+use App\Models\Cms\CmsDraft;
+use App\Models\Media\MediaAsset;
 use App\Models\Research\ResearchPublication;
 use App\Models\Research\ResearchPublicationTranslation;
 use App\Models\Shared\MigrationLog;
 use App\Models\User\User;
+use Database\Seeders\DatabaseSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 final class ResearchPublicPagesTest extends TestCase
@@ -62,6 +67,100 @@ final class ResearchPublicPagesTest extends TestCase
         ] as $uri) {
             $this->get($uri)->assertOk();
         }
+    }
+
+    public function test_publication_filters_pagination_empty_state_and_locale_links_are_functional(): void
+    {
+        $this->get('/en/research/publications?faculty=artificial-intelligence')
+            ->assertOk()
+            ->assertSee('Natural Language Processing for Arabic Medical Record Summarization')
+            ->assertDontSee('Machine Learning Applications in Pharmaceutical Quality Control')
+            ->assertSee('/ar/research/publications?faculty=artificial-intelligence', false);
+
+        $this->get('/en/research/publications?q=dental')
+            ->assertOk()
+            ->assertSee('AI-Driven Predictive Models for Early Dental Caries Detection')
+            ->assertDontSee('Deep Learning Framework for Reservoir Permeability Prediction');
+
+        $this->get('/en/research/publications?page=2')
+            ->assertOk()
+            ->assertSee('Business Analytics for Healthcare Supply Chain Resilience')
+            ->assertDontSee('Machine Learning Applications in Pharmaceutical Quality Control')
+            ->assertSee('aria-current="page"', false)
+            ->assertSee('/ar/research/publications?page=2', false)
+            ->assertSee('<link rel="canonical" href="'.config('app.url').'/en/research/publications?page=2">', false);
+
+        $this->get('/en/research/publications?q=no-such-publication')
+            ->assertOk()
+            ->assertSee('No results found')
+            ->assertSee('Clear filters');
+    }
+
+    public function test_repository_owns_its_filter_pagination_and_locale_state(): void
+    {
+        $this->get('/en/research/repository?faculty=artificial-intelligence')
+            ->assertOk()
+            ->assertSee('Natural Language Processing for Arabic Medical Record Summarization')
+            ->assertDontSee('Machine Learning Applications in Pharmaceutical Quality Control')
+            ->assertSee('action="/en/research/repository"', false)
+            ->assertSee('/ar/research/repository?faculty=artificial-intelligence', false);
+
+        $this->get('/en/research/repository?page=2')
+            ->assertOk()
+            ->assertSee('/en/research/repository?page=2', false)
+            ->assertSee('<link rel="canonical" href="'.config('app.url').'/en/research/repository?page=2">', false);
+    }
+
+    public function test_project_filters_search_and_empty_state_are_functional(): void
+    {
+        $this->get('/en/research/projects?status=ongoing')
+            ->assertOk()
+            ->assertSee('AI Dental Caries Detection System')
+            ->assertSee('Arabic Clinical NLP System')
+            ->assertDontSee('Earthquake-Resistant Concrete for Syrian Reconstruction');
+
+        $response = $this->get('/en/research/projects?faculty=artificial-intelligence')
+            ->assertOk()
+            ->assertSee('Arabic Clinical NLP System');
+        $this->assertStringNotContainsString('AI Dental Caries Detection System', $this->mainContent($response->getContent()));
+
+        $this->get('/en/research/projects?theme=pharmaceutical-sciences&q=quality')
+            ->assertOk()
+            ->assertSee('Pharmaceutical Quality Monitoring')
+            ->assertSee('/ar/research/projects?q=quality&amp;theme=pharmaceutical-sciences', false);
+
+        $this->get('/en/research/projects?q=no-such-project')
+            ->assertOk()
+            ->assertSee('No results found')
+            ->assertSee('Clear filters');
+    }
+
+    public function test_researcher_and_expert_finder_controls_are_functional(): void
+    {
+        $response = $this->get('/en/research/researchers?q=Ayman')
+            ->assertOk()
+            ->assertSee('Dr. Ayman Ali');
+        $this->assertStringNotContainsString('Dr. Mouhib Alnoukari', $this->mainContent($response->getContent()));
+
+        $response = $this->get('/en/research/researchers?faculty=medicine')
+            ->assertOk()
+            ->assertSee('Dr. Ayman Ali');
+        $this->assertStringNotContainsString('Dr. Mahmoud Hadid', $this->mainContent($response->getContent()));
+
+        $this->get('/en/research/researchers?expertise=clinical-medicine')
+            ->assertOk()
+            ->assertSee('Dr. Ayman Ali')
+            ->assertSee('/ar/research/researchers?expertise=clinical-medicine', false);
+
+        $response = $this->get('/en/research/expert-finder?faculty=petroleum')
+            ->assertOk()
+            ->assertSee('Dr. Mahmoud Hadid');
+        $this->assertStringNotContainsString('Dr. Ayman Ali', $this->mainContent($response->getContent()));
+
+        $this->get('/en/research/expert-finder?q=no-such-expert')
+            ->assertOk()
+            ->assertSee('No results found')
+            ->assertSee('Clear filters');
     }
 
     public function test_discovered_research_detail_routes_return_ok(): void
@@ -129,7 +228,11 @@ final class ResearchPublicPagesTest extends TestCase
             ->assertSee('Related Publications')
             ->assertSee('Previous')
             ->assertSee('Next')
-            ->assertSee('/en/research/themes/dental-sciences', false);
+            ->assertSee('/en/research/themes/dental-sciences', false)
+            ->assertSee('property="og:type" content="article"', false)
+            ->assertSee('name="citation_title"', false)
+            ->assertSee('"@type":"ScholarlyArticle"', false)
+            ->assertDontSee('10.1234/');
     }
 
     public function test_missing_publication_detail_slug_returns_404(): void
@@ -173,6 +276,49 @@ final class ResearchPublicPagesTest extends TestCase
             ->assertDontSee('Published in');
     }
 
+    public function test_imported_publication_detail_exposes_verified_media_download(): void
+    {
+        $publication = $this->createImportedResearchPublication();
+        $media = MediaAsset::query()->create([
+            'disk' => 'public',
+            'directory' => 'research',
+            'filename' => 'legacy-filter-target.pdf',
+            'original_name' => 'legacy-filter-target.pdf',
+            'mime_type' => 'application/pdf',
+            'extension' => 'pdf',
+            'size_bytes' => 1024,
+            'path' => 'research/legacy-filter-target.pdf',
+        ]);
+        $publication->update(['file_media_id' => $media->getKey()]);
+
+        $this->get('/en/research/publications/legacy-filter-target-9001')
+            ->assertOk()
+            ->assertSee('Publication Files')
+            ->assertSee('Publication file')
+            ->assertSee('/storage/research/legacy-filter-target.pdf', false)
+            ->assertSee('PDF');
+    }
+
+    public function test_future_and_undated_database_publications_are_not_public(): void
+    {
+        foreach ([null, now()->addYear()] as $index => $publishedAt) {
+            $publication = ResearchPublication::query()->create([
+                'published_at' => $publishedAt,
+                'is_enabled' => true,
+            ]);
+            ResearchPublicationTranslation::query()->create([
+                'research_publication_id' => $publication->getKey(),
+                'locale' => 'en',
+                'title' => 'Hidden Database Publication '.($index + 1),
+            ]);
+        }
+
+        $this->get('/en/research/publications')
+            ->assertOk()
+            ->assertDontSee('Hidden Database Publication 1')
+            ->assertDontSee('Hidden Database Publication 2');
+    }
+
     public function test_legacy_query_detail_redirects_to_canonical_publication_route(): void
     {
         $this->get('/en/research/detail?id=pub-002')
@@ -204,7 +350,8 @@ final class ResearchPublicPagesTest extends TestCase
             ->assertSee('CMS Controlled Publication')
             ->assertSee('CMS detail lead copy.')
             ->assertSee('CMS Keyword')
-            ->assertSee('10.1234/cms.research.1');
+            ->assertDontSee('10.1234/cms.research.1')
+            ->assertDontSee('name="citation_doi"', false);
     }
 
     public function test_research_experts_use_published_cms_payload_for_finder_and_profile(): void
@@ -221,11 +368,12 @@ final class ResearchPublicPagesTest extends TestCase
         $workflow->saveDraft('research.experts', $payload, (int) $user->getKey());
         $workflow->publish('research.experts', (int) $user->getKey());
 
-        $this->get('/en/research/expert-finder')
+        $response = $this->get('/en/research/expert-finder')
             ->assertOk()
             ->assertSee('CMS Expert Finder')
-            ->assertSee('Dr. CMS Expert')
-            ->assertDontSee('Dr. Ayman Ali');
+            ->assertSee('Dr. CMS Expert');
+        $mainContent = explode('</main>', explode('<main', $response->getContent(), 2)[1] ?? '', 2)[0] ?? '';
+        $this->assertStringNotContainsString('Dr. Ayman Ali', $mainContent);
 
         $this->get('/en/research/researchers/cms-expert')
             ->assertOk()
@@ -235,6 +383,218 @@ final class ResearchPublicPagesTest extends TestCase
             ->assertSee('CMS Expert Office')
             ->assertSee('CMS Research Methods')
             ->assertSee('CMS Profile Publication');
+    }
+
+    public function test_research_centers_support_draft_preview_publish_detail_and_unpublish(): void
+    {
+        $user = User::factory()->create(['role_slug' => 'editor']);
+        $payload = app(ResearchPageServiceInterface::class)->getEditablePayload('research.centers');
+        $payload['translations']['en']['hero']['title'] = 'CMS Research Centers';
+        $payload['translations']['ar']['hero']['title'] = 'مراكز بحث CMS';
+        $payload['translations']['en']['items'][0]['name'] = 'CMS Center for Applied AI';
+        $payload['translations']['en']['items'][0]['mission'] = 'CMS controlled center mission.';
+        $payload['translations']['ar']['items'][0]['name'] = 'مركز CMS للذكاء التطبيقي';
+        $payload['translations']['ar']['items'][0]['mission'] = 'رسالة مركز محكومة من CMS.';
+
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $workflow->saveDraft('research.centers', $payload, (int) $user->getKey());
+
+        $this->get('/en/research/centers')
+            ->assertOk()
+            ->assertDontSee('CMS Research Centers')
+            ->assertDontSee('CMS Center for Applied AI');
+
+        $preview = $workflow->preview('research.centers', 'en', (int) $user->getKey());
+        $this->get($preview->previewUrl)
+            ->assertOk()
+            ->assertSee('CMS Research Centers')
+            ->assertSee('CMS Center for Applied AI')
+            ->assertSee('noindex,nofollow,noarchive');
+        $this->get($preview->previewUrl.'&center=ai-digital-innovation')
+            ->assertOk()
+            ->assertSee('CMS Center for Applied AI')
+            ->assertSee('CMS controlled center mission.');
+
+        $this->assertTrue($workflow->publish('research.centers', (int) $user->getKey()));
+
+        $this->get('/en/research/centers')
+            ->assertOk()
+            ->assertSee('CMS Research Centers')
+            ->assertSee('CMS Center for Applied AI');
+        $this->get('/ar/research/centers/ai-digital-innovation')
+            ->assertOk()
+            ->assertSee('مركز CMS للذكاء التطبيقي')
+            ->assertSee('رسالة مركز محكومة من CMS.');
+
+        $this->assertTrue($workflow->unpublish('research.centers', (int) $user->getKey()));
+        $this->get('/en/research/centers')
+            ->assertOk()
+            ->assertSee('Research Centers &amp; Labs', false)
+            ->assertDontSee('CMS Center for Applied AI');
+    }
+
+    public function test_research_admin_loads_and_serializes_center_catalog_without_publication_fallback(): void
+    {
+        $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail());
+
+        Livewire::test(ManageResearch::class)
+            ->call('loadTarget', 'research.centers')
+            ->assertSet('data.target_key', 'research.centers')
+            ->assertSet('data.en_centers.hero.title', 'Research Centers & Labs')
+            ->assertSet('data.en_centers.items', fn (mixed $items): bool => is_array($items)
+                && collect($items)->contains(fn (mixed $item): bool => is_array($item) && ($item['facultySlug'] ?? null) === 'artificial-intelligence'))
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $draft = CmsDraft::query()->where('target_key', 'research.centers')->latest('id')->firstOrFail();
+        $this->assertSame('Center for AI & Digital Innovation', $draft->payload_json['translations']['en']['items'][0]['name'] ?? null);
+        $this->assertArrayNotHasKey('filters', $draft->payload_json['translations']['en'] ?? []);
+    }
+
+    public function test_research_centers_and_details_are_in_the_sitemap(): void
+    {
+        $user = User::factory()->create(['role_slug' => 'editor']);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $workflow->saveDraft(
+            'research.centers',
+            app(ResearchPageServiceInterface::class)->getEditablePayload('research.centers'),
+            (int) $user->getKey(),
+        );
+        $workflow->publish('research.centers', (int) $user->getKey());
+
+        $this->get('/sitemap.xml')
+            ->assertOk()
+            ->assertSee('/en/research/centers</loc>', false)
+            ->assertSee('/ar/research/centers</loc>', false)
+            ->assertSee('/en/research/centers/ai-digital-innovation', false)
+            ->assertSee('/ar/research/centers/clinical-research-simulation', false)
+            ->assertSee('/en/research/centers/energy-sustainable-systems', false);
+    }
+
+    public function test_project_and_theme_catalogs_support_isolated_preview_publish_relations_and_unpublish(): void
+    {
+        $user = User::factory()->create(['role_slug' => 'editor']);
+        $research = app(ResearchPageServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $projects = $research->getEditablePayload('research.projects');
+        $themes = $research->getEditablePayload('research.themes');
+        $projects['translations']['en']['hero']['title'] = 'CMS Research Projects';
+        $projects['translations']['ar']['hero']['title'] = 'مشاريع بحث CMS';
+        $projects['translations']['en']['items'][0]['title'] = 'CMS Seismic Project';
+        $projects['translations']['ar']['items'][0]['title'] = 'مشروع CMS الزلزالي';
+        $projects['translations']['en']['items'][0]['themeSlug'] = 'ai-ml';
+        $projects['translations']['ar']['items'][0]['themeSlug'] = 'ai-ml';
+        $projects['translations']['en']['items'][0]['theme'] = 'Artificial Intelligence & Machine Learning';
+        $projects['translations']['ar']['items'][0]['theme'] = 'الذكاء الاصطناعي وتعلم الآلة';
+        $themes['translations']['en']['hero']['title'] = 'CMS Research Themes';
+        $themes['translations']['ar']['hero']['title'] = 'مجالات بحث CMS';
+        $themes['translations']['en']['items'][0]['name'] = 'CMS AI Theme';
+        $themes['translations']['ar']['items'][0]['name'] = 'مجال CMS للذكاء الاصطناعي';
+
+        $workflow->saveDraft('research.projects', $projects, (int) $user->getKey());
+        $workflow->saveDraft('research.themes', $themes, (int) $user->getKey());
+
+        $this->get('/en/research/projects')->assertOk()->assertDontSee('CMS Research Projects')->assertDontSee('CMS Seismic Project');
+        $this->get('/en/research/themes')->assertOk()->assertDontSee('CMS Research Themes')->assertDontSee('CMS AI Theme');
+
+        $projectPreview = $workflow->preview('research.projects', 'en', (int) $user->getKey());
+        $this->get($projectPreview->previewUrl)
+            ->assertOk()
+            ->assertSee('CMS Research Projects')
+            ->assertSee('CMS Seismic Project')
+            ->assertSee('&amp;project=earthquake-resistant-concrete-syria', false);
+        $this->get($projectPreview->previewUrl.'&project=earthquake-resistant-concrete-syria')
+            ->assertOk()
+            ->assertSee('CMS Seismic Project');
+
+        $themePreview = $workflow->preview('research.themes', 'en', (int) $user->getKey());
+        $this->get($themePreview->previewUrl)
+            ->assertOk()
+            ->assertSee('CMS Research Themes')
+            ->assertSee('CMS AI Theme')
+            ->assertSee('&amp;theme=ai-ml', false);
+        $this->get($themePreview->previewUrl.'&theme=ai-ml')
+            ->assertOk()
+            ->assertSee('CMS AI Theme');
+
+        $this->assertTrue($workflow->publish('research.projects', (int) $user->getKey()));
+        $this->assertTrue($workflow->publish('research.themes', (int) $user->getKey()));
+
+        $this->get('/en/research/projects?theme=ai-ml&q=seismic')
+            ->assertOk()
+            ->assertSee('CMS Seismic Project')
+            ->assertDontSee('AI-Powered Dental Caries Detection System');
+        $this->get('/ar/research/projects/earthquake-resistant-concrete-syria')->assertOk()->assertSee('مشروع CMS الزلزالي');
+        $this->get('/en/research/themes/ai-ml')->assertOk()->assertSee('CMS AI Theme')->assertSee('CMS Seismic Project');
+        $this->get('/ar/research/themes/ai-ml')->assertOk()->assertSee('مجال CMS للذكاء الاصطناعي');
+
+        $this->assertTrue($workflow->unpublish('research.projects', (int) $user->getKey()));
+        $this->assertTrue($workflow->unpublish('research.themes', (int) $user->getKey()));
+        $this->get('/en/research/projects')->assertOk()->assertSee('Research Projects')->assertDontSee('CMS Seismic Project');
+        $this->get('/en/research/themes')->assertOk()->assertSee('Research Themes')->assertDontSee('CMS AI Theme');
+    }
+
+    public function test_research_admin_loads_and_serializes_project_and_theme_catalogs(): void
+    {
+        $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail());
+        $component = Livewire::test(ManageResearch::class)
+            ->call('loadTarget', 'research.projects')
+            ->assertSet('data.target_key', 'research.projects')
+            ->assertSet('data.en_projects.items', fn (mixed $items): bool => is_array($items) && count($items) === 5)
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $projectDraft = CmsDraft::query()->where('target_key', 'research.projects')->latest('id')->firstOrFail();
+        $this->assertSame('building-construction-engineering', $projectDraft->payload_json['translations']['en']['items'][0]['facultySlug'] ?? null);
+        $this->assertSame('artificial-intelligence', $projectDraft->payload_json['translations']['en']['items'][2]['facultySlug'] ?? null);
+
+        $component->call('loadTarget', 'research.themes')
+            ->assertSet('data.target_key', 'research.themes')
+            ->assertSet('data.en_themes.items', fn (mixed $items): bool => is_array($items) && count($items) === 12)
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $themeDraft = CmsDraft::query()->where('target_key', 'research.themes')->latest('id')->firstOrFail();
+        $this->assertSame('theme-001', $themeDraft->payload_json['translations']['en']['items'][0]['id'] ?? null);
+        $this->assertArrayNotHasKey('filters', $themeDraft->payload_json['translations']['en'] ?? []);
+    }
+
+    public function test_project_and_theme_unknown_slugs_return_not_found(): void
+    {
+        $this->get('/en/research/projects/not-a-real-project')->assertNotFound();
+        $this->get('/en/research/themes/not-a-real-theme')->assertNotFound();
+    }
+
+    public function test_project_and_theme_sitemap_entries_are_published_only(): void
+    {
+        $user = User::factory()->create(['role_slug' => 'editor']);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $research = app(ResearchPageServiceInterface::class);
+
+        foreach (['research.projects', 'research.themes'] as $targetKey) {
+            $workflow->saveDraft($targetKey, $research->getEditablePayload($targetKey), (int) $user->getKey());
+        }
+
+        $this->get('/sitemap.xml')
+            ->assertOk()
+            ->assertDontSee('/en/research/projects/earthquake-resistant-concrete-syria', false)
+            ->assertDontSee('/en/research/themes/ai-ml', false);
+
+        $workflow->publish('research.projects', (int) $user->getKey());
+        $workflow->publish('research.themes', (int) $user->getKey());
+        $this->get('/sitemap.xml')
+            ->assertOk()
+            ->assertSee('/en/research/projects</loc>', false)
+            ->assertSee('/ar/research/projects/earthquake-resistant-concrete-syria', false)
+            ->assertSee('/en/research/themes</loc>', false)
+            ->assertSee('/ar/research/themes/structural-engineering', false);
+
+        $workflow->unpublish('research.projects', (int) $user->getKey());
+        $workflow->unpublish('research.themes', (int) $user->getKey());
+        $this->get('/sitemap.xml')
+            ->assertOk()
+            ->assertDontSee('/en/research/projects/earthquake-resistant-concrete-syria', false)
+            ->assertDontSee('/en/research/themes/ai-ml', false);
     }
 
     public function test_research_landing_uses_published_cms_payload(): void
@@ -256,6 +616,7 @@ final class ResearchPublicPagesTest extends TestCase
             ->assertSee('CMS Research Landing')
             ->assertSee('CMS Research Gateway')
             ->assertSee('CMS FEATURED PUBLICATION')
+            ->assertDontSee('10.1234/cms.research.1')
             ->assertDontSee('Research at SPU');
     }
 
@@ -279,6 +640,8 @@ final class ResearchPublicPagesTest extends TestCase
             ->assertSee('CMS Upcoming Research Event')
             ->assertSee('CMS Past Conference')
             ->assertSee('CMS Proceedings')
+            ->assertSee('/en/research/conferences/register?event=cms-conf-001', false)
+            ->assertDontSee('href="#"', false)
             ->assertDontSee('International Conference on AI in Healthcare 2026');
     }
 
@@ -350,6 +713,7 @@ final class ResearchPublicPagesTest extends TestCase
             ->assertSee('CMS Policy Section')
             ->assertSee('CMS Policy Document')
             ->assertSee('cms.policies@spu.edu.sy')
+            ->assertDontSee('href="#"', false)
             ->assertDontSee('Ethics Review Policy');
     }
 
@@ -403,7 +767,7 @@ final class ResearchPublicPagesTest extends TestCase
         ];
     }
 
-    private function createImportedResearchPublication(): void
+    private function createImportedResearchPublication(): ResearchPublication
     {
         $publication = ResearchPublication::query()->create([
             'faculty_member_id' => null,
@@ -435,6 +799,8 @@ final class ResearchPublicPagesTest extends TestCase
             'message' => 'Test imported research publication.',
             'metadata' => ['phase' => 'phase6'],
         ]);
+
+        return $publication;
     }
 
     /** @return array<string, mixed> */
@@ -702,5 +1068,10 @@ final class ResearchPublicPagesTest extends TestCase
                 'location' => 'CMS Policy Office',
             ],
         ];
+    }
+
+    private function mainContent(string $html): string
+    {
+        return explode('</main>', explode('<main', $html, 2)[1] ?? '', 2)[0] ?? '';
     }
 }

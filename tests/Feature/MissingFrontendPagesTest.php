@@ -52,18 +52,20 @@ final class MissingFrontendPagesTest extends TestCase
             ->assertSee('/en/e-services/suggestions-complaints');
 
         $this->post('/en/e-services/suggestions-complaints', [
-            'name' => 'Jane Student',
+            'fullName' => 'Jane Student',
             'email' => 'jane@example.com',
-            'request_type' => 'complaint',
+            'phone' => '+963 11 000 0000',
+            'requestType' => 'complaint',
             'subject' => 'Library access',
             'message' => 'Please review the library access process.',
+            'consent' => '1',
         ])->assertRedirect('/en/e-services/suggestions-complaints');
 
-        $this->assertDatabaseHas('contact_messages', [
+        $this->assertDatabaseHas('dynamic_form_submissions', [
+            'form_id' => 'suggestions-complaints',
             'locale' => 'en',
-            'name' => 'Jane Student',
-            'email' => 'jane@example.com',
-            'subject' => '[Complaint] Library access',
+            'applicant_name' => 'Jane Student',
+            'applicant_email' => 'jane@example.com',
             'status' => 'new',
         ]);
     }

@@ -6,6 +6,8 @@ namespace Tests\Feature;
 
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Page\FacultyPageServiceInterface;
+use App\Contracts\Research\ResearchPageServiceInterface;
+use App\DTOs\Research\ResearchPageDTO;
 use App\Filament\Pages\ManageArtificialIntelligenceFaculty;
 use App\Filament\Pages\ManageBuildingConstructionEngineeringFaculty;
 use App\Filament\Pages\ManageBusinessAdministrationFaculty;
@@ -19,13 +21,20 @@ use App\Models\Career\AlumniTranslation;
 use App\Models\Career\HonorStudent;
 use App\Models\Career\HonorStudentTranslation;
 use App\Models\Cms\CmsDraft;
+use App\Models\Cms\CmsTargetContent;
 use App\Models\Faculty\Faculty;
+use App\Models\Faculty\FacultyLab;
+use App\Models\Faculty\FacultyLabTranslation;
 use App\Models\Faculty\FacultyPage;
+use App\Models\Media\MediaAsset;
+use App\Models\Person\Person;
 use App\Models\Shared\MigrationLog;
 use App\Models\User\User;
 use Database\Seeders\DatabaseSeeder;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -172,7 +181,8 @@ final class FacilitiesWorkflowTest extends TestCase
                 'Clinical Learning',
                 'data-featured="true"',
                 'Applied Education',
-            ], false);
+            ], false)
+            ->assertSee('bg-[#1e2652] text-white', false);
     }
 
     public function test_medicine_faculty_workflow_draft_does_not_leak_until_published(): void
@@ -380,6 +390,142 @@ final class FacilitiesWorkflowTest extends TestCase
             ->assertSee('Published Medicine Departments CMS')
             ->assertSee('Curated Medicine Department')
             ->assertSee('Curated medicine department summary.');
+    }
+
+    public function test_department_study_plan_mapping_survives_preview_and_publication(): void
+    {
+        $facilities = app(FacultyPageServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $payload = $facilities->getEditablePayload('facilities.medicine.departments');
+
+        foreach (['ar', 'en'] as $locale) {
+            $payload['translations'][$locale]['items'] = [[
+                'slug' => 'mapped-medicine',
+                'code' => '01',
+                'title' => $locale === 'ar' ? 'برنامج الطب البشري' : 'Medicine Program',
+                'summary' => $locale === 'ar' ? 'قسم مرتبط بالخطة.' : 'A department linked to its plan.',
+                'degrees' => $locale === 'ar' ? 'بكالوريوس' : 'Bachelor',
+                'tags' => [],
+                'studyPlanDepartmentId' => 'medicine-plan',
+            ]];
+        }
+
+        $workflow->saveDraft('facilities.medicine.departments', $payload, (int) $author->id);
+        $preview = $workflow->preview('facilities.medicine.departments', 'en', (int) $author->id);
+
+        $this->get($preview->previewUrl)
+            ->assertOk()
+            ->assertSee('href="/en/facilities/medicine/study-plan?department=medicine-plan"', false);
+
+        $this->assertTrue($workflow->publish('facilities.medicine.departments', (int) $author->id));
+
+        $this->get('/en/facilities/medicine/departments')
+            ->assertOk()
+            ->assertSee('href="/en/facilities/medicine/study-plan?department=medicine-plan"', false);
+    }
+
+    public function test_departments_reject_draft_only_study_plan_ids(): void
+    {
+        $facilities = app(FacultyPageServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $studyPlanPayload = $facilities->getEditablePayload('facilities.medicine.study_plan');
+
+        foreach (['ar', 'en'] as $locale) {
+            $studyPlanPayload['translations'][$locale]['payload']['plan']['departments'][0]['id'] = 'future-only-plan';
+        }
+
+        $workflow->saveDraft('facilities.medicine.study_plan', $studyPlanPayload, (int) $author->id);
+        $departmentsPayload = $facilities->getEditablePayload('facilities.medicine.departments');
+
+        foreach (['ar', 'en'] as $locale) {
+            $departmentsPayload['translations'][$locale]['items'][0]['studyPlanDepartmentId'] = 'future-only-plan';
+        }
+
+        $readiness = $workflow->readiness('facilities.medicine.departments', $departmentsPayload);
+
+        $this->assertFalse($readiness->isReady);
+        $this->assertArrayHasKey('ar', $readiness->errors);
+        $this->assertArrayHasKey('en', $readiness->errors);
+    }
+
+    public function test_study_plan_publish_cannot_break_published_department_mappings(): void
+    {
+        $facilities = app(FacultyPageServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $departmentsPayload = $facilities->getEditablePayload('facilities.medicine.departments');
+
+        foreach (['ar', 'en'] as $locale) {
+            $departmentsPayload['translations'][$locale]['items'] = [[
+                'slug' => 'medicine-program',
+                'title' => $locale === 'ar' ? 'برنامج الطب البشري' : 'Medicine Program',
+                'summary' => $locale === 'ar' ? 'برنامج منشور.' : 'Published program.',
+                'studyPlanDepartmentId' => 'medicine-plan',
+            ]];
+        }
+
+        $workflow->saveDraft('facilities.medicine.departments', $departmentsPayload, (int) $author->id);
+        $this->assertTrue($workflow->publish('facilities.medicine.departments', (int) $author->id));
+
+        $studyPlanPayload = $facilities->getEditablePayload('facilities.medicine.study_plan');
+        foreach (['ar', 'en'] as $locale) {
+            $studyPlanPayload['translations'][$locale]['payload']['plan']['departments'][0]['id'] = 'replacement-plan';
+        }
+
+        $readiness = $workflow->readiness('facilities.medicine.study_plan', $studyPlanPayload);
+        $this->assertFalse($readiness->isReady);
+        $this->assertArrayHasKey('ar', $readiness->errors);
+        $this->assertArrayHasKey('en', $readiness->errors);
+    }
+
+    public function test_study_plan_ids_must_exist_in_both_locales(): void
+    {
+        $facilities = app(FacultyPageServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $payload = $facilities->getEditablePayload('facilities.medicine.study_plan');
+        $payload['translations']['en']['payload']['plan']['departments'][0]['id'] = 'english-only-plan';
+
+        $readiness = $workflow->readiness('facilities.medicine.study_plan', $payload);
+
+        $this->assertFalse($readiness->isReady);
+        $this->assertArrayHasKey('translations', $readiness->errors);
+    }
+
+    public function test_ambiguous_department_names_do_not_generate_guessed_study_plan_links(): void
+    {
+        $this->get('/en/facilities/artificial-intelligence/departments')
+            ->assertOk()
+            ->assertSee('href="/en/facilities/artificial-intelligence/study-plan"', false)
+            ->assertDontSee('/study-plan?department=', false);
+    }
+
+    public function test_study_plan_language_switch_preserves_only_valid_department_selection(): void
+    {
+        $this->get('/en/facilities/artificial-intelligence/study-plan?department=ai')
+            ->assertOk()
+            ->assertSee('/ar/facilities/artificial-intelligence/study-plan?department=ai', false)
+            ->assertSee('aria-pressed="true"', false);
+
+        $this->get('/en/facilities/artificial-intelligence/study-plan?department=unknown')
+            ->assertNotFound();
+    }
+
+    public function test_faculty_editor_is_restricted_to_assigned_faculty_targets(): void
+    {
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $facultyEditor = User::factory()->create([
+            'role_slug' => 'faculty_editor',
+            'faculty_scope_slug' => 'medicine',
+        ]);
+
+        $this->actingAs($facultyEditor, 'web');
+        $this->assertTrue(ManageMedicineFaculty::canAccess());
+        $this->assertFalse(ManagePharmacyFaculty::canAccess());
+
+        $this->expectException(AuthorizationException::class);
+        $workflow->latestEditableDraftPayload('facilities.pharmacy.departments', (int) $facultyEditor->id);
     }
 
     public function test_manage_medicine_faculty_uses_page_specific_subpage_templates(): void
@@ -611,21 +757,315 @@ final class FacilitiesWorkflowTest extends TestCase
         $alumniPage = $facilities->getSubpage('medicine', 'alumni', 'en');
         $honorPage = $facilities->getSubpage('medicine', 'valedictorians', 'en');
         $secondAlumniPage = $facilities->getSubpage('medicine', 'alumni', 'en', ['page' => 2]);
+        $secondHonorPage = $facilities->getSubpage('medicine', 'valedictorians', 'en', ['page' => 2]);
         $searchedAlumniPage = $facilities->getSubpage('medicine', 'alumni', 'en', ['q' => 'Imported Alumni 30']);
         $firstSemesterHonorPage = $facilities->getSubpage('medicine', 'valedictorians', 'en', ['semester' => 'first']);
         $searchedHonorPage = $facilities->getSubpage('medicine', 'valedictorians', 'en', ['q' => 'Imported Honor Student 30']);
 
         $this->assertNotNull($alumniPage);
         $this->assertNotNull($honorPage);
-        $this->assertSame(24, count($alumniPage->items));
-        $this->assertSame(24, count($honorPage->items));
-        $this->assertGreaterThan(24, $alumniPage->pagination['total_items']);
-        $this->assertGreaterThan(24, $honorPage->pagination['total_items']);
+        $this->assertSame(12, count($alumniPage->items));
+        $this->assertSame(6, count($honorPage->items));
+        $this->assertGreaterThan(12, $alumniPage->pagination['total_items']);
+        $this->assertGreaterThan(6, $honorPage->pagination['total_items']);
         $this->assertSame(2, $secondAlumniPage?->pagination['current_page']);
+        $this->assertSame(2, $secondHonorPage?->pagination['current_page']);
         $this->assertSame(['Imported Alumni 30'], collect($searchedAlumniPage?->items ?? [])->pluck('title')->all());
         $this->assertSame(['Imported Honor Student 30'], collect($searchedHonorPage?->items ?? [])->pluck('title')->all());
         $this->assertSame(15, $firstSemesterHonorPage?->pagination['total_items']);
         $this->assertContains('First Semester', collect($firstSemesterHonorPage?->items ?? [])->pluck('semester')->all());
+    }
+
+    public function test_all_department_routes_are_localized_canonical_and_keep_alias_deep_links(): void
+    {
+        $facilities = app(FacultyPageServiceInterface::class);
+        $facultyAliases = [
+            'artificial-intelligence' => 'ai-engineering',
+            'business-administration' => 'business',
+            'building-construction-engineering' => 'Construction',
+            'dentistry' => 'dentistry',
+            'medicine' => 'medicine',
+            'petroleum' => 'petroleum',
+            'pharmacy' => 'pharmacy',
+        ];
+
+        foreach ($facultyAliases as $facultySlug => $legacySlug) {
+            foreach (['ar', 'en'] as $locale) {
+                $path = '/'.$locale.'/facilities/'.$facultySlug.'/departments';
+                $page = $facilities->getSubpage($facultySlug, 'departments', $locale);
+                $this->assertNotNull($page);
+                $firstDepartment = $page->items[0] ?? null;
+                $this->assertIsArray($firstDepartment);
+
+                $this->get($path)
+                    ->assertOk()
+                    ->assertSee('dir="'.($locale === 'ar' ? 'rtl' : 'ltr').'"', false)
+                    ->assertSee('id="'.$firstDepartment['slug'].'"', false)
+                    ->assertSee('<link rel="canonical" href="'.config('app.url').$path.'">', false)
+                    ->assertSee('hreflang="'.($locale === 'ar' ? 'en' : 'ar').'"', false)
+                    ->assertDontSee('Mock department data');
+
+                $this->get('/'.$locale.'/facilities/'.$facultySlug.'/departments/index.html?source=reference')
+                    ->assertStatus(301)
+                    ->assertRedirect($path.'?source=reference');
+
+                $this->get('/'.$locale.'/faculties/'.$legacySlug.'/departments?source=legacy')
+                    ->assertStatus(301)
+                    ->assertRedirect($path.'?source=legacy');
+            }
+        }
+    }
+
+    public function test_all_student_directories_use_reference_page_sizes_and_preserve_validated_query_state(): void
+    {
+        $sourceId = 50_000;
+
+        foreach (Faculty::query()->whereIn('public_slug', $this->facultySlugs())->get() as $faculty) {
+            for ($index = 1; $index <= 13; $index++) {
+                $alumni = Alumni::query()->create([
+                    'faculty_id' => (int) $faculty->getKey(),
+                    'graduation_year' => 2026,
+                    'is_enabled' => true,
+                ]);
+
+                foreach (['ar', 'en'] as $locale) {
+                    AlumniTranslation::query()->create([
+                        'alumni_id' => (int) $alumni->getKey(),
+                        'locale' => $locale,
+                        'full_name' => 'Parity '.$faculty->public_slug.' Alumni '.$index,
+                    ]);
+                }
+
+                MigrationLog::query()->create([
+                    'module' => 'alumni',
+                    'batch_name' => 'faculty-directory-parity',
+                    'source_table' => 'jx_graduated_students',
+                    'source_id' => $sourceId++,
+                    'target_table' => 'alumni',
+                    'target_id' => (int) $alumni->getKey(),
+                    'status' => 'success',
+                    'message' => 'test',
+                    'metadata' => ['legacy_section_id' => 1],
+                ]);
+            }
+
+            for ($index = 1; $index <= 7; $index++) {
+                $student = HonorStudent::query()->create([
+                    'faculty_id' => (int) $faculty->getKey(),
+                    'academic_year' => '2026 / 2027',
+                    'gpa' => 95,
+                    'sort_order' => 100 + $index,
+                    'is_enabled' => true,
+                ]);
+
+                foreach (['ar', 'en'] as $locale) {
+                    HonorStudentTranslation::query()->create([
+                        'honor_student_id' => (int) $student->getKey(),
+                        'locale' => $locale,
+                        'full_name' => 'Parity '.$faculty->public_slug.' Honor '.$index,
+                    ]);
+                }
+
+                MigrationLog::query()->create([
+                    'module' => 'honor_students',
+                    'batch_name' => 'faculty-directory-parity',
+                    'source_table' => 'jx_good_students',
+                    'source_id' => $sourceId++,
+                    'target_table' => 'honor_students',
+                    'target_id' => (int) $student->getKey(),
+                    'status' => 'success',
+                    'message' => 'test',
+                    'metadata' => ['legacy_section_id' => 1],
+                ]);
+            }
+        }
+
+        Cache::flush();
+        $facilities = app(FacultyPageServiceInterface::class);
+
+        foreach ($this->facultySlugs() as $facultySlug) {
+            foreach (['ar', 'en'] as $locale) {
+                foreach (['alumni' => 12, 'valedictorians' => 6] as $subpage => $perPage) {
+                    $search = 'Parity '.$facultySlug;
+                    $filters = ['q' => $search, 'year' => '2026', 'semester' => 'first'];
+                    $firstPage = $facilities->getSubpage($facultySlug, $subpage, $locale, [...$filters, 'page' => 1]);
+                    $secondPage = $facilities->getSubpage($facultySlug, $subpage, $locale, [...$filters, 'page' => 2]);
+                    $boundedPage = $facilities->getSubpage($facultySlug, $subpage, $locale, [...$filters, 'page' => 999]);
+
+                    $this->assertSame($perPage, count($firstPage?->items ?? []));
+                    $this->assertSame(1, count($secondPage?->items ?? []));
+                    $this->assertSame(2, $boundedPage?->pagination['current_page']);
+
+                    foreach ([1, 2, 999] as $requestedPage) {
+                        $canonicalPage = $requestedPage === 999 ? 2 : $requestedPage;
+                        $query = http_build_query([...$filters, 'page' => $requestedPage], '', '&', PHP_QUERY_RFC3986);
+                        $canonicalQuery = http_build_query([...$filters, 'page' => $canonicalPage], '', '&', PHP_QUERY_RFC3986);
+                        $path = '/'.$locale.'/facilities/'.$facultySlug.'/'.$subpage;
+                        $otherLocale = $locale === 'ar' ? 'en' : 'ar';
+
+                        $this->get($path.'?'.$query)
+                            ->assertOk()
+                            ->assertSee('<link rel="canonical" href="'.config('app.url').$path.'?'.e($canonicalQuery).'">', false)
+                            ->assertSee('/'.$otherLocale.'/facilities/'.$facultySlug.'/'.$subpage.'?'.e($canonicalQuery), false);
+                    }
+                }
+            }
+        }
+    }
+
+    public function test_student_directory_media_and_quote_render_only_from_safe_managed_content(): void
+    {
+        $media = MediaAsset::query()->create([
+            'disk' => 'public',
+            'filename' => 'student-photo.jpg',
+            'original_name' => 'student-photo.jpg',
+            'mime_type' => 'image/jpeg',
+            'extension' => 'jpg',
+            'path' => 'faculty/student-photo.jpg',
+        ]);
+        $faculty = Faculty::query()->where('public_slug', 'medicine')->firstOrFail();
+        $alumni = Alumni::query()->where('faculty_id', $faculty->getKey())->firstOrFail();
+        $student = HonorStudent::query()->create([
+            'faculty_id' => (int) $faculty->getKey(),
+            'academic_year' => '2026-2027',
+            'gpa' => 95,
+            'photo_media_id' => $media->getKey(),
+            'is_enabled' => true,
+        ]);
+        HonorStudentTranslation::query()->create([
+            'honor_student_id' => (int) $student->getKey(),
+            'locale' => 'en',
+            'full_name' => 'Managed Media Honor Student',
+        ]);
+        HonorStudentTranslation::query()->create([
+            'honor_student_id' => (int) $student->getKey(),
+            'locale' => 'ar',
+            'full_name' => 'طالب شرف بصورة مدارة',
+        ]);
+        $alumni->update(['photo_media_id' => $media->getKey()]);
+        Cache::flush();
+
+        $this->get('/en/facilities/medicine/alumni')
+            ->assertOk()
+            ->assertSee('/storage/faculty/student-photo.jpg', false)
+            ->assertDontSee('/images/unkown.jpeg', false);
+        $this->get('/en/facilities/medicine/valedictorians')
+            ->assertOk()
+            ->assertSee('/storage/faculty/student-photo.jpg', false)
+            ->assertDontSee('/images/unkown.jpeg', false);
+
+        $facilities = app(FacultyPageServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $payload = $facilities->getEditablePayload('facilities.medicine.valedictorians');
+
+        foreach (['ar', 'en'] as $locale) {
+            $payload['translations'][$locale]['payload']['quote'] = 'Managed <script>alert("quote")</script>';
+            $payload['translations'][$locale]['items'] = [[
+                'title' => 'Managed Honor Student',
+                'academicYear' => '2026',
+                'gpa' => '3.95',
+                'image' => 'javascript:alert(1)',
+            ]];
+        }
+
+        $workflow->saveDraft('facilities.medicine.valedictorians', $payload, (int) $author->id);
+        $this->assertTrue($workflow->publish('facilities.medicine.valedictorians', (int) $author->id));
+
+        $this->get('/en/facilities/medicine/valedictorians')
+            ->assertOk()
+            ->assertSee('Managed &lt;script&gt;alert(&quot;quote&quot;)&lt;/script&gt;', false)
+            ->assertDontSee('src="javascript:', false)
+            ->assertDontSee('/images/unkown.jpeg', false);
+    }
+
+    public function test_six_project_routes_have_bounded_server_pagination_and_localized_links(): void
+    {
+        foreach ($this->projectFacultySlugs() as $facultySlug) {
+            foreach (['ar', 'en'] as $locale) {
+                $path = '/'.$locale.'/facilities/'.$facultySlug.'/projects';
+
+                $this->get($path.'?page=1')
+                    ->assertOk()
+                    ->assertSee('id="'.$facultySlug.'-project-1"', false)
+                    ->assertDontSee('id="'.$facultySlug.'-project-7"', false)
+                    ->assertSee('href="'.$path.'?page=2"', false)
+                    ->assertSee('<link rel="canonical" href="'.config('app.url').$path.'?page=1">', false);
+
+                $otherLocale = $locale === 'ar' ? 'en' : 'ar';
+                $this->get($path.'?page=2')
+                    ->assertOk()
+                    ->assertSee('id="'.$facultySlug.'-project-7"', false)
+                    ->assertDontSee('id="'.$facultySlug.'-project-1"', false)
+                    ->assertSee('/'.$otherLocale.'/facilities/'.$facultySlug.'/projects?page=2', false)
+                    ->assertSee('<link rel="canonical" href="'.config('app.url').$path.'?page=2">', false);
+
+                $this->get($path.'?page=999')
+                    ->assertOk()
+                    ->assertSee('id="'.$facultySlug.'-project-7"', false)
+                    ->assertSee('<link rel="canonical" href="'.config('app.url').$path.'?page=2">', false);
+            }
+        }
+    }
+
+    public function test_six_lab_routes_paginate_and_resolve_full_collection_details_with_related_labs(): void
+    {
+        foreach (Faculty::query()->whereIn('public_slug', $this->labFacultySlugs())->get() as $faculty) {
+            for ($index = 1; $index <= 7; $index++) {
+                $lab = FacultyLab::query()->create([
+                    'faculty_id' => (int) $faculty->getKey(),
+                    'slug' => 'parity-'.$faculty->public_slug.'-lab-'.$index,
+                    'image' => '/images/slider-3.webp',
+                    'sort_order' => 100 + $index,
+                    'is_enabled' => true,
+                ]);
+
+                foreach (['ar', 'en'] as $locale) {
+                    FacultyLabTranslation::query()->create([
+                        'faculty_lab_id' => (int) $lab->getKey(),
+                        'locale' => $locale,
+                        'title' => 'Parity '.$faculty->public_slug.' Lab '.$index,
+                        'department' => 'Parity Department',
+                        'instructor' => 'Parity Instructor',
+                        'description' => 'Parity lab description.',
+                    ]);
+                }
+            }
+        }
+
+        Cache::flush();
+
+        foreach ($this->labFacultySlugs() as $facultySlug) {
+            foreach (['ar', 'en'] as $locale) {
+                $path = '/'.$locale.'/facilities/'.$facultySlug.'/labs';
+                $detailSlug = 'parity-'.$facultySlug.'-lab-7';
+
+                $this->get($path.'?page=1')
+                    ->assertOk()
+                    ->assertSee('href="'.$path.'?page=2"', false)
+                    ->assertSee('<link rel="canonical" href="'.config('app.url').$path.'?page=1">', false);
+
+                $this->get($path.'?page=2')
+                    ->assertOk()
+                    ->assertSee('Parity '.$facultySlug.' Lab', false)
+                    ->assertSee('aria-current="page"', false);
+
+                $otherLocale = $locale === 'ar' ? 'en' : 'ar';
+                $this->get($path.'?lab='.$detailSlug.'&page=2')
+                    ->assertOk()
+                    ->assertSee('Parity '.$facultySlug.' Lab 7')
+                    ->assertSee($locale === 'ar' ? 'مخابر ذات صلة' : 'Related Labs')
+                    ->assertSee('href="'.$path.'?lab=', false)
+                    ->assertSee('page=2', false)
+                    ->assertSee('/'.$otherLocale.'/facilities/'.$facultySlug.'/labs?lab='.$detailSlug.'&amp;page=2', false)
+                    ->assertSee('<link rel="canonical" href="'.config('app.url').$path.'?lab='.$detailSlug.'&amp;page=2">', false);
+
+                $this->get($path.'?page=999')
+                    ->assertOk()
+                    ->assertSee('<link rel="canonical" href="'.config('app.url').$path.'?page=', false)
+                    ->assertDontSee('?page=999', false);
+            }
+        }
     }
 
     public function test_medicine_study_plan_preview_renders_cms_labels(): void
@@ -663,9 +1103,14 @@ final class FacilitiesWorkflowTest extends TestCase
             'facilities.'.$facultySlug.'.study_plan',
             'facilities.'.$facultySlug.'.labs',
             'facilities.'.$facultySlug.'.projects',
+            'facilities.'.$facultySlug.'.research',
             'facilities.'.$facultySlug.'.alumni',
             'facilities.'.$facultySlug.'.valedictorians',
         ];
+
+        if ($facultySlug === 'pharmacy') {
+            $expectedTargets[] = 'facilities.pharmacy.training';
+        }
 
         $reflection = new \ReflectionClass($pageClass);
         $method = $reflection->getMethod('targetOptions');
@@ -710,6 +1155,172 @@ final class FacilitiesWorkflowTest extends TestCase
             'pageClass' => ManageBusinessAdministrationFaculty::class,
             'facultySlug' => 'business-administration',
         ];
+    }
+
+    #[DataProvider('facultyResearchPageProvider')]
+    public function test_faculty_research_pages_render_localized_reference_publications(string $facultySlug, string $englishTitle, string $arabicTitle): void
+    {
+        $this->get('/en/facilities/'.$facultySlug.'/research')
+            ->assertOk()
+            ->assertSee('Latest Research')
+            ->assertSee($englishTitle)
+            ->assertSee('/en/research/publications/', false)
+            ->assertSee('<link rel="canonical" href="'.config('app.url').'/en/facilities/'.$facultySlug.'/research">', false)
+            ->assertSee('hreflang="ar"', false);
+
+        $this->get('/ar/facilities/'.$facultySlug.'/research')
+            ->assertOk()
+            ->assertSee('أحدث الأبحاث')
+            ->assertSee($arabicTitle)
+            ->assertSee('/ar/research/publications/', false)
+            ->assertSee('dir="rtl"', false);
+    }
+
+    /** @return iterable<string, array{facultySlug: string, englishTitle: string, arabicTitle: string}> */
+    public static function facultyResearchPageProvider(): iterable
+    {
+        yield 'artificial intelligence' => [
+            'facultySlug' => 'artificial-intelligence',
+            'englishTitle' => 'Natural Language Processing for Arabic Medical Record Summarization',
+            'arabicTitle' => 'معالجة اللغة الطبيعية لتلخيص السجلات الطبية العربية',
+        ];
+        yield 'business administration' => [
+            'facultySlug' => 'business-administration',
+            'englishTitle' => 'Business Analytics for Healthcare Supply Chain Resilience',
+            'arabicTitle' => 'تحليلات الأعمال لمرونة سلسلة التوريد الصحية',
+        ];
+        yield 'building construction engineering' => [
+            'facultySlug' => 'building-construction-engineering',
+            'englishTitle' => 'Structural Performance of Fiber-Reinforced Concrete in Seismic Zones',
+            'arabicTitle' => 'الأداء الإنشائي للخرسانة المسلحة بالألياف في المناطق الزلزالية',
+        ];
+        yield 'dentistry' => [
+            'facultySlug' => 'dentistry',
+            'englishTitle' => 'AI-Driven Predictive Models for Early Dental Caries Detection',
+            'arabicTitle' => 'نماذج تنبؤية مدفوعة بالذكاء الاصطناعي للكشف المبكر عن تسوس الأسنان',
+        ];
+        yield 'medicine' => [
+            'facultySlug' => 'medicine',
+            'englishTitle' => 'Clinical Simulation Training Impact on Medical Student Diagnostic Accuracy',
+            'arabicTitle' => 'تأثير تدريب المحاكاة السريرية على دقة تشخيص طلاب الطب',
+        ];
+        yield 'petroleum' => [
+            'facultySlug' => 'petroleum',
+            'englishTitle' => 'Deep Learning Framework for Reservoir Permeability Prediction',
+            'arabicTitle' => 'إطار التعلم العميق للتنبؤ بنفاذية المكامن',
+        ];
+        yield 'pharmacy' => [
+            'facultySlug' => 'pharmacy',
+            'englishTitle' => 'Machine Learning Applications in Pharmaceutical Quality Control',
+            'arabicTitle' => 'تطبيقات تعلم الآلة في مراقبة جودة الأدوية',
+        ];
+    }
+
+    public function test_faculty_research_workflow_previews_and_publishes_page_copy(): void
+    {
+        $facilities = app(FacultyPageServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $payload = $facilities->getEditablePayload('facilities.medicine.research');
+        $payload['translations']['en']['title'] = 'Medicine Research CMS Preview';
+        $payload['translations']['en']['summary'] = 'CMS-managed medicine research summary.';
+        $payload['translations']['en']['seoTitle'] = 'Medicine Research CMS SEO';
+        $payload['translations']['en']['seoDescription'] = 'Medicine research CMS metadata.';
+        $payload['translations']['en']['seoImage'] = '/images/research-clinical-simulation.webp';
+        $payload['translations']['en']['emptyTitle'] = 'CMS Empty Research Title';
+        $payload['translations']['en']['emptySummary'] = 'CMS empty research summary.';
+
+        $workflow->saveDraft('facilities.medicine.research', $payload, (int) $author->id);
+
+        $this->get('/en/facilities/medicine/research')
+            ->assertOk()
+            ->assertDontSee('Medicine Research CMS Preview');
+
+        $preview = $workflow->preview('facilities.medicine.research', 'en', (int) $author->id);
+        $this->get($preview->previewUrl)
+            ->assertOk()
+            ->assertSee('Medicine Research CMS Preview')
+            ->assertSee('Clinical Simulation Training Impact on Medical Student Diagnostic Accuracy')
+            ->assertSee('Preview mode');
+
+        $this->assertTrue($workflow->publish('facilities.medicine.research', (int) $author->id));
+        $publishedPage = $facilities->getSubpage('medicine', 'research', 'en');
+        $this->assertSame('CMS Empty Research Title', $publishedPage?->page['emptyTitle'] ?? null);
+        $this->assertSame('CMS empty research summary.', $publishedPage?->page['emptySummary'] ?? null);
+        $this->get('/en/facilities/medicine/research')
+            ->assertOk()
+            ->assertSee('Medicine Research CMS Preview')
+            ->assertSee('Medicine Research CMS SEO')
+            ->assertSee('/images/research-clinical-simulation.webp', false);
+    }
+
+    public function test_faculty_research_pagination_is_server_backed(): void
+    {
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $research = app(ResearchPageServiceInterface::class);
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $payload = $research->getEditablePayload('research.publications');
+
+        foreach (['ar', 'en'] as $locale) {
+            foreach ($payload['translations'][$locale]['items'] as $index => $item) {
+                $payload['translations'][$locale]['items'][$index]['facultySlug'] = 'medicine';
+                $payload['translations'][$locale]['items'][$index]['title'] = 'Paginated Medicine Publication '.($index + 1);
+            }
+        }
+
+        $workflow->saveDraft('research.publications', $payload, (int) $author->id);
+        $this->assertTrue($workflow->publish('research.publications', (int) $author->id));
+
+        $this->get('/en/facilities/medicine/research')
+            ->assertOk()
+            ->assertSee('Paginated Medicine Publication 1')
+            ->assertDontSee('Paginated Medicine Publication 7')
+            ->assertSee('href="/en/facilities/medicine/research?page=2"', false);
+
+        $this->get('/en/facilities/medicine/research?page=2')
+            ->assertOk()
+            ->assertSee('Paginated Medicine Publication 7')
+            ->assertDontSee('Paginated Medicine Publication 1')
+            ->assertSee('aria-current="page"', false)
+            ->assertSee('/ar/facilities/medicine/research?page=2', false)
+            ->assertSee('<link rel="canonical" href="'.config('app.url').'/en/facilities/medicine/research?page=2">', false);
+    }
+
+    public function test_disabled_faculty_research_page_returns_not_found(): void
+    {
+        $faculty = Faculty::query()->where('public_slug', 'medicine')->firstOrFail();
+        FacultyPage::query()
+            ->where('faculty_id', $faculty->getKey())
+            ->where('slug', 'research')
+            ->update(['is_enabled' => false]);
+        Cache::flush();
+
+        $this->get('/en/facilities/medicine/research')->assertNotFound();
+    }
+
+    public function test_faculty_research_page_has_one_main_landmark(): void
+    {
+        $content = $this->get('/en/facilities/medicine/research')->assertOk()->getContent();
+
+        $this->assertSame(1, substr_count($content, 'id="main-content"'));
+    }
+
+    public function test_manage_faculty_exposes_research_editor_and_sitemap_lists_all_routes(): void
+    {
+        $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
+
+        Livewire::test(ManageMedicineFaculty::class)
+            ->set('data.target_key', 'facilities.medicine.research')
+            ->call('loadTarget', 'facilities.medicine.research')
+            ->assertSee('Research Page Metadata')
+            ->assertSee('SEO Title');
+
+        $sitemap = $this->get('/sitemap.xml')->assertOk()->getContent();
+
+        foreach (['artificial-intelligence', 'business-administration', 'building-construction-engineering', 'dentistry', 'medicine', 'petroleum', 'pharmacy'] as $facultySlug) {
+            $this->assertStringContainsString('/en/facilities/'.$facultySlug.'/research', $sitemap);
+            $this->assertStringContainsString('/ar/facilities/'.$facultySlug.'/research', $sitemap);
+        }
     }
 
     public function test_artificial_intelligence_faculty_workflow_draft_does_not_leak_until_published(): void
@@ -813,6 +1424,138 @@ final class FacilitiesWorkflowTest extends TestCase
         yield 'dentistry' => ['dentistry', 'dentistry-project-1', 'Digital Impression Analysis System', 'Open3D'];
         yield 'medicine' => ['medicine', 'medicine-project-1', 'Clinical Appointment Flow Optimizer', 'OptaPlanner'];
         yield 'pharmacy' => ['pharmacy', 'pharmacy-project-1', 'Evidence-Based Learning Repository', 'Elasticsearch'];
+    }
+
+    public function test_all_study_plan_and_course_routes_render_in_both_locales_with_valid_selector_state(): void
+    {
+        foreach ($this->facultySlugs() as $facultySlug) {
+            foreach (['ar', 'en'] as $locale) {
+                [$departmentId, $courseId, $type] = $this->firstStudyPlanSelection($facultySlug, $locale);
+                $studyPath = '/'.$locale.'/facilities/'.$facultySlug.'/study-plan';
+                $studyQuery = 'department='.rawurlencode($departmentId);
+                $coursePath = $studyPath.'/course';
+                $courseQuery = http_build_query([
+                    'department' => $departmentId,
+                    'course' => $courseId,
+                    'type' => $type,
+                ], '', '&', PHP_QUERY_RFC3986);
+                $otherLocale = $locale === 'ar' ? 'en' : 'ar';
+
+                $this->get($studyPath.'?'.$studyQuery)
+                    ->assertOk()
+                    ->assertSee('data-study-plan', false)
+                    ->assertSee('role="dialog"', false)
+                    ->assertSee('aria-modal="true"', false)
+                    ->assertSee('aria-labelledby="study-plan-modal-title"', false)
+                    ->assertSee('aria-describedby="study-plan-modal-description"', false)
+                    ->assertSee('data-modal-initial-focus', false)
+                    ->assertSee('aria-haspopup="dialog"', false)
+                    ->assertSee('tabindex="0" role="region"', false)
+                    ->assertSee($locale === 'ar' ? 'aria-label="تكبير المخطط"' : 'aria-label="Zoom in"', false)
+                    ->assertSee($locale === 'ar' ? 'aria-label="تصغير المخطط"' : 'aria-label="Zoom out"', false)
+                    ->assertSee('<link rel="canonical" href="'.config('app.url').$studyPath.'?'.$studyQuery.'">', false)
+                    ->assertSee('/'.$otherLocale.'/facilities/'.$facultySlug.'/study-plan?'.$studyQuery, false);
+
+                $escapedCourseQuery = e($courseQuery);
+                $this->get($coursePath.'?'.$courseQuery)
+                    ->assertOk()
+                    ->assertSee('<link rel="canonical" href="'.config('app.url').$coursePath.'?'.$escapedCourseQuery.'">', false)
+                    ->assertSee('/'.$otherLocale.'/facilities/'.$facultySlug.'/study-plan/course?'.$escapedCourseQuery, false)
+                    ->assertSee('href="'.$coursePath.'?department='.rawurlencode($departmentId).'&amp;course='.rawurlencode($courseId).'"', false)
+                    ->assertDontSee('href="#"', false);
+            }
+        }
+    }
+
+    public function test_study_plan_and_course_selectors_reject_unknown_malformed_and_mismatched_state(): void
+    {
+        [$departmentId, $courseId] = $this->firstStudyPlanSelection('artificial-intelligence', 'en');
+        $page = app(FacultyPageServiceInterface::class)->getSubpage('artificial-intelligence', 'study-plan', 'en');
+        $departments = collect($page?->page['payload']['plan']['departments'] ?? []);
+        $mismatch = null;
+
+        foreach ($departments as $sourceDepartment) {
+            $sourceCourses = collect($sourceDepartment['terms'] ?? [])->flatMap(fn (array $term): array => $term['courses'] ?? []);
+            foreach ($departments as $otherDepartment) {
+                if (($sourceDepartment['id'] ?? null) === ($otherDepartment['id'] ?? null)) {
+                    continue;
+                }
+
+                $otherCourseIds = collect($otherDepartment['terms'] ?? [])->flatMap(fn (array $term): array => $term['courses'] ?? [])->pluck('id');
+                $uniqueCourse = $sourceCourses->first(fn (array $course): bool => ! $otherCourseIds->contains($course['id'] ?? null));
+                if (is_array($uniqueCourse)) {
+                    $mismatch = [(string) ($otherDepartment['id'] ?? ''), (string) ($uniqueCourse['id'] ?? '')];
+                    break 2;
+                }
+            }
+        }
+
+        $this->assertIsArray($mismatch);
+        $coursePath = '/en/facilities/artificial-intelligence/study-plan/course';
+
+        $this->get('/en/facilities/artificial-intelligence/study-plan?department=unknown')->assertNotFound();
+        $this->get('/en/facilities/artificial-intelligence/study-plan?department[]=ai')->assertNotFound();
+        $this->get($coursePath)->assertNotFound();
+        $this->get($coursePath.'?department='.$departmentId.'&course=unknown')->assertNotFound();
+        $this->get($coursePath.'?department='.$mismatch[0].'&course='.$mismatch[1])->assertNotFound();
+        $this->get($coursePath.'?department='.$departmentId.'&course='.$courseId.'&type=unknown')->assertNotFound();
+    }
+
+    public function test_course_materials_and_instructor_links_render_only_when_resolved_safely(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('course-materials/verified.pdf', 'verified course material');
+        $facilities = app(FacultyPageServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $payload = $facilities->getEditablePayload('facilities.artificial-intelligence.study_plan');
+        $departmentId = (string) ($payload['translations']['en']['payload']['plan']['departments'][0]['id'] ?? '');
+        $courseId = (string) ($payload['translations']['en']['payload']['plan']['departments'][0]['terms'][0]['courses'][0]['id'] ?? '');
+
+        foreach (['ar', 'en'] as $locale) {
+            $payload['translations'][$locale]['payload']['plan']['departments'][0]['terms'][0]['courses'][0]['lessons'][0]['pdfUrl'] = '/storage/course-materials/verified.pdf';
+            $payload['translations'][$locale]['payload']['plan']['departments'][0]['terms'][0]['courses'][0]['instructor']['staffSlug'] = 'missing-profile';
+        }
+
+        $workflow->saveDraft('facilities.artificial-intelligence.study_plan', $payload, (int) $author->getKey());
+        $this->assertTrue($workflow->publish('facilities.artificial-intelligence.study_plan', (int) $author->getKey()));
+
+        $published = CmsTargetContent::query()
+            ->where('target_key', 'facilities.artificial-intelligence.study_plan')
+            ->where('status', 'published')
+            ->firstOrFail();
+        $publishedPayload = $published->payload_json;
+        $publishedPayload['translations']['en']['payload']['plan']['departments'][0]['terms'][0]['courses'][0]['lessons'][1]['pdfUrl'] = '/storage/../private/unsafe.pdf';
+        $published->update(['payload_json' => $publishedPayload]);
+        Cache::flush();
+
+        $this->get('/en/facilities/artificial-intelligence/study-plan?department='.$departmentId)
+            ->assertOk()
+            ->assertDontSee('/storage/../private/unsafe.pdf', false);
+
+        $this->get('/en/facilities/artificial-intelligence/study-plan/course?department='.$departmentId.'&course='.$courseId)
+            ->assertOk()
+            ->assertSee('href="/storage/course-materials/verified.pdf"', false)
+            ->assertDontSee('/storage/../private/unsafe.pdf', false)
+            ->assertDontSee('/en/about/profile/faculty-member/missing-profile', false)
+            ->assertDontSee('href="#"', false);
+    }
+
+    public function test_study_plan_publish_readiness_rejects_unsafe_or_missing_material_paths(): void
+    {
+        $facilities = app(FacultyPageServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $payload = $facilities->getEditablePayload('facilities.artificial-intelligence.study_plan');
+
+        foreach (['ar', 'en'] as $locale) {
+            $payload['translations'][$locale]['payload']['plan']['departments'][0]['terms'][0]['courses'][0]['lessons'][0]['pdfUrl'] = '/storage/course-materials/missing.pdf';
+        }
+
+        $readiness = $workflow->readiness('facilities.artificial-intelligence.study_plan', $payload);
+
+        $this->assertFalse($readiness->isReady);
+        $this->assertContains('Course materials must reference an existing internal PDF file.', $readiness->errors['ar']);
+        $this->assertContains('Course materials must reference an existing internal PDF file.', $readiness->errors['en']);
     }
 
     public function test_artificial_intelligence_study_plan_public_payload_is_trimmed_to_active_department(): void
@@ -988,5 +1731,184 @@ final class FacilitiesWorkflowTest extends TestCase
             ->assertRedirect('/en/facilities/artificial-intelligence/projects/artificial-intelligence-project-1');
 
         $this->get('/en/projects/detail?id=missing-project')->assertNotFound();
+    }
+
+    #[DataProvider('facultyOverviewProvider')]
+    public function test_all_faculty_overviews_render_localized_central_research_and_canonical_dean_profiles(
+        string $facultySlug,
+        string $profileSlug,
+        string $englishTitle,
+        string $arabicTitle,
+    ): void {
+        $facilities = app(FacultyPageServiceInterface::class);
+
+        foreach (['en' => $englishTitle, 'ar' => $arabicTitle] as $locale => $title) {
+            $page = $facilities->getSubpage($facultySlug, 'overview', $locale);
+
+            $this->assertNotNull($page);
+            $this->assertNotEmpty($page->latestResearch);
+            $this->assertSame('/'.$locale.'/about/profile/person/'.$profileSlug, $page->deanProfile?->path);
+            $this->assertSame($title, $page->latestResearch[0]['title'] ?? null);
+            $this->assertStringStartsWith('/'.$locale.'/research/publications/', (string) ($page->latestResearch[0]['url'] ?? ''));
+
+            $this->get('/'.$locale.'/facilities/'.$facultySlug.'/overview')
+                ->assertOk()
+                ->assertSee('id="overview-latest-research"', false)
+                ->assertSee('aria-labelledby="overview-latest-research-title"', false)
+                ->assertSee($title)
+                ->assertSee('/'.$locale.'/research/publications/'.($page->latestResearch[0]['slug'] ?? ''), false)
+                ->assertSee('/'.$locale.'/about/profile/person/'.$profileSlug, false)
+                ->assertDontSee('/'.$locale.'/about/profile/person/'.$facultySlug.'-dean', false)
+                ->assertDontSee('SPU-'.strtoupper($facultySlug).'-', false)
+                ->assertSee('dir="'.($locale === 'ar' ? 'rtl' : 'ltr').'"', false);
+        }
+    }
+
+    public function test_all_faculty_overview_drafts_preview_localized_content_without_public_leaks_and_publish(): void
+    {
+        $facilities = app(FacultyPageServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+
+        foreach (self::facultyOverviewProvider() as $case) {
+            $facultySlug = $case['facultySlug'];
+            $targetKey = 'facilities.'.$facultySlug.'.overview';
+            $payload = $facilities->getEditablePayload($targetKey);
+            $englishTitle = 'Draft family overview '.$facultySlug;
+            $arabicTitle = 'مسودة لمحة الكلية '.$facultySlug;
+            $payload['translations']['en']['title'] = $englishTitle;
+            $payload['translations']['ar']['title'] = $arabicTitle;
+
+            $workflow->saveDraft($targetKey, $payload, (int) $author->getKey());
+
+            $this->get('/en/facilities/'.$facultySlug.'/overview')->assertOk()->assertDontSee($englishTitle);
+            $this->get('/ar/facilities/'.$facultySlug.'/overview')->assertOk()->assertDontSee($arabicTitle);
+
+            foreach (['en' => $englishTitle, 'ar' => $arabicTitle] as $locale => $title) {
+                $preview = $workflow->preview($targetKey, $locale, (int) $author->getKey());
+                $this->get($preview->previewUrl)
+                    ->assertOk()
+                    ->assertSee($title)
+                    ->assertSee('id="overview-latest-research"', false);
+            }
+
+            $this->assertTrue($workflow->publish($targetKey, (int) $author->getKey()));
+            $this->get('/en/facilities/'.$facultySlug.'/overview')->assertOk()->assertSee($englishTitle);
+            $this->get('/ar/facilities/'.$facultySlug.'/overview')->assertOk()->assertSee($arabicTitle);
+        }
+    }
+
+    public function test_faculty_overviews_do_not_render_profile_links_without_canonical_public_targets(): void
+    {
+        Person::query()->where('category', 'dean')->update(['is_enabled' => false]);
+        Cache::flush();
+
+        foreach (self::facultyOverviewProvider() as $case) {
+            foreach (['ar', 'en'] as $locale) {
+                $this->get('/'.$locale.'/facilities/'.$case['facultySlug'].'/overview')
+                    ->assertOk()
+                    ->assertDontSee('/'.$locale.'/about/profile/person/'.$case['profileSlug'], false)
+                    ->assertDontSee('/'.$locale.'/about/profile/person/'.$case['facultySlug'].'-dean', false);
+            }
+        }
+    }
+
+    public function test_faculty_overviews_hide_latest_research_region_when_central_publications_are_empty(): void
+    {
+        $this->mock(ResearchPageServiceInterface::class, function ($mock): void {
+            $mock->shouldReceive('facultyPublications')->andReturnUsing(
+                fn (string $facultySlug, string $locale): ResearchPageDTO => new ResearchPageDTO(
+                    locale: $locale,
+                    direction: $locale === 'ar' ? 'rtl' : 'ltr',
+                    type: 'faculty-publications',
+                    data: ['items' => []],
+                    seoTitle: '',
+                    seoDescription: '',
+                    seoImage: '',
+                    path: '/facilities/'.$facultySlug.'/research',
+                ),
+            );
+        });
+        Cache::flush();
+
+        foreach (self::facultyOverviewProvider() as $case) {
+            foreach (['ar', 'en'] as $locale) {
+                $this->get('/'.$locale.'/facilities/'.$case['facultySlug'].'/overview')
+                    ->assertOk()
+                    ->assertDontSee('id="overview-latest-research"', false);
+            }
+        }
+    }
+
+    /** @return iterable<string, array{facultySlug: string, profileSlug: string, englishTitle: string, arabicTitle: string}> */
+    public static function facultyOverviewProvider(): iterable
+    {
+        yield 'artificial intelligence' => ['facultySlug' => 'artificial-intelligence', 'profileSlug' => 'mouhib-alnoukari', 'englishTitle' => 'Natural Language Processing for Arabic Medical Record Summarization', 'arabicTitle' => 'معالجة اللغة الطبيعية لتلخيص السجلات الطبية العربية'];
+        yield 'business administration' => ['facultySlug' => 'business-administration', 'profileSlug' => 'samar-habib', 'englishTitle' => 'Business Analytics for Healthcare Supply Chain Resilience', 'arabicTitle' => 'تحليلات الأعمال لمرونة سلسلة التوريد الصحية'];
+        yield 'building construction engineering' => ['facultySlug' => 'building-construction-engineering', 'profileSlug' => 'ammar-ghada', 'englishTitle' => 'Structural Performance of Fiber-Reinforced Concrete in Seismic Zones', 'arabicTitle' => 'الأداء الإنشائي للخرسانة المسلحة بالألياف في المناطق الزلزالية'];
+        yield 'dentistry' => ['facultySlug' => 'dentistry', 'profileSlug' => 'talaat-abu-hatab', 'englishTitle' => 'AI-Driven Predictive Models for Early Dental Caries Detection', 'arabicTitle' => 'نماذج تنبؤية مدفوعة بالذكاء الاصطناعي للكشف المبكر عن تسوس الأسنان'];
+        yield 'medicine' => ['facultySlug' => 'medicine', 'profileSlug' => 'ayman-ali', 'englishTitle' => 'Clinical Simulation Training Impact on Medical Student Diagnostic Accuracy', 'arabicTitle' => 'تأثير تدريب المحاكاة السريرية على دقة تشخيص طلاب الطب'];
+        yield 'petroleum' => ['facultySlug' => 'petroleum', 'profileSlug' => 'mahmoud-hadid', 'englishTitle' => 'Deep Learning Framework for Reservoir Permeability Prediction', 'arabicTitle' => 'إطار التعلم العميق للتنبؤ بنفاذية المكامن'];
+        yield 'pharmacy' => ['facultySlug' => 'pharmacy', 'profileSlug' => 'hossam-shahrour', 'englishTitle' => 'Machine Learning Applications in Pharmaceutical Quality Control', 'arabicTitle' => 'تطبيقات تعلم الآلة في مراقبة جودة الأدوية'];
+    }
+
+    /** @return array{0: string, 1: string, 2: string} */
+    private function firstStudyPlanSelection(string $facultySlug, string $locale): array
+    {
+        $page = app(FacultyPageServiceInterface::class)->getSubpage($facultySlug, 'study-plan', $locale);
+        $this->assertNotNull($page);
+        $department = $page->detail['activeDepartment'] ?? null;
+        $this->assertIsArray($department);
+        $course = collect($department['terms'] ?? [])
+            ->flatMap(fn (array $term): array => is_array($term['courses'] ?? null) ? $term['courses'] : [])
+            ->first();
+        $this->assertIsArray($course);
+        $type = collect($course['lessons'] ?? [])->pluck('type')->first();
+
+        return [
+            (string) ($department['id'] ?? ''),
+            (string) ($course['id'] ?? ''),
+            is_string($type) && $type !== '' ? $type : 'all',
+        ];
+    }
+
+    /** @return array<int, string> */
+    private function facultySlugs(): array
+    {
+        return [
+            'artificial-intelligence',
+            'business-administration',
+            'building-construction-engineering',
+            'dentistry',
+            'medicine',
+            'petroleum',
+            'pharmacy',
+        ];
+    }
+
+    /** @return array<int, string> */
+    private function projectFacultySlugs(): array
+    {
+        return [
+            'artificial-intelligence',
+            'business-administration',
+            'building-construction-engineering',
+            'dentistry',
+            'medicine',
+            'pharmacy',
+        ];
+    }
+
+    /** @return array<int, string> */
+    private function labFacultySlugs(): array
+    {
+        return [
+            'artificial-intelligence',
+            'building-construction-engineering',
+            'dentistry',
+            'medicine',
+            'petroleum',
+            'pharmacy',
+        ];
     }
 }

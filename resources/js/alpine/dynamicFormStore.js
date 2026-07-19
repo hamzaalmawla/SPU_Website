@@ -186,6 +186,8 @@ export function registerDynamicFormStore(Alpine) {
             Object.keys(this.files).forEach((key) => body.append(key, this.files[key]));
             if (this.context.eventSource) body.append('event_source', this.context.eventSource);
             if (this.context.eventId) body.append('event_id', this.context.eventId);
+            if (this.context.jobId) body.append('job_id', this.context.jobId);
+            if (this.context.jobSlug) body.append('job_slug', this.context.jobSlug);
 
             try {
                 const response = await fetch(`/${this.locale}/forms/${this.activeFormId}/submissions`, {

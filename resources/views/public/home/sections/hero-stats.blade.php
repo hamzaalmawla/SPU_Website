@@ -17,7 +17,7 @@
                                     @if ($stat->prefix)
                                         <span class="stats-card-value" translate="no">{{ $stat->prefix }}</span>
                                     @endif
-                                    <span class="stats-card-value" data-value="{{ $stat->value }}" translate="no">0</span>
+                                    <span class="stats-card-value" data-value="{{ $stat->value }}" translate="no">{{ $stat->value }}</span>
                                     @if ($stat->suffix)
                                         <span class="stats-card-plus">{{ $stat->suffix }}</span>
                                     @endif

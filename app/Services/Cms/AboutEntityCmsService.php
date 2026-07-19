@@ -99,6 +99,13 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
 
         [$type, $id] = $target;
         $slug = $this->entitySlug($type, $id);
+        $facultyScopeSlug = null;
+        if ($type === 'faculty-member') {
+            $faculty = $this->findFacultyMember($id)?->faculty;
+            $facultyScopeSlug = $faculty !== null
+                ? (string) ($faculty->faculty_scope_slug ?: $faculty->public_slug ?: $faculty->slug)
+                : null;
+        }
         $path = match ($type) {
             'person' => '/about/profile/person/'.$slug,
             'faculty-member' => '/about/profile/faculty-member/'.$slug,
@@ -124,6 +131,7 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
                 'partnership' => 'about.partnerships',
             },
             supportsDraftWorkflow: true,
+            facultyScopeSlug: $facultyScopeSlug,
         );
     }
 

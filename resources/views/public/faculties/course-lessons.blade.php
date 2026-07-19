@@ -4,18 +4,13 @@
     $labels = $studyPayload['courseLabels'] ?? [];
     $lessonTypes = $studyPayload['lessonTypes'] ?? [];
     $legend = $studyPayload['legend'] ?? [];
-    $departments = collect($plan['departments'] ?? [])->filter(fn ($item) => is_array($item))->values();
-    $activeDepartmentId = (string) request('department', $departments->first()['id'] ?? '');
-    $activeDepartment = $departments->firstWhere('id', $activeDepartmentId) ?? $departments->first();
-    $courses = collect($activeDepartment['terms'] ?? [])->flatMap(fn (array $term) => collect($term['courses'] ?? []))->values();
-    $courseId = (string) request('course', '');
-    $course = $courses->firstWhere('id', $courseId);
-    $lessons = collect(is_array($course) ? ($course['lessons'] ?? []) : [])->values();
-    $selectedType = (string) request('type', 'all');
-    $availableTypes = $lessons->pluck('type')->filter()->unique()->values();
-    $filteredLessons = $selectedType === 'all' ? $lessons : $lessons->filter(fn (array $lesson): bool => ($lesson['type'] ?? '') === $selectedType)->values();
-    $prerequisites = is_array($course) ? collect($course['prerequisites'] ?? [])->map(fn ($id) => $courses->firstWhere('id', $id))->filter()->values() : collect();
-    $openedCourses = is_array($course) ? $courses->filter(fn (array $item): bool => in_array($course['id'] ?? '', $item['prerequisites'] ?? [], true))->values() : collect();
+    $activeDepartment = $page->detail['activeDepartment'];
+    $course = $page->detail['course'];
+    $filteredLessons = collect($page->detail['lessons']);
+    $selectedType = $page->detail['selectedType'];
+    $availableTypes = collect($page->detail['availableTypes']);
+    $prerequisites = collect($page->detail['prerequisites']);
+    $openedCourses = collect($page->detail['openedCourses']);
     $label = fn (string $key): string => (string) ($labels[$key] ?? '');
     $text = fn (array $item, string $key): string => (string) ($item[$key] ?? $item[$key.'En'] ?? $item[$key.'Ar'] ?? '');
     $typeLabel = function (?array $course) use ($legend, $text, $label): string {
@@ -71,8 +66,11 @@
                         <div class="rounded-[6px] border border-slate-100 bg-white p-3"><dt class="text-slate-400">{{ $label('courseType') }}</dt><dd class="mt-1 text-[13px] text-spu-blue">{{ $typeLabel($course) }}</dd></div>
                         <div class="col-span-2 rounded-[6px] border border-slate-100 bg-white p-3"><dt class="text-slate-400">{{ $label('requiredStatus') }}</dt><dd class="mt-1 text-[13px] text-spu-blue">{{ ($course['required'] ?? true) ? $label('required') : $label('elective') }}</dd></div>
                         @if (is_array($course['instructor'] ?? null))
-                            @php($instructorSlug = (string) ($course['instructor']['staffSlug'] ?? ''))
-                            <a href="{{ $instructorSlug !== '' ? route('public.about.profile', ['locale' => $locale, 'source' => 'faculty-member', 'slug' => $instructorSlug]) : '#' }}" class="col-span-2 rounded-[6px] border border-slate-100 bg-white p-3 transition hover:border-spu-blue hover:bg-spu-blue/5"><dt class="text-slate-400">{{ $isAr ? 'المدرس' : 'Instructor' }}</dt><dd class="mt-1 flex items-center gap-2 text-[13px] font-bold text-spu-blue"><img src="/images/icon-user-graduate-outline.svg" alt="" class="h-4 w-4" aria-hidden="true"><span>{{ $isAr ? ($course['instructor']['nameAr'] ?? '') : ($course['instructor']['nameEn'] ?? '') }}</span></dd></a>
+                            @if (is_string($course['instructorUrl'] ?? null))
+                                <a href="{{ $course['instructorUrl'] }}" class="col-span-2 rounded-[6px] border border-slate-100 bg-white p-3 transition hover:border-spu-blue hover:bg-spu-blue/5"><dt class="text-slate-400">{{ $isAr ? 'المدرس' : 'Instructor' }}</dt><dd class="mt-1 flex items-center gap-2 text-[13px] font-bold text-spu-blue"><img src="/images/icon-user-graduate-outline.svg" alt="" class="h-4 w-4" aria-hidden="true"><span>{{ $isAr ? ($course['instructor']['nameAr'] ?? '') : ($course['instructor']['nameEn'] ?? '') }}</span></dd></a>
+                            @else
+                                <div class="col-span-2 rounded-[6px] border border-slate-100 bg-white p-3"><dt class="text-slate-400">{{ $isAr ? 'المدرس' : 'Instructor' }}</dt><dd class="mt-1 flex items-center gap-2 text-[13px] font-bold text-spu-blue"><img src="/images/icon-user-graduate-outline.svg" alt="" class="h-4 w-4" aria-hidden="true"><span>{{ $isAr ? ($course['instructor']['nameAr'] ?? '') : ($course['instructor']['nameEn'] ?? '') }}</span></dd></div>
+                            @endif
                         @endif
                     </dl>
                 </aside>

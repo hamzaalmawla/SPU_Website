@@ -51,12 +51,14 @@ final class LegacyLocationImportService implements LegacyLocationImportServiceIn
             if ($sourceId === null) {
                 $this->countSkip($skipReasonCounts, 'missing_source_id');
                 $skippedRows++;
+
                 continue;
             }
 
             if ($this->alreadyImported('jx_countries', $sourceId)) {
                 $this->countSkip($skipReasonCounts, 'already_imported');
                 $skippedRows++;
+
                 continue;
             }
 
@@ -68,6 +70,7 @@ final class LegacyLocationImportService implements LegacyLocationImportServiceIn
                 $this->countSkip($skipReasonCounts, 'missing_name');
                 $skippedRows++;
                 $this->writeSkip($write, $batchName, 'jx_countries', $sourceId, 'Skipped legacy country without AR/EN name.');
+
                 continue;
             }
 
@@ -120,12 +123,14 @@ final class LegacyLocationImportService implements LegacyLocationImportServiceIn
             if ($sourceId === null) {
                 $this->countSkip($skipReasonCounts, 'missing_source_id');
                 $skippedRows++;
+
                 continue;
             }
 
             if ($this->alreadyImported('jx_cities', $sourceId)) {
                 $this->countSkip($skipReasonCounts, 'already_imported');
                 $skippedRows++;
+
                 continue;
             }
 
@@ -137,6 +142,7 @@ final class LegacyLocationImportService implements LegacyLocationImportServiceIn
                 $this->countSkip($skipReasonCounts, 'missing_country');
                 $skippedRows++;
                 $this->writeSkip($write, $batchName, 'jx_cities', $sourceId, 'Skipped legacy city without imported country.', ['legacy_country_id' => $legacyCountryId]);
+
                 continue;
             }
 
@@ -144,6 +150,7 @@ final class LegacyLocationImportService implements LegacyLocationImportServiceIn
                 $this->countSkip($skipReasonCounts, 'missing_name');
                 $skippedRows++;
                 $this->writeSkip($write, $batchName, 'jx_cities', $sourceId, 'Skipped legacy city without AR/EN name.', ['legacy_country_id' => $legacyCountryId]);
+
                 continue;
             }
 

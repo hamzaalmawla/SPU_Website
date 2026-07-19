@@ -174,9 +174,9 @@ final class LegacyClassificationReportService implements LegacyClassificationRep
         $idColumn = is_string($rule['id_column'] ?? null) ? $rule['id_column'] : 'id';
 
         try {
-            $connection = $this->oldDatabase->connection();
+            $schema = $this->oldDatabase->schema();
 
-            if (! $connection->getSchemaBuilder()->hasTable($table)) {
+            if (! $schema->hasTable($table)) {
                 return [
                     'source_row_count' => 0,
                     'mapping_rows' => [],
@@ -184,7 +184,7 @@ final class LegacyClassificationReportService implements LegacyClassificationRep
                 ];
             }
 
-            $columns = $connection->getSchemaBuilder()->getColumnListing($table);
+            $columns = $schema->getColumnListing($table);
             if (! in_array($idColumn, $columns, true)) {
                 return [
                     'source_row_count' => 0,
@@ -360,7 +360,6 @@ final class LegacyClassificationReportService implements LegacyClassificationRep
         return is_string($root) && trim($root) !== '';
     }
 
-    /** @param mixed $columns */
     private function firstScalarValue(object $row, mixed $columns): string
     {
         $columns = is_array($columns) ? array_values(array_filter($columns, 'is_string')) : [];

@@ -57,8 +57,25 @@
 }
 
 .sp-course-card:hover::after,
+.sp-course-card:focus-visible::after,
 .sp-course-card.sp-card-highlighted::after {
     opacity: 1;
+}
+
+.rtl [data-study-plan-controls] {
+    right: auto;
+    left: 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    [data-study-plan] *,
+    [data-study-plan] *::before,
+    [data-study-plan] *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }
 
 .sp-card-accent-uni {

@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace App\Services\Legacy;
 
 use App\Contracts\Legacy\LegacyCleaningInspectionServiceInterface;
-use App\Contracts\Legacy\LegacyIntegrityInspectionServiceInterface;
 use App\Contracts\Legacy\LegacyImportBatchServiceInterface;
 use App\Contracts\Legacy\LegacyImportInspectionServiceInterface;
 use App\Contracts\Legacy\LegacyImportModuleRegistryInterface;
 use App\Contracts\Legacy\LegacyImportRunnerServiceInterface;
+use App\Contracts\Legacy\LegacyIntegrityInspectionServiceInterface;
 use App\DTOs\Legacy\LegacyCleaningInspectionResultDTO;
-use App\DTOs\Legacy\LegacyIntegrityInspectionResultDTO;
 use App\DTOs\Legacy\LegacyImportRunResultDTO;
+use App\DTOs\Legacy\LegacyIntegrityInspectionResultDTO;
 use Symfony\Component\Console\Command\Command;
 
 final class LegacyImportRunnerService implements LegacyImportRunnerServiceInterface

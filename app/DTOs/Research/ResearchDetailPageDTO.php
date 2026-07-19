@@ -7,8 +7,8 @@ namespace App\DTOs\Research;
 final readonly class ResearchDetailPageDTO
 {
     /**
-     * @param array<string, mixed> $item
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $item
+     * @param  array<string, mixed>  $data
      */
     public function __construct(
         public string $locale,

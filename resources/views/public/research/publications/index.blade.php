@@ -3,13 +3,16 @@
 @include('public.research.partials.styles')
 
 @section('content')
-    @php($data = $page->data)
+    @php
+        $data = $page->data;
+        $basePath = '/'.$locale.'/research/'.($page->type === 'repository' ? 'repository' : 'publications');
+    @endphp
     @include('public.research.partials.page-hero', ['hero' => $data['hero'] ?? [], 'locale' => $locale, 'direction' => $direction])
 
     <section class="bg-white pb-[80px] pt-[60px] font-hacen" dir="{{ $direction }}">
         <div class="container">
-            @php($activeFilters = $data['activeFilters'] ?? ['q' => '', 'faculty' => '', 'type' => '', 'year' => ''])
-            <form method="GET" action="/{{ $locale }}/research/publications" class="research-filter-grid-publications mx-auto max-w-[1210px]">
+            @php($activeFilters = $data['activeFilters'] ?? ['q' => '', 'faculty' => '', 'type' => '', 'year' => '', 'page' => 1])
+            <form method="GET" action="{{ $basePath }}" class="research-filter-grid-publications mx-auto max-w-[1210px]">
                 @foreach ([['faculties', 'facultyLabel', 'faculty'], ['publicationTypes', 'typeLabel', 'type'], ['years', 'yearLabel', 'year']] as [$key, $labelKey, $inputName])
                     <label class="relative block">
                         <span class="sr-only">{{ $data['filters'][$labelKey] ?? '' }}</span>
@@ -27,12 +30,24 @@
                     <input name="q" value="{{ $activeFilters['q'] ?? '' }}" type="search" class="h-[49px] w-full rounded-[8px] border border-[#dde2ea] bg-white ps-12 pe-5 text-[13px] font-medium text-[#344054] shadow-[0_8px_18px_rgba(16,24,40,0.08)] outline-none transition placeholder:text-[#5b6473] focus:border-spu-blue" placeholder="{{ $data['filters']['searchPlaceholder'] ?? '' }}">
                 </label>
             </form>
-            <p class="mx-auto mt-4 max-w-[1210px] text-sm text-[#6f7280]">{{ $data['resultCount'] ?? count($data['items'] ?? []) }} {{ $locale === 'ar' ? 'نتيجة' : 'results' }}</p>
-            <div class="mx-auto mt-[48px] grid max-w-[1168px] grid-cols-1 gap-x-[38px] gap-y-[38px] lg:grid-cols-2">
-                @foreach (($data['items'] ?? []) as $publication)
-                    @include('public.research.partials.publication-card', ['publication' => $publication, 'locale' => $locale])
-                @endforeach
+            <div class="mx-auto mt-4 flex max-w-[1210px] items-center justify-between gap-4 text-sm text-[#6f7280]">
+                <p aria-live="polite">{{ $data['resultCount'] ?? count($data['items'] ?? []) }} {{ $locale === 'ar' ? 'نتيجة' : 'results' }}</p>
+                @if (collect($activeFilters)->except('page')->filter(fn ($value) => (string) $value !== '')->isNotEmpty())
+                    <a href="{{ $basePath }}" class="font-bold text-spu-red hover:text-spu-blue">{{ $locale === 'ar' ? 'مسح عوامل التصفية' : 'Clear filters' }}</a>
+                @endif
             </div>
+            <div class="mx-auto mt-[48px] grid max-w-[1168px] grid-cols-1 gap-x-[38px] gap-y-[38px] lg:grid-cols-2">
+                @forelse (($data['items'] ?? []) as $publication)
+                    @include('public.research.partials.publication-card', ['publication' => $publication, 'locale' => $locale])
+                @empty
+                    <div class="rounded-[10px] border border-slate-200 bg-section p-8 text-center lg:col-span-2">
+                        <h2 class="text-xl font-bold text-spu-blue">{{ $locale === 'ar' ? 'لا توجد نتائج' : 'No results found' }}</h2>
+                        <p class="mt-2 text-sm text-slate-600">{{ $locale === 'ar' ? 'جرّب تغيير كلمات البحث أو عوامل التصفية.' : 'Try changing your search terms or filters.' }}</p>
+                        <a href="{{ $basePath }}" class="mt-5 inline-flex rounded-[6px] bg-spu-red px-5 py-2.5 text-xs font-bold text-white">{{ $locale === 'ar' ? 'مسح عوامل التصفية' : 'Clear filters' }}</a>
+                    </div>
+                @endforelse
+            </div>
+            @include('public.research.partials.listing-pagination', ['data' => $data, 'basePath' => $basePath, 'locale' => $locale])
         </div>
     </section>
 @endsection

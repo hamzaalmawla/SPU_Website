@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Concerns;
 
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
 use App\Contracts\Page\FacultyPageServiceInterface;
 use App\Exceptions\ConflictException;
 use App\Filament\Support\MediaPicker;
@@ -24,6 +25,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Notifications\Notification;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -39,22 +41,49 @@ trait ManagesFacultyHomepage
 
     private CmsWorkflowServiceInterface $cmsWorkflowService;
 
+    private FacultyStudyPlanLinkServiceInterface $studyPlanLinkService;
+
     /** @return array<string, string> */
     abstract protected function targetOptions(): array;
 
     abstract protected function defaultTargetKey(): string;
 
+    abstract protected static function managedFacultyScope(): string;
+
     public function boot(
         FacultyPageServiceInterface $facultyPageService,
         CmsWorkflowServiceInterface $cmsWorkflowService,
+        FacultyStudyPlanLinkServiceInterface $studyPlanLinkService,
     ): void {
         $this->facultyPageService = $facultyPageService;
         $this->cmsWorkflowService = $cmsWorkflowService;
+        $this->studyPlanLinkService = $studyPlanLinkService;
     }
 
     public static function canAccess(): bool
     {
-        return Gate::allows('manage-faculties');
+        if (! Gate::allows('manage-faculties')) {
+            return false;
+        }
+
+        $user = auth()->user();
+
+        if (! $user instanceof User || $user->role_slug !== 'faculty_editor') {
+            return true;
+        }
+
+        return self::canonicalManagedFacultyScope((string) $user->faculty_scope_slug)
+            === self::canonicalManagedFacultyScope(static::managedFacultyScope());
+    }
+
+    private static function canonicalManagedFacultyScope(string $scope): string
+    {
+        return match ($scope) {
+            'ai', 'ai-engineering' => 'artificial-intelligence',
+            'construction' => 'building-construction-engineering',
+            'business' => 'business-administration',
+            default => $scope,
+        };
     }
 
     public static function getNavigationGroup(): ?string
@@ -70,9 +99,10 @@ trait ManagesFacultyHomepage
     public function loadTarget(string $targetKey): void
     {
         $this->assertManagedTarget($targetKey);
-        $draftPayload = $this->cmsWorkflowService->latestEditableDraftPayload($targetKey);
+        $userId = $this->authenticatedUserId();
+        $draftPayload = $this->cmsWorkflowService->latestEditableDraftPayload($targetKey, $userId);
         $payload = is_array($draftPayload) ? $draftPayload : $this->facultyPageService->getEditablePayload($targetKey);
-        $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey);
+        $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey, $userId);
         $studyPlanDepartmentOptions = $this->studyPlanDepartmentOptionsFromPayload($targetKey, $payload);
         $studyPlanDepartmentId = $this->studyPlanDepartmentIdFromPayload($targetKey, $payload, (string) ($this->data['study_plan_department_id'] ?? ''));
         $studyPlanTermOptions = $this->studyPlanTermOptionsFromPayload($targetKey, $payload, $studyPlanDepartmentId);
@@ -112,28 +142,38 @@ trait ManagesFacultyHomepage
                         ->options(fn (): array => $this->studyPlanDepartmentOptions())
                         ->visible(fn (): bool => $this->subpageSlugFromTarget($this->currentTargetKeyForSchema()) === 'study-plan')
                         ->live()
-                        ->afterStateUpdated(fn (): mixed => $this->loadTarget($this->currentTargetKeyForSchema())),
+                        ->afterStateUpdated(function (): void {
+                            $this->loadTarget($this->currentTargetKeyForSchema());
+                        }),
                     Select::make('study_plan_term_id')
                         ->label('Open Term Folder')
                         ->options(fn (): array => $this->studyPlanTermOptions())
                         ->visible(fn (): bool => $this->subpageSlugFromTarget($this->currentTargetKeyForSchema()) === 'study-plan')
                         ->live()
-                        ->afterStateUpdated(fn (): mixed => $this->loadTarget($this->currentTargetKeyForSchema())),
+                        ->afterStateUpdated(function (): void {
+                            $this->loadTarget($this->currentTargetKeyForSchema());
+                        }),
                     TextInput::make('record_search')
                         ->label('Search Records')
                         ->visible(fn (): bool => $this->hasFilterableRecords($this->currentTargetKeyForSchema()))
                         ->live(onBlur: true)
-                        ->afterStateUpdated(fn (): mixed => $this->loadTarget($this->currentTargetKeyForSchema())),
+                        ->afterStateUpdated(function (): void {
+                            $this->loadTarget($this->currentTargetKeyForSchema());
+                        }),
                     TextInput::make('record_department_filter')
                         ->label('Department / Faculty Filter')
                         ->visible(fn (): bool => $this->hasFilterableRecords($this->currentTargetKeyForSchema()))
                         ->live(onBlur: true)
-                        ->afterStateUpdated(fn (): mixed => $this->loadTarget($this->currentTargetKeyForSchema())),
+                        ->afterStateUpdated(function (): void {
+                            $this->loadTarget($this->currentTargetKeyForSchema());
+                        }),
                     TextInput::make('record_year_filter')
                         ->label('Year Filter')
                         ->visible(fn (): bool => $this->hasFilterableRecords($this->currentTargetKeyForSchema()))
                         ->live(onBlur: true)
-                        ->afterStateUpdated(fn (): mixed => $this->loadTarget($this->currentTargetKeyForSchema())),
+                        ->afterStateUpdated(function (): void {
+                            $this->loadTarget($this->currentTargetKeyForSchema());
+                        }),
                 ]),
                 Tabs::make('faculty_homepage_locales')
                     ->tabs([
@@ -168,7 +208,9 @@ trait ManagesFacultyHomepage
                 ->form([
                     DateTimePicker::make('publish_at')->label('Publish At')->required()->minDate(now())->native(false),
                 ])
-                ->action(fn (array $data): mixed => $this->schedule((string) $data['publish_at'])),
+                ->action(function (array $data): void {
+                    $this->schedule((string) $data['publish_at']);
+                }),
             Action::make('unpublish')->label('Unpublish')->icon('heroicon-o-x-circle')->color('danger')->requiresConfirmation()->action(function (): void {
                 $this->unpublish();
             }),
@@ -398,6 +440,8 @@ trait ManagesFacultyHomepage
             'projects' => [...$sections, ...$this->projectsSubpageFields($prefix)],
             'alumni' => [...$sections, ...$this->alumniSubpageFields($prefix)],
             'valedictorians' => [...$sections, ...$this->valedictoriansSubpageFields($prefix)],
+            'training' => [...$sections, ...$this->trainingSubpageFields($prefix)],
+            'research' => [...$sections, ...$this->researchSubpageFields($prefix)],
             default => throw new \InvalidArgumentException('Unsupported faculty subpage target.'),
         };
     }
@@ -411,6 +455,57 @@ trait ManagesFacultyHomepage
                 MediaPicker::image($prefix.'.heroImage', 'Hero Image'),
                 Textarea::make($prefix.'.summary')->label('Summary')->rows(2)->columnSpanFull(),
                 Textarea::make($prefix.'.body')->label('Body')->rows(4)->columnSpanFull(),
+            ])->columns(2),
+        ];
+    }
+
+    /** @return array<int, Section> */
+    private function trainingSubpageFields(string $prefix): array
+    {
+        return [
+            Section::make('Training Hero')->schema([
+                TextInput::make($prefix.'.payload.hero.eyebrow')->required()->maxLength(120),
+                TextInput::make($prefix.'.payload.hero.title')->required()->maxLength(180),
+                Textarea::make($prefix.'.payload.hero.summary')->required()->rows(3)->columnSpanFull(),
+                MediaPicker::image($prefix.'.payload.hero.image', 'Hero Image', true),
+            ])->columns(2),
+            Section::make('Training Introduction')->schema([
+                Repeater::make($prefix.'.payload.introCards')->schema([
+                    TextInput::make('title')->required()->maxLength(180),
+                    MediaPicker::icon('icon', 'Icon', true),
+                    Textarea::make('description')->required()->rows(3)->columnSpanFull(),
+                ])->columns(2)->reorderable()->minItems(1)->columnSpanFull(),
+            ]),
+            Section::make('Training Programme')->schema([
+                TextInput::make($prefix.'.payload.programme.title')->required()->maxLength(180),
+                Repeater::make($prefix.'.payload.programme.steps')->schema([
+                    TextInput::make('number')->required()->maxLength(20),
+                    TextInput::make('title')->required()->maxLength(180),
+                    Textarea::make('description')->required()->rows(3)->columnSpanFull(),
+                ])->columns(2)->reorderable()->minItems(1)->columnSpanFull(),
+            ]),
+            Section::make('Verified Training Destinations')->description('Only existing localized SPU routes can be published.')->schema([
+                TextInput::make($prefix.'.payload.partners.title')->required()->maxLength(180),
+                TextInput::make($prefix.'.payload.partners.cta')->required()->maxLength(120),
+                Repeater::make($prefix.'.payload.partners.items')->schema([
+                    TextInput::make('title')->required()->maxLength(180),
+                    TextInput::make('category')->required()->maxLength(120),
+                    TextInput::make('href')->required()->maxLength(255),
+                    MediaPicker::image('image', 'Image', true),
+                    Textarea::make('description')->required()->rows(3)->columnSpanFull(),
+                ])->columns(2)->reorderable()->columnSpanFull(),
+            ])->columns(2),
+            Section::make('Verified Facts')->schema([
+                Repeater::make($prefix.'.payload.facts')->schema([
+                    TextInput::make('value')->required()->maxLength(80),
+                    TextInput::make('label')->required()->maxLength(160),
+                    Toggle::make('verified')->label('Verified by faculty content owner')->required(),
+                ])->columns(2)->reorderable()->columnSpanFull(),
+            ]),
+            Section::make('SEO')->schema([
+                TextInput::make($prefix.'.seoTitle')->required()->maxLength(180),
+                Textarea::make($prefix.'.seoDescription')->required()->rows(2),
+                MediaPicker::image($prefix.'.seoImage', 'SEO Image', true),
             ])->columns(2),
         ];
     }
@@ -745,6 +840,10 @@ trait ManagesFacultyHomepage
     {
         return [
             Section::make('Honor List Records')->schema([
+                Textarea::make($prefix.'.payload.quote')
+                    ->label('Honor Quote')
+                    ->rows(2)
+                    ->columnSpanFull(),
                 Repeater::make($prefix.'.items')
                     ->label('Honor Students')
                     ->schema([
@@ -763,6 +862,20 @@ trait ManagesFacultyHomepage
                     ->collapsible()
                     ->columnSpanFull(),
             ]),
+        ];
+    }
+
+    /** @return array<int, Section> */
+    private function researchSubpageFields(string $prefix): array
+    {
+        return [
+            Section::make('Research Page Metadata')->schema([
+                TextInput::make($prefix.'.emptyTitle')->label('Empty State Title')->maxLength(180),
+                Textarea::make($prefix.'.emptySummary')->label('Empty State Summary')->rows(2)->columnSpanFull(),
+                TextInput::make($prefix.'.seoTitle')->label('SEO Title')->required()->maxLength(180),
+                Textarea::make($prefix.'.seoDescription')->label('SEO Description')->required()->rows(2)->columnSpanFull(),
+                MediaPicker::image($prefix.'.seoImage', 'SEO Image'),
+            ])->columns(2),
         ];
     }
 
@@ -878,6 +991,12 @@ trait ManagesFacultyHomepage
             return $content;
         }
 
+        if ($subpageSlug === 'research') {
+            unset($content['items'], $content['stats'], $content['dean']);
+
+            return $content;
+        }
+
         $content['items'] = $this->listOfArrays($content['items'] ?? []);
         $content['items'] = array_map(function (array $item) use ($subpageSlug): array {
             if ($subpageSlug === 'departments') {
@@ -901,6 +1020,17 @@ trait ManagesFacultyHomepage
     private function currentFormData(): array
     {
         return is_array($this->data) ? $this->data : [];
+    }
+
+    private function authenticatedUserId(): int
+    {
+        $userId = auth()->id();
+
+        if (! is_int($userId) && ! is_string($userId)) {
+            throw new AuthorizationException('An authenticated CMS user is required.');
+        }
+
+        return (int) $userId;
     }
 
     private function currentTargetKey(): string
@@ -995,7 +1125,7 @@ trait ManagesFacultyHomepage
     /** @param array<string, mixed> $content @return array<string, mixed> */
     private function mergeFilterableRecordContent(string $targetKey, string $locale, array $content): array
     {
-        $basePayload = $this->cmsWorkflowService->latestEditableDraftPayload($targetKey) ?? $this->facultyPageService->getEditablePayload($targetKey);
+        $basePayload = $this->cmsWorkflowService->latestEditableDraftPayload($targetKey, $this->authenticatedUserId()) ?? $this->facultyPageService->getEditablePayload($targetKey);
         $baseContent = is_array($basePayload['translations'][$locale] ?? null) ? $basePayload['translations'][$locale] : [];
         $baseItems = $this->recordItemsWithKeys($this->listOfArrays($baseContent['items'] ?? []));
         $editedItems = $this->recordItemsWithKeys($this->listOfArrays($content['items'] ?? []));
@@ -1144,30 +1274,7 @@ trait ManagesFacultyHomepage
             return [];
         }
 
-        $studyPlanTargetKey = $this->studyPlanTargetKeyFromDepartmentsTarget($targetKey);
-
-        if ($studyPlanTargetKey === null) {
-            return [];
-        }
-
-        $draft = $this->cmsWorkflowService->latestEditableDraftPayload($studyPlanTargetKey);
-        $payload = is_array($draft) ? $draft : null;
-
-        if ($payload === null) {
-            try {
-                $payload = $this->facultyPageService->getEditablePayload($studyPlanTargetKey);
-            } catch (\Throwable $error) {
-                report($error);
-
-                return [];
-            }
-        }
-
-        $content = is_array($payload['translations']['en'] ?? null)
-            ? $payload['translations']['en']
-            : (is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : []);
-
-        return $this->studyPlanLabelsFromContent($content);
+        return $this->studyPlanLinkService->optionsForDepartmentsTarget($targetKey);
     }
 
     /** @return array<string, string> */
@@ -1176,55 +1283,10 @@ trait ManagesFacultyHomepage
         return is_array($this->data['department_study_plan_options'] ?? null) ? $this->data['department_study_plan_options'] : [];
     }
 
-    private function studyPlanTargetKeyFromDepartmentsTarget(string $targetKey): ?string
-    {
-        if (! str_starts_with($targetKey, 'facilities.')) {
-            return null;
-        }
-
-        $parts = explode('.', $targetKey);
-
-        if (count($parts) < 3 || $parts[2] !== 'departments') {
-            return null;
-        }
-
-        $parts[2] = 'study_plan';
-
-        return implode('.', $parts);
-    }
-
-    /** @param array<string, mixed> $content @return array<string, string> */
-    private function studyPlanLabelsFromContent(array $content): array
-    {
-        $departments = is_array($content['payload']['plan']['departments'] ?? null) ? $content['payload']['plan']['departments'] : [];
-        $options = [];
-
-        foreach ($this->listOfArrays($departments) as $department) {
-            $id = (string) ($department['id'] ?? '');
-
-            if ($id === '') {
-                continue;
-            }
-
-            $enLabel = trim((string) ($department['nameEn'] ?? $department['name'] ?? ''));
-            $arLabel = trim((string) ($department['nameAr'] ?? $department['name'] ?? ''));
-
-            if ($enLabel !== '' && $arLabel !== '') {
-                $label = $enLabel.' — '.$arLabel;
-            } else {
-                $label = $enLabel !== '' ? $enLabel : ($arLabel !== '' ? $arLabel : $id);
-            }
-
-            $options[$id] = $label;
-        }
-
-        return $options;
-    }
-
     /** @param array<string, mixed> $content @return array<string, mixed> */
     private function mergeStudyPlanDepartmentContent(string $targetKey, string $locale, array $content): array
     {
-        $basePayload = $this->cmsWorkflowService->latestEditableDraftPayload($targetKey) ?? $this->facultyPageService->getEditablePayload($targetKey);
+        $basePayload = $this->cmsWorkflowService->latestEditableDraftPayload($targetKey, $this->authenticatedUserId()) ?? $this->facultyPageService->getEditablePayload($targetKey);
         $baseContent = is_array($basePayload['translations'][$locale] ?? null) ? $basePayload['translations'][$locale] : [];
         $baseContent['payload'] = is_array($baseContent['payload'] ?? null) ? $baseContent['payload'] : [];
         $baseContent['payload']['plan'] = is_array($baseContent['payload']['plan'] ?? null) ? $baseContent['payload']['plan'] : [];

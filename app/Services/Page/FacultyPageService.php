@@ -5,8 +5,14 @@ declare(strict_types=1);
 namespace App\Services\Page;
 
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
+use App\Contracts\Page\AboutPageServiceInterface;
 use App\Contracts\Page\FacultyPageServiceInterface;
+use App\Contracts\Page\ProfilePageServiceInterface;
+use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
+use App\DTOs\Content\PersonDTO;
+use App\DTOs\Content\ProfilePageDTO;
 use App\DTOs\Faculty\FacultyCardDTO;
 use App\DTOs\Faculty\FacultyDetailPageDTO;
 use App\DTOs\Faculty\FacultyHighlightDTO;
@@ -32,6 +38,7 @@ use App\Models\Faculty\FacultyStudentProject;
 use App\Models\Faculty\FacultyStudentProjectTranslation;
 use App\Models\Faculty\FacultyTranslation;
 use App\Models\Shared\MigrationLog;
+use App\Support\MediaUrlResolver;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -46,15 +53,25 @@ final class FacultyPageService implements FacultyPageServiceInterface
         'business' => 'business-administration',
     ];
 
-    private const SUBPAGE_SLUGS = ['overview', 'departments', 'study-plan', 'study-plan-course', 'labs', 'projects', 'alumni', 'valedictorians', 'training'];
+    private const SUBPAGE_SLUGS = ['overview', 'departments', 'study-plan', 'study-plan-course', 'labs', 'projects', 'alumni', 'valedictorians', 'training', 'research'];
 
-    private const STUDENT_LIST_PER_PAGE = 24;
+    private const ALUMNI_LIST_PER_PAGE = 12;
+
+    private const HONOR_LIST_PER_PAGE = 6;
+
+    private const FACULTY_LIST_PER_PAGE = 6;
+
+    private const RESEARCH_LIST_PER_PAGE = 6;
 
     private const MEMORIAL_HONOR_SOURCE_IDS = [134, 359, 390, 898, 1118];
 
     public function __construct(
         private readonly CacheServiceInterface $cacheService,
         private readonly CmsWorkflowServiceInterface $cmsWorkflowService,
+        private readonly FacultyStudyPlanLinkServiceInterface $studyPlanLinkService,
+        private readonly ResearchPageServiceInterface $researchPageService,
+        private readonly AboutPageServiceInterface $aboutPageService,
+        private readonly ProfilePageServiceInterface $profilePageService,
     ) {}
 
     public function getHub(string $locale): FacultyHubPageDTO
@@ -201,13 +218,24 @@ final class FacultyPageService implements FacultyPageServiceInterface
         }
 
         $facultySlug = $this->canonicalFacultySlug($facultySlug);
-        $filters = $this->studentListFilters($filters);
+        $filters = match ($subpageSlug) {
+            'alumni', 'valedictorians' => $this->studentListFilters($filters),
+            'projects' => $this->paginationFilters($filters),
+            'labs' => $this->labFilters($filters),
+            'research' => $this->researchFilters($filters),
+            'study-plan', 'study-plan-course' => $this->studyPlanFilters($filters, $subpageSlug === 'study-plan-course'),
+            default => [],
+        };
         $filterKey = md5((string) json_encode($filters));
 
         return $this->facilitiesCache()->remember("public.facilities.{$facultySlug}.{$subpageSlug}.{$locale}.{$filterKey}", function () use ($facultySlug, $subpageSlug, $locale, $filters): ?FacultySubpageDTO {
             $faculty = $this->facultyByPublicSlug($facultySlug);
 
             if (! $faculty instanceof Faculty) {
+                return null;
+            }
+
+            if ($subpageSlug === 'research' && ! $faculty->pages->contains(fn (FacultyPage $page): bool => $page->slug === 'research')) {
                 return null;
             }
 
@@ -278,14 +306,60 @@ final class FacultyPageService implements FacultyPageServiceInterface
             }
         }
 
+        if ($subpageSlug === 'departments') {
+            $items = $this->studyPlanLinkService->enrichDepartmentItems($this->publicSlug($faculty), $locale, $items);
+        }
+
         $filterOptions = [];
         $pagination = $this->emptyPagination(count($items));
+        $detail = [];
+
+        if (in_array($subpageSlug, ['study-plan', 'study-plan-course'], true)) {
+            $selection = $this->studyPlanSelection($pageData, $filters, $locale, $subpageSlug === 'study-plan-course');
+
+            if ($selection === null) {
+                return null;
+            }
+
+            $filters = $selection['filters'];
+            $detail = $selection['detail'];
+        }
 
         if ($this->isStudentListSubpage($subpageSlug)) {
             $filterOptions = $this->studentFilterOptions($items, $subpageSlug);
             $items = $this->filteredStudentItems($items, $subpageSlug, $filters);
-            [$items, $pagination] = $this->paginatedStudentItems($items, $filters);
+            $items = $this->resolvedStudentImages($items);
+            $perPage = $subpageSlug === 'alumni' ? self::ALUMNI_LIST_PER_PAGE : self::HONOR_LIST_PER_PAGE;
+            [$items, $pagination] = $this->paginatedItems($items, $filters, $perPage);
         }
+
+        if ($subpageSlug === 'projects') {
+            [$items, $pagination] = $this->paginatedItems($items, $filters, self::FACULTY_LIST_PER_PAGE);
+        }
+
+        if ($subpageSlug === 'labs') {
+            $selectedLab = collect($items)->firstWhere('slug', $filters['lab'] ?? '');
+
+            if (is_array($selectedLab)) {
+                $detail = [
+                    'item' => $selectedLab,
+                    'related' => collect($items)
+                        ->reject(fn (array $item): bool => (string) ($item['slug'] ?? '') === (string) ($selectedLab['slug'] ?? ''))
+                        ->take(3)
+                        ->values()
+                        ->all(),
+                ];
+            }
+
+            [$items, $pagination] = $this->paginatedItems($items, $filters, self::FACULTY_LIST_PER_PAGE);
+        }
+
+        if ($subpageSlug === 'research') {
+            [$items, $pagination] = $this->paginatedResearchItems($items, $filters);
+        }
+
+        $latestResearch = $subpageSlug === 'overview' ? $this->latestResearch($faculty, $locale) : [];
+        $deanProfile = $subpageSlug === 'overview' ? $this->deanProfile($faculty, $locale, $pageData) : null;
 
         return new FacultySubpageDTO(
             locale: $locale,
@@ -298,11 +372,14 @@ final class FacultyPageService implements FacultyPageServiceInterface
             filters: $filters,
             filterOptions: $filterOptions,
             pagination: $pagination,
+            detail: $detail,
+            latestResearch: $latestResearch,
+            deanProfile: $deanProfile,
             navigation: $this->navigation($faculty, $locale, $subpageSlug),
             highlights: $this->highlights($faculty, $locale),
             seoTitle: $this->stringOrDefault($cmsContent['seoTitle'] ?? null, (string) ($pageData['title'] ?? $this->subpageTitle($subpageSlug, $locale)).' | '.(string) $this->facultyTranslation($faculty, $locale)->name),
             seoDescription: $this->stringOrDefault($cmsContent['seoDescription'] ?? null, (string) ($pageData['summary'] ?? '')),
-            seoImage: $this->stringOrDefault($pageData['heroImage'] ?? null, '/images/uni-main-place.JPG'),
+            seoImage: $this->stringOrDefault($cmsContent['seoImage'] ?? null, $this->stringOrDefault($pageData['heroImage'] ?? null, '/images/uni-main-place.JPG')),
         );
     }
 
@@ -532,7 +609,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
         $translation = $page instanceof FacultyPage ? $this->pageTranslation($page, $locale) : null;
         $payload = $page instanceof FacultyPage && is_array($page->payload_json) ? $this->localizedPayload($page->payload_json, $locale) : [];
 
-        return [
+        $content = [
             'title' => (string) ($translation?->title ?? $this->subpageTitle($subpageSlug, $locale)),
             'summary' => (string) ($translation->summary ?? ''),
             'body' => (string) ($translation->body ?? ''),
@@ -541,6 +618,20 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'payload' => $payload,
             'items' => $this->subpageItems($faculty, $subpageSlug, $locale, $page),
         ];
+
+        if ($subpageSlug === 'research') {
+            $facultyName = (string) $this->facultyTranslation($faculty, $locale)->name;
+            $content['eyebrow'] = $locale === 'ar' ? 'أبحاث الكلية' : 'Faculty Research';
+            $content['emptyTitle'] = $locale === 'ar' ? 'لا توجد منشورات حالياً' : 'No publications available';
+            $content['emptySummary'] = $locale === 'ar'
+                ? 'ستظهر أحدث المنشورات العلمية الخاصة بالكلية هنا عند نشرها.'
+                : 'The faculty latest scholarly publications will appear here when published.';
+            $content['seoTitle'] = ($locale === 'ar' ? 'أبحاث ' : '').$facultyName.($locale === 'ar' ? ' | الجامعة السورية الخاصة' : ' Research | SPU');
+            $content['seoDescription'] = (string) $content['summary'];
+            $content['seoImage'] = (string) (($page instanceof FacultyPage ? $page->hero_image : null) ?: $faculty->hero_image ?: '/images/uni-main-place.JPG');
+        }
+
+        return $content;
     }
 
     /** @param array<string, mixed> $content @param array<string, mixed> $modelPage @return array<string, mixed> */
@@ -557,7 +648,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
             $payload['dean'] = $content['dean'];
         }
 
-        return [
+        $page = [
             ...$modelPage,
             'title' => $this->stringOrDefault($content['title'] ?? null, (string) ($modelPage['title'] ?? '')),
             'summary' => $this->stringOrDefault($content['summary'] ?? null, (string) ($modelPage['summary'] ?? '')),
@@ -566,6 +657,14 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'sections' => $sections !== [] ? $sections : ($modelPage['sections'] ?? []),
             'payload' => $payload !== [] ? $payload : ($modelPage['payload'] ?? []),
         ];
+
+        foreach (['eyebrow', 'emptyTitle', 'emptySummary'] as $field) {
+            if (array_key_exists($field, $content)) {
+                $page[$field] = $content[$field];
+            }
+        }
+
+        return $page;
     }
 
     /** @param array<string, mixed> $dean @return array<string, mixed> */
@@ -717,8 +816,8 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 'departments' => fn ($query) => $query->enabled()->with('translations'),
                 'labs' => fn ($query) => $query->enabled()->with('translations'),
                 'studentProjects' => fn ($query) => $query->enabled()->with('translations'),
-                'alumni' => fn ($query) => $query->enabled()->with(['translations', 'department.translations'])->orderByDesc('graduation_year'),
-                'honorStudents' => fn ($query) => $query->enabled()->with(['translations', 'department.translations']),
+                'alumni' => fn ($query) => $query->enabled()->with(['translations', 'department.translations', 'photoMedia'])->orderByDesc('graduation_year'),
+                'honorStudents' => fn ($query) => $query->enabled()->with(['translations', 'department.translations', 'photoMedia']),
             ])
             ->orderBy('sort_order');
     }
@@ -796,6 +895,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'alumni' => $locale === 'ar' ? 'الخريجون' : 'Alumni',
             'valedictorians' => $locale === 'ar' ? 'قائمة الشرف' : 'Honor List',
             'training' => $locale === 'ar' ? 'التدريب' : 'Training',
+            'research' => $locale === 'ar' ? 'البحث العلمي' : 'Research',
         ];
 
         return $faculty->pages
@@ -838,6 +938,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'alumni' => $this->alumniItems($faculty, $locale),
             'valedictorians' => $this->honorItems($faculty, $locale),
             'training' => $this->localizedPayloadList(($page instanceof FacultyPage && is_array($page->payload_json) ? ($page->payload_json['items'] ?? []) : []), $locale),
+            'research' => $this->researchPageService->facultyPublications($this->publicSlug($faculty), $locale)->data['items'] ?? [],
             'study-plan', 'study-plan-course' => [],
             default => [],
         };
@@ -850,16 +951,11 @@ final class FacultyPageService implements FacultyPageServiceInterface
             ->filter(fn (mixed $item): bool => is_array($item) && isset($item['slug']))
             ->keyBy('slug');
 
-        $studyPlanUrl = $this->url($locale, "/facilities/{$this->publicSlug($faculty)}/study-plan");
-        $studyPlanDepartmentIds = $this->studyPlanDepartmentMap($faculty, $locale);
-
-        return $faculty->departments->map(function (Department $department) use ($locale, $departmentPayloads, $studyPlanUrl, $studyPlanDepartmentIds): array {
+        return $faculty->departments->map(function (Department $department) use ($locale, $departmentPayloads): array {
             $translation = $this->departmentTranslation($department, $locale);
             $payload = $departmentPayloads->get((string) $department->slug, []);
             $localeSuffix = ucfirst($locale);
-            $autoDepartmentId = $studyPlanDepartmentIds[(string) $department->slug] ?? null;
             $explicitDepartmentId = is_array($payload) ? trim((string) ($payload['studyPlanDepartmentId'] ?? '')) : '';
-            $departmentId = $explicitDepartmentId !== '' ? $explicitDepartmentId : $autoDepartmentId;
 
             return [
                 'slug' => (string) $department->slug,
@@ -868,131 +964,9 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 'summary' => (string) ($translation->description ?? ''),
                 'degrees' => is_array($payload) ? ($payload['degrees'.$localeSuffix] ?? null) : null,
                 'tags' => is_array($payload) && is_array($payload['tags'] ?? null) ? $payload['tags'] : [],
-                'studyPlanDepartmentId' => $departmentId,
-                'studyPlanUrl' => $departmentId !== null && $departmentId !== ''
-                    ? $studyPlanUrl.'?department='.urlencode($departmentId)
-                    : $studyPlanUrl,
+                'studyPlanDepartmentId' => $explicitDepartmentId,
             ];
         })->values()->all();
-    }
-
-    /**
-     * Resolve a mapping of department slug to the matching study-plan department tab id.
-     *
-     * The study plan payload stores a flat departments list whose names rarely line up
-     * exactly with the department translations stored in the database (e.g. the AI
-     * faculty exposes a "Department of Artificial Intelligence" in the database while
-     * its study plan ships an "Artificial Intelligence & Data Science" tab). Token based
-     * matching is therefore used: significant tokens of each department name are scored
-     * against every study-plan department tab and the highest-scoring tab wins. Ties
-     * fall back to plan order, and an unmistakable miss falls back to the first tab so
-     * the deep link still lands inside the study plan.
-     *
-     * @return array<string, string>
-     */
-    private function studyPlanDepartmentMap(Faculty $faculty, string $locale): array
-    {
-        $studyPlanPage = $this->pageForFaculty($faculty, 'study-plan');
-
-        if (! $studyPlanPage instanceof FacultyPage || ! is_array($studyPlanPage->payload_json)) {
-            return [];
-        }
-
-        $payload = $studyPlanPage->payload_json;
-        $plan = is_array($payload['plan'] ?? null) ? $payload['plan'] : [];
-        $planDepartments = collect($plan['departments'] ?? [])
-            ->filter(fn (mixed $item): bool => is_array($item) && isset($item['id']))
-            ->values();
-
-        if ($planDepartments->isEmpty()) {
-            return [];
-        }
-
-        $studyPlanFallbackId = (string) ($planDepartments->first()['id'] ?? '');
-
-        return $faculty->departments->mapWithKeys(function (Department $department) use ($planDepartments, $studyPlanFallbackId): array {
-            $planId = $this->matchStudyPlanDepartment($department, $planDepartments);
-
-            return [
-                (string) $department->slug => $planId !== '' ? $planId : $studyPlanFallbackId,
-            ];
-        })->all();
-    }
-
-    /**
-     * Score a department against every study-plan department tab on both Arabic and English
-     * token overlap and return the best matching tab id.
-     *
-     * @param  \Illuminate\Support\Collection<int, array<string, mixed>>  $planDepartments
-     */
-    private function matchStudyPlanDepartment(Department $department, Collection $planDepartments): string
-    {
-        $arTokens = $this->significantTokens((string) $this->departmentTranslation($department, 'ar')->name);
-        $enTokens = $this->significantTokens((string) $this->departmentTranslation($department, 'en')->name);
-
-        if ($arTokens === [] && $enTokens === []) {
-            return '';
-        }
-
-        $bestId = '';
-        $bestScore = 0.0;
-
-        foreach ($planDepartments as $planDepartment) {
-            if (! is_array($planDepartment)) {
-                continue;
-            }
-
-            $planArTokens = $this->significantTokens((string) ($planDepartment['nameAr'] ?? ''));
-            $planEnTokens = $this->significantTokens((string) ($planDepartment['nameEn'] ?? ''));
-
-            $score = max(
-                $this->tokenScore($enTokens, $planEnTokens),
-                $this->tokenScore($arTokens, $planArTokens),
-            );
-
-            if ($score > $bestScore) {
-                $bestScore = $score;
-                $bestId = (string) ($planDepartment['id'] ?? '');
-            }
-        }
-
-        return $bestScore >= 0.5 ? $bestId : '';
-    }
-
-    /** @param  array<int, string>  $needles  @param  array<int, string>  $haystack */
-    private function tokenScore(array $needles, array $haystack): float
-    {
-        if ($needles === []) {
-            return 0.0;
-        }
-
-        $intersection = count(array_intersect($needles, $haystack));
-
-        return (float) $intersection / (float) count($needles);
-    }
-
-    /** @return array<int, string> */
-    private function significantTokens(string $name): array
-    {
-        if ($name === '') {
-            return [];
-        }
-
-        $stopwords = [
-            'the', 'and', 'of', 'for', 'in', 'on', 'with', 'to', 'a', 'an', 'department', 'dept',
-            'قسم', 'اله', 'ال', 'و', 'في', 'من',
-        ];
-
-        $tokens = preg_split('/[\s\-&\/,]+/u', mb_strtolower(trim($name))) ?: [];
-        $tokens = array_filter(
-            $tokens,
-            static fn (mixed $token): bool => is_string($token)
-                && $token !== ''
-                && ! in_array($token, $stopwords, true)
-                && mb_strlen($token) > 1,
-        );
-
-        return array_values(array_unique($tokens));
     }
 
     /** @return array<int, array<string, mixed>> */
@@ -1263,7 +1237,9 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 'semester' => $this->semesterLabel($semesterKey, $locale),
                 'semesterKey' => $semesterKey,
                 'academicPhase' => $locale === 'ar' ? 'خريج' : 'Graduate',
-                'image' => '/images/unkown.jpeg',
+                'image' => $alumni->photoMedia === null
+                    ? null
+                    : MediaUrlResolver::resolve($alumni->photoMedia->path, $alumni->photoMedia->disk),
             ];
         })->values()->all();
     }
@@ -1287,7 +1263,9 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 'semester' => $this->semesterLabel($semesterKey, $locale),
                 'semesterKey' => $semesterKey,
                 'faculty' => $this->facultyTranslation($faculty, $locale)->name,
-                'image' => '/images/unkown.jpeg',
+                'image' => $student->photoMedia === null
+                    ? null
+                    : MediaUrlResolver::resolve($student->photoMedia->path, $student->photoMedia->disk),
                 'isMemorial' => $this->isMemorialHonorStudent($metadata),
             ];
         })->values()->all();
@@ -1352,13 +1330,34 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'faculty' => mb_substr($this->filterString($filters['faculty'] ?? ''), 0, 180),
             'semester' => in_array($filters['semester'] ?? '', ['first', 'second'], true) ? (string) $filters['semester'] : '',
             'academic_phase' => mb_substr($this->filterString($filters['academic_phase'] ?? ''), 0, 120),
-            'page' => max(1, min(500, (int) ($filters['page'] ?? 1))),
+            'page' => max(1, min(500, (int) $this->filterString($filters['page'] ?? 1))),
         ];
     }
 
     private function filterString(mixed $value): string
     {
         return is_scalar($value) ? trim((string) $value) : '';
+    }
+
+    /** @param array<string, mixed> $filters @return array{page: int} */
+    private function researchFilters(array $filters): array
+    {
+        return $this->paginationFilters($filters);
+    }
+
+    /** @param array<string, mixed> $filters @return array{page: int} */
+    private function paginationFilters(array $filters): array
+    {
+        return ['page' => max(1, min(500, (int) $this->filterString($filters['page'] ?? 1)))];
+    }
+
+    /** @param array<string, mixed> $filters @return array{lab: string, page: int} */
+    private function labFilters(array $filters): array
+    {
+        return [
+            'lab' => mb_substr($this->filterString($filters['lab'] ?? ''), 0, 160),
+            ...$this->paginationFilters($filters),
+        ];
     }
 
     /** @param array<int, array<string, mixed>> $items @return array<string, mixed> */
@@ -1424,24 +1423,38 @@ final class FacultyPageService implements FacultyPageServiceInterface
     }
 
     /** @param array<int, array<string, mixed>> $items @param array<string, mixed> $filters @return array{0: array<int, array<string, mixed>>, 1: array<string, mixed>} */
-    private function paginatedStudentItems(array $items, array $filters): array
+    private function paginatedItems(array $items, array $filters, int $perPage): array
     {
         $total = count($items);
-        $totalPages = max(1, (int) ceil($total / self::STUDENT_LIST_PER_PAGE));
-        $currentPage = min((int) $filters['page'], $totalPages);
-        $offset = ($currentPage - 1) * self::STUDENT_LIST_PER_PAGE;
+        $totalPages = max(1, (int) ceil($total / $perPage));
+        $currentPage = min(max(1, (int) ($filters['page'] ?? 1)), $totalPages);
+        $offset = ($currentPage - 1) * $perPage;
 
         return [
-            array_slice($items, $offset, self::STUDENT_LIST_PER_PAGE),
+            array_slice($items, $offset, $perPage),
             [
                 'current_page' => $currentPage,
-                'per_page' => self::STUDENT_LIST_PER_PAGE,
+                'per_page' => $perPage,
                 'total_items' => $total,
                 'total_pages' => $totalPages,
                 'from' => $total === 0 ? 0 : $offset + 1,
-                'to' => min($total, $offset + self::STUDENT_LIST_PER_PAGE),
+                'to' => min($total, $offset + $perPage),
             ],
         ];
+    }
+
+    /** @param array<int, array<string, mixed>> $items @return array<int, array<string, mixed>> */
+    private function resolvedStudentImages(array $items): array
+    {
+        return collect($items)
+            ->map(function (array $item): array {
+                $image = $item['image'] ?? null;
+                $item['image'] = is_string($image) ? MediaUrlResolver::resolve($image) : null;
+
+                return $item;
+            })
+            ->values()
+            ->all();
     }
 
     /** @return array<string, mixed> */
@@ -1454,6 +1467,27 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'total_pages' => 1,
             'from' => $total > 0 ? 1 : 0,
             'to' => $total,
+        ];
+    }
+
+    /** @param array<int, array<string, mixed>> $items @param array<string, mixed> $filters @return array{0: array<int, array<string, mixed>>, 1: array<string, mixed>} */
+    private function paginatedResearchItems(array $items, array $filters): array
+    {
+        $total = count($items);
+        $totalPages = max(1, (int) ceil($total / self::RESEARCH_LIST_PER_PAGE));
+        $currentPage = min(max(1, (int) ($filters['page'] ?? 1)), $totalPages);
+        $offset = ($currentPage - 1) * self::RESEARCH_LIST_PER_PAGE;
+
+        return [
+            array_slice($items, $offset, self::RESEARCH_LIST_PER_PAGE),
+            [
+                'current_page' => $currentPage,
+                'per_page' => self::RESEARCH_LIST_PER_PAGE,
+                'total_items' => $total,
+                'total_pages' => $totalPages,
+                'from' => $total === 0 ? 0 : $offset + 1,
+                'to' => min($total, $offset + self::RESEARCH_LIST_PER_PAGE),
+            ],
         ];
     }
 
@@ -1484,6 +1518,170 @@ final class FacultyPageService implements FacultyPageServiceInterface
         return $parts[0] !== '' ? $parts[0] : $value;
     }
 
+    /** @param array<string, mixed> $filters @return array<string, mixed> */
+    private function studyPlanFilters(array $filters, bool $coursePage): array
+    {
+        $normalized = ['_invalid' => false, '_type_provided' => array_key_exists('type', $filters)];
+
+        foreach ($coursePage ? ['department', 'course', 'type'] : ['department'] as $key) {
+            if (! array_key_exists($key, $filters)) {
+                continue;
+            }
+
+            $value = $filters[$key];
+            if (! is_string($value) || $value === '' || strlen($value) > 160 || preg_match('/^[A-Za-z0-9-]+$/', $value) !== 1) {
+                $normalized['_invalid'] = true;
+
+                continue;
+            }
+
+            $normalized[$key] = $value;
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * @param  array<string, mixed>  $pageData
+     * @param  array<string, mixed>  $filters
+     * @return array{filters: array<string, string>, detail: array<string, mixed>}|null
+     */
+    private function studyPlanSelection(array $pageData, array $filters, string $locale, bool $coursePage): ?array
+    {
+        if (($filters['_invalid'] ?? false) === true) {
+            return null;
+        }
+
+        $payload = is_array($pageData['payload'] ?? null) ? $pageData['payload'] : [];
+        $plan = is_array($payload['plan'] ?? null) ? $payload['plan'] : [];
+        $departments = collect(is_array($plan['departments'] ?? null) ? $plan['departments'] : [])
+            ->filter(fn (mixed $department): bool => is_array($department) && trim((string) ($department['id'] ?? '')) !== '')
+            ->values();
+        $departmentId = $filters['department'] ?? null;
+        $activeDepartment = is_string($departmentId)
+            ? $departments->firstWhere('id', $departmentId)
+            : $departments->first();
+
+        if (! is_array($activeDepartment)) {
+            return null;
+        }
+
+        $activeDepartment = $this->sanitizedStudyPlanDepartment($activeDepartment);
+
+        $validatedFilters = [];
+        if (is_string($departmentId)) {
+            $validatedFilters['department'] = $departmentId;
+        }
+
+        if (! $coursePage) {
+            return [
+                'filters' => $validatedFilters,
+                'detail' => ['activeDepartment' => $activeDepartment],
+            ];
+        }
+
+        $courseId = $filters['course'] ?? null;
+        if (! is_string($departmentId) || ! is_string($courseId)) {
+            return null;
+        }
+
+        $courses = collect(is_array($activeDepartment['terms'] ?? null) ? $activeDepartment['terms'] : [])
+            ->filter(fn (mixed $term): bool => is_array($term))
+            ->flatMap(fn (array $term): array => is_array($term['courses'] ?? null) ? $term['courses'] : [])
+            ->filter(fn (mixed $course): bool => is_array($course))
+            ->values();
+        $course = $courses->firstWhere('id', $courseId);
+
+        if (! is_array($course)) {
+            return null;
+        }
+
+        $lessons = collect(is_array($course['lessons'] ?? null) ? $course['lessons'] : [])
+            ->filter(fn (mixed $lesson): bool => is_array($lesson))
+            ->map(function (array $lesson): array {
+                return [
+                    ...$lesson,
+                    'pdfUrl' => $this->studyPlanLinkService->sanitizeCourseMaterialPath($lesson['pdfUrl'] ?? null),
+                ];
+            })
+            ->values();
+        $availableTypes = $lessons->pluck('type')->filter(fn (mixed $type): bool => is_string($type) && $type !== '')->unique()->values();
+        $selectedType = is_string($filters['type'] ?? null) ? $filters['type'] : 'all';
+
+        if ($selectedType !== 'all' && ! $availableTypes->contains($selectedType)) {
+            return null;
+        }
+
+        $instructor = is_array($course['instructor'] ?? null) ? $course['instructor'] : null;
+        $course['instructorUrl'] = $this->courseInstructorUrl($locale, $instructor);
+        $course['lessons'] = $lessons->all();
+        $validatedFilters = ['department' => $departmentId, 'course' => $courseId];
+
+        if (($filters['_type_provided'] ?? false) === true) {
+            $validatedFilters['type'] = $selectedType;
+        }
+
+        return [
+            'filters' => $validatedFilters,
+            'detail' => [
+                'activeDepartment' => $activeDepartment,
+                'course' => $course,
+                'lessons' => $lessons->when($selectedType !== 'all', fn (Collection $items): Collection => $items->where('type', $selectedType))->values()->all(),
+                'selectedType' => $selectedType,
+                'availableTypes' => $availableTypes->all(),
+                'prerequisites' => collect($course['prerequisites'] ?? [])->map(fn (mixed $id): mixed => $courses->firstWhere('id', $id))->filter()->values()->all(),
+                'openedCourses' => $courses->filter(fn (array $item): bool => in_array($courseId, is_array($item['prerequisites'] ?? null) ? $item['prerequisites'] : [], true))->values()->all(),
+            ],
+        ];
+    }
+
+    /** @param array<string, mixed>|null $instructor */
+    private function courseInstructorUrl(string $locale, ?array $instructor): ?string
+    {
+        $slug = trim((string) ($instructor['staffSlug'] ?? ''));
+
+        if ($slug === '' || preg_match('/^[A-Za-z0-9-]+$/', $slug) !== 1) {
+            return null;
+        }
+
+        $profile = $this->profilePageService->getProfile($locale, 'faculty-member', $slug);
+
+        return $profile instanceof ProfilePageDTO && str_starts_with($profile->path, '/'.$locale.'/about/profile/')
+            ? $profile->path
+            : null;
+    }
+
+    /** @param array<string, mixed> $department @return array<string, mixed> */
+    private function sanitizedStudyPlanDepartment(array $department): array
+    {
+        $department['terms'] = collect(is_array($department['terms'] ?? null) ? $department['terms'] : [])
+            ->filter(fn (mixed $term): bool => is_array($term))
+            ->map(function (array $term): array {
+                $term['courses'] = collect(is_array($term['courses'] ?? null) ? $term['courses'] : [])
+                    ->filter(fn (mixed $course): bool => is_array($course))
+                    ->map(function (array $course): array {
+                        $course['lessons'] = collect(is_array($course['lessons'] ?? null) ? $course['lessons'] : [])
+                            ->filter(fn (mixed $lesson): bool => is_array($lesson))
+                            ->map(fn (array $lesson): array => [
+                                ...$lesson,
+                                'pdfUrl' => $this->studyPlanLinkService->sanitizeCourseMaterialPath($lesson['pdfUrl'] ?? null),
+                            ])
+                            ->values()
+                            ->all();
+
+                        return $course;
+                    })
+                    ->values()
+                    ->all();
+
+                return $term;
+            })
+            ->values()
+            ->all();
+
+        return $department;
+    }
+
     private function nullableString(mixed $value): ?string
     {
         if (! is_scalar($value)) {
@@ -1507,6 +1705,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'alumni' => $locale === 'ar' ? 'الخريجون' : 'Alumni',
             'valedictorians' => $locale === 'ar' ? 'قائمة الشرف' : 'Honor List',
             'training' => $locale === 'ar' ? 'التدريب' : 'Training',
+            'research' => $locale === 'ar' ? 'أحدث الأبحاث' : 'Latest Research',
         ];
 
         return $titles[$subpageSlug] ?? $subpageSlug;
@@ -1515,21 +1714,54 @@ final class FacultyPageService implements FacultyPageServiceInterface
     /** @return array<int, array<string, mixed>> */
     private function latestResearch(Faculty $faculty, string $locale): array
     {
-        return $faculty->studentProjects->take(3)->values()->map(function (FacultyStudentProject $project, int $index) use ($faculty, $locale): array {
-            $translation = $this->projectTranslation($project, $locale);
-            $facultyId = strtoupper((string) $faculty->slug);
+        $researchPage = $this->researchPageService->facultyPublications($this->publicSlug($faculty), $locale);
 
-            return [
-                'title' => (string) $translation->title,
-                'summary' => (string) ($translation->summary ?? ''),
-                'type' => (string) ($translation->tag ?? ($locale === 'ar' ? 'مشروع طلابي' : 'Student Project')),
-                'date' => '2026',
-                'doi' => 'SPU-'.$facultyId.'-'.($index + 1),
-                'image' => $project->image ?: $faculty->hero_image,
-                'url' => $this->projectDetailRoute($faculty, $locale, (string) $project->slug),
-                'cta' => $index === 0 ? 'View Research' : 'Research Details',
-            ];
-        })->values()->all();
+        return collect($researchPage->data['items'] ?? [])
+            ->filter(fn (mixed $item): bool => is_array($item)
+                && preg_match('/^[A-Za-z0-9-]+$/', (string) ($item['slug'] ?? '')) === 1
+                && trim((string) ($item['title'] ?? '')) !== '')
+            ->take(3)
+            ->map(fn (array $item): array => [
+                ...$item,
+                'url' => $this->url($locale, '/research/publications/'.(string) $item['slug']),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /** @param array<string, mixed> $pageData */
+    private function deanProfile(Faculty $faculty, string $locale, array $pageData): ?ProfilePageDTO
+    {
+        $facultySlug = $this->publicSlug($faculty);
+        $dean = $this->aboutPageService->getLeadershipProfiles($locale)
+            ->first(fn (PersonDTO $person): bool => $person->category === 'dean'
+                && $this->canonicalFacultySlug((string) $person->facultySlug) === $facultySlug);
+
+        if (! $dean instanceof PersonDTO) {
+            return null;
+        }
+
+        $profile = $this->profilePageService->getProfile($locale, 'person', $dean->slug);
+        $deanPayload = is_array($pageData['payload']['dean'] ?? null) ? $pageData['payload']['dean'] : [];
+        $displayName = (string) ($deanPayload['name'] ?? $deanPayload['name'.ucfirst($locale)] ?? '');
+
+        if (! $profile instanceof ProfilePageDTO || $displayName === '' || ! $this->samePersonName($displayName, $profile->name)) {
+            return null;
+        }
+
+        return $profile;
+    }
+
+    private function samePersonName(string $first, string $second): bool
+    {
+        $normalize = static function (string $name): string {
+            $name = mb_strtolower(trim($name));
+            $name = str_replace(['الأستاذ الدكتور', 'الأستاذة الدكتورة', 'الدكتور', 'الدكتورة', 'أ.د.', 'د.', 'professor', 'prof.', 'dr.'], '', $name);
+
+            return (string) preg_replace('/[^\p{L}\p{N}]+/u', '', $name);
+        };
+
+        return $normalize($first) !== '' && $normalize($first) === $normalize($second);
     }
 
     /** @return array<int, array{id: string, label: string, body: string}> */
@@ -1567,7 +1799,13 @@ final class FacultyPageService implements FacultyPageServiceInterface
     {
         $gallery = is_array($faculty->gallery_json) ? $faculty->gallery_json : [];
 
-        return collect([$faculty->hero_image, ...$gallery])->filter()->unique()->values()->all();
+        return collect([$faculty->hero_image, ...$gallery])
+            ->filter(fn (mixed $image): bool => is_string($image)
+                && trim($image) !== ''
+                && (! str_starts_with($image, '/') || is_file(public_path(ltrim((string) parse_url($image, PHP_URL_PATH), '/')))))
+            ->unique()
+            ->values()
+            ->all();
     }
 
     private function facultyTranslation(Faculty $faculty, string $locale): FacultyTranslation

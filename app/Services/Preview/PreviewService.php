@@ -221,6 +221,20 @@ final class PreviewService implements PreviewServiceInterface
         return match ($targetKey) {
             'contact' => $locale.'/contact',
             'e_services' => $locale.'/e-services',
+            'campus_life.landing' => $locale.'/campus-life',
+            'campus_life.virtual_tour' => $locale.'/virtual-tour',
+            'news.articles' => $locale.'/news/articles',
+            'facilities.pharmacy.training' => $locale.'/facilities/pharmacy/training',
+            'research.index' => $locale.'/research',
+            'research.publications' => $locale.'/research/publications',
+            'research.centers' => $locale.'/research/centers',
+            'research.projects' => $locale.'/research/projects',
+            'research.themes' => $locale.'/research/themes',
+            'research.experts' => $locale.'/research/expert-finder',
+            'research.conferences' => $locale.'/research/conferences',
+            'research.library' => $locale.'/research/library',
+            'research.office' => $locale.'/research/office',
+            'research.policies' => $locale.'/research/policies',
             default => $locale,
         };
     }

@@ -80,10 +80,10 @@ final class CmsTargetRegistry implements CmsTargetRegistryInterface
 
         foreach ($this->facultySlugs() as $facultySlug) {
             $facultyKey = 'facilities.'.$facultySlug;
-            $targets[] = $this->target($facultyKey, 'facilities', 'admin.cms.targets.facilities.faculty_homepage', '/facilities/'.$facultySlug, 'public.facilities.show', 'facilities.landing');
-            $targets[] = $this->target($facultyKey.'.study_plan', 'facilities', 'admin.cms.targets.facilities.study_plan', '/facilities/'.$facultySlug.'/study-plan', 'public.facilities.study-plan', $facultyKey);
+            $targets[] = $this->target($facultyKey, 'facilities', 'admin.cms.targets.facilities.faculty_homepage', '/facilities/'.$facultySlug, 'public.facilities.show', 'facilities.landing', facultyScopeSlug: $facultySlug);
+            $targets[] = $this->target($facultyKey.'.study_plan', 'facilities', 'admin.cms.targets.facilities.study_plan', '/facilities/'.$facultySlug.'/study-plan', 'public.facilities.study-plan', $facultyKey, facultyScopeSlug: $facultySlug);
 
-            foreach ($this->facultySubpageSlugs() as $subpageSlug) {
+            foreach ($this->facultySubpageSlugs($facultySlug) as $subpageSlug) {
                 $targets[] = $this->target(
                     $facultyKey.'.'.$subpageSlug,
                     'facilities',
@@ -91,6 +91,7 @@ final class CmsTargetRegistry implements CmsTargetRegistryInterface
                     '/facilities/'.$facultySlug.'/'.$subpageSlug,
                     'public.facilities.subpage',
                     $facultyKey,
+                    facultyScopeSlug: $facultySlug,
                 );
             }
         }
@@ -124,6 +125,15 @@ final class CmsTargetRegistry implements CmsTargetRegistryInterface
             $targets[] = $this->target('campus_life.'.$slug, 'campus_life', 'admin.cms.targets.campus_life.'.$slug, '/campus-life/'.$slug, 'public.campus-life.section', 'campus_life.landing');
         }
 
+        $targets[] = $this->target(
+            'campus_life.jobs',
+            'campus_life',
+            'admin.cms.targets.campus_life.jobs',
+            '/campus-life/career-development/jobs',
+            'public.campus-life.career-development.jobs',
+            'campus_life.career-development',
+        );
+
         return $targets;
     }
 
@@ -135,6 +145,7 @@ final class CmsTargetRegistry implements CmsTargetRegistryInterface
             $this->target('e_services.library', 'e_services', 'admin.cms.targets.e_services_pages.library', '/e-services/library', 'public.e-services.detail', 'e_services'),
             $this->target('e_services.staff-email', 'e_services', 'admin.cms.targets.e_services_pages.staff_email', '/e-services/staff-email', 'public.e-services.detail', 'e_services'),
             $this->target('e_services.it-support', 'e_services', 'admin.cms.targets.e_services_pages.it_support', '/e-services/it-support', 'public.e-services.detail', 'e_services'),
+            $this->target('e_services.suggestions-complaints', 'e_services', 'admin.cms.targets.e_services_pages.suggestions_complaints', '/e-services/suggestions-complaints', 'public.e-services.suggestions-complaints', 'e_services'),
             $this->target('contact', 'contact', 'admin.cms.targets.contact', '/contact', 'public.contact'),
         ];
     }
@@ -159,6 +170,9 @@ final class CmsTargetRegistry implements CmsTargetRegistryInterface
             $this->target('research.index', 'research', 'admin.cms.targets.research.index', '/research', 'public.research.index'),
             $this->target('research.publications', 'research', 'admin.cms.targets.research.publications', '/research/publications', 'public.research.publications.index', 'research.index'),
             $this->target('research.publication', 'research', 'admin.cms.targets.research.publication', null, 'public.research.publications.show', 'research.publications'),
+            $this->target('research.centers', 'research', 'admin.cms.targets.research.centers', '/research/centers', 'public.research.centers.index', 'research.index'),
+            $this->target('research.projects', 'research', 'admin.cms.targets.research.projects', '/research/projects', 'public.research.projects.index', 'research.index'),
+            $this->target('research.themes', 'research', 'admin.cms.targets.research.themes', '/research/themes', 'public.research.themes.index', 'research.index'),
             $this->target('research.experts', 'research', 'admin.cms.targets.research.experts', '/research/expert-finder', 'public.research.expert-finder', 'research.index'),
             $this->target('research.expert_profile', 'research', 'admin.cms.targets.research.expert_profile', null, 'public.research.researchers.show', 'research.experts'),
             $this->target('research.conferences', 'research', 'admin.cms.targets.research.conferences', '/research/conferences', 'public.research.conferences', 'research.index'),
@@ -176,6 +190,7 @@ final class CmsTargetRegistry implements CmsTargetRegistryInterface
         ?string $routeName,
         ?string $parentKey = null,
         bool $supportsDraftWorkflow = true,
+        ?string $facultyScopeSlug = null,
     ): CmsTargetDTO {
         return new CmsTargetDTO(
             key: $key,
@@ -185,6 +200,7 @@ final class CmsTargetRegistry implements CmsTargetRegistryInterface
             routeName: $routeName,
             parentKey: $parentKey,
             supportsDraftWorkflow: $supportsDraftWorkflow,
+            facultyScopeSlug: $facultyScopeSlug,
         );
     }
 
@@ -195,9 +211,11 @@ final class CmsTargetRegistry implements CmsTargetRegistryInterface
     }
 
     /** @return array<int, string> */
-    private function facultySubpageSlugs(): array
+    private function facultySubpageSlugs(string $facultySlug): array
     {
-        return ['overview', 'departments', 'labs', 'projects', 'alumni', 'valedictorians', 'training'];
+        $slugs = ['overview', 'departments', 'labs', 'projects', 'alumni', 'valedictorians', 'research'];
+
+        return $facultySlug === 'pharmacy' ? [...$slugs, 'training'] : $slugs;
     }
 
     /** @return array<int, string> */

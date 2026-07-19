@@ -9,7 +9,7 @@ use App\DTOs\Legacy\LegacyCleanedRowDTO;
 interface LegacyCleanedRowServiceInterface
 {
     /**
-     * @param array<string, string> $approvedActionsByField
+     * @param  array<string, string>  $approvedActionsByField
      */
     public function cleanRow(string $module, string $sourceTable, object|array $row, array $approvedActionsByField = []): LegacyCleanedRowDTO;
 }

@@ -21,5 +21,7 @@ final readonly class DynamicFormSubmissionDataDTO
         public ?string $userAgent,
         public ?string $eventSource = null,
         public ?string $eventId = null,
+        public ?string $jobId = null,
+        public ?string $jobSlug = null,
     ) {}
 }

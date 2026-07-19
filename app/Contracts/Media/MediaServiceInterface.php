@@ -60,4 +60,7 @@ interface MediaServiceInterface
 
     /** @param array<int, int> $mediaIds */
     public function publicImagesArePublishable(array $mediaIds): bool;
+
+    /** @param array<int, int> $mediaIds */
+    public function publicDocumentsArePublishable(array $mediaIds): bool;
 }

@@ -38,9 +38,9 @@ trait InteractsWithAboutEntityCmsWorkflow
     protected function mutateFormDataBeforeFill(array $data): array
     {
         $targetKey = $this->targetKey();
-        $payload = $this->cmsWorkflowService->latestEditableDraftPayload($targetKey)
+        $payload = $this->cmsWorkflowService->latestEditableDraftPayload($targetKey, (int) auth()->id())
             ?? $this->aboutEntityCmsService->getStoredData($targetKey)?->payload;
-        $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey);
+        $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey, (int) auth()->id());
 
         return is_array($payload) ? $this->payloadToFormData($payload) : $data;
     }

@@ -154,7 +154,7 @@ final class LegacyUrlContinuityInventoryService implements LegacyUrlContinuityIn
             ->orderBy('source_id')
             ->get(['module', 'source_table', 'source_id', 'raw_summary'])
             ->map(function (MigrationRejection $rejection): ?array {
-                $summary = is_array($rejection->raw_summary) ? $rejection->raw_summary : [];
+                $summary = $rejection->raw_summary ?? [];
                 $legacyPath = is_string($summary['legacy_path'] ?? null) ? trim($summary['legacy_path']) : '';
 
                 if ($legacyPath === '') {

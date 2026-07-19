@@ -65,7 +65,8 @@
     .reveal,
     .reveal-up,
     .reveal-left,
-    .reveal-right {
+    .reveal-right,
+    .reveal .reveal-item {
         opacity: 1 !important;
         transform: none !important;
         transition: none !important;

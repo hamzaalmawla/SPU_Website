@@ -44,6 +44,7 @@ class ManageArtificialIntelligenceFaculty extends Page implements HasForms
             'facilities.artificial-intelligence.study_plan' => 'Study Plan',
             'facilities.artificial-intelligence.labs' => 'Labs',
             'facilities.artificial-intelligence.projects' => 'Projects',
+            'facilities.artificial-intelligence.research' => __('admin.cms.targets.facilities.research'),
             'facilities.artificial-intelligence.alumni' => 'Alumni',
             'facilities.artificial-intelligence.valedictorians' => 'Valedictorians',
         ];
@@ -52,5 +53,10 @@ class ManageArtificialIntelligenceFaculty extends Page implements HasForms
     protected function defaultTargetKey(): string
     {
         return 'facilities.artificial-intelligence';
+    }
+
+    protected static function managedFacultyScope(): string
+    {
+        return 'artificial-intelligence';
     }
 }

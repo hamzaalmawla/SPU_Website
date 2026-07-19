@@ -21,10 +21,11 @@ final class DynamicFormPageRenderingTest extends TestCase
 
     public function test_job_application_page_renders_frontend_dynamic_form_shell(): void
     {
-        $this->get('/en/campus-life/career-development/jobs/apply')
+        $this->get('/en/campus-life/career-development/jobs/apply?job=lecturer-computer-science')
             ->assertOk()
             ->assertSee('Apply for Job')
             ->assertSee('Application Information')
+            ->assertSee('Lecturer in Computer Science')
             ->assertSee('x-data="dynamicFormShell()"', false)
             ->assertSee('x-if="$store.dynamicForm.schema"', false)
             ->assertSee('data-form-id="job-application"', false)

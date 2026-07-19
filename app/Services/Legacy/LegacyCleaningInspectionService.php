@@ -184,7 +184,7 @@ final class LegacyCleaningInspectionService implements LegacyCleaningInspectionS
     private function tableExists(string $table): bool
     {
         try {
-            return $this->oldDatabase->connection()->getSchemaBuilder()->hasTable($table);
+            return $this->oldDatabase->schema()->hasTable($table);
         } catch (Throwable) {
             return false;
         }
@@ -193,7 +193,7 @@ final class LegacyCleaningInspectionService implements LegacyCleaningInspectionS
     private function columnExists(string $table, string $column): bool
     {
         try {
-            return $this->oldDatabase->connection()->getSchemaBuilder()->hasColumn($table, $column);
+            return $this->oldDatabase->schema()->hasColumn($table, $column);
         } catch (Throwable) {
             return false;
         }

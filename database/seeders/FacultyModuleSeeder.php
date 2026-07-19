@@ -69,7 +69,7 @@ final class FacultyModuleSeeder extends Seeder
     /** @param array<string, mixed> $faculty */
     private function seedPages(int $facultyId, array $faculty): void
     {
-        $pages = ['overview', 'departments', 'study-plan', 'study-plan-course', 'labs', 'projects', 'alumni', 'valedictorians'];
+        $pages = ['overview', 'departments', 'study-plan', 'study-plan-course', 'labs', 'projects', 'research', 'alumni', 'valedictorians'];
 
         if ($faculty['public_slug'] === 'pharmacy') {
             $pages[] = 'training';
@@ -445,17 +445,14 @@ final class FacultyModuleSeeder extends Seeder
     /** @param array<string, mixed> $faculty */
     private function seedHonorStudents(int $facultyId, array $faculty): void
     {
-        foreach ([1, 2, 3] as $index) {
-            $now = now();
-            $identifier = $faculty['public_slug'].'-honor-'.$index;
-            DB::table('honor_students')->updateOrInsert(
-                ['student_identifier' => $identifier],
-                ['faculty_id' => $facultyId, 'academic_year' => '2025-2026', 'gpa' => 3.95 - ($index * 0.04), 'sort_order' => $index, 'is_enabled' => true, 'created_at' => $now, 'updated_at' => $now],
-            );
-            $studentId = (int) DB::table('honor_students')->where('student_identifier', $identifier)->value('id');
-            DB::table('honor_student_translations')->updateOrInsert(['honor_student_id' => $studentId, 'locale' => 'en'], ['full_name' => 'Student Name', 'created_at' => $now, 'updated_at' => $now]);
-            DB::table('honor_student_translations')->updateOrInsert(['honor_student_id' => $studentId, 'locale' => 'ar'], ['full_name' => 'اسم الطالب', 'created_at' => $now, 'updated_at' => $now]);
-        }
+        $placeholderIdentifiers = collect([1, 2, 3])
+            ->map(fn (int $index): string => $faculty['public_slug'].'-honor-'.$index)
+            ->all();
+
+        DB::table('honor_students')
+            ->where('faculty_id', $facultyId)
+            ->whereIn('student_identifier', $placeholderIdentifiers)
+            ->update(['is_enabled' => false, 'updated_at' => now()]);
     }
 
     /** @return array<int, array<string, mixed>> */
@@ -605,6 +602,7 @@ final class FacultyModuleSeeder extends Seeder
             'alumni' => ['ar' => 'الخريجون', 'en' => 'Alumni'],
             'valedictorians' => ['ar' => 'قائمة الشرف', 'en' => 'Honor List'],
             'training' => ['ar' => 'التدريب والتلمذة المهنية', 'en' => 'Training & Apprenticeship'],
+            'research' => ['ar' => 'أحدث الأبحاث', 'en' => 'Latest Research'],
             'study-plan' => ['ar' => 'الخطة الدراسية', 'en' => 'Study Plan'],
             'study-plan-course' => ['ar' => 'محاضرات المقرر', 'en' => 'Course Lessons'],
             default => ['ar' => $slug, 'en' => $slug],
@@ -621,6 +619,7 @@ final class FacultyModuleSeeder extends Seeder
                 'alumni' => 'استعرض سجلات خريجي '.$facultyName.'.',
                 'valedictorians' => 'قائمة الشرف والأوائل في '.$facultyName.'.',
                 'training' => 'مسار التدريب العملي لطلبة '.$facultyName.'.',
+                'research' => 'استكشف أحدث المنشورات والأبحاث العلمية في '.$facultyName.'.',
                 'study-plan' => 'الخطة الدراسية وتسلسل المقررات في '.$facultyName.'.',
                 'study-plan-course' => 'محاضرات ومواد المقررات في '.$facultyName.'.',
                 default => $facultyName,
@@ -634,6 +633,7 @@ final class FacultyModuleSeeder extends Seeder
             'alumni' => 'Browse alumni records for '.$facultyName.'.',
             'valedictorians' => 'Honor list and valedictorians for '.$facultyName.'.',
             'training' => 'Practical training pathway for '.$facultyName.' students.',
+            'research' => 'Explore the latest scholarly publications and research from '.$facultyName.'.',
             'study-plan' => 'Study plan and course sequence for '.$facultyName.'.',
             'study-plan-course' => 'Course lessons and materials for '.$facultyName.'.',
             default => $facultyName,

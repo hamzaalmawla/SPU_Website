@@ -16,7 +16,7 @@ The 175-page reference inventory remains the route baseline. Counts are provisio
 | Done | P0 | Locale switching | Reuse contextual language-switch DTOs in the footer so switching locale preserves the current page. |
 | Done | P0 | Browser locale | Bare-domain requests now negotiate AR/EN from the browser `Accept-Language` preference while explicit locale URLs remain authoritative. |
 | Done | P0 | Shared runtime | Removed generic-page slug/template metadata, ported the missing admissions hero, corrected the dormant footer-logo seed, and restored the reference header stacking level. |
-| Done | P0 | Route inventory | Reconciled all 175 effective reference pages in `Docs/FRONTEND_ROUTE_PARITY_MATRIX.md`: 43 complete, 7 redirects, 118 partial, and 7 missing. |
+| Done | P0 | Route inventory | Reconciled all 175 effective reference pages in `Docs/FRONTEND_ROUTE_PARITY_MATRIX.md`: 168 complete, 7 approved redirects, 0 partial, and 0 missing. |
 | Done | P0 | Route compatibility | Added browser-locale negotiation for approved unprefixed deep links and canonical compatibility for reference profile, article, facilities hub, and shared project-detail query URLs. |
 | Done | P0 | Legacy HTML continuity | Added exact locale-aware redirects for all 175 approved physical reference files, including query preservation, nested `index.html` paths, and renamed Campus Life/E-Services aliases. |
 | Done | P0 | Announcements | Added dedicated route precedence, announcement-only data queries, category filtering, pagination, CMS editor, protected preview, publication workflow, and landing-page links. |
@@ -25,11 +25,21 @@ The 175-page reference inventory remains the route baseline. Counts are provisio
 | Done | P1 | About | Completed all approved About routes with bilingual curated editors, entity draft/preview/publish/schedule workflows, publication-aware profiles/directories, Partnerships controls/proposal flow, verified content cleanup, assets, SEO/sitemap, accessibility, and focused tests. |
 | Done | P1 | E-Services | Added dedicated bilingual Library, Staff Email, and IT Support pages with independent CMS workflows, safe verified destinations, contact integration, navigation, SEO/sitemap, continuity, and tests. |
 | Done | P1 | News Gallery | Added bilingual Media Library curation, filters, featured selection, pagination, keyboard-accessible image viewing, preview/publish workflows, media readiness checks, and cache invalidation. |
-| Pending | P1 | Facilities | Implement faculty research pages for all seven faculties and restore functional galleries and project pagination. |
-| Pending | P1 | Research | Implement project, researcher, and expert-finder filtering and complete scholarly metadata. |
-| Pending | P1 | Campus Life | Restore job-board filtering, selected-job application context, sharing, pagination, and related jobs. |
-| Pending | P1 | Virtual Tour | Restore scene switching, drag/touch/zoom, hotspots, autoplay, thumbnails, fullscreen, and CMS-managed scenes. |
-| Pending | P2 | Shared UX | Normalize RTL sliders, dynamic reveal observation, calendar initial date, counters, keyboard behavior, and reduced motion. |
+| Done | P1 | Facilities | Implemented all seven faculty research pages with central publication data, bilingual CMS workflows, faculty scope, server pagination, canonical links, SEO, sitemap, assets, and tests. Gallery and project-pagination parity remain tracked separately. |
+| Done | P1 | Faculty Directories | Completed 33 department, lab, project, alumni, and valedictorian routes with family-wide AR/EN evidence, server pagination, related lab details, managed media, and query-preserving navigation. |
+| Done | P1 | Faculty Overviews | Completed all seven overview routes with eligible central research, safe canonical dean/profile links, bilingual CMS/preview behavior, and family-wide tests. |
+| Done | P1 | Campus Life Jobs | Added one bilingual CMS job catalog covering board, application, and eight details with filters, preview/publication, status/expiry enforcement, trusted application context, private CV storage, JobPosting metadata, and tests. |
+| Done | P1 | Faculty Study Plans | Completed all 14 study-plan/course routes with accessible dialogs and graph controls, validated selectors, safe resources/profiles, localized query preservation, and family-wide tests. |
+| Done | P1 | Admissions | Completed all nine remaining Admissions routes, removed fabricated/inert public data, added verified-media readiness and a validated application flow, and expanded AR/EN accessibility tests. |
+| Done | P1 | Homepage UX | Completed RTL-aware keyboard sliders, reduced-motion/autoplay/focus behavior, counters, dynamic reveals, asset validation, and focused JS/Blade tests. |
+| Done | P1 | Research | Added functional project, publication, researcher, and expert-finder controls plus verified scholarly metadata, structured data, and publication downloads. |
+| Done | P1 | Research Centers | Added one bilingual center/laboratory catalog with validated AR/EN identity, protected listing/detail preview, publish/schedule/unpublish workflow, explicit relationships, real affiliated researchers, SEO/sitemap coverage, and tests. |
+| Done | P1 | Research Projects & Themes | Added aggregate bilingual catalogs covering 19 listing/detail routes with protected preview, validated publication workflows, relationships, SEO/sitemap, and tests. |
+| Done | P1 | Research Completion | Completed repository behavior, eight scholarly publication details, researcher preview/taxonomy, conferences/registration context, and verified policy documents across 13 routes. |
+| Done | P1 | Campus Life | Completed job-board filtering, selected-job application context, sharing, pagination, related jobs, and safe landing portal guidance. |
+| Done | P1 | Virtual Tour | Added CMS-managed scenes with accessible switching, pan/zoom, hotspots, autoplay, thumbnails, fullscreen fallback, RTL, and reduced motion. |
+| Done | P2 | Shared UX | Normalized RTL sliders, dynamic reveals, counters, keyboard behavior, focus/autoplay handling, and reduced motion. |
+| Done | P1 | Final Route Batch | Completed Suggestions/Complaints secure workflow, News Articles shell CMS, and Pharmacy-only training editor; no reference routes remain partial. |
 | Pending | P0 | Legacy continuity | Inventory and import old-production query/document URLs beyond the complete 175-file approved reference alias set. |
 | Pending | P2 | Production content | Remove fake/sample contact data, broken settings assets, placeholders, and developer-facing public metadata. |
 | Pending | P2 | Production gate | Verify clean dependency installation, full tests, frontend build, queues, scheduler, cache, storage, security headers, monitoring, SEO, and launch checks. |

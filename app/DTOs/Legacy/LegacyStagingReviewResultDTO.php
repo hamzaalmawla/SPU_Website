@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\DTOs\Legacy;
 
 /**
- * @param array<string, int> $reviewStatusCounts
- * @param array<string, int> $classificationCounts
- * @param array<string, int> $blockerCounts
- * @param array<int, string> $paths
+ * @param  array<string, int>  $reviewStatusCounts
+ * @param  array<string, int>  $classificationCounts
+ * @param  array<string, int>  $blockerCounts
+ * @param  array<int, string>  $paths
  */
 final readonly class LegacyStagingReviewResultDTO
 {

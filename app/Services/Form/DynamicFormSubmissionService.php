@@ -6,6 +6,8 @@ namespace App\Services\Form;
 
 use App\Contracts\Form\DynamicFormSubmissionServiceInterface;
 use App\Contracts\News\NewsServiceInterface;
+use App\Contracts\Page\CampusLifePageServiceInterface;
+use App\DTOs\CampusLife\CampusLifeJobDTO;
 use App\DTOs\Form\DynamicFormSubmissionDataDTO;
 use App\DTOs\News\NewsEventDTO;
 use App\Mail\EventRegistrationReceived;
@@ -18,7 +20,10 @@ use Illuminate\Validation\ValidationException;
 
 final class DynamicFormSubmissionService implements DynamicFormSubmissionServiceInterface
 {
-    public function __construct(private readonly NewsServiceInterface $newsService) {}
+    public function __construct(
+        private readonly NewsServiceInterface $newsService,
+        private readonly CampusLifePageServiceInterface $campusLifePageService,
+    ) {}
 
     /** @return array<int, string> */
     public function allowedFormIds(): array
@@ -63,20 +68,24 @@ final class DynamicFormSubmissionService implements DynamicFormSubmissionService
                 }
             } elseif ($type === 'number') {
                 $fieldRules[] = 'numeric';
+            } elseif ($type === 'tel') {
+                $fieldRules[] = 'string';
+                $fieldRules[] = 'max:30';
+                $fieldRules[] = 'regex:/^[0-9+() .-]{7,30}$/';
             } elseif ($type === 'date') {
                 $fieldRules[] = 'date';
             } elseif ($type === 'checkbox') {
                 $fieldRules = [(bool) ($field['required'] ?? false) ? 'accepted' : 'boolean'];
             } elseif ($type === 'file') {
                 $fieldRules[] = 'file';
-                $fieldRules[] = 'max:5120';
-                $fieldRules[] = 'mimes:pdf';
+                $fieldRules[] = 'max:'.(int) ($field['maxKilobytes'] ?? 5120);
+                $fieldRules[] = 'mimes:'.(string) ($field['mimes'] ?? 'pdf');
             } elseif ($type === 'textarea') {
                 $fieldRules[] = 'string';
-                $fieldRules[] = 'max:5000';
+                $fieldRules[] = 'max:'.(int) ($field['maxLength'] ?? 5000);
             } else {
                 $fieldRules[] = 'string';
-                $fieldRules[] = 'max:1000';
+                $fieldRules[] = 'max:'.(int) ($field['maxLength'] ?? 1000);
             }
 
             $rules[$name] = $fieldRules;
@@ -95,6 +104,18 @@ final class DynamicFormSubmissionService implements DynamicFormSubmissionService
 
         if ($data->eventSource !== null) {
             $payload['_context'] = $this->validatedEventContext($data);
+        }
+
+        if ($data->formId === 'job-application') {
+            $payload['_context'] = $this->validatedJobContext($data);
+        }
+
+        if ($data->formId === 'admissions-application') {
+            $payload['_context'] = ['source' => 'admissions'];
+        }
+
+        if ($data->formId === 'suggestions-complaints') {
+            $payload['_context'] = ['source' => 'e-services-suggestions-complaints'];
         }
 
         $files = [];
@@ -119,7 +140,7 @@ final class DynamicFormSubmissionService implements DynamicFormSubmissionService
             'user_agent' => $data->userAgent,
         ]);
 
-        if (is_array($payload['_context'] ?? null) && is_string($payload['email'] ?? null)) {
+        if (($payload['_context']['source'] ?? null) === 'news-events' && is_string($payload['email'] ?? null)) {
             Mail::to($payload['email'])->queue(new EventRegistrationReceived(
                 applicantName: $this->applicantName($payload) ?? $payload['email'],
                 eventTitle: (string) ($payload['_context']['event_title'] ?? ''),
@@ -167,6 +188,25 @@ final class DynamicFormSubmissionService implements DynamicFormSubmissionService
             'source' => 'news-events',
             'event_id' => $event->id,
             'event_title' => $event->title,
+        ];
+    }
+
+    /** @return array{source: string, job_id: string, job_slug: string, job_title: string} */
+    private function validatedJobContext(DynamicFormSubmissionDataDTO $data): array
+    {
+        $job = $data->jobSlug !== null
+            ? $this->campusLifePageService->findOpenCareerJob($data->jobSlug, $data->locale)
+            : null;
+
+        if (! $job instanceof CampusLifeJobDTO || ! $job->applicationEligible || $data->jobId === null || $job->id !== $data->jobId) {
+            throw ValidationException::withMessages(['job_slug' => ['The selected job is not open for applications.']]);
+        }
+
+        return [
+            'source' => 'campus-life-jobs',
+            'job_id' => $job->id,
+            'job_slug' => $job->slug,
+            'job_title' => $job->title,
         ];
     }
 
@@ -229,6 +269,17 @@ final class DynamicFormSubmissionService implements DynamicFormSubmissionService
                 ['name' => 'studentId', 'type' => 'text', 'required' => false],
                 ['name' => 'notes', 'type' => 'textarea', 'required' => false],
             ],
+            'admissions-application' => [
+                ['name' => 'fullName', 'type' => 'text', 'required' => true],
+                ['name' => 'email', 'type' => 'email', 'required' => true],
+                ['name' => 'phone', 'type' => 'tel', 'required' => true],
+                ['name' => 'applicantType', 'type' => 'select', 'required' => true, 'options' => [['value' => 'new'], ['value' => 'transfer'], ['value' => 'equivalency'], ['value' => 'international']]],
+                ['name' => 'targetFaculty', 'type' => 'select', 'required' => true, 'options' => [['value' => 'medicine'], ['value' => 'dentistry'], ['value' => 'pharmacy'], ['value' => 'artificial-intelligence'], ['value' => 'building-construction-engineering'], ['value' => 'petroleum'], ['value' => 'business-administration']]],
+                ['name' => 'secondaryCertificate', 'type' => 'text', 'required' => true],
+                ['name' => 'certificateCountry', 'type' => 'text', 'required' => true],
+                ['name' => 'notes', 'type' => 'textarea', 'required' => false],
+                ['name' => 'agreeToTerms', 'type' => 'checkbox', 'required' => true],
+            ],
             'job-application' => [
                 ['name' => 'firstNameAr', 'type' => 'text', 'required' => true],
                 ['name' => 'lastNameAr', 'type' => 'text', 'required' => true],
@@ -254,6 +305,16 @@ final class DynamicFormSubmissionService implements DynamicFormSubmissionService
                 ['name' => 'hasPriorCriminalRecord', 'type' => 'select', 'required' => true, 'options' => [['value' => 'no'], ['value' => 'yes']]],
                 ['name' => 'canProvideReferences', 'type' => 'select', 'required' => true, 'options' => [['value' => 'yes'], ['value' => 'no']]],
                 ['name' => 'agreeToTerms', 'type' => 'checkbox', 'required' => true],
+            ],
+            'suggestions-complaints' => [
+                ['name' => 'fullName', 'type' => 'text', 'required' => true, 'maxLength' => 120],
+                ['name' => 'email', 'type' => 'email', 'required' => true],
+                ['name' => 'phone', 'type' => 'tel', 'required' => true],
+                ['name' => 'requestType', 'type' => 'select', 'required' => true, 'options' => [['value' => 'suggestion'], ['value' => 'complaint'], ['value' => 'inquiry']]],
+                ['name' => 'subject', 'type' => 'text', 'required' => true, 'maxLength' => 180],
+                ['name' => 'message', 'type' => 'textarea', 'required' => true, 'maxLength' => 5000],
+                ['name' => 'attachment', 'type' => 'file', 'required' => false, 'mimes' => 'pdf,jpg,jpeg,png', 'maxKilobytes' => 5120],
+                ['name' => 'consent', 'type' => 'checkbox', 'required' => true],
             ],
         ];
     }

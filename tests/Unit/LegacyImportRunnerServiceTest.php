@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use App\Contracts\Legacy\LegacyImportRunnerServiceInterface;
 use App\Contracts\Legacy\LegacyCleaningInspectionServiceInterface;
 use App\Contracts\Legacy\LegacyImportBatchServiceInterface;
-use App\Contracts\Legacy\LegacyIntegrityInspectionServiceInterface;
 use App\Contracts\Legacy\LegacyImportInspectionServiceInterface;
 use App\Contracts\Legacy\LegacyImportModuleRegistryInterface;
+use App\Contracts\Legacy\LegacyImportRunnerServiceInterface;
+use App\Contracts\Legacy\LegacyIntegrityInspectionServiceInterface;
 use App\DTOs\Legacy\LegacyImportModuleRunnerDTO;
 use App\Services\Legacy\LegacyImportRunnerService;
 use Illuminate\Foundation\Testing\RefreshDatabase;

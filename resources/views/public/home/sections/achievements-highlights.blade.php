@@ -20,7 +20,18 @@
     $sectionTitle = $decodeHtmlEntities($section->payload->title);
 @endphp
 
-<section x-data="honorPanel()" data-items="{{ json_encode($honorItems, JSON_THROW_ON_ERROR) }}" class="py-16 bg-white font-hacen relative overflow-hidden reveal">
+<section x-data="honorPanel()"
+         data-items="{{ json_encode($honorItems, JSON_THROW_ON_ERROR) }}"
+         data-item-label="{{ __('public.show_item') }}"
+         class="py-16 bg-white font-hacen relative overflow-hidden reveal"
+         role="region"
+         aria-roledescription="{{ __('public.carousel') }}"
+         aria-label="{{ $sectionTitle }}"
+         @keydown="handleKey($event)"
+         @mouseenter="stopAuto()"
+         @mouseleave="startAuto()"
+         @focusin="stopAuto()"
+         @focusout="resumeAuto($event)">
     <div class="container">
         <div class="flex items-end justify-between mb-12">
             <div>
@@ -30,14 +41,14 @@
                 <h2 class="text-3xl lg:text-4xl font-bold text-spu-blue">{{ $sectionTitle }}</h2>
             </div>
             <div class="flex gap-3">
-                <button @click="handleManual('prev')" type="button" class="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all"><img src="/images/icon-chevron-left-outline.svg" class="w-4 h-4 rtl:rotate-180" alt="{{ __('public.previous') }}"></button>
-                <button @click="handleManual('next')" type="button" class="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all"><img src="/images/icon-chevron-right-outline.svg" class="w-4 h-4 rtl:rotate-180" alt="{{ __('public.next') }}"></button>
+                <button @click="handleManual('prev')" type="button" class="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-controls="honor-panels" aria-label="{{ __('public.previous') }}"><img src="/images/icon-chevron-left-outline.svg" class="w-4 h-4 rtl:rotate-180" alt=""></button>
+                <button @click="handleManual('next')" type="button" class="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-controls="honor-panels" aria-label="{{ __('public.next') }}"><img src="/images/icon-chevron-right-outline.svg" class="w-4 h-4 rtl:rotate-180" alt=""></button>
             </div>
         </div>
 
-        <div class="relative h-[500px] w-full">
+        <div id="honor-panels" class="relative h-[500px] w-full">
             <template x-for="(item, index) in items" :key="itemKey(item, index)">
-                <div class="absolute transition-all duration-[1800ms] [transition-timing-function:cubic-bezier(0.25,1,0.5,1)] rounded-[40px] overflow-hidden group" :class="panelClass(index)">
+                <div class="absolute transition-all duration-[1800ms] [transition-timing-function:cubic-bezier(0.25,1,0.5,1)] rounded-[40px] overflow-hidden group" :class="panelClass(index)" role="group" aria-roledescription="{{ __('public.slide') }}" :aria-label="itemLabel(index)" :aria-hidden="isHidden(index)">
                     <img :src="item.image" :alt="itemAlt(item)" class="absolute inset-0 w-full h-full object-cover transition-transform duration-[3000ms] group-hover:scale-110">
                     <div x-show="isPrimary(index)" x-transition:enter="transition ease-out duration-[1200ms] delay-[600ms]" x-transition:enter-start="opacity-0 translate-y-12" x-transition:enter-end="opacity-100 translate-y-0" class="absolute inset-0 bg-gradient-to-t from-spu-blue/95 via-spu-blue/40 to-transparent flex flex-col justify-end p-10 text-white">
                         <div class="flex items-center gap-3 mb-4">
@@ -53,14 +64,14 @@
                             </a>
                         </template>
                     </div>
-                    <div x-show="isSecondary(index)" class="absolute inset-0 bg-black/30 hover:bg-black/10 transition-colors cursor-pointer" @click="handleManual('goto', index)"></div>
+                    <button x-show="isSecondary(index)" type="button" class="absolute inset-0 hidden bg-black/30 hover:bg-black/10 transition-colors cursor-pointer focus-visible:outline focus-visible:outline-4 focus-visible:-outline-offset-4 focus-visible:outline-white lg:block" @click="handleManual('goto', index)" :aria-label="itemLabel(index)"></button>
                 </div>
             </template>
         </div>
 
         <div class="flex justify-center gap-3 mt-10">
             <template x-for="(item, index) in items" :key="dotKey(item, index)">
-                <button @click="handleManual('goto', index)" class="h-2 rounded-full transition-all duration-1000" :class="dotClass(index)" :aria-label="itemLabel(index)"></button>
+                <button type="button" @click="handleManual('goto', index)" class="h-2 rounded-full transition-all duration-1000" :class="dotClass(index)" :aria-label="itemLabel(index)" :aria-current="isPrimary(index)"></button>
             </template>
         </div>
     </div>

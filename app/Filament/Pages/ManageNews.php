@@ -143,8 +143,8 @@ class ManageNews extends Page implements HasForms
     {
         $this->assertNewsTarget($targetKey);
 
-        if (! in_array($targetKey, ['news.index', 'news.announcements', 'news.events', 'news.gallery'], true)) {
-            $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey);
+        if (! in_array($targetKey, ['news.index', 'news.articles', 'news.announcements', 'news.events', 'news.gallery'], true)) {
+            $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey, (int) auth()->id());
             $this->form->fill([
                 'target_key' => $targetKey,
                 'ar_index' => [],
@@ -154,9 +154,19 @@ class ManageNews extends Page implements HasForms
             return;
         }
 
-        $draftPayload = $this->cmsWorkflowService->latestEditableDraftPayload($targetKey);
+        $draftPayload = $this->cmsWorkflowService->latestEditableDraftPayload($targetKey, (int) auth()->id());
         $payload = is_array($draftPayload) ? $draftPayload : $this->newsService->getEditablePayload($targetKey);
-        $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey);
+        $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey, (int) auth()->id());
+
+        if ($targetKey === 'news.articles') {
+            $this->form->fill([
+                'target_key' => $targetKey,
+                'ar_articles' => is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
+                'en_articles' => is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
+            ]);
+
+            return;
+        }
 
         if ($targetKey === 'news.announcements') {
             $this->form->fill([
@@ -334,6 +344,15 @@ class ManageNews extends Page implements HasForms
             ];
         }
 
+        if (($state['target_key'] ?? null) === 'news.articles') {
+            return [
+                'translations' => [
+                    'ar' => is_array($state['ar_articles'] ?? null) ? $state['ar_articles'] : [],
+                    'en' => is_array($state['en_articles'] ?? null) ? $state['en_articles'] : [],
+                ],
+            ];
+        }
+
         if (($state['target_key'] ?? null) === 'news.events') {
             return [
                 'translations' => [
@@ -368,8 +387,28 @@ class ManageNews extends Page implements HasForms
         $eventsPrefix = $locale.'_events';
         $galleryPrefix = $locale.'_gallery';
         $indexPrefix = $locale.'_index';
+        $articlesPrefix = $locale.'_articles';
 
         return [
+            Section::make('News Articles Shell')
+                ->schema([
+                    TextInput::make($articlesPrefix.'.title')->label('Page Title')->required()->maxLength(160),
+                    Textarea::make($articlesPrefix.'.summary')->label('Page Summary')->required()->rows(2)->columnSpanFull(),
+                    MediaPicker::image($articlesPrefix.'.heroImage', 'Hero Image', true),
+                    TextInput::make($articlesPrefix.'.allLabel')->label('All Articles Label')->required()->maxLength(120),
+                    TextInput::make($articlesPrefix.'.searchLabel')->label('Search Label')->required()->maxLength(120),
+                    TextInput::make($articlesPrefix.'.searchPlaceholder')->label('Search Placeholder')->required()->maxLength(180),
+                    TextInput::make($articlesPrefix.'.searchAction')->label('Search Action')->required()->maxLength(80),
+                    TextInput::make($articlesPrefix.'.readMoreLabel')->label('Read More Label')->required()->maxLength(80),
+                    Textarea::make($articlesPrefix.'.emptyLabel')->label('Empty State')->required()->rows(2),
+                    TextInput::make($articlesPrefix.'.previousLabel')->label('Previous Page Label')->required()->maxLength(120),
+                    TextInput::make($articlesPrefix.'.nextLabel')->label('Next Page Label')->required()->maxLength(120),
+                    TextInput::make($articlesPrefix.'.seoTitle')->label('SEO Title')->required()->maxLength(180),
+                    Textarea::make($articlesPrefix.'.seoDescription')->label('SEO Description')->required()->rows(2),
+                    MediaPicker::image($articlesPrefix.'.seoImage', 'SEO Image', true),
+                ])
+                ->columns(2)
+                ->visible(fn (): bool => $this->targetKeyForSchema() === 'news.articles'),
             Section::make('Announcement Page')
                 ->schema([
                     TextInput::make($announcementPrefix.'.pageTitle')->label('Page Title')->required()->maxLength(160),
@@ -447,7 +486,7 @@ class ManageNews extends Page implements HasForms
                 ->schema([
                     TextInput::make($locale.'_target_pending')->label('Status')->default('Structured form pending for this news target')->disabled(),
                 ])
-                ->visible(fn (): bool => ! in_array($this->targetKeyForSchema(), ['news.index', 'news.announcements', 'news.events', 'news.gallery'], true)),
+                ->visible(fn (): bool => ! in_array($this->targetKeyForSchema(), ['news.index', 'news.articles', 'news.announcements', 'news.events', 'news.gallery'], true)),
             Section::make('Hero')->schema([
                 TextInput::make($indexPrefix.'.pageTitle')->label('Page Title')->required()->maxLength(160),
                 TextInput::make($indexPrefix.'.heroTitle')->label('Hero Title')->required()->maxLength(160),

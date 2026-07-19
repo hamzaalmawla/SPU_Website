@@ -1,0 +1,87 @@
+import assert from 'node:assert/strict';
+import { afterEach, test } from 'node:test';
+
+import { createCalendarApp } from '../../resources/js/alpine/calendarApp.js';
+import { createHeroSlider } from '../../resources/js/alpine/heroSlider.js';
+import { createHonorPanel } from '../../resources/js/alpine/honorPanel.js';
+import { createStatsCounter } from '../../resources/js/alpine/statsCounter.js';
+
+const originalWindow = globalThis.window;
+const originalDocument = globalThis.document;
+const originalIntersectionObserver = globalThis.IntersectionObserver;
+
+afterEach(() => {
+    globalThis.window = originalWindow;
+    globalThis.document = originalDocument;
+    globalThis.IntersectionObserver = originalIntersectionObserver;
+});
+
+function installReducedMotionBrowser() {
+    globalThis.document = {
+        activeElement: null,
+        documentElement: { lang: 'en', direction: 'ltr' },
+    };
+    globalThis.window = {
+        getComputedStyle: () => ({ direction: 'ltr' }),
+        matchMedia: () => ({
+            matches: true,
+            addEventListener() {},
+            removeEventListener() {},
+        }),
+    };
+}
+
+function root(dataset = {}) {
+    return {
+        dataset,
+        contains: () => false,
+        matches: () => false,
+    };
+}
+
+test('hero and honor autoplay remain stopped under reduced motion', () => {
+    installReducedMotionBrowser();
+
+    const hero = createHeroSlider();
+    hero.$el = root({ images: JSON.stringify(['/one.jpg', '/two.jpg']) });
+    hero.init();
+
+    const honor = createHonorPanel();
+    honor.$el = root({
+        items: JSON.stringify([{ id: 1 }, { id: 2 }]),
+        itemLabel: 'Show item',
+    });
+    honor.init();
+
+    assert.equal(hero._timer, null);
+    assert.equal(honor._timer, null);
+    assert.equal(honor.itemLabel(0), 'Show item 1 / 2');
+});
+
+test('calendar preserves the first chronological event and stops autoplay', () => {
+    installReducedMotionBrowser();
+    const calendar = createCalendarApp();
+    calendar.$el = root({
+        events: JSON.stringify([
+            { id: 2, title: 'Later', startsAt: '2026-08-20' },
+            { id: 1, title: 'First', startsAt: '2026-08-10' },
+        ]),
+    });
+
+    calendar.init();
+
+    assert.equal(calendar.selectedDate, '2026-08-10');
+    assert.equal(calendar.selectedEvent.title, 'First');
+    assert.equal(calendar.carouselInterval, null);
+});
+
+test('counters retain their server-rendered value under reduced motion', () => {
+    installReducedMotionBrowser();
+    const target = { dataset: { value: '1250' }, textContent: '1250' };
+    const counter = createStatsCounter();
+    counter.$el = { querySelectorAll: () => [target] };
+
+    counter.init();
+
+    assert.equal(target.textContent, '1250');
+});

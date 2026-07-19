@@ -105,6 +105,7 @@ return [
                 'alumni' => 'الخريجون',
                 'valedictorians' => 'الطلبة الأوائل',
                 'training' => 'التدريب',
+                'research' => 'البحث العلمي',
             ],
             'admissions' => [
                 'landing' => 'القبول والتسجيل',
@@ -124,6 +125,7 @@ return [
                 'transport' => 'النقل',
                 'clubs-activities' => 'الأندية والأنشطة',
                 'career-development' => 'التطوير المهني',
+                'jobs' => 'وظائف التطوير المهني',
                 'dental' => 'عيادات الأسنان',
                 'hospital' => 'المستشفى الجامعي',
                 'health-insurance' => 'التأمين الصحي',
@@ -139,6 +141,7 @@ return [
                 'library' => 'المكتبة الإلكترونية',
                 'staff_email' => 'إرشادات بريد الموظفين',
                 'it_support' => 'دعم تكنولوجيا المعلومات',
+                'suggestions_complaints' => 'الاقتراحات والشكاوى',
             ],
             'contact' => 'التواصل',
             'news' => [
@@ -153,6 +156,9 @@ return [
                 'index' => 'الأبحاث',
                 'publications' => 'المنشورات البحثية',
                 'publication' => 'منشور بحثي',
+                'centers' => 'مراكز ومخابر البحث',
+                'projects' => 'المشاريع البحثية',
+                'themes' => 'المجالات البحثية',
                 'experts' => 'الباحث عن الخبراء',
                 'expert_profile' => 'ملف خبير',
                 'conferences' => 'المؤتمرات والندوات',

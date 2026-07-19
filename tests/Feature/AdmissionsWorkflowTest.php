@@ -175,8 +175,8 @@ final class AdmissionsWorkflowTest extends TestCase
 
     public function test_imported_admissions_pages_render_redirects_and_have_curated_editors(): void
     {
-        $this->get('/en/admissions/study-system')->assertRedirect('/en/admissions/documents');
-        $this->get('/en/admissions/academic-warnings')->assertRedirect('/en/admissions/documents');
+        $this->get('/en/admissions/study-system')->assertRedirect('/en/admissions/documents?tab=study-system');
+        $this->get('/en/admissions/academic-warnings')->assertRedirect('/en/admissions/documents?tab=academic-warnings');
 
         foreach ([
             'admissions.filling-vacancies' => ['path' => '/en/admissions/filling-vacancies', 'state' => 'en_filling_vacancies', 'title' => 'Filling Vacant Seats'],
@@ -453,5 +453,76 @@ final class AdmissionsWorkflowTest extends TestCase
 
         $this->assertSame('Curated Transfer Notes', $draft->payload_json['translations']['en']['notesTitle'] ?? null);
         $this->assertContains('Curated Transfer Step', $stepTitles);
+    }
+
+    public function test_all_requested_admissions_defaults_pass_specialized_publish_readiness(): void
+    {
+        $admissions = app(AdmissionsPageServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+
+        foreach (['landing', 'requirements', 'tuition', 'faq', 'how-to-apply', 'transfer', 'calendar', 'documents', 'filling-vacancies'] as $slug) {
+            $targetKey = 'admissions.'.$slug;
+            $readiness = $workflow->readiness($targetKey, $admissions->getEditablePayload($targetKey));
+
+            $this->assertTrue($readiness->isReady, $targetKey.': '.json_encode($readiness->errors));
+        }
+    }
+
+    public function test_admissions_readiness_rejects_fake_tuition_and_inert_payment_actions(): void
+    {
+        $admissions = app(AdmissionsPageServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $payload = $admissions->getEditablePayload('admissions.tuition');
+
+        foreach (['ar', 'en'] as $locale) {
+            $payload['translations'][$locale]['feeRows'][] = [
+                'faculty' => 'Medicine',
+                'type' => 'New',
+                'tuitionFee' => '$15,000',
+                'registrationFee' => '$500',
+                'additionalFees' => '$250 (Lab)',
+            ];
+            $payload['translations'][$locale]['methods'][] = [
+                'title' => 'Online payment',
+                'desc' => 'Placeholder payment method',
+                'cta' => 'Pay now',
+                'ctaUrl' => '#',
+            ];
+        }
+
+        $readiness = $workflow->readiness('admissions.tuition', $payload);
+
+        $this->assertFalse($readiness->isReady);
+        $this->assertArrayHasKey('ar', $readiness->errors);
+        $this->assertArrayHasKey('en', $readiness->errors);
+    }
+
+    public function test_calendar_and_documents_readiness_reject_unverified_downloads(): void
+    {
+        $admissions = app(AdmissionsPageServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+
+        foreach (['calendar', 'documents'] as $slug) {
+            $targetKey = 'admissions.'.$slug;
+            $payload = $admissions->getEditablePayload($targetKey);
+
+            foreach (['ar', 'en'] as $locale) {
+                if ($slug === 'calendar') {
+                    $payload['translations'][$locale]['download'] = [
+                        'title' => 'Calendar',
+                        'button' => 'Download',
+                        'href' => '/storage/media/document/calendar.pdf',
+                        'mediaId' => 999999,
+                    ];
+                } else {
+                    $payload['translations'][$locale]['tabs'][0]['subTabs'][0]['download'] = [
+                        'href' => '/storage/media/document/checklist.pdf',
+                        'mediaId' => 999999,
+                    ];
+                }
+            }
+
+            $this->assertFalse($workflow->readiness($targetKey, $payload)->isReady, $targetKey);
+        }
     }
 }

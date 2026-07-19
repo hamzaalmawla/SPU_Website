@@ -44,6 +44,7 @@ class ManageBuildingConstructionEngineeringFaculty extends Page implements HasFo
             'facilities.building-construction-engineering.study_plan' => 'Study Plan',
             'facilities.building-construction-engineering.labs' => 'Labs',
             'facilities.building-construction-engineering.projects' => 'Projects',
+            'facilities.building-construction-engineering.research' => __('admin.cms.targets.facilities.research'),
             'facilities.building-construction-engineering.alumni' => 'Alumni',
             'facilities.building-construction-engineering.valedictorians' => 'Valedictorians',
         ];
@@ -52,5 +53,10 @@ class ManageBuildingConstructionEngineeringFaculty extends Page implements HasFo
     protected function defaultTargetKey(): string
     {
         return 'facilities.building-construction-engineering';
+    }
+
+    protected static function managedFacultyScope(): string
+    {
+        return 'building-construction-engineering';
     }
 }

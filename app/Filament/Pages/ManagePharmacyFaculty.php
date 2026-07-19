@@ -44,13 +44,20 @@ class ManagePharmacyFaculty extends Page implements HasForms
             'facilities.pharmacy.study_plan' => 'Study Plan',
             'facilities.pharmacy.labs' => 'Labs',
             'facilities.pharmacy.projects' => 'Projects',
+            'facilities.pharmacy.research' => __('admin.cms.targets.facilities.research'),
             'facilities.pharmacy.alumni' => 'Alumni',
             'facilities.pharmacy.valedictorians' => 'Valedictorians',
+            'facilities.pharmacy.training' => 'Training',
         ];
     }
 
     protected function defaultTargetKey(): string
     {
         return 'facilities.pharmacy';
+    }
+
+    protected static function managedFacultyScope(): string
+    {
+        return 'pharmacy';
     }
 }

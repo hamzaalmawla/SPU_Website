@@ -213,8 +213,8 @@ final class LegacyContentCleaningService implements LegacyContentCleaningService
     }
 
     /**
-     * @param array<int, string> $issues
-     * @param array<int, string> $messages
+     * @param  array<int, string>  $issues
+     * @param  array<int, string>  $messages
      */
     private function resultForPossiblyMissingValue(string $field, ?string $original, ?string $cleaned, bool $required, array $issues, array $messages): LegacyCleaningDecisionDTO
     {
@@ -229,8 +229,8 @@ final class LegacyContentCleaningService implements LegacyContentCleaningService
     }
 
     /**
-     * @param array<int, string> $issueCodes
-     * @param array<int, string> $messages
+     * @param  array<int, string>  $issueCodes
+     * @param  array<int, string>  $messages
      */
     private function decision(string $field, string $decision, ?string $originalValue, ?string $cleanedValue, bool $canImportPublicly, array $issueCodes, array $messages): LegacyCleaningDecisionDTO
     {

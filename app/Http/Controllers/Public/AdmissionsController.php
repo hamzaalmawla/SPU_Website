@@ -46,21 +46,24 @@ final class AdmissionsController extends Controller
         $page = $this->admissionsPageService->getSection($section, $locale);
         abort_if($page === null, 404);
 
+        $queryString = $request->getQueryString();
+        $languageSwitchSuffix = '/'.$page->sectionSlug.($queryString !== null ? '?'.$queryString : '');
+
         return view('public.admissions.section', [
             'locale' => $locale,
             'direction' => $page->direction,
             'navigation' => $this->navigationService->getFullNavigationPayload($locale, $request->path()),
             'settings' => $this->settingsService->getPublicSettings($locale),
-            'languageSwitch' => $this->languageSwitchLinks($locale, '/'.$page->sectionSlug),
+            'languageSwitch' => $this->languageSwitchLinks($locale, $languageSwitchSuffix),
             'isPreview' => false,
             'seo' => $this->sectionSeo($locale, $page),
             'page' => $page,
         ]);
     }
 
-    public function redirectToDocuments(string $locale): RedirectResponse
+    public function redirectToDocuments(string $locale, string $tab): RedirectResponse
     {
-        return redirect('/'.$locale.'/admissions/documents', 301);
+        return redirect('/'.$locale.'/admissions/documents?tab='.$tab, 301);
     }
 
     private function landingSeo(string $locale, AdmissionsPageDTO $page): mixed

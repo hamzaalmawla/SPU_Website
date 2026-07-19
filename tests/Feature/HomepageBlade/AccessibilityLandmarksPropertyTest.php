@@ -17,7 +17,7 @@ class AccessibilityLandmarksPropertyTest extends TestCase
         $html = view('layouts.public', $data)->render();
 
         $this->assertMatchesRegularExpression('/<nav\s[^>]*aria-label/', $html, 'Expected <nav> with aria-label');
-        $this->assertStringContainsString('<main>', $html, 'Expected <main> element');
+        $this->assertMatchesRegularExpression('/<main(?:\s[^>]*)?>/', $html, 'Expected <main> element');
         $this->assertMatchesRegularExpression('/<footer\s/', $html, 'Expected <footer> element');
     }
 

@@ -1,4 +1,5 @@
 import dayjs from 'dayjs';
+import { horizontalKeyAction, observeReducedMotion } from '../utils/motionDirection.js';
 
 const CALENDAR_GRID_DAYS = 35;
 
@@ -34,6 +35,8 @@ export function createCalendarApp() {
         selectedDate: dayjs().format('YYYY-MM-DD'),
         activeEventIndex: 0,
         carouselInterval: null,
+        reducedMotion: false,
+        _removeMotionObserver: null,
 
         init() {
             let incoming = [];
@@ -46,7 +49,15 @@ export function createCalendarApp() {
             }
 
             this.setEvents(incoming);
-            this.startCarousel();
+            this._removeMotionObserver = observeReducedMotion((reduced) => {
+                this.reducedMotion = reduced;
+                reduced ? this.stopCarousel() : this.startCarousel();
+            });
+        },
+
+        destroy() {
+            this.stopCarousel();
+            this._removeMotionObserver?.();
         },
 
         setEvents(events = []) {
@@ -164,8 +175,22 @@ export function createCalendarApp() {
             return this.activeEventIndex === index ? 'w-[24px] bg-[#27316d]' : 'w-[8px] bg-[#d1d5de]';
         },
 
+        isEventActive(index) {
+            return this.activeEventIndex === index;
+        },
+
         eventDotLabel(index) {
-            return `View event ${index + 1}`;
+            const label = this.$el.dataset.eventLabel || 'View event';
+            return `${label} ${index + 1} / ${this.selectedDateEvents.length}`;
+        },
+
+        dayLabel(day) {
+            return new Intl.DateTimeFormat(getCurrentLocale(), { dateStyle: 'long' })
+                .format(dayjs(day.date).toDate());
+        },
+
+        isDateSelected(day) {
+            return this.selectedDate === day.date;
         },
 
         dayButtonClass(day) {
@@ -196,7 +221,7 @@ export function createCalendarApp() {
         startCarousel() {
             this.stopCarousel();
 
-            if (this.selectedDateEvents.length <= 1) return;
+            if (this.reducedMotion || this.selectedDateEvents.length <= 1 || this.hasActiveInteraction()) return;
 
             this.carouselInterval = setInterval(() => {
                 this.activeEventIndex = (this.activeEventIndex + 1) % this.selectedDateEvents.length;
@@ -208,6 +233,35 @@ export function createCalendarApp() {
                 clearInterval(this.carouselInterval);
                 this.carouselInterval = null;
             }
+        },
+
+        hasActiveInteraction() {
+            const hovered = typeof this.$el.matches === 'function' && this.$el.matches(':hover');
+            const focused = typeof document !== 'undefined' && this.$el.contains(document.activeElement);
+
+            return hovered || focused;
+        },
+
+        resumeCarousel(event) {
+            if (event?.relatedTarget && this.$el.contains(event.relatedTarget)) return;
+            this.startCarousel();
+        },
+
+        moveEvent(action) {
+            const count = this.selectedDateEvents.length;
+            if (count <= 1) return;
+
+            this.stopCarousel();
+            const step = action === 'next' ? 1 : -1;
+            this.activeEventIndex = (this.activeEventIndex + step + count) % count;
+        },
+
+        handleCarouselKey(event) {
+            const action = horizontalKeyAction(event, this.$el);
+            if (!action) return;
+
+            event.preventDefault();
+            this.moveEvent(action);
         },
     };
 }

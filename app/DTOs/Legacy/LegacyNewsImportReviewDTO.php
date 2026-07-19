@@ -7,7 +7,7 @@ namespace App\DTOs\Legacy;
 final readonly class LegacyNewsImportReviewDTO
 {
     /**
-     * @param array<string, int> $rejectionReasonCounts
+     * @param  array<string, int>  $rejectionReasonCounts
      */
     public function __construct(
         public int $categories,

@@ -27,38 +27,101 @@ final class EServicesPageService implements EServicesPageServiceInterface
 
     public function getSuggestionsComplaintsPage(string $locale): EServicesPageDTO
     {
+        $published = $this->cmsWorkflowService->getPublishedPayload('e_services.suggestions-complaints');
+        $content = is_array($published['translations'][$locale] ?? null)
+            ? $published['translations'][$locale]
+            : $this->suggestionsComplaintsFallback($locale);
+
+        return $this->suggestionsComplaintsPageFromContent($locale, $content);
+    }
+
+    public function buildSuggestionsComplaintsPreviewPage(string $locale, array $content): EServicesPageDTO
+    {
+        return $this->suggestionsComplaintsPageFromContent($locale, $content);
+    }
+
+    public function getSuggestionsComplaintsEditablePayload(): array
+    {
+        $published = $this->cmsWorkflowService->getPublishedPayload('e_services.suggestions-complaints');
+
+        return [
+            'translations' => [
+                'ar' => is_array($published['translations']['ar'] ?? null) ? $published['translations']['ar'] : $this->suggestionsComplaintsFallback('ar'),
+                'en' => is_array($published['translations']['en'] ?? null) ? $published['translations']['en'] : $this->suggestionsComplaintsFallback('en'),
+            ],
+        ];
+    }
+
+    /** @param array<string, mixed> $content */
+    private function suggestionsComplaintsPageFromContent(string $locale, array $content): EServicesPageDTO
+    {
         $isArabic = $locale === 'ar';
+        $hero = is_array($content['hero'] ?? null) ? $content['hero'] : [];
+        $form = is_array($content['form'] ?? null) ? $content['form'] : [];
+        $seo = is_array($content['seo'] ?? null) ? $content['seo'] : [];
 
         return new EServicesPageDTO(
             locale: $locale,
             direction: $isArabic ? 'rtl' : 'ltr',
             hero: [
-                'eyebrow' => $isArabic ? 'الخدمات الإلكترونية' : 'E-Services',
-                'title' => $isArabic ? 'الاقتراحات والشكاوى' : 'Suggestions & Complaints',
-                'summary' => $isArabic ? 'شاركنا ملاحظاتك واقتراحاتك أو مخاوفك للمساعدة في تحسين خدمات الجامعة وتجربة الطلاب.' : 'Share your feedback, suggestions, or concerns to help us improve university services and student experience.',
-                'imageHero' => '/images/slider-3.webp',
+                'eyebrow' => $this->stringValue($hero, 'eyebrow'),
+                'title' => $this->stringValue($hero, 'title'),
+                'summary' => $this->stringValue($hero, 'summary'),
+                'imageHero' => $this->stringValue($hero, 'image'),
                 'imageLeft' => '',
                 'imageRight' => '',
             ],
             digitalServices: [
-                'formTitle' => $isArabic ? 'قدّم طلبك' : 'Submit Your Request',
+                'formTitle' => $this->stringValue($form, 'title'),
+                'requestTypes' => array_values(array_filter(is_array($form['requestTypes'] ?? null) ? $form['requestTypes'] : [], 'is_array')),
+                'infoTitle' => $this->stringValue($form, 'infoTitle'),
+                'infoBody' => $this->stringValue($form, 'infoBody'),
+                'consentLabel' => $this->stringValue($form, 'consentLabel'),
+                'attachmentHelp' => $this->stringValue($form, 'attachmentHelp'),
+                'cards' => array_values(array_filter(is_array($form['cards'] ?? null) ? $form['cards'] : [], 'is_array')),
+            ],
+            supportCards: [],
+            seoTitle: $this->stringValue($seo, 'title'),
+            seoDescription: $this->stringValue($seo, 'description'),
+            seoImage: $this->stringValue($seo, 'image'),
+        );
+    }
+
+    /** @return array<string, mixed> */
+    private function suggestionsComplaintsFallback(string $locale): array
+    {
+        $isArabic = $locale === 'ar';
+
+        return [
+            'title' => $isArabic ? 'الاقتراحات والشكاوى' : 'Suggestions & Complaints',
+            'summary' => $isArabic ? 'شاركنا ملاحظاتك للمساعدة في تحسين خدمات الجامعة.' : 'Share feedback to help improve university services.',
+            'hero' => [
+                'eyebrow' => $isArabic ? 'الخدمات الإلكترونية' : 'E-Services',
+                'title' => $isArabic ? 'الاقتراحات والشكاوى' : 'Suggestions & Complaints',
+                'summary' => $isArabic ? 'شاركنا ملاحظاتك واقتراحاتك أو مخاوفك للمساعدة في تحسين خدمات الجامعة وتجربة الطلاب.' : 'Share your feedback, suggestions, or concerns to help us improve university services and student experience.',
+                'image' => '/images/slider-3.webp',
+            ],
+            'form' => [
+                'title' => $isArabic ? 'قدّم طلبك' : 'Submit Your Request',
                 'requestTypes' => [
                     ['value' => 'suggestion', 'label' => $isArabic ? 'اقتراح' : 'Suggestion'],
                     ['value' => 'complaint', 'label' => $isArabic ? 'شكوى' : 'Complaint'],
                     ['value' => 'inquiry', 'label' => $isArabic ? 'استفسار' : 'Inquiry'],
                 ],
                 'infoTitle' => $isArabic ? 'نقدّر ملاحظاتك' : 'We Value Your Feedback',
-                'infoBody' => $isArabic ? 'تساعدنا آراؤك في تحديد فرص التحسين وضمان تلبية خدمات الجامعة لتوقعات الطلاب. تتم مراجعة كل رسالة بعناية من قبل القسم المعني.' : 'Your opinions help us identify opportunities for improvement and ensure that university services meet student expectations. Every submission is reviewed carefully by the relevant department.',
+                'infoBody' => $isArabic ? 'تتم مراجعة كل رسالة بعناية من قبل القسم المعني.' : 'Every submission is reviewed carefully by the relevant department.',
+                'consentLabel' => $isArabic ? 'أوافق على معالجة بياناتي للرد على هذا الطلب.' : 'I consent to the processing of my data to respond to this request.',
+                'attachmentHelp' => $isArabic ? 'اختياري: PDF أو JPG أو PNG، بحد أقصى 5 ميغابايت.' : 'Optional: PDF, JPG, or PNG, up to 5 MB.',
                 'cards' => [
-                    ['title' => $isArabic ? 'السرية' : 'Confidentiality', 'body' => $isArabic ? 'يتم التعامل مع جميع المعلومات بسرية ومشاركتها فقط مع القسم المسؤول.' : 'All submitted information is handled confidentially and shared only with the responsible department.'],
-                    ['title' => $isArabic ? 'مدة الرد' : 'Response Time', 'body' => $isArabic ? 'يمكنك توقع رد خلال 3 إلى 5 أيام عمل بعد التقديم.' : 'You can expect a response within 3-5 business days after submission.'],
+                    ['title' => $isArabic ? 'السرية' : 'Confidentiality', 'body' => $isArabic ? 'تُحفظ المرفقات بشكل خاص ولا تتاح إلا للمراجعين المخولين.' : 'Attachments are stored privately and are available only to authorized reviewers.'],
                 ],
             ],
-            supportCards: [],
-            seoTitle: ($isArabic ? 'الاقتراحات والشكاوى' : 'Suggestions & Complaints').' | '.($isArabic ? 'الجامعة السورية الخاصة' : 'Syrian Private University'),
-            seoDescription: $isArabic ? 'قدّم اقتراحاتك أو شكاواك لتحسين خدمات الجامعة السورية الخاصة.' : 'Submit suggestions, complaints, or inquiries to help improve Syrian Private University services.',
-            seoImage: '/images/slider-3.webp',
-        );
+            'seo' => [
+                'title' => ($isArabic ? 'الاقتراحات والشكاوى' : 'Suggestions & Complaints').' | '.($isArabic ? 'الجامعة السورية الخاصة' : 'Syrian Private University'),
+                'description' => $isArabic ? 'قدّم اقتراحاتك أو شكاواك لتحسين خدمات الجامعة السورية الخاصة.' : 'Submit suggestions, complaints, or inquiries to help improve Syrian Private University services.',
+                'image' => '/images/slider-3.webp',
+            ],
+        ];
     }
 
     public function getDetailPage(string $locale, string $slug): EServicesDetailPageDTO

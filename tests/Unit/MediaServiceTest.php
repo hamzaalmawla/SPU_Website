@@ -9,6 +9,7 @@ use App\DTOs\Shared\PaginatedResultDTO;
 use App\Filament\Support\MediaPicker;
 use App\Models\Media\MediaAsset;
 use App\Models\User\User;
+use App\Support\MediaUrlResolver;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -158,14 +159,14 @@ class MediaServiceTest extends TestCase
 
     public function test_existing_public_image_url_fallback_is_preserved(): void
     {
-        $this->assertSame('/images/existing-campus.jpg', \App\Support\MediaUrlResolver::resolve('/images/existing-campus.jpg'));
+        $this->assertSame('/images/existing-campus.jpg', MediaUrlResolver::resolve('/images/existing-campus.jpg'));
     }
 
     public function test_unconfigured_legacy_disk_path_resolves_as_public_path(): void
     {
         config()->set('filesystems.disks.legacy', null);
 
-        $this->assertSame('/news/images/legacy.jpg', \App\Support\MediaUrlResolver::resolve('news/images/legacy.jpg', 'legacy'));
+        $this->assertSame('/news/images/legacy.jpg', MediaUrlResolver::resolve('news/images/legacy.jpg', 'legacy'));
     }
 
     public function test_upload_rejects_disallowed_mime_type(): void

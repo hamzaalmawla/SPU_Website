@@ -9,11 +9,11 @@ use Illuminate\Support\Collection;
 final readonly class FacultyDetailPageDTO
 {
     /**
-     * @param array<string, mixed> $faculty
-     * @param array<string, mixed> $content
-     * @param array<int, array<string, mixed>> $stats
-     * @param Collection<int, FacultyNavigationItemDTO> $navigation
-     * @param Collection<int, FacultyHighlightDTO> $highlights
+     * @param  array<string, mixed>  $faculty
+     * @param  array<string, mixed>  $content
+     * @param  array<int, array<string, mixed>>  $stats
+     * @param  Collection<int, FacultyNavigationItemDTO>  $navigation
+     * @param  Collection<int, FacultyHighlightDTO>  $highlights
      */
     public function __construct(
         public string $locale,

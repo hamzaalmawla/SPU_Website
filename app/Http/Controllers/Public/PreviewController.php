@@ -14,6 +14,7 @@ use App\Contracts\Page\ContactPageServiceInterface;
 use App\Contracts\Page\EServicesPageServiceInterface;
 use App\Contracts\Page\FacultyPageServiceInterface;
 use App\Contracts\Page\PageServiceInterface;
+use App\Contracts\Page\VirtualTourPageServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Contracts\Seo\SeoMetadataServiceInterface;
 use App\Contracts\Settings\SettingsServiceInterface;
@@ -23,6 +24,8 @@ use App\DTOs\Navigation\LanguageSwitchLinkDTO;
 use App\DTOs\Page\PageDTO;
 use App\DTOs\Page\PageTranslationDTO;
 use App\DTOs\Preview\PreviewDTO;
+use App\DTOs\Research\ResearchDetailPageDTO;
+use App\DTOs\Research\ResearchPageDTO;
 use App\Http\Controllers\Controller;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
@@ -40,6 +43,7 @@ final class PreviewController extends Controller
         private readonly FacultyPageServiceInterface $facultyPageService,
         private readonly ResearchPageServiceInterface $researchPageService,
         private readonly PageServiceInterface $pageService,
+        private readonly VirtualTourPageServiceInterface $virtualTourPageService,
         private readonly SettingsServiceInterface $settingsService,
         private readonly SeoMetadataServiceInterface $seoMetadataService,
         private readonly NavigationServiceInterface $navigationService,
@@ -57,7 +61,7 @@ final class PreviewController extends Controller
         abort_if($preview === null, 404);
 
         if ($preview->targetType === 'cms') {
-            return $this->renderCmsPreview($locale, $preview);
+            return $this->renderCmsPreview($request, $locale, $preview);
         }
 
         if ($preview->payload->page instanceof PageDTO && ! $preview->payload->page->metadata->isHomepageShell) {
@@ -115,7 +119,7 @@ final class PreviewController extends Controller
         ]);
     }
 
-    private function renderCmsPreview(string $locale, PreviewDTO $preview): View
+    private function renderCmsPreview(Request $request, string $locale, PreviewDTO $preview): View
     {
         $snapshot = $preview->payload->cms;
         abort_if(! is_array($snapshot), 404);
@@ -147,6 +151,10 @@ final class PreviewController extends Controller
             return $this->renderNewsIndexPreview($locale, $preview, $localizedContent);
         }
 
+        if ($targetKey === 'news.articles') {
+            return $this->renderNewsArticlesPreview($locale, $preview, $localizedContent);
+        }
+
         if ($targetKey === 'news.announcements') {
             return $this->renderNewsAnnouncementsPreview($locale, $preview, $localizedContent);
         }
@@ -171,6 +179,18 @@ final class PreviewController extends Controller
             return $this->renderResearchExpertsPreview($locale, $preview, $localizedContent);
         }
 
+        if ($targetKey === 'research.centers') {
+            return $this->renderResearchCentersPreview($request, $locale, $preview, $localizedContent);
+        }
+
+        if ($targetKey === 'research.projects') {
+            return $this->renderResearchProjectsPreview($request, $locale, $preview, $localizedContent);
+        }
+
+        if ($targetKey === 'research.themes') {
+            return $this->renderResearchThemesPreview($request, $locale, $preview, $localizedContent);
+        }
+
         if ($targetKey === 'research.conferences') {
             return $this->renderResearchTargetPreview($locale, $preview, $targetKey, $localizedContent, 'public.research.conferences', '/research/conferences');
         }
@@ -191,6 +211,14 @@ final class PreviewController extends Controller
             return $this->renderCampusLifeLandingPreview($locale, $preview, $localizedContent);
         }
 
+        if ($targetKey === 'campus_life.virtual_tour') {
+            return $this->renderVirtualTourPreview($locale, $preview, $localizedContent);
+        }
+
+        if ($targetKey === 'campus_life.jobs') {
+            return $this->renderCampusLifeJobsPreview($request, $locale, $preview, $localizedContent);
+        }
+
         if ($targetKey === 'facilities.landing') {
             return $this->renderFacilitiesHubPreview($locale, $preview, $localizedContent);
         }
@@ -209,6 +237,10 @@ final class PreviewController extends Controller
 
         if (is_string($targetKey) && str_starts_with($targetKey, 'admissions.')) {
             return $this->renderAdmissionsSectionPreview($locale, $preview, $targetKey, $localizedContent);
+        }
+
+        if ($targetKey === 'e_services.suggestions-complaints') {
+            return $this->renderSuggestionsComplaintsPreview($locale, $preview, $localizedContent);
         }
 
         if (is_string($targetKey) && str_starts_with($targetKey, 'e_services.')) {
@@ -425,6 +457,118 @@ final class PreviewController extends Controller
     }
 
     /** @param array<string, mixed> $content */
+    private function renderResearchCentersPreview(Request $request, string $locale, PreviewDTO $preview, array $content): View
+    {
+        $centerSlug = is_string($request->query('center')) ? trim((string) $request->query('center')) : '';
+
+        if ($centerSlug !== '') {
+            $page = $this->researchPageService->buildPreviewCenter($locale, $content, $centerSlug);
+            abort_if($page === null, 404);
+
+            return view('public.research.centers.show', [
+                'locale' => $locale,
+                'direction' => $page->direction,
+                'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $locale.'/research/centers/'.$centerSlug),
+                'settings' => $this->settingsService->getPublicSettings($locale),
+                'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale, ['center' => $centerSlug]),
+                'isPreview' => true,
+                'seo' => $this->seoMetadataService->buildFallback($locale, [
+                    'path' => '/'.$locale.'/research/centers/'.$centerSlug,
+                    'locale_paths' => ['ar' => '/ar/research/centers/'.$centerSlug, 'en' => '/en/research/centers/'.$centerSlug],
+                    'title' => $page->seoTitle,
+                    'meta_description' => $page->seoDescription,
+                    'og_title' => $page->seoTitle,
+                    'og_description' => $page->seoDescription,
+                    'og_image' => $page->seoImage,
+                ]),
+                'page' => $page,
+                'preview' => $preview,
+            ]);
+        }
+
+        return $this->renderResearchTargetPreview($locale, $preview, 'research.centers', $content, 'public.research.centers.index', '/research/centers');
+    }
+
+    /** @param array<string, mixed> $content */
+    private function renderResearchProjectsPreview(Request $request, string $locale, PreviewDTO $preview, array $content): View
+    {
+        $slug = is_string($request->query('project')) ? trim((string) $request->query('project')) : '';
+        if ($slug !== '') {
+            $page = $this->researchPageService->buildPreviewProject($locale, $content, $slug);
+            abort_if($page === null, 404);
+
+            return $this->renderResearchDetailPreview($locale, $preview, $page, 'public.research.projects.show', '/research/projects/'.$slug, ['project' => $slug]);
+        }
+
+        $page = $this->researchPageService->buildPreviewProjects($locale, $content, $request->only(['q', 'status', 'faculty', 'theme', 'page']));
+
+        return $this->renderResearchPagePreview($locale, $preview, $page, 'public.research.projects.index', '/research/projects');
+    }
+
+    /** @param array<string, mixed> $content */
+    private function renderResearchThemesPreview(Request $request, string $locale, PreviewDTO $preview, array $content): View
+    {
+        $slug = is_string($request->query('theme')) ? trim((string) $request->query('theme')) : '';
+        if ($slug !== '') {
+            $page = $this->researchPageService->buildPreviewTheme($locale, $content, $slug);
+            abort_if($page === null, 404);
+
+            return $this->renderResearchDetailPreview($locale, $preview, $page, 'public.research.themes.show', '/research/themes/'.$slug, ['theme' => $slug]);
+        }
+
+        return $this->renderResearchTargetPreview($locale, $preview, 'research.themes', $content, 'public.research.themes.index', '/research/themes');
+    }
+
+    private function renderResearchPagePreview(string $locale, PreviewDTO $preview, ResearchPageDTO $page, string $view, string $path): View
+    {
+        return view($view, [
+            'locale' => $locale,
+            'direction' => $page->direction,
+            'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $locale.$path),
+            'settings' => $this->settingsService->getPublicSettings($locale),
+            'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale),
+            'isPreview' => true,
+            'seo' => $this->seoMetadataService->buildFallback($locale, [
+                'path' => '/'.$locale.$path,
+                'locale_paths' => ['ar' => '/ar'.$path, 'en' => '/en'.$path],
+                'title' => $page->seoTitle,
+                'meta_description' => $page->seoDescription,
+                'og_title' => $page->seoTitle,
+                'og_description' => $page->seoDescription,
+                'og_image' => $page->seoImage,
+                'robots' => 'noindex,nofollow',
+            ]),
+            'page' => $page,
+            'preview' => $preview,
+        ]);
+    }
+
+    /** @param array<string, string> $query */
+    private function renderResearchDetailPreview(string $locale, PreviewDTO $preview, ResearchDetailPageDTO $page, string $view, string $path, array $query): View
+    {
+        return view($view, [
+            'locale' => $locale,
+            'direction' => $page->direction,
+            'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $locale.$path),
+            'settings' => $this->settingsService->getPublicSettings($locale),
+            'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale, $query),
+            'isPreview' => true,
+            'seo' => $this->seoMetadataService->buildFallback($locale, [
+                'path' => '/'.$locale.$path,
+                'locale_paths' => ['ar' => '/ar'.$path, 'en' => '/en'.$path],
+                'title' => $page->seoTitle,
+                'meta_description' => $page->seoDescription,
+                'og_title' => $page->seoTitle,
+                'og_description' => $page->seoDescription,
+                'og_image' => $page->seoImage,
+                'robots' => 'noindex,nofollow',
+            ]),
+            'page' => $page,
+            'preview' => $preview,
+        ]);
+    }
+
+    /** @param array<string, mixed> $content */
     private function renderResearchTargetPreview(string $locale, PreviewDTO $preview, string $targetKey, array $content, string $view, string $path): View
     {
         $page = $this->researchPageService->buildPreviewTarget($targetKey, $locale, $content);
@@ -568,6 +712,85 @@ final class PreviewController extends Controller
     }
 
     /** @param array<string, mixed> $content */
+    private function renderCampusLifeJobsPreview(Request $request, string $locale, PreviewDTO $preview, array $content): View
+    {
+        $slug = is_string($request->query('job')) ? trim((string) $request->query('job')) : '';
+
+        if ($slug !== '') {
+            $page = $this->campusLifePageService->buildPreviewCareerJob($locale, $content, $slug);
+            abort_if($page === null, 404);
+            $job = is_array($page->section['job'] ?? null) ? $page->section['job'] : [];
+            $path = '/'.$locale.'/campus-life/career-development/jobs/'.$slug;
+
+            return view('public.campus-life.job-detail', [
+                'locale' => $locale,
+                'direction' => $page->direction,
+                'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $path),
+                'settings' => $this->settingsService->getPublicSettings($locale),
+                'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale, ['job' => $slug]),
+                'isPreview' => true,
+                'seo' => $this->seoMetadataService->buildFallback($locale, [
+                    'path' => $path,
+                    'locale_paths' => ['ar' => '/ar/campus-life/career-development/jobs/'.$slug, 'en' => '/en/campus-life/career-development/jobs/'.$slug],
+                    'title' => $page->seoTitle,
+                    'meta_description' => $page->seoDescription,
+                    'og_title' => $page->seoTitle,
+                    'og_description' => $page->seoDescription,
+                    'og_image' => $page->seoImage,
+                    'robots' => 'noindex,nofollow',
+                ]),
+                'structuredData' => $this->previewJobStructuredData($locale, $job),
+                'page' => $page,
+                'preview' => $preview,
+            ]);
+        }
+
+        $page = $this->campusLifePageService->buildPreviewCareerJobs($locale, $content, $request->only(['q', 'category', 'type', 'page']));
+        $filters = is_array($page->section['activeFilters'] ?? null) ? $page->section['activeFilters'] : [];
+        $query = array_filter($filters, static fn (mixed $value, string $key): bool => is_scalar($value) && $value !== '' && $value !== 'all' && ! ($key === 'page' && (int) $value <= 1), ARRAY_FILTER_USE_BOTH);
+
+        return view('public.campus-life.job-board', [
+            'locale' => $locale,
+            'direction' => $page->direction,
+            'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $locale.'/campus-life/career-development/jobs'),
+            'settings' => $this->settingsService->getPublicSettings($locale),
+            'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale, $query),
+            'isPreview' => true,
+            'seo' => $this->seoMetadataService->buildFallback($locale, [
+                'path' => '/'.$locale.'/campus-life/career-development/jobs',
+                'locale_paths' => ['ar' => '/ar/campus-life/career-development/jobs', 'en' => '/en/campus-life/career-development/jobs'],
+                'title' => $page->seoTitle,
+                'meta_description' => $page->seoDescription,
+                'og_title' => $page->seoTitle,
+                'og_description' => $page->seoDescription,
+                'og_image' => $page->seoImage,
+                'robots' => 'noindex,nofollow',
+            ]),
+            'page' => $page,
+            'preview' => $preview,
+        ]);
+    }
+
+    /** @param array<string, mixed> $job @return array<string, mixed> */
+    private function previewJobStructuredData(string $locale, array $job): array
+    {
+        return [
+            '@context' => 'https://schema.org',
+            '@type' => 'JobPosting',
+            'title' => (string) ($job['title'] ?? ''),
+            'description' => implode("\n", array_values(array_filter(is_array($job['overview'] ?? null) ? $job['overview'] : [], 'is_string'))),
+            'datePosted' => (string) ($job['postedDate'] ?? ''),
+            'validThrough' => (string) ($job['closeDate'] ?? ''),
+            'inLanguage' => $locale,
+            'url' => url('/'.$locale.'/campus-life/career-development/jobs/'.($job['slug'] ?? '')),
+            'hiringOrganization' => [
+                '@type' => 'Organization',
+                'name' => config('app.name', 'Syrian Private University'),
+            ],
+        ];
+    }
+
+    /** @param array<string, mixed> $content */
     private function renderCampusLifeLandingPreview(string $locale, PreviewDTO $preview, array $content): View
     {
         $page = $this->campusLifePageService->buildPreviewLanding($locale, $content);
@@ -587,6 +810,31 @@ final class PreviewController extends Controller
                 'og_title' => $page->seoTitle,
                 'og_description' => $page->seoDescription,
                 'og_image' => $page->seoImage,
+            ]),
+            'page' => $page,
+            'preview' => $preview,
+        ]);
+    }
+
+    /** @param array<string, mixed> $content */
+    private function renderVirtualTourPreview(string $locale, PreviewDTO $preview, array $content): View
+    {
+        $page = $this->virtualTourPageService->buildPreviewPage($locale, $content);
+
+        return view('public.virtual-tour.show', [
+            'locale' => $locale,
+            'direction' => $page->direction,
+            'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $locale.'/virtual-tour'),
+            'settings' => $this->settingsService->getPublicSettings($locale),
+            'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale),
+            'isPreview' => true,
+            'seo' => $this->seoMetadataService->buildFallback($locale, [
+                'path' => '/'.$locale.'/virtual-tour',
+                'locale_paths' => ['ar' => '/ar/virtual-tour', 'en' => '/en/virtual-tour'],
+                'title' => $page->seoTitle,
+                'meta_description' => $page->seoDescription,
+                'og_image' => $page->seoImage,
+                'robots' => 'noindex,nofollow',
             ]),
             'page' => $page,
             'preview' => $preview,
@@ -657,6 +905,37 @@ final class PreviewController extends Controller
                 'og_title' => (string) $page['pageTitle'],
                 'og_description' => (string) $page['pageDescription'],
                 'og_image' => (string) $page['heroImage'],
+            ]),
+            'preview' => $preview,
+        ]);
+    }
+
+    /** @param array<string, mixed> $content */
+    private function renderNewsArticlesPreview(string $locale, PreviewDTO $preview, array $content): View
+    {
+        $page = $this->newsService->buildPreviewArticlesPage($locale, $content);
+
+        return view('public.news.articles', [
+            'locale' => $locale,
+            'direction' => $locale === 'ar' ? 'rtl' : 'ltr',
+            'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $locale.'/news/articles'),
+            'settings' => $this->settingsService->getPublicSettings($locale),
+            'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale),
+            'isPreview' => true,
+            'page' => $page,
+            'articles' => $this->newsService->listPublicArticles($locale, [], 1, 9),
+            'categories' => $this->newsService->getPublicCategories($locale),
+            'activeCategory' => null,
+            'search' => '',
+            'pageTitle' => (string) $page['title'],
+            'pageDescription' => (string) $page['summary'],
+            'seo' => $this->seoMetadataService->buildFallback($locale, [
+                'path' => '/'.$locale.'/news/articles',
+                'locale_paths' => ['ar' => '/ar/news/articles', 'en' => '/en/news/articles'],
+                'title' => (string) $page['seoTitle'],
+                'meta_description' => (string) $page['seoDescription'],
+                'og_image' => (string) $page['seoImage'],
+                'robots' => 'noindex,nofollow',
             ]),
             'preview' => $preview,
         ]);
@@ -1033,6 +1312,32 @@ final class PreviewController extends Controller
         ]);
     }
 
+    /** @param array<string, mixed> $content */
+    private function renderSuggestionsComplaintsPreview(string $locale, PreviewDTO $preview, array $content): View
+    {
+        $page = $this->eServicesPageService->buildSuggestionsComplaintsPreviewPage($locale, $content);
+        $path = '/'.$locale.'/e-services/suggestions-complaints';
+
+        return view('public.e-services-suggestions-complaints', [
+            'locale' => $locale,
+            'direction' => $page->direction,
+            'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, ltrim($path, '/')),
+            'settings' => $this->settingsService->getPublicSettings($locale),
+            'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale),
+            'isPreview' => true,
+            'seo' => $this->seoMetadataService->buildFallback($locale, [
+                'path' => $path,
+                'locale_paths' => ['ar' => '/ar/e-services/suggestions-complaints', 'en' => '/en/e-services/suggestions-complaints'],
+                'title' => $page->seoTitle,
+                'meta_description' => $page->seoDescription,
+                'og_image' => $page->seoImage,
+                'robots' => 'noindex,nofollow',
+            ]),
+            'page' => $page,
+            'preview' => $preview,
+        ]);
+    }
+
     private function resolvePreviewToken(Request $request): ?string
     {
         foreach ([(string) $request->query('token'), (string) $request->query('preview_token'), (string) $request->header('X-Preview-Token')] as $candidate) {
@@ -1106,13 +1411,15 @@ final class PreviewController extends Controller
     }
 
     /** @return array<int, LanguageSwitchLinkDTO> */
-    private function cmsLanguageSwitchLinks(string $token, string $locale): array
+    private function cmsLanguageSwitchLinks(string $token, string $locale, array $query = []): array
     {
+        $queryString = $query !== [] ? '&'.http_build_query($query, '', '&', PHP_QUERY_RFC3986) : '';
+
         return array_map(
             static fn (string $candidateLocale): LanguageSwitchLinkDTO => new LanguageSwitchLinkDTO(
                 locale: $candidateLocale,
                 label: strtoupper($candidateLocale),
-                url: '/'.$candidateLocale.'/preview?token='.$token,
+                url: '/'.$candidateLocale.'/preview?token='.$token.$queryString,
                 isCurrent: $candidateLocale === $locale,
             ),
             ['ar', 'en']

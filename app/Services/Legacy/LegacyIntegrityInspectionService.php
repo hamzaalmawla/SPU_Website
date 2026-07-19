@@ -109,8 +109,8 @@ final class LegacyIntegrityInspectionService implements LegacyIntegrityInspectio
     }
 
     /**
-     * @param array<string, mixed> $rule
-     * @param array<int, string> $warnings
+     * @param  array<string, mixed>  $rule
+     * @param  array<int, string>  $warnings
      * @return array{blocked_rows: int, recorded_rows: int}
      */
     private function inspectOrphanRule(string $module, array $rule, bool $recordQuarantine, ?int $limit, array &$warnings): array
@@ -186,8 +186,8 @@ final class LegacyIntegrityInspectionService implements LegacyIntegrityInspectio
     }
 
     /**
-     * @param array<string, mixed> $rule
-     * @param array<int, string> $warnings
+     * @param  array<string, mixed>  $rule
+     * @param  array<int, string>  $warnings
      * @return array{duplicate_groups: int, blocked_rows: int, recorded_rows: int}
      */
     private function inspectDuplicateRule(string $module, array $rule, bool $recordQuarantine, ?int $limit, array &$warnings): array
@@ -283,7 +283,7 @@ final class LegacyIntegrityInspectionService implements LegacyIntegrityInspectio
     private function columnExists(string $table, string $column): bool
     {
         try {
-            return $this->oldDatabase->connection()->getSchemaBuilder()->hasColumn($table, $column);
+            return $this->oldDatabase->schema()->hasColumn($table, $column);
         } catch (Throwable) {
             return false;
         }

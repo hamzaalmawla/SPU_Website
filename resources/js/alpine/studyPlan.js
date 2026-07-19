@@ -21,6 +21,41 @@ const TYPE_STYLES = {
     elective: { shortLabelEn: 'ELEC', shortLabelAr: 'اختياري' },
 };
 
+export function modalFocusTarget(focusable, activeElement, shiftKey) {
+    if (focusable.length === 0) return null;
+
+    const activeIndex = focusable.indexOf(activeElement);
+    if (activeIndex === -1) return focusable[0];
+    if (shiftKey && activeIndex === 0) return focusable[focusable.length - 1];
+    if (!shiftKey && activeIndex === focusable.length - 1) return focusable[0];
+
+    return null;
+}
+
+export function studyPlanKeyboardAction(key, isAr) {
+    const horizontalStep = isAr ? -40 : 40;
+
+    return {
+        ArrowLeft: { panX: horizontalStep, panY: 0, zoom: 0 },
+        ArrowRight: { panX: -horizontalStep, panY: 0, zoom: 0 },
+        ArrowUp: { panX: 0, panY: 40, zoom: 0 },
+        ArrowDown: { panX: 0, panY: -40, zoom: 0 },
+        '+': { panX: 0, panY: 0, zoom: -0.2 },
+        '=': { panX: 0, panY: 0, zoom: -0.2 },
+        '-': { panX: 0, panY: 0, zoom: 0.2 },
+    }[key] || null;
+}
+
+export function bindCourseCardInteractions(card, { highlight, clear, open }) {
+    const courseId = card.dataset.courseId || '';
+
+    card.addEventListener('mouseenter', () => highlight(courseId));
+    card.addEventListener('mouseleave', clear);
+    card.addEventListener('focus', () => highlight(courseId));
+    card.addEventListener('blur', clear);
+    card.addEventListener('click', () => open(courseId, card));
+}
+
 function flattenCourses(department) {
     return (department?.terms || []).flatMap((term) => term.courses || []);
 }
@@ -95,6 +130,7 @@ function createStudyPlanPage(root) {
     const plan = payload.plan || {};
     const departments = plan.departments || [];
     const urlParams = new URLSearchParams(window.location.search);
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
 
     const state = {
         activeDepartmentId: urlParams.get('department') || departments[0]?.id || '',
@@ -120,6 +156,7 @@ function createStudyPlanPage(root) {
     let activePaths = [];
     let glowPaths = [];
     const modal = root.querySelector('[data-course-modal]');
+    let modalTrigger = null;
 
     function label(key) {
         const suffix = isAr ? 'Ar' : 'En';
@@ -346,7 +383,7 @@ function createStudyPlanPage(root) {
                 stroke: '#94a3b8',
                 'stroke-width': '1.2',
                 'marker-end': 'url(#sp-arrow)',
-                style: 'transition: all 0.3s;',
+                style: reducedMotion ? '' : 'transition: all 0.3s;',
             }));
 
             svg.appendChild(createSvgPath({
@@ -364,8 +401,8 @@ function createStudyPlanPage(root) {
                 stroke: plan.accent || '#202759',
                 'stroke-width': '2.5',
                 'marker-end': 'url(#sp-arrow-path)',
-                class: 'sp-path-animated hidden',
-                style: 'transition: all 0.3s;',
+                class: `${reducedMotion ? '' : 'sp-path-animated'} hidden`,
+                style: reducedMotion ? '' : 'transition: all 0.3s;',
             }));
         });
 
@@ -381,11 +418,12 @@ function createStudyPlanPage(root) {
         )).join('');
     }
 
-    function openModal(courseId) {
+    function openModal(courseId, trigger = null) {
         const course = courseById(courseId);
         if (!course || !modal) return;
 
         state.modalCourseId = courseId;
+        modalTrigger = trigger || (document.activeElement instanceof HTMLElement ? document.activeElement : null);
         setHoveredCourse(courseId);
 
         modal.querySelector('[data-modal-code]').textContent = course.code || '';
@@ -393,6 +431,7 @@ function createStudyPlanPage(root) {
         modal.querySelector('[data-modal-type]').textContent = typeShortLabel(course);
         modal.querySelector('[data-modal-type]').className = `text-[10px] font-bold uppercase tracking-wider ${typeKey(course) === 'elective' ? 'text-slate-400' : 'text-spu-blue/60'}`;
         modal.querySelector('[data-modal-title]').textContent = text(course, 'title');
+        modal.querySelector('[data-modal-description]').textContent = text(course, 'description');
         modal.querySelector('[data-modal-details]').setAttribute('href', courseHref(course.id));
 
         const prereqItems = prerequisites(course);
@@ -406,15 +445,41 @@ function createStudyPlanPage(root) {
 
         modal.classList.remove('hidden');
         modal.classList.add('flex');
+        modal.setAttribute('aria-hidden', 'false');
+        courseCards.forEach((card) => card.setAttribute('aria-expanded', card.dataset.courseId === courseId ? 'true' : 'false'));
         document.body.classList.add('overflow-hidden');
+        requestAnimationFrame(() => modal.querySelector('[data-modal-initial-focus]')?.focus());
     }
 
     function closeModal() {
+        if (!modal || modal.classList.contains('hidden')) return;
+
         state.modalCourseId = '';
-        modal?.classList.add('hidden');
-        modal?.classList.remove('flex');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        modal.setAttribute('aria-hidden', 'true');
+        courseCards.forEach((card) => card.setAttribute('aria-expanded', 'false'));
         document.body.classList.remove('overflow-hidden');
         setHoveredCourse('');
+        modalTrigger?.focus();
+        modalTrigger = null;
+    }
+
+    function containModalFocus(event) {
+        if (event.key !== 'Tab' || !modal || modal.classList.contains('hidden')) return;
+
+        const focusable = Array.from(modal.querySelectorAll('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'))
+            .filter((element) => !element.hidden && element.getAttribute('aria-hidden') !== 'true');
+        if (focusable.length === 0) {
+            event.preventDefault();
+            return;
+        }
+
+        const target = modalFocusTarget(focusable, document.activeElement, event.shiftKey);
+        if (target) {
+            event.preventDefault();
+            target.focus();
+        }
     }
 
     function viewStateKey() {
@@ -570,11 +635,13 @@ function createStudyPlanPage(root) {
         });
 
         courseCards.forEach((card) => {
-            card.addEventListener('mouseenter', () => setHoveredCourse(card.dataset.courseId || ''));
-            card.addEventListener('mouseleave', () => {
-                if (!state.modalCourseId) setHoveredCourse('');
+            bindCourseCardInteractions(card, {
+                highlight: setHoveredCourse,
+                clear: () => {
+                    if (!state.modalCourseId) setHoveredCourse('');
+                },
+                open: openModal,
             });
-            card.addEventListener('click', () => openModal(card.dataset.courseId || ''));
         });
 
         root.querySelector('[data-study-plan-download]')?.addEventListener('click', downloadHoursSummary);
@@ -596,6 +663,21 @@ function createStudyPlanPage(root) {
         viewport?.addEventListener('touchstart', startPan, { passive: false });
         viewport?.addEventListener('touchmove', panBy, { passive: false });
         viewport?.addEventListener('touchend', endPan);
+        viewport?.addEventListener('keydown', (event) => {
+            if (event.target.closest('button, a')) return;
+
+            const action = studyPlanKeyboardAction(event.key, isAr);
+            if (!action) return;
+
+            event.preventDefault();
+            state.panX += action.panX;
+            state.panY += action.panY;
+            if (action.zoom !== 0) {
+                zoomToPoint(action.zoom, viewport.clientWidth / 2, viewport.clientHeight / 2);
+            }
+            applyTransform();
+            saveViewState();
+        });
 
         modal?.addEventListener('click', (event) => {
             if (event.target === modal || event.target.closest('[data-modal-close]')) {
@@ -603,7 +685,12 @@ function createStudyPlanPage(root) {
             }
         });
         document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape') closeModal();
+            if (event.key === 'Escape') {
+                closeModal();
+                return;
+            }
+
+            containModalFocus(event);
         });
     }
 

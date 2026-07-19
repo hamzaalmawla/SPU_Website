@@ -7,6 +7,7 @@ namespace App\Models\Shared;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/** @property array<string, mixed>|null $raw_summary */
 class MigrationRejection extends Model
 {
     use HasFactory;

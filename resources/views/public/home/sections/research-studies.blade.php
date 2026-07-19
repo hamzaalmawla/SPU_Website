@@ -6,15 +6,15 @@
                 @if ($section->payload->sectionAction)
                     <a href="{{ $section->payload->sectionAction->url }}" class="bg-[#1e2652] text-white w-[195px] h-[40px] text-center justify-center rounded-[12px] text-sm font-bold flex items-center gap-3 hover:bg-opacity-90 transition-all" @if ($section->payload->sectionAction->target) target="{{ $section->payload->sectionAction->target }}" rel="noreferrer" @endif>{{ $section->payload->sectionAction->label }}</a>
                 @endif
-                <button type="button" @click="slide('left')" class="slider-nav-btn w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-label="{{ __('public.previous') }}"><img src="/images/icon-chevron-left-outline.svg" class="w-3.5 h-3.5 rtl:rotate-180" alt=""></button>
-                <button type="button" @click="slide('right')" class="slider-nav-btn w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-label="{{ __('public.next') }}"><img src="/images/icon-chevron-right-outline.svg" class="w-3.5 h-3.5 rtl:rotate-180" alt=""></button>
+                <button type="button" @click="slide('previous')" class="slider-nav-btn w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-controls="research-priorities-track" aria-label="{{ __('public.previous') }}"><img src="/images/icon-chevron-left-outline.svg" class="w-3.5 h-3.5 rtl:rotate-180" alt=""></button>
+                <button type="button" @click="slide('next')" class="slider-nav-btn w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-controls="research-priorities-track" aria-label="{{ __('public.next') }}"><img src="/images/icon-chevron-right-outline.svg" class="w-3.5 h-3.5 rtl:rotate-180" alt=""></button>
             </div>
         </div>
 
         @if ($section->payload->researchItems !== [])
-            <div x-ref="researchTrack" class="flex gap-8 overflow-x-auto no-scrollbar scroll-smooth pb-10" style="will-change: scroll-position;">
+            <div id="research-priorities-track" x-ref="researchTrack" class="flex gap-8 overflow-x-auto no-scrollbar scroll-smooth pb-10" style="will-change: scroll-position;" role="region" aria-roledescription="{{ __('public.carousel') }}" aria-label="{{ $section->payload->title }}" tabindex="0" @keydown="handleSliderKey($event)">
                 @foreach ($section->payload->researchItems as $item)
-                    <article class="reveal-item research-card w-[289px] h-[348.03px] shrink-0 relative bg-white rounded-[25px] shadow-[0_10px_30px_rgba(0,0,0,0.05)] overflow-hidden flex flex-col group" style="transform: translateZ(0);">
+                    <article class="reveal-item research-card w-[289px] h-[348.03px] shrink-0 relative bg-white rounded-[25px] shadow-[0_10px_30px_rgba(0,0,0,0.05)] overflow-hidden flex flex-col group" style="transform: translateZ(0);" role="group" aria-roledescription="{{ __('public.slide') }}" aria-label="{{ __('public.slide_position', ['current' => $loop->iteration, 'total' => count($section->payload->researchItems)]) }}">
                         @if ($item->imageUrl)
                             <div class="relative h-[50%] overflow-hidden bg-gray-100">
                                 <img src="{{ $item->imageUrl }}" alt="{{ $item->title }}" loading="lazy" decoding="async" width="289" height="174" class="w-full h-full object-cover" style="transform: translateZ(0);">

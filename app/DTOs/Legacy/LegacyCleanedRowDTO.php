@@ -7,10 +7,10 @@ namespace App\DTOs\Legacy;
 final readonly class LegacyCleanedRowDTO
 {
     /**
-     * @param array<string, mixed> $values
-     * @param array<int, array<string, mixed>> $decisions
-     * @param array<int, string> $blockedFields
-     * @param array<string, int> $issueCounts
+     * @param  array<string, mixed>  $values
+     * @param  array<int, array<string, mixed>>  $decisions
+     * @param  array<int, string>  $blockedFields
+     * @param  array<string, int>  $issueCounts
      */
     public function __construct(
         public string $module,

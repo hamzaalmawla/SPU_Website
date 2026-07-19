@@ -62,6 +62,23 @@
                             @endif
                         </div>
                     @endif
+                    @if (! empty($item['downloads']))
+                        <section class="rounded-[8px] border border-slate-200 bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)]" aria-labelledby="publication-files-heading">
+                            <h2 id="publication-files-heading" class="text-[13px] font-bold uppercase tracking-[0.12em] text-spu-red">{{ __('public.publication_files') }}</h2>
+                            <ul class="mt-4 grid gap-3 sm:grid-cols-2">
+                                @foreach ($item['downloads'] as $download)
+                                    <li>
+                                        <a href="{{ $download['url'] }}" class="flex min-h-12 items-center justify-between gap-4 rounded-[6px] border border-spu-blue/15 px-4 py-3 text-sm font-bold text-spu-blue transition hover:border-spu-blue hover:bg-spu-blue/5" download>
+                                            <span>{{ $download['label'] ?? __('public.download_file', ['type' => $download['type'] ?? '']) }}</span>
+                                            @if (! empty($download['type']))
+                                                <span class="shrink-0 rounded bg-slate-100 px-2 py-1 text-[10px] uppercase tracking-wider text-slate-500">{{ $download['type'] }}</span>
+                                            @endif
+                                        </a>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </section>
+                    @endif
                     @if (! empty($data['related']))
                         <div class="rounded-[8px] border border-slate-200 bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
                             <h2 class="text-[13px] font-bold uppercase tracking-[0.12em] text-spu-red">{{ __('public.related_publications') }}</h2>
@@ -87,7 +104,7 @@
                 <aside class="rounded-[8px] border border-slate-200 bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)] lg:sticky lg:top-28">
                     <h2 class="text-[13px] font-bold uppercase tracking-[0.12em] text-spu-red">{{ __('public.publication_info') }}</h2>
                     <dl class="mt-5 divide-y divide-slate-100">
-                        @foreach ([__('public.category') => $item['category'] ?? $item['type'] ?? '', __('public.author') => $item['author'] ?? '', __('public.year_label') => $item['year'] ?? '', __('public.publisher') => $item['publisher'] ?? '', __('public.faculty') => $item['faculty'] ?? '', __('public.quartile') => $item['rate'] ?? '', __('public.type') => $item['type'] ?? ''] as $label => $value)
+                        @foreach ([__('public.category') => $item['category'] ?? $item['type'] ?? '', __('public.author') => $item['author'] ?? '', __('public.publication_date') => $item['publicationDate'] ?? $item['year'] ?? '', __('public.journal') => $item['journalTitle'] ?? $item['publisher'] ?? '', __('public.volume') => $item['volume'] ?? '', __('public.issue') => $item['issue'] ?? '', __('public.pages') => $item['pages'] ?? '', __('public.issn') => $item['issn'] ?? '', __('public.license') => $item['license'] ?? '', __('public.faculty') => $item['faculty'] ?? '', __('public.quartile') => $item['rate'] ?? '', __('public.type') => $item['type'] ?? ''] as $label => $value)
                             @if ($value !== '')
                                 <div class="py-3 first:pt-0"><dt class="text-[11px] font-bold uppercase tracking-wider text-slate-400">{{ $label }}</dt><dd class="mt-1 text-sm font-bold text-spu-blue">{{ $value }}</dd></div>
                             @endif

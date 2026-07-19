@@ -14,6 +14,12 @@ interface EServicesPageServiceInterface
 
     public function getSuggestionsComplaintsPage(string $locale): EServicesPageDTO;
 
+    /** @param array<string, mixed> $content */
+    public function buildSuggestionsComplaintsPreviewPage(string $locale, array $content): EServicesPageDTO;
+
+    /** @return array{translations: array{ar: array<string, mixed>, en: array<string, mixed>}} */
+    public function getSuggestionsComplaintsEditablePayload(): array;
+
     public function getDetailPage(string $locale, string $slug): EServicesDetailPageDTO;
 
     public function getContent(string $locale): EServicesPageContentDTO;

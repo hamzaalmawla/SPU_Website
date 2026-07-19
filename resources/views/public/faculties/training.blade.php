@@ -5,12 +5,12 @@
 
 <section class="relative flex min-h-[330px] items-end overflow-hidden pt-28 font-hacen">
     <div class="absolute inset-0">
-        <img src="{{ $trainingHero['image'] ?? '/images/pharmacy-place.jpg' }}" alt="SPU pharmacy training campus" class="h-full w-full object-cover">
+        <img src="{{ $trainingHero['image'] ?? '/images/pharmacy-place.jpg' }}" alt="{{ $localized($trainingHero, 'title') }}" class="h-full w-full object-cover">
         <div class="absolute inset-0 bg-gradient-to-t from-spu-blue via-spu-blue/72 to-spu-blue/22"></div>
     </div>
 
     <div class="container z-10 pb-10 text-center text-white">
-        <nav class="mb-4 flex items-center justify-center gap-2 text-[11px] font-semibold text-white/75" aria-label="Breadcrumb">
+        <nav class="mb-4 flex items-center justify-center gap-2 text-[11px] font-semibold text-white/75" aria-label="{{ $locale === 'ar' ? 'مسار التنقل' : 'Breadcrumb' }}">
             <a href="/{{ $locale }}" class="transition-colors hover:text-white">{{ $localized($trainingBreadcrumb, 'home') }}</a>
             <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-2 w-2 rtl:rotate-180" aria-hidden="true">
             <a href="/{{ $locale }}/facilities" class="transition-colors hover:text-white">{{ $localized($trainingBreadcrumb, 'facilities') }}</a>
@@ -95,7 +95,7 @@
 <section class="mb-12 bg-spu-blue py-9 font-hacen">
     <div class="container">
         <div class="grid gap-5 text-white sm:grid-cols-2 lg:grid-cols-4">
-            @foreach (($training['facts'] ?? []) as $fact)
+            @foreach (array_values(array_filter($training['facts'] ?? [], fn (mixed $fact): bool => is_array($fact) && ($fact['verified'] ?? false) === true)) as $fact)
                 <article class="text-center lg:text-center rtl:lg:text-center">
                     <p class="text-[14px] font-bold">{{ $localized($fact, 'value') }}</p>
                     <p class="mt-2 text-[11px] font-semibold text-white/60">{{ $localized($fact, 'label') }}</p>

@@ -14,7 +14,7 @@
                                 @if ($stat->prefix)
                                     <span class="text-3xl font-bold text-white" translate="no">{{ $stat->prefix }}</span>
                                 @endif
-                                <span class="stats-card-value text-5xl font-bold tracking-tighter text-white lg:text-6xl" data-value="{{ $stat->value }}" translate="no">0</span>
+                                <span class="stats-card-value text-5xl font-bold tracking-tighter text-white lg:text-6xl" data-value="{{ $stat->value }}" translate="no">{{ $stat->value }}</span>
                                 @if ($stat->suffix)
                                     <span class="ms-1 text-3xl font-bold text-spu-red" translate="no">{{ $stat->suffix }}</span>
                                 @endif

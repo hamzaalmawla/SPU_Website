@@ -10,7 +10,8 @@
         $homeLabel = $isAr ? 'الرئيسية' : 'Home';
         $facultyUrl = '/'.$locale.'/facilities/'.$page->facultySlug;
         $breadcrumbTitle = $subpage['title'] ?? '';
-        $selectedLab = $page->subpageSlug === 'labs' ? collect($page->items)->firstWhere('slug', request('lab')) : null;
+        $selectedLab = $page->subpageSlug === 'labs' ? ($page->detail['item'] ?? null) : null;
+        $relatedLabs = $page->subpageSlug === 'labs' && is_array($page->detail['related'] ?? null) ? $page->detail['related'] : [];
         $isLabDetail = is_array($selectedLab);
         $heroImage = match ($page->subpageSlug) {
             'labs' => $isLabDetail ? ($selectedLab['image'] ?? '/images/dental-clin-lab.jpg') : ($faculty['heroImage'] ?? '/images/slider-3.webp'),
@@ -28,12 +29,24 @@
         $filterOptions = $page->filterOptions ?? [];
         $pagination = $page->pagination ?? ['current_page' => 1, 'total_pages' => 1, 'total_items' => count($page->items), 'from' => count($page->items) > 0 ? 1 : 0, 'to' => count($page->items)];
         $studentListUrl = '/'.$locale.'/facilities/'.$page->facultySlug.'/'.$page->subpageSlug;
-        $pageUrl = fn (int $pageNumber): string => request()->fullUrlWithQuery(['page' => $pageNumber]);
+        $validatedQuery = collect($filters)
+            ->except('page')
+            ->filter(fn (mixed $value): bool => is_scalar($value) && (string) $value !== '')
+            ->map(fn (mixed $value): string => (string) $value)
+            ->all();
+        $queryUrl = fn (array $query): string => $studentListUrl.($query === [] ? '' : '?'.http_build_query($query, '', '&', PHP_QUERY_RFC3986));
+        $pageUrl = fn (int $pageNumber): string => $queryUrl([...$validatedQuery, 'page' => $pageNumber]);
+        $labDetailUrl = fn (string $slug): string => $queryUrl(array_filter([
+            'lab' => $slug,
+            'page' => (int) ($pagination['current_page'] ?? 1) > 1 ? (int) $pagination['current_page'] : null,
+        ], fn (mixed $value): bool => $value !== null));
+        $labBackUrl = $queryUrl((int) ($pagination['current_page'] ?? 1) > 1 ? ['page' => (int) $pagination['current_page']] : []);
         $training = $page->subpageSlug === 'training' ? ($subpage['payload'] ?? []) : [];
         $localized = fn (array $item, string $key): string => (string) ($item[$key] ?? $item[$key.ucfirst($locale)] ?? $item[$key.'En'] ?? $item[$key.'Ar'] ?? '');
     @endphp
 
-    @if ($page->subpageSlug === 'study-plan')
+    @if ($page->subpageSlug === 'research')
+    @elseif ($page->subpageSlug === 'study-plan')
         @include('public.faculties.study-plan')
     @elseif ($page->subpageSlug === 'study-plan-course')
         @include('public.faculties.course-lessons')
@@ -62,7 +75,9 @@
         </section>
     @endif
 
-    @if ($page->subpageSlug === 'overview')
+    @if ($page->subpageSlug === 'research')
+        @include('public.faculties.research')
+    @elseif ($page->subpageSlug === 'overview')
         @php
             $sections = $subpage['sections'] ?? [];
             $stats = $subpage['payload']['stats'] ?? [];
@@ -136,19 +151,37 @@
                         </div>
                         <div class="border-l-[3px] pl-9 rtl:border-l-0 rtl:border-r-[3px] rtl:pl-0 rtl:pr-9" style="border-color: {{ $accent }}">
                             <h2 class="text-[30px] font-bold leading-tight text-spu-blue md:text-[40px]">{{ $isAr ? 'رسالة العميد' : 'Dean Message' }}</h2>
-                            <p class="mt-8 text-sm font-bold text-spu-blue">{{ $isAr ? ($dean['nameAr'] ?? '') : ($dean['nameEn'] ?? '') }}</p>
+                            @php($deanName = $dean['name'] ?? ($isAr ? ($dean['nameAr'] ?? '') : ($dean['nameEn'] ?? '')))
+                            @if ($page->deanProfile)
+                                <a href="{{ $page->deanProfile->path }}" class="mt-8 inline-flex text-sm font-bold text-spu-blue transition-colors hover:text-spu-red focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-blue">{{ $deanName }}</a>
+                            @else
+                                <p class="mt-8 text-sm font-bold text-spu-blue">{{ $deanName }}</p>
+                            @endif
                             <div class="mt-6 space-y-5 text-[14px] leading-8 text-slate-600">
-                                <p>{{ $isAr ? ($dean['messageAr'] ?? '') : ($dean['messageEn'] ?? '') }}</p>
+                                <p>{{ $dean['message'] ?? ($isAr ? ($dean['messageAr'] ?? '') : ($dean['messageEn'] ?? '')) }}</p>
                                 <p>{{ $firstSection['body'] ?? '' }}</p>
                             </div>
                             <div class="mt-8 border-t border-slate-100 pt-5">
-                                <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-spu-blue">{{ $isAr ? ($dean['roleAr'] ?? 'عميد الكلية') : ($dean['roleEn'] ?? 'Faculty Dean') }}</p>
+                                <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-spu-blue">{{ $dean['role'] ?? ($isAr ? ($dean['roleAr'] ?? 'عميد الكلية') : ($dean['roleEn'] ?? 'Faculty Dean')) }}</p>
+                                @if ($page->deanProfile)
+                                    <a href="{{ $page->deanProfile->path }}" class="mt-4 inline-flex items-center gap-2 text-xs font-bold text-spu-blue transition-colors hover:text-spu-red focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-blue">
+                                        <span>{{ $isAr ? 'عرض الملف الشخصي' : 'View Profile' }}</span>
+                                        <img src="/images/icon-arrow-right-outline.svg" alt="" class="h-3 w-3 rtl:rotate-180" aria-hidden="true">
+                                    </a>
+                                @endif
                             </div>
                         </div>
                     </div>
                 </div>
             </section>
         @endif
+
+        @include('public.faculties.partials.latest-research', [
+            'latestResearch' => $page->latestResearch,
+            'locale' => $locale,
+            'accent' => $accent,
+            'sectionId' => 'overview-latest-research',
+        ])
 
         @include('public.faculties.partials.navigation-section', [
             'navSectionId' => 'faculty-pathways',
@@ -209,7 +242,9 @@
                 @if ($selectedLab)
                     <div class="mx-auto max-w-4xl">
                         <div class="relative h-[300px] overflow-hidden rounded-[10px]">
-                            <img src="{{ $selectedLab['image'] ?? '/images/dental-clin-lab.jpg' }}" alt="{{ $selectedLab['title'] ?? '' }}" class="h-full w-full object-cover">
+                            @if (! empty($selectedLab['image']))
+                                <img src="{{ $selectedLab['image'] }}" alt="{{ $selectedLab['title'] ?? '' }}" class="h-full w-full object-cover">
+                            @endif
                         </div>
                         <div class="mt-8 space-y-4">
                             <div class="flex flex-wrap items-center gap-4">
@@ -225,7 +260,22 @@
                             <h2 class="mb-4 text-xl font-bold text-spu-blue">{{ $isAr ? 'الوصف' : 'Description' }}</h2>
                             <p class="text-lg leading-relaxed text-slate-600">{{ $selectedLab['summary'] ?? '' }}</p>
                         </div>
-                        <a href="/{{ $locale }}/facilities/{{ $page->facultySlug }}/labs" class="mt-12 inline-flex items-center gap-2 text-sm font-bold transition-colors hover:text-spu-red" style="color: {{ $accent }}">
+                        @if ($relatedLabs !== [])
+                            <div class="mt-12 border-t border-slate-100 pt-8">
+                                <h2 class="text-xl font-bold text-spu-blue">{{ $isAr ? 'مخابر ذات صلة' : 'Related Labs' }}</h2>
+                                <div class="mt-5 grid gap-5 sm:grid-cols-3">
+                                    @foreach ($relatedLabs as $relatedLab)
+                                        <a href="{{ $labDetailUrl((string) ($relatedLab['slug'] ?? '')) }}" class="overflow-hidden rounded-[8px] border border-slate-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                                            @if (! empty($relatedLab['image']))
+                                                <img src="{{ $relatedLab['image'] }}" alt="{{ $relatedLab['title'] ?? '' }}" class="h-28 w-full object-cover">
+                                            @endif
+                                            <span class="block p-4 text-sm font-bold text-spu-blue">{{ $relatedLab['title'] ?? '' }}</span>
+                                        </a>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+                        <a href="{{ $labBackUrl }}" class="mt-12 inline-flex items-center gap-2 text-sm font-bold transition-colors hover:text-spu-red" style="color: {{ $accent }}">
                             <img src="/images/icon-chevron-left-outline.svg" alt="" class="h-4 w-4 rtl:rotate-180" aria-hidden="true">
                             <span>{{ $isAr ? 'العودة إلى المخابر' : 'Back to Labs' }}</span>
                         </a>
@@ -233,9 +283,11 @@
                 @else
                     <div class="cms-grid-cards gap-6 lg:gap-8">
                         @forelse ($page->items as $item)
-                            <a href="/{{ $locale }}/facilities/{{ $page->facultySlug }}/labs?lab={{ $item['slug'] ?? '' }}" class="group overflow-hidden rounded-[10px] bg-white shadow-[0_4px_20px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(0,0,0,0.15)]">
+                            <a href="{{ $labDetailUrl((string) ($item['slug'] ?? '')) }}" class="group overflow-hidden rounded-[10px] bg-white shadow-[0_4px_20px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(0,0,0,0.15)]">
                                 <div class="relative h-[180px] overflow-hidden">
-                                    <img src="{{ $item['image'] ?? '/images/dental-clin-lab.jpg' }}" alt="{{ $item['title'] ?? '' }}" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105">
+                                    @if (! empty($item['image']))
+                                        <img src="{{ $item['image'] }}" alt="{{ $item['title'] ?? '' }}" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105">
+                                    @endif
                                     <div class="absolute right-3 top-3 rtl:left-3 rtl:right-auto">
                                         <span class="flex items-center gap-1 rounded border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-bold text-spu-blue shadow-sm">{{ $item['department'] ?? $faculty['title'] }}</span>
                                     </div>
@@ -252,6 +304,13 @@
                             <p class="text-slate-500">{{ $isAr ? 'لا توجد مخابر منشورة حالياً.' : 'No published labs are available yet.' }}</p>
                         @endforelse
                     </div>
+                    @if (($pagination['total_pages'] ?? 1) > 1)
+                        <nav class="mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="{{ $isAr ? 'ترقيم الصفحات' : 'Pagination' }}">
+                            @for ($pageNumber = 1; $pageNumber <= (int) $pagination['total_pages']; $pageNumber++)
+                                <a href="{{ $pageUrl($pageNumber) }}" @if ((int) ($pagination['current_page'] ?? 1) === $pageNumber) aria-current="page" @endif class="inline-flex h-9 min-w-9 items-center justify-center rounded-[4px] border px-3 text-[12px] font-bold transition {{ (int) ($pagination['current_page'] ?? 1) === $pageNumber ? 'border-spu-red bg-spu-red text-white' : 'border-slate-200 text-spu-blue hover:border-spu-blue' }}">{{ $pageNumber }}</a>
+                            @endfor
+                        </nav>
+                    @endif
                 @endif
             </div>
         </section>
@@ -290,16 +349,30 @@
                         <p class="text-slate-500">{{ $isAr ? 'لا توجد مشاريع منشورة حالياً.' : 'No published projects are available yet.' }}</p>
                     @endforelse
                 </div>
-                @if (count($page->items) > 0)
-                    <div class="mt-10 flex items-center justify-center gap-2">
-                        <button type="button" class="flex h-8 w-8 items-center justify-center rounded-[4px] border border-slate-200 text-spu-blue transition hover:border-spu-blue" aria-label="{{ $isAr ? 'الصفحة السابقة' : 'Previous page' }}">
-                            <img src="/images/icon-chevron-left-outline.svg" alt="" class="h-3 w-3 rtl:rotate-180" aria-hidden="true">
-                        </button>
-                        <button type="button" class="h-8 min-w-8 rounded-[4px] border border-spu-red bg-spu-red px-3 text-[12px] font-bold text-white">1</button>
-                        <button type="button" class="flex h-8 w-8 items-center justify-center rounded-[4px] border border-slate-200 text-spu-blue transition hover:border-spu-blue" aria-label="{{ $isAr ? 'الصفحة التالية' : 'Next page' }}">
-                            <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-3 w-3 rtl:rotate-180" aria-hidden="true">
-                        </button>
-                    </div>
+                @if (($pagination['total_pages'] ?? 1) > 1)
+                    <nav class="mt-10 flex items-center justify-center gap-2" aria-label="{{ $isAr ? 'ترقيم الصفحات' : 'Pagination' }}">
+                        @if ((int) ($pagination['current_page'] ?? 1) > 1)
+                            <a href="{{ $pageUrl((int) $pagination['current_page'] - 1) }}" class="flex h-8 w-8 items-center justify-center rounded-[4px] border border-slate-200 text-spu-blue transition hover:border-spu-blue" aria-label="{{ $isAr ? 'الصفحة السابقة' : 'Previous page' }}">
+                                <img src="/images/icon-chevron-left-outline.svg" alt="" class="h-3 w-3 rtl:rotate-180" aria-hidden="true">
+                            </a>
+                        @else
+                            <span class="flex h-8 w-8 items-center justify-center rounded-[4px] border border-slate-100 opacity-40" aria-hidden="true">
+                                <img src="/images/icon-chevron-left-outline.svg" alt="" class="h-3 w-3 rtl:rotate-180" aria-hidden="true">
+                            </span>
+                        @endif
+                        @for ($pageNumber = 1; $pageNumber <= (int) $pagination['total_pages']; $pageNumber++)
+                            <a href="{{ $pageUrl($pageNumber) }}" @if ((int) ($pagination['current_page'] ?? 1) === $pageNumber) aria-current="page" @endif class="inline-flex h-8 min-w-8 items-center justify-center rounded-[4px] border px-3 text-[12px] font-bold {{ (int) ($pagination['current_page'] ?? 1) === $pageNumber ? 'border-spu-red bg-spu-red text-white' : 'border-slate-200 text-spu-blue hover:border-spu-blue' }}">{{ $pageNumber }}</a>
+                        @endfor
+                        @if ((int) ($pagination['current_page'] ?? 1) < (int) $pagination['total_pages'])
+                            <a href="{{ $pageUrl((int) $pagination['current_page'] + 1) }}" class="flex h-8 w-8 items-center justify-center rounded-[4px] border border-slate-200 text-spu-blue transition hover:border-spu-blue" aria-label="{{ $isAr ? 'الصفحة التالية' : 'Next page' }}">
+                                <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-3 w-3 rtl:rotate-180" aria-hidden="true">
+                            </a>
+                        @else
+                            <span class="flex h-8 w-8 items-center justify-center rounded-[4px] border border-slate-100 opacity-40" aria-hidden="true">
+                                <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-3 w-3 rtl:rotate-180" aria-hidden="true">
+                            </span>
+                        @endif
+                    </nav>
                 @endif
             </div>
         </section>
@@ -344,7 +417,9 @@
                     @forelse ($page->items as $item)
                         <article class="overflow-hidden border border-slate-200 bg-white shadow-[0_8px_26px_rgba(15,23,42,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_44px_rgba(15,23,42,0.1)]">
                             <div class="h-[230px] overflow-hidden bg-slate-100">
-                                <img src="{{ $item['image'] ?? '/images/unkown.jpeg' }}" alt="{{ $item['title'] ?? '' }}" class="h-full w-full object-cover transition-transform duration-500 hover:scale-105">
+                                @if (! empty($item['image']))
+                                    <img src="{{ $item['image'] }}" alt="{{ $item['title'] ?? '' }}" class="h-full w-full object-cover transition-transform duration-500 hover:scale-105">
+                                @endif
                             </div>
                             <div class="p-4 text-center">
                                 <h2 class="text-[14px] font-bold text-spu-blue">{{ $item['title'] ?? '' }}</h2>
@@ -417,7 +492,9 @@
                                 </span>
                             @endif
                             <div class="honor-card__media">
-                                <img src="{{ $item['image'] ?? '/images/unkown.jpeg' }}" alt="{{ $item['title'] ?? '' }}" class="h-full w-full object-cover">
+                                @if (! empty($item['image']))
+                                    <img src="{{ $item['image'] }}" alt="{{ $item['title'] ?? '' }}" class="h-full w-full object-cover">
+                                @endif
                                 <div class="honor-card__gpa">
                                     <span>{{ $isAr ? 'المعدل' : 'GPA' }}</span>
                                     <span dir="ltr">{{ $item['gpa'] ?? '' }}</span>
@@ -479,6 +556,11 @@
                             <a href="{{ $pageUrl($pageNumber) }}" class="inline-flex h-9 min-w-9 items-center justify-center rounded-[4px] border px-3 text-[12px] font-bold transition {{ (int) ($pagination['current_page'] ?? 1) === $pageNumber ? 'border-spu-red bg-spu-red text-white' : 'border-slate-200 text-spu-blue hover:border-spu-blue' }}">{{ $pageNumber }}</a>
                         @endfor
                     </nav>
+                @endif
+                @if (is_string($subpage['payload']['quote'] ?? null) && trim($subpage['payload']['quote']) !== '')
+                    <blockquote class="mx-auto mt-14 max-w-3xl border-y border-slate-100 px-6 py-8 text-center text-xl font-bold leading-9 text-spu-blue">
+                        {{ $subpage['payload']['quote'] }}
+                    </blockquote>
                 @endif
             </div>
         </section>

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\DTOs\Legacy;
 
 /**
- * @param array<int, string> $warnings
- * @param array<int, string> $sampleLinks
+ * @param  array<int, string>  $warnings
+ * @param  array<int, string>  $sampleLinks
  */
 final readonly class LegacyInternalLinkExtractionResultDTO
 {

@@ -22,16 +22,38 @@
         </div>
     </section>
 
-    <section id="tour" class="bg-white py-14 font-hacen">
+    <section id="tour" x-data="virtualTour" data-autoplay-interval="{{ (int) ($content['tour']['autoplayInterval'] ?? 6000) }}" data-play-label="{{ $content['tour']['playLabel'] ?? '' }}" data-pause-label="{{ $content['tour']['pauseLabel'] ?? '' }}" data-fullscreen-label="{{ $content['tour']['fullscreenLabel'] ?? '' }}" data-exit-fullscreen-label="{{ $content['tour']['exitFullscreenLabel'] ?? '' }}" class="bg-white py-14 font-hacen">
         <div class="container">
             <div class="text-center"><p class="text-[11px] font-bold uppercase tracking-[0.16em] text-spu-blue/55">{{ $content['tour']['eyebrow'] ?? '' }}</p><h2 class="mt-2 text-[24px] font-bold leading-tight text-spu-blue md:text-[30px]">{{ $content['tour']['title'] ?? '' }}</h2><p class="mx-auto mt-3 w-full text-sm leading-6 text-spu-blue/60 md:w-[48%]">{{ $content['tour']['summary'] ?? '' }}</p></div>
-            <div class="relative mt-8 overflow-hidden rounded-[8px] border border-spu-blue/10 bg-white shadow-[0_18px_60px_rgba(32,39,89,0.16)]">
-                <img src="{{ $content['tour']['image'] ?? '' }}" alt="{{ $content['tour']['imageAlt'] ?? '' }}" class="h-[360px] w-full object-cover md:h-[560px]">
-                <div class="absolute right-4 top-4 flex items-center gap-2 rtl:left-4 rtl:right-auto" aria-label="{{ $content['tour']['controlLabel'] ?? '' }}"><button type="button" class="grid h-8 w-8 place-items-center rounded-[4px] bg-white/90 text-spu-blue shadow-lg transition hover:bg-white" aria-label="{{ $content['tour']['floorLabel'] ?? '' }}"><img src="/images/icon-sitemap-outline.svg" alt="" class="h-4 w-4" aria-hidden="true"></button><button type="button" class="grid h-8 w-8 place-items-center rounded-[4px] bg-white/90 text-spu-blue shadow-lg transition hover:bg-white" aria-label="{{ $content['tour']['fullscreenLabel'] ?? '' }}"><img src="/images/icon-map-outline.svg" alt="" class="h-4 w-4" aria-hidden="true"></button></div>
-                @foreach (($content['tour']['hotspots'] ?? []) as $hotspot)
-                    <button type="button" class="group absolute -translate-x-1/2 -translate-y-1/2" style="left: {{ $hotspot['x'] ?? '50%' }}; top: {{ $hotspot['y'] ?? '50%' }};" aria-label="{{ $hotspot['label'] ?? '' }}"><span class="grid h-7 w-7 place-items-center rounded-full bg-white/95 shadow-[0_8px_24px_rgba(0,0,0,0.2)] ring-4 ring-white/25"><span class="h-2.5 w-2.5 rounded-full bg-spu-red"></span></span><span class="pointer-events-none absolute left-1/2 top-9 hidden -translate-x-1/2 whitespace-nowrap rounded-[4px] bg-spu-blue px-3 py-1.5 text-[11px] font-bold text-white shadow-xl group-hover:block">{{ $hotspot['label'] ?? '' }}</span></button>
+            <script type="application/json" x-ref="sceneData">{!! json_encode($content['tour']['scenes'] ?? [], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
+            <div x-ref="viewer" class="relative mt-8 overflow-hidden rounded-[8px] border border-spu-blue/10 bg-spu-blue shadow-[0_18px_60px_rgba(32,39,89,0.16)]" x-bind:class="fullscreenClass">
+                <div tabindex="0" role="application" aria-roledescription="{{ $content['tour']['experienceLabel'] ?? '' }}" x-bind:aria-label="activeTitle" class="relative h-[360px] touch-none cursor-grab overflow-hidden outline-none focus-visible:ring-4 focus-visible:ring-spu-red md:h-[560px]" x-on:pointerdown="startPan" x-on:pointermove="movePan" x-on:pointerup="endPan" x-on:pointercancel="endPan" x-on:keydown="handleKey">
+                    <img x-bind:src="activeImage" x-bind:alt="activeImageAlt" x-bind:style="imageTransform" draggable="false" class="h-full w-full select-none object-cover will-change-transform">
+                    <template x-for="hotspot in activeHotspots" x-bind:key="hotspot.id">
+                        <button type="button" x-bind:data-target-scene="hotspot.targetSceneId" x-on:click="activateHotspot" x-bind:style="hotspot.style" x-bind:aria-label="hotspot.label" x-bind:title="hotspot.description" class="group absolute -translate-x-1/2 -translate-y-1/2"><span class="grid h-8 w-8 place-items-center rounded-full bg-white shadow-lg ring-4 ring-white/30"><span class="h-2.5 w-2.5 rounded-full bg-spu-red"></span></span><span class="pointer-events-none absolute left-1/2 top-10 hidden max-w-56 -translate-x-1/2 rounded bg-spu-blue px-3 py-2 text-xs font-bold text-white group-hover:block group-focus:block" x-text="hotspot.label"></span></button>
+                    </template>
+                    <div class="absolute bottom-4 left-4 max-w-[70%] rounded bg-spu-blue/90 px-4 py-3 text-white rtl:left-auto rtl:right-4"><p class="text-sm font-bold" x-text="activeTitle"></p><p class="mt-1 text-xs text-white/75" x-text="activeSummary"></p></div>
+                </div>
+                <div class="flex flex-wrap items-center justify-between gap-3 bg-spu-blue p-3 text-white" aria-label="{{ $content['tour']['controlLabel'] ?? '' }}">
+                    <div class="flex items-center gap-2">
+                        <button type="button" x-on:click="previous" class="rounded border border-white/25 px-3 py-2 text-xs font-bold" aria-label="{{ $content['tour']['previousLabel'] ?? '' }}">&larr;</button>
+                        <button type="button" x-on:click="next" class="rounded border border-white/25 px-3 py-2 text-xs font-bold" aria-label="{{ $content['tour']['nextLabel'] ?? '' }}">&rarr;</button>
+                        <button type="button" x-on:click="toggleAutoplay" class="rounded border border-white/25 px-3 py-2 text-xs font-bold" x-bind:aria-label="autoplayLabel" x-text="autoplayLabel"></button>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" x-on:click="zoomOut" class="grid h-9 w-9 place-items-center rounded border border-white/25 font-bold" aria-label="{{ $content['tour']['zoomOutLabel'] ?? '' }}">-</button>
+                        <output class="min-w-12 text-center text-xs font-bold" x-text="zoomLabel"></output>
+                        <button type="button" x-on:click="zoomIn" class="grid h-9 w-9 place-items-center rounded border border-white/25 font-bold" aria-label="{{ $content['tour']['zoomInLabel'] ?? '' }}">+</button>
+                        <button type="button" x-on:click="resetView" class="rounded border border-white/25 px-3 py-2 text-xs font-bold">{{ $content['tour']['resetLabel'] ?? '' }}</button>
+                        <button type="button" x-on:click="toggleFullscreen" class="rounded border border-white/25 px-3 py-2 text-xs font-bold" x-bind:aria-label="fullscreenLabel" x-text="fullscreenLabel"></button>
+                    </div>
+                </div>
+            </div>
+            <p class="sr-only" aria-live="polite" x-text="announcement"></p>
+            <div class="mt-4 flex gap-3 overflow-x-auto pb-2" role="group" aria-label="{{ $content['tour']['title'] ?? '' }}">
+                @foreach (($content['tour']['scenes'] ?? []) as $index => $scene)
+                    <button type="button" data-scene-index="{{ $index }}" x-on:click="selectScene" class="w-36 shrink-0 rounded border border-slate-200 bg-white p-2 text-start focus-visible:outline focus-visible:outline-2 focus-visible:outline-spu-red"><img src="{{ $scene['image'] ?? '' }}" alt="" class="h-20 w-full rounded object-cover" aria-hidden="true"><span class="mt-2 block text-xs font-bold text-spu-blue">{{ $scene['title'] ?? '' }}</span></button>
                 @endforeach
-                <div class="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-spu-blue/85 px-5 py-2 text-xs font-bold text-white shadow-xl backdrop-blur-sm">{{ $content['tour']['experienceLabel'] ?? '' }}</div>
             </div>
         </div>
     </section>

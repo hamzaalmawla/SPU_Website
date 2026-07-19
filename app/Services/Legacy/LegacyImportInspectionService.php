@@ -119,9 +119,7 @@ final class LegacyImportInspectionService implements LegacyImportInspectionServi
     private function inspectSourceTable(string $table): LegacyImportTableInventoryDTO
     {
         try {
-            $connection = $this->oldDatabase->connection();
-
-            if (! $connection->getSchemaBuilder()->hasTable($table)) {
+            if (! $this->oldDatabase->schema()->hasTable($table)) {
                 return new LegacyImportTableInventoryDTO($table, false, null);
             }
 

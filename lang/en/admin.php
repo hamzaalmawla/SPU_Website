@@ -105,6 +105,7 @@ return [
                 'alumni' => 'Alumni',
                 'valedictorians' => 'Honor Students',
                 'training' => 'Training',
+                'research' => 'Research',
             ],
             'admissions' => [
                 'landing' => 'Admissions',
@@ -124,6 +125,7 @@ return [
                 'transport' => 'Transport',
                 'clubs-activities' => 'Clubs & Activities',
                 'career-development' => 'Career Development',
+                'jobs' => 'Career Development Jobs',
                 'dental' => 'Dental Clinics',
                 'hospital' => 'University Hospital',
                 'health-insurance' => 'Health Insurance',
@@ -139,6 +141,7 @@ return [
                 'library' => 'E-Library',
                 'staff_email' => 'Staff Email Guidance',
                 'it_support' => 'IT Support',
+                'suggestions_complaints' => 'Suggestions & Complaints',
             ],
             'contact' => 'Contact',
             'news' => [
@@ -153,6 +156,9 @@ return [
                 'index' => 'Research',
                 'publications' => 'Research Publications',
                 'publication' => 'Research Publication',
+                'centers' => 'Research Centers & Labs',
+                'projects' => 'Research Projects',
+                'themes' => 'Research Themes',
                 'experts' => 'Expert Finder',
                 'expert_profile' => 'Expert Profile',
                 'conferences' => 'Conferences & Seminars',

@@ -108,6 +108,8 @@ class DynamicFormSubmissionResource extends Resource
                 TextColumn::make('form_id')->label('Form')->searchable()->sortable(),
                 TextColumn::make('applicant_name')->searchable()->sortable()->placeholder('-'),
                 TextColumn::make('applicant_email')->searchable()->sortable()->placeholder('-'),
+                TextColumn::make('payload_json._context.job_title')->label('Selected Job')->wrap()->placeholder('-'),
+                TextColumn::make('payload_json.targetFaculty')->label('Admissions Faculty')->wrap()->placeholder('-'),
                 TextColumn::make('locale')->badge()->sortable(),
                 TextColumn::make('status')
                     ->badge()
@@ -123,6 +125,8 @@ class DynamicFormSubmissionResource extends Resource
                         'symposium-registration' => 'Symposium Registration',
                         'activity-registration' => 'Activity Registration',
                         'job-application' => 'Job Application',
+                        'admissions-application' => 'Admissions Application',
+                        'suggestions-complaints' => 'Suggestions & Complaints',
                     ]),
                 SelectFilter::make('locale')->options(['ar' => 'Arabic', 'en' => 'English']),
                 SelectFilter::make('status')->options(['new' => 'New']),

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\PX06;
 
-use App\Filament\Resources\MediaAssetResource;
 use App\Filament\Resources\LegacyMediaAssetResource;
+use App\Filament\Resources\MediaAssetResource;
 use App\Models\Media\MediaAsset;
 use App\Models\User\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;

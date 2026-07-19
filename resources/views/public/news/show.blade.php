@@ -5,6 +5,7 @@
         $isAr = $locale === 'ar';
         $previousArticle = $adjacentArticles['previous'] ?? null;
         $nextArticle = $adjacentArticles['next'] ?? null;
+        $canonicalArticleUrl = url($article->url);
     @endphp
 
     <section class="relative flex min-h-[285px] items-end overflow-hidden pt-24 font-hacen">
@@ -90,14 +91,15 @@
                     <span></span>
                 @endif
 
-                <div class="flex items-center justify-center gap-3">
+                <div x-data="newsShare" data-share-url="{{ $canonicalArticleUrl }}" class="flex items-center justify-center gap-3">
                     <span class="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">{{ __('public.share_article') }}</span>
-                    <a href="https://www.facebook.com/SPUpage.sy/?ref=bookmarks" class="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 transition hover:border-spu-blue" aria-label="Facebook">
+                    <a href="https://www.facebook.com/sharer/sharer.php?u={{ urlencode($canonicalArticleUrl) }}" target="_blank" rel="noopener noreferrer" class="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 transition hover:border-spu-blue" aria-label="{{ $isAr ? 'مشاركة على فيسبوك' : 'Share on Facebook' }}">
                         <img src="/images/icon-facebook-outline.svg" alt="" class="h-3.5 w-3.5" aria-hidden="true">
                     </a>
-                    <a href="https://telegram.me/SPUchannel" class="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 transition hover:border-spu-blue" aria-label="Telegram">
+                    <a href="https://t.me/share/url?url={{ urlencode($canonicalArticleUrl) }}&text={{ urlencode($article->title) }}" target="_blank" rel="noopener noreferrer" class="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 transition hover:border-spu-blue" aria-label="{{ $isAr ? 'مشاركة على تيليغرام' : 'Share on Telegram' }}">
                         <img src="/images/icon-telegram-outline.svg" alt="" class="h-3.5 w-3.5" aria-hidden="true">
                     </a>
+                    <button type="button" x-on:click="copy" class="flex h-8 min-w-8 items-center justify-center rounded-full border border-slate-200 px-2 text-[10px] font-bold transition hover:border-spu-blue" aria-live="polite"><span x-text="copyLabel">{{ $isAr ? 'نسخ الرابط' : 'Copy link' }}</span></button>
                 </div>
 
                 @if ($nextArticle)

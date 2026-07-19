@@ -132,9 +132,11 @@ class ManageEServicesPage extends Page implements HasForms
     public function loadTarget(string $targetKey): void
     {
         $this->assertEServicesTarget($targetKey);
-        $draftPayload = $this->cmsWorkflowService->latestEditableDraftPayload($targetKey);
-        $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey);
+        $userId = (int) auth()->id();
+        $draftPayload = $this->cmsWorkflowService->latestEditableDraftPayload($targetKey, $userId);
+        $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey, $userId);
         $isLanding = $targetKey === 'e_services';
+        $isSuggestions = $targetKey === 'e_services.suggestions-complaints';
         $slug = $isLanding ? null : substr($targetKey, strlen('e_services.'));
 
         $state = [
@@ -143,7 +145,18 @@ class ManageEServicesPage extends Page implements HasForms
             'en_landing' => [],
             'ar_detail' => [],
             'en_detail' => [],
+            'ar_suggestions' => [],
+            'en_suggestions' => [],
         ];
+
+        if ($isSuggestions) {
+            $payload = is_array($draftPayload) ? $draftPayload : $this->eServicesPageService->getSuggestionsComplaintsEditablePayload();
+            $state['ar_suggestions'] = is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [];
+            $state['en_suggestions'] = is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [];
+            $this->form->fill($state);
+
+            return;
+        }
 
         foreach (['ar', 'en'] as $locale) {
             $draftContent = is_array($draftPayload['translations'][$locale] ?? null)
@@ -257,6 +270,28 @@ class ManageEServicesPage extends Page implements HasForms
     private function localeTab(string $locale, string $label): Tab
     {
         return Tab::make($label)->schema([
+            Section::make('Suggestions & Complaints Page')->schema([
+                TextInput::make("{$locale}_suggestions.hero.eyebrow")->label('Eyebrow')->required()->maxLength(160),
+                TextInput::make("{$locale}_suggestions.hero.title")->label('Title')->required()->maxLength(180),
+                Textarea::make("{$locale}_suggestions.hero.summary")->label('Summary')->required()->rows(3)->columnSpanFull(),
+                MediaPicker::image("{$locale}_suggestions.hero.image", 'Hero Image', true),
+                TextInput::make("{$locale}_suggestions.form.title")->label('Form Title')->required()->maxLength(180),
+                TextInput::make("{$locale}_suggestions.form.infoTitle")->label('Information Title')->required()->maxLength(180),
+                Textarea::make("{$locale}_suggestions.form.infoBody")->label('Information Body')->required()->rows(3)->columnSpanFull(),
+                Textarea::make("{$locale}_suggestions.form.consentLabel")->label('Consent Label')->required()->rows(2)->columnSpanFull(),
+                TextInput::make("{$locale}_suggestions.form.attachmentHelp")->label('Attachment Help')->required()->maxLength(255)->columnSpanFull(),
+                Repeater::make("{$locale}_suggestions.form.requestTypes")->label('Request Types')->schema([
+                    Select::make('value')->options(['suggestion' => 'Suggestion', 'complaint' => 'Complaint', 'inquiry' => 'Inquiry'])->required(),
+                    TextInput::make('label')->required()->maxLength(120),
+                ])->columns(2)->minItems(3)->maxItems(3)->reorderable(false)->columnSpanFull(),
+                Repeater::make("{$locale}_suggestions.form.cards")->label('Information Cards')->schema([
+                    TextInput::make('title')->required()->maxLength(180),
+                    Textarea::make('body')->required()->rows(3),
+                ])->columns(2)->columnSpanFull(),
+                TextInput::make("{$locale}_suggestions.seo.title")->label('SEO Title')->required()->maxLength(180),
+                Textarea::make("{$locale}_suggestions.seo.description")->label('SEO Description')->required()->rows(3),
+                MediaPicker::image("{$locale}_suggestions.seo.image", 'SEO Image', true),
+            ])->columns(2)->visible(fn (): bool => $this->isSuggestionsTarget()),
             Section::make('Landing Hero')->schema([
                 TextInput::make("{$locale}_landing.hero_eyebrow")->label('Eyebrow')->required()->maxLength(160),
                 TextInput::make("{$locale}_landing.hero_title")->label('Title')->required()->maxLength(180),
@@ -291,14 +326,14 @@ class ManageEServicesPage extends Page implements HasForms
                 MediaPicker::image("{$locale}_detail.hero_image", 'Hero Image', true),
                 TextInput::make("{$locale}_detail.intro_title")->label('Introduction Title')->required()->maxLength(180),
                 Textarea::make("{$locale}_detail.intro_body")->label('Introduction Body')->required()->rows(5)->columnSpanFull(),
-            ])->columns(2)->visible(fn (): bool => ! $this->isLandingTarget()),
+            ])->columns(2)->visible(fn (): bool => ! $this->isLandingTarget() && ! $this->isSuggestionsTarget()),
             Section::make('Guidance Sections')->schema([
                 Repeater::make("{$locale}_detail.sections")->schema([
                     TextInput::make('id')->required()->maxLength(80),
                     TextInput::make('title')->required()->maxLength(180),
                     Textarea::make('body')->required()->rows(4)->columnSpanFull(),
                 ])->columns(2)->reorderable()->minItems(1)->defaultItems(0),
-            ])->visible(fn (): bool => ! $this->isLandingTarget()),
+            ])->visible(fn (): bool => ! $this->isLandingTarget() && ! $this->isSuggestionsTarget()),
             Section::make('Verified Open Resources')->description('Library resources must use public HTTPS URLs.')->schema([
                 TextInput::make("{$locale}_detail.resources_title")->label('Section Title')->required()->maxLength(180),
                 Repeater::make("{$locale}_detail.resource_links")->schema([
@@ -317,7 +352,7 @@ class ManageEServicesPage extends Page implements HasForms
                     TextInput::make('title')->required()->maxLength(180),
                     TextInput::make('url')->required()->maxLength(500),
                 ])->columns(2)->reorderable()->minItems(1)->defaultItems(0)->columnSpanFull(),
-            ])->columns(2)->visible(fn (): bool => ! $this->isLandingTarget()),
+            ])->columns(2)->visible(fn (): bool => ! $this->isLandingTarget() && ! $this->isSuggestionsTarget()),
             Section::make('Landing SEO')->schema([
                 TextInput::make("{$locale}_landing.seo_title")->label('SEO Title')->required()->maxLength(180),
                 Textarea::make("{$locale}_landing.seo_description")->label('SEO Description')->required()->rows(3),
@@ -327,7 +362,7 @@ class ManageEServicesPage extends Page implements HasForms
                 TextInput::make("{$locale}_detail.seo_title")->label('SEO Title')->required()->maxLength(180),
                 Textarea::make("{$locale}_detail.seo_description")->label('SEO Description')->required()->rows(3),
                 MediaPicker::image("{$locale}_detail.seo_image", 'SEO Image', true),
-            ])->visible(fn (): bool => ! $this->isLandingTarget()),
+            ])->visible(fn (): bool => ! $this->isLandingTarget() && ! $this->isSuggestionsTarget()),
         ]);
     }
 
@@ -350,6 +385,11 @@ class ManageEServicesPage extends Page implements HasForms
     private function isLandingTarget(): bool
     {
         return ($this->data['target_key'] ?? 'e_services') === 'e_services';
+    }
+
+    private function isSuggestionsTarget(): bool
+    {
+        return ($this->data['target_key'] ?? null) === 'e_services.suggestions-complaints';
     }
 
     private function assertEServicesTarget(string $targetKey): void
@@ -435,6 +475,15 @@ class ManageEServicesPage extends Page implements HasForms
     {
         $targetKey = (string) ($state['target_key'] ?? 'e_services');
         $isLanding = $targetKey === 'e_services';
+
+        if ($targetKey === 'e_services.suggestions-complaints') {
+            return [
+                'translations' => [
+                    'ar' => is_array($state['ar_suggestions'] ?? null) ? $state['ar_suggestions'] : [],
+                    'en' => is_array($state['en_suggestions'] ?? null) ? $state['en_suggestions'] : [],
+                ],
+            ];
+        }
 
         return [
             'translations' => [

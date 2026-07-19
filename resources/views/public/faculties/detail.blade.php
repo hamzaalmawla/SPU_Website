@@ -178,70 +178,11 @@
         </section>
     @endif
 
-    @if (! empty($latestResearch))
-        <section id="latest-research" class="bg-white py-16 font-hacen lg:py-24">
-            <div class="container">
-                <div class="grid items-end gap-8 lg:grid-cols-[0.82fr_1fr]">
-                    <div>
-                        <p class="text-[12px] font-bold uppercase tracking-[0.28em]" style="color: {{ $accent }}">{{ __('public.faculty_research') }}</p>
-                        <h2 class="mt-4 max-w-[680px] text-[32px] font-bold leading-tight text-spu-blue md:text-[44px]">{{ __('public.latest_research') }}</h2>
-                        <div class="mt-4 h-[3px] w-16 rounded-full" style="background-color: {{ $accent }}"></div>
-                    </div>
-                </div>
-
-                @php($featured = $latestResearch[0] ?? null)
-                @if ($featured)
-                    <div class="mt-12 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-                        <article class="group grid overflow-hidden rounded-[8px] border border-slate-100 bg-section shadow-[0_18px_45px_rgba(9,17,68,0.08)] md:grid-cols-[0.9fr_1.1fr]">
-                            <div class="relative min-h-[280px] overflow-hidden">
-                                <img src="{{ $featured['image'] ?? '/images/uni-main-place.JPG' }}" alt="" class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105">
-                                <div class="absolute inset-0 bg-gradient-to-t from-spu-blue/72 via-spu-blue/15 to-transparent"></div>
-                                <span class="absolute left-5 top-5 rounded-full bg-white px-4 py-2 text-[11px] font-bold uppercase tracking-[0.14em] text-spu-blue">{{ $featured['date'] ?? '' }}</span>
-                            </div>
-                            <div class="flex min-h-[280px] flex-col justify-between p-7 md:p-9">
-                                <div>
-                                    <p class="text-[12px] font-bold uppercase tracking-[0.18em]" style="color: {{ $accent }}">{{ $featured['type'] ?? '' }}</p>
-                                    <h3 class="mt-4 text-[26px] font-bold leading-tight text-spu-blue md:text-[32px]">{{ $featured['title'] ?? '' }}</h3>
-                                    <p class="mt-5 text-[15px] leading-8 text-slate-600">{{ $featured['summary'] ?? '' }}</p>
-                                </div>
-                                <div class="mt-7 flex flex-wrap items-center justify-between gap-4 border-t border-white pt-5">
-                                    <span class="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">{{ $featured['doi'] ?? '' }}</span>
-                                    <a href="{{ $featured['url'] ?? '#' }}" class="inline-flex items-center gap-2 text-sm font-bold transition-all hover:gap-3" style="color: {{ $accent }}">
-                                        <span>{{ $featured['cta'] ?? __('public.view_project') }}</span>
-                                        <img src="/images/icon-arrow-right-outline.svg" alt="" class="h-3.5 w-3.5 rtl:rotate-180" aria-hidden="true">
-                                    </a>
-                                </div>
-                            </div>
-                        </article>
-
-                        <div class="grid gap-6">
-                            @foreach (array_slice($latestResearch, 1) as $item)
-                                <article class="group grid min-h-[190px] overflow-hidden rounded-[8px] border border-slate-100 bg-white shadow-[0_14px_34px_rgba(9,17,68,0.06)] sm:grid-cols-[190px_1fr]">
-                                    <div class="relative min-h-[190px] overflow-hidden">
-                                        <img src="{{ $item['image'] ?? '/images/uni-main-place.JPG' }}" alt="" class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105">
-                                    </div>
-                                    <div class="flex flex-col justify-between p-6">
-                                        <div>
-                                            <div class="flex flex-wrap items-center gap-3">
-                                                <span class="text-[11px] font-bold uppercase tracking-[0.16em]" style="color: {{ $accent }}">{{ $item['type'] ?? '' }}</span>
-                                                <span class="h-1 w-1 rounded-full bg-slate-300"></span>
-                                                <span class="text-[11px] font-bold text-slate-400">{{ $item['date'] ?? '' }}</span>
-                                            </div>
-                                            <h3 class="mt-3 text-xl font-bold leading-tight text-spu-blue">{{ $item['title'] ?? '' }}</h3>
-                                            <p class="mt-3 line-clamp-2 text-sm leading-7 text-slate-600">{{ $item['summary'] ?? '' }}</p>
-                                        </div>
-                                        <a href="{{ $item['url'] ?? '#' }}" class="mt-5 inline-flex items-center gap-2 text-sm font-bold transition-all hover:gap-3" style="color: {{ $accent }}">
-                                            <span>{{ $item['cta'] ?? __('public.view_project') }}</span>
-                                            <img src="/images/icon-arrow-right-outline.svg" alt="" class="h-3.5 w-3.5 rtl:rotate-180" aria-hidden="true">
-                                        </a>
-                                    </div>
-                                </article>
-                            @endforeach
-                        </div>
-                    </div>
-                @endif
-            </div>
-        </section>
-    @endif
+    @include('public.faculties.partials.latest-research', [
+        'latestResearch' => $latestResearch,
+        'locale' => $locale,
+        'accent' => $accent,
+        'sectionId' => 'latest-research',
+    ])
 
     @include('public.faculties.partials.highlights', ['highlights' => $page->highlights, 'faculty' => $faculty, 'navigationItems' => $page->navigation])

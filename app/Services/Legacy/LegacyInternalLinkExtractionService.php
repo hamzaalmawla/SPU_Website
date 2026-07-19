@@ -151,7 +151,7 @@ final class LegacyInternalLinkExtractionService implements LegacyInternalLinkExt
     private function columnExists(string $table, string $column): bool
     {
         try {
-            return $this->oldDatabase->connection()->getSchemaBuilder()->hasColumn($table, $column);
+            return $this->oldDatabase->schema()->hasColumn($table, $column);
         } catch (Throwable) {
             return false;
         }

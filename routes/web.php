@@ -43,6 +43,7 @@ Route::prefix('{locale}')
             ->name('public.e-services.detail');
         Route::get('/e-services/suggestions-complaints', [EServicesController::class, 'suggestionsComplaints'])->name('public.e-services.suggestions-complaints');
         Route::post('/e-services/suggestions-complaints', [EServicesController::class, 'storeSuggestionsComplaints'])
+            ->defaults('form', 'suggestions-complaints')
             ->middleware('throttle:public-form')
             ->name('public.e-services.suggestions-complaints.submit');
         Route::get('/virtual-tour', VirtualTourController::class)->name('public.virtual-tour');
@@ -79,7 +80,7 @@ Route::prefix('{locale}')
                 Route::get('/{faculty}/{subpage}', 'subpage')
                     ->where([
                         'faculty' => 'medicine|dentistry|pharmacy|artificial-intelligence|building-construction-engineering|petroleum|business-administration',
-                        'subpage' => 'overview|departments|labs|projects|alumni|valedictorians|training',
+                        'subpage' => 'overview|departments|labs|projects|alumni|valedictorians|training|research',
                     ])
                     ->name('subpage');
             });
@@ -89,8 +90,12 @@ Route::prefix('{locale}')
             ->name('public.admissions.')
             ->group(function (): void {
                 Route::get('/', 'landing')->name('landing');
-                Route::get('/study-system', 'redirectToDocuments')->name('study-system.redirect');
-                Route::get('/academic-warnings', 'redirectToDocuments')->name('academic-warnings.redirect');
+                Route::get('/study-system', 'redirectToDocuments')
+                    ->defaults('tab', 'study-system')
+                    ->name('study-system.redirect');
+                Route::get('/academic-warnings', 'redirectToDocuments')
+                    ->defaults('tab', 'academic-warnings')
+                    ->name('academic-warnings.redirect');
                 Route::get('/{section}', 'section')
                     ->where(['section' => 'requirements|tuition|how-to-apply|faq|calendar|documents|transfer|filling-vacancies|graduation-exams'])
                     ->name('section');
@@ -146,7 +151,7 @@ Route::prefix('{locale}')
             ->name('public.contact.submit');
 
         Route::post('/forms/{form}/submissions', DynamicFormSubmissionController::class)
-            ->where(['form' => 'conference-registration|symposium-registration|activity-registration|job-application'])
+            ->where(['form' => 'conference-registration|symposium-registration|activity-registration|job-application|admissions-application|suggestions-complaints'])
             ->middleware('throttle:public-form')
             ->name('public.forms.submit');
 

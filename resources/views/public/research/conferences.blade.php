@@ -57,9 +57,11 @@
                                 @if (! empty($conf['hasProceedings']))
                                     <div class="flex items-center justify-between border-t border-spu-blue/10 pt-4">
                                         <span class="text-xs font-semibold text-spu-blue/60">{{ $data['pastSection']['proceedings'] ?? ($locale === 'ar' ? 'الوقائع' : 'Proceedings') }}</span>
-                                        <a href="{{ $conf['proceedingsUrl'] ?? '#' }}" class="text-xs font-bold text-spu-red transition hover:text-spu-blue">
-                                            {{ $conf['proceedingsLabel'] ?? ($locale === 'ar' ? 'تحميل' : 'Download') }}
-                                        </a>
+                                        @if (! empty($conf['proceedingsUrl']))
+                                            <a href="{{ $conf['proceedingsUrl'] }}" class="text-xs font-bold text-spu-red transition hover:text-spu-blue">
+                                                {{ $conf['proceedingsLabel'] ?? ($locale === 'ar' ? 'تحميل' : 'Download') }}
+                                            </a>
+                                        @endif
                                     </div>
                                 @endif
                             </div>

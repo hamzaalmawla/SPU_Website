@@ -62,7 +62,7 @@
                     @foreach ($section->payload->stats as $stat)
                         <div class="flex flex-col items-center justify-center text-center px-4">
                             <div class="flex items-baseline mb-3">
-                                <span class="text-5xl lg:text-6xl font-bold text-white tracking-tighter stats-card-value" data-value="{{ $stat->value }}" translate="no">0</span>
+                                <span class="text-5xl lg:text-6xl font-bold text-white tracking-tighter stats-card-value" data-value="{{ $stat->value }}" translate="no">{{ $stat->value }}</span>
                                 @if ($stat->suffix)<span class="text-3xl font-bold text-spu-red ml-1" translate="no">{{ $stat->suffix }}</span>@endif
                             </div>
                             <p class="text-[#799DD6] text-xs font-bold tracking-widest uppercase">{{ $stat->label }}</p>

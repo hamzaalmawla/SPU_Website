@@ -45,10 +45,7 @@ final class NewsController extends Controller
 
     public function articles(Request $request, string $locale): View
     {
-        $title = $locale === 'ar' ? 'قائمة الأخبار' : 'News Listing';
-        $description = $locale === 'ar'
-            ? 'تصفح أخبار الجامعة السورية الخاصة حسب التصنيف.'
-            : 'Browse Syrian Private University news by category.';
+        $page = $this->newsService->getArticlesPageContent($locale);
 
         return view('public.news.articles', $this->sharedPayload($request, $locale, '/news/articles', [
             'articles' => $this->newsService->listPublicArticles($locale, [
@@ -58,9 +55,10 @@ final class NewsController extends Controller
             'categories' => $this->newsService->getPublicCategories($locale),
             'activeCategory' => is_string($request->query('category')) ? (string) $request->query('category') : null,
             'search' => is_string($request->query('search')) ? (string) $request->query('search') : '',
-            'pageTitle' => $title,
-            'pageDescription' => $description,
-            'seo' => $this->seo($locale, '/news/articles', $title, $description),
+            'page' => $page,
+            'pageTitle' => (string) $page['title'],
+            'pageDescription' => (string) $page['summary'],
+            'seo' => $this->seo($locale, '/news/articles', (string) $page['seoTitle'], (string) $page['seoDescription'], (string) $page['seoImage']),
         ]));
     }
 

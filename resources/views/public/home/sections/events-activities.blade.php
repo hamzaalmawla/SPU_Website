@@ -16,12 +16,19 @@
     $calendarHighlights = $decodeHtmlEntities($section->payload->content['calendarHighlights'] ?? []);
 @endphp
 
-<section x-data="calendarApp()" data-events="{{ json_encode($events, JSON_THROW_ON_ERROR) }}" class="overflow-hidden bg-white py-16 font-hacen lg:py-20">
+<section x-data="calendarApp()"
+         data-events="{{ json_encode($events, JSON_THROW_ON_ERROR) }}"
+         data-event-label="{{ __('public.show_event') }}"
+         class="overflow-hidden bg-white py-16 font-hacen lg:py-20"
+         @mouseenter="stopCarousel()"
+         @mouseleave="startCarousel()"
+         @focusin="stopCarousel()"
+         @focusout="resumeCarousel($event)">
     <div class="container">
         <h2 class="mb-8 text-[34px] font-bold tracking-tight text-[#1e2652] sm:mb-10 sm:text-[42px] lg:text-[52px]">{{ $sectionTitle }}</h2>
 
         <div class="grid grid-cols-1 gap-10 xl:grid-cols-[minmax(0,560px)_minmax(0,1fr)] xl:items-stretch">
-            <div @mouseenter="stopCarousel()" @mouseleave="startCarousel()" class="overflow-hidden rounded-[20px] bg-white shadow-[0_18px_40px_rgba(0,0,0,0.22)] h-full flex flex-col relative">
+            <div class="overflow-hidden rounded-[20px] bg-white shadow-[0_18px_40px_rgba(0,0,0,0.22)] h-full flex flex-col relative" role="region" aria-roledescription="{{ __('public.carousel') }}" aria-label="{{ $sectionTitle }}" tabindex="0" @keydown="handleCarouselKey($event)">
                 <template x-if="selectedEvent">
                     <article :key="activeEventIndex" x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100" class="flex flex-1 flex-col">
                         <div class="relative h-[220px] overflow-hidden md:h-[250px]">
@@ -40,7 +47,7 @@
                                 <div class="border-t border-[#9c2a2a]/20"></div>
                                 <div class="flex items-center justify-center gap-2 pt-7">
                                     <template x-for="(eventItem, index) in selectedDateEvents" :key="eventKey(eventItem, index)">
-                                        <button type="button" @click="selectEvent(index)" class="h-[8px] rounded-full transition-all duration-300" :class="eventDotClass(index)" :aria-label="eventDotLabel(index)"></button>
+                                        <button type="button" @click="selectEvent(index)" class="h-[8px] rounded-full transition-all duration-300" :class="eventDotClass(index)" :aria-label="eventDotLabel(index)" :aria-current="isEventActive(index)"></button>
                                     </template>
                                 </div>
                             </div>
@@ -69,7 +76,7 @@
                 </div>
                 <div class="grid grid-cols-7 gap-y-3 sm:gap-y-4">
                     <template x-for="day in calendarDays" :key="day.date">
-                        <button type="button" @click="selectDate(day.date)" class="relative mx-auto flex h-[50px] w-[50px] items-center justify-center rounded-[14px] transition-colors sm:h-[56px] sm:w-[56px]" :class="dayButtonClass(day)">
+                        <button type="button" @click="selectDate(day.date)" class="relative mx-auto flex h-[50px] w-[50px] items-center justify-center rounded-[14px] transition-colors sm:h-[56px] sm:w-[56px]" :class="dayButtonClass(day)" :aria-label="dayLabel(day)" :aria-pressed="isDateSelected(day)">
                             <span class="text-[18px] font-semibold transition-colors sm:text-[20px]" translate="no" :class="dayNumberClass(day)" x-text="day.dayNumber"></span>
                             <span x-show="showEventMarker(day)" class="absolute bottom-[6px] left-1/2 h-[4px] w-[4px] -translate-x-1/2 rounded-full bg-[#27316d]"></span>
                         </button>

@@ -19,8 +19,7 @@ final class LegacyQueryResolverRegistry implements LegacyQueryResolverRegistryIn
     public function __construct(
         LegacyNewsQueryResolver $newsResolver,
         LegacyPageQueryResolver $pageResolver,
-    )
-    {
+    ) {
         $this->resolvers = [$newsResolver, $pageResolver];
     }
 

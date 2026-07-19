@@ -4,6 +4,8 @@ export function createDynamicFormShell() {
             this.$store.dynamicForm.open(this.$el.dataset.formId, this.$el.dataset.locale, null, {
                 eventSource: this.$el.dataset.eventSource || '',
                 eventId: this.$el.dataset.eventId || '',
+                jobId: this.$el.dataset.jobId || '',
+                jobSlug: this.$el.dataset.jobSlug || '',
             });
         },
     };

@@ -32,7 +32,13 @@ final class ResearchController extends Controller
 
     public function repository(Request $request, string $locale): View
     {
-        return $this->renderPage($request, $locale, $this->researchPageService->repository($locale), 'public.research.repository', '/research/repository');
+        return $this->renderPage(
+            $request,
+            $locale,
+            $this->researchPageService->repository($locale, $request->only(['q', 'faculty', 'type', 'year', 'page'])),
+            'public.research.repository',
+            '/research/repository'
+        );
     }
 
     public function publications(Request $request, string $locale): View
@@ -40,7 +46,7 @@ final class ResearchController extends Controller
         return $this->renderPage(
             $request,
             $locale,
-            $this->researchPageService->publications($locale, $request->only(['q', 'faculty', 'type', 'year'])),
+            $this->researchPageService->publications($locale, $request->only(['q', 'faculty', 'type', 'year', 'page'])),
             'public.research.publications.index',
             '/research/publications'
         );
@@ -69,7 +75,7 @@ final class ResearchController extends Controller
 
     public function projects(Request $request, string $locale): View
     {
-        return $this->renderPage($request, $locale, $this->researchPageService->projects($locale), 'public.research.projects.index', '/research/projects');
+        return $this->renderPage($request, $locale, $this->researchPageService->projects($locale, $request->only(['q', 'status', 'faculty', 'theme', 'page'])), 'public.research.projects.index', '/research/projects');
     }
 
     public function project(Request $request, string $locale, string $slug): View
@@ -95,7 +101,7 @@ final class ResearchController extends Controller
 
     public function researchers(Request $request, string $locale): View
     {
-        return $this->renderPage($request, $locale, $this->researchPageService->researchers($locale), 'public.research.researchers.index', '/research/researchers');
+        return $this->renderPage($request, $locale, $this->researchPageService->researchers($locale, $request->only(['q', 'faculty', 'expertise', 'page'])), 'public.research.researchers.index', '/research/researchers');
     }
 
     public function researcher(Request $request, string $locale, string $slug): View
@@ -108,7 +114,7 @@ final class ResearchController extends Controller
 
     public function expertFinder(Request $request, string $locale): View
     {
-        return $this->renderPage($request, $locale, $this->researchPageService->expertFinder($locale), 'public.research.expert-finder', '/research/expert-finder');
+        return $this->renderPage($request, $locale, $this->researchPageService->expertFinder($locale, $request->only(['q', 'faculty', 'page'])), 'public.research.expert-finder', '/research/expert-finder');
     }
 
     public function conferences(Request $request, string $locale): View
@@ -153,20 +159,24 @@ final class ResearchController extends Controller
 
     private function renderPage(Request $request, string $locale, ResearchPageDTO $page, string $view, string $suffix): View
     {
+        $query = $this->pageQuery($page);
+
         return view($view, [
             'locale' => $locale,
             'direction' => $page->direction,
             'navigation' => $this->navigationService->getFullNavigationPayload($locale, $request->path()),
             'settings' => $this->settingsService->getPublicSettings($locale),
-            'languageSwitch' => $this->languageSwitchLinks($locale, $suffix),
+            'languageSwitch' => $this->languageSwitchLinks($locale, $suffix, $query),
             'isPreview' => false,
-            'seo' => $this->seo($locale, $page->path, $suffix, $page->seoTitle, $page->seoDescription, $page->seoImage),
+            'seo' => $this->seo($locale, $page->path, $suffix, $page->seoTitle, $page->seoDescription, $page->seoImage, $query),
             'page' => $page,
         ]);
     }
 
     private function renderDetail(Request $request, string $locale, ResearchDetailPageDTO $page, string $view, string $suffix): View
     {
+        $structuredData = $this->detailStructuredData($page);
+
         return view($view, [
             'locale' => $locale,
             'direction' => $page->direction,
@@ -175,15 +185,20 @@ final class ResearchController extends Controller
             'languageSwitch' => $this->languageSwitchLinks($locale, $suffix),
             'isPreview' => false,
             'seo' => $this->seo($locale, $page->path, $suffix, $page->seoTitle, $page->seoDescription, $page->seoImage),
+            'structuredData' => $structuredData,
+            'citationMeta' => $page->type === 'publication' ? $this->publicationCitationMeta($page) : null,
+            'ogType' => $page->type === 'publication' ? 'article' : 'website',
             'page' => $page,
         ]);
     }
 
-    private function seo(string $locale, string $path, string $suffix, string $title, string $description, string $image): mixed
+    private function seo(string $locale, string $path, string $suffix, string $title, string $description, string $image, array $query = []): mixed
     {
+        $queryString = $query !== [] ? '?'.http_build_query($query, '', '&', PHP_QUERY_RFC3986) : '';
+
         return $this->seoMetadataService->buildFallback($locale, [
-            'path' => $path,
-            'locale_paths' => ['ar' => '/ar'.$suffix, 'en' => '/en'.$suffix],
+            'path' => $path.$queryString,
+            'locale_paths' => ['ar' => '/ar'.$suffix.$queryString, 'en' => '/en'.$suffix.$queryString],
             'title' => $title,
             'meta_description' => $description,
             'og_title' => $title,
@@ -193,11 +208,125 @@ final class ResearchController extends Controller
     }
 
     /** @return array<int, LanguageSwitchLinkDTO> */
-    private function languageSwitchLinks(string $locale, string $suffix): array
+    private function languageSwitchLinks(string $locale, string $suffix, array $query = []): array
     {
+        $queryString = $query !== [] ? '?'.http_build_query($query, '', '&', PHP_QUERY_RFC3986) : '';
+
         return [
-            new LanguageSwitchLinkDTO('ar', 'AR', '/ar'.$suffix, $locale === 'ar'),
-            new LanguageSwitchLinkDTO('en', 'EN', '/en'.$suffix, $locale === 'en'),
+            new LanguageSwitchLinkDTO('ar', 'AR', '/ar'.$suffix.$queryString, $locale === 'ar'),
+            new LanguageSwitchLinkDTO('en', 'EN', '/en'.$suffix.$queryString, $locale === 'en'),
         ];
+    }
+
+    /** @return array<string, scalar> */
+    private function pageQuery(ResearchPageDTO $page): array
+    {
+        $filters = is_array($page->data['activeFilters'] ?? null) ? $page->data['activeFilters'] : [];
+        $query = [];
+
+        foreach ($filters as $key => $value) {
+            if (! is_string($key) || ! is_scalar($value) || $value === '' || ($key === 'page' && (int) $value <= 1)) {
+                continue;
+            }
+
+            $query[$key] = $value;
+        }
+
+        if ($page->type === 'conference-registration') {
+            $eventId = $page->data['registerEvent']['id'] ?? null;
+
+            if (is_scalar($eventId) && (string) $eventId !== '') {
+                $query['event'] = (string) $eventId;
+            }
+        }
+
+        return $query;
+    }
+
+    /** @return array<string, mixed> */
+    private function detailStructuredData(ResearchDetailPageDTO $page): array
+    {
+        $item = $page->item;
+        $canonicalUrl = url($page->path);
+
+        if ($page->type === 'publication') {
+            $data = [
+                '@context' => 'https://schema.org',
+                '@type' => 'ScholarlyArticle',
+                'headline' => (string) ($item['title'] ?? ''),
+                'description' => (string) ($item['lead'] ?? $item['summary'] ?? ''),
+                'inLanguage' => $page->locale,
+                'mainEntityOfPage' => $canonicalUrl,
+                'url' => $canonicalUrl,
+                'image' => url((string) ($item['image'] ?? $page->seoImage)),
+                'author' => [
+                    '@type' => 'Person',
+                    'name' => (string) ($item['author'] ?? ''),
+                ],
+                'publisher' => [
+                    '@type' => 'Organization',
+                    'name' => config('app.name', 'Syrian Private University'),
+                    'url' => url('/'),
+                ],
+                'datePublished' => (string) ($item['publicationDate'] ?? $item['year'] ?? ''),
+                'keywords' => array_values(array_filter(is_array($item['keywords'] ?? null) ? $item['keywords'] : [], 'is_scalar')),
+            ];
+
+            if (is_string($item['doi'] ?? null) && $item['doi'] !== '') {
+                $data['identifier'] = 'https://doi.org/'.$item['doi'];
+            }
+
+            if (is_bool($item['isOpenAccess'] ?? null)) {
+                $data['isAccessibleForFree'] = $item['isOpenAccess'];
+            }
+
+            return $data;
+        }
+
+        return [
+            '@context' => 'https://schema.org',
+            '@type' => match ($page->type) {
+                'researcher' => 'Person',
+                'project' => 'ResearchProject',
+                'center' => 'Organization',
+                default => 'WebPage',
+            },
+            'name' => (string) ($item['title'] ?? $item['name'] ?? ''),
+            'description' => (string) ($item['summary'] ?? $item['mission'] ?? $item['description'] ?? ''),
+            'inLanguage' => $page->locale,
+            'url' => $canonicalUrl,
+        ];
+    }
+
+    /** @return array<string, string> */
+    private function publicationCitationMeta(ResearchDetailPageDTO $page): array
+    {
+        $item = $page->item;
+        $keywords = is_array($item['keywords'] ?? null)
+            ? implode(', ', array_map('strval', array_filter($item['keywords'], 'is_scalar')))
+            : '';
+        $meta = [
+            'citation_title' => (string) ($item['title'] ?? ''),
+            'citation_author' => (string) ($item['author'] ?? ''),
+            'citation_publication_date' => (string) ($item['publicationDate'] ?? $item['year'] ?? ''),
+            'citation_journal_title' => (string) ($item['journalTitle'] ?? $item['publisher'] ?? ''),
+            'citation_language' => $page->locale,
+            'citation_abstract' => (string) ($item['lead'] ?? $item['summary'] ?? ''),
+            'citation_keywords' => $keywords,
+            'DC.title' => (string) ($item['title'] ?? ''),
+            'DC.creator' => (string) ($item['author'] ?? ''),
+            'DC.date' => (string) ($item['publicationDate'] ?? $item['year'] ?? ''),
+            'DC.description' => (string) ($item['lead'] ?? $item['summary'] ?? ''),
+            'DC.type' => (string) ($item['type'] ?? 'ScholarlyArticle'),
+            'DC.language' => $page->locale,
+            'DC.subject' => $keywords,
+        ];
+
+        if (is_string($item['doi'] ?? null) && $item['doi'] !== '') {
+            $meta['citation_doi'] = $item['doi'];
+            $meta['DC.identifier'] = 'https://doi.org/'.$item['doi'];
+        }
+
+        return $meta;
     }
 }

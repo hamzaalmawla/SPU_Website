@@ -14,6 +14,7 @@ use InvalidArgumentException;
 final class LegacyPhaseSixApprovalService implements LegacyPhaseSixApprovalServiceInterface
 {
     private const APPROVAL_TOKEN = 'phase6-menu-links';
+
     private const PAGES_APPROVAL_TOKEN = 'phase6-pages';
 
     public function approveMenuLinks(bool $write = false, ?string $approval = null): LegacyPhaseSixApprovalResultDTO
@@ -129,10 +130,10 @@ final class LegacyPhaseSixApprovalService implements LegacyPhaseSixApprovalServi
             $blockers[] = 'blocked_file_dependency';
         }
 
-        foreach (is_array($row->blocked_reasons) ? $row->blocked_reasons : [] as $reason) {
-            $blockers[] = (string) $reason;
+        foreach ($row->blocked_reasons ?? [] as $reason) {
+            $blockers[] = $reason;
         }
 
-        return array_values(array_unique(array_filter($blockers)));
+        return array_values(array_unique($blockers));
     }
 }

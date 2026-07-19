@@ -24,17 +24,17 @@
 
             <div class="flex-1 min-w-0 w-full relative">
                 <div class="flex gap-3 absolute -top-20 z-50 rtl:left-0 ltr:right-0">
-                    <button @click="slideFaculties('left')" type="button" class="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-label="{{ __('public.previous') }}">
+                    <button @click="slideFaculties('previous')" type="button" class="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-controls="academic-faculties-track" aria-label="{{ __('public.previous') }}">
                         <img src="/images/icon-chevron-left-outline.svg" class="w-3.5 h-3.5 rtl:rotate-180" alt="">
                     </button>
-                    <button @click="slideFaculties('right')" type="button" class="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-label="{{ __('public.next') }}">
+                    <button @click="slideFaculties('next')" type="button" class="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-controls="academic-faculties-track" aria-label="{{ __('public.next') }}">
                         <img src="/images/icon-chevron-right-outline.svg" class="w-3.5 h-3.5 rtl:rotate-180" alt="">
                     </button>
                 </div>
 
-                <div x-ref="facultiesTrack" class="flex h-[390px] w-full snap-x snap-mandatory flex-nowrap gap-6 bg-transparent overflow-x-auto overflow-y-hidden no-scrollbar scroll-smooth overscroll-x-contain px-2 pb-5 items-start z-10">
+                <div id="academic-faculties-track" x-ref="facultiesTrack" class="flex h-[390px] w-full snap-x snap-mandatory flex-nowrap gap-6 bg-transparent overflow-x-auto overflow-y-hidden no-scrollbar scroll-smooth overscroll-x-contain px-2 pb-5 items-start z-10" role="region" aria-roledescription="{{ __('public.carousel') }}" aria-label="{{ $section->payload->title }}" tabindex="0" @keydown="handleSliderKey($event)">
                     @foreach ($section->payload->items as $item)
-                        <article @mouseenter="setActiveFaculty({{ $loop->index }})" @mouseleave="clearActiveFaculty()" :class="facultyCardClass({{ $loop->index }})" class="faculty-card snap-start w-[292px] h-[380px] hover:cursor-pointer shrink-0 relative bg-white rounded-[24px] border border-gray-100 shadow-[0_10px_30px_rgba(0,0,0,0.03)] flex flex-col items-center text-center transition-all duration-300 group overflow-hidden">
+                        <article @mouseenter="setActiveFaculty({{ $loop->index }})" @mouseleave="clearActiveFaculty()" :class="facultyCardClass({{ $loop->index }})" class="faculty-card snap-start w-[292px] h-[380px] shrink-0 relative bg-white rounded-[24px] border border-gray-100 shadow-[0_10px_30px_rgba(0,0,0,0.03)] flex flex-col items-center text-center transition-all duration-300 group overflow-hidden" role="group" aria-roledescription="{{ __('public.slide') }}" aria-label="{{ __('public.slide_position', ['current' => $loop->iteration, 'total' => count($section->payload->items)]) }}">
                             @if (! empty($item['accent']))
                                 <div class="absolute top-0 left-0 w-full h-0 group-hover:h-[6px] z-50 transition-all duration-300 ease-in-out" style="background-color: {{ $item['accent'] }};"></div>
                             @endif

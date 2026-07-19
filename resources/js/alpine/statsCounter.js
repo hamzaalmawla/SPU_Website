@@ -1,20 +1,26 @@
+import { prefersReducedMotion } from '../utils/motionDirection.js';
+
 function animateValue(el, end, duration = 1500) {
     const frameRate = 1000 / 60;
     const totalFrames = Math.round(duration / frameRate);
     const increment = end / totalFrames;
     let currentFrame = 0;
+    const finalText = el.textContent;
+    const locale = typeof document !== 'undefined' ? document.documentElement.lang : 'en';
+
+    el.textContent = new Intl.NumberFormat(locale).format(0);
 
     const timer = setInterval(() => {
         currentFrame += 1;
         const next = Math.round(increment * currentFrame);
 
         if (currentFrame >= totalFrames) {
-            el.textContent = new Intl.NumberFormat('en-US').format(end);
+            el.textContent = finalText;
             clearInterval(timer);
             return;
         }
 
-        el.textContent = new Intl.NumberFormat('en-US').format(next);
+        el.textContent = new Intl.NumberFormat(locale).format(next);
     }, frameRate);
 }
 
@@ -26,13 +32,15 @@ export function createStatsCounter() {
             const targets = this.$el.querySelectorAll('[data-value]');
             if (!targets.length) return;
 
+            if (prefersReducedMotion() || typeof IntersectionObserver === 'undefined') return;
+
             const observer = new IntersectionObserver((entries) => {
                 if (!entries[0].isIntersecting || this._observed) return;
                 this._observed = true;
                 observer.disconnect();
 
                 targets.forEach((el) => {
-                    const end = parseFloat(el.dataset.value) || 0;
+                    const end = Number.parseFloat(el.dataset.value.replaceAll(',', '')) || 0;
                     animateValue(el, end);
                 });
             }, { threshold: 0.2 });
@@ -45,7 +53,7 @@ export function createStatsCounter() {
                 this._observed = true;
                 observer.disconnect();
                 targets.forEach((el) => {
-                    const end = parseFloat(el.dataset.value) || 0;
+                    const end = Number.parseFloat(el.dataset.value.replaceAll(',', '')) || 0;
                     animateValue(el, end);
                 });
             }

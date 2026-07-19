@@ -212,7 +212,7 @@
       "facultyAr": "الطب البشري",
       "heroImage": "/images/about/leadership/medicine-dean.jpg",
       "accent": "#bc2428",
-      "summaryEn": "Mock department data for SPU medicine, based on a six-year clinical model with foundational sciences, hospital training, and applied medical practice.",
+      "summaryEn": "SPU medicine departments follow a six-year clinical model with foundational sciences, hospital training, and applied medical practice.",
       "summaryAr": "بيانات تجريبية لكلية الطب البشري في الجامعة السورية الخاصة، مبنية على نموذج سريري من ست سنوات يجمع العلوم الأساسية والتدريب في المشافي والممارسة الطبية.",
       "stats": [
         {
@@ -731,7 +731,7 @@
       "facultyAr": "الصيدلة",
       "heroImage": "/images/pharmacy-place.jpg",
       "accent": "#5ebe7b",
-      "summaryEn": "Mock department data for SPU pharmacy, reflecting drug formulation, quality control, therapeutics, and professional pharmacy practice.",
+      "summaryEn": "SPU pharmacy departments cover drug formulation, quality control, therapeutics, and professional pharmacy practice.",
       "summaryAr": "بيانات تجريبية لكلية الصيدلة في الجامعة السورية الخاصة، تعكس صياغة الأدوية ومراقبة الجودة والعلاجات والممارسة الصيدلانية المهنية.",
       "stats": [
         {
@@ -1033,7 +1033,7 @@
       "facultyAr": "الذكاء الاصطناعي",
       "heroImage": "/images/faculities/ai/lab.jpg",
       "accent": "#683695",
-      "summaryEn": "Mock academic department data for SPU AI programs, shaped around computing foundations, intelligent systems, and applied software practice.",
+      "summaryEn": "SPU artificial intelligence departments are shaped around computing foundations, intelligent systems, and applied software practice.",
       "summaryAr": "بيانات تجريبية لأقسام كلية الذكاء الاصطناعي في الجامعة السورية الخاصة، مبنية حول الحوسبة والأنظمة الذكية والتطبيق العملي.",
       "stats": [
         {
@@ -1319,7 +1319,7 @@
       "facultyAr": "هندسة التشييد والبناء",
       "heroImage": "/images/slider-3.webp",
       "accent": "#7f8c8d",
-      "summaryEn": "Mock department data for SPU construction engineering, centered on structures, materials, project delivery, and reconstruction needs.",
+      "summaryEn": "SPU construction engineering departments focus on structures, materials, project delivery, and reconstruction needs.",
       "summaryAr": "بيانات تجريبية لهندسة التشييد والبناء في الجامعة السورية الخاصة، تتمحور حول المنشآت والمواد وتنفيذ المشاريع واحتياجات إعادة الإعمار.",
       "stats": [
         {
@@ -1592,7 +1592,7 @@
       "facultyAr": "هندسة البترول",
       "heroImage": "/images/petroleom-dean.jpg",
       "accent": "#0b5759",
-      "summaryEn": "Mock department data for SPU petroleum engineering, organized around energy labs, field training, drilling, reservoirs, and production systems.",
+      "summaryEn": "SPU petroleum engineering departments are organized around energy labs, field training, drilling, reservoirs, and production systems.",
       "summaryAr": "بيانات تجريبية لكلية هندسة البترول في الجامعة السورية الخاصة، منظمة حول مخابر الطاقة والتدريب الميداني والحفر والمكامن وأنظمة الإنتاج.",
       "stats": [
         {
@@ -1817,7 +1817,7 @@
       "facultyAr": "إدارة الأعمال",
       "heroImage": "/images/about/leadership/busnins-dean.jpg",
       "accent": "#caa949",
-      "summaryEn": "Mock department data aligned with SPU business education, management practice, finance, marketing, and organizational leadership.",
+      "summaryEn": "SPU business administration departments align academic study with management practice, finance, marketing, and organizational leadership.",
       "summaryAr": "بيانات تجريبية منسجمة مع تعليم إدارة الأعمال في الجامعة السورية الخاصة ومجالات الإدارة والتمويل والتسويق والقيادة المؤسسية.",
       "stats": [
         {

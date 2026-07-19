@@ -59,6 +59,21 @@ class HomepageCmsWorkflowTest extends TestCase
         $this->assertCount(4, $choosePath->englishPayload?->items ?? []);
     }
 
+    public function test_public_homepage_local_image_assets_resolve(): void
+    {
+        $html = $this->get('/en')->assertOk()->getContent();
+        preg_match_all('#/images/[^"\'<>]+?\.(?:svg|png|jpe?g|webp)#iu', $html, $matches);
+
+        $assets = array_values(array_unique($matches[0]));
+        $this->assertNotEmpty($assets);
+
+        foreach ($assets as $asset) {
+            $path = parse_url(html_entity_decode($asset), PHP_URL_PATH);
+            $this->assertIsString($path);
+            $this->assertFileExists(public_path(ltrim(urldecode($path), '/')), "Missing public homepage asset: {$asset}");
+        }
+    }
+
     public function test_update_section_is_locale_specific_and_does_not_leak_publicly_before_publish(): void
     {
         $this->actingAs($this->author(), 'web');

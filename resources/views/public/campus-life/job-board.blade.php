@@ -6,6 +6,13 @@
         $hero = $section['hero'] ?? [];
         $labels = $section['labels'] ?? [];
         $jobs = array_values(array_filter($section['jobs'] ?? [], 'is_array'));
+        $categories = array_values(array_filter($section['categories'] ?? [], 'is_array'));
+        $types = array_values(array_filter($section['types'] ?? [], 'is_array'));
+        $typeLabels = collect($types)->pluck('label', 'id');
+        $filters = is_array($section['activeFilters'] ?? null) ? $section['activeFilters'] : [];
+        $pagination = is_array($section['pagination'] ?? null) ? $section['pagination'] : [];
+        $boardPath = '/'.$locale.'/campus-life/career-development/jobs';
+        $previewToken = ($isPreview ?? false) && isset($preview) ? $preview->token : null;
     @endphp
 
     <section class="relative overflow-hidden bg-white pt-28 font-hacen">
@@ -31,18 +38,45 @@
 
     <section id="jobs-listing" class="bg-white py-16 font-hacen md:py-20">
         <div class="container">
+            <form method="GET" action="{{ ($isPreview ?? false) ? '/'.$locale.'/preview' : $boardPath }}" class="mx-auto grid max-w-[1100px] gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-5 md:grid-cols-[minmax(0,1fr)_220px_220px_auto]" role="search">
+                @if ($previewToken)
+                    <input type="hidden" name="token" value="{{ $previewToken }}">
+                @endif
+                <label class="sr-only" for="job-search">{{ $labels['search'] ?? '' }}</label>
+                <input id="job-search" name="q" value="{{ $filters['q'] ?? '' }}" maxlength="100" placeholder="{{ $labels['search'] ?? '' }}" class="h-11 rounded-lg border border-slate-300 bg-white px-4 text-sm text-slate-800 focus:border-spu-blue focus:ring-spu-blue">
+                <label class="sr-only" for="job-category">{{ $labels['category'] ?? '' }}</label>
+                <select id="job-category" name="category" class="h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 focus:border-spu-blue focus:ring-spu-blue">
+                    @foreach ($categories as $category)
+                        <option value="{{ $category['id'] ?? '' }}" @selected(($filters['category'] ?? 'all') === ($category['id'] ?? null))>{{ $category['label'] ?? '' }}</option>
+                    @endforeach
+                </select>
+                <label class="sr-only" for="job-type">{{ $labels['type'] ?? '' }}</label>
+                <select id="job-type" name="type" class="h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 focus:border-spu-blue focus:ring-spu-blue">
+                    @foreach ($types as $type)
+                        <option value="{{ $type['id'] ?? '' }}" @selected(($filters['type'] ?? 'all') === ($type['id'] ?? null))>{{ $type['label'] ?? '' }}</option>
+                    @endforeach
+                </select>
+                <button type="submit" class="h-11 rounded-lg bg-spu-blue px-5 text-sm font-bold text-white transition hover:bg-spu-red">{{ $labels['searchAction'] ?? '' }}</button>
+            </form>
+
             <p class="mx-auto max-w-[1100px] text-xs font-bold text-slate-500">
-                {{ $labels['showing'] ?? '' }} {{ count($jobs) }} {{ $labels['positions'] ?? '' }}
+                {{ $labels['showing'] ?? '' }} {{ $pagination['from'] ?? 0 }}-{{ $pagination['to'] ?? 0 }} {{ $labels['of'] ?? '' }} {{ $pagination['total'] ?? 0 }} {{ $labels['positions'] ?? '' }}
             </p>
 
-            <div class="mx-auto mt-6 grid max-w-[1280px] grid-cols-1 gap-7 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            @if ($jobs === [])
+                <div class="mx-auto mt-8 max-w-[700px] rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-14 text-center">
+                    <p class="font-bold text-slate-700">{{ $labels['noResults'] ?? '' }}</p>
+                    <a href="{{ ($isPreview ?? false) ? '/'.$locale.'/preview?token='.$previewToken : $boardPath }}" class="mt-5 inline-flex rounded-lg border border-spu-blue px-5 py-2 text-sm font-bold text-spu-blue transition hover:bg-spu-blue hover:text-white">{{ $labels['reset'] ?? '' }}</a>
+                </div>
+            @else
+            <div class="mx-auto mt-6 grid max-w-[1280px] grid-cols-1 gap-7 sm:grid-cols-2 lg:grid-cols-3">
                 @foreach ($jobs as $job)
                     <article class="group flex flex-col overflow-hidden rounded-md border border-slate-200 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.08)] transition duration-200 hover:-translate-y-1 hover:shadow-[0_18px_34px_rgba(15,23,42,0.12)]">
                         <div class="relative h-16 overflow-hidden bg-spu-blue px-5 py-4">
                             <div class="absolute inset-0 bg-gradient-to-br from-white/8 to-transparent"></div>
                             <div class="relative flex h-full justify-between">
                                 <span class="h-fit w-fit rounded-[3px] bg-white px-2 text-[10px] font-bold text-spu-blue shadow-sm">{{ $job['department'] ?? '' }}</span>
-                                <span class="text-[10px] font-bold uppercase tracking-wider text-white/90">{{ $job['type'] ?? '' }}</span>
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-white/90">{{ $typeLabels->get($job['type'] ?? '', '') }}</span>
                             </div>
                         </div>
 
@@ -51,13 +85,36 @@
                             <p class="mt-2 line-clamp-2 text-xs leading-5 text-slate-600">{{ $job['shortDescription'] ?? '' }}</p>
 
                             <div class="mt-auto flex flex-wrap gap-2 pt-5">
-                                <a href="/{{ $locale }}/campus-life/career-development/jobs/{{ $job['slug'] ?? '' }}" class="inline-flex h-9 items-center justify-center rounded-md bg-spu-blue px-4 text-[11px] font-bold text-white transition hover:bg-spu-red">{{ $labels['learnMore'] ?? '' }}</a>
-                                <a href="/{{ $locale }}/campus-life/career-development/jobs/apply?job={{ $job['slug'] ?? '' }}" class="inline-flex h-9 items-center justify-center rounded-md border border-spu-red px-4 text-[11px] font-bold text-spu-red transition hover:bg-spu-red hover:text-white">{{ $labels['apply'] ?? '' }}</a>
+                                <a href="{{ $previewToken ? '/'.$locale.'/preview?token='.$previewToken.'&job='.urlencode((string) ($job['slug'] ?? '')) : $boardPath.'/'.($job['slug'] ?? '') }}" class="inline-flex h-9 items-center justify-center rounded-md bg-spu-blue px-4 text-[11px] font-bold text-white transition hover:bg-spu-red">{{ $labels['learnMore'] ?? '' }}</a>
+                                @if (! ($isPreview ?? false) && ($job['applicationEligible'] ?? false))
+                                    <a href="/{{ $locale }}/campus-life/career-development/jobs/apply?job={{ urlencode((string) ($job['slug'] ?? '')) }}" class="inline-flex h-9 items-center justify-center rounded-md border border-spu-red px-4 text-[11px] font-bold text-spu-red transition hover:bg-spu-red hover:text-white">{{ $labels['apply'] ?? '' }}</a>
+                                @endif
                             </div>
                         </div>
                     </article>
                 @endforeach
             </div>
+            @endif
+
+            @if (($pagination['lastPage'] ?? 1) > 1)
+                <nav class="mx-auto mt-10 flex max-w-[1100px] items-center justify-center gap-2" aria-label="{{ $locale === 'ar' ? 'ترقيم صفحات الوظائف' : 'Job pagination' }}">
+                    @for ($pageNumber = 1; $pageNumber <= (int) $pagination['lastPage']; $pageNumber++)
+                        @php
+                            $pageQuery = array_filter([
+                                'q' => $filters['q'] ?? null,
+                                'category' => ($filters['category'] ?? 'all') !== 'all' ? $filters['category'] : null,
+                                'type' => ($filters['type'] ?? 'all') !== 'all' ? $filters['type'] : null,
+                                'page' => $pageNumber > 1 ? $pageNumber : null,
+                            ], static fn ($value) => $value !== null && $value !== '');
+                            if ($previewToken) {
+                                $pageQuery = ['token' => $previewToken, ...$pageQuery];
+                            }
+                            $pageUrl = (($isPreview ?? false) ? '/'.$locale.'/preview' : $boardPath).($pageQuery !== [] ? '?'.http_build_query($pageQuery) : '');
+                        @endphp
+                        <a href="{{ $pageUrl }}" @if ($pageNumber === (int) ($pagination['currentPage'] ?? 1)) aria-current="page" @endif class="flex h-10 min-w-10 items-center justify-center rounded-lg border px-3 text-sm font-bold transition {{ $pageNumber === (int) ($pagination['currentPage'] ?? 1) ? 'border-spu-blue bg-spu-blue text-white' : 'border-slate-200 text-spu-blue hover:border-spu-blue' }}">{{ $pageNumber }}</a>
+                    @endfor
+                </nav>
+            @endif
         </div>
     </section>
 @endsection

@@ -5,6 +5,7 @@
         $section = $page->section;
         $hero = $section['hero'] ?? [];
         $breadcrumbs = $hero['breadcrumbs'] ?? [];
+        $selectedJob = is_array($section['selectedJob'] ?? null) ? $section['selectedJob'] : [];
     @endphp
 
     <section class="relative bg-white font-hacen">
@@ -30,7 +31,7 @@
         </div>
     </section>
 
-    <section class="bg-white py-12 font-hacen md:py-16" x-data="dynamicFormShell()" data-form-id="job-application" data-locale="{{ $locale }}">
+    <section class="bg-white py-12 font-hacen md:py-16" x-data="dynamicFormShell()" data-form-id="job-application" data-locale="{{ $locale }}" data-job-id="{{ $selectedJob['id'] ?? '' }}" data-job-slug="{{ $selectedJob['slug'] ?? '' }}">
         <div class="container mx-auto">
             <div class="mx-auto">
                 <div class="mb-8 rounded-2xl border border-spu-blue/10 bg-spu-blue/[0.03] p-6">
@@ -41,6 +42,7 @@
                         <div>
                             <h2 class="text-lg font-bold text-spu-blue">{{ $section['info']['title'] ?? '' }}</h2>
                             <p class="mt-1 text-sm text-spu-blue/60">{{ $section['info']['summary'] ?? '' }}</p>
+                            <p class="mt-3 text-sm font-bold text-spu-red">{{ $section['info']['selectedJob'] ?? '' }} {{ $selectedJob['title'] ?? '' }}</p>
                         </div>
                     </div>
                 </div>

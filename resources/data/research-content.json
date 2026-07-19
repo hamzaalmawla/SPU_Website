@@ -71,7 +71,6 @@
     "downloadCtaAr": "تحميل PDF",
     "doiLabelEn": "DIGITAL OBJECT IDENTIFIER",
     "doiLabelAr": "معرف الكائن الرقمي",
-    "doi": "10.1234/spu.arch.2023.01",
     "image": "/images/research-digital-dentistry.webp"
   },
   "gateway": {
@@ -319,7 +318,6 @@
         "authorAr": "د. حسام شحرور",
         "authorSlug": "hossam-shahrour",
         "year": "2024",
-        "doi": "10.1234/spu.phar.2024.01",
         "isOpenAccess": true,
         "gsIndexed": true,
         "image": "/images/pharmacy-place.jpg",
@@ -360,7 +358,6 @@
         "authorAr": "د. نبيل حداد",
         "authorSlug": "nabil-haddad",
         "year": "2024",
-        "doi": "10.1234/spu.dent.2024.02",
         "isOpenAccess": true,
         "gsIndexed": true,
         "image": "/images/research-digital-dentistry.webp",
@@ -401,7 +398,6 @@
         "authorAr": "د. عمار غضة",
         "authorSlug": "ammar-ghada",
         "year": "2023",
-        "doi": "10.1234/spu.civ.2023.01",
         "isOpenAccess": true,
         "gsIndexed": true,
         "image": "/images/campus-feature-01.webp",
@@ -442,7 +438,6 @@
         "authorAr": "د. محمود حديد",
         "authorSlug": "mahmoud-hadid",
         "year": "2023",
-        "doi": "10.1234/spu.pet.2023.01",
         "isOpenAccess": true,
         "gsIndexed": true,
         "image": "/images/slider-3.webp",
@@ -484,7 +479,6 @@
         "authorAr": "د. أيمن علي",
         "authorSlug": "ayman-ali",
         "year": "2024",
-        "doi": "10.1234/spu.med.2024.01",
         "isOpenAccess": true,
         "gsIndexed": true,
         "image": "/images/research-clinical-simulation.webp",
@@ -525,7 +519,6 @@
         "authorAr": "د. محيب النقري",
         "authorSlug": "mouhib-alnoukari",
         "year": "2024",
-        "doi": "10.1234/spu.ai.2024.01",
         "isOpenAccess": true,
         "gsIndexed": true,
         "image": "/images/Gemini_Generated_Image_c89yjwc89yjwc89y.webp",
@@ -567,7 +560,6 @@
         "authorAr": "د. سمر حبيب",
         "authorSlug": "samar-habib",
         "year": "2023",
-        "doi": "10.1234/spu.bus.2023.01",
         "isOpenAccess": true,
         "gsIndexed": false,
         "image": "/images/campus-feature-02.webp",
@@ -608,7 +600,6 @@
         "authorAr": "د. محمود حديد",
         "authorSlug": "mahmoud-hadid",
         "year": "2024",
-        "doi": "10.1234/spu.ene.2024.01",
         "isOpenAccess": true,
         "gsIndexed": false,
         "image": "/images/slider-4.webp",
@@ -1460,9 +1451,6 @@
         "bioAr": "يتخصص الدكتور الخالد في كيمياء العقاقير مع التركيز على أنظمة إيصال الأدوية الجديدة والصياغات النانوية للعلاج المستهدف.",
         "email": "ahmad.khaled@spu.edu.sy",
         "emailPublic": true,
-        "orcidId": "0000-0000-0000-0001",
-        "scholarUrl": "https://scholar.google.com/citations?user=ahmad123",
-        "scopusId": "35798025301",
         "image": "/images/pharmacy-dean.jpg",
         "publications": 47,
         "citations": 1240
@@ -1495,9 +1483,6 @@
         "bioAr": "تقود الدكتورة خير الشؤون الأكاديمية مع التركيز على الابتكار في المناهج والاعتماد الأكاديمي وتطوير أعضاء هيئة التدريس.",
         "email": "arwa.khair@spu.edu.sy",
         "emailPublic": true,
-        "orcidId": "0000-0000-0000-0002",
-        "scholarUrl": "https://scholar.google.com/citations?user=arwa123",
-        "scopusId": "35798025302",
         "image": "/images/about/leadership/pre-presendent.jpg",
         "publications": 32,
         "citations": 580
@@ -1533,9 +1518,6 @@
         "bioAr": "الدكتور علي جراح قلب وصدر معروف ومعلم طبي ذو خبرة واسعة في المحاكاة السريرية والتدريب الجراحي.",
         "email": "ayman.ali@spu.edu.sy",
         "emailPublic": true,
-        "orcidId": "0000-0000-0000-0004",
-        "scholarUrl": "https://scholar.google.com/citations?user=ayman123",
-        "scopusId": "35798025304",
         "image": "/images/about/leadership/medicine-dean.jpg",
         "publications": 45,
         "citations": 890
@@ -1570,9 +1552,6 @@
         "bioAr": "يقود الدكتور أبو حطب التعليم والبحث في طب الأسنان باهتمام خاص بطب الأسنان الرقمي وميكانيكا تقويم الأسنان.",
         "email": "talaat.abuhatab@spu.edu.sy",
         "emailPublic": true,
-        "orcidId": "0000-0000-0000-0005",
-        "scholarUrl": "https://scholar.google.com/citations?user=talaat123",
-        "scopusId": "35798025305",
         "image": "/images/about/leadership/dental-dean.jpg",
         "publications": 38,
         "citations": 650
@@ -1607,9 +1586,6 @@
         "bioAr": "يقود الدكتور شحرور البحث الصيدلاني مع التركيز على أنظمة مراقبة الجودة وتطوير الطرق التحليلية ودراسات استقرار الأدوية.",
         "email": "hossam.shahrour@spu.edu.sy",
         "emailPublic": true,
-        "orcidId": "0000-0000-0000-0006",
-        "scholarUrl": "https://scholar.google.com/citations?user=hossam123",
-        "scopusId": "35798025306",
         "image": "/images/about/leadership/pharmacy-dean.jpg",
         "publications": 52,
         "citations": 1200
@@ -1645,9 +1621,6 @@
         "bioAr": "يقود الدكتور النقري بحث الذكاء الاصطناعي بخبرة في معالجة اللغات الطبيعية والرؤية الحاسوبية والأنظمة الذكية لتطبيقات الرعاية الصحية والهندسة.",
         "email": "mouhib.alnoukari@spu.edu.sy",
         "emailPublic": true,
-        "orcidId": "0000-0000-0000-0007",
-        "scholarUrl": "https://scholar.google.com/citations?user=mouhib123",
-        "scopusId": "35798025307",
         "image": "/images/about/leadership/Ai-dean.jpg",
         "publications": 42,
         "citations": 980
@@ -1683,9 +1656,6 @@
         "bioAr": "يتخصص الدكتور حديد في هندسة المكامن مع التركيز على تطبيقات الذكاء الاصطناعي ومكامن الكربونات واستراتيجيات التحول الطاقي.",
         "email": "mahmoud.hadid@spu.edu.sy",
         "emailPublic": true,
-        "orcidId": "0000-0000-0000-0008",
-        "scholarUrl": "https://scholar.google.com/citations?user=mahmoud123",
-        "scopusId": "35798025308",
         "image": "/images/about/leadership/petrol-dean.jpg",
         "publications": 35,
         "citations": 720
@@ -1720,9 +1690,6 @@
         "bioAr": "تقود الدكتورة حبيب تعليم الأعمال باهتمامات بحثية في السلوك التنظيمي وإدارة الموارد البشرية الاستراتيجية وإدارة الرعاية الصحية.",
         "email": "samar.habib@spu.edu.sy",
         "emailPublic": true,
-        "orcidId": "0000-0000-0000-0009",
-        "scholarUrl": "https://scholar.google.com/citations?user=samar123",
-        "scopusId": "35798025309",
         "image": "/images/about/leadership/busnins-dean.jpg",
         "publications": 30,
         "citations": 540
@@ -1758,9 +1725,6 @@
         "bioAr": "يقود الدكتور غضة بحث هندسة التشييد مع التركيز على المواد المقاومة للزلازل والديناميكا الإنشائية والبناء المستدام.",
         "email": "ammar.ghada@spu.edu.sy",
         "emailPublic": true,
-        "orcidId": "0000-0000-0000-0010",
-        "scholarUrl": "https://scholar.google.com/citations?user=ammar123",
-        "scopusId": "35798025310",
         "image": "/images/uni-main-place.JPG",
         "publications": 28,
         "citations": 410
@@ -1904,8 +1868,6 @@
           "إيصال الدواء النانوي"
         ],
         "email": "ahmad.khaled@spu.edu.sy",
-        "orcidUrl": "https://orcid.org/0000-0000-0000-0001",
-        "scholarUrl": "https://scholar.google.com/citations?user=ahmad123",
         "image": "/images/pharmacy-dean.jpg",
         "publications": 47,
         "citations": 1240
@@ -1929,8 +1891,6 @@
           "تطوير المناهج"
         ],
         "email": "arwa.khair@spu.edu.sy",
-        "orcidUrl": "https://orcid.org/0000-0000-0000-0002",
-        "scholarUrl": "https://scholar.google.com/citations?user=arwa123",
         "image": "/images/about/leadership/pre-presendent.jpg",
         "publications": 32,
         "citations": 580
@@ -1956,8 +1916,6 @@
           "البحث السريري"
         ],
         "email": "ayman.ali@spu.edu.sy",
-        "orcidUrl": "https://orcid.org/0000-0000-0000-0004",
-        "scholarUrl": "https://scholar.google.com/citations?user=ayman123",
         "image": "/images/about/leadership/medicine-dean.jpg",
         "publications": 45,
         "citations": 890
@@ -1983,8 +1941,6 @@
           "علوم طب الأسنان"
         ],
         "email": "talaat.abuhatab@spu.edu.sy",
-        "orcidUrl": "https://orcid.org/0000-0000-0000-0005",
-        "scholarUrl": "https://scholar.google.com/citations?user=talaat123",
         "image": "/images/about/leadership/dental-dean.jpg",
         "publications": 38,
         "citations": 650
@@ -2010,8 +1966,6 @@
           "مراقبة الجودة"
         ],
         "email": "hossam.shahrour@spu.edu.sy",
-        "orcidUrl": "https://orcid.org/0000-0000-0000-0006",
-        "scholarUrl": "https://scholar.google.com/citations?user=hossam123",
         "image": "/images/about/leadership/pharmacy-dean.jpg",
         "publications": 52,
         "citations": 1200
@@ -2037,8 +1991,6 @@
           "تعلم الآلة"
         ],
         "email": "mouhib.alnoukari@spu.edu.sy",
-        "orcidUrl": "https://orcid.org/0000-0000-0000-0007",
-        "scholarUrl": "https://scholar.google.com/citations?user=mouhib123",
         "image": "/images/about/leadership/Ai-dean.jpg",
         "publications": 42,
         "citations": 980
@@ -2064,8 +2016,6 @@
           "الطاقة"
         ],
         "email": "mahmoud.hadid@spu.edu.sy",
-        "orcidUrl": "https://orcid.org/0000-0000-0000-0008",
-        "scholarUrl": "https://scholar.google.com/citations?user=mahmoud123",
         "image": "/images/about/leadership/petrol-dean.jpg",
         "publications": 35,
         "citations": 720
@@ -2091,8 +2041,6 @@
           "استراتيجية الأعمال"
         ],
         "email": "samar.habib@spu.edu.sy",
-        "orcidUrl": "https://orcid.org/0000-0000-0000-0009",
-        "scholarUrl": "https://scholar.google.com/citations?user=samar123",
         "image": "/images/about/leadership/busnins-dean.jpg",
         "publications": 30,
         "citations": 540
@@ -2118,8 +2066,6 @@
           "مواد البناء"
         ],
         "email": "ammar.ghada@spu.edu.sy",
-        "orcidUrl": "https://orcid.org/0000-0000-0000-0010",
-        "scholarUrl": "https://scholar.google.com/citations?user=ammar123",
         "image": "/images/uni-main-place.JPG",
         "publications": 28,
         "citations": 410

@@ -76,8 +76,9 @@ class ManageContactPage extends Page implements HasForms
 
     public function mount(): void
     {
-        $draftPayload = $this->cmsWorkflowService->latestEditableDraftPayload('contact');
-        $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion('contact');
+        $userId = (int) auth()->id();
+        $draftPayload = $this->cmsWorkflowService->latestEditableDraftPayload('contact', $userId);
+        $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion('contact', $userId);
 
         $this->form->fill([
             'ar' => $this->formData('ar', $draftPayload),

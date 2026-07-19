@@ -210,7 +210,7 @@ final class LegacyFileInventoryService implements LegacyFileInventoryServiceInte
     private function legacyTableExists(string $table): bool
     {
         try {
-            return $this->oldDatabase->connection()->getSchemaBuilder()->hasTable($table);
+            return $this->oldDatabase->schema()->hasTable($table);
         } catch (Throwable) {
             return false;
         }
@@ -219,7 +219,7 @@ final class LegacyFileInventoryService implements LegacyFileInventoryServiceInte
     private function legacyColumnExists(string $table, string $column): bool
     {
         try {
-            return $this->oldDatabase->connection()->getSchemaBuilder()->hasColumn($table, $column);
+            return $this->oldDatabase->schema()->hasColumn($table, $column);
         } catch (Throwable) {
             return false;
         }

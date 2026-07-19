@@ -103,15 +103,15 @@ final class NewsWorkflowTest extends TestCase
         $this->assertContains('Curated News Link', $linkLabels);
     }
 
-    public function test_manage_news_non_index_targets_are_pending_until_curated(): void
+    public function test_manage_news_articles_target_has_curated_shell_editor(): void
     {
         $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
 
         Livewire::test(ManageNews::class)
             ->set('data.target_key', 'news.articles')
             ->call('loadTarget', 'news.articles')
-            ->assertSee('Target Schema Pending')
-            ->assertSee('does not have its curated editor yet');
+            ->assertSee('News Articles Shell')
+            ->assertDontSee('Target Schema Pending');
     }
 
     public function test_announcements_route_takes_precedence_and_only_renders_announcements(): void

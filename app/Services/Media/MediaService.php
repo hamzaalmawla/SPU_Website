@@ -298,6 +298,26 @@ final class MediaService implements MediaServiceInterface
             ->count() === count($ids);
     }
 
+    public function publicDocumentsArePublishable(array $mediaIds): bool
+    {
+        $ids = array_values(array_unique(array_filter($mediaIds, static fn (mixed $id): bool => is_int($id) && $id > 0)));
+
+        if ($ids === []) {
+            return false;
+        }
+
+        return MediaAsset::query()
+            ->whereIn('id', $ids)
+            ->where('library_scope', 'main')
+            ->whereIn('media_type', ['pdf', 'document'])
+            ->where('metadata_status', 'reviewed')
+            ->whereNotNull('title_ar')
+            ->where('title_ar', '<>', '')
+            ->whereNotNull('title_en')
+            ->where('title_en', '<>', '')
+            ->count() === count($ids);
+    }
+
     public function find(int|string $mediaId, int $userId): ?MediaUploadResultDTO
     {
         $asset = MediaAsset::query()->find($mediaId);

@@ -1,4 +1,5 @@
-<a href="/{{ $locale }}/research/projects/{{ $project['slug'] ?? '' }}"
+@php($isProjectPreview = ($isPreview ?? false) && isset($preview) && (($preview->payload->cms['target_key'] ?? null) === 'research.projects'))
+<a href="{{ $isProjectPreview ? '/'.$locale.'/preview?token='.$preview->token.'&project='.urlencode((string) ($project['slug'] ?? '')) : '/'.$locale.'/research/projects/'.($project['slug'] ?? '') }}"
    class="group block overflow-hidden rounded-[10px] border border-[#d5d9e2] bg-white shadow-[0_4px_10px_rgba(0,0,0,0.16)] transition-all hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(32,39,89,0.12)]">
     <div class="relative h-[180px] overflow-hidden">
         <img src="{{ $project['image'] ?? '/images/uni-main-place.JPG' }}" alt="{{ $project['title'] ?? '' }}" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105">

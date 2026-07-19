@@ -65,7 +65,6 @@ final class LegacyQuarantineExportServiceTest extends TestCase
         $this->assertSame('Original body', $payload['rows'][0]['original_preview']);
     }
 
-    /** @return void */
     private function createRejections(): void
     {
         MigrationRejection::query()->create([

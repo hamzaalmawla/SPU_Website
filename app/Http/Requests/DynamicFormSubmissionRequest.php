@@ -23,6 +23,8 @@ final class DynamicFormSubmissionRequest extends FormRequest
         return array_merge(app(DynamicFormSubmissionServiceInterface::class)->validationRules($this->formId()), [
             'event_source' => ['nullable', 'string', 'in:news-events'],
             'event_id' => ['nullable', 'required_with:event_source', 'string', 'max:80'],
+            'job_id' => ['nullable', 'string', 'max:80'],
+            'job_slug' => ['nullable', 'string', 'max:160', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'],
         ]);
     }
 
@@ -43,7 +45,9 @@ final class DynamicFormSubmissionRequest extends FormRequest
         $files = [];
         $eventSource = is_string($payload['event_source'] ?? null) ? $payload['event_source'] : null;
         $eventId = is_string($payload['event_id'] ?? null) ? $payload['event_id'] : null;
-        unset($payload['event_source'], $payload['event_id']);
+        $jobId = is_string($payload['job_id'] ?? null) ? $payload['job_id'] : null;
+        $jobSlug = is_string($payload['job_slug'] ?? null) ? $payload['job_slug'] : null;
+        unset($payload['event_source'], $payload['event_id'], $payload['job_id'], $payload['job_slug']);
 
         foreach ($payload as $field => $value) {
             if ($value instanceof UploadedFile) {
@@ -61,6 +65,8 @@ final class DynamicFormSubmissionRequest extends FormRequest
             userAgent: $this->userAgent(),
             eventSource: $eventSource,
             eventId: $eventId,
+            jobId: $jobId,
+            jobSlug: $jobSlug,
         );
     }
 

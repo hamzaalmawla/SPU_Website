@@ -56,6 +56,19 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+    html,
+    .scroll-smooth {
+        scroll-behavior: auto !important;
+    }
+
+    [data-homepage] *,
+    [data-homepage] *::before,
+    [data-homepage] *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
     [data-campus-reveal] {
         opacity: 1 !important;
         transform: none !important;

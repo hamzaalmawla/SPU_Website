@@ -352,7 +352,6 @@
 
     /* Floating glass stats bar */
     .fac-hub-stats-bar {
-        
         backdrop-filter: blur(22px) saturate(180%);
         -webkit-backdrop-filter: blur(22px) saturate(180%);
         border: 1px solid rgba(255, 255, 255, 0.10);

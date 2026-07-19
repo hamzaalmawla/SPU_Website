@@ -45,6 +45,16 @@ final class NewsService implements NewsServiceInterface
         return $this->normalizeIndexPageContent($content, $locale);
     }
 
+    public function getArticlesPageContent(string $locale): array
+    {
+        return $this->publishedLocalizedPayload('news.articles', $locale) ?? $this->articlesPageFallback($locale);
+    }
+
+    public function buildPreviewArticlesPage(string $locale, array $content): array
+    {
+        return $this->normalizeArticlesPageContent($content, $locale);
+    }
+
     public function getAnnouncementsPageContent(string $locale): array
     {
         return $this->publishedLocalizedPayload('news.announcements', $locale) ?? $this->announcementsPageFallback($locale);
@@ -158,7 +168,7 @@ final class NewsService implements NewsServiceInterface
 
     public function getEditablePayload(string $targetKey): array
     {
-        if (! in_array($targetKey, ['news.index', 'news.announcements', 'news.events', 'news.gallery'], true)) {
+        if (! in_array($targetKey, ['news.index', 'news.articles', 'news.announcements', 'news.events', 'news.gallery'], true)) {
             throw new \InvalidArgumentException('Unsupported news target.');
         }
 
@@ -175,6 +185,7 @@ final class NewsService implements NewsServiceInterface
 
         $fallback = match ($targetKey) {
             'news.index' => fn (string $locale): array => $this->indexPageFallback($locale),
+            'news.articles' => fn (string $locale): array => $this->articlesPageFallback($locale),
             'news.announcements' => fn (string $locale): array => $this->announcementsPageFallback($locale),
             'news.events' => fn (string $locale): array => $this->eventsPageFallback($locale),
             'news.gallery' => fn (string $locale): array => $this->galleryPageFallback($locale),
@@ -528,6 +539,7 @@ final class NewsService implements NewsServiceInterface
         }
 
         return match ($targetKey) {
+            'news.articles' => $this->normalizeArticlesPageContent($localized, $locale),
             'news.announcements' => $this->normalizeAnnouncementsPageContent($localized, $locale),
             'news.events' => $this->normalizeEventsPageContent($localized, $locale),
             'news.gallery' => $this->normalizeGalleryPageContent($localized, $locale),
@@ -589,6 +601,52 @@ final class NewsService implements NewsServiceInterface
             'downloadLabel' => $isAr ? 'تحميل المرفق' : 'Download Attachment',
             'emptyState' => $isAr ? 'لا توجد إعلانات منشورة حالياً.' : 'No announcements are currently published.',
         ], $locale);
+    }
+
+    /** @return array<string, mixed> */
+    private function articlesPageFallback(string $locale): array
+    {
+        $isAr = $locale === 'ar';
+
+        return $this->normalizeArticlesPageContent([
+            'title' => $isAr ? 'قائمة الأخبار' : 'News Listing',
+            'summary' => $isAr ? 'تصفح أخبار الجامعة السورية الخاصة حسب التصنيف.' : 'Browse Syrian Private University news by category.',
+            'heroImage' => '/images/slider-1.webp',
+            'allLabel' => $isAr ? 'كل الأخبار' : 'All News',
+            'searchLabel' => $isAr ? 'البحث في الأخبار' : 'Search news',
+            'searchPlaceholder' => $isAr ? 'ابحث بالعنوان أو المحتوى' : 'Search by title or content',
+            'searchAction' => $isAr ? 'بحث' : 'Search',
+            'readMoreLabel' => $isAr ? 'اقرأ المزيد' : 'Read More',
+            'emptyLabel' => $isAr ? 'لا توجد أخبار مطابقة.' : 'No matching news articles were found.',
+            'previousLabel' => $isAr ? 'الصفحة السابقة' : 'Previous page',
+            'nextLabel' => $isAr ? 'الصفحة التالية' : 'Next page',
+            'seoTitle' => ($isAr ? 'قائمة الأخبار' : 'News Listing').' | SPU',
+            'seoDescription' => $isAr ? 'أخبار الجامعة السورية الخاصة.' : 'Syrian Private University news listing.',
+            'seoImage' => '/images/slider-1.webp',
+        ], $locale);
+    }
+
+    /** @param array<string, mixed> $content @return array<string, mixed> */
+    private function normalizeArticlesPageContent(array $content, string $locale): array
+    {
+        $fallback = $locale === 'ar' ? [
+            'title' => 'قائمة الأخبار', 'summary' => '', 'heroImage' => '/images/slider-1.webp', 'allLabel' => 'كل الأخبار',
+            'searchLabel' => 'البحث في الأخبار', 'searchPlaceholder' => 'ابحث بالعنوان أو المحتوى', 'searchAction' => 'بحث',
+            'readMoreLabel' => 'اقرأ المزيد', 'emptyLabel' => 'لا توجد أخبار مطابقة.', 'previousLabel' => 'الصفحة السابقة',
+            'nextLabel' => 'الصفحة التالية', 'seoTitle' => 'قائمة الأخبار | SPU', 'seoDescription' => '', 'seoImage' => '/images/slider-1.webp',
+        ] : [
+            'title' => 'News Listing', 'summary' => '', 'heroImage' => '/images/slider-1.webp', 'allLabel' => 'All News',
+            'searchLabel' => 'Search news', 'searchPlaceholder' => 'Search by title or content', 'searchAction' => 'Search',
+            'readMoreLabel' => 'Read More', 'emptyLabel' => 'No matching news articles were found.', 'previousLabel' => 'Previous page',
+            'nextLabel' => 'Next page', 'seoTitle' => 'News Listing | SPU', 'seoDescription' => '', 'seoImage' => '/images/slider-1.webp',
+        ];
+
+        foreach ($fallback as $key => $value) {
+            $candidate = $content[$key] ?? $value;
+            $fallback[$key] = is_string($candidate) || is_numeric($candidate) ? (string) $candidate : $value;
+        }
+
+        return $fallback;
     }
 
     /** @param array<string, mixed> $content @return array<string, mixed> */

@@ -151,13 +151,13 @@ final class LegacyGeneratedUrlInventoryService implements LegacyGeneratedUrlInve
     private function tableRows(string $table, ?int $limit): array
     {
         try {
-            $connection = $this->oldDatabase->connection();
+            $schema = $this->oldDatabase->schema();
 
-            if (! $connection->getSchemaBuilder()->hasTable($table)) {
+            if (! $schema->hasTable($table)) {
                 return ['source_rows' => 0, 'rows' => [], 'warnings' => ["Missing legacy URL source table [{$table}]."]];
             }
 
-            $columns = $connection->getSchemaBuilder()->getColumnListing($table);
+            $columns = $schema->getColumnListing($table);
 
             if (! in_array('id', $columns, true)) {
                 return ['source_rows' => 0, 'rows' => [], 'warnings' => ["Missing legacy URL source id column [{$table}.id]."]];

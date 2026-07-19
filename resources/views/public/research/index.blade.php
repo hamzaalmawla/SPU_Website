@@ -59,16 +59,20 @@
                             <span>{{ $featured['viewCta'] ?? '' }}</span>
                             <img src="/images/icon-arrow-right-outline.svg" alt="" class="h-3 w-3 transition-transform duration-300 group-hover:translate-x-1 rtl:rotate-180 group-hover:rtl:-translate-x-1" aria-hidden="true">
                         </a>
-                        <a href="https://doi.org/{{ $featured['doi'] ?? '' }}" target="_blank" rel="noopener" class="inline-flex h-[37px] min-w-[142px] items-center justify-center rounded-[6px] border border-[#202759] px-5 text-[11px] font-bold text-spu-blue transition hover:bg-spu-blue/5">{{ $featured['downloadCta'] ?? '' }}</a>
+                        @if (! empty($featured['doi']))
+                            <a href="https://doi.org/{{ $featured['doi'] }}" target="_blank" rel="noopener" class="inline-flex h-[37px] min-w-[142px] items-center justify-center rounded-[6px] border border-[#202759] px-5 text-[11px] font-bold text-spu-blue transition hover:bg-spu-blue/5">{{ $featured['downloadCta'] ?? '' }}</a>
+                        @endif
                     </div>
                 </div>
                 <div class="relative min-h-[355px] w-full shrink-0 border-t-[5px] border-spu-red bg-[#7e86aa] lg:min-h-0 lg:w-[370px]">
                     <img src="{{ $featured['image'] ?? '/images/uni-main-place.JPG' }}" alt="{{ $featured['title'] ?? '' }}" class="h-[305px] w-full object-cover">
                     <div class="absolute bottom-0 left-0 right-0 h-[76px] bg-[#858caf]"></div>
-                    <div class="absolute bottom-0 left-[86px] right-0 rounded-t-[3px] bg-white px-4 py-3 shadow-sm rtl:left-0 rtl:right-[86px]">
-                        <p class="text-[8px] font-medium uppercase tracking-[0.14em] text-[#8a8a9a]">{{ $featured['doiLabel'] ?? '' }}</p>
-                        <p class="mt-1 text-[11px] font-bold text-spu-blue">{{ $featured['doi'] ?? '' }}</p>
-                    </div>
+                    @if (! empty($featured['doi']))
+                        <div class="absolute bottom-0 left-[86px] right-0 rounded-t-[3px] bg-white px-4 py-3 shadow-sm rtl:left-0 rtl:right-[86px]">
+                            <p class="text-[8px] font-medium uppercase tracking-[0.14em] text-[#8a8a9a]">{{ $featured['doiLabel'] ?? '' }}</p>
+                            <p class="mt-1 text-[11px] font-bold text-spu-blue">{{ $featured['doi'] }}</p>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>

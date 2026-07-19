@@ -263,7 +263,7 @@ final class AboutEntityCmsWorkflowTest extends TestCase
             new AboutEntityCmsDataDTO('person', $prepared->entityId, $this->personPayload('Scheduled Replacement')),
             (int) $this->editor->getKey(),
         );
-        $version = $this->workflow->latestEditableDraftVersion($targetKey);
+        $version = $this->workflow->latestEditableDraftVersion($targetKey, (int) $this->editor->getKey());
         $this->workflow->saveDraft($targetKey, $replacement->payload, (int) $this->editor->getKey(), $version);
         $this->workflow->schedule($targetKey, now()->addMinute(), (int) $this->editor->getKey());
 

@@ -21,5 +21,6 @@ final readonly class CmsTargetDTO
         public ?string $parentKey,
         public bool $supportsDraftWorkflow,
         public array $locales = ['ar', 'en'],
+        public ?string $facultyScopeSlug = null,
     ) {}
 }

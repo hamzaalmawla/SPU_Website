@@ -47,7 +47,7 @@ class SectionLoopPropertyTest extends TestCase
         $html = view('public.home', $data)->render();
 
         // Extract main content area
-        preg_match('/<main>(.*?)<\/main>/s', $html, $mainMatch);
+        preg_match('/<main(?:\s[^>]*)?>(.*?)<\/main>/s', $html, $mainMatch);
         $mainContent = $mainMatch[1] ?? '';
 
         foreach ($expectedKeys as $key) {

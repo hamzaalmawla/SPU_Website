@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Seo;
 
 use App\Contracts\Page\PageServiceInterface;
+use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Contracts\Seo\SeoMetadataServiceInterface;
 use App\Contracts\Seo\SitemapServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
@@ -12,6 +13,8 @@ use App\DTOs\Seo\SitemapEntryDTO;
 use App\Enums\PublicationStatus;
 use App\Models\Cms\CmsTargetContent;
 use App\Models\Content\Directorate;
+use App\Models\Faculty\Faculty;
+use App\Models\News\NewsArticle;
 use App\Models\Page\AboutPage;
 use App\Models\Page\Page;
 use App\Models\Person\FacultyMember;
@@ -29,6 +32,7 @@ final class SitemapService implements SitemapServiceInterface
         private readonly PageServiceInterface $pageService,
         private readonly CacheServiceInterface $cacheService,
         private readonly SeoMetadataServiceInterface $seoMetadataService,
+        private readonly ResearchPageServiceInterface $researchPageService,
     ) {}
 
     public function generateEntries(): Collection
@@ -81,8 +85,158 @@ final class SitemapService implements SitemapServiceInterface
 
         $this->appendAboutEntries($entries, $baseUrl);
         $this->appendEServicesEntries($entries, $baseUrl);
+        $this->appendFacultyResearchEntries($entries, $baseUrl);
+        $this->appendResearchCatalogEntries($entries, $baseUrl);
+        $this->appendCmsRouteEntries($entries, $baseUrl);
+        $this->appendNewsArticleEntries($entries, $baseUrl);
 
         return $entries->unique(fn (SitemapEntryDTO $entry): string => $entry->loc)->values();
+    }
+
+    /** @param Collection<int, SitemapEntryDTO> $entries */
+    private function appendCmsRouteEntries(Collection $entries, string $baseUrl): void
+    {
+        foreach ([
+            'campus_life.landing' => '/campus-life',
+            'campus_life.virtual_tour' => '/virtual-tour',
+            'e_services.suggestions-complaints' => '/e-services/suggestions-complaints',
+            'news.articles' => '/news/articles',
+            'facilities.pharmacy.training' => '/facilities/pharmacy/training',
+        ] as $targetKey => $path) {
+            $content = CmsTargetContent::query()
+                ->where('target_key', $targetKey)
+                ->where('status', PublicationStatus::Published->value)
+                ->first();
+            if (! $content instanceof CmsTargetContent) {
+                continue;
+            }
+            $translations = is_array($content->payload_json['translations'] ?? null) ? $content->payload_json['translations'] : [];
+            $locales = collect(['ar', 'en'])->filter(fn (string $locale): bool => is_array($translations[$locale] ?? null) && $translations[$locale] !== [])->values();
+            $alternates = $locales->map(fn (string $locale): array => ['locale' => $locale, 'url' => $baseUrl.'/'.$locale.$path])->all();
+
+            foreach ($locales as $locale) {
+                $entries->push(new SitemapEntryDTO(
+                    loc: $baseUrl.'/'.$locale.$path,
+                    lastmod: $content->updated_at?->toW3cString() ?? now()->toW3cString(),
+                    changefreq: null,
+                    priority: null,
+                    alternates: $alternates,
+                ));
+            }
+        }
+    }
+
+    /** @param Collection<int, SitemapEntryDTO> $entries */
+    private function appendNewsArticleEntries(Collection $entries, string $baseUrl): void
+    {
+        $articles = NewsArticle::query()
+            ->public()
+            ->with('translations')
+            ->orderBy('id')
+            ->get();
+
+        foreach ($articles as $article) {
+            $locales = collect(['ar', 'en'])
+                ->filter(fn (string $locale): bool => $article->translations->contains('locale', $locale))
+                ->values();
+            if ($locales->isEmpty()) {
+                continue;
+            }
+            $path = '/news/'.(int) $article->getKey();
+            $alternates = $locales->map(fn (string $locale): array => ['locale' => $locale, 'url' => $baseUrl.'/'.$locale.$path])->all();
+
+            foreach ($locales as $locale) {
+                $entries->push(new SitemapEntryDTO(
+                    loc: $baseUrl.'/'.$locale.$path,
+                    lastmod: $article->updated_at?->toW3cString() ?? $article->published_at?->toW3cString() ?? now()->toW3cString(),
+                    changefreq: null,
+                    priority: null,
+                    alternates: $alternates,
+                ));
+            }
+        }
+    }
+
+    /** @param Collection<int, SitemapEntryDTO> $entries */
+    private function appendFacultyResearchEntries(Collection $entries, string $baseUrl): void
+    {
+        $faculties = Faculty::query()
+            ->enabled()
+            ->whereHas('pages', fn ($query) => $query->where('is_enabled', true)->where('slug', 'research'))
+            ->orderBy('sort_order')
+            ->get();
+
+        foreach ($faculties as $faculty) {
+            $slug = (string) ($faculty->public_slug ?: $faculty->slug);
+            $path = '/facilities/'.$slug.'/research';
+            $alternates = collect(['ar', 'en'])->map(fn (string $locale): array => [
+                'locale' => $locale,
+                'url' => $baseUrl.'/'.$locale.$path,
+            ])->all();
+
+            foreach (['ar', 'en'] as $locale) {
+                $entries->push(new SitemapEntryDTO(
+                    loc: $baseUrl.'/'.$locale.$path,
+                    lastmod: $faculty->updated_at?->toW3cString() ?? now()->toW3cString(),
+                    changefreq: null,
+                    priority: null,
+                    alternates: $alternates,
+                ));
+            }
+        }
+    }
+
+    /** @param Collection<int, SitemapEntryDTO> $entries */
+    private function appendResearchCatalogEntries(Collection $entries, string $baseUrl): void
+    {
+        foreach ([
+            'research.centers' => 'centers',
+            'research.projects' => 'projects',
+            'research.themes' => 'themes',
+        ] as $targetKey => $segment) {
+            $publishedContent = CmsTargetContent::query()
+                ->where('target_key', $targetKey)
+                ->where('status', PublicationStatus::Published->value)
+                ->first();
+
+            if (! $publishedContent instanceof CmsTargetContent) {
+                continue;
+            }
+
+            $pages = collect(['ar', 'en'])->mapWithKeys(fn (string $locale): array => [
+                $locale => match ($targetKey) {
+                    'research.centers' => $this->researchPageService->centers($locale),
+                    'research.projects' => $this->researchPageService->projects($locale),
+                    'research.themes' => $this->researchPageService->themes($locale),
+                },
+            ]);
+            $slugLists = $pages->map(fn ($page): array => collect($page->data['items'] ?? [])
+                ->filter(fn (mixed $item): bool => is_array($item) && is_string($item['slug'] ?? null) && $item['slug'] !== '')
+                ->pluck('slug')
+                ->values()
+                ->all());
+            $slugs = array_values(array_intersect(...array_values($slugLists->all())));
+            $basePath = '/research/'.$segment;
+            $paths = [$basePath, ...array_map(static fn (string $slug): string => $basePath.'/'.$slug, $slugs)];
+            $lastmod = $publishedContent->updated_at?->toW3cString() ?? now()->toW3cString();
+
+            foreach ($paths as $path) {
+                $alternates = collect(['ar', 'en'])->map(fn (string $locale): array => [
+                    'locale' => $locale,
+                    'url' => $baseUrl.'/'.$locale.$path,
+                ])->all();
+
+                foreach (['ar', 'en'] as $locale) {
+                    $entries->push(new SitemapEntryDTO(
+                        loc: $baseUrl.'/'.$locale.$path,
+                        lastmod: $lastmod,
+                        changefreq: null,
+                        priority: null,
+                        alternates: $alternates,
+                    ));
+                }
+            }
+        }
     }
 
     /** @param Collection<int, SitemapEntryDTO> $entries */

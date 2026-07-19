@@ -22,7 +22,7 @@ Columns: `Route`, `CMS`, `Behavior`, `Assets`, and `Tests`. `Overall` is conserv
 
 | Reference path | Route | CMS | Behavior | Assets | Tests | Overall | Primary gap |
 |---|---|---|---|---|---|---|---|
-| `/` | D | Y | P | Y | P | Partial | Browser-level slider, counter, reduced-motion, and responsive QA remains. |
+| `/` | D | Y | Y | Y | Y | Complete | CMS content, RTL-aware keyboard sliders, reduced-motion behavior, focus/autoplay handling, counters, reveals, assets, and focused tests are implemented. |
 
 ## About
 
@@ -51,84 +51,84 @@ Columns: `Route`, `CMS`, `Behavior`, `Assets`, and `Tests`. `Overall` is conserv
 
 | Reference path | Route | CMS | Behavior | Assets | Tests | Overall | Primary gap |
 |---|---|---|---|---|---|---|---|
-| `/admissions/` | D | Y | P | Y | Y | Partial | Resource inventory and final interaction/visual parity remain incomplete. |
-| `/admissions/requirements/` | D | Y | Y | Y | P | Partial | Browser keyboard/RTL interaction coverage remains. |
-| `/admissions/tuition/` | D | Y | P | Y | P | Partial | Placeholder financial data and inert payment CTA remain. |
-| `/admissions/faq/` | D | Y | Y | Y | P | Partial | Search/accordion browser and AR/RTL coverage remains. |
-| `/admissions/how-to-apply/` | D | Y | P | Y | P | Partial | Final application CTA does not start a real application flow. |
-| `/admissions/transfer/` | D | Y | Y | Y | P | Partial | Browser/AR interaction coverage remains. |
-| `/admissions/calendar/` | D | Y | N | N | P | Partial | Download control points to `#`; calendar PDF is absent. |
-| `/admissions/documents/` | D | Y | P | N | P | Partial | Document/download links are inert and reference tables are reduced. |
-| `/admissions/study-system/` | R | NA | P | NA | Y | Redirect | Redirect does not open the intended documents tab. |
-| `/admissions/academic-warnings/` | R | NA | P | NA | Y | Redirect | Redirect does not open the intended warnings tab. |
-| `/admissions/filling-vacancies/` | D | Y | P | Y | Y | Partial | Missing landing link and real vacancy application flow. |
-| `/admissions/graduation-exams/` | D | Y | Y | Y | P | Partial | Missing landing resource and target-specific workflow/AR tests. |
+| `/admissions/` | D | Y | Y | Y | Y | Complete | Approved assets, complete localized resources, responsive rendering, accessible navigation, and tests are implemented. |
+| `/admissions/requirements/` | D | Y | Y | Y | Y | Complete | Bilingual CMS content, accessible interactions, RTL behavior, and focused tests are implemented. |
+| `/admissions/tuition/` | D | Y | Y | Y | Y | Complete | Fabricated finance data is removed; only verified CMS data/actions render, with transparent managed guidance otherwise. |
+| `/admissions/faq/` | D | Y | Y | Y | Y | Complete | Search, accessible accordion behavior, empty states, AR/RTL rendering, and tests are implemented. |
+| `/admissions/how-to-apply/` | D | Y | Y | Y | Y | Complete | A validated Admissions application flow with server-owned context, persistence, and authorized review is implemented. |
+| `/admissions/transfer/` | D | Y | Y | Y | Y | Complete | Bilingual CMS tabs, accessible navigation, RTL behavior, and focused tests are implemented. |
+| `/admissions/calendar/` | D | Y | Y | Y | Y | Complete | Inert downloads and fabricated dates are removed; verified Media Library resources render when available with managed guidance otherwise. |
+| `/admissions/documents/` | D | Y | Y | Y | Y | Complete | Addressable accessible tabs and reviewed Media Library documents replace inert links, with safe managed fallback guidance. |
+| `/admissions/study-system/` | R | NA | Y | NA | Y | Redirect | Redirect opens the addressable study-system tab and preserves locale state. |
+| `/admissions/academic-warnings/` | R | NA | Y | NA | Y | Redirect | Redirect opens the addressable academic-warnings tab and preserves locale state. |
+| `/admissions/filling-vacancies/` | D | Y | Y | Y | Y | Complete | Fabricated seats/dates are removed; bilingual CMS-published factual content and transparent guidance are implemented and tested. |
+| `/admissions/graduation-exams/` | D | Y | Y | Y | Y | Complete | Dedicated bilingual CMS content, landing resource, localized links, and focused AR/EN tests are implemented. |
 
 ## Research
 
 | Reference path | Route | CMS | Behavior | Assets | Tests | Overall | Primary gap |
 |---|---|---|---|---|---|---|---|
 | `/research/` | D | Y | Y | Y | Y | Complete | Dedicated CMS-backed gateway. |
-| `/research/repository/` | D | N | N | Y | P | Partial | Filters are not processed on this route and content is bundled data. |
-| `/research/centers/` | D | N | Y | Y | P | Partial | Centers lack CMS publication workflow. |
-| `/research/centers/ai-digital-innovation/` | D | N | Y | Y | P | Partial | Center detail is bundled JSON without CMS workflow. |
-| `/research/centers/clinical-research-simulation/` | D | N | Y | Y | P | Partial | Center detail is bundled JSON without CMS workflow. |
-| `/research/centers/energy-sustainable-systems/` | D | N | Y | Y | P | Partial | Center detail is bundled JSON without CMS workflow. |
-| `/research/projects/` | D | N | N | Y | P | Partial | Search/status/faculty/theme controls are inert. |
-| `/research/projects/earthquake-resistant-concrete-syria/` | D | N | Y | Y | P | Partial | Project detail lacks CMS workflow. |
-| `/research/projects/ai-dental-diagnostics-system/` | D | N | Y | Y | P | Partial | Project detail lacks CMS workflow. |
-| `/research/projects/arabic-clinical-nlp-system/` | D | N | Y | Y | P | Partial | Project detail lacks CMS workflow. |
-| `/research/projects/pharmaceutical-quality-monitoring/` | D | N | Y | Y | P | Partial | Project detail lacks CMS workflow. |
-| `/research/projects/reservoir-characterization-ai/` | D | N | Y | Y | P | Partial | Project detail lacks CMS workflow. |
-| `/research/publications/` | D | Y | P | Y | Y | Partial | Pagination/reset/no-result parity remains. |
-| `/research/publications/machine-learning-pharmaceutical-quality-control/` | D | Y | P | Y | P | Partial | Scholarly metadata and complete citation fields are missing. |
-| `/research/publications/ai-dental-diagnostics/` | D | Y | P | Y | Y | Partial | Scholarly metadata and complete citation fields are missing. |
-| `/research/publications/structural-analysis-earthquake-resistant-concrete/` | D | Y | P | Y | P | Partial | Scholarly metadata and complete citation fields are missing. |
-| `/research/publications/deep-learning-reservoir-permeability/` | D | Y | P | Y | P | Partial | Scholarly metadata and complete citation fields are missing. |
-| `/research/publications/clinical-simulation-training-medical-students/` | D | Y | P | Y | P | Partial | Scholarly metadata and complete citation fields are missing. |
-| `/research/publications/arabic-medical-record-nlp/` | D | Y | P | Y | P | Partial | Scholarly metadata and complete citation fields are missing. |
-| `/research/publications/business-analytics-healthcare-supply-chain/` | D | Y | P | Y | P | Partial | Scholarly metadata and complete citation fields are missing. |
-| `/research/publications/renewable-energy-integration-syrian-grid/` | D | Y | P | Y | P | Partial | Scholarly metadata and complete citation fields are missing. |
-| `/research/researchers/` | D | P | N | Y | P | Partial | Search, faculty, and expertise filters are inert. |
-| `/research/themes/` | D | N | Y | Y | P | Partial | Theme catalog lacks CMS workflow. |
-| `/research/themes/ai-ml/` | D | N | Y | Y | P | Partial | Theme detail lacks CMS workflow. |
-| `/research/themes/pharmaceutical-sciences/` | D | N | Y | Y | P | Partial | Theme detail lacks CMS workflow. |
-| `/research/themes/clinical-medicine/` | D | N | Y | Y | P | Partial | Theme detail lacks CMS workflow. |
-| `/research/themes/dental-sciences/` | D | N | Y | Y | P | Partial | Theme detail lacks CMS workflow. |
-| `/research/themes/petroleum-engineering/` | D | N | Y | Y | P | Partial | Theme detail lacks CMS workflow. |
-| `/research/themes/construction-engineering/` | D | N | Y | Y | P | Partial | Theme detail lacks CMS workflow. |
-| `/research/themes/business-administration/` | D | N | Y | Y | P | Partial | Theme detail lacks CMS workflow. |
-| `/research/themes/medical-education/` | D | N | Y | Y | P | Partial | Theme detail lacks CMS workflow. |
-| `/research/themes/biomedical-engineering/` | D | N | Y | Y | P | Partial | Theme detail lacks CMS workflow. |
-| `/research/themes/energy-systems/` | D | N | Y | Y | P | Partial | Theme detail lacks CMS workflow. |
-| `/research/themes/data-science/` | D | N | Y | Y | P | Partial | Theme detail lacks CMS workflow. |
-| `/research/themes/structural-engineering/` | D | N | Y | Y | P | Partial | Theme detail lacks CMS workflow. |
-| `/research/expert-finder/` | D | Y | N | Y | P | Partial | Search and faculty/expertise filters are inert. |
-| `/research/conferences/` | D | Y | P | Y | P | Partial | Proceedings/download controls still use `#`. |
-| `/research/conferences/register/` | D | P | P | Y | Y | Partial | Missing reference program/speakers/topics tabs and event-bound submission context. |
+| `/research/repository/` | D | Y | Y | Y | Y | Complete | Authoritative CMS/database publications, functional filters/pagination, reset/empty states, locale query preservation, and tests are implemented. |
+| `/research/centers/` | D | Y | Y | Y | Y | Complete | Bilingual center/laboratory editor, protected preview, validated publication workflow, localized SEO, sitemap, assets, and tests are implemented. |
+| `/research/centers/ai-digital-innovation/` | D | Y | Y | Y | Y | Complete | Published center catalog drives the detail page, explicit relationships, real affiliated researchers, contact fields, preview, SEO, sitemap, and tests. |
+| `/research/centers/clinical-research-simulation/` | D | Y | Y | Y | Y | Complete | Published center catalog drives the detail page, explicit relationships, real affiliated researchers, contact fields, preview, SEO, sitemap, and tests. |
+| `/research/centers/energy-sustainable-systems/` | D | Y | Y | Y | Y | Complete | Published center catalog drives the detail page, explicit relationships, real affiliated researchers, contact fields, preview, SEO, sitemap, and tests. |
+| `/research/projects/` | D | Y | Y | Y | Y | Complete | Bilingual project catalog, functional filtering/pagination, protected preview, validated publication workflow, sitemap, and tests are implemented. |
+| `/research/projects/earthquake-resistant-concrete-syria/` | D | Y | Y | Y | Y | Complete | Published project catalog drives the detail, preview, relationships, SEO, sitemap, and tests. |
+| `/research/projects/ai-dental-diagnostics-system/` | D | Y | Y | Y | Y | Complete | Published project catalog drives the detail, preview, relationships, SEO, sitemap, and tests. |
+| `/research/projects/arabic-clinical-nlp-system/` | D | Y | Y | Y | Y | Complete | Published project catalog drives the detail, preview, relationships, SEO, sitemap, and tests. |
+| `/research/projects/pharmaceutical-quality-monitoring/` | D | Y | Y | Y | Y | Complete | Published project catalog drives the detail, preview, relationships, SEO, sitemap, and tests. |
+| `/research/projects/reservoir-characterization-ai/` | D | Y | Y | Y | Y | Complete | Published project catalog drives the detail, preview, relationships, SEO, sitemap, and tests. |
+| `/research/publications/` | D | Y | Y | Y | Y | Complete | CMS-backed filtering, pagination, reset/empty states, query-preserving locale links, scholarly metadata, and downloads are implemented. |
+| `/research/publications/machine-learning-pharmaceutical-quality-control/` | D | Y | Y | Y | Y | Complete | Verified bibliographic/citation fields, safe files, Dublin Core, ScholarlyArticle metadata, placeholder suppression, and tests are implemented. |
+| `/research/publications/ai-dental-diagnostics/` | D | Y | Y | Y | Y | Complete | Verified bibliographic/citation fields, safe files, Dublin Core, ScholarlyArticle metadata, placeholder suppression, and tests are implemented. |
+| `/research/publications/structural-analysis-earthquake-resistant-concrete/` | D | Y | Y | Y | Y | Complete | Verified bibliographic/citation fields, safe files, Dublin Core, ScholarlyArticle metadata, placeholder suppression, and tests are implemented. |
+| `/research/publications/deep-learning-reservoir-permeability/` | D | Y | Y | Y | Y | Complete | Verified bibliographic/citation fields, safe files, Dublin Core, ScholarlyArticle metadata, placeholder suppression, and tests are implemented. |
+| `/research/publications/clinical-simulation-training-medical-students/` | D | Y | Y | Y | Y | Complete | Verified bibliographic/citation fields, safe files, Dublin Core, ScholarlyArticle metadata, placeholder suppression, and tests are implemented. |
+| `/research/publications/arabic-medical-record-nlp/` | D | Y | Y | Y | Y | Complete | Verified bibliographic/citation fields, safe files, Dublin Core, ScholarlyArticle metadata, placeholder suppression, and tests are implemented. |
+| `/research/publications/business-analytics-healthcare-supply-chain/` | D | Y | Y | Y | Y | Complete | Verified bibliographic/citation fields, safe files, Dublin Core, ScholarlyArticle metadata, placeholder suppression, and tests are implemented. |
+| `/research/publications/renewable-energy-integration-syrian-grid/` | D | Y | Y | Y | Y | Complete | Verified bibliographic/citation fields, safe files, Dublin Core, ScholarlyArticle metadata, placeholder suppression, and tests are implemented. |
+| `/research/researchers/` | D | Y | Y | Y | Y | Complete | CMS taxonomy, functional controls, exact listing/profile preview, bilingual invariants, canonical profiles, and tests are implemented. |
+| `/research/themes/` | D | Y | Y | Y | Y | Complete | Bilingual theme catalog, protected preview, validated publication workflow, sitemap, and tests are implemented. |
+| `/research/themes/ai-ml/` | D | Y | Y | Y | Y | Complete | Published theme catalog drives detail relationships, preview, SEO, sitemap, and tests. |
+| `/research/themes/pharmaceutical-sciences/` | D | Y | Y | Y | Y | Complete | Published theme catalog drives detail relationships, preview, SEO, sitemap, and tests. |
+| `/research/themes/clinical-medicine/` | D | Y | Y | Y | Y | Complete | Published theme catalog drives detail relationships, preview, SEO, sitemap, and tests. |
+| `/research/themes/dental-sciences/` | D | Y | Y | Y | Y | Complete | Published theme catalog drives detail relationships, preview, SEO, sitemap, and tests. |
+| `/research/themes/petroleum-engineering/` | D | Y | Y | Y | Y | Complete | Published theme catalog drives detail relationships, preview, SEO, sitemap, and tests. |
+| `/research/themes/construction-engineering/` | D | Y | Y | Y | Y | Complete | Published theme catalog drives detail relationships, preview, SEO, sitemap, and tests. |
+| `/research/themes/business-administration/` | D | Y | Y | Y | Y | Complete | Published theme catalog drives detail relationships, preview, SEO, sitemap, and tests. |
+| `/research/themes/medical-education/` | D | Y | Y | Y | Y | Complete | Published theme catalog drives detail relationships, preview, SEO, sitemap, and tests. |
+| `/research/themes/biomedical-engineering/` | D | Y | Y | Y | Y | Complete | Published theme catalog drives detail relationships, preview, SEO, sitemap, and tests. |
+| `/research/themes/energy-systems/` | D | Y | Y | Y | Y | Complete | Published theme catalog drives detail relationships, preview, SEO, sitemap, and tests. |
+| `/research/themes/data-science/` | D | Y | Y | Y | Y | Complete | Published theme catalog drives detail relationships, preview, SEO, sitemap, and tests. |
+| `/research/themes/structural-engineering/` | D | Y | Y | Y | Y | Complete | Published theme catalog drives detail relationships, preview, SEO, sitemap, and tests. |
+| `/research/expert-finder/` | D | Y | Y | Y | Y | Complete | CMS-backed search and faculty filtering, pagination, reset/empty state, canonical profiles, and tests are implemented. |
+| `/research/conferences/` | D | Y | Y | Y | Y | Complete | Verified proceedings/registration destinations, transparent unavailable states, bilingual CMS workflow, preview, and tests are implemented. |
+| `/research/conferences/register/` | D | Y | Y | Y | Y | Complete | Accessible program/speaker/topic content and server-validated event-bound submissions with authorized review are implemented. |
 | `/research/library/` | D | Y | Y | Y | Y | Complete | Dedicated CMS-backed resource page. |
-| `/research/policies/` | D | Y | N | N | P | Partial | Policy download links are inert. |
+| `/research/policies/` | D | Y | Y | Y | Y | Complete | Reviewed Media Library or safe HTTPS policy documents, transparent unavailable states, CMS readiness, preview, and tests are implemented. |
 | `/research/office/` | D | Y | Y | Y | Y | Complete | Dedicated CMS-backed office page. |
 
 ## Campus Life
 
 | Reference path | Route | CMS | Behavior | Assets | Tests | Overall | Primary gap |
 |---|---|---|---|---|---|---|---|
-| `/campus-life/` | D | Y | P | Y | Y | Partial | Two visible portal controls still point to `#`. |
+| `/campus-life/` | D | Y | Y | Y | Y | Complete | Unverified figures and inert portals are removed; bilingual CMS guidance, safe destinations, assets, and tests are implemented. |
 | `/campus-life/services/` | D | Y | Y | Y | Y | Complete | Dedicated CMS-backed static service directory. |
 | `/campus-life/transport/` | D | Y | Y | Y | Y | Complete | Dedicated CMS-backed transport content. |
 | `/campus-life/clubs-activities/` | D | Y | Y | Y | Y | Complete | Dedicated CMS-backed clubs content. |
 | `/campus-life/career-development/` | D | Y | Y | Y | Y | Complete | Dedicated CMS-backed career content. |
-| `/campus-life/career-development/jobs/` | D | N | N | Y | P | Partial | Search/category/type filters and pagination are absent. |
-| `/campus-life/career-development/jobs/apply/` | D | N | P | Y | Y | Partial | `?job=` is not displayed or persisted as application context. |
-| `/campus-life/career-development/jobs/lecturer-computer-science/` | D | N | P | Y | P | Partial | Sharing, related jobs, and CMS management are missing. |
-| `/campus-life/career-development/jobs/research-assistant/` | D | N | P | Y | P | Partial | Sharing, related jobs, and CMS management are missing. |
-| `/campus-life/career-development/jobs/administrative-coordinator/` | D | N | P | Y | P | Partial | Sharing, related jobs, and CMS management are missing. |
-| `/campus-life/career-development/jobs/admissions-officer/` | D | N | P | Y | P | Partial | Sharing, related jobs, and CMS management are missing. |
-| `/campus-life/career-development/jobs/campus-bus-driver/` | D | N | P | Y | P | Partial | Sharing, related jobs, and CMS management are missing. |
-| `/campus-life/career-development/jobs/it-support-specialist/` | D | N | P | Y | P | Partial | Sharing, related jobs, and CMS management are missing. |
-| `/campus-life/career-development/jobs/laboratory-technician/` | D | N | P | Y | P | Partial | Sharing, related jobs, and CMS management are missing. |
-| `/campus-life/career-development/jobs/dental-clinic-supervisor/` | D | N | P | Y | P | Partial | Sharing, related jobs, and CMS management are missing. |
+| `/campus-life/career-development/jobs/` | D | Y | Y | Y | Y | Complete | Bilingual CMS catalog, filtering, pagination, open/closed enforcement, protected preview, and tests are implemented. |
+| `/campus-life/career-development/jobs/apply/` | D | Y | Y | Y | Y | Complete | Published open-job context is validated, displayed, locale-preserved, persisted with private CV storage, and exposed to authorized review. |
+| `/campus-life/career-development/jobs/lecturer-computer-science/` | D | Y | Y | Y | Y | Complete | CMS detail, dates/status, related jobs, canonical sharing, JobPosting metadata, preview, and tests are implemented. |
+| `/campus-life/career-development/jobs/research-assistant/` | D | Y | Y | Y | Y | Complete | CMS detail, dates/status, related jobs, canonical sharing, JobPosting metadata, preview, and tests are implemented. |
+| `/campus-life/career-development/jobs/administrative-coordinator/` | D | Y | Y | Y | Y | Complete | CMS detail, dates/status, related jobs, canonical sharing, JobPosting metadata, preview, and tests are implemented. |
+| `/campus-life/career-development/jobs/admissions-officer/` | D | Y | Y | Y | Y | Complete | CMS detail, dates/status, related jobs, canonical sharing, JobPosting metadata, preview, and tests are implemented. |
+| `/campus-life/career-development/jobs/campus-bus-driver/` | D | Y | Y | Y | Y | Complete | CMS detail, dates/status, related jobs, canonical sharing, JobPosting metadata, preview, and tests are implemented. |
+| `/campus-life/career-development/jobs/it-support-specialist/` | D | Y | Y | Y | Y | Complete | CMS detail, dates/status, related jobs, canonical sharing, JobPosting metadata, preview, and tests are implemented. |
+| `/campus-life/career-development/jobs/laboratory-technician/` | D | Y | Y | Y | Y | Complete | CMS detail, dates/status, related jobs, canonical sharing, JobPosting metadata, preview, and tests are implemented. |
+| `/campus-life/career-development/jobs/dental-clinic-supervisor/` | D | Y | Y | Y | Y | Complete | CMS detail, dates/status, related jobs, canonical sharing, JobPosting metadata, preview, and tests are implemented. |
 | `/campus-life/dental/` | D | Y | Y | Y | Y | Complete | Dedicated date-aware CMS-backed clinic page. |
 | `/campus-life/hospital/` | D | Y | Y | Y | Y | Complete | Dedicated date-aware CMS-backed hospital page. |
 | `/campus-life/health-insurance/` | D | Y | Y | Y | Y | Complete | Dedicated CMS-backed insurance content. |
@@ -142,14 +142,14 @@ Columns: `Route`, `CMS`, `Behavior`, `Assets`, and `Tests`. `Overall` is conserv
 
 | Reference path | Route | CMS | Behavior | Assets | Tests | Overall | Primary gap |
 |---|---|---|---|---|---|---|---|
-| `/virtual-tour/` | D | N | N | P | N | Partial | Current page is static; scene switching, panorama controls, hotspots, fullscreen, and CMS are absent. |
+| `/virtual-tour/` | D | Y | Y | Y | Y | Complete | CMS-managed photo scenes, accessible scene switching, pan/zoom, hotspots, autoplay, thumbnails, fullscreen fallback, reduced motion, and tests are implemented. |
 
 ## E-Services
 
 | Reference path | Route | CMS | Behavior | Assets | Tests | Overall | Primary gap |
 |---|---|---|---|---|---|---|---|
 | `/e-services/` | D | Y | Y | Y | Y | Complete | Dedicated bilingual CMS-backed gateway. |
-| `/e-services/suggestions-complaints/` | D | N | P | Y | Y | Partial | Attachment handling and dedicated CMS/preview workflow are absent. |
+| `/e-services/suggestions-complaints/` | D | Y | Y | Y | Y | Complete | Dedicated bilingual CMS workflow, secure throttled submission, private validated attachments, consent/context, admin review/download, and tests are implemented. |
 | `/e-services/library/` | D | Y | Y | Y | Y | Complete | Dedicated bilingual CMS workflow, verified open-resource links, safe external-link handling, localized SEO/structured data, sitemap, aliases, and tests are implemented. |
 | `/e-services/staff-email/` | D | Y | Y | Y | Y | Complete | Dedicated bilingual guidance page, protected preview/publication workflow, credential-safety guidance, internal support path, SEO, sitemap, aliases, and tests are implemented. |
 | `/e-services/it-support/` | D | Y | Y | Y | Y | Complete | Dedicated bilingual support guidance, validated contact-topic flow, CMS workflow, localized SEO/structured data, sitemap, aliases, and tests are implemented. |
@@ -159,7 +159,7 @@ Columns: `Route`, `CMS`, `Behavior`, `Assets`, and `Tests`. `Overall` is conserv
 | Reference path | Route | CMS | Behavior | Assets | Tests | Overall | Primary gap |
 |---|---|---|---|---|---|---|---|
 | `/news/` | D | Y | Y | Y | Y | Complete | Dedicated bilingual News gateway. |
-| `/news/articles/` | D | P | Y | Y | Y | Partial | Registered page-shell editor remains pending. |
+| `/news/articles/` | D | Y | Y | Y | Y | Complete | CMS-managed bilingual shell, working listing controls/pagination, protected preview, canonical article sharing, and tests are implemented. |
 | `/news/article/` | R | P | Y | Y | Y | Redirect | Reference `?id=` links resolve to canonical published article URLs. |
 | `/news/announcements/` | D | Y | Y | Y | Y | Complete | Dedicated filtered/paginated CMS-backed page. |
 | `/news/events/` | D | Y | Y | Y | Y | Complete | Dedicated functional monthly calendar. |
@@ -179,68 +179,68 @@ Columns: `Route`, `CMS`, `Behavior`, `Assets`, and `Tests`. `Overall` is conserv
 | Reference path | Route | CMS | Behavior | Assets | Tests | Overall | Primary gap |
 |---|---|---|---|---|---|---|---|
 | `/facilities/` | D | Y | Y | Y | Y | Complete | Catalog and reference `?id=` selectors resolve to canonical faculty URLs. |
-| `/facilities/artificial-intelligence/overview/` | D | Y | P | Y | P | Partial | Latest-research block and complete profile linking are missing. |
-| `/facilities/business-administration/overview/` | D | Y | P | Y | P | Partial | Latest-research block and complete profile linking are missing. |
-| `/facilities/building-construction-engineering/overview/` | D | Y | P | Y | P | Partial | Latest-research block and complete profile linking are missing. |
-| `/facilities/dentistry/overview/` | D | Y | P | Y | P | Partial | Latest-research block and complete profile linking are missing. |
-| `/facilities/medicine/overview/` | D | Y | P | Y | Y | Partial | Latest-research block and complete profile linking are missing. |
-| `/facilities/petroleum/overview/` | D | Y | P | Y | P | Partial | Latest-research block and complete profile linking are missing. |
-| `/facilities/pharmacy/overview/` | D | Y | P | Y | P | Partial | Latest-research block and complete profile linking are missing. |
-| `/facilities/artificial-intelligence/departments/` | D | Y | Y | Y | P | Partial | AR/public family coverage and deep-link continuity remain. |
-| `/facilities/business-administration/departments/` | D | Y | Y | Y | P | Partial | AR/public family coverage and deep-link continuity remain. |
-| `/facilities/building-construction-engineering/departments/` | D | Y | Y | Y | P | Partial | AR/public family coverage and deep-link continuity remain. |
-| `/facilities/dentistry/departments/` | D | Y | Y | Y | P | Partial | AR/public family coverage and deep-link continuity remain. |
-| `/facilities/medicine/departments/` | D | Y | Y | Y | Y | Partial | Remaining family-wide AR/browser verification. |
-| `/facilities/petroleum/departments/` | D | Y | Y | Y | P | Partial | AR/public family coverage and deep-link continuity remain. |
-| `/facilities/pharmacy/departments/` | D | Y | Y | Y | P | Partial | AR/public family coverage and deep-link continuity remain. |
-| `/facilities/artificial-intelligence/labs/` | D | Y | P | Y | N | Partial | Six-item pagination and related-lab details are missing. |
-| `/facilities/building-construction-engineering/labs/` | D | Y | P | Y | N | Partial | Six-item pagination and related-lab details are missing. |
-| `/facilities/dentistry/labs/` | D | Y | P | Y | N | Partial | Six-item pagination and related-lab details are missing. |
-| `/facilities/medicine/labs/` | D | Y | P | Y | N | Partial | Six-item pagination and related-lab details are missing. |
-| `/facilities/petroleum/labs/` | D | Y | P | Y | N | Partial | Six-item pagination and related-lab details are missing. |
-| `/facilities/pharmacy/labs/` | D | Y | P | Y | N | Partial | Six-item pagination and related-lab details are missing. |
-| `/facilities/pharmacy/training/` | D | N | Y | Y | N | Partial | Registered training target is not exposed by a saveable Pharmacy editor. |
-| `/facilities/artificial-intelligence/projects/` | D | Y | N | Y | P | Partial | Pagination controls are inert. |
-| `/facilities/business-administration/projects/` | D | Y | N | Y | P | Partial | Pagination controls are inert. |
-| `/facilities/building-construction-engineering/projects/` | D | Y | N | Y | P | Partial | Pagination controls are inert. |
-| `/facilities/dentistry/projects/` | D | Y | N | Y | P | Partial | Pagination controls are inert. |
-| `/facilities/medicine/projects/` | D | Y | N | Y | P | Partial | Pagination controls are inert. |
-| `/facilities/pharmacy/projects/` | D | Y | N | Y | P | Partial | Pagination controls are inert. |
-| `/facilities/artificial-intelligence/research/` | M | N | N | N | N | Missing | No route, service subpage, CMS target, view, or tests. |
-| `/facilities/business-administration/research/` | M | N | N | N | N | Missing | No route, service subpage, CMS target, view, or tests. |
-| `/facilities/building-construction-engineering/research/` | M | N | N | N | N | Missing | No route, service subpage, CMS target, view, or tests. |
-| `/facilities/dentistry/research/` | M | N | N | N | N | Missing | No route, service subpage, CMS target, view, or tests. |
-| `/facilities/medicine/research/` | M | N | N | N | N | Missing | No route, service subpage, CMS target, view, or tests. |
-| `/facilities/petroleum/research/` | M | N | N | N | N | Missing | No route, service subpage, CMS target, view, or tests. |
-| `/facilities/pharmacy/research/` | M | N | N | N | N | Missing | No route, service subpage, CMS target, view, or tests. |
-| `/facilities/artificial-intelligence/study-plan/` | D | Y | P | Y | P | Partial | Browser accessibility and AR interaction coverage remain. |
-| `/facilities/business-administration/study-plan/` | D | Y | P | Y | P | Partial | Browser accessibility and AR interaction coverage remain. |
-| `/facilities/building-construction-engineering/study-plan/` | D | Y | P | Y | P | Partial | Browser accessibility and AR interaction coverage remain. |
-| `/facilities/dentistry/study-plan/` | D | Y | P | Y | P | Partial | Browser accessibility and AR interaction coverage remain. |
-| `/facilities/medicine/study-plan/` | D | Y | P | Y | P | Partial | Browser accessibility and AR interaction coverage remain. |
-| `/facilities/petroleum/study-plan/` | D | Y | P | Y | P | Partial | Browser accessibility and AR interaction coverage remain. |
-| `/facilities/pharmacy/study-plan/` | D | Y | P | Y | P | Partial | Browser accessibility and AR interaction coverage remain. |
-| `/facilities/artificial-intelligence/study-plan/course/` | D | Y | P | P | N | Partial | Query behavior lacks HTTP/AR tests and file-resolution validation. |
-| `/facilities/business-administration/study-plan/course/` | D | Y | P | P | N | Partial | Query behavior lacks HTTP/AR tests and file-resolution validation. |
-| `/facilities/building-construction-engineering/study-plan/course/` | D | Y | P | P | N | Partial | Query behavior lacks HTTP/AR tests and file-resolution validation. |
-| `/facilities/dentistry/study-plan/course/` | D | Y | P | P | N | Partial | Query behavior lacks HTTP/AR tests and file-resolution validation. |
-| `/facilities/medicine/study-plan/course/` | D | Y | P | P | N | Partial | Query behavior lacks HTTP/AR tests and file-resolution validation. |
-| `/facilities/petroleum/study-plan/course/` | D | Y | P | P | N | Partial | Query behavior lacks HTTP/AR tests and file-resolution validation. |
-| `/facilities/pharmacy/study-plan/course/` | D | Y | P | P | N | Partial | Query behavior lacks HTTP/AR tests and file-resolution validation. |
-| `/facilities/artificial-intelligence/alumni/` | D | Y | P | P | P | Partial | Page size differs from reference and AR/public controls need tests. |
-| `/facilities/business-administration/alumni/` | D | Y | P | P | P | Partial | Page size differs from reference and AR/public controls need tests. |
-| `/facilities/building-construction-engineering/alumni/` | D | Y | P | P | P | Partial | Page size differs from reference and AR/public controls need tests. |
-| `/facilities/dentistry/alumni/` | D | Y | P | P | P | Partial | Page size differs from reference and AR/public controls need tests. |
-| `/facilities/medicine/alumni/` | D | Y | P | P | Y | Partial | Page size differs from reference and image fallback remains generic. |
-| `/facilities/petroleum/alumni/` | D | Y | P | P | P | Partial | Page size differs from reference and AR/public controls need tests. |
-| `/facilities/pharmacy/alumni/` | D | Y | P | P | P | Partial | Page size differs from reference and AR/public controls need tests. |
-| `/facilities/artificial-intelligence/valedictorians/` | D | Y | P | P | P | Partial | Page size, quote section, image, and AR parity differ. |
-| `/facilities/business-administration/valedictorians/` | D | Y | P | P | P | Partial | Page size, quote section, image, and AR parity differ. |
-| `/facilities/building-construction-engineering/valedictorians/` | D | Y | P | P | P | Partial | Page size, quote section, image, and AR parity differ. |
-| `/facilities/dentistry/valedictorians/` | D | Y | P | P | P | Partial | Page size, quote section, image, and AR parity differ. |
-| `/facilities/medicine/valedictorians/` | D | Y | P | P | Y | Partial | Page size, quote section, and image parity differ. |
-| `/facilities/petroleum/valedictorians/` | D | Y | P | P | P | Partial | Page size, quote section, image, and AR parity differ. |
-| `/facilities/pharmacy/valedictorians/` | D | Y | P | P | P | Partial | Page size, quote section, image, and AR parity differ. |
+| `/facilities/artificial-intelligence/overview/` | D | Y | Y | Y | Y | Complete | CMS overview, eligible central research, canonical profile linking, AR/EN rendering, and tests are implemented. |
+| `/facilities/business-administration/overview/` | D | Y | Y | Y | Y | Complete | CMS overview, eligible central research, canonical profile linking, AR/EN rendering, and tests are implemented. |
+| `/facilities/building-construction-engineering/overview/` | D | Y | Y | Y | Y | Complete | CMS overview, eligible central research, canonical profile linking, AR/EN rendering, and tests are implemented. |
+| `/facilities/dentistry/overview/` | D | Y | Y | Y | Y | Complete | CMS overview, eligible central research, canonical profile linking, AR/EN rendering, and tests are implemented. |
+| `/facilities/medicine/overview/` | D | Y | Y | Y | Y | Complete | CMS overview, eligible central research, canonical profile linking, AR/EN rendering, and tests are implemented. |
+| `/facilities/petroleum/overview/` | D | Y | Y | Y | Y | Complete | CMS overview, eligible central research, canonical profile linking, AR/EN rendering, and tests are implemented. |
+| `/facilities/pharmacy/overview/` | D | Y | Y | Y | Y | Complete | CMS overview, eligible central research, canonical profile linking, AR/EN rendering, and tests are implemented. |
+| `/facilities/artificial-intelligence/departments/` | D | Y | Y | Y | Y | Complete | Bilingual CMS rendering, study-plan links, canonical/hreflang, and exact deep-link continuity are tested. |
+| `/facilities/business-administration/departments/` | D | Y | Y | Y | Y | Complete | Bilingual CMS rendering, study-plan links, canonical/hreflang, and exact deep-link continuity are tested. |
+| `/facilities/building-construction-engineering/departments/` | D | Y | Y | Y | Y | Complete | Bilingual CMS rendering, study-plan links, canonical/hreflang, and exact deep-link continuity are tested. |
+| `/facilities/dentistry/departments/` | D | Y | Y | Y | Y | Complete | Bilingual CMS rendering, study-plan links, canonical/hreflang, and exact deep-link continuity are tested. |
+| `/facilities/medicine/departments/` | D | Y | Y | Y | Y | Complete | Bilingual CMS rendering, study-plan links, canonical/hreflang, and exact deep-link continuity are tested. |
+| `/facilities/petroleum/departments/` | D | Y | Y | Y | Y | Complete | Bilingual CMS rendering, study-plan links, canonical/hreflang, and exact deep-link continuity are tested. |
+| `/facilities/pharmacy/departments/` | D | Y | Y | Y | Y | Complete | Bilingual CMS rendering, study-plan links, canonical/hreflang, and exact deep-link continuity are tested. |
+| `/facilities/artificial-intelligence/labs/` | D | Y | Y | Y | Y | Complete | Six-item server pagination, full-collection detail lookup, related labs, locale query preservation, and tests are implemented. |
+| `/facilities/building-construction-engineering/labs/` | D | Y | Y | Y | Y | Complete | Six-item server pagination, full-collection detail lookup, related labs, locale query preservation, and tests are implemented. |
+| `/facilities/dentistry/labs/` | D | Y | Y | Y | Y | Complete | Six-item server pagination, full-collection detail lookup, related labs, locale query preservation, and tests are implemented. |
+| `/facilities/medicine/labs/` | D | Y | Y | Y | Y | Complete | Six-item server pagination, full-collection detail lookup, related labs, locale query preservation, and tests are implemented. |
+| `/facilities/petroleum/labs/` | D | Y | Y | Y | Y | Complete | Six-item server pagination, full-collection detail lookup, related labs, locale query preservation, and tests are implemented. |
+| `/facilities/pharmacy/labs/` | D | Y | Y | Y | Y | Complete | Six-item server pagination, full-collection detail lookup, related labs, locale query preservation, and tests are implemented. |
+| `/facilities/pharmacy/training/` | D | Y | Y | Y | Y | Complete | Structured Pharmacy-only bilingual editor, full preview/publication lifecycle, scoped authorization, rendering, and tests are implemented. |
+| `/facilities/artificial-intelligence/projects/` | D | Y | Y | Y | Y | Complete | Six-item server pagination, bounded pages, query-preserving controls, localized links, and tests are implemented. |
+| `/facilities/business-administration/projects/` | D | Y | Y | Y | Y | Complete | Six-item server pagination, bounded pages, query-preserving controls, localized links, and tests are implemented. |
+| `/facilities/building-construction-engineering/projects/` | D | Y | Y | Y | Y | Complete | Six-item server pagination, bounded pages, query-preserving controls, localized links, and tests are implemented. |
+| `/facilities/dentistry/projects/` | D | Y | Y | Y | Y | Complete | Six-item server pagination, bounded pages, query-preserving controls, localized links, and tests are implemented. |
+| `/facilities/medicine/projects/` | D | Y | Y | Y | Y | Complete | Six-item server pagination, bounded pages, query-preserving controls, localized links, and tests are implemented. |
+| `/facilities/pharmacy/projects/` | D | Y | Y | Y | Y | Complete | Six-item server pagination, bounded pages, query-preserving controls, localized links, and tests are implemented. |
+| `/facilities/artificial-intelligence/research/` | D | Y | Y | Y | Y | Complete | Localized central-publication listing, faculty-scoped CMS workflow, canonical detail links, SEO/sitemap, continuity, and server pagination are implemented. |
+| `/facilities/business-administration/research/` | D | Y | Y | Y | Y | Complete | Localized central-publication listing, faculty-scoped CMS workflow, canonical detail links, SEO/sitemap, continuity, and server pagination are implemented. |
+| `/facilities/building-construction-engineering/research/` | D | Y | Y | Y | Y | Complete | Localized central-publication listing, faculty-scoped CMS workflow, canonical detail links, SEO/sitemap, continuity, and server pagination are implemented. |
+| `/facilities/dentistry/research/` | D | Y | Y | Y | Y | Complete | Localized central-publication listing, faculty-scoped CMS workflow, canonical detail links, SEO/sitemap, continuity, and server pagination are implemented. |
+| `/facilities/medicine/research/` | D | Y | Y | Y | Y | Complete | Localized central-publication listing, faculty-scoped CMS workflow, canonical detail links, SEO/sitemap, continuity, and server pagination are implemented. |
+| `/facilities/petroleum/research/` | D | Y | Y | Y | Y | Complete | Two localized reference publications, faculty-scoped CMS workflow, canonical detail links, SEO/sitemap, continuity, and server pagination are implemented. |
+| `/facilities/pharmacy/research/` | D | Y | Y | Y | Y | Complete | Localized central-publication listing, faculty-scoped CMS workflow, canonical detail links, SEO/sitemap, continuity, and server pagination are implemented. |
+| `/facilities/artificial-intelligence/study-plan/` | D | Y | Y | Y | Y | Complete | Accessible dialog/focus behavior, keyboard graph controls, localized labels, RTL/reduced-motion handling, and tests are implemented. |
+| `/facilities/business-administration/study-plan/` | D | Y | Y | Y | Y | Complete | Accessible dialog/focus behavior, keyboard graph controls, localized labels, RTL/reduced-motion handling, and tests are implemented. |
+| `/facilities/building-construction-engineering/study-plan/` | D | Y | Y | Y | Y | Complete | Accessible dialog/focus behavior, keyboard graph controls, localized labels, RTL/reduced-motion handling, and tests are implemented. |
+| `/facilities/dentistry/study-plan/` | D | Y | Y | Y | Y | Complete | Accessible dialog/focus behavior, keyboard graph controls, localized labels, RTL/reduced-motion handling, and tests are implemented. |
+| `/facilities/medicine/study-plan/` | D | Y | Y | Y | Y | Complete | Accessible dialog/focus behavior, keyboard graph controls, localized labels, RTL/reduced-motion handling, and tests are implemented. |
+| `/facilities/petroleum/study-plan/` | D | Y | Y | Y | Y | Complete | Accessible dialog/focus behavior, keyboard graph controls, localized labels, RTL/reduced-motion handling, and tests are implemented. |
+| `/facilities/pharmacy/study-plan/` | D | Y | Y | Y | Y | Complete | Accessible dialog/focus behavior, keyboard graph controls, localized labels, RTL/reduced-motion handling, and tests are implemented. |
+| `/facilities/artificial-intelligence/study-plan/course/` | D | Y | Y | Y | Y | Complete | Service-validated selectors, safe materials/profiles, query-preserving locale/SEO links, AR/EN rendering, and tests are implemented. |
+| `/facilities/business-administration/study-plan/course/` | D | Y | Y | Y | Y | Complete | Service-validated selectors, safe materials/profiles, query-preserving locale/SEO links, AR/EN rendering, and tests are implemented. |
+| `/facilities/building-construction-engineering/study-plan/course/` | D | Y | Y | Y | Y | Complete | Service-validated selectors, safe materials/profiles, query-preserving locale/SEO links, AR/EN rendering, and tests are implemented. |
+| `/facilities/dentistry/study-plan/course/` | D | Y | Y | Y | Y | Complete | Service-validated selectors, safe materials/profiles, query-preserving locale/SEO links, AR/EN rendering, and tests are implemented. |
+| `/facilities/medicine/study-plan/course/` | D | Y | Y | Y | Y | Complete | Service-validated selectors, safe materials/profiles, query-preserving locale/SEO links, AR/EN rendering, and tests are implemented. |
+| `/facilities/petroleum/study-plan/course/` | D | Y | Y | Y | Y | Complete | Service-validated selectors, safe materials/profiles, query-preserving locale/SEO links, AR/EN rendering, and tests are implemented. |
+| `/facilities/pharmacy/study-plan/course/` | D | Y | Y | Y | Y | Complete | Service-validated selectors, safe materials/profiles, query-preserving locale/SEO links, AR/EN rendering, and tests are implemented. |
+| `/facilities/artificial-intelligence/alumni/` | D | Y | Y | Y | Y | Complete | Twelve-item directory pagination, validated filters, managed media, AR/EN query preservation, and tests are implemented. |
+| `/facilities/business-administration/alumni/` | D | Y | Y | Y | Y | Complete | Twelve-item directory pagination, validated filters, managed media, AR/EN query preservation, and tests are implemented. |
+| `/facilities/building-construction-engineering/alumni/` | D | Y | Y | Y | Y | Complete | Twelve-item directory pagination, validated filters, managed media, AR/EN query preservation, and tests are implemented. |
+| `/facilities/dentistry/alumni/` | D | Y | Y | Y | Y | Complete | Twelve-item directory pagination, validated filters, managed media, AR/EN query preservation, and tests are implemented. |
+| `/facilities/medicine/alumni/` | D | Y | Y | Y | Y | Complete | Twelve-item directory pagination, validated filters, managed media, AR/EN query preservation, and tests are implemented. |
+| `/facilities/petroleum/alumni/` | D | Y | Y | Y | Y | Complete | Twelve-item directory pagination, validated filters, managed media, AR/EN query preservation, and tests are implemented. |
+| `/facilities/pharmacy/alumni/` | D | Y | Y | Y | Y | Complete | Twelve-item directory pagination, validated filters, managed media, AR/EN query preservation, and tests are implemented. |
+| `/facilities/artificial-intelligence/valedictorians/` | D | Y | Y | Y | Y | Complete | Six-item pagination, managed quote/media behavior, AR/EN query preservation, and tests are implemented. |
+| `/facilities/business-administration/valedictorians/` | D | Y | Y | Y | Y | Complete | Six-item pagination, managed quote/media behavior, AR/EN query preservation, and tests are implemented. |
+| `/facilities/building-construction-engineering/valedictorians/` | D | Y | Y | Y | Y | Complete | Six-item pagination, managed quote/media behavior, AR/EN query preservation, and tests are implemented. |
+| `/facilities/dentistry/valedictorians/` | D | Y | Y | Y | Y | Complete | Six-item pagination, managed quote/media behavior, AR/EN query preservation, and tests are implemented. |
+| `/facilities/medicine/valedictorians/` | D | Y | Y | Y | Y | Complete | Six-item pagination, managed quote/media behavior, AR/EN query preservation, and tests are implemented. |
+| `/facilities/petroleum/valedictorians/` | D | Y | Y | Y | Y | Complete | Six-item pagination, managed quote/media behavior, AR/EN query preservation, and tests are implemented. |
+| `/facilities/pharmacy/valedictorians/` | D | Y | Y | Y | Y | Complete | Six-item pagination, managed quote/media behavior, AR/EN query preservation, and tests are implemented. |
 
 ## Shared Project Detail
 

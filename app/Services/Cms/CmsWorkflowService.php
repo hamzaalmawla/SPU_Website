@@ -7,6 +7,7 @@ namespace App\Services\Cms;
 use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
 use App\Contracts\Media\MediaServiceInterface;
 use App\Contracts\Shared\AuditServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
@@ -29,6 +30,12 @@ use Illuminate\Validation\ValidationException;
 
 final class CmsWorkflowService implements CmsWorkflowServiceInterface
 {
+    /** @var list<string> */
+    private const RESEARCH_FACULTY_SLUGS = ['medicine', 'dentistry', 'pharmacy', 'artificial-intelligence', 'building-construction-engineering', 'petroleum', 'business-administration'];
+
+    /** @var list<string> */
+    private const RESEARCH_THEME_SLUGS = ['ai-ml', 'pharmaceutical-sciences', 'clinical-medicine', 'dental-sciences', 'petroleum-engineering', 'construction-engineering', 'business-administration', 'medical-education', 'biomedical-engineering', 'energy-systems', 'data-science', 'structural-engineering'];
+
     public function __construct(
         private readonly CmsTargetRegistryInterface $targetRegistry,
         private readonly AuditServiceInterface $auditService,
@@ -36,6 +43,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
         private readonly PreviewTokenStore $previewTokenStore,
         private readonly MediaServiceInterface $mediaService,
         private readonly AboutEntityCmsServiceInterface $aboutEntityCmsService,
+        private readonly FacultyStudyPlanLinkServiceInterface $studyPlanLinkService,
     ) {}
 
     /** @param array<string, mixed> $payload */
@@ -218,12 +226,82 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
             $this->appendGalleryReadinessErrors($payload, $target->locales, $errors);
         }
 
+        if ($target->key === 'news.articles') {
+            $this->appendNewsArticlesReadinessErrors($payload, $target->locales, $errors);
+        }
+
         if ($target->key === 'about.vision-mission') {
             $this->appendVisionMissionReadinessErrors($payload, $target->locales, $errors);
         }
 
-        if (str_starts_with($target->key, 'e_services.')) {
+        if ($target->key === 'research.centers') {
+            $this->appendResearchCentersReadinessErrors($payload, $target->locales, $errors);
+        }
+
+        if ($target->key === 'research.projects') {
+            $this->appendResearchProjectsReadinessErrors($payload, $target->locales, $errors);
+        }
+
+        if ($target->key === 'research.themes') {
+            $this->appendResearchThemesReadinessErrors($payload, $target->locales, $errors);
+        }
+
+        if ($target->key === 'campus_life.jobs') {
+            $this->appendCampusLifeJobsReadinessErrors($payload, $target->locales, $errors);
+        }
+
+        if ($target->key === 'campus_life.landing') {
+            $this->appendCampusLifeLandingReadinessErrors($payload, $target->locales, $errors);
+        }
+
+        if ($target->key === 'campus_life.virtual_tour') {
+            $this->appendVirtualTourReadinessErrors($payload, $target->locales, $errors);
+        }
+
+        if ($target->key === 'e_services.suggestions-complaints') {
+            $this->appendSuggestionsComplaintsReadinessErrors($payload, $target->locales, $errors);
+        }
+
+        if (str_starts_with($target->key, 'e_services.') && $target->key !== 'e_services.suggestions-complaints') {
             $this->appendEServicesDetailReadinessErrors($target->key, $payload, $target->locales, $errors);
+        }
+
+        if (str_starts_with($target->key, 'admissions.')) {
+            $this->appendAdmissionsReadinessErrors($target->key, $payload, $target->locales, $errors);
+        }
+
+        if (str_ends_with($target->key, '.departments') && str_starts_with($target->key, 'facilities.')) {
+            foreach ($this->studyPlanLinkService->validationErrors($target->key, $payload) as $field => $messages) {
+                $errors[$field] = array_values(array_unique([
+                    ...($errors[$field] ?? []),
+                    ...$messages,
+                ]));
+            }
+        }
+
+        if (str_ends_with($target->key, '.research') && str_starts_with($target->key, 'facilities.')) {
+            foreach ($target->locales as $locale) {
+                $translation = $this->localePayload($payload, $locale);
+
+                foreach (['seoTitle', 'seoDescription', 'seoImage'] as $field) {
+                    if (! $this->filledString($translation[$field] ?? null)) {
+                        $errors[$locale][] = "The research {$field} field is required.";
+                    }
+                }
+            }
+        }
+
+        if ($target->key === 'facilities.pharmacy.training') {
+            $this->appendPharmacyTrainingReadinessErrors($payload, $target->locales, $errors);
+        }
+
+        if (str_ends_with($target->key, '.study_plan') && str_starts_with($target->key, 'facilities.')) {
+            foreach ($this->studyPlanLinkService->studyPlanValidationErrors($target->key, $payload) as $field => $messages) {
+                $errors[$field] = array_values(array_unique([
+                    ...($errors[$field] ?? []),
+                    ...$messages,
+                ]));
+            }
         }
 
         foreach ($this->aboutEntityCmsService->publishErrors($target->key, $payload) as $field => $messages) {
@@ -236,9 +314,10 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
         return new CmsPublishReadinessDTO($errors === [], $errors);
     }
 
-    public function latestEditableDraftVersion(string $targetKey): ?int
+    public function latestEditableDraftVersion(string $targetKey, int $userId): ?int
     {
-        $this->requireTarget($targetKey);
+        $target = $this->requireTarget($targetKey);
+        $this->authorizeTargetWrite($target, $userId);
 
         $draft = $this->latestEditableDraft($targetKey);
 
@@ -246,9 +325,10 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
     }
 
     /** @return array<string, mixed>|null */
-    public function latestEditableDraftPayload(string $targetKey): ?array
+    public function latestEditableDraftPayload(string $targetKey, int $userId): ?array
     {
-        $this->requireTarget($targetKey);
+        $target = $this->requireTarget($targetKey);
+        $this->authorizeTargetWrite($target, $userId);
 
         return $this->latestEditablePayload($targetKey);
     }
@@ -382,20 +462,12 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
 
     private function latestEditableDraft(string $targetKey): ?CmsDraft
     {
-        $draftId = CmsDraft::query()
+        $draft = CmsDraft::query()
             ->where('target_key', $targetKey)
             ->whereIn('status', PublicationStatus::editableValues())
             ->latest('updated_at')
             ->latest('id')
-            ->value('id');
-
-        $id = $draftId !== null ? (int) $draftId : null;
-
-        if ($id === null) {
-            return null;
-        }
-
-        $draft = CmsDraft::query()->find($id);
+            ->first();
 
         return $draft instanceof CmsDraft ? $draft : null;
     }
@@ -440,7 +512,29 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
             throw new AuthorizationException('This user is not authorized to manage this CMS target.');
         }
 
+        if ($user->role_slug === 'faculty_editor' && $target->facultyScopeSlug === null) {
+            throw new AuthorizationException('Faculty editors cannot manage global CMS targets.');
+        }
+
+        if ($target->facultyScopeSlug !== null && $user->role_slug === 'faculty_editor') {
+            $userScope = $this->canonicalFacultyScope((string) $user->faculty_scope_slug);
+
+            if ($userScope === '' || $userScope !== $this->canonicalFacultyScope($target->facultyScopeSlug)) {
+                throw new AuthorizationException('This faculty editor is not authorized to manage this faculty target.');
+            }
+        }
+
         $this->aboutEntityCmsService->authorizeTarget($target->key, $userId, $payload);
+    }
+
+    private function canonicalFacultyScope(string $scope): string
+    {
+        return match ($scope) {
+            'ai', 'ai-engineering' => 'artificial-intelligence',
+            'construction' => 'building-construction-engineering',
+            'business' => 'business-administration',
+            default => $scope,
+        };
     }
 
     private function manageAbilityForArea(string $area): string
@@ -489,6 +583,199 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
         }
 
         return is_array($payload['hero'] ?? null) && $this->filledString($payload['hero']['title'] ?? null);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<int, string>  $locales
+     * @param  array<string, array<int, string>>  $errors
+     */
+    private function appendAdmissionsReadinessErrors(string $targetKey, array $payload, array $locales, array &$errors): void
+    {
+        foreach ($locales as $locale) {
+            $translation = $this->localePayload($payload, $locale);
+
+            if ($this->containsAdmissionsPlaceholder($translation)) {
+                $errors[$locale][] = 'Admissions content contains a known placeholder, fabricated reference value, or inert link.';
+            }
+
+            if ($targetKey === 'admissions.landing') {
+                $hero = is_array($translation['hero'] ?? null) ? $translation['hero'] : [];
+                $images = is_array($hero['images'] ?? null) ? $hero['images'] : [];
+                $timeline = is_array($translation['timeline'] ?? null) ? $translation['timeline'] : [];
+                $resources = is_array($translation['resources']['cards'] ?? null) ? $translation['resources']['cards'] : [];
+
+                foreach (['campus', 'campusAlt', 'students', 'studentsAlt'] as $field) {
+                    if (! $this->filledString($images[$field] ?? null)) {
+                        $errors[$locale][] = "The Admissions hero {$field} field is required.";
+                    }
+                }
+                if (! $this->filledString($timeline['imageAlt'] ?? null)) {
+                    $errors[$locale][] = 'The Admissions timeline image alt text is required.';
+                }
+                foreach ($resources as $resource) {
+                    $slug = is_array($resource) ? ($resource['slug'] ?? null) : null;
+                    if (! is_string($slug) || ! in_array($slug, ['requirements', 'tuition', 'how-to-apply', 'faq', 'calendar', 'documents', 'transfer', 'filling-vacancies', 'graduation-exams'], true)) {
+                        $errors[$locale][] = 'Every Admissions resource must link to a supported Admissions route.';
+                    }
+                }
+                $resourceSlugs = collect($resources)
+                    ->filter(static fn (mixed $resource): bool => is_array($resource) && is_string($resource['slug'] ?? null))
+                    ->pluck('slug')
+                    ->all();
+                $requiredResourceSlugs = ['requirements', 'tuition', 'how-to-apply', 'faq', 'calendar', 'documents', 'transfer', 'filling-vacancies'];
+                if (array_diff($requiredResourceSlugs, $resourceSlugs) !== [] || count($resourceSlugs) !== count(array_unique($resourceSlugs))) {
+                    $errors[$locale][] = 'The Admissions landing must include each approved resource route exactly once.';
+                }
+            }
+
+            if ($targetKey === 'admissions.tuition') {
+                $rows = is_array($translation['feeRows'] ?? null) ? $translation['feeRows'] : [];
+                $methods = is_array($translation['methods'] ?? null) ? $translation['methods'] : [];
+
+                if ($rows === [] && ! $this->filledString($translation['availabilityGuidance'] ?? null)) {
+                    $errors[$locale][] = 'Transparent tuition availability guidance is required when no verified fee rows are published.';
+                }
+                foreach ($rows as $row) {
+                    if (! is_array($row) || ! $this->admissionsFieldsAreFilled($row, ['faculty', 'type', 'tuitionFee', 'registrationFee', 'additionalFees'])) {
+                        $errors[$locale][] = 'Every tuition row requires complete verified fee data.';
+                    }
+                }
+                if ($methods === [] && ! $this->filledString($translation['paymentGuidance'] ?? null)) {
+                    $errors[$locale][] = 'Transparent payment guidance is required when no verified payment method is published.';
+                }
+                foreach ($methods as $method) {
+                    if (! is_array($method) || ! $this->admissionsFieldsAreFilled($method, ['title', 'desc'])) {
+                        $errors[$locale][] = 'Every payment method requires a title and description.';
+
+                        continue;
+                    }
+                    $ctaUrl = $method['ctaUrl'] ?? null;
+                    if ($this->filledString($ctaUrl) && ! $this->isSafeAdmissionsPaymentUrl($ctaUrl)) {
+                        $errors[$locale][] = 'Payment actions must use a non-placeholder HTTPS URL.';
+                    }
+                    if ($this->filledString($method['cta'] ?? null) !== $this->filledString($ctaUrl)) {
+                        $errors[$locale][] = 'Payment action labels and URLs must be supplied together.';
+                    }
+                }
+            }
+
+            if ($targetKey === 'admissions.how-to-apply') {
+                if (! $this->admissionsFieldsAreFilled($translation, ['applicationTitle', 'applicationGuidance'])) {
+                    $errors[$locale][] = 'The admissions application title and non-guarantee guidance are required.';
+                }
+                $steps = is_array($translation['steps'] ?? null) ? $translation['steps'] : [];
+                $hasApplicationAction = collect($steps)->contains(function (mixed $step): bool {
+                    if (! is_array($step) || ! is_string($step['href'] ?? null)) {
+                        return false;
+                    }
+                    $url = rtrim($step['href'], '/');
+
+                    return str_ends_with($url, '/admissions/how-to-apply#application');
+                });
+                if (! $hasApplicationAction) {
+                    $errors[$locale][] = 'At least one How to Apply step must link to the real #application form.';
+                }
+            }
+
+            if ($targetKey === 'admissions.calendar') {
+                $deadlines = is_array($translation['deadlines'] ?? null) ? $translation['deadlines'] : [];
+                $semesters = is_array($translation['semesters'] ?? null) ? $translation['semesters'] : [];
+                if ($deadlines === [] && $semesters === [] && ! $this->filledString($translation['scheduleGuidance'] ?? null)) {
+                    $errors[$locale][] = 'Transparent calendar guidance is required when no approved dates are published.';
+                }
+                $this->appendAdmissionsDownloadError($translation['download'] ?? null, $locale, 'calendar', $errors);
+            }
+
+            if ($targetKey === 'admissions.documents') {
+                if (! $this->filledString($translation['downloadGuidance'] ?? null)) {
+                    $errors[$locale][] = 'Transparent document-download guidance is required.';
+                }
+                foreach ((array) ($translation['tabs'] ?? []) as $tab) {
+                    if (! is_array($tab)) {
+                        continue;
+                    }
+                    foreach ((array) ($tab['subTabs'] ?? []) as $subTab) {
+                        if (is_array($subTab)) {
+                            $this->appendAdmissionsDownloadError($subTab['download'] ?? null, $locale, 'checklist', $errors);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /** @param array<string, array<int, string>> $errors */
+    private function appendAdmissionsDownloadError(mixed $download, string $locale, string $label, array &$errors): void
+    {
+        if (! is_array($download) || $download === []) {
+            return;
+        }
+
+        $href = $download['href'] ?? null;
+        $mediaId = is_numeric($download['mediaId'] ?? null) ? (int) $download['mediaId'] : 0;
+        $hasHref = $this->filledString($href);
+
+        if (! $hasHref && $mediaId === 0) {
+            return;
+        }
+
+        if (! $hasHref || $href === '#' || $mediaId <= 0 || ! $this->mediaService->publicDocumentsArePublishable([$mediaId])) {
+            $errors[$locale][] = "The {$label} download must reference a reviewed main Media Library document.";
+        }
+    }
+
+    /** @param array<string, mixed> $payload
+     * @param  list<string>  $fields
+     */
+    private function admissionsFieldsAreFilled(array $payload, array $fields): bool
+    {
+        foreach ($fields as $field) {
+            if (! $this->filledString($payload[$field] ?? null)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function isSafeAdmissionsPaymentUrl(mixed $url): bool
+    {
+        return is_string($url)
+            && filter_var($url, FILTER_VALIDATE_URL) !== false
+            && parse_url($url, PHP_URL_SCHEME) === 'https'
+            && ! str_contains(mb_strtolower($url), 'example.');
+    }
+
+    private function containsAdmissionsPlaceholder(mixed $value): bool
+    {
+        if (is_array($value)) {
+            foreach ($value as $item) {
+                if ($this->containsAdmissionsPlaceholder($item)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        if (! is_string($value)) {
+            return false;
+        }
+
+        $normalized = mb_strtolower(trim($value));
+        $known = [
+            '#', 'applications open', 'التقديم مفتوح', 'main national bank', 'المصرف الوطني الرئيسي',
+            'sy12345678901234567890', '$15,000', '$13,500', '$500', '$300', '$250 (lab)', '$350 (materials)',
+            '15 aug 2026', '15 آب 2026', '01 jan 2026', '01 كانون الثاني 2026', '2026/2027',
+            'sept 15, 2026', 'sept 1, 2026', 'jan 10, 2027', 'fall 2026', 'spring 2027',
+            'pdf, 2.4 mb', 'pdf, 1.2 mb', 'pdf, 280 kb', 'pdf, 310 kb', 'pdf, 295 kb', 'pdf, 340 kb',
+        ];
+
+        return in_array($normalized, $known, true)
+            || str_contains($normalized, 'lorem ipsum')
+            || str_contains($normalized, 'placeholder')
+            || str_contains($normalized, 'example.com');
     }
 
     /**
@@ -725,6 +1012,806 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
         return $ids;
     }
 
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<int, string>  $locales
+     * @param  array<string, array<int, string>>  $errors
+     */
+    private function appendResearchCentersReadinessErrors(array $payload, array $locales, array &$errors): void
+    {
+        $localeCenters = [];
+        $localeLaboratories = [];
+
+        foreach ($locales as $locale) {
+            $translation = $this->localePayload($payload, $locale);
+            $hero = is_array($translation['hero'] ?? null) ? $translation['hero'] : [];
+            $intro = is_array($translation['intro'] ?? null) ? $translation['intro'] : [];
+            $laboratories = is_array($translation['laboratories'] ?? null) ? $translation['laboratories'] : [];
+
+            foreach (['title', 'summary', 'primaryCta', 'secondaryCta', 'secondaryCtaUrl', 'backgroundImage'] as $field) {
+                if (! $this->filledString($hero[$field] ?? null)) {
+                    $errors[$locale][] = "The centers hero {$field} field is required.";
+                }
+            }
+
+            if (! $this->isSafeResearchPath($hero['secondaryCtaUrl'] ?? null, $locale)) {
+                $errors[$locale][] = 'The centers secondary call-to-action must use an internal Research URL.';
+            }
+
+            foreach (['title', 'summary'] as $field) {
+                if (! $this->filledString($intro[$field] ?? null)) {
+                    $errors[$locale][] = "The centers introduction {$field} field is required.";
+                }
+            }
+
+            $highlights = is_array($intro['highlights'] ?? null) ? $intro['highlights'] : [];
+            if ($highlights === []) {
+                $errors[$locale][] = 'At least one center highlight is required.';
+            }
+            foreach ($highlights as $highlight) {
+                if (! is_array($highlight) || ! $this->filledString($highlight['title'] ?? null) || ! $this->filledString($highlight['summary'] ?? null) || ! $this->filledString($highlight['icon'] ?? null)) {
+                    $errors[$locale][] = 'Every center highlight requires a title, summary, and icon.';
+                }
+            }
+
+            $items = is_array($translation['items'] ?? null) ? $translation['items'] : [];
+            $centerSignatures = [];
+            $centerIds = [];
+            $centerSlugs = [];
+            if ($items === []) {
+                $errors[$locale][] = 'At least one research center is required.';
+            }
+
+            foreach ($items as $item) {
+                if (! is_array($item)) {
+                    $errors[$locale][] = 'Every research center must be structured content.';
+
+                    continue;
+                }
+
+                foreach (['id', 'slug', 'name', 'mission', 'faculty', 'facultySlug', 'directorName', 'contactEmail', 'image'] as $field) {
+                    if (! $this->filledString($item[$field] ?? null)) {
+                        $errors[$locale][] = "Every research center requires {$field}.";
+                    }
+                }
+
+                $id = trim((string) ($item['id'] ?? ''));
+                $slug = trim((string) ($item['slug'] ?? ''));
+                $facultySlug = trim((string) ($item['facultySlug'] ?? ''));
+                $centerIds[] = $id;
+                $centerSlugs[] = $slug;
+                $centerSignatures[] = [
+                    'id' => $id,
+                    'slug' => $slug,
+                    'facultySlug' => $facultySlug,
+                    'publicationSlugs' => $this->readinessStringList($item['publicationSlugs'] ?? []),
+                    'projectSlugs' => $this->readinessStringList($item['projectSlugs'] ?? []),
+                    'researcherSlugs' => $this->readinessStringList($item['researcherSlugs'] ?? []),
+                ];
+
+                if ($slug !== '' && preg_match('~^[a-z0-9]+(?:-[a-z0-9]+)*$~', $slug) !== 1) {
+                    $errors[$locale][] = 'Research center slugs must use lowercase letters, numbers, and hyphens only.';
+                }
+                if (! in_array($facultySlug, ['medicine', 'dentistry', 'pharmacy', 'artificial-intelligence', 'building-construction-engineering', 'petroleum', 'business-administration'], true)) {
+                    $errors[$locale][] = 'Every research center requires a valid faculty slug.';
+                }
+                if (filter_var($item['contactEmail'] ?? null, FILTER_VALIDATE_EMAIL) === false) {
+                    $errors[$locale][] = 'Every research center requires a valid contact email.';
+                }
+                if ($this->filledString($item['externalWebsite'] ?? null) && ! $this->isSafeHttpsUrl($item['externalWebsite'])) {
+                    $errors[$locale][] = 'Research center websites must use safe public HTTPS URLs.';
+                }
+                foreach (['labs', 'researchers', 'projects', 'publications'] as $field) {
+                    if (! is_numeric($item[$field] ?? null) || (int) $item[$field] < 0) {
+                        $errors[$locale][] = "Research center {$field} must be a non-negative number.";
+                    }
+                }
+            }
+
+            if (count(array_unique($centerIds)) !== count($centerIds) || count(array_unique($centerSlugs)) !== count($centerSlugs)) {
+                $errors[$locale][] = 'Research center IDs and slugs must be unique.';
+            }
+
+            if (! $this->filledString($laboratories['title'] ?? null)) {
+                $errors[$locale][] = 'The research laboratories title is required.';
+            }
+            $laboratoryItems = is_array($laboratories['items'] ?? null) ? $laboratories['items'] : [];
+            $laboratorySignatures = [];
+            $laboratoryIds = [];
+            foreach ($laboratoryItems as $laboratory) {
+                if (! is_array($laboratory)) {
+                    $errors[$locale][] = 'Every research laboratory must be structured content.';
+
+                    continue;
+                }
+                foreach (['id', 'slug', 'title', 'faculty', 'summary', 'director', 'projects', 'publications', 'contact', 'cta', 'image'] as $field) {
+                    if (! $this->filledString($laboratory[$field] ?? null)) {
+                        $errors[$locale][] = "Every research laboratory requires {$field}.";
+                    }
+                }
+
+                $laboratoryId = trim((string) ($laboratory['id'] ?? ''));
+                $laboratorySlug = trim((string) ($laboratory['slug'] ?? ''));
+                $laboratoryIds[] = $laboratoryId;
+                $laboratorySignatures[] = ['id' => $laboratoryId, 'slug' => $laboratorySlug];
+                if ($laboratorySlug !== '' && ! in_array($laboratorySlug, $centerSlugs, true)) {
+                    $errors[$locale][] = 'Every research laboratory must link to a published center slug.';
+                }
+            }
+            if ($laboratoryItems === []) {
+                $errors[$locale][] = 'At least one research laboratory is required.';
+            } elseif (count(array_unique($laboratoryIds)) !== count($laboratoryIds)) {
+                $errors[$locale][] = 'Research laboratory IDs must be unique.';
+            }
+
+            $localeCenters[$locale] = $centerSignatures;
+            $localeLaboratories[$locale] = $laboratorySignatures;
+        }
+
+        if (count($localeCenters) === count($locales) && count(array_unique(array_map('serialize', $localeCenters))) !== 1) {
+            $errors['centers'][] = 'Center IDs, slugs, faculty assignments, and relationships must match across locales.';
+        }
+        if (count($localeLaboratories) === count($locales) && count(array_unique(array_map('serialize', $localeLaboratories))) !== 1) {
+            $errors['centers'][] = 'Laboratory IDs and linked center slugs must match across locales.';
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<int, string>  $locales
+     * @param  array<string, array<int, string>>  $errors
+     */
+    private function appendResearchProjectsReadinessErrors(array $payload, array $locales, array &$errors): void
+    {
+        $localeSignatures = [];
+
+        foreach ($locales as $locale) {
+            $translation = $this->localePayload($payload, $locale);
+            $hero = is_array($translation['hero'] ?? null) ? $translation['hero'] : [];
+            $filters = is_array($translation['filters'] ?? null) ? $translation['filters'] : [];
+            $cardLabels = is_array($translation['cardLabels'] ?? null) ? $translation['cardLabels'] : [];
+
+            foreach (['eyebrow', 'title', 'summary', 'backgroundImage'] as $field) {
+                if (! $this->filledString($hero[$field] ?? null)) {
+                    $errors[$locale][] = "The projects hero {$field} field is required.";
+                }
+            }
+            if ($this->filledString($hero['backgroundImage'] ?? null) && ! $this->isSafePublicAsset($hero['backgroundImage'])) {
+                $errors[$locale][] = 'The projects hero image must use a safe internal or HTTPS URL.';
+            }
+            $this->appendResearchBreadcrumbErrors($hero, 'projects', $locale, $errors);
+
+            foreach (['statusLabel', 'facultyLabel', 'themeLabel', 'searchPlaceholder'] as $field) {
+                if (! $this->filledString($filters[$field] ?? null)) {
+                    $errors[$locale][] = "The project filters {$field} field is required.";
+                }
+            }
+            foreach (['viewProject', 'since'] as $field) {
+                if (! $this->filledString($cardLabels[$field] ?? null)) {
+                    $errors[$locale][] = "The project card {$field} label is required.";
+                }
+            }
+
+            $filterValues = [];
+            foreach (['statuses', 'faculties', 'themes'] as $group) {
+                $options = is_array($filters[$group] ?? null) ? $filters[$group] : [];
+                if ($options === []) {
+                    $errors[$locale][] = "At least one project {$group} filter is required.";
+                }
+                $filterValues[$group] = [];
+                foreach ($options as $option) {
+                    if (! is_array($option) || ! $this->filledString($option['label'] ?? null)) {
+                        $errors[$locale][] = "Every project {$group} filter requires a label.";
+
+                        continue;
+                    }
+                    $value = trim((string) ($option['value'] ?? ''));
+                    $filterValues[$group][] = $value;
+                    if ($value !== '' && ! $this->isValidResearchRelation($group, $value)) {
+                        $errors[$locale][] = "The project {$group} filter contains an invalid value.";
+                    }
+                }
+                if (count(array_unique($filterValues[$group])) !== count($filterValues[$group])) {
+                    $errors[$locale][] = "Project {$group} filter values must be unique.";
+                }
+            }
+
+            $items = is_array($translation['items'] ?? null) ? $translation['items'] : [];
+            if ($items === []) {
+                $errors[$locale][] = 'At least one research project is required.';
+            }
+            $ids = [];
+            $slugs = [];
+            $signatures = [];
+            foreach ($items as $item) {
+                if (! is_array($item)) {
+                    $errors[$locale][] = 'Every research project must be structured content.';
+
+                    continue;
+                }
+                foreach (['id', 'slug', 'title', 'summary', 'faculty', 'facultySlug', 'theme', 'themeSlug', 'status', 'startYear', 'funding', 'image'] as $field) {
+                    if (! $this->filledString($item[$field] ?? null)) {
+                        $errors[$locale][] = "Every research project requires {$field}.";
+                    }
+                }
+
+                $id = trim((string) ($item['id'] ?? ''));
+                $slug = trim((string) ($item['slug'] ?? ''));
+                $facultySlug = trim((string) ($item['facultySlug'] ?? ''));
+                $themeSlug = trim((string) ($item['themeSlug'] ?? ''));
+                $status = trim((string) ($item['status'] ?? ''));
+                $startYear = trim((string) ($item['startYear'] ?? ''));
+                $endYear = trim((string) ($item['endYear'] ?? ''));
+                $ids[] = $id;
+                $slugs[] = $slug;
+                $signatures[] = compact('id', 'slug', 'facultySlug', 'themeSlug', 'status', 'startYear', 'endYear');
+
+                foreach (['ID' => $id, 'slug' => $slug] as $label => $value) {
+                    if ($value !== '' && preg_match('~^[a-z0-9]+(?:-[a-z0-9]+)*$~', $value) !== 1) {
+                        $errors[$locale][] = "Research project {$label}s must use lowercase letters, numbers, and hyphens only.";
+                    }
+                }
+                if (! in_array($facultySlug, self::RESEARCH_FACULTY_SLUGS, true)) {
+                    $errors[$locale][] = 'Every research project requires a valid faculty slug.';
+                }
+                if (! in_array($themeSlug, self::RESEARCH_THEME_SLUGS, true)) {
+                    $errors[$locale][] = 'Every research project must reference an approved research theme.';
+                }
+                if (! in_array($status, ['ongoing', 'completed', 'paused'], true)) {
+                    $errors[$locale][] = 'Every research project requires a valid status.';
+                }
+                if (preg_match('~^(?:19|20|21)\d{2}$~', $startYear) !== 1 || ($endYear !== '' && (preg_match('~^(?:19|20|21)\d{2}$~', $endYear) !== 1 || (int) $endYear < (int) $startYear))) {
+                    $errors[$locale][] = 'Research project years must be valid and the end year cannot precede the start year.';
+                }
+                if ($this->filledString($item['image'] ?? null) && ! $this->isSafePublicAsset($item['image'])) {
+                    $errors[$locale][] = 'Research project images must use safe internal or HTTPS URLs.';
+                }
+            }
+            if (count(array_unique($ids)) !== count($ids) || count(array_unique($slugs)) !== count($slugs)) {
+                $errors[$locale][] = 'Research project IDs and slugs must be unique.';
+            }
+
+            $localeSignatures[$locale] = ['filters' => $filterValues, 'items' => $signatures];
+        }
+
+        if (count($localeSignatures) === count($locales) && count(array_unique(array_map('serialize', $localeSignatures))) !== 1) {
+            $errors['projects'][] = 'Project IDs, slugs, filters, statuses, faculty assignments, themes, and years must match across locales.';
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<int, string>  $locales
+     * @param  array<string, array<int, string>>  $errors
+     */
+    private function appendResearchThemesReadinessErrors(array $payload, array $locales, array &$errors): void
+    {
+        $localeSignatures = [];
+
+        foreach ($locales as $locale) {
+            $translation = $this->localePayload($payload, $locale);
+            $hero = is_array($translation['hero'] ?? null) ? $translation['hero'] : [];
+            foreach (['eyebrow', 'title', 'summary', 'backgroundImage'] as $field) {
+                if (! $this->filledString($hero[$field] ?? null)) {
+                    $errors[$locale][] = "The themes hero {$field} field is required.";
+                }
+            }
+            if ($this->filledString($hero['backgroundImage'] ?? null) && ! $this->isSafePublicAsset($hero['backgroundImage'])) {
+                $errors[$locale][] = 'The themes hero image must use a safe internal or HTTPS URL.';
+            }
+            $this->appendResearchBreadcrumbErrors($hero, 'themes', $locale, $errors);
+
+            $items = is_array($translation['items'] ?? null) ? $translation['items'] : [];
+            if ($items === []) {
+                $errors[$locale][] = 'At least one research theme is required.';
+            }
+            $ids = [];
+            $slugs = [];
+            $signatures = [];
+            foreach ($items as $item) {
+                if (! is_array($item)) {
+                    $errors[$locale][] = 'Every research theme must be structured content.';
+
+                    continue;
+                }
+                foreach (['id', 'slug', 'name', 'description', 'icon'] as $field) {
+                    if (! $this->filledString($item[$field] ?? null)) {
+                        $errors[$locale][] = "Every research theme requires {$field}.";
+                    }
+                }
+                $id = trim((string) ($item['id'] ?? ''));
+                $slug = trim((string) ($item['slug'] ?? ''));
+                $publicationCount = $item['publicationCount'] ?? null;
+                $projectCount = $item['projectCount'] ?? null;
+                $ids[] = $id;
+                $slugs[] = $slug;
+                $signatures[] = compact('id', 'slug', 'publicationCount', 'projectCount');
+
+                foreach (['ID' => $id, 'slug' => $slug] as $label => $value) {
+                    if ($value !== '' && preg_match('~^[a-z0-9]+(?:-[a-z0-9]+)*$~', $value) !== 1) {
+                        $errors[$locale][] = "Research theme {$label}s must use lowercase letters, numbers, and hyphens only.";
+                    }
+                }
+                if ($slug !== '' && ! in_array($slug, self::RESEARCH_THEME_SLUGS, true)) {
+                    $errors[$locale][] = 'Research theme slugs must identify an approved theme.';
+                }
+                if (! is_numeric($publicationCount) || (int) $publicationCount < 0 || ! is_numeric($projectCount) || (int) $projectCount < 0) {
+                    $errors[$locale][] = 'Research theme publication and project counts must be non-negative numbers.';
+                }
+                if ($this->filledString($item['icon'] ?? null) && ! $this->isSafePublicAsset($item['icon'])) {
+                    $errors[$locale][] = 'Research theme icons must use safe internal or HTTPS URLs.';
+                }
+            }
+            if (count(array_unique($ids)) !== count($ids) || count(array_unique($slugs)) !== count($slugs)) {
+                $errors[$locale][] = 'Research theme IDs and slugs must be unique.';
+            }
+
+            $localeSignatures[$locale] = $signatures;
+        }
+
+        if (count($localeSignatures) === count($locales) && count(array_unique(array_map('serialize', $localeSignatures))) !== 1) {
+            $errors['themes'][] = 'Theme IDs, slugs, and catalog counts must match across locales.';
+        }
+    }
+
+    private function isValidResearchRelation(string $group, string $value): bool
+    {
+        return match ($group) {
+            'statuses' => in_array($value, ['ongoing', 'completed', 'paused'], true),
+            'faculties' => in_array($value, self::RESEARCH_FACULTY_SLUGS, true),
+            'themes' => in_array($value, self::RESEARCH_THEME_SLUGS, true),
+            default => false,
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<int, string>  $locales
+     * @param  array<string, array<int, string>>  $errors
+     */
+    private function appendCampusLifeJobsReadinessErrors(array $payload, array $locales, array &$errors): void
+    {
+        $localeSignatures = [];
+
+        foreach ($locales as $locale) {
+            $translation = $this->localePayload($payload, $locale);
+            $hero = is_array($translation['hero'] ?? null) ? $translation['hero'] : [];
+
+            foreach (['title', 'summary', 'image'] as $field) {
+                if (! $this->filledString($hero[$field] ?? null)) {
+                    $errors[$locale][] = "The jobs hero {$field} field is required.";
+                }
+            }
+
+            if ($this->filledString($hero['image'] ?? null) && ! $this->isSafePublicAsset($hero['image'])) {
+                $errors[$locale][] = 'The jobs hero image must use a safe internal or HTTPS URL.';
+            }
+
+            $filterIds = [];
+            foreach (['categories', 'types'] as $group) {
+                $options = is_array($translation[$group] ?? null) ? $translation[$group] : [];
+                if ($options === []) {
+                    $errors[$locale][] = "At least one jobs {$group} option is required.";
+                }
+
+                $filterIds[$group] = [];
+                foreach ($options as $option) {
+                    if (! is_array($option) || ! $this->filledString($option['id'] ?? null) || ! $this->filledString($option['label'] ?? null)) {
+                        $errors[$locale][] = "Every jobs {$group} option requires an ID and label.";
+
+                        continue;
+                    }
+
+                    $optionId = trim((string) $option['id']);
+                    $filterIds[$group][] = $optionId;
+                    if (preg_match('~^[a-z0-9]+(?:-[a-z0-9]+)*$~', $optionId) !== 1) {
+                        $errors[$locale][] = "Jobs {$group} IDs must use lowercase letters, numbers, and hyphens only.";
+                    }
+                }
+
+                if (count(array_unique($filterIds[$group])) !== count($filterIds[$group])) {
+                    $errors[$locale][] = "Jobs {$group} IDs must be unique.";
+                }
+            }
+
+            $labels = is_array($translation['labels'] ?? null) ? $translation['labels'] : [];
+            foreach (['category', 'type', 'search', 'searchAction', 'showing', 'positions', 'of', 'previous', 'next', 'reset', 'noResults', 'learnMore', 'apply', 'applicationsClosed', 'postedOn', 'closesOn', 'status', 'openStatus', 'closedStatus', 'share', 'copyLink', 'copied', 'related', 'overview', 'responsibilities', 'requirements', 'benefits', 'back'] as $label) {
+                if (! $this->filledString($labels[$label] ?? null)) {
+                    $errors[$locale][] = "The jobs {$label} label is required.";
+                }
+            }
+
+            $items = is_array($translation['jobs'] ?? null) ? $translation['jobs'] : [];
+            if ($items === []) {
+                $errors[$locale][] = 'At least one job is required.';
+            }
+
+            $ids = [];
+            $slugs = [];
+            $signatures = [];
+
+            foreach ($items as $item) {
+                if (! is_array($item)) {
+                    $errors[$locale][] = 'Every job must be structured content.';
+
+                    continue;
+                }
+
+                foreach (['id', 'slug', 'category', 'type', 'status', 'title', 'department', 'location', 'shortDescription', 'postedDate', 'closeDate', 'image'] as $field) {
+                    if (! $this->filledString($item[$field] ?? null)) {
+                        $errors[$locale][] = "Every job requires {$field}.";
+                    }
+                }
+
+                foreach (['overview', 'responsibilities', 'requirements', 'benefits'] as $field) {
+                    if ($this->readinessStringList($item[$field] ?? []) === []) {
+                        $errors[$locale][] = "Every job requires localized {$field}.";
+                    }
+                }
+
+                $id = trim((string) ($item['id'] ?? ''));
+                $slug = trim((string) ($item['slug'] ?? ''));
+                $category = trim((string) ($item['category'] ?? ''));
+                $type = trim((string) ($item['type'] ?? ''));
+                $status = trim((string) ($item['status'] ?? ''));
+                $postedDate = trim((string) ($item['postedDate'] ?? ''));
+                $closeDate = trim((string) ($item['closeDate'] ?? ''));
+                $applicationEligible = $item['applicationEligible'] ?? null;
+                $image = trim((string) ($item['image'] ?? ''));
+                $ids[] = $id;
+                $slugs[] = $slug;
+                $signatures[] = compact('id', 'slug', 'category', 'type', 'status', 'postedDate', 'closeDate', 'applicationEligible', 'image');
+
+                foreach (['ID' => $id, 'slug' => $slug] as $label => $value) {
+                    if ($value !== '' && preg_match('~^[a-z0-9]+(?:-[a-z0-9]+)*$~', $value) !== 1) {
+                        $errors[$locale][] = "Job {$label}s must use lowercase letters, numbers, and hyphens only.";
+                    }
+                }
+
+                if (! in_array($status, ['open', 'closed'], true)) {
+                    $errors[$locale][] = 'Every job requires an open or closed status.';
+                }
+
+                if ($category !== '' && ! in_array($category, $filterIds['categories'] ?? [], true)) {
+                    $errors[$locale][] = 'Every job category must reference a configured category filter.';
+                }
+
+                if ($type !== '' && ! in_array($type, $filterIds['types'] ?? [], true)) {
+                    $errors[$locale][] = 'Every job type must reference a configured type filter.';
+                }
+
+                if (! is_bool($applicationEligible)) {
+                    $errors[$locale][] = 'Every job application eligibility value must be true or false.';
+                }
+
+                $postedTimestamp = \DateTimeImmutable::createFromFormat('!Y-m-d', $postedDate);
+                $closeTimestamp = \DateTimeImmutable::createFromFormat('!Y-m-d', $closeDate);
+                if (! $postedTimestamp instanceof \DateTimeImmutable || $postedTimestamp->format('Y-m-d') !== $postedDate
+                    || ! $closeTimestamp instanceof \DateTimeImmutable || $closeTimestamp->format('Y-m-d') !== $closeDate
+                    || $closeTimestamp < $postedTimestamp) {
+                    $errors[$locale][] = 'Job dates must be valid and the close date cannot precede the posted date.';
+                }
+
+                if ($image !== '' && ! $this->isSafePublicAsset($image)) {
+                    $errors[$locale][] = 'Job images must use safe internal or HTTPS URLs.';
+                }
+            }
+
+            if (count(array_unique($ids)) !== count($ids) || count(array_unique($slugs)) !== count($slugs)) {
+                $errors[$locale][] = 'Job IDs and slugs must be unique.';
+            }
+
+            $localeSignatures[$locale] = ['filters' => $filterIds, 'jobs' => $signatures];
+        }
+
+        if (count($localeSignatures) === count($locales) && count(array_unique(array_map('serialize', $localeSignatures))) !== 1) {
+            $errors['jobs'][] = 'Job IDs, slugs, categories, types, statuses, dates, images, and application eligibility must match across locales.';
+        }
+    }
+
+    /** @param array<int, string> $locales @param array<string, array<int, string>> $errors */
+    private function appendCampusLifeLandingReadinessErrors(array $payload, array $locales, array &$errors): void
+    {
+        foreach ($locales as $locale) {
+            $translation = $this->localePayload($payload, $locale);
+            $portals = is_array($translation['portals'] ?? null) ? $translation['portals'] : [];
+
+            if ($portals === [] && ! $this->filledString($translation['portalGuidance'] ?? null)) {
+                $errors[$locale][] = 'Transparent portal availability guidance is required when no verified destinations are published.';
+            }
+
+            $controlGroups = [
+                ['items' => $translation['hero']['quickLinks'] ?? [], 'url' => 'href'],
+                ['items' => $translation['services'] ?? [], 'url' => 'href'],
+                ['items' => $portals, 'url' => 'url'],
+            ];
+            foreach ($controlGroups as $group) {
+                foreach (is_array($group['items']) ? $group['items'] : [] as $item) {
+                    $url = is_array($item) ? ($item[$group['url']] ?? null) : null;
+                    if (! $this->isSafeCampusDestination($url, $locale)) {
+                        $errors[$locale][] = 'Campus Life controls must use a verified localized public destination and cannot use inert URLs.';
+                    }
+                }
+            }
+
+            foreach (is_array($translation['stats'] ?? null) ? $translation['stats'] : [] as $stat) {
+                if (! is_array($stat) || ! ($stat['verified'] ?? false)) {
+                    $errors[$locale][] = 'Campus Life figures must be explicitly marked as verified or removed.';
+                }
+            }
+        }
+    }
+
+    /** @param array<int, string> $locales @param array<string, array<int, string>> $errors */
+    private function appendSuggestionsComplaintsReadinessErrors(array $payload, array $locales, array &$errors): void
+    {
+        $expectedTypes = ['complaint', 'inquiry', 'suggestion'];
+
+        foreach ($locales as $locale) {
+            $translation = $this->localePayload($payload, $locale);
+            $hero = is_array($translation['hero'] ?? null) ? $translation['hero'] : [];
+            $form = is_array($translation['form'] ?? null) ? $translation['form'] : [];
+            $seo = is_array($translation['seo'] ?? null) ? $translation['seo'] : [];
+
+            foreach (['eyebrow', 'title', 'summary', 'image'] as $field) {
+                if (! $this->filledString($hero[$field] ?? null)) {
+                    $errors[$locale][] = "The suggestions hero {$field} field is required.";
+                }
+            }
+            foreach (['title', 'infoTitle', 'infoBody', 'consentLabel', 'attachmentHelp'] as $field) {
+                if (! $this->filledString($form[$field] ?? null)) {
+                    $errors[$locale][] = "The suggestions form {$field} field is required.";
+                }
+            }
+            foreach (['title', 'description', 'image'] as $field) {
+                if (! $this->filledString($seo[$field] ?? null)) {
+                    $errors[$locale][] = "The suggestions SEO {$field} field is required.";
+                }
+            }
+
+            $types = collect(is_array($form['requestTypes'] ?? null) ? $form['requestTypes'] : [])
+                ->filter(fn (mixed $item): bool => is_array($item))->pluck('value')->sort()->values()->all();
+            if ($types !== $expectedTypes) {
+                $errors[$locale][] = 'Suggestion, complaint, and inquiry request types must each be configured exactly once.';
+            }
+            if (! $this->isSafePublicAsset($hero['image'] ?? null) || ! $this->isSafePublicAsset($seo['image'] ?? null)) {
+                $errors[$locale][] = 'Suggestions page images must use safe public assets.';
+            }
+        }
+    }
+
+    private function isSafeCampusDestination(mixed $url, string $locale): bool
+    {
+        return is_string($url)
+            && $url !== ''
+            && $url !== '#'
+            && ! str_starts_with($url, '//')
+            && preg_match('~^/'.preg_quote($locale, '~').'/(?:campus-life|e-services|admissions|contact|facilities|virtual-tour)(?:[/?#]|$)~', $url) === 1;
+    }
+
+    /** @param array<int, string> $locales @param array<string, array<int, string>> $errors */
+    private function appendVirtualTourReadinessErrors(array $payload, array $locales, array &$errors): void
+    {
+        $localeSceneIds = [];
+
+        foreach ($locales as $locale) {
+            $translation = $this->localePayload($payload, $locale);
+            $hero = is_array($translation['hero'] ?? null) ? $translation['hero'] : [];
+            $tour = is_array($translation['tour'] ?? null) ? $translation['tour'] : [];
+            $seo = is_array($translation['seo'] ?? null) ? $translation['seo'] : [];
+            $scenes = is_array($tour['scenes'] ?? null) ? $tour['scenes'] : [];
+
+            foreach (['eyebrow', 'title', 'summary', 'image', 'imageAlt', 'primaryLabel', 'primaryUrl', 'secondaryLabel', 'secondaryUrl'] as $field) {
+                if (! $this->filledString($hero[$field] ?? null)) {
+                    $errors[$locale][] = "The virtual tour hero {$field} field is required.";
+                }
+            }
+            foreach (['primaryUrl', 'secondaryUrl'] as $field) {
+                if (! is_string($hero[$field] ?? null) || preg_match('~^/'.preg_quote($locale, '~').'/virtual-tour(?:[?#]|$)~', $hero[$field]) !== 1) {
+                    $errors[$locale][] = 'Virtual tour hero actions must target a real section on the localized tour page.';
+                }
+            }
+            foreach (['eyebrow', 'title', 'summary', 'experienceLabel', 'controlLabel', 'fullscreenLabel', 'exitFullscreenLabel', 'playLabel', 'pauseLabel', 'zoomInLabel', 'zoomOutLabel', 'resetLabel', 'previousLabel', 'nextLabel'] as $field) {
+                if (! $this->filledString($tour[$field] ?? null)) {
+                    $errors[$locale][] = "The virtual tour {$field} field is required.";
+                }
+            }
+            if (! is_numeric($tour['autoplayInterval'] ?? null) || (int) $tour['autoplayInterval'] < 3000 || (int) $tour['autoplayInterval'] > 20000) {
+                $errors[$locale][] = 'Virtual tour autoplay must be between 3 and 20 seconds.';
+            }
+            if ($scenes === []) {
+                $errors[$locale][] = 'At least one virtual tour photo scene is required.';
+            }
+
+            $sceneIds = [];
+            foreach ($scenes as $scene) {
+                if (! is_array($scene)) {
+                    $errors[$locale][] = 'Every virtual tour scene must be structured content.';
+
+                    continue;
+                }
+                foreach (['id', 'title', 'summary', 'image', 'imageAlt'] as $field) {
+                    if (! $this->filledString($scene[$field] ?? null)) {
+                        $errors[$locale][] = "Every virtual tour scene requires {$field}.";
+                    }
+                }
+                $sceneId = trim((string) ($scene['id'] ?? ''));
+                $sceneIds[] = $sceneId;
+                if (preg_match('~^[a-z0-9]+(?:-[a-z0-9]+)*$~', $sceneId) !== 1) {
+                    $errors[$locale][] = 'Virtual tour scene IDs must use lowercase letters, numbers, and hyphens.';
+                }
+                if (! $this->isReviewedVirtualTourImage($scene)) {
+                    $errors[$locale][] = 'Every virtual tour scene must use an existing approved image or reviewed Media Library image.';
+                }
+                foreach (is_array($scene['hotspots'] ?? null) ? $scene['hotspots'] : [] as $hotspot) {
+                    if (! is_array($hotspot) || ! $this->filledString($hotspot['id'] ?? null) || ! $this->filledString($hotspot['label'] ?? null) || ! $this->filledString($hotspot['description'] ?? null)
+                        || ! is_numeric($hotspot['x'] ?? null) || (float) $hotspot['x'] < 0 || (float) $hotspot['x'] > 100
+                        || ! is_numeric($hotspot['y'] ?? null) || (float) $hotspot['y'] < 0 || (float) $hotspot['y'] > 100) {
+                        $errors[$locale][] = 'Every hotspot requires an ID, label, description, and coordinates from 0 to 100.';
+                    }
+                }
+            }
+            if (count(array_unique($sceneIds)) !== count($sceneIds)) {
+                $errors[$locale][] = 'Virtual tour scene IDs must be unique.';
+            }
+            foreach ($scenes as $scene) {
+                foreach (is_array($scene['hotspots'] ?? null) ? $scene['hotspots'] : [] as $hotspot) {
+                    $targetSceneId = is_array($hotspot) ? trim((string) ($hotspot['targetSceneId'] ?? '')) : '';
+                    if ($targetSceneId !== '' && ! in_array($targetSceneId, $sceneIds, true)) {
+                        $errors[$locale][] = 'Hotspot target scene IDs must reference a configured scene.';
+                    }
+                }
+            }
+            $localeSceneIds[$locale] = $sceneIds;
+
+            $serialized = mb_strtolower((string) json_encode($translation, JSON_UNESCAPED_UNICODE));
+            if (str_contains($serialized, '360') || str_contains($serialized, 'بانوراما')) {
+                $errors[$locale][] = 'Flat campus photographs cannot be described as 360-degree panoramas.';
+            }
+            foreach (['title', 'description', 'image'] as $field) {
+                if (! $this->filledString($seo[$field] ?? null)) {
+                    $errors[$locale][] = "The virtual tour SEO {$field} field is required.";
+                }
+            }
+            foreach (['highlights', 'facilities'] as $group) {
+                foreach (is_array($translation[$group]['items'] ?? null) ? $translation[$group]['items'] : [] as $item) {
+                    if (! is_array($item) || ! $this->isSafeCampusDestination($item['href'] ?? null, $locale)) {
+                        $errors[$locale][] = 'Virtual tour cards must use verified localized public destinations.';
+                    }
+                }
+            }
+        }
+
+        if (count($localeSceneIds) === count($locales) && count(array_unique(array_map('serialize', $localeSceneIds))) !== 1) {
+            $errors['scenes'][] = 'Virtual tour scene IDs and order must match across locales.';
+        }
+    }
+
+    /** @param array<string, mixed> $scene */
+    private function isReviewedVirtualTourImage(array $scene): bool
+    {
+        $image = $scene['image'] ?? null;
+        $mediaId = is_numeric($scene['imageMediaId'] ?? null) ? (int) $scene['imageMediaId'] : 0;
+
+        if ($mediaId > 0) {
+            return $this->mediaService->publicImagesArePublishable([$mediaId]);
+        }
+
+        return is_string($image)
+            && str_starts_with($image, '/images/')
+            && is_file(public_path(ltrim($image, '/')));
+    }
+
+    /** @param array<int, string> $locales @param array<string, array<int, string>> $errors */
+    private function appendNewsArticlesReadinessErrors(array $payload, array $locales, array &$errors): void
+    {
+        foreach ($locales as $locale) {
+            $translation = $this->localePayload($payload, $locale);
+            foreach (['title', 'summary', 'heroImage', 'allLabel', 'searchLabel', 'searchPlaceholder', 'searchAction', 'readMoreLabel', 'emptyLabel', 'previousLabel', 'nextLabel', 'seoTitle', 'seoDescription', 'seoImage'] as $field) {
+                if (! $this->filledString($translation[$field] ?? null)) {
+                    $errors[$locale][] = "The News Articles shell {$field} field is required.";
+                }
+            }
+            if (! $this->isSafePublicAsset($translation['heroImage'] ?? null) || ! $this->isSafePublicAsset($translation['seoImage'] ?? null)) {
+                $errors[$locale][] = 'News Articles shell images must use safe public assets.';
+            }
+        }
+    }
+
+    /** @param array<int, string> $locales @param array<string, array<int, string>> $errors */
+    private function appendPharmacyTrainingReadinessErrors(array $payload, array $locales, array &$errors): void
+    {
+        foreach ($locales as $locale) {
+            $translation = $this->localePayload($payload, $locale);
+            $training = is_array($translation['payload'] ?? null) ? $translation['payload'] : [];
+            $hero = is_array($training['hero'] ?? null) ? $training['hero'] : [];
+            $programme = is_array($training['programme'] ?? null) ? $training['programme'] : [];
+            $partners = is_array($training['partners'] ?? null) ? $training['partners'] : [];
+
+            foreach (['eyebrow', 'title', 'summary', 'image'] as $field) {
+                if (! $this->filledString($hero[$field] ?? null)) {
+                    $errors[$locale][] = "The training hero {$field} field is required.";
+                }
+            }
+            if (! $this->isSafePublicAsset($hero['image'] ?? null)) {
+                $errors[$locale][] = 'The training hero must use a safe public image.';
+            }
+            if (! $this->filledString($programme['title'] ?? null) || ! is_array($programme['steps'] ?? null) || $programme['steps'] === []) {
+                $errors[$locale][] = 'The training programme requires a title and at least one structured step.';
+            }
+            if (! is_array($training['introCards'] ?? null) || $training['introCards'] === []) {
+                $errors[$locale][] = 'At least one training introduction card is required.';
+            }
+            foreach (is_array($partners['items'] ?? null) ? $partners['items'] : [] as $item) {
+                $href = is_array($item) ? ($item['href'] ?? null) : null;
+                if (! is_string($href) || preg_match('~^/(?:'.preg_quote($locale, '~').'/)?(?:facilities/pharmacy|campus-life)(?:[/?#]|$)~', $href) !== 1) {
+                    $errors[$locale][] = 'Training destinations must use an existing Pharmacy or Campus Life route.';
+                }
+            }
+            foreach (is_array($training['facts'] ?? null) ? $training['facts'] : [] as $fact) {
+                if (! is_array($fact) || ! ($fact['verified'] ?? false)) {
+                    $errors[$locale][] = 'Training facts must be explicitly verified or removed.';
+                }
+            }
+            foreach (['seoTitle', 'seoDescription', 'seoImage'] as $field) {
+                if (! $this->filledString($translation[$field] ?? null)) {
+                    $errors[$locale][] = "The training {$field} field is required.";
+                }
+            }
+        }
+    }
+
+    private function isSafePublicAsset(mixed $url): bool
+    {
+        if (! is_string($url) || trim($url) === '' || str_starts_with($url, '//')) {
+            return false;
+        }
+
+        return str_starts_with($url, '/') || $this->isSafeHttpsUrl($url);
+    }
+
+    /**
+     * @param  array<string, mixed>  $hero
+     * @param  array<string, array<int, string>>  $errors
+     */
+    private function appendResearchBreadcrumbErrors(array $hero, string $catalog, string $locale, array &$errors): void
+    {
+        $breadcrumbs = is_array($hero['breadcrumbs'] ?? null) ? $hero['breadcrumbs'] : [];
+        if ($breadcrumbs === []) {
+            $errors[$locale][] = "At least one {$catalog} breadcrumb is required.";
+        }
+
+        foreach ($breadcrumbs as $breadcrumb) {
+            $url = is_array($breadcrumb) ? ($breadcrumb['url'] ?? null) : null;
+            if (! is_array($breadcrumb) || ! $this->filledString($breadcrumb['label'] ?? null) || ! $this->isSafeResearchCatalogPath($url)) {
+                $errors[$locale][] = "Every {$catalog} breadcrumb requires a label and safe internal Research URL.";
+            }
+        }
+    }
+
+    private function isSafeResearchCatalogPath(mixed $url): bool
+    {
+        return is_string($url)
+            && ! str_starts_with($url, '//')
+            && preg_match('~^/(?:$|(?:(?:ar|en)/)?research(?:[/?#].*)?$)~', $url) === 1;
+    }
+
+    /** @return array<int, string> */
+    private function readinessStringList(mixed $items): array
+    {
+        return array_values(array_map(
+            static fn (mixed $item): string => trim((string) $item),
+            array_filter(is_array($items) ? $items : [], static fn (mixed $item): bool => is_scalar($item) && trim((string) $item) !== ''),
+        ));
+    }
+
+    private function isSafeResearchPath(mixed $url, string $locale): bool
+    {
+        return is_string($url)
+            && ! str_starts_with($url, '//')
+            && preg_match('~^/(?:'.preg_quote($locale, '~').'/)?research(?:[/?#]|$)~', $url) === 1;
+    }
+
     private function isSafeHttpsUrl(mixed $url): bool
     {
         if (! is_string($url) || filter_var($url, FILTER_VALIDATE_URL) === false) {
@@ -750,7 +1837,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
     /** @param array<string, mixed> $payload */
     private function hasBodyLikeContent(array $payload): bool
     {
-        foreach (['body', 'content', 'description', 'summary', 'excerpt', 'subheadline', 'role', 'position'] as $key) {
+        foreach (['body', 'content', 'description', 'summary', 'excerpt', 'subheadline', 'role', 'position', 'intro', 'availabilityGuidance', 'paymentGuidance', 'scheduleGuidance', 'downloadGuidance', 'applicationGuidance'] as $key) {
             if ($this->filledString($payload[$key] ?? null)) {
                 return true;
             }

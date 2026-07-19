@@ -44,6 +44,7 @@ class ManageDentistryFaculty extends Page implements HasForms
             'facilities.dentistry.study_plan' => 'Study Plan',
             'facilities.dentistry.labs' => 'Labs',
             'facilities.dentistry.projects' => 'Projects',
+            'facilities.dentistry.research' => __('admin.cms.targets.facilities.research'),
             'facilities.dentistry.alumni' => 'Alumni',
             'facilities.dentistry.valedictorians' => 'Valedictorians',
         ];
@@ -52,5 +53,10 @@ class ManageDentistryFaculty extends Page implements HasForms
     protected function defaultTargetKey(): string
     {
         return 'facilities.dentistry';
+    }
+
+    protected static function managedFacultyScope(): string
+    {
+        return 'dentistry';
     }
 }

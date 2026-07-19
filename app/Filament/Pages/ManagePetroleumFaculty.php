@@ -44,6 +44,7 @@ class ManagePetroleumFaculty extends Page implements HasForms
             'facilities.petroleum.study_plan' => 'Study Plan',
             'facilities.petroleum.labs' => 'Labs',
             'facilities.petroleum.projects' => 'Projects',
+            'facilities.petroleum.research' => __('admin.cms.targets.facilities.research'),
             'facilities.petroleum.alumni' => 'Alumni',
             'facilities.petroleum.valedictorians' => 'Valedictorians',
         ];
@@ -52,5 +53,10 @@ class ManagePetroleumFaculty extends Page implements HasForms
     protected function defaultTargetKey(): string
     {
         return 'facilities.petroleum';
+    }
+
+    protected static function managedFacultyScope(): string
+    {
+        return 'petroleum';
     }
 }

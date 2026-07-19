@@ -165,8 +165,7 @@ final class LegacyPhaseSixCandidateService implements LegacyPhaseSixCandidateSer
             $blockers[] = 'blocked_file_dependency';
         }
 
-        foreach (is_array($item->blocked_reasons) ? $item->blocked_reasons : [] as $reason) {
-            $reason = (string) $reason;
+        foreach ($item->blocked_reasons ?? [] as $reason) {
             $blockers[] = str_starts_with($reason, 'file_dependency_') ? 'blocked_file_dependency' : $reason;
         }
 
@@ -178,7 +177,7 @@ final class LegacyPhaseSixCandidateService implements LegacyPhaseSixCandidateSer
             $blockers[] = 'blocked_file_dependency';
         }
 
-        return array_values(array_unique(array_filter($blockers)));
+        return array_values(array_unique($blockers));
     }
 
     /** @param array<int, string> $blockers */

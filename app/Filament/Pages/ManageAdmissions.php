@@ -169,9 +169,9 @@ class ManageAdmissions extends Page implements HasForms
     {
         $this->assertAdmissionsTarget($targetKey);
 
-        $draftPayload = $this->cmsWorkflowService->latestEditableDraftPayload($targetKey);
+        $draftPayload = $this->cmsWorkflowService->latestEditableDraftPayload($targetKey, (int) auth()->id());
         $payload = is_array($draftPayload) ? $draftPayload : $this->admissionsPageService->getEditablePayload($targetKey);
-        $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey);
+        $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey, (int) auth()->id());
 
         $this->form->fill([
             'target_key' => $targetKey,
@@ -617,8 +617,9 @@ class ManageAdmissions extends Page implements HasForms
                 TextInput::make($prefix.'.download_label')->label('Download Button Label')->required()->maxLength(120),
                 TextInput::make($prefix.'.download_all_label')->label('Download All Title')->required()->maxLength(180),
                 Textarea::make($prefix.'.download_all_desc')->label('Download All Description')->required()->rows(2)->columnSpanFull(),
+                Textarea::make($prefix.'.download_guidance')->label('No Download Guidance')->required()->rows(2)->columnSpanFull(),
                 TextInput::make($prefix.'.last_reviewed_label')->label('Last Reviewed Label')->required()->maxLength(120),
-                TextInput::make($prefix.'.last_reviewed')->label('Last Reviewed Value')->required()->maxLength(120),
+                TextInput::make($prefix.'.last_reviewed')->label('Last Reviewed Value')->maxLength(120),
             ])->columns(2),
 
             Section::make('Admission Checklist')->schema([
@@ -629,8 +630,8 @@ class ManageAdmissions extends Page implements HasForms
                         TextInput::make('id')->required()->maxLength(80),
                         TextInput::make('label')->required()->maxLength(120),
                         Textarea::make('desc')->required()->rows(2)->columnSpanFull(),
-                        MediaPicker::document('download_href', 'Download File', true),
-                        TextInput::make('download_size')->label('Download Size')->required()->maxLength(80),
+                        MediaPicker::document('download_href', 'Download File'),
+                        TextInput::make('download_size')->label('Download Size')->maxLength(80),
                         Repeater::make('items')
                             ->label('Documents')
                             ->schema([
@@ -796,10 +797,11 @@ class ManageAdmissions extends Page implements HasForms
             ]),
 
             Section::make('Download and Notice')->schema([
-                TextInput::make($prefix.'.download_title')->label('Download Title')->required()->maxLength(180),
-                Textarea::make($prefix.'.download_desc')->label('Download Description')->required()->rows(2)->columnSpanFull(),
-                TextInput::make($prefix.'.download_button')->label('Download Button')->required()->maxLength(120),
-                MediaPicker::document($prefix.'.download_href', 'Download File', true),
+                Textarea::make($prefix.'.schedule_guidance')->label('No Published Dates Guidance')->required()->rows(2)->columnSpanFull(),
+                TextInput::make($prefix.'.download_title')->label('Download Title')->maxLength(180),
+                Textarea::make($prefix.'.download_desc')->label('Download Description')->rows(2)->columnSpanFull(),
+                TextInput::make($prefix.'.download_button')->label('Download Button')->maxLength(120),
+                MediaPicker::document($prefix.'.download_href', 'Download File'),
                 TextInput::make($prefix.'.notice_title')->label('Notice Title')->required()->maxLength(180),
                 Textarea::make($prefix.'.notice_desc')->label('Notice Description')->required()->rows(3)->columnSpanFull(),
             ])->columns(2),
@@ -884,6 +886,8 @@ class ManageAdmissions extends Page implements HasForms
 
             Section::make('Step-by-Step Guide')->schema([
                 TextInput::make($prefix.'.guide_title')->label('Guide Title')->required()->maxLength(180),
+                TextInput::make($prefix.'.application_title')->label('Application Form Title')->required()->maxLength(180),
+                Textarea::make($prefix.'.application_guidance')->label('Application Form Guidance')->required()->rows(3)->columnSpanFull(),
                 Repeater::make($prefix.'.steps')
                     ->label('Steps')
                     ->schema([
@@ -917,6 +921,7 @@ class ManageAdmissions extends Page implements HasForms
                 TextInput::make($prefix.'.faculty_filter_label')->label('Faculty Filter Label')->required()->maxLength(120),
                 TextInput::make($prefix.'.student_type_filter_label')->label('Student Type Filter Label')->required()->maxLength(120),
                 TextInput::make($prefix.'.empty_state')->label('Empty State')->required()->maxLength(180),
+                Textarea::make($prefix.'.availability_guidance')->label('No Published Fees Guidance')->required()->rows(3)->columnSpanFull(),
             ])->columns(2),
 
             Section::make('Fee Table')->schema([
@@ -951,6 +956,7 @@ class ManageAdmissions extends Page implements HasForms
 
             Section::make('Payment Methods')->schema([
                 TextInput::make($prefix.'.payment_title')->label('Payment Title')->required()->maxLength(180),
+                Textarea::make($prefix.'.payment_guidance')->label('No Published Payment Method Guidance')->required()->rows(3)->columnSpanFull(),
                 Repeater::make($prefix.'.methods')
                     ->label('Payment Methods')
                     ->schema([
@@ -1077,7 +1083,9 @@ class ManageAdmissions extends Page implements HasForms
                 TextInput::make($prefix.'.hero_badge_label')->label('Badge Label')->required()->maxLength(120),
                 TextInput::make($prefix.'.hero_badge_value')->label('Badge Value')->required()->maxLength(120),
                 MediaPicker::image($prefix.'.hero_campus_image', 'Campus Image', true),
+                TextInput::make($prefix.'.hero_campus_alt')->label('Campus Image Alt Text')->required()->maxLength(255),
                 MediaPicker::image($prefix.'.hero_students_image', 'Students Image', true),
+                TextInput::make($prefix.'.hero_students_alt')->label('Students Image Alt Text')->required()->maxLength(255),
                 Repeater::make($prefix.'.hero_checklist_items')
                     ->label('Checklist Items')
                     ->schema([
@@ -1130,6 +1138,7 @@ class ManageAdmissions extends Page implements HasForms
                 TextInput::make($prefix.'.timeline_primary_deadline_label')->label('Deadline Label')->required()->maxLength(120),
                 Textarea::make($prefix.'.timeline_primary_deadline_desc')->label('Deadline Description')->required()->rows(3)->columnSpanFull(),
                 MediaPicker::image($prefix.'.timeline_image', 'Timeline Image', true),
+                TextInput::make($prefix.'.timeline_image_alt')->label('Timeline Image Alt Text')->required()->maxLength(255),
                 Repeater::make($prefix.'.timeline_phases')
                     ->label('Timeline Phases')
                     ->schema([
@@ -1187,7 +1196,9 @@ class ManageAdmissions extends Page implements HasForms
             'hero_badge_label' => $this->stringValue($hero, 'badgeLabel'),
             'hero_badge_value' => $this->stringValue($hero, 'badgeValue'),
             'hero_campus_image' => $this->stringValue($images, 'campus'),
+            'hero_campus_alt' => $this->stringValue($images, 'campusAlt'),
             'hero_students_image' => $this->stringValue($images, 'students'),
+            'hero_students_alt' => $this->stringValue($images, 'studentsAlt'),
             'hero_checklist_items' => array_values(array_filter(is_array($hero['checklistItems'] ?? null) ? $hero['checklistItems'] : [], static fn (mixed $item): bool => is_array($item))),
             'trust_bar' => array_values(array_filter(is_array($payload['trustBar'] ?? null) ? $payload['trustBar'] : [], static fn (mixed $item): bool => is_array($item))),
             'journey_eyebrow' => $this->stringValue($journey, 'eyebrow'),
@@ -1200,6 +1211,7 @@ class ManageAdmissions extends Page implements HasForms
             'timeline_primary_deadline_label' => $this->stringValue($timeline, 'primaryDeadlineLabel'),
             'timeline_primary_deadline_desc' => $this->stringValue($timeline, 'primaryDeadlineDesc'),
             'timeline_image' => $this->stringValue($timeline, 'image'),
+            'timeline_image_alt' => $this->stringValue($timeline, 'imageAlt'),
             'timeline_phases' => array_values(array_filter(is_array($timeline['phases'] ?? null) ? $timeline['phases'] : [], static fn (mixed $item): bool => is_array($item))),
             'resources_eyebrow' => $this->stringValue($resources, 'eyebrow'),
             'resources_title' => $this->stringValue($resources, 'title'),
@@ -1224,7 +1236,9 @@ class ManageAdmissions extends Page implements HasForms
                 'checklistItems' => $this->listValue($data, 'hero_checklist_items'),
                 'images' => [
                     'campus' => (string) ($data['hero_campus_image'] ?? ''),
+                    'campusAlt' => (string) ($data['hero_campus_alt'] ?? ''),
                     'students' => (string) ($data['hero_students_image'] ?? ''),
+                    'studentsAlt' => (string) ($data['hero_students_alt'] ?? ''),
                 ],
             ],
             'trustBar' => $this->listValue($data, 'trust_bar'),
@@ -1241,6 +1255,7 @@ class ManageAdmissions extends Page implements HasForms
                 'primaryDeadlineLabel' => (string) ($data['timeline_primary_deadline_label'] ?? ''),
                 'primaryDeadlineDesc' => (string) ($data['timeline_primary_deadline_desc'] ?? ''),
                 'image' => (string) ($data['timeline_image'] ?? ''),
+                'imageAlt' => (string) ($data['timeline_image_alt'] ?? ''),
                 'phases' => $this->listValue($data, 'timeline_phases'),
             ],
             'resources' => [
@@ -1348,7 +1363,9 @@ class ManageAdmissions extends Page implements HasForms
             'table_headers' => $this->listValue($payload, 'tableHeaders'),
             'fee_rows' => $this->listValue($payload, 'feeRows'),
             'empty_state' => $this->stringValue($payload, 'emptyState'),
+            'availability_guidance' => $this->stringValue($payload, 'availabilityGuidance'),
             'payment_title' => $this->stringValue($payload, 'paymentTitle'),
+            'payment_guidance' => $this->stringValue($payload, 'paymentGuidance'),
             'methods' => $this->listValue($payload, 'methods'),
             'notes_title' => $this->stringValue($payload, 'notesTitle'),
             'notes' => collect(is_array($payload['notes'] ?? null) ? $payload['notes'] : [])
@@ -1392,7 +1409,9 @@ class ManageAdmissions extends Page implements HasForms
                 ->values()
                 ->all(),
             'emptyState' => (string) ($data['empty_state'] ?? ''),
+            'availabilityGuidance' => (string) ($data['availability_guidance'] ?? ''),
             'paymentTitle' => (string) ($data['payment_title'] ?? ''),
+            'paymentGuidance' => (string) ($data['payment_guidance'] ?? ''),
             'methods' => collect($this->listValue($data, 'methods'))
                 ->map(fn (array $method): array => array_filter([
                     'icon' => (string) ($method['icon'] ?? ''),
@@ -1432,6 +1451,8 @@ class ManageAdmissions extends Page implements HasForms
             'hero_desc' => $this->stringValue($payload, 'heroDesc'),
             'feature_cards' => $this->listValue($payload, 'featureCards'),
             'guide_title' => $this->stringValue($payload, 'guideTitle'),
+            'application_title' => $this->stringValue($payload, 'applicationTitle'),
+            'application_guidance' => $this->stringValue($payload, 'applicationGuidance'),
             'steps' => $this->listValue($payload, 'steps'),
         ];
     }
@@ -1456,6 +1477,8 @@ class ManageAdmissions extends Page implements HasForms
                 ->values()
                 ->all(),
             'guideTitle' => (string) ($data['guide_title'] ?? ''),
+            'applicationTitle' => (string) ($data['application_title'] ?? ''),
+            'applicationGuidance' => (string) ($data['application_guidance'] ?? ''),
             'steps' => collect($this->listValue($data, 'steps'))
                 ->map(static fn (array $step): array => [
                     'number' => (string) ($step['number'] ?? ''),
@@ -1532,10 +1555,12 @@ class ManageAdmissions extends Page implements HasForms
             'deadlines' => $this->listValue($payload, 'deadlines'),
             'timeline_title' => $this->stringValue($payload, 'timelineTitle'),
             'semesters' => $this->listValue($payload, 'semesters'),
+            'schedule_guidance' => $this->stringValue($payload, 'scheduleGuidance'),
             'download_title' => $this->stringValue($download, 'title'),
             'download_desc' => $this->stringValue($download, 'desc'),
             'download_button' => $this->stringValue($download, 'button'),
             'download_href' => $this->stringValue($download, 'href'),
+            'download_hrefMediaId' => is_numeric($download['mediaId'] ?? null) ? (int) $download['mediaId'] : null,
             'notice_title' => $this->stringValue($notice, 'title'),
             'notice_desc' => $this->stringValue($notice, 'desc'),
         ];
@@ -1582,11 +1607,13 @@ class ManageAdmissions extends Page implements HasForms
                 ])
                 ->values()
                 ->all(),
+            'scheduleGuidance' => (string) ($data['schedule_guidance'] ?? ''),
             'download' => [
                 'title' => (string) ($data['download_title'] ?? ''),
                 'desc' => (string) ($data['download_desc'] ?? ''),
                 'button' => (string) ($data['download_button'] ?? ''),
                 'href' => (string) ($data['download_href'] ?? ''),
+                'mediaId' => is_numeric($data['download_hrefMediaId'] ?? null) ? (int) $data['download_hrefMediaId'] : null,
             ],
             'notice' => [
                 'title' => (string) ($data['notice_title'] ?? ''),
@@ -1619,6 +1646,7 @@ class ManageAdmissions extends Page implements HasForms
             'download_label' => $this->stringValue($payload, 'downloadLabel'),
             'download_all_label' => $this->stringValue($payload, 'downloadAllLabel'),
             'download_all_desc' => $this->stringValue($payload, 'downloadAllDesc'),
+            'download_guidance' => $this->stringValue($payload, 'downloadGuidance'),
             'last_reviewed_label' => $this->stringValue($payload, 'lastReviewedLabel'),
             'last_reviewed' => $this->stringValue($payload, 'lastReviewed'),
             'checklist_label' => $this->stringValue(is_array($checklist) ? $checklist : [], 'label'),
@@ -1628,6 +1656,7 @@ class ManageAdmissions extends Page implements HasForms
                     'label' => $this->stringValue($subTab, 'label'),
                     'desc' => $this->stringValue($subTab, 'desc'),
                     'download_href' => $this->stringValue(is_array($subTab['download'] ?? null) ? $subTab['download'] : [], 'href'),
+                    'download_hrefMediaId' => is_numeric($subTab['download']['mediaId'] ?? null) ? (int) $subTab['download']['mediaId'] : null,
                     'download_size' => $this->stringValue(is_array($subTab['download'] ?? null) ? $subTab['download'] : [], 'size'),
                     'items' => $this->listValue($subTab, 'items'),
                 ])
@@ -1672,6 +1701,7 @@ class ManageAdmissions extends Page implements HasForms
             'downloadLabel' => (string) ($data['download_label'] ?? ''),
             'downloadAllLabel' => (string) ($data['download_all_label'] ?? ''),
             'downloadAllDesc' => (string) ($data['download_all_desc'] ?? ''),
+            'downloadGuidance' => (string) ($data['download_guidance'] ?? ''),
             'lastReviewedLabel' => (string) ($data['last_reviewed_label'] ?? ''),
             'tabs' => [
                 [
@@ -1684,6 +1714,7 @@ class ManageAdmissions extends Page implements HasForms
                             'desc' => (string) ($subTab['desc'] ?? ''),
                             'download' => [
                                 'href' => (string) ($subTab['download_href'] ?? ''),
+                                'mediaId' => is_numeric($subTab['download_hrefMediaId'] ?? null) ? (int) $subTab['download_hrefMediaId'] : null,
                                 'size' => (string) ($subTab['download_size'] ?? ''),
                             ],
                             'items' => collect($this->listValue($subTab, 'items'))

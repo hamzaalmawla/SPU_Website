@@ -77,9 +77,9 @@ class ManageFacilities extends Page implements HasForms
 
     public function mount(): void
     {
-        $draftPayload = $this->cmsWorkflowService->latestEditableDraftPayload('facilities.landing');
+        $draftPayload = $this->cmsWorkflowService->latestEditableDraftPayload('facilities.landing', (int) auth()->id());
         $payload = is_array($draftPayload) ? $draftPayload : $this->facultyPageService->getEditablePayload('facilities.landing');
-        $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion('facilities.landing');
+        $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion('facilities.landing', (int) auth()->id());
 
         $this->form->fill([
             'ar_content' => is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
@@ -124,7 +124,9 @@ class ManageFacilities extends Page implements HasForms
                 ->form([
                     DateTimePicker::make('publish_at')->label('Publish At')->required()->minDate(now())->native(false),
                 ])
-                ->action(fn (array $data): mixed => $this->schedule((string) $data['publish_at'])),
+                ->action(function (array $data): void {
+                    $this->schedule((string) $data['publish_at']);
+                }),
             Action::make('unpublish')->label('Unpublish')->icon('heroicon-o-x-circle')->color('danger')->requiresConfirmation()->action(function (): void {
                 $this->unpublish();
             }),

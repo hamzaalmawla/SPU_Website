@@ -4,10 +4,11 @@ import { createHeroSlider } from './alpine/heroSlider.js';
 import { createHonorPanel } from './alpine/honorPanel.js';
 import { createResearchSlider } from './alpine/researchSlider.js';
 import { createStatsCounter } from './alpine/statsCounter.js';
+import { horizontalKeyAction, scrollByDirection } from './utils/motionDirection.js';
 
 function createPathSlider() {
     return {
-        slidePaths(direction) {
+        slidePaths(action) {
             const track = this.$refs.pathsTrack;
             if (!track) return;
 
@@ -15,10 +16,15 @@ function createPathSlider() {
             const cardWidth = firstCard ? firstCard.getBoundingClientRect().width : 292;
             const distance = Math.round(cardWidth + 24);
 
-            track.scrollBy({
-                left: direction === 'right' ? distance : -distance,
-                behavior: 'smooth',
-            });
+            scrollByDirection(track, action, distance);
+        },
+
+        handleSliderKey(event) {
+            const action = horizontalKeyAction(event, this.$refs.pathsTrack);
+            if (!action) return;
+
+            event.preventDefault();
+            this.slidePaths(action);
         },
     };
 }

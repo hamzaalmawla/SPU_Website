@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\DTOs\Legacy;
 
 /**
- * @param array<string, int> $skipReasonCounts
+ * @param  array<string, int>  $skipReasonCounts
  */
 final readonly class LegacyFacultyProfileImportResultDTO
 {

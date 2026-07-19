@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\DTOs\Legacy;
 
 /**
- * @param array<string, int> $bucketCounts
- * @param array<int, string> $warnings
- * @param array<int, string> $paths
+ * @param  array<string, int>  $bucketCounts
+ * @param  array<int, string>  $warnings
+ * @param  array<int, string>  $paths
  */
 final readonly class LegacyClassificationReportResultDTO
 {

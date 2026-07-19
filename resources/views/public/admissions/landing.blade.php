@@ -11,10 +11,10 @@
                 <h1 class="text-[50px] font-bold leading-[1.06] tracking-[-0.96px] text-spu-blue">{{ $landing['hero']['title'] ?? '' }}</h1>
                 <p class="max-w-[580px] text-[30px] font-bold leading-[37px] text-[#46464f]">{{ $landing['hero']['summary'] ?? '' }}</p>
 
-                <div class="flex flex-wrap items-center gap-[23px]">
-                    <a href="{{ $landing['hero']['primaryUrl'] ?? '#requirements' }}" class="inline-flex h-[54px] items-center justify-center rounded-[6px] bg-spu-red px-8 text-xs font-bold uppercase tracking-[1.2px] text-white transition hover:opacity-90">{{ $landing['hero']['ctaPrimary'] ?? '' }}</a>
-                    <a href="{{ $landing['hero']['secondaryUrl'] ?? ('/'.$locale.'/contact') }}" class="inline-flex h-[54px] items-center justify-center rounded-[6px] border border-[#c7c5d0] bg-white px-8 text-xs font-bold uppercase tracking-[1.2px] text-spu-blue transition hover:bg-slate-50">{{ $landing['hero']['ctaSecondary'] ?? '' }}</a>
-                </div>
+                @if (! empty($landing['hero']['primaryUrl']) || ! empty($landing['hero']['secondaryUrl']))<div class="flex flex-wrap items-center gap-[23px]">
+                    @if (! empty($landing['hero']['primaryUrl']))<a href="{{ $landing['hero']['primaryUrl'] }}" class="inline-flex h-[54px] items-center justify-center rounded-[6px] bg-spu-red px-8 text-xs font-bold uppercase tracking-[1.2px] text-white transition hover:opacity-90">{{ $landing['hero']['ctaPrimary'] ?? '' }}</a>@endif
+                    @if (! empty($landing['hero']['secondaryUrl']))<a href="{{ $landing['hero']['secondaryUrl'] }}" class="inline-flex h-[54px] items-center justify-center rounded-[6px] border border-[#c7c5d0] bg-white px-8 text-xs font-bold uppercase tracking-[1.2px] text-spu-blue transition hover:bg-slate-50">{{ $landing['hero']['ctaSecondary'] ?? '' }}</a>@endif
+                </div>@endif
 
                 <div class="flex flex-col gap-5 pt-2">
                     @foreach (($landing['hero']['checklistItems'] ?? []) as $item)
@@ -31,11 +31,11 @@
 
             <div class="relative hidden h-[649px] lg:block">
                 <div class="absolute right-0 top-0 h-[480px] w-[75%] overflow-hidden rounded shadow-sm rtl:left-0 rtl:right-auto">
-                    <img src="{{ $landing['hero']['images']['campus'] ?? '/images/admissions-hero-campus.webp' }}" alt="SPU Campus architecture" class="h-full w-full object-cover">
+                    <img src="{{ $landing['hero']['images']['campus'] ?? '/images/admissions-hero-campus.webp' }}" alt="{{ $landing['hero']['images']['campusAlt'] ?? ($locale === 'ar' ? 'حرم الجامعة السورية الخاصة' : 'Syrian Private University campus') }}" class="h-full w-full object-cover">
                     <div class="absolute inset-0 bg-spu-blue/40"></div>
                 </div>
                 <div class="absolute bottom-0 left-0 h-[358px] w-[56%] overflow-hidden rtl:left-auto rtl:right-0">
-                    <img src="{{ $landing['hero']['images']['students'] ?? '/images/admissions-hero-students.webp' }}" alt="SPU students collaborating" class="h-full w-full object-cover">
+                    <img src="{{ $landing['hero']['images']['students'] ?? '/images/admission/front-img.jpg' }}" alt="{{ $landing['hero']['images']['studentsAlt'] ?? ($locale === 'ar' ? 'طلاب الجامعة السورية الخاصة' : 'Syrian Private University students') }}" class="h-full w-full object-cover">
                     <div class="absolute inset-0 bg-spu-blue/40"></div>
                 </div>
                 <div class="absolute bottom-[10%] right-[6%] w-[250px] rounded bg-spu-blue px-6 pb-6 pt-[77px] text-white shadow-sm rtl:left-[6%] rtl:right-auto">
@@ -91,11 +91,11 @@
         <div class="container">
             <div class="grid grid-cols-1 items-stretch gap-10 lg:grid-cols-12 lg:gap-8">
                 <div class="relative overflow-hidden rounded-3xl lg:col-span-5">
-                    <img src="{{ $landing['timeline']['image'] ?? '/images/admissions-hero-campus.webp' }}" alt="SPU Campus" class="h-full min-h-[500px] w-full object-cover lg:min-h-0">
+                    <img src="{{ $landing['timeline']['image'] ?? '/images/admissions-hero-campus.webp' }}" alt="{{ $landing['timeline']['imageAlt'] ?? ($locale === 'ar' ? 'حرم الجامعة السورية الخاصة' : 'Syrian Private University campus') }}" class="h-full min-h-[500px] w-full object-cover lg:min-h-0">
                     <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-spu-blue/90 via-spu-blue/30 to-transparent"></div>
                     <div class="absolute bottom-0 left-0 right-0 p-8">
                         <p class="text-[11px] font-bold uppercase tracking-[1.5px] text-white/60">{{ $landing['timeline']['primaryDeadlineLabel'] ?? '' }}</p>
-                        <p class="mt-2 text-[42px] font-bold leading-[1.1] tracking-tight text-white">{{ $landing['timeline']['primaryDeadline'] ?? '' }}</p>
+                        @if (! empty($landing['timeline']['primaryDeadline']))<p class="mt-2 text-[42px] font-bold leading-[1.1] tracking-tight text-white">{{ $landing['timeline']['primaryDeadline'] }}</p>@endif
                         <div class="mt-4 border-s-[3px] border-spu-red py-1 ps-5"><p class="max-w-[360px] text-[15px] leading-relaxed text-white/80">{{ $landing['timeline']['primaryDeadlineDesc'] ?? '' }}</p></div>
                     </div>
                 </div>

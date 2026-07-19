@@ -44,6 +44,7 @@ class ManageMedicineFaculty extends Page implements HasForms
             'facilities.medicine.study_plan' => 'Study Plan',
             'facilities.medicine.labs' => 'Labs',
             'facilities.medicine.projects' => 'Projects',
+            'facilities.medicine.research' => __('admin.cms.targets.facilities.research'),
             'facilities.medicine.alumni' => 'Alumni',
             'facilities.medicine.valedictorians' => 'Valedictorians',
         ];
@@ -52,5 +53,10 @@ class ManageMedicineFaculty extends Page implements HasForms
     protected function defaultTargetKey(): string
     {
         return 'facilities.medicine';
+    }
+
+    protected static function managedFacultyScope(): string
+    {
+        return 'medicine';
     }
 }

@@ -44,6 +44,7 @@ class ManageBusinessAdministrationFaculty extends Page implements HasForms
             'facilities.business-administration.study_plan' => 'Study Plan',
             'facilities.business-administration.labs' => 'Labs',
             'facilities.business-administration.projects' => 'Projects',
+            'facilities.business-administration.research' => __('admin.cms.targets.facilities.research'),
             'facilities.business-administration.alumni' => 'Alumni',
             'facilities.business-administration.valedictorians' => 'Valedictorians',
         ];
@@ -52,5 +53,10 @@ class ManageBusinessAdministrationFaculty extends Page implements HasForms
     protected function defaultTargetKey(): string
     {
         return 'facilities.business-administration';
+    }
+
+    protected static function managedFacultyScope(): string
+    {
+        return 'business-administration';
     }
 }

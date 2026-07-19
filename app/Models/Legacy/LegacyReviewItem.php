@@ -7,6 +7,7 @@ namespace App\Models\Legacy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/** @property list<string>|null $blocked_reasons */
 class LegacyReviewItem extends Model
 {
     use HasFactory;

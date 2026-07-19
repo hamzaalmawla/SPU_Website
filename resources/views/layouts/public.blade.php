@@ -10,7 +10,7 @@
             <meta name="description" content="{{ $seo->metaDescription }}">
         @endif
         <meta property="og:locale" content="{{ $locale }}">
-        <meta property="og:type" content="website">
+        <meta property="og:type" content="{{ $ogType ?? 'website' }}">
         <meta property="og:site_name" content="{{ config('app.name', 'Syrian Private University') }}">
         @if ($seo->canonicalUrl)<meta property="og:url" content="{{ $seo->canonicalUrl }}">@endif
         <meta property="og:title" content="{{ $seo->ogTitle ?? $seo->title }}">
@@ -32,6 +32,13 @@
         @endforeach
         @if (isset($structuredData) && is_array($structuredData))
             <script type="application/ld+json">{!! json_encode($structuredData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}</script>
+        @endif
+        @if (isset($citationMeta) && is_array($citationMeta))
+            @foreach ($citationMeta as $name => $content)
+                @if (is_string($name) && is_scalar($content) && (string) $content !== '')
+                    <meta name="{{ $name }}" content="{{ $content }}">
+                @endif
+            @endforeach
         @endif
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link rel="icon" href="{{ asset('images/single-logo.png') }}" type="image/png">

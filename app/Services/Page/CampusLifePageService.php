@@ -6,11 +6,15 @@ namespace App\Services\Page;
 
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Page\CampusLifePageServiceInterface;
+use App\DTOs\CampusLife\CampusLifeJobDTO;
 use App\DTOs\CampusLife\CampusLifePageDTO;
 use App\DTOs\CampusLife\CampusLifeSectionDTO;
+use Carbon\CarbonImmutable;
 
 final class CampusLifePageService implements CampusLifePageServiceInterface
 {
+    private const JOBS_PER_PAGE = 6;
+
     public function __construct(
         private readonly CmsWorkflowServiceInterface $cmsWorkflowService,
     ) {}
@@ -20,12 +24,12 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
         $landing = $this->publishedLocalizedPayload('campus_life.landing', $locale)
             ?? $this->localized($this->landingPayload(), $locale);
 
-        return $this->landingDto($locale, $this->normalizeUrls($landing, $locale));
+        return $this->landingDto($locale, $this->safeLandingPayload($this->normalizeUrls($landing, $locale), $locale));
     }
 
     public function buildPreviewLanding(string $locale, array $landing): CampusLifePageDTO
     {
-        return $this->landingDto($locale, $this->normalizeUrls($landing, $locale));
+        return $this->landingDto($locale, $this->safeLandingPayload($this->normalizeUrls($landing, $locale), $locale));
     }
 
     /** @param array<string, mixed> $landing */
@@ -72,6 +76,15 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
             ];
         }
 
+        if ($targetKey === 'campus_life.jobs') {
+            return [
+                'translations' => [
+                    'ar' => $this->normalizeUrls($this->localized($this->jobBoardPayload(), 'ar'), 'ar'),
+                    'en' => $this->normalizeUrls($this->localized($this->jobBoardPayload(), 'en'), 'en'),
+                ],
+            ];
+        }
+
         $slug = $this->slugFromTargetKey($targetKey);
         $payload = $slug !== null ? ($this->sectionPayloads()[$slug] ?? null) : null;
 
@@ -103,29 +116,96 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
         return $this->sectionDto($slug, $locale, $this->normalizeUrls($payload, $locale));
     }
 
-    public function getCareerJobBoard(string $locale): CampusLifeSectionDTO
+    public function getCareerJobBoard(string $locale, array $filters = []): CampusLifeSectionDTO
     {
-        return $this->sectionDto('career-development/jobs', $locale, $this->normalizeUrls($this->localized($this->jobBoardPayload(), $locale), $locale));
+        $payload = $this->publishedLocalizedPayload('campus_life.jobs', $locale)
+            ?? $this->localized($this->jobBoardPayload(), $locale);
+
+        return $this->jobBoardDto($locale, $payload, $filters, false);
     }
 
     public function getCareerJobDetail(string $slug, string $locale): ?CampusLifeSectionDTO
     {
-        $payload = $this->localized($this->jobBoardPayload(), $locale);
-        $jobs = array_values(array_filter($payload['jobs'] ?? [], static fn (mixed $job): bool => is_array($job)));
-        $job = collect($jobs)->firstWhere('slug', $slug);
+        $payload = $this->publishedLocalizedPayload('campus_life.jobs', $locale)
+            ?? $this->localized($this->jobBoardPayload(), $locale);
+        $jobs = $this->publicJobs($payload);
+        $job = $this->jobBySlug($jobs, $slug);
 
         if (! is_array($job)) {
             return null;
         }
 
         $payload['job'] = $job;
+        $payload['relatedJobs'] = $this->relatedJobs($jobs, $job);
+        unset($payload['jobs']);
 
         return $this->sectionDto('career-development/jobs/'.$slug, $locale, $this->normalizeUrls($payload, $locale));
     }
 
-    public function getCareerJobApplication(string $locale): CampusLifeSectionDTO
+    public function getCareerJobApplication(string $locale, ?string $slug): ?CampusLifeSectionDTO
     {
-        return $this->sectionDto('career-development/jobs/apply', $locale, $this->normalizeUrls($this->localized($this->jobApplicationPayload(), $locale), $locale));
+        if ($slug === null || trim($slug) === '') {
+            return null;
+        }
+
+        $job = $this->findOpenCareerJob($slug, $locale);
+
+        if (! $job instanceof CampusLifeJobDTO || ! $job->applicationEligible) {
+            return null;
+        }
+
+        $payload = $this->localized($this->jobApplicationPayload(), $locale);
+        $payload['selectedJob'] = [
+            'id' => $job->id,
+            'slug' => $job->slug,
+            'title' => $job->title,
+            'postedDate' => $job->postedDate,
+            'closeDate' => $job->closeDate,
+        ];
+
+        return $this->sectionDto('career-development/jobs/apply', $locale, $this->normalizeUrls($payload, $locale));
+    }
+
+    public function findOpenCareerJob(string $slug, string $locale): ?CampusLifeJobDTO
+    {
+        $payload = $this->publishedLocalizedPayload('campus_life.jobs', $locale)
+            ?? $this->localized($this->jobBoardPayload(), $locale);
+        $job = $this->jobBySlug($this->publicJobs($payload), $slug);
+
+        if (! is_array($job)) {
+            return null;
+        }
+
+        return new CampusLifeJobDTO(
+            id: (string) ($job['id'] ?? ''),
+            slug: (string) ($job['slug'] ?? ''),
+            title: (string) ($job['title'] ?? ''),
+            status: (string) ($job['status'] ?? ''),
+            postedDate: (string) ($job['postedDate'] ?? ''),
+            closeDate: is_string($job['closeDate'] ?? null) && $job['closeDate'] !== '' ? $job['closeDate'] : null,
+            applicationEligible: (bool) ($job['applicationEligible'] ?? false),
+        );
+    }
+
+    public function buildPreviewCareerJobs(string $locale, array $content, array $filters = []): CampusLifeSectionDTO
+    {
+        return $this->jobBoardDto($locale, $content, $filters, true);
+    }
+
+    public function buildPreviewCareerJob(string $locale, array $content, string $slug): ?CampusLifeSectionDTO
+    {
+        $jobs = $this->jobArrays($content['jobs'] ?? []);
+        $job = $this->jobBySlug($jobs, $slug);
+
+        if (! is_array($job)) {
+            return null;
+        }
+
+        $content['job'] = $job;
+        $content['relatedJobs'] = $this->relatedJobs($jobs, $job);
+        unset($content['jobs']);
+
+        return $this->sectionDto('career-development/jobs/'.$slug, $locale, $this->normalizeUrls($content, $locale));
     }
 
     public function buildPreviewSection(string $targetKey, string $locale, array $section): ?CampusLifeSectionDTO
@@ -164,7 +244,7 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
 
     private function slugFromTargetKey(string $targetKey): ?string
     {
-        if (! str_starts_with($targetKey, 'campus_life.') || $targetKey === 'campus_life.landing' || $targetKey === 'campus_life.virtual_tour') {
+        if (! str_starts_with($targetKey, 'campus_life.') || in_array($targetKey, ['campus_life.landing', 'campus_life.virtual_tour', 'campus_life.jobs'], true)) {
             return null;
         }
 
@@ -194,12 +274,7 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
                 'summaryEn' => 'A connected campus journey designed to support your academic advancement, personal wellbeing, and professional development from day one.',
                 'summaryAr' => 'رحلة جامعية متصلة مصممة لدعم تقدمك الأكاديمي ورفاهيتك الشخصية وتطورك المهني من اليوم الأول.',
             ],
-            'stats' => [
-                ['id' => 'students', 'value' => 8500, 'suffixEn' => '+', 'suffixAr' => '+', 'labelEn' => 'Active Students', 'labelAr' => 'طالب نشط', 'icon' => '/images/icon-user-graduate-outline.svg'],
-                ['id' => 'clubs', 'value' => 25, 'suffixEn' => '+', 'suffixAr' => '+', 'labelEn' => 'Student Clubs', 'labelAr' => 'نادي طلابي', 'icon' => '/images/icon-users-outline.svg'],
-                ['id' => 'events', 'value' => 120, 'suffixEn' => '+', 'suffixAr' => '+', 'labelEn' => 'Annual Events', 'labelAr' => 'فعالية سنوية', 'icon' => '/images/icon-calendar-outline.svg'],
-                ['id' => 'satisfaction', 'value' => 96, 'suffixEn' => '%', 'suffixAr' => '%', 'labelEn' => 'Student Satisfaction', 'labelAr' => 'رضا الطلاب', 'icon' => '/images/icon-handshake-outline.svg'],
-            ],
+            'stats' => [],
             'features' => [
                 'eyebrowEn' => 'WHY SPU',
                 'eyebrowAr' => 'لماذا SPU',
@@ -240,13 +315,36 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
                 ],
             ],
             'portalsHeading' => ['eyebrowEn' => 'DIGITAL ACCESS', 'eyebrowAr' => 'الوصول الرقمي', 'titleEn' => 'Digital Service Portals', 'titleAr' => 'بوابات الخدمات الرقمية'],
+            'portalGuidanceEn' => 'Verified student portal destinations will be published here after review. Contact Student Affairs for current access guidance.',
+            'portalGuidanceAr' => 'ستُنشر روابط بوابات الطلاب الموثقة هنا بعد مراجعتها. يرجى التواصل مع شؤون الطلاب للحصول على إرشادات الوصول الحالية.',
             'portals' => [
-                ['titleEn' => 'Student Portal', 'titleAr' => 'بوابة الطالب', 'summaryEn' => 'Access student records and core digital services.', 'summaryAr' => 'الوصول إلى السجلات الطلابية والخدمات الرقمية الأساسية.', 'icon' => '/images/icon-check-circle-outline.svg', 'url' => '#'],
-                ['titleEn' => 'Electronic Registration', 'titleAr' => 'التسجيل الإلكتروني', 'summaryEn' => 'Reach online registration services through the official portal entry point.', 'summaryAr' => 'الوصول إلى خدمات التسجيل الإلكتروني عبر بوابة الجامعة الرسمية.', 'icon' => '/images/icon-file-outline.svg', 'url' => '#'],
                 ['titleEn' => 'Contact Student Affairs', 'titleAr' => 'التواصل مع شؤون الطلاب', 'summaryEn' => 'Get direct guidance for support needs, schedules, and student services.', 'summaryAr' => 'الحصول على إرشاد مباشر لاحتياجات الدعم والجداول والخدمات الطلابية.', 'icon' => '/images/icon-phone-outline.svg', 'url' => '/contact#admissions-support'],
             ],
             'cta' => ['titleEn' => 'Ready to Begin Your Journey?', 'titleAr' => 'مستعد لبدء رحلتك؟', 'summaryEn' => 'Join thousands of students who chose SPU as their path to academic excellence and professional success.', 'summaryAr' => 'انضم إلى آلاف الطلاب الذين اختاروا SPU كطريقهم نحو التميز الأكاديمي والنجاح المهني.', 'primaryLabelEn' => 'Apply Now', 'primaryLabelAr' => 'قدّم الآن', 'primaryUrl' => '/admissions', 'secondaryLabelEn' => 'Contact Us', 'secondaryLabelAr' => 'تواصل معنا', 'secondaryUrl' => '/contact'],
         ];
+    }
+
+    /** @param array<string, mixed> $landing @return array<string, mixed> */
+    private function safeLandingPayload(array $landing, string $locale): array
+    {
+        $landing['stats'] = array_values(array_filter(
+            is_array($landing['stats'] ?? null) ? $landing['stats'] : [],
+            static fn (mixed $stat): bool => is_array($stat) && ($stat['verified'] ?? false) === true,
+        ));
+        $landing['portals'] = array_values(array_filter(
+            is_array($landing['portals'] ?? null) ? $landing['portals'] : [],
+            fn (mixed $portal): bool => is_array($portal) && $this->isSafeLandingDestination($portal['url'] ?? null, $locale),
+        ));
+
+        return $landing;
+    }
+
+    private function isSafeLandingDestination(mixed $url, string $locale): bool
+    {
+        return is_string($url)
+            && $url !== '#'
+            && ! str_starts_with($url, '//')
+            && preg_match('~^/'.preg_quote($locale, '~').'/(?:campus-life|e-services|admissions|contact|facilities|virtual-tour)(?:[/?#]|$)~', $url) === 1;
     }
 
     /** @return array<string, array<string, mixed>> */
@@ -357,6 +455,8 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
                 'titleAr' => 'معلومات التقديم',
                 'summaryEn' => 'Please fill in all required fields accurately. You will be able to review your data before final submission.',
                 'summaryAr' => 'يرجى ملء جميع الحقول المطلوبة بدقة. ستتمكن من مراجعة بياناتك قبل الإرسال النهائي.',
+                'selectedJobEn' => 'Selected job:',
+                'selectedJobAr' => 'الوظيفة المختارة:',
             ],
             'seoDescriptionEn' => 'Submit a job application to Syrian Private University through the official career development form.',
             'seoDescriptionAr' => 'قدّم طلب توظيف إلى الجامعة السورية الخاصة عبر نموذج التطوير المهني الرسمي.',
@@ -380,10 +480,26 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
                 'categoryEn' => 'Category', 'categoryAr' => 'الفئة',
                 'typeEn' => 'Job Type', 'typeAr' => 'نوع الوظيفة',
                 'searchEn' => 'Search by title, department, or keyword...', 'searchAr' => 'ابحث حسب العنوان أو القسم أو الكلمة المفتاحية...',
+                'searchActionEn' => 'Search', 'searchActionAr' => 'بحث',
                 'showingEn' => 'Showing', 'showingAr' => 'عرض',
                 'positionsEn' => 'positions', 'positionsAr' => 'وظيفة',
+                'ofEn' => 'of', 'ofAr' => 'من',
+                'previousEn' => 'Previous', 'previousAr' => 'السابق',
+                'nextEn' => 'Next', 'nextAr' => 'التالي',
+                'resetEn' => 'Reset filters', 'resetAr' => 'إعادة ضبط المرشحات',
+                'noResultsEn' => 'No jobs match your search.', 'noResultsAr' => 'لا توجد وظائف تطابق بحثك.',
                 'learnMoreEn' => 'Learn More', 'learnMoreAr' => 'اعرف المزيد',
                 'applyEn' => 'Apply Now', 'applyAr' => 'قدّم الآن',
+                'applicationsClosedEn' => 'Applications unavailable', 'applicationsClosedAr' => 'التقديم غير متاح',
+                'postedOnEn' => 'Posted on', 'postedOnAr' => 'نُشر بتاريخ',
+                'closesOnEn' => 'Closes on', 'closesOnAr' => 'ينتهي التقديم بتاريخ',
+                'statusEn' => 'Status', 'statusAr' => 'الحالة',
+                'openStatusEn' => 'Open', 'openStatusAr' => 'مفتوحة',
+                'closedStatusEn' => 'Closed', 'closedStatusAr' => 'مغلقة',
+                'shareEn' => 'Share', 'shareAr' => 'مشاركة',
+                'copyLinkEn' => 'Copy Link', 'copyLinkAr' => 'نسخ الرابط',
+                'copiedEn' => 'Copied', 'copiedAr' => 'تم النسخ',
+                'relatedEn' => 'Related jobs', 'relatedAr' => 'وظائف ذات صلة',
                 'overviewEn' => 'Job Overview', 'overviewAr' => 'نظرة عامة على الوظيفة',
                 'requirementsEn' => 'Requirements', 'requirementsAr' => 'المتطلبات',
                 'responsibilitiesEn' => 'Key Responsibilities', 'responsibilitiesAr' => 'المسؤوليات الرئيسية',
@@ -422,10 +538,23 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
     /** @return array<string, mixed> */
     private function job(string $slug, string $category, string $type, string $titleEn, string $titleAr, string $departmentEn, string $departmentAr, string $summaryEn, string $summaryAr, string $postedDate): array
     {
+        $number = array_search($slug, [
+            'lecturer-computer-science',
+            'research-assistant',
+            'administrative-coordinator',
+            'admissions-officer',
+            'campus-bus-driver',
+            'it-support-specialist',
+            'laboratory-technician',
+            'dental-clinic-supervisor',
+        ], true);
+
         return [
+            'id' => 'job-'.str_pad((string) (($number === false ? 0 : $number) + 1), 3, '0', STR_PAD_LEFT),
             'slug' => $slug,
             'category' => $category,
             'type' => $type,
+            'status' => 'open',
             'titleEn' => $titleEn,
             'titleAr' => $titleAr,
             'departmentEn' => $departmentEn,
@@ -443,7 +572,132 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
             'benefitsEn' => ['Professional university environment.', 'Development and training opportunities.', 'Competitive package based on role and experience.'],
             'benefitsAr' => ['بيئة جامعية مهنية.', 'فرص تطوير وتدريب.', 'حزمة تنافسية حسب الدور والخبرة.'],
             'postedDate' => $postedDate,
+            'closeDate' => '2026-12-31',
+            'image' => '/images/career-development-hero.webp',
+            'applicationEligible' => true,
         ];
+    }
+
+    /** @param array<string, mixed> $payload @param array<string, mixed> $filters */
+    private function jobBoardDto(string $locale, array $payload, array $filters, bool $preview): CampusLifeSectionDTO
+    {
+        $jobs = $preview ? $this->jobArrays($payload['jobs'] ?? []) : $this->publicJobs($payload);
+        $categories = $this->optionIds($payload['categories'] ?? []);
+        $types = $this->optionIds($payload['types'] ?? []);
+        $query = mb_substr(trim(is_scalar($filters['q'] ?? null) ? (string) $filters['q'] : ''), 0, 100);
+        $category = is_string($filters['category'] ?? null) && in_array($filters['category'], $categories, true) ? $filters['category'] : 'all';
+        $type = is_string($filters['type'] ?? null) && in_array($filters['type'], $types, true) ? $filters['type'] : 'all';
+
+        $filtered = array_values(array_filter($jobs, static function (array $job) use ($query, $category, $type): bool {
+            if ($category !== 'all' && ($job['category'] ?? null) !== $category) {
+                return false;
+            }
+
+            if ($type !== 'all' && ($job['type'] ?? null) !== $type) {
+                return false;
+            }
+
+            if ($query === '') {
+                return true;
+            }
+
+            $haystack = mb_strtolower(implode(' ', [
+                (string) ($job['title'] ?? ''),
+                (string) ($job['department'] ?? ''),
+                (string) ($job['location'] ?? ''),
+                (string) ($job['shortDescription'] ?? ''),
+            ]));
+
+            return str_contains($haystack, mb_strtolower($query));
+        }));
+
+        $total = count($filtered);
+        $lastPage = max(1, (int) ceil($total / self::JOBS_PER_PAGE));
+        $requestedPage = filter_var($filters['page'] ?? 1, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: 1;
+        $page = min($requestedPage, $lastPage);
+        $payload['jobs'] = array_slice($filtered, ($page - 1) * self::JOBS_PER_PAGE, self::JOBS_PER_PAGE);
+        $payload['resultCount'] = $total;
+        $payload['activeFilters'] = ['q' => $query, 'category' => $category, 'type' => $type, 'page' => $page];
+        $payload['pagination'] = [
+            'currentPage' => $page,
+            'lastPage' => $lastPage,
+            'perPage' => self::JOBS_PER_PAGE,
+            'total' => $total,
+            'from' => $total === 0 ? 0 : (($page - 1) * self::JOBS_PER_PAGE) + 1,
+            'to' => min($page * self::JOBS_PER_PAGE, $total),
+        ];
+
+        return $this->sectionDto('career-development/jobs', $locale, $this->normalizeUrls($payload, $locale));
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function publicJobs(array $payload): array
+    {
+        $today = CarbonImmutable::today();
+
+        return array_values(array_filter($this->jobArrays($payload['jobs'] ?? []), static function (array $job) use ($today): bool {
+            if (($job['status'] ?? null) !== 'open') {
+                return false;
+            }
+
+            $postedDate = (string) ($job['postedDate'] ?? '');
+            $closeDate = (string) ($job['closeDate'] ?? '');
+            if (preg_match('~^\d{4}-\d{2}-\d{2}$~', $postedDate) !== 1 || preg_match('~^\d{4}-\d{2}-\d{2}$~', $closeDate) !== 1) {
+                return false;
+            }
+
+            try {
+                $posted = CarbonImmutable::parse($postedDate);
+                $close = CarbonImmutable::parse($closeDate);
+            } catch (\Throwable) {
+                return false;
+            }
+
+            return $posted->startOfDay()->lessThanOrEqualTo($today) && $close->endOfDay()->greaterThanOrEqualTo($today);
+        }));
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function jobArrays(mixed $jobs): array
+    {
+        return array_values(array_filter(is_array($jobs) ? $jobs : [], static fn (mixed $job): bool => is_array($job)));
+    }
+
+    /** @param array<int, array<string, mixed>> $jobs @return array<string, mixed>|null */
+    private function jobBySlug(array $jobs, string $slug): ?array
+    {
+        foreach ($jobs as $job) {
+            if (($job['slug'] ?? null) === $slug) {
+                return $job;
+            }
+        }
+
+        return null;
+    }
+
+    /** @param array<int, array<string, mixed>> $jobs @param array<string, mixed> $job @return array<int, array<string, mixed>> */
+    private function relatedJobs(array $jobs, array $job): array
+    {
+        $others = array_values(array_filter($jobs, static fn (array $candidate): bool => ($candidate['slug'] ?? null) !== ($job['slug'] ?? null)));
+        $sameCategory = array_values(array_filter($others, static fn (array $candidate): bool => ($candidate['category'] ?? null) === ($job['category'] ?? null)));
+
+        return array_slice(array_values(array_reduce([...$sameCategory, ...$others], static function (array $carry, array $candidate): array {
+            $slug = (string) ($candidate['slug'] ?? '');
+            if ($slug !== '' && ! isset($carry[$slug])) {
+                $carry[$slug] = $candidate;
+            }
+
+            return $carry;
+        }, [])), 0, 3);
+    }
+
+    /** @return array<int, string> */
+    private function optionIds(mixed $options): array
+    {
+        return array_values(array_filter(array_map(
+            static fn (mixed $option): string => is_array($option) ? (string) ($option['id'] ?? '') : '',
+            is_array($options) ? $options : [],
+        ), static fn (string $id): bool => $id !== ''));
     }
 
     /** @param array<int, array<string, string>> $items @return array<string, mixed> */
@@ -501,7 +755,7 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
                 ['id' => 'career-guidance', 'icon' => '/images/icon-globe-outline.svg', 'titleEn' => 'Career Guidance', 'titleAr' => 'الإرشاد المهني', 'summaryEn' => 'One-on-one support for students preparing career direction and professional profiles.', 'summaryAr' => 'دعم فردي للطلاب في تحديد المسار المهني وبناء الملف الاحترافي.', 'linkEn' => 'Get Career Guidance', 'linkAr' => 'احصل على إرشاد مهني', 'href' => '/campus-life/career-development#career-guidance'],
                 ['id' => 'cv-workshops', 'icon' => '/images/icon-award-outline.svg', 'titleEn' => 'CV Workshops', 'titleAr' => 'ورش السيرة الذاتية', 'summaryEn' => 'Interactive workshops on CV structure, interview readiness, and job search confidence.', 'summaryAr' => 'ورش تفاعلية حول بنية السيرة الذاتية والاستعداد للمقابلات والبحث عن العمل.', 'linkEn' => 'View Workshops', 'linkAr' => 'عرض الورش', 'href' => '/campus-life/career-development#cv-workshops'],
                 ['id' => 'internship-listings', 'icon' => '/images/icon-calendar-outline.svg', 'titleEn' => 'Internship Listings', 'titleAr' => 'فرص التدريب', 'summaryEn' => 'Seasonal internship listings with university partners across academic disciplines.', 'summaryAr' => 'فرص تدريب موسمية مع شركاء الجامعة في مختلف الاختصاصات.', 'linkEn' => 'View Internships', 'linkAr' => 'عرض فرص التدريب', 'href' => '/campus-life/career-development#internship-listings'],
-                ['id' => 'job-board', 'icon' => '/images/icon-file-outline.svg', 'titleEn' => 'Job Board', 'titleAr' => 'لوحة الوظائف', 'summaryEn' => 'Access full-time job opportunities for recent graduates through verified employer outreach.', 'summaryAr' => 'الوصول إلى فرص عمل بدوام كامل للخريجين عبر أصحاب عمل موثوقين.', 'linkEn' => 'Open Job Board', 'linkAr' => 'فتح لوحة الوظائف', 'href' => '/campus-life/career-development#job-board'],
+                ['id' => 'job-board', 'icon' => '/images/icon-file-outline.svg', 'titleEn' => 'Job Board', 'titleAr' => 'لوحة الوظائف', 'summaryEn' => 'Access full-time job opportunities for recent graduates through verified employer outreach.', 'summaryAr' => 'الوصول إلى فرص عمل بدوام كامل للخريجين عبر أصحاب عمل موثوقين.', 'linkEn' => 'Open Job Board', 'linkAr' => 'فتح لوحة الوظائف', 'href' => '/campus-life/career-development/jobs'],
                 ['id' => 'employer-partners', 'icon' => '/images/icon-handshake-outline.svg', 'titleEn' => 'Employer Partners', 'titleAr' => 'شركاء التوظيف', 'summaryEn' => 'Discover cooperating organizations and employer resources connected with Syrian Private University.', 'summaryAr' => 'اكتشف المؤسسات المتعاونة وموارد أصحاب العمل المرتبطة بالجامعة السورية الخاصة.', 'linkEn' => 'View Partners', 'linkAr' => 'عرض الشركاء', 'href' => '/campus-life/career-development#employer-partners'],
                 ['id' => 'career-events', 'icon' => '/images/icon-sitemap-outline.svg', 'titleEn' => 'Career Events', 'titleAr' => 'فعاليات التوظيف', 'summaryEn' => 'Explore upcoming career fairs, employer information sessions, and specialized hiring events.', 'summaryAr' => 'استكشف معارض التوظيف والجلسات التعريفية وفعاليات التوظيف المتخصصة.', 'linkEn' => 'View Events', 'linkAr' => 'عرض الفعاليات', 'href' => '/campus-life/career-development#career-events'],
             ]],

@@ -71,9 +71,50 @@ class CmsTargetRegistryTest extends TestCase
             'e_services.library',
             'e_services.staff-email',
             'e_services.it-support',
+            'e_services.suggestions-complaints',
         ], $registry->forArea('e_services')->pluck('key')->all());
         $this->assertSame('e_services', $registry->find('e_services.library')?->parentKey);
         $this->assertSame('/e-services/staff-email', $registry->find('e_services.staff-email')?->publicPath);
+    }
+
+    public function test_all_faculty_research_targets_are_registered_with_scope(): void
+    {
+        $registry = app(CmsTargetRegistryInterface::class);
+
+        foreach (['medicine', 'dentistry', 'pharmacy', 'artificial-intelligence', 'building-construction-engineering', 'petroleum', 'business-administration'] as $facultySlug) {
+            $target = $registry->find('facilities.'.$facultySlug.'.research');
+
+            $this->assertNotNull($target);
+            $this->assertSame('/facilities/'.$facultySlug.'/research', $target->publicPath);
+            $this->assertSame('public.facilities.subpage', $target->routeName);
+            $this->assertSame($facultySlug, $target->facultyScopeSlug);
+        }
+    }
+
+    public function test_research_centers_target_is_registered_for_listing_and_details(): void
+    {
+        $target = app(CmsTargetRegistryInterface::class)->find('research.centers');
+
+        $this->assertNotNull($target);
+        $this->assertSame('research', $target->area);
+        $this->assertSame('research.index', $target->parentKey);
+        $this->assertSame('/research/centers', $target->publicPath);
+        $this->assertSame('public.research.centers.index', $target->routeName);
+    }
+
+    public function test_research_project_and_theme_catalog_targets_are_registered(): void
+    {
+        $registry = app(CmsTargetRegistryInterface::class);
+
+        foreach (['projects', 'themes'] as $catalog) {
+            $target = $registry->find('research.'.$catalog);
+
+            $this->assertNotNull($target);
+            $this->assertSame('research', $target->area);
+            $this->assertSame('research.index', $target->parentKey);
+            $this->assertSame('/research/'.$catalog, $target->publicPath);
+            $this->assertSame('public.research.'.$catalog.'.index', $target->routeName);
+        }
     }
 
     public function test_target_labels_are_translated_in_arabic_and_english(): void

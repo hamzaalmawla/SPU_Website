@@ -143,7 +143,7 @@ class ManageAbout extends Page implements HasForms
         $this->assertAboutTarget($targetKey);
 
         if (! in_array($targetKey, ['about.landing', 'about.vision-mission', 'about.history', 'about.leadership', 'about.directorates', 'about.directorates_staff', 'about.partnerships', 'about.quality-policy', 'about.ethical-charter', 'about.organizational-structure', 'about.accreditation', 'about.why-spu'], true)) {
-            $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey);
+            $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey, (int) auth()->id());
             $this->form->fill([
                 'target_key' => $targetKey,
                 'ar_landing' => [],
@@ -175,9 +175,9 @@ class ManageAbout extends Page implements HasForms
             return;
         }
 
-        $draftPayload = $this->cmsWorkflowService->latestEditableDraftPayload($targetKey);
+        $draftPayload = $this->cmsWorkflowService->latestEditableDraftPayload($targetKey, (int) auth()->id());
         $payload = is_array($draftPayload) ? $draftPayload : $this->aboutPageService->getEditablePayload($targetKey);
-        $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey);
+        $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey, (int) auth()->id());
 
         $this->form->fill([
             'target_key' => $targetKey,

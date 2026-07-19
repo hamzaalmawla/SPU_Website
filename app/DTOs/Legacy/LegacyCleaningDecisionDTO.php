@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\DTOs\Legacy;
 
 /**
- * @param array<int, string> $issueCodes
- * @param array<int, string> $messages
+ * @param  array<int, string>  $issueCodes
+ * @param  array<int, string>  $messages
  */
 final readonly class LegacyCleaningDecisionDTO
 {

@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace Tests\Unit;
 
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Enums\PublicationStatus;
 use App\Exceptions\ConflictException;
 use App\Models\Cms\CmsDraft;
 use App\Models\Cms\CmsTargetContent;
 use App\Models\Shared\PreviewToken;
 use App\Models\User\User;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
@@ -37,7 +39,7 @@ final class CmsWorkflowServiceTest extends TestCase
 
         $this->assertSame(1, $first->version);
         $this->assertSame(2, $second->version);
-        $this->assertSame(2, $this->service->latestEditableDraftVersion('contact'));
+        $this->assertSame(2, $this->service->latestEditableDraftVersion('contact', (int) $user->getKey()));
         $this->assertDatabaseHas('audit_logs', ['action' => 'cms.draft.saved']);
     }
 
@@ -134,6 +136,98 @@ final class CmsWorkflowServiceTest extends TestCase
         $this->assertTrue($this->service->unpublish('contact', (int) $user->getKey()));
         $this->assertNull($this->service->getPublishedPayload('contact'));
         $this->assertDatabaseHas('audit_logs', ['action' => 'cms.unpublished']);
+    }
+
+    public function test_published_draft_is_not_returned_as_editable(): void
+    {
+        $user = User::factory()->create(['role_slug' => 'editor']);
+        $payload = $this->completePayload('تواصل معنا', 'Contact us');
+
+        $this->service->saveDraft('contact', $payload, (int) $user->getKey());
+        $this->assertTrue($this->service->publish('contact', (int) $user->getKey()));
+
+        $this->assertNull($this->service->latestEditableDraftVersion('contact', (int) $user->getKey()));
+        $this->assertNull($this->service->latestEditableDraftPayload('contact', (int) $user->getKey()));
+    }
+
+    public function test_research_centers_require_complete_matching_bilingual_catalogs(): void
+    {
+        $payload = app(ResearchPageServiceInterface::class)->getEditablePayload('research.centers');
+
+        $this->assertTrue($this->service->readiness('research.centers', $payload)->isReady);
+
+        $payload['translations']['en']['items'][0]['slug'] = 'different-center-slug';
+        $readiness = $this->service->readiness('research.centers', $payload);
+
+        $this->assertFalse($readiness->isReady);
+        $this->assertArrayHasKey('centers', $readiness->errors);
+    }
+
+    public function test_faculty_editor_cannot_manage_global_research_centers(): void
+    {
+        $user = User::factory()->create([
+            'role_slug' => 'faculty_editor',
+            'faculty_scope_slug' => 'medicine',
+        ]);
+
+        $this->expectException(AuthorizationException::class);
+
+        $this->service->saveDraft(
+            'research.centers',
+            app(ResearchPageServiceInterface::class)->getEditablePayload('research.centers'),
+            (int) $user->getKey(),
+        );
+    }
+
+    public function test_research_project_and_theme_catalogs_require_matching_bilingual_invariants(): void
+    {
+        $research = app(ResearchPageServiceInterface::class);
+
+        foreach (['research.projects', 'research.themes'] as $targetKey) {
+            $payload = $research->getEditablePayload($targetKey);
+            $this->assertTrue($this->service->readiness($targetKey, $payload)->isReady, $targetKey);
+
+            $payload['translations']['en']['items'][0]['slug'] = 'mismatched-slug';
+            $readiness = $this->service->readiness($targetKey, $payload);
+
+            $this->assertFalse($readiness->isReady);
+            $this->assertArrayHasKey(substr($targetKey, strlen('research.')), $readiness->errors);
+        }
+    }
+
+    public function test_research_project_publish_rejects_invalid_relationships_but_draft_save_allows_them(): void
+    {
+        $user = User::factory()->create(['role_slug' => 'editor']);
+        $payload = app(ResearchPageServiceInterface::class)->getEditablePayload('research.projects');
+        $payload['translations']['ar']['items'][0]['themeSlug'] = 'unknown-theme';
+        $payload['translations']['en']['items'][0]['themeSlug'] = 'unknown-theme';
+
+        $this->service->saveDraft('research.projects', $payload, (int) $user->getKey());
+        $this->assertFalse($this->service->readiness('research.projects')->isReady);
+
+        $this->expectException(ValidationException::class);
+        $this->service->publish('research.projects', (int) $user->getKey());
+    }
+
+    public function test_faculty_editor_cannot_manage_global_project_or_theme_catalogs(): void
+    {
+        $user = User::factory()->create([
+            'role_slug' => 'faculty_editor',
+            'faculty_scope_slug' => 'medicine',
+        ]);
+
+        foreach (['research.projects', 'research.themes'] as $targetKey) {
+            try {
+                $this->service->saveDraft(
+                    $targetKey,
+                    app(ResearchPageServiceInterface::class)->getEditablePayload($targetKey),
+                    (int) $user->getKey(),
+                );
+                $this->fail('Faculty editor unexpectedly managed '.$targetKey);
+            } catch (AuthorizationException) {
+                $this->assertDatabaseMissing('cms_drafts', ['target_key' => $targetKey]);
+            }
+        }
     }
 
     /**

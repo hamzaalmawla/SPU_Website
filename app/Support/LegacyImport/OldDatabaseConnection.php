@@ -7,6 +7,7 @@ namespace App\Support\LegacyImport;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Database\Schema\Builder as SchemaBuilder;
 
 class OldDatabaseConnection
 {
@@ -44,6 +45,11 @@ class OldDatabaseConnection
     public function table(string $table): Builder
     {
         return $this->connection()->table($table);
+    }
+
+    public function schema(): SchemaBuilder
+    {
+        return $this->database->connection($this->connectionName())->getSchemaBuilder();
     }
 
     private function hasDedicatedLegacyConfig(): bool

@@ -255,13 +255,13 @@ final class LegacyRedirectEvidenceService implements LegacyRedirectEvidenceServi
         }
 
         if ($reviewItem instanceof LegacyReviewItem) {
-            foreach (is_array($reviewItem->blocked_reasons) ? $reviewItem->blocked_reasons : [] as $reason) {
+            foreach ($reviewItem->blocked_reasons ?? [] as $reason) {
                 if ($reason === 'phase3_findings_block_review') {
                     $blockers[] = 'blocked_phase3_findings';
-                } elseif (str_starts_with((string) $reason, 'file_dependency_')) {
+                } elseif (str_starts_with($reason, 'file_dependency_')) {
                     $blockers[] = 'blocked_file_dependency';
                 } else {
-                    $blockers[] = (string) $reason;
+                    $blockers[] = $reason;
                 }
             }
         }
@@ -270,7 +270,7 @@ final class LegacyRedirectEvidenceService implements LegacyRedirectEvidenceServi
             $blockers[] = 'needs_imported_target';
         }
 
-        return array_values(array_unique(array_filter($blockers)));
+        return array_values(array_unique($blockers));
     }
 
     /** @param array<int, string> $blockers */

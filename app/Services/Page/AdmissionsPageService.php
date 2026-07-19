@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Page;
 
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Media\MediaServiceInterface;
 use App\Contracts\Page\AdmissionsPageServiceInterface;
 use App\DTOs\Admissions\AdmissionsPageDTO;
 use App\DTOs\Admissions\AdmissionsSectionDTO;
@@ -13,6 +14,7 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
 {
     public function __construct(
         private readonly CmsWorkflowServiceInterface $cmsWorkflowService,
+        private readonly MediaServiceInterface $mediaService,
     ) {}
 
     public function getLanding(string $locale): AdmissionsPageDTO
@@ -20,12 +22,12 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
         $landing = $this->publishedLocalizedPayload('admissions.landing', $locale)
             ?? $this->localized($this->landingPayload(), $locale);
 
-        return $this->landingDto($locale, $this->normalizeUrls($landing, $locale));
+        return $this->landingDto($locale, $this->sanitizeLanding($this->normalizeUrls($landing, $locale), $locale));
     }
 
     public function buildPreviewLanding(string $locale, array $landing): AdmissionsPageDTO
     {
-        return $this->landingDto($locale, $this->normalizeUrls($landing, $locale));
+        return $this->landingDto($locale, $this->sanitizeLanding($this->normalizeUrls($landing, $locale), $locale));
     }
 
     /** @param array<string, mixed> $landing */
@@ -56,7 +58,7 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
             return null;
         }
 
-        $section = $this->normalizeUrls($this->localized($payload, $locale), $locale);
+        $section = $this->sanitizeSection($slug, $this->normalizeUrls($this->localized($payload, $locale), $locale), $locale);
 
         return $this->sectionDto($slug, $locale, $section);
     }
@@ -69,7 +71,7 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
             return null;
         }
 
-        return $this->sectionDto($slug, $locale, $this->normalizeUrls($section, $locale));
+        return $this->sectionDto($slug, $locale, $this->sanitizeSection($slug, $this->normalizeUrls($section, $locale), $locale));
     }
 
     /** @return array{translations: array{ar: array<string, mixed>, en: array<string, mixed>}} */
@@ -166,19 +168,26 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
                 'summaryAr' => 'اكتشف كل ما تحتاج معرفته للانضمام إلى الجامعة السورية الخاصة. ابدأ رحلتك نحو التميز الأكاديمي والإرث الحديث.',
                 'ctaPrimaryEn' => 'APPLY NOW',
                 'ctaPrimaryAr' => 'قدّم الآن',
-                'primaryUrl' => '/admissions/how-to-apply',
+                'primaryUrl' => '/admissions/how-to-apply#application',
                 'ctaSecondaryEn' => 'REQUEST INFORMATION',
                 'ctaSecondaryAr' => 'اطلب معلومات',
                 'secondaryUrl' => '/contact#admissions-support',
                 'badgeLabelEn' => 'Admissions Status Badge',
                 'badgeLabelAr' => 'حالة القبول',
-                'badgeValueEn' => 'Applications Open',
-                'badgeValueAr' => 'التقديم مفتوح',
+                'badgeValueEn' => 'Contact Admissions for current availability',
+                'badgeValueAr' => 'تواصل مع القبول لمعرفة حالة التقديم الحالية',
                 'checklistItems' => [
-                    ['titleEn' => 'Official Transcripts', 'titleAr' => 'الشهادات الرسمية', 'descEn' => 'Sealed records from all previously attended institutions.', 'descAr' => 'سجلات مختومة من جميع المؤسسات التي التحقت بها سابقاً.'],
-                    ['titleEn' => 'Personal Statement', 'titleAr' => 'البيان الشخصي', 'descEn' => 'A 500-word essay articulating your academic intentions.', 'descAr' => 'مقال من 500 كلمة يوضح نواياك الأكاديمية.'],
+                    ['titleEn' => 'Confirm Current Requirements', 'titleAr' => 'أكد المتطلبات الحالية', 'descEn' => 'Review the current applicant guidance and confirm required records with Admissions.', 'descAr' => 'راجع إرشادات المتقدم الحالية وأكد السجلات المطلوبة مع مديرية القبول.'],
+                    ['titleEn' => 'Prepare Verified Records', 'titleAr' => 'حضّر السجلات الموثقة', 'descEn' => 'Do not submit identity or academic records until Admissions provides the approved channel.', 'descAr' => 'لا ترسل وثائق الهوية أو السجلات الأكاديمية حتى تزودك مديرية القبول بالقناة المعتمدة.'],
                 ],
-                'images' => ['campus' => '/images/admissions-hero-campus.webp', 'students' => '/images/admissions-hero-students.webp'],
+                'images' => [
+                    'campus' => '/images/admissions-hero-campus.webp',
+                    'campusAltEn' => 'Syrian Private University campus',
+                    'campusAltAr' => 'حرم الجامعة السورية الخاصة',
+                    'students' => '/images/admission/front-img.jpg',
+                    'studentsAltEn' => 'Syrian Private University students',
+                    'studentsAltAr' => 'طلاب الجامعة السورية الخاصة',
+                ],
             ],
             'trustBar' => [
                 ['titleEn' => 'Accredited Programs', 'titleAr' => 'برامج معتمدة', 'icon' => '/images/icon-award-outline.svg'],
@@ -206,18 +215,16 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
                 'titleAr' => 'الجدول الزمني للقبول',
                 'summaryEn' => 'Our admissions process is designed to thoroughly evaluate each candidate. Please review the following key dates to ensure your application is timely.',
                 'summaryAr' => 'تم تصميم عملية القبول لدينا لتقييم كل مرشح بدقة. يرجى مراجعة التواريخ الرئيسية التالية لضمان تقديم طلبك في الوقت المناسب.',
-                'primaryDeadlineEn' => '15 Aug 2026',
-                'primaryDeadlineAr' => '15 آب 2026',
-                'primaryDeadlineLabelEn' => 'PRIMARY DEADLINE',
-                'primaryDeadlineLabelAr' => 'الموعد النهائي الرئيسي',
-                'primaryDeadlineDescEn' => 'Review each phase of the admissions journey to better understand the requirements and prepare your application successfully.',
-                'primaryDeadlineDescAr' => 'راجع كل مرحلة من رحلة القبول لفهم المتطلبات بشكل أفضل وتحضير طلبك بنجاح.',
+                'primaryDeadlineEn' => '',
+                'primaryDeadlineAr' => '',
+                'primaryDeadlineLabelEn' => 'CURRENT DATES',
+                'primaryDeadlineLabelAr' => 'المواعيد الحالية',
+                'primaryDeadlineDescEn' => 'Admission dates are published only after official approval. Contact Admissions or review official university announcements before applying.',
+                'primaryDeadlineDescAr' => 'تنشر مواعيد القبول بعد اعتمادها رسمياً فقط. تواصل مع مديرية القبول أو راجع إعلانات الجامعة الرسمية قبل التقديم.',
                 'image' => '/images/admissions-hero-campus.webp',
-                'phases' => [
-                    ['labelEn' => 'PHASE 1', 'labelAr' => 'المرحلة 1', 'titleEn' => 'Applications Open', 'titleAr' => 'فتح باب التقديم', 'dateEn' => '01 Jan 2026', 'dateAr' => '01 كانون الثاني 2026', 'active' => true],
-                    ['labelEn' => 'PHASE 2', 'labelAr' => 'المرحلة 2', 'titleEn' => 'Review Period', 'titleAr' => 'فترة المراجعة', 'dateEn' => '16 Aug - 30 Sep 2026', 'dateAr' => '16 آب - 30 أيلول 2026', 'active' => false],
-                    ['labelEn' => 'PHASE 3', 'labelAr' => 'المرحلة 3', 'titleEn' => 'Semester Starts', 'titleAr' => 'بداية الفصل', 'dateEn' => '12 Jan 2027', 'dateAr' => '12 كانون الثاني 2027', 'active' => false],
-                ],
+                'imageAltEn' => 'Syrian Private University campus',
+                'imageAltAr' => 'حرم الجامعة السورية الخاصة',
+                'phases' => [],
             ],
             'resources' => [
                 'eyebrowEn' => 'Resources',
@@ -258,6 +265,8 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
             ['titleEn' => 'Academic Calendar', 'titleAr' => 'التقويم الأكاديمي', 'icon' => '/images/icon-calendar-outline.svg', 'descEn' => 'Important dates and deadlines', 'descAr' => 'تواريخ ومواعيد هامة', 'slug' => 'calendar'],
             ['titleEn' => 'Documents Checklist', 'titleAr' => 'قائمة الوثائق', 'icon' => '/images/icon-file-outline.svg', 'descEn' => 'Required paperwork for all students', 'descAr' => 'الأوراق المطلوبة لجميع الطلاب', 'slug' => 'documents'],
             ['titleEn' => 'Transfer & International', 'titleAr' => 'طلاب التحويل والدوليون', 'icon' => '/images/icon-globe-outline.svg', 'descEn' => 'Pathways for global students', 'descAr' => 'مسارات للطلاب الدوليين', 'slug' => 'transfer'],
+            ['titleEn' => 'Filling Vacancies', 'titleAr' => 'ملء الشواغر', 'icon' => '/images/icon-university-outline.svg', 'descEn' => 'Eligibility and process for vacant seats', 'descAr' => 'الأهلية وإجراءات التقديم على المقاعد الشاغرة', 'slug' => 'filling-vacancies'],
+            ['titleEn' => 'Graduation & National Exams', 'titleAr' => 'التخرج والامتحانات الوطنية', 'icon' => '/images/icon-award-outline.svg', 'descEn' => 'Graduation clearance and national exam guidance', 'descAr' => 'إرشادات استكمال التخرج والامتحانات الوطنية', 'slug' => 'graduation-exams'],
         ];
     }
 
@@ -276,7 +285,7 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
             'titleAr' => 'متطلبات القبول',
             'applyLabelEn' => 'Apply Now',
             'applyLabelAr' => 'قدّم الآن',
-            'applyUrl' => '/admissions/how-to-apply',
+            'applyUrl' => '/admissions/how-to-apply#application',
             'requestInfoLabelEn' => 'Request Info',
             'requestInfoLabelAr' => 'اطلب معلومات',
             'requestInfoUrl' => '/contact#admissions-support',
@@ -401,39 +410,16 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
                 ['key' => 'additionalFees', 'labelEn' => 'Additional Fees', 'labelAr' => 'رسوم إضافية'],
                 ['key' => 'notes', 'labelEn' => 'Notes', 'labelAr' => 'ملاحظات'],
             ],
-            'feeRows' => [
-                ['facultyEn' => 'Medicine', 'facultyAr' => 'الطب البشري', 'typeEn' => 'New', 'typeAr' => 'مستجد', 'tuitionFeeEn' => '$15,000', 'tuitionFeeAr' => '$15,000', 'registrationFeeEn' => '$500', 'registrationFeeAr' => '$500', 'additionalFeesEn' => '$250 (Lab)', 'additionalFeesAr' => '$250 (مخابر)', 'notesEn' => 'Includes basic insurance', 'notesAr' => 'يشمل التأمين الأساسي'],
-                ['facultyEn' => 'Medicine', 'facultyAr' => 'الطب البشري', 'typeEn' => 'Transfer', 'typeAr' => 'تحويل', 'tuitionFeeEn' => '$15,000', 'tuitionFeeAr' => '$15,000', 'registrationFeeEn' => '$300', 'registrationFeeAr' => '$300', 'additionalFeesEn' => '$250 (Lab)', 'additionalFeesAr' => '$250 (مخابر)', 'notesEn' => '-', 'notesAr' => '-'],
-                ['facultyEn' => 'Dentistry', 'facultyAr' => 'طب الأسنان', 'typeEn' => 'New', 'typeAr' => 'مستجد', 'tuitionFeeEn' => '$13,500', 'tuitionFeeAr' => '$13,500', 'registrationFeeEn' => '$500', 'registrationFeeAr' => '$500', 'additionalFeesEn' => '$350 (Materials)', 'additionalFeesAr' => '$350 (مواد)', 'notesEn' => 'Tool kit extra', 'notesAr' => 'عدة الأدوات غير مشمولة'],
-            ],
+            'feeRows' => [],
             'emptyStateEn' => 'No tuition rows match the selected filters.',
             'emptyStateAr' => 'لا توجد رسوم مطابقة للفلاتر المحددة.',
+            'availabilityGuidanceEn' => 'Verified tuition amounts are not currently published on this page. Contact the Admissions or Finance Office for the approved fee schedule before making any payment.',
+            'availabilityGuidanceAr' => 'لا توجد مبالغ رسوم معتمدة منشورة حالياً في هذه الصفحة. تواصل مع مديرية القبول أو المديرية المالية للحصول على جدول الرسوم المعتمد قبل إجراء أي دفعة.',
             'paymentTitleEn' => 'Payment Methods',
             'paymentTitleAr' => 'طرق الدفع',
-            'methods' => [
-                [
-                    'icon' => 'bank',
-                    'titleEn' => 'Bank Transfer',
-                    'titleAr' => 'تحويل مصرفي',
-                    'descEn' => 'Direct transfer to the university official bank account. Takes 2-3 business days to clear.',
-                    'descAr' => 'تحويل مباشر إلى الحساب المصرفي الرسمي للجامعة، وقد يستغرق يومين إلى ثلاثة أيام عمل للتسوية.',
-                    'details' => [
-                        ['labelEn' => 'Account Name', 'labelAr' => 'اسم الحساب', 'valueEn' => 'Syrian Private University', 'valueAr' => 'الجامعة السورية الخاصة'],
-                        ['labelEn' => 'Bank', 'labelAr' => 'المصرف', 'valueEn' => 'Main National Bank', 'valueAr' => 'المصرف الوطني الرئيسي'],
-                        ['labelEn' => 'IBAN', 'labelAr' => 'IBAN', 'valueEn' => 'SY12345678901234567890', 'valueAr' => 'SY12345678901234567890'],
-                    ],
-                ],
-                [
-                    'icon' => 'card',
-                    'titleEn' => 'Online Payment',
-                    'titleAr' => 'الدفع الإلكتروني',
-                    'descEn' => 'Instant processing via the Student Portal using supported payment cards.',
-                    'descAr' => 'معالجة فورية عبر بوابة الطالب باستخدام بطاقات الدفع المدعومة.',
-                    'ctaEn' => 'Access Portal',
-                    'ctaAr' => 'الدخول إلى البوابة',
-                    'ctaUrl' => '#',
-                ],
-            ],
+            'methods' => [],
+            'paymentGuidanceEn' => 'Use only payment instructions issued directly by SPU. No bank account or online payment link is published on this page at present.',
+            'paymentGuidanceAr' => 'استخدم تعليمات الدفع الصادرة مباشرة عن الجامعة فقط. لا يوجد حالياً حساب مصرفي أو رابط دفع إلكتروني منشور في هذه الصفحة.',
             'notesTitleEn' => 'Important Financial Notes',
             'notesTitleAr' => 'ملاحظات مالية هامة',
             'notes' => [
@@ -455,15 +441,19 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
             'featureCards' => [
                 ['titleEn' => 'Clear Steps', 'titleAr' => 'خطوات واضحة', 'descEn' => 'A straightforward, numbered process from application to enrollment.', 'descAr' => 'عملية مرقمة وواضحة من التقديم حتى التسجيل.', 'icon' => 'steps'],
                 ['titleEn' => 'Required Documents', 'titleAr' => 'الوثائق المطلوبة', 'descEn' => 'Prepare your portfolio with our comprehensive checklist.', 'descAr' => 'حضّر ملفك اعتماداً على قائمة الوثائق الشاملة.', 'icon' => 'document'],
-                ['titleEn' => 'Apply at Every Stage', 'titleAr' => 'التقديم في كل مرحلة', 'descEn' => 'Access the application portal immediately from any step in the journey.', 'descAr' => 'ادخل إلى بوابة التقديم مباشرة من أي خطوة في الرحلة.', 'icon' => 'apply'],
+                ['titleEn' => 'Secure Application', 'titleAr' => 'طلب آمن', 'descEn' => 'Submit your information through the validated form on this page for Admissions review.', 'descAr' => 'أرسل معلوماتك عبر النموذج المتحقق منه في هذه الصفحة لمراجعتها من مديرية القبول.', 'icon' => 'apply'],
             ],
             'guideTitleEn' => 'Step-by-Step Guide', 'guideTitleAr' => 'دليل خطوة بخطوة',
             'steps' => [
                 ['number' => '01', 'titleEn' => 'Choose Faculty', 'titleAr' => 'اختر الكلية', 'descEn' => 'Explore our diverse range of faculties and programs to find the perfect fit for your career aspirations.', 'descAr' => 'استكشف كلياتنا وبرامجنا المتنوعة لتجد الخيار الأنسب لطموحاتك المهنية.', 'ctaEn' => 'Explore Programs', 'ctaAr' => 'استكشف البرامج', 'href' => '/facilities/'],
                 ['number' => '02', 'titleEn' => 'Review Requirements', 'titleAr' => 'راجع المتطلبات', 'descEn' => 'Ensure you meet the academic criteria and understand the specific prerequisites for your chosen degree program.', 'descAr' => 'تأكد من استيفاء المعايير الأكاديمية وفهم المتطلبات الخاصة بالبرنامج الذي اخترته.', 'ctaEn' => 'View Requirements', 'ctaAr' => 'عرض المتطلبات', 'href' => '/admissions/requirements/'],
                 ['number' => '03', 'titleEn' => 'Prepare Documents', 'titleAr' => 'حضّر الوثائق', 'descEn' => 'Gather necessary paperwork, including identification, transcripts, and certificates, to streamline your application.', 'descAr' => 'اجمع الأوراق اللازمة، بما في ذلك الهوية وكشوف العلامات والشهادات، لتسهيل طلبك.', 'ctaEn' => 'Checklist Below', 'ctaAr' => 'قائمة الوثائق', 'href' => '/admissions/documents/'],
-                ['number' => '04', 'titleEn' => 'Submit Application', 'titleAr' => 'قدّم الطلب', 'descEn' => 'Complete the online form and upload your prepared documents through our secure portal.', 'descAr' => 'أكمل النموذج الإلكتروني وارفع وثائقك المحضّرة عبر بوابتنا الآمنة.', 'ctaEn' => 'Apply Now', 'ctaAr' => 'قدّم الآن', 'href' => '/admissions/how-to-apply/'],
+                ['number' => '04', 'titleEn' => 'Submit Application', 'titleAr' => 'قدّم الطلب', 'descEn' => 'Complete the secure admissions application form. Admissions staff will review the submitted information and contact you about the next required steps.', 'descAr' => 'أكمل نموذج طلب القبول الآمن. ستراجع مديرية القبول المعلومات المقدمة وتتواصل معك بشأن الخطوات المطلوبة التالية.', 'ctaEn' => 'Open Application Form', 'ctaAr' => 'افتح نموذج الطلب', 'href' => '/admissions/how-to-apply#application'],
             ],
+            'applicationTitleEn' => 'Admissions Application',
+            'applicationTitleAr' => 'طلب القبول',
+            'applicationGuidanceEn' => 'Submitting this form starts an admissions review request. It does not reserve a seat or constitute an admission decision. Do not send documents or payments until Admissions provides verified instructions.',
+            'applicationGuidanceAr' => 'يبدأ إرسال هذا النموذج طلب مراجعة للقبول، ولا يحجز مقعداً ولا يعد قرار قبول. لا ترسل وثائق أو دفعات قبل أن تزودك مديرية القبول بتعليمات موثقة.',
         ];
     }
 
@@ -475,9 +465,9 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
             'searchLabelEn' => 'Search admissions questions', 'searchLabelAr' => 'ابحث في أسئلة القبول', 'searchPlaceholderEn' => 'Search admissions questions...', 'searchPlaceholderAr' => 'ابحث في أسئلة القبول...', 'emptyStateEn' => 'No matching admissions questions found.', 'emptyStateAr' => 'لا توجد أسئلة مطابقة.',
             'sections' => [
                 ['id' => 'application-process', 'titleEn' => 'Application Process', 'titleAr' => 'عملية تقديم الطلب', 'icon' => '/images/icon-file-outline.svg', 'items' => [
-                    ['qEn' => 'When is the application deadline for the Fall semester?', 'qAr' => 'متى يغلق باب التقديم لفصل الخريف؟', 'aEn' => 'The regular decision deadline is typically July 15, with earlier deadlines for limited-capacity programs.', 'aAr' => 'الموعد النهائي العادي عادة هو 15 تموز، مع مواعيد أبكر للبرامج ذات الطاقة المحدودة.'],
+                    ['qEn' => 'Where can I find the current application deadline?', 'qAr' => 'أين أجد موعد التقديم الحالي؟', 'aEn' => 'Deadlines are published through official university announcements after approval. Confirm the active period with Admissions before submitting.', 'aAr' => 'تنشر المواعيد عبر إعلانات الجامعة الرسمية بعد اعتمادها. أكد الفترة النافذة مع مديرية القبول قبل التقديم.'],
                     ['qEn' => 'Can I apply to multiple programs at once?', 'qAr' => 'هل يمكنني التقديم لعدة برامج في نفس الوقت؟', 'aEn' => 'Yes. Each application must include the complete required documentation.', 'aAr' => 'نعم، ويجب أن يتضمن كل طلب الوثائق المطلوبة كاملة.'],
-                    ['qEn' => 'How long does an admission decision take?', 'qAr' => 'كم يستغرق قرار القبول؟', 'aEn' => 'Decisions are usually issued within 3-5 weeks after receiving a complete file.', 'aAr' => 'عادة تصدر القرارات خلال 3 إلى 5 أسابيع بعد استلام ملف كامل.'],
+                    ['qEn' => 'How will I receive an admission decision?', 'qAr' => 'كيف أتلقى قرار القبول؟', 'aEn' => 'Admissions will use the verified contact information in your application to communicate review updates and required next steps.', 'aAr' => 'تستخدم مديرية القبول معلومات التواصل الموثقة في طلبك لإبلاغك بمستجدات المراجعة والخطوات المطلوبة.'],
                     ['qEn' => 'Where do I submit my application?', 'qAr' => 'أين أقدّم طلبي؟', 'aEn' => 'Applications are submitted through the official admissions channel announced by SPU. Contact admissions support if you need help before submission.', 'aAr' => 'تُقدّم الطلبات عبر قناة القبول الرسمية التي تعلنها الجامعة. تواصل مع دعم القبول إذا احتجت إلى مساعدة قبل التقديم.'],
                     ['qEn' => 'Can I update my application after submission?', 'qAr' => 'هل يمكنني تعديل طلبي بعد التقديم؟', 'aEn' => 'Updates may be possible before review is complete. The admissions office will confirm whether your file can still be amended.', 'aAr' => 'قد يكون التعديل ممكناً قبل اكتمال المراجعة، ويؤكد مكتب القبول ما إذا كان ملفك ما يزال قابلاً للتعديل.'],
                     ['qEn' => 'Do I need to visit campus before applying?', 'qAr' => 'هل يجب زيارة الحرم قبل التقديم؟', 'aEn' => 'A campus visit is not required, but applicants are welcome to request advising or visit days when available.', 'aAr' => 'زيارة الحرم ليست مطلوبة، لكن يمكن للمتقدمين طلب الاستشارة أو المشاركة في أيام الزيارة عند توفرها.'],
@@ -515,29 +505,16 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
     private function calendarPayload(): array
     {
         return [
-            'heroImage' => '/images/DSC_1015.JPG', 'breadcrumbHomeEn' => 'Home', 'breadcrumbHomeAr' => 'الرئيسية', 'breadcrumbParentEn' => 'Admissions', 'breadcrumbParentAr' => 'القبول والتسجيل', 'breadcrumbCurrentEn' => 'Academic Calendar', 'breadcrumbCurrentAr' => 'التقويم الأكاديمي', 'titleEn' => 'Academic Calendar 2026/2027', 'titleAr' => 'التقويم الأكاديمي 2026/2027',
+            'heroImage' => '/images/DSC_1015.JPG', 'breadcrumbHomeEn' => 'Home', 'breadcrumbHomeAr' => 'الرئيسية', 'breadcrumbParentEn' => 'Admissions', 'breadcrumbParentAr' => 'القبول والتسجيل', 'breadcrumbCurrentEn' => 'Academic Calendar', 'breadcrumbCurrentAr' => 'التقويم الأكاديمي', 'titleEn' => 'Academic Calendar', 'titleAr' => 'التقويم الأكاديمي',
             'statCards' => [
-                ['titleEn' => 'Current Academic Year', 'titleAr' => 'العام الأكاديمي الحالي', 'descEn' => 'Comprehensive timeline for Fall 2026 and Spring 2027 semesters.', 'descAr' => 'جدول زمني شامل لفصلي خريف 2026 وربيع 2027.', 'icon' => 'calendar'],
-                ['titleEn' => 'Downloadable PDF', 'titleAr' => 'ملف PDF قابل للتنزيل', 'descEn' => 'Prepare your portfolio with our comprehensive checklist.', 'descAr' => 'حضّر ملفك اعتماداً على قائمة الوثائق الشاملة.', 'icon' => 'download'],
-                ['titleEn' => 'Key Dates', 'titleAr' => 'تواريخ مهمة', 'descEn' => 'Quick access to essential deadlines, exams, and registration windows.', 'descAr' => 'وصول سريع إلى المواعيد النهائية والامتحانات وفترات التسجيل.', 'icon' => 'key'],
+                ['titleEn' => 'Official Schedule', 'titleAr' => 'الجدول الرسمي', 'descEn' => 'Approved dates are added here after publication by the University.', 'descAr' => 'تضاف المواعيد المعتمدة هنا بعد نشرها من الجامعة.', 'icon' => 'calendar'],
             ],
             'deadlinesTitleEn' => 'Essential Deadlines', 'deadlinesTitleAr' => 'المواعيد الأساسية', 'timelineTitleEn' => 'Detailed Academic Timeline', 'timelineTitleAr' => 'الجدول الأكاديمي التفصيلي',
-            'deadlines' => [
-                ['typeEn' => 'Classes', 'typeAr' => 'الدروس', 'titleEn' => 'First Day of Classes', 'titleAr' => 'أول يوم دوام', 'dateEn' => 'Sept 15, 2026', 'dateAr' => '15 أيلول 2026'],
-                ['typeEn' => 'Registration', 'typeAr' => 'التسجيل', 'titleEn' => 'Registration Opens', 'titleAr' => 'بدء التسجيل', 'dateEn' => 'Sept 1, 2026', 'dateAr' => '1 أيلول 2026'],
-                ['typeEn' => 'Exams', 'typeAr' => 'الامتحانات', 'titleEn' => 'Final Exams Begin', 'titleAr' => 'بدء الامتحانات النهائية', 'dateEn' => 'Jan 10, 2027', 'dateAr' => '10 كانون الثاني 2027'],
-            ],
-            'semesters' => [
-                ['titleEn' => 'First Semester (Fall 2026)', 'titleAr' => 'الفصل الأول (خريف 2026)', 'events' => [
-                    ['dateEn' => 'Sept 1 - Sept 10', 'dateAr' => '1 - 10 أيلول', 'titleEn' => 'Registration Period', 'titleAr' => 'فترة التسجيل', 'descEn' => 'Course registration for continuing and new students.', 'descAr' => 'تسجيل المقررات للطلاب المستمرين والجدد.'],
-                    ['dateEn' => 'Sept 15', 'dateAr' => '15 أيلول', 'titleEn' => 'Classes Begin', 'titleAr' => 'بدء الدوام', 'descEn' => 'Official start of Fall semester classes.', 'descAr' => 'البداية الرسمية لمحاضرات فصل الخريف.'],
-                    ['dateEn' => 'Oct 15', 'dateAr' => '15 تشرين الأول', 'titleEn' => 'Add/Drop Deadline', 'titleAr' => 'آخر موعد للإضافة والحذف', 'descEn' => 'Last day to add or drop courses without academic penalty.', 'descAr' => 'آخر يوم لإضافة أو حذف المقررات دون عقوبة أكاديمية.'],
-                ]],
-                ['titleEn' => 'Second Semester (Spring 2027)', 'titleAr' => 'الفصل الثاني (ربيع 2027)', 'events' => [
-                    ['dateEn' => 'Feb 1 - Feb 10', 'dateAr' => '1 - 10 شباط', 'titleEn' => 'Registration Period', 'titleAr' => 'فترة التسجيل', 'descEn' => 'Course registration for continuing and new students.', 'descAr' => 'تسجيل المقررات للطلاب المستمرين والجدد.'],
-                ]],
-            ],
-            'download' => ['titleEn' => 'Download Official Calendar', 'titleAr' => 'تحميل التقويم الرسمي', 'descEn' => 'Get the complete 2026-2027 Academic Calendar in PDF format. (PDF, 2.4 MB)', 'descAr' => 'احصل على تقويم 2026-2027 الأكاديمي كاملاً بصيغة PDF. (PDF، 2.4 MB)', 'buttonEn' => 'Download PDF', 'buttonAr' => 'تحميل PDF', 'href' => '#'],
+            'deadlines' => [],
+            'semesters' => [],
+            'scheduleGuidanceEn' => 'No approved academic dates are currently published on this page. Check official university announcements or contact Student Affairs for the current calendar.',
+            'scheduleGuidanceAr' => 'لا توجد مواعيد أكاديمية معتمدة منشورة حالياً في هذه الصفحة. راجع إعلانات الجامعة الرسمية أو تواصل مع شؤون الطلاب للحصول على التقويم الحالي.',
+            'download' => [],
             'notice' => ['titleEn' => 'Official Notice', 'titleAr' => 'تنبيه رسمي', 'descEn' => 'Dates in this academic calendar are subject to change. The University reserves the right to modify the calendar as necessary. Official announcements regarding any changes will be communicated via university email and posted on the official website.', 'descAr' => 'التواريخ في هذا التقويم الأكاديمي قابلة للتغيير. تحتفظ الجامعة بحق تعديل التقويم عند الضرورة، وسيتم إبلاغ أي تغييرات عبر البريد الجامعي ونشرها على الموقع الرسمي.'],
         ];
     }
@@ -546,10 +523,10 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
     private function documentsPayload(): array
     {
         return [
-            'heroImage' => '/images/DSC_1015.JPG', 'lastReviewed' => 'June 2026', 'breadcrumbHomeEn' => 'Home', 'breadcrumbHomeAr' => 'الرئيسية', 'breadcrumbParentEn' => 'Admissions', 'breadcrumbParentAr' => 'القبول والتسجيل', 'breadcrumbCurrentEn' => 'Documents & Checklists', 'breadcrumbCurrentAr' => 'الوثائق وقوائم التحقق', 'titleEn' => 'Documents & Checklists', 'titleAr' => 'الوثائق وقوائم التحقق', 'applyLabelEn' => 'APPLY NOW', 'applyLabelAr' => 'قدّم الآن', 'applyUrl' => '/admissions/how-to-apply', 'requestInfoLabelEn' => 'Request Info', 'requestInfoLabelAr' => 'اطلب معلومات', 'requestInfoUrl' => '/contact', 'requiredLabelEn' => 'Required', 'requiredLabelAr' => 'مطلوب', 'optionalLabelEn' => 'Optional', 'optionalLabelAr' => 'اختياري', 'downloadLabelEn' => 'Download PDF', 'downloadLabelAr' => 'تحميل PDF', 'downloadAllLabelEn' => 'Download All Checklists', 'downloadAllLabelAr' => 'تحميل جميع قوائم التحقق', 'downloadAllDescEn' => 'Get the complete admissions documents checklist in PDF format. (PDF, 1.2 MB)', 'downloadAllDescAr' => 'احصل على قائمة وثائق القبول الكاملة بصيغة PDF. (PDF، 1.2 ميغابايت)', 'lastReviewedLabelEn' => 'Last reviewed', 'lastReviewedLabelAr' => 'آخر مراجعة',
+            'heroImage' => '/images/DSC_1015.JPG', 'lastReviewed' => '', 'breadcrumbHomeEn' => 'Home', 'breadcrumbHomeAr' => 'الرئيسية', 'breadcrumbParentEn' => 'Admissions', 'breadcrumbParentAr' => 'القبول والتسجيل', 'breadcrumbCurrentEn' => 'Documents & Checklists', 'breadcrumbCurrentAr' => 'الوثائق وقوائم التحقق', 'titleEn' => 'Documents & Checklists', 'titleAr' => 'الوثائق وقوائم التحقق', 'applyLabelEn' => 'APPLY NOW', 'applyLabelAr' => 'قدّم الآن', 'applyUrl' => '/admissions/how-to-apply#application', 'requestInfoLabelEn' => 'Request Info', 'requestInfoLabelAr' => 'اطلب معلومات', 'requestInfoUrl' => '/contact', 'requiredLabelEn' => 'Required', 'requiredLabelAr' => 'مطلوب', 'optionalLabelEn' => 'Optional', 'optionalLabelAr' => 'اختياري', 'downloadLabelEn' => 'Download PDF', 'downloadLabelAr' => 'تحميل PDF', 'downloadAllLabelEn' => 'Admissions files', 'downloadAllLabelAr' => 'ملفات القبول', 'downloadAllDescEn' => 'Verified downloadable files will appear here after publication through the Media Library.', 'downloadAllDescAr' => 'ستظهر الملفات القابلة للتنزيل هنا بعد اعتمادها ونشرها عبر مكتبة الوسائط.', 'downloadGuidanceEn' => 'No verified admissions file is currently available for download. Use the on-page checklist and confirm current requirements with Admissions before submitting documents.', 'downloadGuidanceAr' => 'لا يتوفر حالياً ملف قبول موثق للتنزيل. استخدم القائمة المعروضة في الصفحة وأكد المتطلبات الحالية مع مديرية القبول قبل تقديم الوثائق.', 'lastReviewedLabelEn' => 'Last reviewed', 'lastReviewedLabelAr' => 'آخر مراجعة',
             'tabs' => [
                 ['id' => 'checklist', 'labelEn' => 'Admission Checklist', 'labelAr' => 'قائمة القبول', 'subTabs' => [
-                    ['id' => 'freshman', 'labelEn' => 'Freshman', 'labelAr' => 'مستجد', 'descEn' => 'These are the documents required for first-time university applicants holding a certified high school diploma or equivalent. All documents must be submitted in original or certified copy form.', 'descAr' => 'هذه هي الوثائق المطلوبة للمتقدمين للجامعة لأول مرة والحاصلين على شهادة الثانوية العامة المصدقة أو ما يعادلها. يجب تقديم جميع الوثائق أصلية أو مصورة مصدقة.', 'download' => ['href' => '#', 'sizeEn' => 'PDF, 280 KB', 'sizeAr' => 'PDF، 280 كيلوبايت'], 'items' => [
+                    ['id' => 'freshman', 'labelEn' => 'Freshman', 'labelAr' => 'مستجد', 'descEn' => 'These are the documents required for first-time university applicants holding a certified high school diploma or equivalent. Confirm the current form and certification requirements with Admissions.', 'descAr' => 'هذه وثائق إرشادية للمتقدمين للجامعة لأول مرة والحاصلين على شهادة الثانوية العامة أو ما يعادلها. أكد النموذج الحالي ومتطلبات التصديق مع مديرية القبول.', 'download' => [], 'items' => [
                         ['nameEn' => 'Certified High School Diploma', 'nameAr' => 'شهادة الثانوية العامة مصدقة', 'required' => true, 'noteEn' => 'Must be certified by the Ministry of Education.', 'noteAr' => 'يجب أن تكون مصدقة من وزارة التربية.'],
                         ['nameEn' => 'Copy of National ID or Passport', 'nameAr' => 'صورة عن الهوية الشخصية أو جواز السفر', 'required' => true, 'noteEn' => 'Valid and clear photocopy.', 'noteAr' => 'نسخة واضحة وسارية المفعول.'],
                         ['nameEn' => '4 Personal Photos (White Background)', 'nameAr' => '4 صور شخصية (خلفية بيضاء)', 'required' => true, 'noteEn' => 'Recent photos, 4x6 cm.', 'noteAr' => 'صور حديثة، مقاس 4x6 سم.'],
@@ -557,20 +534,20 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
                         ['nameEn' => 'Military Service Status Document (for males)', 'nameAr' => 'وثيقة حالة الخدمة الإلزامية (للذكور)', 'required' => true, 'noteEn' => 'Or postponement document if applicable.', 'noteAr' => 'أو وثيقة التأجيل إن وجدت.'],
                         ['nameEn' => 'Proof of Residence', 'nameAr' => 'إثبات السكن', 'required' => false, 'noteEn' => 'Recent utility bill or rental contract.', 'noteAr' => 'فاتورة خدمات حديثة أو عقد إيجار.'],
                     ]],
-                    ['id' => 'transfer', 'labelEn' => 'Transfer', 'labelAr' => 'تحويل', 'descEn' => 'Transfer students must provide documents from their previous institution in addition to standard identification. Credit transfer is subject to faculty review.', 'descAr' => 'يجب على طلاب التحويل تقديم وثائق من مؤسستهم السابقة بالإضافة إلى أوراق الهوية القياسية. يخضع تحويل الساعات لموافقة الكلية.', 'download' => ['href' => '#', 'sizeEn' => 'PDF, 310 KB', 'sizeAr' => 'PDF، 310 كيلوبايت'], 'items' => [
+                    ['id' => 'transfer', 'labelEn' => 'Transfer', 'labelAr' => 'تحويل', 'descEn' => 'Transfer students provide records from their previous institution in addition to identification. Credit recognition remains subject to faculty review.', 'descAr' => 'يقدم طلاب التحويل سجلات مؤسستهم السابقة إضافة إلى وثائق الهوية. يبقى احتساب الساعات خاضعاً لمراجعة الكلية.', 'download' => [], 'items' => [
                         ['nameEn' => 'Official University Transcript', 'nameAr' => 'كشف علامات جامعي رسمي', 'required' => true, 'noteEn' => 'Sealed and stamped by the previous university.', 'noteAr' => 'مختوم وموثق من الجامعة السابقة.'],
                         ['nameEn' => 'Course Descriptions / Syllabi', 'nameAr' => 'وصف المساقات / المناهج', 'required' => true, 'noteEn' => 'For all completed courses seeking transfer.', 'noteAr' => 'لجميع المساقات المنجزة المراد تحويلها.'],
                         ['nameEn' => 'High School Certificate Copy', 'nameAr' => 'صورة عن شهادة الثانوية', 'required' => true, 'noteEn' => 'Certified copy.', 'noteAr' => 'نسخة مصدقة.'],
                         ['nameEn' => 'Good Standing / Non-Disciplinary Letter', 'nameAr' => 'خطاب حسن سلوك / عدم تأديبي', 'required' => true, 'noteEn' => 'From the previous university registrar.', 'noteAr' => 'من مسجل الجامعة السابقة.'],
                         ['nameEn' => 'Transfer Credit Evaluation Form', 'nameAr' => 'نموذج تقييم ساعات التحويل', 'required' => false, 'noteEn' => 'Available at the Admissions Office.', 'noteAr' => 'متوفر في مكتب القبول والتسجيل.'],
                     ]],
-                    ['id' => 'equivalency', 'labelEn' => 'Equivalency', 'labelAr' => 'معادلة', 'descEn' => 'Applicants with non-Syrian certificates or special-track diplomas must obtain an equivalency decision from the Ministry of Higher Education before final admission.', 'descAr' => 'يجب على المتقدمين الحاصلين على شهادات غير سورية أو ثانويات مسار خاص الحصول على قرار معادلة من وزارة التعليم العالي قبل القبول النهائي.', 'download' => ['href' => '#', 'sizeEn' => 'PDF, 295 KB', 'sizeAr' => 'PDF، 295 كيلوبايت'], 'items' => [
+                    ['id' => 'equivalency', 'labelEn' => 'Equivalency', 'labelAr' => 'معادلة', 'descEn' => 'Applicants with certificates requiring equivalency should confirm the current competent-authority process before final admission.', 'descAr' => 'على أصحاب الشهادات التي تتطلب معادلة تأكيد الإجراءات الحالية لدى الجهة المختصة قبل القبول النهائي.', 'download' => [], 'items' => [
                         ['nameEn' => 'Original External Certificate', 'nameAr' => 'الشهادة الخارجية الأصلية', 'required' => true, 'noteEn' => 'Attested by the issuing country and Syrian embassy.', 'noteAr' => 'مصدقة من دولة الإصدار والسفارة السورية.'],
                         ['nameEn' => 'Certified Arabic Translation', 'nameAr' => 'ترجمة عربية مصدقة', 'required' => true, 'noteEn' => 'By a sworn translator if the certificate is not in Arabic.', 'noteAr' => 'من مترجم قسمي إذا كانت الشهادة ليست بالعربية.'],
                         ['nameEn' => 'Equivalency / Recognition Decision', 'nameAr' => 'قرار المعادلة / المعترف بها', 'required' => true, 'noteEn' => 'From the Syrian Ministry of Higher Education.', 'noteAr' => 'من وزارة التعليم العالي السورية.'],
                         ['nameEn' => 'Passport or National ID Copy', 'nameAr' => 'صورة عن جواز السفر أو الهوية', 'required' => true, 'noteEn' => 'Valid and clear photocopy.', 'noteAr' => 'نسخة واضحة وسارية المفعول.'],
                     ]],
-                    ['id' => 'international', 'labelEn' => 'International', 'labelAr' => 'دولي', 'descEn' => 'International applicants should confirm visa status, passport validity, and equivalency requirements before submitting their application.', 'descAr' => 'يجب على المتقدمين الدوليين التأكد من حالة التأشيرة وصلاحية جواز السفر ومتطلبات المعادلة قبل تقديم طلبهم.', 'download' => ['href' => '#', 'sizeEn' => 'PDF, 340 KB', 'sizeAr' => 'PDF، 340 كيلوبايت'], 'items' => [
+                    ['id' => 'international', 'labelEn' => 'International', 'labelAr' => 'دولي', 'descEn' => 'International applicants should confirm current passport, residency, authentication, and equivalency requirements before applying.', 'descAr' => 'على المتقدمين الدوليين تأكيد متطلبات جواز السفر والإقامة والتصديق والمعادلة الحالية قبل التقديم.', 'download' => [], 'items' => [
                         ['nameEn' => 'Valid Passport Copy', 'nameAr' => 'صورة عن جواز السفر الساري', 'required' => true, 'noteEn' => 'Must be valid for at least 6 months.', 'noteAr' => 'يجب أن يكون سارياً لمدة 6 أشهر على الأقل.'],
                         ['nameEn' => 'Certified Secondary School Certificate', 'nameAr' => 'شهادة الثانوية العامة مصدقة', 'required' => true, 'noteEn' => 'Attested by the issuing country and Syrian embassy.', 'noteAr' => 'مصدقة من دولة الإصدار والسفارة السورية.'],
                         ['nameEn' => 'Ministry Equivalency Documents', 'nameAr' => 'وثائق معادلة الوزارة', 'required' => true, 'noteEn' => 'Decision from the Ministry of Higher Education.', 'noteAr' => 'قرار من وزارة التعليم العالي.'],
@@ -586,22 +563,10 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
                 ]],
                 ['id' => 'studySystem', 'labelEn' => 'Study System & GPA', 'labelAr' => 'نظام الدراسة والمعدل', 'introEn' => 'Syrian Private University follows a semester-based credit hour system. Academic performance is evaluated using a 4.0 GPA scale alongside the traditional percentage system.', 'introAr' => 'تتبع الجامعة السورية الخاصة نظام الساعات المعتمدة المبني على الفصول الدراسية. يتم تقييم الأداء الأكاديمي باستخدام مقياس المعدل التراكمي 4.0 إلى جانب نظام النسبة المئوية التقليدي.', 'scaleTitleEn' => 'Grading Scale', 'scaleTitleAr' => 'مقياس التقديرات', 'scaleHeaders' => [
                     ['key' => 'percentage', 'labelEn' => 'Percentage', 'labelAr' => 'النسبة المئوية'], ['key' => 'gpa', 'labelEn' => 'GPA (4.0)', 'labelAr' => 'المعدل (4.0)'], ['key' => 'grade', 'labelEn' => 'Grade', 'labelAr' => 'التقدير'], ['key' => 'descriptor', 'labelEn' => 'Descriptor', 'labelAr' => 'الوصف'],
-                ], 'scaleRows' => [
-                    ['percentageEn' => '90 - 100%', 'percentageAr' => '90 - 100%', 'gpa' => '4.0', 'gradeEn' => 'A', 'gradeAr' => 'أ', 'descriptorEn' => 'Excellent', 'descriptorAr' => 'ممتاز'],
-                    ['percentageEn' => '80 - 84%', 'percentageAr' => '80 - 84%', 'gpa' => '3.3', 'gradeEn' => 'B+', 'gradeAr' => 'ب+', 'descriptorEn' => 'Good Plus', 'descriptorAr' => 'جيد +'],
-                    ['percentageEn' => '70 - 74%', 'percentageAr' => '70 - 74%', 'gpa' => '2.7', 'gradeEn' => 'B-', 'gradeAr' => 'ب-', 'descriptorEn' => 'Above Average', 'descriptorAr' => 'فوق المتوسط'],
-                    ['percentageEn' => '60 - 64%', 'percentageAr' => '60 - 64%', 'gpa' => '2.0', 'gradeEn' => 'C', 'gradeAr' => 'ج', 'descriptorEn' => 'Average', 'descriptorAr' => 'متوسط'],
-                    ['percentageEn' => 'Below 50%', 'percentageAr' => 'أقل من 50%', 'gpa' => '0.0', 'gradeEn' => 'F', 'gradeAr' => 'رسوب', 'descriptorEn' => 'Fail', 'descriptorAr' => 'راسب'],
-                ], 'notes' => [
-                    ['en' => 'The minimum passing grade for any course is 50% (D / 1.0 GPA).', 'ar' => 'الحد الأدنى للنجاح في أي مساق هو 50% (د / 1.0 معدل).'],
-                    ['en' => 'GPA is calculated on a cumulative basis across all completed credit hours.', 'ar' => 'يتم حساب المعدل التراكمي على أساس جميع الساعات المعتمدة المنجزة.'],
-                    ['en' => 'Some faculties may require higher minimum grades for progression.', 'ar' => 'قد تتطلب بعض الكليات علامات دنيا أعلى للترقي.'],
+                ], 'scaleRows' => [], 'notes' => [
+                    ['en' => 'The complete grading scale is published only after verification against the current study regulations. Contact the Registrar for the applicable scale.', 'ar' => 'ينشر مقياس التقديرات الكامل بعد التحقق من نظام الدراسة النافذ. تواصل مع أمانة السجل للحصول على المقياس المطبق.'],
                 ]],
-                ['id' => 'warnings', 'labelEn' => 'Academic Warnings', 'labelAr' => 'الإنذارات الأكاديمية', 'introEn' => 'The academic warning system is designed to identify students whose performance falls below satisfactory levels and to provide structured pathways for recovery before dismissal.', 'introAr' => 'تم تصميم نظام الإنذار الأكاديمي لتحديد الطلاب الذين ينخفض أداؤهم عن المستويات المقبولة وتوفير مسارات منظمة للتعافي قبل الفصل.', 'levelsTitleEn' => 'Warning Levels', 'levelsTitleAr' => 'مستويات الإنذار', 'levels' => [
-                    ['levelEn' => 'First Warning', 'levelAr' => 'الإنذار الأول', 'thresholdEn' => 'GPA below 2.0', 'thresholdAr' => 'معدل أقل من 2.0', 'consequencesEn' => 'Academic advising mandatory. Student must meet with faculty advisor within 2 weeks.', 'consequencesAr' => 'الإرشاد الأكاديمي إلزامي. يجب على الطالب مقابلة المرشد الأكاديمي خلال أسبوعين.', 'recoveryEn' => 'Raise GPA to 2.0 or above in the following semester to clear the warning.', 'recoveryAr' => 'رفع المعدل إلى 2.0 أو أعلى في الفصل الدراسي التالي لإلغاء الإنذار.'],
-                    ['levelEn' => 'Second Warning', 'levelAr' => 'الإنذار الثاني', 'thresholdEn' => 'GPA below 2.0 for two consecutive semesters', 'thresholdAr' => 'معدل أقل من 2.0 لفصلين دراسيين متتاليين', 'consequencesEn' => 'Course load limited to 12 credit hours. Mandatory tutoring and academic support plan.', 'consequencesAr' => 'تحميل المقررات محدد بـ 12 ساعة معتمدة. خطة تأهيل ودعم أكاديمي إلزامية.', 'recoveryEn' => 'Achieve GPA of 2.0 or higher in the next semester and maintain it for one additional semester.', 'recoveryAr' => 'تحقيق معدل 2.0 أو أعلى في الفصل التالي والمحافظة عليه لفصل إضافي.'],
-                    ['levelEn' => 'Final Warning / Dismissal', 'levelAr' => 'الإنذار النهائي / الفصل', 'thresholdEn' => 'GPA below 2.0 for three consecutive semesters', 'thresholdAr' => 'معدل أقل من 2.0 لثلاثة فصول دراسية متتالية', 'consequencesEn' => 'Academic dismissal from the faculty. Student may appeal to the Faculty Council within 30 days.', 'consequencesAr' => 'الفصل الأكاديمي من الكلية. يحق للطالب الاستئناف أمام مجلس الكلية خلال 30 يوماً.', 'recoveryEn' => 'Successful appeal with documented extenuating circumstances, or re-admission after one academic year with dean approval.', 'recoveryAr' => 'استئناف ناجح مع ظروف استثنائية موثقة، أو إعادة قبول بعد عام أكاديمي بموافقة العميد.'],
-                ]],
+                ['id' => 'warnings', 'labelEn' => 'Academic Warnings', 'labelAr' => 'الإنذارات الأكاديمية', 'introEn' => 'Academic-warning thresholds and consequences depend on the current study regulations. Contact the Registrar or your faculty adviser for verified guidance.', 'introAr' => 'تعتمد حدود الإنذارات الأكاديمية وآثارها على نظام الدراسة النافذ. تواصل مع أمانة السجل أو مرشد الكلية للحصول على إرشادات موثقة.', 'levelsTitleEn' => 'Warning Levels', 'levelsTitleAr' => 'مستويات الإنذار', 'levels' => []],
             ],
         ];
     }
@@ -610,7 +575,7 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
     private function transferPayload(): array
     {
         return [
-            'heroImage' => '/images/DSC_1015.JPG', 'breadcrumbHomeEn' => 'Home', 'breadcrumbHomeAr' => 'الرئيسية', 'breadcrumbParentEn' => 'Admissions', 'breadcrumbParentAr' => 'القبول والتسجيل', 'breadcrumbCurrentEn' => 'Transfer & International Students', 'breadcrumbCurrentAr' => 'التحويل والطلاب الدوليون', 'titleEn' => 'Transfer & International Students', 'titleAr' => 'التحويل والطلاب الدوليون', 'applyLabelEn' => 'APPLY NOW', 'applyLabelAr' => 'قدّم الآن', 'applyUrl' => '/admissions/how-to-apply', 'requestInfoLabelEn' => 'Request Info', 'requestInfoLabelAr' => 'اطلب معلومات', 'requestInfoUrl' => '/contact#admissions-support', 'requiredLabelEn' => 'Required', 'requiredLabelAr' => 'مطلوب', 'optionalLabelEn' => 'Optional (if Applicable)', 'optionalLabelAr' => 'اختياري (إذا توفر)',
+            'heroImage' => '/images/DSC_1015.JPG', 'breadcrumbHomeEn' => 'Home', 'breadcrumbHomeAr' => 'الرئيسية', 'breadcrumbParentEn' => 'Admissions', 'breadcrumbParentAr' => 'القبول والتسجيل', 'breadcrumbCurrentEn' => 'Transfer & International Students', 'breadcrumbCurrentAr' => 'التحويل والطلاب الدوليون', 'titleEn' => 'Transfer & International Students', 'titleAr' => 'التحويل والطلاب الدوليون', 'applyLabelEn' => 'APPLY NOW', 'applyLabelAr' => 'قدّم الآن', 'applyUrl' => '/admissions/how-to-apply#application', 'requestInfoLabelEn' => 'Request Info', 'requestInfoLabelAr' => 'اطلب معلومات', 'requestInfoUrl' => '/contact#admissions-support', 'requiredLabelEn' => 'Required', 'requiredLabelAr' => 'مطلوب', 'optionalLabelEn' => 'Optional (if Applicable)', 'optionalLabelAr' => 'اختياري (إذا توفر)',
             'tabs' => [
                 ['id' => 'transfer', 'labelEn' => 'Transfer Student', 'labelAr' => 'طالب محوّل', 'policiesTitleEn' => 'Transfer Policies', 'policiesTitleAr' => 'سياسات التحويل', 'policies' => [['icon' => 'transfer', 'titleEn' => 'Credit Transfer Policy', 'titleAr' => 'سياسة تحويل الساعات المعتمدة', 'descEn' => 'Credits are evaluated on a course-by-course basis. A minimum grade of C or equivalent is required for transfer consideration. Core curriculum courses undergo rigorous review by the respective college dean.', 'descAr' => 'يتم تقييم الساعات المعتمدة على أساس كل مقرر على حدة. يُشترط الحصول على حد أدنى من الدرجات C أو ما يعادلها للنظر في التحويل الأكاديمي. وتخضع مساقات المنهج الأساسي لمراجعة دقيقة من قبل عميد الكلية المختص.'], ['icon' => 'equivalency', 'titleEn' => 'Course Equivalency', 'titleAr' => 'تعادل المقررات الدراسية', 'descEn' => 'Applicants must provide detailed syllabi for courses seeking equivalency. The academic committee assesses content overlap, credit hours, and learning outcomes against SPU standards.', 'descAr' => 'يجب على المتقدمين تقديم توصيف تفصيلي للمقررات التي يطلبون معادلتها. وتقوم اللجنة الأكاديمية بتقييم تداخل المحتوى، والساعات المعتمدة، ومخرجات التعلم مقارنة بمعايير جامعة SPU.']], 'documentsTitleEn' => 'Required Documents', 'documentsTitleAr' => 'الوثائق المطلوبة للتقديم', 'documents' => [['titleEn' => 'Original High School Transcript', 'titleAr' => 'وثيقة شهادة الثانوية العامة الأصلية المصدقة', 'required' => true], ['titleEn' => 'Photocopy of ID Card / Passport', 'titleAr' => 'صورة عن الهوية الشخصية أو جواز السفر', 'required' => true], ['titleEn' => 'Four (4) Recent Passport Photos', 'titleAr' => 'أربع (4) صور شخصية ملونة حديثة', 'required' => true], ['titleEn' => 'Medical Fitness Certificate', 'titleAr' => 'شهادة خلو من الأمراض السارية (شهادة صحية)', 'required' => true], ['titleEn' => 'Language Proficiency Test Scores', 'titleAr' => 'درجات اختبار كفاءة اللغة الإنجليزية (إن وجد)', 'required' => false]], 'processTitleEn' => 'Application Process', 'processTitleAr' => 'خطوات وإجراءات التقديم', 'steps' => [['titleEn' => 'Choose Type', 'titleAr' => 'اختر الفئة', 'descEn' => 'Determine if you are applying as a transfer or international student.', 'descAr' => 'تحديد ما إذا كنت تتقدم للدراسة كطالب محوّل أو طالب دولي.'], ['titleEn' => 'Review Requirements', 'titleAr' => 'مراجعة المتطلبات الأكاديمية', 'descEn' => 'Gather all necessary documentation based on your applicant type.', 'descAr' => 'جمع كافة المستندات والوثائق المطلوبة بناءً على فئة التقديم الخاصة بك.'], ['titleEn' => 'Prepare Documents', 'titleAr' => 'تحضير وتصديق الوثائق', 'descEn' => 'Ensure transcripts, syllabi, and identification are certified.', 'descAr' => 'التأكد من تصديق كشوف العلامات، وتوصيف المقررات الأكاديمية، والوثائق الشخصية رسمياً.']]],
                 ['id' => 'international', 'labelEn' => 'International Student', 'labelAr' => 'طالب دولي', 'policiesTitleEn' => 'International Student Policies', 'policiesTitleAr' => 'سياسات الطلاب الدوليين', 'policies' => [['icon' => 'language', 'titleEn' => 'Language Requirements', 'titleAr' => 'متطلبات الكفاءة اللغوية', 'descEn' => 'Applicants may be asked to provide Arabic or English language evidence depending on faculty requirements and the chosen academic programme.', 'descAr' => 'قد يُطلب من المتقدمين تقديم إثبات إتقان اللغة العربية أو الإنجليزية اعتماداً على شروط القبول في الكلية والبرنامج الأكاديمي المختار.'], ['icon' => 'visa', 'titleEn' => 'Visa & Equivalency Guide', 'titleAr' => 'دليل التأشيرات ومعادلة الشهادات', 'descEn' => 'International applicants should confirm visa status, passport validity, and Ministry of Education equivalency requirements before final admission.', 'descAr' => 'يجب على المتقدمين الدوليين التأكد من حالة التأشيرة وصلاحية جواز السفر، واستيفاء متطلبات المعادلة لدى وزارة التعليم العالي السورية قبل القبول النهائي.']], 'documentsTitleEn' => 'Required Documents', 'documentsTitleAr' => 'الوثائق المطلوبة للطلاب الدوليين', 'documents' => [['titleEn' => 'Valid Passport Copy', 'titleAr' => 'صورة واضحة عن جواز سفر ساري المفعول', 'required' => true], ['titleEn' => 'Certified Secondary School Certificate', 'titleAr' => 'شهادة الدراسة الثانوية العامة مصدقة من وزارة الخارجية والسفارة السورية', 'required' => true], ['titleEn' => 'Ministry Equivalency Documents', 'titleAr' => 'وثيقة معادلة الشهادة الثانوية الصادرة عن وزارة التعليم العالي السورية', 'required' => true], ['titleEn' => 'Four (4) Recent Passport Photos', 'titleAr' => 'أربع (4) صور شخصية ملونة حديثة', 'required' => true], ['titleEn' => 'Visa or Residency Documents', 'titleAr' => 'صورة عن التأشيرة الدراسية أو إقامة سارية المفعول في سوريا', 'required' => false]], 'processTitleEn' => 'Application Process', 'processTitleAr' => 'خطوات تقديم طلبات القبول الدولي', 'steps' => [['titleEn' => 'Confirm Eligibility', 'titleAr' => 'التحقق من الأهلية والمعادلة', 'descEn' => 'Review country-specific academic and equivalency requirements.', 'descAr' => 'مراجعة المتطلبات الأكاديمية وشروط معادلة الشهادات المعتمدة لكل جنسية.'], ['titleEn' => 'Submit Documents', 'titleAr' => 'تقديم ملف الوثائق', 'descEn' => 'Provide certified academic records, passport documents, and translations.', 'descAr' => 'تقديم السجلات الأكاديمية المصدقة، وصور جواز السفر، والترجمات المعتمدة قانونياً.'], ['titleEn' => 'Finalize Admission', 'titleAr' => 'استكمال التسجيل والقبول', 'descEn' => 'Coordinate with Admissions for acceptance, visa guidance, and registration steps.', 'descAr' => 'التنسيق مع مكتب القبول والتسجيل لاستلام إشعار القبول الرسمي وإتمام إجراءات الإقامة.']]],
@@ -650,16 +615,11 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
             'breadcrumbCurrentAr' => 'ملء الشواغر',
             'titleEn' => 'Filling Vacant Seats',
             'titleAr' => 'ملء الشواغر',
-            'introEn' => 'SPU offers the opportunity to apply for vacant seats in certain faculties after the initial enrollment period has closed. This process allows qualified students who missed the regular admission cycle to secure a place in their desired program, subject to availability.',
-            'introAr' => 'تتيح الجامعة السورية الخاصة فرصة التقديم على المقاعد الشاغرة في بعض الكليات بعد انتهاء فترة التسجيل الأولي. تتيح هذه العملية للطلاب المؤهلين الذين فاتتهم دورة القبول العادية تأمين مقعد في البرنامج الذي يرغبون فيه، حسب التوفر.',
-            'cardsTitleEn' => 'Vacancy Application Requirements',
-            'cardsTitleAr' => 'متطلبات التقديم على الشواغر',
-            'cards' => [
-                ['titleEn' => 'Eligibility', 'titleAr' => 'الأهلية', 'bodyEn' => 'Applicants must meet the same academic requirements as regular admission candidates, including minimum high school GPA and faculty-specific prerequisites.', 'bodyAr' => 'يجب أن يستوفي المتقدمون نفس المتطلبات الأكاديمية لمرشحي القبول العادي، بما في ذلك الحد الأدنى لمعدل الثانوية العامة والمتطلبات الخاصة بكل كلية.'],
-                ['titleEn' => 'Available Faculties', 'titleAr' => 'الكليات المتاحة', 'bodyEn' => 'Vacant seats vary by faculty and academic year. The list of faculties with open seats is announced after the regular enrollment period ends.', 'bodyAr' => 'تختلف المقاعد الشاغرة حسب الكلية والعام الأكاديمي. يتم الإعلان عن قائمة الكليات ذات المقاعد الشاغرة بعد انتهاء فترة التسجيل العادي.'],
-                ['titleEn' => 'Application Period', 'titleAr' => 'فترة التقديم', 'bodyEn' => 'Applications for vacant seats are accepted during a specified period announced on the official university website and through university announcements.', 'bodyAr' => 'يتم استقبال طلبات ملء الشواغر خلال فترة محددة تعلن على الموقع الرسمي للجامعة وعبر إعلانات الجامعة.'],
-                ['titleEn' => 'Required Documents', 'titleAr' => 'الوثائق المطلوبة', 'bodyEn' => 'Applicants must submit all standard admission documents along with a vacancy application form available from the Admissions Office.', 'bodyAr' => 'يجب على المتقدمين تقديم جميع وثائق القبول القياسية بالإضافة إلى نموذج طلب الشواغر المتاح من مكتب القبول والتسجيل.'],
-            ],
+            'introEn' => 'No verified vacant-seat announcement is currently published on this page. Availability, eligible faculties, dates, and the official submission method will appear here only after approval through the Admissions CMS workflow.',
+            'introAr' => 'لا يوجد حالياً إعلان موثق لملء الشواغر منشور في هذه الصفحة. لن تظهر أعداد الشواغر والكليات المؤهلة والمواعيد وآلية التقديم الرسمية هنا إلا بعد اعتمادها عبر نظام إدارة محتوى القبول.',
+            'cardsTitleEn' => '',
+            'cardsTitleAr' => '',
+            'cards' => [],
             'seoDescriptionEn' => 'Apply for vacant seats at SPU after the initial enrollment period. Check eligibility, required documents, and application process.',
             'seoDescriptionAr' => 'التقديم على المقاعد الشاغرة في الجامعة السورية الخاصة بعد فترة التسجيل الأولي، مع الأهلية والوثائق المطلوبة وآلية التقديم.',
         ];
@@ -754,5 +714,190 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
         }
 
         return '/'.$locale.$value;
+    }
+
+    /** @param array<string, mixed> $landing
+     * @return array<string, mixed>
+     */
+    private function sanitizeLanding(array $landing, string $locale): array
+    {
+        $hero = is_array($landing['hero'] ?? null) ? $landing['hero'] : [];
+        if ($this->containsKnownAdmissionsPlaceholder($hero['badgeValue'] ?? null)) {
+            $landing['hero']['badgeValue'] = $locale === 'ar'
+                ? 'تواصل مع القبول لمعرفة حالة التقديم الحالية'
+                : 'Contact Admissions for current availability';
+        }
+
+        $timeline = is_array($landing['timeline'] ?? null) ? $landing['timeline'] : [];
+        if ($this->containsKnownAdmissionsPlaceholder($timeline)) {
+            $landing['timeline']['primaryDeadline'] = '';
+            $landing['timeline']['phases'] = [];
+            $landing['timeline']['primaryDeadlineDesc'] = $locale === 'ar'
+                ? 'تنشر مواعيد القبول بعد اعتمادها رسمياً فقط. راجع إعلانات الجامعة أو تواصل مع مديرية القبول.'
+                : 'Admission dates are published only after official approval. Review university announcements or contact Admissions.';
+        }
+
+        return $this->removeInertAdmissionsUrls($landing);
+    }
+
+    /** @param array<string, mixed> $section
+     * @return array<string, mixed>
+     */
+    private function sanitizeSection(string $slug, array $section, string $locale): array
+    {
+        if ($slug === 'tuition') {
+            $section['feeRows'] = array_values(array_filter(
+                is_array($section['feeRows'] ?? null) ? $section['feeRows'] : [],
+                fn (mixed $row): bool => is_array($row) && ! $this->containsKnownAdmissionsPlaceholder($row),
+            ));
+            $section['methods'] = array_values(array_filter(
+                is_array($section['methods'] ?? null) ? $section['methods'] : [],
+                fn (mixed $method): bool => is_array($method)
+                    && ! $this->containsKnownAdmissionsPlaceholder($method)
+                    && (! isset($method['ctaUrl']) || $this->isSafePaymentUrl($method['ctaUrl'])),
+            ));
+            $section['availabilityGuidance'] ??= $locale === 'ar'
+                ? 'لا توجد مبالغ رسوم معتمدة منشورة حالياً. تواصل مع مديرية القبول أو المديرية المالية قبل إجراء أي دفعة.'
+                : 'Verified tuition amounts are not currently published. Contact Admissions or Finance before making any payment.';
+            $section['paymentGuidance'] ??= $locale === 'ar'
+                ? 'استخدم تعليمات الدفع الصادرة مباشرة عن الجامعة فقط.'
+                : 'Use only payment instructions issued directly by SPU.';
+        }
+
+        if ($slug === 'calendar') {
+            if ($this->containsKnownAdmissionsPlaceholder($section['deadlines'] ?? null)) {
+                $section['deadlines'] = [];
+            }
+            if ($this->containsKnownAdmissionsPlaceholder($section['semesters'] ?? null)) {
+                $section['semesters'] = [];
+            }
+            if ($this->containsKnownAdmissionsPlaceholder($section['title'] ?? null)) {
+                $section['title'] = $locale === 'ar' ? 'التقويم الأكاديمي' : 'Academic Calendar';
+            }
+            $section['scheduleGuidance'] ??= $locale === 'ar'
+                ? 'لا توجد مواعيد أكاديمية معتمدة منشورة حالياً. راجع إعلانات الجامعة الرسمية.'
+                : 'No approved academic dates are currently published. Check official university announcements.';
+            $section['download'] = $this->verifiedDownload(is_array($section['download'] ?? null) ? $section['download'] : []);
+        }
+
+        if ($slug === 'documents') {
+            foreach (($section['tabs'] ?? []) as $tabIndex => $tab) {
+                if (! is_array($tab) || ! is_array($tab['subTabs'] ?? null)) {
+                    continue;
+                }
+                foreach ($tab['subTabs'] as $subIndex => $subTab) {
+                    if (is_array($subTab)) {
+                        $section['tabs'][$tabIndex]['subTabs'][$subIndex]['download'] = $this->verifiedDownload(
+                            is_array($subTab['download'] ?? null) ? $subTab['download'] : [],
+                        );
+                    }
+                }
+            }
+            $section['downloadGuidance'] ??= $locale === 'ar'
+                ? 'لا يتوفر حالياً ملف قبول موثق للتنزيل. أكد المتطلبات الحالية مع مديرية القبول.'
+                : 'No verified admissions file is currently available. Confirm current requirements with Admissions.';
+        }
+
+        if ($slug === 'how-to-apply') {
+            foreach (($section['steps'] ?? []) as $index => $step) {
+                if (is_array($step) && $this->isHowToApplySelfLoop($step['href'] ?? null, $locale)) {
+                    $section['steps'][$index]['href'] = '/'.$locale.'/admissions/how-to-apply#application';
+                }
+            }
+            $section['applicationTitle'] ??= $locale === 'ar' ? 'طلب القبول' : 'Admissions Application';
+            $section['applicationGuidance'] ??= $locale === 'ar'
+                ? 'إرسال النموذج لا يحجز مقعداً ولا يعد قرار قبول. ستتواصل مديرية القبول معك بشأن الخطوات التالية.'
+                : 'Submitting the form does not reserve a seat or constitute admission. Admissions will contact you about next steps.';
+        }
+
+        return $this->removeInertAdmissionsUrls($section);
+    }
+
+    /** @param array<string, mixed> $download
+     * @return array<string, mixed>
+     */
+    private function verifiedDownload(array $download): array
+    {
+        $mediaId = is_numeric($download['mediaId'] ?? null) ? (int) $download['mediaId'] : 0;
+        $href = is_string($download['href'] ?? null) ? trim($download['href']) : '';
+
+        return $mediaId > 0 && $href !== '' && $href !== '#' && $this->mediaService->publicDocumentsArePublishable([$mediaId])
+            ? $download
+            : [];
+    }
+
+    private function isHowToApplySelfLoop(mixed $url, string $locale): bool
+    {
+        if (! is_string($url)) {
+            return false;
+        }
+
+        $path = parse_url($url, PHP_URL_PATH);
+        $fragment = parse_url($url, PHP_URL_FRAGMENT);
+
+        return in_array($path, ['/admissions/how-to-apply', '/admissions/how-to-apply/', '/'.$locale.'/admissions/how-to-apply', '/'.$locale.'/admissions/how-to-apply/'], true)
+            && $fragment !== 'application';
+    }
+
+    private function isSafePaymentUrl(mixed $url): bool
+    {
+        if (! is_string($url) || trim($url) === '' || trim($url) === '#') {
+            return false;
+        }
+
+        return filter_var($url, FILTER_VALIDATE_URL) !== false
+            && parse_url($url, PHP_URL_SCHEME) === 'https'
+            && ! str_contains(mb_strtolower($url), 'example.');
+    }
+
+    private function containsKnownAdmissionsPlaceholder(mixed $value): bool
+    {
+        if (is_array($value)) {
+            foreach ($value as $item) {
+                if ($this->containsKnownAdmissionsPlaceholder($item)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        if (! is_string($value)) {
+            return false;
+        }
+
+        $normalized = mb_strtolower(trim($value));
+        $known = [
+            '#', 'applications open', 'التقديم مفتوح', 'main national bank', 'المصرف الوطني الرئيسي',
+            'sy12345678901234567890', '$15,000', '$13,500', '$500', '$300', '$250 (lab)', '$350 (materials)',
+            '15 aug 2026', '15 آب 2026', '01 jan 2026', '01 كانون الثاني 2026', '2026/2027',
+            'sept 15, 2026', 'sept 1, 2026', 'jan 10, 2027', 'fall 2026', 'spring 2027',
+            'pdf, 2.4 mb', 'pdf, 1.2 mb', 'pdf, 280 kb', 'pdf, 310 kb', 'pdf, 295 kb', 'pdf, 340 kb',
+        ];
+
+        return in_array($normalized, $known, true)
+            || str_contains($normalized, 'lorem ipsum')
+            || str_contains($normalized, 'placeholder')
+            || str_contains($normalized, 'example.com');
+    }
+
+    private function removeInertAdmissionsUrls(mixed $value, ?string $key = null): mixed
+    {
+        if (is_array($value)) {
+            $clean = [];
+            foreach ($value as $itemKey => $item) {
+                $clean[$itemKey] = $this->removeInertAdmissionsUrls($item, is_string($itemKey) ? $itemKey : null);
+            }
+
+            return $clean;
+        }
+
+        if (! is_string($value) || $key === null || ! preg_match('/(?:url|href)$/i', $key)) {
+            return $value;
+        }
+
+        $url = trim($value);
+
+        return $url === '#' || str_starts_with(mb_strtolower($url), 'javascript:') ? '' : $value;
     }
 }

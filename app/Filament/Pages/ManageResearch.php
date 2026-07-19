@@ -14,9 +14,9 @@ use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\Tabs\Tab;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -97,8 +97,8 @@ class ManageResearch extends Page implements HasForms
                 ]),
                 Tabs::make('research_publications_locales')
                     ->tabs([
-                        Tab::make('Arabic')->schema([...$this->landingFields('ar'), ...$this->publicationFields('ar'), ...$this->expertFields('ar'), ...$this->conferenceFields('ar'), ...$this->libraryFields('ar'), ...$this->officeFields('ar'), ...$this->policyFields('ar')]),
-                        Tab::make('English')->schema([...$this->landingFields('en'), ...$this->publicationFields('en'), ...$this->expertFields('en'), ...$this->conferenceFields('en'), ...$this->libraryFields('en'), ...$this->officeFields('en'), ...$this->policyFields('en')]),
+                        Tab::make('Arabic')->schema([...$this->landingFields('ar'), ...$this->publicationFields('ar'), ...$this->centerFields('ar'), ...$this->projectFields('ar'), ...$this->themeFields('ar'), ...$this->expertFields('ar'), ...$this->conferenceFields('ar'), ...$this->libraryFields('ar'), ...$this->officeFields('ar'), ...$this->policyFields('ar')]),
+                        Tab::make('English')->schema([...$this->landingFields('en'), ...$this->publicationFields('en'), ...$this->centerFields('en'), ...$this->projectFields('en'), ...$this->themeFields('en'), ...$this->expertFields('en'), ...$this->conferenceFields('en'), ...$this->libraryFields('en'), ...$this->officeFields('en'), ...$this->policyFields('en')]),
                     ])
                     ->persistTabInQueryString('locale')
                     ->columnSpanFull(),
@@ -110,9 +110,9 @@ class ManageResearch extends Page implements HasForms
     {
         $this->assertResearchTarget($targetKey);
 
-        $draftPayload = $this->cmsWorkflowService->latestEditableDraftPayload($targetKey);
+        $draftPayload = $this->cmsWorkflowService->latestEditableDraftPayload($targetKey, (int) auth()->id());
         $payload = is_array($draftPayload) ? $draftPayload : $this->researchPageService->getEditablePayload($targetKey);
-        $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey);
+        $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey, (int) auth()->id());
 
         $this->form->fill([
             'target_key' => $targetKey,
@@ -120,6 +120,12 @@ class ManageResearch extends Page implements HasForms
             'en_landing' => $targetKey === 'research.index' && is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
             'ar_publications' => $targetKey === 'research.publications' && is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
             'en_publications' => $targetKey === 'research.publications' && is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
+            'ar_centers' => $targetKey === 'research.centers' && is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
+            'en_centers' => $targetKey === 'research.centers' && is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
+            'ar_projects' => $targetKey === 'research.projects' && is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
+            'en_projects' => $targetKey === 'research.projects' && is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
+            'ar_themes' => $targetKey === 'research.themes' && is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
+            'en_themes' => $targetKey === 'research.themes' && is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
             'ar_experts' => $targetKey === 'research.experts' && is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
             'en_experts' => $targetKey === 'research.experts' && is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
             'ar_conferences' => $targetKey === 'research.conferences' && is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
@@ -136,10 +142,18 @@ class ManageResearch extends Page implements HasForms
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('save')->label('Save Draft')->icon('heroicon-o-check')->color('gray')->action(fn (): mixed => $this->save()),
-            Action::make('preview_ar')->label('Preview AR')->icon('heroicon-o-eye')->color('info')->action(fn (): mixed => $this->openPreview('ar')),
-            Action::make('preview_en')->label('Preview EN')->icon('heroicon-o-eye')->color('info')->action(fn (): mixed => $this->openPreview('en')),
-            Action::make('publish')->label('Publish')->icon('heroicon-o-paper-airplane')->color('success')->requiresConfirmation()->action(fn (): mixed => $this->publish()),
+            Action::make('save')->label('Save Draft')->icon('heroicon-o-check')->color('gray')->action(function (): void {
+                $this->save();
+            }),
+            Action::make('preview_ar')->label('Preview AR')->icon('heroicon-o-eye')->color('info')->action(function (): void {
+                $this->openPreview('ar');
+            }),
+            Action::make('preview_en')->label('Preview EN')->icon('heroicon-o-eye')->color('info')->action(function (): void {
+                $this->openPreview('en');
+            }),
+            Action::make('publish')->label('Publish')->icon('heroicon-o-paper-airplane')->color('success')->requiresConfirmation()->action(function (): void {
+                $this->publish();
+            }),
             Action::make('schedule')
                 ->label('Schedule')
                 ->icon('heroicon-o-clock')
@@ -147,8 +161,12 @@ class ManageResearch extends Page implements HasForms
                 ->form([
                     DateTimePicker::make('publish_at')->label('Publish At')->required()->minDate(now())->native(false),
                 ])
-                ->action(fn (array $data): mixed => $this->schedule((string) $data['publish_at'])),
-            Action::make('unpublish')->label('Unpublish')->icon('heroicon-o-x-circle')->color('danger')->requiresConfirmation()->action(fn (): mixed => $this->unpublish()),
+                ->action(function (array $data): void {
+                    $this->schedule((string) $data['publish_at']);
+                }),
+            Action::make('unpublish')->label('Unpublish')->icon('heroicon-o-x-circle')->color('danger')->requiresConfirmation()->action(function (): void {
+                $this->unpublish();
+            }),
         ];
     }
 
@@ -162,7 +180,7 @@ class ManageResearch extends Page implements HasForms
             $draft = $this->cmsWorkflowService->saveDraft($targetKey, $this->payloadFromForm($this->currentFormData()), (int) $user->id, $this->draftVersion);
             $this->draftVersion = $draft->version;
 
-            Notification::make()->title('Research publications draft saved')->success()->send();
+            Notification::make()->title('Research draft saved')->success()->send();
         } catch (ConflictException $e) {
             $this->draftVersion = $e->currentVersion;
             Notification::make()->title('Draft conflict detected')->body('Reload this research target before saving again.')->danger()->persistent()->send();
@@ -204,12 +222,12 @@ class ManageResearch extends Page implements HasForms
             $this->draftVersion = $draft->version;
             $this->cmsWorkflowService->publish($targetKey, (int) $user->id);
 
-            Notification::make()->title('Research publications published')->success()->send();
+            Notification::make()->title('Research content published')->success()->send();
         } catch (ValidationException $e) {
             Notification::make()->title('Publish failed')->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to publish research publications')->body($e->getMessage())->danger()->send();
+            Notification::make()->title('Failed to publish research content')->body($e->getMessage())->danger()->send();
         }
     }
 
@@ -224,12 +242,12 @@ class ManageResearch extends Page implements HasForms
             $this->draftVersion = $draft->version;
             $this->cmsWorkflowService->schedule($targetKey, new \DateTimeImmutable($publishAt), (int) $user->id);
 
-            Notification::make()->title('Research publications scheduled')->success()->send();
+            Notification::make()->title('Research content scheduled')->success()->send();
         } catch (ValidationException $e) {
             Notification::make()->title('Schedule failed')->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to schedule research publications')->body($e->getMessage())->danger()->send();
+            Notification::make()->title('Failed to schedule research content')->body($e->getMessage())->danger()->send();
         }
     }
 
@@ -238,7 +256,7 @@ class ManageResearch extends Page implements HasForms
         /** @var User $user */
         $user = auth()->user();
         $result = $this->cmsWorkflowService->unpublish($this->currentTargetKey(), (int) $user->id);
-        $notification = Notification::make()->title($result ? 'Research publications unpublished' : 'No published research publications found');
+        $notification = Notification::make()->title($result ? 'Research content unpublished' : 'No published research content found');
 
         ($result ? $notification->success() : $notification->warning())->send();
     }
@@ -249,6 +267,9 @@ class ManageResearch extends Page implements HasForms
         return [
             'research.index' => __('admin.cms.targets.research.index'),
             'research.publications' => __('admin.cms.targets.research.publications'),
+            'research.centers' => __('admin.cms.targets.research.centers'),
+            'research.projects' => __('admin.cms.targets.research.projects'),
+            'research.themes' => __('admin.cms.targets.research.themes'),
             'research.experts' => __('admin.cms.targets.research.experts'),
             'research.conferences' => __('admin.cms.targets.research.conferences'),
             'research.library' => __('admin.cms.targets.research.library'),
@@ -267,7 +288,7 @@ class ManageResearch extends Page implements HasForms
 
     private function assertResearchTarget(string $targetKey): void
     {
-        if (! in_array($targetKey, ['research.index', 'research.publications', 'research.experts', 'research.conferences', 'research.library', 'research.office', 'research.policies'], true)) {
+        if (! in_array($targetKey, ['research.index', 'research.publications', 'research.centers', 'research.projects', 'research.themes', 'research.experts', 'research.conferences', 'research.library', 'research.office', 'research.policies'], true)) {
             throw new \InvalidArgumentException('Unsupported research target.');
         }
     }
@@ -378,6 +399,154 @@ class ManageResearch extends Page implements HasForms
 
         return array_map(
             static fn (Section $section): Section => $section->visible(static fn (Get $get): bool => $get('target_key') === 'research.publications'),
+            $sections,
+        );
+    }
+
+    /** @return array<int, Section> */
+    private function centerFields(string $locale): array
+    {
+        $prefix = $locale.'_centers';
+        $sections = [
+            Section::make('Centers Hero')->schema([
+                TextInput::make($prefix.'.hero.title')->required()->maxLength(180),
+                MediaPicker::image($prefix.'.hero.backgroundImage', 'Background Image', true),
+                Textarea::make($prefix.'.hero.summary')->required()->rows(2)->columnSpanFull(),
+                TextInput::make($prefix.'.hero.primaryCta')->required()->maxLength(120),
+                TextInput::make($prefix.'.hero.secondaryCta')->required()->maxLength(120),
+                TextInput::make($prefix.'.hero.secondaryCtaUrl')->required()->maxLength(255)->columnSpanFull(),
+                Repeater::make($prefix.'.hero.breadcrumbs')
+                    ->schema([
+                        TextInput::make('label')->required()->maxLength(120),
+                        TextInput::make('url')->required()->maxLength(255),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ])->columns(2),
+            Section::make('Centers Introduction')->schema([
+                TextInput::make($prefix.'.intro.title')->required()->maxLength(180),
+                Textarea::make($prefix.'.intro.summary')->required()->rows(3)->columnSpanFull(),
+                Repeater::make($prefix.'.intro.highlights')
+                    ->schema([
+                        TextInput::make('title')->required()->maxLength(180),
+                        MediaPicker::image('icon', 'Icon', true),
+                        Textarea::make('summary')->required()->rows(2)->columnSpanFull(),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->cloneable()
+                    ->collapsible()
+                    ->itemLabel(fn (array $state): ?string => $state['title'] ?? null)
+                    ->columnSpanFull(),
+            ])->columns(2),
+            Section::make('Research Centers')->schema([
+                Repeater::make($prefix.'.items')
+                    ->schema($this->centerItemFields())
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->cloneable()
+                    ->collapsible()
+                    ->itemLabel(fn (array $state): ?string => $state['name'] ?? $state['slug'] ?? null)
+                    ->columnSpanFull(),
+            ]),
+            Section::make('Research Laboratories')->schema([
+                TextInput::make($prefix.'.laboratories.title')->required()->maxLength(180),
+                Repeater::make($prefix.'.laboratories.items')
+                    ->schema($this->laboratoryItemFields())
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->cloneable()
+                    ->collapsible()
+                    ->itemLabel(fn (array $state): ?string => $state['title'] ?? $state['slug'] ?? null)
+                    ->columnSpanFull(),
+            ]),
+        ];
+
+        return array_map(
+            static fn (Section $section): Section => $section->visible(static fn (Get $get): bool => $get('target_key') === 'research.centers'),
+            $sections,
+        );
+    }
+
+    /** @return array<int, Section> */
+    private function projectFields(string $locale): array
+    {
+        $prefix = $locale.'_projects';
+        $sections = [
+            Section::make('Projects Hero')->schema([
+                TextInput::make($prefix.'.hero.eyebrow')->required()->maxLength(160),
+                TextInput::make($prefix.'.hero.title')->required()->maxLength(180),
+                MediaPicker::image($prefix.'.hero.backgroundImage', 'Background Image', true),
+                Textarea::make($prefix.'.hero.summary')->required()->rows(2)->columnSpanFull(),
+                Repeater::make($prefix.'.hero.breadcrumbs')->schema([
+                    TextInput::make('label')->required()->maxLength(120),
+                    TextInput::make('url')->required()->maxLength(255),
+                ])->columns(2)->defaultItems(0)->reorderable()->collapsible()->columnSpanFull(),
+            ])->columns(2),
+            Section::make('Project Filters')->schema([
+                TextInput::make($prefix.'.filters.statusLabel')->required()->maxLength(100),
+                TextInput::make($prefix.'.filters.facultyLabel')->required()->maxLength(100),
+                TextInput::make($prefix.'.filters.themeLabel')->required()->maxLength(100),
+                TextInput::make($prefix.'.filters.searchPlaceholder')->required()->maxLength(180),
+                Repeater::make($prefix.'.filters.statuses')->schema($this->optionFields())->columns(2)->defaultItems(0)->reorderable()->collapsible()->columnSpanFull(),
+                Repeater::make($prefix.'.filters.faculties')->schema($this->optionFields())->columns(2)->defaultItems(0)->reorderable()->collapsible()->columnSpanFull(),
+                Repeater::make($prefix.'.filters.themes')->schema($this->optionFields())->columns(2)->defaultItems(0)->reorderable()->collapsible()->columnSpanFull(),
+            ])->columns(2),
+            Section::make('Project Card Labels')->schema([
+                TextInput::make($prefix.'.cardLabels.viewProject')->required()->maxLength(120),
+                TextInput::make($prefix.'.cardLabels.since')->required()->maxLength(80),
+            ])->columns(2),
+            Section::make('Research Projects')->schema([
+                Repeater::make($prefix.'.items')
+                    ->schema($this->projectItemFields())
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->cloneable()
+                    ->collapsible()
+                    ->itemLabel(fn (array $state): ?string => $state['title'] ?? $state['slug'] ?? null)
+                    ->columnSpanFull(),
+            ]),
+        ];
+
+        return array_map(
+            static fn (Section $section): Section => $section->visible(static fn (Get $get): bool => $get('target_key') === 'research.projects'),
+            $sections,
+        );
+    }
+
+    /** @return array<int, Section> */
+    private function themeFields(string $locale): array
+    {
+        $prefix = $locale.'_themes';
+        $sections = [
+            Section::make('Themes Hero')->schema([
+                TextInput::make($prefix.'.hero.eyebrow')->required()->maxLength(160),
+                TextInput::make($prefix.'.hero.title')->required()->maxLength(180),
+                MediaPicker::image($prefix.'.hero.backgroundImage', 'Background Image', true),
+                Textarea::make($prefix.'.hero.summary')->required()->rows(2)->columnSpanFull(),
+                Repeater::make($prefix.'.hero.breadcrumbs')->schema([
+                    TextInput::make('label')->required()->maxLength(120),
+                    TextInput::make('url')->required()->maxLength(255),
+                ])->columns(2)->defaultItems(0)->reorderable()->collapsible()->columnSpanFull(),
+            ])->columns(2),
+            Section::make('Research Themes')->schema([
+                Repeater::make($prefix.'.items')
+                    ->schema($this->themeItemFields())
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->cloneable()
+                    ->collapsible()
+                    ->itemLabel(fn (array $state): ?string => $state['name'] ?? $state['slug'] ?? null)
+                    ->columnSpanFull(),
+            ]),
+        ];
+
+        return array_map(
+            static fn (Section $section): Section => $section->visible(static fn (Get $get): bool => $get('target_key') === 'research.themes'),
             $sections,
         );
     }
@@ -680,6 +849,87 @@ class ManageResearch extends Page implements HasForms
     }
 
     /** @return array<int, mixed> */
+    private function centerItemFields(): array
+    {
+        return [
+            TextInput::make('id')->required()->maxLength(120),
+            TextInput::make('slug')->required()->maxLength(160),
+            TextInput::make('name')->required()->maxLength(180)->columnSpanFull(),
+            Textarea::make('mission')->required()->rows(3)->columnSpanFull(),
+            TextInput::make('faculty')->required()->maxLength(180),
+            TextInput::make('facultySlug')->required()->maxLength(120),
+            TextInput::make('directorName')->required()->maxLength(180),
+            TextInput::make('contactEmail')->email()->required()->maxLength(180),
+            TextInput::make('contactPhone')->maxLength(80),
+            TextInput::make('externalWebsite')->url()->maxLength(255)->columnSpanFull(),
+            MediaPicker::image('image', 'Center Image', true)->columnSpanFull(),
+            TextInput::make('labs')->numeric()->minValue(0)->required(),
+            TextInput::make('researchers')->numeric()->minValue(0)->required(),
+            TextInput::make('projects')->numeric()->minValue(0)->required(),
+            TextInput::make('publications')->numeric()->minValue(0)->required(),
+            TagsInput::make('publicationSlugs')->label('Related Publication Slugs')->columnSpanFull(),
+            TagsInput::make('projectSlugs')->label('Related Project Slugs')->columnSpanFull(),
+            TagsInput::make('researcherSlugs')->label('Affiliated Researcher Slugs')->columnSpanFull(),
+        ];
+    }
+
+    /** @return array<int, mixed> */
+    private function laboratoryItemFields(): array
+    {
+        return [
+            TextInput::make('id')->required()->maxLength(120),
+            TextInput::make('slug')->required()->maxLength(160),
+            TextInput::make('title')->required()->maxLength(180)->columnSpanFull(),
+            TextInput::make('faculty')->required()->maxLength(180),
+            TextInput::make('director')->required()->maxLength(180),
+            Textarea::make('summary')->required()->rows(2)->columnSpanFull(),
+            TextInput::make('projects')->required()->maxLength(180),
+            TextInput::make('publications')->required()->maxLength(180),
+            TextInput::make('contact')->required()->maxLength(180),
+            TextInput::make('cta')->required()->maxLength(120),
+            MediaPicker::image('image', 'Laboratory Image', true)->columnSpanFull(),
+        ];
+    }
+
+    /** @return array<int, mixed> */
+    private function projectItemFields(): array
+    {
+        return [
+            TextInput::make('id')->required()->maxLength(120),
+            TextInput::make('slug')->required()->maxLength(160),
+            TextInput::make('title')->required()->maxLength(240)->columnSpanFull(),
+            Textarea::make('summary')->required()->rows(3)->columnSpanFull(),
+            TextInput::make('faculty')->required()->maxLength(180),
+            TextInput::make('facultySlug')->required()->maxLength(120),
+            TextInput::make('theme')->required()->maxLength(180),
+            TextInput::make('themeSlug')->required()->maxLength(120),
+            Select::make('status')->required()->options([
+                'ongoing' => 'Ongoing',
+                'completed' => 'Completed',
+                'paused' => 'Paused',
+            ]),
+            TextInput::make('startYear')->required()->numeric()->minValue(1900)->maxValue(2200),
+            TextInput::make('endYear')->numeric()->minValue(1900)->maxValue(2200),
+            TextInput::make('funding')->required()->maxLength(180)->columnSpanFull(),
+            MediaPicker::image('image', 'Project Image', true)->columnSpanFull(),
+        ];
+    }
+
+    /** @return array<int, mixed> */
+    private function themeItemFields(): array
+    {
+        return [
+            TextInput::make('id')->required()->maxLength(120),
+            TextInput::make('slug')->required()->maxLength(160),
+            TextInput::make('name')->required()->maxLength(180)->columnSpanFull(),
+            Textarea::make('description')->required()->rows(3)->columnSpanFull(),
+            MediaPicker::image('icon', 'Theme Icon', true)->columnSpanFull(),
+            TextInput::make('publicationCount')->required()->numeric()->minValue(0),
+            TextInput::make('projectCount')->required()->numeric()->minValue(0),
+        ];
+    }
+
+    /** @return array<int, mixed> */
     private function publicationItemFields(): array
     {
         return [
@@ -695,6 +945,12 @@ class ManageResearch extends Page implements HasForms
             TextInput::make('authorSlug')->required()->maxLength(160),
             TextInput::make('year')->required()->maxLength(20),
             TextInput::make('doi')->maxLength(180),
+            TextInput::make('journalTitle')->label('Journal / Proceedings')->maxLength(180),
+            TextInput::make('volume')->maxLength(40),
+            TextInput::make('issue')->maxLength(40),
+            TextInput::make('pages')->maxLength(40),
+            TextInput::make('issn')->label('ISSN')->maxLength(40),
+            TextInput::make('license')->maxLength(180)->columnSpanFull(),
             MediaPicker::image('image', 'Publication Image', true)->columnSpanFull(),
             Textarea::make('lead')->label('Detail Lead')->rows(2)->columnSpanFull(),
             TagsInput::make('paragraphs')->label('Detail Paragraphs')->columnSpanFull(),
@@ -717,6 +973,17 @@ class ManageResearch extends Page implements HasForms
             TextInput::make('rate')->maxLength(80),
             Toggle::make('isOpenAccess')->label('Open Access'),
             Toggle::make('gsIndexed')->label('Google Scholar Indexed'),
+            Repeater::make('downloads')
+                ->schema([
+                    TextInput::make('label')->required()->maxLength(180),
+                    TextInput::make('type')->maxLength(40),
+                    MediaPicker::document('url', 'Publication File', true)->columnSpanFull(),
+                ])
+                ->columns(2)
+                ->defaultItems(0)
+                ->reorderable()
+                ->collapsible()
+                ->columnSpanFull(),
         ];
     }
 
@@ -811,6 +1078,33 @@ class ManageResearch extends Page implements HasForms
             ];
         }
 
+        if (($state['target_key'] ?? null) === 'research.centers') {
+            return [
+                'translations' => [
+                    'ar' => $this->normalizeCenterContent(is_array($state['ar_centers'] ?? null) ? $state['ar_centers'] : []),
+                    'en' => $this->normalizeCenterContent(is_array($state['en_centers'] ?? null) ? $state['en_centers'] : []),
+                ],
+            ];
+        }
+
+        if (($state['target_key'] ?? null) === 'research.projects') {
+            return [
+                'translations' => [
+                    'ar' => $this->normalizeProjectContent(is_array($state['ar_projects'] ?? null) ? $state['ar_projects'] : []),
+                    'en' => $this->normalizeProjectContent(is_array($state['en_projects'] ?? null) ? $state['en_projects'] : []),
+                ],
+            ];
+        }
+
+        if (($state['target_key'] ?? null) === 'research.themes') {
+            return [
+                'translations' => [
+                    'ar' => $this->normalizeThemeContent(is_array($state['ar_themes'] ?? null) ? $state['ar_themes'] : []),
+                    'en' => $this->normalizeThemeContent(is_array($state['en_themes'] ?? null) ? $state['en_themes'] : []),
+                ],
+            ];
+        }
+
         if (($state['target_key'] ?? null) === 'research.conferences') {
             return [
                 'translations' => [
@@ -870,6 +1164,70 @@ class ManageResearch extends Page implements HasForms
             $item['resolvedThemes'] = $this->listOfArrays($item['resolvedThemes'] ?? []);
             $item['isOpenAccess'] = (bool) ($item['isOpenAccess'] ?? false);
             $item['gsIndexed'] = (bool) ($item['gsIndexed'] ?? false);
+
+            return $item;
+        }, $this->listOfArrays($content['items'] ?? []));
+
+        return $content;
+    }
+
+    /** @param array<string, mixed> $content @return array<string, mixed> */
+    private function normalizeCenterContent(array $content): array
+    {
+        $content['hero']['breadcrumbs'] = $this->listOfArrays($content['hero']['breadcrumbs'] ?? []);
+        $content['intro']['highlights'] = $this->listOfArrays($content['intro']['highlights'] ?? []);
+        $content['items'] = array_map(function (array $item): array {
+            foreach (['labs', 'researchers', 'projects', 'publications'] as $field) {
+                $item[$field] = is_numeric($item[$field] ?? null) ? max(0, (int) $item[$field]) : 0;
+            }
+
+            $item['publicationSlugs'] = $this->listOfStrings($item['publicationSlugs'] ?? []);
+            $item['projectSlugs'] = $this->listOfStrings($item['projectSlugs'] ?? []);
+            $item['researcherSlugs'] = $this->listOfStrings($item['researcherSlugs'] ?? []);
+
+            return $item;
+        }, $this->listOfArrays($content['items'] ?? []));
+        $content['laboratories']['items'] = array_map(function (array $item): array {
+            $slug = trim((string) ($item['slug'] ?? ''));
+            $item['ctaUrl'] = $slug !== '' ? '/research/centers/'.$slug.'/' : '';
+
+            return $item;
+        }, $this->listOfArrays($content['laboratories']['items'] ?? []));
+
+        return $content;
+    }
+
+    /** @param array<string, mixed> $content @return array<string, mixed> */
+    private function normalizeProjectContent(array $content): array
+    {
+        $content['hero']['breadcrumbs'] = $this->listOfArrays($content['hero']['breadcrumbs'] ?? []);
+        foreach (['statuses', 'faculties', 'themes'] as $optionGroup) {
+            $content['filters'][$optionGroup] = $this->listOfArrays($content['filters'][$optionGroup] ?? []);
+        }
+        $content['items'] = array_map(function (array $item): array {
+            $item['id'] = strtolower(trim((string) ($item['id'] ?? '')));
+            $item['slug'] = strtolower(trim((string) ($item['slug'] ?? '')));
+            $item['facultySlug'] = $this->canonicalFacultySlug(strtolower(trim((string) ($item['facultySlug'] ?? ''))));
+            $item['themeSlug'] = strtolower(trim((string) ($item['themeSlug'] ?? '')));
+            $item['status'] = strtolower(trim((string) ($item['status'] ?? '')));
+            $item['startYear'] = trim((string) ($item['startYear'] ?? ''));
+            $item['endYear'] = trim((string) ($item['endYear'] ?? ''));
+
+            return $item;
+        }, $this->listOfArrays($content['items'] ?? []));
+
+        return $content;
+    }
+
+    /** @param array<string, mixed> $content @return array<string, mixed> */
+    private function normalizeThemeContent(array $content): array
+    {
+        $content['hero']['breadcrumbs'] = $this->listOfArrays($content['hero']['breadcrumbs'] ?? []);
+        $content['items'] = array_map(static function (array $item): array {
+            $item['id'] = strtolower(trim((string) ($item['id'] ?? '')));
+            $item['slug'] = strtolower(trim((string) ($item['slug'] ?? '')));
+            $item['publicationCount'] = is_numeric($item['publicationCount'] ?? null) ? max(0, (int) $item['publicationCount']) : 0;
+            $item['projectCount'] = is_numeric($item['projectCount'] ?? null) ? max(0, (int) $item['projectCount']) : 0;
 
             return $item;
         }, $this->listOfArrays($content['items'] ?? []));
@@ -982,6 +1340,16 @@ class ManageResearch extends Page implements HasForms
     private function listOfStrings(mixed $items): array
     {
         return array_values(array_filter(is_array($items) ? $items : [], static fn (mixed $item): bool => is_string($item) && trim($item) !== ''));
+    }
+
+    private function canonicalFacultySlug(string $slug): string
+    {
+        return match ($slug) {
+            'ai', 'ai-engineering' => 'artificial-intelligence',
+            'construction' => 'building-construction-engineering',
+            'business' => 'business-administration',
+            default => $slug,
+        };
     }
 
     /** @param array<string, array<int, string>> $errors */

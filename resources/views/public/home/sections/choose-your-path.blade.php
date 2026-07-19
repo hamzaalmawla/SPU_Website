@@ -18,14 +18,14 @@
 
             <div class="flex-1 min-w-0 w-full relative">
                 <div class="flex gap-3 absolute -top-26 z-50 rtl:left-0 ltr:right-0">
-                    <button type="button" @click="slidePaths('left')" class="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-label="{{ __('public.previous') }}"><img src="/images/icon-chevron-left-outline.svg" class="w-3.5 h-3.5 rtl:rotate-180" alt=""></button>
-                    <button type="button" @click="slidePaths('right')" class="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-label="{{ __('public.next') }}"><img src="/images/icon-chevron-right-outline.svg" class="w-3.5 h-3.5 rtl:rotate-180" alt=""></button>
+                    <button type="button" @click="slidePaths('previous')" class="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-controls="home-paths-track" aria-label="{{ __('public.previous') }}"><img src="/images/icon-chevron-left-outline.svg" class="w-3.5 h-3.5 rtl:rotate-180" alt=""></button>
+                    <button type="button" @click="slidePaths('next')" class="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-controls="home-paths-track" aria-label="{{ __('public.next') }}"><img src="/images/icon-chevron-right-outline.svg" class="w-3.5 h-3.5 rtl:rotate-180" alt=""></button>
                 </div>
 
-                <div x-ref="pathsTrack" class="flex h-[390px] w-full snap-x snap-mandatory flex-nowrap gap-6 bg-transparent overflow-x-auto overflow-y-hidden no-scrollbar scroll-smooth overscroll-x-contain px-2 pt-2 pb-5 items-start z-10">
+                <div id="home-paths-track" x-ref="pathsTrack" class="flex h-[390px] w-full snap-x snap-mandatory flex-nowrap gap-6 bg-transparent overflow-x-auto overflow-y-hidden no-scrollbar scroll-smooth overscroll-x-contain px-2 pt-2 pb-5 items-start z-10" role="region" aria-roledescription="{{ __('public.carousel') }}" aria-label="{{ $section->payload->title }}" tabindex="0" @keydown="handleSliderKey($event)">
                     @foreach ($section->payload->items as $item)
-                        <article class="reveal-item path-card snap-start w-[292px] h-[380px] hover:cursor-pointer shrink-0 relative rounded-[28px] border border-gray-100 bg-white shadow-[0_15px_35px_rgba(20,30,70,0.06)] transition-all duration-300 group overflow-hidden">
-                            <div class="absolute inset-0 bg-white flex flex-col items-center justify-center p-8 transition-transform duration-500 ease-in-out group-hover:-translate-y-full">
+                        <article class="reveal-item path-card snap-start w-[292px] h-[380px] shrink-0 relative rounded-[28px] border border-gray-100 bg-white shadow-[0_15px_35px_rgba(20,30,70,0.06)] transition-all duration-300 group overflow-hidden" role="group" aria-roledescription="{{ __('public.slide') }}" aria-label="{{ __('public.slide_position', ['current' => $loop->iteration, 'total' => count($section->payload->items)]) }}">
+                            <div class="absolute inset-0 bg-white flex flex-col items-center justify-center p-8 transition-transform duration-500 ease-in-out group-hover:-translate-y-full group-focus-within:-translate-y-full">
                                 <div class="absolute top-0 left-0 w-full h-[6px] bg-spu-red"></div>
                                 @if (!empty($item['icon']))
                                     <div class="w-20 h-20 rounded-2xl bg-slate-50 text-spu-blue flex items-center justify-center mb-8 shadow-sm">
@@ -34,7 +34,7 @@
                                 @endif
                                 <h3 class="text-[26px] font-bold text-[#1e2652] leading-tight text-center">{{ $item['title'] ?? '' }}</h3>
                             </div>
-                            <div class="absolute inset-0 bg-[#1e2652] text-white p-7 flex flex-col translate-y-full transition-transform duration-500 ease-in-out group-hover:translate-y-0">
+                            <div class="absolute inset-0 bg-[#1e2652] text-white p-7 flex flex-col translate-y-full transition-transform duration-500 ease-in-out group-hover:translate-y-0 group-focus-within:translate-y-0">
                                 <h4 class="text-lg font-bold mb-6 opacity-90 border-b border-white/10 pb-2">{{ $item['title'] ?? '' }}</h4>
                                 @if (!empty($item['links']))
                                     <ul class="space-y-4 mb-6 flex-1">
@@ -50,11 +50,11 @@
                                         @endforeach
                                     </ul>
                                 @endif
-                                @if (!empty($item['action']['label']))
-                                    <div class="mt-auto flex items-center justify-between pt-4 border-t border-white/10">
+                                @if (! empty($item['action']['label']) && ! empty($item['action']['url']))
+                                    <a href="{{ $item['action']['url'] }}" class="mt-auto flex items-center justify-between pt-4 border-t border-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white" @if (! empty($item['action']['target'])) target="{{ $item['action']['target'] }}" rel="noreferrer" @endif>
                                         <span class="text-sm font-bold">{{ $item['action']['label'] }}</span>
                                         <img src="/images/icon-arrow-right-outline.svg" class="w-3.5 h-3.5 brightness-0 invert rtl:rotate-180" alt="">
-                                    </div>
+                                    </a>
                                 @endif
                             </div>
                         </article>

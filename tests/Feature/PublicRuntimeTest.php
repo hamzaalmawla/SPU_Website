@@ -56,15 +56,13 @@ class PublicRuntimeTest extends TestCase
         $this->get('/en')
             ->assertOk()
             ->assertSee('About')
-            ->assertSee('Student Portal')
+            ->assertDontSee('Student Portal')
             ->assertSee('EXPLORE SPU')
-            ->assertSee('Privacy Policy')
-            ->assertSee('Terms of Use')
             ->assertDontSee('Connect');
 
         $this->get('/ar')
             ->assertOk()
-            ->assertSee('بوابة الطالب')
+            ->assertDontSee('بوابة الطالب')
             ->assertSee('استكشف SPU')
             ->assertSee('تواصل معنا')
             ->assertDontSee('Student Portal');

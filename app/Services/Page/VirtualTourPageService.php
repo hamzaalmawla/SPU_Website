@@ -4,24 +4,56 @@ declare(strict_types=1);
 
 namespace App\Services\Page;
 
+use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Page\VirtualTourPageServiceInterface;
 use App\DTOs\VirtualTour\VirtualTourPageDTO;
 
 final class VirtualTourPageService implements VirtualTourPageServiceInterface
 {
+    public function __construct(
+        private readonly CmsWorkflowServiceInterface $cmsWorkflowService,
+    ) {}
+
     public function getPage(string $locale): VirtualTourPageDTO
     {
-        $page = $this->normalizeUrls($this->localized($this->payload(), $locale), $locale);
+        $published = $this->cmsWorkflowService->getPublishedPayload('campus_life.virtual_tour');
+        $page = is_array($published['translations'][$locale] ?? null)
+            ? $published['translations'][$locale]
+            : $this->localized($this->payload(), $locale);
+
+        return $this->pageDto($locale, $page);
+    }
+
+    public function buildPreviewPage(string $locale, array $content): VirtualTourPageDTO
+    {
+        return $this->pageDto($locale, $content);
+    }
+
+    public function getEditablePayload(): array
+    {
+        $published = $this->cmsWorkflowService->getPublishedPayload('campus_life.virtual_tour');
+
+        return [
+            'translations' => [
+                'ar' => is_array($published['translations']['ar'] ?? null) ? $published['translations']['ar'] : $this->normalizeUrls($this->localized($this->payload(), 'ar'), 'ar'),
+                'en' => is_array($published['translations']['en'] ?? null) ? $published['translations']['en'] : $this->normalizeUrls($this->localized($this->payload(), 'en'), 'en'),
+            ],
+        ];
+    }
+
+    /** @param array<string, mixed> $content */
+    private function pageDto(string $locale, array $content): VirtualTourPageDTO
+    {
+        $page = $this->normalizeUrls($content, $locale);
+        $seo = is_array($page['seo'] ?? null) ? $page['seo'] : [];
 
         return new VirtualTourPageDTO(
             locale: $locale,
             direction: $locale === 'ar' ? 'rtl' : 'ltr',
             page: $page,
-            seoTitle: $locale === 'ar' ? 'الجولة الافتراضية | الجامعة السورية الخاصة' : 'Virtual Tour | Syrian Private University',
-            seoDescription: $locale === 'ar'
-                ? 'استكشف الجامعة السورية الخاصة من خلال جولة مرئية في مبنى الإدارة والمساحات الطلابية والمستشفى والعيادات والمرافق التعليمية.'
-                : 'Explore Syrian Private University through a visual campus tour featuring the central administration building, student spaces, hospital, dental clinics, and learning facilities.',
-            seoImage: '/images/uni-main-place.JPG',
+            seoTitle: (string) ($seo['title'] ?? ($locale === 'ar' ? 'الجولة الافتراضية | الجامعة السورية الخاصة' : 'Virtual Tour | Syrian Private University')),
+            seoDescription: (string) ($seo['description'] ?? ''),
+            seoImage: (string) ($seo['image'] ?? '/images/uni-main-place.JPG'),
         );
     }
 
@@ -29,6 +61,10 @@ final class VirtualTourPageService implements VirtualTourPageServiceInterface
     private function payload(): array
     {
         return [
+            'titleEn' => 'Virtual Tour',
+            'titleAr' => 'الجولة الافتراضية',
+            'summaryEn' => 'Explore approved campus photographs with accessible interactive controls.',
+            'summaryAr' => 'استكشف صور الحرم الجامعي المعتمدة عبر أدوات تفاعلية ميسّرة.',
             'hero' => [
                 'eyebrowEn' => 'Virtual Tour',
                 'eyebrowAr' => 'جولة افتراضية',
@@ -55,21 +91,37 @@ final class VirtualTourPageService implements VirtualTourPageServiceInterface
                 'titleAr' => 'مبنى الإدارة المركزية',
                 'summaryEn' => 'The heart of SPU campus, housing the executive offices and main hall.',
                 'summaryAr' => 'قلب الحرم الجامعي، ويضم المكاتب التنفيذية والقاعة الرئيسية.',
-                'image' => '/images/uni-main-place.JPG',
-                'imageAltEn' => 'Central Administration Building and fountain',
-                'imageAltAr' => 'مبنى الإدارة المركزية والنافورة',
                 'controlLabelEn' => 'Tour controls',
                 'controlLabelAr' => 'أدوات الجولة',
-                'floorLabelEn' => 'Floor plan',
-                'floorLabelAr' => 'المخطط',
                 'fullscreenLabelEn' => 'Fullscreen',
                 'fullscreenLabelAr' => 'ملء الشاشة',
-                'experienceLabelEn' => '360 degree view',
-                'experienceLabelAr' => 'عرض 360 درجة',
-                'hotspots' => [
-                    ['id' => 'main-hall', 'x' => '49%', 'y' => '37%', 'labelEn' => 'Main Hall', 'labelAr' => 'القاعة الرئيسية'],
-                    ['id' => 'fountain', 'x' => '50%', 'y' => '76%', 'labelEn' => 'Campus Fountain', 'labelAr' => 'نافورة الحرم'],
-                    ['id' => 'student-entry', 'x' => '31%', 'y' => '55%', 'labelEn' => 'Student Entry', 'labelAr' => 'مدخل الطلاب'],
+                'exitFullscreenLabelEn' => 'Exit fullscreen',
+                'exitFullscreenLabelAr' => 'الخروج من ملء الشاشة',
+                'playLabelEn' => 'Start autoplay',
+                'playLabelAr' => 'بدء التشغيل التلقائي',
+                'pauseLabelEn' => 'Pause autoplay',
+                'pauseLabelAr' => 'إيقاف التشغيل التلقائي',
+                'zoomInLabelEn' => 'Zoom in',
+                'zoomInLabelAr' => 'تكبير',
+                'zoomOutLabelEn' => 'Zoom out',
+                'zoomOutLabelAr' => 'تصغير',
+                'resetLabelEn' => 'Reset view',
+                'resetLabelAr' => 'إعادة ضبط العرض',
+                'previousLabelEn' => 'Previous scene',
+                'previousLabelAr' => 'المشهد السابق',
+                'nextLabelEn' => 'Next scene',
+                'nextLabelAr' => 'المشهد التالي',
+                'experienceLabelEn' => 'Interactive campus photo viewer',
+                'experienceLabelAr' => 'عارض صور تفاعلي للحرم الجامعي',
+                'autoplayInterval' => 6000,
+                'scenes' => [
+                    ['id' => 'administration', 'titleEn' => 'Central Administration', 'titleAr' => 'الإدارة المركزية', 'summaryEn' => 'A campus photograph of the central administration building and fountain.', 'summaryAr' => 'صورة لمبنى الإدارة المركزية والنافورة في الحرم الجامعي.', 'image' => '/images/uni-main-place.JPG', 'imageAltEn' => 'Central Administration Building and fountain', 'imageAltAr' => 'مبنى الإدارة المركزية والنافورة', 'hotspots' => [
+                        ['id' => 'main-hall', 'x' => 49, 'y' => 37, 'labelEn' => 'Main Hall', 'labelAr' => 'القاعة الرئيسية', 'descriptionEn' => 'Administration building entrance.', 'descriptionAr' => 'مدخل مبنى الإدارة.'],
+                        ['id' => 'fountain', 'x' => 50, 'y' => 76, 'labelEn' => 'Campus Fountain', 'labelAr' => 'نافورة الحرم', 'descriptionEn' => 'The fountain in front of the administration building.', 'descriptionAr' => 'النافورة أمام مبنى الإدارة.'],
+                    ]],
+                    ['id' => 'campus', 'titleEn' => 'Campus Grounds', 'titleAr' => 'ساحات الحرم', 'summaryEn' => 'A campus photograph showing university grounds and walkways.', 'summaryAr' => 'صورة تظهر ساحات الجامعة وممراتها.', 'image' => '/images/slider-4.webp', 'imageAltEn' => 'SPU campus grounds and walkways', 'imageAltAr' => 'ساحات وممرات حرم الجامعة السورية الخاصة', 'hotspots' => []],
+                    ['id' => 'hospital', 'titleEn' => 'University Hospital', 'titleAr' => 'المستشفى الجامعي', 'summaryEn' => 'A photograph of the university hospital facility.', 'summaryAr' => 'صورة لمنشأة المستشفى الجامعي.', 'image' => '/images/campus-hospital.webp', 'imageAltEn' => 'University hospital facility', 'imageAltAr' => 'منشأة المستشفى الجامعي', 'hotspots' => []],
+                    ['id' => 'dental', 'titleEn' => 'Dental Clinics', 'titleAr' => 'عيادات طب الأسنان', 'summaryEn' => 'A photograph of the dental clinical learning facility.', 'summaryAr' => 'صورة لمنشأة التدريب السريري لطب الأسنان.', 'image' => '/images/campus-dental.webp', 'imageAltEn' => 'Dental clinical learning facility', 'imageAltAr' => 'منشأة التدريب السريري لطب الأسنان', 'hotspots' => []],
                 ],
             ],
             'highlights' => [
@@ -100,6 +152,13 @@ final class VirtualTourPageService implements VirtualTourPageServiceInterface
                     ['id' => 'library', 'titleEn' => 'University Library', 'titleAr' => 'مكتبة الجامعة', 'summaryEn' => 'Study collections, quiet reading areas, and research support.', 'summaryAr' => 'مصادر دراسية ومساحات قراءة هادئة ودعم بحثي.', 'icon' => '/images/icons/globe.svg', 'image' => '/images/slider-3.webp', 'href' => '/e-services'],
                 ],
             ],
+            'seo' => [
+                'titleEn' => 'Virtual Tour | Syrian Private University',
+                'titleAr' => 'الجولة الافتراضية | الجامعة السورية الخاصة',
+                'descriptionEn' => 'Explore approved campus photographs with accessible interactive controls.',
+                'descriptionAr' => 'استكشف صور الحرم الجامعي المعتمدة عبر أدوات تفاعلية ميسّرة.',
+                'image' => '/images/uni-main-place.JPG',
+            ],
         ];
     }
 
@@ -119,6 +178,7 @@ final class VirtualTourPageService implements VirtualTourPageServiceInterface
 
             if (str_ends_with((string) $key, $suffix)) {
                 $localized[substr((string) $key, 0, -2)] = $value;
+
                 continue;
             }
 
@@ -140,6 +200,7 @@ final class VirtualTourPageService implements VirtualTourPageServiceInterface
                 $payload[$key] = array_is_list($value)
                     ? array_map(fn (mixed $item): mixed => is_array($item) ? $this->normalizeUrls($item, $locale) : $item, $value)
                     : $this->normalizeUrls($value, $locale);
+
                 continue;
             }
 

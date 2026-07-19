@@ -25,10 +25,10 @@ interface CmsWorkflowServiceInterface
     /** @param array<string, mixed>|null $payload */
     public function readiness(string $targetKey, ?array $payload = null): CmsPublishReadinessDTO;
 
-    public function latestEditableDraftVersion(string $targetKey): ?int;
+    public function latestEditableDraftVersion(string $targetKey, int $userId): ?int;
 
     /** @return array<string, mixed>|null */
-    public function latestEditableDraftPayload(string $targetKey): ?array;
+    public function latestEditableDraftPayload(string $targetKey, int $userId): ?array;
 
     /** @return array<string, mixed>|null */
     public function getPublishedPayload(string $targetKey): ?array;
