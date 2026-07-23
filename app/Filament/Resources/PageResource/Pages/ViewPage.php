@@ -13,6 +13,16 @@ class ViewPage extends ViewRecord
 {
     protected static string $resource = PageResource::class;
 
+    public function getTitle(): string
+    {
+        return __('admin.page_resource.headings.view', ['title' => $this->getRecordTitle()]);
+    }
+
+    public function getBreadcrumb(): string
+    {
+        return __('admin.page_resource.breadcrumbs.view');
+    }
+
     protected function mutateFormDataBeforeFill(array $data): array
     {
         /** @var Page $page */
@@ -70,7 +80,24 @@ class ViewPage extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\EditAction::make(),
+            $this->publicationStatusAction(),
+            Actions\EditAction::make()
+                ->label(__('admin.page_resource.actions.edit')),
         ];
+    }
+
+    private function publicationStatusAction(): Actions\Action
+    {
+        /** @var Page $page */
+        $page = $this->record;
+        $status = is_string($page->status) ? $page->status : null;
+
+        return Actions\Action::make('publicationStatus')
+            ->label(__('admin.page_resource.publication_status', [
+                'status' => PageResource::getPublicationStatusLabel($status),
+            ]))
+            ->badge()
+            ->color(PageResource::getPublicationStatusColor($status))
+            ->icon(PageResource::getPublicationStatusIcon($status));
     }
 }

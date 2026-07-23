@@ -38,6 +38,16 @@ class EditPage extends EditRecord
         $this->previewService = $previewService;
     }
 
+    public function getTitle(): string
+    {
+        return __('admin.page_resource.headings.edit', ['title' => $this->getRecordTitle()]);
+    }
+
+    public function getBreadcrumb(): string
+    {
+        return __('admin.page_resource.breadcrumbs.edit');
+    }
+
     protected function mutateFormDataBeforeFill(array $data): array
     {
         /** @var Page $page */
@@ -118,6 +128,7 @@ class EditPage extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            $this->publicationStatusAction(),
             $this->saveDraftAction(),
             $this->previewAction('ar'),
             $this->previewAction('en'),
@@ -127,10 +138,42 @@ class EditPage extends EditRecord
         ];
     }
 
+    protected function getSaveFormAction(): Action
+    {
+        return parent::getSaveFormAction()
+            ->label(__('admin.page_resource.actions.save_changes'));
+    }
+
+    protected function getCancelFormAction(): Action
+    {
+        return parent::getCancelFormAction()
+            ->label(__('admin.page_resource.actions.cancel'));
+    }
+
+    protected function getSavedNotificationTitle(): ?string
+    {
+        return __('admin.page_resource.notifications.changes_saved');
+    }
+
+    private function publicationStatusAction(): Action
+    {
+        /** @var Page $page */
+        $page = $this->record;
+        $status = is_string($page->status) ? $page->status : null;
+
+        return Action::make('publicationStatus')
+            ->label(__('admin.page_resource.publication_status', [
+                'status' => PageResource::getPublicationStatusLabel($status),
+            ]))
+            ->badge()
+            ->color(PageResource::getPublicationStatusColor($status))
+            ->icon(PageResource::getPublicationStatusIcon($status));
+    }
+
     private function saveDraftAction(): Action
     {
         return Action::make('saveDraft')
-            ->label('Save Draft')
+            ->label(__('admin.page_resource.actions.save_draft'))
             ->icon('heroicon-o-document')
             ->color('gray')
             ->action(function (): void {
@@ -141,7 +184,9 @@ class EditPage extends EditRecord
     private function previewAction(string $locale): Action
     {
         return Action::make("preview_{$locale}")
-            ->label('Preview ('.strtoupper($locale).')')
+            ->label(__('admin.page_resource.actions.preview', [
+                'locale' => __('admin.page_resource.locale_names.'.$locale),
+            ]))
             ->icon('heroicon-o-eye')
             ->color('info')
             ->action(function () use ($locale): void {
@@ -173,12 +218,12 @@ class EditPage extends EditRecord
     private function publishAction(): Action
     {
         return Action::make('publish')
-            ->label('Publish')
+            ->label(__('admin.page_resource.actions.publish'))
             ->icon('heroicon-o-check-circle')
             ->color('success')
             ->requiresConfirmation()
-            ->modalHeading('Publish Page')
-            ->modalDescription('This will make the page live immediately.')
+            ->modalHeading(__('admin.page_resource.modals.publish_heading'))
+            ->modalDescription(__('admin.page_resource.modals.publish_description'))
             ->action(function (): void {
                 /** @var Page $page */
                 $page = $this->record;
@@ -192,7 +237,7 @@ class EditPage extends EditRecord
 
                 if ($validationErrors !== []) {
                     Notification::make()
-                        ->title('Publish failed')
+                        ->title(__('admin.page_resource.notifications.publish_failed'))
                         ->body($this->formatValidationErrors($validationErrors))
                         ->danger()
                         ->persistent()
@@ -213,13 +258,13 @@ class EditPage extends EditRecord
 
                 if ($result) {
                     Notification::make()
-                        ->title('Page published successfully')
+                        ->title(__('admin.page_resource.notifications.published'))
                         ->success()
                         ->send();
                 } else {
                     Notification::make()
-                        ->title('Publish failed')
-                        ->body('The page could not be published. Check that it is enabled and has both Arabic and English titles.')
+                        ->title(__('admin.page_resource.notifications.publish_failed'))
+                        ->body(__('admin.page_resource.notifications.publish_requirements'))
                         ->danger()
                         ->persistent()
                         ->send();
@@ -232,12 +277,12 @@ class EditPage extends EditRecord
     private function scheduleAction(): Action
     {
         return Action::make('schedule')
-            ->label('Schedule')
+            ->label(__('admin.page_resource.actions.schedule'))
             ->icon('heroicon-o-clock')
             ->color('warning')
             ->form([
                 DateTimePicker::make('publish_at')
-                    ->label('Publish At')
+                    ->label(__('admin.page_resource.schedule.publish_at'))
                     ->required()
                     ->minDate(now())
                     ->native(false),
@@ -255,7 +300,7 @@ class EditPage extends EditRecord
 
                 if ($validationErrors !== []) {
                     Notification::make()
-                        ->title('Schedule failed')
+                        ->title(__('admin.page_resource.notifications.schedule_failed'))
                         ->body($this->formatValidationErrors($validationErrors))
                         ->danger()
                         ->persistent()
@@ -280,13 +325,13 @@ class EditPage extends EditRecord
 
                 if ($result) {
                     Notification::make()
-                        ->title('Page scheduled for publication')
-                        ->body("Scheduled for: {$data['publish_at']}")
+                        ->title(__('admin.page_resource.notifications.scheduled'))
+                        ->body(__('admin.page_resource.notifications.scheduled_for', ['date' => $data['publish_at']]))
                         ->success()
                         ->send();
                 } else {
                     Notification::make()
-                        ->title('Schedule failed')
+                        ->title(__('admin.page_resource.notifications.schedule_failed'))
                         ->danger()
                         ->send();
                 }
@@ -298,12 +343,12 @@ class EditPage extends EditRecord
     private function unpublishAction(): Action
     {
         return Action::make('unpublish')
-            ->label('Unpublish')
+            ->label(__('admin.page_resource.actions.unpublish'))
             ->icon('heroicon-o-x-circle')
             ->color('danger')
             ->requiresConfirmation()
-            ->modalHeading('Unpublish Page')
-            ->modalDescription('This will remove the page from public view.')
+            ->modalHeading(__('admin.page_resource.modals.unpublish_heading'))
+            ->modalDescription(__('admin.page_resource.modals.unpublish_description'))
             ->action(function (): void {
                 /** @var Page $page */
                 $page = $this->record;
@@ -316,12 +361,12 @@ class EditPage extends EditRecord
 
                 if ($result) {
                     Notification::make()
-                        ->title('Page unpublished')
+                        ->title(__('admin.page_resource.notifications.unpublished'))
                         ->success()
                         ->send();
                 } else {
                     Notification::make()
-                        ->title('Unpublish failed')
+                        ->title(__('admin.page_resource.notifications.unpublish_failed'))
                         ->danger()
                         ->send();
                 }
@@ -345,7 +390,7 @@ class EditPage extends EditRecord
         }
 
         Notification::make()
-            ->title('Draft saved successfully')
+            ->title(__('admin.page_resource.notifications.draft_saved'))
             ->success()
             ->send();
     }
@@ -389,8 +434,8 @@ class EditPage extends EditRecord
         $this->draftVersion = $exception->currentVersion;
 
         Notification::make()
-            ->title('Draft changed')
-            ->body('This page draft changed while the editor was open. Refresh, review the latest draft, then save or publish again.')
+            ->title(__('admin.page_resource.notifications.draft_changed'))
+            ->body(__('admin.page_resource.notifications.draft_changed_description'))
             ->warning()
             ->persistent()
             ->send();
@@ -402,23 +447,23 @@ class EditPage extends EditRecord
         $errors = [];
 
         if (($formData['slug'] ?? '') === '') {
-            $errors[] = 'Slug is required.';
+            $errors[] = __('admin.page_resource.validation.slug_required');
         }
 
         if (($formData['template'] ?? '') === '') {
-            $errors[] = 'Template is required.';
+            $errors[] = __('admin.page_resource.validation.template_required');
         }
 
         if (! (bool) ($formData['is_enabled'] ?? true)) {
-            $errors[] = 'The page must be enabled before it can be published.';
+            $errors[] = __('admin.page_resource.validation.enabled_required');
         }
 
         if (($formData['ar_title'] ?? '') === '') {
-            $errors[] = 'Arabic title is required.';
+            $errors[] = __('admin.page_resource.validation.arabic_title_required');
         }
 
         if (($formData['en_title'] ?? '') === '') {
-            $errors[] = 'English title is required.';
+            $errors[] = __('admin.page_resource.validation.english_title_required');
         }
 
         return $errors;
@@ -427,7 +472,9 @@ class EditPage extends EditRecord
     /** @param list<string> $errors */
     private function formatValidationErrors(array $errors): string
     {
-        return "Missing or invalid publish fields:\n- ".implode("\n- ", $errors);
+        return __('admin.page_resource.validation.publish_fields_heading', [
+            'errors' => implode("\n- ", $errors),
+        ]);
     }
 
     // ──────────────────────────────────────────────
