@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Concerns;
 
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Faculty\FacultyStudyPlanEditorServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
 use App\Contracts\Page\FacultyPageServiceInterface;
 use App\Exceptions\ConflictException;
@@ -45,6 +46,8 @@ trait ManagesFacultyHomepage
 
     private FacultyStudyPlanLinkServiceInterface $studyPlanLinkService;
 
+    private FacultyStudyPlanEditorServiceInterface $studyPlanEditorService;
+
     /** @return array<string, string> */
     abstract protected function targetOptions(): array;
 
@@ -56,10 +59,12 @@ trait ManagesFacultyHomepage
         FacultyPageServiceInterface $facultyPageService,
         CmsWorkflowServiceInterface $cmsWorkflowService,
         FacultyStudyPlanLinkServiceInterface $studyPlanLinkService,
+        FacultyStudyPlanEditorServiceInterface $studyPlanEditorService,
     ): void {
         $this->facultyPageService = $facultyPageService;
         $this->cmsWorkflowService = $cmsWorkflowService;
         $this->studyPlanLinkService = $studyPlanLinkService;
+        $this->studyPlanEditorService = $studyPlanEditorService;
     }
 
     public static function canAccess(): bool
@@ -120,7 +125,16 @@ trait ManagesFacultyHomepage
         $studyPlanDepartmentId = $this->studyPlanDepartmentIdFromPayload($targetKey, $payload, (string) ($this->data['study_plan_department_id'] ?? ''));
         $studyPlanTermOptions = $this->studyPlanTermOptionsFromPayload($targetKey, $payload, $studyPlanDepartmentId);
         $studyPlanTermId = $this->studyPlanTermIdFromPayload($targetKey, $payload, $studyPlanDepartmentId, (string) ($this->data['study_plan_term_id'] ?? ''));
-        $studyPlanCourseOptions = $this->studyPlanCourseOptionsFromPayload($targetKey, $payload, $studyPlanDepartmentId);
+        $isStudyPlan = $this->subpageSlugFromTarget($targetKey) === 'study-plan';
+        $studyPlanCourseOptions = $isStudyPlan && is_string($studyPlanDepartmentId)
+            ? $this->studyPlanEditorService->prerequisiteOptions($payload, $studyPlanDepartmentId)
+            : [];
+        $studyPlanLessonTypeOptions = $isStudyPlan && is_string($studyPlanDepartmentId)
+            ? $this->studyPlanEditorService->lessonTypeOptions($payload, $studyPlanDepartmentId)
+            : [];
+        $studyPlanWorkspace = $isStudyPlan && is_string($studyPlanDepartmentId) && is_string($studyPlanTermId)
+            ? $this->studyPlanEditorService->buildWorkspace($payload, $studyPlanDepartmentId, $studyPlanTermId)
+            : [];
 
         $this->form->fill([
             'target_key' => $targetKey,
@@ -129,6 +143,7 @@ trait ManagesFacultyHomepage
             'record_search' => (string) ($this->data['record_search'] ?? ''),
             'record_department_filter' => (string) ($this->data['record_department_filter'] ?? ''),
             'record_year_filter' => (string) ($this->data['record_year_filter'] ?? ''),
+            'study_plan_workspace' => $studyPlanWorkspace,
             'ar_content' => $this->contentForForm($targetKey, is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [], $studyPlanDepartmentId, $studyPlanTermId),
             'en_content' => $this->contentForForm($targetKey, is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [], $studyPlanDepartmentId, $studyPlanTermId),
         ]);
@@ -137,6 +152,7 @@ trait ManagesFacultyHomepage
             $this->data['study_plan_department_options'] = $studyPlanDepartmentOptions;
             $this->data['study_plan_term_options'] = $studyPlanTermOptions;
             $this->data['study_plan_course_options'] = $studyPlanCourseOptions;
+            $this->data['study_plan_lesson_type_options'] = $studyPlanLessonTypeOptions;
             $this->data['department_study_plan_options'] = $this->departmentStudyPlanOptionsFromTarget($targetKey);
         }
     }
@@ -178,6 +194,8 @@ trait ManagesFacultyHomepage
                     ])
                     ->persistTabInQueryString('locale')
                     ->columnSpanFull(),
+                $this->studyPlanWorkspaceFields()
+                    ->visible(fn (): bool => $this->subpageSlugFromTarget($this->currentTargetKeyForSchema()) === 'study-plan'),
             ])
             ->statePath('data');
     }
@@ -308,6 +326,12 @@ trait ManagesFacultyHomepage
 
     public function openPreview(string $locale): void
     {
+        if (! in_array($locale, ['ar', 'en'], true)) {
+            Notification::make()->title(__('admin.faculty_workspace.notifications.preview_failed'))->body(__('admin.faculty_workspace.notifications.invalid_preview_locale'))->danger()->send();
+
+            return;
+        }
+
         /** @var User $user */
         $user = auth()->user();
 
@@ -371,12 +395,17 @@ trait ManagesFacultyHomepage
     {
         /** @var User $user */
         $user = auth()->user();
-        $result = $this->cmsWorkflowService->unpublish($this->currentTargetKey(), (int) $user->id);
-        $notification = Notification::make()->title($result
-            ? __('admin.faculty_workspace.notifications.unpublished')
-            : __('admin.faculty_workspace.notifications.nothing_published'));
+        try {
+            $result = $this->cmsWorkflowService->unpublish($this->currentTargetKey(), (int) $user->id);
+            $notification = Notification::make()->title($result
+                ? __('admin.faculty_workspace.notifications.unpublished')
+                : __('admin.faculty_workspace.notifications.nothing_published'));
 
-        ($result ? $notification->success() : $notification->warning())->send();
+            ($result ? $notification->success() : $notification->warning())->send();
+        } catch (\Throwable $e) {
+            report($e);
+            Notification::make()->title(__('admin.faculty_workspace.notifications.unpublish_failed'))->body(__('admin.faculty_workspace.notifications.safe_error'))->danger()->send();
+        }
     }
 
     /** @return array<int, Section> */
@@ -483,7 +512,7 @@ trait ManagesFacultyHomepage
         $targetKey = (string) ($state['target_key'] ?? $this->defaultTargetKey());
         $this->assertManagedTarget($targetKey);
 
-        return [
+        $payload = [
             'translations' => [
                 'ar' => $targetKey === $this->defaultTargetKey()
                     ? $this->normalizeContent(is_array($state['ar_content'] ?? null) ? $state['ar_content'] : [])
@@ -493,6 +522,22 @@ trait ManagesFacultyHomepage
                     : $this->normalizeSubpageContent($targetKey, 'en', is_array($state['en_content'] ?? null) ? $state['en_content'] : []),
             ],
         ];
+
+        if ($this->subpageSlugFromTarget($targetKey) !== 'study-plan') {
+            return $payload;
+        }
+
+        $workspace = $this->studyPlanEditorService->prepareWorkspace(
+            is_array($state['study_plan_workspace'] ?? null) ? $state['study_plan_workspace'] : [],
+        );
+        $this->data['study_plan_workspace'] = $workspace;
+
+        return $this->studyPlanEditorService->mergeWorkspace(
+            $payload,
+            $workspace,
+            (string) ($state['study_plan_department_id'] ?? ''),
+            (string) ($state['study_plan_term_id'] ?? ''),
+        );
     }
 
     /** @return array<int, Section> */
@@ -663,74 +708,87 @@ trait ManagesFacultyHomepage
                 TextInput::make($prefix.'.payload.plan.faculty')->label(__('admin.faculty_workspace.study_plan.plan_faculty'))->maxLength(180),
                 MediaPicker::image($prefix.'.payload.plan.heroImage', __('admin.faculty_workspace.study_plan.plan_image')),
                 TextInput::make($prefix.'.payload.plan.accent')->label(__('admin.faculty_workspace.study_plan.plan_color'))->maxLength(20),
-                Repeater::make($prefix.'.payload.plan.departments')
-                    ->label(__('admin.faculty_workspace.editor.sections.departments'))
+            ])->columns(2)->collapsed(),
+
+            Section::make(__('admin.faculty_workspace.study_plan.legend_settings'))->schema([
+                Repeater::make($prefix.'.payload.legend')
+                    ->label(__('admin.faculty_workspace.study_plan.course_type_legend'))
                     ->schema([
-                        TextInput::make('id')->label(__('admin.faculty_workspace.study_plan.internal_department_id'))->required()->maxLength(80),
-                        TextInput::make('name')->label(__('admin.faculty_workspace.editor.fields.department_name'))->required()->maxLength(160),
-                        TextInput::make('totalCredits')->label(__('admin.faculty_workspace.study_plan.total_credits'))->numeric(),
+                        Hidden::make('id')->dehydrated(),
+                        TextInput::make('label')->label(__('admin.faculty_workspace.editor.fields.label'))->required()->maxLength(120),
                     ])
-                    ->columns(3)
+                    ->columns(2)
                     ->defaultItems(0)
                     ->reorderable()
                     ->collapsible()
                     ->columnSpanFull(),
-            ])->columns(2)->collapsed(),
-
-            Section::make(__('admin.faculty_workspace.study_plan.courses'))->description(__('admin.faculty_workspace.study_plan.courses_help'))->schema([
-                Repeater::make($prefix.'.payload.plan.terms')
-                    ->label(__('admin.faculty_workspace.study_plan.terms'))
+                Repeater::make($prefix.'.payload.lessonTypes')
+                    ->label(__('admin.faculty_workspace.study_plan.lesson_types_label'))
                     ->schema([
-                        TextInput::make('id')->required()->maxLength(80),
-                        TextInput::make('label')->required()->maxLength(120),
-                        Repeater::make('courses')
-                            ->label(__('admin.faculty_workspace.study_plan.courses_in_term'))
-                            ->visible(fn (Get $get): bool => (string) $get('id') === (string) ($this->data['study_plan_term_id'] ?? ''))
+                        Hidden::make('id')->dehydrated(),
+                        TextInput::make('label')->label(__('admin.faculty_workspace.editor.fields.label'))->required()->maxLength(120),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ])->collapsed(),
+        ];
+    }
+
+    private function studyPlanWorkspaceFields(): Section
+    {
+        return Section::make(__('admin.faculty_workspace.study_plan.paired_workspace'))
+            ->description(__('admin.faculty_workspace.study_plan.paired_workspace_help'))
+            ->schema([
+                Repeater::make('study_plan_workspace.courses')
+                    ->label(__('admin.faculty_workspace.study_plan.courses_in_term'))
+                    ->schema([
+                        Hidden::make('id')->dehydrated(),
+                        Hidden::make('_originalId')->dehydrated(),
+                        Hidden::make('_originalIndexes')->dehydrated(),
+                        TextInput::make('code')->label(__('admin.faculty_workspace.study_plan.course_code'))->required()->maxLength(80),
+                        TextInput::make('credits')->label(__('admin.faculty_workspace.study_plan.credits'))->numeric(),
+                        Select::make('type')->label(__('admin.faculty_workspace.study_plan.requirement_type'))->options([
+                            'university' => __('admin.faculty_workspace.study_plan.types.university'),
+                            'faculty' => __('admin.faculty_workspace.study_plan.types.faculty'),
+                            'specialization' => __('admin.faculty_workspace.study_plan.types.specialization'),
+                        ]),
+                        Toggle::make('required')->label(__('admin.faculty_workspace.study_plan.required')),
+                        Select::make('prerequisites')
+                            ->label(__('admin.faculty_workspace.study_plan.prerequisites'))
+                            ->helperText(__('admin.faculty_workspace.study_plan.prerequisites_help'))
+                            ->options(fn (): array => $this->studyPlanCourseOptions())
+                            ->multiple()
+                            ->searchable()
+                            ->preload()
+                            ->disableOptionWhen(fn (string $value, Get $get): bool => $value === (string) $get('id'))
+                            ->columnSpanFull(),
+                        Section::make(__('admin.faculty_workspace.study_plan.arabic_content'))->schema([
+                            TextInput::make('titleAr')->label(__('admin.faculty_workspace.study_plan.course_title_ar'))->required()->maxLength(180),
+                            TextInput::make('instructor.nameAr')->label(__('admin.faculty_workspace.study_plan.instructor_ar'))->maxLength(160),
+                            Textarea::make('descriptionAr')->label(__('admin.faculty_workspace.study_plan.description_ar'))->rows(2)->columnSpanFull(),
+                        ])->columns(2),
+                        Section::make(__('admin.faculty_workspace.study_plan.english_content'))->schema([
+                            TextInput::make('titleEn')->label(__('admin.faculty_workspace.study_plan.course_title_en'))->required()->maxLength(180),
+                            TextInput::make('instructor.nameEn')->label(__('admin.faculty_workspace.study_plan.instructor_en'))->maxLength(160),
+                            Textarea::make('descriptionEn')->label(__('admin.faculty_workspace.study_plan.description_en'))->rows(2)->columnSpanFull(),
+                        ])->columns(2),
+                        Hidden::make('instructor.staffSlug')->dehydrated(),
+                        Repeater::make('lessons')
+                            ->label(__('admin.faculty_workspace.study_plan.lessons'))
                             ->schema([
-                                TextInput::make('code')->label(__('admin.faculty_workspace.study_plan.course_code'))->maxLength(80),
-                                TextInput::make('title')->label(__('admin.faculty_workspace.study_plan.course_title'))->required()->maxLength(180),
-                                TextInput::make('credits')->label(__('admin.faculty_workspace.study_plan.credits'))->numeric(),
-                                Select::make('type')->label(__('admin.faculty_workspace.study_plan.requirement_type'))->options([
-                                    'university' => __('admin.faculty_workspace.study_plan.types.university'),
-                                    'faculty' => __('admin.faculty_workspace.study_plan.types.faculty'),
-                                    'specialization' => __('admin.faculty_workspace.study_plan.types.specialization'),
-                                ]),
-                                Toggle::make('required')->label(__('admin.faculty_workspace.study_plan.required')),
-                                Select::make('prerequisites')
-                                    ->label(__('admin.faculty_workspace.study_plan.prerequisites'))
-                                    ->helperText(__('admin.faculty_workspace.study_plan.prerequisites_help'))
-                                    ->options(fn (): array => $this->studyPlanCourseOptions())
-                                    ->multiple()
-                                    ->searchable()
-                                    ->preload()
-                                    ->disableOptionWhen(fn (string $value, Get $get): bool => $value === (string) $get('id'))
-                                    ->columnSpanFull(),
-                                TextInput::make('instructor.nameAr')->label(__('admin.faculty_workspace.study_plan.instructor_ar'))->maxLength(160),
-                                TextInput::make('instructor.nameEn')->label(__('admin.faculty_workspace.study_plan.instructor_en'))->maxLength(160),
-                                TextInput::make('instructor.staffSlug')->hidden()->dehydrated(),
-                                Textarea::make('description')->label(__('admin.faculty_workspace.study_plan.description'))->rows(2)->columnSpanFull(),
-                                Section::make(__('admin.faculty_workspace.study_plan.advanced_identity'))->collapsed()->schema([
-                                    TextInput::make('id')->required()->label(__('admin.faculty_workspace.study_plan.course_id'))->maxLength(80),
-                                ]),
-                                Repeater::make('lessons')
-                                    ->label(__('admin.faculty_workspace.study_plan.lessons'))
-                                    ->schema([
-                                        TextInput::make('order')->label(__('admin.faculty_workspace.study_plan.lesson_order'))->numeric(),
-                                        Select::make('type')->label(__('admin.faculty_workspace.study_plan.lesson_type'))->options([
-                                            'lecture' => __('admin.faculty_workspace.study_plan.lesson_types.lecture'),
-                                            'practical' => __('admin.faculty_workspace.study_plan.lesson_types.practical'),
-                                            'seminar' => __('admin.faculty_workspace.study_plan.lesson_types.seminar'),
-                                        ]),
-                                        TextInput::make('title')->label(__('admin.faculty_workspace.study_plan.lesson_title'))->required()->maxLength(180),
-                                        MediaPicker::document('pdfUrl', __('admin.faculty_workspace.study_plan.lesson_file')),
-                                        Textarea::make('description')->label(__('admin.faculty_workspace.study_plan.description'))->rows(2)->columnSpanFull(),
-                                    ])
-                                    ->columns(3)
-                                    ->defaultItems(0)
-                                    ->reorderable()
-                                    ->collapsible()
-                                    ->collapsed()
-                                    ->columnSpanFull(),
+                                Hidden::make('id')->dehydrated(),
+                                Hidden::make('_originalId')->dehydrated(),
+                                Hidden::make('_originalIndexes')->dehydrated(),
+                                TextInput::make('order')->label(__('admin.faculty_workspace.study_plan.lesson_order'))->numeric(),
+                                Select::make('type')->label(__('admin.faculty_workspace.study_plan.lesson_type'))->options(fn (): array => $this->studyPlanLessonTypeOptions()),
+                                MediaPicker::document('pdfUrl', __('admin.faculty_workspace.study_plan.lesson_file')),
+                                TextInput::make('titleAr')->label(__('admin.faculty_workspace.study_plan.lesson_title_ar'))->required()->maxLength(180),
+                                TextInput::make('titleEn')->label(__('admin.faculty_workspace.study_plan.lesson_title_en'))->required()->maxLength(180),
+                                Textarea::make('descriptionAr')->label(__('admin.faculty_workspace.study_plan.description_ar'))->rows(2),
+                                Textarea::make('descriptionEn')->label(__('admin.faculty_workspace.study_plan.description_en'))->rows(2),
                             ])
                             ->columns(3)
                             ->defaultItems(0)
@@ -743,64 +801,40 @@ trait ManagesFacultyHomepage
                     ->defaultItems(0)
                     ->reorderable()
                     ->collapsible()
-                    ->collapsed()
                     ->columnSpanFull(),
-            ]),
-
-            Section::make(__('admin.faculty_workspace.study_plan.electives_promotion'))->schema([
-                Repeater::make($prefix.'.payload.plan.electivePools')
+                Repeater::make('study_plan_workspace.electivePools')
                     ->label(__('admin.faculty_workspace.study_plan.elective_pools'))
                     ->schema([
-                        TextInput::make('departmentId')->required()->label(__('admin.faculty_workspace.study_plan.internal_department_id'))->maxLength(80),
-                        TextInput::make('id')->label(__('admin.faculty_workspace.study_plan.internal_pool_id'))->required()->maxLength(80),
+                        Hidden::make('id')->dehydrated(),
+                        Hidden::make('_originalId')->dehydrated(),
+                        Hidden::make('_originalIndexes')->dehydrated(),
                         TextInput::make('requiredHours')->label(__('admin.faculty_workspace.study_plan.required_hours'))->numeric(),
-                        Textarea::make('description')->label(__('admin.faculty_workspace.study_plan.description'))->rows(2)->columnSpanFull(),
+                        Textarea::make('descriptionAr')->label(__('admin.faculty_workspace.study_plan.description_ar'))->rows(2),
+                        Textarea::make('descriptionEn')->label(__('admin.faculty_workspace.study_plan.description_en'))->rows(2),
                     ])
                     ->columns(3)
                     ->defaultItems(0)
                     ->reorderable()
                     ->collapsible()
                     ->columnSpanFull(),
-                Repeater::make($prefix.'.payload.plan.promotionRequirements')
+                Repeater::make('study_plan_workspace.promotionRequirements')
                     ->label(__('admin.faculty_workspace.study_plan.promotion_requirements'))
                     ->schema([
-                        TextInput::make('departmentId')->required()->label(__('admin.faculty_workspace.study_plan.internal_department_id'))->maxLength(80),
+                        Hidden::make('id')->dehydrated(),
+                        Hidden::make('_originalId')->dehydrated(),
+                        Hidden::make('_originalIndexes')->dehydrated(),
                         TextInput::make('fromYear')->label(__('admin.faculty_workspace.study_plan.from_year'))->required()->maxLength(20),
                         TextInput::make('toYear')->label(__('admin.faculty_workspace.study_plan.to_year'))->required()->maxLength(20),
                         TextInput::make('requiredCredits')->label(__('admin.faculty_workspace.study_plan.required_credits'))->numeric(),
+                        Textarea::make('descriptionAr')->label(__('admin.faculty_workspace.study_plan.description_ar'))->rows(2),
+                        Textarea::make('descriptionEn')->label(__('admin.faculty_workspace.study_plan.description_en'))->rows(2),
                     ])
-                    ->columns(4)
+                    ->columns(3)
                     ->defaultItems(0)
                     ->reorderable()
                     ->collapsible()
                     ->columnSpanFull(),
-            ])->collapsed(),
-
-            Section::make(__('admin.faculty_workspace.study_plan.legend_settings'))->schema([
-                Repeater::make($prefix.'.payload.legend')
-                    ->label(__('admin.faculty_workspace.study_plan.course_type_legend'))
-                    ->schema([
-                        TextInput::make('id')->label(__('admin.faculty_workspace.study_plan.internal_type_id'))->required()->maxLength(80),
-                        TextInput::make('label')->label(__('admin.faculty_workspace.editor.fields.label'))->required()->maxLength(120),
-                    ])
-                    ->columns(2)
-                    ->defaultItems(0)
-                    ->reorderable()
-                    ->collapsible()
-                    ->columnSpanFull(),
-                Repeater::make($prefix.'.payload.lessonTypes')
-                    ->label(__('admin.faculty_workspace.study_plan.lesson_types_label'))
-                    ->schema([
-                        TextInput::make('id')->label(__('admin.faculty_workspace.study_plan.internal_type_id'))->required()->maxLength(80),
-                        TextInput::make('label')->label(__('admin.faculty_workspace.editor.fields.label'))->required()->maxLength(120),
-                    ])
-                    ->columns(2)
-                    ->defaultItems(0)
-                    ->reorderable()
-                    ->collapsible()
-                    ->columnSpanFull(),
-            ])->collapsed(),
-        ];
+            ]);
     }
 
     /** @return array<int, Section> */
@@ -984,41 +1018,8 @@ trait ManagesFacultyHomepage
 
         $payload = is_array($content['payload'] ?? null) ? $content['payload'] : [];
         $plan = is_array($payload['plan'] ?? null) ? $payload['plan'] : [];
-        $departments = $this->listOfArrays($plan['departments'] ?? []);
-        $flatDepartments = [];
-        $terms = [];
-        $electivePools = [];
-        $promotionRequirements = [];
-
-        $departmentId = $departmentId !== null && $departmentId !== '' ? $departmentId : (string) ($departments[0]['id'] ?? '');
-        $selectedTermId = $termId !== null && $termId !== '' ? $termId : null;
-
-        foreach ($departments as $department) {
-            $currentDepartmentId = (string) ($department['id'] ?? '');
-            $flatDepartments[] = $this->withoutKeys($department, ['terms', 'electivePools', 'promotionRequirements']);
-
-            if ($currentDepartmentId !== $departmentId) {
-                continue;
-            }
-
-            $terms = $this->termsWithOpensCourseIds($this->listOfArrays($department['terms'] ?? []), $selectedTermId);
-
-            foreach ($this->listOfArrays($department['electivePools'] ?? []) as $pool) {
-                $electivePools[] = ['departmentId' => $currentDepartmentId, ...$pool];
-            }
-
-            foreach ($this->listOfArrays($department['promotionRequirements'] ?? []) as $requirement) {
-                $promotionRequirements[] = ['departmentId' => $currentDepartmentId, ...$requirement];
-            }
-        }
-
-        $payload['plan'] = [
-            ...$plan,
-            'departments' => $flatDepartments,
-            'terms' => $terms,
-            'electivePools' => $electivePools,
-            'promotionRequirements' => $promotionRequirements,
-        ];
+        unset($plan['departments'], $plan['terms'], $plan['courses'], $plan['lessons'], $plan['electivePools'], $plan['promotionRequirements']);
+        $payload['plan'] = $plan;
         $payload['lessonTypes'] = $this->lessonTypesForForm($payload['lessonTypes'] ?? []);
         $content['payload'] = $payload;
 
@@ -1344,41 +1345,16 @@ trait ManagesFacultyHomepage
         return is_array($this->data['study_plan_term_options'] ?? null) ? $this->data['study_plan_term_options'] : [];
     }
 
-    /** @param array<string, mixed> $payload @return array<string, string> */
-    private function studyPlanCourseOptionsFromPayload(string $targetKey, array $payload, ?string $departmentId): array
-    {
-        if ($this->subpageSlugFromTarget($targetKey) !== 'study-plan' || blank($departmentId)) {
-            return [];
-        }
-
-        $content = is_array($payload['translations']['en'] ?? null)
-            ? $payload['translations']['en']
-            : (is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : []);
-        $plan = $this->nestedStudyPlan(is_array($content['payload']['plan'] ?? null) ? $content['payload']['plan'] : []);
-        $department = collect($this->listOfArrays($plan['departments'] ?? []))->firstWhere('id', $departmentId);
-        $options = [];
-
-        foreach ($this->listOfArrays(is_array($department) ? ($department['terms'] ?? []) : []) as $term) {
-            foreach ($this->listOfArrays($term['courses'] ?? []) as $course) {
-                $id = trim((string) ($course['id'] ?? ''));
-
-                if ($id === '') {
-                    continue;
-                }
-
-                $code = trim((string) ($course['code'] ?? ''));
-                $title = trim((string) ($course['title'] ?? $id));
-                $options[$id] = $code !== '' ? "{$code} - {$title}" : $title;
-            }
-        }
-
-        return $options;
-    }
-
     /** @return array<string, string> */
     private function studyPlanCourseOptions(): array
     {
         return is_array($this->data['study_plan_course_options'] ?? null) ? $this->data['study_plan_course_options'] : [];
+    }
+
+    /** @return array<string, string> */
+    private function studyPlanLessonTypeOptions(): array
+    {
+        return is_array($this->data['study_plan_lesson_type_options'] ?? null) ? $this->data['study_plan_lesson_type_options'] : [];
     }
 
     /**
@@ -1410,37 +1386,14 @@ trait ManagesFacultyHomepage
         $baseContent = is_array($basePayload['translations'][$locale] ?? null) ? $basePayload['translations'][$locale] : [];
         $baseContent['payload'] = is_array($baseContent['payload'] ?? null) ? $baseContent['payload'] : [];
         $baseContent['payload']['plan'] = is_array($baseContent['payload']['plan'] ?? null) ? $baseContent['payload']['plan'] : [];
-        $baseDepartments = $this->listOfArrays($baseContent['payload']['plan']['departments'] ?? []);
-        $selectedDepartmentId = (string) ($this->data['study_plan_department_id'] ?? '');
-        $selectedTermId = (string) ($this->data['study_plan_term_id'] ?? '');
         $editedPayload = is_array($content['payload'] ?? null) ? $content['payload'] : [];
-        $editedPlan = $this->nestedStudyPlan(is_array($editedPayload['plan'] ?? null) ? $editedPayload['plan'] : []);
-        $editedDepartment = collect($this->listOfArrays($editedPlan['departments'] ?? []))->firstWhere('id', $selectedDepartmentId);
-
-        if (is_array($editedDepartment)) {
-            $replaced = false;
-            $baseDepartments = array_map(function (array $department) use ($editedDepartment, $selectedDepartmentId, $selectedTermId, &$replaced): array {
-                if ((string) ($department['id'] ?? '') !== $selectedDepartmentId) {
-                    return $department;
-                }
-
-                $replaced = true;
-
-                return $this->mergeStudyPlanDepartment($department, $editedDepartment, $selectedTermId);
-            }, $baseDepartments);
-
-            if (! $replaced) {
-                $baseDepartments[] = $this->applyStudyPlanOpensCourseIds($editedDepartment);
-            }
-        }
+        $editedPlan = is_array($editedPayload['plan'] ?? null) ? $editedPayload['plan'] : [];
 
         foreach (['faculty', 'heroImage', 'accent'] as $key) {
             if (array_key_exists($key, $editedPlan)) {
                 $baseContent['payload']['plan'][$key] = $editedPlan[$key];
             }
         }
-
-        $baseContent['payload']['plan']['departments'] = $baseDepartments;
 
         foreach (['labels', 'courseLabels', 'legend', 'lessonTypes'] as $key) {
             if (array_key_exists($key, $editedPayload)) {
@@ -1455,226 +1408,6 @@ trait ManagesFacultyHomepage
         }
 
         return $baseContent;
-    }
-
-    /** @param array<string, mixed> $baseDepartment @param array<string, mixed> $editedDepartment @return array<string, mixed> */
-    private function mergeStudyPlanDepartment(array $baseDepartment, array $editedDepartment, string $selectedTermId): array
-    {
-        if ($selectedTermId === '') {
-            return $this->applyStudyPlanOpensCourseIds($editedDepartment);
-        }
-
-        $mergedDepartment = [
-            ...$baseDepartment,
-            ...$this->withoutKeys($editedDepartment, ['terms']),
-        ];
-        $editedTerms = collect($this->listOfArrays($editedDepartment['terms'] ?? []))->keyBy(fn (array $term): string => (string) ($term['id'] ?? ''));
-        $seenTermIds = [];
-        $mergedTerms = array_map(function (array $baseTerm) use ($editedTerms, $selectedTermId, &$seenTermIds): array {
-            $termId = (string) ($baseTerm['id'] ?? '');
-            $editedTerm = $editedTerms->get($termId);
-            $seenTermIds[] = $termId;
-
-            if (! is_array($editedTerm)) {
-                return $baseTerm;
-            }
-
-            if ($termId === $selectedTermId) {
-                return $editedTerm;
-            }
-
-            return [
-                ...$baseTerm,
-                ...$this->withoutKeys($editedTerm, ['courses']),
-            ];
-        }, $this->listOfArrays($baseDepartment['terms'] ?? []));
-
-        foreach ($editedTerms as $termId => $editedTerm) {
-            if (in_array((string) $termId, $seenTermIds, true)) {
-                continue;
-            }
-
-            $mergedTerms[] = $editedTerm;
-        }
-
-        $mergedDepartment['terms'] = $mergedTerms;
-
-        return $this->applyStudyPlanOpensCourseIds($mergedDepartment);
-    }
-
-    /** @param array<string, mixed> $plan @return array<string, mixed> */
-    private function nestedStudyPlan(array $plan): array
-    {
-        $rawTerms = $this->listOfArrays($plan['terms'] ?? []);
-        $selectedDepartmentId = (string) ($this->data['study_plan_department_id'] ?? '');
-
-        if ($this->termsContainNestedCourses($rawTerms) && $selectedDepartmentId !== '') {
-            $departments = array_map(function (array $department) use ($rawTerms, $selectedDepartmentId): array {
-                if ((string) ($department['id'] ?? '') === $selectedDepartmentId) {
-                    $department['terms'] = $this->normalizeNestedStudyPlanTerms($rawTerms);
-                }
-
-                return $department;
-            }, $this->listOfArrays($plan['departments'] ?? []));
-
-            unset($plan['terms'], $plan['courses'], $plan['lessons'], $plan['electivePools'], $plan['promotionRequirements']);
-            $plan['departments'] = $departments;
-
-            return $plan;
-        }
-
-        $terms = collect($rawTerms)->groupBy('departmentId');
-        $courses = collect($this->listOfArrays($plan['courses'] ?? []))->groupBy(fn (array $course): string => (string) ($course['departmentId'] ?? '').'|'.(string) ($course['termId'] ?? ''));
-        $lessons = collect($this->listOfArrays($plan['lessons'] ?? []))->groupBy('courseId');
-        $electivePools = collect($this->listOfArrays($plan['electivePools'] ?? []))->groupBy('departmentId');
-        $promotionRequirements = collect($this->listOfArrays($plan['promotionRequirements'] ?? []))->groupBy('departmentId');
-
-        $departments = array_map(function (array $department) use ($terms, $courses, $lessons, $electivePools, $promotionRequirements): array {
-            $departmentId = (string) ($department['id'] ?? '');
-            $department['electivePools'] = $electivePools->get($departmentId, collect())->map(fn (array $pool): array => $this->withoutKeys($pool, ['departmentId']))->values()->all();
-            $department['promotionRequirements'] = $promotionRequirements->get($departmentId, collect())->map(fn (array $requirement): array => $this->withoutKeys($requirement, ['departmentId']))->values()->all();
-            $department['terms'] = $terms->get($departmentId, collect())->map(function (array $term) use ($departmentId, $courses, $lessons): array {
-                $termId = (string) ($term['id'] ?? '');
-                $term['courses'] = $courses->get($departmentId.'|'.$termId, collect())->map(function (array $course) use ($lessons): array {
-                    $courseId = (string) ($course['id'] ?? '');
-                    $course['prerequisites'] = $this->stringList($course['prerequisites'] ?? []);
-                    $course['instructor'] = is_array($course['instructor'] ?? null) ? $course['instructor'] : [];
-                    $course['lessons'] = $lessons->get($courseId, collect())->map(fn (array $lesson): array => $this->withoutKeys($lesson, ['courseId']))->values()->all();
-
-                    return $this->withoutKeys($course, ['departmentId', 'termId']);
-                })->values()->all();
-
-                return $this->withoutKeys($term, ['departmentId']);
-            })->values()->all();
-
-            return $department;
-        }, $this->listOfArrays($plan['departments'] ?? []));
-
-        unset($plan['terms'], $plan['courses'], $plan['lessons'], $plan['electivePools'], $plan['promotionRequirements']);
-        $plan['departments'] = $departments;
-
-        return $plan;
-    }
-
-    /** @param array<int, array<string, mixed>> $terms @return array<int, array<string, mixed>> */
-    private function termsWithOpensCourseIds(array $terms, ?string $selectedTermId = null): array
-    {
-        $openers = [];
-
-        foreach ($terms as $term) {
-            foreach ($this->listOfArrays($term['courses'] ?? []) as $course) {
-                $courseId = (string) ($course['id'] ?? '');
-
-                if ($courseId === '') {
-                    continue;
-                }
-
-                foreach ($this->stringList($course['prerequisites'] ?? []) as $prerequisiteId) {
-                    $openers[$prerequisiteId][] = $courseId;
-                }
-            }
-        }
-
-        $visibleTerms = $selectedTermId === null
-            ? $terms
-            : array_values(array_filter(
-                $terms,
-                static fn (array $term): bool => (string) ($term['id'] ?? '') === $selectedTermId,
-            ));
-
-        return array_map(function (array $term) use ($openers): array {
-            $term['courses'] = array_map(function (array $course) use ($openers): array {
-                $courseId = (string) ($course['id'] ?? '');
-                $course['prerequisites'] = $this->stringList($course['prerequisites'] ?? []);
-                $course['opensCourseIds'] = array_values(array_unique($openers[$courseId] ?? []));
-                $course['lessons'] = $this->listOfArrays($course['lessons'] ?? []);
-
-                return $course;
-            }, $this->listOfArrays($term['courses'] ?? []));
-
-            return $term;
-        }, $visibleTerms);
-    }
-
-    /** @param array<int, array<string, mixed>> $terms */
-    private function termsContainNestedCourses(array $terms): bool
-    {
-        foreach ($terms as $term) {
-            if (array_key_exists('courses', $term)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /** @param array<int, array<string, mixed>> $terms @return array<int, array<string, mixed>> */
-    private function normalizeNestedStudyPlanTerms(array $terms): array
-    {
-        return array_map(function (array $term): array {
-            $term['courses'] = array_map(function (array $course): array {
-                $course['prerequisites'] = $this->stringList($course['prerequisites'] ?? []);
-                $course['opensCourseIds'] = $this->stringList($course['opensCourseIds'] ?? []);
-                $course['instructor'] = is_array($course['instructor'] ?? null) ? $course['instructor'] : [];
-                $course['lessons'] = $this->listOfArrays($course['lessons'] ?? []);
-
-                return $course;
-            }, $this->listOfArrays($term['courses'] ?? []));
-
-            return $term;
-        }, $terms);
-    }
-
-    /** @param array<string, mixed> $department @return array<string, mixed> */
-    private function applyStudyPlanOpensCourseIds(array $department): array
-    {
-        $normalizedTerms = $this->listOfArrays($department['terms'] ?? []);
-        $courseLocations = [];
-
-        foreach ($normalizedTerms as $termIndex => $term) {
-            foreach ($this->listOfArrays($term['courses'] ?? []) as $courseIndex => $course) {
-                $courseId = (string) ($course['id'] ?? '');
-
-                if ($courseId !== '') {
-                    $courseLocations[$courseId] = [$termIndex, $courseIndex];
-                }
-            }
-        }
-
-        foreach ($normalizedTerms as $term) {
-            foreach ($this->listOfArrays($term['courses'] ?? []) as $course) {
-                $sourceId = (string) ($course['id'] ?? '');
-
-                if ($sourceId === '') {
-                    continue;
-                }
-
-                foreach ($this->stringList($course['opensCourseIds'] ?? []) as $targetId) {
-                    if ($targetId === $sourceId || ! isset($courseLocations[$targetId])) {
-                        continue;
-                    }
-
-                    [$targetTermIndex, $targetCourseIndex] = $courseLocations[$targetId];
-                    $prerequisites = $this->stringList($normalizedTerms[$targetTermIndex]['courses'][$targetCourseIndex]['prerequisites'] ?? []);
-                    $prerequisites[] = $sourceId;
-                    $normalizedTerms[$targetTermIndex]['courses'][$targetCourseIndex]['prerequisites'] = array_values(array_unique($prerequisites));
-                }
-            }
-        }
-
-        $department['terms'] = array_map(function (array $term): array {
-            $term['courses'] = array_map(fn (array $course): array => $this->withoutKeys($course, ['opensCourseIds']), $this->listOfArrays($term['courses'] ?? []));
-
-            return $term;
-        }, $normalizedTerms);
-
-        return $department;
-    }
-
-    /** @return array<int, string> */
-    private function stringList(mixed $items): array
-    {
-        return array_values(array_filter(array_map(static fn (mixed $item): string => trim((string) $item), is_array($items) ? $items : []), static fn (string $item): bool => $item !== ''));
     }
 
     /** @return array<string, array<string, mixed>> */

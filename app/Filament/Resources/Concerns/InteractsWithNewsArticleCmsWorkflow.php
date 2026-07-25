@@ -59,6 +59,9 @@ trait InteractsWithNewsArticleCmsWorkflow
             $this->conflictNotification();
         } catch (ValidationException $exception) {
             $this->validationNotification('save_failed', $exception);
+        } catch (\Throwable $exception) {
+            report($exception);
+            $this->safeFailureNotification('save_failed');
         }
 
         return $record;
@@ -188,6 +191,16 @@ trait InteractsWithNewsArticleCmsWorkflow
 
     private function previewArticle(string $locale): mixed
     {
+        if (! in_array($locale, ['ar', 'en'], true)) {
+            Notification::make()
+                ->title(__('admin.news_article.workflow.notifications.preview_failed'))
+                ->body(__('admin.news_article.workflow.notifications.invalid_preview_locale'))
+                ->danger()
+                ->send();
+
+            return null;
+        }
+
         try {
             $this->saveDraft($this->form->getState());
             $preview = $this->cmsWorkflowService->preview($this->targetKey(), $locale, $this->userId());

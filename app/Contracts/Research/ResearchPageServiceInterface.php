@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Contracts\Research;
 
+use App\DTOs\Research\ResearchConferenceRegistrationDTO;
 use App\DTOs\Research\ResearchDetailPageDTO;
 use App\DTOs\Research\ResearchPageDTO;
 
@@ -64,6 +65,8 @@ interface ResearchPageServiceInterface
     public function expertFinder(string $locale, array $filters = []): ResearchPageDTO;
 
     public function conferences(string $locale): ResearchPageDTO;
+
+    public function findRegisterableConference(string $eventId, string $locale): ?ResearchConferenceRegistrationDTO;
 
     public function conferenceRegistration(string $locale, ?string $eventId): ResearchPageDTO;
 

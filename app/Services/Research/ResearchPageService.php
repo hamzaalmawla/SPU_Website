@@ -6,6 +6,7 @@ namespace App\Services\Research;
 
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
+use App\DTOs\Research\ResearchConferenceRegistrationDTO;
 use App\DTOs\Research\ResearchDetailPageDTO;
 use App\DTOs\Research\ResearchPageDTO;
 use App\Enums\PublicationStatus;
@@ -469,23 +470,27 @@ final class ResearchPageService implements ResearchPageServiceInterface
         return $this->pageDto($locale, 'conferences', $data, '/research/conferences', $data['hero'] ?? []);
     }
 
+    public function findRegisterableConference(string $eventId, string $locale): ?ResearchConferenceRegistrationDTO
+    {
+        $event = $this->registerableConferenceEvent($this->conferences($locale)->data, $eventId);
+
+        if ($event === null) {
+            return null;
+        }
+
+        return new ResearchConferenceRegistrationDTO(
+            id: (string) $event['id'],
+            locale: $locale,
+            title: (string) $event['title'],
+            formId: (string) $event['formId'],
+        );
+    }
+
     public function conferenceRegistration(string $locale, ?string $eventId): ResearchPageDTO
     {
         $conferences = $this->conferences($locale);
         $data = $conferences->data;
-        $events = [...$this->arrayList($data['upcoming'] ?? []), ...$this->arrayList($data['past'] ?? [])];
-        $registerEvent = null;
-
-        foreach ($events as $event) {
-            if (($event['id'] ?? null) === $eventId) {
-                $registerEvent = $event;
-                break;
-            }
-        }
-
-        if (is_array($registerEvent)) {
-            $registerEvent['formId'] = (string) ($registerEvent['formId'] ?? (($registerEvent['id'] ?? '') === 'conf-002' ? 'symposium-registration' : 'conference-registration'));
-        }
+        $registerEvent = is_string($eventId) ? $this->registerableConferenceEvent($data, $eventId) : null;
 
         $data['registerEvent'] = $registerEvent;
 
@@ -499,6 +504,25 @@ final class ResearchPageService implements ResearchPageServiceInterface
             seoImage: is_array($registerEvent) ? (string) ($registerEvent['image'] ?? '/images/uni-main-place.JPG') : '/images/uni-main-place.JPG',
             path: '/'.$locale.'/research/conferences/register',
         );
+    }
+
+    /** @param array<string, mixed> $content @return array<string, mixed>|null */
+    private function registerableConferenceEvent(array $content, string $eventId): ?array
+    {
+        foreach ($this->arrayList($content['upcoming'] ?? []) as $event) {
+            $id = trim((string) ($event['id'] ?? ''));
+            $title = trim((string) ($event['title'] ?? ''));
+            $formId = trim((string) ($event['formId'] ?? ''));
+
+            if ($id !== ''
+                && hash_equals($id, $eventId)
+                && $title !== ''
+                && in_array($formId, ['conference-registration', 'symposium-registration'], true)) {
+                return $event;
+            }
+        }
+
+        return null;
     }
 
     public function library(string $locale): ResearchPageDTO
@@ -1363,9 +1387,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
         ));
         $item['downloads'] = $downloads;
 
-        if ($doi === '' || ! $this->isPublishableDoi($doi)) {
-            $item['isOpenAccess'] = $downloads !== [];
-        }
+        $item['isOpenAccess'] = $downloads !== [];
 
         return $item;
     }
@@ -1391,7 +1413,10 @@ final class ResearchPageService implements ResearchPageServiceInterface
         $content['upcoming'] = array_map(function (array $event): array {
             if (! $this->isSafePublicResourceUrl($event['registrationUrl'] ?? null)) {
                 $id = trim((string) ($event['id'] ?? ''));
-                $event['registrationUrl'] = $id === '' ? null : '/research/conferences/register?event='.rawurlencode($id);
+                $formId = trim((string) ($event['formId'] ?? ''));
+                $event['registrationUrl'] = $id !== '' && in_array($formId, ['conference-registration', 'symposium-registration'], true)
+                    ? '/research/conferences/register?event='.rawurlencode($id)
+                    : null;
             }
 
             return $event;

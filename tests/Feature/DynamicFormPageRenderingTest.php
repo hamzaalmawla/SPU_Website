@@ -40,6 +40,8 @@ final class DynamicFormPageRenderingTest extends TestCase
             ->assertSee('Registration Information')
             ->assertSee('x-data="dynamicFormShell()"', false)
             ->assertSee('data-form-id="conference-registration"', false)
+            ->assertSee('data-event-source="research-conferences"', false)
+            ->assertSee('data-event-id="conf-001"', false)
             ->assertDontSee('Event Not Found');
     }
 
@@ -49,6 +51,8 @@ final class DynamicFormPageRenderingTest extends TestCase
             ->assertOk()
             ->assertSee('Symposium on Pharmaceutical Innovation')
             ->assertSee('data-form-id="symposium-registration"', false)
+            ->assertSee('data-event-source="research-conferences"', false)
+            ->assertSee('data-event-id="conf-002"', false)
             ->assertDontSee('Event Not Found');
     }
 

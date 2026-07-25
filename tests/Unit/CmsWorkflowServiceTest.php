@@ -273,6 +273,99 @@ final class CmsWorkflowServiceTest extends TestCase
         }
     }
 
+    public function test_research_catalogs_reject_duplicate_or_mismatched_bilingual_ids(): void
+    {
+        $research = app(ResearchPageServiceInterface::class);
+        $paths = [
+            'research.publications' => 'items',
+            'research.experts' => 'researchers',
+            'research.conferences' => 'upcoming',
+            'research.policies' => 'sections',
+        ];
+
+        foreach ($paths as $targetKey => $path) {
+            $payload = $research->getEditablePayload($targetKey);
+            data_set($payload, 'translations.en.'.$path.'.0.id', 'mismatched-english-id');
+            $readiness = $this->service->readiness($targetKey, $payload);
+
+            $this->assertFalse($readiness->isReady, $targetKey);
+            $this->assertArrayHasKey('research', $readiness->errors, $targetKey);
+
+            $items = data_get($payload, 'translations.ar.'.$path, []);
+            if (is_array($items) && count($items) > 1) {
+                data_set($payload, 'translations.ar.'.$path.'.1.id', data_get($payload, 'translations.ar.'.$path.'.0.id'));
+                $this->assertFalse($this->service->readiness($targetKey, $payload)->isReady, $targetKey.' duplicate');
+            }
+        }
+    }
+
+    public function test_invalid_conference_registration_and_proceedings_states_block_publish(): void
+    {
+        $user = User::factory()->create(['role_slug' => 'editor']);
+        $payload = $this->validResearchConferencesPayload();
+        foreach (['ar', 'en'] as $locale) {
+            $payload['translations'][$locale]['upcoming'][0]['formId'] = 'unsupported-registration';
+            $payload['translations'][$locale]['past'][0]['hasProceedings'] = true;
+            $payload['translations'][$locale]['past'][0]['proceedingsUrl'] = '#';
+        }
+
+        $this->service->saveDraft('research.conferences', $payload, (int) $user->getKey());
+        $readiness = $this->service->readiness('research.conferences');
+        $this->assertFalse($readiness->isReady);
+        $this->assertStringContainsString('approved conference registration form', implode(' ', $readiness->errors['research'] ?? []));
+        $this->assertStringContainsString('valid proceedings file', implode(' ', $readiness->errors['research'] ?? []));
+
+        $this->expectException(ValidationException::class);
+        $this->service->publish('research.conferences', (int) $user->getKey());
+    }
+
+    public function test_missing_or_placeholder_policy_documents_block_publish(): void
+    {
+        $user = User::factory()->create(['role_slug' => 'editor']);
+        $payload = app(ResearchPageServiceInterface::class)->getEditablePayload('research.policies');
+        foreach (['ar', 'en'] as $locale) {
+            $payload['translations'][$locale]['sections'][0]['documents'][0]['url'] = '#';
+            $payload['translations'][$locale]['sections'][1]['documents'] = [];
+        }
+
+        $this->service->saveDraft('research.policies', $payload, (int) $user->getKey());
+        $readiness = $this->service->readiness('research.policies');
+        $this->assertFalse($readiness->isReady);
+        $this->assertStringContainsString('valid file', implode(' ', $readiness->errors['research'] ?? []));
+        $this->assertStringContainsString('at least one document', implode(' ', $readiness->errors['research'] ?? []));
+
+        $this->expectException(ValidationException::class);
+        $this->service->publish('research.policies', (int) $user->getKey());
+    }
+
+    public function test_unsafe_enabled_research_links_block_publish(): void
+    {
+        $payload = app(ResearchPageServiceInterface::class)->getEditablePayload('research.publications');
+        foreach (['ar', 'en'] as $locale) {
+            $payload['translations'][$locale]['items'][0]['scholarUrl'] = 'javascript:alert(1)';
+        }
+
+        $readiness = $this->service->readiness('research.publications', $payload);
+        $this->assertFalse($readiness->isReady);
+        $this->assertStringContainsString('safe public HTTPS', implode(' ', $readiness->errors['research'] ?? []));
+    }
+
+    /** @return array<string, mixed> */
+    private function validResearchConferencesPayload(): array
+    {
+        $payload = app(ResearchPageServiceInterface::class)->getEditablePayload('research.conferences');
+
+        foreach (['ar', 'en'] as $locale) {
+            foreach ($payload['translations'][$locale]['past'] ?? [] as $index => $conference) {
+                if ((bool) ($conference['hasProceedings'] ?? false)) {
+                    $payload['translations'][$locale]['past'][$index]['proceedingsUrl'] = '/storage/research/proceedings-'.$index.'.pdf';
+                }
+            }
+        }
+
+        return $payload;
+    }
+
     /**
      * @return array<string, mixed>
      */

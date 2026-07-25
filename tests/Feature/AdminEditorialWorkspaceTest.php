@@ -85,6 +85,24 @@ final class AdminEditorialWorkspaceTest extends TestCase
         $this->assertStringContainsString('category_type', $links[0]['url']);
     }
 
+    public function test_event_end_cannot_precede_event_start(): void
+    {
+        $this->actingAs($this->editor(), 'web');
+
+        $component = Livewire::test(ManageEvents::class);
+        /** @var array<string, mixed> $data */
+        $data = $component->get('data');
+        $eventKey = array_key_first($data['events_workspace']['upcoming'] ?? []);
+        $this->assertNotNull($eventKey);
+        $prefix = 'data.events_workspace.upcoming.'.$eventKey;
+
+        $component
+            ->set($prefix.'.startsAt', '2026-07-20 12:00:00')
+            ->set($prefix.'.endsAt', '2026-07-20 11:00:00')
+            ->call('save')
+            ->assertHasErrors([$prefix.'.endsAt' => 'after_or_equal']);
+    }
+
     private function editor(): User
     {
         return User::factory()->create([

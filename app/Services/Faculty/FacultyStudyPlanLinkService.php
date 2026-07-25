@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Faculty;
 
+use App\Contracts\Faculty\FacultyStudyPlanEditorServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
 use App\Enums\PublicationStatus;
 use App\Models\Cms\CmsTargetContent;
@@ -20,6 +21,10 @@ final class FacultyStudyPlanLinkService implements FacultyStudyPlanLinkServiceIn
         'construction' => 'building-construction-engineering',
         'business' => 'business-administration',
     ];
+
+    public function __construct(
+        private readonly FacultyStudyPlanEditorServiceInterface $studyPlanEditorService,
+    ) {}
 
     public function optionsForDepartmentsTarget(string $targetKey): array
     {
@@ -104,7 +109,10 @@ final class FacultyStudyPlanLinkService implements FacultyStudyPlanLinkServiceIn
         }
 
         $candidateIds = [];
-        $errors = [];
+        $errors = $this->studyPlanEditorService->validationErrors(
+            $payload,
+            $this->legacyDanglingPrerequisiteEdges($parts[1]),
+        );
 
         foreach (['ar', 'en'] as $locale) {
             $translation = is_array($payload['translations'][$locale] ?? null) ? $payload['translations'][$locale] : [];
@@ -269,6 +277,78 @@ final class FacultyStudyPlanLinkService implements FacultyStudyPlanLinkServiceIn
         $plan = is_array($page->payload_json['plan'] ?? null) ? $page->payload_json['plan'] : [];
 
         return $this->indexedDepartments(is_array($plan['departments'] ?? null) ? $plan['departments'] : []);
+    }
+
+    /** @return array<int, string> */
+    private function legacyDanglingPrerequisiteEdges(string $facultySlug): array
+    {
+        $facultySlug = $this->canonicalFacultySlug($facultySlug);
+        $plans = [];
+        $published = CmsTargetContent::query()
+            ->where('target_key', 'facilities.'.$facultySlug.'.study_plan')
+            ->where('status', PublicationStatus::Published->value)
+            ->first();
+
+        if ($published instanceof CmsTargetContent && is_array($published->payload_json)) {
+            foreach (['ar', 'en'] as $locale) {
+                $translation = is_array($published->payload_json['translations'][$locale] ?? null)
+                    ? $published->payload_json['translations'][$locale]
+                    : [];
+                $plan = is_array($translation['payload']['plan'] ?? null) ? $translation['payload']['plan'] : [];
+
+                if ($plan !== []) {
+                    $plans[] = $plan;
+                }
+            }
+        }
+
+        if ($plans === []) {
+            $faculty = Faculty::query()->enabled()->where('public_slug', $facultySlug)->first();
+            $page = $faculty instanceof Faculty
+                ? FacultyPage::query()->enabled()->where('faculty_id', $faculty->getKey())->where('slug', 'study-plan')->first()
+                : null;
+            $plan = $page instanceof FacultyPage && is_array($page->payload_json['plan'] ?? null)
+                ? $page->payload_json['plan']
+                : [];
+
+            if ($plan !== []) {
+                $plans[] = $plan;
+            }
+        }
+
+        $edges = [];
+
+        foreach ($plans as $plan) {
+            $courses = [];
+
+            foreach (is_array($plan['departments'] ?? null) ? $plan['departments'] : [] as $department) {
+                foreach (is_array($department['terms'] ?? null) ? $department['terms'] : [] as $term) {
+                    foreach (is_array($term['courses'] ?? null) ? $term['courses'] : [] as $course) {
+                        if (! is_array($course)) {
+                            continue;
+                        }
+
+                        $courseId = trim((string) ($course['id'] ?? ''));
+
+                        if ($courseId !== '') {
+                            $courses[$courseId] = $course;
+                        }
+                    }
+                }
+            }
+
+            foreach ($courses as $courseId => $course) {
+                foreach (is_array($course['prerequisites'] ?? null) ? $course['prerequisites'] : [] as $prerequisiteId) {
+                    $prerequisiteId = trim((string) $prerequisiteId);
+
+                    if ($prerequisiteId !== '' && ! isset($courses[$prerequisiteId])) {
+                        $edges[$courseId.'|'.$prerequisiteId] = true;
+                    }
+                }
+            }
+        }
+
+        return array_keys($edges);
     }
 
     /** @param array<string, mixed> $payload @return array<string, array{nameEn: string, nameAr: string}> */

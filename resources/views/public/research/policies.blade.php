@@ -24,7 +24,7 @@
                                 <h4 class="mb-3 text-xs font-bold uppercase tracking-wider text-spu-blue/50">{{ $locale === 'ar' ? 'المستندات المتاحة' : 'Available Documents' }}</h4>
                                 <div class="flex flex-col gap-2">
                                     @foreach (($section['documents'] ?? []) as $document)
-                                        @if (! empty($document['url']))
+                                        @if (! empty($document['url']) && $document['url'] !== '#')
                                             <a href="{{ $document['url'] }}" target="_blank" rel="noopener" class="group flex items-center justify-between rounded-lg border border-spu-blue/10 bg-spu-blue/[0.02] px-4 py-3 transition hover:border-spu-blue/30 hover:bg-spu-blue/[0.06]">
                                                 <span class="text-sm font-semibold text-spu-blue">{{ $document['title'] ?? '' }}</span>
                                                 <span class="text-[10px] font-bold uppercase tracking-wider text-spu-red/70">{{ $document['fileType'] ?? '' }}</span>

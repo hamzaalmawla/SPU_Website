@@ -41,9 +41,13 @@ final class AdminFacultyWorkspaceTest extends TestCase
             ->withSession(['admin_locale' => 'en'])
             ->get('/admin/manage-dentistry-faculty?target=facilities.dentistry.study_plan')
             ->assertOk()
-            ->assertSee('Courses by term')
+            ->assertSee('Bilingual term workspace')
             ->assertSee('Prerequisite courses')
             ->assertSee('Choose courses students must complete')
+            ->assertSee('Course title in Arabic')
+            ->assertSee('Course title in English')
+            ->assertDontSee('Internal course identifier')
+            ->assertDontSee('Internal department identifier')
             ->assertDontSee('Opens Course IDs');
     }
 
@@ -80,16 +84,17 @@ final class AdminFacultyWorkspaceTest extends TestCase
         /** @var array<string, mixed> $data */
         $data = $component->get('data');
         $selectedTermId = $data['study_plan_term_id'] ?? null;
-        $arabicTerms = array_values($data['ar_content']['payload']['plan']['terms'] ?? []);
-        $englishTerms = array_values($data['en_content']['payload']['plan']['terms'] ?? []);
+        $workspace = $data['study_plan_workspace'] ?? [];
         $allTermCount = count($component->instance()->getStudyPlanTermNavigation());
 
         $this->assertNotEmpty($selectedTermId);
         $this->assertGreaterThan(1, $allTermCount);
-        $this->assertCount(1, $arabicTerms);
-        $this->assertCount(1, $englishTerms);
-        $this->assertSame((string) $selectedTermId, (string) ($arabicTerms[0]['id'] ?? ''));
-        $this->assertSame((string) $selectedTermId, (string) ($englishTerms[0]['id'] ?? ''));
+        $this->assertNotEmpty($workspace['courses'] ?? []);
+        $this->assertArrayNotHasKey('departments', $data['ar_content']['payload']['plan'] ?? []);
+        $this->assertArrayNotHasKey('departments', $data['en_content']['payload']['plan'] ?? []);
+        $firstCourse = array_values($workspace['courses'])[0];
+        $this->assertArrayHasKey('titleAr', $firstCourse);
+        $this->assertArrayHasKey('titleEn', $firstCourse);
 
         $component->call('save');
 

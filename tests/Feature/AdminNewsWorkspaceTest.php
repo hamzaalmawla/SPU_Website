@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Filament\Pages\ManageNews;
 use App\Models\News\NewsArticle;
 use App\Models\News\NewsCategory;
 use App\Models\User\User;
 use Database\Seeders\NewsCategorySeeder;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 final class AdminNewsWorkspaceTest extends TestCase
@@ -100,7 +102,7 @@ final class AdminNewsWorkspaceTest extends TestCase
             ['locale' => 'en', 'title' => 'Revision actions', 'body' => '<p>English content</p>'],
         ]);
 
-        $this->actingAs($this->administrator(), 'web')
+        $response = $this->actingAs($this->administrator(), 'web')
             ->get('/admin/news-articles/'.$article->getKey().'/edit')
             ->assertOk()
             ->assertSee('حفظ المسودة')
@@ -110,6 +112,55 @@ final class AdminNewsWorkspaceTest extends TestCase
             ->assertSee('جدولة النشر')
             ->assertSee('إلغاء النشر')
             ->assertDontSee('تاريخ النشر');
+
+        $this->assertSame(1, substr_count($response->getContent(), 'حفظ المسودة'));
+        $response->assertDontSee('حفظ التغييرات');
+    }
+
+    public function test_broad_news_workspace_exposes_only_canonical_page_targets(): void
+    {
+        $this->actingAs($this->administrator(), 'web');
+
+        $component = Livewire::test(ManageNews::class);
+        $method = new \ReflectionMethod(ManageNews::class, 'targetOptions');
+        $method->setAccessible(true);
+        /** @var array<string, string> $options */
+        $options = $method->invoke($component->instance());
+
+        $this->assertSame(['news.index', 'news.articles', 'news.gallery'], array_keys($options));
+        $this->assertArrayNotHasKey('news.article', $options);
+        $this->assertArrayNotHasKey('news.announcements', $options);
+        $this->assertArrayNotHasKey('news.events', $options);
+    }
+
+    public function test_stale_news_target_queries_fall_back_to_the_news_landing_editor(): void
+    {
+        $this->actingAs($this->administrator(), 'web');
+
+        foreach (['news.article', 'news.announcements', 'news.events', 'unknown'] as $target) {
+            Livewire::withQueryParams(['target' => $target])
+                ->test(ManageNews::class)
+                ->assertSet('activeTargetKey', 'news.index')
+                ->assertSet('data.target_key', 'news.index')
+                ->assertDontSee('Target Schema Pending');
+        }
+    }
+
+    public function test_active_news_shell_targets_use_arabic_admin_labels(): void
+    {
+        $user = $this->administrator();
+
+        foreach ([
+            'news.index' => 'مقدمة الصفحة',
+            'news.articles' => 'صفحة المقالات الإخبارية',
+            'news.gallery' => 'معرض الوسائط',
+        ] as $target => $label) {
+            $this->actingAs($user, 'web')
+                ->get('/admin/manage-news?target='.$target)
+                ->assertOk()
+                ->assertSee($label)
+                ->assertDontSee('Target Schema Pending');
+        }
     }
 
     private function administrator(): User

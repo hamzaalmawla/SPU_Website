@@ -7,9 +7,11 @@ namespace App\Services\Form;
 use App\Contracts\Form\DynamicFormSubmissionServiceInterface;
 use App\Contracts\News\NewsServiceInterface;
 use App\Contracts\Page\CampusLifePageServiceInterface;
+use App\Contracts\Research\ResearchPageServiceInterface;
 use App\DTOs\CampusLife\CampusLifeJobDTO;
 use App\DTOs\Form\DynamicFormSubmissionDataDTO;
 use App\DTOs\News\NewsEventDTO;
+use App\DTOs\Research\ResearchConferenceRegistrationDTO;
 use App\Mail\EventRegistrationReceived;
 use App\Models\Form\DynamicFormSubmission;
 use Illuminate\Http\UploadedFile;
@@ -17,18 +19,29 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 final class DynamicFormSubmissionService implements DynamicFormSubmissionServiceInterface
 {
+    /** @var array<int, string> */
+    private const EVENT_REGISTRATION_FORMS = ['conference-registration', 'symposium-registration', 'activity-registration'];
+
     public function __construct(
         private readonly NewsServiceInterface $newsService,
         private readonly CampusLifePageServiceInterface $campusLifePageService,
+        private readonly ResearchPageServiceInterface $researchPageService,
     ) {}
 
     /** @return array<int, string> */
     public function allowedFormIds(): array
     {
         return array_keys($this->schemas());
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    public function formSchema(string $formId): array
+    {
+        return $this->schemas()[$formId] ?? [];
     }
 
     /** @return array<string, array<int, string>> */
@@ -118,27 +131,41 @@ final class DynamicFormSubmissionService implements DynamicFormSubmissionService
             $payload['_context'] = ['source' => 'e-services-suggestions-complaints'];
         }
 
-        $files = [];
-
-        foreach ($data->files as $field => $file) {
-            if (! $file instanceof UploadedFile) {
-                continue;
-            }
-
-            $files[$field] = $this->storeFile($data->formId, $file);
+        if (is_string($payload['email'] ?? null)) {
+            $payload['email'] = mb_strtolower(trim($payload['email']));
         }
 
-        DynamicFormSubmission::query()->create([
-            'form_id' => $data->formId,
-            'locale' => $data->locale,
-            'applicant_name' => $this->applicantName($payload),
-            'applicant_email' => is_string($payload['email'] ?? null) ? $payload['email'] : null,
-            'status' => 'new',
-            'payload_json' => $payload,
-            'files_json' => $files,
-            'ip_address' => $data->ipAddress,
-            'user_agent' => $data->userAgent,
-        ]);
+        $files = [];
+
+        try {
+            foreach ($data->files as $field => $file) {
+                if (! $file instanceof UploadedFile) {
+                    continue;
+                }
+
+                $files[$field] = $this->storeFile($data->formId, $file);
+            }
+
+            DynamicFormSubmission::query()->create([
+                'form_id' => $data->formId,
+                'locale' => $data->locale,
+                'applicant_name' => $this->applicantName($payload),
+                'applicant_email' => is_string($payload['email'] ?? null) ? $payload['email'] : null,
+                'status' => 'new',
+                'payload_json' => $payload,
+                'files_json' => $files,
+                'ip_address' => $data->ipAddress,
+                'user_agent' => $data->userAgent,
+            ]);
+        } catch (Throwable $exception) {
+            foreach ($files as $metadata) {
+                if (($metadata['disk'] ?? null) === 'local' && is_string($metadata['path'] ?? null)) {
+                    Storage::disk('local')->delete($metadata['path']);
+                }
+            }
+
+            throw $exception;
+        }
 
         if (($payload['_context']['source'] ?? null) === 'news-events' && is_string($payload['email'] ?? null)) {
             Mail::to($payload['email'])->queue(new EventRegistrationReceived(
@@ -154,38 +181,54 @@ final class DynamicFormSubmissionService implements DynamicFormSubmissionService
     /** @return array{source: string, event_id: string, event_title: string} */
     private function validatedEventContext(DynamicFormSubmissionDataDTO $data): array
     {
-        $event = $data->eventSource === 'news-events' && $data->eventId !== null
-            ? $this->newsService->findNewsEvent($data->eventId, $data->locale, false)
-            : null;
+        $event = match ($data->eventSource) {
+            'news-events' => $data->eventId !== null
+                ? $this->newsService->findNewsEvent($data->eventId, $data->locale, false)
+                : null,
+            'research-conferences' => $data->eventId !== null
+                ? $this->researchPageService->findRegisterableConference($data->eventId, $data->locale)
+                : null,
+            default => null,
+        };
 
-        if (! $event instanceof NewsEventDTO || ! $event->isRegisterable || $event->formId !== $data->formId) {
+        if ($event instanceof NewsEventDTO) {
+            if (! $event->isRegisterable || $event->formId !== $data->formId) {
+                throw ValidationException::withMessages(['event_id' => ['The selected event is not open for this registration form.']]);
+            }
+        } elseif ($event instanceof ResearchConferenceRegistrationDTO) {
+            if ($event->formId !== $data->formId) {
+                throw ValidationException::withMessages(['event_id' => ['The selected event is not open for this registration form.']]);
+            }
+        } else {
             throw ValidationException::withMessages(['event_id' => ['The selected event is not open for this registration form.']]);
         }
 
         $email = is_string($data->payload['email'] ?? null) ? mb_strtolower(trim($data->payload['email'])) : '';
         $registrations = DynamicFormSubmission::query()
-            ->whereIn('form_id', ['conference-registration', 'activity-registration'])
-            ->where('applicant_email', $email)
+            ->whereIn('form_id', self::EVENT_REGISTRATION_FORMS)
+            ->whereRaw('LOWER(applicant_email) = ?', [$email])
             ->get();
 
-        if ($registrations->contains(fn (DynamicFormSubmission $submission): bool => ($submission->payload_json['_context']['source'] ?? null) === 'news-events'
+        if ($registrations->contains(fn (DynamicFormSubmission $submission): bool => ($submission->payload_json['_context']['source'] ?? null) === $data->eventSource
             && ($submission->payload_json['_context']['event_id'] ?? null) === $event->id)) {
             throw ValidationException::withMessages(['email' => ['This email is already registered for the selected event.']]);
         }
 
-        $submittedCount = DynamicFormSubmission::query()
-            ->whereIn('form_id', ['conference-registration', 'activity-registration'])
-            ->get()
-            ->filter(fn (DynamicFormSubmission $submission): bool => ($submission->payload_json['_context']['source'] ?? null) === 'news-events'
-                && ($submission->payload_json['_context']['event_id'] ?? null) === $event->id)
-            ->count();
+        if ($event instanceof NewsEventDTO) {
+            $submittedCount = DynamicFormSubmission::query()
+                ->whereIn('form_id', ['conference-registration', 'activity-registration'])
+                ->get()
+                ->filter(fn (DynamicFormSubmission $submission): bool => ($submission->payload_json['_context']['source'] ?? null) === 'news-events'
+                    && ($submission->payload_json['_context']['event_id'] ?? null) === $event->id)
+                ->count();
 
-        if ($event->capacity !== null && $event->registered + $submittedCount >= $event->capacity) {
-            throw ValidationException::withMessages(['event_id' => ['The selected event has reached capacity.']]);
+            if ($event->capacity !== null && $event->registered + $submittedCount >= $event->capacity) {
+                throw ValidationException::withMessages(['event_id' => ['The selected event has reached capacity.']]);
+            }
         }
 
         return [
-            'source' => 'news-events',
+            'source' => (string) $data->eventSource,
             'event_id' => $event->id,
             'event_title' => $event->title,
         ];
@@ -219,6 +262,10 @@ final class DynamicFormSubmissionService implements DynamicFormSubmissionService
             $file,
             (string) Str::uuid().'.'.$extension
         );
+
+        if (! is_string($path) || $path === '') {
+            throw new \RuntimeException('The submission attachment could not be stored.');
+        }
 
         return [
             'disk' => 'local',

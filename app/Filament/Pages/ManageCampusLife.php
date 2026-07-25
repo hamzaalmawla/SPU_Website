@@ -272,6 +272,8 @@ class ManageCampusLife extends Page implements HasForms
 
     public function save(): void
     {
+        $this->validateJobDates();
+
         /** @var User $user */
         $user = auth()->user();
 
@@ -291,6 +293,12 @@ class ManageCampusLife extends Page implements HasForms
 
     public function openPreview(string $locale): void
     {
+        if (! in_array($locale, ['ar', 'en'], true)) {
+            Notification::make()->title(__('admin.campus_workspace.notifications.preview_failed'))->body(__('admin.campus_workspace.notifications.invalid_preview_locale'))->danger()->send();
+
+            return;
+        }
+
         /** @var User $user */
         $user = auth()->user();
 
@@ -354,20 +362,35 @@ class ManageCampusLife extends Page implements HasForms
     {
         /** @var User $user */
         $user = auth()->user();
-        $result = $this->cmsWorkflowService->unpublish($this->currentTargetKey(), (int) $user->id);
-        $notification = Notification::make()->title($result
-            ? __('admin.campus_workspace.notifications.unpublished')
-            : __('admin.campus_workspace.notifications.nothing_published'));
+        try {
+            $result = $this->cmsWorkflowService->unpublish($this->currentTargetKey(), (int) $user->id);
+            $notification = Notification::make()->title($result
+                ? __('admin.campus_workspace.notifications.unpublished')
+                : __('admin.campus_workspace.notifications.nothing_published'));
 
-        ($result ? $notification->success() : $notification->warning())->send();
+            ($result ? $notification->success() : $notification->warning())->send();
+        } catch (\Throwable $e) {
+            report($e);
+            Notification::make()->title(__('admin.campus_workspace.notifications.unpublish_failed'))->body(__('admin.campus_workspace.notifications.safe_error'))->danger()->send();
+        }
     }
 
     /** @return array<string, string> */
     private function targetOptions(): array
     {
-        return $this->targetRegistry->forArea('campus_life')
+        $options = $this->targetRegistry->forArea('campus_life')
             ->mapWithKeys(fn (CmsTargetDTO $target): array => [$target->key => __($target->labelKey)])
             ->all();
+
+        if (! $this->showsTargetSelector()) {
+            $targetKey = $this->defaultCampusLifeTargetKey();
+
+            return isset($options[$targetKey]) ? [$targetKey => $options[$targetKey]] : [];
+        }
+
+        unset($options['campus_life.jobs']);
+
+        return $options;
     }
 
     private function currentTargetKey(): string
@@ -1453,13 +1476,34 @@ class ManageCampusLife extends Page implements HasForms
                             'part-time' => __('admin.jobs_workspace.types.part_time'),
                             'contract' => __('admin.jobs_workspace.types.contract'),
                         ]),
-                        Select::make('status')->label(__('admin.jobs_workspace.fields.status'))->required()->options([
-                            'open' => __('admin.jobs_workspace.statuses.open'),
-                            'closed' => __('admin.jobs_workspace.statuses.closed'),
-                        ]),
-                        Toggle::make('applicationEligible')->label(__('admin.jobs_workspace.fields.accept_applications')),
+                        Select::make('status')
+                            ->label(__('admin.jobs_workspace.fields.status'))
+                            ->required()
+                            ->options([
+                                'open' => __('admin.jobs_workspace.statuses.open'),
+                                'closed' => __('admin.jobs_workspace.statuses.closed'),
+                            ])
+                            ->live()
+                            ->afterStateUpdated(function (?string $state, Set $set): void {
+                                if ($state === 'closed') {
+                                    $set('applicationEligible', false);
+                                }
+                            }),
+                        Toggle::make('applicationEligible')
+                            ->label(__('admin.jobs_workspace.fields.accept_applications'))
+                            ->helperText(fn (Get $get): string => $get('status') === 'closed'
+                                ? __('admin.jobs_workspace.fields.applications_closed_help')
+                                : __('admin.jobs_workspace.fields.accept_applications_help'))
+                            ->disabled(fn (Get $get): bool => $get('status') === 'closed')
+                            ->dehydrated(),
                         DatePicker::make('postedDate')->label(__('admin.jobs_workspace.fields.posted_date'))->required()->native(false),
-                        DatePicker::make('closeDate')->label(__('admin.jobs_workspace.fields.closing_date'))->required()->native(false),
+                        DatePicker::make('closeDate')
+                            ->label(__('admin.jobs_workspace.fields.closing_date'))
+                            ->helperText(__('admin.jobs_workspace.fields.closing_date_help'))
+                            ->required()
+                            ->afterOrEqual('postedDate')
+                            ->validationMessages(['after_or_equal' => __('admin.jobs_workspace.validation.closing_after_posted')])
+                            ->native(false),
                         MediaPicker::image('image', __('admin.jobs_workspace.fields.image'), true)->columnSpanFull(),
                     ])->columns(3),
                     Section::make(__('admin.jobs_workspace.sections.arabic'))->schema([
@@ -1555,7 +1599,7 @@ class ManageCampusLife extends Page implements HasForms
                     'category' => (string) ($shared['category'] ?? ''),
                     'type' => (string) ($shared['type'] ?? ''),
                     'status' => (string) ($shared['status'] ?? 'open'),
-                    'applicationEligible' => (bool) ($shared['applicationEligible'] ?? false),
+                    'applicationEligible' => ($shared['status'] ?? 'open') === 'open' && (bool) ($shared['applicationEligible'] ?? false),
                     'postedDate' => (string) ($shared['postedDate'] ?? ''),
                     'closeDate' => (string) ($shared['closeDate'] ?? ''),
                     'image' => (string) ($shared['image'] ?? ''),
@@ -1604,7 +1648,7 @@ class ManageCampusLife extends Page implements HasForms
                 'category' => (string) ($job['category'] ?? ''),
                 'type' => (string) ($job['type'] ?? ''),
                 'status' => (string) ($job['status'] ?? 'open'),
-                'applicationEligible' => (bool) ($job['applicationEligible'] ?? false),
+                'applicationEligible' => ($job['status'] ?? 'open') === 'open' && (bool) ($job['applicationEligible'] ?? false),
                 'title' => $title,
                 'department' => trim((string) ($job['department_'.$locale] ?? '')),
                 'location' => trim((string) ($job['location_'.$locale] ?? '')),
@@ -1631,6 +1675,32 @@ class ManageCampusLife extends Page implements HasForms
         return is_string($this->data['target_key'] ?? null) && $this->data['target_key'] !== ''
             ? $this->data['target_key']
             : 'campus_life.landing';
+    }
+
+    private function validateJobDates(): void
+    {
+        if ($this->currentTargetKey() !== 'campus_life.jobs') {
+            return;
+        }
+
+        $rules = [];
+
+        $vacancies = is_array($this->data['jobs_workspace']['vacancies'] ?? null) ? $this->data['jobs_workspace']['vacancies'] : [];
+
+        foreach ($vacancies as $key => $vacancy) {
+            if (! is_array($vacancy)) {
+                continue;
+            }
+
+            $prefix = 'data.jobs_workspace.vacancies.'.$key;
+            $rules[$prefix.'.closeDate'] = ['required', 'date', 'after_or_equal:'.$prefix.'.postedDate'];
+        }
+
+        if ($rules !== []) {
+            $this->validate($rules, [
+                'data.jobs_workspace.vacancies.*.closeDate.after_or_equal' => __('admin.jobs_workspace.validation.closing_after_posted'),
+            ]);
+        }
     }
 
     /** @return array<int, string> */
@@ -1723,7 +1793,7 @@ class ManageCampusLife extends Page implements HasForms
         $payload['jobs'] = array_map(function (array $job): array {
             $job['id'] = strtolower(trim((string) ($job['id'] ?? '')));
             $job['slug'] = strtolower(trim((string) ($job['slug'] ?? '')));
-            $job['applicationEligible'] = (bool) ($job['applicationEligible'] ?? false);
+            $job['applicationEligible'] = ($job['status'] ?? 'open') === 'open' && (bool) ($job['applicationEligible'] ?? false);
 
             foreach (['overview', 'responsibilities', 'requirements', 'benefits'] as $field) {
                 $job[$field] = array_values(array_filter(array_map(

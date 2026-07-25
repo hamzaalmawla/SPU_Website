@@ -10,7 +10,7 @@
     <div class="px-[18px] pb-[20px] pt-[20px]">
         <div class="flex flex-wrap gap-[7px]">
             <span class="rounded-[5px] border border-[#c8ceda] px-[12px] py-[5px] text-[9px] font-bold text-spu-blue">{{ $project['faculty'] ?? '' }}</span>
-            <span class="rounded-[5px] border border-[#c8ceda] px-[12px] py-[5px] text-[9px] font-bold text-spu-blue">{{ $locale === 'ar' ? 'منذ ' : 'Since ' }}{{ $project['startYear'] ?? '' }}</span>
+            <span class="rounded-[5px] border border-[#c8ceda] px-[12px] py-[5px] text-[9px] font-bold text-spu-blue">{{ $labels['since'] ?? ($locale === 'ar' ? 'منذ' : 'Since') }} {{ $project['startYear'] ?? '' }}@if (! empty($project['endYear'])) - {{ $project['endYear'] }}@endif</span>
         </div>
         <h2 class="mt-[14px] text-[20px] font-bold leading-tight text-spu-blue transition-colors group-hover:text-spu-red">{{ $project['title'] ?? '' }}</h2>
         <p class="mt-[10px] max-w-[500px] text-[15px] leading-[1.75] text-[#263650]">{{ $project['summary'] ?? '' }}</p>
@@ -18,7 +18,7 @@
             <span>{{ $project['theme'] ?? '' }}</span>
         </div>
         <div class="mt-[16px] flex items-center gap-3">
-            <span class="inline-flex h-[27px] min-w-[100px] items-center justify-center rounded-[6px] bg-spu-blue px-4 text-[8px] font-bold text-white transition group-hover:bg-[#171d47]">{{ $locale === 'ar' ? 'عرض المشروع' : 'View Project' }}</span>
+            <span class="inline-flex h-[27px] min-w-[100px] items-center justify-center rounded-[6px] bg-spu-blue px-4 text-[8px] font-bold text-white transition group-hover:bg-[#171d47]">{{ $labels['viewProject'] ?? ($locale === 'ar' ? 'عرض المشروع' : 'View Project') }}</span>
         </div>
     </div>
 </a>

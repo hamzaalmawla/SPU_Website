@@ -14,5 +14,8 @@ interface DynamicFormSubmissionServiceInterface
     /** @return array<string, array<int, string>> */
     public function validationRules(string $formId): array;
 
+    /** @return array<int, array<string, mixed>> */
+    public function formSchema(string $formId): array;
+
     public function submit(DynamicFormSubmissionDataDTO $data): bool;
 }

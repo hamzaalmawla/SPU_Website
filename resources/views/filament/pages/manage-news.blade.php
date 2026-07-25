@@ -10,7 +10,7 @@
                 <div class="spu-task-grid__items">
                     @foreach ($this->getNewsOperationalLinks() as $link)
                         <a href="{{ $link['url'] }}" class="spu-task-card">
-                            <span class="spu-task-card__mark">{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
+                            <span class="spu-task-card__mark" aria-hidden="true">{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
                             <span>
                                 <strong>{{ $link['label'] }}</strong>
                                 <small>{{ $link['description'] }}</small>

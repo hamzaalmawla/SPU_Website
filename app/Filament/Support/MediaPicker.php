@@ -16,9 +16,11 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
+use Filament\Notifications\Notification;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 final class MediaPicker
@@ -99,21 +101,18 @@ final class MediaPicker
         return Grid::make(1)
             ->schema([
                 Hidden::make($mediaIdPath),
-
-                TextInput::make($statePath)
+                Hidden::make($statePath)
+                    ->required($required)
+                    ->dehydrated(true),
+                Placeholder::make($statePath.'_selection')
+                    ->key(self::componentKey($statePath, $label, $type))
                     ->label($label)
                     ->helperText(__('admin.media_picker.existing_value_help'))
-                    ->required($required)
-                    ->maxLength(2048)
-                    ->suffixActions([
+                    ->content(fn (Get $get): HtmlString|string => self::preview($get($statePath)))
+                    ->hintActions([
                         self::chooseOrUploadAction($statePath, $mediaIdPath, $type),
                         self::clearAction($statePath, $mediaIdPath),
-                    ])
-                    ->dehydrated(true),
-
-                Placeholder::make($statePath.'_preview')
-                    ->label(__('admin.media_picker.selected_file'))
-                    ->content(fn (Get $get): HtmlString|string => self::preview($get($statePath))),
+                    ]),
             ]);
     }
 
@@ -124,18 +123,18 @@ final class MediaPicker
         return Grid::make(1)
             ->schema([
                 Hidden::make($mediaIdPath),
-
-                TextInput::make($statePath)
+                Hidden::make($statePath)
+                    ->required($required)
+                    ->dehydrated(true),
+                Placeholder::make($statePath.'_selection')
+                    ->key(self::componentKey($statePath, $label, $type))
                     ->label($label)
                     ->helperText(__('admin.media_picker.choose_help'))
-                    ->required($required)
-                    ->readOnly()
-                    ->maxLength(2048)
-                    ->suffixActions([
+                    ->content(fn (Get $get): HtmlString|string => self::preview($get($statePath)))
+                    ->hintActions([
                         self::chooseOrUploadAction($statePath, $mediaIdPath, $type),
                         self::clearAction($statePath, $mediaIdPath),
-                    ])
-                    ->dehydrated(true),
+                    ]),
             ]);
     }
 
@@ -149,6 +148,13 @@ final class MediaPicker
                 Select::make('media_id')
                     ->label(__('admin.media_picker.choose_existing'))
                     ->helperText(__('admin.media_picker.choose_existing_help'))
+                    ->live()
+                    ->afterStateUpdated(function (mixed $state, Set $set): void {
+                        if (is_numeric($state)) {
+                            $set('legacy_media_id', null);
+                            $set('file', null);
+                        }
+                    })
                     ->searchable()
                     ->native(false)
                     ->preload(false)
@@ -158,6 +164,13 @@ final class MediaPicker
                 Select::make('legacy_media_id')
                     ->label(__('admin.media_picker.promote_legacy'))
                     ->helperText(__('admin.media_picker.promote_legacy_help'))
+                    ->live()
+                    ->afterStateUpdated(function (mixed $state, Set $set): void {
+                        if (is_numeric($state)) {
+                            $set('media_id', null);
+                            $set('file', null);
+                        }
+                    })
                     ->searchable()
                     ->native(false)
                     ->preload(false)
@@ -166,6 +179,14 @@ final class MediaPicker
                     ->getOptionLabelUsing(fn (mixed $value): ?string => self::optionLabel($value)),
                 FileUpload::make('file')
                     ->label(__('admin.media_picker.upload_new'))
+                    ->helperText(__('admin.media_picker.upload_new_help'))
+                    ->live()
+                    ->afterStateUpdated(function (mixed $state, Set $set): void {
+                        if (self::uploadedPath($state) !== null) {
+                            $set('media_id', null);
+                            $set('legacy_media_id', null);
+                        }
+                    })
                     ->disk((string) config('filesystems.media_disk', 'public'))
                     ->directory('media-tmp')
                     ->visibility('public')
@@ -191,25 +212,34 @@ final class MediaPicker
                     ->required(fn (Get $get): bool => self::isImageType($type) && self::requiresUploadOrPromotionMetadata($get) && ! self::filledString($get('alt_text_ar'))),
             ])
             ->action(function (array $data, Set $set) use ($statePath, $mediaIdPath, $type): void {
-                $mediaId = null;
+                try {
+                    $mediaId = null;
 
-                if (self::uploadedPath($data['file'] ?? null) !== null) {
-                    $mediaId = self::uploadOption($data, $type);
-                } elseif (is_numeric($data['media_id'] ?? null)) {
-                    $mediaId = (int) $data['media_id'];
-                } elseif (is_numeric($data['legacy_media_id'] ?? null)) {
-                    $mediaId = self::promoteLegacyOption((int) $data['legacy_media_id'], $data);
-                }
+                    if (self::uploadedPath($data['file'] ?? null) !== null) {
+                        $mediaId = self::uploadOption($data, $type);
+                    } elseif (is_numeric($data['media_id'] ?? null)) {
+                        $mediaId = (int) $data['media_id'];
+                    } elseif (is_numeric($data['legacy_media_id'] ?? null)) {
+                        $mediaId = self::promoteLegacyOption((int) $data['legacy_media_id'], $data);
+                    }
 
-                if ($mediaId === null) {
-                    return;
-                }
+                    if ($mediaId === null) {
+                        Notification::make()->title(__('admin.media_picker.selection_required'))->warning()->send();
 
-                $url = self::selectedUrl($mediaId);
+                        return;
+                    }
 
-                if ($url !== null) {
+                    $url = self::selectedUrl($mediaId);
+
+                    if ($url === null) {
+                        throw new \RuntimeException('The selected media URL could not be resolved.');
+                    }
+
                     $set($mediaIdPath, $mediaId);
                     $set($statePath, $url);
+                } catch (Throwable $exception) {
+                    report($exception);
+                    Notification::make()->title(__('admin.media_picker.action_failed'))->body(__('admin.media_picker.safe_error'))->danger()->send();
                 }
             });
     }
@@ -266,7 +296,17 @@ final class MediaPicker
                     ->visible(self::isImageType($type))
                     ->required(fn (Get $get): bool => self::isImageType($type) && ! self::filledString($get('alt_text_ar'))),
             ])
-            ->createOptionUsing(fn (array $data): int => self::uploadOption($data, $type))
+            ->createOptionUsing(function (array $data) use ($type): int {
+                try {
+                    return self::uploadOption($data, $type);
+                } catch (Throwable $exception) {
+                    report($exception);
+
+                    throw ValidationException::withMessages([
+                        'file' => __('admin.media_picker.safe_error'),
+                    ]);
+                }
+            })
             ->dehydrated(true);
     }
 
@@ -438,16 +478,30 @@ final class MediaPicker
         $url = is_string($value) ? MediaUrlResolver::resolve($value) : null;
 
         if ($url === null || $url === '') {
-            return 'No file selected.';
+            return __('admin.media_picker.no_file_selected');
         }
 
-        $escaped = e($url);
+        $escapedUrl = e($url);
+        $filename = self::filenameFromUrl($url);
+        $escapedFilename = e($filename);
 
         if (preg_match('/\.(jpe?g|png|gif|webp)(\?.*)?$/i', $url) === 1) {
-            return new HtmlString('<img src="'.$escaped.'" alt="" style="max-width: 220px; max-height: 120px; border-radius: 8px; object-fit: cover;" />');
+            $alt = e(__('admin.media_picker.preview_alt', ['file' => $filename]));
+
+            return new HtmlString('<span class="spu-media-preview"><img src="'.$escapedUrl.'" alt="'.$alt.'" /><span>'.$escapedFilename.'</span></span>');
         }
 
-        return new HtmlString('<a href="'.$escaped.'" target="_blank" rel="noopener noreferrer">'.$escaped.'</a>');
+        $ariaLabel = e(__('admin.media_picker.open_file', ['file' => $filename]));
+
+        return new HtmlString('<a class="spu-media-preview spu-media-preview--link" href="'.$escapedUrl.'" target="_blank" rel="noopener noreferrer" aria-label="'.$ariaLabel.'">'.$escapedFilename.'</a>');
+    }
+
+    private static function filenameFromUrl(string $url): string
+    {
+        $path = parse_url($url, PHP_URL_PATH);
+        $filename = is_string($path) ? rawurldecode(basename($path)) : '';
+
+        return $filename !== '' ? $filename : __('admin.media_picker.selected_file');
     }
 
     /** @return list<string> */
@@ -478,6 +532,11 @@ final class MediaPicker
         $segments[] = $last.'MediaId';
 
         return implode('.', $segments);
+    }
+
+    private static function componentKey(string $statePath, string $label, string $type): string
+    {
+        return 'media-picker-'.sha1($statePath.'|'.$label.'|'.$type);
     }
 
     private static function formatFileSize(int $bytes): string

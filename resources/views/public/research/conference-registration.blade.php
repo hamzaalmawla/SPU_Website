@@ -31,7 +31,7 @@
         </div>
     </section>
 
-    <section class="bg-white py-12 font-hacen md:py-16" @if($event) x-data="dynamicFormShell()" data-form-id="{{ $formId }}" data-locale="{{ $locale }}" @endif>
+    <section class="bg-white py-12 font-hacen md:py-16" @if($event) x-data="dynamicFormShell()" data-form-id="{{ $formId }}" data-locale="{{ $locale }}" data-event-source="research-conferences" data-event-id="{{ $event['id'] }}" @endif>
         <div class="container mx-auto px-6">
             @if (! $event)
                 <div class="mx-auto max-w-[600px] py-20 text-center">

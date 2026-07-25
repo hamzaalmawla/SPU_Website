@@ -28,7 +28,7 @@ final class DynamicFormSubmissionTest extends TestCase
     {
         $this->postJson('/en/forms/conference-registration/submissions', [
             'fullName' => 'Jane Applicant',
-            'email' => 'jane@example.com',
+            'email' => 'Jane@Example.COM',
             'phone' => '+963 000 000 000',
             'affiliation' => 'Syrian Private University',
             'role' => 'presenter',
@@ -48,6 +48,7 @@ final class DynamicFormSubmissionTest extends TestCase
         $submission = DynamicFormSubmission::query()->firstOrFail();
 
         $this->assertSame('presenter', $submission->payload_json['role'] ?? null);
+        $this->assertSame('jane@example.com', $submission->payload_json['email'] ?? null);
     }
 
     public function test_dynamic_form_submission_validates_required_fields(): void
@@ -147,6 +148,101 @@ final class DynamicFormSubmissionTest extends TestCase
         $conference['event_id'] = 'evt-past-001';
 
         $this->postJson('/en/forms/conference-registration/submissions', $conference)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('event_id');
+    }
+
+    public function test_research_conference_and_symposium_registrations_store_trusted_localized_context(): void
+    {
+        $this->postJson('/en/forms/conference-registration/submissions', [
+            'fullName' => 'Conference Applicant',
+            'email' => 'conference@example.com',
+            'affiliation' => 'SPU',
+            'role' => 'presenter',
+            'event_source' => 'research-conferences',
+            'event_id' => 'conf-001',
+        ])->assertCreated();
+
+        $this->postJson('/ar/forms/symposium-registration/submissions', [
+            'fullName' => 'متقدم الندوة',
+            'email' => 'symposium@example.com',
+            'department' => 'الصيدلة',
+            'year' => 'master',
+            'event_source' => 'research-conferences',
+            'event_id' => 'conf-002',
+        ])->assertCreated();
+
+        $conference = DynamicFormSubmission::query()->where('form_id', 'conference-registration')->firstOrFail();
+        $symposium = DynamicFormSubmission::query()->where('form_id', 'symposium-registration')->firstOrFail();
+
+        $this->assertSame('research-conferences', $conference->payload_json['_context']['source'] ?? null);
+        $this->assertSame('conf-001', $conference->payload_json['_context']['event_id'] ?? null);
+        $this->assertSame('International Conference on AI in Healthcare 2026', $conference->payload_json['_context']['event_title'] ?? null);
+        $this->assertSame('research-conferences', $symposium->payload_json['_context']['source'] ?? null);
+        $this->assertSame('conf-002', $symposium->payload_json['_context']['event_id'] ?? null);
+        $this->assertSame('ندوة الابتكار الصيدلاني', $symposium->payload_json['_context']['event_title'] ?? null);
+    }
+
+    public function test_research_registration_rejects_mismatched_form_and_non_upcoming_event(): void
+    {
+        $conference = [
+            'fullName' => 'Mismatched Applicant',
+            'email' => 'mismatch@example.com',
+            'affiliation' => 'SPU',
+            'role' => 'attendee',
+            'event_source' => 'research-conferences',
+            'event_id' => 'conf-002',
+        ];
+
+        $this->postJson('/en/forms/conference-registration/submissions', $conference)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('event_id');
+
+        $conference['event_id'] = 'conf-past-001';
+
+        $this->postJson('/en/forms/conference-registration/submissions', $conference)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('event_id');
+
+        $this->assertDatabaseCount('dynamic_form_submissions', 0);
+    }
+
+    public function test_research_symposium_duplicate_email_is_compared_case_insensitively(): void
+    {
+        $payload = [
+            'fullName' => 'Symposium Applicant',
+            'email' => 'Research.Duplicate@Example.COM',
+            'department' => 'Pharmacy',
+            'year' => 'faculty',
+            'event_source' => 'research-conferences',
+            'event_id' => 'conf-002',
+        ];
+
+        $this->postJson('/en/forms/symposium-registration/submissions', $payload)->assertCreated();
+
+        $payload['email'] = 'research.duplicate@example.com';
+
+        $this->postJson('/en/forms/symposium-registration/submissions', $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('email');
+
+        $this->assertDatabaseCount('dynamic_form_submissions', 1);
+    }
+
+    public function test_event_context_fields_must_be_submitted_together(): void
+    {
+        $payload = [
+            'fullName' => 'Context Applicant',
+            'email' => 'context@example.com',
+            'affiliation' => 'SPU',
+            'role' => 'attendee',
+        ];
+
+        $this->postJson('/en/forms/conference-registration/submissions', $payload + ['event_id' => 'conf-001'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('event_source');
+
+        $this->postJson('/en/forms/conference-registration/submissions', $payload + ['event_source' => 'research-conferences'])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('event_id');
     }

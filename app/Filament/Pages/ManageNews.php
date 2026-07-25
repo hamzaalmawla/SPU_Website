@@ -245,6 +245,8 @@ class ManageNews extends Page implements HasForms
 
     public function save(): void
     {
+        $this->validateEventDates();
+
         /** @var User $user */
         $user = auth()->user();
 
@@ -264,6 +266,12 @@ class ManageNews extends Page implements HasForms
 
     public function openPreview(string $locale): void
     {
+        if (! in_array($locale, ['ar', 'en'], true)) {
+            Notification::make()->title(__('admin.editorial_workspace.notifications.preview_failed'))->body(__('admin.editorial_workspace.notifications.invalid_preview_locale'))->danger()->send();
+
+            return;
+        }
+
         /** @var User $user */
         $user = auth()->user();
 
@@ -327,20 +335,33 @@ class ManageNews extends Page implements HasForms
     {
         /** @var User $user */
         $user = auth()->user();
-        $result = $this->cmsWorkflowService->unpublish($this->currentTargetKey(), (int) $user->id);
-        $notification = Notification::make()->title($result
-            ? __('admin.editorial_workspace.notifications.unpublished')
-            : __('admin.editorial_workspace.notifications.nothing_published'));
+        try {
+            $result = $this->cmsWorkflowService->unpublish($this->currentTargetKey(), (int) $user->id);
+            $notification = Notification::make()->title($result
+                ? __('admin.editorial_workspace.notifications.unpublished')
+                : __('admin.editorial_workspace.notifications.nothing_published'));
 
-        ($result ? $notification->success() : $notification->warning())->send();
+            ($result ? $notification->success() : $notification->warning())->send();
+        } catch (\Throwable $e) {
+            report($e);
+            Notification::make()->title(__('admin.editorial_workspace.notifications.unpublish_failed'))->body(__('admin.editorial_workspace.notifications.safe_error'))->danger()->send();
+        }
     }
 
     /** @return array<string, string> */
     private function targetOptions(): array
     {
-        return $this->targetRegistry->forArea('news')
+        $options = $this->targetRegistry->forArea('news')
             ->mapWithKeys(fn (CmsTargetDTO $target): array => [$target->key => __($target->labelKey)])
             ->all();
+
+        if (! $this->showsTargetSelector()) {
+            $targetKey = $this->defaultNewsTargetKey();
+
+            return isset($options[$targetKey]) ? [$targetKey => $options[$targetKey]] : [];
+        }
+
+        return array_diff_key($options, array_flip(['news.article', 'news.announcements', 'news.events']));
     }
 
     private function currentTargetKey(): string
@@ -432,22 +453,22 @@ class ManageNews extends Page implements HasForms
         $articlesPrefix = $locale.'_articles';
 
         return [
-            Section::make('News Articles Shell')
+            Section::make(__('admin.editorial_workspace.news_shell.articles'))
                 ->schema([
-                    TextInput::make($articlesPrefix.'.title')->label('Page Title')->required()->maxLength(160),
-                    Textarea::make($articlesPrefix.'.summary')->label('Page Summary')->required()->rows(2)->columnSpanFull(),
-                    MediaPicker::image($articlesPrefix.'.heroImage', 'Hero Image', true),
-                    TextInput::make($articlesPrefix.'.allLabel')->label('All Articles Label')->required()->maxLength(120),
-                    TextInput::make($articlesPrefix.'.searchLabel')->label('Search Label')->required()->maxLength(120),
-                    TextInput::make($articlesPrefix.'.searchPlaceholder')->label('Search Placeholder')->required()->maxLength(180),
-                    TextInput::make($articlesPrefix.'.searchAction')->label('Search Action')->required()->maxLength(80),
-                    TextInput::make($articlesPrefix.'.readMoreLabel')->label('Read More Label')->required()->maxLength(80),
-                    Textarea::make($articlesPrefix.'.emptyLabel')->label('Empty State')->required()->rows(2),
-                    TextInput::make($articlesPrefix.'.previousLabel')->label('Previous Page Label')->required()->maxLength(120),
-                    TextInput::make($articlesPrefix.'.nextLabel')->label('Next Page Label')->required()->maxLength(120),
-                    TextInput::make($articlesPrefix.'.seoTitle')->label('SEO Title')->required()->maxLength(180),
-                    Textarea::make($articlesPrefix.'.seoDescription')->label('SEO Description')->required()->rows(2),
-                    MediaPicker::image($articlesPrefix.'.seoImage', 'SEO Image', true),
+                    TextInput::make($articlesPrefix.'.title')->label(__('admin.editorial_workspace.news_shell.page_title'))->required()->maxLength(160),
+                    Textarea::make($articlesPrefix.'.summary')->label(__('admin.editorial_workspace.news_shell.page_summary'))->required()->rows(2)->columnSpanFull(),
+                    MediaPicker::image($articlesPrefix.'.heroImage', __('admin.editorial_workspace.news_shell.hero_image'), true),
+                    TextInput::make($articlesPrefix.'.allLabel')->label(__('admin.editorial_workspace.news_shell.all_articles'))->required()->maxLength(120),
+                    TextInput::make($articlesPrefix.'.searchLabel')->label(__('admin.editorial_workspace.news_shell.search_label'))->required()->maxLength(120),
+                    TextInput::make($articlesPrefix.'.searchPlaceholder')->label(__('admin.editorial_workspace.news_shell.search_placeholder'))->required()->maxLength(180),
+                    TextInput::make($articlesPrefix.'.searchAction')->label(__('admin.editorial_workspace.news_shell.search_action'))->required()->maxLength(80),
+                    TextInput::make($articlesPrefix.'.readMoreLabel')->label(__('admin.editorial_workspace.news_shell.read_more'))->required()->maxLength(80),
+                    Textarea::make($articlesPrefix.'.emptyLabel')->label(__('admin.editorial_workspace.news_shell.empty_state'))->required()->rows(2),
+                    TextInput::make($articlesPrefix.'.previousLabel')->label(__('admin.editorial_workspace.news_shell.previous_page'))->required()->maxLength(120),
+                    TextInput::make($articlesPrefix.'.nextLabel')->label(__('admin.editorial_workspace.news_shell.next_page'))->required()->maxLength(120),
+                    TextInput::make($articlesPrefix.'.seoTitle')->label(__('admin.editorial_workspace.news_shell.seo_title'))->required()->maxLength(180),
+                    Textarea::make($articlesPrefix.'.seoDescription')->label(__('admin.editorial_workspace.news_shell.seo_description'))->required()->rows(2),
+                    MediaPicker::image($articlesPrefix.'.seoImage', __('admin.editorial_workspace.news_shell.seo_image'), true),
                 ])
                 ->columns(2)
                 ->visible(fn (): bool => $this->targetKeyForSchema() === 'news.articles'),
@@ -494,7 +515,7 @@ class ManageNews extends Page implements HasForms
                     TextInput::make($eventsPrefix.'.resultsLabel')->label('Results Label')->required()->maxLength(120),
                     TextInput::make($eventsPrefix.'.galleryLabel')->label('Gallery Label')->required()->maxLength(120),
                     Repeater::make($eventsPrefix.'.categories')->label('Categories')->schema([
-                        TextInput::make('id')->required()->maxLength(80),
+                        TextInput::make('id')->label(__('admin.editorial_workspace.news_shell.identifier'))->required()->maxLength(80),
                         TextInput::make('label')->required()->maxLength(120),
                     ])->columns(2)->reorderable()->collapsible()->columnSpanFull(),
                     Repeater::make($eventsPrefix.'.upcoming')->label('Upcoming Events')->schema($this->eventFields(false))->reorderable()->collapsible()->columnSpanFull(),
@@ -502,49 +523,46 @@ class ManageNews extends Page implements HasForms
                 ])
                 ->columns(2)
                 ->visible(fn (): bool => $this->targetKeyForSchema() === 'news.events'),
-            Section::make('Media Gallery')
+            Section::make(__('admin.editorial_workspace.news_shell.media_gallery'))
                 ->schema([
-                    TextInput::make($galleryPrefix.'.title')->label('Page Title')->required()->maxLength(160),
-                    Textarea::make($galleryPrefix.'.summary')->label('Page Summary')->required()->rows(2)->columnSpanFull(),
-                    MediaPicker::image($galleryPrefix.'.heroImage', 'Hero Image', true),
-                    TextInput::make($galleryPrefix.'.allLabel')->label('All Images Label')->required()->maxLength(120),
-                    TextInput::make($galleryPrefix.'.latestLabel')->label('Latest Label')->required()->maxLength(120),
-                    Textarea::make($galleryPrefix.'.emptyLabel')->label('Empty State')->required()->rows(2),
-                    TextInput::make($galleryPrefix.'.openLabel')->label('Open Image Label')->required()->maxLength(120),
-                    TextInput::make($galleryPrefix.'.closeLabel')->label('Close Viewer Label')->required()->maxLength(120),
-                    TextInput::make($galleryPrefix.'.previousLabel')->label('Previous Image Label')->required()->maxLength(120),
-                    TextInput::make($galleryPrefix.'.nextLabel')->label('Next Image Label')->required()->maxLength(120),
-                    Repeater::make($galleryPrefix.'.categories')->label('Gallery Categories')->schema([
-                        TextInput::make('id')->required()->maxLength(80),
-                        TextInput::make('label')->required()->maxLength(120),
+                    TextInput::make($galleryPrefix.'.title')->label(__('admin.editorial_workspace.news_shell.page_title'))->required()->maxLength(160),
+                    Textarea::make($galleryPrefix.'.summary')->label(__('admin.editorial_workspace.news_shell.page_summary'))->required()->rows(2)->columnSpanFull(),
+                    MediaPicker::image($galleryPrefix.'.heroImage', __('admin.editorial_workspace.news_shell.hero_image'), true),
+                    TextInput::make($galleryPrefix.'.allLabel')->label(__('admin.editorial_workspace.news_shell.all_images'))->required()->maxLength(120),
+                    TextInput::make($galleryPrefix.'.latestLabel')->label(__('admin.editorial_workspace.news_shell.latest'))->required()->maxLength(120),
+                    Textarea::make($galleryPrefix.'.emptyLabel')->label(__('admin.editorial_workspace.news_shell.empty_state'))->required()->rows(2),
+                    TextInput::make($galleryPrefix.'.openLabel')->label(__('admin.editorial_workspace.news_shell.open_image'))->required()->maxLength(120),
+                    TextInput::make($galleryPrefix.'.closeLabel')->label(__('admin.editorial_workspace.news_shell.close_viewer'))->required()->maxLength(120),
+                    TextInput::make($galleryPrefix.'.previousLabel')->label(__('admin.editorial_workspace.news_shell.previous_image'))->required()->maxLength(120),
+                    TextInput::make($galleryPrefix.'.nextLabel')->label(__('admin.editorial_workspace.news_shell.next_image'))->required()->maxLength(120),
+                    Repeater::make($galleryPrefix.'.categories')->label(__('admin.editorial_workspace.news_shell.gallery_categories'))->schema([
+                        TextInput::make('id')->label(__('admin.editorial_workspace.news_shell.identifier'))->required()->maxLength(80),
+                        TextInput::make('label')->label(__('admin.editorial_workspace.news_shell.category_label'))->required()->maxLength(120),
                     ])->columns(2)->reorderable()->collapsible()->columnSpanFull(),
-                    Repeater::make($galleryPrefix.'.items')->label('Gallery Images')->schema([
-                        TextInput::make('id')->required()->maxLength(80),
-                        MediaPicker::assetImage('mediaId', 'Gallery Image', true),
-                        TextInput::make('categoryId')->required()->maxLength(80),
-                        TextInput::make('categoryLabel')->required()->maxLength(120),
-                        TextInput::make('dateLabel')->required()->maxLength(120),
-                        Select::make('featured')->options(['0' => 'No', '1' => 'Yes'])->required(),
+                    Repeater::make($galleryPrefix.'.items')->label(__('admin.editorial_workspace.news_shell.gallery_images'))->schema([
+                        TextInput::make('id')->label(__('admin.editorial_workspace.news_shell.identifier'))->required()->maxLength(80),
+                        MediaPicker::assetImage('mediaId', __('admin.editorial_workspace.news_shell.gallery_image'), true),
+                        TextInput::make('categoryId')->label(__('admin.editorial_workspace.news_shell.category_id'))->required()->maxLength(80),
+                        TextInput::make('categoryLabel')->label(__('admin.editorial_workspace.news_shell.category_label'))->required()->maxLength(120),
+                        TextInput::make('dateLabel')->label(__('admin.editorial_workspace.news_shell.date_label'))->required()->maxLength(120),
+                        Select::make('featured')->label(__('admin.editorial_workspace.news_shell.featured'))->options([
+                            '0' => __('admin.editorial_workspace.news_shell.no'),
+                            '1' => __('admin.editorial_workspace.news_shell.yes'),
+                        ])->required(),
                     ])->columns(2)->reorderable()->collapsible()->columnSpanFull(),
                 ])
                 ->columns(2)
                 ->visible(fn (): bool => $this->targetKeyForSchema() === 'news.gallery'),
-            Section::make('Target Schema Pending')
-                ->description('The selected News target does not have its curated editor yet.')
-                ->schema([
-                    TextInput::make($locale.'_target_pending')->label('Status')->default('Structured form pending for this news target')->disabled(),
-                ])
-                ->visible(fn (): bool => ! in_array($this->targetKeyForSchema(), ['news.index', 'news.articles', 'news.announcements', 'news.events', 'news.gallery'], true)),
-            Section::make('Hero')->schema([
-                TextInput::make($indexPrefix.'.pageTitle')->label('Page Title')->required()->maxLength(160),
-                TextInput::make($indexPrefix.'.heroTitle')->label('Hero Title')->required()->maxLength(160),
-                Textarea::make($indexPrefix.'.pageDescription')->label('Description')->required()->rows(2)->columnSpanFull(),
-                MediaPicker::image($indexPrefix.'.heroImage', 'Hero Image', true),
+            Section::make(__('admin.editorial_workspace.news_shell.hero'))->schema([
+                TextInput::make($indexPrefix.'.pageTitle')->label(__('admin.editorial_workspace.news_shell.page_title'))->required()->maxLength(160),
+                TextInput::make($indexPrefix.'.heroTitle')->label(__('admin.editorial_workspace.news_shell.hero_title'))->required()->maxLength(160),
+                Textarea::make($indexPrefix.'.pageDescription')->label(__('admin.editorial_workspace.news_shell.description'))->required()->rows(2)->columnSpanFull(),
+                MediaPicker::image($indexPrefix.'.heroImage', __('admin.editorial_workspace.news_shell.hero_image'), true),
                 Repeater::make($indexPrefix.'.heroLinks')
-                    ->label('Hero Links')
+                    ->label(__('admin.editorial_workspace.news_shell.hero_links'))
                     ->schema([
                         TextInput::make('id')->required()->maxLength(80),
-                        TextInput::make('label')->required()->maxLength(120),
+                        TextInput::make('label')->label(__('admin.editorial_workspace.news_shell.link_label'))->required()->maxLength(120),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -553,27 +571,27 @@ class ManageNews extends Page implements HasForms
                     ->columnSpanFull(),
             ])->columns(2)->visible(fn (): bool => $this->targetKeyForSchema() === 'news.index'),
 
-            Section::make('Sections')->schema([
-                TextInput::make($indexPrefix.'.lastNewsTitle')->label('Last News Title')->required()->maxLength(160),
-                TextInput::make($indexPrefix.'.lastNewsViewAllLabel')->label('Last News View All')->required()->maxLength(160),
-                TextInput::make($indexPrefix.'.announcementsTitle')->label('Announcements Title')->required()->maxLength(160),
-                TextInput::make($indexPrefix.'.announcementsViewAllLabel')->label('Announcements View All')->required()->maxLength(160),
-                TextInput::make($indexPrefix.'.eventsTitle')->label('Events Title')->required()->maxLength(160),
-                TextInput::make($indexPrefix.'.eventsViewAllLabel')->label('Events View All')->required()->maxLength(160),
-                TextInput::make($indexPrefix.'.exploreMoreTitle')->label('Explore More Title')->required()->maxLength(160),
+            Section::make(__('admin.editorial_workspace.news_shell.sections'))->schema([
+                TextInput::make($indexPrefix.'.lastNewsTitle')->label(__('admin.editorial_workspace.news_shell.last_news_title'))->required()->maxLength(160),
+                TextInput::make($indexPrefix.'.lastNewsViewAllLabel')->label(__('admin.editorial_workspace.news_shell.last_news_view_all'))->required()->maxLength(160),
+                TextInput::make($indexPrefix.'.announcementsTitle')->label(__('admin.editorial_workspace.news_shell.announcements_title'))->required()->maxLength(160),
+                TextInput::make($indexPrefix.'.announcementsViewAllLabel')->label(__('admin.editorial_workspace.news_shell.announcements_view_all'))->required()->maxLength(160),
+                TextInput::make($indexPrefix.'.eventsTitle')->label(__('admin.editorial_workspace.news_shell.events_title'))->required()->maxLength(160),
+                TextInput::make($indexPrefix.'.eventsViewAllLabel')->label(__('admin.editorial_workspace.news_shell.events_view_all'))->required()->maxLength(160),
+                TextInput::make($indexPrefix.'.exploreMoreTitle')->label(__('admin.editorial_workspace.news_shell.explore_more_title'))->required()->maxLength(160),
             ])->columns(2)->visible(fn (): bool => $this->targetKeyForSchema() === 'news.index'),
 
-            Section::make('Cards and Labels')->schema([
-                TextInput::make($indexPrefix.'.archiveTitle')->label('Archive Card Title')->required()->maxLength(160),
-                TextInput::make($indexPrefix.'.archiveCta')->label('Archive Card CTA')->required()->maxLength(120),
-                TextInput::make($indexPrefix.'.announcementsCardTitle')->label('Announcements Card Title')->required()->maxLength(160),
-                TextInput::make($indexPrefix.'.announcementsCardCta')->label('Announcements Card CTA')->required()->maxLength(120),
-                TextInput::make($indexPrefix.'.readMoreLabel')->label('Read More Label')->required()->maxLength(80),
-                TextInput::make($indexPrefix.'.viewDetailsLabel')->label('View Details Label')->required()->maxLength(80),
-                TextInput::make($indexPrefix.'.newLabel')->label('New Badge')->required()->maxLength(80),
-                TextInput::make($indexPrefix.'.newsFallbackCategory')->label('News Fallback Category')->required()->maxLength(120),
-                TextInput::make($indexPrefix.'.universityNewsFallbackCategory')->label('University News Fallback Category')->required()->maxLength(120),
-                Textarea::make($indexPrefix.'.emptyAnnouncements')->label('Empty Announcements Text')->required()->rows(2)->columnSpanFull(),
+            Section::make(__('admin.editorial_workspace.news_shell.cards_labels'))->schema([
+                TextInput::make($indexPrefix.'.archiveTitle')->label(__('admin.editorial_workspace.news_shell.archive_title'))->required()->maxLength(160),
+                TextInput::make($indexPrefix.'.archiveCta')->label(__('admin.editorial_workspace.news_shell.archive_cta'))->required()->maxLength(120),
+                TextInput::make($indexPrefix.'.announcementsCardTitle')->label(__('admin.editorial_workspace.news_shell.announcements_card_title'))->required()->maxLength(160),
+                TextInput::make($indexPrefix.'.announcementsCardCta')->label(__('admin.editorial_workspace.news_shell.announcements_card_cta'))->required()->maxLength(120),
+                TextInput::make($indexPrefix.'.readMoreLabel')->label(__('admin.editorial_workspace.news_shell.read_more'))->required()->maxLength(80),
+                TextInput::make($indexPrefix.'.viewDetailsLabel')->label(__('admin.editorial_workspace.news_shell.view_details'))->required()->maxLength(80),
+                TextInput::make($indexPrefix.'.newLabel')->label(__('admin.editorial_workspace.news_shell.new_badge'))->required()->maxLength(80),
+                TextInput::make($indexPrefix.'.newsFallbackCategory')->label(__('admin.editorial_workspace.news_shell.news_fallback_category'))->required()->maxLength(120),
+                TextInput::make($indexPrefix.'.universityNewsFallbackCategory')->label(__('admin.editorial_workspace.news_shell.university_news_fallback_category'))->required()->maxLength(120),
+                Textarea::make($indexPrefix.'.emptyAnnouncements')->label(__('admin.editorial_workspace.news_shell.empty_announcements'))->required()->rows(2)->columnSpanFull(),
             ])->columns(2)->visible(fn (): bool => $this->targetKeyForSchema() === 'news.index'),
         ];
     }
@@ -639,7 +657,12 @@ class ManageNews extends Page implements HasForms
             Hidden::make('id')->default(fn (): string => 'event-'.Str::lower(Str::random(10))),
             Section::make(__('admin.editorial_workspace.events.sections.schedule'))->schema([
                 DateTimePicker::make('startsAt')->label(__('admin.editorial_workspace.fields.starts_at'))->required()->seconds(false),
-                DateTimePicker::make('endsAt')->label(__('admin.editorial_workspace.fields.ends_at'))->seconds(false),
+                DateTimePicker::make('endsAt')
+                    ->label(__('admin.editorial_workspace.fields.ends_at'))
+                    ->helperText(__('admin.editorial_workspace.fields.ends_at_help'))
+                    ->afterOrEqual('startsAt')
+                    ->validationMessages(['after_or_equal' => __('admin.editorial_workspace.validation.ends_after_start')])
+                    ->seconds(false),
                 Radio::make('categoryId')
                     ->label(__('admin.editorial_workspace.fields.category'))
                     ->options(fn (): array => $this->eventCategoryOptions())
@@ -881,6 +904,34 @@ class ManageNews extends Page implements HasForms
         return is_string($this->data['target_key'] ?? null) && $this->data['target_key'] !== ''
             ? $this->data['target_key']
             : $this->defaultNewsTargetKey();
+    }
+
+    private function validateEventDates(): void
+    {
+        if ($this->currentTargetKey() !== 'news.events') {
+            return;
+        }
+
+        $rules = [];
+
+        foreach (['upcoming', 'past'] as $group) {
+            $events = is_array($this->data['events_workspace'][$group] ?? null) ? $this->data['events_workspace'][$group] : [];
+
+            foreach ($events as $key => $event) {
+                if (! is_array($event)) {
+                    continue;
+                }
+
+                $prefix = 'data.events_workspace.'.$group.'.'.$key;
+                $rules[$prefix.'.endsAt'] = ['nullable', 'date', 'after_or_equal:'.$prefix.'.startsAt'];
+            }
+        }
+
+        if ($rules !== []) {
+            $this->validate($rules, [
+                'data.events_workspace.*.*.endsAt.after_or_equal' => __('admin.editorial_workspace.validation.ends_after_start'),
+            ]);
+        }
     }
 
     /** @return list<array{label: string, description: string, url: string}> */

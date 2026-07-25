@@ -3,9 +3,17 @@ import { test } from 'node:test';
 
 import {
     bindCourseCardInteractions,
+    localizedStudyPlanText,
     modalFocusTarget,
     studyPlanKeyboardAction,
 } from '../../resources/js/alpine/studyPlan.js';
+
+test('current localized plain text wins over stale suffix values', () => {
+    const course = { title: 'Current title', titleEn: 'Stale title', titleAr: 'عنوان قديم' };
+
+    assert.equal(localizedStudyPlanText(course, 'title', false), 'Current title');
+    assert.equal(localizedStudyPlanText(course, 'title', true), 'Current title');
+});
 
 test('dialog focus containment wraps and recovers escaped focus', () => {
     const first = { id: 'first' };

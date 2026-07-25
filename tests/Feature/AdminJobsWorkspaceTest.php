@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Filament\Pages\ManageCampusLife;
 use App\Filament\Pages\ManageJobBoard;
 use App\Models\Cms\CmsDraft;
 use App\Models\User\User;
@@ -60,6 +61,50 @@ final class AdminJobsWorkspaceTest extends TestCase
         $this->actingAs($facultyEditor, 'web')
             ->get('/admin/manage-job-board')
             ->assertForbidden();
+    }
+
+    public function test_campus_life_selector_omits_job_board_while_dedicated_route_keeps_it(): void
+    {
+        $this->actingAs($this->editor(), 'web');
+
+        $campusComponent = Livewire::test(ManageCampusLife::class);
+        $method = new \ReflectionMethod(ManageCampusLife::class, 'targetOptions');
+        $method->setAccessible(true);
+        /** @var array<string, string> $options */
+        $options = $method->invoke($campusComponent->instance());
+
+        $this->assertArrayNotHasKey('campus_life.jobs', $options);
+
+        Livewire::withQueryParams(['target' => 'campus_life.jobs'])
+            ->test(ManageCampusLife::class)
+            ->assertSet('activeTargetKey', 'campus_life.landing')
+            ->assertSet('data.target_key', 'campus_life.landing')
+            ->assertDontSee('Target Schema Pending');
+
+        Livewire::test(ManageJobBoard::class)
+            ->assertSet('activeTargetKey', 'campus_life.jobs')
+            ->assertSet('data.target_key', 'campus_life.jobs');
+    }
+
+    public function test_closed_job_cannot_accept_applications_and_deadline_cannot_precede_posting(): void
+    {
+        $this->actingAs($this->editor(), 'web');
+
+        $component = Livewire::test(ManageJobBoard::class);
+        /** @var array<string, mixed> $data */
+        $data = $component->get('data');
+        $vacancyKey = array_key_first($data['jobs_workspace']['vacancies'] ?? []);
+        $this->assertNotNull($vacancyKey);
+        $prefix = 'data.jobs_workspace.vacancies.'.$vacancyKey;
+
+        $component
+            ->set($prefix.'.applicationEligible', true)
+            ->set($prefix.'.status', 'closed')
+            ->assertSet($prefix.'.applicationEligible', false)
+            ->set($prefix.'.postedDate', '2026-07-20')
+            ->set($prefix.'.closeDate', '2026-07-19')
+            ->call('save')
+            ->assertHasErrors([$prefix.'.closeDate' => 'after_or_equal']);
     }
 
     public function test_saving_bilingual_vacancy_keeps_shared_identity_in_both_locales(): void

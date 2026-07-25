@@ -22,6 +22,9 @@ Completed in the first implementation slice:
   News or Announcement; generic category management is no longer exposed.
 - [x] Research uses task cards instead of a technical target selector, localized
   workflow actions, permission-aware publishing controls, and safe errors.
+- [x] All ten Research editors use localized AR/EN directed forms, progressive
+  disclosure, generated technical identity, legacy-safe payload round trips,
+  human domain selectors, and Research-specific publish-readiness checks.
 - [x] Faculty workspaces use URL-addressable task cards, dynamic faculty labels,
   localized workflow actions, safe errors, and permission-aware publishing.
 - [x] Study-plan prerequisites use human course selectors while reverse graph
@@ -48,6 +51,25 @@ Completed in the first implementation slice:
 - [x] Individual News Articles use versioned aggregate drafts, protected AR/EN
   previews, explicit publish/schedule/unpublish actions, and atomic revision
   promotion without changing an already-published article during normal edits.
+- [x] Study Plans use one transient paired AR/EN workspace for the selected
+  department and term. The service owns pairing, stable generated identities,
+  localized-field synchronization, prerequisite canonicalization, preservation
+  of unselected data, and publish graph validation.
+- [x] Applications and submissions use one task-oriented review resource with
+  persisted event, job, admissions, and feedback inboxes; localized structured
+  detail views; guarded status transitions; and private attachment downloads.
+- [x] Research conference and symposium submissions carry server-validated
+  published event context so Event Registration inbox records identify their
+  trusted Research source and localized event title.
+- [x] Shared admin cleanup establishes canonical broad-workspace choices while
+  retaining dedicated Announcements, Events, and Job Board routes; stale target
+  queries fall back safely instead of exposing unfinished target schemas.
+- [x] News revisions expose one Save Draft action, priority workflow actions use
+  localized safe failures and AR/EN preview guards, and the shared header names
+  AR/EN as content languages rather than implying measured completeness.
+- [x] Shared workspace CSS includes dark-mode contrast, high-contrast keyboard
+  focus, RTL typography, mobile wrapping, media filename treatment, and reduced
+  motion behavior. Job and event editors enforce consistent status/date rules.
 
 Still required before the priority release is complete:
 
@@ -55,9 +77,10 @@ Still required before the priority release is complete:
   live article never changes public content before explicit publication.
 - [x] Replace the combined Events payload editor with a focused bilingual event
   workflow.
-- [ ] Complete the study-plan migration by pairing Arabic and English course
-  content and generating remaining term/course identifiers internally.
-- [ ] Finish task-specific field localization and progressive disclosure inside
+- [x] Complete the study-plan migration by pairing Arabic and English course,
+  lesson, elective-pool, and promotion content and generating missing editable
+  record identifiers internally.
+- [x] Finish task-specific field localization and progressive disclosure inside
   each Research editor.
 
 ## Purpose
@@ -271,13 +294,17 @@ The staff journey is:
 4. View courses in that term.
 5. Add or edit one course.
 
-The normal course editor includes course code, title, credits, requirement type,
-required/elective state, prerequisites selected by course name and code,
-instructor, description, optional lessons, and related documents.
+The normal course editor is one paired Arabic/English workspace for the selected
+department and term. It includes course code, bilingual title and description,
+credits, requirement type, required/elective state, prerequisites selected by
+course name and code, bilingual instructor names, optional paired lessons and
+related documents. Elective pools and promotion requirements are edited in the
+same department workspace.
 
-The system derives reverse prerequisite relationships. Editors do not manage
-course IDs, prerequisite IDs, reverse graph IDs, department IDs, or instructor
-profile slugs.
+Prerequisites are the canonical editable relationship; the public site derives
+reverse relationships. The system generates stable internal identities for new
+courses, lessons, pools, and promotion requirements. Editors do not manage
+those IDs, reverse graph IDs, department IDs, or instructor profile slugs.
 
 ## Two-Day Implementation Sequence
 
@@ -336,6 +363,12 @@ The first release is not accepted until a non-technical staff user can:
 - Keyboard checks for tabs, forms, dialogs, tables, filters, and media fields.
 - No raw exception messages, inert controls, broken assets, or untranslated
   staff-facing labels.
+- Broad News and Campus Life selectors omit targets owned by dedicated routes;
+  bookmarked legacy query targets load a safe canonical editor.
+- Job deadlines cannot precede posting dates, closed jobs cannot accept online
+  applications, and event end times cannot precede start times.
+- Manual browser QA covers Media Picker source switching, long filenames, dark
+  mode, keyboard focus, narrow action rows, and AR/EN responsive direction.
 - `./vendor/bin/pint --test`, scoped tests, relevant authorization tests, and
   `git diff --check` must pass before each commit.
 

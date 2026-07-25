@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources;
 
+use App\Enums\FormSubmissionInbox;
+use App\Enums\FormSubmissionStatus;
 use App\Filament\Resources\DynamicFormSubmissionResource\Pages;
 use App\Models\Form\DynamicFormSubmission;
-use Filament\Forms\Components\Section;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -27,8 +26,6 @@ class DynamicFormSubmissionResource extends Resource
 
     protected static ?int $navigationSort = 3;
 
-    protected static ?string $recordTitleAttribute = 'form_id';
-
     public static function canAccess(): bool
     {
         return Gate::allows('viewAny', DynamicFormSubmission::class);
@@ -44,9 +41,39 @@ class DynamicFormSubmissionResource extends Resource
         return __('admin.navigation.items.dynamic_form_submissions');
     }
 
+    public static function getModelLabel(): string
+    {
+        return __('form_submissions.resource.model');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('form_submissions.resource.plural_model');
+    }
+
+    public static function getRecordTitle(?Model $record): string
+    {
+        if (! $record instanceof DynamicFormSubmission) {
+            return self::getModelLabel();
+        }
+
+        $applicant = filled($record->applicant_name)
+            ? (string) $record->applicant_name
+            : (filled($record->applicant_email) ? (string) $record->applicant_email : __('form_submissions.values.unknown_applicant'));
+
+        return __('form_submissions.resource.record_title', [
+            'applicant' => $applicant,
+            'form' => self::formLabel((string) $record->form_id),
+        ]);
+    }
+
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery();
+        $formIds = collect(FormSubmissionInbox::cases())
+            ->flatMap(fn (FormSubmissionInbox $inbox): array => $inbox->formIds())
+            ->all();
+
+        return parent::getEloquentQuery()->whereIn('form_id', $formIds);
     }
 
     public static function canCreate(): bool
@@ -61,85 +88,93 @@ class DynamicFormSubmissionResource extends Resource
 
     public static function canDelete(Model $record): bool
     {
-        return Gate::allows('delete', $record);
+        return false;
     }
 
     public static function form(Form $form): Form
     {
-        return $form->schema([
-            Section::make('Submission')->schema([
-                TextInput::make('form_id')->label('Form')->disabled(),
-                TextInput::make('locale')->disabled(),
-                TextInput::make('applicant_name')->disabled(),
-                TextInput::make('applicant_email')->disabled(),
-                TextInput::make('status')->disabled(),
-                TextInput::make('created_at')->label('Submitted')->disabled(),
-            ])->columns(2),
-
-            Section::make('Payload')->schema([
-                Textarea::make('payload_json')
-                    ->label('Submitted Fields')
-                    ->formatStateUsing(fn (mixed $state): string => json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '')
-                    ->rows(12)
-                    ->disabled()
-                    ->columnSpanFull(),
-            ]),
-
-            Section::make('Files')->schema([
-                Textarea::make('files_json')
-                    ->label('Stored Files')
-                    ->formatStateUsing(fn (mixed $state): string => json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '')
-                    ->rows(8)
-                    ->disabled()
-                    ->columnSpanFull(),
-            ]),
-
-            Section::make('Request')->schema([
-                TextInput::make('ip_address')->label('IP Address')->disabled(),
-                Textarea::make('user_agent')->label('User Agent')->disabled()->columnSpanFull(),
-            ])->columns(2),
-        ]);
+        return $form->schema([]);
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                TextColumn::make('form_id')->label('Form')->searchable()->sortable(),
-                TextColumn::make('applicant_name')->searchable()->sortable()->placeholder('-'),
-                TextColumn::make('applicant_email')->searchable()->sortable()->placeholder('-'),
-                TextColumn::make('payload_json._context.job_title')->label('Selected Job')->wrap()->placeholder('-'),
-                TextColumn::make('payload_json.targetFaculty')->label('Admissions Faculty')->wrap()->placeholder('-'),
-                TextColumn::make('locale')->badge()->sortable(),
-                TextColumn::make('status')
-                    ->badge()
-                    ->color(fn (string $state): string => $state === 'new' ? 'success' : 'gray')
+                TextColumn::make('applicant_name')
+                    ->label(__('form_submissions.columns.applicant'))
+                    ->description(fn (DynamicFormSubmission $record): ?string => $record->applicant_email)
+                    ->searchable(['applicant_name', 'applicant_email'])
+                    ->sortable()
+                    ->placeholder(__('form_submissions.values.unknown_applicant')),
+                TextColumn::make('context_title')
+                    ->label(__('form_submissions.columns.context_title'))
+                    ->state(fn (DynamicFormSubmission $record): ?string => self::contextTitle($record))
+                    ->searchable(query: fn (Builder $query, string $search): Builder => $query->where(
+                        fn (Builder $query): Builder => $query
+                            ->where('payload_json->_context->event_title', 'like', "%{$search}%")
+                            ->orWhere('payload_json->_context->job_title', 'like', "%{$search}%")
+                            ->orWhere('payload_json->subject', 'like', "%{$search}%"),
+                    ))
+                    ->wrap()
+                    ->placeholder(__('form_submissions.values.no_context_title')),
+                TextColumn::make('request_target')
+                    ->label(__('form_submissions.columns.request_target'))
+                    ->state(fn (DynamicFormSubmission $record): ?string => self::requestTarget($record))
+                    ->wrap()
+                    ->placeholder(__('form_submissions.values.not_applicable')),
+                TextColumn::make('form_id')
+                    ->label(__('form_submissions.columns.form_type'))
+                    ->formatStateUsing(fn (string $state): string => self::formLabel($state))
                     ->sortable(),
-                TextColumn::make('created_at')->label('Submitted')->dateTime()->sortable(),
+                TextColumn::make('locale')
+                    ->label(__('form_submissions.columns.locale'))
+                    ->formatStateUsing(fn (string $state): string => __('form_submissions.locales.'.$state))
+                    ->badge()
+                    ->sortable(),
+                TextColumn::make('status')
+                    ->label(__('form_submissions.columns.status'))
+                    ->formatStateUsing(fn (string $state): string => self::statusLabel($state))
+                    ->badge()
+                    ->color(fn (string $state): string => self::statusColor($state))
+                    ->sortable(),
+                TextColumn::make('created_at')
+                    ->label(__('form_submissions.columns.submitted_at'))
+                    ->dateTime()
+                    ->sortable(),
             ])
             ->filters([
                 SelectFilter::make('form_id')
-                    ->label('Form')
+                    ->label(__('form_submissions.filters.form_type'))
                     ->options([
-                        'conference-registration' => 'Conference Registration',
-                        'symposium-registration' => 'Symposium Registration',
-                        'activity-registration' => 'Activity Registration',
-                        'job-application' => 'Job Application',
-                        'admissions-application' => 'Admissions Application',
-                        'suggestions-complaints' => 'Suggestions & Complaints',
+                        'conference-registration' => __('form_submissions.forms.conference-registration'),
+                        'symposium-registration' => __('form_submissions.forms.symposium-registration'),
+                        'activity-registration' => __('form_submissions.forms.activity-registration'),
+                        'job-application' => __('form_submissions.forms.job-application'),
+                        'admissions-application' => __('form_submissions.forms.admissions-application'),
+                        'suggestions-complaints' => __('form_submissions.forms.suggestions-complaints'),
                     ]),
-                SelectFilter::make('locale')->options(['ar' => 'Arabic', 'en' => 'English']),
-                SelectFilter::make('status')->options(['new' => 'New']),
+                SelectFilter::make('locale')
+                    ->label(__('form_submissions.filters.locale'))
+                    ->options([
+                        'ar' => __('form_submissions.locales.ar'),
+                        'en' => __('form_submissions.locales.en'),
+                    ]),
+                SelectFilter::make('status')
+                    ->label(__('form_submissions.filters.status'))
+                    ->options(collect(FormSubmissionStatus::cases())
+                        ->mapWithKeys(fn (FormSubmissionStatus $status): array => [
+                            $status->value => __('form_submissions.statuses.'.$status->value),
+                        ])
+                        ->all()),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\ViewAction::make()
+                    ->label(__('form_submissions.actions.review')),
             ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ])
+            ->bulkActions([])
+            ->emptyStateHeading(__('form_submissions.empty.heading'))
+            ->emptyStateDescription(__('form_submissions.empty.description'))
+            ->emptyStateIcon('heroicon-o-inbox')
             ->defaultSort('created_at', 'desc')
             ->defaultPaginationPageOption(25)
             ->paginationPageOptions([10, 25, 50]);
@@ -156,5 +191,67 @@ class DynamicFormSubmissionResource extends Resource
             'index' => Pages\ListDynamicFormSubmissions::route('/'),
             'view' => Pages\ViewDynamicFormSubmission::route('/{record}'),
         ];
+    }
+
+    private static function formLabel(string $formId): string
+    {
+        $key = 'form_submissions.forms.'.$formId;
+        $label = __($key);
+
+        return $label === $key ? __('form_submissions.inboxes.unknown') : $label;
+    }
+
+    private static function statusLabel(string $status): string
+    {
+        $key = 'form_submissions.statuses.'.$status;
+        $label = __($key);
+
+        return $label === $key ? __('form_submissions.values.unknown_status') : $label;
+    }
+
+    private static function statusColor(string $status): string
+    {
+        return match (FormSubmissionStatus::tryFrom($status)) {
+            FormSubmissionStatus::NEW => 'info',
+            FormSubmissionStatus::IN_REVIEW => 'warning',
+            FormSubmissionStatus::ACCEPTED, FormSubmissionStatus::RESOLVED => 'success',
+            FormSubmissionStatus::REJECTED => 'danger',
+            FormSubmissionStatus::CLOSED => 'gray',
+            default => 'gray',
+        };
+    }
+
+    private static function contextTitle(DynamicFormSubmission $record): ?string
+    {
+        $payload = is_array($record->payload_json) ? $record->payload_json : [];
+        $context = is_array($payload['_context'] ?? null) ? $payload['_context'] : [];
+
+        foreach ([$context['event_title'] ?? null, $context['job_title'] ?? null, $payload['subject'] ?? null] as $value) {
+            if (is_string($value) && $value !== '') {
+                return $value;
+            }
+        }
+
+        return null;
+    }
+
+    private static function requestTarget(DynamicFormSubmission $record): ?string
+    {
+        $payload = is_array($record->payload_json) ? $record->payload_json : [];
+
+        foreach (['requestType', 'applicantType', 'targetFaculty', 'role'] as $field) {
+            $value = $payload[$field] ?? null;
+
+            if (! is_string($value) || $value === '') {
+                continue;
+            }
+
+            $key = 'form_submissions.options.'.$value;
+            $label = __($key);
+
+            return $label === $key ? $value : $label;
+        }
+
+        return null;
     }
 }

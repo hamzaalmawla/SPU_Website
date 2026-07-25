@@ -217,9 +217,10 @@ final class CampusLifeJobsTest extends TestCase
         Storage::disk('local')->assertExists($submission->files_json['cvFile']['path']);
 
         $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
-        Livewire::test(ListDynamicFormSubmissions::class)
+        Livewire::withQueryParams(['activeTab' => 'jobs'])
+            ->test(ListDynamicFormSubmissions::class)
             ->assertSee('Lecturer in Computer Science')
-            ->assertSee('Selected Job');
+            ->assertSee('Related event, job, or subject');
     }
 
     public function test_faculty_editor_cannot_manage_global_jobs_catalog(): void

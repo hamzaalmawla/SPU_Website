@@ -480,8 +480,14 @@ final class ResearchPublicPagesTest extends TestCase
         $themes = $research->getEditablePayload('research.themes');
         $projects['translations']['en']['hero']['title'] = 'CMS Research Projects';
         $projects['translations']['ar']['hero']['title'] = 'مشاريع بحث CMS';
+        $projects['translations']['en']['cardLabels']['viewProject'] = 'Inspect Research Project';
+        $projects['translations']['en']['cardLabels']['since'] = 'Commenced';
+        $projects['translations']['ar']['cardLabels']['viewProject'] = 'استعراض المشروع البحثي';
+        $projects['translations']['ar']['cardLabels']['since'] = 'بدأ عام';
         $projects['translations']['en']['items'][0]['title'] = 'CMS Seismic Project';
         $projects['translations']['ar']['items'][0]['title'] = 'مشروع CMS الزلزالي';
+        $projects['translations']['en']['items'][0]['endYear'] = '2030';
+        $projects['translations']['ar']['items'][0]['endYear'] = '2030';
         $projects['translations']['en']['items'][0]['themeSlug'] = 'ai-ml';
         $projects['translations']['ar']['items'][0]['themeSlug'] = 'ai-ml';
         $projects['translations']['en']['items'][0]['theme'] = 'Artificial Intelligence & Machine Learning';
@@ -523,6 +529,9 @@ final class ResearchPublicPagesTest extends TestCase
         $this->get('/en/research/projects?theme=ai-ml&q=seismic')
             ->assertOk()
             ->assertSee('CMS Seismic Project')
+            ->assertSee('Inspect Research Project')
+            ->assertSee('Commenced')
+            ->assertSee('2030')
             ->assertDontSee('AI-Powered Dental Caries Detection System');
         $this->get('/ar/research/projects/earthquake-resistant-concrete-syria')->assertOk()->assertSee('مشروع CMS الزلزالي');
         $this->get('/en/research/themes/ai-ml')->assertOk()->assertSee('CMS AI Theme')->assertSee('CMS Seismic Project');
@@ -934,7 +943,8 @@ final class ResearchPublicPagesTest extends TestCase
                 'location' => 'SPU Campus',
                 'description' => 'CMS upcoming event summary.',
                 'image' => '/images/uni-main-place.JPG',
-                'registrationUrl' => '#',
+                'registrationUrl' => '/research/conferences/register?event=cms-conf-001',
+                'formId' => 'conference-registration',
                 'eventType' => 'CMS Symposium',
             ]],
             'past' => [[
@@ -945,7 +955,7 @@ final class ResearchPublicPagesTest extends TestCase
                 'description' => 'CMS past conference summary.',
                 'image' => '/images/uni-main-place.JPG',
                 'hasProceedings' => true,
-                'proceedingsUrl' => '#',
+                'proceedingsUrl' => '/storage/research/cms-proceedings.pdf',
                 'participants' => '120 Participants',
             ]],
         ];
@@ -1057,7 +1067,7 @@ final class ResearchPublicPagesTest extends TestCase
                 'documents' => [[
                     'title' => $documentTitle,
                     'fileType' => 'PDF',
-                    'url' => '#',
+                    'url' => '/storage/research/cms-policy.pdf',
                 ]],
             ]],
             'contactSection' => [

@@ -79,9 +79,9 @@ final class NewsWorkflowTest extends TestCase
 
         $component = Livewire::test(ManageNews::class)
             ->assertSet('data.target_key', 'news.index')
-            ->assertSee('Hero')
-            ->assertSee('Sections')
-            ->assertSee('Cards and Labels');
+            ->assertSee('مقدمة الصفحة')
+            ->assertSee('أقسام الصفحة الرئيسية')
+            ->assertSee('البطاقات والتسميات');
 
         /** @var array<string, mixed> $data */
         $data = $component->get('data');
@@ -110,7 +110,7 @@ final class NewsWorkflowTest extends TestCase
         Livewire::test(ManageNews::class)
             ->set('data.target_key', 'news.articles')
             ->call('loadTarget', 'news.articles')
-            ->assertSee('News Articles Shell')
+            ->assertSee('صفحة المقالات الإخبارية')
             ->assertDontSee('Target Schema Pending');
     }
 
@@ -327,9 +327,9 @@ final class NewsWorkflowTest extends TestCase
         Livewire::test(ManageNews::class)
             ->call('loadTarget', 'news.gallery')
             ->assertSet('data.target_key', 'news.gallery')
-            ->assertSee('Media Gallery')
-            ->assertSee('Gallery Categories')
-            ->assertSee('Gallery Images');
+            ->assertSee('معرض الوسائط')
+            ->assertSee('تصنيفات المعرض')
+            ->assertSee('صور المعرض');
     }
 
     private function createPublishedArticle(string $type, string $slug, string $title, bool $featured = false): NewsArticle

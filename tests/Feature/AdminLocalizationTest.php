@@ -68,6 +68,22 @@ class AdminLocalizationTest extends TestCase
             ->get('/admin/pages')
             ->assertOk()
             ->assertSee('مساحة إدارة المحتوى')
+            ->assertSee('لغات المحتوى')
+            ->assertDontSee('حالة اللغات')
             ->assertSee('إدارة الصفحات والمحتوى ثنائي اللغة من نفس نمط التحرير.');
+    }
+
+    public function test_shared_workspace_css_includes_keyboard_mobile_dark_mode_and_motion_safeguards(): void
+    {
+        $css = file_get_contents(resource_path('css/filament/admin.css'));
+
+        $this->assertIsString($css);
+        $this->assertStringContainsString('.spu-workspace__link:focus-visible', $css);
+        $this->assertStringContainsString('.spu-task-card:focus-visible', $css);
+        $this->assertStringContainsString('[dir="rtl"] .spu-workspace__eyebrow', $css);
+        $this->assertStringContainsString('.dark .spu-choice-panel', $css);
+        $this->assertStringContainsString('.spu-media-preview', $css);
+        $this->assertStringContainsString('@media (prefers-reduced-motion: reduce)', $css);
+        $this->assertStringContainsString('overflow-wrap: anywhere', $css);
     }
 }

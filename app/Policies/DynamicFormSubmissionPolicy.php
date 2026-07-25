@@ -9,14 +9,9 @@ use App\Models\User\User;
 
 final class DynamicFormSubmissionPolicy
 {
-    public function before(User $user, string $ability): ?bool
-    {
-        return $user->role_slug === 'super_admin' ? true : null;
-    }
-
     public function viewAny(User $user): bool
     {
-        return $user->role_slug === 'editor';
+        return in_array($user->role_slug, ['super_admin', 'editor'], true);
     }
 
     public function view(User $user, DynamicFormSubmission $dynamicFormSubmission): bool
@@ -35,6 +30,16 @@ final class DynamicFormSubmissionPolicy
     }
 
     public function delete(User $user, DynamicFormSubmission $dynamicFormSubmission): bool
+    {
+        return false;
+    }
+
+    public function transitionStatus(User $user, DynamicFormSubmission $dynamicFormSubmission): bool
+    {
+        return in_array($user->role_slug, ['super_admin', 'editor'], true);
+    }
+
+    public function downloadAttachment(User $user, DynamicFormSubmission $dynamicFormSubmission): bool
     {
         return in_array($user->role_slug, ['super_admin', 'editor'], true);
     }

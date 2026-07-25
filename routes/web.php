@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Admin\AuthController;
+use App\Http\Controllers\Admin\DynamicFormSubmissionAttachmentController;
 use App\Http\Controllers\Admin\TwoFactorChallengeController;
 use App\Http\Controllers\Public\AboutController;
 use App\Http\Controllers\Public\AdmissionsController;
@@ -234,6 +235,11 @@ Route::prefix('admin')
         Route::middleware(['admin.auth', 'two.factor'])
             ->group(function (): void {
                 Route::post('/auth/logout', [AuthController::class, 'destroy'])->name('logout');
+
+                Route::get('/form-submissions/{submission}/attachments/{field}', DynamicFormSubmissionAttachmentController::class)
+                    ->whereNumber('submission')
+                    ->whereIn('field', ['cvFile', 'attachment'])
+                    ->name('form-submissions.attachments.download');
 
                 Route::get('/two-factor-challenge', [TwoFactorChallengeController::class, 'create'])
                     ->name('two-factor.challenge');

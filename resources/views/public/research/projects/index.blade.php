@@ -21,7 +21,7 @@
             <div class="mx-auto mt-4 flex max-w-[1210px] items-center justify-between gap-4 text-sm text-[#6f7280]"><p aria-live="polite">{{ $data['resultCount'] ?? count($data['items'] ?? []) }} {{ $locale === 'ar' ? 'نتيجة' : 'results' }}</p>@if (collect($activeFilters)->except('page')->filter(fn ($value) => (string) $value !== '')->isNotEmpty())<a href="{{ ($isPreview ?? false) && isset($preview) ? '/'.$locale.'/preview?token='.$preview->token : '/'.$locale.'/research/projects' }}" class="font-bold text-spu-red hover:text-spu-blue">{{ $locale === 'ar' ? 'مسح عوامل التصفية' : 'Clear filters' }}</a>@endif</div>
             <div class="mx-auto mt-[48px] grid max-w-[1168px] grid-cols-1 gap-x-[38px] gap-y-[38px] lg:grid-cols-2">
                 @forelse (($data['items'] ?? []) as $project)
-                    @include('public.research.partials.project-card', ['project' => $project, 'locale' => $locale])
+                    @include('public.research.partials.project-card', ['project' => $project, 'locale' => $locale, 'labels' => $data['cardLabels'] ?? []])
                 @empty
                     <div class="rounded-[10px] border border-slate-200 bg-section p-8 text-center lg:col-span-2"><h2 class="text-xl font-bold text-spu-blue">{{ $locale === 'ar' ? 'لا توجد نتائج' : 'No results found' }}</h2><p class="mt-2 text-sm text-slate-600">{{ $locale === 'ar' ? 'جرّب تغيير كلمات البحث أو عوامل التصفية.' : 'Try changing your search terms or filters.' }}</p><a href="/{{ $locale }}/research/projects" class="mt-5 inline-flex rounded-[6px] bg-spu-red px-5 py-2.5 text-xs font-bold text-white">{{ $locale === 'ar' ? 'مسح عوامل التصفية' : 'Clear filters' }}</a></div>
                 @endforelse

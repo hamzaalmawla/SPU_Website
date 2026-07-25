@@ -107,6 +107,23 @@ class MediaServiceTest extends TestCase
         $this->assertSame($uploaded->url, MediaPicker::selectedUrl($uploaded->mediaId));
     }
 
+    public function test_media_picker_preview_uses_accessible_filename_without_displaying_raw_url(): void
+    {
+        app()->setLocale('en');
+        $preview = new \ReflectionMethod(MediaPicker::class, 'preview');
+        $preview->setAccessible(true);
+
+        $document = (string) $preview->invoke(null, '/storage/media/long%20policy%20document.pdf?token=private');
+        $image = (string) $preview->invoke(null, '/storage/media/campus-photo.jpg');
+        $empty = (string) $preview->invoke(null, null);
+
+        $this->assertStringContainsString('long policy document.pdf', $document);
+        $this->assertStringContainsString('aria-label="Open selected file: long policy document.pdf"', $document);
+        $this->assertStringNotContainsString('>/storage/media/', $document);
+        $this->assertStringContainsString('alt="Preview of campus-photo.jpg"', $image);
+        $this->assertSame('No file selected.', $empty);
+    }
+
     public function test_media_picker_legacy_search_is_explicit_and_non_preloaded(): void
     {
         $this->actingAs($this->actor);

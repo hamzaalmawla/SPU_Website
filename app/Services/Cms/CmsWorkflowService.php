@@ -271,6 +271,10 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
             $this->appendResearchThemesReadinessErrors($payload, $target->locales, $errors);
         }
 
+        if (in_array($target->key, ['research.publications', 'research.experts', 'research.conferences', 'research.policies'], true)) {
+            $this->appendResearchCatalogReadinessErrors($target->key, $payload, $target->locales, $errors);
+        }
+
         if ($target->key === 'campus_life.jobs') {
             $this->appendCampusLifeJobsReadinessErrors($payload, $target->locales, $errors);
         }
@@ -1413,6 +1417,112 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
         }
     }
 
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<int, string>  $locales
+     * @param  array<string, array<int, string>>  $errors
+     */
+    private function appendResearchCatalogReadinessErrors(string $targetKey, array $payload, array $locales, array &$errors): void
+    {
+        $paths = match ($targetKey) {
+            'research.publications' => ['items'],
+            'research.experts' => ['researchers'],
+            'research.conferences' => ['upcoming', 'past'],
+            'research.policies' => ['sections'],
+            default => [],
+        };
+        $localeSignatures = [];
+
+        foreach ($locales as $locale) {
+            $translation = $this->localePayload($payload, $locale);
+            $localeSignatures[$locale] = [];
+
+            foreach ($paths as $path) {
+                $items = is_array($translation[$path] ?? null) ? $translation[$path] : [];
+                $ids = [];
+
+                foreach ($items as $item) {
+                    if (! is_array($item)) {
+                        $errors['research'][] = 'Every catalog entry must contain structured content.';
+
+                        continue;
+                    }
+
+                    $id = trim((string) ($item['id'] ?? ''));
+                    if ($id === '') {
+                        $errors['research'][] = 'Every catalog entry requires a stable internal identity.';
+                    } else {
+                        $ids[] = $id;
+                    }
+
+                    if ($targetKey === 'research.publications') {
+                        foreach (['scholarUrl', 'scopusUrl'] as $field) {
+                            if ($this->filledString($item[$field] ?? null) && ! $this->isSafeHttpsUrl($item[$field])) {
+                                $errors['research'][] = 'Publication index links must use safe public HTTPS URLs.';
+                            }
+                        }
+                        foreach (is_array($item['downloads'] ?? null) ? $item['downloads'] : [] as $download) {
+                            if (! is_array($download) || ! $this->isSafeResearchResourceUrl($download['url'] ?? null)) {
+                                $errors['research'][] = 'Every publication download must use a safe file URL.';
+                            }
+                        }
+                    }
+
+                    if ($targetKey === 'research.experts') {
+                        foreach (['orcidUrl', 'scholarUrl'] as $field) {
+                            if ($this->filledString($item[$field] ?? null) && ! $this->isSafeHttpsUrl($item[$field])) {
+                                $errors['research'][] = 'Expert profile links must use safe public HTTPS URLs.';
+                            }
+                        }
+                    }
+
+                    if ($targetKey === 'research.conferences' && $path === 'upcoming') {
+                        $formId = trim((string) ($item['formId'] ?? ''));
+                        if ($formId !== '' && ! in_array($formId, ['conference-registration', 'symposium-registration'], true)) {
+                            $errors['research'][] = 'Choose an approved conference registration form.';
+                        }
+                        if (is_string($item['registrationUrl'] ?? null) && str_contains($item['registrationUrl'], '/research/conferences/register') && $formId === '') {
+                            $errors['research'][] = 'Choose an approved form for each internal conference registration link.';
+                        }
+                        if ($this->filledString($item['registrationUrl'] ?? null) && ! $this->isSafeResearchResourceUrl($item['registrationUrl'])) {
+                            $errors['research'][] = 'Conference registration links must use a safe internal or HTTPS URL.';
+                        }
+                    }
+
+                    if ($targetKey === 'research.conferences' && $path === 'past' && (bool) ($item['hasProceedings'] ?? false) && ! $this->isSafeResearchResourceUrl($item['proceedingsUrl'] ?? null)) {
+                        $errors['research'][] = 'Upload a valid proceedings file before marking proceedings as available.';
+                    }
+
+                    if ($targetKey === 'research.policies') {
+                        $documents = is_array($item['documents'] ?? null) ? $item['documents'] : [];
+                        if ($documents === []) {
+                            $errors['research'][] = 'Every policy section requires at least one document.';
+                        }
+                        foreach ($documents as $document) {
+                            if (! is_array($document) || ! $this->isSafeResearchResourceUrl($document['url'] ?? null)) {
+                                $errors['research'][] = 'Every policy document requires a valid file.';
+                            }
+                        }
+                    }
+                }
+
+                if (count(array_unique($ids)) !== count($ids)) {
+                    $errors['research'][] = 'Catalog entry identities must be unique within each language.';
+                }
+
+                $localeSignatures[$locale][$path] = $ids;
+            }
+        }
+
+        if (count($localeSignatures) === count($locales) && count(array_unique(array_map('serialize', $localeSignatures))) !== 1) {
+            $errors['research'][] = 'Arabic and English catalog entries must have matching identities and order.';
+        }
+
+        if (isset($errors['research'])) {
+            $errors['research'] = array_values(array_unique($errors['research']));
+        }
+    }
+
     private function isValidResearchRelation(string $group, string $value): bool
     {
         return match ($group) {
@@ -1884,6 +1994,14 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
             && is_string($parts['host'] ?? null)
             && $parts['host'] !== ''
             && ! isset($parts['user'], $parts['pass']);
+    }
+
+    private function isSafeResearchResourceUrl(mixed $url): bool
+    {
+        return is_string($url)
+            && trim($url) !== ''
+            && $url !== '#'
+            && ((str_starts_with($url, '/') && ! str_starts_with($url, '//')) || $this->isSafeHttpsUrl($url));
     }
 
     private function isSafeLocalizedEServicesUrl(mixed $url, string $locale): bool

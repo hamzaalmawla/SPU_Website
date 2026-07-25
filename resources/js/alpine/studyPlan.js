@@ -56,6 +56,12 @@ export function bindCourseCardInteractions(card, { highlight, clear, open }) {
     card.addEventListener('click', () => open(courseId, card));
 }
 
+export function localizedStudyPlanText(item, key, isAr) {
+    const suffix = isAr ? 'Ar' : 'En';
+
+    return item?.[key] || item?.[`${key}${suffix}`] || item?.[`${key}En`] || item?.[`${key}Ar`] || '';
+}
+
 function flattenCourses(department) {
     return (department?.terms || []).flatMap((term) => term.courses || []);
 }
@@ -164,8 +170,7 @@ function createStudyPlanPage(root) {
     }
 
     function text(item, key) {
-        const suffix = isAr ? 'Ar' : 'En';
-        return item?.[`${key}${suffix}`] || item?.[`${key}En`] || item?.[`${key}Ar`] || item?.[key] || '';
+        return localizedStudyPlanText(item, key, isAr);
     }
 
     function activeDepartment() {

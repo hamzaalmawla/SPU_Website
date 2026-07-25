@@ -21,7 +21,7 @@ final class DynamicFormSubmissionRequest extends FormRequest
     public function rules(): array
     {
         return array_merge(app(DynamicFormSubmissionServiceInterface::class)->validationRules($this->formId()), [
-            'event_source' => ['nullable', 'string', 'in:news-events'],
+            'event_source' => ['nullable', 'required_with:event_id', 'string', 'in:news-events,research-conferences'],
             'event_id' => ['nullable', 'required_with:event_source', 'string', 'max:80'],
             'job_id' => ['nullable', 'string', 'max:80'],
             'job_slug' => ['nullable', 'string', 'max:160', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'],

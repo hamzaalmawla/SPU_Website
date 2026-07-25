@@ -157,6 +157,12 @@ class ManageFacilities extends Page implements HasForms
 
     public function openPreview(string $locale): void
     {
+        if (! in_array($locale, ['ar', 'en'], true)) {
+            Notification::make()->title(__('admin.campus_workspace.notifications.preview_failed'))->body(__('admin.campus_workspace.notifications.invalid_preview_locale'))->danger()->send();
+
+            return;
+        }
+
         /** @var User $user */
         $user = auth()->user();
 
@@ -217,12 +223,17 @@ class ManageFacilities extends Page implements HasForms
     {
         /** @var User $user */
         $user = auth()->user();
-        $result = $this->cmsWorkflowService->unpublish('facilities.landing', (int) $user->id);
-        $notification = Notification::make()->title($result
-            ? __('admin.campus_workspace.notifications.unpublished')
-            : __('admin.campus_workspace.notifications.nothing_published'));
+        try {
+            $result = $this->cmsWorkflowService->unpublish('facilities.landing', (int) $user->id);
+            $notification = Notification::make()->title($result
+                ? __('admin.campus_workspace.notifications.unpublished')
+                : __('admin.campus_workspace.notifications.nothing_published'));
 
-        ($result ? $notification->success() : $notification->warning())->send();
+            ($result ? $notification->success() : $notification->warning())->send();
+        } catch (\Throwable $e) {
+            report($e);
+            Notification::make()->title(__('admin.campus_workspace.notifications.unpublish_failed'))->body(__('admin.campus_workspace.notifications.safe_error'))->danger()->send();
+        }
     }
 
     /** @return array<int, Section> */

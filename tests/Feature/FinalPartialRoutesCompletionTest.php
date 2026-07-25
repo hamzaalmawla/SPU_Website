@@ -206,8 +206,8 @@ final class FinalPartialRoutesCompletionTest extends TestCase
             ->assertDontSee('facebook.com/SPUpage.sy', false)
             ->assertDontSee('telegram.me/SPUchannel', false);
 
-        $this->actingAs($author, 'web');
-        Livewire::test(ManageNews::class)->set('data.target_key', 'news.articles')->call('loadTarget', 'news.articles')->assertSee('News Articles Shell');
+        $this->actingAs($author, 'web')->withSession(['admin_locale' => 'en']);
+        Livewire::test(ManageNews::class)->set('data.target_key', 'news.articles')->call('loadTarget', 'news.articles')->assertSee('News articles page');
     }
 
     public function test_only_pharmacy_registers_training_and_its_full_workflow_is_available(): void

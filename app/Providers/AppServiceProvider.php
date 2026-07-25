@@ -11,7 +11,9 @@ use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Content\PersonServiceInterface;
 use App\Contracts\Content\ProfileAdminServiceInterface;
+use App\Contracts\Faculty\FacultyStudyPlanEditorServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
+use App\Contracts\Form\DynamicFormSubmissionReviewServiceInterface;
 use App\Contracts\Form\DynamicFormSubmissionServiceInterface;
 use App\Contracts\Homepage\HomepagePreviewAssemblerInterface;
 use App\Contracts\Homepage\HomepagePublishingServiceInterface;
@@ -123,7 +125,9 @@ use App\Services\Cms\CmsTargetRegistry;
 use App\Services\Cms\CmsWorkflowService;
 use App\Services\Content\PersonService;
 use App\Services\Content\ProfileAdminService;
+use App\Services\Faculty\FacultyStudyPlanEditorService;
 use App\Services\Faculty\FacultyStudyPlanLinkService;
+use App\Services\Form\DynamicFormSubmissionReviewService;
 use App\Services\Form\DynamicFormSubmissionService;
 use App\Services\Homepage\HomepageDraftReader;
 use App\Services\Homepage\HomepagePreviewAssembler;
@@ -369,8 +373,10 @@ class AppServiceProvider extends ServiceProvider
             CmsWorkflowServiceInterface::class => CmsWorkflowService::class,
             ContinuityServiceInterface::class => ContinuityService::class,
             ContactPageServiceInterface::class => ContactPageService::class,
+            DynamicFormSubmissionReviewServiceInterface::class => DynamicFormSubmissionReviewService::class,
             DynamicFormSubmissionServiceInterface::class => DynamicFormSubmissionService::class,
             EServicesPageServiceInterface::class => EServicesPageService::class,
+            FacultyStudyPlanEditorServiceInterface::class => FacultyStudyPlanEditorService::class,
             FacultyStudyPlanLinkServiceInterface::class => FacultyStudyPlanLinkService::class,
             FacultyPageServiceInterface::class => FacultyPageService::class,
             SitemapServiceInterface::class => SitemapService::class,
