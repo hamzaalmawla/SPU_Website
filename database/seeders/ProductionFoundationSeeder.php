@@ -18,6 +18,7 @@ class ProductionFoundationSeeder extends Seeder
             HomepageSectionSeeder::class,
             AboutSectionSeeder::class,
             FacultyModuleSeeder::class,
+            NewsCategorySeeder::class,
         ]);
     }
 }

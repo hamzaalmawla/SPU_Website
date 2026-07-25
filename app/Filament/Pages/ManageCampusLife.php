@@ -15,6 +15,7 @@ use App\Models\User\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -27,9 +28,12 @@ use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class ManageCampusLife extends Page implements HasForms
@@ -48,6 +52,8 @@ class ManageCampusLife extends Page implements HasForms
     public ?array $data = [];
 
     public ?int $draftVersion = null;
+
+    public ?string $activeTargetKey = null;
 
     private CampusLifePageServiceInterface $campusLifePageService;
 
@@ -91,26 +97,40 @@ class ManageCampusLife extends Page implements HasForms
 
     public function mount(): void
     {
-        $this->loadTarget('campus_life.landing');
+        $requestedTarget = request()->query('target', $this->defaultCampusLifeTargetKey());
+        $targetKey = is_string($requestedTarget) && array_key_exists($requestedTarget, $this->targetOptions())
+            ? $requestedTarget
+            : $this->defaultCampusLifeTargetKey();
+
+        if (! $this->showsTargetSelector()) {
+            $targetKey = $this->defaultCampusLifeTargetKey();
+        }
+
+        $this->loadTarget($targetKey);
     }
 
     public function form(Form $form): Form
     {
         return $form
             ->schema([
-                Section::make('Campus Life Target')->schema([
+                Section::make(__('admin.campus_workspace.choose_page'))->schema([
                     Select::make('target_key')
-                        ->label('Page / Subpage')
+                        ->label(__('admin.campus_workspace.page'))
                         ->options($this->targetOptions())
                         ->required()
                         ->live()
                         ->afterStateUpdated(fn (?string $state): mixed => is_string($state) && $state !== '' ? $this->loadTarget($state) : null),
-                ]),
+                ])->visible(fn (): bool => $this->showsTargetSelector()),
+                Section::make(__('admin.jobs_workspace.heading'))
+                    ->description(__('admin.jobs_workspace.description'))
+                    ->schema($this->jobsWorkspaceFields())
+                    ->visible(fn (): bool => $this->targetKeyForSchema() === 'campus_life.jobs'),
                 Tabs::make('campus_life_locales')
                     ->tabs([
-                        Tab::make('Arabic')->schema($this->payloadFields('ar')),
-                        Tab::make('English')->schema($this->payloadFields('en')),
+                        Tab::make(__('admin.locales.ar'))->extraAttributes(['dir' => 'rtl'])->schema($this->payloadFields('ar')),
+                        Tab::make(__('admin.locales.en'))->extraAttributes(['dir' => 'ltr'])->schema($this->payloadFields('en')),
                     ])
+                    ->visible(fn (): bool => $this->targetKeyForSchema() !== 'campus_life.jobs')
                     ->persistTabInQueryString('locale')
                     ->columnSpanFull(),
             ])
@@ -120,37 +140,51 @@ class ManageCampusLife extends Page implements HasForms
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('save')->label('Save Draft')->icon('heroicon-o-check')->color('gray')->action(function (): void {
+            Action::make('save')->label(__('admin.campus_workspace.actions.save_draft'))->icon('heroicon-o-check')->color('gray')->action(function (): void {
                 $this->save();
             }),
-            Action::make('preview_ar')->label('Preview AR')->icon('heroicon-o-eye')->color('info')->action(function (): void {
+            Action::make('preview_ar')->label(__('admin.campus_workspace.actions.preview_ar'))->icon('heroicon-o-eye')->color('info')->action(function (): void {
                 $this->openPreview('ar');
             }),
-            Action::make('preview_en')->label('Preview EN')->icon('heroicon-o-eye')->color('info')->action(function (): void {
+            Action::make('preview_en')->label(__('admin.campus_workspace.actions.preview_en'))->icon('heroicon-o-eye')->color('info')->action(function (): void {
                 $this->openPreview('en');
             }),
-            Action::make('publish')->label('Publish')->icon('heroicon-o-paper-airplane')->color('success')->requiresConfirmation()->action(function (): void {
-                $this->publish();
-            }),
+            Action::make('publish')->label(__('admin.campus_workspace.actions.publish'))->icon('heroicon-o-paper-airplane')->color('success')->requiresConfirmation()
+                ->visible(fn (): bool => Gate::allows('publish-content'))->action(function (): void {
+                    $this->publish();
+                }),
             Action::make('schedule')
-                ->label('Schedule')
+                ->label(__('admin.campus_workspace.actions.schedule'))
                 ->icon('heroicon-o-clock')
                 ->color('warning')
                 ->form([
-                    DateTimePicker::make('publish_at')->label('Publish At')->required()->minDate(now())->native(false),
+                    DateTimePicker::make('publish_at')->label(__('admin.campus_workspace.publish_at'))->required()->minDate(now())->native(false),
                 ])
+                ->visible(fn (): bool => Gate::allows('publish-content'))
                 ->action(function (array $data): void {
                     $this->schedule((string) $data['publish_at']);
                 }),
-            Action::make('unpublish')->label('Unpublish')->icon('heroicon-o-x-circle')->color('danger')->requiresConfirmation()->action(function (): void {
-                $this->unpublish();
-            }),
+            Action::make('unpublish')->label(__('admin.campus_workspace.actions.unpublish'))->icon('heroicon-o-x-circle')->color('danger')->requiresConfirmation()
+                ->visible(fn (): bool => Gate::allows('publish-content'))->action(function (): void {
+                    $this->unpublish();
+                }),
         ];
+    }
+
+    protected function defaultCampusLifeTargetKey(): string
+    {
+        return 'campus_life.landing';
+    }
+
+    protected function showsTargetSelector(): bool
+    {
+        return true;
     }
 
     public function loadTarget(string $targetKey): void
     {
         $this->assertCampusLifeTarget($targetKey);
+        $this->activeTargetKey = $targetKey;
 
         if (! in_array($targetKey, $this->curatedTargetKeys(), true)) {
             $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey, (int) auth()->id());
@@ -209,6 +243,12 @@ class ManageCampusLife extends Page implements HasForms
             'en_career_development' => $targetKey === 'campus_life.career-development' && is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
             'ar_jobs' => $targetKey === 'campus_life.jobs' && is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
             'en_jobs' => $targetKey === 'campus_life.jobs' && is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
+            'jobs_workspace' => $targetKey === 'campus_life.jobs'
+                ? $this->jobsWorkspaceFromTranslations(
+                    is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
+                    is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
+                )
+                : [],
             'ar_dental' => $targetKey === 'campus_life.dental' && is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
             'en_dental' => $targetKey === 'campus_life.dental' && is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
             'ar_hospital' => $targetKey === 'campus_life.hospital' && is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
@@ -239,13 +279,13 @@ class ManageCampusLife extends Page implements HasForms
             $draft = $this->cmsWorkflowService->saveDraft($this->currentTargetKey(), $this->payloadFromForm($this->currentFormData()), (int) $user->id, $this->draftVersion);
             $this->draftVersion = $draft->version;
 
-            Notification::make()->title('Campus Life draft saved')->success()->send();
+            Notification::make()->title(__('admin.campus_workspace.notifications.draft_saved'))->success()->send();
         } catch (ConflictException $e) {
             $this->draftVersion = $e->currentVersion;
-            Notification::make()->title('Draft conflict detected')->body('Reload this campus life target before saving again.')->danger()->persistent()->send();
+            Notification::make()->title(__('admin.campus_workspace.notifications.conflict'))->body(__('admin.campus_workspace.notifications.conflict_description'))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to save campus life draft')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('admin.campus_workspace.notifications.save_failed'))->body(__('admin.campus_workspace.notifications.safe_error'))->danger()->send();
         }
     }
 
@@ -263,10 +303,10 @@ class ManageCampusLife extends Page implements HasForms
             $this->redirect($preview->previewUrl);
         } catch (ConflictException $e) {
             $this->draftVersion = $e->currentVersion;
-            Notification::make()->title('Draft conflict detected')->body('Reload this campus life target before previewing again.')->danger()->persistent()->send();
+            Notification::make()->title(__('admin.campus_workspace.notifications.conflict'))->body(__('admin.campus_workspace.notifications.conflict_description'))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to create campus life preview')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('admin.campus_workspace.notifications.preview_failed'))->body(__('admin.campus_workspace.notifications.safe_error'))->danger()->send();
         }
     }
 
@@ -281,12 +321,12 @@ class ManageCampusLife extends Page implements HasForms
             $this->draftVersion = $draft->version;
             $this->cmsWorkflowService->publish($targetKey, (int) $user->id);
 
-            Notification::make()->title('Campus Life target published')->success()->send();
+            Notification::make()->title(__('admin.campus_workspace.notifications.published'))->success()->send();
         } catch (ValidationException $e) {
-            Notification::make()->title('Publish failed')->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
+            Notification::make()->title(__('admin.campus_workspace.notifications.publish_failed'))->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to publish campus life target')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('admin.campus_workspace.notifications.publish_failed'))->body(__('admin.campus_workspace.notifications.safe_error'))->danger()->send();
         }
     }
 
@@ -301,12 +341,12 @@ class ManageCampusLife extends Page implements HasForms
             $this->draftVersion = $draft->version;
             $this->cmsWorkflowService->schedule($targetKey, new \DateTimeImmutable($publishAt), (int) $user->id);
 
-            Notification::make()->title('Campus Life target scheduled')->success()->send();
+            Notification::make()->title(__('admin.campus_workspace.notifications.scheduled'))->success()->send();
         } catch (ValidationException $e) {
-            Notification::make()->title('Schedule failed')->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
+            Notification::make()->title(__('admin.campus_workspace.notifications.schedule_failed'))->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to schedule campus life target')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('admin.campus_workspace.notifications.schedule_failed'))->body(__('admin.campus_workspace.notifications.safe_error'))->danger()->send();
         }
     }
 
@@ -315,7 +355,9 @@ class ManageCampusLife extends Page implements HasForms
         /** @var User $user */
         $user = auth()->user();
         $result = $this->cmsWorkflowService->unpublish($this->currentTargetKey(), (int) $user->id);
-        $notification = Notification::make()->title($result ? 'Campus Life target unpublished' : 'No published campus life target found');
+        $notification = Notification::make()->title($result
+            ? __('admin.campus_workspace.notifications.unpublished')
+            : __('admin.campus_workspace.notifications.nothing_published'));
 
         ($result ? $notification->success() : $notification->warning())->send();
     }
@@ -420,10 +462,12 @@ class ManageCampusLife extends Page implements HasForms
         }
 
         if (($state['target_key'] ?? null) === 'campus_life.jobs') {
+            $workspace = is_array($state['jobs_workspace'] ?? null) ? $state['jobs_workspace'] : [];
+
             return [
                 'translations' => [
-                    'ar' => $this->normalizeJobsPayload(is_array($state['ar_jobs'] ?? null) ? $state['ar_jobs'] : []),
-                    'en' => $this->normalizeJobsPayload(is_array($state['en_jobs'] ?? null) ? $state['en_jobs'] : []),
+                    'ar' => $this->normalizeJobsPayload($this->jobsTranslationFromWorkspace($workspace, 'ar')),
+                    'en' => $this->normalizeJobsPayload($this->jobsTranslationFromWorkspace($workspace, 'en')),
                 ],
             ];
         }
@@ -1361,9 +1405,232 @@ class ManageCampusLife extends Page implements HasForms
         ];
     }
 
+    /** @return array<int, mixed> */
+    private function jobsWorkspaceFields(): array
+    {
+        return [
+            Hidden::make('jobs_workspace.ar_meta.type'),
+            Hidden::make('jobs_workspace.ar_meta.categories'),
+            Hidden::make('jobs_workspace.ar_meta.types'),
+            Hidden::make('jobs_workspace.en_meta.type'),
+            Hidden::make('jobs_workspace.en_meta.categories'),
+            Hidden::make('jobs_workspace.en_meta.types'),
+            Section::make(__('admin.jobs_workspace.page_intro'))
+                ->collapsed()
+                ->schema([
+                    Tabs::make('jobs_workspace_page_locales')
+                        ->tabs([
+                            Tab::make(__('admin.locales.ar'))->extraAttributes(['dir' => 'rtl'])->schema([
+                                TextInput::make('jobs_workspace.ar_meta.hero.title')->label(__('admin.jobs_workspace.fields.page_title'))->required()->maxLength(180),
+                                MediaPicker::image('jobs_workspace.ar_meta.hero.image', __('admin.jobs_workspace.fields.hero_image'), true),
+                                Textarea::make('jobs_workspace.ar_meta.hero.summary')->label(__('admin.jobs_workspace.fields.page_summary'))->required()->rows(3)->columnSpanFull(),
+                                Textarea::make('jobs_workspace.ar_meta.seoDescription')->label(__('admin.jobs_workspace.fields.seo_description'))->required()->rows(2)->columnSpanFull(),
+                            ])->columns(2),
+                            Tab::make(__('admin.locales.en'))->extraAttributes(['dir' => 'ltr'])->schema([
+                                TextInput::make('jobs_workspace.en_meta.hero.title')->label(__('admin.jobs_workspace.fields.page_title'))->required()->maxLength(180),
+                                MediaPicker::image('jobs_workspace.en_meta.hero.image', __('admin.jobs_workspace.fields.hero_image'), true),
+                                Textarea::make('jobs_workspace.en_meta.hero.summary')->label(__('admin.jobs_workspace.fields.page_summary'))->required()->rows(3)->columnSpanFull(),
+                                Textarea::make('jobs_workspace.en_meta.seoDescription')->label(__('admin.jobs_workspace.fields.seo_description'))->required()->rows(2)->columnSpanFull(),
+                            ])->columns(2),
+                        ]),
+                ]),
+            Repeater::make('jobs_workspace.vacancies')
+                ->label(__('admin.jobs_workspace.vacancies'))
+                ->addActionLabel(__('admin.jobs_workspace.add_vacancy'))
+                ->schema([
+                    Hidden::make('id')->default(fn (): string => 'job-'.Str::lower(Str::random(10))),
+                    Hidden::make('slug'),
+                    Section::make(__('admin.jobs_workspace.sections.position'))->schema([
+                        Select::make('category')->label(__('admin.jobs_workspace.fields.category'))->required()->options([
+                            'academic' => __('admin.jobs_workspace.categories.academic'),
+                            'administrative' => __('admin.jobs_workspace.categories.administrative'),
+                            'driver' => __('admin.jobs_workspace.categories.driver'),
+                            'technical' => __('admin.jobs_workspace.categories.technical'),
+                            'medical' => __('admin.jobs_workspace.categories.medical'),
+                        ]),
+                        Select::make('type')->label(__('admin.jobs_workspace.fields.employment_type'))->required()->options([
+                            'full-time' => __('admin.jobs_workspace.types.full_time'),
+                            'part-time' => __('admin.jobs_workspace.types.part_time'),
+                            'contract' => __('admin.jobs_workspace.types.contract'),
+                        ]),
+                        Select::make('status')->label(__('admin.jobs_workspace.fields.status'))->required()->options([
+                            'open' => __('admin.jobs_workspace.statuses.open'),
+                            'closed' => __('admin.jobs_workspace.statuses.closed'),
+                        ]),
+                        Toggle::make('applicationEligible')->label(__('admin.jobs_workspace.fields.accept_applications')),
+                        DatePicker::make('postedDate')->label(__('admin.jobs_workspace.fields.posted_date'))->required()->native(false),
+                        DatePicker::make('closeDate')->label(__('admin.jobs_workspace.fields.closing_date'))->required()->native(false),
+                        MediaPicker::image('image', __('admin.jobs_workspace.fields.image'), true)->columnSpanFull(),
+                    ])->columns(3),
+                    Section::make(__('admin.jobs_workspace.sections.arabic'))->schema([
+                        TextInput::make('title_ar')->label(__('admin.jobs_workspace.fields.title'))->required()->maxLength(240)->columnSpanFull(),
+                        TextInput::make('department_ar')->label(__('admin.jobs_workspace.fields.department'))->required()->maxLength(180),
+                        TextInput::make('location_ar')->label(__('admin.jobs_workspace.fields.location'))->required()->maxLength(180),
+                        Textarea::make('short_description_ar')->label(__('admin.jobs_workspace.fields.summary'))->required()->rows(2)->columnSpanFull(),
+                        TagsInput::make('overview_ar')->label(__('admin.jobs_workspace.fields.overview'))->required()->columnSpanFull(),
+                        TagsInput::make('responsibilities_ar')->label(__('admin.jobs_workspace.fields.responsibilities'))->required()->columnSpanFull(),
+                        TagsInput::make('requirements_ar')->label(__('admin.jobs_workspace.fields.requirements'))->required()->columnSpanFull(),
+                        TagsInput::make('benefits_ar')->label(__('admin.jobs_workspace.fields.benefits'))->required()->columnSpanFull(),
+                    ])->columns(2)->extraAttributes(['dir' => 'rtl']),
+                    Section::make(__('admin.jobs_workspace.sections.english'))->schema([
+                        TextInput::make('title_en')
+                            ->label(__('admin.jobs_workspace.fields.title'))
+                            ->required()
+                            ->maxLength(240)
+                            ->live(onBlur: true)
+                            ->afterStateUpdated(function (?string $state, Set $set, Get $get): void {
+                                if (blank($get('slug')) && filled($state)) {
+                                    $set('slug', Str::slug((string) $state));
+                                }
+                            })
+                            ->columnSpanFull(),
+                        TextInput::make('department_en')->label(__('admin.jobs_workspace.fields.department'))->required()->maxLength(180),
+                        TextInput::make('location_en')->label(__('admin.jobs_workspace.fields.location'))->required()->maxLength(180),
+                        Textarea::make('short_description_en')->label(__('admin.jobs_workspace.fields.summary'))->required()->rows(2)->columnSpanFull(),
+                        TagsInput::make('overview_en')->label(__('admin.jobs_workspace.fields.overview'))->required()->columnSpanFull(),
+                        TagsInput::make('responsibilities_en')->label(__('admin.jobs_workspace.fields.responsibilities'))->required()->columnSpanFull(),
+                        TagsInput::make('requirements_en')->label(__('admin.jobs_workspace.fields.requirements'))->required()->columnSpanFull(),
+                        TagsInput::make('benefits_en')->label(__('admin.jobs_workspace.fields.benefits'))->required()->columnSpanFull(),
+                    ])->columns(2)->extraAttributes(['dir' => 'ltr']),
+                ])
+                ->defaultItems(0)
+                ->reorderable()
+                ->cloneable()
+                ->collapsible()
+                ->collapsed()
+                ->itemLabel(fn (array $state): ?string => (string) ($state[app()->getLocale() === 'ar' ? 'title_ar' : 'title_en'] ?? $state['title_en'] ?? $state['title_ar'] ?? ''))
+                ->columnSpanFull(),
+            Section::make(__('admin.jobs_workspace.interface_text'))
+                ->description(__('admin.jobs_workspace.interface_text_help'))
+                ->collapsed()
+                ->schema([
+                    Tabs::make('jobs_workspace_interface_locales')
+                        ->tabs([
+                            Tab::make(__('admin.locales.ar'))->extraAttributes(['dir' => 'rtl'])->schema($this->jobInterfaceTextFields('ar')),
+                            Tab::make(__('admin.locales.en'))->extraAttributes(['dir' => 'ltr'])->schema($this->jobInterfaceTextFields('en')),
+                        ]),
+                ]),
+        ];
+    }
+
+    /** @return array<int, TextInput> */
+    private function jobInterfaceTextFields(string $locale): array
+    {
+        $prefix = 'jobs_workspace.'.$locale.'_meta.labels';
+        $fields = [
+            'category', 'type', 'search', 'searchAction', 'showing', 'positions', 'of', 'previous', 'next', 'reset',
+            'noResults', 'learnMore', 'apply', 'applicationsClosed', 'postedOn', 'closesOn', 'status', 'openStatus',
+            'closedStatus', 'share', 'copyLink', 'copied', 'related', 'overview', 'responsibilities', 'requirements',
+            'benefits', 'back',
+        ];
+
+        return array_map(
+            fn (string $field): TextInput => TextInput::make($prefix.'.'.$field)
+                ->label(__('admin.jobs_workspace.interface_fields.'.$field))
+                ->required()
+                ->maxLength(180),
+            $fields,
+        );
+    }
+
+    /** @param array<string, mixed> $ar @param array<string, mixed> $en @return array<string, mixed> */
+    private function jobsWorkspaceFromTranslations(array $ar, array $en): array
+    {
+        $arJobs = collect($this->listOfArrays($ar['jobs'] ?? []))->keyBy(fn (array $job): string => (string) ($job['id'] ?? ''));
+        $enJobs = collect($this->listOfArrays($en['jobs'] ?? []))->keyBy(fn (array $job): string => (string) ($job['id'] ?? ''));
+        $ids = $arJobs->keys()->merge($enJobs->keys())->filter()->unique()->values();
+        unset($ar['jobs'], $en['jobs']);
+
+        return [
+            'ar_meta' => $ar,
+            'en_meta' => $en,
+            'vacancies' => $ids->map(function (string $id) use ($arJobs, $enJobs): array {
+                $arJob = is_array($arJobs->get($id)) ? $arJobs->get($id) : [];
+                $enJob = is_array($enJobs->get($id)) ? $enJobs->get($id) : [];
+                $shared = $enJob !== [] ? $enJob : $arJob;
+
+                return [
+                    'id' => $id,
+                    'slug' => (string) ($shared['slug'] ?? ''),
+                    'category' => (string) ($shared['category'] ?? ''),
+                    'type' => (string) ($shared['type'] ?? ''),
+                    'status' => (string) ($shared['status'] ?? 'open'),
+                    'applicationEligible' => (bool) ($shared['applicationEligible'] ?? false),
+                    'postedDate' => (string) ($shared['postedDate'] ?? ''),
+                    'closeDate' => (string) ($shared['closeDate'] ?? ''),
+                    'image' => (string) ($shared['image'] ?? ''),
+                    ...$this->localizedJobWorkspaceFields($arJob, 'ar'),
+                    ...$this->localizedJobWorkspaceFields($enJob, 'en'),
+                ];
+            })->all(),
+        ];
+    }
+
+    /** @param array<string, mixed> $job @return array<string, mixed> */
+    private function localizedJobWorkspaceFields(array $job, string $locale): array
+    {
+        return [
+            'title_'.$locale => (string) ($job['title'] ?? ''),
+            'department_'.$locale => (string) ($job['department'] ?? ''),
+            'location_'.$locale => (string) ($job['location'] ?? ''),
+            'short_description_'.$locale => (string) ($job['shortDescription'] ?? ''),
+            'overview_'.$locale => $this->stringList($job['overview'] ?? []),
+            'responsibilities_'.$locale => $this->stringList($job['responsibilities'] ?? []),
+            'requirements_'.$locale => $this->stringList($job['requirements'] ?? []),
+            'benefits_'.$locale => $this->stringList($job['benefits'] ?? []),
+        ];
+    }
+
+    /** @param array<string, mixed> $workspace @return array<string, mixed> */
+    private function jobsTranslationFromWorkspace(array $workspace, string $locale): array
+    {
+        $payload = is_array($workspace[$locale.'_meta'] ?? null) ? $workspace[$locale.'_meta'] : [];
+        $payload['jobs'] = array_map(function (array $job, int $index) use ($locale): array {
+            $id = trim((string) ($job['id'] ?? ''));
+            $slug = trim((string) ($job['slug'] ?? ''));
+            $title = trim((string) ($job['title_'.$locale] ?? ''));
+
+            if ($id === '') {
+                $id = 'job-'.substr(hash('sha256', $slug.'|'.$title.'|'.$index), 0, 12);
+            }
+
+            if ($slug === '') {
+                $slug = Str::slug((string) ($job['title_en'] ?? '')) ?: $id;
+            }
+
+            return [
+                'id' => $id,
+                'slug' => $slug,
+                'category' => (string) ($job['category'] ?? ''),
+                'type' => (string) ($job['type'] ?? ''),
+                'status' => (string) ($job['status'] ?? 'open'),
+                'applicationEligible' => (bool) ($job['applicationEligible'] ?? false),
+                'title' => $title,
+                'department' => trim((string) ($job['department_'.$locale] ?? '')),
+                'location' => trim((string) ($job['location_'.$locale] ?? '')),
+                'shortDescription' => trim((string) ($job['short_description_'.$locale] ?? '')),
+                'overview' => $this->stringList($job['overview_'.$locale] ?? []),
+                'responsibilities' => $this->stringList($job['responsibilities_'.$locale] ?? []),
+                'requirements' => $this->stringList($job['requirements_'.$locale] ?? []),
+                'benefits' => $this->stringList($job['benefits_'.$locale] ?? []),
+                'postedDate' => (string) ($job['postedDate'] ?? ''),
+                'closeDate' => (string) ($job['closeDate'] ?? ''),
+                'image' => (string) ($job['image'] ?? ''),
+            ];
+        }, $this->listOfArrays($workspace['vacancies'] ?? []), array_keys($this->listOfArrays($workspace['vacancies'] ?? [])));
+
+        return $payload;
+    }
+
     private function targetKeyForSchema(): string
     {
-        return is_string($this->data['target_key'] ?? null) && $this->data['target_key'] !== '' ? $this->data['target_key'] : 'campus_life.landing';
+        if (is_string($this->activeTargetKey) && $this->activeTargetKey !== '') {
+            return $this->activeTargetKey;
+        }
+
+        return is_string($this->data['target_key'] ?? null) && $this->data['target_key'] !== ''
+            ? $this->data['target_key']
+            : 'campus_life.landing';
     }
 
     /** @return array<int, string> */
@@ -1532,6 +1799,15 @@ class ManageCampusLife extends Page implements HasForms
     private function listOfArrays(mixed $items): array
     {
         return array_values(array_filter(is_array($items) ? $items : [], static fn (mixed $item): bool => is_array($item)));
+    }
+
+    /** @return array<int, string> */
+    private function stringList(mixed $items): array
+    {
+        return array_values(array_filter(array_map(
+            static fn (mixed $item): string => trim((string) $item),
+            is_array($items) ? $items : [],
+        ), static fn (string $item): bool => $item !== ''));
     }
 
     /** @param array<string, array<int, string>> $errors */

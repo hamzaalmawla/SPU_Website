@@ -9,6 +9,7 @@ use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
 use App\Contracts\Media\MediaServiceInterface;
+use App\Contracts\News\NewsArticleCmsServiceInterface;
 use App\Contracts\Shared\AuditServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
 use App\DTOs\Cms\CmsDraftDTO;
@@ -43,6 +44,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
         private readonly PreviewTokenStore $previewTokenStore,
         private readonly MediaServiceInterface $mediaService,
         private readonly AboutEntityCmsServiceInterface $aboutEntityCmsService,
+        private readonly NewsArticleCmsServiceInterface $newsArticleCmsService,
         private readonly FacultyStudyPlanLinkServiceInterface $studyPlanLinkService,
     ) {}
 
@@ -60,9 +62,17 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
                 throw new ConflictException('CMS draft has been modified by another editor.', $currentVersion);
             }
 
+            $hasScheduledRelease = CmsDraft::query()
+                ->where('target_key', $target->key)
+                ->where('status', PublicationStatus::Scheduled->value)
+                ->exists();
+            $nextVersion = ((int) CmsDraft::query()
+                ->where('target_key', $target->key)
+                ->max('version')) + 1;
+
             CmsDraft::query()
                 ->where('target_key', $target->key)
-                ->whereIn('status', PublicationStatus::editableValues())
+                ->where('status', PublicationStatus::Draft->value)
                 ->update(['status' => PublicationStatus::Superseded->value]);
 
             $draft = CmsDraft::query()->create([
@@ -71,10 +81,13 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
                 'status' => PublicationStatus::Draft->value,
                 'created_by' => $userId,
                 'updated_by' => $userId,
-                'version' => ($currentVersion ?? 0) + 1,
+                'version' => $nextVersion,
             ]);
 
-            $this->aboutEntityCmsService->markDraft($target->key);
+            if (! $hasScheduledRelease) {
+                $this->aboutEntityCmsService->markDraft($target->key);
+                $this->newsArticleCmsService->markDraft($target->key);
+            }
 
             $this->auditService->log('cms.draft.saved', $userId, CmsDraft::class, (int) $draft->getKey(), [
                 'target_key' => $target->key,
@@ -142,6 +155,12 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
         $this->assertReadyForPublish($target->key, is_array($draft->payload_json) ? $draft->payload_json : []);
 
         DB::transaction(function () use ($draft, $publishAt, $userId, $target): void {
+            CmsDraft::query()
+                ->where('target_key', $target->key)
+                ->whereKeyNot((int) $draft->getKey())
+                ->where('status', PublicationStatus::Scheduled->value)
+                ->update(['status' => PublicationStatus::Superseded->value]);
+
             $draft->forceFill([
                 'status' => PublicationStatus::Scheduled->value,
                 'scheduled_at' => $publishAt,
@@ -149,6 +168,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
                 'updated_by' => $userId,
             ])->save();
             $this->aboutEntityCmsService->markScheduled($target->key);
+            $this->newsArticleCmsService->markScheduled($target->key);
         });
 
         $this->auditService->log('cms.publish.scheduled', $userId, CmsDraft::class, (int) $draft->getKey(), [
@@ -167,11 +187,16 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
         $unpublished = DB::transaction(function () use ($target, $userId): bool {
             $content = CmsTargetContent::query()->where('target_key', $target->key)->first();
             $entityUnpublished = $this->aboutEntityCmsService->unpublishTarget($target->key);
+            $newsArticleUnpublished = $this->newsArticleCmsService->unpublishTarget($target->key);
+            $hasWorkingDraft = CmsDraft::query()
+                ->where('target_key', $target->key)
+                ->where('status', PublicationStatus::Draft->value)
+                ->exists();
             $cancelledSchedules = CmsDraft::query()
                 ->where('target_key', $target->key)
                 ->where('status', PublicationStatus::Scheduled->value)
                 ->update([
-                    'status' => PublicationStatus::Draft->value,
+                    'status' => $hasWorkingDraft ? PublicationStatus::Superseded->value : PublicationStatus::Draft->value,
                     'scheduled_at' => null,
                     'approved_by' => null,
                     'updated_by' => $userId,
@@ -184,7 +209,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
                 ])->save();
             }
 
-            return $content instanceof CmsTargetContent || $entityUnpublished || $cancelledSchedules > 0;
+            return $content instanceof CmsTargetContent || $entityUnpublished || $newsArticleUnpublished || $cancelledSchedules > 0;
         });
 
         if (! $unpublished) {
@@ -311,6 +336,13 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
             ]));
         }
 
+        foreach ($this->newsArticleCmsService->publishErrors($target->key, $payload) as $field => $messages) {
+            $errors[$field] = array_values(array_unique([
+                ...($errors[$field] ?? []),
+                ...$messages,
+            ]));
+        }
+
         return new CmsPublishReadinessDTO($errors === [], $errors);
     }
 
@@ -363,13 +395,20 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
                 continue;
             }
 
+            $target = $this->requireTarget($draft->target_key);
+            $userId = $draft->approved_by !== null ? (int) $draft->approved_by : (int) $draft->created_by;
+
+            try {
+                $this->authorizePublish($target, $userId);
+            } catch (AuthorizationException) {
+                continue;
+            }
+
             $readiness = $this->readiness($draft->target_key, is_array($draft->payload_json) ? $draft->payload_json : []);
 
             if (! $readiness->isReady) {
                 continue;
             }
-
-            $userId = $draft->approved_by !== null ? (int) $draft->approved_by : (int) $draft->created_by;
 
             if (DB::transaction(fn (): bool => $this->publishDraft($draft, $userId))) {
                 $published++;
@@ -381,9 +420,11 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
 
     private function publishDraft(CmsDraft $draft, int $userId): bool
     {
+        $wasScheduled = $draft->status === PublicationStatus::Scheduled->value;
         $publishedAt = now();
         $payload = is_array($draft->payload_json) ? $draft->payload_json : [];
         $this->aboutEntityCmsService->publishTarget($draft->target_key, $payload, $publishedAt);
+        $this->newsArticleCmsService->publishTarget($draft->target_key, $payload, $publishedAt, $userId);
 
         CmsTargetContent::query()->updateOrCreate(
             ['target_key' => $draft->target_key],
@@ -398,7 +439,9 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
         CmsDraft::query()
             ->where('target_key', $draft->target_key)
             ->whereKeyNot((int) $draft->getKey())
-            ->whereIn('status', PublicationStatus::editableValues())
+            ->whereIn('status', $wasScheduled
+                ? [PublicationStatus::Scheduled->value]
+                : PublicationStatus::editableValues())
             ->update(['status' => PublicationStatus::Superseded->value]);
 
         $draft->forceFill([
@@ -418,7 +461,13 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
     {
         $this->previewTokenStore->invalidateCmsTarget($targetKey);
 
-        if (! $this->cacheService->flushTags(['public-pages', 'public-shell', 'seo', 'sitemap', 'cms', 'cms:'.$targetKey])) {
+        $tags = ['public-pages', 'public-shell', 'seo', 'sitemap', 'cms', 'cms:'.$targetKey];
+
+        if (str_starts_with($targetKey, 'news.') || str_starts_with($targetKey, 'entity.news-article.')) {
+            $tags[] = 'news';
+        }
+
+        if (! $this->cacheService->flushTags($tags)) {
             $this->cacheService->flushAll();
         }
 
@@ -464,10 +513,19 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
     {
         $draft = CmsDraft::query()
             ->where('target_key', $targetKey)
-            ->whereIn('status', PublicationStatus::editableValues())
+            ->where('status', PublicationStatus::Draft->value)
             ->latest('updated_at')
             ->latest('id')
             ->first();
+
+        if (! $draft instanceof CmsDraft) {
+            $draft = CmsDraft::query()
+                ->where('target_key', $targetKey)
+                ->where('status', PublicationStatus::Scheduled->value)
+                ->latest('updated_at')
+                ->latest('id')
+                ->first();
+        }
 
         return $draft instanceof CmsDraft ? $draft : null;
     }
@@ -508,7 +566,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
         $user = User::query()->find($userId);
         $ability = $this->manageAbilityForArea($target->area);
 
-        if (! $user instanceof User || Gate::forUser($user)->denies($ability)) {
+        if (! $user instanceof User || (bool) $user->is_locked || Gate::forUser($user)->denies($ability)) {
             throw new AuthorizationException('This user is not authorized to manage this CMS target.');
         }
 
@@ -525,6 +583,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
         }
 
         $this->aboutEntityCmsService->authorizeTarget($target->key, $userId, $payload);
+        $this->newsArticleCmsService->authorizeTarget($target->key, $userId, $payload);
     }
 
     private function canonicalFacultyScope(string $scope): string

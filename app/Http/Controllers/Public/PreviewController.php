@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Public;
 
 use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Navigation\NavigationServiceInterface;
+use App\Contracts\News\NewsArticleCmsServiceInterface;
 use App\Contracts\News\NewsServiceInterface;
 use App\Contracts\Page\AboutPageServiceInterface;
 use App\Contracts\Page\AdmissionsPageServiceInterface;
@@ -48,6 +49,7 @@ final class PreviewController extends Controller
         private readonly SeoMetadataServiceInterface $seoMetadataService,
         private readonly NavigationServiceInterface $navigationService,
         private readonly AboutEntityCmsServiceInterface $aboutEntityCmsService,
+        private readonly NewsArticleCmsServiceInterface $newsArticleCmsService,
     ) {}
 
     public function __invoke(Request $request, string $locale): View
@@ -126,6 +128,10 @@ final class PreviewController extends Controller
 
         $targetKey = $snapshot['target_key'] ?? null;
         $payload = is_array($snapshot['payload'] ?? null) ? $snapshot['payload'] : [];
+
+        if (is_string($targetKey) && str_starts_with($targetKey, 'entity.news-article.')) {
+            return $this->renderNewsArticlePreview($locale, $preview, $payload);
+        }
 
         if (is_string($targetKey) && str_starts_with($targetKey, 'entity.')) {
             return $this->renderAboutEntityPreview($locale, $preview, $targetKey, $payload);
@@ -252,6 +258,38 @@ final class PreviewController extends Controller
             'e_services' => $this->renderEServicesPreview($locale, $preview, $localizedContent),
             default => abort(404),
         };
+    }
+
+    /** @param array<string, mixed> $payload */
+    private function renderNewsArticlePreview(string $locale, PreviewDTO $preview, array $payload): View
+    {
+        $article = $this->newsArticleCmsService->buildPreview($payload, $locale);
+        abort_if($article === null, 404);
+
+        $path = '/'.$locale.'/news/'.$article->id;
+
+        return view('public.news.show', [
+            'locale' => $locale,
+            'direction' => $locale === 'ar' ? 'rtl' : 'ltr',
+            'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $path),
+            'settings' => $this->settingsService->getPublicSettings($locale),
+            'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale),
+            'isPreview' => true,
+            'article' => $article,
+            'relatedArticles' => collect(),
+            'adjacentArticles' => ['previous' => null, 'next' => null],
+            'seo' => $this->seoMetadataService->buildFallback($locale, [
+                'path' => $path,
+                'locale_paths' => ['ar' => '/ar/news/'.$article->id, 'en' => '/en/news/'.$article->id],
+                'title' => $article->metaTitle ?? $article->title,
+                'meta_description' => $article->metaDescription ?? $article->excerpt ?? $article->title,
+                'og_title' => $article->ogTitle ?? $article->title,
+                'og_description' => $article->ogDescription ?? $article->excerpt ?? $article->title,
+                'og_image' => $article->ogImage,
+                'robots' => 'noindex,nofollow',
+            ]),
+            'preview' => $preview,
+        ]);
     }
 
     /** @param array<string, mixed> $payload */

@@ -43,7 +43,7 @@ class EditNewsCategory extends EditRecord
                     $this->newsWorkflow()->deleteCategory((int) $this->record->getKey(), auth()->id());
 
                     Notification::make()
-                        ->title('News category deleted')
+                        ->title(__('admin.news_category.notifications.deleted'))
                         ->success()
                         ->send();
 

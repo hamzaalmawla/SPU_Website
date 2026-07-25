@@ -25,52 +25,52 @@ final class MediaPicker
 {
     public static function image(string $statePath, ?string $label = null, bool $required = false): Grid
     {
-        return self::make($statePath, $label ?? 'Image', 'image', $required);
+        return self::make($statePath, $label ?? __('admin.media_picker.image'), 'image', $required);
     }
 
     public static function document(string $statePath, ?string $label = null, bool $required = false): Grid
     {
-        return self::make($statePath, $label ?? 'Document', 'document', $required);
+        return self::make($statePath, $label ?? __('admin.media_picker.document'), 'document', $required);
     }
 
     public static function any(string $statePath, ?string $label = null, bool $required = false): Grid
     {
-        return self::make($statePath, $label ?? 'Media File', 'any', $required);
+        return self::make($statePath, $label ?? __('admin.media_picker.media_file'), 'any', $required);
     }
 
     public static function assetImage(string $statePath, ?string $label = null, bool $required = false): Grid
     {
-        return self::asset($statePath, $label ?? 'Image', 'image', $required);
+        return self::asset($statePath, $label ?? __('admin.media_picker.image'), 'image', $required);
     }
 
     public static function assetDocument(string $statePath, ?string $label = null, bool $required = false): Grid
     {
-        return self::asset($statePath, $label ?? 'Document', 'document', $required);
+        return self::asset($statePath, $label ?? __('admin.media_picker.document'), 'document', $required);
     }
 
     public static function assetAny(string $statePath, ?string $label = null, bool $required = false): Grid
     {
-        return self::asset($statePath, $label ?? 'Media File', 'any', $required);
+        return self::asset($statePath, $label ?? __('admin.media_picker.media_file'), 'any', $required);
     }
 
     public static function icon(string $statePath, ?string $label = null, bool $required = false): Grid
     {
-        return self::make($statePath, $label ?? 'Icon', 'image', $required);
+        return self::make($statePath, $label ?? __('admin.media_picker.icon'), 'image', $required);
     }
 
     public static function lightImage(string $statePath, ?string $label = null, bool $required = false): Grid
     {
-        return self::light($statePath, $label ?? 'Image', 'image', $required);
+        return self::light($statePath, $label ?? __('admin.media_picker.image'), 'image', $required);
     }
 
     public static function lightDocument(string $statePath, ?string $label = null, bool $required = false): Grid
     {
-        return self::light($statePath, $label ?? 'Document', 'document', $required);
+        return self::light($statePath, $label ?? __('admin.media_picker.document'), 'document', $required);
     }
 
     public static function lightAny(string $statePath, ?string $label = null, bool $required = false): Grid
     {
-        return self::light($statePath, $label ?? 'Media File', 'any', $required);
+        return self::light($statePath, $label ?? __('admin.media_picker.media_file'), 'any', $required);
     }
 
     public static function selectedUrl(int|string|null $mediaId): ?string
@@ -102,7 +102,7 @@ final class MediaPicker
 
                 TextInput::make($statePath)
                     ->label($label)
-                    ->helperText('Existing URL/path values keep working. Use Choose / Upload for Media Library files.')
+                    ->helperText(__('admin.media_picker.existing_value_help'))
                     ->required($required)
                     ->maxLength(2048)
                     ->suffixActions([
@@ -112,7 +112,7 @@ final class MediaPicker
                     ->dehydrated(true),
 
                 Placeholder::make($statePath.'_preview')
-                    ->label('Selected file')
+                    ->label(__('admin.media_picker.selected_file'))
                     ->content(fn (Get $get): HtmlString|string => self::preview($get($statePath))),
             ]);
     }
@@ -127,7 +127,7 @@ final class MediaPicker
 
                 TextInput::make($statePath)
                     ->label($label)
-                    ->helperText('Click Choose / Upload to select from the Media Library or upload a new file. Existing values keep working.')
+                    ->helperText(__('admin.media_picker.choose_help'))
                     ->required($required)
                     ->readOnly()
                     ->maxLength(2048)
@@ -142,13 +142,13 @@ final class MediaPicker
     private static function chooseOrUploadAction(string $statePath, string $mediaIdPath, string $type): FormAction
     {
         return FormAction::make('choose_or_upload_media')
-            ->label('Choose / Upload')
+            ->label(__('admin.media_picker.choose_upload'))
             ->icon('heroicon-o-photo')
-            ->modalHeading('Choose or upload media')
+            ->modalHeading(__('admin.media_picker.modal_heading'))
             ->form([
                 Select::make('media_id')
-                    ->label('Choose existing main library file')
-                    ->helperText('Search clean media by filename or title. Legacy assets are not included here.')
+                    ->label(__('admin.media_picker.choose_existing'))
+                    ->helperText(__('admin.media_picker.choose_existing_help'))
                     ->searchable()
                     ->native(false)
                     ->preload(false)
@@ -156,8 +156,8 @@ final class MediaPicker
                     ->getSearchResultsUsing(fn (string $search): array => self::options($type, $search))
                     ->getOptionLabelUsing(fn (mixed $value): ?string => self::optionLabel($value)),
                 Select::make('legacy_media_id')
-                    ->label('Promote from legacy archive')
-                    ->helperText('Optional. Search legacy filename, title, or path, then promote it into the Main Media Library.')
+                    ->label(__('admin.media_picker.promote_legacy'))
+                    ->helperText(__('admin.media_picker.promote_legacy_help'))
                     ->searchable()
                     ->native(false)
                     ->preload(false)
@@ -165,27 +165,27 @@ final class MediaPicker
                     ->getSearchResultsUsing(fn (string $search): array => self::options($type, $search, 'legacy'))
                     ->getOptionLabelUsing(fn (mixed $value): ?string => self::optionLabel($value)),
                 FileUpload::make('file')
-                    ->label('Upload new file')
+                    ->label(__('admin.media_picker.upload_new'))
                     ->disk((string) config('filesystems.media_disk', 'public'))
                     ->directory('media-tmp')
                     ->visibility('public')
                     ->acceptedFileTypes(self::acceptedFileTypes($type))
                     ->maxSize(20480),
                 TextInput::make('title_ar')
-                    ->label('Title (AR)')
+                    ->label(__('admin.media_picker.title_ar'))
                     ->maxLength(255)
                     ->required(fn (Get $get): bool => self::requiresUploadOrPromotionMetadata($get) && ! self::filledString($get('title_en'))),
                 TextInput::make('title_en')
-                    ->label('Title (EN)')
+                    ->label(__('admin.media_picker.title_en'))
                     ->maxLength(255)
                     ->required(fn (Get $get): bool => self::requiresUploadOrPromotionMetadata($get) && ! self::filledString($get('title_ar'))),
                 TextInput::make('alt_text_ar')
-                    ->label('Alt Text (AR)')
+                    ->label(__('admin.media_picker.alt_ar'))
                     ->maxLength(500)
                     ->visible(self::isImageType($type))
                     ->required(fn (Get $get): bool => self::isImageType($type) && self::requiresUploadOrPromotionMetadata($get) && ! self::filledString($get('alt_text_en'))),
                 TextInput::make('alt_text_en')
-                    ->label('Alt Text (EN)')
+                    ->label(__('admin.media_picker.alt_en'))
                     ->maxLength(500)
                     ->visible(self::isImageType($type))
                     ->required(fn (Get $get): bool => self::isImageType($type) && self::requiresUploadOrPromotionMetadata($get) && ! self::filledString($get('alt_text_ar'))),
@@ -221,7 +221,7 @@ final class MediaPicker
                 self::select($statePath, $label, $type)
                     ->required($required),
                 Placeholder::make($statePath.'_preview')
-                    ->label('Selected file')
+                    ->label(__('admin.media_picker.selected_file'))
                     ->content(fn (Get $get): HtmlString|string => self::preview(self::selectedUrl($get($statePath)))),
             ]);
     }
@@ -230,7 +230,7 @@ final class MediaPicker
     {
         return Select::make($statePath)
             ->label($label)
-            ->helperText('Choose an existing media library file or upload a new one.')
+            ->helperText(__('admin.media_picker.asset_help'))
             ->nullable()
             ->searchable()
             ->native(false)
@@ -240,7 +240,7 @@ final class MediaPicker
             ->getOptionLabelUsing(fn (mixed $value): ?string => self::optionLabel($value))
             ->createOptionForm([
                 FileUpload::make('file')
-                    ->label('Upload from device')
+                    ->label(__('admin.media_picker.upload_device'))
                     ->required()
                     ->disk((string) config('filesystems.media_disk', 'public'))
                     ->directory('media-tmp')
@@ -248,20 +248,20 @@ final class MediaPicker
                     ->acceptedFileTypes(self::acceptedFileTypes($type))
                     ->maxSize(20480),
                 TextInput::make('title_ar')
-                    ->label('Title (AR)')
+                    ->label(__('admin.media_picker.title_ar'))
                     ->maxLength(255)
                     ->required(fn (Get $get): bool => ! self::filledString($get('title_en'))),
                 TextInput::make('title_en')
-                    ->label('Title (EN)')
+                    ->label(__('admin.media_picker.title_en'))
                     ->maxLength(255)
                     ->required(fn (Get $get): bool => ! self::filledString($get('title_ar'))),
                 TextInput::make('alt_text_ar')
-                    ->label('Alt Text (AR)')
+                    ->label(__('admin.media_picker.alt_ar'))
                     ->maxLength(500)
                     ->visible(self::isImageType($type))
                     ->required(fn (Get $get): bool => self::isImageType($type) && ! self::filledString($get('alt_text_en'))),
                 TextInput::make('alt_text_en')
-                    ->label('Alt Text (EN)')
+                    ->label(__('admin.media_picker.alt_en'))
                     ->maxLength(500)
                     ->visible(self::isImageType($type))
                     ->required(fn (Get $get): bool => self::isImageType($type) && ! self::filledString($get('alt_text_ar'))),
@@ -273,7 +273,7 @@ final class MediaPicker
     private static function clearAction(string $statePath, string $mediaIdPath): FormAction
     {
         return FormAction::make('clear_media')
-            ->label('Clear')
+            ->label(__('admin.media_picker.clear'))
             ->icon('heroicon-o-x-mark')
             ->color('gray')
             ->action(function (Set $set) use ($statePath, $mediaIdPath): void {

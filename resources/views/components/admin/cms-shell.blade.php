@@ -4,6 +4,7 @@
     'state' => null,
     'stateColor' => 'gray',
     'locales' => ['ar', 'en'],
+    'links' => [],
 ])
 
 <div class="space-y-6">
@@ -13,6 +14,7 @@
         :state="$state"
         :state-color="$stateColor"
         :locales="$locales"
+        :links="$links"
     />
 
     {{ $slot }}

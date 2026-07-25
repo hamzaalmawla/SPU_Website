@@ -12,6 +12,7 @@ use App\Models\News\NewsArticle;
 use App\Models\News\NewsCategory;
 use App\Models\User\User;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 final class NewsAdminWorkflowService implements NewsAdminWorkflowServiceInterface
@@ -122,6 +123,62 @@ final class NewsAdminWorkflowService implements NewsAdminWorkflowServiceInterfac
         }
 
         return $logged;
+    }
+
+    public function publishDueScheduled(): int
+    {
+        $articleIds = NewsArticle::query()
+            ->where('status', 'scheduled')
+            ->whereNotNull('scheduled_at')
+            ->where('scheduled_at', '<=', now())
+            ->orderBy('scheduled_at')
+            ->orderBy('id')
+            ->pluck('id');
+        $published = 0;
+
+        foreach ($articleIds as $articleId) {
+            $didPublish = DB::transaction(function () use ($articleId): bool {
+                $article = NewsArticle::query()->lockForUpdate()->find($articleId);
+
+                if (! $article instanceof NewsArticle
+                    || $article->getAttribute('status') !== 'scheduled'
+                    || $article->getAttribute('scheduled_at') === null
+                    || $article->getAttribute('scheduled_at')->isFuture()) {
+                    return false;
+                }
+
+                $approver = $this->user($article->getAttribute('updated_by'));
+
+                if (! $this->canPublish($approver)) {
+                    return false;
+                }
+
+                $scheduledAt = $article->getAttribute('scheduled_at')->toIso8601String();
+                $article->forceFill([
+                    'status' => 'published',
+                    'published_at' => now(),
+                    'scheduled_at' => null,
+                    'updated_by' => (int) $approver->getKey(),
+                ])->save();
+
+                $this->auditService->log('news.article.scheduled_published', (int) $approver->getKey(), NewsArticle::class, (int) $article->getKey(), [
+                    'slug' => $article->getAttribute('slug'),
+                    'scheduled_at' => $scheduledAt,
+                ]);
+
+                return true;
+            });
+
+            if ($didPublish) {
+                $published++;
+            }
+        }
+
+        if ($published > 0) {
+            $this->invalidateNewsCache();
+        }
+
+        return $published;
     }
 
     public function recordCategoryCreated(int $categoryId, ?int $userId): bool
@@ -273,7 +330,9 @@ final class NewsAdminWorkflowService implements NewsAdminWorkflowServiceInterfac
 
     private function canPublish(?User $user): bool
     {
-        return $user instanceof User && in_array($user->role_slug, ['super_admin', 'editor'], true);
+        return $user instanceof User
+            && ! (bool) $user->is_locked
+            && in_array($user->role_slug, ['super_admin', 'editor'], true);
     }
 
     private function user(?int $userId): ?User

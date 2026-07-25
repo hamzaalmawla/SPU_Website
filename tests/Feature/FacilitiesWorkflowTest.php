@@ -103,10 +103,10 @@ final class FacilitiesWorkflowTest extends TestCase
         $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
 
         $component = Livewire::test(ManageFacilities::class)
-            ->assertSee('Hero')
-            ->assertSee('Facts')
-            ->assertSee('Faculty Buttons')
-            ->assertSee('Academic Model');
+            ->assertSee('مقدمة مركز الكليات')
+            ->assertSee('الأرقام والمعلومات السريعة')
+            ->assertSee('بطاقات الكليات')
+            ->assertSee('النموذج الأكاديمي');
 
         /** @var array<string, mixed> $data */
         $data = $component->get('data');
@@ -245,12 +245,12 @@ final class FacilitiesWorkflowTest extends TestCase
         $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
 
         $component = Livewire::test(ManageMedicineFaculty::class)
-            ->assertSee('Page Content')
-            ->assertSee('Faculty Identity')
-            ->assertSee('Overview Tabs')
+            ->assertSee('محتوى الصفحة')
+            ->assertSee('بيانات الكلية وصورها')
+            ->assertSee('أقسام التعريف بالكلية')
             ->assertDontSee('Body Sections')
-            ->assertSee('Dean Message')
-            ->assertSee('Latest Research Cards');
+            ->assertSee('كلمة العميد')
+            ->assertSee('أحدث الأبحاث');
 
         /** @var array<string, mixed> $data */
         $data = $component->get('data');
@@ -339,9 +339,9 @@ final class FacilitiesWorkflowTest extends TestCase
         $component = Livewire::test(ManageMedicineFaculty::class)
             ->set('data.target_key', 'facilities.medicine.overview')
             ->call('loadTarget', 'facilities.medicine.overview')
-            ->assertSee('Subpage Content')
-            ->assertSee('Overview Sections')
-            ->assertSee('Overview Stats');
+            ->assertSee('مقدمة الصفحة')
+            ->assertSee('محتوى النظرة العامة')
+            ->assertSee('الإحصاءات');
 
         /** @var array<string, mixed> $data */
         $data = $component->get('data');
@@ -535,48 +535,48 @@ final class FacilitiesWorkflowTest extends TestCase
         Livewire::test(ManageMedicineFaculty::class)
             ->set('data.target_key', 'facilities.medicine.departments')
             ->call('loadTarget', 'facilities.medicine.departments')
-            ->assertSee('Department Directory')
-            ->assertSee('Degree / Track')
+            ->assertSee('الأقسام الأكاديمية')
+            ->assertSee('الدرجة أو المسار')
             ->assertDontSee('Subpage Items');
 
         Livewire::test(ManageMedicineFaculty::class)
             ->set('data.target_key', 'facilities.medicine.labs')
             ->call('loadTarget', 'facilities.medicine.labs')
-            ->assertSee('Laboratories')
-            ->assertSee('Instructor')
-            ->assertDontSee('Degree / Track');
+            ->assertSee('المخابر')
+            ->assertSee('المشرف أو المدرس')
+            ->assertDontSee('الدرجة أو المسار');
 
         Livewire::test(ManageMedicineFaculty::class)
             ->set('data.target_key', 'facilities.medicine.projects')
             ->call('loadTarget', 'facilities.medicine.projects')
-            ->assertSee('Student Projects')
-            ->assertSee('Supervisor')
-            ->assertSee('Team');
+            ->assertSee('مشاريع الطلاب')
+            ->assertSee('المشرف')
+            ->assertSee('فريق العمل');
 
         Livewire::test(ManageMedicineFaculty::class)
             ->set('data.target_key', 'facilities.medicine.alumni')
             ->call('loadTarget', 'facilities.medicine.alumni')
-            ->assertSee('Alumni Records')
-            ->assertSee('Search Records')
-            ->assertSee('Year Filter');
+            ->assertSee('الخريجون')
+            ->assertSee('البحث في السجلات')
+            ->assertSee('السنة');
 
         Livewire::test(ManageMedicineFaculty::class)
             ->set('data.target_key', 'facilities.medicine.valedictorians')
             ->call('loadTarget', 'facilities.medicine.valedictorians')
-            ->assertSee('Honor List Records')
-            ->assertSee('Search Records')
-            ->assertSee('Year Filter');
+            ->assertSee('الطلبة الأوائل')
+            ->assertSee('البحث في السجلات')
+            ->assertSee('السنة');
 
         Livewire::test(ManageMedicineFaculty::class)
             ->set('data.target_key', 'facilities.medicine.study_plan')
             ->call('loadTarget', 'facilities.medicine.study_plan')
-            ->assertSee('Study Plan Labels')
-            ->assertSee('Course Page Labels')
-            ->assertSee('Elective Pools')
-            ->assertSee('Study Plan Tree')
-            ->assertSee('Courses In This Term')
-            ->assertSee('Opens Course IDs')
-            ->assertSee('Lessons');
+            ->assertSee('نصوص واجهة الخطة الدراسية')
+            ->assertSee('نصوص صفحة المقرر')
+            ->assertSee('مجموعات المقررات الاختيارية')
+            ->assertSee('مقررات حسب الفصل')
+            ->assertSee('مقررات هذا الفصل')
+            ->assertDontSee('Opens Course IDs')
+            ->assertSee('المحاضرات والملفات');
     }
 
     public function test_manage_medicine_faculty_filters_alumni_and_valedictorians_inside_curated_workflow(): void
@@ -601,9 +601,9 @@ final class FacilitiesWorkflowTest extends TestCase
             ->set('data.target_key', 'facilities.medicine.alumni')
             ->set('data.record_search', 'Target Alumni')
             ->call('loadTarget', 'facilities.medicine.alumni')
-            ->assertSee('Search Records')
-            ->assertSee('Department / Faculty Filter')
-            ->assertSee('Year Filter');
+            ->assertSee('البحث في السجلات')
+            ->assertSee('الكلية أو القسم')
+            ->assertSee('السنة');
 
         /** @var array<string, mixed> $data */
         $data = $component->get('data');
@@ -634,8 +634,8 @@ final class FacilitiesWorkflowTest extends TestCase
             ->set('data.record_department_filter', 'Surgery')
             ->set('data.record_year_filter', '2024')
             ->call('loadTarget', 'facilities.medicine.valedictorians')
-            ->assertSee('Honor List Records')
-            ->assertSee('Search Records');
+            ->assertSee('الطلبة الأوائل')
+            ->assertSee('البحث في السجلات');
 
         /** @var array<string, mixed> $honorData */
         $honorData = $honorComponent->get('data');
@@ -664,8 +664,8 @@ final class FacilitiesWorkflowTest extends TestCase
         $component = Livewire::test(ManageMedicineFaculty::class)
             ->set('data.target_key', 'facilities.medicine.alumni')
             ->call('loadTarget', 'facilities.medicine.alumni')
-            ->assertSee('Alumni Records')
-            ->assertSee('Search Records');
+            ->assertSee('الخريجون')
+            ->assertSee('البحث في السجلات');
 
         /** @var array<string, mixed> $data */
         $data = $component->get('data');
@@ -1093,8 +1093,8 @@ final class FacilitiesWorkflowTest extends TestCase
         $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
 
         Livewire::test($pageClass)
-            ->assertSee('Faculty Identity')
-            ->assertSee('Overview Tabs');
+            ->assertSee('بيانات الكلية وصورها')
+            ->assertSee('أقسام التعريف بالكلية');
 
         $expectedTargets = [
             'facilities.'.$facultySlug,
@@ -1312,8 +1312,8 @@ final class FacilitiesWorkflowTest extends TestCase
         Livewire::test(ManageMedicineFaculty::class)
             ->set('data.target_key', 'facilities.medicine.research')
             ->call('loadTarget', 'facilities.medicine.research')
-            ->assertSee('Research Page Metadata')
-            ->assertSee('SEO Title');
+            ->assertSee('إعدادات صفحة البحث العلمي')
+            ->assertSee('عنوان محركات البحث');
 
         $sitemap = $this->get('/sitemap.xml')->assertOk()->getContent();
 
@@ -1582,11 +1582,11 @@ final class FacilitiesWorkflowTest extends TestCase
         $component = Livewire::test(ManageArtificialIntelligenceFaculty::class)
             ->set('data.target_key', 'facilities.artificial-intelligence.study_plan')
             ->call('loadTarget', 'facilities.artificial-intelligence.study_plan')
-            ->assertSee('Study Plan Department')
-            ->assertSee('Study Plan Tree')
-            ->assertSee('Courses In This Term')
-            ->assertSee('Prerequisite Course IDs')
-            ->assertSee('Opens Course IDs');
+            ->assertSee('القسم')
+            ->assertSee('المقررات حسب الفصل')
+            ->assertSee('مقررات هذا الفصل')
+            ->assertSee('المتطلبات السابقة')
+            ->assertDontSee('Opens Course IDs');
 
         /** @var array<string, mixed> $data */
         $data = $component->get('data');
@@ -1682,22 +1682,22 @@ final class FacilitiesWorkflowTest extends TestCase
         $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
 
         Livewire::test(ManageArtificialIntelligenceFaculty::class)
-            ->assertSee('Faculty Identity')
-            ->assertSee('Overview Tabs');
+            ->assertSee('بيانات الكلية وصورها')
+            ->assertSee('أقسام التعريف بالكلية');
 
         Livewire::test(ManageArtificialIntelligenceFaculty::class)
             ->set('data.target_key', 'facilities.artificial-intelligence.departments')
             ->call('loadTarget', 'facilities.artificial-intelligence.departments')
-            ->assertSee('Department Directory')
-            ->assertSee('Degree / Track')
+            ->assertSee('الأقسام الأكاديمية')
+            ->assertSee('الدرجة أو المسار')
             ->assertDontSee('Subpage Items');
 
         Livewire::test(ManageArtificialIntelligenceFaculty::class)
             ->set('data.target_key', 'facilities.artificial-intelligence.projects')
             ->call('loadTarget', 'facilities.artificial-intelligence.projects')
-            ->assertSee('Student Projects')
-            ->assertSee('Supervisor')
-            ->assertSee('Team');
+            ->assertSee('مشاريع الطلاب')
+            ->assertSee('المشرف')
+            ->assertSee('فريق العمل');
     }
 
     public function test_registered_faculty_subpage_target_hydrates_when_page_shell_is_missing(): void
@@ -1715,8 +1715,8 @@ final class FacilitiesWorkflowTest extends TestCase
             ->set('data.target_key', 'facilities.petroleum.projects')
             ->call('loadTarget', 'facilities.petroleum.projects')
             ->assertSet('data.en_content.title', 'Projects')
-            ->assertSee('Student Projects')
-            ->assertSee('Supervisor');
+            ->assertSee('مشاريع الطلاب')
+            ->assertSee('المشرف');
     }
 
     public function test_reference_faculty_and_project_queries_redirect_to_canonical_routes(): void

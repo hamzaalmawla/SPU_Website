@@ -11,6 +11,7 @@ use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -80,21 +81,19 @@ class ManageResearch extends Page implements HasForms
 
     public function mount(): void
     {
-        $this->loadTarget('research.publications');
+        $requestedTarget = request()->query('target', 'research.publications');
+        $targetKey = is_string($requestedTarget) && array_key_exists($requestedTarget, $this->targetOptions())
+            ? $requestedTarget
+            : 'research.publications';
+
+        $this->loadTarget($targetKey);
     }
 
     public function form(Form $form): Form
     {
         return $form
             ->schema([
-                Section::make('Research Target')->schema([
-                    Select::make('target_key')
-                        ->label('Page / Content Type')
-                        ->options($this->targetOptions())
-                        ->required()
-                        ->live()
-                        ->afterStateUpdated(fn (?string $state): mixed => is_string($state) && $state !== '' ? $this->loadTarget($state) : null),
-                ]),
+                Hidden::make('target_key')->required(),
                 Tabs::make('research_publications_locales')
                     ->tabs([
                         Tab::make('Arabic')->schema([...$this->landingFields('ar'), ...$this->publicationFields('ar'), ...$this->centerFields('ar'), ...$this->projectFields('ar'), ...$this->themeFields('ar'), ...$this->expertFields('ar'), ...$this->conferenceFields('ar'), ...$this->libraryFields('ar'), ...$this->officeFields('ar'), ...$this->policyFields('ar')]),
@@ -142,32 +141,66 @@ class ManageResearch extends Page implements HasForms
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('save')->label('Save Draft')->icon('heroicon-o-check')->color('gray')->action(function (): void {
+            Action::make('save')->label(__('admin.research_workspace.actions.save_draft'))->icon('heroicon-o-check')->color('gray')->action(function (): void {
                 $this->save();
             }),
-            Action::make('preview_ar')->label('Preview AR')->icon('heroicon-o-eye')->color('info')->action(function (): void {
+            Action::make('preview_ar')->label(__('admin.research_workspace.actions.preview_ar'))->icon('heroicon-o-eye')->color('info')->action(function (): void {
                 $this->openPreview('ar');
             }),
-            Action::make('preview_en')->label('Preview EN')->icon('heroicon-o-eye')->color('info')->action(function (): void {
+            Action::make('preview_en')->label(__('admin.research_workspace.actions.preview_en'))->icon('heroicon-o-eye')->color('info')->action(function (): void {
                 $this->openPreview('en');
             }),
-            Action::make('publish')->label('Publish')->icon('heroicon-o-paper-airplane')->color('success')->requiresConfirmation()->action(function (): void {
-                $this->publish();
-            }),
+            Action::make('publish')
+                ->label(__('admin.research_workspace.actions.publish'))
+                ->icon('heroicon-o-paper-airplane')
+                ->color('success')
+                ->requiresConfirmation()
+                ->modalHeading(__('admin.research_workspace.confirm.publish_heading'))
+                ->modalDescription(__('admin.research_workspace.confirm.publish_description'))
+                ->visible(fn (): bool => Gate::allows('publish-content'))
+                ->action(function (): void {
+                    $this->publish();
+                }),
             Action::make('schedule')
-                ->label('Schedule')
+                ->label(__('admin.research_workspace.actions.schedule'))
                 ->icon('heroicon-o-clock')
                 ->color('warning')
                 ->form([
-                    DateTimePicker::make('publish_at')->label('Publish At')->required()->minDate(now())->native(false),
+                    DateTimePicker::make('publish_at')->label(__('admin.research_workspace.fields.publish_at'))->required()->minDate(now())->native(false),
                 ])
+                ->visible(fn (): bool => Gate::allows('publish-content'))
                 ->action(function (array $data): void {
                     $this->schedule((string) $data['publish_at']);
                 }),
-            Action::make('unpublish')->label('Unpublish')->icon('heroicon-o-x-circle')->color('danger')->requiresConfirmation()->action(function (): void {
-                $this->unpublish();
-            }),
+            Action::make('unpublish')
+                ->label(__('admin.research_workspace.actions.unpublish'))
+                ->icon('heroicon-o-x-circle')
+                ->color('danger')
+                ->requiresConfirmation()
+                ->modalHeading(__('admin.research_workspace.confirm.unpublish_heading'))
+                ->modalDescription(__('admin.research_workspace.confirm.unpublish_description'))
+                ->visible(fn (): bool => Gate::allows('publish-content'))
+                ->action(function (): void {
+                    $this->unpublish();
+                }),
         ];
+    }
+
+    /** @return list<array{key: string, label: string, description: string, url: string, active: bool}> */
+    public function getWorkspaceTasks(): array
+    {
+        $currentTarget = $this->currentTargetKey();
+
+        return collect($this->targetOptions())
+            ->map(fn (string $label, string $key): array => [
+                'key' => $key,
+                'label' => $label,
+                'description' => __('admin.research_workspace.descriptions.'.str_replace(['research.', '.'], ['', '_'], $key)),
+                'url' => static::getUrl(['target' => $key]),
+                'active' => $key === $currentTarget,
+            ])
+            ->values()
+            ->all();
     }
 
     public function save(): void
@@ -180,13 +213,13 @@ class ManageResearch extends Page implements HasForms
             $draft = $this->cmsWorkflowService->saveDraft($targetKey, $this->payloadFromForm($this->currentFormData()), (int) $user->id, $this->draftVersion);
             $this->draftVersion = $draft->version;
 
-            Notification::make()->title('Research draft saved')->success()->send();
+            Notification::make()->title(__('admin.research_workspace.notifications.draft_saved'))->success()->send();
         } catch (ConflictException $e) {
             $this->draftVersion = $e->currentVersion;
-            Notification::make()->title('Draft conflict detected')->body('Reload this research target before saving again.')->danger()->persistent()->send();
+            Notification::make()->title(__('admin.research_workspace.notifications.conflict'))->body(__('admin.research_workspace.notifications.conflict_description'))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to save research draft')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('admin.research_workspace.notifications.save_failed'))->body(__('admin.research_workspace.notifications.safe_error'))->danger()->send();
         }
     }
 
@@ -204,10 +237,10 @@ class ManageResearch extends Page implements HasForms
             $this->redirect($preview->previewUrl);
         } catch (ConflictException $e) {
             $this->draftVersion = $e->currentVersion;
-            Notification::make()->title('Draft conflict detected')->body('Reload this research target before previewing again.')->danger()->persistent()->send();
+            Notification::make()->title(__('admin.research_workspace.notifications.conflict'))->body(__('admin.research_workspace.notifications.conflict_description'))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to create research preview')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('admin.research_workspace.notifications.preview_failed'))->body(__('admin.research_workspace.notifications.safe_error'))->danger()->send();
         }
     }
 
@@ -222,12 +255,12 @@ class ManageResearch extends Page implements HasForms
             $this->draftVersion = $draft->version;
             $this->cmsWorkflowService->publish($targetKey, (int) $user->id);
 
-            Notification::make()->title('Research content published')->success()->send();
+            Notification::make()->title(__('admin.research_workspace.notifications.published'))->success()->send();
         } catch (ValidationException $e) {
-            Notification::make()->title('Publish failed')->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
+            Notification::make()->title(__('admin.research_workspace.notifications.publish_failed'))->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to publish research content')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('admin.research_workspace.notifications.publish_failed'))->body(__('admin.research_workspace.notifications.safe_error'))->danger()->send();
         }
     }
 
@@ -242,12 +275,12 @@ class ManageResearch extends Page implements HasForms
             $this->draftVersion = $draft->version;
             $this->cmsWorkflowService->schedule($targetKey, new \DateTimeImmutable($publishAt), (int) $user->id);
 
-            Notification::make()->title('Research content scheduled')->success()->send();
+            Notification::make()->title(__('admin.research_workspace.notifications.scheduled'))->success()->send();
         } catch (ValidationException $e) {
-            Notification::make()->title('Schedule failed')->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
+            Notification::make()->title(__('admin.research_workspace.notifications.schedule_failed'))->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to schedule research content')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('admin.research_workspace.notifications.schedule_failed'))->body(__('admin.research_workspace.notifications.safe_error'))->danger()->send();
         }
     }
 
@@ -256,7 +289,9 @@ class ManageResearch extends Page implements HasForms
         /** @var User $user */
         $user = auth()->user();
         $result = $this->cmsWorkflowService->unpublish($this->currentTargetKey(), (int) $user->id);
-        $notification = Notification::make()->title($result ? 'Research content unpublished' : 'No published research content found');
+        $notification = Notification::make()->title($result
+            ? __('admin.research_workspace.notifications.unpublished')
+            : __('admin.research_workspace.notifications.nothing_published'));
 
         ($result ? $notification->success() : $notification->warning())->send();
     }

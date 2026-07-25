@@ -9,10 +9,13 @@ use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\News\NewsServiceInterface;
 use App\DTOs\Cms\CmsTargetDTO;
 use App\Exceptions\ConflictException;
+use App\Filament\Resources\NewsArticleResource;
 use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -21,12 +24,14 @@ use Filament\Forms\Components\Tabs\Tab;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class ManageNews extends Page implements HasForms
@@ -45,6 +50,8 @@ class ManageNews extends Page implements HasForms
     public ?array $data = [];
 
     public ?int $draftVersion = null;
+
+    public ?string $activeTargetKey = null;
 
     private NewsServiceInterface $newsService;
 
@@ -84,26 +91,40 @@ class ManageNews extends Page implements HasForms
 
     public function mount(): void
     {
-        $this->loadTarget('news.index');
+        $requestedTarget = request()->query('target', $this->defaultNewsTargetKey());
+        $targetKey = is_string($requestedTarget) && array_key_exists($requestedTarget, $this->targetOptions())
+            ? $requestedTarget
+            : $this->defaultNewsTargetKey();
+
+        if (! $this->showsTargetSelector()) {
+            $targetKey = $this->defaultNewsTargetKey();
+        }
+
+        $this->loadTarget($targetKey);
     }
 
     public function form(Form $form): Form
     {
         return $form
             ->schema([
-                Section::make('News Target')->schema([
+                Section::make(__('admin.editorial_workspace.choose_page'))->schema([
                     Select::make('target_key')
-                        ->label('Page / Subpage')
+                        ->label(__('admin.editorial_workspace.page'))
                         ->options($this->targetOptions())
                         ->required()
                         ->live()
                         ->afterStateUpdated(fn (?string $state): mixed => is_string($state) && $state !== '' ? $this->loadTarget($state) : null),
-                ]),
+                ])->visible(fn (): bool => $this->showsTargetSelector()),
+                Section::make(__('admin.editorial_workspace.events.heading'))
+                    ->description(__('admin.editorial_workspace.events.description'))
+                    ->schema($this->eventsWorkspaceFields())
+                    ->visible(fn (): bool => $this->targetKeyForSchema() === 'news.events'),
                 Tabs::make('news_locales')
                     ->tabs([
-                        Tab::make('Arabic')->schema($this->payloadFields('ar')),
-                        Tab::make('English')->schema($this->payloadFields('en')),
+                        Tab::make(__('admin.locales.ar'))->extraAttributes(['dir' => 'rtl'])->schema($this->payloadFields('ar')),
+                        Tab::make(__('admin.locales.en'))->extraAttributes(['dir' => 'ltr'])->schema($this->payloadFields('en')),
                     ])
+                    ->visible(fn (): bool => $this->targetKeyForSchema() !== 'news.events')
                     ->persistTabInQueryString('locale')
                     ->columnSpanFull(),
             ])
@@ -113,35 +134,49 @@ class ManageNews extends Page implements HasForms
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('save')->label('Save Draft')->icon('heroicon-o-check')->color('gray')->action(function (): void {
+            Action::make('save')->label(__('admin.editorial_workspace.actions.save_draft'))->icon('heroicon-o-check')->color('gray')->action(function (): void {
                 $this->save();
             }),
-            Action::make('preview_ar')->label('Preview AR')->icon('heroicon-o-eye')->color('info')->action(function (): void {
+            Action::make('preview_ar')->label(__('admin.editorial_workspace.actions.preview_ar'))->icon('heroicon-o-eye')->color('info')->action(function (): void {
                 $this->openPreview('ar');
             }),
-            Action::make('preview_en')->label('Preview EN')->icon('heroicon-o-eye')->color('info')->action(function (): void {
+            Action::make('preview_en')->label(__('admin.editorial_workspace.actions.preview_en'))->icon('heroicon-o-eye')->color('info')->action(function (): void {
                 $this->openPreview('en');
             }),
-            Action::make('publish')->label('Publish')->icon('heroicon-o-paper-airplane')->color('success')->requiresConfirmation()->action(function (): void {
-                $this->publish();
-            }),
+            Action::make('publish')->label(__('admin.editorial_workspace.actions.publish'))->icon('heroicon-o-paper-airplane')->color('success')->requiresConfirmation()
+                ->visible(fn (): bool => Gate::allows('publish-content'))->action(function (): void {
+                    $this->publish();
+                }),
             Action::make('schedule')
-                ->label('Schedule')
+                ->label(__('admin.editorial_workspace.actions.schedule'))
                 ->icon('heroicon-o-clock')
                 ->color('warning')
                 ->form([
-                    DateTimePicker::make('publish_at')->label('Publish At')->required()->minDate(now())->native(false),
+                    DateTimePicker::make('publish_at')->label(__('admin.editorial_workspace.publish_at'))->required()->minDate(now())->native(false),
                 ])
+                ->visible(fn (): bool => Gate::allows('publish-content'))
                 ->action(fn (array $data) => $this->schedule((string) $data['publish_at'])),
-            Action::make('unpublish')->label('Unpublish')->icon('heroicon-o-x-circle')->color('danger')->requiresConfirmation()->action(function (): void {
-                $this->unpublish();
-            }),
+            Action::make('unpublish')->label(__('admin.editorial_workspace.actions.unpublish'))->icon('heroicon-o-x-circle')->color('danger')->requiresConfirmation()
+                ->visible(fn (): bool => Gate::allows('publish-content'))->action(function (): void {
+                    $this->unpublish();
+                }),
         ];
+    }
+
+    protected function defaultNewsTargetKey(): string
+    {
+        return 'news.index';
+    }
+
+    protected function showsTargetSelector(): bool
+    {
+        return true;
     }
 
     public function loadTarget(string $targetKey): void
     {
         $this->assertNewsTarget($targetKey);
+        $this->activeTargetKey = $targetKey;
 
         if (! in_array($targetKey, ['news.index', 'news.articles', 'news.announcements', 'news.events', 'news.gallery'], true)) {
             $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey, (int) auth()->id());
@@ -179,10 +214,13 @@ class ManageNews extends Page implements HasForms
         }
 
         if ($targetKey === 'news.events') {
+            $arEvents = is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [];
+            $enEvents = is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [];
             $this->form->fill([
                 'target_key' => $targetKey,
-                'ar_events' => is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
-                'en_events' => is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
+                'ar_events' => $arEvents,
+                'en_events' => $enEvents,
+                'events_workspace' => $this->eventsWorkspaceFromTranslations($arEvents, $enEvents),
             ]);
 
             return;
@@ -214,13 +252,13 @@ class ManageNews extends Page implements HasForms
             $draft = $this->cmsWorkflowService->saveDraft($this->currentTargetKey(), $this->payloadFromForm($this->currentFormData()), (int) $user->id, $this->draftVersion);
             $this->draftVersion = $draft->version;
 
-            Notification::make()->title('News draft saved')->success()->send();
+            Notification::make()->title(__('admin.editorial_workspace.notifications.draft_saved'))->success()->send();
         } catch (ConflictException $e) {
             $this->draftVersion = $e->currentVersion;
-            Notification::make()->title('Draft conflict detected')->body('Reload this news target before saving again.')->danger()->persistent()->send();
+            Notification::make()->title(__('admin.editorial_workspace.notifications.conflict'))->body(__('admin.editorial_workspace.notifications.conflict_description'))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to save news draft')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('admin.editorial_workspace.notifications.save_failed'))->body(__('admin.editorial_workspace.notifications.safe_error'))->danger()->send();
         }
     }
 
@@ -238,10 +276,10 @@ class ManageNews extends Page implements HasForms
             $this->redirect($preview->previewUrl);
         } catch (ConflictException $e) {
             $this->draftVersion = $e->currentVersion;
-            Notification::make()->title('Draft conflict detected')->body('Reload this news target before previewing again.')->danger()->persistent()->send();
+            Notification::make()->title(__('admin.editorial_workspace.notifications.conflict'))->body(__('admin.editorial_workspace.notifications.conflict_description'))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to create news preview')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('admin.editorial_workspace.notifications.preview_failed'))->body(__('admin.editorial_workspace.notifications.safe_error'))->danger()->send();
         }
     }
 
@@ -256,12 +294,12 @@ class ManageNews extends Page implements HasForms
             $this->draftVersion = $draft->version;
             $this->cmsWorkflowService->publish($targetKey, (int) $user->id);
 
-            Notification::make()->title('News target published')->success()->send();
+            Notification::make()->title(__('admin.editorial_workspace.notifications.published'))->success()->send();
         } catch (ValidationException $e) {
-            Notification::make()->title('Publish failed')->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
+            Notification::make()->title(__('admin.editorial_workspace.notifications.publish_failed'))->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to publish news target')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('admin.editorial_workspace.notifications.publish_failed'))->body(__('admin.editorial_workspace.notifications.safe_error'))->danger()->send();
         }
     }
 
@@ -276,12 +314,12 @@ class ManageNews extends Page implements HasForms
             $this->draftVersion = $draft->version;
             $this->cmsWorkflowService->schedule($targetKey, new \DateTimeImmutable($publishAt), (int) $user->id);
 
-            Notification::make()->title('News target scheduled')->success()->send();
+            Notification::make()->title(__('admin.editorial_workspace.notifications.scheduled'))->success()->send();
         } catch (ValidationException $e) {
-            Notification::make()->title('Schedule failed')->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
+            Notification::make()->title(__('admin.editorial_workspace.notifications.schedule_failed'))->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to schedule news target')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('admin.editorial_workspace.notifications.schedule_failed'))->body(__('admin.editorial_workspace.notifications.safe_error'))->danger()->send();
         }
     }
 
@@ -290,7 +328,9 @@ class ManageNews extends Page implements HasForms
         /** @var User $user */
         $user = auth()->user();
         $result = $this->cmsWorkflowService->unpublish($this->currentTargetKey(), (int) $user->id);
-        $notification = Notification::make()->title($result ? 'News target unpublished' : 'No published news target found');
+        $notification = Notification::make()->title($result
+            ? __('admin.editorial_workspace.notifications.unpublished')
+            : __('admin.editorial_workspace.notifications.nothing_published'));
 
         ($result ? $notification->success() : $notification->warning())->send();
     }
@@ -354,10 +394,12 @@ class ManageNews extends Page implements HasForms
         }
 
         if (($state['target_key'] ?? null) === 'news.events') {
+            $workspace = is_array($state['events_workspace'] ?? null) ? $state['events_workspace'] : [];
+
             return [
                 'translations' => [
-                    'ar' => is_array($state['ar_events'] ?? null) ? $this->normalizeEventsPayload($state['ar_events']) : [],
-                    'en' => is_array($state['en_events'] ?? null) ? $this->normalizeEventsPayload($state['en_events']) : [],
+                    'ar' => $this->normalizeEventsPayload($this->eventsTranslationFromWorkspace($workspace, 'ar')),
+                    'en' => $this->normalizeEventsPayload($this->eventsTranslationFromWorkspace($workspace, 'en')),
                 ],
             ];
         }
@@ -409,18 +451,24 @@ class ManageNews extends Page implements HasForms
                 ])
                 ->columns(2)
                 ->visible(fn (): bool => $this->targetKeyForSchema() === 'news.articles'),
-            Section::make('Announcement Page')
+            Section::make(__('admin.editorial_workspace.announcements.page_intro'))
                 ->schema([
-                    TextInput::make($announcementPrefix.'.pageTitle')->label('Page Title')->required()->maxLength(160),
-                    Textarea::make($announcementPrefix.'.pageDescription')->label('Description')->required()->rows(2)->columnSpanFull(),
-                    MediaPicker::image($announcementPrefix.'.heroImage', 'Hero Image', true),
-                    TextInput::make($announcementPrefix.'.featuredLabel')->label('Featured Label')->required()->maxLength(120),
-                    TextInput::make($announcementPrefix.'.allCategoriesLabel')->label('All Categories Label')->required()->maxLength(120),
-                    TextInput::make($announcementPrefix.'.readMoreLabel')->label('Read More Label')->required()->maxLength(120),
-                    TextInput::make($announcementPrefix.'.downloadLabel')->label('Download Label')->required()->maxLength(120),
-                    Textarea::make($announcementPrefix.'.emptyState')->label('Empty State')->required()->rows(2)->columnSpanFull(),
+                    TextInput::make($announcementPrefix.'.pageTitle')->label(__('admin.editorial_workspace.fields.page_title'))->required()->maxLength(160),
+                    Textarea::make($announcementPrefix.'.pageDescription')->label(__('admin.editorial_workspace.fields.page_summary'))->required()->rows(2)->columnSpanFull(),
+                    MediaPicker::image($announcementPrefix.'.heroImage', __('admin.editorial_workspace.fields.hero_image'), true),
                 ])
                 ->columns(2)
+                ->visible(fn (): bool => $this->targetKeyForSchema() === 'news.announcements'),
+            Section::make(__('admin.editorial_workspace.announcements.interface_text'))
+                ->schema([
+                    TextInput::make($announcementPrefix.'.featuredLabel')->label(__('admin.editorial_workspace.fields.featured_label'))->required()->maxLength(120),
+                    TextInput::make($announcementPrefix.'.allCategoriesLabel')->label(__('admin.editorial_workspace.fields.all_categories_label'))->required()->maxLength(120),
+                    TextInput::make($announcementPrefix.'.readMoreLabel')->label(__('admin.editorial_workspace.fields.read_more_label'))->required()->maxLength(120),
+                    TextInput::make($announcementPrefix.'.downloadLabel')->label(__('admin.editorial_workspace.fields.download_label'))->required()->maxLength(120),
+                    Textarea::make($announcementPrefix.'.emptyState')->label(__('admin.editorial_workspace.fields.empty_state'))->required()->rows(2)->columnSpanFull(),
+                ])
+                ->columns(2)
+                ->collapsed()
                 ->visible(fn (): bool => $this->targetKeyForSchema() === 'news.announcements'),
             Section::make('Events Catalog')
                 ->schema([
@@ -530,9 +578,327 @@ class ManageNews extends Page implements HasForms
         ];
     }
 
+    /** @return array<int, mixed> */
+    private function eventsWorkspaceFields(): array
+    {
+        return [
+            Hidden::make('events_workspace.ar_meta'),
+            Hidden::make('events_workspace.en_meta'),
+            Repeater::make('events_workspace.upcoming')
+                ->label(__('admin.editorial_workspace.events.upcoming'))
+                ->addActionLabel(__('admin.editorial_workspace.events.add_upcoming'))
+                ->schema($this->eventWorkspaceSchema(false))
+                ->itemLabel(fn (array $state): string => (string) ($state[app()->getLocale() === 'ar' ? 'title_ar' : 'title_en'] ?? $state['title_ar'] ?? $state['title_en'] ?? ''))
+                ->reorderable()
+                ->collapsible()
+                ->collapsed()
+                ->columnSpanFull(),
+            Repeater::make('events_workspace.past')
+                ->label(__('admin.editorial_workspace.events.past'))
+                ->addActionLabel(__('admin.editorial_workspace.events.add_past'))
+                ->schema($this->eventWorkspaceSchema(true))
+                ->itemLabel(fn (array $state): string => (string) ($state[app()->getLocale() === 'ar' ? 'title_ar' : 'title_en'] ?? $state['title_ar'] ?? $state['title_en'] ?? ''))
+                ->reorderable()
+                ->collapsible()
+                ->collapsed()
+                ->columnSpanFull(),
+            Section::make(__('admin.editorial_workspace.events.categories'))->collapsed()->schema([
+                Repeater::make('events_workspace.categories')
+                    ->hiddenLabel()
+                    ->addActionLabel(__('admin.editorial_workspace.events.add_category'))
+                    ->schema([
+                        Hidden::make('id')->default(fn (): string => 'category-'.Str::lower(Str::random(8))),
+                        TextInput::make('label_ar')->label(__('admin.editorial_workspace.fields.label_ar'))->required()->maxLength(120),
+                        TextInput::make('label_en')->label(__('admin.editorial_workspace.fields.label_en'))->required()->maxLength(120),
+                    ])
+                    ->columns(2)
+                    ->reorderable()
+                    ->collapsible(),
+            ]),
+            Section::make(__('admin.editorial_workspace.events.page_intro'))->collapsed()->schema([
+                Tabs::make('event_page_locales')->tabs([
+                    Tab::make(__('admin.locales.ar'))->extraAttributes(['dir' => 'rtl'])->schema([
+                        TextInput::make('events_workspace.page_ar.title')->label(__('admin.editorial_workspace.fields.page_title'))->required()->maxLength(160),
+                        Textarea::make('events_workspace.page_ar.summary')->label(__('admin.editorial_workspace.fields.page_summary'))->required()->rows(2)->columnSpanFull(),
+                        MediaPicker::image('events_workspace.page_ar.heroImage', __('admin.editorial_workspace.fields.hero_image'), true),
+                    ]),
+                    Tab::make(__('admin.locales.en'))->extraAttributes(['dir' => 'ltr'])->schema([
+                        TextInput::make('events_workspace.page_en.title')->label(__('admin.editorial_workspace.fields.page_title'))->required()->maxLength(160),
+                        Textarea::make('events_workspace.page_en.summary')->label(__('admin.editorial_workspace.fields.page_summary'))->required()->rows(2)->columnSpanFull(),
+                        MediaPicker::image('events_workspace.page_en.heroImage', __('admin.editorial_workspace.fields.hero_image'), true),
+                    ]),
+                ]),
+            ]),
+        ];
+    }
+
+    /** @return array<int, mixed> */
+    private function eventWorkspaceSchema(bool $past): array
+    {
+        $fields = [
+            Hidden::make('id')->default(fn (): string => 'event-'.Str::lower(Str::random(10))),
+            Section::make(__('admin.editorial_workspace.events.sections.schedule'))->schema([
+                DateTimePicker::make('startsAt')->label(__('admin.editorial_workspace.fields.starts_at'))->required()->seconds(false),
+                DateTimePicker::make('endsAt')->label(__('admin.editorial_workspace.fields.ends_at'))->seconds(false),
+                Radio::make('categoryId')
+                    ->label(__('admin.editorial_workspace.fields.category'))
+                    ->options(fn (): array => $this->eventCategoryOptions())
+                    ->required()
+                    ->inline()
+                    ->columnSpanFull(),
+                MediaPicker::image('image', __('admin.editorial_workspace.fields.event_image'), true),
+            ])->columns(2),
+            Section::make(__('admin.editorial_workspace.events.sections.arabic'))->schema($this->localizedEventWorkspaceFields('ar', $past))->columns(2)->extraAttributes(['dir' => 'rtl']),
+            Section::make(__('admin.editorial_workspace.events.sections.english'))->schema($this->localizedEventWorkspaceFields('en', $past))->columns(2)->extraAttributes(['dir' => 'ltr']),
+        ];
+
+        if (! $past) {
+            array_splice($fields, 1, 0, [
+                Section::make(__('admin.editorial_workspace.events.sections.registration'))->schema([
+                    Radio::make('formId')->label(__('admin.editorial_workspace.fields.registration_form'))->options([
+                        'conference-registration' => __('admin.editorial_workspace.events.forms.conference'),
+                        'activity-registration' => __('admin.editorial_workspace.events.forms.activity'),
+                    ])->required()->inline(),
+                    TextInput::make('capacity')->label(__('admin.editorial_workspace.fields.capacity'))->numeric()->minValue(0)->required(),
+                    Hidden::make('registered')->default(0),
+                    Toggle::make('featured')->label(__('admin.editorial_workspace.fields.featured')),
+                ])->columns(2),
+            ]);
+        } else {
+            $fields[] = Section::make(__('admin.editorial_workspace.events.sections.advanced'))->collapsed()->schema([
+                TagsInput::make('gallery')->label(__('admin.editorial_workspace.fields.gallery'))->columnSpanFull(),
+            ]);
+        }
+
+        return $fields;
+    }
+
+    /** @return array<int, mixed> */
+    private function localizedEventWorkspaceFields(string $locale, bool $past): array
+    {
+        $fields = [
+            TextInput::make('title_'.$locale)->label(__('admin.editorial_workspace.fields.event_title'))->required()->maxLength(200)->columnSpanFull(),
+            Textarea::make('summary_'.$locale)->label(__('admin.editorial_workspace.fields.summary'))->required()->rows(2)->columnSpanFull(),
+            TextInput::make('date_label_'.$locale)->label(__('admin.editorial_workspace.fields.date_label'))->required()->maxLength(120),
+            TextInput::make('time_label_'.$locale)->label(__('admin.editorial_workspace.fields.time_label'))->required()->maxLength(120),
+            TextInput::make('location_'.$locale)->label(__('admin.editorial_workspace.fields.location'))->required()->maxLength(200)->columnSpanFull(),
+        ];
+
+        if ($past) {
+            $fields[] = TextInput::make('participants_'.$locale)->label(__('admin.editorial_workspace.fields.participants'))->maxLength(120);
+            $fields[] = TagsInput::make('highlights_'.$locale)->label(__('admin.editorial_workspace.fields.highlights'))->columnSpanFull();
+            $fields[] = Repeater::make('speakers_'.$locale)->label(__('admin.editorial_workspace.fields.speakers'))->schema([
+                TextInput::make('name')->label(__('admin.editorial_workspace.fields.speaker_name'))->required()->maxLength(160),
+                TextInput::make('title')->label(__('admin.editorial_workspace.fields.speaker_title'))->required()->maxLength(200),
+            ])->columns(2)->collapsible()->columnSpanFull();
+            $fields[] = Textarea::make('results_'.$locale)->label(__('admin.editorial_workspace.fields.results'))->rows(2)->columnSpanFull();
+        }
+
+        return $fields;
+    }
+
+    /** @param array<string, mixed> $ar @param array<string, mixed> $en @return array<string, mixed> */
+    private function eventsWorkspaceFromTranslations(array $ar, array $en): array
+    {
+        $arCategories = collect($this->listOfArrays($ar['categories'] ?? []))->keyBy(fn (array $category): string => (string) ($category['id'] ?? ''));
+        $enCategories = collect($this->listOfArrays($en['categories'] ?? []))->keyBy(fn (array $category): string => (string) ($category['id'] ?? ''));
+        $categoryIds = $arCategories->keys()->merge($enCategories->keys())->filter()->unique()->values();
+        $categories = $categoryIds->map(fn (string $id): array => [
+            'id' => $id,
+            'label_ar' => (string) (($arCategories->get($id)['label'] ?? null) ?: $id),
+            'label_en' => (string) (($enCategories->get($id)['label'] ?? null) ?: $id),
+        ])->all();
+
+        $workspace = [
+            'page_ar' => $this->eventPageWorkspaceFields($ar),
+            'page_en' => $this->eventPageWorkspaceFields($en),
+            'categories' => $categories,
+            'upcoming' => $this->pairedEvents($ar['upcoming'] ?? [], $en['upcoming'] ?? [], false),
+            'past' => $this->pairedEvents($ar['past'] ?? [], $en['past'] ?? [], true),
+        ];
+
+        unset($ar['categories'], $ar['upcoming'], $ar['past'], $en['categories'], $en['upcoming'], $en['past']);
+        $workspace['ar_meta'] = $ar;
+        $workspace['en_meta'] = $en;
+
+        return $workspace;
+    }
+
+    /** @param array<string, mixed> $payload @return array<string, string> */
+    private function eventPageWorkspaceFields(array $payload): array
+    {
+        return [
+            'title' => (string) ($payload['title'] ?? ''),
+            'summary' => (string) ($payload['summary'] ?? ''),
+            'heroImage' => (string) ($payload['heroImage'] ?? ''),
+        ];
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function pairedEvents(mixed $arRecords, mixed $enRecords, bool $past): array
+    {
+        $arEvents = collect($this->listOfArrays($arRecords))->keyBy(fn (array $event): string => (string) ($event['id'] ?? ''));
+        $enEvents = collect($this->listOfArrays($enRecords))->keyBy(fn (array $event): string => (string) ($event['id'] ?? ''));
+
+        return $arEvents->keys()->merge($enEvents->keys())->filter()->unique()->values()
+            ->map(function (string $id) use ($arEvents, $enEvents, $past): array {
+                $ar = is_array($arEvents->get($id)) ? $arEvents->get($id) : [];
+                $en = is_array($enEvents->get($id)) ? $enEvents->get($id) : [];
+                $shared = $en !== [] ? $en : $ar;
+
+                return [
+                    'id' => $id,
+                    'startsAt' => (string) ($shared['startsAt'] ?? ''),
+                    'endsAt' => is_string($shared['endsAt'] ?? null) ? $shared['endsAt'] : null,
+                    'categoryId' => (string) ($shared['categoryId'] ?? ''),
+                    'image' => (string) ($shared['image'] ?? ''),
+                    'formId' => $past ? null : (string) ($shared['formId'] ?? ''),
+                    'capacity' => $past ? null : ($shared['capacity'] ?? 0),
+                    'registered' => $past ? 0 : ($shared['registered'] ?? 0),
+                    'featured' => ! $past && (bool) ($shared['featured'] ?? false),
+                    'gallery' => $past ? $this->stringList($shared['gallery'] ?? []) : [],
+                    ...$this->localizedEventWorkspaceState($ar, 'ar', $past),
+                    ...$this->localizedEventWorkspaceState($en, 'en', $past),
+                ];
+            })->all();
+    }
+
+    /** @param array<string, mixed> $event @return array<string, mixed> */
+    private function localizedEventWorkspaceState(array $event, string $locale, bool $past): array
+    {
+        $state = [
+            'title_'.$locale => (string) ($event['title'] ?? ''),
+            'summary_'.$locale => (string) ($event['summary'] ?? ''),
+            'date_label_'.$locale => (string) ($event['dateLabel'] ?? ''),
+            'time_label_'.$locale => (string) ($event['timeLabel'] ?? ''),
+            'location_'.$locale => (string) ($event['location'] ?? ''),
+        ];
+
+        if ($past) {
+            $state['participants_'.$locale] = (string) ($event['participants'] ?? '');
+            $state['highlights_'.$locale] = $this->stringList($event['highlights'] ?? []);
+            $state['speakers_'.$locale] = $this->listOfArrays($event['speakers'] ?? []);
+            $state['results_'.$locale] = (string) ($event['results'] ?? '');
+        }
+
+        return $state;
+    }
+
+    /** @param array<string, mixed> $workspace @return array<string, mixed> */
+    private function eventsTranslationFromWorkspace(array $workspace, string $locale): array
+    {
+        $payload = is_array($workspace[$locale.'_meta'] ?? null) ? $workspace[$locale.'_meta'] : [];
+        $page = is_array($workspace['page_'.$locale] ?? null) ? $workspace['page_'.$locale] : [];
+        $payload['title'] = (string) ($page['title'] ?? '');
+        $payload['headline'] = $payload['title'];
+        $payload['summary'] = (string) ($page['summary'] ?? '');
+        $payload['heroImage'] = (string) ($page['heroImage'] ?? '');
+        $payload['categories'] = array_map(fn (array $category): array => [
+            'id' => (string) ($category['id'] ?? ''),
+            'label' => (string) ($category['label_'.$locale] ?? ''),
+        ], $this->listOfArrays($workspace['categories'] ?? []));
+        $categoryLabels = collect($payload['categories'])->pluck('label', 'id')->all();
+        $payload['upcoming'] = $this->eventsForTranslation($workspace['upcoming'] ?? [], $locale, false, $categoryLabels);
+        $payload['past'] = $this->eventsForTranslation($workspace['past'] ?? [], $locale, true, $categoryLabels);
+
+        return $payload;
+    }
+
+    /** @param array<string, string> $categoryLabels @return array<int, array<string, mixed>> */
+    private function eventsForTranslation(mixed $records, string $locale, bool $past, array $categoryLabels): array
+    {
+        return array_map(function (array $event) use ($locale, $past, $categoryLabels): array {
+            $categoryId = (string) ($event['categoryId'] ?? '');
+            $translated = [
+                'id' => (string) ($event['id'] ?? ''),
+                'title' => (string) ($event['title_'.$locale] ?? ''),
+                'summary' => (string) ($event['summary_'.$locale] ?? ''),
+                'startsAt' => (string) ($event['startsAt'] ?? ''),
+                'endsAt' => is_string($event['endsAt'] ?? null) && $event['endsAt'] !== '' ? $event['endsAt'] : null,
+                'dateLabel' => (string) ($event['date_label_'.$locale] ?? ''),
+                'timeLabel' => (string) ($event['time_label_'.$locale] ?? ''),
+                'location' => (string) ($event['location_'.$locale] ?? ''),
+                'categoryId' => $categoryId,
+                'categoryLabel' => (string) ($categoryLabels[$categoryId] ?? ''),
+                'image' => (string) ($event['image'] ?? ''),
+            ];
+
+            if (! $past) {
+                return [
+                    ...$translated,
+                    'formId' => (string) ($event['formId'] ?? ''),
+                    'capacity' => (int) ($event['capacity'] ?? 0),
+                    'registered' => (int) ($event['registered'] ?? 0),
+                    'featured' => (bool) ($event['featured'] ?? false),
+                ];
+            }
+
+            return [
+                ...$translated,
+                'participants' => (string) ($event['participants_'.$locale] ?? ''),
+                'highlights' => $this->stringList($event['highlights_'.$locale] ?? []),
+                'speakers' => $this->listOfArrays($event['speakers_'.$locale] ?? []),
+                'results' => (string) ($event['results_'.$locale] ?? ''),
+                'gallery' => $this->stringList($event['gallery'] ?? []),
+            ];
+        }, $this->listOfArrays($records));
+    }
+
+    /** @return array<string, string> */
+    private function eventCategoryOptions(): array
+    {
+        $localeKey = app()->getLocale() === 'ar' ? 'label_ar' : 'label_en';
+
+        return collect($this->listOfArrays($this->data['events_workspace']['categories'] ?? []))
+            ->mapWithKeys(fn (array $category): array => [
+                (string) ($category['id'] ?? '') => (string) ($category[$localeKey] ?? $category['label_ar'] ?? $category['label_en'] ?? ''),
+            ])
+            ->filter(fn (string $label, string $id): bool => $id !== '' && $label !== '')
+            ->all();
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function listOfArrays(mixed $items): array
+    {
+        return array_values(array_filter(is_array($items) ? $items : [], static fn (mixed $item): bool => is_array($item)));
+    }
+
+    /** @return array<int, string> */
+    private function stringList(mixed $items): array
+    {
+        return array_values(array_filter(array_map(
+            static fn (mixed $item): string => trim((string) $item),
+            is_array($items) ? $items : [],
+        ), static fn (string $item): bool => $item !== ''));
+    }
+
     private function targetKeyForSchema(): string
     {
-        return is_string($this->data['target_key'] ?? null) && $this->data['target_key'] !== '' ? $this->data['target_key'] : 'news.index';
+        if (is_string($this->activeTargetKey) && $this->activeTargetKey !== '') {
+            return $this->activeTargetKey;
+        }
+
+        return is_string($this->data['target_key'] ?? null) && $this->data['target_key'] !== ''
+            ? $this->data['target_key']
+            : $this->defaultNewsTargetKey();
+    }
+
+    /** @return list<array{label: string, description: string, url: string}> */
+    public function getNewsOperationalLinks(): array
+    {
+        if ($this->targetKeyForSchema() !== 'news.announcements') {
+            return [];
+        }
+
+        return [
+            [
+                'label' => __('admin.editorial_workspace.announcements.records'),
+                'description' => __('admin.editorial_workspace.announcements.records_help'),
+                'url' => NewsArticleResource::getUrl('index', [
+                    'tableFilters' => ['category_type' => ['value' => 'announcement']],
+                ]),
+            ],
+        ];
     }
 
     /** @return array<string, mixed> */

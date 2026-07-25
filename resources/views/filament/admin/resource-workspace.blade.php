@@ -5,11 +5,11 @@
     use App\Filament\Resources\DirectorateResource;
     use App\Filament\Resources\MediaAssetResource;
     use App\Filament\Resources\NewsArticleResource;
-    use App\Filament\Resources\NewsCategoryResource;
     use App\Filament\Resources\PageResource;
     use App\Filament\Resources\PartnershipResource;
     use App\Filament\Resources\PersonResource;
     use App\Filament\Resources\UserResource;
+    use App\Filament\Pages\ManageNews;
     use Filament\Resources\Resource;
 
     $resourceClass = collect($scopes ?? [])
@@ -18,7 +18,6 @@
     $resourceAreas = [
         PageResource::class => 'pages',
         NewsArticleResource::class => 'news',
-        NewsCategoryResource::class => 'news',
         MediaAssetResource::class => 'media',
         AboutPageResource::class => 'about',
         DirectorateResource::class => 'about',
@@ -30,8 +29,20 @@
     ];
 
     $area = is_string($resourceClass) ? ($resourceAreas[$resourceClass] ?? null) : null;
+    $links = $area === 'news' ? [
+        [
+            'label' => __('admin.news_workspace.articles'),
+            'url' => NewsArticleResource::getUrl('index'),
+            'active' => $resourceClass === NewsArticleResource::class,
+        ],
+        [
+            'label' => __('admin.news_workspace.pages_events'),
+            'url' => ManageNews::getUrl(),
+            'active' => false,
+        ],
+    ] : [];
 @endphp
 
 @if ($area !== null)
-    <x-admin.cms-workspace-header :area="$area" />
+    <x-admin.cms-workspace-header :area="$area" :links="$links" />
 @endif

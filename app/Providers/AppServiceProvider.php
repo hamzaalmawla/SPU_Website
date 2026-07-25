@@ -62,6 +62,7 @@ use App\Contracts\Media\MediaServiceInterface;
 use App\Contracts\Navigation\MenuServiceInterface;
 use App\Contracts\Navigation\NavigationServiceInterface;
 use App\Contracts\News\NewsAdminWorkflowServiceInterface;
+use App\Contracts\News\NewsArticleCmsServiceInterface;
 use App\Contracts\News\NewsServiceInterface;
 use App\Contracts\Page\AboutPageServiceInterface;
 use App\Contracts\Page\AdmissionsPageServiceInterface;
@@ -176,6 +177,7 @@ use App\Services\Media\MediaService;
 use App\Services\Navigation\MenuService;
 use App\Services\Navigation\NavigationService;
 use App\Services\News\NewsAdminWorkflowService;
+use App\Services\News\NewsArticleCmsService;
 use App\Services\News\NewsService;
 use App\Services\Page\AboutPageService;
 use App\Services\Page\AdmissionsPageService;
@@ -376,6 +378,7 @@ class AppServiceProvider extends ServiceProvider
             SlugServiceInterface::class => SlugService::class,
             MenuServiceInterface::class => MenuService::class,
             NewsAdminWorkflowServiceInterface::class => NewsAdminWorkflowService::class,
+            NewsArticleCmsServiceInterface::class => NewsArticleCmsService::class,
             NewsServiceInterface::class => NewsService::class,
             SeoMetadataServiceInterface::class => SeoMetadataService::class,
             HomepagePreviewAssemblerInterface::class => HomepagePreviewAssembler::class,

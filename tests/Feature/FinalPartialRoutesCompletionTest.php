@@ -254,8 +254,8 @@ final class FinalPartialRoutesCompletionTest extends TestCase
         Livewire::test(ManagePharmacyFaculty::class)
             ->set('data.target_key', 'facilities.pharmacy.training')
             ->call('loadTarget', 'facilities.pharmacy.training')
-            ->assertSee('Training Programme')
-            ->assertSee('Verified Training Destinations');
+            ->assertSee('Training program steps')
+            ->assertSee('Approved training destinations');
     }
 
     private function superAdmin(): User

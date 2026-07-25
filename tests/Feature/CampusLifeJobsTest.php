@@ -55,8 +55,9 @@ final class CampusLifeJobsTest extends TestCase
         Livewire::test(ManageCampusLife::class)
             ->set('data.target_key', 'campus_life.jobs')
             ->call('loadTarget', 'campus_life.jobs')
-            ->assertSee('Job Board Hero')
-            ->assertSee('Job Catalog')
+            ->assertSee('إدارة فرص العمل')
+            ->assertSee('المحتوى العربي')
+            ->assertSee('المحتوى الإنجليزي')
             ->assertDontSee('Target Schema Pending');
     }
 

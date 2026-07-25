@@ -26,7 +26,7 @@ class AdminLocalizationTest extends TestCase
             ->assertSee('lang="ar"', false)
             ->assertSee('dir="rtl"', false)
             ->assertSee('إدارة الإعدادات')
-            ->assertSee('English');
+            ->assertSee('الإنجليزية');
     }
 
     public function test_filament_admin_can_render_english_ltr(): void

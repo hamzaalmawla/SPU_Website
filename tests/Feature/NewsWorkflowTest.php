@@ -172,7 +172,7 @@ final class NewsWorkflowTest extends TestCase
         Livewire::test(ManageNews::class)
             ->call('loadTarget', 'news.announcements')
             ->assertSet('data.target_key', 'news.announcements')
-            ->assertSee('Announcement Page')
+            ->assertSee('مقدمة صفحة الإعلانات')
             ->set('data.en_target.pageTitle', 'Curated Announcement Center')
             ->call('save');
 
@@ -234,9 +234,9 @@ final class NewsWorkflowTest extends TestCase
         Livewire::test(ManageNews::class)
             ->call('loadTarget', 'news.events')
             ->assertSet('data.target_key', 'news.events')
-            ->assertSee('Events Catalog')
-            ->assertSee('Upcoming Events')
-            ->assertSee('Past Events');
+            ->assertSee('إدارة الفعاليات')
+            ->assertSee('الفعاليات القادمة')
+            ->assertSee('الفعاليات السابقة');
     }
 
     public function test_gallery_route_filter_and_pagination_are_functional(): void

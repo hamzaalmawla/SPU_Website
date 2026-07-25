@@ -48,6 +48,12 @@ jobs:
       - name: NPM audit
         run: npm audit --audit-level=high
 
+      - name: Frontend tests
+        run: npm run test
+
+      - name: Production build
+        run: npm run build
+
       - name: Pint
         continue-on-error: true
         run: ./vendor/bin/pint --test

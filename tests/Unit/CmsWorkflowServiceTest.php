@@ -126,6 +126,49 @@ final class CmsWorkflowServiceTest extends TestCase
         $this->assertSame($payload, $this->service->getPublishedPayload('e_services'));
     }
 
+    public function test_saving_a_new_draft_preserves_the_scheduled_release(): void
+    {
+        $user = User::factory()->create(['role_slug' => 'editor', 'is_locked' => false]);
+        $scheduledPayload = $this->completePayload('تواصل مجدول', 'Scheduled contact');
+        $workingPayload = $this->completePayload('تواصل جديد', 'Later draft');
+
+        $scheduledDraft = $this->service->saveDraft('contact', $scheduledPayload, (int) $user->getKey());
+        $this->service->schedule('contact', now()->addMinute(), (int) $user->getKey());
+        $workingDraft = $this->service->saveDraft('contact', $workingPayload, (int) $user->getKey(), $scheduledDraft->version);
+
+        $this->assertSame($scheduledDraft->version + 1, $workingDraft->version);
+        $this->assertDatabaseHas(CmsDraft::class, [
+            'id' => $scheduledDraft->id,
+            'status' => PublicationStatus::Scheduled->value,
+        ]);
+        $this->assertDatabaseHas(CmsDraft::class, [
+            'id' => $workingDraft->id,
+            'status' => PublicationStatus::Draft->value,
+        ]);
+
+        CmsDraft::query()->whereKey($scheduledDraft->id)->update(['scheduled_at' => now()->subMinute()]);
+
+        $this->assertSame(1, $this->service->publishDueScheduled());
+        $this->assertSame($scheduledPayload, $this->service->getPublishedPayload('contact'));
+        $this->assertSame($workingPayload, $this->service->latestEditableDraftPayload('contact', (int) $user->getKey()));
+    }
+
+    public function test_due_scheduled_target_is_not_published_after_approver_is_locked(): void
+    {
+        $user = User::factory()->create(['role_slug' => 'editor', 'is_locked' => false]);
+        $draft = $this->service->saveDraft('contact', $this->completePayload('تواصل', 'Contact'), (int) $user->getKey());
+        $this->service->schedule('contact', now()->addMinute(), (int) $user->getKey());
+        CmsDraft::query()->whereKey($draft->id)->update(['scheduled_at' => now()->subMinute()]);
+        $user->forceFill(['is_locked' => true])->save();
+
+        $this->assertSame(0, $this->service->publishDueScheduled());
+        $this->assertDatabaseHas(CmsDraft::class, [
+            'id' => $draft->id,
+            'status' => PublicationStatus::Scheduled->value,
+        ]);
+        $this->assertNull($this->service->getPublishedPayload('contact'));
+    }
+
     public function test_unpublish_hides_published_payload(): void
     {
         $user = User::factory()->create(['role_slug' => 'editor']);

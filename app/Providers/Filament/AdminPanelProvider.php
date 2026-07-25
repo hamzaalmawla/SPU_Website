@@ -37,10 +37,11 @@ class AdminPanelProvider extends PanelProvider
             ->authGuard((string) config('auth.admin_guard', 'web'))
             ->login([AuthController::class, 'create'])
             ->colors([
-                'primary' => Color::Blue,
+                'primary' => Color::hex('#0f6471'),
                 'danger' => Color::Red,
                 'warning' => Color::Amber,
             ])
+            ->unsavedChangesAlerts()
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->navigationGroups([
@@ -49,6 +50,8 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make(fn (): string => __('admin.navigation.groups.facilities')),
                 NavigationGroup::make(fn (): string => __('admin.navigation.groups.about')),
                 NavigationGroup::make(fn (): string => __('admin.navigation.groups.admissions')),
+                NavigationGroup::make(fn (): string => __('admin.navigation.groups.campus_life')),
+                NavigationGroup::make(fn (): string => __('admin.navigation.groups.research')),
                 NavigationGroup::make(fn (): string => __('admin.navigation.groups.contact')),
                 NavigationGroup::make(fn (): string => __('admin.navigation.groups.e_services')),
                 NavigationGroup::make(fn (): string => __('admin.navigation.groups.administration')),
@@ -56,6 +59,10 @@ class AdminPanelProvider extends PanelProvider
             ->pages([
                 Pages\Dashboard::class,
             ])
+            ->renderHook(
+                PanelsRenderHook::HEAD_END,
+                fn (): string => view('filament.admin.styles')->render(),
+            )
             ->renderHook(
                 PanelsRenderHook::TOPBAR_END,
                 fn (): string => view('filament.admin.locale-switcher')->render(),

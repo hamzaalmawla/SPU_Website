@@ -25,6 +25,8 @@ interface NewsAdminWorkflowServiceInterface
      */
     public function recordArticleUpdated(int $articleId, ?int $userId, array $before): bool;
 
+    public function publishDueScheduled(): int;
+
     public function recordCategoryCreated(int $categoryId, ?int $userId): bool;
 
     /**

@@ -168,6 +168,44 @@ final class NewsAdminWorkflowServiceTest extends TestCase
         $this->assertNotNull($data['published_at']);
     }
 
+    public function test_due_scheduled_article_is_published_by_the_scheduler(): void
+    {
+        $editor = User::factory()->create(['role_slug' => 'editor', 'is_locked' => false]);
+        $article = NewsArticle::query()->create([
+            'slug' => 'scheduled-news',
+            'status' => 'scheduled',
+            'scheduled_at' => now()->subMinute(),
+            'is_enabled' => true,
+            'updated_by' => $editor->getKey(),
+        ]);
+
+        $this->assertSame(1, $this->service->publishDueScheduled());
+
+        $article->refresh();
+        $this->assertSame('published', $article->status);
+        $this->assertNotNull($article->published_at);
+        $this->assertNull($article->scheduled_at);
+        $this->assertDatabaseHas(AuditLog::class, [
+            'action' => 'news.article.scheduled_published',
+            'entity_id' => $article->getKey(),
+        ]);
+    }
+
+    public function test_due_scheduled_article_is_not_published_after_approver_is_locked(): void
+    {
+        $editor = User::factory()->create(['role_slug' => 'editor', 'is_locked' => true]);
+        $article = NewsArticle::query()->create([
+            'slug' => 'blocked-scheduled-news',
+            'status' => 'scheduled',
+            'scheduled_at' => now()->subMinute(),
+            'is_enabled' => true,
+            'updated_by' => $editor->getKey(),
+        ]);
+
+        $this->assertSame(0, $this->service->publishDueScheduled());
+        $this->assertSame('scheduled', $article->fresh()->status);
+    }
+
     public function test_article_write_events_create_audit_entries(): void
     {
         $user = User::factory()->create(['role_slug' => 'editor']);

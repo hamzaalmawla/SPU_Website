@@ -93,8 +93,8 @@ class ManageFacilities extends Page implements HasForms
             ->schema([
                 Tabs::make('facilities_locales')
                     ->tabs([
-                        Tab::make('Arabic')->schema($this->payloadFields('ar')),
-                        Tab::make('English')->schema($this->payloadFields('en')),
+                        Tab::make(__('admin.locales.ar'))->extraAttributes(['dir' => 'rtl'])->schema($this->payloadFields('ar')),
+                        Tab::make(__('admin.locales.en'))->extraAttributes(['dir' => 'ltr'])->schema($this->payloadFields('en')),
                     ])
                     ->persistTabInQueryString('locale')
                     ->columnSpanFull(),
@@ -105,31 +105,34 @@ class ManageFacilities extends Page implements HasForms
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('save')->label('Save Draft')->icon('heroicon-o-check')->color('gray')->action(function (): void {
+            Action::make('save')->label(__('admin.campus_workspace.actions.save_draft'))->icon('heroicon-o-check')->color('gray')->action(function (): void {
                 $this->save();
             }),
-            Action::make('preview_ar')->label('Preview AR')->icon('heroicon-o-eye')->color('info')->action(function (): void {
+            Action::make('preview_ar')->label(__('admin.campus_workspace.actions.preview_ar'))->icon('heroicon-o-eye')->color('info')->action(function (): void {
                 $this->openPreview('ar');
             }),
-            Action::make('preview_en')->label('Preview EN')->icon('heroicon-o-eye')->color('info')->action(function (): void {
+            Action::make('preview_en')->label(__('admin.campus_workspace.actions.preview_en'))->icon('heroicon-o-eye')->color('info')->action(function (): void {
                 $this->openPreview('en');
             }),
-            Action::make('publish')->label('Publish')->icon('heroicon-o-paper-airplane')->color('success')->requiresConfirmation()->action(function (): void {
-                $this->publish();
-            }),
+            Action::make('publish')->label(__('admin.campus_workspace.actions.publish'))->icon('heroicon-o-paper-airplane')->color('success')->requiresConfirmation()
+                ->visible(fn (): bool => Gate::allows('publish-content'))->action(function (): void {
+                    $this->publish();
+                }),
             Action::make('schedule')
-                ->label('Schedule')
+                ->label(__('admin.campus_workspace.actions.schedule'))
                 ->icon('heroicon-o-clock')
                 ->color('warning')
                 ->form([
-                    DateTimePicker::make('publish_at')->label('Publish At')->required()->minDate(now())->native(false),
+                    DateTimePicker::make('publish_at')->label(__('admin.campus_workspace.publish_at'))->required()->minDate(now())->native(false),
                 ])
+                ->visible(fn (): bool => Gate::allows('publish-content'))
                 ->action(function (array $data): void {
                     $this->schedule((string) $data['publish_at']);
                 }),
-            Action::make('unpublish')->label('Unpublish')->icon('heroicon-o-x-circle')->color('danger')->requiresConfirmation()->action(function (): void {
-                $this->unpublish();
-            }),
+            Action::make('unpublish')->label(__('admin.campus_workspace.actions.unpublish'))->icon('heroicon-o-x-circle')->color('danger')->requiresConfirmation()
+                ->visible(fn (): bool => Gate::allows('publish-content'))->action(function (): void {
+                    $this->unpublish();
+                }),
         ];
     }
 
@@ -142,13 +145,13 @@ class ManageFacilities extends Page implements HasForms
             $draft = $this->cmsWorkflowService->saveDraft('facilities.landing', $this->payloadFromForm($this->currentFormData()), (int) $user->id, $this->draftVersion);
             $this->draftVersion = $draft->version;
 
-            Notification::make()->title('Facilities draft saved')->success()->send();
+            Notification::make()->title(__('admin.campus_workspace.notifications.draft_saved'))->success()->send();
         } catch (ConflictException $e) {
             $this->draftVersion = $e->currentVersion;
-            Notification::make()->title('Draft conflict detected')->body('Reload this facilities target before saving again.')->danger()->persistent()->send();
+            Notification::make()->title(__('admin.campus_workspace.notifications.conflict'))->body(__('admin.campus_workspace.notifications.conflict_description'))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to save facilities draft')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('admin.campus_workspace.notifications.save_failed'))->body(__('admin.campus_workspace.notifications.safe_error'))->danger()->send();
         }
     }
 
@@ -165,10 +168,10 @@ class ManageFacilities extends Page implements HasForms
             $this->redirect($preview->previewUrl);
         } catch (ConflictException $e) {
             $this->draftVersion = $e->currentVersion;
-            Notification::make()->title('Draft conflict detected')->body('Reload this facilities target before previewing again.')->danger()->persistent()->send();
+            Notification::make()->title(__('admin.campus_workspace.notifications.conflict'))->body(__('admin.campus_workspace.notifications.conflict_description'))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to create facilities preview')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('admin.campus_workspace.notifications.preview_failed'))->body(__('admin.campus_workspace.notifications.safe_error'))->danger()->send();
         }
     }
 
@@ -182,12 +185,12 @@ class ManageFacilities extends Page implements HasForms
             $this->draftVersion = $draft->version;
             $this->cmsWorkflowService->publish('facilities.landing', (int) $user->id);
 
-            Notification::make()->title('Facilities hub published')->success()->send();
+            Notification::make()->title(__('admin.campus_workspace.notifications.published'))->success()->send();
         } catch (ValidationException $e) {
-            Notification::make()->title('Publish failed')->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
+            Notification::make()->title(__('admin.campus_workspace.notifications.publish_failed'))->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to publish facilities hub')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('admin.campus_workspace.notifications.publish_failed'))->body(__('admin.campus_workspace.notifications.safe_error'))->danger()->send();
         }
     }
 
@@ -201,12 +204,12 @@ class ManageFacilities extends Page implements HasForms
             $this->draftVersion = $draft->version;
             $this->cmsWorkflowService->schedule('facilities.landing', new \DateTimeImmutable($publishAt), (int) $user->id);
 
-            Notification::make()->title('Facilities hub scheduled')->success()->send();
+            Notification::make()->title(__('admin.campus_workspace.notifications.scheduled'))->success()->send();
         } catch (ValidationException $e) {
-            Notification::make()->title('Schedule failed')->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
+            Notification::make()->title(__('admin.campus_workspace.notifications.schedule_failed'))->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to schedule facilities hub')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('admin.campus_workspace.notifications.schedule_failed'))->body(__('admin.campus_workspace.notifications.safe_error'))->danger()->send();
         }
     }
 
@@ -215,7 +218,9 @@ class ManageFacilities extends Page implements HasForms
         /** @var User $user */
         $user = auth()->user();
         $result = $this->cmsWorkflowService->unpublish('facilities.landing', (int) $user->id);
-        $notification = Notification::make()->title($result ? 'Facilities hub unpublished' : 'No published facilities hub found');
+        $notification = Notification::make()->title($result
+            ? __('admin.campus_workspace.notifications.unpublished')
+            : __('admin.campus_workspace.notifications.nothing_published'));
 
         ($result ? $notification->success() : $notification->warning())->send();
     }
@@ -226,37 +231,39 @@ class ManageFacilities extends Page implements HasForms
         $prefix = $locale.'_content';
 
         return [
-            Section::make('Hero')->schema([
-                TextInput::make($prefix.'.hero.title')->label('Title')->required()->maxLength(160),
-                MediaPicker::image($prefix.'.hero.image', 'Hero Image', true),
-                Textarea::make($prefix.'.hero.summary')->label('Summary')->required()->rows(2)->columnSpanFull(),
-                TextInput::make($prefix.'.hero.applyLabel')->label('Apply Label')->required()->maxLength(120),
-                TextInput::make($prefix.'.hero.applyUrl')->label('Apply URL')->required()->maxLength(255),
-                TextInput::make($prefix.'.hero.campusMapLabel')->label('Campus Map Label')->required()->maxLength(120),
+            Section::make(__('admin.facilities_editor.sections.intro'))->schema([
+                TextInput::make($prefix.'.hero.title')->label(__('admin.facilities_editor.fields.title'))->required()->maxLength(160),
+                MediaPicker::image($prefix.'.hero.image', __('admin.facilities_editor.fields.hero_image'), true),
+                Textarea::make($prefix.'.hero.summary')->label(__('admin.facilities_editor.fields.summary'))->required()->rows(2)->columnSpanFull(),
+                TextInput::make($prefix.'.hero.applyLabel')->label(__('admin.facilities_editor.fields.apply_label'))->required()->maxLength(120),
+                TextInput::make($prefix.'.hero.applyUrl')->label(__('admin.facilities_editor.fields.apply_url'))->required()->maxLength(255),
+                TextInput::make($prefix.'.hero.campusMapLabel')->label(__('admin.facilities_editor.fields.map_label'))->required()->maxLength(120),
             ])->columns(2),
 
-            Section::make('Facts')->schema([
+            Section::make(__('admin.facilities_editor.sections.facts'))->schema([
                 Repeater::make($prefix.'.facts')
-                    ->label('Facts')
+                    ->label(__('admin.facilities_editor.sections.facts'))
                     ->schema([
-                        TextInput::make('value')->required()->maxLength(40),
-                        TextInput::make('label')->required()->maxLength(120),
+                        TextInput::make('value')->label(__('admin.facilities_editor.fields.value'))->required()->maxLength(40),
+                        TextInput::make('label')->label(__('admin.facilities_editor.fields.label'))->required()->maxLength(120),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
                     ->reorderable()
                     ->collapsible()
                     ->columnSpanFull(),
-            ]),
+            ])->collapsed(),
 
-            Section::make('Faculty Buttons')->schema([
+            Section::make(__('admin.facilities_editor.sections.faculty_cards'))->schema([
                 Repeater::make($prefix.'.facultyLinks')
-                    ->label('Faculty Buttons')
+                    ->label(__('admin.facilities_editor.sections.faculty_cards'))
                     ->schema([
-                        TextInput::make('title')->required()->maxLength(160),
-                        Textarea::make('summary')->required()->rows(2),
-                        TextInput::make('url')->required()->maxLength(255),
-                        TextInput::make('accentColor')->label('Accent Color')->maxLength(20),
+                        TextInput::make('title')->label(__('admin.facilities_editor.fields.faculty_name'))->required()->maxLength(160),
+                        Textarea::make('summary')->label(__('admin.facilities_editor.fields.summary'))->required()->rows(2),
+                        Section::make(__('admin.facilities_editor.sections.advanced'))->collapsed()->schema([
+                            TextInput::make('url')->label(__('admin.facilities_editor.fields.url'))->required()->maxLength(255),
+                            TextInput::make('accentColor')->label(__('admin.facilities_editor.fields.accent_color'))->maxLength(20),
+                        ]),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -265,21 +272,21 @@ class ManageFacilities extends Page implements HasForms
                     ->columnSpanFull(),
             ]),
 
-            Section::make('Academic Model')->schema([
-                TextInput::make($prefix.'.model.title')->label('Title')->required()->maxLength(180),
+            Section::make(__('admin.facilities_editor.sections.academic_model'))->schema([
+                TextInput::make($prefix.'.model.title')->label(__('admin.facilities_editor.fields.title'))->required()->maxLength(180),
                 Repeater::make($prefix.'.model.cards')
-                    ->label('Model Cards')
+                    ->label(__('admin.facilities_editor.sections.model_cards'))
                     ->schema([
-                        TextInput::make('title')->required()->maxLength(160),
-                        Textarea::make('summary')->required()->rows(2),
-                        Toggle::make('featured')->label('Featured'),
+                        TextInput::make('title')->label(__('admin.facilities_editor.fields.title'))->required()->maxLength(160),
+                        Textarea::make('summary')->label(__('admin.facilities_editor.fields.summary'))->required()->rows(2),
+                        Toggle::make('featured')->label(__('admin.facilities_editor.fields.featured')),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
                     ->reorderable()
                     ->collapsible()
                     ->columnSpanFull(),
-            ])->columns(2),
+            ])->columns(2)->collapsed(),
         ];
     }
 

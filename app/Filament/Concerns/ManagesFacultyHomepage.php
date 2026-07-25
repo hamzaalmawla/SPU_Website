@@ -37,6 +37,8 @@ trait ManagesFacultyHomepage
 
     public ?int $draftVersion = null;
 
+    public ?string $activeTargetKey = null;
+
     private FacultyPageServiceInterface $facultyPageService;
 
     private CmsWorkflowServiceInterface $cmsWorkflowService;
@@ -93,12 +95,23 @@ trait ManagesFacultyHomepage
 
     public function mount(): void
     {
-        $this->loadTarget($this->defaultTargetKey());
+        $requestedTarget = request()->query('target', $this->defaultTargetKey());
+        $targetKey = is_string($requestedTarget) && array_key_exists($requestedTarget, $this->targetOptions())
+            ? $requestedTarget
+            : $this->defaultTargetKey();
+
+        $requestedDepartment = request()->query('department');
+        $requestedTerm = request()->query('term');
+        $this->data['study_plan_department_id'] = is_string($requestedDepartment) ? $requestedDepartment : '';
+        $this->data['study_plan_term_id'] = is_string($requestedTerm) ? $requestedTerm : '';
+
+        $this->loadTarget($targetKey);
     }
 
     public function loadTarget(string $targetKey): void
     {
         $this->assertManagedTarget($targetKey);
+        $this->activeTargetKey = $targetKey;
         $userId = $this->authenticatedUserId();
         $draftPayload = $this->cmsWorkflowService->latestEditableDraftPayload($targetKey, $userId);
         $payload = is_array($draftPayload) ? $draftPayload : $this->facultyPageService->getEditablePayload($targetKey);
@@ -107,6 +120,7 @@ trait ManagesFacultyHomepage
         $studyPlanDepartmentId = $this->studyPlanDepartmentIdFromPayload($targetKey, $payload, (string) ($this->data['study_plan_department_id'] ?? ''));
         $studyPlanTermOptions = $this->studyPlanTermOptionsFromPayload($targetKey, $payload, $studyPlanDepartmentId);
         $studyPlanTermId = $this->studyPlanTermIdFromPayload($targetKey, $payload, $studyPlanDepartmentId, (string) ($this->data['study_plan_term_id'] ?? ''));
+        $studyPlanCourseOptions = $this->studyPlanCourseOptionsFromPayload($targetKey, $payload, $studyPlanDepartmentId);
 
         $this->form->fill([
             'target_key' => $targetKey,
@@ -122,6 +136,7 @@ trait ManagesFacultyHomepage
         if (is_array($this->data)) {
             $this->data['study_plan_department_options'] = $studyPlanDepartmentOptions;
             $this->data['study_plan_term_options'] = $studyPlanTermOptions;
+            $this->data['study_plan_course_options'] = $studyPlanCourseOptions;
             $this->data['department_study_plan_options'] = $this->departmentStudyPlanOptionsFromTarget($targetKey);
         }
     }
@@ -130,55 +145,36 @@ trait ManagesFacultyHomepage
     {
         return $form
             ->schema([
-                Section::make('Medicine Target')->schema([
-                    Select::make('target_key')
-                        ->label('Page / Subpage')
-                        ->options($this->targetOptions())
-                        ->required()
-                        ->live()
-                        ->afterStateUpdated(fn (?string $state): mixed => is_string($state) && $state !== '' ? $this->loadTarget($state) : null),
-                    Select::make('study_plan_department_id')
-                        ->label('Study Plan Department')
-                        ->options(fn (): array => $this->studyPlanDepartmentOptions())
-                        ->visible(fn (): bool => $this->subpageSlugFromTarget($this->currentTargetKeyForSchema()) === 'study-plan')
-                        ->live()
-                        ->afterStateUpdated(function (): void {
-                            $this->loadTarget($this->currentTargetKeyForSchema());
-                        }),
-                    Select::make('study_plan_term_id')
-                        ->label('Open Term Folder')
-                        ->options(fn (): array => $this->studyPlanTermOptions())
-                        ->visible(fn (): bool => $this->subpageSlugFromTarget($this->currentTargetKeyForSchema()) === 'study-plan')
-                        ->live()
-                        ->afterStateUpdated(function (): void {
-                            $this->loadTarget($this->currentTargetKeyForSchema());
-                        }),
+                Hidden::make('target_key')->required(),
+                Hidden::make('study_plan_department_id'),
+                Hidden::make('study_plan_term_id'),
+                Section::make(__('admin.faculty_workspace.editing_tools'))->schema([
                     TextInput::make('record_search')
-                        ->label('Search Records')
+                        ->label(__('admin.faculty_workspace.fields.search'))
                         ->visible(fn (): bool => $this->hasFilterableRecords($this->currentTargetKeyForSchema()))
                         ->live(onBlur: true)
                         ->afterStateUpdated(function (): void {
                             $this->loadTarget($this->currentTargetKeyForSchema());
                         }),
                     TextInput::make('record_department_filter')
-                        ->label('Department / Faculty Filter')
+                        ->label(__('admin.faculty_workspace.fields.department_filter'))
                         ->visible(fn (): bool => $this->hasFilterableRecords($this->currentTargetKeyForSchema()))
                         ->live(onBlur: true)
                         ->afterStateUpdated(function (): void {
                             $this->loadTarget($this->currentTargetKeyForSchema());
                         }),
                     TextInput::make('record_year_filter')
-                        ->label('Year Filter')
+                        ->label(__('admin.faculty_workspace.fields.year_filter'))
                         ->visible(fn (): bool => $this->hasFilterableRecords($this->currentTargetKeyForSchema()))
                         ->live(onBlur: true)
                         ->afterStateUpdated(function (): void {
                             $this->loadTarget($this->currentTargetKeyForSchema());
                         }),
-                ]),
+                ])->visible(fn (): bool => $this->hasFilterableRecords($this->currentTargetKeyForSchema())),
                 Tabs::make('faculty_homepage_locales')
                     ->tabs([
-                        Tab::make('Arabic')->schema($this->payloadFields('ar')),
-                        Tab::make('English')->schema($this->payloadFields('en')),
+                        Tab::make(__('admin.locales.ar'))->extraAttributes(['dir' => 'rtl'])->schema($this->payloadFields('ar')),
+                        Tab::make(__('admin.locales.en'))->extraAttributes(['dir' => 'ltr'])->schema($this->payloadFields('en')),
                     ])
                     ->persistTabInQueryString('locale')
                     ->columnSpanFull(),
@@ -189,32 +185,106 @@ trait ManagesFacultyHomepage
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('save')->label('Save Draft')->icon('heroicon-o-check')->color('gray')->action(function (): void {
+            Action::make('save')->label(__('admin.faculty_workspace.actions.save_draft'))->icon('heroicon-o-check')->color('gray')->action(function (): void {
                 $this->save();
             }),
-            Action::make('preview_ar')->label('Preview AR')->icon('heroicon-o-eye')->color('info')->action(function (): void {
+            Action::make('preview_ar')->label(__('admin.faculty_workspace.actions.preview_ar'))->icon('heroicon-o-eye')->color('info')->action(function (): void {
                 $this->openPreview('ar');
             }),
-            Action::make('preview_en')->label('Preview EN')->icon('heroicon-o-eye')->color('info')->action(function (): void {
+            Action::make('preview_en')->label(__('admin.faculty_workspace.actions.preview_en'))->icon('heroicon-o-eye')->color('info')->action(function (): void {
                 $this->openPreview('en');
             }),
-            Action::make('publish')->label('Publish')->icon('heroicon-o-paper-airplane')->color('success')->requiresConfirmation()->action(function (): void {
-                $this->publish();
-            }),
+            Action::make('publish')->label(__('admin.faculty_workspace.actions.publish'))->icon('heroicon-o-paper-airplane')->color('success')->requiresConfirmation()
+                ->visible(fn (): bool => Gate::allows('publish-content'))->action(function (): void {
+                    $this->publish();
+                }),
             Action::make('schedule')
-                ->label('Schedule')
+                ->label(__('admin.faculty_workspace.actions.schedule'))
                 ->icon('heroicon-o-clock')
                 ->color('warning')
                 ->form([
-                    DateTimePicker::make('publish_at')->label('Publish At')->required()->minDate(now())->native(false),
+                    DateTimePicker::make('publish_at')->label(__('admin.faculty_workspace.fields.publish_at'))->required()->minDate(now())->native(false),
                 ])
+                ->visible(fn (): bool => Gate::allows('publish-content'))
                 ->action(function (array $data): void {
                     $this->schedule((string) $data['publish_at']);
                 }),
-            Action::make('unpublish')->label('Unpublish')->icon('heroicon-o-x-circle')->color('danger')->requiresConfirmation()->action(function (): void {
-                $this->unpublish();
-            }),
+            Action::make('unpublish')->label(__('admin.faculty_workspace.actions.unpublish'))->icon('heroicon-o-x-circle')->color('danger')->requiresConfirmation()
+                ->visible(fn (): bool => Gate::allows('publish-content'))->action(function (): void {
+                    $this->unpublish();
+                }),
         ];
+    }
+
+    /** @return list<array{key: string, label: string, description: string, url: string, active: bool}> */
+    public function getFacultyWorkspaceTasks(): array
+    {
+        $currentTarget = $this->currentTargetKeyForSchema();
+
+        return collect(array_keys($this->targetOptions()))
+            ->map(function (string $key) use ($currentTarget): array {
+                $task = $key === $this->defaultTargetKey()
+                    ? 'homepage'
+                    : str_replace('-', '_', (string) Str::afterLast($key, '.'));
+
+                return [
+                    'key' => $key,
+                    'label' => __('admin.faculty_workspace.targets.'.$task),
+                    'description' => __('admin.faculty_workspace.descriptions.'.$task),
+                    'url' => static::getUrl(['target' => $key]),
+                    'active' => $key === $currentTarget,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    /** @return list<array{id: string, label: string, url: string, active: bool}> */
+    public function getStudyPlanDepartmentNavigation(): array
+    {
+        if ($this->subpageSlugFromTarget($this->currentTargetKeyForSchema()) !== 'study-plan') {
+            return [];
+        }
+
+        $currentDepartment = (string) ($this->data['study_plan_department_id'] ?? '');
+
+        return collect($this->studyPlanDepartmentOptions())
+            ->map(fn (string $label, string $id): array => [
+                'id' => $id,
+                'label' => $label,
+                'url' => static::getUrl([
+                    'target' => $this->currentTargetKeyForSchema(),
+                    'department' => $id,
+                ]),
+                'active' => $id === $currentDepartment,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /** @return list<array{id: string, label: string, url: string, active: bool}> */
+    public function getStudyPlanTermNavigation(): array
+    {
+        if ($this->subpageSlugFromTarget($this->currentTargetKeyForSchema()) !== 'study-plan') {
+            return [];
+        }
+
+        $currentDepartment = (string) ($this->data['study_plan_department_id'] ?? '');
+        $currentTerm = (string) ($this->data['study_plan_term_id'] ?? '');
+
+        return collect($this->studyPlanTermOptions())
+            ->map(fn (string $label, string $id): array => [
+                'id' => $id,
+                'label' => $label,
+                'url' => static::getUrl([
+                    'target' => $this->currentTargetKeyForSchema(),
+                    'department' => $currentDepartment,
+                    'term' => $id,
+                ]),
+                'active' => $id === $currentTerm,
+            ])
+            ->values()
+            ->all();
     }
 
     public function save(): void
@@ -226,13 +296,13 @@ trait ManagesFacultyHomepage
             $draft = $this->cmsWorkflowService->saveDraft($this->currentTargetKey(), $this->payloadFromForm($this->currentFormData()), (int) $user->id, $this->draftVersion);
             $this->draftVersion = $draft->version;
 
-            Notification::make()->title('Faculty draft saved')->success()->send();
+            Notification::make()->title(__('admin.faculty_workspace.notifications.draft_saved'))->success()->send();
         } catch (ConflictException $e) {
             $this->draftVersion = $e->currentVersion;
-            Notification::make()->title('Draft conflict detected')->body('Reload this faculty target before saving again.')->danger()->persistent()->send();
+            Notification::make()->title(__('admin.faculty_workspace.notifications.conflict'))->body(__('admin.faculty_workspace.notifications.conflict_description'))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to save faculty draft')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('admin.faculty_workspace.notifications.save_failed'))->body(__('admin.faculty_workspace.notifications.safe_error'))->danger()->send();
         }
     }
 
@@ -250,10 +320,10 @@ trait ManagesFacultyHomepage
             $this->redirect($preview->previewUrl);
         } catch (ConflictException $e) {
             $this->draftVersion = $e->currentVersion;
-            Notification::make()->title('Draft conflict detected')->body('Reload this faculty target before previewing again.')->danger()->persistent()->send();
+            Notification::make()->title(__('admin.faculty_workspace.notifications.conflict'))->body(__('admin.faculty_workspace.notifications.conflict_description'))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to create faculty preview')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('admin.faculty_workspace.notifications.preview_failed'))->body(__('admin.faculty_workspace.notifications.safe_error'))->danger()->send();
         }
     }
 
@@ -268,12 +338,12 @@ trait ManagesFacultyHomepage
             $this->draftVersion = $draft->version;
             $this->cmsWorkflowService->publish($targetKey, (int) $user->id);
 
-            Notification::make()->title('Faculty homepage published')->success()->send();
+            Notification::make()->title(__('admin.faculty_workspace.notifications.published'))->success()->send();
         } catch (ValidationException $e) {
-            Notification::make()->title('Publish failed')->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
+            Notification::make()->title(__('admin.faculty_workspace.notifications.publish_failed'))->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to publish faculty homepage')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('admin.faculty_workspace.notifications.publish_failed'))->body(__('admin.faculty_workspace.notifications.safe_error'))->danger()->send();
         }
     }
 
@@ -288,12 +358,12 @@ trait ManagesFacultyHomepage
             $this->draftVersion = $draft->version;
             $this->cmsWorkflowService->schedule($targetKey, new \DateTimeImmutable($publishAt), (int) $user->id);
 
-            Notification::make()->title('Faculty homepage scheduled')->success()->send();
+            Notification::make()->title(__('admin.faculty_workspace.notifications.scheduled'))->success()->send();
         } catch (ValidationException $e) {
-            Notification::make()->title('Schedule failed')->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
+            Notification::make()->title(__('admin.faculty_workspace.notifications.schedule_failed'))->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to schedule faculty homepage')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('admin.faculty_workspace.notifications.schedule_failed'))->body(__('admin.faculty_workspace.notifications.safe_error'))->danger()->send();
         }
     }
 
@@ -302,7 +372,9 @@ trait ManagesFacultyHomepage
         /** @var User $user */
         $user = auth()->user();
         $result = $this->cmsWorkflowService->unpublish($this->currentTargetKey(), (int) $user->id);
-        $notification = Notification::make()->title($result ? 'Faculty homepage unpublished' : 'No published faculty homepage found');
+        $notification = Notification::make()->title($result
+            ? __('admin.faculty_workspace.notifications.unpublished')
+            : __('admin.faculty_workspace.notifications.nothing_published'));
 
         ($result ? $notification->success() : $notification->warning())->send();
     }
@@ -317,50 +389,50 @@ trait ManagesFacultyHomepage
         $prefix = $locale.'_content';
 
         return [
-            Section::make('Page Content')->schema([
-                TextInput::make($prefix.'.title')->label('Page Title')->maxLength(180),
-                TextInput::make($prefix.'.summary')->label('Summary')->maxLength(255),
-                Textarea::make($prefix.'.body')->label('Body')->rows(5)->columnSpanFull(),
+            Section::make(__('admin.faculty_workspace.editor.sections.page_content'))->schema([
+                TextInput::make($prefix.'.title')->label(__('admin.faculty_workspace.editor.fields.page_title'))->maxLength(180),
+                TextInput::make($prefix.'.summary')->label(__('admin.faculty_workspace.editor.fields.summary'))->maxLength(255),
+                Textarea::make($prefix.'.body')->label(__('admin.faculty_workspace.editor.fields.body'))->rows(5)->columnSpanFull(),
             ])->columns(2),
 
-            Section::make('Faculty Identity')->schema([
-                TextInput::make($prefix.'.faculty.name')->label('Name')->maxLength(180),
-                TextInput::make($prefix.'.faculty.title')->label('Display Title')->maxLength(180),
-                TextInput::make($prefix.'.faculty.yearsLabel')->label('Years Label')->maxLength(80),
-                TextInput::make($prefix.'.faculty.accentColor')->label('Accent Color')->maxLength(20),
-                MediaPicker::image($prefix.'.faculty.heroImage', 'Hero Image'),
-                MediaPicker::image($prefix.'.faculty.logoImage', 'Logo Image'),
-                Textarea::make($prefix.'.faculty.summary')->label('Short Summary')->rows(2)->columnSpanFull(),
-                Textarea::make($prefix.'.faculty.description')->label('Description')->rows(4)->columnSpanFull(),
-            ])->columns(2),
+            Section::make(__('admin.faculty_workspace.editor.sections.faculty_identity'))->schema([
+                TextInput::make($prefix.'.faculty.name')->label(__('admin.faculty_workspace.editor.fields.name'))->maxLength(180),
+                TextInput::make($prefix.'.faculty.title')->label(__('admin.faculty_workspace.editor.fields.display_title'))->maxLength(180),
+                TextInput::make($prefix.'.faculty.yearsLabel')->label(__('admin.faculty_workspace.editor.fields.years_label'))->maxLength(80),
+                TextInput::make($prefix.'.faculty.accentColor')->label(__('admin.faculty_workspace.editor.fields.accent_color'))->maxLength(20),
+                MediaPicker::image($prefix.'.faculty.heroImage', __('admin.faculty_workspace.editor.fields.hero_image')),
+                MediaPicker::image($prefix.'.faculty.logoImage', __('admin.faculty_workspace.editor.fields.logo_image')),
+                Textarea::make($prefix.'.faculty.summary')->label(__('admin.faculty_workspace.editor.fields.short_summary'))->rows(2)->columnSpanFull(),
+                Textarea::make($prefix.'.faculty.description')->label(__('admin.faculty_workspace.editor.fields.description'))->rows(4)->columnSpanFull(),
+            ])->columns(2)->collapsed(),
 
-            Section::make('Overview Tabs')->schema([
+            Section::make(__('admin.faculty_workspace.editor.sections.overview_tabs'))->schema([
                 Repeater::make($prefix.'.tabs')
-                    ->label('Tabs')
+                    ->label(__('admin.faculty_workspace.editor.fields.tabs'))
                     ->schema([
-                        TextInput::make('id')->maxLength(80),
-                        TextInput::make('label')->maxLength(120),
-                        Textarea::make('body')->rows(3)->columnSpanFull(),
+                        Hidden::make('id')->default(fn (): string => 'tab-'.Str::lower(Str::random(8))),
+                        TextInput::make('label')->label(__('admin.faculty_workspace.editor.fields.label'))->maxLength(120),
+                        Textarea::make('body')->label(__('admin.faculty_workspace.editor.fields.body'))->rows(3)->columnSpanFull(),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
                     ->reorderable()
                     ->collapsible()
                     ->columnSpanFull(),
-            ]),
+            ])->collapsed(),
 
-            Section::make('Dean Message')->schema([
-                TextInput::make($prefix.'.dean.name')->label('Dean Name')->maxLength(160),
-                TextInput::make($prefix.'.dean.role')->label('Dean Role')->maxLength(160),
-                MediaPicker::image($prefix.'.dean.image', 'Dean Image'),
-                Textarea::make($prefix.'.dean.message')->label('Message')->rows(4)->columnSpanFull(),
+            Section::make(__('admin.faculty_workspace.editor.sections.dean_message'))->schema([
+                TextInput::make($prefix.'.dean.name')->label(__('admin.faculty_workspace.editor.fields.dean_name'))->maxLength(160),
+                TextInput::make($prefix.'.dean.role')->label(__('admin.faculty_workspace.editor.fields.dean_role'))->maxLength(160),
+                MediaPicker::image($prefix.'.dean.image', __('admin.faculty_workspace.editor.fields.dean_image')),
+                Textarea::make($prefix.'.dean.message')->label(__('admin.faculty_workspace.editor.fields.message'))->rows(4)->columnSpanFull(),
             ])->columns(2),
 
-            Section::make('Gallery')->schema([
+            Section::make(__('admin.faculty_workspace.editor.sections.gallery'))->schema([
                 Repeater::make($prefix.'.gallery')
-                    ->label('Gallery Images')
+                    ->label(__('admin.faculty_workspace.editor.fields.gallery_images'))
                     ->schema([
-                        MediaPicker::image('image', 'Image'),
+                        MediaPicker::image('image', __('admin.faculty_workspace.editor.fields.image')),
                     ])
                     ->defaultItems(0)
                     ->reorderable()
@@ -368,13 +440,13 @@ trait ManagesFacultyHomepage
                     ->columnSpanFull(),
             ]),
 
-            Section::make('Stats')->schema([
+            Section::make(__('admin.faculty_workspace.editor.sections.stats'))->schema([
                 Repeater::make($prefix.'.stats')
-                    ->label('Stats')
+                    ->label(__('admin.faculty_workspace.editor.sections.stats'))
                     ->schema([
-                        TextInput::make('value')->maxLength(40),
-                        TextInput::make('label')->maxLength(120),
-                        MediaPicker::icon('icon', 'Icon'),
+                        TextInput::make('value')->label(__('admin.faculty_workspace.editor.fields.value'))->maxLength(40),
+                        TextInput::make('label')->label(__('admin.faculty_workspace.editor.fields.label'))->maxLength(120),
+                        MediaPicker::icon('icon', __('admin.faculty_workspace.editor.fields.icon')),
                     ])
                     ->columns(3)
                     ->defaultItems(0)
@@ -383,18 +455,18 @@ trait ManagesFacultyHomepage
                     ->columnSpanFull(),
             ]),
 
-            Section::make('Latest Research Cards')->schema([
+            Section::make(__('admin.faculty_workspace.editor.sections.latest_research'))->schema([
                 Repeater::make($prefix.'.latestResearch')
-                    ->label('Research Cards')
+                    ->label(__('admin.faculty_workspace.editor.sections.latest_research'))
                     ->schema([
-                        TextInput::make('title')->maxLength(180),
-                        TextInput::make('type')->maxLength(120),
-                        TextInput::make('date')->maxLength(80),
-                        TextInput::make('doi')->maxLength(120),
-                        MediaPicker::image('image', 'Image'),
-                        TextInput::make('url')->maxLength(255),
-                        TextInput::make('cta')->maxLength(120),
-                        Textarea::make('summary')->rows(2)->columnSpanFull(),
+                        TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.title'))->maxLength(180),
+                        TextInput::make('type')->label(__('admin.faculty_workspace.editor.fields.type'))->maxLength(120),
+                        TextInput::make('date')->label(__('admin.faculty_workspace.editor.fields.date'))->maxLength(80),
+                        TextInput::make('doi')->label(__('admin.faculty_workspace.editor.fields.doi'))->maxLength(120),
+                        MediaPicker::image('image', __('admin.faculty_workspace.editor.fields.image')),
+                        TextInput::make('url')->label(__('admin.faculty_workspace.editor.fields.url'))->maxLength(255),
+                        TextInput::make('cta')->label(__('admin.faculty_workspace.editor.fields.action_label'))->maxLength(120),
+                        Textarea::make('summary')->label(__('admin.faculty_workspace.editor.fields.summary'))->rows(2)->columnSpanFull(),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -450,12 +522,12 @@ trait ManagesFacultyHomepage
     private function baseSubpageFields(string $prefix): array
     {
         return [
-            Section::make('Subpage Content')->schema([
-                TextInput::make($prefix.'.title')->label('Title')->required()->maxLength(180),
-                MediaPicker::image($prefix.'.heroImage', 'Hero Image'),
-                Textarea::make($prefix.'.summary')->label('Summary')->rows(2)->columnSpanFull(),
-                Textarea::make($prefix.'.body')->label('Body')->rows(4)->columnSpanFull(),
-            ])->columns(2),
+            Section::make(__('admin.faculty_workspace.editor.sections.page_intro'))->schema([
+                TextInput::make($prefix.'.title')->label(__('admin.faculty_workspace.editor.fields.title'))->required()->maxLength(180),
+                MediaPicker::image($prefix.'.heroImage', __('admin.faculty_workspace.editor.fields.hero_image')),
+                Textarea::make($prefix.'.summary')->label(__('admin.faculty_workspace.editor.fields.summary'))->rows(2)->columnSpanFull(),
+                Textarea::make($prefix.'.body')->label(__('admin.faculty_workspace.editor.fields.body'))->rows(4)->columnSpanFull(),
+            ])->columns(2)->collapsed(),
         ];
     }
 
@@ -463,49 +535,49 @@ trait ManagesFacultyHomepage
     private function trainingSubpageFields(string $prefix): array
     {
         return [
-            Section::make('Training Hero')->schema([
-                TextInput::make($prefix.'.payload.hero.eyebrow')->required()->maxLength(120),
-                TextInput::make($prefix.'.payload.hero.title')->required()->maxLength(180),
-                Textarea::make($prefix.'.payload.hero.summary')->required()->rows(3)->columnSpanFull(),
-                MediaPicker::image($prefix.'.payload.hero.image', 'Hero Image', true),
+            Section::make(__('admin.faculty_workspace.editor.sections.training_intro'))->schema([
+                TextInput::make($prefix.'.payload.hero.eyebrow')->label(__('admin.faculty_workspace.editor.fields.eyebrow'))->required()->maxLength(120),
+                TextInput::make($prefix.'.payload.hero.title')->label(__('admin.faculty_workspace.editor.fields.title'))->required()->maxLength(180),
+                Textarea::make($prefix.'.payload.hero.summary')->label(__('admin.faculty_workspace.editor.fields.summary'))->required()->rows(3)->columnSpanFull(),
+                MediaPicker::image($prefix.'.payload.hero.image', __('admin.faculty_workspace.editor.fields.hero_image'), true),
             ])->columns(2),
-            Section::make('Training Introduction')->schema([
+            Section::make(__('admin.faculty_workspace.editor.sections.training_cards'))->schema([
                 Repeater::make($prefix.'.payload.introCards')->schema([
-                    TextInput::make('title')->required()->maxLength(180),
-                    MediaPicker::icon('icon', 'Icon', true),
-                    Textarea::make('description')->required()->rows(3)->columnSpanFull(),
+                    TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.title'))->required()->maxLength(180),
+                    MediaPicker::icon('icon', __('admin.faculty_workspace.editor.fields.icon'), true),
+                    Textarea::make('description')->label(__('admin.faculty_workspace.editor.fields.description'))->required()->rows(3)->columnSpanFull(),
                 ])->columns(2)->reorderable()->minItems(1)->columnSpanFull(),
             ]),
-            Section::make('Training Programme')->schema([
-                TextInput::make($prefix.'.payload.programme.title')->required()->maxLength(180),
+            Section::make(__('admin.faculty_workspace.editor.sections.training_program'))->schema([
+                TextInput::make($prefix.'.payload.programme.title')->label(__('admin.faculty_workspace.editor.fields.title'))->required()->maxLength(180),
                 Repeater::make($prefix.'.payload.programme.steps')->schema([
-                    TextInput::make('number')->required()->maxLength(20),
-                    TextInput::make('title')->required()->maxLength(180),
-                    Textarea::make('description')->required()->rows(3)->columnSpanFull(),
+                    TextInput::make('number')->label(__('admin.faculty_workspace.editor.fields.step_number'))->required()->maxLength(20),
+                    TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.title'))->required()->maxLength(180),
+                    Textarea::make('description')->label(__('admin.faculty_workspace.editor.fields.description'))->required()->rows(3)->columnSpanFull(),
                 ])->columns(2)->reorderable()->minItems(1)->columnSpanFull(),
             ]),
-            Section::make('Verified Training Destinations')->description('Only existing localized SPU routes can be published.')->schema([
-                TextInput::make($prefix.'.payload.partners.title')->required()->maxLength(180),
-                TextInput::make($prefix.'.payload.partners.cta')->required()->maxLength(120),
+            Section::make(__('admin.faculty_workspace.editor.sections.training_destinations'))->description(__('admin.faculty_workspace.editor.help.verified_routes'))->schema([
+                TextInput::make($prefix.'.payload.partners.title')->label(__('admin.faculty_workspace.editor.fields.title'))->required()->maxLength(180),
+                TextInput::make($prefix.'.payload.partners.cta')->label(__('admin.faculty_workspace.editor.fields.action_label'))->required()->maxLength(120),
                 Repeater::make($prefix.'.payload.partners.items')->schema([
-                    TextInput::make('title')->required()->maxLength(180),
-                    TextInput::make('category')->required()->maxLength(120),
-                    TextInput::make('href')->required()->maxLength(255),
-                    MediaPicker::image('image', 'Image', true),
-                    Textarea::make('description')->required()->rows(3)->columnSpanFull(),
+                    TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.title'))->required()->maxLength(180),
+                    TextInput::make('category')->label(__('admin.faculty_workspace.editor.fields.category'))->required()->maxLength(120),
+                    TextInput::make('href')->label(__('admin.faculty_workspace.editor.fields.url'))->required()->maxLength(255),
+                    MediaPicker::image('image', __('admin.faculty_workspace.editor.fields.image'), true),
+                    Textarea::make('description')->label(__('admin.faculty_workspace.editor.fields.description'))->required()->rows(3)->columnSpanFull(),
                 ])->columns(2)->reorderable()->columnSpanFull(),
             ])->columns(2),
-            Section::make('Verified Facts')->schema([
+            Section::make(__('admin.faculty_workspace.editor.sections.verified_facts'))->schema([
                 Repeater::make($prefix.'.payload.facts')->schema([
-                    TextInput::make('value')->required()->maxLength(80),
-                    TextInput::make('label')->required()->maxLength(160),
-                    Toggle::make('verified')->label('Verified by faculty content owner')->required(),
+                    TextInput::make('value')->label(__('admin.faculty_workspace.editor.fields.value'))->required()->maxLength(80),
+                    TextInput::make('label')->label(__('admin.faculty_workspace.editor.fields.label'))->required()->maxLength(160),
+                    Toggle::make('verified')->label(__('admin.faculty_workspace.editor.fields.verified'))->required(),
                 ])->columns(2)->reorderable()->columnSpanFull(),
             ]),
-            Section::make('SEO')->schema([
-                TextInput::make($prefix.'.seoTitle')->required()->maxLength(180),
-                Textarea::make($prefix.'.seoDescription')->required()->rows(2),
-                MediaPicker::image($prefix.'.seoImage', 'SEO Image', true),
+            Section::make(__('admin.faculty_workspace.editor.sections.seo'))->schema([
+                TextInput::make($prefix.'.seoTitle')->label(__('admin.faculty_workspace.editor.fields.seo_title'))->required()->maxLength(180),
+                Textarea::make($prefix.'.seoDescription')->label(__('admin.faculty_workspace.editor.fields.seo_description'))->required()->rows(2),
+                MediaPicker::image($prefix.'.seoImage', __('admin.faculty_workspace.editor.fields.seo_image'), true),
             ])->columns(2),
         ];
     }
@@ -514,13 +586,13 @@ trait ManagesFacultyHomepage
     private function overviewSubpageFields(string $prefix): array
     {
         return [
-            Section::make('Overview Sections')->schema([
+            Section::make(__('admin.faculty_workspace.editor.sections.overview_sections'))->schema([
                 Repeater::make($prefix.'.sections')
-                    ->label('Narrative Sections')
+                    ->label(__('admin.faculty_workspace.editor.sections.overview_sections'))
                     ->schema([
-                        TextInput::make('id')->maxLength(80),
-                        TextInput::make('title')->maxLength(160),
-                        Textarea::make('body')->rows(4)->columnSpanFull(),
+                        Hidden::make('id')->default(fn (): string => 'section-'.Str::lower(Str::random(8))),
+                        TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.title'))->maxLength(160),
+                        Textarea::make('body')->label(__('admin.faculty_workspace.editor.fields.body'))->rows(4)->columnSpanFull(),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -529,13 +601,13 @@ trait ManagesFacultyHomepage
                     ->columnSpanFull(),
             ]),
 
-            Section::make('Overview Stats')->schema([
+            Section::make(__('admin.faculty_workspace.editor.sections.stats'))->schema([
                 Repeater::make($prefix.'.stats')
-                    ->label('Stats')
+                    ->label(__('admin.faculty_workspace.editor.sections.stats'))
                     ->schema([
-                        TextInput::make('value')->maxLength(40),
-                        TextInput::make('label')->maxLength(120),
-                        MediaPicker::icon('icon', 'Icon'),
+                        TextInput::make('value')->label(__('admin.faculty_workspace.editor.fields.value'))->maxLength(40),
+                        TextInput::make('label')->label(__('admin.faculty_workspace.editor.fields.label'))->maxLength(120),
+                        MediaPicker::icon('icon', __('admin.faculty_workspace.editor.fields.icon')),
                     ])
                     ->columns(3)
                     ->defaultItems(0)
@@ -544,14 +616,14 @@ trait ManagesFacultyHomepage
                     ->columnSpanFull(),
             ]),
 
-            Section::make('Dean Message')->schema([
-                TextInput::make($prefix.'.dean.nameAr')->label('Dean Name AR')->maxLength(160),
-                TextInput::make($prefix.'.dean.nameEn')->label('Dean Name EN')->maxLength(160),
-                TextInput::make($prefix.'.dean.roleAr')->label('Dean Role AR')->maxLength(160),
-                TextInput::make($prefix.'.dean.roleEn')->label('Dean Role EN')->maxLength(160),
-                MediaPicker::image($prefix.'.dean.image', 'Dean Image'),
-                Textarea::make($prefix.'.dean.messageAr')->label('Message AR')->rows(4),
-                Textarea::make($prefix.'.dean.messageEn')->label('Message EN')->rows(4),
+            Section::make(__('admin.faculty_workspace.editor.sections.dean_message'))->schema([
+                TextInput::make($prefix.'.dean.nameAr')->label(__('admin.faculty_workspace.editor.fields.dean_name_ar'))->maxLength(160),
+                TextInput::make($prefix.'.dean.nameEn')->label(__('admin.faculty_workspace.editor.fields.dean_name_en'))->maxLength(160),
+                TextInput::make($prefix.'.dean.roleAr')->label(__('admin.faculty_workspace.editor.fields.dean_role_ar'))->maxLength(160),
+                TextInput::make($prefix.'.dean.roleEn')->label(__('admin.faculty_workspace.editor.fields.dean_role_en'))->maxLength(160),
+                MediaPicker::image($prefix.'.dean.image', __('admin.faculty_workspace.editor.fields.dean_image')),
+                Textarea::make($prefix.'.dean.messageAr')->label(__('admin.faculty_workspace.editor.fields.message_ar'))->rows(4),
+                Textarea::make($prefix.'.dean.messageEn')->label(__('admin.faculty_workspace.editor.fields.message_en'))->rows(4),
             ])->columns(2),
         ];
     }
@@ -560,95 +632,98 @@ trait ManagesFacultyHomepage
     private function studyPlanSubpageFields(string $prefix): array
     {
         return [
-            Section::make('Study Plan Labels')->schema([
-                TextInput::make($prefix.'.payload.labels.title')->label('Title')->maxLength(160),
-                TextInput::make($prefix.'.payload.labels.home')->label('Home Label')->maxLength(120),
-                TextInput::make($prefix.'.payload.labels.faculties')->label('Facilities Label')->maxLength(120),
-                TextInput::make($prefix.'.payload.labels.empty')->label('Empty Label')->maxLength(160),
-                TextInput::make($prefix.'.payload.labels.electiveRequirements')->label('Elective Requirements Label')->maxLength(160),
-                TextInput::make($prefix.'.payload.labels.promotionRequirements')->label('Promotion Requirements Label')->maxLength(160),
-                TextInput::make($prefix.'.payload.labels.viewDetails')->label('Course Details Label')->maxLength(120),
-                TextInput::make($prefix.'.payload.labels.close')->label('Close Label')->maxLength(120),
-            ])->columns(2),
+            Section::make(__('admin.faculty_workspace.study_plan.interface_labels'))->schema([
+                TextInput::make($prefix.'.payload.labels.title')->label(__('admin.faculty_workspace.study_plan.labels.title'))->maxLength(160),
+                TextInput::make($prefix.'.payload.labels.home')->label(__('admin.faculty_workspace.study_plan.labels.home'))->maxLength(120),
+                TextInput::make($prefix.'.payload.labels.faculties')->label(__('admin.faculty_workspace.study_plan.labels.faculties'))->maxLength(120),
+                TextInput::make($prefix.'.payload.labels.empty')->label(__('admin.faculty_workspace.study_plan.labels.empty'))->maxLength(160),
+                TextInput::make($prefix.'.payload.labels.electiveRequirements')->label(__('admin.faculty_workspace.study_plan.labels.elective_requirements'))->maxLength(160),
+                TextInput::make($prefix.'.payload.labels.promotionRequirements')->label(__('admin.faculty_workspace.study_plan.labels.promotion_requirements'))->maxLength(160),
+                TextInput::make($prefix.'.payload.labels.viewDetails')->label(__('admin.faculty_workspace.study_plan.labels.course_details'))->maxLength(120),
+                TextInput::make($prefix.'.payload.labels.close')->label(__('admin.faculty_workspace.study_plan.labels.close'))->maxLength(120),
+            ])->columns(2)->collapsed(),
 
-            Section::make('Course Page Labels')->schema([
-                TextInput::make($prefix.'.payload.courseLabels.studyPlan')->label('Study Plan Label')->maxLength(160),
-                TextInput::make($prefix.'.payload.courseLabels.coursePage')->label('Course Page Label')->maxLength(160),
-                TextInput::make($prefix.'.payload.courseLabels.credits')->label('Credits Label')->maxLength(120),
-                TextInput::make($prefix.'.payload.courseLabels.courseType')->label('Course Type Label')->maxLength(120),
-                TextInput::make($prefix.'.payload.courseLabels.requiredStatus')->label('Required Status Label')->maxLength(120),
-                TextInput::make($prefix.'.payload.courseLabels.required')->label('Required Label')->maxLength(120),
-                TextInput::make($prefix.'.payload.courseLabels.elective')->label('Elective Label')->maxLength(120),
-                TextInput::make($prefix.'.payload.courseLabels.prerequisites')->label('Prerequisites Label')->maxLength(120),
-                TextInput::make($prefix.'.payload.courseLabels.opensAfter')->label('Opens After Label')->maxLength(120),
-                TextInput::make($prefix.'.payload.courseLabels.lessons')->label('Lessons Label')->maxLength(120),
-                TextInput::make($prefix.'.payload.courseLabels.all')->label('All Lessons Label')->maxLength(120),
-                TextInput::make($prefix.'.payload.courseLabels.viewPdf')->label('View PDF Label')->maxLength(120),
-                TextInput::make($prefix.'.payload.courseLabels.download')->label('Download Label')->maxLength(120),
-            ])->columns(2),
+            Section::make(__('admin.faculty_workspace.study_plan.course_page_labels'))->schema([
+                TextInput::make($prefix.'.payload.courseLabels.studyPlan')->label(__('admin.faculty_workspace.study_plan.labels.study_plan'))->maxLength(160),
+                TextInput::make($prefix.'.payload.courseLabels.coursePage')->label(__('admin.faculty_workspace.study_plan.labels.course_page'))->maxLength(160),
+                TextInput::make($prefix.'.payload.courseLabels.credits')->label(__('admin.faculty_workspace.study_plan.labels.credits'))->maxLength(120),
+                TextInput::make($prefix.'.payload.courseLabels.courseType')->label(__('admin.faculty_workspace.study_plan.labels.course_type'))->maxLength(120),
+                TextInput::make($prefix.'.payload.courseLabels.requiredStatus')->label(__('admin.faculty_workspace.study_plan.labels.required_status'))->maxLength(120),
+                TextInput::make($prefix.'.payload.courseLabels.required')->label(__('admin.faculty_workspace.study_plan.labels.required'))->maxLength(120),
+                TextInput::make($prefix.'.payload.courseLabels.elective')->label(__('admin.faculty_workspace.study_plan.labels.elective'))->maxLength(120),
+                TextInput::make($prefix.'.payload.courseLabels.prerequisites')->label(__('admin.faculty_workspace.study_plan.labels.prerequisites'))->maxLength(120),
+                TextInput::make($prefix.'.payload.courseLabels.opensAfter')->label(__('admin.faculty_workspace.study_plan.labels.opens_after'))->maxLength(120),
+                TextInput::make($prefix.'.payload.courseLabels.lessons')->label(__('admin.faculty_workspace.study_plan.labels.lessons'))->maxLength(120),
+                TextInput::make($prefix.'.payload.courseLabels.all')->label(__('admin.faculty_workspace.study_plan.labels.all_lessons'))->maxLength(120),
+                TextInput::make($prefix.'.payload.courseLabels.viewPdf')->label(__('admin.faculty_workspace.study_plan.labels.view_pdf'))->maxLength(120),
+                TextInput::make($prefix.'.payload.courseLabels.download')->label(__('admin.faculty_workspace.study_plan.labels.download'))->maxLength(120),
+            ])->columns(2)->collapsed(),
 
-            Section::make('Study Plan Departments')->schema([
-                TextInput::make($prefix.'.payload.plan.faculty')->label('Plan Faculty Name')->maxLength(180),
-                MediaPicker::image($prefix.'.payload.plan.heroImage', 'Plan Hero Image'),
-                TextInput::make($prefix.'.payload.plan.accent')->label('Plan Accent Color')->maxLength(20),
+            Section::make(__('admin.faculty_workspace.study_plan.plan_settings'))->schema([
+                TextInput::make($prefix.'.payload.plan.faculty')->label(__('admin.faculty_workspace.study_plan.plan_faculty'))->maxLength(180),
+                MediaPicker::image($prefix.'.payload.plan.heroImage', __('admin.faculty_workspace.study_plan.plan_image')),
+                TextInput::make($prefix.'.payload.plan.accent')->label(__('admin.faculty_workspace.study_plan.plan_color'))->maxLength(20),
                 Repeater::make($prefix.'.payload.plan.departments')
-                    ->label('Departments')
+                    ->label(__('admin.faculty_workspace.editor.sections.departments'))
                     ->schema([
-                        TextInput::make('id')->required()->maxLength(80),
-                        TextInput::make('name')->required()->maxLength(160),
-                        TextInput::make('totalCredits')->numeric(),
+                        TextInput::make('id')->label(__('admin.faculty_workspace.study_plan.internal_department_id'))->required()->maxLength(80),
+                        TextInput::make('name')->label(__('admin.faculty_workspace.editor.fields.department_name'))->required()->maxLength(160),
+                        TextInput::make('totalCredits')->label(__('admin.faculty_workspace.study_plan.total_credits'))->numeric(),
                     ])
                     ->columns(3)
                     ->defaultItems(0)
                     ->reorderable()
                     ->collapsible()
                     ->columnSpanFull(),
-            ])->columns(2),
+            ])->columns(2)->collapsed(),
 
-            Section::make('Study Plan Tree')->schema([
+            Section::make(__('admin.faculty_workspace.study_plan.courses'))->description(__('admin.faculty_workspace.study_plan.courses_help'))->schema([
                 Repeater::make($prefix.'.payload.plan.terms')
-                    ->label('Term Folders')
+                    ->label(__('admin.faculty_workspace.study_plan.terms'))
                     ->schema([
                         TextInput::make('id')->required()->maxLength(80),
                         TextInput::make('label')->required()->maxLength(120),
                         Repeater::make('courses')
-                            ->label('Courses In This Term')
+                            ->label(__('admin.faculty_workspace.study_plan.courses_in_term'))
                             ->visible(fn (Get $get): bool => (string) $get('id') === (string) ($this->data['study_plan_term_id'] ?? ''))
                             ->schema([
-                                TextInput::make('id')->required()->label('Course ID')->maxLength(80),
-                                TextInput::make('code')->maxLength(80),
-                                TextInput::make('title')->required()->maxLength(180),
-                                TextInput::make('credits')->numeric(),
-                                Select::make('type')->options([
-                                    'university' => 'University Requirement',
-                                    'faculty' => 'Faculty Requirement',
-                                    'specialization' => 'Specialization Requirement',
+                                TextInput::make('code')->label(__('admin.faculty_workspace.study_plan.course_code'))->maxLength(80),
+                                TextInput::make('title')->label(__('admin.faculty_workspace.study_plan.course_title'))->required()->maxLength(180),
+                                TextInput::make('credits')->label(__('admin.faculty_workspace.study_plan.credits'))->numeric(),
+                                Select::make('type')->label(__('admin.faculty_workspace.study_plan.requirement_type'))->options([
+                                    'university' => __('admin.faculty_workspace.study_plan.types.university'),
+                                    'faculty' => __('admin.faculty_workspace.study_plan.types.faculty'),
+                                    'specialization' => __('admin.faculty_workspace.study_plan.types.specialization'),
                                 ]),
-                                Toggle::make('required')->label('Required'),
-                                TagsInput::make('prerequisites')
-                                    ->label('Prerequisite Course IDs')
-                                    ->helperText('Incoming lines: courses that must be completed before this course.')
+                                Toggle::make('required')->label(__('admin.faculty_workspace.study_plan.required')),
+                                Select::make('prerequisites')
+                                    ->label(__('admin.faculty_workspace.study_plan.prerequisites'))
+                                    ->helperText(__('admin.faculty_workspace.study_plan.prerequisites_help'))
+                                    ->options(fn (): array => $this->studyPlanCourseOptions())
+                                    ->multiple()
+                                    ->searchable()
+                                    ->preload()
+                                    ->disableOptionWhen(fn (string $value, Get $get): bool => $value === (string) $get('id'))
                                     ->columnSpanFull(),
-                                TagsInput::make('opensCourseIds')
-                                    ->label('Opens Course IDs')
-                                    ->helperText('Outgoing lines: courses unlocked by this course. These are saved as prerequisites on the target courses for the public graph.')
-                                    ->columnSpanFull(),
-                                TextInput::make('instructor.nameAr')->label('Instructor AR')->maxLength(160),
-                                TextInput::make('instructor.nameEn')->label('Instructor EN')->maxLength(160),
-                                TextInput::make('instructor.staffSlug')->label('Instructor Profile Slug')->maxLength(120),
-                                Textarea::make('description')->rows(2)->columnSpanFull(),
+                                TextInput::make('instructor.nameAr')->label(__('admin.faculty_workspace.study_plan.instructor_ar'))->maxLength(160),
+                                TextInput::make('instructor.nameEn')->label(__('admin.faculty_workspace.study_plan.instructor_en'))->maxLength(160),
+                                TextInput::make('instructor.staffSlug')->hidden()->dehydrated(),
+                                Textarea::make('description')->label(__('admin.faculty_workspace.study_plan.description'))->rows(2)->columnSpanFull(),
+                                Section::make(__('admin.faculty_workspace.study_plan.advanced_identity'))->collapsed()->schema([
+                                    TextInput::make('id')->required()->label(__('admin.faculty_workspace.study_plan.course_id'))->maxLength(80),
+                                ]),
                                 Repeater::make('lessons')
-                                    ->label('Lessons')
+                                    ->label(__('admin.faculty_workspace.study_plan.lessons'))
                                     ->schema([
-                                        TextInput::make('order')->numeric(),
-                                        Select::make('type')->options([
-                                            'lecture' => 'Lecture',
-                                            'practical' => 'Practical',
-                                            'seminar' => 'Seminar',
+                                        TextInput::make('order')->label(__('admin.faculty_workspace.study_plan.lesson_order'))->numeric(),
+                                        Select::make('type')->label(__('admin.faculty_workspace.study_plan.lesson_type'))->options([
+                                            'lecture' => __('admin.faculty_workspace.study_plan.lesson_types.lecture'),
+                                            'practical' => __('admin.faculty_workspace.study_plan.lesson_types.practical'),
+                                            'seminar' => __('admin.faculty_workspace.study_plan.lesson_types.seminar'),
                                         ]),
-                                        TextInput::make('title')->required()->maxLength(180),
-                                        MediaPicker::document('pdfUrl', 'PDF File'),
-                                        Textarea::make('description')->rows(2)->columnSpanFull(),
+                                        TextInput::make('title')->label(__('admin.faculty_workspace.study_plan.lesson_title'))->required()->maxLength(180),
+                                        MediaPicker::document('pdfUrl', __('admin.faculty_workspace.study_plan.lesson_file')),
+                                        Textarea::make('description')->label(__('admin.faculty_workspace.study_plan.description'))->rows(2)->columnSpanFull(),
                                     ])
                                     ->columns(3)
                                     ->defaultItems(0)
@@ -672,14 +747,14 @@ trait ManagesFacultyHomepage
                     ->columnSpanFull(),
             ]),
 
-            Section::make('Electives & Promotion')->schema([
+            Section::make(__('admin.faculty_workspace.study_plan.electives_promotion'))->schema([
                 Repeater::make($prefix.'.payload.plan.electivePools')
-                    ->label('Elective Pools')
+                    ->label(__('admin.faculty_workspace.study_plan.elective_pools'))
                     ->schema([
-                        TextInput::make('departmentId')->required()->label('Department ID')->maxLength(80),
-                        TextInput::make('id')->required()->maxLength(80),
-                        TextInput::make('requiredHours')->numeric(),
-                        Textarea::make('description')->rows(2)->columnSpanFull(),
+                        TextInput::make('departmentId')->required()->label(__('admin.faculty_workspace.study_plan.internal_department_id'))->maxLength(80),
+                        TextInput::make('id')->label(__('admin.faculty_workspace.study_plan.internal_pool_id'))->required()->maxLength(80),
+                        TextInput::make('requiredHours')->label(__('admin.faculty_workspace.study_plan.required_hours'))->numeric(),
+                        Textarea::make('description')->label(__('admin.faculty_workspace.study_plan.description'))->rows(2)->columnSpanFull(),
                     ])
                     ->columns(3)
                     ->defaultItems(0)
@@ -687,26 +762,26 @@ trait ManagesFacultyHomepage
                     ->collapsible()
                     ->columnSpanFull(),
                 Repeater::make($prefix.'.payload.plan.promotionRequirements')
-                    ->label('Promotion Requirements')
+                    ->label(__('admin.faculty_workspace.study_plan.promotion_requirements'))
                     ->schema([
-                        TextInput::make('departmentId')->required()->label('Department ID')->maxLength(80),
-                        TextInput::make('fromYear')->required()->maxLength(20),
-                        TextInput::make('toYear')->required()->maxLength(20),
-                        TextInput::make('requiredCredits')->numeric(),
+                        TextInput::make('departmentId')->required()->label(__('admin.faculty_workspace.study_plan.internal_department_id'))->maxLength(80),
+                        TextInput::make('fromYear')->label(__('admin.faculty_workspace.study_plan.from_year'))->required()->maxLength(20),
+                        TextInput::make('toYear')->label(__('admin.faculty_workspace.study_plan.to_year'))->required()->maxLength(20),
+                        TextInput::make('requiredCredits')->label(__('admin.faculty_workspace.study_plan.required_credits'))->numeric(),
                     ])
                     ->columns(4)
                     ->defaultItems(0)
                     ->reorderable()
                     ->collapsible()
                     ->columnSpanFull(),
-            ]),
+            ])->collapsed(),
 
-            Section::make('Legend & Lesson Types')->schema([
+            Section::make(__('admin.faculty_workspace.study_plan.legend_settings'))->schema([
                 Repeater::make($prefix.'.payload.legend')
-                    ->label('Course Type Legend')
+                    ->label(__('admin.faculty_workspace.study_plan.course_type_legend'))
                     ->schema([
-                        TextInput::make('id')->required()->maxLength(80),
-                        TextInput::make('label')->required()->maxLength(120),
+                        TextInput::make('id')->label(__('admin.faculty_workspace.study_plan.internal_type_id'))->required()->maxLength(80),
+                        TextInput::make('label')->label(__('admin.faculty_workspace.editor.fields.label'))->required()->maxLength(120),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -714,17 +789,17 @@ trait ManagesFacultyHomepage
                     ->collapsible()
                     ->columnSpanFull(),
                 Repeater::make($prefix.'.payload.lessonTypes')
-                    ->label('Lesson Types')
+                    ->label(__('admin.faculty_workspace.study_plan.lesson_types_label'))
                     ->schema([
-                        TextInput::make('id')->required()->maxLength(80),
-                        TextInput::make('label')->required()->maxLength(120),
+                        TextInput::make('id')->label(__('admin.faculty_workspace.study_plan.internal_type_id'))->required()->maxLength(80),
+                        TextInput::make('label')->label(__('admin.faculty_workspace.editor.fields.label'))->required()->maxLength(120),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
                     ->reorderable()
                     ->collapsible()
                     ->columnSpanFull(),
-            ]),
+            ])->collapsed(),
         ];
     }
 
@@ -732,22 +807,24 @@ trait ManagesFacultyHomepage
     private function departmentsSubpageFields(string $prefix): array
     {
         return [
-            Section::make('Department Directory')->schema([
+            Section::make(__('admin.faculty_workspace.editor.sections.departments'))->schema([
                 Repeater::make($prefix.'.items')
-                    ->label('Departments')
+                    ->label(__('admin.faculty_workspace.editor.sections.departments'))
                     ->schema([
-                        TextInput::make('slug')->required()->maxLength(100),
-                        TextInput::make('code')->maxLength(40),
-                        TextInput::make('title')->required()->maxLength(180),
-                        TextInput::make('degrees')->label('Degree / Track')->maxLength(160),
-                        Select::make('studyPlanDepartmentId')
-                            ->label('Study Plan Tab')
-                            ->options(fn (): array => $this->departmentStudyPlanOptions())
-                            ->searchable()
-                            ->placeholder('Auto-match')
-                            ->helperText('Pick a Study Plan tab this department links to. Leave on "Auto-match" to let the system guess from the department name.'),
-                        TagsInput::make('tags')->columnSpanFull(),
-                        Textarea::make('summary')->rows(3)->columnSpanFull(),
+                        Hidden::make('slug')->default(fn (): string => 'department-'.Str::lower(Str::random(8))),
+                        TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.department_name'))->required()->maxLength(180),
+                        TextInput::make('degrees')->label(__('admin.faculty_workspace.editor.fields.degree_track'))->maxLength(160),
+                        TagsInput::make('tags')->label(__('admin.faculty_workspace.editor.fields.tags'))->columnSpanFull(),
+                        Textarea::make('summary')->label(__('admin.faculty_workspace.editor.fields.summary'))->rows(3)->columnSpanFull(),
+                        Section::make(__('admin.faculty_workspace.editor.sections.advanced'))->collapsed()->schema([
+                            TextInput::make('code')->label(__('admin.faculty_workspace.editor.fields.department_code'))->maxLength(40),
+                            Select::make('studyPlanDepartmentId')
+                                ->label(__('admin.faculty_workspace.editor.fields.study_plan_link'))
+                                ->options(fn (): array => $this->departmentStudyPlanOptions())
+                                ->searchable()
+                                ->placeholder(__('admin.faculty_workspace.editor.fields.automatic'))
+                                ->helperText(__('admin.faculty_workspace.editor.help.study_plan_link')),
+                        ]),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -762,16 +839,16 @@ trait ManagesFacultyHomepage
     private function labsSubpageFields(string $prefix): array
     {
         return [
-            Section::make('Laboratories')->schema([
+            Section::make(__('admin.faculty_workspace.editor.sections.labs'))->schema([
                 Repeater::make($prefix.'.items')
-                    ->label('Labs')
+                    ->label(__('admin.faculty_workspace.editor.sections.labs'))
                     ->schema([
-                        TextInput::make('slug')->required()->maxLength(100),
-                        TextInput::make('title')->required()->maxLength(180),
-                        TextInput::make('department')->maxLength(160),
-                        TextInput::make('instructor')->maxLength(160),
-                        MediaPicker::image('image', 'Image'),
-                        Textarea::make('summary')->rows(3)->columnSpanFull(),
+                        Hidden::make('slug')->default(fn (): string => 'lab-'.Str::lower(Str::random(8))),
+                        TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.lab_name'))->required()->maxLength(180),
+                        TextInput::make('department')->label(__('admin.faculty_workspace.editor.fields.department'))->maxLength(160),
+                        TextInput::make('instructor')->label(__('admin.faculty_workspace.editor.fields.instructor'))->maxLength(160),
+                        MediaPicker::image('image', __('admin.faculty_workspace.editor.fields.image')),
+                        Textarea::make('summary')->label(__('admin.faculty_workspace.editor.fields.summary'))->rows(3)->columnSpanFull(),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -786,18 +863,18 @@ trait ManagesFacultyHomepage
     private function projectsSubpageFields(string $prefix): array
     {
         return [
-            Section::make('Student Projects')->schema([
+            Section::make(__('admin.faculty_workspace.editor.sections.projects'))->schema([
                 Repeater::make($prefix.'.items')
-                    ->label('Projects')
+                    ->label(__('admin.faculty_workspace.editor.sections.projects'))
                     ->schema([
-                        TextInput::make('slug')->required()->maxLength(100),
-                        TextInput::make('title')->required()->maxLength(180),
-                        TextInput::make('tag')->maxLength(120),
-                        TextInput::make('team')->maxLength(180),
-                        TextInput::make('supervisor')->maxLength(180),
-                        MediaPicker::image('image', 'Image'),
-                        TextInput::make('detailRoute')->maxLength(255),
-                        Textarea::make('summary')->rows(3)->columnSpanFull(),
+                        Hidden::make('slug')->default(fn (): string => 'project-'.Str::lower(Str::random(8))),
+                        Hidden::make('detailRoute'),
+                        TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.project_name'))->required()->maxLength(180),
+                        TextInput::make('tag')->label(__('admin.faculty_workspace.editor.fields.category'))->maxLength(120),
+                        TextInput::make('team')->label(__('admin.faculty_workspace.editor.fields.team'))->maxLength(180),
+                        TextInput::make('supervisor')->label(__('admin.faculty_workspace.editor.fields.supervisor'))->maxLength(180),
+                        MediaPicker::image('image', __('admin.faculty_workspace.editor.fields.image')),
+                        Textarea::make('summary')->label(__('admin.faculty_workspace.editor.fields.summary'))->rows(3)->columnSpanFull(),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -812,19 +889,19 @@ trait ManagesFacultyHomepage
     private function alumniSubpageFields(string $prefix): array
     {
         return [
-            Section::make('Alumni Records')->schema([
+            Section::make(__('admin.faculty_workspace.editor.sections.alumni'))->schema([
                 Repeater::make($prefix.'.items')
-                    ->label('Alumni')
+                    ->label(__('admin.faculty_workspace.editor.sections.alumni'))
                     ->schema([
                         Hidden::make('_cmsKey'),
-                        TextInput::make('title')->label('Graduate Name')->required()->maxLength(180),
-                        TextInput::make('graduationYear')->maxLength(20),
-                        TextInput::make('semester')->maxLength(80),
-                        TextInput::make('department')->maxLength(160),
-                        TextInput::make('faculty')->maxLength(180),
-                        TextInput::make('degree')->maxLength(120),
-                        TextInput::make('academicPhase')->maxLength(120),
-                        MediaPicker::image('image', 'Image'),
+                        TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.graduate_name'))->required()->maxLength(180),
+                        TextInput::make('graduationYear')->label(__('admin.faculty_workspace.editor.fields.graduation_year'))->maxLength(20),
+                        TextInput::make('semester')->label(__('admin.faculty_workspace.editor.fields.semester'))->maxLength(80),
+                        TextInput::make('department')->label(__('admin.faculty_workspace.editor.fields.department'))->maxLength(160),
+                        TextInput::make('faculty')->label(__('admin.faculty_workspace.editor.fields.faculty'))->maxLength(180),
+                        TextInput::make('degree')->label(__('admin.faculty_workspace.editor.fields.degree'))->maxLength(120),
+                        TextInput::make('academicPhase')->label(__('admin.faculty_workspace.editor.fields.academic_phase'))->maxLength(120),
+                        MediaPicker::image('image', __('admin.faculty_workspace.editor.fields.image')),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -839,22 +916,22 @@ trait ManagesFacultyHomepage
     private function valedictoriansSubpageFields(string $prefix): array
     {
         return [
-            Section::make('Honor List Records')->schema([
+            Section::make(__('admin.faculty_workspace.editor.sections.honor_students'))->schema([
                 Textarea::make($prefix.'.payload.quote')
-                    ->label('Honor Quote')
+                    ->label(__('admin.faculty_workspace.editor.fields.honor_quote'))
                     ->rows(2)
                     ->columnSpanFull(),
                 Repeater::make($prefix.'.items')
-                    ->label('Honor Students')
+                    ->label(__('admin.faculty_workspace.editor.sections.honor_students'))
                     ->schema([
                         Hidden::make('_cmsKey'),
-                        TextInput::make('title')->label('Student Name')->required()->maxLength(180),
-                        TextInput::make('academicYear')->maxLength(40),
-                        TextInput::make('semester')->maxLength(80),
-                        TextInput::make('department')->maxLength(160),
-                        TextInput::make('faculty')->maxLength(180),
-                        TextInput::make('gpa')->maxLength(20),
-                        MediaPicker::image('image', 'Image'),
+                        TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.student_name'))->required()->maxLength(180),
+                        TextInput::make('academicYear')->label(__('admin.faculty_workspace.editor.fields.academic_year'))->maxLength(40),
+                        TextInput::make('semester')->label(__('admin.faculty_workspace.editor.fields.semester'))->maxLength(80),
+                        TextInput::make('department')->label(__('admin.faculty_workspace.editor.fields.department'))->maxLength(160),
+                        TextInput::make('faculty')->label(__('admin.faculty_workspace.editor.fields.faculty'))->maxLength(180),
+                        TextInput::make('gpa')->label(__('admin.faculty_workspace.editor.fields.gpa'))->maxLength(20),
+                        MediaPicker::image('image', __('admin.faculty_workspace.editor.fields.image')),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -869,13 +946,13 @@ trait ManagesFacultyHomepage
     private function researchSubpageFields(string $prefix): array
     {
         return [
-            Section::make('Research Page Metadata')->schema([
-                TextInput::make($prefix.'.emptyTitle')->label('Empty State Title')->maxLength(180),
-                Textarea::make($prefix.'.emptySummary')->label('Empty State Summary')->rows(2)->columnSpanFull(),
-                TextInput::make($prefix.'.seoTitle')->label('SEO Title')->required()->maxLength(180),
-                Textarea::make($prefix.'.seoDescription')->label('SEO Description')->required()->rows(2)->columnSpanFull(),
-                MediaPicker::image($prefix.'.seoImage', 'SEO Image'),
-            ])->columns(2),
+            Section::make(__('admin.faculty_workspace.editor.sections.research_settings'))->schema([
+                TextInput::make($prefix.'.emptyTitle')->label(__('admin.faculty_workspace.editor.fields.empty_title'))->maxLength(180),
+                Textarea::make($prefix.'.emptySummary')->label(__('admin.faculty_workspace.editor.fields.empty_summary'))->rows(2)->columnSpanFull(),
+                TextInput::make($prefix.'.seoTitle')->label(__('admin.faculty_workspace.editor.fields.seo_title'))->required()->maxLength(180),
+                Textarea::make($prefix.'.seoDescription')->label(__('admin.faculty_workspace.editor.fields.seo_description'))->required()->rows(2)->columnSpanFull(),
+                MediaPicker::image($prefix.'.seoImage', __('admin.faculty_workspace.editor.fields.seo_image')),
+            ])->columns(2)->collapsed(),
         ];
     }
 
@@ -1043,7 +1120,13 @@ trait ManagesFacultyHomepage
 
     private function currentTargetKeyForSchema(): string
     {
-        return is_string($this->data['target_key'] ?? null) && $this->data['target_key'] !== '' ? $this->data['target_key'] : $this->defaultTargetKey();
+        if (is_string($this->activeTargetKey) && $this->activeTargetKey !== '') {
+            return $this->activeTargetKey;
+        }
+
+        return is_string($this->data['target_key'] ?? null) && $this->data['target_key'] !== ''
+            ? $this->data['target_key']
+            : $this->defaultTargetKey();
     }
 
     private function assertManagedTarget(string $targetKey): void
@@ -1261,6 +1344,43 @@ trait ManagesFacultyHomepage
         return is_array($this->data['study_plan_term_options'] ?? null) ? $this->data['study_plan_term_options'] : [];
     }
 
+    /** @param array<string, mixed> $payload @return array<string, string> */
+    private function studyPlanCourseOptionsFromPayload(string $targetKey, array $payload, ?string $departmentId): array
+    {
+        if ($this->subpageSlugFromTarget($targetKey) !== 'study-plan' || blank($departmentId)) {
+            return [];
+        }
+
+        $content = is_array($payload['translations']['en'] ?? null)
+            ? $payload['translations']['en']
+            : (is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : []);
+        $plan = $this->nestedStudyPlan(is_array($content['payload']['plan'] ?? null) ? $content['payload']['plan'] : []);
+        $department = collect($this->listOfArrays($plan['departments'] ?? []))->firstWhere('id', $departmentId);
+        $options = [];
+
+        foreach ($this->listOfArrays(is_array($department) ? ($department['terms'] ?? []) : []) as $term) {
+            foreach ($this->listOfArrays($term['courses'] ?? []) as $course) {
+                $id = trim((string) ($course['id'] ?? ''));
+
+                if ($id === '') {
+                    continue;
+                }
+
+                $code = trim((string) ($course['code'] ?? ''));
+                $title = trim((string) ($course['title'] ?? $id));
+                $options[$id] = $code !== '' ? "{$code} - {$title}" : $title;
+            }
+        }
+
+        return $options;
+    }
+
+    /** @return array<string, string> */
+    private function studyPlanCourseOptions(): array
+    {
+        return is_array($this->data['study_plan_course_options'] ?? null) ? $this->data['study_plan_course_options'] : [];
+    }
+
     /**
      * Resolve the Study Plan department options that should be presented per department row in the
      * departments subpage editor. They are loaded from the matching faculty's study_plan target draft
@@ -1455,13 +1575,14 @@ trait ManagesFacultyHomepage
             }
         }
 
-        return array_map(function (array $term) use ($openers, $selectedTermId): array {
-            $termId = (string) ($term['id'] ?? '');
+        $visibleTerms = $selectedTermId === null
+            ? $terms
+            : array_values(array_filter(
+                $terms,
+                static fn (array $term): bool => (string) ($term['id'] ?? '') === $selectedTermId,
+            ));
 
-            if ($selectedTermId !== null && $termId !== $selectedTermId) {
-                return $this->withoutKeys($term, ['courses']);
-            }
-
+        return array_map(function (array $term) use ($openers): array {
             $term['courses'] = array_map(function (array $course) use ($openers): array {
                 $courseId = (string) ($course['id'] ?? '');
                 $course['prerequisites'] = $this->stringList($course['prerequisites'] ?? []);
@@ -1472,7 +1593,7 @@ trait ManagesFacultyHomepage
             }, $this->listOfArrays($term['courses'] ?? []));
 
             return $term;
-        }, $terms);
+        }, $visibleTerms);
     }
 
     /** @param array<int, array<string, mixed>> $terms */

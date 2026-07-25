@@ -220,7 +220,7 @@ final class AboutEntityCmsWorkflowTest extends TestCase
         }
     }
 
-    public function test_saving_after_schedule_supersedes_the_pending_release(): void
+    public function test_saving_after_schedule_preserves_the_pending_release_and_new_draft(): void
     {
         $prepared = $this->prepare('directorate', $this->directoratePayload('Scheduled Directorate'));
         $targetKey = (string) $prepared->targetKey;
@@ -229,16 +229,24 @@ final class AboutEntityCmsWorkflowTest extends TestCase
 
         $changed = $prepared->payload;
         $changed['translations']['en']['title'] = 'Replacement Draft';
-        $this->workflow->saveDraft($targetKey, $changed, (int) $this->editor->getKey(), $first->version);
+        $replacement = $this->workflow->saveDraft($targetKey, $changed, (int) $this->editor->getKey(), $first->version);
         CmsDraft::query()->where('target_key', $targetKey)->where('status', PublicationStatus::Scheduled->value)->update(['scheduled_at' => now()->subMinute()]);
 
-        $this->assertSame(0, $this->workflow->publishDueScheduled());
-        $this->assertSame(PublicationStatus::Draft->value, Directorate::query()->findOrFail($prepared->entityId)->publication_status);
+        $this->assertSame(1, $this->workflow->publishDueScheduled());
+        $this->assertSame(PublicationStatus::Published->value, Directorate::query()->findOrFail($prepared->entityId)->publication_status);
         $this->assertDatabaseHas('cms_drafts', [
+            'id' => $first->id,
             'target_key' => $targetKey,
-            'status' => PublicationStatus::Superseded->value,
+            'status' => PublicationStatus::Published->value,
             'version' => 1,
         ]);
+        $this->assertDatabaseHas('cms_drafts', [
+            'id' => $replacement->id,
+            'target_key' => $targetKey,
+            'status' => PublicationStatus::Draft->value,
+            'version' => 2,
+        ]);
+        $this->assertSame('Replacement Draft', $this->workflow->latestEditableDraftPayload($targetKey, (int) $this->editor->getKey())['translations']['en']['title'] ?? null);
     }
 
     public function test_schedule_validates_entity_payload_and_unpublish_cancels_pending_release(): void
