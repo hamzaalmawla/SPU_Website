@@ -23,6 +23,7 @@ final readonly class LegacyFileInventoryScanResultDTO
         public int $missingColumns,
         public int $existingFiles,
         public int $missingFiles,
+        public int $unverifiedFiles,
         public array $warnings,
         public array $sampleMissingPaths = [],
         public int $checksumFailedFiles = 0,

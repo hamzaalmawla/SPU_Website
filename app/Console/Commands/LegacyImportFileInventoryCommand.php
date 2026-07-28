@@ -6,10 +6,14 @@ namespace App\Console\Commands;
 
 use App\Contracts\Legacy\LegacyFileInventoryServiceInterface;
 use Illuminate\Console\Command;
+use Throwable;
 
 final class LegacyImportFileInventoryCommand extends Command
 {
-    protected $signature = 'legacy-import:file-inventory {--write : Persist discovered legacy file references} {--limit= : Optional per-column scan limit}';
+    protected $signature = 'legacy-import:file-inventory
+        {--write : Persist discovered legacy file references}
+        {--checksum : Compute SHA-256, MIME type, and size for files found under an available root}
+        {--limit= : Optional per-column scan limit}';
 
     protected $description = 'Scan high-priority legacy file fields into the legacy file inventory, dry-run by default.';
 
@@ -25,13 +29,20 @@ final class LegacyImportFileInventoryCommand extends Command
         $limit = is_numeric($limit) ? max(1, (int) $limit) : null;
         $write = (bool) $this->option('write');
 
-        $result = $this->fileInventoryService->scan(
-            $write,
-            $limit,
-            $write ? function (int $processed, int $total, int $existing, int $missing, int $written, int $updated): void {
-                $this->line("Progress: {$processed}/{$total} paths, existing {$existing}, missing {$missing}, written {$written}, updated {$updated}");
-            } : null,
-        );
+        try {
+            $result = $this->fileInventoryService->scan(
+                $write,
+                $limit,
+                $write ? function (int $processed, int $total, int $existing, int $missing, int $written, int $updated): void {
+                    $this->line("Progress: {$processed}/{$total} paths, existing {$existing}, missing {$missing}, written {$written}, updated {$updated}");
+                } : null,
+                (bool) $this->option('checksum'),
+            );
+        } catch (Throwable $exception) {
+            $this->error($exception->getMessage());
+
+            return self::FAILURE;
+        }
 
         $this->info('Legacy File Inventory '.($result->wroteChanges ? 'Write' : 'Dry Run'));
         $this->line('Scanned references: '.$result->scannedReferences);
@@ -40,6 +51,7 @@ final class LegacyImportFileInventoryCommand extends Command
         $this->line('Updated rows: '.$result->updatedRows);
         $this->line('Existing files: '.$result->existingFiles);
         $this->line('Missing files: '.$result->missingFiles);
+        $this->line('Unverified files: '.$result->unverifiedFiles);
         $this->line('Checksum failed files: '.$result->checksumFailedFiles);
         $this->line('Unexpected error files: '.$result->unexpectedErrorFiles);
         $this->line('Broken symlink candidates: '.$result->brokenSymlinks);

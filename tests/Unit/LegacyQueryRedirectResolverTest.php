@@ -62,28 +62,31 @@ final class LegacyQueryRedirectResolverTest extends TestCase
         $this->assertNull($result);
     }
 
-    public function test_resolves_imported_static_page_query_through_migration_log_mapping(): void
+    public function test_resolves_audited_public_business_subsite_home(): void
+    {
+        $result = $this->resolver->resolve('/admin/index.php', 'lang=2');
+
+        $this->assertNotNull($result);
+        $this->assertSame(301, $result->statusCode);
+        $this->assertSame('/en/facilities/business-administration', $result->destinationUrl);
+    }
+
+    public function test_resolves_audited_dental_clinic_subsite_home(): void
+    {
+        $result = $this->resolver->resolve('/dent_clinic/index.php', 'lang=1');
+
+        $this->assertNotNull($result);
+        $this->assertSame('/ar/campus-life/dental', $result->destinationUrl);
+    }
+
+    public function test_does_not_redirect_imported_static_snippet_as_standalone_page(): void
     {
         $pageId = $this->createPublishedPage('legacy-community-service');
         $this->createMigrationLog('static_pages', 'jx_site_static_pages', 12, 'pages', $pageId);
 
         $result = $this->resolver->resolve('/index.php', 'page=show&dir=items&item_id=12&lang=2');
 
-        $this->assertNotNull($result);
-        $this->assertSame('/en/legacy-community-service', $result->destinationUrl);
-        $this->assertSame('legacy_query', $result->matchType);
-    }
-
-    public function test_static_page_resolver_builds_parent_page_paths(): void
-    {
-        $parentId = $this->createPublishedPage('about-legacy');
-        $pageId = $this->createPublishedPage('community-service', $parentId);
-        $this->createMigrationLog('static_pages', 'jx_site_static_pages', 13, 'pages', $pageId);
-
-        $result = $this->resolver->resolve('/index.php', 'lang=1&item_id=13&dir=items&page=show');
-
-        $this->assertNotNull($result);
-        $this->assertSame('/ar/about-legacy/community-service', $result->destinationUrl);
+        $this->assertNull($result);
     }
 
     public function test_static_page_resolver_does_not_guess_from_generic_cat_id(): void

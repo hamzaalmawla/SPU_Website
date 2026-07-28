@@ -18,8 +18,6 @@ use InvalidArgumentException;
 
 final class LegacyResearchPublicationImportService implements LegacyResearchPublicationImportServiceInterface
 {
-    private const APPROVAL_TOKEN = 'phase6-research-publications';
-
     private const MODULE = 'research';
 
     private const SOURCE_TABLE = 'jx_member_categories';
@@ -35,8 +33,8 @@ final class LegacyResearchPublicationImportService implements LegacyResearchPubl
 
     public function import(bool $write = false, ?string $approval = null, ?string $batch = null, bool $enable = false, ?int $limit = null): LegacyResearchPublicationImportResultDTO
     {
-        if ($write && $approval !== self::APPROVAL_TOKEN) {
-            throw new InvalidArgumentException('Importing Phase 6 research publications requires --approve='.self::APPROVAL_TOKEN.'.');
+        if ($write) {
+            throw new InvalidArgumentException('jx_member_* import is blocked pending /members/ product and ownership reconciliation; approval tokens cannot enable writes.');
         }
 
         $batch = $batch !== null && trim($batch) !== '' ? trim($batch) : 'phase6-research-publications-'.now()->format('Ymd_His');

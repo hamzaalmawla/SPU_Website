@@ -64,6 +64,10 @@ final class LegacyRedirectEvidenceServiceTest extends TestCase
         foreach ($result->paths as $path) {
             Storage::disk('local')->assertExists($path);
         }
+
+        $preview = Storage::disk('local')->get($result->paths[2]);
+        $this->assertStringContainsString('approval_decision,approved_by,approval_notes', $preview);
+        $this->assertStringContainsString(',root,ar,jx_categories,325,', $preview);
     }
 
     private function generatedCsv(): string

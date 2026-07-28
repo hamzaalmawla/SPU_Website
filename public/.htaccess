@@ -5,6 +5,10 @@
 
     RewriteEngine On
 
+    # Preserved legacy static trees must never execute old application code.
+    RewriteRule ^(?:downloads/files(?:/.*)?|downloads/files2(?:/.*)?|images(?:/.*)?|pdf(?:/.*)?|cv_bank(?:/.*)?|(?:med|dent|pharm|info|petrol|admin|research|hospital|dent_clinic|alumni|clubs)/images(?:/.*)?)\.(?:php[0-9]?|phtml|phar|cgi|pl|py|sh|asp|aspx|jsp|exe|dll|com|bat|cmd|ps1|sql|bak|conf|config|ini|log)(?:\.|$) - [R=404,L,NC]
+    RewriteRule ^(?:downloads/files|downloads/files2|images|pdf|cv_bank|(?:med|dent|pharm|info|petrol|admin|research|hospital|dent_clinic|alumni|clubs)/images)/(?:.*\/)?\.[^/]+$ - [R=404,L,NC]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]

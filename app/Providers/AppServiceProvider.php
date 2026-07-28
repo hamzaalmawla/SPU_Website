@@ -18,12 +18,20 @@ use App\Contracts\Form\DynamicFormSubmissionServiceInterface;
 use App\Contracts\Homepage\HomepagePreviewAssemblerInterface;
 use App\Contracts\Homepage\HomepagePublishingServiceInterface;
 use App\Contracts\Homepage\HomepageSectionServiceInterface;
+use App\Contracts\Legacy\LegacyCareerLinkImportServiceInterface;
+use App\Contracts\Legacy\LegacyCareerLinkReviewPacketServiceInterface;
+use App\Contracts\Legacy\LegacyCategoryMatrixExporterInterface;
+use App\Contracts\Legacy\LegacyCategoryReviewPacketServiceInterface;
+use App\Contracts\Legacy\LegacyCentralCouncilImportServiceInterface;
 use App\Contracts\Legacy\LegacyClassificationReportServiceInterface;
 use App\Contracts\Legacy\LegacyCleanedRowServiceInterface;
 use App\Contracts\Legacy\LegacyCleaningInspectionServiceInterface;
 use App\Contracts\Legacy\LegacyContentCleaningServiceInterface;
 use App\Contracts\Legacy\LegacyDecisionPlanServiceInterface;
 use App\Contracts\Legacy\LegacyFacultyProfileImportServiceInterface;
+use App\Contracts\Legacy\LegacyFaqImportServiceInterface;
+use App\Contracts\Legacy\LegacyFaqReviewPacketServiceInterface;
+use App\Contracts\Legacy\LegacyFileContinuityProbeServiceInterface;
 use App\Contracts\Legacy\LegacyFileInventoryServiceInterface;
 use App\Contracts\Legacy\LegacyGeneratedUrlInventoryServiceInterface;
 use App\Contracts\Legacy\LegacyImportBatchServiceInterface;
@@ -35,6 +43,7 @@ use App\Contracts\Legacy\LegacyIntegrityInspectionServiceInterface;
 use App\Contracts\Legacy\LegacyInternalLinkExtractionServiceInterface;
 use App\Contracts\Legacy\LegacyLocationImportServiceInterface;
 use App\Contracts\Legacy\LegacyMappingProposalServiceInterface;
+use App\Contracts\Legacy\LegacyMembersReviewPacketServiceInterface;
 use App\Contracts\Legacy\LegacyNewsImportReviewServiceInterface;
 use App\Contracts\Legacy\LegacyNewsImportServiceInterface;
 use App\Contracts\Legacy\LegacyNewsSlugCleanupApplyServiceInterface;
@@ -46,11 +55,14 @@ use App\Contracts\Legacy\LegacyPhaseSixPageImportServiceInterface;
 use App\Contracts\Legacy\LegacyPhaseSixRestoreServiceInterface;
 use App\Contracts\Legacy\LegacyPhaseSixSettingsImportServiceInterface;
 use App\Contracts\Legacy\LegacyPhaseSixSettingsMappingServiceInterface;
+use App\Contracts\Legacy\LegacyPublicStaffImportServiceInterface;
+use App\Contracts\Legacy\LegacyPublicStaffReviewPacketServiceInterface;
 use App\Contracts\Legacy\LegacyQuarantineExportServiceInterface;
 use App\Contracts\Legacy\LegacyQuarantineSummaryServiceInterface;
 use App\Contracts\Legacy\LegacyQueryModuleResolverInterface;
 use App\Contracts\Legacy\LegacyQueryRedirectResolverInterface;
 use App\Contracts\Legacy\LegacyQueryResolverRegistryInterface;
+use App\Contracts\Legacy\LegacyRedirectDecisionServiceInterface;
 use App\Contracts\Legacy\LegacyRedirectEvidenceServiceInterface;
 use App\Contracts\Legacy\LegacyResearchPublicationImportServiceInterface;
 use App\Contracts\Legacy\LegacyReviewCandidateReportServiceInterface;
@@ -134,12 +146,20 @@ use App\Services\Homepage\HomepagePreviewAssembler;
 use App\Services\Homepage\HomepagePublishingService;
 use App\Services\Homepage\HomepageSectionService;
 use App\Services\Homepage\HomepageSectionValidator;
+use App\Services\Legacy\LegacyCareerLinkImportService;
+use App\Services\Legacy\LegacyCareerLinkReviewPacketService;
+use App\Services\Legacy\LegacyCategoryMatrixExporter;
+use App\Services\Legacy\LegacyCategoryReviewPacketService;
+use App\Services\Legacy\LegacyCentralCouncilImportService;
 use App\Services\Legacy\LegacyClassificationReportService;
 use App\Services\Legacy\LegacyCleanedRowService;
 use App\Services\Legacy\LegacyCleaningInspectionService;
 use App\Services\Legacy\LegacyContentCleaningService;
 use App\Services\Legacy\LegacyDecisionPlanService;
 use App\Services\Legacy\LegacyFacultyProfileImportService;
+use App\Services\Legacy\LegacyFaqImportService;
+use App\Services\Legacy\LegacyFaqReviewPacketService;
+use App\Services\Legacy\LegacyFileContinuityProbeService;
 use App\Services\Legacy\LegacyFileInventoryService;
 use App\Services\Legacy\LegacyGeneratedUrlInventoryService;
 use App\Services\Legacy\LegacyImportBatchService;
@@ -150,6 +170,7 @@ use App\Services\Legacy\LegacyIntegrityInspectionService;
 use App\Services\Legacy\LegacyInternalLinkExtractionService;
 use App\Services\Legacy\LegacyLocationImportService;
 use App\Services\Legacy\LegacyMappingProposalService;
+use App\Services\Legacy\LegacyMembersReviewPacketService;
 use App\Services\Legacy\LegacyNewsImportReviewService;
 use App\Services\Legacy\LegacyNewsImportService;
 use App\Services\Legacy\LegacyNewsSlugCleanupApplyService;
@@ -161,10 +182,13 @@ use App\Services\Legacy\LegacyPhaseSixPageImportService;
 use App\Services\Legacy\LegacyPhaseSixRestoreService;
 use App\Services\Legacy\LegacyPhaseSixSettingsImportService;
 use App\Services\Legacy\LegacyPhaseSixSettingsMappingService;
+use App\Services\Legacy\LegacyPublicStaffImportService;
+use App\Services\Legacy\LegacyPublicStaffReviewPacketService;
 use App\Services\Legacy\LegacyQuarantineExportService;
 use App\Services\Legacy\LegacyQuarantineSummaryService;
 use App\Services\Legacy\LegacyQueryRedirectResolver;
 use App\Services\Legacy\LegacyQueryResolverRegistry;
+use App\Services\Legacy\LegacyRedirectDecisionService;
 use App\Services\Legacy\LegacyRedirectEvidenceService;
 use App\Services\Legacy\LegacyResearchPublicationImportService;
 use App\Services\Legacy\LegacyReviewCandidateReportService;
@@ -390,12 +414,20 @@ class AppServiceProvider extends ServiceProvider
             HomepagePreviewAssemblerInterface::class => HomepagePreviewAssembler::class,
             HomepageSectionServiceInterface::class => HomepageSectionService::class,
             LegacyCleanedRowServiceInterface::class => LegacyCleanedRowService::class,
+            LegacyCategoryMatrixExporterInterface::class => LegacyCategoryMatrixExporter::class,
+            LegacyCategoryReviewPacketServiceInterface::class => LegacyCategoryReviewPacketService::class,
+            LegacyCareerLinkImportServiceInterface::class => LegacyCareerLinkImportService::class,
+            LegacyCareerLinkReviewPacketServiceInterface::class => LegacyCareerLinkReviewPacketService::class,
+            LegacyCentralCouncilImportServiceInterface::class => LegacyCentralCouncilImportService::class,
             LegacyClassificationReportServiceInterface::class => LegacyClassificationReportService::class,
             LegacyDecisionPlanServiceInterface::class => LegacyDecisionPlanService::class,
             LegacyFacultyProfileImportServiceInterface::class => LegacyFacultyProfileImportService::class,
+            LegacyFaqImportServiceInterface::class => LegacyFaqImportService::class,
+            LegacyFaqReviewPacketServiceInterface::class => LegacyFaqReviewPacketService::class,
             LegacyCleaningInspectionServiceInterface::class => LegacyCleaningInspectionService::class,
             LegacyContentCleaningServiceInterface::class => LegacyContentCleaningService::class,
             LegacyFileInventoryServiceInterface::class => LegacyFileInventoryService::class,
+            LegacyFileContinuityProbeServiceInterface::class => LegacyFileContinuityProbeService::class,
             LegacyGeneratedUrlInventoryServiceInterface::class => LegacyGeneratedUrlInventoryService::class,
             LegacyIntegrityInspectionServiceInterface::class => LegacyIntegrityInspectionService::class,
             LegacyInternalLinkExtractionServiceInterface::class => LegacyInternalLinkExtractionService::class,
@@ -403,6 +435,7 @@ class AppServiceProvider extends ServiceProvider
             LegacyImportInspectionServiceInterface::class => LegacyImportInspectionService::class,
             LegacyLocationImportServiceInterface::class => LegacyLocationImportService::class,
             LegacyMappingProposalServiceInterface::class => LegacyMappingProposalService::class,
+            LegacyMembersReviewPacketServiceInterface::class => LegacyMembersReviewPacketService::class,
             LegacyNewsImportServiceInterface::class => LegacyNewsImportService::class,
             LegacyPhaseSixCandidateServiceInterface::class => LegacyPhaseSixCandidateService::class,
             LegacyPhaseSixApprovalServiceInterface::class => LegacyPhaseSixApprovalService::class,
@@ -411,6 +444,8 @@ class AppServiceProvider extends ServiceProvider
             LegacyPhaseSixRestoreServiceInterface::class => LegacyPhaseSixRestoreService::class,
             LegacyPhaseSixSettingsImportServiceInterface::class => LegacyPhaseSixSettingsImportService::class,
             LegacyPhaseSixSettingsMappingServiceInterface::class => LegacyPhaseSixSettingsMappingService::class,
+            LegacyPublicStaffImportServiceInterface::class => LegacyPublicStaffImportService::class,
+            LegacyPublicStaffReviewPacketServiceInterface::class => LegacyPublicStaffReviewPacketService::class,
             LegacyStudentProfileImportServiceInterface::class => LegacyStudentProfileImportService::class,
             LegacyImportModuleRegistryInterface::class => LegacyImportModuleRegistry::class,
             LegacyImportModuleRunnerInterface::class => LegacyLinksImportModuleRunner::class,
@@ -421,6 +456,7 @@ class AppServiceProvider extends ServiceProvider
             LegacyQuarantineExportServiceInterface::class => LegacyQuarantineExportService::class,
             LegacyQuarantineSummaryServiceInterface::class => LegacyQuarantineSummaryService::class,
             LegacyRedirectEvidenceServiceInterface::class => LegacyRedirectEvidenceService::class,
+            LegacyRedirectDecisionServiceInterface::class => LegacyRedirectDecisionService::class,
             LegacyReviewCandidateReportServiceInterface::class => LegacyReviewCandidateReportService::class,
             LegacyResearchPublicationImportServiceInterface::class => LegacyResearchPublicationImportService::class,
             LegacyStagingReviewServiceInterface::class => LegacyStagingReviewService::class,

@@ -125,14 +125,20 @@ final class LegacyUrlContinuityInventoryService implements LegacyUrlContinuityIn
             ->orderBy('id')
             ->get()
             ->map(function (LegacyExactRedirect $redirect): array {
-                $normalized = $this->normalizeLegacyPath((string) $redirect->legacy_path);
+                $legacyPath = (string) $redirect->legacy_path;
+
+                if (is_string($redirect->query_signature) && $redirect->query_signature !== '') {
+                    $legacyPath .= '?'.$redirect->query_signature;
+                }
+
+                $normalized = $this->normalizeLegacyPath($legacyPath);
 
                 return $this->baseRow(
                     sourceType: 'exact_redirect',
                     module: 'continuity',
                     sourceTable: 'legacy_exact_redirects',
                     sourceId: (int) $redirect->getKey(),
-                    legacyPath: (string) $redirect->legacy_path,
+                    legacyPath: $legacyPath,
                     normalized: $normalized,
                     targetUrl: (string) $redirect->destination_url,
                     status: (bool) $redirect->is_active ? 'persisted_exact_redirect' : 'inactive_exact_redirect',

@@ -18,7 +18,7 @@ final class LegacyImportResearchPublicationsCommand extends Command
         {--enable : Import records as enabled instead of disabled review records}
         {--json : Output machine-readable JSON}';
 
-    protected $description = 'Import visible legacy research publications DB-first, with file attachments deferred.';
+    protected $description = 'Run non-authoritative jx_member_* research inspection; all writes are frozen.';
 
     public function __construct(
         private readonly LegacyResearchPublicationImportServiceInterface $researchPublicationImportService,
@@ -44,6 +44,7 @@ final class LegacyImportResearchPublicationsCommand extends Command
         }
 
         $this->info('Legacy Research Publication Import');
+        $this->warn('Non-authoritative inspection only: /members/ product and ownership reconciliation is unresolved.');
         $this->line('Written: '.($result->written ? 'yes' : 'no'));
         $this->line('Batch: '.$result->batch);
         $this->line('Enabled on import: '.($result->enabledOnImport ? 'yes' : 'no'));
@@ -67,6 +68,8 @@ final class LegacyImportResearchPublicationsCommand extends Command
     private function toArray(LegacyResearchPublicationImportResultDTO $result): array
     {
         return [
+            'authoritative' => false,
+            'write_supported' => false,
             'written' => $result->written,
             'batch' => $result->batch,
             'enabled_on_import' => $result->enabledOnImport,

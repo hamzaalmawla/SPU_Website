@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Shared;
 
 use App\Contracts\Legacy\LegacyQueryRedirectResolverInterface;
+use App\Contracts\Legacy\LegacyUrlNormalizerInterface;
 use App\Contracts\Shared\CacheServiceInterface;
 use App\Contracts\Shared\ContinuityServiceInterface;
 use App\DTOs\Legacy\PatternRuleDTO;
@@ -30,6 +31,7 @@ final class ContinuityService implements ContinuityServiceInterface
     public function __construct(
         private readonly CacheServiceInterface $cacheService,
         private readonly LegacyQueryRedirectResolverInterface $legacyQueryRedirectResolver,
+        private readonly LegacyUrlNormalizerInterface $legacyUrlNormalizer,
     ) {}
 
     public function resolveRedirect(
@@ -257,7 +259,7 @@ final class ContinuityService implements ContinuityServiceInterface
 
             $visited[] = $currentPath;
 
-            $result = $this->resolveExactMatch($currentPath)
+            $result = $this->resolveExactMatch($currentPath, $hop === 0 ? $queryString : null)
                 ?? $this->resolveLegacyQueryMatch($currentPath, $hop === 0 ? $queryString : null)
                 ?? $this->resolvePatternMatch($currentPath);
 
@@ -288,15 +290,32 @@ final class ContinuityService implements ContinuityServiceInterface
         return $this->legacyQueryRedirectResolver->resolve($path, $queryString);
     }
 
-    private function resolveExactMatch(string $path): ?RedirectResultDTO
+    private function resolveExactMatch(string $path, ?string $queryString): ?RedirectResultDTO
     {
-        $cacheKey = 'continuity:exact:'.md5($path);
+        $querySignature = $this->querySignature($path, $queryString);
+        $isLegacyRouter = in_array(mb_strtolower(basename($path)), ['index.php', 'windex.php'], true);
+        $cacheKey = 'continuity:exact:'.md5($path.'?'.$querySignature);
 
         $rule = $this->cacheService->tags('continuity')->remember(
             $cacheKey,
             fn () => LegacyExactRedirect::query()
                 ->active()
                 ->whereRaw('LOWER(legacy_path) = ?', [mb_strtolower($path)])
+                ->where(function ($query) use ($querySignature, $isLegacyRouter): void {
+                    if ($querySignature !== '') {
+                        $query->where('query_signature', $querySignature);
+
+                        if (! $isLegacyRouter) {
+                            $query->orWhereNull('query_signature')->orWhere('query_signature', '');
+                        }
+
+                        return;
+                    }
+
+                    $query->whereNull('query_signature')->orWhere('query_signature', '');
+                })
+                ->orderByRaw('CASE WHEN query_signature IS NULL OR query_signature = ? THEN 1 ELSE 0 END', [''])
+                ->orderBy('id')
                 ->first(),
             self::CACHE_TTL,
         );
@@ -327,6 +346,18 @@ final class ContinuityService implements ContinuityServiceInterface
             destinationUrl: $destinationUrl,
             matchType: 'exact',
         );
+    }
+
+    private function querySignature(string $path, ?string $queryString): string
+    {
+        if ($queryString === null || trim($queryString) === '') {
+            return '';
+        }
+
+        $params = $this->legacyUrlNormalizer->normalize($path, $queryString)->params;
+        ksort($params);
+
+        return http_build_query($params, '', '&', PHP_QUERY_RFC3986);
     }
 
     private function resolvePatternMatch(string $path): ?RedirectResultDTO
@@ -420,7 +451,7 @@ final class ContinuityService implements ContinuityServiceInterface
         $redirects = LegacyExactRedirect::query()
             ->active()
             ->get()
-            ->groupBy(fn (LegacyExactRedirect $r): string => mb_strtolower((string) $r->legacy_path));
+            ->groupBy(fn (LegacyExactRedirect $r): string => mb_strtolower((string) $r->legacy_path).'?'.(string) $r->query_signature);
 
         foreach ($redirects as $path => $group) {
             if ($group->count() > 1) {

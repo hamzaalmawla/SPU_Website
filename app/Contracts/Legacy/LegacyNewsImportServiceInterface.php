@@ -8,5 +8,11 @@ use App\DTOs\Legacy\LegacyNewsImportResultDTO;
 
 interface LegacyNewsImportServiceInterface
 {
-    public function import(bool $write = false, ?string $approval = null, ?string $batch = null): LegacyNewsImportResultDTO;
+    public function import(
+        bool $write = false,
+        ?string $approval = null,
+        ?string $batch = null,
+        ?string $input = null,
+        string $disk = 'local',
+    ): LegacyNewsImportResultDTO;
 }

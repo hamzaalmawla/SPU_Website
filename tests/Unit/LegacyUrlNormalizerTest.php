@@ -84,4 +84,23 @@ final class LegacyUrlNormalizerTest extends TestCase
         $this->assertSame('legacy_media_file', $normalized->requestType);
         $this->assertSame('legacy_media_file', $normalized->handlerKey);
     }
+
+    public function test_normalizes_category_and_show_page_aliases(): void
+    {
+        $normalized = $this->normalizer->normalize('/index.php', 'page=show_cat&dir=items&ser=3&cat=77&lang=2');
+
+        $this->assertSame('show', $normalized->page);
+        $this->assertSame('3', $normalized->service);
+        $this->assertSame('77', $normalized->params['cat_id']);
+        $this->assertSame('root:items:show', $normalized->handlerKey);
+    }
+
+    public function test_identifies_dental_clinic_subsite(): void
+    {
+        $normalized = $this->normalizer->normalize('/dent_clinic/index.php', 'lang=1');
+
+        $this->assertSame('dent_clinic', $normalized->subsite->key);
+        $this->assertSame(10, $normalized->subsite->siteId);
+        $this->assertSame('dent_clinic:home', $normalized->handlerKey);
+    }
 }

@@ -72,6 +72,18 @@ final class LegacyImportFileInventoryCommandTest extends TestCase
         ]);
     }
 
+    public function test_command_refuses_write_when_source_root_is_unavailable(): void
+    {
+        $this->createLegacyDocsTable();
+        config()->set('old_database.file_inventory_roots', [Storage::disk('local')->path('unmounted-root')]);
+
+        $this->artisan('legacy-import:file-inventory', ['--write' => true])
+            ->assertExitCode(1)
+            ->expectsOutputToContain('Cannot write legacy file inventory evidence without a readable OLD_PUBLIC_ROOT.');
+
+        $this->assertDatabaseCount('legacy_file_inventory', 0);
+    }
+
     private function createLegacyDocsTable(): void
     {
         Schema::connection('legacy_file_inventory_command_testing')->create('jx_docs', function ($schema): void {

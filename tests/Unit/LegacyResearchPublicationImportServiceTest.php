@@ -159,30 +159,21 @@ final class LegacyResearchPublicationImportServiceTest extends TestCase
         $this->assertSame(0, ResearchPublication::query()->count());
     }
 
-    public function test_write_requires_approval_token(): void
+    public function test_write_is_blocked_before_mutation_regardless_of_approval_token(): void
     {
-        $this->expectException(InvalidArgumentException::class);
+        try {
+            app(LegacyResearchPublicationImportServiceInterface::class)->import(
+                write: true,
+                approval: 'phase6-research-publications',
+                batch: 'research-test',
+            );
+            $this->fail('Expected the /members/ reconciliation write freeze.');
+        } catch (InvalidArgumentException $exception) {
+            $this->assertStringContainsString('jx_member_* import is blocked', $exception->getMessage());
+        }
 
-        app(LegacyResearchPublicationImportServiceInterface::class)->import(write: true, approval: 'wrong');
-    }
-
-    public function test_write_imports_disabled_publication_and_preserves_file_references(): void
-    {
-        $service = app(LegacyResearchPublicationImportServiceInterface::class);
-
-        $first = $service->import(write: true, approval: 'phase6-research-publications', batch: 'research-test');
-        $second = $service->import(write: true, approval: 'phase6-research-publications', batch: 'research-test-2');
-
-        $this->assertSame(1, $first->importedRows);
-        $this->assertSame(0, $second->importedRows);
-        $this->assertSame(1, ResearchPublication::query()->where('is_enabled', false)->whereNull('file_media_id')->count());
-        $this->assertSame('2020-05-01', ResearchPublication::query()->firstOrFail()->published_at?->toDateString());
-        $this->assertSame(2, ResearchPublicationTranslation::query()->count());
-        $this->assertSame('Published Research', ResearchPublicationTranslation::query()->where('locale', 'en')->value('title'));
-        $this->assertSame(3, MigrationLog::query()->count());
-        $this->assertSame(1, MigrationLog::query()->where('status', 'success')->count());
-        $metadata = MigrationLog::query()->where('status', 'success')->firstOrFail()->metadata;
-        $this->assertSame('research.pdf', $metadata['attachment_references'][0]['paths'][0]);
-        $this->assertSame(3, $second->skipReasonCounts['already_processed']);
+        $this->assertSame(0, ResearchPublication::query()->count());
+        $this->assertSame(0, ResearchPublicationTranslation::query()->count());
+        $this->assertSame(0, MigrationLog::query()->count());
     }
 }

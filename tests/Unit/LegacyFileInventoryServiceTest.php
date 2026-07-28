@@ -111,6 +111,7 @@ final class LegacyFileInventoryServiceTest extends TestCase
 
     public function test_scan_reports_missing_tables_and_columns_without_writing_noise(): void
     {
+        Storage::disk('local')->makeDirectory('legacy-root');
         Schema::connection('legacy_file_inventory_testing')->create('jx_docs', function ($schema): void {
             $schema->increments('id');
             $schema->string('title')->nullable();
@@ -122,6 +123,19 @@ final class LegacyFileInventoryServiceTest extends TestCase
         $this->assertSame(1, $result->missingColumns);
         $this->assertSame(0, $result->writtenRows);
         $this->assertDatabaseCount('legacy_file_inventory', 0);
+    }
+
+    public function test_scan_does_not_classify_files_as_missing_when_root_is_unavailable(): void
+    {
+        $this->createLegacyItemsTable();
+        config()->set('old_database.file_inventory_roots', [Storage::disk('local')->path('unmounted-root')]);
+
+        $result = $this->service->scan(write: false);
+
+        $this->assertSame(0, $result->existingFiles);
+        $this->assertSame(0, $result->missingFiles);
+        $this->assertSame(2, $result->unverifiedFiles);
+        $this->assertStringContainsString('No readable legacy file inventory root', implode(' ', $result->warnings));
     }
 
     private function createLegacyItemsTable(): void

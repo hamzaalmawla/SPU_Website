@@ -44,7 +44,7 @@ OLD_PUBLIC_ROOT=/path/to/legacy/public/root
 
 Production deployments must run schema migrations with `php artisan migrate --force`. Never run `migrate:fresh` against a production database because it drops all managed content before rebuilding the schema.
 
-For a new local environment or an explicitly approved disaster-recovery database, rebuild the foundation and replay every completed Phase 6 lane with:
+For a new local environment or an explicitly approved disaster-recovery database, rebuild the foundation and replay the still-approved Phase 6 lanes with:
 
 ```bash
 php artisan migrate:fresh --seed
@@ -56,14 +56,89 @@ The first restore invocation is a dry run. The approved write invocation rebuild
 
 - locations, disabled for review
 - alumni and honor students, enabled according to legacy visibility
-- faculty profiles, disabled for review
-- research publications, enabled
-- news and announcements, preserving legacy visibility
+- faculty profiles are not restored; public staff requires the separate private `jx_councils` review-packet workflow
+- research publications are not restored; audit reconciliation blocks `jx_member_*` because those records belong to `/members/`
+- news and announcements are not restored; they require a separate approved category review packet
 - static pages, disabled drafts
 - footer menu links, disabled
 - reviewed safe settings, live
 
 The restore is idempotent through migration logs and applies version-controlled source corrections before cleaning and duplicate detection. It requires the configured legacy database to remain available. Database backups remain the authoritative production disaster-recovery mechanism; this command is a controlled reconstruction tool, not a replacement for backups.
+
+FAQ and career-link review data are deliberately excluded from `legacy-import:phase6-restore`. They must use the separate packet-driven workflows below and are never restored automatically.
+
+### FAQ Review Packets
+
+The audited `jx_faqs` source contains 1,553 rows: language 1 has 887 rows with 24 visible/answered, language 2 has 283 rows with 23 visible/answered, language 7 has 379 rows with none visible/answered, and languages 0, 3, and 6 account for the remaining four rows. Only exact mappings `1=ar` and `2=en` are supported. Unsupported locales are never synthesized or used as fallback content.
+
+Generate the private candidate and metadata-only backlog packet:
+
+```bash
+php artisan legacy-import:faq-review-packets
+php artisan legacy-import:faq-review-packets --disk=local --dir=legacy-import-exports/faq-review-packets --json
+```
+
+The exporter never selects or exports values from `first_name`, `last_name`, `email`, `country`, or `phone`. Candidate question and answer text is private evidence and may still contain contact-like text, which is marked `content_contains_contact_pattern`; keep all packets off public storage and out of version control. Backlog rows contain metadata only and never include question, answer, subject, or submitter values.
+
+Review `faq_candidates.csv` privately. Set only explicitly approved rows to `approval_decision=import` and `approved_target=faqs`, then dry-run and write with the separate token:
+
+```bash
+php artisan legacy-import:faqs legacy-import-private/reviewed-faqs.csv --disk=local --batch=legacy-faq-review
+php artisan legacy-import:faqs legacy-import-private/reviewed-faqs.csv --disk=local --write --approve=legacy-faq-import --batch=legacy-faqs-YYYYMMDD
+```
+
+The importer re-reads approved source IDs and does not trust candidate text. Contact-pattern content remains blocked even when approved. Imported records use the disabled `legacy-faq-review` category and one source locale only. Submitter PII values are never selected, imported, or logged; migration metadata stores only presence booleans. The workflow creates no redirects, routes, publication state, or media.
+
+### Career-Link Review Packets
+
+The audited `jx_job_sites` source contains exactly three visible external-link records with Arabic/English names, URL, photo evidence, and ordering. Generate and privately review the packet:
+
+```bash
+php artisan legacy-import:career-link-review-packets
+php artisan legacy-import:career-link-review-packets --disk=local --dir=legacy-import-exports/career-link-review-packets --json
+php artisan legacy-import:career-links legacy-import-private/reviewed-career-links.csv --disk=local --batch=legacy-career-review
+php artisan legacy-import:career-links legacy-import-private/reviewed-career-links.csv --disk=local --write --approve=legacy-career-links-import --batch=legacy-career-links-YYYYMMDD
+```
+
+Only absolute `http` and `https` URLs are eligible. The importer re-verifies URL, visibility, titles, duplicates, and mappings from the source. It creates disabled external links with only the locales actually present. Legacy photo paths are retained as migration evidence only; no media is imported and no redirects or routes are created.
+
+The current FAQ and career-link tables are not wired to public rendering or Filament. These imports are disabled archival/review data only and do not constitute public FAQ, careers, CMS, migration-parity, or feature completion.
+
+### Approved News Packets
+
+Generate private, read-only review packets for root news and announcements:
+
+```bash
+php artisan legacy-import:category-review-packets --subsite=root --service=3 --service=4 --disk=local
+```
+
+Copy the relevant generated CSVs to a private review location, review each candidate, and fill `approval_decision` and `approved_target` only in the reviewed copies. A row is eligible only when those fields are exactly `import` and `news` after case and surrounding-whitespace normalization. Blank decisions are never candidates. Packet exports and reviewed copies can contain sensitive migration evidence: keep them on private storage and never commit them.
+
+Run the reviewed packet first without writes, inspect all reason counts, and then use the separate approval token for the gated write:
+
+```bash
+php artisan legacy-import:news legacy-import-private/reviewed-root-news.csv --disk=local --batch=phase6-news-review
+php artisan legacy-import:news legacy-import-private/reviewed-root-news.csv --disk=local --write --approve=phase6-news --batch=phase6-news-YYYYMMDD
+```
+
+Every approved article is imported as a disabled draft with no publish or schedule date and `noindex,nofollow` SEO. The import does not create continuity redirects, does not copy one locale into another, and keeps attachment files deferred for separate media reconciliation.
+
+### Members Reconciliation Evidence
+
+Generate private, read-only `/members/` evidence packets for `jx_member_categories` and `jx_member_items`:
+
+```bash
+php artisan legacy-import:members-review-packets
+php artisan legacy-import:members-review-packets --service=1 --service=2 --disk=local --json
+```
+
+The command writes one category CSV and one item CSV for each selected service, plus a manifest and Markdown summary. It reads only scalar metadata and database-computed text lengths; legacy HTML descriptions and data are not exported. Service 1 is evidence for publication/research-like member output requiring publication proof. Service 2 is teaching/course-like archive evidence and must not be treated as research.
+
+These packets are evidence only. There is no members approval command, importer, target mapping workflow, or redirect workflow. `candidate_target_policy` remains `unresolved_product_decision`, and approval and target fields are intentionally blank.
+
+`jx_member_categories.parent` is a staff-owner identity, not a category hierarchy. The same owner ID can occur in both `jx_councils` and `jx_councils1`; packets report both sources independently and mark that condition as ambiguous. Product and ownership reconciliation must resolve the intended person source and destination before any target design or continuity decision.
+
+All writes through `legacy-import:research-publications` are frozen regardless of approval token. Its dry run is retained only as non-authoritative historical inspection and does not establish that a service-1 category is a publication. The `jx_member_*` write freeze remains in force pending `/members/` product, ownership, attachment, and publication-proof reconciliation.
 
 ## Run Manual Imports
 
@@ -129,6 +204,7 @@ php artisan legacy-import:phase6-settings --input=legacy-import-exports/phase6-s
 php artisan legacy-import:locations
 php artisan legacy-import:locations --write --approve=phase6-locations --batch=phase6-locations-20260708
 php artisan legacy-import:news-review
+php artisan legacy-import:members-review-packets
 php artisan legacy-import:news-slug-plan --limit=50
 php artisan legacy-import:news-slug-plan --all --json --output=storage/app/legacy-news-slug-plan.json
 php artisan legacy-import:news-slug-apply --all --approve=news-slug-cleanup
@@ -554,6 +630,156 @@ Rules:
 - only evidence-backed router patterns from `OLD_SYSTEM_FINDINGS.md` are generated
 - generated rows use the same CSV shape as the URL continuity inventory so they can be triaged by `legacy-import:url-continuity-triage`
 - unresolved generated URLs explicitly remain backlog and must not redirect to homepage
+
+## Phase 5 Redirect Decisions
+
+`legacy-import:redirect-evidence` now produces a preview CSV with blank `approval_decision`, `approved_by`, and `approval_notes` fields. Evidence is not a redirect rule until those fields are explicitly reviewed.
+
+Only rows that remain `preview_ready`, `resolver_ready`, and `runtime_resolver` are eligible. Set `approval_decision` to `redirect` and provide one consistent `approved_by` value for the batch. Leave rejected or deferred rows blank or give them a non-redirect decision.
+
+Preview the reviewed packet without writing:
+
+```bash
+php artisan legacy-import:redirect-decisions <reviewed-preview.csv> --batch=redirect-review-YYYYMMDD
+```
+
+Apply after reviewing eligible, idempotent, conflict, and skipped counts:
+
+```bash
+php artisan legacy-import:redirect-decisions <reviewed-preview.csv> \
+  --batch=redirect-review-YYYYMMDD \
+  --write \
+  --approve=legacy-redirect-apply
+```
+
+Preview and apply rollback for exactly that batch:
+
+```bash
+php artisan legacy-import:redirect-rollback redirect-review-YYYYMMDD
+php artisan legacy-import:redirect-rollback redirect-review-YYYYMMDD \
+  --write \
+  --approve=legacy-redirect-rollback
+```
+
+Safety rules:
+
+- router redirects are keyed by normalized path plus normalized query signature;
+- `service`, `ser`, and `Ser` share one canonical identity, as do `cat_id` and `cat`;
+- query order does not affect matching;
+- unsupported locales, blank approvals, stale runtime targets, unsafe targets, self-redirects, duplicates, and existing conflicts are rejected;
+- the current query resolver must still resolve to the packet target at apply time;
+- existing manual rules are never overwritten;
+- writes are transactional and recorded in `legacy_redirect_decision_batches` and `migration_logs`;
+- rollback deletes only redirects created by the selected decision batch;
+- continuity cache is invalidated after apply and rollback.
+
+Current generated evidence has blank approval fields, so running this workflow without editorial decisions creates zero redirects.
+
+Latest regenerated decision evidence:
+
+- Generated URL inventory: `storage/app/private/legacy-import-exports/generated-url-inventory/20260728_223735_generated_url_inventory.csv`.
+- Triage rows: `storage/app/private/legacy-import-exports/url-continuity-triage/20260728_223810_url_continuity_triage_rows.csv`.
+- Reviewed decision input: `storage/app/private/legacy-import-exports/redirect-evidence/20260728_223901_redirect_evidence_preview.csv`.
+- Total/preview-ready/blocked: `11919/12/11907`.
+- Current blank-approval dry-run: `12` scanned, `0` approved, `0` eligible, `0` created, `12` skipped.
+
+Approved subsite-home batch:
+
+- Reviewed packet: `storage/app/private/legacy-import-exports/redirect-evidence/20260729_approved_subsite_home_redirects.csv`.
+- Batch: `approved-subsite-homes-20260729`.
+- Scope: root AR/EN plus Business, Petroleum, AI, Pharmacy, Dentistry, and Medicine AR/EN homes.
+- Dry-run: `14` scanned, `14` approved, `14` eligible, `0` skipped.
+- Apply: `14` created and `14` success migration logs.
+- Idempotency replay: `0` created, `14` idempotent.
+- Validation: all redirect rules valid; all 14 source signatures resolve with `301`; all 14 targets render `200`.
+- Rollback preview: `14` batch redirects, `0` deleted. The batch remains applied.
+
+## Public Staff Audit And Approval
+
+Public staff reconciliation is a separate, private workflow. The only source eligible for this workflow is `jx_councils`. `jx_councils1` is not proven to represent public profiles and must not be imported by the Phase 6 restore or used to create public faculty profiles. It is read only for cross-source email overlap evidence.
+
+Export all 14 service packets:
+
+```bash
+php artisan legacy-import:public-staff-review-packets
+php artisan legacy-import:public-staff-review-packets --json
+```
+
+Export selected services to a private location:
+
+```bash
+php artisan legacy-import:public-staff-review-packets --service=4 --service=13 --disk=local --dir=legacy-import-exports/public-staff-review-packets
+```
+
+Packet rules:
+
+- output contains metadata and `CHAR_LENGTH` evidence only; legacy AR/EN HTML is never exported
+- every row starts with blank `approval_decision` and `approved_target`
+- every row remains `pending_editorial_review` or `mapped_reconciliation_review`; packets never claim approval or import readiness
+- service 1 and 2 rows require a separate councils target and cannot enter the faculty member importer
+- odd/even service labels preserve faculty leadership/staff semantics
+- missing media is not a blocker; file paths are deferred evidence only
+- exports and edited approvals must remain private and must not be placed under `public/`
+
+An editor must review blockers and evidence in one service CSV. To approve a faculty profile candidate, set exactly:
+
+```text
+approval_decision=import
+approved_target=faculty_members
+```
+
+Do not edit source identity/content fields as a way to alter imported data. The importer uses packet IDs only to fetch approved `jx_councils` rows and verifies packet service/faculty context against the fixed mapping. Dry-run the privately edited packet first:
+
+```bash
+php artisan legacy-import:public-staff legacy-import-exports/public-staff-review-packets/<timestamp>/service_04_medicine_staff.csv
+php artisan legacy-import:public-staff legacy-import-exports/public-staff-review-packets/<timestamp>/service_04_medicine_staff.csv --json
+```
+
+After reviewing dry-run counts and skip reasons, write disabled drafts with the explicit token:
+
+```bash
+php artisan legacy-import:public-staff legacy-import-exports/public-staff-review-packets/<timestamp>/service_04_medicine_staff.csv --write --approve=public-staff-import --batch=<reviewed-batch>
+```
+
+Write guarantees:
+
+- creates only disabled `draft` `faculty_members` with `published_at`, photo media, and CV media left null
+- creates only usable source locales; it does not synthesize AR or EN translations
+- invalid email and URL-in-email values become null and are retained only in migration-log evidence
+- media paths, source visibility/rank/service, packet path, and packet SHA-256 remain migration-log metadata
+- creates no redirects and never publishes content
+- successful `jx_councils` migration logs make replay idempotent
+- duplicate approved identities, existing current emails, missing faculties, and prior mappings are skipped rather than merged
+
+## Central Council Approval Import
+
+Central governance uses the service 1 and 2 packets from the same private packet generator:
+
+```bash
+php artisan legacy-import:public-staff-review-packets --service=1 --service=2 --disk=local --dir=legacy-import-exports/public-staff-review-packets
+```
+
+In each reviewed copy, approve only intended central members by setting exactly:
+
+```text
+approval_decision=import
+approved_target=council_members
+```
+
+Keep `candidate_target_module=councils` and `candidate_faculty_slug` blank. Dry-run each reviewed copy before writing:
+
+```bash
+php artisan legacy-import:central-councils legacy-import-exports/public-staff-review-packets/<timestamp>/service_01_university_board.csv
+php artisan legacy-import:central-councils legacy-import-exports/public-staff-review-packets/<timestamp>/service_02_university_council.csv --json
+```
+
+Write only after checking importable and reason counts:
+
+```bash
+php artisan legacy-import:central-councils legacy-import-exports/public-staff-review-packets/<timestamp>/service_01_university_board.csv --write --approve=central-councils-import --batch=<reviewed-batch>
+```
+
+This workflow imports only verified `jx_councils` service 1 and 2 rows. It never reads `jx_councils1`, auto-links faculty identities, or trusts packet names/content. Councils and members are created disabled as review/archive data, no content is published or publicly listed, and no routes or redirects are created. Packet files must remain private.
 
 Latest generated URL baseline:
 

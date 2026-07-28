@@ -49,7 +49,7 @@ class OldDatabaseConnection
 
     public function schema(): SchemaBuilder
     {
-        return $this->database->connection($this->connectionName())->getSchemaBuilder();
+        return $this->connection()->getSchemaBuilder();
     }
 
     private function hasDedicatedLegacyConfig(): bool

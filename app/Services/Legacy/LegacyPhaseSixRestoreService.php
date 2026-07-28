@@ -5,17 +5,14 @@ declare(strict_types=1);
 namespace App\Services\Legacy;
 
 use App\Contracts\Legacy\LegacyClassificationReportServiceInterface;
-use App\Contracts\Legacy\LegacyFacultyProfileImportServiceInterface;
 use App\Contracts\Legacy\LegacyLocationImportServiceInterface;
 use App\Contracts\Legacy\LegacyMappingProposalServiceInterface;
-use App\Contracts\Legacy\LegacyNewsImportServiceInterface;
 use App\Contracts\Legacy\LegacyPhaseSixApprovalServiceInterface;
 use App\Contracts\Legacy\LegacyPhaseSixMenuLinkImportServiceInterface;
 use App\Contracts\Legacy\LegacyPhaseSixPageImportServiceInterface;
 use App\Contracts\Legacy\LegacyPhaseSixRestoreServiceInterface;
 use App\Contracts\Legacy\LegacyPhaseSixSettingsImportServiceInterface;
 use App\Contracts\Legacy\LegacyPhaseSixSettingsMappingServiceInterface;
-use App\Contracts\Legacy\LegacyResearchPublicationImportServiceInterface;
 use App\Contracts\Legacy\LegacyStagingReviewServiceInterface;
 use App\Contracts\Legacy\LegacyStudentProfileImportServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
@@ -35,9 +32,6 @@ final class LegacyPhaseSixRestoreService implements LegacyPhaseSixRestoreService
         private readonly LegacyPhaseSixSettingsMappingServiceInterface $settingsMappingService,
         private readonly LegacyLocationImportServiceInterface $locationImportService,
         private readonly LegacyStudentProfileImportServiceInterface $studentProfileImportService,
-        private readonly LegacyFacultyProfileImportServiceInterface $facultyProfileImportService,
-        private readonly LegacyResearchPublicationImportServiceInterface $researchPublicationImportService,
-        private readonly LegacyNewsImportServiceInterface $newsImportService,
         private readonly LegacyPhaseSixPageImportServiceInterface $pageImportService,
         private readonly LegacyPhaseSixMenuLinkImportServiceInterface $menuLinkImportService,
         private readonly LegacyPhaseSixSettingsImportServiceInterface $settingsImportService,
@@ -81,14 +75,14 @@ final class LegacyPhaseSixRestoreService implements LegacyPhaseSixRestoreService
         $honor = $this->studentProfileImportService->import('honor_students', $write, $write ? 'phase6-honor-students' : null, $batch.'-honor-students', true);
         $lanes['honor_students'] = $this->profileSummary($honor->scannedRows, $honor->importableRows, $honor->importedRows, $honor->skippedRows, true);
 
-        $faculty = $this->facultyProfileImportService->import($write, $write ? 'phase6-faculty-members' : null, $batch.'-faculty-members', false);
-        $lanes['faculty_members'] = $this->profileSummary($faculty->scannedRows, $faculty->importableRows, $faculty->importedRows, $faculty->skippedRows, false);
+        $lanes['faculty_members'] = ['status' => 'blocked_by_audit_reconciliation', ...$this->profileSummary(0, 0, 0, 0, false)];
+        $warnings[] = 'Faculty members are blocked by audit reconciliation: jx_councils1 is not proven public; use the separate private jx_councils public staff packet workflow.';
 
-        $research = $this->researchPublicationImportService->import($write, $write ? 'phase6-research-publications' : null, $batch.'-research-publications', true);
-        $lanes['research_publications'] = $this->profileSummary($research->scannedRows, $research->importableRows, $research->importedRows, $research->skippedRows, true);
+        $lanes['research_publications'] = ['status' => 'blocked_by_audit_reconciliation', ...$this->profileSummary(0, 0, 0, 0, false)];
+        $warnings[] = 'Research publications are blocked because audited jx_member_* records belong to /members/ and require reconciliation.';
 
-        $news = $this->newsImportService->import($write, $write ? 'phase6-news' : null, $batch.'-news');
-        $lanes['news'] = $this->profileSummary($news->scannedRows, $news->importableRows, $news->importedRows, $news->skippedRows, true);
+        $lanes['news'] = ['status' => 'requires_approved_packet', ...$this->profileSummary(0, 0, 0, 0, false)];
+        $warnings[] = 'News is excluded from Phase 6 restore and requires a privately reviewed category approval packet.';
 
         $pages = $this->pageImportService->import($write, $write ? 'phase6-pages' : null, $batch.'-pages');
         $lanes['static_pages'] = $this->profileSummary($pages->scannedRows, $pages->importableRows, $pages->importedRows, $pages->skippedRows, false);

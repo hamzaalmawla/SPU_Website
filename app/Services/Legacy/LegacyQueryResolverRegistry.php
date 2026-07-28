@@ -9,7 +9,7 @@ use App\Contracts\Legacy\LegacyQueryResolverRegistryInterface;
 use App\DTOs\Legacy\LegacyQueryResolutionDTO;
 use App\DTOs\Legacy\NormalizedLegacyUrlDTO;
 use App\Services\Legacy\QueryResolvers\LegacyNewsQueryResolver;
-use App\Services\Legacy\QueryResolvers\LegacyPageQueryResolver;
+use App\Services\Legacy\QueryResolvers\LegacySubsiteHomeQueryResolver;
 
 final class LegacyQueryResolverRegistry implements LegacyQueryResolverRegistryInterface
 {
@@ -18,9 +18,9 @@ final class LegacyQueryResolverRegistry implements LegacyQueryResolverRegistryIn
 
     public function __construct(
         LegacyNewsQueryResolver $newsResolver,
-        LegacyPageQueryResolver $pageResolver,
+        LegacySubsiteHomeQueryResolver $subsiteHomeResolver,
     ) {
-        $this->resolvers = [$newsResolver, $pageResolver];
+        $this->resolvers = [$subsiteHomeResolver, $newsResolver];
     }
 
     public function resolve(NormalizedLegacyUrlDTO $url): ?LegacyQueryResolutionDTO

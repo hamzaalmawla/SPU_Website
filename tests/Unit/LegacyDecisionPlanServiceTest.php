@@ -57,7 +57,7 @@ final class LegacyDecisionPlanServiceTest extends TestCase
 
         $this->assertSame(2, $decisions->firstWhere('action', 'auto_keep_canonical_duplicate')['source_id']);
         $this->assertSame(2, $decisions->firstWhere('action', 'auto_skip_duplicate')['canonical_source_id']);
-        $this->assertSame('/en', $decisions->firstWhere('action', 'auto_redirect_candidate')['target_url']);
+        $this->assertSame('/ar', $decisions->firstWhere('action', 'auto_redirect_candidate')['target_url']);
         $this->assertFalse($decisions->firstWhere('action', 'auto_skip_invalid_contact_until_verified')['public_import_allowed']);
     }
 

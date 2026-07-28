@@ -8,5 +8,10 @@ use App\DTOs\Legacy\LegacyFileInventoryScanResultDTO;
 
 interface LegacyFileInventoryServiceInterface
 {
-    public function scan(bool $write, ?int $limit = null, ?callable $progress = null): LegacyFileInventoryScanResultDTO;
+    public function scan(
+        bool $write,
+        ?int $limit = null,
+        ?callable $progress = null,
+        bool $computeChecksums = false,
+    ): LegacyFileInventoryScanResultDTO;
 }

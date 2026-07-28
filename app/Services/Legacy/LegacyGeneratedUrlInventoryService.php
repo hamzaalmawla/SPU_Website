@@ -259,7 +259,8 @@ final class LegacyGeneratedUrlInventoryService implements LegacyGeneratedUrlInve
         return match ($table) {
             'jx_categories' => $this->categoryRouterUrls($row),
             'jx_member_categories' => $this->memberCategoryRouterUrls($row),
-            'jx_councils', 'jx_councils1' => $this->councilRouterUrls($row),
+            'jx_councils' => $this->councilRouterUrls($row),
+            'jx_councils1' => [],
             'jx_site_static_pages' => $this->staticPageRouterUrls($row),
             default => [],
         };
@@ -275,9 +276,34 @@ final class LegacyGeneratedUrlInventoryService implements LegacyGeneratedUrlInve
             return [];
         }
 
+        $path = $this->categorySubsitePath($serviceType);
+
+        if ($path === null) {
+            return [];
+        }
+
         return collect($this->localesForRow($row))->map(
-            fn (int $lang): string => '/index.php?page=show&ex=2&dir=items&lang='.$lang.'&ser='.$serviceType.'&cat_id='.$id
+            fn (int $lang): string => $path.'/index.php?page=show&ex=2&dir=items&lang='.$lang.'&ser='.$serviceType.'&cat_id='.$id
         )->all();
+    }
+
+    private function categorySubsitePath(int $serviceType): ?string
+    {
+        return match (true) {
+            $serviceType >= 1 && $serviceType <= 10 => '',
+            $serviceType >= 21 && $serviceType <= 29 => '/med',
+            $serviceType >= 31 && $serviceType <= 39 => '/dent',
+            $serviceType >= 41 && $serviceType <= 49 => '/pharm',
+            $serviceType >= 51 && $serviceType <= 59 => '/info',
+            $serviceType >= 61 && $serviceType <= 69 => '/petrol',
+            $serviceType >= 71 && $serviceType <= 79 => '/admin',
+            $serviceType >= 81 && $serviceType <= 89 => '/research',
+            $serviceType >= 91 && $serviceType <= 99 => '/hospital',
+            $serviceType >= 101 && $serviceType <= 109 => '/dent_clinic',
+            $serviceType >= 111 && $serviceType <= 119 => '/alumni',
+            $serviceType >= 121 && $serviceType <= 129 => '/clubs',
+            default => null,
+        };
     }
 
     /** @return array<int, string> */
@@ -305,8 +331,23 @@ final class LegacyGeneratedUrlInventoryService implements LegacyGeneratedUrlInve
             return [];
         }
 
+        $path = match (true) {
+            $serviceType >= 1 && $serviceType <= 2 => '',
+            $serviceType >= 3 && $serviceType <= 4 => '/med',
+            $serviceType >= 5 && $serviceType <= 6 => '/dent',
+            $serviceType >= 7 && $serviceType <= 8 => '/pharm',
+            $serviceType >= 9 && $serviceType <= 10 => '/info',
+            $serviceType >= 11 && $serviceType <= 12 => '/petrol',
+            $serviceType >= 13 && $serviceType <= 14 => '/admin',
+            default => null,
+        };
+
+        if ($path === null) {
+            return [];
+        }
+
         return collect($this->localesForRow($row))->map(
-            fn (int $lang): string => '/members/index.php?page=show&ex=2&dir=councils&lang='.$lang.'&service='.$serviceType.'&council_id='.$id
+            fn (int $lang): string => $path.'/index.php?page=show&ex=2&dir=councils&lang='.$lang.'&service='.$serviceType.'&cat_id='.$id
         )->all();
     }
 

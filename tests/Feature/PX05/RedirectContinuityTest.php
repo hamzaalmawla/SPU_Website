@@ -136,15 +136,14 @@ class RedirectContinuityTest extends TestCase
         $response->assertRedirect('/en/news/'.$articleId);
     }
 
-    public function test_old_static_page_query_redirects_by_migration_log_mapping(): void
+    public function test_old_static_snippet_query_does_not_become_standalone_redirect(): void
     {
         $pageId = $this->createPublishedPage('legacy-community-service');
         $this->createMigrationLog('static_pages', 'jx_site_static_pages', 12, 'pages', $pageId);
 
         $response = $this->get('/index.php?page=show&dir=items&item_id=12&lang=2');
 
-        $response->assertStatus(301);
-        $response->assertRedirect('/en/legacy-community-service');
+        $response->assertNotFound();
     }
 
     public function test_legacy_public_admin_index_is_logged_but_admin_login_still_skips(): void
@@ -167,6 +166,13 @@ class RedirectContinuityTest extends TestCase
         $response = $this->get('/admin/login');
 
         $this->assertNotEquals(301, $response->getStatusCode());
+    }
+
+    public function test_legacy_public_business_subsite_home_redirects_before_admin_routes(): void
+    {
+        $this->get('/admin/index.php?lang=1')
+            ->assertRedirect('/ar/facilities/business-administration')
+            ->assertStatus(301);
     }
 
     public function test_repeated_unresolved_request_increments_hit_count(): void

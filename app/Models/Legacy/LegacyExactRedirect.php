@@ -20,6 +20,7 @@ class LegacyExactRedirect extends Model
      */
     protected $fillable = [
         'legacy_path',
+        'query_signature',
         'destination_url',
         'status_code',
         'locale',
@@ -27,6 +28,8 @@ class LegacyExactRedirect extends Model
         'hit_count',
         'last_hit_at',
         'notes',
+        'decision_batch',
+        'evidence_sha256',
     ];
 
     /**

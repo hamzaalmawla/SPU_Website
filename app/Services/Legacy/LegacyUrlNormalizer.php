@@ -30,6 +30,7 @@ final class LegacyUrlNormalizer implements LegacyUrlNormalizerInterface
         'admin' => ['site_id' => 7, 'public_admin' => true],
         'research' => ['site_id' => 8],
         'hospital' => ['site_id' => 9],
+        'dent_clinic' => ['site_id' => 10],
         'alumni' => ['site_id' => 11],
         'clubs' => ['site_id' => 12],
         'members' => ['site_id' => 13],
@@ -129,10 +130,21 @@ final class LegacyUrlNormalizer implements LegacyUrlNormalizerInterface
                 $params['service'] = $params['Ser'];
             }
         }
+        unset($params['ser'], $params['Ser']);
+
+        if ((! isset($params['cat_id']) || $params['cat_id'] === '') && isset($params['cat']) && $params['cat'] !== '') {
+            $params['cat_id'] = $params['cat'];
+        }
+        unset($params['cat']);
+
+        if (($params['page'] ?? null) === 'show_cat') {
+            $params['page'] = 'show';
+        }
 
         if (array_key_exists('mylang', $params) && (! isset($params['lang']) || $params['lang'] === '')) {
             $params['lang'] = '1';
         }
+        unset($params['mylang']);
 
         return $params;
     }

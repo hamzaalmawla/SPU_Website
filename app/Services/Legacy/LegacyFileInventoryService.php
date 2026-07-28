@@ -21,8 +21,12 @@ final class LegacyFileInventoryService implements LegacyFileInventoryServiceInte
         private readonly OldDatabaseConnection $oldDatabase,
     ) {}
 
-    public function scan(bool $write, ?int $limit = null, ?callable $progress = null): LegacyFileInventoryScanResultDTO
-    {
+    public function scan(
+        bool $write,
+        ?int $limit = null,
+        ?callable $progress = null,
+        bool $computeChecksums = false,
+    ): LegacyFileInventoryScanResultDTO {
         $references = [];
         $warnings = [];
         $missingTables = 0;
@@ -31,6 +35,7 @@ final class LegacyFileInventoryService implements LegacyFileInventoryServiceInte
         $updatedRows = 0;
         $existingFiles = 0;
         $missingFiles = 0;
+        $unverifiedFiles = 0;
         $sampleMissingPaths = [];
         $checksumFailedFiles = 0;
         $checksumFailedPaths = [];
@@ -38,6 +43,21 @@ final class LegacyFileInventoryService implements LegacyFileInventoryServiceInte
         $unexpectedErrorPaths = [];
         $brokenSymlinks = 0;
         $brokenSymlinkPaths = [];
+        $configuredRoots = $this->fileInventoryRoots();
+        $availableRoots = array_values(array_filter($configuredRoots, static fn (string $root): bool => is_dir($root) && is_readable($root)));
+        $unavailableRoots = array_values(array_diff($configuredRoots, $availableRoots));
+
+        foreach ($unavailableRoots as $root) {
+            $warnings[] = 'Legacy file inventory root is unavailable; absence will not be classified as missing: '.$root;
+        }
+
+        if ($availableRoots === []) {
+            $warnings[] = 'No readable legacy file inventory root is available. File existence remains unverified.';
+
+            if ($write) {
+                throw new \RuntimeException('Cannot write legacy file inventory evidence without a readable OLD_PUBLIC_ROOT.');
+            }
+        }
 
         foreach ($this->configuredFields() as $definition) {
             $table = $definition['table'];
@@ -85,17 +105,28 @@ final class LegacyFileInventoryService implements LegacyFileInventoryServiceInte
         foreach ($grouped as $legacyPath => $pathReferences) {
             $first = $pathReferences->first();
             $existing = $write ? $existingByPath->get(mb_strtolower((string) $legacyPath)) : null;
-            $inspection = $this->inspectFile((string) $legacyPath, false, $pathReferences->values()->all());
-            $status = $this->statusForInspection($existing instanceof LegacyFileInventory ? $existing : null, $inspection['exists']);
+            $inspection = $this->inspectFile(
+                (string) $legacyPath,
+                $computeChecksums,
+                $pathReferences->values()->all(),
+                $availableRoots,
+            );
+            $status = $this->statusForInspection(
+                $existing instanceof LegacyFileInventory ? $existing : null,
+                $inspection['exists'],
+                $inspection['verified'],
+            );
 
             if ($inspection['exists']) {
                 $existingFiles++;
-            } else {
+            } elseif ($inspection['verified']) {
                 $missingFiles++;
 
                 if (count($sampleMissingPaths) < 20) {
                     $sampleMissingPaths[] = (string) $legacyPath;
                 }
+            } else {
+                $unverifiedFiles++;
             }
 
             if ($inspection['checksum_failed']) {
@@ -130,10 +161,12 @@ final class LegacyFileInventoryService implements LegacyFileInventoryServiceInte
                     'source_id' => $first['source_id'],
                     'status' => $status,
                     'extension' => $this->extensionForPath((string) $legacyPath),
-                    'mime_type' => $inspection['mime_type'],
-                    'file_size_bytes' => $inspection['file_size_bytes'],
-                    'checksum_sha256' => null,
-                    'checksum_status' => 'pending',
+                    'mime_type' => $computeChecksums ? $inspection['mime_type'] : $existing?->mime_type,
+                    'file_size_bytes' => $computeChecksums ? $inspection['file_size_bytes'] : $existing?->file_size_bytes,
+                    'checksum_sha256' => $computeChecksums ? $inspection['checksum_sha256'] : $existing?->checksum_sha256,
+                    'checksum_status' => $computeChecksums
+                        ? ($inspection['checksum_failed'] ? 'failed' : ($inspection['checksum_sha256'] !== null ? 'verified' : 'pending'))
+                        : ($existing?->checksum_status ?? 'pending'),
                     'reference_count' => $pathReferences->count(),
                     'source_references' => $pathReferences->values()->all(),
                     'last_seen_at' => now(),
@@ -166,6 +199,7 @@ final class LegacyFileInventoryService implements LegacyFileInventoryServiceInte
             missingColumns: $missingColumns,
             existingFiles: $existingFiles,
             missingFiles: $missingFiles,
+            unverifiedFiles: $unverifiedFiles,
             warnings: array_values(array_unique($warnings)),
             sampleMissingPaths: $sampleMissingPaths,
             checksumFailedFiles: $checksumFailedFiles,
@@ -294,13 +328,14 @@ final class LegacyFileInventoryService implements LegacyFileInventoryServiceInte
         return $extension !== '' ? mb_substr($extension, 0, 32) : null;
     }
 
-    /** @param array<int, array{legacy_path: string, source_table: string, source_column: string, source_id: ?int}> $references @return array{exists: bool, full_path: ?string, mime_type: ?string, file_size_bytes: ?int, checksum_sha256: ?string, checksum_failed: bool, error: ?string, broken_symlink: bool} */
-    private function inspectFile(string $legacyPath, bool $computeChecksum, array $references): array
+    /** @param array<int, array{legacy_path: string, source_table: string, source_column: string, source_id: ?int}> $references @param list<string> $roots @return array{verified: bool, exists: bool, full_path: ?string, mime_type: ?string, file_size_bytes: ?int, checksum_sha256: ?string, checksum_failed: bool, error: ?string, broken_symlink: bool} */
+    private function inspectFile(string $legacyPath, bool $computeChecksum, array $references, array $roots): array
     {
-        $fullPath = $this->findFullPath($legacyPath, $references);
+        $fullPath = $this->findFullPath($legacyPath, $references, $roots);
 
         if ($fullPath === null) {
             return [
+                'verified' => $roots !== [],
                 'exists' => false,
                 'full_path' => null,
                 'mime_type' => null,
@@ -308,7 +343,7 @@ final class LegacyFileInventoryService implements LegacyFileInventoryServiceInte
                 'checksum_sha256' => null,
                 'checksum_failed' => false,
                 'error' => null,
-                'broken_symlink' => $this->hasBrokenSymlinkCandidate($legacyPath, $references),
+                'broken_symlink' => $this->hasBrokenSymlinkCandidate($legacyPath, $references, $roots),
             ];
         }
 
@@ -338,6 +373,7 @@ final class LegacyFileInventoryService implements LegacyFileInventoryServiceInte
         }
 
         return [
+            'verified' => true,
             'exists' => true,
             'full_path' => $fullPath,
             'mime_type' => $mimeType,
@@ -349,11 +385,11 @@ final class LegacyFileInventoryService implements LegacyFileInventoryServiceInte
         ];
     }
 
-    /** @param array<int, array{legacy_path: string, source_table: string, source_column: string, source_id: ?int}> $references */
-    private function findFullPath(string $legacyPath, array $references): ?string
+    /** @param array<int, array{legacy_path: string, source_table: string, source_column: string, source_id: ?int}> $references @param list<string> $roots */
+    private function findFullPath(string $legacyPath, array $references, array $roots): ?string
     {
-        foreach ($this->fileInventoryRoots() as $root) {
-            foreach ($this->candidateRelativePaths($legacyPath, $references) as $relativePath) {
+        foreach ($roots as $root) {
+            foreach ($this->candidateRelativePaths($legacyPath, $references, $roots) as $relativePath) {
                 $candidate = rtrim($root, DIRECTORY_SEPARATOR.'/\\').DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
 
                 try {
@@ -370,7 +406,7 @@ final class LegacyFileInventoryService implements LegacyFileInventoryServiceInte
     }
 
     /** @param array<int, array{legacy_path: string, source_table: string, source_column: string, source_id: ?int}> $references @return list<string> */
-    private function candidateRelativePaths(string $legacyPath, array $references): array
+    private function candidateRelativePaths(string $legacyPath, array $references, array $roots): array
     {
         $relativePath = ltrim(str_replace('\\', '/', $legacyPath), '/');
 
@@ -388,7 +424,7 @@ final class LegacyFileInventoryService implements LegacyFileInventoryServiceInte
             $paths[] = 'downloads/files/'.$relativePath;
             $paths[] = 'downloads/files2/'.$relativePath;
 
-            $alternative = $this->alternativeDownloadRelativePath($relativePath);
+            $alternative = $this->alternativeDownloadRelativePath($relativePath, $roots);
 
             if ($alternative !== null) {
                 $paths[] = $alternative;
@@ -413,7 +449,8 @@ final class LegacyFileInventoryService implements LegacyFileInventoryServiceInte
         return false;
     }
 
-    private function alternativeDownloadRelativePath(string $filename): ?string
+    /** @param list<string> $roots */
+    private function alternativeDownloadRelativePath(string $filename, array $roots): ?string
     {
         if (! preg_match('/^\d+_(.+)$/', $filename, $matches)) {
             return null;
@@ -422,7 +459,7 @@ final class LegacyFileInventoryService implements LegacyFileInventoryServiceInte
         $suffix = mb_strtolower($matches[1]);
         $matches = [];
 
-        foreach ($this->downloadFileIndex() as $files) {
+        foreach ($this->downloadFileIndex($roots) as $files) {
             foreach ($files as $lowerFilename => $relativePath) {
                 if (str_ends_with($lowerFilename, $suffix)) {
                     $matches[$relativePath] = true;
@@ -433,8 +470,8 @@ final class LegacyFileInventoryService implements LegacyFileInventoryServiceInte
         return count($matches) === 1 ? array_key_first($matches) : null;
     }
 
-    /** @return array<string, array<string, string>> */
-    private function downloadFileIndex(): array
+    /** @param list<string> $roots @return array<string, array<string, string>> */
+    private function downloadFileIndex(array $roots): array
     {
         if ($this->downloadFileIndex !== null) {
             return $this->downloadFileIndex;
@@ -442,7 +479,7 @@ final class LegacyFileInventoryService implements LegacyFileInventoryServiceInte
 
         $index = [];
 
-        foreach ($this->fileInventoryRoots() as $root) {
+        foreach ($roots as $root) {
             foreach (['downloads/files', 'downloads/files2'] as $directory) {
                 $fullDirectory = rtrim($root, DIRECTORY_SEPARATOR.'/\\').DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $directory);
                 $items = @scandir($fullDirectory);
@@ -469,10 +506,11 @@ final class LegacyFileInventoryService implements LegacyFileInventoryServiceInte
     }
 
     /** @param array<int, array{legacy_path: string, source_table: string, source_column: string, source_id: ?int}> $references */
-    private function hasBrokenSymlinkCandidate(string $legacyPath, array $references): bool
+    /** @param list<string> $roots */
+    private function hasBrokenSymlinkCandidate(string $legacyPath, array $references, array $roots): bool
     {
-        foreach ($this->fileInventoryRoots() as $root) {
-            foreach ($this->candidateRelativePaths($legacyPath, $references) as $relativePath) {
+        foreach ($roots as $root) {
+            foreach ($this->candidateRelativePaths($legacyPath, $references, $roots) as $relativePath) {
                 $candidate = rtrim($root, DIRECTORY_SEPARATOR.'/\\').DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
 
                 if (@is_link($candidate) && ! @file_exists($candidate)) {
@@ -484,7 +522,7 @@ final class LegacyFileInventoryService implements LegacyFileInventoryServiceInte
         return false;
     }
 
-    /** @param array{exists: bool, error: ?string, broken_symlink: bool} $inspection */
+    /** @param array{verified: bool, exists: bool, error: ?string, broken_symlink: bool} $inspection */
     private function inspectionNotes(array $inspection): ?string
     {
         if ($inspection['error'] !== null) {
@@ -493,6 +531,10 @@ final class LegacyFileInventoryService implements LegacyFileInventoryServiceInte
 
         if ($inspection['broken_symlink']) {
             return 'Referenced legacy file appears to be a broken symlink in configured inventory roots.';
+        }
+
+        if (! $inspection['verified']) {
+            return 'Legacy file existence is unverified because no configured inventory root is readable.';
         }
 
         return $inspection['exists'] ? null : 'Referenced legacy file was not found in configured inventory roots.';
@@ -515,10 +557,14 @@ final class LegacyFileInventoryService implements LegacyFileInventoryServiceInte
             ->all();
     }
 
-    private function statusForInspection(?LegacyFileInventory $existing, bool $exists): string
+    private function statusForInspection(?LegacyFileInventory $existing, bool $exists, bool $verified): string
     {
         if ($existing instanceof LegacyFileInventory && $existing->status === 'mapped') {
             return 'mapped';
+        }
+
+        if (! $verified) {
+            return $existing?->status ?? 'unmapped';
         }
 
         return $exists ? 'unmapped' : 'missing';

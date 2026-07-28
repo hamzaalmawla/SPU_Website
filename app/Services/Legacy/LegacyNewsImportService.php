@@ -20,12 +20,25 @@ use App\Support\LegacyImport\HtmlSanitizer;
 use App\Support\LegacyImport\OldDatabaseConnection;
 use App\Support\LegacyImport\TextCleaner;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
 {
     private const APPROVAL_TOKEN = 'phase6-news';
+
+    private const SOURCE_TABLE = 'jx_categories';
+
+    /** @var list<string> */
+    private const REQUIRED_HEADERS = [
+        'source_table',
+        'source_id',
+        'subsite',
+        'service_type',
+        'approval_decision',
+        'approved_target',
+    ];
 
     public function __construct(
         private readonly OldDatabaseConnection $oldDatabase,
@@ -36,30 +49,52 @@ final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
         private readonly CacheServiceInterface $cacheService,
     ) {}
 
-    public function import(bool $write = false, ?string $approval = null, ?string $batch = null): LegacyNewsImportResultDTO
-    {
+    public function import(
+        bool $write = false,
+        ?string $approval = null,
+        ?string $batch = null,
+        ?string $input = null,
+        string $disk = 'local',
+    ): LegacyNewsImportResultDTO {
         if ($write && $approval !== self::APPROVAL_TOKEN) {
             throw new InvalidArgumentException('Importing Phase 6 news requires --approve='.self::APPROVAL_TOKEN.'.');
         }
 
         $batch = $batch !== null && trim($batch) !== '' ? trim($batch) : 'phase6-news-'.now()->format('Ymd_His');
-        $rows = $this->oldDatabase->table('jx_categories')
-            ->whereIn('service_type', [3, 4])
-            ->orderBy('id')
-            ->get();
-        $categories = $write ? $this->ensureCategories() : [];
+
+        if ($input === null || trim($input) === '') {
+            if ($write) {
+                throw new InvalidArgumentException('Importing Phase 6 news requires an approved category review packet CSV.');
+            }
+
+            return new LegacyNewsImportResultDTO(false, $batch, 0, 0, 0, 0, 0, 0, []);
+        }
+
+        [$scannedRows, $approvedRows, $skippedRows, $skipReasonCounts] = $this->approvedPacketRows(trim($input), $disk);
+        $inputChecksum = hash('sha256', Storage::disk($disk)->get(trim($input)));
+        $approvedIds = array_keys($approvedRows);
+        $rows = $approvedIds === []
+            ? collect()
+            : $this->oldDatabase->table(self::SOURCE_TABLE)->whereIn('id', $approvedIds)->get()->keyBy('id');
+        $categories = [];
         $importableRows = 0;
         $importedRows = 0;
         $createdTranslations = 0;
         $createdAttachments = 0;
-        $skippedRows = 0;
-        $skipReasonCounts = [];
 
-        foreach ($rows as $row) {
-            $sourceId = $this->integerValue($row, 'id');
+        foreach ($approvedRows as $sourceId => $packetRow) {
+            $row = $rows->get($sourceId);
 
-            if ($sourceId === null) {
-                $this->countSkip($skipReasonCounts, 'missing_source_id');
+            if (! is_object($row)) {
+                $this->countSkip($skipReasonCounts, 'missing_source');
+                $skippedRows++;
+
+                continue;
+            }
+
+            $serviceType = $this->integerValue($row, 'service_type');
+            if ($serviceType !== $packetRow['service_type']) {
+                $this->countSkip($skipReasonCounts, 'source_service_mismatch');
                 $skippedRows++;
 
                 continue;
@@ -91,9 +126,22 @@ final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
                 continue;
             }
 
-            $serviceType = $this->integerValue($row, 'service_type') ?? 3;
+            if ($categories === []) {
+                $categories = $this->ensureCategories();
+            }
+
             $category = $categories[$serviceType] ?? $categories[3];
-            [$translationCount, $attachmentCount] = $this->writeArticle($row, $sourceId, $serviceType, $category, $translations, $batch);
+            [$translationCount, $attachmentCount] = $this->writeArticle(
+                $row,
+                $sourceId,
+                $serviceType,
+                $category,
+                $translations,
+                $batch,
+                trim($input),
+                $disk,
+                $inputChecksum,
+            );
             $createdTranslations += $translationCount;
             $createdAttachments += $attachmentCount;
             $importedRows++;
@@ -106,7 +154,7 @@ final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
         return new LegacyNewsImportResultDTO(
             written: $write,
             batch: $batch,
-            scannedRows: $rows->count(),
+            scannedRows: $scannedRows,
             importableRows: $importableRows,
             importedRows: $importedRows,
             createdTranslations: $createdTranslations,
@@ -114,6 +162,132 @@ final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
             skippedRows: $skippedRows,
             skipReasonCounts: $skipReasonCounts,
         );
+    }
+
+    /**
+     * @return array{0: int, 1: array<int, array{service_type: int}>, 2: int, 3: array<string, int>}
+     */
+    private function approvedPacketRows(string $input, string $disk): array
+    {
+        if (! Storage::disk($disk)->exists($input)) {
+            throw new InvalidArgumentException('Approved category review packet CSV ['.$input.'] does not exist on disk ['.$disk.'].');
+        }
+
+        $stream = fopen('php://temp', 'r+');
+        if ($stream === false) {
+            throw new InvalidArgumentException('Approved category review packet CSV could not be opened.');
+        }
+
+        fwrite($stream, Storage::disk($disk)->get($input));
+        rewind($stream);
+        $headers = fgetcsv($stream);
+
+        if (! is_array($headers)) {
+            fclose($stream);
+            throw new InvalidArgumentException('Approved category review packet CSV is empty.');
+        }
+
+        $headers = array_map(static fn (mixed $header): string => trim((string) $header), $headers);
+        $headers[0] = ltrim($headers[0] ?? '', "\xEF\xBB\xBF");
+        $missingHeaders = array_values(array_diff(self::REQUIRED_HEADERS, $headers));
+        if ($missingHeaders !== [] || count($headers) !== count(array_unique($headers))) {
+            fclose($stream);
+            $message = $missingHeaders !== [] ? ' Missing: '.implode(', ', $missingHeaders).'.' : ' Duplicate headers are not allowed.';
+            throw new InvalidArgumentException('Input is not a valid category review packet CSV.'.$message);
+        }
+
+        $scanned = 0;
+        $skipped = 0;
+        $reasons = [];
+        $packetRows = [];
+        $candidates = [];
+
+        while (($values = fgetcsv($stream)) !== false) {
+            if ($values === [null] || $values === []) {
+                continue;
+            }
+
+            $scanned++;
+            if (count($values) !== count($headers)) {
+                $this->countSkip($reasons, 'malformed_packet_row');
+                $skipped++;
+
+                continue;
+            }
+
+            /** @var array<string, string> $packetRow */
+            $packetRow = array_combine($headers, array_map(static fn (mixed $value): string => trim((string) $value), $values));
+            $packetRows[] = $packetRow;
+        }
+        fclose($stream);
+
+        $sourceIdCounts = [];
+        foreach ($packetRows as $packetRow) {
+            if (ctype_digit($packetRow['source_id']) && (int) $packetRow['source_id'] > 0) {
+                $sourceId = (int) $packetRow['source_id'];
+                $sourceIdCounts[$sourceId] = ($sourceIdCounts[$sourceId] ?? 0) + 1;
+            }
+        }
+
+        foreach ($packetRows as $packetRow) {
+            $decision = Str::lower($packetRow['approval_decision']);
+            $target = Str::lower($packetRow['approved_target']);
+
+            if (ctype_digit($packetRow['source_id'])
+                && (int) $packetRow['source_id'] > 0
+                && ($sourceIdCounts[(int) $packetRow['source_id']] ?? 0) > 1) {
+                $this->countSkip($reasons, 'duplicate_source_id');
+                $skipped++;
+
+                continue;
+            }
+            if ($decision !== 'import') {
+                $this->countSkip($reasons, $decision === '' ? 'blank_approval_decision' : 'approval_decision_not_import');
+                $skipped++;
+
+                continue;
+            }
+            if ($target !== 'news') {
+                $this->countSkip($reasons, $target === '' ? 'blank_approved_target' : 'approved_target_not_news');
+                $skipped++;
+
+                continue;
+            }
+            if ($packetRow['source_table'] !== self::SOURCE_TABLE) {
+                $this->countSkip($reasons, 'source_table_mismatch');
+                $skipped++;
+
+                continue;
+            }
+            if ($packetRow['subsite'] !== 'root') {
+                $this->countSkip($reasons, 'subsite_mismatch');
+                $skipped++;
+
+                continue;
+            }
+            if (! ctype_digit($packetRow['source_id']) || (int) $packetRow['source_id'] < 1) {
+                $this->countSkip($reasons, 'invalid_source_id');
+                $skipped++;
+
+                continue;
+            }
+            if (! ctype_digit($packetRow['service_type']) || ! in_array((int) $packetRow['service_type'], [3, 4], true)) {
+                $this->countSkip($reasons, 'invalid_service_type');
+                $skipped++;
+
+                continue;
+            }
+
+            $sourceId = (int) $packetRow['source_id'];
+            $candidates[$sourceId][] = ['service_type' => (int) $packetRow['service_type']];
+        }
+
+        $approved = [];
+        foreach ($candidates as $sourceId => $rows) {
+            $approved[$sourceId] = $rows[0];
+        }
+
+        return [$scanned, $approved, $skipped, $reasons];
     }
 
     /** @return array<int, NewsCategory> */
@@ -161,14 +335,6 @@ final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
             ];
         }
 
-        if (! isset($translations['ar']) && isset($translations['en'])) {
-            $translations['ar'] = $translations['en'];
-        }
-
-        if (! isset($translations['en']) && isset($translations['ar'])) {
-            $translations['en'] = $translations['ar'];
-        }
-
         return $translations;
     }
 
@@ -176,19 +342,18 @@ final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
      * @param  array<string, array{title: string, excerpt: ?string, body: ?string}>  $translations
      * @return array{0: int, 1: int}
      */
-    private function writeArticle(object $row, int $sourceId, int $serviceType, NewsCategory $category, array $translations, string $batch): array
+    private function writeArticle(object $row, int $sourceId, int $serviceType, NewsCategory $category, array $translations, string $batch, string $input, string $disk, string $inputChecksum): array
     {
-        return DB::transaction(function () use ($row, $sourceId, $serviceType, $category, $translations, $batch): array {
+        return DB::transaction(function () use ($row, $sourceId, $serviceType, $category, $translations, $batch, $input, $disk, $inputChecksum): array {
             $title = $translations['en']['title'] ?? $translations['ar']['title'];
-            $enabled = $this->visible($row);
             $article = NewsArticle::query()->create([
                 'news_category_id' => (int) $category->getKey(),
                 'cover_media_id' => null,
                 'slug' => $this->slugService->generate($title, NewsArticle::class, 'en', null, 80),
-                'status' => $enabled ? 'published' : 'draft',
-                'published_at' => $this->dateNormalizer->normalize($this->value($row, ['start_date', 'end_date']))?->toDateTimeString(),
+                'status' => 'draft',
+                'published_at' => null,
                 'scheduled_at' => null,
-                'is_enabled' => $enabled,
+                'is_enabled' => false,
                 'is_featured' => false,
                 'sort_order' => $this->integerValue($row, 'category_order') ?? 0,
                 'faculty_scope_slug' => null,
@@ -215,7 +380,7 @@ final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
                     'og_description' => $translation['excerpt'],
                     'og_image_media_id' => null,
                     'og_image_url' => null,
-                    'robots' => 'index,follow',
+                    'robots' => 'noindex,nofollow',
                 ]);
             }
 
@@ -232,6 +397,14 @@ final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
                 'metadata' => [
                     'phase' => 'phase6',
                     'service_type' => $serviceType,
+                    'approval_packet' => ['disk' => $disk, 'path' => $input, 'sha256' => $inputChecksum],
+                    'legacy_visibility' => $this->value($row, ['is_visible', 'is_active', 'active', 'is_enabled']),
+                    'legacy_dates' => [
+                        'start_raw' => $this->value($row, 'start_date'),
+                        'start_normalized' => $this->dateNormalizer->normalize($this->value($row, 'start_date'))?->toDateTimeString(),
+                        'end_raw' => $this->value($row, 'end_date'),
+                        'end_normalized' => $this->dateNormalizer->normalize($this->value($row, 'end_date'))?->toDateTimeString(),
+                    ],
                     'legacy_photo' => $this->stringValue($row, 'photo'),
                     'attachments_deferred' => true,
                 ],
@@ -310,13 +483,6 @@ final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
             'message' => $message,
             'metadata' => ['phase' => 'phase6'],
         ]);
-    }
-
-    private function visible(object $row): bool
-    {
-        $value = $this->value($row, ['is_visible', 'is_active', 'active', 'is_enabled']);
-
-        return $value === null || (string) $value === '1' || $value === 1 || $value === true;
     }
 
     private function stringValue(object $row, string $key): ?string

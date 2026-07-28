@@ -105,10 +105,31 @@ return [
         ['table' => 'jx_docs', 'id_column' => 'id', 'columns' => ['file']],
     ],
 
+    // Never treat Laravel's current public directory as proof of the legacy source tree.
     'file_inventory_roots' => array_values(array_filter([
         env('OLD_PUBLIC_ROOT'),
-        public_path(),
     ])),
+
+    // Only these legacy static trees may be considered for direct public preservation.
+    'file_continuity_static_directories' => [
+        'downloads/files',
+        'downloads/files/thumb',
+        'downloads/files2',
+        'images',
+        'pdf',
+        'cv_bank',
+        'med/images',
+        'dent/images',
+        'pharm/images',
+        'info/images',
+        'petrol/images',
+        'admin/images',
+        'research/images',
+        'hospital/images',
+        'dent_clinic/images',
+        'alumni/images',
+        'clubs/images',
+    ],
 
     'cleaning_inspection_fields' => [
         'admins' => [
@@ -213,6 +234,17 @@ return [
                 ['column' => 'ar_data', 'type' => 'html', 'required' => false],
                 ['column' => 'en_data', 'type' => 'html', 'required' => false],
                 ['column' => 'cv', 'type' => 'url', 'required' => false],
+            ]],
+            ['table' => 'jx_councils', 'id_column' => 'id', 'fields' => [
+                ['column' => 'ar_name', 'type' => 'text', 'required' => false],
+                ['column' => 'en_name', 'type' => 'text', 'required' => false],
+                ['column' => 'email', 'type' => 'email', 'required' => false],
+                ['column' => 'ar_data', 'type' => 'html', 'required' => false],
+                ['column' => 'en_data', 'type' => 'html', 'required' => false],
+                ['column' => 'ar_position', 'type' => 'text', 'required' => false],
+                ['column' => 'en_position', 'type' => 'text', 'required' => false],
+                ['column' => 'ar_specialization', 'type' => 'text', 'required' => false],
+                ['column' => 'en_specialization', 'type' => 'text', 'required' => false],
             ]],
         ],
         'research' => [
@@ -551,26 +583,28 @@ return [
                 'notes' => 'External-link rows are redirect/content-link candidates, not final redirects.',
             ],
         ],
-        'news' => [
+        'legacy_categories' => [
             'jx_categories' => [
-                'bucket' => 'canonical_rebuild_now',
-                'rule_key' => 'legacy_news_content_candidate',
+                'bucket' => 'archive_now_remodel_later',
+                'rule_key' => 'legacy_category_context_review',
                 'high_risk' => true,
                 'identity_columns' => ['ar_name', 'en_name'],
                 'file_columns' => ['photo'],
                 'url_columns' => ['url'],
                 'date_columns' => ['start_date'],
-                'notes' => 'Core old content nodes are canonical candidates only after Phase 3 decisions and module mapping pass.',
+                'notes' => 'Category rows require subsite, service suffix, hierarchy, visibility, and link/file semantics before any typed module import.',
             ],
+        ],
+        'legacy_items' => [
             'jx_items' => [
                 'bucket' => 'file_only_preserve',
-                'rule_key' => 'legacy_news_attachment_preserve',
+                'rule_key' => 'legacy_typed_child_content_preserve',
                 'high_risk' => true,
                 'identity_columns' => ['ar_name', 'en_name'],
                 'file_columns' => ['photo', 'ar_file', 'en_file'],
                 'url_columns' => ['video_link'],
                 'date_columns' => ['post_date', 'updated_date', 'added_date'],
-                'notes' => 'Old item rows mostly behave as child media/attachment support and need parent mapping before import.',
+                'notes' => 'Item rows require parent category context before typed content or file preservation decisions.',
             ],
         ],
         'faculties' => [
@@ -727,9 +761,9 @@ return [
     'future_module_map' => [
         'jx_members' => 'faculty_members',
         'jx_councils' => 'councils',
-        'jx_member_items' => 'research_publications',
-        'jx_categories' => 'news_articles',
-        'jx_items' => 'news_article_attachments',
+        'jx_member_items' => 'members_archive',
+        'jx_categories' => 'typed_legacy_content_registry',
+        'jx_items' => 'typed_legacy_child_content',
         'jx_faqs' => 'faqs',
         'jx_complaint_cats' => 'complaint_categories',
         'jx_complaints' => 'complaints',
