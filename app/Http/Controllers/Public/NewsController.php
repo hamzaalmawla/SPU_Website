@@ -50,9 +50,10 @@ final class NewsController extends Controller
         return view('public.news.articles', $this->sharedPayload($request, $locale, '/news/articles', [
             'articles' => $this->newsService->listPublicArticles($locale, [
                 'category' => $request->query('category'),
+                'categoryType' => 'news',
                 'search' => $request->query('search'),
             ], max(1, (int) $request->query('page', 1)), 9),
-            'categories' => $this->newsService->getPublicCategories($locale),
+            'categories' => $this->newsService->getPublicCategories($locale, 'news'),
             'activeCategory' => is_string($request->query('category')) ? (string) $request->query('category') : null,
             'search' => is_string($request->query('search')) ? (string) $request->query('search') : '',
             'page' => $page,

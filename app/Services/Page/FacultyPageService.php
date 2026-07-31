@@ -328,6 +328,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
         if ($this->isStudentListSubpage($subpageSlug)) {
             $filterOptions = $this->studentFilterOptions($items, $subpageSlug);
             $items = $this->filteredStudentItems($items, $subpageSlug, $filters);
+            $items = $this->newestStudentItems($items, $subpageSlug);
             $items = $this->resolvedStudentImages($items);
             $perPage = $subpageSlug === 'alumni' ? self::ALUMNI_LIST_PER_PAGE : self::HONOR_LIST_PER_PAGE;
             [$items, $pagination] = $this->paginatedItems($items, $filters, $perPage);
@@ -816,7 +817,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 'departments' => fn ($query) => $query->enabled()->with('translations'),
                 'labs' => fn ($query) => $query->enabled()->with('translations'),
                 'studentProjects' => fn ($query) => $query->enabled()->with('translations'),
-                'alumni' => fn ($query) => $query->enabled()->with(['translations', 'department.translations', 'photoMedia'])->orderByDesc('graduation_year'),
+                'alumni' => fn ($query) => $query->enabled()->with(['translations', 'department.translations', 'photoMedia'])->orderByDesc('graduation_year')->orderByDesc('id'),
                 'honorStudents' => fn ($query) => $query->enabled()->with(['translations', 'department.translations', 'photoMedia']),
             ])
             ->orderBy('sort_order');
@@ -1220,28 +1221,26 @@ final class FacultyPageService implements FacultyPageServiceInterface
     /** @return array<int, array<string, mixed>> */
     private function alumniItems(Faculty $faculty, string $locale): array
     {
-        $metadataByTargetId = $this->migrationMetadataByTargetId('alumni', $faculty->alumni->pluck('id')->all());
+        return $faculty->alumni
+            ->map(function (Alumni $alumni) use ($faculty, $locale): array {
+                $translation = $this->alumniTranslation($alumni, $locale);
+                $department = $alumni->department instanceof Department ? $this->departmentTranslation($alumni->department, $locale)->name : null;
 
-        return $faculty->alumni->map(function (Alumni $alumni) use ($faculty, $locale, $metadataByTargetId): array {
-            $translation = $this->alumniTranslation($alumni, $locale);
-            $department = $alumni->department instanceof Department ? $this->departmentTranslation($alumni->department, $locale)->name : null;
-            $metadata = $metadataByTargetId[(int) $alumni->getKey()] ?? [];
-            $semesterKey = $this->semesterKey($metadata['legacy_section_id'] ?? null);
-
-            return [
-                'title' => (string) $translation->full_name,
-                'graduationYear' => $alumni->graduation_year,
-                'department' => $department,
-                'faculty' => $this->facultyTranslation($faculty, $locale)->name,
-                'degree' => $alumni->degree,
-                'semester' => $this->semesterLabel($semesterKey, $locale),
-                'semesterKey' => $semesterKey,
-                'academicPhase' => $locale === 'ar' ? 'خريج' : 'Graduate',
-                'image' => $alumni->photoMedia === null
-                    ? null
-                    : MediaUrlResolver::resolve($alumni->photoMedia->path, $alumni->photoMedia->disk),
-            ];
-        })->values()->all();
+                return [
+                    'id' => (int) $alumni->getKey(),
+                    'title' => (string) $translation->full_name,
+                    'graduationYear' => $alumni->graduation_year,
+                    'department' => $department,
+                    'faculty' => $this->facultyTranslation($faculty, $locale)->name,
+                    'degree' => $alumni->degree,
+                    'semester' => null,
+                    'semesterKey' => null,
+                    'academicPhase' => $locale === 'ar' ? 'خريج' : 'Graduate',
+                    'image' => $alumni->photoMedia === null
+                        ? null
+                        : MediaUrlResolver::resolve($alumni->photoMedia->path, $alumni->photoMedia->disk),
+                ];
+            })->values()->all();
     }
 
     /** @return array<int, array<string, mixed>> */
@@ -1249,26 +1248,27 @@ final class FacultyPageService implements FacultyPageServiceInterface
     {
         $metadataByTargetId = $this->migrationMetadataByTargetId('honor_students', $faculty->honorStudents->pluck('id')->all());
 
-        return $faculty->honorStudents->map(function (HonorStudent $student) use ($faculty, $locale, $metadataByTargetId): array {
-            $translation = $this->honorTranslation($student, $locale);
-            $department = $student->department instanceof Department ? $this->departmentTranslation($student->department, $locale)->name : null;
-            $metadata = $metadataByTargetId[(int) $student->getKey()] ?? [];
-            $semesterKey = $this->semesterKey($metadata['legacy_section_id'] ?? null);
+        return $faculty->honorStudents
+            ->map(function (HonorStudent $student) use ($faculty, $locale, $metadataByTargetId): array {
+                $translation = $this->honorTranslation($student, $locale);
+                $department = $student->department instanceof Department ? $this->departmentTranslation($student->department, $locale)->name : null;
+                $metadata = $metadataByTargetId[(int) $student->getKey()] ?? [];
 
-            return [
-                'title' => (string) $translation->full_name,
-                'academicYear' => $student->academic_year,
-                'department' => $department,
-                'gpa' => $student->gpa,
-                'semester' => $this->semesterLabel($semesterKey, $locale),
-                'semesterKey' => $semesterKey,
-                'faculty' => $this->facultyTranslation($faculty, $locale)->name,
-                'image' => $student->photoMedia === null
-                    ? null
-                    : MediaUrlResolver::resolve($student->photoMedia->path, $student->photoMedia->disk),
-                'isMemorial' => $this->isMemorialHonorStudent($metadata),
-            ];
-        })->values()->all();
+                return [
+                    'id' => (int) $student->getKey(),
+                    'title' => (string) $translation->full_name,
+                    'academicYear' => $student->academic_year,
+                    'department' => $department,
+                    'gpa' => $student->gpa,
+                    'semester' => null,
+                    'semesterKey' => null,
+                    'faculty' => $this->facultyTranslation($faculty, $locale)->name,
+                    'image' => $student->photoMedia === null
+                        ? null
+                        : MediaUrlResolver::resolve($student->photoMedia->path, $student->photoMedia->disk),
+                    'isMemorial' => $this->isMemorialHonorStudent($metadata),
+                ];
+            })->values()->all();
     }
 
     /** @param array<string, mixed> $metadata */
@@ -1293,24 +1293,6 @@ final class FacultyPageService implements FacultyPageServiceInterface
             ->get(['target_id', 'source_id', 'metadata'])
             ->mapWithKeys(fn (MigrationLog $log): array => [(int) $log->target_id => ['source_id' => (int) $log->source_id, ...(is_array($log->metadata) ? $log->metadata : [])]])
             ->all();
-    }
-
-    private function semesterKey(mixed $legacySectionId): ?string
-    {
-        return match ((string) $legacySectionId) {
-            '1' => 'first',
-            '2' => 'second',
-            default => null,
-        };
-    }
-
-    private function semesterLabel(?string $semesterKey, string $locale): ?string
-    {
-        return match ($semesterKey) {
-            'first' => $locale === 'ar' ? 'الفصل الأول' : 'First Semester',
-            'second' => $locale === 'ar' ? 'الفصل الثاني' : 'Second Semester',
-            default => null,
-        };
     }
 
     private function isStudentListSubpage(string $subpageSlug): bool
@@ -1420,6 +1402,35 @@ final class FacultyPageService implements FacultyPageServiceInterface
             })
             ->values()
             ->all();
+    }
+
+    /** @param array<int, array<string, mixed>> $items @return array<int, array<string, mixed>> */
+    private function newestStudentItems(array $items, string $subpageSlug): array
+    {
+        usort($items, function (array $left, array $right) use ($subpageSlug): int {
+            $leftYear = $subpageSlug === 'alumni'
+                ? (int) ($left['graduationYear'] ?? 0)
+                : $this->academicYearSortValue($left['academicYear'] ?? null);
+            $rightYear = $subpageSlug === 'alumni'
+                ? (int) ($right['graduationYear'] ?? 0)
+                : $this->academicYearSortValue($right['academicYear'] ?? null);
+
+            return ($rightYear <=> $leftYear)
+                ?: ((int) ($right['id'] ?? 0) <=> (int) ($left['id'] ?? 0))
+                ?: strnatcasecmp((string) ($left['title'] ?? ''), (string) ($right['title'] ?? ''));
+        });
+
+        return $items;
+    }
+
+    private function academicYearSortValue(mixed $academicYear): int
+    {
+        $value = $this->nullableString($academicYear);
+        if ($value === null || preg_match('/\b(19|20|21)\d{2}\b/', $value, $matches) !== 1) {
+            return 0;
+        }
+
+        return (int) $matches[0];
     }
 
     /** @param array<int, array<string, mixed>> $items @param array<string, mixed> $filters @return array{0: array<int, array<string, mixed>>, 1: array<string, mixed>} */

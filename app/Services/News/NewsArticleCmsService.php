@@ -107,6 +107,7 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
             routeName: 'public.news.show',
             parentKey: 'news.articles',
             supportsDraftWorkflow: true,
+            locales: $this->requiredLocales($stored->payload),
             facultyScopeSlug: $this->nullableString($stored->payload['faculty_scope_slug'] ?? null),
         );
     }
@@ -389,7 +390,7 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
             $errors['news_category_id'][] = 'A News or Announcement content type is required.';
         }
 
-        foreach (['ar', 'en'] as $locale) {
+        foreach ($this->requiredLocales($payload) as $locale) {
             $translation = $payload['translations'][$locale] ?? null;
             if (! is_array($translation) || $this->stringValue($translation['title'] ?? null) === '') {
                 $errors['translations.'.$locale.'.title'][] = 'A localized title is required.';
@@ -416,6 +417,28 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
         }
 
         return $errors;
+    }
+
+    /** @param array<string, mixed> $payload @return list<string> */
+    private function requiredLocales(array $payload): array
+    {
+        $articleId = $this->nullableInt($payload['entity_id'] ?? null);
+        $article = $articleId !== null ? NewsArticle::query()->find($articleId) : null;
+        if (! $article instanceof NewsArticle || $article->legacy_source_table !== 'jx_categories') {
+            return ['ar', 'en'];
+        }
+
+        $translations = $this->translations($payload);
+        $arabic = $translations['ar'] ?? null;
+        $english = $translations['en'] ?? null;
+        $hasArabic = is_array($arabic)
+            && $this->stringValue($arabic['title'] ?? null) !== ''
+            && $this->stringValue($arabic['body'] ?? null) !== '';
+        $hasEnglish = is_array($english)
+            && $this->stringValue($english['title'] ?? null) !== ''
+            && $this->stringValue($english['body'] ?? null) !== '';
+
+        return $hasArabic && ! $hasEnglish ? ['ar'] : ['ar', 'en'];
     }
 
     /** @param array<string, array<int, string>> $errors */

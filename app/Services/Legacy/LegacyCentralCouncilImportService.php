@@ -61,6 +61,8 @@ final class LegacyCentralCouncilImportService implements LegacyCentralCouncilImp
         $checksum = hash('sha256', $packet);
         $sourceRows = $approvedRows === [] ? collect() : $this->oldDatabase->table(self::SOURCE_TABLE)
             ->whereIn('id', array_keys($approvedRows))->orderBy('id')->get()->keyBy('id');
+        [$sourceIds, $emailCounts, $arNameCounts, $enNameCounts] = $this->sourceIdentityEvidence();
+        $archiveEmails = $this->archiveEmails();
         $batch = $this->batch($batch);
         $importable = 0;
         $imported = 0;
@@ -78,6 +80,37 @@ final class LegacyCentralCouncilImportService implements LegacyCentralCouncilImp
             $service = $this->integerValue($row, 'service_type');
             if ($service !== $packetRow['service_type']) {
                 $this->skip($reasons, $skipped, 'source_service_mismatch');
+
+                continue;
+            }
+            if ($this->integerValue($row, 'is_visible') !== 1) {
+                $this->skip($reasons, $skipped, 'hidden_source');
+
+                continue;
+            }
+            if ($this->truthy($this->rawValue($row, 'is_link'))) {
+                $this->skip($reasons, $skipped, 'external_link_source');
+
+                continue;
+            }
+            $email = $this->normalizedEmail($this->rawValue($row, 'email'));
+            $arName = $this->normalizedName($this->rawValue($row, 'ar_name'));
+            $enName = $this->normalizedName($this->rawValue($row, 'en_name'));
+            if (($email !== null && ($emailCounts[$email] ?? 0) > 1)
+                || ($arName !== null && ($arNameCounts[$arName] ?? 0) > 1)
+                || ($enName !== null && ($enNameCounts[$enName] ?? 0) > 1)) {
+                $this->skip($reasons, $skipped, 'duplicate_source_identity');
+
+                continue;
+            }
+            if ($email !== null && isset($archiveEmails[$email])) {
+                $this->skip($reasons, $skipped, 'councils1_identity_overlap');
+
+                continue;
+            }
+            $parentId = $this->integerValue($row, 'parent');
+            if ($parentId !== null && $parentId !== 0 && ! isset($sourceIds[$parentId])) {
+                $this->skip($reasons, $skipped, 'orphan_parent');
 
                 continue;
             }
@@ -335,6 +368,70 @@ final class LegacyCentralCouncilImportService implements LegacyCentralCouncilImp
         $value = trim(html_entity_decode((string) $value, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
 
         return $value !== '' ? $value : null;
+    }
+
+    private function truthy(mixed $value): bool
+    {
+        return in_array($value, [true, 1, '1', 'true', 'yes', 'on'], true);
+    }
+
+    /** @return array{array<int, true>, array<string, int>, array<string, int>, array<string, int>} */
+    private function sourceIdentityEvidence(): array
+    {
+        $ids = [];
+        $emails = [];
+        $arNames = [];
+        $enNames = [];
+        foreach ($this->oldDatabase->table(self::SOURCE_TABLE)->orderBy('id')->get() as $row) {
+            $id = $this->integerValue($row, 'id');
+            if ($id !== null) {
+                $ids[$id] = true;
+            }
+            $this->increment($emails, $this->normalizedEmail($this->rawValue($row, 'email')));
+            $this->increment($arNames, $this->normalizedName($this->rawValue($row, 'ar_name')));
+            $this->increment($enNames, $this->normalizedName($this->rawValue($row, 'en_name')));
+        }
+
+        return [$ids, $emails, $arNames, $enNames];
+    }
+
+    /** @return array<string, true> */
+    private function archiveEmails(): array
+    {
+        if (! $this->oldDatabase->schema()->hasTable('jx_councils1')) {
+            return [];
+        }
+        $emails = [];
+        foreach ($this->oldDatabase->table('jx_councils1')->pluck('email') as $value) {
+            $email = $this->normalizedEmail($value);
+            if ($email !== null) {
+                $emails[$email] = true;
+            }
+        }
+
+        return $emails;
+    }
+
+    private function normalizedEmail(mixed $value): ?string
+    {
+        $value = $this->text($value);
+
+        return $value !== null && filter_var($value, FILTER_VALIDATE_EMAIL) !== false ? Str::lower($value) : null;
+    }
+
+    private function normalizedName(mixed $value): ?string
+    {
+        $value = $this->usableName($value);
+
+        return $value !== null ? Str::lower((string) preg_replace('/\s+/u', ' ', strip_tags($value))) : null;
+    }
+
+    /** @param array<string, int> $counts */
+    private function increment(array &$counts, ?string $value): void
+    {
+        if ($value !== null) {
+            $counts[$value] = ($counts[$value] ?? 0) + 1;
+        }
     }
 
     private function integerValue(object $row, string $field): ?int

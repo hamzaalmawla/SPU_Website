@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\PX05;
 
 use App\Models\Legacy\LegacyExactRedirect;
+use App\Models\Legacy\LegacyFileInventory;
 use App\Models\Legacy\LegacyPatternRule;
 use App\Models\Page\UnresolvedLegacyRequest;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -175,6 +176,33 @@ class RedirectContinuityTest extends TestCase
             ->assertStatus(301);
     }
 
+    public function test_reviewed_root_category_queries_redirect_through_runtime_continuity(): void
+    {
+        $this->get('/index.php?page=show&ex=2&dir=items&lang=2&ser=2&cat_id=1263')
+            ->assertRedirect('/en/facilities/dentistry')
+            ->assertStatus(301);
+
+        $this->get('/index.php?page=show&ex=2&dir=items&lang=1&ser=1&cat_id=28')
+            ->assertRedirect('/ar/about/accreditation')
+            ->assertStatus(301);
+
+        $this->get('/index.php?page=show&ex=2&dir=items&lang=1&ser=2&cat_id=12')
+            ->assertNotFound();
+    }
+
+    public function test_reviewed_functional_queries_redirect_through_runtime_continuity(): void
+    {
+        $this->get('/index.php?mylang=1&dir=html&ex=1&page=contactus')
+            ->assertRedirect('/ar/contact')
+            ->assertStatus(301);
+
+        $this->get('/index.php?dir=jobs&ex=2&lang=1&page=list&service=49')
+            ->assertRedirect('/ar/campus-life/career-development/jobs')
+            ->assertStatus(301);
+
+        $this->get('/index.php?dir=jobs&ex=2&lang=1&page=list&service=48')->assertNotFound();
+    }
+
     public function test_repeated_unresolved_request_increments_hit_count(): void
     {
         $this->get('/same-missing-page');
@@ -264,9 +292,81 @@ class RedirectContinuityTest extends TestCase
         $this->assertContains($response->getStatusCode(), [301, 302]);
     }
 
+    public function test_retired_legacy_languages_redirect_to_english_homepage_before_exact_rules(): void
+    {
+        LegacyExactRedirect::create([
+            'legacy_path' => '/index.php',
+            'query_signature' => 'lang=3',
+            'destination_url' => '/ar',
+            'status_code' => 301,
+            'locale' => 'ar',
+            'is_active' => true,
+        ]);
+
+        foreach ([3, 6, 7] as $languageId) {
+            $this->get('/index.php?lang='.$languageId)
+                ->assertStatus(302)
+                ->assertRedirect('/en');
+        }
+    }
+
+    public function test_private_members_archive_blocks_exact_pattern_and_file_redirects(): void
+    {
+        LegacyExactRedirect::create([
+            'legacy_path' => '/members/index.php',
+            'query_signature' => 'lang=1',
+            'destination_url' => '/ar',
+            'status_code' => 301,
+            'locale' => 'ar',
+            'is_active' => true,
+        ]);
+        LegacyPatternRule::create([
+            'pattern' => '#^/members/#',
+            'replacement' => '/ar',
+            'status_code' => 301,
+            'priority' => 1,
+            'is_active' => true,
+        ]);
+        LegacyFileInventory::create([
+            'legacy_path' => '/members/private-cv.pdf',
+            'current_path' => '/media/private-cv.pdf',
+            'status' => 'mapped',
+        ]);
+
+        $this->get('/members/index.php?lang=1')->assertNotFound();
+        $this->get('/members/unknown?lang=2')->assertNotFound();
+        $this->get('/members/private-cv.pdf')->assertNotFound();
+
+        $this->assertDatabaseHas('unresolved_legacy_requests', [
+            'request_type' => 'file',
+            'outcome' => 'unresolved',
+        ]);
+    }
+
+    public function test_unrecognized_language_id_cannot_use_exact_or_pattern_homepage_fallback(): void
+    {
+        LegacyExactRedirect::create([
+            'legacy_path' => '/index.php',
+            'query_signature' => 'lang=99',
+            'destination_url' => '/en',
+            'status_code' => 302,
+            'locale' => 'en',
+            'is_active' => true,
+        ]);
+        LegacyPatternRule::create([
+            'pattern' => '#^/index\.php$#',
+            'replacement' => '/en',
+            'status_code' => 302,
+            'priority' => 1,
+            'is_active' => true,
+        ]);
+
+        $this->get('/index.php?lang=99')->assertNotFound();
+    }
+
     private function createLegacyNewsArticle(int $legacySourceId, int $serviceType, string $slug): int
     {
-        return (int) DB::table('news_articles')->insertGetId([
+        $articleId = (int) DB::table('news_articles')->insertGetId([
             'slug' => $slug,
             'status' => 'published',
             'published_at' => now()->subDay(),
@@ -280,6 +380,12 @@ class RedirectContinuityTest extends TestCase
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+        DB::table('news_article_translations')->insert([
+            ['news_article_id' => $articleId, 'locale' => 'ar', 'title' => 'خبر', 'excerpt' => null, 'body' => null, 'created_at' => now(), 'updated_at' => now()],
+            ['news_article_id' => $articleId, 'locale' => 'en', 'title' => 'News', 'excerpt' => null, 'body' => null, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        return $articleId;
     }
 
     private function createPublishedPage(string $slug, ?int $parentId = null): int

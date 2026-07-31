@@ -24,6 +24,14 @@ return [
 
     'allowed_locales' => ['ar', 'en'],
 
+    'unsupported_language_continuity' => [
+        'old_language_ids' => [3, 6, 7],
+        'target' => '/en',
+        'status_code' => 302,
+    ],
+
+    'members_continuity_policy' => 'private_archive',
+
     'fake_dates' => [
         '0000-00-00',
         '0000-00-00 00:00:00',

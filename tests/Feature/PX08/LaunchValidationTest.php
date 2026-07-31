@@ -71,6 +71,24 @@ class LaunchValidationTest extends TestCase
             ->assertSuccessful();
     }
 
+    public function test_launch_validate_resolves_query_aware_redirect_sample(): void
+    {
+        $this->seedValidData();
+        LegacyExactRedirect::query()->delete();
+        LegacyExactRedirect::create([
+            'legacy_path' => '/index.php',
+            'query_signature' => 'cat_id=325&dir=items&ex=2&lang=1&page=show&service=3',
+            'destination_url' => '/ar/about',
+            'status_code' => 301,
+            'locale' => 'ar',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('launch:validate')
+            ->expectsOutputToContain('Sample resolution: ok')
+            ->assertSuccessful();
+    }
+
     /**
      * Seed minimum valid data for launch validation to pass.
      */

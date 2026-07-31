@@ -35,7 +35,7 @@
             ->map(fn (mixed $value): string => (string) $value)
             ->all();
         $queryUrl = fn (array $query): string => $studentListUrl.($query === [] ? '' : '?'.http_build_query($query, '', '&', PHP_QUERY_RFC3986));
-        $pageUrl = fn (int $pageNumber): string => $queryUrl([...$validatedQuery, 'page' => $pageNumber]);
+        $pageUrl = fn (int $pageNumber): string => $queryUrl([...$validatedQuery, ...($pageNumber > 1 ? ['page' => $pageNumber] : [])]);
         $labDetailUrl = fn (string $slug): string => $queryUrl(array_filter([
             'lab' => $slug,
             'page' => (int) ($pagination['current_page'] ?? 1) > 1 ? (int) $pagination['current_page'] : null,
@@ -304,13 +304,7 @@
                             <p class="text-slate-500">{{ $isAr ? 'لا توجد مخابر منشورة حالياً.' : 'No published labs are available yet.' }}</p>
                         @endforelse
                     </div>
-                    @if (($pagination['total_pages'] ?? 1) > 1)
-                        <nav class="mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="{{ $isAr ? 'ترقيم الصفحات' : 'Pagination' }}">
-                            @for ($pageNumber = 1; $pageNumber <= (int) $pagination['total_pages']; $pageNumber++)
-                                <a href="{{ $pageUrl($pageNumber) }}" @if ((int) ($pagination['current_page'] ?? 1) === $pageNumber) aria-current="page" @endif class="inline-flex h-9 min-w-9 items-center justify-center rounded-[4px] border px-3 text-[12px] font-bold transition {{ (int) ($pagination['current_page'] ?? 1) === $pageNumber ? 'border-spu-red bg-spu-red text-white' : 'border-slate-200 text-spu-blue hover:border-spu-blue' }}">{{ $pageNumber }}</a>
-                            @endfor
-                        </nav>
-                    @endif
+                    <x-public.pagination :current-page="$pagination['current_page'] ?? 1" :total-pages="$pagination['total_pages'] ?? 1" :page-url="$pageUrl" :locale="$locale" class="mt-10" />
                 @endif
             </div>
         </section>
@@ -349,31 +343,7 @@
                         <p class="text-slate-500">{{ $isAr ? 'لا توجد مشاريع منشورة حالياً.' : 'No published projects are available yet.' }}</p>
                     @endforelse
                 </div>
-                @if (($pagination['total_pages'] ?? 1) > 1)
-                    <nav class="mt-10 flex items-center justify-center gap-2" aria-label="{{ $isAr ? 'ترقيم الصفحات' : 'Pagination' }}">
-                        @if ((int) ($pagination['current_page'] ?? 1) > 1)
-                            <a href="{{ $pageUrl((int) $pagination['current_page'] - 1) }}" class="flex h-8 w-8 items-center justify-center rounded-[4px] border border-slate-200 text-spu-blue transition hover:border-spu-blue" aria-label="{{ $isAr ? 'الصفحة السابقة' : 'Previous page' }}">
-                                <img src="/images/icon-chevron-left-outline.svg" alt="" class="h-3 w-3 rtl:rotate-180" aria-hidden="true">
-                            </a>
-                        @else
-                            <span class="flex h-8 w-8 items-center justify-center rounded-[4px] border border-slate-100 opacity-40" aria-hidden="true">
-                                <img src="/images/icon-chevron-left-outline.svg" alt="" class="h-3 w-3 rtl:rotate-180" aria-hidden="true">
-                            </span>
-                        @endif
-                        @for ($pageNumber = 1; $pageNumber <= (int) $pagination['total_pages']; $pageNumber++)
-                            <a href="{{ $pageUrl($pageNumber) }}" @if ((int) ($pagination['current_page'] ?? 1) === $pageNumber) aria-current="page" @endif class="inline-flex h-8 min-w-8 items-center justify-center rounded-[4px] border px-3 text-[12px] font-bold {{ (int) ($pagination['current_page'] ?? 1) === $pageNumber ? 'border-spu-red bg-spu-red text-white' : 'border-slate-200 text-spu-blue hover:border-spu-blue' }}">{{ $pageNumber }}</a>
-                        @endfor
-                        @if ((int) ($pagination['current_page'] ?? 1) < (int) $pagination['total_pages'])
-                            <a href="{{ $pageUrl((int) $pagination['current_page'] + 1) }}" class="flex h-8 w-8 items-center justify-center rounded-[4px] border border-slate-200 text-spu-blue transition hover:border-spu-blue" aria-label="{{ $isAr ? 'الصفحة التالية' : 'Next page' }}">
-                                <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-3 w-3 rtl:rotate-180" aria-hidden="true">
-                            </a>
-                        @else
-                            <span class="flex h-8 w-8 items-center justify-center rounded-[4px] border border-slate-100 opacity-40" aria-hidden="true">
-                                <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-3 w-3 rtl:rotate-180" aria-hidden="true">
-                            </span>
-                        @endif
-                    </nav>
-                @endif
+                <x-public.pagination :current-page="$pagination['current_page'] ?? 1" :total-pages="$pagination['total_pages'] ?? 1" :page-url="$pageUrl" :locale="$locale" class="mt-10" />
             </div>
         </section>
     @elseif ($page->subpageSlug === 'alumni')
@@ -433,13 +403,7 @@
                     @endforelse
                 </div>
 
-                @if (($pagination['total_pages'] ?? 1) > 1)
-                    <nav class="mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="{{ $isAr ? 'ترقيم الصفحات' : 'Pagination' }}">
-                        @for ($pageNumber = 1; $pageNumber <= (int) $pagination['total_pages']; $pageNumber++)
-                            <a href="{{ $pageUrl($pageNumber) }}" class="inline-flex h-9 min-w-9 items-center justify-center rounded-[4px] border px-3 text-[12px] font-bold transition {{ (int) ($pagination['current_page'] ?? 1) === $pageNumber ? 'border-spu-red bg-spu-red text-white' : 'border-slate-200 text-spu-blue hover:border-spu-blue' }}">{{ $pageNumber }}</a>
-                        @endfor
-                    </nav>
-                @endif
+                <x-public.pagination :current-page="$pagination['current_page'] ?? 1" :total-pages="$pagination['total_pages'] ?? 1" :page-url="$pageUrl" :locale="$locale" class="mt-10" />
             </div>
         </section>
     @elseif ($page->subpageSlug === 'valedictorians')
@@ -538,8 +502,10 @@
                                 <div @if ($isMemorial) style="position: relative; z-index: 2;" @endif>
                                     <h3 class="honor-card__name">{{ $item['title'] ?? '' }}</h3>
                                     <p class="mt-2 text-[10px] font-bold uppercase tracking-[0.08em] text-spu-blue/45">{{ $item['faculty'] ?? $faculty['title'] }}</p>
-                                    <div class="mt-6 flex items-center justify-between gap-5">
-                                        <span class="honor-card__semester">{{ $item['semester'] ?? ($isAr ? 'الفصل الثاني' : 'Second Semester') }}</span>
+                                    <div class="mt-6 flex items-center justify-end gap-5">
+                                        @if (! empty($item['semester']))
+                                            <span class="honor-card__semester">{{ $item['semester'] }}</span>
+                                        @endif
                                         <span class="honor-card__rank">{{ $isAr ? 'قائمة الشرف' : 'Honor List' }}</span>
                                     </div>
                                 </div>
@@ -550,13 +516,7 @@
                     @endforelse
                 </div>
 
-                @if (($pagination['total_pages'] ?? 1) > 1)
-                    <nav class="mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="{{ $isAr ? 'ترقيم الصفحات' : 'Pagination' }}">
-                        @for ($pageNumber = 1; $pageNumber <= (int) $pagination['total_pages']; $pageNumber++)
-                            <a href="{{ $pageUrl($pageNumber) }}" class="inline-flex h-9 min-w-9 items-center justify-center rounded-[4px] border px-3 text-[12px] font-bold transition {{ (int) ($pagination['current_page'] ?? 1) === $pageNumber ? 'border-spu-red bg-spu-red text-white' : 'border-slate-200 text-spu-blue hover:border-spu-blue' }}">{{ $pageNumber }}</a>
-                        @endfor
-                    </nav>
-                @endif
+                <x-public.pagination :current-page="$pagination['current_page'] ?? 1" :total-pages="$pagination['total_pages'] ?? 1" :page-url="$pageUrl" :locale="$locale" class="mt-10" />
                 @if (is_string($subpage['payload']['quote'] ?? null) && trim($subpage['payload']['quote']) !== '')
                     <blockquote class="mx-auto mt-14 max-w-3xl border-y border-slate-100 px-6 py-8 text-center text-xl font-bold leading-9 text-spu-blue">
                         {{ $subpage['payload']['quote'] }}

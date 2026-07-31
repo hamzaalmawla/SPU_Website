@@ -50,6 +50,36 @@ final class FacilitiesWorkflowTest extends TestCase
         $this->seed(DatabaseSeeder::class);
     }
 
+    public function test_english_student_lists_fall_back_to_original_arabic_names(): void
+    {
+        $faculty = Faculty::query()->where('slug', 'medicine')->firstOrFail();
+        $alumni = Alumni::query()->create([
+            'faculty_id' => $faculty->getKey(), 'graduation_year' => 2024,
+            'is_featured' => false, 'is_enabled' => true,
+        ]);
+        AlumniTranslation::query()->create([
+            'alumni_id' => $alumni->getKey(), 'locale' => 'ar', 'full_name' => 'خريج عربي فقط',
+        ]);
+        $honor = HonorStudent::query()->create([
+            'faculty_id' => $faculty->getKey(), 'academic_year' => '2024 / 1',
+            'sort_order' => 1, 'is_enabled' => true,
+        ]);
+        HonorStudentTranslation::query()->create([
+            'honor_student_id' => $honor->getKey(), 'locale' => 'ar', 'full_name' => 'متفوق عربي فقط',
+        ]);
+        $service = app(FacultyPageServiceInterface::class);
+
+        $arabicAlumni = $service->getSubpage('medicine', 'alumni', 'ar');
+        $englishAlumni = $service->getSubpage('medicine', 'alumni', 'en');
+        $arabicHonor = $service->getSubpage('medicine', 'valedictorians', 'ar');
+        $englishHonor = $service->getSubpage('medicine', 'valedictorians', 'en');
+
+        $this->assertContains('خريج عربي فقط', array_column($arabicAlumni?->items ?? [], 'title'));
+        $this->assertContains('خريج عربي فقط', array_column($englishAlumni?->items ?? [], 'title'));
+        $this->assertContains('متفوق عربي فقط', array_column($arabicHonor?->items ?? [], 'title'));
+        $this->assertContains('متفوق عربي فقط', array_column($englishHonor?->items ?? [], 'title'));
+    }
+
     public function test_facilities_hub_workflow_draft_does_not_leak_until_published(): void
     {
         $facilities = app(FacultyPageServiceInterface::class);
@@ -759,7 +789,6 @@ final class FacilitiesWorkflowTest extends TestCase
         $secondAlumniPage = $facilities->getSubpage('medicine', 'alumni', 'en', ['page' => 2]);
         $secondHonorPage = $facilities->getSubpage('medicine', 'valedictorians', 'en', ['page' => 2]);
         $searchedAlumniPage = $facilities->getSubpage('medicine', 'alumni', 'en', ['q' => 'Imported Alumni 30']);
-        $firstSemesterHonorPage = $facilities->getSubpage('medicine', 'valedictorians', 'en', ['semester' => 'first']);
         $searchedHonorPage = $facilities->getSubpage('medicine', 'valedictorians', 'en', ['q' => 'Imported Honor Student 30']);
 
         $this->assertNotNull($alumniPage);
@@ -772,8 +801,8 @@ final class FacilitiesWorkflowTest extends TestCase
         $this->assertSame(2, $secondHonorPage?->pagination['current_page']);
         $this->assertSame(['Imported Alumni 30'], collect($searchedAlumniPage?->items ?? [])->pluck('title')->all());
         $this->assertSame(['Imported Honor Student 30'], collect($searchedHonorPage?->items ?? [])->pluck('title')->all());
-        $this->assertSame(15, $firstSemesterHonorPage?->pagination['total_items']);
-        $this->assertContains('First Semester', collect($firstSemesterHonorPage?->items ?? [])->pluck('semester')->all());
+        $this->assertSame([null], collect($alumniPage->items)->pluck('semester')->unique()->values()->all());
+        $this->assertSame([null], collect($honorPage->items)->pluck('semester')->unique()->values()->all());
     }
 
     public function test_all_department_routes_are_localized_canonical_and_keep_alias_deep_links(): void
@@ -911,6 +940,43 @@ final class FacilitiesWorkflowTest extends TestCase
                 }
             }
         }
+    }
+
+    public function test_alumni_and_honor_students_are_sorted_by_newest_academic_year_before_pagination(): void
+    {
+        $faculty = Faculty::query()->where('public_slug', 'medicine')->firstOrFail();
+
+        foreach ([2030 => 'Older Alumni', 2031 => 'Newest Alumni'] as $year => $name) {
+            $alumni = Alumni::query()->create([
+                'faculty_id' => $faculty->getKey(),
+                'graduation_year' => $year,
+                'is_enabled' => true,
+            ]);
+            $alumni->translations()->createMany([
+                ['locale' => 'ar', 'full_name' => $name],
+                ['locale' => 'en', 'full_name' => $name],
+            ]);
+        }
+
+        foreach ([2030 => ['Older Honor', 1], 2031 => ['Newest Honor', 999]] as $year => [$name, $sortOrder]) {
+            $student = HonorStudent::query()->create([
+                'faculty_id' => $faculty->getKey(),
+                'academic_year' => $year.' / '.($year + 1),
+                'gpa' => 95,
+                'sort_order' => $sortOrder,
+                'is_enabled' => true,
+            ]);
+            $student->translations()->createMany([
+                ['locale' => 'ar', 'full_name' => $name],
+                ['locale' => 'en', 'full_name' => $name],
+            ]);
+        }
+
+        Cache::flush();
+        $facilities = app(FacultyPageServiceInterface::class);
+
+        $this->assertSame('Newest Alumni', $facilities->getSubpage('medicine', 'alumni', 'en')?->items[0]['title']);
+        $this->assertSame('Newest Honor', $facilities->getSubpage('medicine', 'valedictorians', 'en')?->items[0]['title']);
     }
 
     public function test_student_directory_media_and_quote_render_only_from_safe_managed_content(): void

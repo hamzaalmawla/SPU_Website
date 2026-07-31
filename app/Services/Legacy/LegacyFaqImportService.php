@@ -31,7 +31,10 @@ final class LegacyFaqImportService implements LegacyFaqImportServiceInterface
     private const CATEGORY_SLUG = 'legacy-faq-review';
 
     /** @var list<string> */
-    private const REQUIRED_HEADERS = ['source_table', 'source_id', 'locale', 'legacy_lang', 'approval_decision', 'approved_target'];
+    private const REQUIRED_HEADERS = [
+        'source_table', 'source_id', 'locale', 'legacy_lang', 'approval_decision', 'approved_target',
+        'question_sha256', 'answer_sha256',
+    ];
 
     /** @var array<string, string> */
     private const CATEGORY_NAMES = ['ar' => 'الأسئلة الشائعة الموروثة (للمراجعة)', 'en' => 'Legacy FAQs (Review)'];
@@ -91,6 +94,12 @@ final class LegacyFaqImportService implements LegacyFaqImportServiceInterface
 
                 continue;
             }
+            if (($packet['question_hash'] !== null && ! hash_equals($packet['question_hash'], hash('sha256', $question)))
+                || ($packet['answer_hash'] !== null && ! hash_equals($packet['answer_hash'], hash('sha256', $answer)))) {
+                $this->skip($reasons, $skipped, 'source_content_changed_after_review');
+
+                continue;
+            }
             if ($this->containsContactPattern($question) || $this->containsContactPattern($answer)) {
                 $this->skip($reasons, $skipped, 'content_contact_blocked');
 
@@ -111,10 +120,10 @@ final class LegacyFaqImportService implements LegacyFaqImportServiceInterface
         foreach ($prepared as $item) {
             if (($approvedQuestionCounts[$item['key']] ?? 0) > 1) {
                 $this->skip($reasons, $skipped, 'duplicate_approved_question');
-            } elseif (isset($currentQuestions[$item['key']])) {
-                $this->skip($reasons, $skipped, 'current_question_conflict');
             } elseif ($this->alreadyMapped($item['sourceId'])) {
                 $this->skip($reasons, $skipped, 'already_mapped');
+            } elseif (isset($currentQuestions[$item['key']])) {
+                $this->skip($reasons, $skipped, 'current_question_conflict');
             } else {
                 $eligible[] = $item;
             }
@@ -148,7 +157,7 @@ final class LegacyFaqImportService implements LegacyFaqImportServiceInterface
         return new LegacyFaqImportResultDTO($write, $batch, $scanned, $importable, $imported, $translations, $skipped, $reasons);
     }
 
-    /** @return array{0: int, 1: array<int, array{locale: string, lang: int}>, 2: int, 3: array<string, int>} */
+    /** @return array{0: int, 1: array<int, array{locale: string, lang: int, question_hash: ?string, answer_hash: ?string}>, 2: int, 3: array<string, int>} */
     private function approvedRows(string $input, string $disk): array
     {
         if (! Storage::disk($disk)->exists($input)) {
@@ -209,8 +218,13 @@ final class LegacyFaqImportService implements LegacyFaqImportServiceInterface
                 $this->skip($reasons, $skipped, 'invalid_locale_mapping');
             } elseif (($row['locale'] === 'ar' ? 1 : 2) !== (int) $row['legacy_lang']) {
                 $this->skip($reasons, $skipped, 'invalid_locale_mapping');
+            } elseif (! $this->validHash($row['question_sha256']) || ! $this->validHash($row['answer_sha256'])) {
+                $this->skip($reasons, $skipped, 'invalid_content_hash');
             } else {
-                $approved[$id] = ['locale' => $row['locale'], 'lang' => (int) $row['legacy_lang']];
+                $approved[$id] = [
+                    'locale' => $row['locale'], 'lang' => (int) $row['legacy_lang'],
+                    'question_hash' => $row['question_sha256'], 'answer_hash' => $row['answer_sha256'],
+                ];
             }
         }
 
@@ -308,6 +322,11 @@ final class LegacyFaqImportService implements LegacyFaqImportServiceInterface
     private function locale(mixed $lang): ?string
     {
         return (int) $lang === 1 ? 'ar' : ((int) $lang === 2 ? 'en' : null);
+    }
+
+    private function validHash(string $value): bool
+    {
+        return preg_match('/^[a-f0-9]{64}$/', $value) === 1;
     }
 
     /** @param array<string, int> $reasons */

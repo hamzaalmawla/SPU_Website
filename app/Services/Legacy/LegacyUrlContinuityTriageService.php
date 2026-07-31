@@ -7,6 +7,10 @@ namespace App\Services\Legacy;
 use App\Contracts\Legacy\LegacyUrlContinuityTriageServiceInterface;
 use App\DTOs\Legacy\LegacyUrlContinuityTriageResultDTO;
 use App\Models\Legacy\LegacyContentMapping;
+use App\Models\News\NewsArticle;
+use App\Models\Person\CouncilMember;
+use App\Models\Person\FacultyMember;
+use App\Models\Shared\MigrationLog;
 use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
 
@@ -115,10 +119,14 @@ final class LegacyUrlContinuityTriageService implements LegacyUrlContinuityTriag
         $requestType = trim($row['request_type'] ?? '');
         $params = $this->params($row['query_signature'] ?? '');
         $sourceId = $this->sourceId($params);
+        $serviceType = isset($params['service']) && is_numeric($params['service']) ? (int) $params['service'] : null;
         $sourceTables = $this->candidateSourceTables($handlerKey);
-        $mappingAvailable = $sourceId !== null && $sourceTables !== [] && $this->hasMapping($sourceTables, $sourceId);
-        $triageStatus = $this->triageStatus($status, $requestType, $handlerKey, $sourceId, $sourceTables, $mappingAvailable);
-        $notes = $this->notes($triageStatus, $handlerKey, $sourceId, $sourceTables, $mappingAvailable);
+        $targetState = $sourceId !== null && $sourceTables !== []
+            ? $this->targetState($sourceTables, $sourceId, (string) ($row['locale'] ?? ''), $serviceType)
+            : 'none';
+        $mappingAvailable = $targetState !== 'none';
+        $triageStatus = $this->triageStatus($status, $requestType, $handlerKey, $sourceId, $sourceTables, $targetState);
+        $notes = $this->notes($triageStatus, $handlerKey, $sourceId, $sourceTables, $targetState);
 
         if ($handlerKey === '' && $status !== 'unresolved_unknown_legacy_url') {
             $warnings[] = "Row {$lineNumber} has no handler key.";
@@ -220,17 +228,79 @@ final class LegacyUrlContinuityTriageService implements LegacyUrlContinuityTriag
     }
 
     /** @param array<int, string> $sourceTables */
-    private function hasMapping(array $sourceTables, int $sourceId): bool
+    private function targetState(array $sourceTables, int $sourceId, string $locale, ?int $serviceType): string
     {
-        return LegacyContentMapping::query()
+        if (in_array('jx_categories', $sourceTables, true)) {
+            $article = NewsArticle::query()
+                ->where('legacy_source_table', 'jx_categories')
+                ->where('legacy_source_id', $sourceId)
+                ->when($serviceType !== null, fn ($query) => $query->where('legacy_service_type', $serviceType))
+                ->first();
+
+            if ($article instanceof NewsArticle) {
+                $publicLocale = in_array($locale, ['ar', 'en'], true)
+                    && $article->is_enabled
+                    && $article->status === 'published'
+                    && ($article->published_at === null || $article->published_at->isPast())
+                    && $article->translations()->where('locale', $locale)->exists();
+
+                return $publicLocale ? 'public_target' : 'private_target';
+            }
+        }
+
+        if (in_array('jx_councils', $sourceTables, true)) {
+            $mapping = MigrationLog::query()
+                ->where('source_table', 'jx_councils')
+                ->where('source_id', $sourceId)
+                ->where('target_table', 'faculty_members')
+                ->where('status', 'success')
+                ->latest('id')
+                ->first();
+            $member = $mapping?->target_id !== null ? FacultyMember::query()->find((int) $mapping->target_id) : null;
+
+            if ($member instanceof FacultyMember) {
+                $publicLocale = in_array($locale, ['ar', 'en'], true)
+                    && $member->is_enabled
+                    && $member->publication_status === 'published'
+                    && $member->published_at !== null
+                    && $member->published_at->isPast()
+                    && $member->translations()->where('locale', $locale)->exists();
+
+                return $publicLocale ? 'public_target' : 'private_target';
+            }
+
+            $councilMapping = MigrationLog::query()
+                ->where('source_table', 'jx_councils')
+                ->where('source_id', $sourceId)
+                ->where('target_table', 'council_members')
+                ->where('status', 'success')
+                ->latest('id')
+                ->first();
+            $councilMember = $councilMapping?->target_id !== null
+                ? CouncilMember::query()->with('council')->find((int) $councilMapping->target_id)
+                : null;
+
+            if ($councilMember instanceof CouncilMember) {
+                $publicLocale = in_array($locale, ['ar', 'en'], true)
+                    && $councilMember->is_enabled
+                    && $councilMember->council?->is_enabled
+                    && $councilMember->translations()->where('locale', $locale)->exists();
+
+                return $publicLocale ? 'public_target' : 'private_target';
+            }
+        }
+
+        $mapped = LegacyContentMapping::query()
             ->whereIn('source_table', $sourceTables)
             ->where('source_id', $sourceId)
             ->whereIn('mapping_status', ['proposed', 'approved'])
             ->exists();
+
+        return $mapped ? 'content_mapping' : 'none';
     }
 
     /** @param array<int, string> $sourceTables */
-    private function triageStatus(string $status, string $requestType, string $handlerKey, ?int $sourceId, array $sourceTables, bool $mappingAvailable): string
+    private function triageStatus(string $status, string $requestType, string $handlerKey, ?int $sourceId, array $sourceTables, string $targetState): string
     {
         if ($requestType === 'legacy_media_file' || $handlerKey === 'legacy_media_file') {
             return 'blocked_file_url';
@@ -248,7 +318,11 @@ final class LegacyUrlContinuityTriageService implements LegacyUrlContinuityTriag
             return 'needs_phase4_mapping';
         }
 
-        if (! $mappingAvailable) {
+        if ($targetState === 'private_target') {
+            return 'blocked_target_not_public';
+        }
+
+        if ($targetState === 'none') {
             return 'needs_phase4_mapping';
         }
 
@@ -272,16 +346,17 @@ final class LegacyUrlContinuityTriageService implements LegacyUrlContinuityTriag
     }
 
     /** @param array<int, string> $sourceTables */
-    private function notes(string $triageStatus, string $handlerKey, ?int $sourceId, array $sourceTables, bool $mappingAvailable): string
+    private function notes(string $triageStatus, string $handlerKey, ?int $sourceId, array $sourceTables, string $targetState): string
     {
         return match ($triageStatus) {
             'resolver_candidate' => 'Handler has parseable source ID and existing Phase 4 mapping evidence. Resolver can be designed, but redirects remain gated.',
             'needs_phase4_mapping' => 'No safe source mapping exists yet for handler/source ID. Keep in continuity backlog.',
             'blocked_missing_target_module' => 'Handler points to a module or subsite that is not production-ready in current scope.',
+            'blocked_target_not_public' => 'Imported target exists but remains disabled, draft, scheduled, or missing the requested locale. Do not redirect publicly.',
             'blocked_file_url' => 'File URL continuity is blocked until legacy file bytes or mapped file inventory are available.',
             'unknown_legacy_url' => 'URL shape is unknown; do not guess or redirect to homepage.',
             default => 'Unresolved continuity backlog row.',
-        }.' Handler='.$handlerKey.' SourceId='.($sourceId !== null ? (string) $sourceId : 'none').' Tables='.($sourceTables !== [] ? implode('|', $sourceTables) : 'none').' Mapping='.($mappingAvailable ? 'yes' : 'no').'.';
+        }.' Handler='.$handlerKey.' SourceId='.($sourceId !== null ? (string) $sourceId : 'none').' Tables='.($sourceTables !== [] ? implode('|', $sourceTables) : 'none').' TargetState='.$targetState.'.';
     }
 
     /** @return array<int, array<string, string>> */

@@ -41,6 +41,47 @@ final class ResearchPublicPagesTest extends TestCase
             ->assertSee('/en/research/publications/ai-dental-diagnostics', false);
     }
 
+    public function test_publications_and_projects_are_sorted_newest_first_before_pagination(): void
+    {
+        $this->createImportedResearchPublication();
+        $research = app(ResearchPageServiceInterface::class);
+        $publicationYears = collect($research->publications('en')->data['items'] ?? [])->pluck('year')->map(fn (mixed $year): int => (int) $year)->all();
+        $projectYears = collect($research->projects('en')->data['items'] ?? [])->pluck('startYear')->map(fn (mixed $year): int => (int) $year)->all();
+
+        $this->assertSame(collect($publicationYears)->sortDesc()->values()->all(), $publicationYears);
+        $this->assertSame(collect($projectYears)->sortDesc()->values()->all(), $projectYears);
+    }
+
+    public function test_structured_database_publication_metadata_is_exposed_without_reparsing_or_fabrication(): void
+    {
+        $publication = ResearchPublication::query()->create([
+            'published_at' => '2025-01-15',
+            'publication_year' => 2025,
+            'doi' => '10.1234/spu.2025.1',
+            'journal_rank' => 'Q2',
+            'is_enabled' => true,
+        ]);
+        ResearchPublicationTranslation::query()->create([
+            'research_publication_id' => $publication->getKey(),
+            'locale' => 'en',
+            'title' => 'Structured Metadata Publication',
+            'authors' => 'Researcher One and Researcher Two',
+            'abstract' => 'Structured abstract.',
+            'publisher' => 'SPU Research Journal',
+            'citation' => 'SPU Research Journal 10(2), 2025',
+            'keywords' => ['structured data', 'migration'],
+        ]);
+
+        $item = collect(app(ResearchPageServiceInterface::class)->publications('en', ['q' => 'Structured Metadata Publication'])->data['items'] ?? [])->first();
+
+        $this->assertSame('Researcher One and Researcher Two', $item['author'] ?? null);
+        $this->assertSame('SPU Research Journal', $item['publisher'] ?? null);
+        $this->assertSame('10.1234/spu.2025.1', $item['doi'] ?? null);
+        $this->assertSame('Q2', $item['rate'] ?? null);
+        $this->assertSame('2025', $item['year'] ?? null);
+        $this->assertSame(['structured data', 'migration'], $item['keywords'] ?? null);
+    }
+
     public function test_arabic_research_landing_returns_ok_with_arabic_content(): void
     {
         $this->get('/ar/research')

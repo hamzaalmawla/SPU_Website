@@ -574,9 +574,9 @@ The workflow must:
 - [x] Extend exact redirect lookup to consider normalized query signature for exceptions, or use deterministic resolvers exclusively where valid.
 - [x] Replace/guard static page resolver assumptions based on `jx_site_static_pages` audit finding.
 - [ ] Add `jx_councils` public resolver/import path.
-- [ ] Add `/members/` context isolation.
+- [x] Add `/members/` context isolation and enforce the approved private-archive runtime policy.
 - [x] Add `show_cat` and `ser` alias normalization tests.
-- [ ] Add 5-language inbound policy tests.
+- [x] Add 5-language inbound policy tests. AR/EN resolve normally; retired FR/ES/DE router requests use the approved temporary English-home fallback.
 - [ ] Add test ensuring hidden legacy source never redirects to public target unless explicit archival policy allows it.
 
 Exit criteria:

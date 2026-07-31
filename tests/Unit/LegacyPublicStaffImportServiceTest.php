@@ -43,6 +43,10 @@ final class LegacyPublicStaffImportServiceTest extends TestCase
             $this->row(14, 4, ['ar_name' => 'Duplicate B', 'en_name' => 'Same Name', 'email' => 'SAME@example.com']),
             $this->row(15, 4, ['ar_name' => 'Same Arabic', 'en_name' => 'Unique One', 'email' => 'one@example.com']),
             $this->row(16, 4, ['ar_name' => 'Same Arabic', 'en_name' => 'Unique Two', 'email' => 'two@example.com']),
+            $this->row(17, 4, ['is_visible' => 0]),
+            $this->row(18, 4, ['is_link' => 1]),
+            $this->row(19, 4, ['email' => 'rogue@example.com']),
+            $this->row(20, 4, ['parent' => 999]),
         ]);
         DB::connection($this->connection)->table('jx_councils1')->insert([
             'id' => 999, 'service_type' => 4, 'ar_name' => 'Never Imported', 'en_name' => 'Never Imported', 'email' => 'rogue@example.com',
@@ -129,6 +133,34 @@ final class LegacyPublicStaffImportServiceTest extends TestCase
         Storage::disk('local')->put('approved/missing-headers.csv', "source_table,source_id\njx_councils,10\n");
         $this->expectException(InvalidArgumentException::class);
         $service->import('approved/missing-headers.csv');
+    }
+
+    public function test_hidden_and_link_only_source_rows_cannot_be_imported_by_packet_approval(): void
+    {
+        $path = $this->packet([
+            $this->approval(17, 4, 'medicine'),
+            $this->approval(18, 4, 'medicine'),
+        ]);
+
+        $result = app(LegacyPublicStaffImportServiceInterface::class)->import($path);
+
+        $this->assertSame(0, $result->importableRows);
+        $this->assertSame(1, $result->skipReasonCounts['hidden_source']);
+        $this->assertSame(1, $result->skipReasonCounts['external_link_source']);
+    }
+
+    public function test_archive_identity_overlap_and_orphan_parent_cannot_be_approved_away(): void
+    {
+        $path = $this->packet([
+            $this->approval(19, 4, 'medicine'),
+            $this->approval(20, 4, 'medicine'),
+        ]);
+
+        $result = app(LegacyPublicStaffImportServiceInterface::class)->import($path);
+
+        $this->assertSame(0, $result->importableRows);
+        $this->assertSame(1, $result->skipReasonCounts['councils1_identity_overlap']);
+        $this->assertSame(1, $result->skipReasonCounts['orphan_parent']);
     }
 
     /** @param array<string, mixed> $overrides @return array<string, mixed> */

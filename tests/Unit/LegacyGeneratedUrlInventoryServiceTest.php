@@ -100,6 +100,36 @@ final class LegacyGeneratedUrlInventoryServiceTest extends TestCase
         $this->assertStringNotContainsString('generated_router_url', $archiveCsv);
     }
 
+    public function test_external_index_php_links_are_not_treated_as_spu_continuity_urls(): void
+    {
+        Storage::fake('local');
+        $this->createLegacyTables();
+        DB::connection('legacy_generated_url_testing')->table('jx_categories')->where('id', 10)->update([
+            'url' => 'https://www.asiapharmaceutics.info/index.php/ajp/article/view/2047',
+        ]);
+
+        $result = app(LegacyGeneratedUrlInventoryServiceInterface::class)->export(table: 'jx_categories');
+        $csv = Storage::disk('local')->get($result->paths[1]);
+
+        $this->assertSame(2, $result->generatedRows);
+        $this->assertStringNotContainsString('asiapharmaceutics.info', $csv);
+    }
+
+    public function test_scheme_less_external_index_php_links_are_not_treated_as_spu_continuity_urls(): void
+    {
+        Storage::fake('local');
+        $this->createLegacyTables();
+        DB::connection('legacy_generated_url_testing')->table('jx_categories')->where('id', 10)->update([
+            'url' => 'www.external.example/index.php?page=article',
+        ]);
+
+        $result = app(LegacyGeneratedUrlInventoryServiceInterface::class)->export(table: 'jx_categories');
+        $csv = Storage::disk('local')->get($result->paths[1]);
+
+        $this->assertSame(2, $result->generatedRows);
+        $this->assertStringNotContainsString('external.example', $csv);
+    }
+
     private function createLegacyTables(): void
     {
         Schema::connection('legacy_generated_url_testing')->create('jx_categories', function ($schema): void {

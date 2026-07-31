@@ -74,7 +74,7 @@ final class LegacyUrlContinuityInventoryServiceTest extends TestCase
 
     private function createLegacyNewsArticle(int $legacySourceId, int $serviceType): int
     {
-        return (int) DB::table('news_articles')->insertGetId([
+        $articleId = (int) DB::table('news_articles')->insertGetId([
             'slug' => 'legacy-news-'.$legacySourceId,
             'status' => 'published',
             'published_at' => now()->subDay(),
@@ -88,5 +88,16 @@ final class LegacyUrlContinuityInventoryServiceTest extends TestCase
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+        DB::table('news_article_translations')->insert([
+            'news_article_id' => $articleId,
+            'locale' => 'ar',
+            'title' => 'خبر',
+            'excerpt' => null,
+            'body' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return $articleId;
     }
 }

@@ -19,6 +19,7 @@ final readonly class LegacyStudentProfileImportResultDTO
         public int $importedRows,
         public int $skippedRows,
         public int $duplicateSkippedRows,
+        public int $placeholderRowsDisabled,
         public array $skipReasonCounts,
     ) {}
 }

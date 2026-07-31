@@ -55,9 +55,9 @@ php artisan legacy-import:phase6-restore --write --approve=phase6-restore --batc
 The first restore invocation is a dry run. The approved write invocation rebuilds classification, mapping, staging, and approval prerequisites before restoring these lanes in one workflow:
 
 - locations, disabled for review
-- alumni and honor students, enabled according to legacy visibility
+- alumni and honor students use the separate controlled student-profile lane and remain disabled until editorial review
 - faculty profiles are not restored; public staff requires the separate private `jx_councils` review-packet workflow
-- research publications are not restored; audit reconciliation blocks `jx_member_*` because those records belong to `/members/`
+- research publication-like service-1 `/members/` rows are restored only as structured disabled review records; service 2 remains excluded teaching/archive content
 - news and announcements are not restored; they require a separate approved category review packet
 - static pages, disabled drafts
 - footer menu links, disabled
@@ -76,6 +76,7 @@ Generate the private candidate and metadata-only backlog packet:
 ```bash
 php artisan legacy-import:faq-review-packets
 php artisan legacy-import:faq-review-packets --disk=local --dir=legacy-import-exports/faq-review-packets --json
+php artisan legacy-import:faq-approval-packet <faq_candidates.csv> --approved-by=<reviewer>
 ```
 
 The exporter never selects or exports values from `first_name`, `last_name`, `email`, `country`, or `phone`. Candidate question and answer text is private evidence and may still contain contact-like text, which is marked `content_contains_contact_pattern`; keep all packets off public storage and out of version control. Backlog rows contain metadata only and never include question, answer, subject, or submitter values.
@@ -87,7 +88,19 @@ php artisan legacy-import:faqs legacy-import-private/reviewed-faqs.csv --disk=lo
 php artisan legacy-import:faqs legacy-import-private/reviewed-faqs.csv --disk=local --write --approve=legacy-faq-import --batch=legacy-faqs-YYYYMMDD
 ```
 
-The importer re-reads approved source IDs and does not trust candidate text. Contact-pattern content remains blocked even when approved. Imported records use the disabled `legacy-faq-review` category and one source locale only. Submitter PII values are never selected, imported, or logged; migration metadata stores only presence booleans. The workflow creates no redirects, routes, publication state, or media.
+The approval builder emits only source identity, locale, cleaned-content hashes, and approval provenance; it excludes question, answer, subject, and submitter fields. The importer re-reads approved source IDs, re-cleans content, and requires hashes to match when present. Contact-pattern content remains blocked even when approved. Imported records use the disabled `legacy-faq-review` category and one source locale only. Submitter PII values are never selected, imported, or logged; migration metadata stores only presence booleans. The workflow creates no redirects, routes, publication state, or media.
+
+Applied conservative FAQ batch on 2026-07-29:
+
+- Review packet: `storage/app/private/legacy-import-exports/faq-review-packets/20260729_163525/faq_candidates.csv`.
+- Approval packet: `storage/app/private/legacy-import-exports/faq-approval-packets/20260729_163552/approved_faqs.csv`.
+- Source/candidate/approved/rejected: `1553/47/43/4`; the four rejected candidates are duplicate supported questions.
+- Imported: `1` disabled review category, `43` disabled FAQs, and `43` source-locale translations (`24` AR, `19` EN).
+- Submitter PII values imported or logged: `0`; migration metadata retains presence booleans only.
+- Provenance: `43` success logs under `approved-legacy-faqs-20260729`.
+- Replay dry-run: `43` `already_mapped`, `0` duplicate imports.
+- Public redirects: `0`; the three old FAQ-list links remain unmapped until public FAQ/CMS integration is complete.
+- Post-import continuity remains `8726` mapping rows, `3166` private-target URL variants, and `13` missing gallery-module rows.
 
 ### Career-Link Review Packets
 
@@ -104,12 +117,75 @@ Only absolute `http` and `https` URLs are eligible. The importer re-verifies URL
 
 The current FAQ and career-link tables are not wired to public rendering or Filament. These imports are disabled archival/review data only and do not constitute public FAQ, careers, CMS, migration-parity, or feature completion.
 
+### Alumni And Honor Student Import
+
+The real legacy student records remain in `spu_legacy.jx_graduated_students` and `spu_legacy.jx_good_students`. They must enter the current tables through the guarded student-profile importer; copying the legacy database to the same MySQL server does not populate `spu_website.alumni` or `spu_website.honor_students`.
+
+Dry run:
+
+```bash
+php artisan legacy-import:student-profiles alumni --json
+php artisan legacy-import:student-profiles honor_students --json
+```
+
+Disabled import:
+
+```bash
+php artisan legacy-import:student-profiles alumni --write --approve=phase6-alumni --batch=<reviewed-batch> --json
+php artisan legacy-import:student-profiles honor_students --write --approve=phase6-honor-students --batch=<reviewed-batch> --json
+```
+
+Safety rules:
+
+- known `FacultyModuleSeeder` placeholder identifiers are disabled and logged before a write
+- imports remain disabled; public enablement uses the separate approval-gated publication command below
+- missing translations are not synthesized; only usable source locales are stored
+- email and phone values are not imported
+- legacy photos are retained as migration metadata only and no media is attached
+- source IDs, faculty/section evidence, grade, date, locales, and deferred photo paths remain in migration logs
+- legacy `section_id` values `1` and `2` are preserved as unverified raw buckets and are not displayed as First/Second Semester
+- duplicate source identities are logged as skipped
+- successful and skipped source IDs make replay idempotent
+
+Applied controlled batches on 2026-07-30:
+
+- Alumni batch: `approved-legacy-alumni-20260730`.
+- Alumni scanned/imported/duplicate skipped: `5246/4939/307`.
+- Alumni seeded placeholders disabled: `14`.
+- Honor batch: `approved-legacy-honor-students-20260730`.
+- Honor scanned/imported/duplicate skipped: `1070/1067/3`.
+- Honor seeded placeholders disabled: `21`.
+- Imported records enabled: `0` for both lanes.
+- Imported email/phone/media attachments: `0`.
+- Stored translations are source-only: imported alumni `4939` AR and `4` EN; imported honor students `1067` AR and `65` EN.
+- Replay dry run: all `5246` alumni and `1070` honor source rows report `already_processed`.
+- Public alumni and valedictorian pages remained available with honest empty states between import and the explicit publication step below.
+
+Approved publication on 2026-07-30:
+
+```bash
+php artisan legacy-import:publish-student-profiles alumni --write --approve=publish-legacy-alumni --batch=approved-public-alumni-20260730 --json
+php artisan legacy-import:publish-student-profiles honor_students --write --approve=publish-legacy-honor-students --batch=approved-public-honor-students-20260730 --json
+```
+
+- Alumni mappings/source-visible/enabled/blocked-hidden: `4939/4904/4904/35`.
+- Honor mappings/source-visible/enabled/blocked-hidden: `1067/1066/1066/1`.
+- Publication enables only targets backed by a successful import log, a currently visible legacy source row, and at least one stored source translation.
+- Seed placeholders are excluded because they have no legacy import provenance; enabled seeded placeholders remain `0`.
+- Public AR and EN lists both include all `4904` alumni and `1066` honor students.
+- English source names are used for `4` alumni and `65` honor students; records without an English source name display the original Arabic name on the English page.
+- Locale fallback is presentation-only and does not create synthesized translation rows.
+- Publication logs: `4904` alumni and `1066` honor success records under the approved publication batches.
+- Publication replay reports `4904` and `1066` already enabled with no additional writes.
+- Photos remain deferred; public cards use the existing no-image presentation.
+
 ### Approved News Packets
 
 Generate private, read-only review packets for root news and announcements:
 
 ```bash
 php artisan legacy-import:category-review-packets --subsite=root --service=3 --service=4 --disk=local
+php artisan legacy-import:news-approval-packet <root-service-3.csv> <root-service-4.csv> --approved-by=<reviewer>
 ```
 
 Copy the relevant generated CSVs to a private review location, review each candidate, and fill `approval_decision` and `approved_target` only in the reviewed copies. A row is eligible only when those fields are exactly `import` and `news` after case and surrounding-whitespace normalization. Blank decisions are never candidates. Packet exports and reviewed copies can contain sensitive migration evidence: keep them on private storage and never commit them.
@@ -123,6 +199,64 @@ php artisan legacy-import:news legacy-import-private/reviewed-root-news.csv --di
 
 Every approved article is imported as a disabled draft with no publish or schedule date and `noindex,nofollow` SEO. The import does not create continuity redirects, does not copy one locale into another, and keeps attachment files deferred for separate media reconciliation.
 
+The conservative approval builder rejects hidden, external-link, placeholder, empty, orphaned, already-mapped, duplicate-source, and same-service duplicate localized-title records. Invalid legacy dates may normalize to null because the records remain unpublished drafts. The importer independently rechecks source visibility, external-link state, content/child evidence, service, translations, and prior imports; packet approval cannot bypass those checks.
+
+Applied root news/announcement review batch on 2026-07-29:
+
+- Source review packets: `storage/app/private/legacy-import-exports/category-review-packets/20260729_131345/root_service_03.csv` and `root_service_04.csv`.
+- Approval packet: `storage/app/private/legacy-import-exports/news-approval-packets/20260729_131511/approved_news.csv`.
+- Scanned/approved/rejected: `3038/1341/1697`.
+- Approved service counts: news `647`, announcements `694`.
+- Imported: `1341` disabled drafts, `2669` source-locale translations, and `5268` deferred attachment references.
+- Safety state: `1341` disabled, `1341` draft, `0` published dates, `2669` `noindex,nofollow`, `0` attached media.
+- Provenance: `1341` success migration logs under batch `approved-root-news-20260729`.
+- Replay dry-run: `0` importable and `1341` `already_imported`; no duplicate records were created.
+- No content redirects were created. The query resolver now requires enabled, published state and the requested locale, so all imported draft URL variants remain blocked from public redirect resolution.
+
+Publish only an explicitly reviewed subset through the CMS workflow. The command is dry-run-first, requires an unlocked publishing user, accepts at most 25 explicit source IDs, verifies successful import provenance, requires complete AR/EN title and body content, blocks unresolved attachments, and retains imported `noindex,nofollow` metadata:
+
+```bash
+php artisan legacy-import:publish-news --source-id=<jx_categories-id> --actor=<publisher-user-id> --batch=<batch> --json
+php artisan legacy-import:publish-news --source-id=<jx_categories-id> --featured-source-id=<jx_categories-id> --actor=<publisher-user-id> --write --approve=publish-legacy-news --batch=<batch> --json
+```
+
+Applied public demo batch on 2026-07-31:
+
+- Batch: `approved-public-news-demo-20260731`.
+- Explicit source IDs: `5361`, `5328`, `5310`, `5356`, `5275`, `5222`, `5221`, and `5347`.
+- Published: `8` total, split into `4` news and `4` announcements.
+- Featured: news source `5347` and announcement source `5361`.
+- Readiness: all `8` had complete source AR/EN content, successful import provenance, enabled canonical categories, both SEO rows, and zero attachment dependencies.
+- Safety at the time of this demo batch: remaining imported rows stayed disabled drafts; imported `noindex,nofollow` directives were retained.
+- Audit: every article was promoted through `CmsWorkflowService`, generating CMS publication history, cache invalidation, and one `news_publication` migration log per source row.
+- Replay: `0` republished and `8` reported `already_published`.
+- Editorial revisions corrected one encoded title and one obvious English initial-letter source artifact through the same CMS workflow.
+
+Applied Arabic-fallback transfer batch on 2026-07-31:
+
+- Product decision: when the source English title is `Under Construction`, English public presentation may use the original Arabic title/body without creating an English translation row.
+- Approval packet: `storage/app/private/legacy-import-exports/news-approval-packets/20260731_144617_v6vdfg8k/approved_news.csv`.
+- Packet result: `3038` scanned, `2278` approved, and `760` rejected after the Arabic-fallback policy exposed additional duplicate Arabic-title collisions.
+- Dry run: `944` importable, `1332` already imported, and `2` blocked by source-side duplicate-title revalidation.
+- Import batch: `approved-root-news-arabic-fallback-20260731`.
+- Written: `944` disabled Arabic-source drafts, `944` AR translations/SEO rows, and `4297` deferred attachment references.
+- Combined target state: `2285` articles = `1097` news + `1188` announcements; `8` are published and `2277` remain disabled drafts.
+- Locale state: `957` articles have no source English translation and use presentation fallback only; no synthetic EN rows were created.
+- Media state: `9565` attachment references remain unresolved because the legacy public files will be retrieved from cPanel.
+- Remaining source dispositions: `753` rows are not standalone imports after importer revalidation. They remain hidden, external-link, empty, duplicate-title, missing-title, or duplicate-source review cases and must receive explicit mapping/merge/retirement decisions.
+- Importer scalability was corrected to stream only identity columns during source duplicate checks instead of loading every legacy body into memory.
+
+Applied complete-text publication batch on 2026-07-31:
+
+- Batch: `all-legacy-news-text-publication-20260731`.
+- Product decision: unresolved cPanel media may remain as private deferred references while complete source text is published; unresolved references must not render links or an empty attachment section.
+- Dry run: `2277` drafts checked, `2085` eligible, and `192` blocked for `incomplete_ar_content`.
+- Published through CMS workflow: `2085` additional records with actor authorization, revisions, audit events, cache invalidation, and `news_publication` logs.
+- Final public totals: `2093` = `1090` news + `1003` announcements. AR and EN return the same totals, with approved Arabic fallback where source EN content is absent.
+- Remaining private drafts: `192` = `7` news + `185` announcements with no usable Arabic article body.
+- All `9565` unresolved media references remain stored for cPanel reconciliation but are filtered from public DTOs, so no empty `href` or empty attachment section renders.
+- Legacy source dates remain unknown and are not represented by the migration publication timestamp in public DTOs.
+
 ### Members Reconciliation Evidence
 
 Generate private, read-only `/members/` evidence packets for `jx_member_categories` and `jx_member_items`:
@@ -134,11 +268,23 @@ php artisan legacy-import:members-review-packets --service=1 --service=2 --disk=
 
 The command writes one category CSV and one item CSV for each selected service, plus a manifest and Markdown summary. It reads only scalar metadata and database-computed text lengths; legacy HTML descriptions and data are not exported. Service 1 is evidence for publication/research-like member output requiring publication proof. Service 2 is teaching/course-like archive evidence and must not be treated as research.
 
-These packets are evidence only. There is no members approval command, importer, target mapping workflow, or redirect workflow. `candidate_target_policy` remains `unresolved_product_decision`, and approval and target fields are intentionally blank.
+These packets remain ownership and disposition evidence. The structured publication importer now accepts service-1 rows under an explicit approval token, but there is still no automatic owner reconciliation or public `/members/` redirect workflow.
 
 `jx_member_categories.parent` is a staff-owner identity, not a category hierarchy. The same owner ID can occur in both `jx_councils` and `jx_councils1`; packets report both sources independently and mark that condition as ambiguous. Product and ownership reconciliation must resolve the intended person source and destination before any target design or continuity decision.
 
-All writes through `legacy-import:research-publications` are frozen regardless of approval token. Its dry run is retained only as non-authoritative historical inspection and does not establish that a service-1 category is a publication. The `jx_member_*` write freeze remains in force pending `/members/` product, ownership, attachment, and publication-proof reconciliation.
+`legacy-import:research-publications` is dry-run-first. Write mode requires `--approve=legacy-research-publications-import`, rejects `--enable`, imports only visible titled service-1 rows, and creates disabled review records. It preserves structured metadata and owner/file provenance without making ambiguous identity claims. Service 2 is never imported as research.
+
+Applied structured research batch on 2026-07-31:
+
+- Batch: `approved-structured-research-import-20260731`.
+- Source universe: `349` categories; `302` service 1 and `47` service 2.
+- Imported: `289` disabled publication review records and `549` source-locale translations.
+- Skipped: `4` hidden service-1 rows, `9` titleless service-1 rows, and all `47` service-2 teaching rows.
+- Structured publication coverage: authors `156`, citation `69`, clean publisher/journal `59`, validated DOI `11`, citation-backed year `63`, explicit keywords `225`, rank `0`, safe current-owner links `5`, duplicate-title review `36`.
+- Deferred media: `240` attachment groups containing `241` path references; no missing file was represented as a public download.
+- Provenance: `289` success logs include source SHA-256, extraction evidence, owner status, duplicate status, locales, and attachment references.
+- Replay: all `349` rows report `already_processed`; no duplicate targets are created.
+- Full mapping policy: `Docs/LEGACY_RESEARCH_PUBLICATION_MAPPING.md`.
 
 ## Run Manual Imports
 
@@ -694,6 +840,30 @@ Approved subsite-home batch:
 - Validation: all redirect rules valid; all 14 source signatures resolve with `301`; all 14 targets render `200`.
 - Rollback preview: `14` batch redirects, `0` deleted. The batch remains applied.
 
+## Approved Unsupported-Language And Members Policies
+
+Product approval recorded on 2026-07-29:
+
+- Legacy French (`lang=3`), Spanish (`lang=6`), and German (`lang=7`) router requests temporarily redirect with `302` to the English homepage `/en`.
+- This is a narrow retired-language exception. Unknown URLs and unknown language IDs such as `lang=99` remain `404` and are logged; exact and pattern rules cannot bypass that boundary.
+- The unsupported-language policy runs before exact and pattern redirects so stale rules cannot send those requests elsewhere.
+- Normalized request metadata records English as the explicit fallback locale.
+- `/members/` is a private archive for supported Arabic and English requests.
+- Supported-language `/members/` pages and files cannot resolve through exact, query, pattern, or mapped-file continuity rules.
+- `/members/` write/import lanes remain frozen; private evidence stays under `storage/app/private`.
+- Unsupported-language `/members/` router requests follow the separately approved retired-language fallback to `/en`.
+
+Prior 2026-07-29 post-import continuity evidence:
+
+- Generated inventory: `storage/app/private/legacy-import-exports/generated-url-inventory/20260729_133602_generated_url_inventory.csv`.
+- Triage rows: `storage/app/private/legacy-import-exports/url-continuity-triage/20260729_133718_url_continuity_triage_rows.csv`.
+- Redirect evidence: `storage/app/private/legacy-import-exports/redirect-evidence/20260729_134806_redirect_evidence_all.csv`.
+- Total/resolver-ready/blocked: `11917/12/11905`.
+- Mapping backlog: `9210`.
+- Imported but intentionally non-public URL variants: `2682`, classified `blocked_target_not_public` / `target_private_review`.
+- Explicitly blocked gallery-list routes: `13`; no generic gallery target was guessed.
+- Unknown URL rows: `0` after external domains containing `index.php` were excluded from SPU continuity generation.
+
 ## Public Staff Audit And Approval
 
 Public staff reconciliation is a separate, private workflow. The only source eligible for this workflow is `jx_councils`. `jx_councils1` is not proven to represent public profiles and must not be imported by the Phase 6 restore or used to create public faculty profiles. It is read only for cross-source email overlap evidence.
@@ -709,6 +879,7 @@ Export selected services to a private location:
 
 ```bash
 php artisan legacy-import:public-staff-review-packets --service=4 --service=13 --disk=local --dir=legacy-import-exports/public-staff-review-packets
+php artisan legacy-import:public-staff-approval-packet <service-03.csv> ... <service-14.csv> --approved-by=<reviewer>
 ```
 
 Packet rules:
@@ -749,6 +920,19 @@ Write guarantees:
 - media paths, source visibility/rank/service, packet path, and packet SHA-256 remain migration-log metadata
 - creates no redirects and never publishes content
 - successful `jx_councils` migration logs make replay idempotent
+
+Applied conservative faculty staff batch on 2026-07-29:
+
+- Review packets: `storage/app/private/legacy-import-exports/public-staff-review-packets/20260729_141514/` for services `3-14`.
+- Approval packet: `storage/app/private/legacy-import-exports/public-staff-approval-packets/20260729_141619/approved_staff.csv`.
+- Scanned/approved/rejected: `603/239/364`.
+- The zero-blocker subset excluded all `280` hidden records plus duplicate identities, bad/URL email fields, missing English names, current conflicts, and `jx_councils1` overlaps.
+- Imported: `239` disabled draft faculty profiles and `478` source-locale translations.
+- Media: `0` photos and `0` CVs attached; legacy paths remain private migration evidence.
+- Provenance: `239` success logs under `approved-public-staff-20260729`.
+- Replay dry-run: `239` `already_mapped`, `0` duplicate imports.
+- Public redirects: `0`; the resulting `478` AR/EN URL variants are `blocked_target_not_public` until profiles are explicitly published.
+- Post-import continuity: mapping backlog `8732`, private-target URL variants `3160`, gallery-module blockers `13`.
 - duplicate approved identities, existing current emails, missing faculties, and prior mappings are skipped rather than merged
 
 ## Central Council Approval Import
@@ -757,6 +941,7 @@ Central governance uses the service 1 and 2 packets from the same private packet
 
 ```bash
 php artisan legacy-import:public-staff-review-packets --service=1 --service=2 --disk=local --dir=legacy-import-exports/public-staff-review-packets
+php artisan legacy-import:public-staff-approval-packet <service-01.csv> <service-02.csv> --approved-by=<reviewer> --central --dir=legacy-import-exports/central-council-approval-packets
 ```
 
 In each reviewed copy, approve only intended central members by setting exactly:
@@ -781,7 +966,56 @@ php artisan legacy-import:central-councils legacy-import-exports/public-staff-re
 
 This workflow imports only verified `jx_councils` service 1 and 2 rows. It never reads `jx_councils1`, auto-links faculty identities, or trusts packet names/content. Councils and members are created disabled as review/archive data, no content is published or publicly listed, and no routes or redirects are created. Packet files must remain private.
 
-Latest generated URL baseline:
+Applied conservative central council batch on 2026-07-29:
+
+- Review packets: `storage/app/private/legacy-import-exports/public-staff-review-packets/20260729_144822/`.
+- Approval packet: `storage/app/private/legacy-import-exports/central-council-approval-packets/20260729_144842/approved_central_councils.csv`.
+- Scanned/approved/rejected: `45/3/42`.
+- Only the expected `central_council_requires_separate_target` marker is ignored; all visibility, identity, translation, email, and `jx_councils1` overlap blockers remain rejecting.
+- Imported: `1` disabled council, `3` disabled members, `2` council translations, and `6` member translations.
+- Provenance: `3` success logs under `approved-central-councils-20260729`.
+- Replay dry-run: `3` `already_mapped`, `0` duplicate imports.
+- Public redirects: `0`; all `6` AR/EN URL variants are `blocked_target_not_public`.
+- Post-import continuity: mapping backlog `8726`, private-target URL variants `3166`, gallery-module blockers `13`.
+
+## Reviewed Root Route Mapping Checkpoint - 2026-07-30
+
+The root services `1`, `2`, `5`, `6`, `7`, and `9` were regenerated and reviewed from private category packets. Only exact navigation identities with a proven current public route were accepted.
+
+- Root navigation packets: `storage/app/private/legacy-import-exports/category-review-packets/20260730_135813/`.
+- Additional root content packets: `storage/app/private/legacy-import-exports/category-review-packets/20260730_133407/` and `storage/app/private/legacy-import-exports/category-review-packets/20260730_134739/`.
+- Accepted mapping: `36` exact `jx_categories` source IDs from root services `1` and `2`.
+- Accepted targets: localized homepage, About, Accreditation, Academic Warnings, Suggestions/Complaints, Medicine, Dentistry, Pharmacy, Artificial Intelligence, Petroleum, and Business Administration.
+- Resolution requires the exact reviewed source ID and service; wrong services, unknown IDs, non-root subsites, and generic category requests remain unresolved.
+- Generated variants newly resolved: `73`; no stored exact redirects were created and the existing active redirect count remains `14`.
+- Root service `6`: four visible bilingual records remain blocked because their packet contains invalid legacy dates and their workshop/course/exhibition/conference semantics plus deferred child media do not prove a generic Page target.
+- Root service `5`: visible records represent cooperation agreements rather than proven Events targets.
+- Root service `7`: visible records are achievements despite the legacy research/statistics service label, so no Research mapping was guessed.
+- Root service `9`: records are predominantly hidden jobs, with incomplete translations and no approved legacy job-detail continuity target.
+- FAQ, council, gallery, cooperation, achievement, job, and ambiguous content rows were not folded into the exact route resolver.
+
+Final evidence:
+
+- Functional route follow-up: exact normalized signatures now resolve `14` Contact rows, `1` Suggestions/Complaints row, and `1` service-49 Jobs row. Missing or extra semantic parameters remain unresolved.
+- Generated inventory: `storage/app/private/legacy-import-exports/generated-url-inventory/20260730_144235_generated_url_inventory.csv`.
+- Triage rows: `storage/app/private/legacy-import-exports/url-continuity-triage/20260730_144325_url_continuity_triage_rows.csv`.
+- Redirect evidence: `storage/app/private/legacy-import-exports/redirect-evidence/20260730_144418_redirect_evidence_all.csv`.
+- Total/resolver-ready/blocked: `11917/101/11816`.
+- Mapping backlog: `8637`.
+- Imported but intentionally private URL variants: `3166`.
+- Unsupported gallery-list routes: `13`, still `blocked_missing_target_module`.
+- Unknown generated URL rows: `0`.
+- Active stored exact redirects: `14`.
+
+Quarantine reconciliation as of 2026-07-30, before the approved demo publication batch:
+
+- News: `1341` total, `0` enabled, `0` non-draft, `0` with `published_at`.
+- Faculty staff: `239` total, `0` enabled, `0` non-draft, `0` with `published_at`.
+- Central councils: `3` members and `1` council, all disabled.
+- FAQs: `43` total, `0` enabled, `0` featured.
+- No editorial publication decision was made during route mapping.
+
+Historical generated URL baseline from 2026-07-05:
 
 - Report: `storage/app/private/legacy-import-exports/generated-url-inventory/20260705_233452_generated_url_inventory.md`.
 - CSV: `storage/app/private/legacy-import-exports/generated-url-inventory/20260705_233452_generated_url_inventory.csv`.
@@ -1028,7 +1262,7 @@ Current controlled runner registry:
 
 Modules without a controlled runner, such as `homepage`, are blocked with an explicit "no controlled runner" message even when dry-run source validation passes.
 
-Legacy news and announcements already exist in the local migrated database. Keep them in review/quarantine until `legacy-import:news-review` reports no cleanup blockers and old URL redirect mappings are approved.
+Legacy news and announcements already exist in the local migrated database. Keep all unreviewed rows in quarantine. A small explicit subset may be promoted only with `legacy-import:publish-news` after provenance, bilingual content, category, SEO, media, actor, dry-run, and approval-token checks pass; never bulk-enable the imported table.
 
 Use `legacy-import:news-slug-plan` to dry-run long canonical slug cleanup. It proposes old slug to new slug mappings and AR/EN redirect pairs only; it does not update articles or create redirects.
 

@@ -76,6 +76,8 @@ final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
         $rows = $approvedIds === []
             ? collect()
             : $this->oldDatabase->table(self::SOURCE_TABLE)->whereIn('id', $approvedIds)->get()->keyBy('id');
+        $childSourceIds = $this->childSourceIds($approvedIds);
+        [$sourceIds, $sourceTitleCounts] = $this->sourceIdentityEvidence();
         $categories = [];
         $importableRows = 0;
         $importedRows = 0;
@@ -100,6 +102,34 @@ final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
                 continue;
             }
 
+            if ($this->integerValue($row, 'is_visible') !== 1) {
+                $this->countSkip($skipReasonCounts, 'hidden_source');
+                $skippedRows++;
+
+                continue;
+            }
+
+            if ($this->truthy($this->value($row, 'is_link'))) {
+                $this->countSkip($skipReasonCounts, 'external_link_source');
+                $skippedRows++;
+
+                continue;
+            }
+
+            if (! $this->hasContentOrChildren($row, isset($childSourceIds[$sourceId]))) {
+                $this->countSkip($skipReasonCounts, 'empty_content_and_children');
+                $skippedRows++;
+
+                continue;
+            }
+            $parentId = $this->integerValue($row, 'parent');
+            if ($parentId !== null && $parentId !== 0 && ! isset($sourceIds[$parentId])) {
+                $this->countSkip($skipReasonCounts, 'orphan_parent');
+                $skippedRows++;
+
+                continue;
+            }
+
             if ($this->alreadyImported($sourceId)) {
                 $this->countSkip($skipReasonCounts, 'already_imported');
                 $skippedRows++;
@@ -116,6 +146,20 @@ final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
                 if ($write) {
                     $this->logSkip($sourceId, $batch, 'Skipped legacy news row without a usable AR/EN title.');
                 }
+
+                continue;
+            }
+            $duplicateSourceTitle = false;
+            foreach ($translations as $locale => $translation) {
+                $titleKey = $serviceType.'|'.$locale.'|'.$this->normalizedTitle($translation['title']);
+                if (($sourceTitleCounts[$titleKey] ?? 0) > 1) {
+                    $duplicateSourceTitle = true;
+                    break;
+                }
+            }
+            if ($duplicateSourceTitle) {
+                $this->countSkip($skipReasonCounts, 'duplicate_source_title');
+                $skippedRows++;
 
                 continue;
             }
@@ -322,7 +366,7 @@ final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
         $translations = [];
 
         foreach (['ar', 'en'] as $locale) {
-            $title = $this->stringValue($row, $locale.'_name');
+            $title = $this->plainTextValue($row, $locale.'_name');
 
             if ($title === null || Str::lower($title) === 'under construction') {
                 continue;
@@ -330,7 +374,7 @@ final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
 
             $translations[$locale] = [
                 'title' => $title,
-                'excerpt' => $this->stringValue($row, $locale.'_brief'),
+                'excerpt' => $this->plainTextValue($row, $locale.'_brief'),
                 'body' => $this->htmlSanitizer->sanitize($this->stringValue($row, $locale.'_data')),
             ];
         }
@@ -407,6 +451,7 @@ final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
                     ],
                     'legacy_photo' => $this->stringValue($row, 'photo'),
                     'attachments_deferred' => true,
+                    'locale_fallback_policy' => isset($translations['en']) ? null : 'display_arabic_source_in_english',
                 ],
             ]);
 
@@ -459,6 +504,78 @@ final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
         return $created;
     }
 
+    /** @param list<int> $sourceIds @return array<int, true> */
+    private function childSourceIds(array $sourceIds): array
+    {
+        if ($sourceIds === [] || ! $this->oldDatabase->schema()->hasTable('jx_items')) {
+            return [];
+        }
+
+        return $this->oldDatabase->table('jx_items')
+            ->whereIn('category_id', $sourceIds)
+            ->distinct()
+            ->pluck('category_id')
+            ->mapWithKeys(static fn (mixed $sourceId): array => [(int) $sourceId => true])
+            ->all();
+    }
+
+    private function hasContentOrChildren(object $row, bool $hasChildren): bool
+    {
+        if ($hasChildren) {
+            return true;
+        }
+
+        foreach (['ar_brief', 'en_brief', 'ar_data', 'en_data'] as $column) {
+            if ($this->stringValue($row, $column) !== null) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** @return array{array<int, true>, array<string, int>} */
+    private function sourceIdentityEvidence(): array
+    {
+        $ids = [];
+        $titleCounts = [];
+        $rows = $this->oldDatabase->table(self::SOURCE_TABLE)
+            ->select(['id', 'service_type', 'is_visible', 'is_link', 'ar_name', 'en_name'])
+            ->lazyById(500, 'id');
+
+        foreach ($rows as $row) {
+            $id = $this->integerValue($row, 'id');
+            if ($id !== null) {
+                $ids[$id] = true;
+            }
+            $service = $this->integerValue($row, 'service_type');
+            if (! in_array($service, [3, 4], true) || $this->integerValue($row, 'is_visible') !== 1 || $this->truthy($this->value($row, 'is_link'))) {
+                continue;
+            }
+            foreach (['ar', 'en'] as $locale) {
+                $title = $this->plainTextValue($row, $locale.'_name');
+                if ($title === null || Str::lower($title) === 'under construction') {
+                    continue;
+                }
+
+                $key = $service.'|'.$locale.'|'.$this->normalizedTitle($title);
+                $titleCounts[$key] = ($titleCounts[$key] ?? 0) + 1;
+            }
+        }
+
+        return [$ids, $titleCounts];
+    }
+
+    private function normalizedTitle(string $title): string
+    {
+        return Str::lower(trim((string) preg_replace('/\s+/u', ' ', strip_tags($title))));
+    }
+
+    private function truthy(mixed $value): bool
+    {
+        return in_array($value, [true, 1, '1', 'true', 'yes', 'on'], true);
+    }
+
     private function alreadyImported(int $sourceId): bool
     {
         return MigrationLog::query()
@@ -488,6 +605,13 @@ final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
     private function stringValue(object $row, string $key): ?string
     {
         return $this->textCleaner->clean((string) $this->value($row, $key, ''));
+    }
+
+    private function plainTextValue(object $row, string $key): ?string
+    {
+        $value = $this->stringValue($row, $key);
+
+        return $value === null ? null : html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
     }
 
     private function integerValue(object $row, string $key): ?int

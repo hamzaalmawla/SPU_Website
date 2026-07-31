@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit;
 
 use App\Contracts\Legacy\LegacyResearchPublicationImportServiceInterface;
+use App\Models\Research\LegacyResearchFileReference;
 use App\Models\Research\ResearchPublication;
 use App\Models\Research\ResearchPublicationTranslation;
 use App\Models\Shared\MigrationLog;
@@ -37,6 +38,8 @@ final class LegacyResearchPublicationImportServiceTest extends TestCase
             $table->string('en_name')->nullable();
             $table->text('ar_data')->nullable();
             $table->text('en_data')->nullable();
+            $table->text('ar_keywords')->nullable();
+            $table->text('en_keywords')->nullable();
             $table->unsignedInteger('parent')->nullable();
             $table->unsignedInteger('service_type')->nullable();
             $table->unsignedInteger('member_category_order')->default(0);
@@ -65,7 +68,9 @@ final class LegacyResearchPublicationImportServiceTest extends TestCase
                 'ar_name' => 'بحث منشور',
                 'en_name' => 'Published Research',
                 'ar_data' => '<p>ملخص عربي</p>',
-                'en_data' => '<p>English abstract</p>',
+                'en_data' => '<p><strong>Authors</strong></p><p>Dr. Researcher and Prof. Scholar</p><p><strong>Published in</strong></p><p>SPU Journal, 2019. doi:10.1234/spu.2019.1</p><p><strong>Abstract</strong></p><p>English abstract</p>',
+                'ar_keywords' => 'بحث، جامعة',
+                'en_keywords' => 'research, university',
                 'parent' => 5,
                 'service_type' => 1,
                 'member_category_order' => 2,
@@ -81,6 +86,8 @@ final class LegacyResearchPublicationImportServiceTest extends TestCase
                 'en_name' => 'Hidden Research',
                 'ar_data' => null,
                 'en_data' => null,
+                'ar_keywords' => null,
+                'en_keywords' => null,
                 'parent' => 5,
                 'service_type' => 1,
                 'member_category_order' => 3,
@@ -96,6 +103,8 @@ final class LegacyResearchPublicationImportServiceTest extends TestCase
                 'en_name' => 'Deferred Lecture',
                 'ar_data' => null,
                 'en_data' => null,
+                'ar_keywords' => null,
+                'en_keywords' => null,
                 'parent' => 5,
                 'service_type' => 2,
                 'member_category_order' => 4,
@@ -159,21 +168,37 @@ final class LegacyResearchPublicationImportServiceTest extends TestCase
         $this->assertSame(0, ResearchPublication::query()->count());
     }
 
-    public function test_write_is_blocked_before_mutation_regardless_of_approval_token(): void
+    public function test_write_requires_token_and_imports_structured_disabled_review_record(): void
     {
         try {
             app(LegacyResearchPublicationImportServiceInterface::class)->import(
                 write: true,
-                approval: 'phase6-research-publications',
+                approval: 'wrong-token',
                 batch: 'research-test',
             );
-            $this->fail('Expected the /members/ reconciliation write freeze.');
+            $this->fail('Expected the research import approval gate.');
         } catch (InvalidArgumentException $exception) {
-            $this->assertStringContainsString('jx_member_* import is blocked', $exception->getMessage());
+            $this->assertStringContainsString('legacy-research-publications-import', $exception->getMessage());
         }
 
-        $this->assertSame(0, ResearchPublication::query()->count());
-        $this->assertSame(0, ResearchPublicationTranslation::query()->count());
-        $this->assertSame(0, MigrationLog::query()->count());
+        $result = app(LegacyResearchPublicationImportServiceInterface::class)->import(
+            write: true,
+            approval: 'legacy-research-publications-import',
+            batch: 'research-test',
+        );
+
+        $publication = ResearchPublication::query()->firstOrFail();
+        $english = $publication->translations()->where('locale', 'en')->firstOrFail();
+        $this->assertSame(1, $result->importedRows);
+        $this->assertFalse((bool) $publication->is_enabled);
+        $this->assertSame(2019, $publication->publication_year);
+        $this->assertSame('10.1234/spu.2019.1', $publication->doi);
+        $this->assertSame('metadata_review', $publication->extraction_status);
+        $this->assertSame('Dr. Researcher and Prof. Scholar', $english->authors);
+        $this->assertSame('SPU Journal', $english->publisher);
+        $this->assertSame(['research', 'university'], $english->keywords);
+        $this->assertSame(2, ResearchPublicationTranslation::query()->count());
+        $this->assertSame(1, LegacyResearchFileReference::query()->count());
+        $this->assertDatabaseHas('migration_logs', ['module' => 'research', 'source_id' => 10, 'status' => 'success']);
     }
 }

@@ -263,7 +263,7 @@ final class LaunchValidateCommand extends Command
             $validation = $this->continuityService->validateRedirectRules();
             $sample = $exactRedirects->first();
             $sampleResult = $sample !== null
-                ? $this->continuityService->resolveRedirect($sample->legacyPath)
+                ? $this->continuityService->resolveRedirect($sample->legacyPath, $sample->querySignature)
                 : null;
 
             $this->record(

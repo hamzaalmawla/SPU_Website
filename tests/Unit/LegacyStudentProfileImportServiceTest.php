@@ -94,6 +94,7 @@ final class LegacyStudentProfileImportServiceTest extends TestCase
         $second = $service->import('alumni', write: true, approval: 'phase6-alumni', batch: 'student-test-2');
 
         $this->assertSame(1, $first->importedRows);
+        $this->assertSame(0, $first->placeholderRowsDisabled);
         $this->assertSame(0, $second->importedRows);
         $this->assertSame(2, $second->skipReasonCounts['already_processed']);
         $this->assertSame(1, Alumni::query()->where('is_enabled', false)->whereNull('photo_media_id')->whereNull('degree')->count());
@@ -133,10 +134,89 @@ final class LegacyStudentProfileImportServiceTest extends TestCase
         $this->assertSame(1, HonorStudent::query()->where('is_enabled', false)->whereNull('photo_media_id')->count());
         $this->assertSame('2024 / 1', HonorStudent::query()->value('academic_year'));
         $this->assertSame('89.60', HonorStudent::query()->value('gpa'));
-        $this->assertSame(
-            ['ياسمين نبيل المولا', 'ياسمين نبيل المولا'],
-            HonorStudent::query()->firstOrFail()->translations()->orderBy('locale')->pluck('full_name')->all(),
+        $this->assertSame(['ar'], HonorStudent::query()->firstOrFail()->translations()->pluck('locale')->all());
+        $this->assertSame(['ياسمين نبيل المولا'], HonorStudent::query()->firstOrFail()->translations()->pluck('full_name')->all());
+    }
+
+    public function test_write_disables_only_known_seeded_placeholders_and_logs_cleanup(): void
+    {
+        $medicine = Faculty::query()->where('slug', 'medicine')->firstOrFail();
+        Alumni::query()->create([
+            'student_identifier' => 'medicine-alumni-2023', 'faculty_id' => $medicine->getKey(),
+            'graduation_year' => 2023, 'is_featured' => true, 'is_enabled' => true,
+        ]);
+        $unrelated = Alumni::query()->create([
+            'student_identifier' => 'verified-current-record', 'faculty_id' => $medicine->getKey(),
+            'graduation_year' => 2024, 'is_featured' => false, 'is_enabled' => true,
+        ]);
+
+        $result = app(LegacyStudentProfileImportServiceInterface::class)->import(
+            'alumni', write: true, approval: 'phase6-alumni', batch: 'placeholder-cleanup-test',
         );
+
+        $this->assertSame(1, $result->placeholderRowsDisabled);
+        $this->assertFalse(Alumni::query()->where('student_identifier', 'medicine-alumni-2023')->value('is_enabled'));
+        $this->assertTrue($unrelated->fresh()->is_enabled);
+        $this->assertDatabaseHas('migration_logs', [
+            'module' => 'student_profile_placeholder_cleanup', 'batch_name' => 'placeholder-cleanup-test',
+            'source_table' => 'application_seed', 'target_table' => 'alumni', 'status' => 'success',
+        ]);
+    }
+
+    public function test_publication_enables_only_provenance_backed_visible_imports(): void
+    {
+        $medicine = Faculty::query()->where('slug', 'medicine')->firstOrFail();
+        $placeholder = Alumni::query()->create([
+            'student_identifier' => 'medicine-alumni-2023', 'faculty_id' => $medicine->getKey(),
+            'graduation_year' => 2023, 'is_featured' => true, 'is_enabled' => true,
+        ]);
+        $service = app(LegacyStudentProfileImportServiceInterface::class);
+        $service->import('alumni', write: true, approval: 'phase6-alumni', batch: 'publication-import');
+
+        $dryRun = $service->publishImported('alumni', batch: 'publication-dry');
+        $this->assertSame(1, $dryRun->importedMappings);
+        $this->assertSame(1, $dryRun->eligibleRows);
+        $this->assertSame(0, $dryRun->enabledRows);
+
+        try {
+            $service->publishImported('alumni', write: true, approval: 'wrong');
+            $this->fail('Expected publication approval token validation.');
+        } catch (InvalidArgumentException) {
+            $this->assertFalse($placeholder->fresh()->is_enabled);
+        }
+
+        $published = $service->publishImported(
+            'alumni', write: true, approval: 'publish-legacy-alumni', batch: 'publication-write',
+        );
+        $replay = $service->publishImported(
+            'alumni', write: true, approval: 'publish-legacy-alumni', batch: 'publication-replay',
+        );
+
+        $this->assertSame(1, $published->enabledRows);
+        $this->assertSame(0, $replay->enabledRows);
+        $this->assertSame(1, $replay->alreadyEnabledRows);
+        $this->assertFalse($placeholder->fresh()->is_enabled);
+        $this->assertSame(1, Alumni::query()->whereNull('student_identifier')->where('is_enabled', true)->count());
+        $this->assertDatabaseHas('migration_logs', [
+            'module' => 'student_profile_publication', 'batch_name' => 'publication-write',
+            'source_table' => 'jx_graduated_students', 'target_table' => 'alumni', 'status' => 'success',
+        ]);
+    }
+
+    public function test_publication_keeps_hidden_source_record_disabled(): void
+    {
+        app('db')->connection('legacy_mysql')->table('jx_graduated_students')->where('id', 10)->update(['is_visible' => 0]);
+        $service = app(LegacyStudentProfileImportServiceInterface::class);
+        $service->import('alumni', write: true, approval: 'phase6-alumni', batch: 'hidden-import');
+
+        $result = $service->publishImported(
+            'alumni', write: true, approval: 'publish-legacy-alumni', batch: 'hidden-publication',
+        );
+
+        $this->assertSame(0, $result->visibleSourceRows);
+        $this->assertSame(0, $result->enabledRows);
+        $this->assertSame(1, $result->blockedRows);
+        $this->assertSame(0, Alumni::query()->where('is_enabled', true)->count());
     }
 
     private function createLegacyStudentTable(string $table): void

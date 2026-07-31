@@ -38,6 +38,10 @@ final class LegacyCentralCouncilImportServiceTest extends TestCase
             $this->row(21, 2, ['ar_name' => 'عضو فقط', 'en_name' => 'Under Construction']),
             $this->row(30, 3),
             $this->row(40, 1, ['ar_name' => null, 'en_name' => 'Under Construction']),
+            $this->row(41, 1, ['is_visible' => 0]),
+            $this->row(42, 2, ['is_link' => 1]),
+            $this->row(43, 1, ['email' => 'sentinel@example.test']),
+            $this->row(44, 2, ['parent' => 999]),
         ]);
         DB::connection($this->connection)->table('jx_councils1')->insert([
             'id' => 999, 'service_type' => 1, 'ar_name' => 'Sentinel', 'en_name' => 'Sentinel', 'email' => 'sentinel@example.test',
@@ -159,6 +163,30 @@ final class LegacyCentralCouncilImportServiceTest extends TestCase
         Storage::disk('local')->put('approved/bad.csv', "source_table,source_id,source_id\njx_councils,10,10\n");
         $this->expectException(InvalidArgumentException::class);
         $service->import('approved/bad.csv');
+    }
+
+    public function test_hidden_and_link_only_sources_cannot_enter_central_councils(): void
+    {
+        $result = app(LegacyCentralCouncilImportServiceInterface::class)->import($this->packet([
+            $this->approval(41, 1),
+            $this->approval(42, 2),
+        ]));
+
+        $this->assertSame(0, $result->importable);
+        $this->assertSame(1, $result->reasonCounts['hidden_source']);
+        $this->assertSame(1, $result->reasonCounts['external_link_source']);
+    }
+
+    public function test_archive_overlap_and_orphan_parent_cannot_enter_central_councils(): void
+    {
+        $result = app(LegacyCentralCouncilImportServiceInterface::class)->import($this->packet([
+            $this->approval(43, 1),
+            $this->approval(44, 2),
+        ]));
+
+        $this->assertSame(0, $result->importable);
+        $this->assertSame(1, $result->reasonCounts['councils1_identity_overlap']);
+        $this->assertSame(1, $result->reasonCounts['orphan_parent']);
     }
 
     /** @param array<string, mixed> $overrides @return array<string, mixed> */

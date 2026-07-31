@@ -9,6 +9,7 @@ use App\Contracts\Legacy\LegacyStudentProfileImportServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
 use App\DTOs\Legacy\LegacyCleanedRowDTO;
 use App\DTOs\Legacy\LegacyStudentProfileImportResultDTO;
+use App\DTOs\Legacy\LegacyStudentProfilePublicationResultDTO;
 use App\Models\Career\Alumni;
 use App\Models\Career\AlumniTranslation;
 use App\Models\Career\HonorStudent;
@@ -21,18 +22,26 @@ use InvalidArgumentException;
 
 final class LegacyStudentProfileImportService implements LegacyStudentProfileImportServiceInterface
 {
+    /** @var list<string> */
+    private const PLACEHOLDER_FACULTY_PREFIXES = [
+        'medicine', 'dentistry', 'pharmacy', 'business-administration', 'petroleum',
+        'artificial-intelligence', 'building-construction-engineering',
+    ];
+
     private const LANES = [
         'alumni' => [
             'module' => 'alumni',
             'source_table' => 'jx_graduated_students',
             'target_table' => 'alumni',
             'approval' => 'phase6-alumni',
+            'publication_approval' => 'publish-legacy-alumni',
         ],
         'honor_students' => [
             'module' => 'honor_students',
             'source_table' => 'jx_good_students',
             'target_table' => 'honor_students',
             'approval' => 'phase6-honor-students',
+            'publication_approval' => 'publish-legacy-honor-students',
         ],
     ];
 
@@ -52,6 +61,7 @@ final class LegacyStudentProfileImportService implements LegacyStudentProfileImp
         }
 
         $batch = $batch !== null && trim($batch) !== '' ? trim($batch) : 'phase6-'.$lane.'-'.now()->format('Ymd_His');
+        $placeholderRowsDisabled = $write ? $this->disableSeededPlaceholders($lane, $batch) : 0;
         $rows = $this->oldDatabase->table($definition['source_table'])->orderBy('id')->get()->all();
         $seenDuplicateKeys = [];
         $importableRows = 0;
@@ -155,7 +165,78 @@ final class LegacyStudentProfileImportService implements LegacyStudentProfileImp
             importedRows: $importedRows,
             skippedRows: $skippedRows,
             duplicateSkippedRows: $duplicateSkippedRows,
+            placeholderRowsDisabled: $placeholderRowsDisabled,
             skipReasonCounts: $skipReasonCounts,
+        );
+    }
+
+    public function publishImported(string $lane, bool $write = false, ?string $approval = null, ?string $batch = null): LegacyStudentProfilePublicationResultDTO
+    {
+        $lane = $this->normalizeLane($lane);
+        $definition = self::LANES[$lane];
+        if ($write && $approval !== $definition['publication_approval']) {
+            throw new InvalidArgumentException('Publishing '.$lane.' requires --approve='.$definition['publication_approval'].'.');
+        }
+
+        $batch = $batch !== null && trim($batch) !== '' ? trim($batch) : 'publish-'.$lane.'-'.now()->format('Ymd_His');
+        $mappings = MigrationLog::query()
+            ->where('module', $definition['module'])
+            ->where('source_table', $definition['source_table'])
+            ->where('target_table', $definition['target_table'])
+            ->where('status', 'success')
+            ->whereNotNull('target_id')
+            ->orderBy('id')
+            ->get(['source_id', 'target_id'])
+            ->unique('source_id');
+        $visibleSourceIds = $this->oldDatabase->table($definition['source_table'])
+            ->whereIn('id', $mappings->pluck('source_id')->all())
+            ->where(fn ($query) => $query->whereNull('is_visible')->orWhere('is_visible', 1))
+            ->pluck('id')
+            ->mapWithKeys(static fn (mixed $id): array => [(int) $id => true])
+            ->all();
+        $visibleMappings = $mappings->filter(fn (MigrationLog $mapping): bool => isset($visibleSourceIds[(int) $mapping->source_id]));
+        $targetIds = $visibleMappings->pluck('target_id')->map(static fn (mixed $id): int => (int) $id)->all();
+        $translationTable = $lane === 'alumni' ? 'alumni_translations' : 'honor_student_translations';
+        $foreignKey = $lane === 'alumni' ? 'alumni_id' : 'honor_student_id';
+        $translatedTargetIds = DB::table($translationTable)->whereIn($foreignKey, $targetIds)->distinct()->pluck($foreignKey)
+            ->mapWithKeys(static fn (mixed $id): array => [(int) $id => true])->all();
+        $eligibleMappings = $visibleMappings->filter(fn (MigrationLog $mapping): bool => isset($translatedTargetIds[(int) $mapping->target_id]));
+        $eligibleTargetIds = $eligibleMappings->pluck('target_id')->map(static fn (mixed $id): int => (int) $id)->all();
+        $model = $lane === 'alumni' ? Alumni::class : HonorStudent::class;
+        $alreadyEnabled = $model::query()->whereIn('id', $eligibleTargetIds)->where('is_enabled', true)->count();
+        $disabledTargetIds = $model::query()->whereIn('id', $eligibleTargetIds)->where('is_enabled', false)->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all();
+        $enabledRows = 0;
+
+        if ($write && $disabledTargetIds !== []) {
+            DB::transaction(function () use ($model, $disabledTargetIds, $eligibleMappings, $definition, $lane, $batch, &$enabledRows): void {
+                $enabledRows = $model::query()->whereIn('id', $disabledTargetIds)->where('is_enabled', false)->update(['is_enabled' => true]);
+                $sourceByTarget = $eligibleMappings->keyBy(fn (MigrationLog $mapping): int => (int) $mapping->target_id);
+                $now = now();
+                foreach (array_chunk($disabledTargetIds, 500) as $chunk) {
+                    DB::table('migration_logs')->insert(array_map(function (int $targetId) use ($sourceByTarget, $definition, $lane, $batch, $now): array {
+                        $mapping = $sourceByTarget->get($targetId);
+
+                        return [
+                            'module' => 'student_profile_publication', 'batch_name' => $batch,
+                            'source_table' => $definition['source_table'], 'source_id' => (int) $mapping->source_id,
+                            'target_table' => $definition['target_table'], 'target_id' => $targetId,
+                            'status' => 'success', 'message' => 'Enabled provenance-backed visible legacy student profile.',
+                            'metadata' => json_encode(['lane' => $lane, 'source_visibility' => 1, 'enabled' => true], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                            'created_at' => $now,
+                        ];
+                    }, $chunk));
+                }
+            });
+            if (! $this->cacheService->flushTags(['facilities', 'public-pages', 'seo', 'sitemap'])) {
+                $this->cacheService->flushAll();
+            }
+        }
+
+        return new LegacyStudentProfilePublicationResultDTO(
+            lane: $lane, written: $write, batch: $batch, importedMappings: $mappings->count(),
+            visibleSourceRows: count($visibleSourceIds), eligibleRows: $eligibleMappings->count(),
+            enabledRows: $enabledRows, alreadyEnabledRows: $alreadyEnabled,
+            blockedRows: $mappings->count() - $eligibleMappings->count(),
         );
     }
 
@@ -311,14 +392,11 @@ final class LegacyStudentProfileImportService implements LegacyStudentProfileImp
     /** @param Alumni|HonorStudent $record @param array{ar?: string, en?: string} $names */
     private function writeTranslations(Alumni|HonorStudent $record, array $names): void
     {
-        $fallback = $names['ar'] ?? $names['en'] ?? null;
-
-        if ($fallback === null) {
-            return;
-        }
-
         foreach (['ar', 'en'] as $locale) {
-            $name = $names[$locale] ?? $fallback;
+            $name = $names[$locale] ?? null;
+            if ($name === null) {
+                continue;
+            }
 
             if ($record instanceof Alumni) {
                 AlumniTranslation::query()->create([
@@ -336,6 +414,44 @@ final class LegacyStudentProfileImportService implements LegacyStudentProfileImp
                 'full_name' => $name,
             ]);
         }
+    }
+
+    private function disableSeededPlaceholders(string $lane, string $batch): int
+    {
+        $identifiers = [];
+        foreach (self::PLACEHOLDER_FACULTY_PREFIXES as $prefix) {
+            $suffixes = $lane === 'alumni' ? ['alumni-2023', 'alumni-2022'] : ['honor-1', 'honor-2', 'honor-3'];
+            foreach ($suffixes as $suffix) {
+                $identifiers[] = $prefix.'-'.$suffix;
+            }
+        }
+
+        $records = $lane === 'alumni'
+            ? Alumni::query()->whereIn('student_identifier', $identifiers)->where('is_enabled', true)->get()
+            : HonorStudent::query()->whereIn('student_identifier', $identifiers)->where('is_enabled', true)->get();
+
+        foreach ($records as $record) {
+            DB::transaction(function () use ($lane, $batch, $record): void {
+                $record->update(['is_enabled' => false]);
+                MigrationLog::query()->create([
+                    'module' => 'student_profile_placeholder_cleanup',
+                    'batch_name' => $batch,
+                    'source_table' => 'application_seed',
+                    'source_id' => (int) $record->getKey(),
+                    'target_table' => $lane === 'alumni' ? 'alumni' : 'honor_students',
+                    'target_id' => (int) $record->getKey(),
+                    'status' => 'success',
+                    'message' => 'Disabled known seeded student-profile placeholder before controlled legacy import.',
+                    'metadata' => [
+                        'lane' => $lane,
+                        'student_identifier' => $record->student_identifier,
+                        'enabled_after_cleanup' => false,
+                    ],
+                ]);
+            });
+        }
+
+        return $records->count();
     }
 
     private function academicYear(object $row): string

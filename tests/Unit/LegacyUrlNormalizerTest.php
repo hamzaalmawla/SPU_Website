@@ -56,15 +56,15 @@ final class LegacyUrlNormalizerTest extends TestCase
         $this->assertSame('root:photos:list', $normalized->handlerKey);
     }
 
-    public function test_preserves_unsupported_old_language_with_arabic_fallback(): void
+    public function test_preserves_unsupported_old_language_with_english_fallback(): void
     {
         $normalized = $this->normalizer->normalize('/index.php', 'lang=3&page=list&dir=items&service=4');
 
         $this->assertSame(3, $normalized->language->oldLanguageId);
         $this->assertSame('fr', $normalized->language->oldSymbol);
         $this->assertFalse($normalized->language->isSupportedLocale);
-        $this->assertSame('ar', $normalized->language->locale);
-        $this->assertSame('ar', $normalized->language->fallbackLocale);
+        $this->assertSame('en', $normalized->language->locale);
+        $this->assertSame('en', $normalized->language->fallbackLocale);
     }
 
     public function test_identifies_public_admin_subsite_without_confusing_it_with_laravel_admin(): void
@@ -102,5 +102,15 @@ final class LegacyUrlNormalizerTest extends TestCase
         $this->assertSame('dent_clinic', $normalized->subsite->key);
         $this->assertSame(10, $normalized->subsite->siteId);
         $this->assertSame('dent_clinic:home', $normalized->handlerKey);
+    }
+
+    public function test_preserves_unrecognized_language_id_without_granting_a_fallback(): void
+    {
+        $normalized = $this->normalizer->normalize('/index.php', 'lang=99');
+
+        $this->assertSame(99, $normalized->language->oldLanguageId);
+        $this->assertSame('unknown', $normalized->language->oldSymbol);
+        $this->assertFalse($normalized->language->isSupportedLocale);
+        $this->assertNull($normalized->language->fallbackLocale);
     }
 }

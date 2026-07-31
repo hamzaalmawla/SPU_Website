@@ -440,6 +440,25 @@ final class LegacyGeneratedUrlInventoryService implements LegacyGeneratedUrlInve
 
     private function looksLikeLegacyUrl(string $url): bool
     {
+        $url = trim($url);
+        $host = parse_url($url, PHP_URL_HOST);
+
+        if (is_string($host) && $host !== '') {
+            $host = mb_strtolower($host);
+
+            if ($host !== 'spu.edu.sy' && ! str_ends_with($host, '.spu.edu.sy')) {
+                return false;
+            }
+        }
+
+        if ((! is_string($host) || $host === '')
+            && preg_match('~^(?:www\.)?([a-z0-9.-]+\.[a-z]{2,})(?:/|$)~i', $url, $matches) === 1) {
+            $schemeLessHost = mb_strtolower($matches[1]);
+            if ($schemeLessHost !== 'spu.edu.sy' && ! str_ends_with($schemeLessHost, '.spu.edu.sy')) {
+                return false;
+            }
+        }
+
         return str_contains($url, 'index.php')
             || str_starts_with($url, '/downloads/')
             || str_starts_with($url, '/images/')

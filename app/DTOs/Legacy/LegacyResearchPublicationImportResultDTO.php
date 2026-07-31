@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\DTOs\Legacy;
 
 /**
+ * @param  array<string, int>  $metadataCoverage
  * @param  array<string, int>  $skipReasonCounts
  */
 final readonly class LegacyResearchPublicationImportResultDTO
@@ -19,6 +20,7 @@ final readonly class LegacyResearchPublicationImportResultDTO
         public int $importedRows,
         public int $skippedRows,
         public int $attachmentReferenceRows,
+        public array $metadataCoverage,
         public array $skipReasonCounts,
     ) {}
 }

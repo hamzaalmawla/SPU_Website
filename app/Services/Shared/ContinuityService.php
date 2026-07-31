@@ -41,6 +41,18 @@ final class ContinuityService implements ContinuityServiceInterface
     ): ?RedirectResultDTO {
         $normalizedPath = '/'.ltrim($path, '/');
 
+        if ($this->isUnsupportedLanguageFallback($normalizedPath, $queryString)) {
+            return $this->legacyQueryRedirectResolver->resolve($normalizedPath, $queryString);
+        }
+
+        if ($this->isUnknownLegacyLanguage($normalizedPath, $queryString)) {
+            return null;
+        }
+
+        if ($this->isPrivateMembersArchive($normalizedPath, $queryString)) {
+            return null;
+        }
+
         $referenceAlias = $this->resolveReferenceHtmlAlias($normalizedPath, $queryString, $preferredLocale);
 
         if ($referenceAlias !== null) {
@@ -54,12 +66,50 @@ final class ContinuityService implements ContinuityServiceInterface
     {
         $normalizedPath = '/'.ltrim($path, '/');
 
+        if ($this->isPrivateMembersArchive($normalizedPath, null)) {
+            return null;
+        }
+
         $entry = LegacyFileInventory::query()
             ->mapped()
             ->whereRaw('LOWER(legacy_path) = ?', [mb_strtolower($normalizedPath)])
             ->first();
 
         return $entry?->current_path;
+    }
+
+    private function isPrivateMembersArchive(string $path, ?string $queryString): bool
+    {
+        if (config('old_database.members_continuity_policy') !== 'private_archive') {
+            return false;
+        }
+
+        $normalized = $this->legacyUrlNormalizer->normalize($path, $queryString);
+
+        return $normalized->subsite->key === 'members'
+            && $normalized->language->isSupportedLocale;
+    }
+
+    private function isUnsupportedLanguageFallback(string $path, ?string $queryString): bool
+    {
+        $normalized = $this->legacyUrlNormalizer->normalize($path, $queryString);
+        $languageIds = config('old_database.unsupported_language_continuity.old_language_ids', [3, 6, 7]);
+
+        return $normalized->requestType === 'legacy_router'
+            && ! $normalized->language->isSupportedLocale
+            && is_array($languageIds)
+            && in_array($normalized->language->oldLanguageId, $languageIds, true);
+    }
+
+    private function isUnknownLegacyLanguage(string $path, ?string $queryString): bool
+    {
+        $normalized = $this->legacyUrlNormalizer->normalize($path, $queryString);
+        $languageIds = config('old_database.unsupported_language_continuity.old_language_ids', [3, 6, 7]);
+
+        return $normalized->requestType === 'legacy_router'
+            && ! $normalized->language->isSupportedLocale
+            && is_array($languageIds)
+            && ! in_array($normalized->language->oldLanguageId, $languageIds, true);
     }
 
     public function logUnresolved(UnresolvedRequestDTO $request): bool
@@ -135,6 +185,7 @@ final class ContinuityService implements ContinuityServiceInterface
                 statusCode: (int) $rule->status_code,
                 locale: $rule->locale,
                 isActive: (bool) $rule->is_active,
+                querySignature: $rule->query_signature,
             ));
     }
 

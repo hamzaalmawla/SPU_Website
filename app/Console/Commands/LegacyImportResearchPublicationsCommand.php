@@ -15,10 +15,10 @@ final class LegacyImportResearchPublicationsCommand extends Command
         {--approve= : Required approval token for write mode}
         {--batch= : Optional migration batch name}
         {--limit= : Optional number of importable rows to process}
-        {--enable : Import records as enabled instead of disabled review records}
+        {--enable : Reserved safety flag; write mode rejects public enablement}
         {--json : Output machine-readable JSON}';
 
-    protected $description = 'Run non-authoritative jx_member_* research inspection; all writes are frozen.';
+    protected $description = 'Inspect or import structured service-1 legacy research publications as disabled review records.';
 
     public function __construct(
         private readonly LegacyResearchPublicationImportServiceInterface $researchPublicationImportService,
@@ -44,7 +44,7 @@ final class LegacyImportResearchPublicationsCommand extends Command
         }
 
         $this->info('Legacy Research Publication Import');
-        $this->warn('Non-authoritative inspection only: /members/ product and ownership reconciliation is unresolved.');
+        $this->warn('Owner links remain conservative; ambiguous /members/ identities are preserved as provenance.');
         $this->line('Written: '.($result->written ? 'yes' : 'no'));
         $this->line('Batch: '.$result->batch);
         $this->line('Enabled on import: '.($result->enabledOnImport ? 'yes' : 'no'));
@@ -54,6 +54,12 @@ final class LegacyImportResearchPublicationsCommand extends Command
         $this->line('Imported rows: '.$result->importedRows);
         $this->line('Skipped rows: '.$result->skippedRows);
         $this->line('Attachment reference rows: '.$result->attachmentReferenceRows);
+
+        if ($result->metadataCoverage !== []) {
+            $this->table(['Metadata Field', 'Rows'], collect($result->metadataCoverage)->map(
+                fn (int $count, string $field): array => [$field, (string) $count]
+            )->values()->all());
+        }
 
         if ($result->skipReasonCounts !== []) {
             $this->table(['Skip Reason', 'Rows'], collect($result->skipReasonCounts)->map(
@@ -68,8 +74,8 @@ final class LegacyImportResearchPublicationsCommand extends Command
     private function toArray(LegacyResearchPublicationImportResultDTO $result): array
     {
         return [
-            'authoritative' => false,
-            'write_supported' => false,
+            'authoritative' => true,
+            'write_supported' => true,
             'written' => $result->written,
             'batch' => $result->batch,
             'enabled_on_import' => $result->enabledOnImport,
@@ -79,6 +85,7 @@ final class LegacyImportResearchPublicationsCommand extends Command
             'imported_rows' => $result->importedRows,
             'skipped_rows' => $result->skippedRows,
             'attachment_reference_rows' => $result->attachmentReferenceRows,
+            'metadata_coverage' => $result->metadataCoverage,
             'skip_reason_counts' => $result->skipReasonCounts,
         ];
     }

@@ -21,6 +21,14 @@ class ResearchPublication extends Model
         'faculty_member_id',
         'category_key',
         'published_at',
+        'publication_year',
+        'doi',
+        'journal_rank',
+        'legacy_source_table',
+        'legacy_source_id',
+        'legacy_owner_id',
+        'legacy_owner_source',
+        'extraction_status',
         'external_url',
         'file_media_id',
         'sort_order',
@@ -31,6 +39,9 @@ class ResearchPublication extends Model
     {
         return [
             'published_at' => 'date',
+            'publication_year' => 'integer',
+            'legacy_source_id' => 'integer',
+            'legacy_owner_id' => 'integer',
             'sort_order' => 'integer',
             'is_enabled' => 'boolean',
             'deleted_at' => 'datetime',
@@ -55,6 +66,11 @@ class ResearchPublication extends Model
     public function files(): HasMany
     {
         return $this->hasMany(ResearchFile::class)->orderBy('sort_order');
+    }
+
+    public function legacyFileReferences(): HasMany
+    {
+        return $this->hasMany(LegacyResearchFileReference::class)->orderBy('sort_order');
     }
 
     public function scopeEnabled(Builder $query): Builder

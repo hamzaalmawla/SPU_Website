@@ -181,7 +181,7 @@ final class LegacyRedirectEvidenceService implements LegacyRedirectEvidenceServi
             $evidenceRows[] = [
                 'redirect_readiness' => 'blocked',
                 'evidence_status' => $evidenceStatus,
-                'approval_status' => $this->approvalStatus($mapping, $reviewItem),
+                'approval_status' => $this->approvalStatus($triageStatus, $mapping, $reviewItem),
                 'approval_decision' => '',
                 'approved_by' => '',
                 'approval_notes' => '',
@@ -252,6 +252,8 @@ final class LegacyRedirectEvidenceService implements LegacyRedirectEvidenceServi
 
         if ($triageStatus === 'blocked_file_url') {
             $blockers[] = 'blocked_file_dependency';
+        } elseif ($triageStatus === 'blocked_target_not_public') {
+            $blockers[] = 'blocked_target_not_public';
         } elseif ($triageStatus === 'blocked_missing_target_module') {
             $blockers[] = 'blocked_missing_target_module';
         } elseif ($triageStatus === 'unknown_legacy_url') {
@@ -260,10 +262,12 @@ final class LegacyRedirectEvidenceService implements LegacyRedirectEvidenceServi
             $blockers[] = 'needs_phase4_mapping';
         }
 
-        if (! $mapping instanceof LegacyContentMapping) {
-            $blockers[] = 'missing_content_mapping';
-        } elseif ((string) $mapping->mapping_status !== 'approved') {
-            $blockers[] = 'blocked_unapproved_mapping';
+        if ($triageStatus !== 'blocked_target_not_public') {
+            if (! $mapping instanceof LegacyContentMapping) {
+                $blockers[] = 'missing_content_mapping';
+            } elseif ((string) $mapping->mapping_status !== 'approved') {
+                $blockers[] = 'blocked_unapproved_mapping';
+            }
         }
 
         if ($reviewItem instanceof LegacyReviewItem) {
@@ -296,6 +300,10 @@ final class LegacyRedirectEvidenceService implements LegacyRedirectEvidenceServi
             return 'blocked_phase3_findings';
         }
 
+        if (in_array('blocked_target_not_public', $blockers, true)) {
+            return 'blocked_target_not_public';
+        }
+
         if ($triageStatus !== 'resolver_candidate') {
             return $triageStatus !== '' ? $triageStatus : 'continuity_backlog';
         }
@@ -315,8 +323,12 @@ final class LegacyRedirectEvidenceService implements LegacyRedirectEvidenceServi
         return 'blocked_unapproved_mapping';
     }
 
-    private function approvalStatus(?LegacyContentMapping $mapping, ?LegacyReviewItem $reviewItem): string
+    private function approvalStatus(string $triageStatus, ?LegacyContentMapping $mapping, ?LegacyReviewItem $reviewItem): string
     {
+        if ($triageStatus === 'blocked_target_not_public') {
+            return 'target_private_review';
+        }
+
         if (! $mapping instanceof LegacyContentMapping) {
             return 'missing_mapping';
         }

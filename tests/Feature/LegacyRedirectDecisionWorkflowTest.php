@@ -34,6 +34,10 @@ final class LegacyRedirectDecisionWorkflowTest extends TestCase
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+        DB::table('news_article_translations')->insert([
+            ['news_article_id' => $this->articleId, 'locale' => 'ar', 'title' => 'خبر', 'excerpt' => null, 'body' => null, 'created_at' => now(), 'updated_at' => now()],
+            ['news_article_id' => $this->articleId, 'locale' => 'en', 'title' => 'News', 'excerpt' => null, 'body' => null, 'created_at' => now(), 'updated_at' => now()],
+        ]);
         Storage::disk('local')->put('redirect-decisions.csv', $this->packet());
     }
 

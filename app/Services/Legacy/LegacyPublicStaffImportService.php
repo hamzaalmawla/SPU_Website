@@ -61,7 +61,10 @@ final class LegacyPublicStaffImportService implements LegacyPublicStaffImportSer
         $checksum = hash('sha256', Storage::disk($disk)->get($input));
         $sourceRows = $approvedRows === [] ? collect() : $this->oldDatabase->table(self::SOURCE_TABLE)
             ->whereIn('id', array_keys($approvedRows))->orderBy('id')->get()->keyBy('id');
-        [$emailCounts, $arNameCounts, $enNameCounts] = $this->approvedIdentityCounts($sourceRows->all());
+        $allSourceRows = $this->oldDatabase->table(self::SOURCE_TABLE)->orderBy('id')->get();
+        [$emailCounts, $arNameCounts, $enNameCounts] = $this->approvedIdentityCounts($allSourceRows->all());
+        $sourceIds = $allSourceRows->pluck('id')->mapWithKeys(static fn (mixed $id): array => [(int) $id => true])->all();
+        $archiveEmails = $this->archiveEmails();
         $facultyIds = $this->facultyIds();
         $currentEmails = $this->currentEmails();
         $batch = $this->batch($batch);
@@ -83,6 +86,16 @@ final class LegacyPublicStaffImportService implements LegacyPublicStaffImportSer
 
                 continue;
             }
+            if ($this->integerValue($row, 'is_visible') !== 1) {
+                $this->skip($reasons, $skipped, 'hidden_source');
+
+                continue;
+            }
+            if ($this->truthy($this->rawValue($row, 'is_link'))) {
+                $this->skip($reasons, $skipped, 'external_link_source');
+
+                continue;
+            }
             if ($this->alreadyMapped($sourceId)) {
                 $this->skip($reasons, $skipped, 'already_mapped');
 
@@ -94,6 +107,17 @@ final class LegacyPublicStaffImportService implements LegacyPublicStaffImportSer
             $enName = $this->normalizedUsableName($this->rawValue($row, 'en_name'));
             if ($email !== null && ($emailCounts[$email] ?? 0) > 1) {
                 $this->skip($reasons, $skipped, 'duplicate_approved_email');
+
+                continue;
+            }
+            if ($email !== null && isset($archiveEmails[$email])) {
+                $this->skip($reasons, $skipped, 'councils1_identity_overlap');
+
+                continue;
+            }
+            $parentId = $this->integerValue($row, 'parent');
+            if ($parentId !== null && $parentId !== 0 && ! isset($sourceIds[$parentId])) {
+                $this->skip($reasons, $skipped, 'orphan_parent');
 
                 continue;
             }
@@ -297,6 +321,24 @@ final class LegacyPublicStaffImportService implements LegacyPublicStaffImportSer
         return $emails;
     }
 
+    /** @return array<string, true> */
+    private function archiveEmails(): array
+    {
+        if (! $this->oldDatabase->schema()->hasTable('jx_councils1')) {
+            return [];
+        }
+
+        $emails = [];
+        foreach ($this->oldDatabase->table('jx_councils1')->pluck('email') as $value) {
+            $email = $this->normalizedValidEmail($value);
+            if ($email !== null) {
+                $emails[$email] = true;
+            }
+        }
+
+        return $emails;
+    }
+
     private function alreadyMapped(int $sourceId): bool
     {
         return MigrationLog::query()->where('source_table', self::SOURCE_TABLE)->where('source_id', $sourceId)->where('status', 'success')->exists();
@@ -400,6 +442,11 @@ final class LegacyPublicStaffImportService implements LegacyPublicStaffImportSer
         $value = $this->text($value);
 
         return $value !== null && filter_var($value, FILTER_VALIDATE_EMAIL) !== false ? Str::lower($value) : null;
+    }
+
+    private function truthy(mixed $value): bool
+    {
+        return in_array($value, [true, 1, '1', 'true', 'yes', 'on'], true);
     }
 
     private function text(mixed $value): ?string

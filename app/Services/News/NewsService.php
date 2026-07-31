@@ -26,6 +26,7 @@ use App\Models\News\NewsCategoryTranslation;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 final class NewsService implements NewsServiceInterface
 {
@@ -91,10 +92,13 @@ final class NewsService implements NewsServiceInterface
         $key = $past ? 'past' : 'upcoming';
         $events = $content[$key] ?? [];
 
-        return collect(is_array($events) ? $events : [])
+        $events = collect(is_array($events) ? $events : [])
             ->filter(fn (mixed $event): bool => is_array($event) && ($category === null || ($event['categoryId'] ?? null) === $category))
-            ->map(fn (array $event): NewsEventDTO => $this->mapNewsEvent($event, $locale, $past))
-            ->sortBy(fn (NewsEventDTO $event): string => $event->startsAt)
+            ->map(fn (array $event): NewsEventDTO => $this->mapNewsEvent($event, $locale, $past));
+
+        return ($past
+            ? $events->sortByDesc(fn (NewsEventDTO $event): string => $event->startsAt)
+            : $events->sortBy(fn (NewsEventDTO $event): string => $event->startsAt))
             ->values();
     }
 
@@ -226,10 +230,9 @@ final class NewsService implements NewsServiceInterface
                             ->orWhere('excerpt', 'like', '%'.$search.'%')
                             ->orWhere('body', 'like', '%'.$search.'%');
                     });
-                })
-                ->orderByDesc('published_at')
-                ->orderBy('sort_order')
-                ->orderByDesc('id');
+                });
+
+            $this->applyNewestArticleOrder($query);
 
             $paginator = $query->paginate($perPage, ['*'], 'page', max(1, $page));
 
@@ -261,14 +264,16 @@ final class NewsService implements NewsServiceInterface
 
     public function getFeaturedArticles(string $locale, int $limit = 3, ?string $categoryType = null): Collection
     {
-        return NewsArticle::query()
+        $query = NewsArticle::query()
             ->public()
             ->where('is_featured', true)
             ->when($categoryType !== null, function (Builder $query) use ($categoryType): void {
                 $query->whereHas('category', fn (Builder $categoryQuery): Builder => $categoryQuery->where('type', $categoryType));
             })
-            ->with(['translations', 'coverMedia', 'category.translations'])
-            ->orderByDesc('published_at')
+            ->with(['translations', 'coverMedia', 'category.translations']);
+        $this->applyNewestArticleOrder($query);
+
+        return $query
             ->limit($limit)
             ->get()
             ->map(function (NewsArticle $article) use ($locale): ArticleCardDTO {
@@ -278,11 +283,11 @@ final class NewsService implements NewsServiceInterface
                 return new ArticleCardDTO(
                     id: (int) $article->getKey(),
                     locale: $locale,
-                    title: (string) $translation->title,
+                    title: $this->plainText((string) $translation->title),
                     slug: (string) $article->slug,
-                    excerpt: $translation->excerpt,
+                    excerpt: $this->articleExcerpt($translation),
                     imageUrl: $this->mediaUrl($article->coverMedia),
-                    publishedAt: $article->published_at?->toDateString(),
+                    publishedAt: $this->articlePublishedAt($article),
                     url: $this->articleUrl($locale, (int) $article->getKey()),
                     categoryLabel: $category?->name,
                 );
@@ -293,15 +298,15 @@ final class NewsService implements NewsServiceInterface
     public function getLatestArticleCards(string $locale, int $limit = 5, ?string $categoryType = null): Collection
     {
         return $this->newsCache()->remember('news:latest:'.$locale.':'.$limit.':'.($categoryType ?? 'all'), function () use ($locale, $limit, $categoryType): Collection {
-            return NewsArticle::query()
+            $query = NewsArticle::query()
                 ->public()
                 ->with(['translations', 'coverMedia', 'category.translations'])
                 ->when($categoryType !== null, function (Builder $query) use ($categoryType): void {
                     $query->whereHas('category', fn (Builder $categoryQuery): Builder => $categoryQuery->where('type', $categoryType));
-                })
-                ->orderByDesc('published_at')
-                ->orderBy('sort_order')
-                ->orderByDesc('id')
+                });
+            $this->applyNewestArticleOrder($query);
+
+            return $query
                 ->limit($limit)
                 ->get()
                 ->map(fn (NewsArticle $article): ArticleCardDTO => $this->mapArticleCard($article, $locale))
@@ -318,14 +323,16 @@ final class NewsService implements NewsServiceInterface
                 return collect();
             }
 
-            return NewsArticle::query()
+            $query = NewsArticle::query()
                 ->public()
                 ->whereKeyNot($article->getKey())
                 ->with(['translations', 'coverMedia', 'category.translations'])
                 ->when($article->news_category_id !== null, function (Builder $query) use ($article): void {
                     $query->where('news_category_id', $article->news_category_id);
-                })
-                ->orderByDesc('published_at')
+                });
+            $this->applyNewestArticleOrder($query);
+
+            return $query
                 ->limit($limit)
                 ->get()
                 ->map(fn (NewsArticle $related): ArticleCardDTO => $this->mapArticleCard($related, $locale))
@@ -389,6 +396,7 @@ final class NewsService implements NewsServiceInterface
     {
         $translation = $this->articleTranslation($article, $locale);
         $seo = $this->articleSeo($article, $locale);
+        $excerpt = $this->articleExcerpt($translation);
         $imageUrl = $seo?->og_image_url
             ?? $this->mediaUrl($seo?->ogImageMedia)
             ?? $this->mediaUrl($article->coverMedia);
@@ -397,17 +405,17 @@ final class NewsService implements NewsServiceInterface
             id: (int) $article->getKey(),
             locale: $locale,
             slug: (string) $article->slug,
-            title: (string) $translation->title,
-            excerpt: $translation->excerpt,
+            title: $this->plainText((string) $translation->title),
+            excerpt: $excerpt,
             body: $includeAttachments ? $translation->body : null,
             imageUrl: $imageUrl,
-            publishedAt: $article->published_at?->toDateString(),
+            publishedAt: $this->articlePublishedAt($article),
             url: $this->articleUrl($locale, (int) $article->getKey()),
             category: $article->category instanceof NewsCategory ? $this->mapCategory($article->category, $locale) : null,
             attachments: $includeAttachments ? $this->mapAttachments($article, $locale) : [],
-            metaTitle: $seo?->meta_title,
-            metaDescription: $seo?->meta_description,
-            ogTitle: $seo?->og_title,
+            metaTitle: $this->nullablePlainText($seo?->meta_title),
+            metaDescription: $seo?->meta_description ?: $excerpt,
+            ogTitle: $this->nullablePlainText($seo?->og_title),
             ogDescription: $seo?->og_description,
             ogImage: $imageUrl,
             robots: $seo?->robots ?? 'index,follow',
@@ -422,11 +430,11 @@ final class NewsService implements NewsServiceInterface
         return new ArticleCardDTO(
             id: (int) $article->getKey(),
             locale: $locale,
-            title: (string) $translation->title,
+            title: $this->plainText((string) $translation->title),
             slug: (string) $article->slug,
-            excerpt: $translation->excerpt,
+            excerpt: $this->articleExcerpt($translation),
             imageUrl: $this->mediaUrl($article->coverMedia),
-            publishedAt: $article->published_at?->toDateString(),
+            publishedAt: $this->articlePublishedAt($article),
             url: $this->articleUrl($locale, (int) $article->getKey()),
             categoryLabel: $category?->name,
         );
@@ -455,15 +463,59 @@ final class NewsService implements NewsServiceInterface
                 label: $locale === 'ar' ? $attachment->label_ar : ($attachment->label_en ?? $attachment->label_ar),
                 url: $this->mediaUrl($attachment->mediaAsset),
             ))
+            ->filter(fn (NewsAttachmentDTO $attachment): bool => $attachment->url !== null)
             ->values()
             ->all();
     }
 
     private function articleTranslation(NewsArticle $article, string $locale): NewsArticleTranslation
     {
-        return $article->translations->firstWhere('locale', $locale)
+        $requested = $article->translations->firstWhere('locale', $locale);
+
+        return ($requested instanceof NewsArticleTranslation
+            && trim((string) $requested->title) !== ''
+            && trim(strip_tags((string) $requested->body)) !== '' ? $requested : null)
             ?? $article->translations->firstWhere('locale', 'ar')
             ?? $article->translations->first();
+    }
+
+    private function articleExcerpt(NewsArticleTranslation $translation): ?string
+    {
+        $excerpt = trim((string) $translation->excerpt);
+        if ($excerpt !== '') {
+            return $excerpt;
+        }
+
+        $body = trim((string) preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags((string) $translation->body), ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+
+        return $body === '' ? null : Str::limit($body, 220, '...');
+    }
+
+    private function articlePublishedAt(NewsArticle $article): ?string
+    {
+        return $article->legacy_source_table === 'jx_categories'
+            ? null
+            : $article->published_at?->toDateString();
+    }
+
+    private function applyNewestArticleOrder(Builder $query): Builder
+    {
+        return $query
+            ->orderByRaw("CASE WHEN legacy_source_table = 'jx_categories' THEN 1 ELSE 0 END ASC")
+            ->orderByRaw("CASE WHEN legacy_source_table = 'jx_categories' THEN NULL ELSE published_at END DESC")
+            ->orderByRaw("CASE WHEN legacy_source_table = 'jx_categories' THEN legacy_source_id ELSE NULL END DESC")
+            ->orderBy('sort_order')
+            ->orderByDesc('id');
+    }
+
+    private function plainText(string $value): string
+    {
+        return html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    }
+
+    private function nullablePlainText(?string $value): ?string
+    {
+        return $value === null ? null : $this->plainText($value);
     }
 
     private function categoryTranslation(NewsCategory $category, string $locale): NewsCategoryTranslation

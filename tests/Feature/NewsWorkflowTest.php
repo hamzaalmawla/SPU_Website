@@ -127,6 +127,34 @@ final class NewsWorkflowTest extends TestCase
             ->assertDontSee('Colliding News Article');
     }
 
+    public function test_news_uses_newest_legacy_source_order_and_excludes_announcements_from_articles(): void
+    {
+        $older = $this->createPublishedArticle('news', 'older-legacy-news', 'Older Legacy News');
+        $older->forceFill(['legacy_source_table' => 'jx_categories', 'legacy_source_id' => 100, 'legacy_service_type' => 3])->save();
+        $newer = $this->createPublishedArticle('news', 'newer-legacy-news', 'Newer Legacy News');
+        $newer->forceFill(['legacy_source_table' => 'jx_categories', 'legacy_source_id' => 300, 'legacy_service_type' => 3])->save();
+        $announcement = $this->createPublishedArticle('announcement', 'separate-announcement', 'Separate Announcement');
+        $announcement->forceFill(['legacy_source_table' => 'jx_categories', 'legacy_source_id' => 400, 'legacy_service_type' => 4])->save();
+
+        $listing = app(NewsServiceInterface::class)->listPublicArticles('en', ['categoryType' => 'news'], 1, 9);
+
+        $this->assertSame(['Newer Legacy News', 'Older Legacy News'], $listing->items->pluck('title')->all());
+        $this->get('/en/news/articles')
+            ->assertOk()
+            ->assertSeeInOrder(['Newer Legacy News', 'Older Legacy News'])
+            ->assertDontSee('Separate Announcement');
+    }
+
+    public function test_past_events_are_newest_first_while_upcoming_events_remain_nearest_first(): void
+    {
+        $news = app(NewsServiceInterface::class);
+        $past = $news->listNewsEvents('en', true)->pluck('startsAt')->all();
+        $upcoming = $news->listNewsEvents('en')->pluck('startsAt')->all();
+
+        $this->assertSame(collect($past)->sortDesc()->values()->all(), $past);
+        $this->assertSame(collect($upcoming)->sort()->values()->all(), $upcoming);
+    }
+
     public function test_reference_article_query_redirects_to_the_canonical_article_url(): void
     {
         $article = $this->createPublishedArticle('news', 'news-001', 'Legacy Query Article');

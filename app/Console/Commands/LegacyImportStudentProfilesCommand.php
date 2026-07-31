@@ -54,6 +54,7 @@ final class LegacyImportStudentProfilesCommand extends Command
         $this->line('Imported rows: '.$result->importedRows);
         $this->line('Skipped rows: '.$result->skippedRows);
         $this->line('Duplicate skipped rows: '.$result->duplicateSkippedRows);
+        $this->line('Seeded placeholder rows disabled: '.$result->placeholderRowsDisabled);
 
         if ($result->skipReasonCounts !== []) {
             $this->table(['Skip Reason', 'Rows'], collect($result->skipReasonCounts)->map(
@@ -77,6 +78,7 @@ final class LegacyImportStudentProfilesCommand extends Command
             'imported_rows' => $result->importedRows,
             'skipped_rows' => $result->skippedRows,
             'duplicate_skipped_rows' => $result->duplicateSkippedRows,
+            'placeholder_rows_disabled' => $result->placeholderRowsDisabled,
             'skip_reason_counts' => $result->skipReasonCounts,
         ];
     }

@@ -12,7 +12,12 @@ class ResearchPublicationTranslation extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['research_publication_id', 'locale', 'title', 'excerpt', 'abstract', 'publisher'];
+    protected $fillable = ['research_publication_id', 'locale', 'title', 'authors', 'excerpt', 'abstract', 'publisher', 'citation', 'keywords'];
+
+    protected function casts(): array
+    {
+        return ['keywords' => 'array'];
+    }
 
     public function researchPublication(): BelongsTo
     {

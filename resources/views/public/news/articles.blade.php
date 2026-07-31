@@ -1,7 +1,11 @@
 @extends('layouts.public')
 
 @section('content')
-    @php($isAr = $locale === 'ar')
+    @php
+        $isAr = $locale === 'ar';
+        $articleQuery = array_filter(['category' => $activeCategory, 'search' => $search], fn (mixed $value): bool => is_string($value) && $value !== '');
+        $articlePageUrl = fn (int $pageNumber): string => '/'.$locale.'/news/articles'.(($query = [...$articleQuery, ...($pageNumber > 1 ? ['page' => $pageNumber] : [])]) !== [] ? '?'.http_build_query($query, '', '&', PHP_QUERY_RFC3986) : '');
+    @endphp
 
     <section class="relative flex min-h-[280px] items-end overflow-hidden pt-24 font-hacen">
         <div class="absolute inset-0">
@@ -71,21 +75,7 @@
                 @endforelse
             </div>
 
-            @if ($articles->lastPage > 1)
-                <div class="mt-10 flex items-center justify-center gap-2">
-                    @if ($articles->currentPage > 1)
-                        <a class="flex h-8 w-8 items-center justify-center rounded-[4px] border border-slate-200 text-spu-blue transition hover:border-spu-blue" aria-label="{{ $page['previousLabel'] }}" href="{{ request()->fullUrlWithQuery(['page' => $articles->currentPage - 1]) }}">
-                            <img src="/images/icon-chevron-left-outline.svg" alt="" class="h-3 w-3 rtl:rotate-180" aria-hidden="true">
-                        </a>
-                    @endif
-                    <span class="h-8 min-w-8 rounded-[4px] border border-spu-red bg-spu-red px-3 text-center text-[12px] font-bold leading-8 text-white">{{ $articles->currentPage }} / {{ $articles->lastPage }}</span>
-                    @if ($articles->currentPage < $articles->lastPage)
-                        <a class="flex h-8 w-8 items-center justify-center rounded-[4px] border border-slate-200 text-spu-blue transition hover:border-spu-blue" aria-label="{{ $page['nextLabel'] }}" href="{{ request()->fullUrlWithQuery(['page' => $articles->currentPage + 1]) }}">
-                            <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-3 w-3 rtl:rotate-180" aria-hidden="true">
-                        </a>
-                    @endif
-                </div>
-            @endif
+            <x-public.pagination :current-page="$articles->currentPage" :total-pages="$articles->lastPage" :page-url="$articlePageUrl" :locale="$locale" class="mt-10" />
         </div>
     </section>
 @endsection

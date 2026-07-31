@@ -79,6 +79,58 @@ final class LegacyQueryRedirectResolverTest extends TestCase
         $this->assertSame('/ar/campus-life/dental', $result->destinationUrl);
     }
 
+    public function test_resolves_reviewed_root_navigation_categories_by_exact_id_and_service(): void
+    {
+        $cases = [
+            [12, 1, 1, '/ar'],
+            [1263, 2, 2, '/en/facilities/dentistry'],
+            [28, 1, 2, '/en/about/accreditation'],
+            [60, 2, 1, '/ar/e-services/suggestions-complaints'],
+        ];
+
+        foreach ($cases as [$sourceId, $service, $language, $target]) {
+            $result = $this->resolver->resolve(
+                '/index.php',
+                "page=show&dir=items&service={$service}&cat_id={$sourceId}&lang={$language}",
+            );
+
+            $this->assertNotNull($result);
+            $this->assertSame(301, $result->statusCode);
+            $this->assertSame($target, $result->destinationUrl);
+        }
+    }
+
+    public function test_root_navigation_category_mapping_rejects_wrong_service_and_unknown_id(): void
+    {
+        $this->assertNull($this->resolver->resolve('/index.php', 'page=show&dir=items&service=2&cat_id=12&lang=1'));
+        $this->assertNull($this->resolver->resolve('/index.php', 'page=show&dir=items&service=1&cat_id=999999&lang=1'));
+        $this->assertNull($this->resolver->resolve('/med/index.php', 'page=show&dir=items&service=1&cat_id=299&lang=1'));
+    }
+
+    public function test_resolves_exact_reviewed_functional_route_signatures(): void
+    {
+        $cases = [
+            ['dir=html&ex=1&lang=1&page=contactus', '/ar/contact'],
+            ['page=contactus&lang=2&ex=1&dir=html', '/en/contact'],
+            ['dir=html&ex=1&lang=1&page=complaint', '/ar/e-services/suggestions-complaints'],
+            ['service=49&page=list&lang=1&ex=2&dir=jobs', '/ar/campus-life/career-development/jobs'],
+        ];
+
+        foreach ($cases as [$query, $target]) {
+            $result = $this->resolver->resolve('/index.php', $query);
+            $this->assertNotNull($result);
+            $this->assertSame($target, $result->destinationUrl);
+        }
+    }
+
+    public function test_functional_route_mapping_rejects_near_miss_queries(): void
+    {
+        $this->assertNull($this->resolver->resolve('/index.php', 'dir=html&lang=1&page=contactus'));
+        $this->assertNull($this->resolver->resolve('/index.php', 'act=1&dir=html&ex=1&lang=1&page=contactus'));
+        $this->assertNull($this->resolver->resolve('/index.php', 'dir=jobs&ex=2&lang=1&page=list&service=48'));
+        $this->assertNull($this->resolver->resolve('/med/index.php', 'dir=html&ex=1&lang=1&page=contactus'));
+    }
+
     public function test_does_not_redirect_imported_static_snippet_as_standalone_page(): void
     {
         $pageId = $this->createPublishedPage('legacy-community-service');
@@ -99,9 +151,56 @@ final class LegacyQueryRedirectResolverTest extends TestCase
         $this->assertNull($result);
     }
 
+    public function test_retired_legacy_languages_temporarily_fall_back_to_english_homepage(): void
+    {
+        foreach ([3, 6, 7] as $languageId) {
+            $result = $this->resolver->resolve(
+                '/index.php',
+                'page=show&dir=items&service=3&cat_id=5362&lang='.$languageId,
+            );
+
+            $this->assertNotNull($result);
+            $this->assertSame(302, $result->statusCode);
+            $this->assertSame('/en', $result->destinationUrl);
+        }
+    }
+
+    public function test_supported_members_routes_remain_private_and_unresolved(): void
+    {
+        foreach ([1, 2] as $languageId) {
+            $result = $this->resolver->resolve(
+                '/members/index.php',
+                'page=show&dir=items&service=1&cat_id=10&lang='.$languageId,
+            );
+
+            $this->assertNull($result);
+        }
+    }
+
+    public function test_unrecognized_language_id_does_not_receive_homepage_fallback(): void
+    {
+        $result = $this->resolver->resolve('/index.php', 'lang=99');
+
+        $this->assertNull($result);
+    }
+
+    public function test_disabled_draft_legacy_news_does_not_receive_public_redirect(): void
+    {
+        DB::table('news_articles')->insert([
+            'slug' => 'disabled-legacy-news', 'status' => 'draft', 'published_at' => null, 'scheduled_at' => null,
+            'is_enabled' => false, 'is_featured' => false, 'sort_order' => 0,
+            'legacy_source_table' => 'jx_categories', 'legacy_source_id' => 9001, 'legacy_service_type' => 3,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $result = $this->resolver->resolve('/index.php', 'page=show&dir=items&service=3&cat_id=9001&lang=1');
+
+        $this->assertNull($result);
+    }
+
     private function createLegacyNewsArticle(int $legacySourceId, int $serviceType, string $slug): int
     {
-        return (int) DB::table('news_articles')->insertGetId([
+        $articleId = (int) DB::table('news_articles')->insertGetId([
             'slug' => $slug,
             'status' => 'published',
             'published_at' => now()->subDay(),
@@ -115,6 +214,12 @@ final class LegacyQueryRedirectResolverTest extends TestCase
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+        DB::table('news_article_translations')->insert([
+            ['news_article_id' => $articleId, 'locale' => 'ar', 'title' => 'خبر', 'excerpt' => null, 'body' => null, 'created_at' => now(), 'updated_at' => now()],
+            ['news_article_id' => $articleId, 'locale' => 'en', 'title' => 'News', 'excerpt' => null, 'body' => null, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        return $articleId;
     }
 
     private function createPublishedPage(string $slug, ?int $parentId = null): int

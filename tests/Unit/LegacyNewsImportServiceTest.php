@@ -76,11 +76,12 @@ final class LegacyNewsImportServiceTest extends TestCase
         $dryRun = $service->import(batch: 'news-dry-run', input: 'private/reviewed-news.csv');
 
         $this->assertSame(5, $dryRun->scannedRows);
-        $this->assertSame(2, $dryRun->importableRows);
-        $this->assertSame(3, $dryRun->skippedRows);
+        $this->assertSame(1, $dryRun->importableRows);
+        $this->assertSame(4, $dryRun->skippedRows);
         $this->assertSame(1, $dryRun->skipReasonCounts['blank_approval_decision']);
-        $this->assertSame(1, $dryRun->skipReasonCounts['missing_translation']);
+        $this->assertSame(1, $dryRun->skipReasonCounts['empty_content_and_children']);
         $this->assertSame(1, $dryRun->skipReasonCounts['missing_source']);
+        $this->assertSame(1, $dryRun->skipReasonCounts['hidden_source']);
         $this->assertDatabaseCount('news_articles', 0);
 
         $written = $service->import(
@@ -96,22 +97,21 @@ final class LegacyNewsImportServiceTest extends TestCase
             input: 'private/reviewed-news.csv',
         );
 
-        $this->assertSame(2, $written->importedRows);
-        $this->assertSame(2, $written->createdTranslations);
+        $this->assertSame(1, $written->importedRows);
+        $this->assertSame(1, $written->createdTranslations);
         $this->assertSame(1, $written->createdAttachments);
         $this->assertSame(0, $replayed->importedRows);
-        $this->assertDatabaseCount('news_articles', 2);
-        $this->assertDatabaseCount('news_article_translations', 2);
+        $this->assertDatabaseCount('news_articles', 1);
+        $this->assertDatabaseCount('news_article_translations', 1);
         $this->assertSame(['ar'], NewsArticleTranslation::query()->where('news_article_id', 1)->pluck('locale')->all());
-        $this->assertSame(['en'], NewsArticleTranslation::query()->where('news_article_id', 2)->pluck('locale')->all());
         $this->assertStringNotContainsString('script', (string) NewsArticleTranslation::query()->where('news_article_id', 1)->value('body'));
         $this->assertSame(0, NewsArticle::query()->where('status', '!=', 'draft')->count());
         $this->assertSame(0, NewsArticle::query()->where('is_enabled', true)->count());
         $this->assertSame(0, NewsArticle::query()->whereNotNull('published_at')->count());
         $this->assertSame(0, NewsArticle::query()->whereNotNull('scheduled_at')->count());
-        $this->assertSame(2, NewsArticleSeoMeta::query()->where('robots', 'noindex,nofollow')->count());
+        $this->assertSame(1, NewsArticleSeoMeta::query()->where('robots', 'noindex,nofollow')->count());
         $this->assertSame(1, NewsArticleAttachment::query()->whereNull('media_asset_id')->count());
-        $this->assertSame(2, MigrationLog::query()->where('module', 'news')->where('status', 'success')->count());
+        $this->assertSame(1, MigrationLog::query()->where('module', 'news')->where('status', 'success')->count());
         $this->assertSame(
             hash('sha256', Storage::disk('local')->get('private/reviewed-news.csv')),
             MigrationLog::query()->where('module', 'news')->where('status', 'success')->firstOrFail()->metadata['approval_packet']['sha256'],
@@ -182,6 +182,7 @@ final class LegacyNewsImportServiceTest extends TestCase
             $table->string('photo')->nullable();
             $table->string('url')->nullable();
             $table->boolean('is_visible')->default(true);
+            $table->boolean('is_link')->default(false);
             $table->integer('category_order')->default(0);
             $table->dateTime('start_date')->nullable();
             $table->dateTime('end_date')->nullable();
@@ -203,7 +204,7 @@ final class LegacyNewsImportServiceTest extends TestCase
         $base = [
             'ar_name' => null, 'en_name' => null, 'ar_brief' => null, 'en_brief' => null,
             'ar_data' => null, 'en_data' => null, 'photo' => null, 'url' => null,
-            'is_visible' => 1, 'category_order' => 0, 'start_date' => null, 'end_date' => null,
+            'is_visible' => 1, 'is_link' => 0, 'category_order' => 0, 'start_date' => null, 'end_date' => null,
         ];
         app('db')->connection('legacy_mysql')->table('jx_categories')->insert([
             array_merge($base, [

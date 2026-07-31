@@ -1,6 +1,10 @@
 @extends('layouts.public')
 
 @section('content')
+    @php
+        $announcementQuery = array_filter(['category' => $activeCategory], fn (mixed $value): bool => is_string($value) && $value !== '');
+        $announcementPageUrl = fn (int $pageNumber): string => '/'.$locale.'/news/announcements'.(($query = [...$announcementQuery, ...($pageNumber > 1 ? ['page' => $pageNumber] : [])]) !== [] ? '?'.http_build_query($query, '', '&', PHP_QUERY_RFC3986) : '');
+    @endphp
     <section class="relative flex min-h-[285px] items-end overflow-hidden pt-24 font-hacen">
         <div class="absolute inset-0">
             <img src="{{ $page['heroImage'] }}" alt="{{ $page['pageTitle'] }}" class="h-full w-full object-cover">
@@ -78,17 +82,7 @@
                 @endforelse
             </div>
 
-            @if ($announcements->lastPage > 1)
-                <nav class="mt-10 flex items-center justify-center gap-3" aria-label="{{ __('public.pagination') }}">
-                    @if ($announcements->currentPage > 1)
-                        <a href="{{ request()->fullUrlWithQuery(['page' => $announcements->currentPage - 1]) }}" class="rounded border border-slate-200 px-4 py-2 text-xs font-bold text-spu-blue">{{ __('public.previous') }}</a>
-                    @endif
-                    <span class="rounded bg-spu-red px-4 py-2 text-xs font-bold text-white">{{ $announcements->currentPage }} / {{ $announcements->lastPage }}</span>
-                    @if ($announcements->currentPage < $announcements->lastPage)
-                        <a href="{{ request()->fullUrlWithQuery(['page' => $announcements->currentPage + 1]) }}" class="rounded border border-slate-200 px-4 py-2 text-xs font-bold text-spu-blue">{{ __('public.next') }}</a>
-                    @endif
-                </nav>
-            @endif
+            <x-public.pagination :current-page="$announcements->currentPage" :total-pages="$announcements->lastPage" :page-url="$announcementPageUrl" :locale="$locale" class="mt-10" />
         </div>
     </section>
 @endsection

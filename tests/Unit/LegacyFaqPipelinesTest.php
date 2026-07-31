@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
+use App\Contracts\Legacy\LegacyFaqApprovalPacketServiceInterface;
 use App\Contracts\Legacy\LegacyFaqImportServiceInterface;
 use App\Contracts\Legacy\LegacyFaqReviewPacketServiceInterface;
 use App\Models\Content\Faq;
@@ -121,6 +122,35 @@ final class LegacyFaqPipelinesTest extends TestCase
         $this->assertStringNotContainsString('9639999999', $metadata);
     }
 
+    public function test_approval_packet_keeps_only_blocker_free_identity_and_hash_fields(): void
+    {
+        $review = app(LegacyFaqReviewPacketServiceInterface::class)->export(directory: 'faq-review');
+        $candidate = $this->path($review->paths, 'faq_candidates.csv');
+
+        $result = app(LegacyFaqApprovalPacketServiceInterface::class)->build($candidate, 'reviewer', directory: 'faq-approved');
+        $second = app(LegacyFaqApprovalPacketServiceInterface::class)->build($candidate, 'reviewer', directory: 'faq-approved');
+
+        $this->assertSame(5, $result->scannedRows);
+        $this->assertSame(1, $result->approvedRows);
+        $this->assertSame(4, $result->rejectedRows);
+        $this->assertNotSame($result->paths[2], $second->paths[2]);
+        $approved = Storage::disk('local')->get($this->path($result->paths, 'approved_faqs.csv'));
+        $headers = str_getcsv(explode("\n", $approved)[0]);
+        $this->assertContains('question_sha256', $headers);
+        $this->assertContains('answer_sha256', $headers);
+        foreach (['question', 'answer', 'subject', 'first_name', 'last_name', 'email', 'country', 'phone'] as $excluded) {
+            $this->assertNotContains($excluded, $headers);
+        }
+        $this->assertStringNotContainsString('submitter@example.test', $approved);
+        $this->assertStringNotContainsString('PII-FIRST', $approved);
+        $this->assertStringNotContainsString('English question', $approved);
+
+        DB::connection('legacy_mysql')->table('jx_faqs')->where('id', 2)->update(['answer' => 'Changed after approval']);
+        $dryRun = app(LegacyFaqImportServiceInterface::class)->import($this->path($result->paths, 'approved_faqs.csv'));
+        $this->assertSame(0, $dryRun->importableRows);
+        $this->assertSame(1, $dryRun->skipReasonCounts['source_content_changed_after_review']);
+    }
+
     public function test_import_gates_duplicates_mappings_category_conflicts_and_empty_approvals(): void
     {
         $service = app(LegacyFaqImportServiceInterface::class);
@@ -159,6 +189,17 @@ final class LegacyFaqPipelinesTest extends TestCase
         $service->import('one.csv', write: true, approval: 'wrong');
     }
 
+    public function test_import_rejects_approval_packets_without_content_hashes(): void
+    {
+        Storage::disk('local')->put(
+            'missing-hashes.csv',
+            "source_table,source_id,locale,legacy_lang,approval_decision,approved_target\njx_faqs,1,ar,1,import,faqs\n",
+        );
+
+        $this->expectException(InvalidArgumentException::class);
+        app(LegacyFaqImportServiceInterface::class)->import('missing-hashes.csv');
+    }
+
     private function seedRows(): void
     {
         $base = ['subject' => null, 'question' => null, 'answer' => null, 'faq_order' => 0, 'post_date' => '2024-01-01', 'is_visible' => 1, 'lang' => 1,
@@ -179,13 +220,30 @@ final class LegacyFaqPipelinesTest extends TestCase
     private function packet(array $rows): string
     {
         $stream = fopen('php://temp', 'r+');
-        fputcsv($stream, ['source_table', 'source_id', 'locale', 'legacy_lang', 'approval_decision', 'approved_target']);
+        $headers = ['source_table', 'source_id', 'locale', 'legacy_lang', 'approval_decision', 'approved_target', 'question_sha256', 'answer_sha256'];
+        fputcsv($stream, $headers);
         foreach ($rows as $row) {
-            fputcsv($stream, array_values($row));
+            $id = (int) $row['source_id'];
+            $row['question_sha256'] = hash('sha256', $this->cleanedFaqValue($id, 'question'));
+            $row['answer_sha256'] = hash('sha256', $this->cleanedFaqValue($id, 'answer'));
+            fputcsv($stream, array_map(static fn (string $header): mixed => $row[$header], $headers));
         }
         rewind($stream);
 
         return (string) stream_get_contents($stream);
+    }
+
+    private function cleanedFaqValue(int $id, string $field): string
+    {
+        $values = [
+            1 => ['question' => 'Clean question', 'answer' => 'Clean answer'],
+            2 => ['question' => 'English question', 'answer' => 'English answer'],
+            6 => ['question' => 'Clean question', 'answer' => 'Duplicate answer'],
+            7 => ['question' => 'Call 123 456 789 for details', 'answer' => 'Contact answer'],
+            8 => ['question' => 'Mapped question', 'answer' => 'Mapped answer'],
+        ];
+
+        return $values[$id][$field] ?? 'missing-source-value';
     }
 
     /** @return array<string, string|int> */

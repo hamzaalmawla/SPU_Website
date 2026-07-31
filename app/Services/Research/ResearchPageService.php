@@ -125,7 +125,10 @@ final class ResearchPageService implements ResearchPageServiceInterface
             return $databasePage;
         }
 
-        $items = $this->detailContent()['publications'] ?? [];
+        $items = array_map(
+            fn (array $publication): array => $this->sanitizePublication($publication),
+            $this->arrayList($this->detailContent()['publications'] ?? []),
+        );
         $item = $this->firstBySlug($items, $slug);
 
         if ($item === null) {
@@ -855,7 +858,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
     private function withFilteredPublications(array $content, array $filters): array
     {
         $activeFilters = $this->normalizedPublicationFilters($filters);
-        $items = $this->arrayList($content['items'] ?? []);
+        $items = $this->newestPublicationItems($this->arrayList($content['items'] ?? []));
         $content['totalItems'] = count($items);
         $content['activeFilters'] = $activeFilters;
 
@@ -910,7 +913,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
             'theme' => $this->filterValue($filters['theme'] ?? null),
             'page' => $this->filterPage($filters['page'] ?? null),
         ];
-        $items = $this->arrayList($content['items'] ?? []);
+        $items = $this->newestProjectItems($this->arrayList($content['items'] ?? []));
         $filtered = array_values(array_filter($items, function (array $item) use ($activeFilters): bool {
             if ($activeFilters['status'] !== '' && $activeFilters['status'] !== (string) ($item['status'] ?? '')) {
                 return false;
@@ -1152,17 +1155,30 @@ final class ResearchPageService implements ResearchPageServiceInterface
         $metadata = $this->withFallbackLegacyPublicationMetadata($metadata, $translations->all());
         $abstract = $metadata['abstract'] !== '' ? $metadata['abstract'] : ($translation instanceof ResearchPublicationTranslation ? $this->plainText($translation->abstract) : '');
         $summary = $translation instanceof ResearchPublicationTranslation ? $this->plainText($translation->excerpt) : '';
+        $authors = $translation instanceof ResearchPublicationTranslation ? $this->plainText($translation->authors) : '';
+        $citation = $translation instanceof ResearchPublicationTranslation ? $this->plainText($translation->citation) : '';
         $publisher = $translation instanceof ResearchPublicationTranslation ? $this->plainText($translation->publisher) : '';
+        $keywords = $translation instanceof ResearchPublicationTranslation && is_array($translation->keywords)
+            ? array_values(array_filter(array_map('strval', $translation->keywords)))
+            : [];
 
         if ($publisher === '') {
-            $publisher = $metadata['publisher'];
+            $publisher = $citation !== '' ? $citation : $metadata['publisher'];
+        }
+        if ($authors === '') {
+            $authors = $metadata['author'];
+        }
+        if ($keywords === []) {
+            $keywords = $metadata['keywords'];
         }
 
         if ($summary === '' && $abstract !== '') {
             $summary = Str::limit($abstract, 260);
         }
 
-        $year = $publication->published_at !== null ? $publication->published_at->format('Y') : '';
+        $year = $publication->publication_year !== null
+            ? (string) $publication->publication_year
+            : ($publication->published_at !== null ? $publication->published_at->format('Y') : '');
         $externalUrl = is_string($publication->external_url) && filter_var($publication->external_url, FILTER_VALIDATE_URL) !== false
             ? $publication->external_url
             : null;
@@ -1182,12 +1198,15 @@ final class ResearchPageService implements ResearchPageServiceInterface
             'type' => $locale === 'ar' ? 'منشور بحثي' : 'Publication',
             'typeSlug' => 'published-research',
             'year' => $year,
+            'publicationDate' => $publication->published_at?->toDateString(),
             'publisher' => $publisher,
             'faculty' => (string) ($facultyTranslation?->name ?? ''),
             'facultySlug' => $faculty !== null ? $this->canonicalFacultySlug((string) ($faculty->public_slug ?: $faculty->slug)) : '',
-            'author' => $metadata['author'],
-            'doi' => null,
-            'keywords' => $metadata['keywords'],
+            'author' => $authors,
+            'doi' => $publication->doi,
+            'rate' => $publication->journal_rank,
+            'citation' => $citation,
+            'keywords' => $keywords,
             'resolvedThemes' => [],
             'scholarUrl' => $externalUrl,
             'scopusUrl' => null,
@@ -1209,10 +1228,46 @@ final class ResearchPageService implements ResearchPageServiceInterface
 
         $content = $this->withDatabasePublications($content, $locale);
 
-        return array_map(
+        return $this->newestPublicationItems(array_map(
             fn (array $item): array => $this->sanitizePublication($item),
             $this->arrayList($content['items'] ?? []),
-        );
+        ));
+    }
+
+    /** @param array<int, array<string, mixed>> $items @return array<int, array<string, mixed>> */
+    private function newestPublicationItems(array $items): array
+    {
+        usort($items, function (array $left, array $right): int {
+            return ($this->publicationSortValue($right) <=> $this->publicationSortValue($left))
+                ?: strnatcasecmp((string) ($right['slug'] ?? ''), (string) ($left['slug'] ?? ''));
+        });
+
+        return $items;
+    }
+
+    /** @param array<string, mixed> $item */
+    private function publicationSortValue(array $item): int
+    {
+        $publicationDate = trim((string) ($item['publicationDate'] ?? ''));
+        if ($publicationDate !== '' && ($timestamp = strtotime($publicationDate)) !== false) {
+            return (int) date('Ymd', $timestamp);
+        }
+
+        $year = (int) preg_replace('/\D+/', '', substr((string) ($item['year'] ?? ''), 0, 4));
+
+        return $year > 0 ? ($year * 10000) + 1231 : 0;
+    }
+
+    /** @param array<int, array<string, mixed>> $items @return array<int, array<string, mixed>> */
+    private function newestProjectItems(array $items): array
+    {
+        usort($items, static function (array $left, array $right): int {
+            return ((int) ($right['startYear'] ?? 0) <=> (int) ($left['startYear'] ?? 0))
+                ?: ((int) ($right['endYear'] ?? 0) <=> (int) ($left['endYear'] ?? 0))
+                ?: strnatcasecmp((string) ($right['slug'] ?? ''), (string) ($left['slug'] ?? ''));
+        });
+
+        return $items;
     }
 
     /** @return array<int, array<string, mixed>> */
@@ -1369,7 +1424,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
         }
 
         $rate = trim((string) ($item['rate'] ?? ''));
-        if ($rate !== '' && str_contains(mb_strtolower($rate), 'verify')) {
+        if ($rate !== '' && str_contains(mb_strtolower($rate), 'verif')) {
             $item['rate'] = null;
         }
 
@@ -1752,6 +1807,19 @@ final class ResearchPageService implements ResearchPageServiceInterface
     {
         $localizedItem = $this->localized($item, $locale);
         $localizedItem = $type === 'publication' && is_array($localizedItem) ? $this->sanitizePublication($localizedItem) : $localizedItem;
+        $localizedData = $this->localized($data, $locale);
+        if ($type === 'publication' && is_array($localizedData)) {
+            if (is_array($localizedData['item'] ?? null)) {
+                $localizedData['item'] = $this->sanitizePublication($localizedData['item']);
+            }
+            foreach (['related', 'previous', 'next'] as $key) {
+                if (is_array($localizedData[$key] ?? null) && array_is_list($localizedData[$key])) {
+                    $localizedData[$key] = array_map(fn (array $publication): array => $this->sanitizePublication($publication), $localizedData[$key]);
+                } elseif (is_array($localizedData[$key] ?? null)) {
+                    $localizedData[$key] = $this->sanitizePublication($localizedData[$key]);
+                }
+            }
+        }
         $title = (string) ($localizedItem['title'] ?? $localizedItem['name'] ?? ($locale === 'ar' ? 'البحث' : 'Research'));
         $description = (string) ($localizedItem['summary'] ?? $localizedItem['mission'] ?? $localizedItem['description'] ?? $title);
 
@@ -1761,7 +1829,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
             type: $type,
             slug: $slug,
             item: $this->normalizeUrls($localizedItem, $locale),
-            data: $this->normalizeUrls($this->localized($data, $locale), $locale),
+            data: $this->normalizeUrls($localizedData, $locale),
             seoTitle: $title.' | '.($locale === 'ar' ? 'الجامعة السورية الخاصة' : 'Syrian Private University'),
             seoDescription: $description,
             seoImage: $image,

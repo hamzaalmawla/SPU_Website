@@ -152,16 +152,17 @@ final class LegacyUrlNormalizer implements LegacyUrlNormalizerInterface
     private function language(?string $rawLang, bool $hasMyLang): LegacyLanguageDTO
     {
         $oldId = is_numeric($rawLang) ? (int) $rawLang : ($hasMyLang ? 1 : 1);
-        $symbol = self::LANGUAGE_SYMBOLS[$oldId] ?? self::LANGUAGE_SYMBOLS[1];
+        $knownLanguage = array_key_exists($oldId, self::LANGUAGE_SYMBOLS);
+        $symbol = self::LANGUAGE_SYMBOLS[$oldId] ?? 'unknown';
         $isSupported = in_array($symbol, ['ar', 'en'], true);
-        $locale = $isSupported ? $symbol : 'ar';
+        $locale = $isSupported ? $symbol : 'en';
 
         return new LegacyLanguageDTO(
-            oldLanguageId: array_key_exists($oldId, self::LANGUAGE_SYMBOLS) ? $oldId : 1,
+            oldLanguageId: $oldId,
             oldSymbol: $symbol,
             locale: $locale,
             isSupportedLocale: $isSupported,
-            fallbackLocale: $isSupported ? null : 'ar',
+            fallbackLocale: $isSupported ? null : ($knownLanguage ? 'en' : null),
         );
     }
 

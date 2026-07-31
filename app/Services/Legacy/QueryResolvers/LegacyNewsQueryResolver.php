@@ -35,9 +35,11 @@ final class LegacyNewsQueryResolver implements LegacyQueryModuleResolverInterfac
         }
 
         $article = NewsArticle::query()
+            ->public()
             ->where('legacy_source_table', 'jx_categories')
             ->where('legacy_source_id', $sourceId)
             ->where('legacy_service_type', $serviceType)
+            ->whereHas('translations', fn ($query) => $query->where('locale', $url->language->locale))
             ->first();
 
         if (! $article instanceof NewsArticle) {

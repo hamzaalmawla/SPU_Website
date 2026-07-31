@@ -70,6 +70,27 @@ final class LegacyRedirectEvidenceServiceTest extends TestCase
         $this->assertStringContainsString(',root,ar,jx_categories,325,', $preview);
     }
 
+    public function test_private_imported_target_does_not_require_a_separate_content_mapping(): void
+    {
+        Storage::fake('local');
+        Storage::disk('local')->put('generated.csv', implode("\n", [
+            'source_type,module,source_table,source_id,legacy_path,normalized_path,query_signature,handler_key,request_type,subsite,old_site_id,locale,old_language_id,target_url,status,confidence,notes',
+            '',
+        ]));
+        Storage::disk('local')->put('triage.csv', implode("\n", [
+            'triage_status,handler_key,subsite,legacy_path,query_signature,candidate_source_id,candidate_source_tables,mapping_available,source_type,module,status,notes',
+            'blocked_target_not_public,root:items:show,root,/index.php?cat_id=12,cat_id=12,12,jx_categories,yes,generated_router_url,generated,unresolved_for_continuity_phase,Private target',
+            '',
+        ]));
+
+        $result = app(LegacyRedirectEvidenceServiceInterface::class)->export('generated.csv', 'triage.csv');
+
+        $this->assertSame(1, $result->blockedRows);
+        $this->assertSame(1, $result->evidenceStatusCounts['blocked_target_not_public']);
+        $this->assertSame(1, $result->blockerCounts['blocked_target_not_public']);
+        $this->assertArrayNotHasKey('missing_content_mapping', $result->blockerCounts);
+    }
+
     private function generatedCsv(): string
     {
         return implode("\n", [

@@ -1,6 +1,10 @@
 @extends('layouts.public')
 
 @section('content')
+    @php
+        $galleryQuery = array_filter(['category' => $activeCategory], fn (mixed $value): bool => is_string($value) && $value !== '');
+        $galleryPageUrl = fn (int $pageNumber): string => '/'.$locale.'/news/gallery'.(($query = [...$galleryQuery, ...($pageNumber > 1 ? ['page' => $pageNumber] : [])]) !== [] ? '?'.http_build_query($query, '', '&', PHP_QUERY_RFC3986) : '');
+    @endphp
     <section class="relative flex min-h-[285px] items-end overflow-hidden pt-24 font-hacen">
         <img src="{{ $page['heroImage'] }}" alt="{{ $page['title'] }}" class="absolute inset-0 h-full w-full object-cover">
         <div class="absolute inset-0 bg-gradient-to-t from-spu-blue/95 via-spu-blue/65 to-spu-blue/20"></div>
@@ -42,13 +46,7 @@
                 @endforelse
             </div>
 
-            @if ($galleryItems->lastPage > 1)
-                <nav class="mt-10 flex items-center justify-center gap-3" aria-label="{{ __('public.pagination') }}">
-                    @if ($galleryItems->currentPage > 1)<a href="{{ request()->fullUrlWithQuery(['page' => $galleryItems->currentPage - 1]) }}" class="rounded border border-slate-200 px-4 py-2 text-xs font-bold text-spu-blue">{{ __('public.previous') }}</a>@endif
-                    <span class="rounded bg-spu-red px-4 py-2 text-xs font-bold text-white">{{ $galleryItems->currentPage }} / {{ $galleryItems->lastPage }}</span>
-                    @if ($galleryItems->currentPage < $galleryItems->lastPage)<a href="{{ request()->fullUrlWithQuery(['page' => $galleryItems->currentPage + 1]) }}" class="rounded border border-slate-200 px-4 py-2 text-xs font-bold text-spu-blue">{{ __('public.next') }}</a>@endif
-                </nav>
-            @endif
+            <x-public.pagination :current-page="$galleryItems->currentPage" :total-pages="$galleryItems->lastPage" :page-url="$galleryPageUrl" :locale="$locale" class="mt-10" />
         </div>
 
         <div x-cloak x-show="isOpen" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 p-4" role="dialog" aria-modal="true" aria-labelledby="gallery-viewer-title" x-ref="dialog" x-on:click.self="close" x-on:keydown.tab="trapFocus">

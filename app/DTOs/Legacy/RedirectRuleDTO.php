@@ -16,5 +16,6 @@ final readonly class RedirectRuleDTO
         public int $statusCode,
         public ?string $locale,
         public bool $isActive,
+        public ?string $querySignature,
     ) {}
 }
