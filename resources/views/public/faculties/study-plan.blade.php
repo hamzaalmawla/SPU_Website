@@ -7,6 +7,7 @@
     $activeDepartmentId = (string) request('department', $departments->first()['id'] ?? '');
     $activeDepartment = $departments->firstWhere('id', $activeDepartmentId) ?? $departments->first();
     $terms = collect($activeDepartment['terms'] ?? [])->filter(fn ($item) => is_array($item))->values();
+    $planPdfUrl = (string) ($activeDepartment['pdfUrl'] ?? '');
     $clientPayload = $studyPayload;
     $clientPayload['plan'] = [
         ...$plan,
@@ -86,7 +87,7 @@
     }
 @endphp
 
-<div class="font-hacen {{ $isAr ? 'rtl' : '' }}" dir="{{ $direction }}" data-study-plan data-locale="{{ $locale }}" data-faculty-slug="{{ $page->facultySlug }}" style="--accent-color: {{ $accent }}; --accent-color-15: {{ $accent }}26;">
+<div class="font-hacen {{ $isAr ? 'rtl' : '' }}" dir="{{ $direction }}" data-study-plan data-locale="{{ $locale }}" data-faculty-slug="{{ $page->facultySlug }}" data-study-plan-pdf-url="{{ $planPdfUrl }}" style="--accent-color: {{ $accent }}; --accent-color-15: {{ $accent }}26;">
     <script type="application/json" data-study-plan-payload>{!! json_encode($clientPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_THROW_ON_ERROR) !!}</script>
 
     <section class="relative flex min-h-[330px] items-center justify-center overflow-hidden pt-28">
@@ -118,7 +119,7 @@
             @else
                 <div class="space-y-10">
                     @if ($departments->count() > 1)
-                        <div class="flex flex-wrap gap-2.5 rounded-3xl border border-slate-100 bg-white p-1.5 shadow-sm">
+                        <div class="flex flex-wrap  rounded-3xl border border-slate-100 bg-white p-0.5 shadow-sm">
                             @foreach ($departments as $department)
                                 @php($isActiveDepartment = ($department['id'] ?? '') === ($activeDepartment['id'] ?? ''))
                                 <button type="button" data-department-tab="{{ $department['id'] ?? '' }}" class="rounded-full px-6 py-3 text-[13px] font-bold transition-all duration-300 {{ $isActiveDepartment ? 'bg-spu-blue text-white shadow-lg shadow-spu-blue/25' : 'bg-white text-spu-blue/80 hover:bg-slate-50' }}">{{ $text($department, 'name') }}</button>
@@ -143,10 +144,12 @@
                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                                 <span>{{ $isAr ? 'تحميل الساعات' : 'Download Hours' }}</span>
                             </button>
-                            <button type="button" data-study-plan-print class="inline-flex items-center gap-2 rounded-lg bg-spu-blue px-4 py-2.5 text-[12px] font-bold text-white shadow-md shadow-spu-blue/20 transition-all hover:bg-spu-blue/90 hover:shadow-lg">
-                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
-                                <span>{{ $isAr ? 'طباعة الخطة' : 'Print Plan' }}</span>
-                            </button>
+                            @if ($planPdfUrl !== '')
+                                <button type="button" data-study-plan-print class="inline-flex items-center gap-2 rounded-lg bg-spu-blue px-4 py-2.5 text-[12px] font-bold text-white shadow-md shadow-spu-blue/20 transition-all hover:bg-spu-blue/90 hover:shadow-lg">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                    <span>{{ $isAr ? 'تحميل الخطة' : 'Download' }}</span>
+                                </button>
+                            @endif
                         </div>
                     </div>
 

@@ -28,7 +28,6 @@
         $yearLabel = $isAr ? 'العام الدراسي' : 'Academic Year';
         $statusLabel = $isAr ? 'الحالة' : 'Status';
         $completedLabel = $isAr ? 'مكتمل' : 'Completed';
-        $technologiesLabel = $isAr ? 'التقنيات' : 'Technologies';
         $teamLabel = $isAr ? 'الفريق' : 'Team';
         $supervisorLabel = $isAr ? 'المشرف' : 'Supervisor';
         $galleryLabel = $isAr ? 'معرض المشروع' : 'Project Gallery';
@@ -36,8 +35,8 @@
         $previousLabel = $isAr ? 'السابق' : 'Previous';
         $nextLabel = $isAr ? 'التالي' : 'Next';
         $viewAllLabel = $isAr ? 'عرض جميع المشاريع' : 'View All Projects';
-        $createdByLabel = $isAr ? 'أعده' : 'Created By';
         $detailsLabel = $isAr ? 'عرض التفاصيل' : 'View Details';
+        $viewReportLabel = $isAr ? 'عرض التقرير' : 'View Report';
         $facultyProjectsUrl = '/'.$locale.'/facilities/'.$page->facultySlug.'/projects';
         $initials = function (string $value): string {
             $words = preg_split('/\s+/u', trim($value)) ?: [];
@@ -160,19 +159,6 @@
                         </div>
                     @endif
 
-                    @if (! empty($project['createdBy']))
-                        <div class="rounded-[6px] border border-slate-200 bg-white p-6 shadow-sm">
-                            <h3 class="text-[13px] font-bold uppercase tracking-[0.04em] text-slate-400">{{ $createdByLabel }}</h3>
-                            <a href="/{{ $locale }}/facilities/{{ $page->facultySlug }}/alumni" class="mt-3 flex items-center gap-3 transition hover:opacity-80">
-                                <div class="flex h-10 w-10 items-center justify-center rounded-full text-[12px] font-bold text-white" style="background-color: {{ $accent }}">{{ $initials((string) $project['createdBy']) }}</div>
-                                <div>
-                                    <p class="text-[13px] font-bold text-spu-blue">{{ $project['createdBy'] }}</p>
-                                    <p class="text-[11px] text-slate-400">{{ $createdByLabel }}</p>
-                                </div>
-                            </a>
-                        </div>
-                    @endif
-
                     @if (! empty($project['teamMembers']))
                         <div class="rounded-[6px] border border-slate-200 bg-white p-6 shadow-sm">
                             <h3 class="text-[13px] font-bold uppercase tracking-[0.04em] text-slate-400">{{ $teamLabel }}</h3>
@@ -192,14 +178,14 @@
                         </div>
                     @endif
 
-                    @if (! empty($project['technologies']))
+                    @if (! empty($project['report_pdf']))
                         <div class="rounded-[6px] border border-slate-200 bg-white p-6 shadow-sm">
-                            <h3 class="text-[13px] font-bold uppercase tracking-[0.04em] text-slate-400">{{ $technologiesLabel }}</h3>
-                            <div class="mt-4 flex flex-wrap gap-2">
-                                @foreach ($project['technologies'] as $technology)
-                                    <span class="rounded-[3px] bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-600">{{ $technology }}</span>
-                                @endforeach
-                            </div>
+                            <a href="{{ $project['report_pdf'] }}" target="_blank" rel="noopener noreferrer" class="inline-flex w-full items-center justify-center gap-2 rounded-[6px] bg-spu-blue px-4 py-3 text-[13px] font-bold text-white transition hover:bg-[#171d47]">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <span>{{ $viewReportLabel }}</span>
+                            </a>
                         </div>
                     @endif
                 </aside>

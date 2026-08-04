@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 namespace App\Services\Page;
 
+use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Page\AdmissionsPageServiceInterface;
 use App\DTOs\Admissions\AdmissionsPageDTO;
 use App\DTOs\Admissions\AdmissionsSectionDTO;
+use App\DTOs\Cms\CmsTargetDTO;
 
 final class AdmissionsPageService implements AdmissionsPageServiceInterface
 {
     public function __construct(
         private readonly CmsWorkflowServiceInterface $cmsWorkflowService,
+        private readonly CmsTargetRegistryInterface $targetRegistry,
     ) {}
 
     public function getLanding(string $locale): AdmissionsPageDTO
@@ -754,5 +757,18 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
         }
 
         return '/'.$locale.$value;
+    }
+
+    /** @return array<int, array{title: string, link: string}> */
+    public function getAdmissionsSubPages(string $locale, ?string $excludeTargetKey = null): array
+    {
+        return $this->targetRegistry->forArea('admissions')
+            ->filter(fn (CmsTargetDTO $target): bool => $target->key !== 'admissions.landing' && $target->key !== $excludeTargetKey && $target->publicPath !== null)
+            ->values()
+            ->map(fn (CmsTargetDTO $target): array => [
+                'title' => __($target->labelKey),
+                'link' => $target->publicPath,
+            ])
+            ->all();
     }
 }

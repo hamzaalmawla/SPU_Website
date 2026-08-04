@@ -83,3 +83,7 @@
     outline: 3px solid #6f1616;
     outline-offset: 3px;
 }
+
+.bg-section {
+    background-color: #f7fbff;
+}

@@ -323,29 +323,11 @@ class NavigationSeeder extends Seeder
     {
         if ($locale === 'ar') {
             return [
-                ['label' => 'المنشورات البحثية', 'target_kind' => 'url', 'url' => '/ar/research/publications', 'children' => [
-                    ['label' => 'تطبيقات تعلم الآلة في مراقبة جودة الأدوية', 'target_kind' => 'url', 'url' => '/ar/research/publications/machine-learning-pharmaceutical-quality-control'],
-                    ['label' => 'نماذج الذكاء الاصطناعي للكشف المبكر عن تسوس الأسنان', 'target_kind' => 'url', 'url' => '/ar/research/publications/ai-dental-diagnostics'],
-                    ['label' => 'إطار التعلم العميق للتنبؤ بنفاذية المكامن', 'target_kind' => 'url', 'url' => '/ar/research/publications/deep-learning-reservoir-permeability'],
-                ]],
-                ['label' => 'الباحثون', 'target_kind' => 'url', 'url' => '/ar/research/researchers', 'children' => [
-                    ['label' => 'د. مهيب النقري - الذكاء الاصطناعي', 'target_kind' => 'url', 'url' => '/ar/research/researchers/mouhib-alnoukari'],
-                    ['label' => 'د. أيمن علي - الطب', 'target_kind' => 'url', 'url' => '/ar/research/researchers/ayman-ali'],
-                    ['label' => 'د. محمود حديد - هندسة البترول', 'target_kind' => 'url', 'url' => '/ar/research/researchers/mahmoud-hadid'],
-                ]],
-                ['label' => 'مجالات البحث', 'target_kind' => 'url', 'url' => '/ar/research/themes', 'children' => [
-                    ['label' => 'الذكاء الاصطناعي وتعلم الآلة', 'target_kind' => 'url', 'url' => '/ar/research/themes/ai-ml'],
-                    ['label' => 'العلوم الصيدلانية', 'target_kind' => 'url', 'url' => '/ar/research/themes/pharmaceutical-sciences'],
-                    ['label' => 'الطب السريري', 'target_kind' => 'url', 'url' => '/ar/research/themes/clinical-medicine'],
-                ]],
-                ['label' => 'مشاريع البحث', 'target_kind' => 'url', 'url' => '/ar/research/projects', 'children' => [
-                    ['label' => 'نظام الكشف عن تسوس الأسنان بالذكاء الاصطناعي', 'target_kind' => 'url', 'url' => '/ar/research/projects/ai-dental-diagnostics-system'],
-                    ['label' => 'إطار NLP العربي للسجلات الطبية', 'target_kind' => 'url', 'url' => '/ar/research/projects/arabic-clinical-nlp-system'],
-                ]],
-                ['label' => 'مراكز البحث', 'target_kind' => 'url', 'url' => '/ar/research/centers', 'children' => [
-                    ['label' => 'مركز الذكاء الاصطناعي والابتكار الرقمي', 'target_kind' => 'url', 'url' => '/ar/research/centers/ai-digital-innovation'],
-                    ['label' => 'مختبر البحث السريري والمحاكاة', 'target_kind' => 'url', 'url' => '/ar/research/centers/clinical-research-simulation'],
-                ]],
+                ['label' => 'المنشورات البحثية', 'target_kind' => 'url', 'url' => '/ar/research/publications'],
+                ['label' => 'الباحثون', 'target_kind' => 'url', 'url' => '/ar/research/researchers'],
+                ['label' => 'مجالات البحث', 'target_kind' => 'url', 'url' => '/ar/research/themes'],
+                ['label' => 'مشاريع البحث', 'target_kind' => 'url', 'url' => '/ar/research/projects'],
+                ['label' => 'مراكز البحث', 'target_kind' => 'url', 'url' => '/ar/research/centers'],
                 ['label' => 'الباحث عن الخبراء', 'target_kind' => 'url', 'url' => '/ar/research/expert-finder'],
                 ['label' => 'المؤتمرات والندوات', 'target_kind' => 'url', 'url' => '/ar/research/conferences'],
                 ['label' => 'مكتبة البحث', 'target_kind' => 'url', 'url' => '/ar/research/library'],
@@ -355,29 +337,11 @@ class NavigationSeeder extends Seeder
         }
 
         return [
-            ['label' => 'Publications', 'target_kind' => 'url', 'url' => '/en/research/publications', 'children' => [
-                ['label' => 'Machine Learning in Pharmaceutical Quality Control', 'target_kind' => 'url', 'url' => '/en/research/publications/machine-learning-pharmaceutical-quality-control'],
-                ['label' => 'AI for Early Dental Caries Detection', 'target_kind' => 'url', 'url' => '/en/research/publications/ai-dental-diagnostics'],
-                ['label' => 'Deep Learning for Reservoir Permeability', 'target_kind' => 'url', 'url' => '/en/research/publications/deep-learning-reservoir-permeability'],
-            ]],
-            ['label' => 'Researchers', 'target_kind' => 'url', 'url' => '/en/research/researchers', 'children' => [
-                ['label' => 'Dr. Mouhib Alnoukari - AI', 'target_kind' => 'url', 'url' => '/en/research/researchers/mouhib-alnoukari'],
-                ['label' => 'Dr. Ayman Ali - Medicine', 'target_kind' => 'url', 'url' => '/en/research/researchers/ayman-ali'],
-                ['label' => 'Dr. Mahmoud Hadid - Petroleum', 'target_kind' => 'url', 'url' => '/en/research/researchers/mahmoud-hadid'],
-            ]],
-            ['label' => 'Research Themes', 'target_kind' => 'url', 'url' => '/en/research/themes', 'children' => [
-                ['label' => 'Artificial Intelligence & Machine Learning', 'target_kind' => 'url', 'url' => '/en/research/themes/ai-ml'],
-                ['label' => 'Pharmaceutical Sciences', 'target_kind' => 'url', 'url' => '/en/research/themes/pharmaceutical-sciences'],
-                ['label' => 'Clinical Medicine', 'target_kind' => 'url', 'url' => '/en/research/themes/clinical-medicine'],
-            ]],
-            ['label' => 'Research Projects', 'target_kind' => 'url', 'url' => '/en/research/projects', 'children' => [
-                ['label' => 'AI Dental Caries Detection System', 'target_kind' => 'url', 'url' => '/en/research/projects/ai-dental-diagnostics-system'],
-                ['label' => 'Arabic Clinical NLP System', 'target_kind' => 'url', 'url' => '/en/research/projects/arabic-clinical-nlp-system'],
-            ]],
-            ['label' => 'Research Centers', 'target_kind' => 'url', 'url' => '/en/research/centers', 'children' => [
-                ['label' => 'Center for AI & Digital Innovation', 'target_kind' => 'url', 'url' => '/en/research/centers/ai-digital-innovation'],
-                ['label' => 'Clinical Research & Simulation Lab', 'target_kind' => 'url', 'url' => '/en/research/centers/clinical-research-simulation'],
-            ]],
+            ['label' => 'Publications', 'target_kind' => 'url', 'url' => '/en/research/publications'],
+            ['label' => 'Researchers', 'target_kind' => 'url', 'url' => '/en/research/researchers'],
+            ['label' => 'Research Themes', 'target_kind' => 'url', 'url' => '/en/research/themes'],
+            ['label' => 'Research Projects', 'target_kind' => 'url', 'url' => '/en/research/projects'],
+            ['label' => 'Research Centers', 'target_kind' => 'url', 'url' => '/en/research/centers'],
             ['label' => 'Expert Finder', 'target_kind' => 'url', 'url' => '/en/research/expert-finder'],
             ['label' => 'Conferences & Seminars', 'target_kind' => 'url', 'url' => '/en/research/conferences'],
             ['label' => 'Research Library', 'target_kind' => 'url', 'url' => '/en/research/library'],

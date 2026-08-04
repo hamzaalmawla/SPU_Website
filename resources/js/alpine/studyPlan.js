@@ -559,6 +559,24 @@ function createStudyPlanPage(root) {
         URL.revokeObjectURL(url);
     }
 
+    function downloadPlanAsPdf() {
+        const pdfUrl = root.dataset.studyPlanPdfUrl || '';
+
+        if (!pdfUrl) {
+            alert(isAr ? 'لا يوجد ملف PDF متاح للتحميل. يرجى رفع الخطة من لوحة التحكم.' : 'No PDF file is available for download. Please upload the plan from the admin panel.');
+            return;
+        }
+
+        const link = document.createElement('a');
+        link.href = pdfUrl;
+        link.download = '';
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
     function bindEvents() {
         root.querySelectorAll('[data-department-tab]').forEach((button) => {
             button.addEventListener('click', () => {
@@ -578,7 +596,7 @@ function createStudyPlanPage(root) {
         });
 
         root.querySelector('[data-study-plan-download]')?.addEventListener('click', downloadHoursSummary);
-        root.querySelector('[data-study-plan-print]')?.addEventListener('click', () => window.print());
+        root.querySelector('[data-study-plan-print]')?.addEventListener('click', downloadPlanAsPdf);
         root.querySelector('[data-study-plan-zoom-in]')?.addEventListener('click', () => {
             const rect = viewport.getBoundingClientRect();
             zoomToPoint(-0.2, rect.width / 2, rect.height / 2);

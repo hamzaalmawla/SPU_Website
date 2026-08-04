@@ -119,23 +119,5 @@
         </div>
     </section>
 
-    <section id="requirements" class="bg-section py-20 font-hacen lg:py-28">
-        <div class="container">
-            <div class="mx-auto max-w-[700px] text-center">
-                <p class="text-sm font-bold uppercase tracking-[0.2em] text-spu-red/60">{{ $landing['resources']['eyebrow'] ?? '' }}</p>
-                <h2 class="mt-3 text-4xl font-bold leading-tight text-spu-blue md:text-5xl">{{ $landing['resources']['title'] ?? '' }}</h2>
-                <p class="mt-4 text-lg leading-relaxed text-slate-500">{{ $landing['resources']['subtitle'] ?? '' }}</p>
-            </div>
-            <div class="cms-grid-cards mx-auto mt-14 max-w-[1100px] gap-5">
-                @foreach (($landing['resources']['cards'] ?? []) as $card)
-                    <a href="/{{ $locale }}/admissions/{{ $card['slug'] ?? '' }}" class="group relative flex flex-col overflow-hidden rounded-2xl p-7 transition-all duration-300 hover:-translate-y-1 {{ ($card['active'] ?? false) ? 'bg-spu-blue text-white shadow-[0_20px_50px_rgba(32,39,89,0.25)]' : 'bg-white text-spu-blue shadow-[0_4px_24px_rgba(0,0,0,0.06)] hover:shadow-[0_16px_48px_rgba(0,0,0,0.1)]' }}">
-                        <div class="flex h-12 w-12 items-center justify-center rounded-xl {{ ($card['active'] ?? false) ? 'bg-white/15' : 'bg-spu-blue/5' }}"><img src="{{ $card['icon'] ?? '' }}" alt="" class="h-5 w-5 {{ ($card['active'] ?? false) ? 'brightness-0 invert' : '' }}" aria-hidden="true"></div>
-                        <h3 class="mt-5 text-xl font-bold leading-snug">{{ $card['title'] ?? '' }}</h3>
-                        <p class="mt-2 text-sm leading-relaxed {{ ($card['active'] ?? false) ? 'text-white/70' : 'text-slate-400' }}">{{ $card['desc'] ?? '' }}</p>
-                        <div class="mt-auto pt-5"><span class="text-xs font-bold uppercase tracking-[1px] {{ ($card['active'] ?? false) ? 'text-white/80' : 'text-spu-red' }}">{{ $card['link'] ?? ($locale === 'ar' ? 'اكتشف' : 'Explore') }}</span></div>
-                    </a>
-                @endforeach
-            </div>
-        </div>
-    </section>
+    @include('public.admissions.partials.navigation-cards', ['locale' => $locale, 'admissionsNavigationCards' => $admissionsNavigationCards])
 @endsection

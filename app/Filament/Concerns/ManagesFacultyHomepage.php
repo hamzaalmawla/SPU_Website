@@ -502,6 +502,7 @@ trait ManagesFacultyHomepage
                         TextInput::make('id')->required()->maxLength(80),
                         TextInput::make('name')->required()->maxLength(160),
                         TextInput::make('totalCredits')->numeric(),
+                        MediaPicker::document('pdfUrl', 'Study Plan PDF'),
                     ])
                     ->columns(3)
                     ->defaultItems(0)
@@ -1252,7 +1253,7 @@ trait ManagesFacultyHomepage
             }
         }
 
-        foreach (['faculty', 'heroImage', 'accent'] as $key) {
+        foreach (['faculty', 'heroImage', 'accent', 'pdfUrl'] as $key) {
             if (array_key_exists($key, $editedPlan)) {
                 $baseContent['payload']['plan'][$key] = $editedPlan[$key];
             }

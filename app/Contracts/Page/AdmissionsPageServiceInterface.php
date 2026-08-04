@@ -19,4 +19,7 @@ interface AdmissionsPageServiceInterface
 
     /** @return array{translations: array{ar: array<string, mixed>, en: array<string, mixed>}} */
     public function getEditablePayload(string $targetKey): array;
+
+    /** @return array<int, array<string, string>> */
+    public function getAdmissionsSubPages(string $locale, ?string $excludeTargetKey = null): array;
 }

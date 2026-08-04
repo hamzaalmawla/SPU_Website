@@ -81,7 +81,11 @@ final class AboutPageService implements AboutPageServiceInterface
             ->public()
             ->where('slug', 'vision-mission')
             ->with('translations')
-            ->firstOrFail();
+            ->first();
+
+        if ($page === null) {
+            return $this->visionMissionDto($locale, $this->defaultVisionMissionPayload($locale));
+        }
 
         return $this->visionMissionDto($locale, $this->contentPayloadFromPage($page, $locale));
     }
@@ -89,6 +93,78 @@ final class AboutPageService implements AboutPageServiceInterface
     public function buildPreviewVisionMission(string $locale, array $content): AboutVisionMissionDTO
     {
         return $this->visionMissionDto($locale, $content);
+    }
+
+    /** @return array<string, mixed> */
+    private function defaultVisionMissionPayload(string $locale): array
+    {
+        $isAr = $locale === 'ar';
+
+        return [
+            'title' => $isAr ? 'الرؤية والرسالة' : 'Vision and Mission',
+            'summary' => $isAr
+                ? 'تدعم الجامعة السورية الخاصة التعليم العالي من خلال تعليم نوعي وتعاون علمي وثقافي وبرامج تستجيب لاحتياجات المجتمع.'
+                : 'SPU advances higher education through quality learning, scientific and cultural cooperation, and programs responsive to community needs.',
+            'heroImage' => '/images/about/hero-img.jpg',
+            'seoTitle' => $isAr ? 'الرؤية والرسالة' : 'Vision and Mission',
+            'seoDescription' => $isAr
+                ? 'تدعم الجامعة السورية الخاصة التعليم العالي من خلال تعليم نوعي وتعاون علمي وثقافي وبرامج تستجيب لاحتياجات المجتمع.'
+                : 'SPU advances higher education through quality learning, scientific and cultural cooperation, and programs responsive to community needs.',
+            'seoImage' => '/images/about/hero-img.jpg',
+            'sections' => [
+                'cardsTitle' => $isAr ? 'توجه الجامعة' : 'Our Direction',
+                'cards' => [
+                    [
+                        'icon' => '/images/icon-search-outline.svg',
+                        'title' => $isAr ? 'الرؤية' : 'Vision',
+                        'body' => $isAr
+                            ? 'أن تكون الجامعة مركزاً علمياً متميزاً محلياً وإقليمياً وعالمياً، يواكب تطور المعرفة ويستجيب لاحتياجات المجتمع.'
+                            : 'To be a distinguished scientific center locally, regionally, and globally, keeping pace with knowledge development while responding to community needs.',
+                    ],
+                    [
+                        'icon' => '/images/icon-award-outline.svg',
+                        'title' => $isAr ? 'الرسالة' : 'Mission',
+                        'body' => $isAr
+                            ? 'تقديم تعليم جامعي معتمد وعالي الجودة من خلال مناهج وبرامج تدريبية وكفاءات أكاديمية متخصصة في المجالات الطبية والهندسية والإدارية.'
+                            : 'To provide accredited, high-quality university education through curricula, training programs, and specialized academic expertise across medical, engineering, and administrative disciplines.',
+                    ],
+                    [
+                        'icon' => '/images/icon-handshake-outline.svg',
+                        'title' => $isAr ? 'القيم' : 'Values',
+                        'body' => $isAr
+                            ? 'الجودة، والمسؤولية، والانفتاح العلمي، وخدمة المجتمع، والنزاهة الأكاديمية في التعليم والبحث والعمل المؤسسي.'
+                            : 'Quality, responsibility, scientific openness, community service, and academic integrity in learning, research, and institutional work.',
+                    ],
+                ],
+                'pillarsTitle' => $isAr ? 'الأعمدة الاستراتيجية' : 'Strategic Pillars',
+                'pillars' => [
+                    [
+                        'title' => $isAr ? 'تعليم معتمد' : 'Accredited Education',
+                        'summary' => $isAr
+                            ? 'تعمل الجامعة وفق أنظمة ومناهج معتمدة من وزارة التعليم العالي والبحث العلمي.'
+                            : 'SPU operates through regulations and curricula approved by the Ministry of Higher Education and Scientific Research.',
+                    ],
+                    [
+                        'title' => $isAr ? 'تعاون علمي' : 'Scientific Cooperation',
+                        'summary' => $isAr
+                            ? 'تدعم الاتفاقيات الأكاديمية تبادل الخبرات ورفع جودة التعليم وتسهيل فرص الدراسات العليا.'
+                            : 'Academic agreements support experience exchange, educational quality, and postgraduate opportunities.',
+                    ],
+                    [
+                        'title' => $isAr ? 'خدمة المجتمع' : 'Community Relevance',
+                        'summary' => $isAr
+                            ? 'ترتبط البرامج والأنشطة البحثية باحتياجات التنمية الاقتصادية والاجتماعية.'
+                            : 'Programs and research activities are aligned with economic and social development needs.',
+                    ],
+                    [
+                        'title' => $isAr ? 'خريجون مؤهلون' : 'Qualified Graduates',
+                        'summary' => $isAr
+                            ? 'تركز التجربة التعليمية على تأهيل الخريجين للمنافسة والتميز في سوق العمل.'
+                            : 'The learning experience prepares graduates to compete and stand out in the labor market.',
+                    ],
+                ],
+            ],
+        ];
     }
 
     public function getEditablePayload(string $targetKey): array
@@ -113,7 +189,16 @@ final class AboutPageService implements AboutPageServiceInterface
                 ->public()
                 ->where('slug', 'about')
                 ->with('translations')
-                ->firstOrFail();
+                ->first();
+
+            if ($page === null) {
+                return [
+                    'translations' => [
+                        'ar' => [],
+                        'en' => [],
+                    ],
+                ];
+            }
 
             return [
                 'translations' => [
@@ -153,7 +238,16 @@ final class AboutPageService implements AboutPageServiceInterface
             ->public()
             ->where('slug', $slug)
             ->with('translations')
-            ->firstOrFail();
+            ->first();
+
+        if ($page === null) {
+            return [
+                'translations' => [
+                    'ar' => [],
+                    'en' => [],
+                ],
+            ];
+        }
 
         return [
             'translations' => [
@@ -577,7 +671,7 @@ final class AboutPageService implements AboutPageServiceInterface
     private function visionMissionDto(string $locale, array $content): AboutVisionMissionDTO
     {
         $sections = is_array($content['sections'] ?? null) ? $content['sections'] : [];
-        $title = (string) ($content['title'] ?? '');
+        $title = (string) ($content['title'] ?? ($locale === 'ar' ? 'الرؤية والرسالة' : 'Vision and Mission'));
         $summary = (string) ($content['summary'] ?? '');
         $heroImage = (string) ($content['heroImage'] ?? '/images/about/hero-img.jpg');
         $cards = collect($this->listValue($sections, 'cards'))
@@ -931,7 +1025,7 @@ final class AboutPageService implements AboutPageServiceInterface
     private function buildAboutNavigationCards(string $locale, ?string $excludeTargetKey = null): array
     {
         return $this->targetRegistry->forArea('about')
-            ->filter(fn (CmsTargetDTO $target): bool => $target->key !== 'about.landing' && $target->key !== $excludeTargetKey && $target->publicPath !== null)
+            ->filter(fn (CmsTargetDTO $target): bool => $target->key !== 'about.landing' && $target->key !== 'about.vision-mission' && $target->key !== $excludeTargetKey && $target->publicPath !== null)
             ->values()
             ->map(fn (CmsTargetDTO $target): array => [
                 'title' => __($target->labelKey),

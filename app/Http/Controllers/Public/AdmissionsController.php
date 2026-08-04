@@ -38,6 +38,7 @@ final class AdmissionsController extends Controller
             'isPreview' => false,
             'seo' => $this->landingSeo($locale, $page),
             'page' => $page,
+            'admissionsNavigationCards' => $this->admissionsPageService->getAdmissionsSubPages($locale),
         ]);
     }
 
