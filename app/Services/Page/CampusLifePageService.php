@@ -39,14 +39,15 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
         $summary = (string) ($landing['hero']['summary'] ?? ($locale === 'ar'
             ? 'اكتشف خدمات ومرافق وأنشطة الحياة الجامعية في الجامعة السورية الخاصة.'
             : 'Discover student services, facilities, and campus activities at Syrian Private University.'));
+        $seo = is_array($landing['seo'] ?? null) ? $landing['seo'] : [];
 
         return new CampusLifePageDTO(
             locale: $locale,
             direction: $locale === 'ar' ? 'rtl' : 'ltr',
             landing: $landing,
-            seoTitle: $title.' | '.($locale === 'ar' ? 'الجامعة السورية الخاصة' : 'Syrian Private University'),
-            seoDescription: $summary,
-            seoImage: (string) ($landing['hero']['image'] ?? '/images/logo-spu.png'),
+            seoTitle: (string) ($seo['title'] ?? ($title.' | '.($locale === 'ar' ? 'الجامعة السورية الخاصة' : 'Syrian Private University'))),
+            seoDescription: (string) ($seo['description'] ?? $summary),
+            seoImage: (string) ($seo['image'] ?? ($landing['hero']['image'] ?? '/images/logo-spu.png')),
         );
     }
 
@@ -267,6 +268,13 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
                     ['labelEn' => 'Student Activities', 'labelAr' => 'الأنشطة الطلابية', 'href' => '/campus-life/clubs-activities'],
                     ['labelEn' => 'Career Development', 'labelAr' => 'التطوير المهني', 'href' => '/campus-life/career-development'],
                 ],
+            ],
+            'seo' => [
+                'titleEn' => 'Campus Life | Syrian Private University',
+                'titleAr' => 'الحياة الجامعية | الجامعة السورية الخاصة',
+                'descriptionEn' => 'Discover student services, facilities, and campus activities at Syrian Private University.',
+                'descriptionAr' => 'اكتشف خدمات ومرافق وأنشطة الحياة الجامعية في الجامعة السورية الخاصة.',
+                'image' => '/images/admissions-hero-campus.webp',
             ],
             'intro' => [
                 'titleEn' => 'Your Campus Life Journey',

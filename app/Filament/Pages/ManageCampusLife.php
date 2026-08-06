@@ -720,6 +720,12 @@ class ManageCampusLife extends Page implements HasForms
                 TextInput::make($prefix.'.cta.secondaryLabel')->label('Secondary Label')->required()->maxLength(120),
                 TextInput::make($prefix.'.cta.secondaryUrl')->label('Secondary URL')->required()->maxLength(255),
             ])->columns(2),
+
+            Section::make('SEO')->schema([
+                TextInput::make($prefix.'.seo.title')->label('SEO Title')->required()->maxLength(180),
+                Textarea::make($prefix.'.seo.description')->label('SEO Description')->required()->rows(2)->columnSpanFull(),
+                MediaPicker::image($prefix.'.seo.image', 'SEO Image', true),
+            ])->columns(2),
         ];
     }
 

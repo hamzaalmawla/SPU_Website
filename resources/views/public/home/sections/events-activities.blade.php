@@ -14,6 +14,7 @@
     $events = $decodeHtmlEntities($section->payload->events);
     $sectionTitle = $decodeHtmlEntities($section->payload->title);
     $calendarHighlights = $decodeHtmlEntities($section->payload->content['calendarHighlights'] ?? []);
+    $eventCtaLabel = $decodeHtmlEntities($section->payload->content['eventCtaLabel'] ?? ($locale === 'ar' ? 'اكتشف التفاصيل' : 'Explore Details'));
 @endphp
 
 <section x-data="calendarApp()"
@@ -40,7 +41,7 @@
                             <h3 class="mb-3 text-xl font-bold text-[#1e2652]" x-text="selectedEvent.title"></h3>
                             <p class="mb-6 text-[17px] leading-[1.65] text-[#55627c]" x-text="selectedEvent.description"></p>
                             <a :href="selectedEventLink()" class="inline-flex w-fit items-center gap-2 text-[18px] font-bold text-[#1e2652] transition-all ease-in-out delay-75 hover:text-spu-red">
-                                <span>{{ $locale === 'ar' ? 'اكتشف التفاصيل' : 'Explore Details' }}</span>
+                                 <span>{{ $eventCtaLabel }}</span>
                                 <img src="/images/icon-chevron-right-outline.svg" class="w-2.5 h-2.5 rtl:rotate-180" alt="">
                             </a>
                             <div class="mt-auto pt-5">

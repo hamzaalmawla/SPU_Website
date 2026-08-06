@@ -70,6 +70,7 @@ use App\Contracts\Legacy\LegacyRedirectDecisionServiceInterface;
 use App\Contracts\Legacy\LegacyRedirectEvidenceServiceInterface;
 use App\Contracts\Legacy\LegacyResearchMetadataExtractorInterface;
 use App\Contracts\Legacy\LegacyResearchPublicationImportServiceInterface;
+use App\Contracts\Legacy\LegacyResearchPublicationPublishingServiceInterface;
 use App\Contracts\Legacy\LegacyReviewCandidateReportServiceInterface;
 use App\Contracts\Legacy\LegacyStagingReviewServiceInterface;
 use App\Contracts\Legacy\LegacyStagingSummaryServiceInterface;
@@ -201,6 +202,7 @@ use App\Services\Legacy\LegacyRedirectDecisionService;
 use App\Services\Legacy\LegacyRedirectEvidenceService;
 use App\Services\Legacy\LegacyResearchMetadataExtractor;
 use App\Services\Legacy\LegacyResearchPublicationImportService;
+use App\Services\Legacy\LegacyResearchPublicationPublishingService;
 use App\Services\Legacy\LegacyReviewCandidateReportService;
 use App\Services\Legacy\LegacyStagingReviewService;
 use App\Services\Legacy\LegacyStagingSummaryService;
@@ -246,7 +248,9 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\View\View as ViewContract;
 
 /**
  * Registers application service bindings and infrastructure configuration.
@@ -281,6 +285,25 @@ class AppServiceProvider extends ServiceProvider
         $this->registerModelObservers();
         $this->registerAuthorization();
         $this->configureRateLimiting();
+        $this->registerPublicHomepageFooterComposer();
+    }
+
+    private function registerPublicHomepageFooterComposer(): void
+    {
+        View::composer('layouts.public', function (ViewContract $view): void {
+            $data = $view->getData();
+
+            if (($data['isPreview'] ?? false) === true) {
+                return;
+            }
+
+            $locale = is_string($data['locale'] ?? null) && in_array($data['locale'], ['ar', 'en'], true)
+                ? $data['locale']
+                : 'ar';
+            $homepage = app(HomepageSectionServiceInterface::class)->getPublicHomepage($locale);
+
+            $view->with('homepageFooterSection', $homepage->findSection('footer'));
+        });
     }
 
     private function registerModelObservers(): void
@@ -471,6 +494,7 @@ class AppServiceProvider extends ServiceProvider
             LegacyQuarantineSummaryServiceInterface::class => LegacyQuarantineSummaryService::class,
             LegacyRedirectEvidenceServiceInterface::class => LegacyRedirectEvidenceService::class,
             LegacyResearchMetadataExtractorInterface::class => LegacyResearchMetadataExtractor::class,
+            LegacyResearchPublicationPublishingServiceInterface::class => LegacyResearchPublicationPublishingService::class,
             LegacyRedirectDecisionServiceInterface::class => LegacyRedirectDecisionService::class,
             LegacyReviewCandidateReportServiceInterface::class => LegacyReviewCandidateReportService::class,
             LegacyResearchPublicationImportServiceInterface::class => LegacyResearchPublicationImportService::class,

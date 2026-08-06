@@ -6,17 +6,12 @@
         <section class="core-domains-section">
             <div class="container">
                 <div class="partner-goals-grid">
-                @foreach ([
-                        ['icon' => '+', 'title' => __('public.experience_exchange'), 'text' => __('public.experience_exchange_desc')],
-                        ['icon' => '◇', 'title' => __('public.faculty_development'), 'text' => __('public.faculty_development_desc')],
-                        ['icon' => '✓', 'title' => __('public.postgraduate_pathways'), 'text' => __('public.postgraduate_pathways_desc')],
-                        ['icon' => '○', 'title' => __('public.community_alignment'), 'text' => __('public.community_alignment_desc')],
-                    ] as $goal)
+                @foreach ($page->sections as $goal)
                         <article class="partner-goal-card reveal reveal-up">
-                            <div class="partner-goal-icon" aria-hidden="true">{{ $goal['icon'] }}</div>
+                            <div class="partner-goal-icon" aria-hidden="true">{{ $goal['icon'] ?? '' }}</div>
                             <div class="partner-goal-content">
-                                <h3>{{ $goal['title'] }}</h3>
-                                <p>{{ $goal['text'] }}</p>
+                                <h3>{{ $goal['title'] ?? '' }}</h3>
+                                <p>{{ $goal['body'] ?? '' }}</p>
                             </div>
                         </article>
                     @endforeach

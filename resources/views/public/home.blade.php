@@ -2,14 +2,7 @@
 
 @section('content')
     @php
-        $displayOrder = [
-            'achievements_highlights' => 3,
-            'academic_faculties' => 4,
-        ];
-
-        $homepageSections = collect($homepage->sections)->sortBy(
-            static fn ($section): int => $displayOrder[$section->key] ?? $section->sortOrder,
-        );
+        $homepageSections = collect($homepage->sections)->sortBy('sortOrder');
     @endphp
 
     <div data-homepage>

@@ -217,6 +217,34 @@ final class AboutWorkflowTest extends TestCase
             ->assertDontSee('Subpage Schema Pending');
     }
 
+    public function test_manage_about_partnerships_exposes_and_saves_goal_cards(): void
+    {
+        $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
+
+        $component = Livewire::test(ManageAbout::class)
+            ->set('data.target_key', 'about.partnerships')
+            ->call('loadTarget', 'about.partnerships')
+            ->assertSee('Partnership Goals');
+
+        /** @var array<string, mixed> $data */
+        $data = $component->get('data');
+        $goals = is_array($data['en_partnerships']['sections'] ?? null) ? $data['en_partnerships']['sections'] : [];
+        $goals[] = [
+            'icon' => 'o',
+            'title' => 'Managed Partnership Goal',
+            'body' => 'This goal is editable from the About workspace.',
+        ];
+
+        $component
+            ->set('data.en_partnerships.sections', $goals)
+            ->call('save');
+
+        $draft = CmsDraft::query()->where('target_key', 'about.partnerships')->latest('id')->firstOrFail();
+        $titles = collect($draft->payload_json['translations']['en']['sections'] ?? [])->pluck('title')->all();
+
+        $this->assertContains('Managed Partnership Goal', $titles);
+    }
+
     public function test_about_landing_uses_verified_managed_content_and_complete_metadata(): void
     {
         $this->get('/en/about')
@@ -552,6 +580,7 @@ final class AboutWorkflowTest extends TestCase
             ->set('data.target_key', 'about.leadership')
             ->call('loadTarget', 'about.leadership')
             ->assertSee('Hero')
+            ->assertSee('Leadership Presentation')
             ->set('data.en_leadership.headline', 'Curated Leadership Shell')
             ->call('save');
 

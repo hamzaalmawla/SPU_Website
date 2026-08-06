@@ -28,6 +28,7 @@ class ResearchPublication extends Model
         'legacy_source_id',
         'legacy_owner_id',
         'legacy_owner_source',
+        'legacy_image_path',
         'extraction_status',
         'external_url',
         'file_media_id',

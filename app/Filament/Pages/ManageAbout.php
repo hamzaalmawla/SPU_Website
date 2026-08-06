@@ -567,7 +567,7 @@ class ManageAbout extends Page implements HasForms
     {
         $prefix = $locale.'_'.$stateKey;
 
-        return [
+        $fields = [
             Section::make('Hero')->schema([
                 TextInput::make($prefix.'.title')->label('Page Title')->required()->maxLength(180),
                 TextInput::make($prefix.'.headline')->label('Headline')->required()->maxLength(255),
@@ -578,6 +578,46 @@ class ManageAbout extends Page implements HasForms
                 MediaPicker::image($prefix.'.seoImage', 'Social Image', true),
             ])->columns(2),
         ];
+
+        if ($stateKey === 'partnerships') {
+            $fields[] = Section::make('Partnership Goals')->schema([
+                Repeater::make($prefix.'.sections')
+                    ->label('Goals')
+                    ->schema([
+                        MediaPicker::icon('icon', 'Icon'),
+                        TextInput::make('title')->required()->maxLength(180),
+                        Textarea::make('body')->required()->rows(3)->columnSpanFull(),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]);
+        }
+
+        if ($stateKey === 'leadership') {
+            $fields[] = Section::make('Leadership Presentation')->schema([
+                Repeater::make($prefix.'.sections')
+                    ->label('Presentation Copy')
+                    ->schema([
+                        Select::make('key')->label('Content Key')->options([
+                            'rector_quote' => 'Rector Quote',
+                            'vice_presidents_title' => 'Vice Presidents Heading',
+                            'deans_title' => 'Faculty Deans Heading',
+                        ])->required(),
+                        TextInput::make('title')->label('Title')->maxLength(180),
+                        Textarea::make('body')->label('Body')->rows(3)->columnSpanFull(),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]);
+        }
+
+        return $fields;
     }
 
     /** @return array<int, Section> */
@@ -895,6 +935,7 @@ class ManageAbout extends Page implements HasForms
             'seoTitle' => $this->stringValue($payload, 'seoTitle') ?: $this->stringValue($payload, 'title'),
             'seoDescription' => $this->stringValue($payload, 'seoDescription') ?: $this->stringValue($payload, 'summary'),
             'seoImage' => $this->stringValue($payload, 'seoImage') ?: $this->stringValue($payload, 'heroImage'),
+            'sections' => $this->listValue($payload, 'sections'),
         ];
     }
 
@@ -909,7 +950,15 @@ class ManageAbout extends Page implements HasForms
             'seoTitle' => (string) ($data['seoTitle'] ?? ''),
             'seoDescription' => (string) ($data['seoDescription'] ?? ''),
             'seoImage' => (string) ($data['seoImage'] ?? ''),
-            'sections' => [],
+            'sections' => collect($this->listValue($data, 'sections'))
+                ->map(static fn (array $section): array => [
+                    'key' => (string) ($section['key'] ?? ''),
+                    'icon' => (string) ($section['icon'] ?? ''),
+                    'title' => (string) ($section['title'] ?? ''),
+                    'body' => (string) ($section['body'] ?? ''),
+                ])
+                ->values()
+                ->all(),
         ];
     }
 

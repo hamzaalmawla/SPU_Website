@@ -33,15 +33,18 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
     /** @param array<string, mixed> $landing */
     private function landingDto(string $locale, array $landing): AdmissionsPageDTO
     {
+        $hero = is_array($landing['hero'] ?? null) ? $landing['hero'] : [];
+        $images = is_array($hero['images'] ?? null) ? $hero['images'] : [];
+
         return new AdmissionsPageDTO(
             locale: $locale,
             direction: $locale === 'ar' ? 'rtl' : 'ltr',
             landing: $landing,
-            seoTitle: $locale === 'ar' ? 'القبول والتسجيل | الجامعة السورية الخاصة' : 'Admissions | Syrian Private University',
-            seoDescription: $locale === 'ar'
+            seoTitle: (string) ($landing['seoTitle'] ?? ($locale === 'ar' ? 'القبول والتسجيل | الجامعة السورية الخاصة' : 'Admissions | Syrian Private University')),
+            seoDescription: (string) ($landing['seoDescription'] ?? ($locale === 'ar'
                 ? 'تعرّف إلى متطلبات القبول وخطوات التقديم والرسوم والدعم المتاح للطلاب الجدد في الجامعة السورية الخاصة.'
-                : 'Understand SPU admission requirements, application steps, tuition guidance, and enrollment support.',
-            seoImage: '/images/admissions-hero-campus.webp',
+                : 'Understand SPU admission requirements, application steps, tuition guidance, and enrollment support.')),
+            seoImage: (string) ($landing['seoImage'] ?? ($images['campus'] ?? '/images/admissions-hero-campus.webp')),
         );
     }
 

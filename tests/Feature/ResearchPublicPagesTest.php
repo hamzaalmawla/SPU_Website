@@ -9,6 +9,7 @@ use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Filament\Pages\ManageResearch;
 use App\Models\Cms\CmsDraft;
 use App\Models\Media\MediaAsset;
+use App\Models\Research\LegacyResearchFileReference;
 use App\Models\Research\ResearchPublication;
 use App\Models\Research\ResearchPublicationTranslation;
 use App\Models\Shared\MigrationLog;
@@ -337,6 +338,28 @@ final class ResearchPublicPagesTest extends TestCase
             ->assertSee('Publication Files')
             ->assertSee('Publication file')
             ->assertSee('/storage/research/legacy-filter-target.pdf', false)
+            ->assertSee('PDF');
+    }
+
+    public function test_imported_publication_detail_exposes_legacy_paper_download(): void
+    {
+        $publication = $this->createImportedResearchPublication();
+        LegacyResearchFileReference::query()->create([
+            'research_publication_id' => $publication->getKey(),
+            'legacy_source_table' => 'jx_member_items',
+            'legacy_source_id' => 7001,
+            'legacy_path' => 'research/papers/legacy-filter-target.pdf',
+            'label_en' => 'Legacy paper',
+            'label_ar' => 'البحث القديم',
+            'sort_order' => 0,
+            'status' => 'deferred',
+        ]);
+
+        $this->get('/en/research/publications/legacy-filter-target-9001')
+            ->assertOk()
+            ->assertSee('Publication Files')
+            ->assertSee('Legacy paper')
+            ->assertSee('href="/research/papers/legacy-filter-target.pdf"', false)
             ->assertSee('PDF');
     }
 

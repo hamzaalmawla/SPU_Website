@@ -14,7 +14,7 @@ class CareerLink extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['url', 'is_external', 'sort_order', 'is_enabled'];
+    protected $fillable = ['url', 'legacy_photo_path', 'is_external', 'sort_order', 'is_enabled'];
 
     protected function casts(): array
     {

@@ -250,6 +250,7 @@ final class LegacyResearchPublicationImportService implements LegacyResearchPubl
                 'legacy_source_id' => $sourceId,
                 'legacy_owner_id' => $this->integerValue($row, 'parent'),
                 'legacy_owner_source' => $ownerSource,
+                'legacy_image_path' => $this->stringValue($this->rawValue($row, 'photo')),
                 'extraction_status' => $duplicateReview ? 'duplicate_review' : 'metadata_review',
                 'external_url' => $this->url($cleaned),
                 'file_media_id' => null,

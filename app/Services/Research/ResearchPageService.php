@@ -1107,10 +1107,27 @@ final class ResearchPageService implements ResearchPageServiceInterface
     {
         $publications = ResearchPublication::query()
             ->enabled()
-            ->whereNotNull('published_at')
-            ->whereDate('published_at', '<=', today())
             ->where(function ($query): void {
-                $query->whereNull('faculty_member_id')
+                $query
+                    ->where(function ($legacyQuery): void {
+                        $legacyQuery
+                            ->where('legacy_source_table', 'jx_member_categories')
+                            ->where('extraction_status', 'published');
+                    })
+                    ->orWhere(function ($nativeQuery): void {
+                        $nativeQuery
+                            ->whereNull('legacy_source_table')
+                            ->whereNotNull('published_at')
+                            ->whereDate('published_at', '<=', today());
+                    });
+            })
+            ->where(function ($query): void {
+                $query->where('legacy_source_table', 'jx_member_categories')
+                    ->where('extraction_status', 'published')
+                    ->orWhere(function ($nativeQuery): void {
+                        $nativeQuery->whereNull('legacy_source_table')
+                            ->whereNull('faculty_member_id');
+                    })
                     ->orWhereHas('facultyMember', function ($memberQuery): void {
                         $memberQuery
                             ->where('is_enabled', true)
@@ -1119,7 +1136,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
                             ->where('published_at', '<=', now());
                     });
             })
-            ->with(['translations', 'facultyMember.faculty.translations', 'fileMedia', 'files.mediaAsset'])
+            ->with(['translations', 'facultyMember.faculty.translations', 'fileMedia', 'files.mediaAsset', 'legacyFileReferences'])
             ->orderByDesc('published_at')
             ->orderBy('sort_order')
             ->orderByDesc('id')
@@ -1187,6 +1204,8 @@ final class ResearchPageService implements ResearchPageServiceInterface
             ?? $faculty?->translations->firstWhere('locale', 'en')
             ?? $faculty?->translations->firstWhere('locale', 'ar');
 
+        $downloads = $this->publicationDownloads($publication, $locale);
+
         return [
             'id' => $sourceId !== null ? 'legacy-'.$sourceId : 'research-publication-'.$publication->getKey(),
             'slug' => $this->databasePublicationSlug($publication, $sourceId),
@@ -1210,9 +1229,9 @@ final class ResearchPageService implements ResearchPageServiceInterface
             'resolvedThemes' => [],
             'scholarUrl' => $externalUrl,
             'scopusUrl' => null,
-            'image' => '/images/uni-main-place.JPG',
-            'isOpenAccess' => $publication->file_media_id !== null,
-            'downloads' => $this->publicationDownloads($publication, $locale),
+            'image' => MediaUrlResolver::resolveLegacy($publication->legacy_image_path) ?? '/images/uni-main-place.JPG',
+            'isOpenAccess' => $downloads !== [],
+            'downloads' => $downloads,
         ];
     }
 
@@ -1408,6 +1427,20 @@ final class ResearchPageService implements ResearchPageServiceInterface
                 'label' => (string) ($file->label ?: ($locale === 'ar' ? 'ملف إضافي' : 'Additional file')),
                 'url' => $url,
                 'type' => strtoupper((string) ($fileMedia->extension ?: 'FILE')),
+            ];
+        }
+
+        foreach ($publication->legacyFileReferences as $reference) {
+            $url = MediaUrlResolver::resolveLegacy($reference->legacy_path);
+
+            if ($url === null || collect($downloads)->contains('url', $url)) {
+                continue;
+            }
+
+            $downloads[] = [
+                'label' => (string) ($locale === 'ar' ? ($reference->label_ar ?: 'ملف إضافي') : ($reference->label_en ?: $reference->label_ar ?: 'Additional file')),
+                'url' => $url,
+                'type' => strtoupper((string) (pathinfo((string) $reference->legacy_path, PATHINFO_EXTENSION) ?: 'FILE')),
             ];
         }
 
@@ -1860,6 +1893,12 @@ final class ResearchPageService implements ResearchPageServiceInterface
                 continue;
             }
 
+            if ($key === 'downloads') {
+                $localized[$key] = $item;
+
+                continue;
+            }
+
             if (str_ends_with($key, 'En') || str_ends_with($key, 'Ar')) {
                 $base = substr($key, 0, -2);
                 $suffix = $locale === 'ar' ? 'Ar' : 'En';
@@ -1887,7 +1926,18 @@ final class ResearchPageService implements ResearchPageServiceInterface
             return $value;
         }
 
-        return array_map(fn (mixed $item): mixed => $this->normalizeUrls($item, $locale), $value);
+        if (array_is_list($value)) {
+            return array_map(fn (mixed $item): mixed => $this->normalizeUrls($item, $locale), $value);
+        }
+
+        $normalized = [];
+        foreach ($value as $key => $item) {
+            $normalized[$key] = $key === 'downloads'
+                ? $item
+                : $this->normalizeUrls($item, $locale);
+        }
+
+        return $normalized;
     }
 
     private function localizedUrl(string $url, string $locale): string

@@ -296,10 +296,10 @@ final class FacultyPageService implements FacultyPageServiceInterface
             $pageData = $this->cmsSubpageData($cmsContent, $pageData);
             $cmsItems = $this->arrayList($cmsContent['items'] ?? []);
 
-            if ($cmsItems !== []) {
+            if (array_key_exists('items', $cmsContent)) {
                 $items = $subpageSlug === 'projects'
                     ? collect($cmsItems)->map(fn (array $item): array => [
-                        ...$item,
+                        ...$this->projectDetailPayload($faculty, $item, $locale),
                         'detailRoute' => $this->projectDetailRoute($faculty, $locale, (string) ($item['slug'] ?? '')),
                     ])->values()->all()
                     : $cmsItems;
@@ -1054,19 +1054,11 @@ final class FacultyPageService implements FacultyPageServiceInterface
     /** @return array<int, array<string, mixed>> */
     private function projectDetailItems(Faculty $faculty, string $locale): array
     {
-        $projects = collect($this->projectItems($faculty, $locale))->keyBy('slug');
         $cmsContent = $this->publishedLocalizedPayload($this->targetKeyForSubpage($this->publicSlug($faculty), 'projects'), $locale);
 
-        foreach ($this->arrayList($cmsContent['items'] ?? []) as $item) {
-            $slug = (string) ($item['slug'] ?? '');
-
-            if ($slug === '') {
-                continue;
-            }
-
-            $existing = $projects->get($slug, []);
-            $projects->put($slug, [...(is_array($existing) ? $existing : []), ...$item]);
-        }
+        $projects = array_key_exists('items', $cmsContent ?? [])
+            ? collect($this->arrayList($cmsContent['items'] ?? []))->keyBy('slug')
+            : collect($this->projectItems($faculty, $locale))->keyBy('slug');
 
         return $projects
             ->map(fn (array $project): array => [
@@ -1083,14 +1075,18 @@ final class FacultyPageService implements FacultyPageServiceInterface
         $frontendProject = $this->frontendProjectDetail($this->publicSlug($faculty), (string) ($project['slug'] ?? ''), $locale);
 
         if ($frontendProject !== []) {
-            return [
-                ...$project,
+            $payload = [
                 ...$frontendProject,
+                ...$project,
+            ];
+            $payload['year'] = (string) ($project['academicYear'] ?? $project['year'] ?? $payload['year'] ?? '');
+
+            return [
+                ...$payload,
                 'detailRoute' => $this->projectDetailRoute($faculty, $locale, (string) ($project['slug'] ?? '')),
             ];
         }
 
-        $summary = (string) ($project['summary'] ?? '');
         $facultyTitle = (string) $this->facultyTranslation($faculty, $locale)->name;
 
         return [
@@ -1098,12 +1094,12 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'facultyTitle' => $facultyTitle,
             'facultySlug' => $this->publicSlug($faculty),
             'facultyColor' => $faculty->accent_color ?: '#202759',
-            'year' => '2025/2026',
-            'createdBy' => (string) ($project['team'] ?? ''),
-            'longDescription' => $this->projectLongDescription($facultyTitle, $summary, $locale),
-            'gallery' => $this->projectGallery($faculty, $project),
-            'technologies' => $this->projectTechnologies($project),
-            'teamMembers' => [],
+            'year' => (string) ($project['year'] ?? $project['academicYear'] ?? ''),
+            'createdBy' => (string) ($project['createdBy'] ?? ''),
+            'longDescription' => $this->stringList($project['longDescription'] ?? []),
+            'gallery' => $this->stringList($project['gallery'] ?? []),
+            'technologies' => $this->stringList($project['technologies'] ?? []),
+            'teamMembers' => $this->arrayList($project['teamMembers'] ?? []),
         ];
     }
 
@@ -1150,10 +1146,13 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'facultyColor' => (string) $project['facultyColor'],
             'year' => (string) $project['year'],
             'createdBy' => (string) ($isAr ? $project['createdByAr'] : $project['createdByEn']),
+            'createdById' => (string) ($project['createdById'] ?? ''),
+            'status' => (string) ($isAr ? ($project['statusAr'] ?? $project['status'] ?? 'مكتمل') : ($project['statusEn'] ?? $project['status'] ?? 'Completed')),
             'longDescription' => $this->stringList($isAr ? ($project['longDescAr'] ?? []) : ($project['longDescEn'] ?? [])),
             'gallery' => $project['gallery'],
             'technologies' => $project['technologies'],
             'teamMembers' => $teamMembers,
+            'supervisorId' => (string) ($project['supervisorId'] ?? ''),
         ];
     }
 
@@ -1173,46 +1172,6 @@ final class FacultyPageService implements FacultyPageServiceInterface
         return $data;
     }
 
-    /** @return array<int, string> */
-    private function projectLongDescription(string $facultyTitle, string $summary, string $locale): array
-    {
-        return $locale === 'ar'
-            ? [
-                $summary,
-                'تم تطوير هذا المشروع كمبادرة تطبيقية ضمن '.$facultyTitle.'، مع التركيز على ربط المفاهيم الأكاديمية باحتياجات عملية قابلة للقياس.',
-                'اعتمد الفريق على مراجعة المتطلبات، وبناء نموذج أولي، واختبار النتائج تحت إشراف أكاديمي لضمان الملاءمة العلمية والتطبيقية.',
-                'توثق مخرجات المشروع المنهجية والنتائج والتوصيات بما يدعم تطويره في دفعات لاحقة أو ربطه بمبادرات بحثية وتدريبية أوسع.',
-            ]
-            : [
-                $summary,
-                'This project was developed as an applied initiative within '.$facultyTitle.', connecting academic concepts with practical needs and measurable outcomes.',
-                'The team combined requirements analysis, prototyping, and supervised validation to keep the work academically rigorous and practically relevant.',
-                'The project outputs document the methodology, results, and recommendations so future cohorts can continue development or connect it to wider research and training initiatives.',
-            ];
-    }
-
-    /** @param array<string, mixed> $project @return array<int, string> */
-    private function projectGallery(Faculty $faculty, array $project): array
-    {
-        $gallery = is_array($faculty->gallery_json) ? $faculty->gallery_json : [];
-
-        return collect([$project['image'] ?? null, $faculty->hero_image, ...$gallery])
-            ->filter(fn (mixed $image): bool => is_string($image) && trim($image) !== '')
-            ->unique()
-            ->take(3)
-            ->values()
-            ->all();
-    }
-
-    /** @param array<string, mixed> $project @return array<int, string> */
-    private function projectTechnologies(array $project): array
-    {
-        return collect([$project['tag'] ?? null])
-            ->filter(fn (mixed $technology): bool => is_string($technology) && trim($technology) !== '')
-            ->values()
-            ->all();
-    }
-
     private function projectDetailRoute(Faculty $faculty, string $locale, string $projectSlug): string
     {
         return $this->url($locale, '/facilities/'.$this->publicSlug($faculty).'/projects/'.$projectSlug);
@@ -1221,10 +1180,14 @@ final class FacultyPageService implements FacultyPageServiceInterface
     /** @return array<int, array<string, mixed>> */
     private function alumniItems(Faculty $faculty, string $locale): array
     {
+        $metadataByTargetId = $this->migrationMetadataByTargetId('alumni', $faculty->alumni->pluck('id')->all());
+
         return $faculty->alumni
-            ->map(function (Alumni $alumni) use ($faculty, $locale): array {
+            ->map(function (Alumni $alumni) use ($faculty, $locale, $metadataByTargetId): array {
                 $translation = $this->alumniTranslation($alumni, $locale);
                 $department = $alumni->department instanceof Department ? $this->departmentTranslation($alumni->department, $locale)->name : null;
+                $legacyPhoto = $alumni->legacy_photo_path
+                    ?? ($metadataByTargetId[(int) $alumni->getKey()]['legacy_photo'] ?? null);
 
                 return [
                     'id' => (int) $alumni->getKey(),
@@ -1237,7 +1200,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
                     'semesterKey' => null,
                     'academicPhase' => $locale === 'ar' ? 'خريج' : 'Graduate',
                     'image' => $alumni->photoMedia === null
-                        ? null
+                        ? MediaUrlResolver::resolveLegacy($legacyPhoto)
                         : MediaUrlResolver::resolve($alumni->photoMedia->path, $alumni->photoMedia->disk),
                 ];
             })->values()->all();
@@ -1253,6 +1216,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 $translation = $this->honorTranslation($student, $locale);
                 $department = $student->department instanceof Department ? $this->departmentTranslation($student->department, $locale)->name : null;
                 $metadata = $metadataByTargetId[(int) $student->getKey()] ?? [];
+                $legacyPhoto = $student->legacy_photo_path ?? ($metadata['legacy_photo'] ?? null);
 
                 return [
                     'id' => (int) $student->getKey(),
@@ -1264,7 +1228,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
                     'semesterKey' => null,
                     'faculty' => $this->facultyTranslation($faculty, $locale)->name,
                     'image' => $student->photoMedia === null
-                        ? null
+                        ? MediaUrlResolver::resolveLegacy($legacyPhoto)
                         : MediaUrlResolver::resolve($student->photoMedia->path, $student->photoMedia->disk),
                     'isMemorial' => $this->isMemorialHonorStudent($metadata),
                 ];

@@ -27,6 +27,7 @@ The 175-page reference inventory remains the route baseline. Counts are provisio
 | Done | P1 | News Gallery | Added bilingual Media Library curation, filters, featured selection, pagination, keyboard-accessible image viewing, preview/publish workflows, media readiness checks, and cache invalidation. |
 | Done | P1 | Facilities | Implemented all seven faculty research pages with central publication data, bilingual CMS workflows, faculty scope, server pagination, canonical links, SEO, sitemap, assets, and tests. Gallery and project-pagination parity remain tracked separately. |
 | Done | P1 | Faculty Directories | Completed 33 department, lab, project, alumni, and valedictorian routes with family-wide AR/EN evidence, server pagination, related lab details, managed media, and query-preserving navigation. |
+| In Progress | P1 | Faculty Projects | Matched the reference six-faculty project listing/detail structure and added bilingual CMS detail fields with published-content precedence. Final reference dataset reconciliation, asset verification, and full parity evidence remain. |
 | Done | P1 | Faculty Overviews | Completed all seven overview routes with eligible central research, safe canonical dean/profile links, bilingual CMS/preview behavior, and family-wide tests. |
 | Done | P1 | Campus Life Jobs | Added one bilingual CMS job catalog covering board, application, and eight details with filters, preview/publication, status/expiry enforcement, trusted application context, private CV storage, JobPosting metadata, and tests. |
 | Done | P1 | Faculty Study Plans | Completed all 14 study-plan/course routes with accessible dialogs and graph controls, validated selectors, safe resources/profiles, localized query preservation, and family-wide tests. |
@@ -218,5 +219,7 @@ Frontend files:
 - Imported batch `approved-structured-research-import-20260731`: `289` publications, `549` source translations, and `241` deferred file paths.
 - Coverage: authors `156`, citation `69`, publisher/journal `59`, DOI `11`, year `63`, keywords `225`, rank `0`, safely linked owners `5`, and duplicate-title review `36`.
 - Rank remains null where the source has no explicit Q1-Q4 evidence. Ambiguous `jx_councils`/`jx_councils1` IDs remain unlinked rather than assigning papers to the wrong researcher.
-- Public research DTO mapping now prefers structured author, citation, publisher, DOI, rank, year, and keywords. Imported records remain private pending editorial publication and cPanel media reconciliation.
+- Public research DTO mapping now prefers structured author, citation, publisher, DOI, rank, year, and keywords. Imported records are public archive entries while cPanel media reconciliation remains pending.
 - Added `Docs/LEGACY_RESEARCH_PUBLICATION_MAPPING.md` as the authoritative field and confidence policy.
+- Published all `289` imported research records in batch `approved-public-research-20260731`. The public research archive now returns `297` records per locale: `289` imported legacy records plus `8` existing curated records. Imported records retain unknown dates, unresolved owners, duplicate-review provenance, and deferred file references without fabricated values.
+- Enabled public service-1 `/members/` query continuity for imported records; service-2 teaching/archive URLs remain private and are not redirected.

@@ -188,6 +188,9 @@ final class LegacyFacultyProfileImportService implements LegacyFacultyProfileImp
                 'phone' => $this->stringValue($this->rawValue($row, 'phone')) ?? $this->stringValue($this->rawValue($row, 'mobile')),
                 'photo_media_id' => null,
                 'cv_media_id' => null,
+                'legacy_photo_path' => $this->stringValue($this->rawValue($row, 'photo')),
+                'legacy_cv_path' => $this->stringValue($this->rawValue($row, 'cv')),
+                'legacy_ar_cv_path' => $this->stringValue($this->rawValue($row, 'ar_cv')),
                 'sort_order' => $this->integerValue($row, 'council_order') ?? $this->integerValue($row, 'id') ?? 0,
                 'is_enabled' => $enable && $this->visible($row),
             ]);

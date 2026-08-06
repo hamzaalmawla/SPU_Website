@@ -186,6 +186,23 @@ class MediaServiceTest extends TestCase
         $this->assertSame('/news/images/legacy.jpg', MediaUrlResolver::resolve('news/images/legacy.jpg', 'legacy'));
     }
 
+    public function test_legacy_relative_path_uses_the_existing_cpanel_public_path(): void
+    {
+        config()->set('legacy_media.base_url', null);
+
+        $this->assertSame('/news/images/legacy.jpg', MediaUrlResolver::resolveLegacy('news/images/legacy.jpg'));
+    }
+
+    public function test_legacy_path_can_use_an_existing_site_base_url(): void
+    {
+        config()->set('legacy_media.base_url', 'https://legacy.example.test/archive');
+
+        $this->assertSame(
+            'https://legacy.example.test/archive/news/images/legacy.jpg',
+            MediaUrlResolver::resolveLegacy('news/images/legacy.jpg'),
+        );
+    }
+
     public function test_upload_rejects_disallowed_mime_type(): void
     {
         $file = UploadedFile::fake()->create('malware.exe', 100, 'application/x-msdownload');

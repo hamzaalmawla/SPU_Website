@@ -346,6 +346,9 @@ final class HomepageFormSchema
                 TextInput::make("{$prefix}.section_title")
                     ->label('Section Title')
                     ->maxLength(255),
+                TextInput::make("{$prefix}.content.event_cta_label")
+                    ->label('Event CTA Label')
+                    ->maxLength(100),
             ]),
             Repeater::make("{$prefix}.events")
                 ->label('Event Cards')

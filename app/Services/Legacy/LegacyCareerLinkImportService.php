@@ -181,7 +181,9 @@ final class LegacyCareerLinkImportService implements LegacyCareerLinkImportServi
         return DB::transaction(function () use ($item, $batch, $disk, $input, $checksum): int {
             $row = $item['row'];
             $link = CareerLink::query()->create([
-                'url' => $item['url'], 'is_external' => true,
+                'url' => $item['url'],
+                'legacy_photo_path' => is_scalar($row->photo) && trim((string) $row->photo) !== '' ? trim((string) $row->photo) : null,
+                'is_external' => true,
                 'sort_order' => is_numeric($row->record_order) ? max(0, (int) $row->record_order) : $item['sourceId'], 'is_enabled' => false,
             ]);
             $count = 0;

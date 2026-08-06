@@ -1174,6 +1174,12 @@ class ManageAdmissions extends Page implements HasForms
                     ->collapsible()
                     ->columnSpanFull(),
             ])->columns(2),
+
+            Section::make('SEO')->schema([
+                TextInput::make($prefix.'.seoTitle')->label('SEO Title')->required()->maxLength(180),
+                Textarea::make($prefix.'.seoDescription')->label('SEO Description')->required()->rows(2)->columnSpanFull(),
+                MediaPicker::image($prefix.'.seoImage', 'SEO Image', true),
+            ])->columns(2),
         ];
     }
 
@@ -1217,6 +1223,9 @@ class ManageAdmissions extends Page implements HasForms
             'resources_title' => $this->stringValue($resources, 'title'),
             'resources_subtitle' => $this->stringValue($resources, 'subtitle'),
             'resource_cards' => array_values(array_filter(is_array($resources['cards'] ?? null) ? $resources['cards'] : [], static fn (mixed $item): bool => is_array($item))),
+            'seoTitle' => $this->stringValue($payload, 'seoTitle') ?: $this->stringValue($hero, 'title'),
+            'seoDescription' => $this->stringValue($payload, 'seoDescription') ?: $this->stringValue($hero, 'summary'),
+            'seoImage' => $this->stringValue($payload, 'seoImage') ?: $this->stringValue($images, 'campus'),
         ];
     }
 
@@ -1264,6 +1273,9 @@ class ManageAdmissions extends Page implements HasForms
                 'subtitle' => (string) ($data['resources_subtitle'] ?? ''),
                 'cards' => $this->listValue($data, 'resource_cards'),
             ],
+            'seoTitle' => (string) ($data['seoTitle'] ?? ''),
+            'seoDescription' => (string) ($data['seoDescription'] ?? ''),
+            'seoImage' => (string) ($data['seoImage'] ?? ''),
         ];
     }
 

@@ -6,10 +6,14 @@
         $rector = $people->firstWhere('category', 'rector');
         $vicePresidents = $people->where('category', 'vice_president')->values();
         $deans = $people->where('category', 'dean')->values();
+        $leadershipCopy = collect($page->sections)->filter(static fn (mixed $section): bool => is_array($section) && isset($section['key']))->keyBy('key');
+        $rectorQuote = (string) ($leadershipCopy->get('rector_quote')['body'] ?? '');
+        $vicePresidentsTitle = (string) ($leadershipCopy->get('vice_presidents_title')['title'] ?? '');
+        $deansTitle = (string) ($leadershipCopy->get('deans_title')['title'] ?? '');
     @endphp
 
     <div class="bg-[#faf9fb] font-hacen text-spu-blue">
-        @include('public.about.partials.hero', ['title' => $page->headline, 'summary' => '', 'image' => $page->heroImage])
+        @include('public.about.partials.hero', ['title' => $page->headline, 'summary' => $page->summary, 'image' => $page->heroImage])
 
         <section class="bg-[#faf9fb] py-16 lg:py-24"
                  x-data="leadershipDirectory()"
@@ -34,7 +38,7 @@
                             <p class="mb-5 text-xs font-black uppercase tracking-[0.15em] text-spu-red">{{ $rector->role }}</p>
                             <h2 class="text-3xl font-black leading-tight text-spu-blue md:text-4xl">{{ $rector->name }}</h2>
                             <blockquote class="staff-quote mt-8 max-w-xl text-[0.95rem] font-medium leading-[1.8] text-gray-600">
-                                {{ $rector->quote ?: ($locale === 'ar' ? 'تتمثل رؤيتنا في بناء بيئة أكاديمية لا تكتفي بالسعي إلى التميز في البحث والتعليم، بل تساهم في التنمية المستدامة للمجتمع وتمكين طلابنا من قيادة المستقبل.' : 'Our vision is to foster an academic environment that not only pursues excellence in research and education but also actively contributes to the sustainable development of our society. We are committed to empowering our students to become the leaders and innovators of tomorrow.') }}
+                                 {{ $rector->quote ?: $rectorQuote }}
                             </blockquote>
                             <a href="{{ route('public.about.profile', ['locale' => $locale, 'source' => 'person', 'slug' => $rector->slug]) }}" class="mt-10 inline-flex items-center gap-3 text-xs font-black uppercase tracking-[0.14em] text-spu-blue transition hover:text-spu-red">
                                 <span>{{ $locale === 'ar' ? 'اقرأ الملف الكامل' : 'Read Full Profile' }}</span>
@@ -46,7 +50,7 @@
 
                 @if ($vicePresidents->isNotEmpty())
                     <div x-show="showInstitutional()">
-                        <div class="section-title-wrapper"><h2 class="section-title">{{ $locale === 'ar' ? 'نواب رئيس الجامعة' : 'Vice Presidents' }}</h2></div>
+                         <div class="section-title-wrapper"><h2 class="section-title">{{ $vicePresidentsTitle }}</h2></div>
                         <div class="vp-grid">
                             @foreach ($vicePresidents as $person)
                                 <a href="{{ route('public.about.profile', ['locale' => $locale, 'source' => 'person', 'slug' => $person->slug]) }}" class="vp-card reveal reveal-up block transition hover:-translate-y-1 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-blue">
@@ -65,7 +69,7 @@
                 @endif
 
                 @if ($deans->isNotEmpty())
-                    <div class="section-title-wrapper"><h2 class="section-title">{{ $locale === 'ar' ? 'عمداء الكليات' : 'Faculty Deans' }}</h2></div>
+                    <div class="section-title-wrapper"><h2 class="section-title">{{ $deansTitle }}</h2></div>
                     <div class="deans-carousel-wrapper"
                          role="region"
                          aria-roledescription="carousel"

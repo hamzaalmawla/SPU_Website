@@ -23,6 +23,7 @@ use App\Models\News\NewsArticleSeoMeta;
 use App\Models\News\NewsArticleTranslation;
 use App\Models\News\NewsCategory;
 use App\Models\News\NewsCategoryTranslation;
+use App\Support\MediaUrlResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -286,7 +287,7 @@ final class NewsService implements NewsServiceInterface
                     title: $this->plainText((string) $translation->title),
                     slug: (string) $article->slug,
                     excerpt: $this->articleExcerpt($translation),
-                    imageUrl: $this->mediaUrl($article->coverMedia),
+                    imageUrl: $this->mediaUrl($article->coverMedia, $article->legacy_cover_path),
                     publishedAt: $this->articlePublishedAt($article),
                     url: $this->articleUrl($locale, (int) $article->getKey()),
                     categoryLabel: $category?->name,
@@ -399,7 +400,7 @@ final class NewsService implements NewsServiceInterface
         $excerpt = $this->articleExcerpt($translation);
         $imageUrl = $seo?->og_image_url
             ?? $this->mediaUrl($seo?->ogImageMedia)
-            ?? $this->mediaUrl($article->coverMedia);
+            ?? $this->mediaUrl($article->coverMedia, $article->legacy_cover_path);
 
         return new NewsArticleDTO(
             id: (int) $article->getKey(),
@@ -433,7 +434,7 @@ final class NewsService implements NewsServiceInterface
             title: $this->plainText((string) $translation->title),
             slug: (string) $article->slug,
             excerpt: $this->articleExcerpt($translation),
-            imageUrl: $this->mediaUrl($article->coverMedia),
+            imageUrl: $this->mediaUrl($article->coverMedia, $article->legacy_cover_path),
             publishedAt: $this->articlePublishedAt($article),
             url: $this->articleUrl($locale, (int) $article->getKey()),
             categoryLabel: $category?->name,
@@ -461,7 +462,7 @@ final class NewsService implements NewsServiceInterface
                 id: (int) $attachment->getKey(),
                 kind: (string) $attachment->kind,
                 label: $locale === 'ar' ? $attachment->label_ar : ($attachment->label_en ?? $attachment->label_ar),
-                url: $this->mediaUrl($attachment->mediaAsset),
+                url: $this->mediaUrl($attachment->mediaAsset, $attachment->legacy_path),
             ))
             ->filter(fn (NewsAttachmentDTO $attachment): bool => $attachment->url !== null)
             ->values()
@@ -532,29 +533,19 @@ final class NewsService implements NewsServiceInterface
             ?? $article->seoMeta->first();
     }
 
-    private function mediaUrl(?MediaAsset $media): ?string
+    private function mediaUrl(?MediaAsset $media, ?string $legacyPath = null): ?string
     {
-        if (! $media instanceof MediaAsset) {
-            return null;
+        if ($media instanceof MediaAsset) {
+            $path = $media->webp_path ?: $media->path;
+
+            if (is_string($path) && $path !== '') {
+                return $media->disk === 'legacy'
+                    ? MediaUrlResolver::resolveLegacy($path)
+                    : MediaUrlResolver::resolve($path, $media->disk);
+            }
         }
 
-        $path = $media->webp_path ?: $media->path;
-
-        if (! is_string($path) || $path === '') {
-            return null;
-        }
-
-        if (preg_match('/^https?:\/\//i', $path) === 1 || str_starts_with($path, '/')) {
-            return $path;
-        }
-
-        if ($media->disk === 'legacy') {
-            $publicLegacyPath = 'legacy/'.ltrim($path, '/');
-
-            return is_file(public_path($publicLegacyPath)) ? '/'.$publicLegacyPath : null;
-        }
-
-        return '/storage/'.$path;
+        return MediaUrlResolver::resolveLegacy($legacyPath);
     }
 
     private function articleUrl(string $locale, int $articleId): string

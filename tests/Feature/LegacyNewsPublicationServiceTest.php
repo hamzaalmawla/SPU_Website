@@ -114,8 +114,9 @@ final class LegacyNewsPublicationServiceTest extends TestCase
         $this->get('/en/news/'.$article->getKey())
             ->assertOk()
             ->assertDontSee('href=""', false)
-            ->assertDontSee('Deferred file')
-            ->assertDontSee('Attachments');
+            ->assertSee('href="/files/deferred.pdf"', false)
+            ->assertSee('Deferred file')
+            ->assertSee('Attachments');
     }
 
     public function test_publication_allows_approved_arabic_source_fallback_without_synthesizing_english(): void

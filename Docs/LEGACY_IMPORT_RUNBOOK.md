@@ -286,6 +286,17 @@ Applied structured research batch on 2026-07-31:
 - Replay: all `349` rows report `already_processed`; no duplicate targets are created.
 - Full mapping policy: `Docs/LEGACY_RESEARCH_PUBLICATION_MAPPING.md`.
 
+Applied public research archive batch on 2026-07-31:
+
+- Batch: `approved-public-research-20260731`.
+- Dry run: `289` requested and eligible; `0` blocked.
+- Published: `289` imported research records through the approval-gated publication service.
+- Public eligibility: imported records use `extraction_status=published`; missing historical dates remain null and are never replaced with the migration timestamp.
+- Duplicate review: all `36` duplicate-title records are public per the explicit archive-display decision, while their `duplicate_review` provenance remains available for later correction.
+- Files: `241` legacy file references remain deferred and are not rendered as downloads until cPanel files are verified.
+- Replay: `289` already published; no duplicate publication logs were created.
+- Public continuity: enabled service-1 member URLs resolve to localized research publication slugs; service-2 member routes remain private and unresolved.
+
 ## Run Manual Imports
 
 Run one module at a time.

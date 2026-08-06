@@ -31,6 +31,7 @@ use App\Models\Person\FacultyMember;
 use App\Models\Person\FacultyMemberTranslation;
 use App\Models\Person\Person;
 use App\Models\Person\PersonTranslation;
+use App\Models\Shared\MigrationLog;
 use App\Support\MediaUrlResolver;
 use Illuminate\Support\Collection;
 
@@ -240,13 +241,18 @@ final class AboutPageService implements AboutPageServiceInterface
             ->public()
             ->with(['translations', 'faculty.translations', 'photoMedia'])
             ->orderBy('sort_order')
-            ->get()
-            ->map(function (FacultyMember $member) use ($locale, $facultyLabels): ?StaffDirectoryItemDTO {
+            ->get();
+        $legacyMediaByTargetId = $this->legacyMediaByTargetId('faculty_members', $facultyMembers->pluck('id')->all());
+        $facultyMembers = $facultyMembers
+            ->map(function (FacultyMember $member) use ($locale, $facultyLabels, $legacyMediaByTargetId): ?StaffDirectoryItemDTO {
                 $translation = $this->facultyMemberTranslation($member, $locale);
 
                 if (! $translation instanceof FacultyMemberTranslation) {
                     return null;
                 }
+
+                $legacyPhoto = $member->legacy_photo_path
+                    ?? ($legacyMediaByTargetId[(int) $member->getKey()]['legacy_photo'] ?? null);
 
                 $facultySlug = $member->faculty instanceof Faculty
                     ? (string) ($member->faculty->faculty_scope_slug ?: $member->faculty->public_slug ?: $member->faculty->slug)
@@ -259,7 +265,7 @@ final class AboutPageService implements AboutPageServiceInterface
                     role: (string) ($translation->position ?: $translation->title ?: ''),
                     image: $member->photoMedia instanceof MediaAsset
                         ? MediaUrlResolver::resolve($member->photoMedia->path, $member->photoMedia->disk)
-                        : null,
+                        : MediaUrlResolver::resolveLegacy($legacyPhoto),
                     facultySlug: $facultySlug,
                     facultyName: $facultySlug !== null ? ($facultyLabels[$facultySlug] ?? null) : null,
                 );
@@ -974,6 +980,25 @@ final class AboutPageService implements AboutPageServiceInterface
 
                 return [$slug => (string) $this->facultyTranslation($faculty, $locale)->name];
             })
+            ->all();
+    }
+
+    /** @param array<int, mixed> $targetIds @return array<int, array<string, mixed>> */
+    private function legacyMediaByTargetId(string $targetTable, array $targetIds): array
+    {
+        $targetIds = array_values(array_filter(array_map('intval', $targetIds)));
+        if ($targetIds === []) {
+            return [];
+        }
+
+        return MigrationLog::query()
+            ->where('target_table', $targetTable)
+            ->where('status', 'success')
+            ->whereIn('target_id', $targetIds)
+            ->orderByDesc('id')
+            ->get(['target_id', 'metadata'])
+            ->unique('target_id')
+            ->mapWithKeys(fn (MigrationLog $log): array => [(int) $log->target_id => is_array($log->metadata) ? $log->metadata : []])
             ->all();
     }
 

@@ -32,6 +32,7 @@ class NewsArticle extends Model
         'legacy_source_id',
         'legacy_service_type',
         'legacy_url',
+        'legacy_cover_path',
         'created_by',
         'updated_by',
     ];

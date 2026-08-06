@@ -11,6 +11,7 @@ use App\DTOs\Legacy\NormalizedLegacyUrlDTO;
 use App\Services\Legacy\QueryResolvers\LegacyCategoryRouteQueryResolver;
 use App\Services\Legacy\QueryResolvers\LegacyFunctionalRouteQueryResolver;
 use App\Services\Legacy\QueryResolvers\LegacyNewsQueryResolver;
+use App\Services\Legacy\QueryResolvers\LegacyResearchQueryResolver;
 use App\Services\Legacy\QueryResolvers\LegacySubsiteHomeQueryResolver;
 use App\Services\Legacy\QueryResolvers\LegacyUnsupportedLanguageQueryResolver;
 
@@ -27,9 +28,10 @@ final class LegacyQueryResolverRegistry implements LegacyQueryResolverRegistryIn
         LegacyFunctionalRouteQueryResolver $functionalRouteResolver,
         LegacySubsiteHomeQueryResolver $subsiteHomeResolver,
         LegacyUnsupportedLanguageQueryResolver $unsupportedLanguageResolver,
+        LegacyResearchQueryResolver $researchResolver,
     ) {
         $this->unsupportedLanguageResolver = $unsupportedLanguageResolver;
-        $this->resolvers = [$subsiteHomeResolver, $functionalRouteResolver, $categoryRouteResolver, $newsResolver];
+        $this->resolvers = [$subsiteHomeResolver, $functionalRouteResolver, $categoryRouteResolver, $newsResolver, $researchResolver];
     }
 
     public function resolve(NormalizedLegacyUrlDTO $url): ?LegacyQueryResolutionDTO
@@ -42,7 +44,7 @@ final class LegacyQueryResolverRegistry implements LegacyQueryResolverRegistryIn
             return null;
         }
 
-        if ($this->isPrivateMembersArchive($url)) {
+        if ($this->isPrivateMembersArchive($url) && ! $this->isPublicResearchRequest($url)) {
             return null;
         }
 
@@ -65,5 +67,14 @@ final class LegacyQueryResolverRegistry implements LegacyQueryResolverRegistryIn
     {
         return config('old_database.members_continuity_policy') === 'private_archive'
             && $url->subsite->key === 'members';
+    }
+
+    private function isPublicResearchRequest(NormalizedLegacyUrlDTO $url): bool
+    {
+        return $url->subsite->key === 'members'
+            && $url->requestType === 'legacy_router'
+            && $url->dir === 'items'
+            && $url->page === 'show'
+            && (int) ($url->service ?? 0) === 1;
     }
 }

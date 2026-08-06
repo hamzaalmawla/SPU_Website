@@ -309,6 +309,9 @@ final class LegacyCentralCouncilImportService implements LegacyCentralCouncilImp
 
             $member = CouncilMember::query()->create([
                 'council_id' => (int) $council->getKey(), 'faculty_member_id' => null,
+                'legacy_photo_path' => $this->text($this->rawValue($row, 'photo')),
+                'legacy_cv_path' => $this->text($this->rawValue($row, 'cv')),
+                'legacy_ar_cv_path' => $this->text($this->rawValue($row, 'ar_cv')),
                 'sort_order' => $this->integerValue($row, 'council_order') ?? $sourceId, 'is_enabled' => false,
             ]);
             foreach ($translations as $locale => $translation) {

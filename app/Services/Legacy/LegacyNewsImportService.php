@@ -405,6 +405,7 @@ final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
                 'legacy_source_id' => $sourceId,
                 'legacy_service_type' => $serviceType,
                 'legacy_url' => $this->stringValue($row, 'url'),
+                'legacy_cover_path' => $this->stringValue($row, 'photo'),
             ]);
 
             foreach ($translations as $locale => $translation) {

@@ -16,7 +16,7 @@ class CouncilMember extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['council_id', 'faculty_member_id', 'sort_order', 'is_enabled'];
+    protected $fillable = ['council_id', 'faculty_member_id', 'legacy_photo_path', 'legacy_cv_path', 'legacy_ar_cv_path', 'sort_order', 'is_enabled'];
 
     protected function casts(): array
     {

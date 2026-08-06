@@ -375,6 +375,9 @@ final class LegacyPublicStaffImportService implements LegacyPublicStaffImportSer
                 'email' => $this->normalizedValidEmail($cleaned->values['email'] ?? null),
                 'phone' => $this->text($this->rawValue($row, 'phone')) ?? $this->text($this->rawValue($row, 'mobile')),
                 'photo_media_id' => null, 'cv_media_id' => null,
+                'legacy_photo_path' => $this->text($this->rawValue($row, 'photo')),
+                'legacy_cv_path' => $this->text($this->rawValue($row, 'cv')),
+                'legacy_ar_cv_path' => $this->text($this->rawValue($row, 'ar_cv')),
                 'sort_order' => $this->integerValue($row, 'council_order') ?? $sourceId,
                 'is_enabled' => false, 'publication_status' => PublicationStatus::Draft->value, 'published_at' => null,
             ]);

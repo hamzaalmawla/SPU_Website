@@ -907,8 +907,41 @@ trait ManagesFacultyHomepage
                         TextInput::make('tag')->label(__('admin.faculty_workspace.editor.fields.category'))->maxLength(120),
                         TextInput::make('team')->label(__('admin.faculty_workspace.editor.fields.team'))->maxLength(180),
                         TextInput::make('supervisor')->label(__('admin.faculty_workspace.editor.fields.supervisor'))->maxLength(180),
+                        TextInput::make('createdBy')->label(__('admin.faculty_workspace.editor.fields.created_by'))->maxLength(180),
+                        TextInput::make('academicYear')->label(__('admin.faculty_workspace.editor.fields.academic_year'))->maxLength(40),
+                        TextInput::make('status')->label(__('admin.faculty_workspace.editor.fields.status'))->maxLength(80),
                         MediaPicker::image('image', __('admin.faculty_workspace.editor.fields.image')),
                         Textarea::make('summary')->label(__('admin.faculty_workspace.editor.fields.summary'))->rows(3)->columnSpanFull(),
+                        Repeater::make('longDescription')
+                            ->label(__('admin.faculty_workspace.editor.fields.long_description'))
+                            ->schema([
+                                Textarea::make('paragraph')->label(__('admin.faculty_workspace.editor.fields.paragraph'))->required()->rows(3)->columnSpanFull(),
+                            ])
+                            ->defaultItems(0)
+                            ->reorderable()
+                            ->collapsible()
+                            ->columnSpanFull(),
+                        Repeater::make('gallery')
+                            ->label(__('admin.faculty_workspace.editor.fields.gallery_images'))
+                            ->schema([
+                                MediaPicker::image('image', __('admin.faculty_workspace.editor.fields.image'), true),
+                            ])
+                            ->defaultItems(0)
+                            ->reorderable()
+                            ->collapsible()
+                            ->columnSpanFull(),
+                        TagsInput::make('technologies')->label(__('admin.faculty_workspace.editor.fields.technologies'))->separator(',')->columnSpanFull(),
+                        Repeater::make('teamMembers')
+                            ->label(__('admin.faculty_workspace.editor.fields.team_members'))
+                            ->schema([
+                                TextInput::make('name')->label(__('admin.faculty_workspace.editor.fields.member_name'))->required()->maxLength(180),
+                                TextInput::make('role')->label(__('admin.faculty_workspace.editor.fields.member_role'))->required()->maxLength(120),
+                            ])
+                            ->columns(2)
+                            ->defaultItems(0)
+                            ->reorderable()
+                            ->collapsible()
+                            ->columnSpanFull(),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -1013,6 +1046,28 @@ trait ManagesFacultyHomepage
         }
 
         if ($subpageSlug !== 'study-plan') {
+            if ($subpageSlug === 'projects') {
+                $content['items'] = array_map(function (array $item): array {
+                    $item['longDescription'] = collect(is_array($item['longDescription'] ?? null) ? $item['longDescription'] : [])
+                        ->map(static fn (mixed $paragraph): array => [
+                            'paragraph' => is_array($paragraph)
+                                ? (string) ($paragraph['paragraph'] ?? $paragraph['body'] ?? '')
+                                : (string) $paragraph,
+                        ])
+                        ->filter(static fn (array $paragraph): bool => $paragraph['paragraph'] !== '')
+                        ->values()
+                        ->all();
+                    $item['gallery'] = collect(is_array($item['gallery'] ?? null) ? $item['gallery'] : [])
+                        ->map(static fn (mixed $image): array => ['image' => is_array($image) ? (string) ($image['image'] ?? '') : (string) $image])
+                        ->filter(static fn (array $image): bool => $image['image'] !== '')
+                        ->values()
+                        ->all();
+                    $item['teamMembers'] = $this->listOfArrays($item['teamMembers'] ?? []);
+
+                    return $item;
+                }, $this->listOfArrays($content['items'] ?? []));
+            }
+
             return $content;
         }
 
@@ -1079,6 +1134,28 @@ trait ManagesFacultyHomepage
         $content['items'] = array_map(function (array $item) use ($subpageSlug): array {
             if ($subpageSlug === 'departments') {
                 $item['tags'] = array_values(array_filter(is_array($item['tags'] ?? null) ? $item['tags'] : []));
+            }
+
+            if ($subpageSlug === 'projects') {
+                $item['longDescription'] = collect($this->listOfArrays($item['longDescription'] ?? []))
+                    ->map(static fn (array $paragraph): string => (string) ($paragraph['paragraph'] ?? $paragraph['body'] ?? ''))
+                    ->filter()
+                    ->values()
+                    ->all();
+                $item['gallery'] = collect(is_array($item['gallery'] ?? null) ? $item['gallery'] : [])
+                    ->map(static fn (mixed $image): string => is_array($image) ? (string) ($image['image'] ?? '') : (string) $image)
+                    ->filter()
+                    ->values()
+                    ->all();
+                $item['technologies'] = array_values(array_filter(is_array($item['technologies'] ?? null) ? $item['technologies'] : [], static fn (mixed $technology): bool => is_string($technology) && trim($technology) !== ''));
+                $item['teamMembers'] = collect($this->listOfArrays($item['teamMembers'] ?? []))
+                    ->map(static fn (array $member): array => [
+                        'name' => (string) ($member['name'] ?? ''),
+                        'role' => (string) ($member['role'] ?? ''),
+                    ])
+                    ->filter(static fn (array $member): bool => $member['name'] !== '')
+                    ->values()
+                    ->all();
             }
 
             return $item;

@@ -28,6 +28,7 @@
         $yearLabel = $isAr ? 'العام الدراسي' : 'Academic Year';
         $statusLabel = $isAr ? 'الحالة' : 'Status';
         $completedLabel = $isAr ? 'مكتمل' : 'Completed';
+        $statusValue = (string) ($project['status'] ?? $completedLabel);
         $technologiesLabel = $isAr ? 'التقنيات' : 'Technologies';
         $teamLabel = $isAr ? 'الفريق' : 'Team';
         $supervisorLabel = $isAr ? 'المشرف' : 'Supervisor';
@@ -142,7 +143,7 @@
                             </div>
                             <div class="mt-3 flex items-center justify-between text-[12px]">
                                 <span class="text-slate-400">{{ $statusLabel }}</span>
-                                <span class="rounded-[3px] bg-green-50 px-2 py-0.5 font-bold text-green-600">{{ $completedLabel }}</span>
+                                <span class="rounded-[3px] bg-green-50 px-2 py-0.5 font-bold text-green-600">{{ $statusValue }}</span>
                             </div>
                         </div>
                     </div>

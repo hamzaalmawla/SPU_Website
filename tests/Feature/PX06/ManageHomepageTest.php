@@ -321,6 +321,20 @@ class ManageHomepageTest extends TestCase
         $this->assertSame('/en/admissions', $footerRoundTrip->content['legalLinks'][0]['url']);
     }
 
+    public function test_homepage_events_cta_label_round_trips_through_the_editor(): void
+    {
+        $payload = $this->invokeFormArrayToPayload([
+            'section_title' => 'Events and Activities',
+            'content' => ['event_cta_label' => 'View Event Details'],
+        ], 'events_activities');
+
+        $this->assertSame('View Event Details', $payload->content['eventCtaLabel'] ?? null);
+
+        $form = $this->invokePayloadToFormArray($payload, 'events_activities');
+
+        $this->assertSame('View Event Details', $form['content']['event_cta_label'] ?? null);
+    }
+
     private function invokeFormArrayToPayload(array $data, string $sectionKey = ''): HomepageSectionDataDTO
     {
         $method = new ReflectionMethod(ManageHomepage::class, 'formArrayToPayload');

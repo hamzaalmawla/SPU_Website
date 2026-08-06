@@ -25,6 +25,7 @@ class HonorStudent extends Model
         'academic_year',
         'gpa',
         'photo_media_id',
+        'legacy_photo_path',
         'sort_order',
         'is_enabled',
     ];

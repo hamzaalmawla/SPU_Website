@@ -111,16 +111,34 @@ class AboutSectionSeeder extends Seeder
                 ]],
             ],
             'leadership' => [
-                'ar' => ['مجلس الجامعة', 'دليل قيادة الجامعة السورية الخاصة', 'تعرف إلى رئاسة الجامعة والعمداء والقيادات الأكاديمية.'],
-                'en' => ['Leadership', 'SPU leadership directory', 'Meet the university rector, deans, and academic leadership.'],
+                'ar' => ['مجلس الجامعة', 'دليل قيادة الجامعة السورية الخاصة', 'تعرف إلى رئاسة الجامعة والعمداء والقيادات الأكاديمية.', [
+                    ['key' => 'rector_quote', 'title' => '', 'body' => 'تتمثل رؤيتنا في بناء بيئة أكاديمية لا تكتفي بالسعي إلى التميز في البحث والتعليم، بل تساهم في التنمية المستدامة للمجتمع وتمكين طلابنا من قيادة المستقبل.'],
+                    ['key' => 'vice_presidents_title', 'title' => 'نواب رئيس الجامعة', 'body' => ''],
+                    ['key' => 'deans_title', 'title' => 'عمداء الكليات', 'body' => ''],
+                ]],
+                'en' => ['Leadership', 'SPU leadership directory', 'Meet the university rector, deans, and academic leadership.', [
+                    ['key' => 'rector_quote', 'title' => '', 'body' => 'Our vision is to foster an academic environment that not only pursues excellence in research and education but also actively contributes to the sustainable development of our society. We are committed to empowering our students to become the leaders and innovators of tomorrow.'],
+                    ['key' => 'vice_presidents_title', 'title' => 'Vice Presidents', 'body' => ''],
+                    ['key' => 'deans_title', 'title' => 'Faculty Deans', 'body' => ''],
+                ]],
             ],
             'directorates' => [
                 'ar' => ['المديريات', 'مديريات متخصصة تضمن التميز التشغيلي ونجاح الطلاب.', 'تدعم المديريات المركزية العملية التعليمية والبحثية والإدارية في الجامعة.'],
                 'en' => ['Directorates', 'Specialized directorates ensuring operational excellence and student success.', 'Central directorates support academic, research, and administrative operations.'],
             ],
             'partnerships' => [
-                'ar' => ['الشراكات', 'شراكات توسع أثر الجامعة', 'تهدف اتفاقيات التعاون العلمي إلى تبادل الخبرات وتحسين جودة التعليم ودعم فرص الدراسات العليا.'],
-                'en' => ['Partnerships', 'Partnerships that extend SPU’s impact', 'Scientific cooperation agreements exchange expertise, improve quality, and support postgraduate opportunities.'],
+                'ar' => ['الشراكات', 'شراكات توسع أثر الجامعة', 'تهدف اتفاقيات التعاون العلمي إلى تبادل الخبرات وتحسين جودة التعليم ودعم فرص الدراسات العليا.', [
+                    ['icon' => '+', 'title' => 'تبادل الخبرات', 'body' => 'تبادل الخبرات التعليمية والبحثية مع مؤسسات مرموقة.'],
+                    ['icon' => '◇', 'title' => 'تطوير الكوادر', 'body' => 'الاستفادة من أساتذة ومحاضرين ذوي خبرة في التعليم والبحث.'],
+                    ['icon' => '✓', 'title' => 'مسارات الدراسات العليا', 'body' => 'دعم الخريجين الساعين إلى مسارات الماجستير والدكتوراه.'],
+                    ['icon' => '○', 'title' => 'مواءمة مجتمعية', 'body' => 'ربط مخرجات الجامعة باحتياجات المجتمع والتنمية الاقتصادية والاجتماعية.'],
+                ]],
+                'en' => ['Partnerships', 'Partnerships that extend SPU’s impact', 'Scientific cooperation agreements exchange expertise, improve quality, and support postgraduate opportunities.', [
+                    ['icon' => '+', 'title' => 'Experience Exchange', 'body' => 'Exchange teaching and research experience with reputable institutions.'],
+                    ['icon' => '◇', 'title' => 'Faculty Development', 'body' => 'Benefit from experienced professors and lecturers in teaching and research.'],
+                    ['icon' => '✓', 'title' => 'Postgraduate Pathways', 'body' => "Support graduates seeking master's and doctoral study pathways."],
+                    ['icon' => '○', 'title' => 'Community Alignment', 'body' => 'Link university outputs with community, economic, and social development needs.'],
+                ]],
             ],
         ];
 

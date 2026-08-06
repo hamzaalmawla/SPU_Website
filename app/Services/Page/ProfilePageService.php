@@ -231,16 +231,16 @@ final class ProfilePageService implements ProfilePageServiceInterface
             return MediaUrlResolver::resolve($member->photoMedia->path, $member->photoMedia->disk);
         }
 
-        return null;
+        return MediaUrlResolver::resolveLegacy($member->legacy_photo_path);
     }
 
     private function resolveCvUrl(FacultyMember $member): ?string
     {
-        if (! $member->cvMedia instanceof MediaAsset) {
-            return null;
+        if ($member->cvMedia instanceof MediaAsset) {
+            return MediaUrlResolver::resolve($member->cvMedia->path, $member->cvMedia->disk);
         }
 
-        return MediaUrlResolver::resolve($member->cvMedia->path, $member->cvMedia->disk);
+        return MediaUrlResolver::resolveLegacy($member->legacy_cv_path ?? $member->legacy_ar_cv_path);
     }
 
     /** @param Collection<int, PersonEducation> $educations @return array<int, EducationDTO> */

@@ -576,12 +576,39 @@ final class FacilitiesWorkflowTest extends TestCase
             ->assertSee('المشرف أو المدرس')
             ->assertDontSee('الدرجة أو المسار');
 
-        Livewire::test(ManageMedicineFaculty::class)
+        $projectEditor = Livewire::test(ManageMedicineFaculty::class)
             ->set('data.target_key', 'facilities.medicine.projects')
             ->call('loadTarget', 'facilities.medicine.projects')
             ->assertSee('مشاريع الطلاب')
             ->assertSee('المشرف')
-            ->assertSee('فريق العمل');
+            ->assertSee('فريق العمل')
+            ->assertSee('وصف المشروع')
+            ->assertSee('التقنيات')
+            ->assertSee('أعضاء الفريق');
+
+        /** @var array<string, mixed> $projectEditorData */
+        $projectEditorData = $projectEditor->get('data');
+        $firstProjectKey = array_key_first($projectEditorData['en_content']['items'] ?? []);
+        $this->assertNotNull($firstProjectKey);
+        $projectEditor
+            ->set('data.en_content.items.'.$firstProjectKey.'.longDescription', [['paragraph' => 'Description persists after reload.']])
+            ->call('save');
+
+        $projectDraft = CmsDraft::query()->where('target_key', 'facilities.medicine.projects')->latest('id')->firstOrFail();
+        $savedLongDescription = $projectDraft->payload_json['translations']['en']['items'][0]['longDescription'] ?? null;
+        $this->assertSame(['Description persists after reload.'], $savedLongDescription);
+
+        /** @var array<string, mixed> $reloadedProjectEditorData */
+        $reloadedProjectEditorData = Livewire::test(ManageMedicineFaculty::class)
+            ->set('data.target_key', 'facilities.medicine.projects')
+            ->call('loadTarget', 'facilities.medicine.projects')
+            ->get('data');
+        $reloadedFirstProjectKey = array_key_first($reloadedProjectEditorData['en_content']['items'] ?? []);
+        $reloadedDescriptionKey = array_key_first($reloadedProjectEditorData['en_content']['items'][$reloadedFirstProjectKey]['longDescription'] ?? []);
+        $this->assertSame(
+            'Description persists after reload.',
+            $reloadedProjectEditorData['en_content']['items'][$reloadedFirstProjectKey]['longDescription'][$reloadedDescriptionKey]['paragraph'] ?? null,
+        );
 
         Livewire::test(ManageMedicineFaculty::class)
             ->set('data.target_key', 'facilities.medicine.alumni')
@@ -607,6 +634,59 @@ final class FacilitiesWorkflowTest extends TestCase
             ->assertSee('مقررات هذا الفصل')
             ->assertDontSee('Opens Course IDs')
             ->assertSee('المحاضرات والملفات');
+    }
+
+    public function test_published_faculty_project_cms_content_overrides_reference_detail_fallback_in_both_locales(): void
+    {
+        $facilities = app(FacultyPageServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $payload = $facilities->getEditablePayload('facilities.medicine.projects');
+        $projectSlug = (string) ($payload['translations']['en']['items'][0]['slug'] ?? '');
+
+        $payload['translations']['en']['items'][0] = [
+            ...$payload['translations']['en']['items'][0],
+            'title' => 'CMS Medicine Project',
+            'summary' => 'CMS medicine project summary.',
+            'academicYear' => '2026 / 2027',
+            'status' => 'In progress',
+            'createdBy' => 'CMS Student',
+            'longDescription' => ['CMS project paragraph.'],
+            'gallery' => ['/images/campus-feature-01.webp'],
+            'technologies' => ['CMS Technology'],
+            'teamMembers' => [['name' => 'CMS Team Member', 'role' => 'Developer']],
+        ];
+        $payload['translations']['ar']['items'][0] = [
+            ...$payload['translations']['ar']['items'][0],
+            'title' => 'مشروع طب CMS',
+            'summary' => 'ملخص مشروع طب CMS.',
+            'academicYear' => '2026 / 2027',
+            'status' => 'قيد التنفيذ',
+            'createdBy' => 'طالب CMS',
+            'longDescription' => ['فقرة مشروع CMS.'],
+            'gallery' => ['/images/campus-feature-01.webp'],
+            'technologies' => ['تقنية CMS'],
+            'teamMembers' => [['name' => 'عضو فريق CMS', 'role' => 'مطور']],
+        ];
+
+        $workflow->saveDraft('facilities.medicine.projects', $payload, (int) $author->id);
+        $this->assertTrue($workflow->publish('facilities.medicine.projects', (int) $author->id));
+        Cache::flush();
+
+        $this->get('/en/facilities/medicine/projects/'.$projectSlug)
+            ->assertOk()
+            ->assertSee('CMS Medicine Project')
+            ->assertSee('CMS project paragraph.')
+            ->assertSee('CMS Technology')
+            ->assertSee('In progress')
+            ->assertSee('2026 / 2027');
+
+        $this->get('/ar/facilities/medicine/projects/'.$projectSlug)
+            ->assertOk()
+            ->assertSee('مشروع طب CMS')
+            ->assertSee('فقرة مشروع CMS.')
+            ->assertSee('تقنية CMS')
+            ->assertSee('قيد التنفيذ');
     }
 
     public function test_manage_medicine_faculty_filters_alumni_and_valedictorians_inside_curated_workflow(): void

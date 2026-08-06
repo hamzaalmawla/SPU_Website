@@ -405,6 +405,11 @@ class ManageHomepage extends Page implements HasForms
         }
 
         $content = $this->withContactContentAliases($content, $payload->contactLinks);
+
+        if (isset($content['eventCtaLabel']) && ! isset($content['event_cta_label'])) {
+            $content['event_cta_label'] = $content['eventCtaLabel'];
+        }
+
         $formContent = $content;
         $formContent['images'] = self::imagesToFormArray($content['images'] ?? []);
 
@@ -522,6 +527,10 @@ class ManageHomepage extends Page implements HasForms
 
         if (! isset($content['legalLinks']) && isset($content['legal_links']) && is_array($content['legal_links'])) {
             $content['legalLinks'] = $content['legal_links'];
+        }
+
+        if (! isset($content['eventCtaLabel']) && isset($content['event_cta_label'])) {
+            $content['eventCtaLabel'] = $content['event_cta_label'];
         }
 
         $legalLinks = $data['content']['legal_links'] ?? $data['content']['legalLinks'] ?? null;

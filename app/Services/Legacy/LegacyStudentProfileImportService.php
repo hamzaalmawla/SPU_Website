@@ -358,6 +358,7 @@ final class LegacyStudentProfileImportService implements LegacyStudentProfileImp
                 'country_id' => null,
                 'city_id' => null,
                 'photo_media_id' => null,
+                'legacy_photo_path' => $this->stringValue($this->rawValue($row, 'photo')),
                 'is_featured' => false,
                 'is_enabled' => $enable && $this->visible($row),
             ]);
@@ -379,6 +380,7 @@ final class LegacyStudentProfileImportService implements LegacyStudentProfileImp
                 'academic_year' => $this->academicYear($row),
                 'gpa' => $this->gpa($row),
                 'photo_media_id' => null,
+                'legacy_photo_path' => $this->stringValue($this->rawValue($row, 'photo')),
                 'sort_order' => $this->integerValue($row, 's_order') ?? $this->integerValue($row, 'record_order') ?? $this->integerValue($row, 'id') ?? 0,
                 'is_enabled' => $enable && $this->visible($row),
             ]);

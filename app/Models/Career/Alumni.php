@@ -33,6 +33,7 @@ class Alumni extends Model
         'country_id',
         'city_id',
         'photo_media_id',
+        'legacy_photo_path',
         'is_featured',
         'is_enabled',
     ];
