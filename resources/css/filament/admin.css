@@ -211,7 +211,7 @@
     font-weight: 800;
 }
 
-.spu-task-grid__intro > p:last-child {
+.spu-task-grid__intro>p:last-child {
     margin-top: 0.45rem;
     color: #5b6e75;
     font-size: 0.84rem;
@@ -226,7 +226,7 @@
 
 .spu-task-grid__items,
 .spu-task-grid__intro,
-.spu-task-card > span:last-child {
+.spu-task-card>span:last-child {
     min-width: 0;
 }
 
@@ -370,8 +370,8 @@
         overflow-wrap: anywhere;
     }
 
-    .fi-header-actions > *,
-    .fi-form-actions > * {
+    .fi-header-actions>*,
+    .fi-form-actions>* {
         max-width: 100%;
     }
 }
@@ -398,6 +398,43 @@
     background: #183440;
 }
 
+/* Sidebar scrollbar: track matches sidebar background, thumb matches sidebar text */
+/* Filament scrolls on .fi-sidebar-nav, so target both the wrapper and the nav */
+.fi-sidebar,
+.fi-sidebar-nav {
+    scrollbar-width: thin;
+    scrollbar-color: #edf7f6 var(--spu-ink);
+}
+
+/* WebKit-based browsers (Chromium, Safari, Edge) */
+.fi-sidebar::-webkit-scrollbar,
+.fi-sidebar-nav::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+}
+
+.fi-sidebar::-webkit-scrollbar-track,
+.fi-sidebar-nav::-webkit-scrollbar-track {
+    background: var(--spu-ink);
+}
+
+.fi-sidebar::-webkit-scrollbar-thumb,
+.fi-sidebar-nav::-webkit-scrollbar-thumb {
+    background-color: #edf7f6;
+    border-radius: 999px;
+}
+
+.fi-sidebar::-webkit-scrollbar-thumb:hover,
+.fi-sidebar-nav::-webkit-scrollbar-thumb:hover {
+    background-color: #fff;
+}
+
+/* Hide scrollbar buttons/arrows in WebKit */
+.fi-sidebar::-webkit-scrollbar-button,
+.fi-sidebar-nav::-webkit-scrollbar-button {
+    display: none;
+}
+
 .dark .spu-choice-panel {
     color: #edf7f6;
     background: #183440;
@@ -411,7 +448,7 @@
 }
 
 .dark .spu-task-card small,
-.dark .spu-task-grid__intro > p:last-child {
+.dark .spu-task-grid__intro>p:last-child {
     color: #b6c9cc;
 }
 
@@ -426,6 +463,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+
     .spu-workspace__link,
     .spu-task-card,
     .spu-choice-links a {
@@ -435,5 +473,99 @@
     .spu-task-card:hover,
     .spu-task-card[aria-current="page"] {
         transform: none;
+    }
+}
+
+/* ============================================
+   Creative Scrollbar — Admin Panel
+   ============================================ */
+
+/**
+ * Base scrollbar styling for WebKit browsers
+ */
+.fi-body ::-webkit-scrollbar,
+.fi-modal-window ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.fi-body ::-webkit-scrollbar-track,
+.fi-modal-window ::-webkit-scrollbar-track {
+    background: linear-gradient(180deg, #f4f5f0 0%, #e8ece3 100%);
+    border-radius: 0;
+}
+
+.fi-body ::-webkit-scrollbar-thumb,
+.fi-modal-window ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #0f6471 0%, #1a4a5c 100%);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    box-shadow:
+        inset 0 0 6px rgba(255, 255, 255, 0.15),
+        0 0 8px rgba(15, 100, 113, 0.25);
+    transition: all 0.3s ease;
+}
+
+.fi-body ::-webkit-scrollbar-thumb:hover,
+.fi-modal-window ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #128a9c 0%, #1e5a70 100%);
+    border: 1px solid transparent;
+    box-shadow:
+        inset 0 0 10px rgba(255, 255, 255, 0.25),
+        0 0 16px rgba(15, 100, 113, 0.45);
+}
+
+.fi-body ::-webkit-scrollbar-corner,
+.fi-modal-window ::-webkit-scrollbar-corner {
+    background: #f4f5f0;
+}
+
+/**
+ * Firefox scrollbar styling
+ */
+.fi-body,
+.fi-modal-window {
+    scrollbar-width: thin;
+    scrollbar-color: #0f6471 #f4f5f0;
+}
+
+/**
+ * Dark mode admin scrollbar
+ */
+.dark .fi-body ::-webkit-scrollbar-track,
+.dark .fi-modal-window ::-webkit-scrollbar-track {
+    background: linear-gradient(180deg, #0e2530 0%, #142f3c 100%);
+}
+
+.dark .fi-body ::-webkit-scrollbar-thumb,
+.dark .fi-modal-window ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #74c9c6 0%, #4a9b9b 100%);
+    box-shadow:
+        inset 0 0 6px rgba(0, 0, 0, 0.2),
+        0 0 8px rgba(116, 201, 198, 0.3);
+}
+
+.dark .fi-body ::-webkit-scrollbar-thumb:hover,
+.dark .fi-modal-window ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #9ff4ed 0%, #74c9c6 100%);
+    box-shadow:
+        inset 0 0 10px rgba(0, 0, 0, 0.15),
+        0 0 16px rgba(116, 201, 198, 0.5);
+}
+
+.dark .fi-body,
+.dark .fi-modal-window {
+    scrollbar-color: #74c9c6 #0e2530;
+}
+
+/**
+ * Reduced motion support
+ */
+@media (prefers-reduced-motion: reduce) {
+
+    .fi-body ::-webkit-scrollbar-thumb,
+    .fi-modal-window ::-webkit-scrollbar-thumb {
+        transition: none;
     }
 }

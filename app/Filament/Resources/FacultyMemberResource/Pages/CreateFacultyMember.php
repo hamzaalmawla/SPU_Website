@@ -27,6 +27,12 @@ class CreateFacultyMember extends CreateRecord
         $this->cmsWorkflowService = $cmsWorkflowService;
     }
 
+    /** @param array<string, mixed> $data @return array<string, mixed> */
+    protected function mutateFormDataBeforeCreate(array $data): array
+    {
+        return FacultyMemberResource::prepareFacultyMemberFormData($data);
+    }
+
     protected function handleRecordCreation(array $data): Model
     {
         $user = auth()->user();

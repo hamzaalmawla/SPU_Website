@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
+use App\Filament\Components\PageUrlSelect;
 
 /**
  * Filament resource for managing bilingual landing pages.
@@ -298,10 +299,7 @@ class PageResource extends Resource
                     ->label('CTA Label')
                     ->maxLength(100),
 
-                TextInput::make("{$prefix}cta_url")
-                    ->label('CTA URL')
-                    ->url()
-                    ->maxLength(2048),
+                PageUrlSelect::make("{$prefix}cta_url", 'CTA URL', $locale),
             ])->columns(2),
 
             Section::make('Additional')->schema([

@@ -18,4 +18,10 @@ class EditFacultyMember extends EditRecord
     {
         return 'faculty-member';
     }
+
+    /** @param array<string, mixed> $data @return array<string, mixed> */
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        return FacultyMemberResource::prepareFacultyMemberFormData($data, (int) $this->record->getKey());
+    }
 }

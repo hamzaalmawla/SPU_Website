@@ -7,6 +7,7 @@ namespace App\Filament\Pages;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Exceptions\ConflictException;
+use App\Filament\Components\PageUrlSelect;
 use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
 use Filament\Actions\Action;
@@ -35,7 +36,6 @@ use Illuminate\Validation\ValidationException;
 class ManageResearch extends Page implements HasForms
 {
     use InteractsWithForms;
-
     protected static ?string $navigationIcon = 'heroicon-o-academic-cap';
 
     protected static ?string $slug = 'manage-research';
@@ -361,9 +361,9 @@ class ManageResearch extends Page implements HasForms
                 MediaPicker::image($prefix.'.hero.backgroundImage', $this->fieldLabel('background_image'), true),
                 Textarea::make($prefix.'.hero.summary')->label($this->fieldLabel('summary'))->required()->rows(2)->columnSpanFull(),
                 TextInput::make($prefix.'.hero.cta1')->label($this->fieldLabel('primary_cta'))->required()->maxLength(120),
-                TextInput::make($prefix.'.hero.cta1Url')->label($this->fieldLabel('primary_cta_url'))->required()->maxLength(255),
+                PageUrlSelect::make($prefix.'.hero.cta1Url', $this->fieldLabel('primary_cta_url'), null, true),
                 TextInput::make($prefix.'.hero.cta2')->label($this->fieldLabel('secondary_cta'))->required()->maxLength(120),
-                TextInput::make($prefix.'.hero.cta2Url')->label($this->fieldLabel('secondary_cta_url'))->required()->maxLength(255),
+                PageUrlSelect::make($prefix.'.hero.cta2Url', $this->fieldLabel('secondary_cta_url'), null, true),
             ])->columns(2),
             Section::make($this->sectionLabel('landing_stats'))->schema([
                 Repeater::make($prefix.'.stats')
@@ -407,7 +407,7 @@ class ManageResearch extends Page implements HasForms
                         TextInput::make('title')->label($this->fieldLabel('title'))->required()->maxLength(160),
                         Textarea::make('summary')->label($this->fieldLabel('summary'))->required()->rows(2)->columnSpanFull(),
                         TextInput::make('cta')->label($this->fieldLabel('cta_label'))->required()->maxLength(120),
-                        TextInput::make('url')->label($this->fieldLabel('url'))->required()->maxLength(255),
+                        PageUrlSelect::make('url', $this->fieldLabel('url'), null, true),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -470,12 +470,12 @@ class ManageResearch extends Page implements HasForms
                 Textarea::make($prefix.'.hero.summary')->label($this->fieldLabel('summary'))->required()->rows(2)->columnSpanFull(),
                 TextInput::make($prefix.'.hero.primaryCta')->label($this->fieldLabel('primary_cta'))->required()->maxLength(120),
                 TextInput::make($prefix.'.hero.secondaryCta')->label($this->fieldLabel('secondary_cta'))->required()->maxLength(120),
-                TextInput::make($prefix.'.hero.secondaryCtaUrl')->label($this->fieldLabel('secondary_cta_url'))->required()->maxLength(255)->columnSpanFull(),
+                PageUrlSelect::make($prefix.'.hero.secondaryCtaUrl', $this->fieldLabel('secondary_cta_url'), null, true)->columnSpanFull(),
                 Repeater::make($prefix.'.hero.breadcrumbs')
                     ->label($this->fieldLabel('breadcrumbs'))
                     ->schema([
                         TextInput::make('label')->label($this->fieldLabel('label'))->required()->maxLength(120),
-                        TextInput::make('url')->label($this->fieldLabel('url'))->required()->maxLength(255),
+                        PageUrlSelect::make('url', $this->fieldLabel('url'), null, true),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -541,7 +541,7 @@ class ManageResearch extends Page implements HasForms
                 Textarea::make($prefix.'.hero.summary')->label($this->fieldLabel('summary'))->required()->rows(2)->columnSpanFull(),
                 Repeater::make($prefix.'.hero.breadcrumbs')->label($this->fieldLabel('breadcrumbs'))->schema([
                     TextInput::make('label')->label($this->fieldLabel('label'))->required()->maxLength(120),
-                    TextInput::make('url')->label($this->fieldLabel('url'))->required()->maxLength(255),
+                    PageUrlSelect::make('url', $this->fieldLabel('url'), null, true),
                 ])->columns(2)->defaultItems(0)->reorderable()->collapsible()->columnSpanFull(),
             ])->columns(2),
             Section::make($this->sectionLabel('project_filters'))->schema([
@@ -585,7 +585,7 @@ class ManageResearch extends Page implements HasForms
                 Textarea::make($prefix.'.hero.summary')->label($this->fieldLabel('summary'))->required()->rows(2)->columnSpanFull(),
                 Repeater::make($prefix.'.hero.breadcrumbs')->label($this->fieldLabel('breadcrumbs'))->schema([
                     TextInput::make('label')->label($this->fieldLabel('label'))->required()->maxLength(120),
-                    TextInput::make('url')->label($this->fieldLabel('url'))->required()->maxLength(255),
+                    PageUrlSelect::make('url', $this->fieldLabel('url'), null, true),
                 ])->columns(2)->defaultItems(0)->reorderable()->collapsible()->columnSpanFull(),
             ])->columns(2),
             Section::make($this->sectionLabel('research_themes'))->schema([
@@ -704,7 +704,7 @@ class ManageResearch extends Page implements HasForms
                     ->schema([
                         TextInput::make('name')->label($this->fieldLabel('name'))->required()->maxLength(180),
                         TextInput::make('accessType')->label($this->fieldLabel('access_type'))->required()->maxLength(120),
-                        TextInput::make('url')->label($this->fieldLabel('url'))->required()->maxLength(255)->columnSpanFull(),
+                        PageUrlSelect::make('url', $this->fieldLabel('url'), null, true)->columnSpanFull(),
                         Textarea::make('description')->label($this->fieldLabel('description'))->required()->rows(2)->columnSpanFull(),
                     ])
                     ->columns(2)

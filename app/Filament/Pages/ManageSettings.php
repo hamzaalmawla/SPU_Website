@@ -7,6 +7,7 @@ namespace App\Filament\Pages;
 use App\Contracts\Settings\SettingsServiceInterface;
 use App\DTOs\Settings\SettingsDTO;
 use App\DTOs\Settings\SettingValueDTO;
+use App\Filament\Components\PageUrlSelect;
 use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
 use Filament\Actions\Action;
@@ -505,10 +506,7 @@ class ManageSettings extends Page implements HasForms
                     ->label('CTA Label')
                     ->maxLength(100),
 
-                TextInput::make("{$prefix}_apply_cta_url")
-                    ->label('CTA URL')
-                    ->url()
-                    ->maxLength(2048),
+                PageUrlSelect::make("{$prefix}_apply_cta_url", 'CTA URL', $locale),
 
                 Toggle::make("{$prefix}_apply_cta_enabled")
                     ->label('Enabled')

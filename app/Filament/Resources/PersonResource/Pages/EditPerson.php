@@ -18,4 +18,10 @@ class EditPerson extends EditRecord
     {
         return 'person';
     }
+
+    /** @param array<string, mixed> $data @return array<string, mixed> */
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        return PersonResource::preparePersonFormData($data, (int) $this->record->getKey());
+    }
 }

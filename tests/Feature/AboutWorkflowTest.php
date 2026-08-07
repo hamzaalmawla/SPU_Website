@@ -342,7 +342,7 @@ final class AboutWorkflowTest extends TestCase
 
     public function test_directorate_details_are_complete_localized_and_listed_in_sitemap(): void
     {
-        foreach (['scientific-research', 'student-affairs', 'it-services', 'public-relations'] as $slug) {
+        foreach (['scientific-research', 'student-affairs', 'public-relations'] as $slug) {
             $response = $this->get('/en/about/directorates/'.$slug)
                 ->assertOk()
                 ->assertSee('Key Services')
@@ -352,6 +352,9 @@ final class AboutWorkflowTest extends TestCase
                 ->assertDontSee('<main class="lg:col-span-3">', false);
             $this->assertStringNotContainsString('Main Building', (string) $response->getContent());
         }
+
+        $this->get('/en/about/directorates/it-services')
+            ->assertRedirect('/en/e-services/it-support');
 
         $this->get('/ar/about/directorates/scientific-research')
             ->assertOk()

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Support;
 
+use App\Filament\Components\PageUrlSelect;
 use Filament\Forms\Components\Component;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
@@ -70,15 +71,11 @@ final class HomepageFormSchema
                 TextInput::make("{$prefix}.primary_cta_label")
                     ->label('Primary CTA Label')
                     ->maxLength(100),
-                TextInput::make("{$prefix}.primary_cta_url")
-                    ->label('Primary CTA URL')
-                    ->maxLength(2048),
+                PageUrlSelect::make("{$prefix}.primary_cta_url", 'Primary CTA URL', self::localeFromPrefix($prefix)),
                 TextInput::make("{$prefix}.secondary_cta_label")
                     ->label('Secondary CTA Label')
                     ->maxLength(100),
-                TextInput::make("{$prefix}.secondary_cta_url")
-                    ->label('Secondary CTA URL')
-                    ->maxLength(2048),
+                PageUrlSelect::make("{$prefix}.secondary_cta_url", 'Secondary CTA URL', self::localeFromPrefix($prefix)),
             ]),
         ];
     }
@@ -155,10 +152,7 @@ final class HomepageFormSchema
                         ->label('CTA Label')
                         ->required()
                         ->maxLength(100),
-                    TextInput::make('cta_url')
-                        ->label('CTA URL')
-                        ->required()
-                        ->maxLength(2048),
+                    PageUrlSelect::make('cta_url', 'CTA URL', self::localeFromPrefix($prefix), true),
                 ])
                 ->columns(2)
                 ->collapsible()
@@ -199,10 +193,7 @@ final class HomepageFormSchema
                         ->label('CTA Label')
                         ->required()
                         ->maxLength(100),
-                    TextInput::make('cta_url')
-                        ->label('CTA URL')
-                        ->required()
-                        ->maxLength(2048),
+                    PageUrlSelect::make('cta_url', 'CTA URL', self::localeFromPrefix($prefix), true),
                 ])
                 ->columns(2)
                 ->collapsible()
@@ -214,12 +205,13 @@ final class HomepageFormSchema
     /** @return array<int, Component> */
     public static function chooseYourPathFields(string $prefix): array
     {
+        $locale = str_ends_with($prefix, '.ar') ? 'ar' : 'en';
+
         return [
             Section::make('Section Header')->schema([
                 TextInput::make("{$prefix}.section_title")
                     ->label('Section Title')
                     ->maxLength(255),
-                ...self::sectionActionFields($prefix),
             ]),
             Repeater::make("{$prefix}.path_items")
                 ->label('Path Cards')
@@ -236,19 +228,13 @@ final class HomepageFormSchema
                                 ->label('Link Label')
                                 ->required()
                                 ->maxLength(255),
-                            TextInput::make('url')
-                                ->label('Link URL')
-                                ->maxLength(2048),
+                            PageUrlSelect::make('url', 'Link Page', $locale)
+                                ->placeholder('None (text-only link)')
+                                ->helperText('Search and pick an internal page (top-level or subpage). Leave empty for a text-only link.'),
                         ])
                         ->defaultItems(0)
                         ->collapsible()
                         ->collapsed(),
-                    TextInput::make('cta_label')
-                        ->label('CTA Label')
-                        ->maxLength(100),
-                    TextInput::make('cta_url')
-                        ->label('CTA URL')
-                        ->maxLength(2048),
                 ])
                 ->columns(2)
                 ->collapsible()
@@ -285,9 +271,7 @@ final class HomepageFormSchema
                     TextInput::make('category')
                         ->label('Category')
                         ->maxLength(100),
-                    TextInput::make('cta_url')
-                        ->label('CTA URL')
-                        ->maxLength(2048),
+                    PageUrlSelect::make('cta_url', 'CTA URL', self::localeFromPrefix($prefix)),
                 ])
                 ->columns(2)
                 ->collapsible()
@@ -327,9 +311,7 @@ final class HomepageFormSchema
                     TextInput::make('authors')
                         ->label('Authors')
                         ->maxLength(500),
-                    TextInput::make('cta_url')
-                        ->label('CTA URL')
-                        ->maxLength(2048),
+                    PageUrlSelect::make('cta_url', 'CTA URL', self::localeFromPrefix($prefix)),
                 ])
                 ->columns(2)
                 ->collapsible()
@@ -371,9 +353,7 @@ final class HomepageFormSchema
                         ->label('Description')
                         ->rows(2)
                         ->maxLength(500),
-                    TextInput::make('cta_url')
-                        ->label('CTA URL')
-                        ->maxLength(2048),
+                    PageUrlSelect::make('cta_url', 'CTA URL', self::localeFromPrefix($prefix)),
                 ])
                 ->columns(2)
                 ->collapsible()
@@ -406,9 +386,7 @@ final class HomepageFormSchema
                     TextInput::make('cta_label')
                         ->label('CTA Label')
                         ->maxLength(100),
-                    TextInput::make('cta_url')
-                        ->label('CTA URL')
-                        ->maxLength(2048),
+                    PageUrlSelect::make('cta_url', 'CTA URL', self::localeFromPrefix($prefix)),
                 ])
                 ->columns(2)
                 ->collapsible()
@@ -504,10 +482,7 @@ final class HomepageFormSchema
                         ->label('Platform')
                         ->required()
                         ->maxLength(50),
-                    TextInput::make('url')
-                        ->label('URL')
-                        ->required()
-                        ->maxLength(2048),
+                    PageUrlSelect::make('url', 'URL', self::localeFromPrefix($prefix), true),
                     self::mediaField('icon', 'Icon'),
                 ])
                 ->columns(3)
@@ -548,10 +523,7 @@ final class HomepageFormSchema
                                 ->label('Label')
                                 ->required()
                                 ->maxLength(255),
-                            TextInput::make('url')
-                                ->label('URL')
-                                ->required()
-                                ->maxLength(2048),
+                            PageUrlSelect::make('url', 'URL', self::localeFromPrefix($prefix), true),
                         ])
                         ->columns(2)
                         ->collapsible()
@@ -568,10 +540,7 @@ final class HomepageFormSchema
                         ->label('Label')
                         ->required()
                         ->maxLength(255),
-                    TextInput::make('url')
-                        ->label('URL')
-                        ->required()
-                        ->maxLength(2048),
+                            PageUrlSelect::make('url', 'URL', self::localeFromPrefix($prefix), true),
                 ])
                 ->columns(2)
                 ->collapsible()
@@ -592,10 +561,15 @@ final class HomepageFormSchema
             TextInput::make("{$prefix}.section_cta_label")
                 ->label('Section CTA Label')
                 ->maxLength(100),
-            TextInput::make("{$prefix}.section_cta_url")
-                ->label('Section CTA URL')
-                ->maxLength(2048),
+            PageUrlSelect::make("{$prefix}.section_cta_url", 'Section CTA URL', self::localeFromPrefix($prefix)),
         ];
+    }
+
+    private static function localeFromPrefix(string $prefix): string
+    {
+        $locale = last(explode('.', $prefix));
+
+        return in_array($locale, ['ar', 'en'], true) ? $locale : app()->getLocale();
     }
 
     private static function mediaField(string $name, string $label, bool $required = false): Component

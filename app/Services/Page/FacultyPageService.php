@@ -239,7 +239,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 return null;
             }
 
-            if (! $this->isAvailableSubpage($this->publicSlug($faculty), $subpageSlug)) {
+            if (! $this->isAvailableSubpage($faculty, $subpageSlug)) {
                 return null;
             }
 
@@ -901,7 +901,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
 
         return $faculty->pages
             ->filter(fn (FacultyPage $page): bool => in_array($page->slug, self::SUBPAGE_SLUGS, true) && $page->slug !== 'study-plan-course')
-            ->filter(fn (FacultyPage $page): bool => $this->isAvailableSubpage($slug, (string) $page->slug))
+            ->filter(fn (FacultyPage $page): bool => $this->isAvailableSubpage($faculty, (string) $page->slug))
             ->sortBy('sort_order')
             ->map(fn (FacultyPage $page): FacultyNavigationItemDTO => new FacultyNavigationItemDTO(
                 slug: (string) $page->slug,
@@ -1844,13 +1844,25 @@ final class FacultyPageService implements FacultyPageServiceInterface
         return (string) ($faculty->public_slug ?: $faculty->slug);
     }
 
-    private function isAvailableSubpage(string $facultySlug, string $subpageSlug): bool
+    private function isAvailableSubpage(Faculty|string $faculty, string $subpageSlug): bool
     {
-        if ($subpageSlug === 'training') {
-            return $facultySlug === 'pharmacy';
+        if (is_string($faculty)) {
+            $faculty = $this->facultyByPublicSlug($faculty);
         }
 
-        return true;
+        if (! $faculty instanceof Faculty) {
+            return false;
+        }
+
+        $facultySlug = (string) $faculty->getKey();
+        $visibleSlugs = app(\App\Contracts\Page\FacultySubpageCardServiceInterface::class)
+            ->getVisibleSubpageSlugs($facultySlug);
+
+        if ($visibleSlugs === []) {
+            return $subpageSlug !== 'training' || $this->publicSlug($faculty) === 'pharmacy';
+        }
+
+        return in_array($subpageSlug, $visibleSlugs, true);
     }
 
     private function direction(string $locale): string

@@ -26,6 +26,8 @@ use Filament\Pages\Page;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
+use App\Filament\Components\PageUrlSelect;
+
 class ManageFacilities extends Page implements HasForms
 {
     use InteractsWithForms;
@@ -247,7 +249,7 @@ class ManageFacilities extends Page implements HasForms
                 MediaPicker::image($prefix.'.hero.image', __('admin.facilities_editor.fields.hero_image'), true),
                 Textarea::make($prefix.'.hero.summary')->label(__('admin.facilities_editor.fields.summary'))->required()->rows(2)->columnSpanFull(),
                 TextInput::make($prefix.'.hero.applyLabel')->label(__('admin.facilities_editor.fields.apply_label'))->required()->maxLength(120),
-                TextInput::make($prefix.'.hero.applyUrl')->label(__('admin.facilities_editor.fields.apply_url'))->required()->maxLength(255),
+                PageUrlSelect::make($prefix.'.hero.applyUrl', __('admin.facilities_editor.fields.apply_url'), $locale, true),
                 TextInput::make($prefix.'.hero.campusMapLabel')->label(__('admin.facilities_editor.fields.map_label'))->required()->maxLength(120),
             ])->columns(2),
 
@@ -272,7 +274,7 @@ class ManageFacilities extends Page implements HasForms
                         TextInput::make('title')->label(__('admin.facilities_editor.fields.faculty_name'))->required()->maxLength(160),
                         Textarea::make('summary')->label(__('admin.facilities_editor.fields.summary'))->required()->rows(2),
                         Section::make(__('admin.facilities_editor.sections.advanced'))->collapsed()->schema([
-                            TextInput::make('url')->label(__('admin.facilities_editor.fields.url'))->required()->maxLength(255),
+                            PageUrlSelect::make('url', __('admin.facilities_editor.fields.url'), $locale, true),
                             TextInput::make('accentColor')->label(__('admin.facilities_editor.fields.accent_color'))->maxLength(20),
                         ]),
                     ])

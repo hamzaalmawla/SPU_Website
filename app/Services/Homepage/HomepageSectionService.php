@@ -63,16 +63,28 @@ final class HomepageSectionService implements HomepageSectionServiceInterface
 
     public function getPublicHomepage(string $locale): HomepageDTO
     {
-        $sections = HomepageSection::query()
+        $sectionsByKey = HomepageSection::query()
             ->with('translations')
             ->whereIn('key', self::SECTION_KEYS)
             ->enabled()
-            ->orderBy('sort_order')
             ->get()
-            ->map(fn (HomepageSection $section): HomepageSectionDTO => $this->draftReader->mapSection($section, $locale))
-            ->filter(fn (HomepageSectionDTO $section): bool => $this->draftReader->hasRenderablePayloadForLocale($section, $locale))
-            ->values()
-            ->all();
+            ->keyBy('key');
+
+        $sections = [];
+
+        foreach (self::SECTION_KEYS as $key) {
+            $section = $sectionsByKey->get($key);
+
+            if (! $section instanceof HomepageSection) {
+                continue;
+            }
+
+            $sectionDto = $this->draftReader->mapSection($section, $locale);
+
+            if ($this->draftReader->hasRenderablePayloadForLocale($sectionDto, $locale)) {
+                $sections[] = $sectionDto;
+            }
+        }
 
         return new HomepageDTO(
             locale: $locale,

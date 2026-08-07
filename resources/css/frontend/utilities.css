@@ -83,3 +83,85 @@
     outline: 3px solid #6f1616;
     outline-offset: 3px;
 }
+
+/* ============================================
+   Creative Scrollbar — Public Website
+   ============================================ */
+
+/**
+ * Base scrollbar styling for WebKit browsers (Chrome, Safari, Edge)
+ */
+html::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+html::-webkit-scrollbar-track {
+    background: linear-gradient(180deg, #f4f5f0 0%, #e8ece3 100%);
+    border-radius: 0;
+}
+
+html::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #0f6471 0%, #202759 100%);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    box-shadow:
+        inset 0 0 6px rgba(255, 255, 255, 0.15),
+        0 0 8px rgba(15, 100, 113, 0.25);
+    transition: all 0.3s ease;
+}
+
+html::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #128a9c 0%, #2a3680 100%);
+    border: 1px solid transparent;
+    box-shadow:
+        inset 0 0 10px rgba(255, 255, 255, 0.25),
+        0 0 16px rgba(15, 100, 113, 0.45);
+}
+
+html::-webkit-scrollbar-corner {
+    background: #f4f5f0;
+}
+
+/**
+ * Firefox scrollbar styling
+ */
+html {
+    scrollbar-width: thin;
+    scrollbar-color: #0f6471 #f4f5f0;
+}
+
+/**
+ * Dark mode support for public scrollbar
+ */
+.dark html::-webkit-scrollbar-track {
+    background: linear-gradient(180deg, #0e2530 0%, #142f3c 100%);
+}
+
+.dark html::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #74c9c6 0%, #4a9b9b 100%);
+    box-shadow:
+        inset 0 0 6px rgba(0, 0, 0, 0.2),
+        0 0 8px rgba(116, 201, 198, 0.3);
+}
+
+.dark html::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #9ff4ed 0%, #74c9c6 100%);
+    box-shadow:
+        inset 0 0 10px rgba(0, 0, 0, 0.15),
+        0 0 16px rgba(116, 201, 198, 0.5);
+}
+
+.dark html {
+    scrollbar-color: #74c9c6 #0e2530;
+}
+
+/**
+ * Reduced motion support
+ */
+@media (prefers-reduced-motion: reduce) {
+    html::-webkit-scrollbar-thumb {
+        transition: none;
+    }
+}

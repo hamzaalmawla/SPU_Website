@@ -141,7 +141,7 @@ final class ProfileAdminService implements ProfileAdminServiceInterface
             'email' => $data->email,
             'phone' => $data->phone,
             'office_location' => $data->officeLocation,
-            'profile_url' => $data->profileUrl,
+            'profile_url' => '/about/profile/person/'.$data->slug,
             'social_links' => $data->socialLinks,
             'sort_order' => $data->sortOrder,
             'is_enabled' => $data->isEnabled,

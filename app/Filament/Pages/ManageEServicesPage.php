@@ -10,6 +10,7 @@ use App\Contracts\Page\EServicesPageServiceInterface;
 use App\DTOs\Cms\CmsTargetDTO;
 use App\DTOs\EServices\EServicesDetailPageDTO;
 use App\Exceptions\ConflictException;
+use App\Filament\Components\PageUrlSelect;
 use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
 use Filament\Actions\Action;
@@ -346,7 +347,7 @@ class ManageEServicesPage extends Page implements HasForms
                 TextInput::make("{$locale}_detail.cta_title")->label('CTA Title')->required()->maxLength(180),
                 Textarea::make("{$locale}_detail.cta_body")->label('CTA Body')->required()->rows(3),
                 TextInput::make("{$locale}_detail.cta_label")->label('CTA Label')->required()->maxLength(100),
-                TextInput::make("{$locale}_detail.cta_url")->label('CTA URL')->required()->maxLength(500),
+                PageUrlSelect::make("{$locale}_detail.cta_url", 'CTA URL', $locale, true),
                 Repeater::make("{$locale}_detail.related_links")->schema([
                     TextInput::make('id')->required()->maxLength(80),
                     TextInput::make('title')->required()->maxLength(180),

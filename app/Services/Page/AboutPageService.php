@@ -6,6 +6,7 @@ namespace App\Services\Page;
 
 use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Page\AboutNavigationCardServiceInterface;
 use App\Contracts\Page\AboutPageServiceInterface;
 use App\DTOs\About\AboutContentPageDTO;
 use App\DTOs\About\AboutLandingDTO;
@@ -14,7 +15,6 @@ use App\DTOs\About\LeadershipDirectoryDTO;
 use App\DTOs\About\PartnershipDirectoryDTO;
 use App\DTOs\About\StaffDirectoryDTO;
 use App\DTOs\About\StaffDirectoryItemDTO;
-use App\DTOs\Cms\CmsTargetDTO;
 use App\DTOs\Content\DirectorateDTO;
 use App\DTOs\Content\PartnershipDTO;
 use App\DTOs\Content\PersonDTO;
@@ -44,6 +44,7 @@ final class AboutPageService implements AboutPageServiceInterface
     public function __construct(
         private readonly CmsWorkflowServiceInterface $cmsWorkflowService,
         private readonly CmsTargetRegistryInterface $targetRegistry,
+        private readonly AboutNavigationCardServiceInterface $navigationCardService,
     ) {}
 
     public function getAboutLanding(string $locale): AboutLandingDTO
@@ -443,7 +444,7 @@ final class AboutPageService implements AboutPageServiceInterface
             quote: $translation->quote,
             image: $person->image,
             email: $person->email,
-            profileUrl: $person->profile_url,
+            profileUrl: '/'.$locale.'/about/profile/person/'.$person->slug,
         );
     }
 
@@ -470,6 +471,7 @@ final class AboutPageService implements AboutPageServiceInterface
             summary: (string) ($translation->summary ?? ''),
             description: (string) ($translation->description ?? ''),
             services: is_array($translation->services_json) ? $translation->services_json : [],
+            links: is_array($translation->links_json) ? $translation->links_json : [],
             icon: $directorate->icon,
             email: $directorate->email,
             location: $directorate->location,
@@ -936,14 +938,16 @@ final class AboutPageService implements AboutPageServiceInterface
     /** @return array<int, array{title: string, link: string}> */
     private function buildAboutNavigationCards(string $locale, ?string $excludeTargetKey = null): array
     {
-        return $this->targetRegistry->forArea('about')
-            ->filter(fn (CmsTargetDTO $target): bool => $target->key !== 'about.landing' && $target->key !== $excludeTargetKey && $target->publicPath !== null)
-            ->values()
-            ->map(fn (CmsTargetDTO $target): array => [
-                'title' => __($target->labelKey),
-                'link' => $target->publicPath,
-            ])
-            ->all();
+        $cards = $this->navigationCardService->getVisibleCards($locale);
+
+        if ($excludeTargetKey !== null) {
+            $cards = array_values(array_filter($cards, fn (array $card): bool => ($card['target_key'] ?? null) !== $excludeTargetKey));
+        }
+
+        return array_map(fn (array $card): array => [
+            'title' => $card['title'],
+            'link' => $card['link'],
+        ], $cards);
     }
 
     private function personTranslation(Person $person, string $locale): PersonTranslation

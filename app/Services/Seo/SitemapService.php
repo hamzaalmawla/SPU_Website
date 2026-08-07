@@ -98,6 +98,18 @@ final class SitemapService implements SitemapServiceInterface
     {
         foreach ([
             'campus_life.landing' => '/campus-life',
+            'campus_life.services' => '/campus-life/services',
+            'campus_life.transport' => '/campus-life/transport',
+            'campus_life.clubs-activities' => '/campus-life/clubs-activities',
+            'campus_life.career-development' => '/campus-life/career-development',
+            'campus_life.dental' => '/campus-life/dental',
+            'campus_life.hospital' => '/campus-life/hospital',
+            'campus_life.health-insurance' => '/campus-life/health-insurance',
+            'campus_life.damascus-research-pub' => '/campus-life/damascus-research-pub',
+            'campus_life.rules-regulations' => '/campus-life/rules-regulations',
+            'campus_life.general-rules' => '/campus-life/general-rules',
+            'campus_life.exam-instructions' => '/campus-life/exam-instructions',
+            'campus_life.exam-penalties' => '/campus-life/exam-penalties',
             'campus_life.virtual_tour' => '/virtual-tour',
             'e_services.suggestions-complaints' => '/e-services/suggestions-complaints',
             'news.articles' => '/news/articles',

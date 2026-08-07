@@ -30,6 +30,12 @@ final class FacultyModuleSeeder extends Seeder
     private function seedFaculty(array $faculty, int $sortOrder): int
     {
         $now = now();
+        $pages = ['overview', 'departments', 'study-plan', 'study-plan-course', 'labs', 'projects', 'research', 'alumni', 'valedictorians'];
+
+        if ($faculty['public_slug'] === 'pharmacy') {
+            $pages[] = 'training';
+        }
+
         $facultyId = (int) DB::table('faculties')->updateOrInsert(
             ['slug' => $faculty['slug']],
             [
@@ -39,6 +45,7 @@ final class FacultyModuleSeeder extends Seeder
                 'hero_image' => $faculty['hero_image'],
                 'logo_image' => $faculty['logo'],
                 'gallery_json' => json_encode($faculty['gallery'], JSON_THROW_ON_ERROR),
+                'subpages_json' => json_encode($pages, JSON_THROW_ON_ERROR),
                 'sort_order' => $sortOrder,
                 'is_enabled' => true,
                 'created_at' => $now,

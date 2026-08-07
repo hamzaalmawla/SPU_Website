@@ -99,8 +99,12 @@ final class AboutController extends Controller
         ]));
     }
 
-    public function directorateDetail(Request $request, string $locale, string $directorate): View
+    public function directorateDetail(Request $request, string $locale, string $directorate): RedirectResponse|View
     {
+        if ($directorate === 'it-services') {
+            return redirect('/' . $locale . '/e-services/it-support', 301);
+        }
+
         $item = $this->aboutPageService->getDirectorate($directorate, $locale);
         abort_if($item === null, 404);
 

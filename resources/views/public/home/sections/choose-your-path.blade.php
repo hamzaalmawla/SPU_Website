@@ -42,20 +42,15 @@
                                             <li class="flex items-center gap-3 text-[14px] font-medium opacity-85 hover:opacity-100 transition-opacity">
                                                 <span class="w-1.5 h-1.5 rounded-full bg-spu-red"></span>
                                                 @if (is_array($link) && ! empty($link['url']))
-                                                    <a href="{{ $link['url'] }}" class="hover:underline">{{ $link['text'] ?? ($link['label'] ?? '') }}</a>
+                                                    <a href="{{ $link['url'] }}" class="cursor-pointer underline underline-offset-2 hover:underline hover:text-white transition-colors">{{ $link['text'] ?? ($link['label'] ?? '') }}</a>
                                                 @else
-                                                    <span>{{ is_array($link) ? ($link['text'] ?? ($link['label'] ?? '')) : $link }}</span>
+                                                    <span class="cursor-default opacity-70">{{ is_array($link) ? ($link['text'] ?? ($link['label'] ?? '')) : $link }}</span>
                                                 @endif
                                             </li>
                                         @endforeach
                                     </ul>
                                 @endif
-                                @if (! empty($item['action']['label']) && ! empty($item['action']['url']))
-                                    <a href="{{ $item['action']['url'] }}" class="mt-auto flex items-center justify-between pt-4 border-t border-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white" @if (! empty($item['action']['target'])) target="{{ $item['action']['target'] }}" rel="noreferrer" @endif>
-                                        <span class="text-sm font-bold">{{ $item['action']['label'] }}</span>
-                                        <img src="/images/icon-arrow-right-outline.svg" class="w-3.5 h-3.5 brightness-0 invert rtl:rotate-180" alt="">
-                                    </a>
-                                @endif
+
                             </div>
                         </article>
                     @endforeach

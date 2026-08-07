@@ -29,6 +29,8 @@ use Filament\Pages\Page;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
+use App\Filament\Components\PageUrlSelect;
+
 class ManageAdmissions extends Page implements HasForms
 {
     use InteractsWithForms;
@@ -534,9 +536,9 @@ class ManageAdmissions extends Page implements HasForms
                 TextInput::make($prefix.'.breadcrumb_parent')->label('Breadcrumb Parent')->required()->maxLength(120),
                 TextInput::make($prefix.'.breadcrumb_current')->label('Breadcrumb Current')->required()->maxLength(160),
                 TextInput::make($prefix.'.apply_label')->label('Apply Button')->required()->maxLength(120),
-                TextInput::make($prefix.'.apply_url')->label('Apply URL')->required()->maxLength(255),
+                PageUrlSelect::make($prefix.'.apply_url', 'Apply Page', $locale, true),
                 TextInput::make($prefix.'.request_info_label')->label('Request Info Button')->required()->maxLength(120),
-                TextInput::make($prefix.'.request_info_url')->label('Request Info URL')->required()->maxLength(255),
+                PageUrlSelect::make($prefix.'.request_info_url', 'Request Info Page', $locale, true),
                 TextInput::make($prefix.'.required_label')->label('Required Label')->required()->maxLength(80),
                 TextInput::make($prefix.'.optional_label')->label('Optional Label')->required()->maxLength(120),
                 TextInput::make($prefix.'.notes_title')->label('Notes Title')->required()->maxLength(180),
@@ -609,9 +611,9 @@ class ManageAdmissions extends Page implements HasForms
                 TextInput::make($prefix.'.breadcrumb_parent')->label('Breadcrumb Parent')->required()->maxLength(120),
                 TextInput::make($prefix.'.breadcrumb_current')->label('Breadcrumb Current')->required()->maxLength(120),
                 TextInput::make($prefix.'.apply_label')->label('Apply Button')->required()->maxLength(120),
-                TextInput::make($prefix.'.apply_url')->label('Apply URL')->required()->maxLength(255),
+                PageUrlSelect::make($prefix.'.apply_url', 'Apply Page', $locale, true),
                 TextInput::make($prefix.'.request_info_label')->label('Request Info Button')->required()->maxLength(120),
-                TextInput::make($prefix.'.request_info_url')->label('Request Info URL')->required()->maxLength(255),
+                PageUrlSelect::make($prefix.'.request_info_url', 'Request Info Page', $locale, true),
                 TextInput::make($prefix.'.required_label')->label('Required Label')->required()->maxLength(80),
                 TextInput::make($prefix.'.optional_label')->label('Optional Label')->required()->maxLength(80),
                 TextInput::make($prefix.'.download_label')->label('Download Button Label')->required()->maxLength(120),
@@ -895,7 +897,7 @@ class ManageAdmissions extends Page implements HasForms
                         TextInput::make('title')->required()->maxLength(160),
                         Textarea::make('desc')->required()->rows(2)->columnSpanFull(),
                         TextInput::make('cta')->label('CTA Label')->required()->maxLength(120),
-                        TextInput::make('href')->label('CTA URL')->required()->maxLength(255),
+                        PageUrlSelect::make('href', 'CTA Page', $locale, true),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -975,7 +977,7 @@ class ManageAdmissions extends Page implements HasForms
                             ->collapsible()
                             ->columnSpanFull(),
                         TextInput::make('cta')->label('CTA Label')->maxLength(120),
-                        TextInput::make('ctaUrl')->label('CTA URL')->maxLength(255),
+                        PageUrlSelect::make('ctaUrl', 'CTA Page', $locale),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -1077,9 +1079,9 @@ class ManageAdmissions extends Page implements HasForms
                 TextInput::make($prefix.'.hero_title')->label('Title')->required()->maxLength(180),
                 Textarea::make($prefix.'.hero_summary')->label('Summary')->required()->rows(3)->columnSpanFull(),
                 TextInput::make($prefix.'.hero_cta_primary')->label('Primary CTA')->required()->maxLength(80),
-                TextInput::make($prefix.'.hero_primary_url')->label('Primary URL')->required()->maxLength(255),
+                PageUrlSelect::make($prefix.'.hero_primary_url', 'Primary URL', $locale, true),
                 TextInput::make($prefix.'.hero_cta_secondary')->label('Secondary CTA')->required()->maxLength(80),
-                TextInput::make($prefix.'.hero_secondary_url')->label('Secondary URL')->required()->maxLength(255),
+                PageUrlSelect::make($prefix.'.hero_secondary_url', 'Secondary URL', $locale, true),
                 TextInput::make($prefix.'.hero_badge_label')->label('Badge Label')->required()->maxLength(120),
                 TextInput::make($prefix.'.hero_badge_value')->label('Badge Value')->required()->maxLength(120),
                 MediaPicker::image($prefix.'.hero_campus_image', 'Campus Image', true),

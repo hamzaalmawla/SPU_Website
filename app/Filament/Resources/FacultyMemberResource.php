@@ -4,18 +4,23 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources;
 
+use App\Contracts\Shared\SlugServiceInterface;
 use App\Filament\Resources\FacultyMemberResource\Pages;
 use App\Filament\Support\MediaPicker;
 use App\Models\Person\FacultyMember;
 use App\Models\User\User;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\IconColumn;
@@ -23,6 +28,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 
 class FacultyMemberResource extends Resource
 {
@@ -64,43 +70,73 @@ class FacultyMemberResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Section::make('Profile')->schema([
-                TextInput::make('slug')->required()->maxLength(255)->alphaDash()->unique(ignoreRecord: true),
+            Section::make('Where this staff member appears')->schema([
                 Select::make('faculty_id')
                     ->label('Faculty')
                     ->relationship('faculty', 'id', modifyQueryUsing: fn (Builder $query): Builder => self::scopeFacultyOptions($query))
                     ->getOptionLabelFromRecordUsing(fn ($record) => $record->translations->firstWhere('locale', 'ar')?->name ?? $record->translations->first()?->name ?? '#'.$record->id)
                     ->searchable()
-                    ->preload(),
+                    ->preload()
+                    ->native(false),
                 Select::make('department_id')
                     ->label('Department')
                     ->relationship('department', 'id', modifyQueryUsing: fn (Builder $query): Builder => self::scopeDepartmentOptions($query))
                     ->getOptionLabelFromRecordUsing(fn ($record) => $record->translations->firstWhere('locale', 'ar')?->name ?? $record->translations->first()?->name ?? '#'.$record->id)
                     ->searchable()
-                    ->preload(),
+                    ->preload()
+                    ->native(false),
+                TextInput::make('sort_order')
+                    ->label('Display order')
+                    ->numeric()
+                    ->default(fn (): int => self::nextSortOrder())
+                    ->minValue(0)
+                    ->step(10)
+                    ->helperText('Lower numbers appear first. You can also reorder staff from the list.'),
+                Toggle::make('is_enabled')->label('Visible to editors')->default(true),
+                MediaPicker::assetImage('photo_media_id', 'Profile Photo'),
+                MediaPicker::assetDocument('cv_media_id', 'CV File'),
+            ])->columns(2),
+            Tabs::make('Profile text')->tabs([
+                Tabs\Tab::make('Arabic')->schema([
+                    Hidden::make('translations.ar.locale')->default('ar'),
+                    TextInput::make('translations.ar.full_name')->label('Arabic full name')->required()->maxLength(255),
+                    TextInput::make('translations.ar.title')->label('Arabic title')->maxLength(255)->placeholder('أ.د، د، م.'),
+                    TextInput::make('translations.ar.position')->label('Arabic position')->maxLength(255)->placeholder('عميد، أستاذ مساعد، ...'),
+                    Textarea::make('translations.ar.bio')->label('Arabic biography')->rows(4)->columnSpanFull(),
+                    TagsInput::make('translations.ar.specializations')->label('Arabic specializations')->separator(',')->columnSpanFull(),
+                ])->columns(2),
+                Tabs\Tab::make('English')->schema([
+                    Hidden::make('translations.en.locale')->default('en'),
+                    TextInput::make('translations.en.full_name')->label('English full name')->required()->maxLength(255)->live(onBlur: true),
+                    TextInput::make('translations.en.title')->label('English title')->maxLength(255)->placeholder('Prof., Dr., Eng.'),
+                    TextInput::make('translations.en.position')->label('English position')->maxLength(255)->placeholder('Dean, Assistant Professor, ...'),
+                    Textarea::make('translations.en.bio')->label('English biography')->rows(4)->columnSpanFull(),
+                    TagsInput::make('translations.en.specializations')->label('English specializations')->separator(',')->columnSpanFull(),
+                ])->columns(2),
+            ])->columnSpanFull(),
+            Section::make('Contact details')->schema([
                 TextInput::make('email')->email()->maxLength(255),
                 TextInput::make('phone')->maxLength(255),
                 TextInput::make('office_location')->maxLength(255),
-                MediaPicker::assetImage('photo_media_id', 'Profile Photo'),
-                MediaPicker::assetDocument('cv_media_id', 'CV File'),
-                TextInput::make('sort_order')->numeric()->default(0),
-                Toggle::make('is_enabled')->default(true),
-            ])->columns(2),
+            ])->columns(2)->collapsible()->collapsed(),
+            Section::make('Advanced URL')->schema([
+                Placeholder::make('computed_profile_url')
+                    ->label('Profile URL')
+                    ->content(fn (Get $get): string => self::profilePathFromForm($get)),
+                TextInput::make('slug')
+                    ->label('Profile URL slug')
+                    ->maxLength(255)
+                    ->alphaDash()
+                    ->unique(ignoreRecord: true)
+                    ->helperText('Leave blank and it will be generated from the English name.'),
+            ])->columns(2)->collapsible()->collapsed(),
             Section::make('Social Links')->schema([
                 TextInput::make('social_links.linkedin')->label('LinkedIn URL')->url()->maxLength(255),
                 TextInput::make('social_links.scholar')->label('Google Scholar URL')->url()->maxLength(255),
                 TextInput::make('social_links.orcid')->label('ORCID URL')->url()->maxLength(255),
                 TextInput::make('social_links.researchgate')->label('ResearchGate URL')->url()->maxLength(255),
                 TextInput::make('social_links.twitter')->label('Twitter/X URL')->url()->maxLength(255),
-            ])->columns(2)->collapsible(),
-            Repeater::make('translations')->schema([
-                Select::make('locale')->required()->options(['ar' => 'Arabic', 'en' => 'English'])->disableOptionsWhenSelectedInSiblingRepeaterItems(),
-                TextInput::make('full_name')->required()->maxLength(255),
-                TextInput::make('title')->maxLength(255)->placeholder('Prof., Dr., etc.'),
-                TextInput::make('position')->maxLength(255)->placeholder('Dean, Assistant Professor, etc.'),
-                Textarea::make('bio')->rows(4),
-                TagsInput::make('specializations')->separator(',')->columnSpanFull(),
-            ])->columns(2)->default([['locale' => 'ar'], ['locale' => 'en']])->minItems(2)->maxItems(2)->columnSpanFull(),
+            ])->columns(2)->collapsible()->collapsed(),
             Section::make('Education')->schema([
                 Repeater::make('educations')->schema([
                     TextInput::make('id')->hidden(),
@@ -123,6 +159,7 @@ class FacultyMemberResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->columns([
+            TextColumn::make('sort_order')->label('Order')->sortable(),
             TextColumn::make('slug')->searchable()->sortable(),
             TextColumn::make('translations.full_name')->label('Name')->searchable()->limit(40),
             TextColumn::make('translations.title')->label('Title')->limit(20),
@@ -134,7 +171,9 @@ class FacultyMemberResource extends Resource
         ])->actions([
             Tables\Actions\EditAction::make(),
             Tables\Actions\ViewAction::make(),
-        ])->bulkActions([]);
+        ])->bulkActions([])
+            ->defaultSort('sort_order')
+            ->reorderable('sort_order');
     }
 
     public static function getPages(): array
@@ -177,5 +216,50 @@ class FacultyMemberResource extends Resource
                 ->orWhere('public_slug', $scope)
                 ->orWhere('slug', $scope);
         });
+    }
+
+    /** @param array<string, mixed> $data @return array<string, mixed> */
+    public static function prepareFacultyMemberFormData(array $data, ?int $ignoreId = null): array
+    {
+        data_set($data, 'translations.ar.locale', 'ar');
+        data_set($data, 'translations.en.locale', 'en');
+
+        if (trim((string) ($data['slug'] ?? '')) === '') {
+            $data['slug'] = self::generateSlug($data, $ignoreId);
+        }
+
+        if (! is_numeric($data['sort_order'] ?? null)) {
+            $data['sort_order'] = self::nextSortOrder();
+        }
+
+        return $data;
+    }
+
+    /** @param array<string, mixed> $data */
+    private static function generateSlug(array $data, ?int $ignoreId): string
+    {
+        $englishName = trim((string) data_get($data, 'translations.en.full_name', ''));
+
+        return app(SlugServiceInterface::class)->generate($englishName !== '' ? $englishName : 'faculty-member', FacultyMember::class, 'en', $ignoreId);
+    }
+
+    private static function profilePathFromForm(Get $get): string
+    {
+        $slug = trim((string) $get('slug'));
+        if ($slug === '') {
+            $slug = Str::slug((string) $get('translations.en.full_name'));
+        }
+
+        return $slug !== '' ? self::profilePath($slug) : 'Generated after entering the English name';
+    }
+
+    private static function profilePath(string $slug): string
+    {
+        return '/about/profile/faculty-member/'.$slug;
+    }
+
+    private static function nextSortOrder(): int
+    {
+        return ((int) (FacultyMember::query()->max('sort_order') ?? 0)) + 10;
     }
 }

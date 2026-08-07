@@ -86,6 +86,10 @@ class AboutPageResource extends Resource
 
     public static function getPages(): array
     {
-        return ['index' => Pages\ListAboutPages::route('/'), 'edit' => Pages\EditAboutPage::route('/{record}/edit')];
+        return [
+            'index' => Pages\ListAboutPages::route('/'),
+            'create' => Pages\CreateAboutPage::route('/create'),
+            'edit' => Pages\EditAboutPage::route('/{record}/edit'),
+        ];
     }
 }

@@ -8,8 +8,10 @@ use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanEditorServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
 use App\Contracts\Page\FacultyPageServiceInterface;
+use App\Contracts\Page\FacultySubpageCardServiceInterface;
 use App\Exceptions\ConflictException;
 use App\Filament\Support\MediaPicker;
+use App\Models\Faculty\Faculty;
 use App\Models\User\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
@@ -30,6 +32,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use App\Filament\Components\PageUrlSelect;
 
 trait ManagesFacultyHomepage
 {
@@ -40,6 +43,8 @@ trait ManagesFacultyHomepage
 
     public ?string $activeTargetKey = null;
 
+    public string $facultyScope = '';
+
     private FacultyPageServiceInterface $facultyPageService;
 
     private CmsWorkflowServiceInterface $cmsWorkflowService;
@@ -47,6 +52,11 @@ trait ManagesFacultyHomepage
     private FacultyStudyPlanLinkServiceInterface $studyPlanLinkService;
 
     private FacultyStudyPlanEditorServiceInterface $studyPlanEditorService;
+
+    private FacultySubpageCardServiceInterface $subpageCardService;
+
+    /** @var array<int, array{card_id: int, subpage_slug: string, title_override_ar: ?string, title_override_en: ?string, is_visible: bool, sort_order: int}> */
+    public array $navCards = [];
 
     /** @return array<string, string> */
     abstract protected function targetOptions(): array;
@@ -60,11 +70,13 @@ trait ManagesFacultyHomepage
         CmsWorkflowServiceInterface $cmsWorkflowService,
         FacultyStudyPlanLinkServiceInterface $studyPlanLinkService,
         FacultyStudyPlanEditorServiceInterface $studyPlanEditorService,
+        FacultySubpageCardServiceInterface $subpageCardService,
     ): void {
         $this->facultyPageService = $facultyPageService;
         $this->cmsWorkflowService = $cmsWorkflowService;
         $this->studyPlanLinkService = $studyPlanLinkService;
         $this->studyPlanEditorService = $studyPlanEditorService;
+        $this->subpageCardService = $subpageCardService;
     }
 
     public static function canAccess(): bool
@@ -109,8 +121,25 @@ trait ManagesFacultyHomepage
         $requestedTerm = request()->query('term');
         $this->data['study_plan_department_id'] = is_string($requestedDepartment) ? $requestedDepartment : '';
         $this->data['study_plan_term_id'] = is_string($requestedTerm) ? $requestedTerm : '';
+        $this->facultyScope = static::managedFacultyScope();
+        $this->loadNavCards();
 
         $this->loadTarget($targetKey);
+    }
+
+    public function loadNavCards(): void
+    {
+        $this->navCards = $this->subpageCardService->getAllCards($this->facultyScope)
+            ->map(fn (object $card): array => [
+                'card_id' => (int) $card->id,
+                'subpage_slug' => $card->subpageSlug,
+                'title_override_ar' => $card->titleOverrideAr,
+                'title_override_en' => $card->titleOverrideEn,
+                'is_visible' => $card->isVisible,
+                'sort_order' => $card->sortOrder,
+            ])
+            ->values()
+            ->all();
     }
 
     public function loadTarget(string $targetKey): void
@@ -408,6 +437,116 @@ trait ManagesFacultyHomepage
         }
     }
 
+    public function toggleNavVisibility(int $cardId): void
+    {
+        $this->subpageCardService->toggleVisibility($cardId);
+        $this->loadNavCards();
+    }
+
+    public function moveNavUp(int $cardId): void
+    {
+        $this->subpageCardService->moveUp($cardId);
+        $this->loadNavCards();
+    }
+
+    public function moveNavDown(int $cardId): void
+    {
+        $this->subpageCardService->moveDown($cardId);
+        $this->loadNavCards();
+    }
+
+    public function deleteNavCard(int $cardId): void
+    {
+        $this->subpageCardService->deleteCard($cardId);
+        Notification::make()->title(__('admin.faculty_workspace.navigation.card_deleted'))->success()->send();
+        $this->loadNavCards();
+    }
+
+    public function updateNavTitles(): void
+    {
+        foreach ($this->navCards as $card) {
+            $id = (int) ($card['card_id'] ?? 0);
+            if ($id <= 0) {
+                continue;
+            }
+            $this->subpageCardService->updateCard($id, [
+                'title_override_ar' => $card['title_override_ar'] ?? null,
+                'title_override_en' => $card['title_override_en'] ?? null,
+                'is_visible' => (bool) ($card['is_visible'] ?? false),
+                'sort_order' => (int) ($card['sort_order'] ?? 0),
+            ]);
+        }
+        Notification::make()->title(__('admin.faculty_workspace.navigation.cards_saved'))->success()->send();
+        $this->loadNavCards();
+    }
+
+    public ?array $navAddForm = null;
+    public bool $navAddModal = false;
+
+    public function openNavAddModal(): void
+    {
+        $this->navAddModal = true;
+        $this->navAddForm = ['subpage_slug' => '', 'title_ar' => '', 'title_en' => ''];
+    }
+
+    public function closeNavAddModal(): void
+    {
+        $this->navAddModal = false;
+        $this->navAddForm = null;
+    }
+
+    public function addNavCard(): void
+    {
+        $slug = (string) ($this->navAddForm['subpage_slug'] ?? '');
+        if ($slug === '') {
+            Notification::make()->title(__('admin.faculty_workspace.navigation.select_subpage'))->danger()->send();
+
+            return;
+        }
+
+        $existing = \App\Models\Faculty\FacultySubpageCard::query()
+            ->where('faculty_slug', $this->facultyScope)
+            ->where('subpage_slug', $slug)
+            ->exists();
+
+        if ($existing) {
+            Notification::make()->title(__('admin.faculty_workspace.navigation.card_exists'))->danger()->send();
+
+            return;
+        }
+
+        $this->subpageCardService->createCard(
+            facultySlug: $this->facultyScope,
+            subpageSlug: $slug,
+            titleOverrideAr: ($this->navAddForm['title_ar'] ?? '') !== '' ? $this->navAddForm['title_ar'] : null,
+            titleOverrideEn: ($this->navAddForm['title_en'] ?? '') !== '' ? $this->navAddForm['title_en'] : null,
+        );
+
+        Notification::make()->title(__('admin.faculty_workspace.navigation.card_added'))->success()->send();
+        $this->closeNavAddModal();
+        $this->loadNavCards();
+    }
+
+    /** @return array<string, string> */
+    public function getNavAvailableSubpages(): array
+    {
+        $existing = collect($this->navCards)->pluck('subpage_slug')->all();
+
+        return collect([
+            'overview' => __('admin.faculty_workspace.subpages.overview'),
+            'departments' => __('admin.faculty_workspace.subpages.departments'),
+            'study-plan' => __('admin.faculty_workspace.subpages.study_plan'),
+            'labs' => __('admin.faculty_workspace.subpages.labs'),
+            'projects' => __('admin.faculty_workspace.subpages.projects'),
+            'alumni' => __('admin.faculty_workspace.subpages.alumni'),
+            'valedictorians' => __('admin.faculty_workspace.subpages.valedictorians'),
+            'training' => __('admin.faculty_workspace.subpages.training'),
+            'research' => __('admin.faculty_workspace.subpages.research'),
+        ])
+            ->filter(fn (string $label, string $slug): bool => ! in_array($slug, $existing, true))
+            ->all();
+    }
+
     /** @return array<int, Section> */
     private function payloadFields(string $locale): array
     {
@@ -493,7 +632,7 @@ trait ManagesFacultyHomepage
                         TextInput::make('date')->label(__('admin.faculty_workspace.editor.fields.date'))->maxLength(80),
                         TextInput::make('doi')->label(__('admin.faculty_workspace.editor.fields.doi'))->maxLength(120),
                         MediaPicker::image('image', __('admin.faculty_workspace.editor.fields.image')),
-                        TextInput::make('url')->label(__('admin.faculty_workspace.editor.fields.url'))->maxLength(255),
+                        PageUrlSelect::make('url', __('admin.faculty_workspace.editor.fields.url'), $locale),
                         TextInput::make('cta')->label(__('admin.faculty_workspace.editor.fields.action_label'))->maxLength(120),
                         Textarea::make('summary')->label(__('admin.faculty_workspace.editor.fields.summary'))->rows(2)->columnSpanFull(),
                     ])
@@ -607,7 +746,7 @@ trait ManagesFacultyHomepage
                 Repeater::make($prefix.'.payload.partners.items')->schema([
                     TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.title'))->required()->maxLength(180),
                     TextInput::make('category')->label(__('admin.faculty_workspace.editor.fields.category'))->required()->maxLength(120),
-                    TextInput::make('href')->label(__('admin.faculty_workspace.editor.fields.url'))->required()->maxLength(255),
+                    PageUrlSelect::make('href', __('admin.faculty_workspace.editor.fields.url'), substr($prefix, 0, 2), true),
                     MediaPicker::image('image', __('admin.faculty_workspace.editor.fields.image'), true),
                     Textarea::make('description')->label(__('admin.faculty_workspace.editor.fields.description'))->required()->rows(3)->columnSpanFull(),
                 ])->columns(2)->reorderable()->columnSpanFull(),

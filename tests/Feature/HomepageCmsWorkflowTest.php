@@ -59,6 +59,16 @@ class HomepageCmsWorkflowTest extends TestCase
         $this->assertCount(4, $choosePath->englishPayload?->items ?? []);
     }
 
+    public function test_homepage_sections_follow_the_requested_order_with_honor_list_before_faculties(): void
+    {
+        $sections = $this->homepageService()->getSections();
+
+        $this->assertSame(
+            ['hero', 'hero_stats', 'achievements_highlights', 'academic_faculties', 'choose_your_path', 'university_news', 'research_studies', 'events_activities', 'medical_facilities_services', 'bottom_stats', 'footer'],
+            $sections->pluck('key')->all(),
+        );
+    }
+
     public function test_public_homepage_local_image_assets_resolve(): void
     {
         $html = $this->get('/en')->assertOk()->getContent();

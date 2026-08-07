@@ -924,46 +924,202 @@
     height: 16px;
 }
 
-.detail-hero {
-    position: relative;
-    overflow: hidden;
-    padding: 8rem 0;
-    background: linear-gradient(135deg, #202759 0%, #6f1616 100%);
+.dir-detail-section {
+    padding: 4rem 0 5rem;
 }
 
-.detail-hero::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    opacity: 0.3;
-    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.16) 1px, transparent 1px);
-    background-size: 30px 30px;
+.dir-eyebrow {
+    margin-bottom: 0.85rem;
+    color: #6f1616;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
 }
 
-.service-item {
-    padding: 2rem;
-    border: 1px solid #f1f5f9;
-    border-radius: 2rem;
+.dir-section-title {
+    margin-bottom: 1.5rem;
+    color: #202759;
+    font-size: 1.75rem;
+    font-weight: 900;
+}
+
+.dir-section-gap {
+    margin-top: 3.5rem;
+}
+
+.dir-overview-text {
+    max-width: 42rem;
+    color: #475569;
+    font-size: 1rem;
+    line-height: 1.9;
+}
+
+.dir-service-list {
+    display: grid;
+    gap: 1rem;
+}
+
+.dir-service-item,
+.dir-link-card {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 1.35rem 1.5rem;
+    border: 1px solid rgba(32, 39, 89, 0.1);
+    border-inline-start: 3px solid #202759;
     background: #fff;
-    transition: all 0.4s ease;
+    text-decoration: none;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
-.service-item:hover {
-    border-color: #6f1616;
-    transform: translateY(-5px);
-    box-shadow: 0 20px 40px rgba(111, 22, 22, 0.05);
+.dir-service-item:hover,
+.dir-link-card:hover {
+    border-inline-start-color: #6f1616;
+    transform: translateY(-4px);
+    box-shadow: 0 18px 40px rgba(32, 39, 89, 0.09);
 }
 
-.icon-circle {
+.dir-service-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 60px;
-    height: 60px;
-    margin-bottom: 1.5rem;
-    border-radius: 50%;
-    background: rgba(111, 22, 22, 0.1);
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    border-radius: 4px;
+    background: rgba(111, 22, 22, 0.08);
     color: #6f1616;
+}
+
+.dir-service-name {
+    color: #202759;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.dir-link-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.dir-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 3rem;
+}
+
+.dir-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 0.85rem 2rem;
+    border: 1px solid #202759;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-weight: 900;
+    text-decoration: none;
+    transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
+
+.dir-btn-primary {
+    background: #202759;
+    color: #fff;
+}
+
+.dir-btn-primary:hover {
+    border-color: #6f1616;
+    background: #6f1616;
+}
+
+.dir-btn-outline {
+    background: transparent;
+    color: #202759;
+}
+
+.dir-btn-outline:hover {
+    background: #202759;
+    color: #fff;
+}
+
+.dir-btn-block {
+    width: 100%;
+    margin-top: 2rem;
+}
+
+.dir-info-card {
+    position: sticky;
+    top: 8rem;
+    padding: 2.5rem;
+    border: 1px solid rgba(32, 39, 89, 0.1);
+    border-top: 3px solid #6f1616;
+    background: #fff;
+}
+
+.dir-info-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    margin-bottom: 1.75rem;
+    border: 1px solid rgba(32, 39, 89, 0.1);
+    border-radius: 4px;
+    background: #faf9fb;
+    color: #6f1616;
+}
+
+.dir-info-title {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(32, 39, 89, 0.1);
+    color: #202759;
+    font-size: 1.15rem;
+    font-weight: 900;
+}
+
+.dir-info-list {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.dir-info-label {
+    display: block;
+    margin-bottom: 0.25rem;
+    color: #6f1616;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.dir-info-value {
+    color: #202759;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.dir-info-link {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+.dir-info-link:hover {
+    color: #6f1616;
+}
+
+@media (min-width: 640px) {
+    .dir-link-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 1024px) {
+    .dir-info-card {
+        position: static;
+    }
 }
 
 @media (max-width: 1024px) {

@@ -27,6 +27,12 @@ class CreatePerson extends CreateRecord
         $this->cmsWorkflowService = $cmsWorkflowService;
     }
 
+    /** @param array<string, mixed> $data @return array<string, mixed> */
+    protected function mutateFormDataBeforeCreate(array $data): array
+    {
+        return PersonResource::preparePersonFormData($data);
+    }
+
     protected function handleRecordCreation(array $data): Model
     {
         $user = auth()->user();

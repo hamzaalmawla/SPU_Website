@@ -272,7 +272,7 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             publications: [],
             councilMemberships: [],
             cvUrl: null,
-            profileUrl: $this->nullableString($payload['profile_url'] ?? null),
+            profileUrl: '/'.$locale.'/about/profile/person/'.$slug,
             seoTitle: $name.' - '.config('app.name', 'SPU'),
             seoDescription: $bio ?? $name,
             seoImage: $this->nullableString($payload['image'] ?? null),
@@ -341,7 +341,7 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             publications: [],
             councilMemberships: [],
             cvUrl: $this->mediaUrl($this->nullableInt($payload['cv_media_id'] ?? null)),
-            profileUrl: null,
+            profileUrl: '/'.$locale.'/about/profile/faculty-member/'.$slug,
             seoTitle: $name.' - '.config('app.name', 'SPU'),
             seoDescription: $bio ?? $name,
             seoImage: $image,
@@ -364,6 +364,7 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             summary: $this->stringValue($translation['summary'] ?? null),
             description: $this->stringValue($translation['description'] ?? null),
             services: array_values(array_filter($this->listValue($translation['services_json'] ?? null), 'is_string')),
+            links: [],
             icon: $this->nullableString($payload['icon'] ?? null),
             email: $this->nullableString($payload['email'] ?? null),
             location: $this->nullableString($payload['location'] ?? null),
@@ -785,6 +786,13 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
     {
         $payload['translations'] = $this->normalizeTranslations($payload['translations'] ?? null);
 
+        if ($type === 'person') {
+            $slug = $this->stringValue($payload['slug'] ?? null);
+            if ($slug !== '') {
+                $payload['profile_url'] = $this->personProfilePath($slug);
+            }
+        }
+
         if (in_array($type, ['person', 'faculty-member'], true)) {
             $payload['educations'] = collect($this->listValue($payload['educations'] ?? null))
                 ->filter(static fn (mixed $education): bool => is_array($education))
@@ -978,6 +986,11 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
     private function targetKey(string $type, int $id): string
     {
         return 'entity.'.$type.'.'.$id;
+    }
+
+    private function personProfilePath(string $slug): string
+    {
+        return '/about/profile/person/'.$slug;
     }
 
     private function assertSupportedType(string $type): void

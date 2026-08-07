@@ -709,7 +709,7 @@ class ManageHomepage extends Page implements HasForms
         };
 
         return array_values(array_map(
-            static function (array $item): array {
+            static function (array $item) use ($sectionKey): array {
                 $mapped = $item;
 
                 if (($mapped['imageUrl'] ?? null) === null) {
@@ -724,14 +724,16 @@ class ManageHomepage extends Page implements HasForms
                     $mapped['summary'] = self::firstString($mapped, ['description', 'text']);
                 }
 
-                $ctaLabel = self::firstString($mapped, ['cta_label']) ?? (is_array($mapped['action'] ?? null) ? self::firstString($mapped['action'], ['label']) : null);
-                $ctaUrl = self::firstString($mapped, ['cta_url']) ?? (is_array($mapped['action'] ?? null) ? self::firstString($mapped['action'], ['url']) : null);
+                if ($sectionKey !== 'choose_your_path') {
+                    $ctaLabel = self::firstString($mapped, ['cta_label']) ?? (is_array($mapped['action'] ?? null) ? self::firstString($mapped['action'], ['label']) : null);
+                    $ctaUrl = self::firstString($mapped, ['cta_url']) ?? (is_array($mapped['action'] ?? null) ? self::firstString($mapped['action'], ['url']) : null);
 
-                if ($ctaLabel !== null || $ctaUrl !== null) {
-                    $mapped['action'] = array_filter([
-                        'label' => $ctaLabel,
-                        'url' => $ctaUrl ?? '#',
-                    ]);
+                    if ($ctaLabel !== null || $ctaUrl !== null) {
+                        $mapped['action'] = array_filter([
+                            'label' => $ctaLabel,
+                            'url' => $ctaUrl ?? '#',
+                        ]);
+                    }
                 }
 
                 if (isset($mapped['links']) && is_array($mapped['links'])) {
@@ -859,9 +861,6 @@ class ManageHomepage extends Page implements HasForms
                         : ['label' => (string) $link],
                     is_array($item['links'] ?? null) ? $item['links'] : [],
                 )),
-                'cta_label' => is_array($item['action'] ?? null) ? ($item['action']['label'] ?? null) : null,
-                'cta_url' => is_array($item['action'] ?? null) ? ($item['action']['url'] ?? null) : null,
-                'action' => $item['action'] ?? null,
             ], static fn (mixed $value): bool => $value !== null && $value !== []),
             $items,
         ));
@@ -1056,7 +1055,7 @@ class ManageHomepage extends Page implements HasForms
         $sectionLabels = [
             'hero' => 'Hero',
             'hero_stats' => 'Hero Stats',
-            'achievements_highlights' => 'Achievements & Highlights',
+            'achievements_highlights' => 'Achievement & Honors',
             'academic_faculties' => 'Academic Faculties',
             'choose_your_path' => 'Choose Your Path',
             'research_studies' => 'Research Studies',

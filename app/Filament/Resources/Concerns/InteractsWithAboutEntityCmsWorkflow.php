@@ -162,7 +162,9 @@ trait InteractsWithAboutEntityCmsWorkflow
     {
         unset($payload['entity_type'], $payload['entity_id']);
         if (is_array($payload['translations'] ?? null)) {
-            $payload['translations'] = array_values($payload['translations']);
+            $payload['translations'] = in_array($this->entityType(), ['person', 'faculty-member'], true)
+                ? $this->translationsToFormMap($payload['translations'])
+                : array_values($payload['translations']);
         }
         if (in_array($this->entityType(), ['person', 'faculty-member'], true) && is_array($payload['educations'] ?? null)) {
             $payload['educations'] = array_values(array_map(function (mixed $education): mixed {
@@ -175,6 +177,32 @@ trait InteractsWithAboutEntityCmsWorkflow
         }
 
         return $payload;
+    }
+
+    /**
+     * @param  array<int|string, mixed>  $translations
+     * @return array<string, array<string, mixed>>
+     */
+    private function translationsToFormMap(array $translations): array
+    {
+        $mapped = [];
+
+        foreach ($translations as $key => $translation) {
+            if (! is_array($translation)) {
+                continue;
+            }
+
+            $locale = is_string($key) && in_array($key, ['ar', 'en'], true)
+                ? $key
+                : (string) ($translation['locale'] ?? '');
+
+            if (in_array($locale, ['ar', 'en'], true)) {
+                $translation['locale'] = $locale;
+                $mapped[$locale] = $translation;
+            }
+        }
+
+        return $mapped;
     }
 
     private function validationMessage(ValidationException $exception): string

@@ -1,32 +1,43 @@
-<section x-data="statsCounter()" class="bg-white py-16 font-hacen reveal lg:py-20">
+<section x-data="statsCounter()" class="stats-section relative z-20 w-full overflow-hidden font-hacen reveal scroll-mt-24">
     <div class="container">
-        @if ($section->payload->stats !== [])
-            <div class="relative overflow-hidden rounded-[28px] bg-spu-blue px-6 py-12 shadow-[0_28px_80px_rgba(17,26,63,0.22)] sm:px-8 lg:px-12">
-                <div class="absolute inset-x-12 top-0 h-px bg-white/20" aria-hidden="true"></div>
-                @if ($section->payload->title)
-                    <h2 class="mb-10 text-center text-2xl font-bold text-white lg:text-3xl">{{ $section->payload->title }}</h2>
-                @endif
+        @if ($section->payload->title)
+            <div class="section-header text-center mb-10 reveal-item">
+                <h2 class="section-title">{{ $section->payload->title }}</h2>
+            </div>
+        @endif
 
-                <div class="cms-grid-stats gap-8 lg:gap-10">
+        <div class="stats-shell reveal-item">
+            @if ($section->payload->stats !== [])
+                <div class="stats-shell__grid">
                     @foreach ($section->payload->stats as $stat)
-                        <article class="flex min-h-[130px] flex-col items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-6 text-center">
-                            <div class="mb-3 flex items-baseline justify-center" dir="ltr">
-                                @if ($stat->prefix)
-                                    <span class="text-3xl font-bold text-white" translate="no">{{ $stat->prefix }}</span>
-                                @endif
-                                <span class="stats-card-value text-5xl font-bold tracking-tighter text-white lg:text-6xl" data-value="{{ $stat->value }}" translate="no">{{ $stat->value }}</span>
-                                @if ($stat->suffix)
-                                    <span class="ms-1 text-3xl font-bold text-spu-red" translate="no">{{ $stat->suffix }}</span>
+                        <article class="stats-card" style="--card-accent: #caa949;">
+                            <div class="stats-card__top">
+                                @if ($stat->icon)
+                                    <div class="stats-icon-badge">
+                                        <img src="{{ $stat->icon }}" alt="{{ $stat->label }}" class="h-7 w-7 object-contain brightness-0 text-white invert sm:h-8 sm:w-8">
+                                    </div>
                                 @endif
                             </div>
-                            <p class="text-xs font-bold uppercase tracking-widest text-[#799DD6]">{{ $stat->label }}</p>
-                            @if ($stat->helperText)
-                                <p class="mt-2 max-w-[220px] text-sm leading-relaxed text-white/70">{{ $stat->helperText }}</p>
-                            @endif
+                            <div class="stats-card__body">
+                                <div class="stats-card__value-row">
+                                    @if ($stat->prefix)
+                                        <span class="stats-card-value" translate="no">{{ $stat->prefix }}</span>
+                                    @endif
+                                    <span class="stats-card-value" data-value="{{ $stat->value }}" translate="no">{{ $stat->value }}</span>
+                                    @if ($stat->suffix)
+                                        <span class="stats-card-plus">{{ $stat->suffix }}</span>
+                                    @endif
+                                </div>
+                                <p class="stats-card-label">{{ $stat->label }}</p>
+                                @if ($stat->helperText)
+                                    <p class="stats-card-summary">{{ $stat->helperText }}</p>
+                                @endif
+                            </div>
+                            <span class="stats-card-line" aria-hidden="true"></span>
                         </article>
                     @endforeach
                 </div>
-            </div>
-        @endif
+            @endif
+        </div>
     </div>
 </section>

@@ -6,6 +6,7 @@ namespace App\DTOs\Content;
 
 /**
  * @param  array<int, string>  $services
+ * @param  array<int, array{title: string, url: string}>  $links
  */
 final readonly class DirectorateDTO
 {
@@ -16,6 +17,7 @@ final readonly class DirectorateDTO
         public string $summary,
         public string $description,
         public array $services,
+        public array $links,
         public ?string $icon,
         public ?string $email,
         public ?string $location,

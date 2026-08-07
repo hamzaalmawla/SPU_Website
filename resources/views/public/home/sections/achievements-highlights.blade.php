@@ -52,13 +52,13 @@
                     <img :src="item.image" :alt="itemAlt(item)" class="absolute inset-0 w-full h-full object-cover transition-transform duration-[3000ms] group-hover:scale-110">
                     <div x-show="isPrimary(index)" x-transition:enter="transition ease-out duration-[1200ms] delay-[600ms]" x-transition:enter-start="opacity-0 translate-y-12" x-transition:enter-end="opacity-100 translate-y-0" class="absolute inset-0 bg-gradient-to-t from-spu-blue/95 via-spu-blue/40 to-transparent flex flex-col justify-end p-10 text-white">
                         <div class="flex items-center gap-3 mb-4">
-                            <template x-if="item.typeTag"><span class="honor-panel-pill px-4 py-1 rounded-full bg-spu-red text-[10px] font-bold uppercase" x-text="item.typeTag"></span></template>
+                            <template x-if="item.typeTag"><span class="honor-panel-pill text-white/90 px-4 py-1 rounded-full bg-spu-red text-[10px] font-bold uppercase" x-text="item.typeTag"></span></template>
                             <template x-if="item.meta"><span class="text-white/70 text-sm" x-text="item.meta"></span></template>
                         </div>
                         <h3 class="text-2xl lg:text-4xl font-bold mb-4" x-text="item.title"></h3>
                         <template x-if="item.summary"><p class="text-white/80 leading-relaxed mb-6 line-clamp-2" x-text="item.summary"></p></template>
                         <template x-if="hasAction(item)">
-                            <a :href="item.action.url" class="honor-panel-cta inline-flex items-center gap-3 font-bold group/link" x-bind:target="actionTarget(item)" x-bind:rel="actionRel(item)">
+                            <a :href="item.action.url" class="honor-panel-cta text-white/90 inline-flex items-center gap-3 font-bold group/link" x-bind:target="actionTarget(item)" x-bind:rel="actionRel(item)">
                                 <span class="border-b-2 border-spu-red pb-1" x-text="item.action.label"></span>
                                 <img src="/images/icon-arrow-right-outline.svg" class="w-4 h-4 brightness-0 invert transition-transform group-hover/link:translate-x-2 rtl:rotate-180" alt="">
                             </a>

@@ -25,6 +25,7 @@ class Faculty extends Model
         'hero_image',
         'logo_image',
         'gallery_json',
+        'subpages_json',
         'sort_order',
         'is_enabled',
     ];
@@ -35,6 +36,7 @@ class Faculty extends Model
             'sort_order' => 'integer',
             'is_enabled' => 'boolean',
             'gallery_json' => 'array',
+            'subpages_json' => 'array',
             'deleted_at' => 'datetime',
         ];
     }

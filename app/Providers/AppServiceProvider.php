@@ -84,6 +84,7 @@ use App\Contracts\Navigation\NavigationServiceInterface;
 use App\Contracts\News\NewsAdminWorkflowServiceInterface;
 use App\Contracts\News\NewsArticleCmsServiceInterface;
 use App\Contracts\News\NewsServiceInterface;
+use App\Contracts\Page\AboutNavigationCardServiceInterface;
 use App\Contracts\Page\AboutPageServiceInterface;
 use App\Contracts\Page\AdmissionsPageServiceInterface;
 use App\Contracts\Page\CampusLifePageServiceInterface;
@@ -140,6 +141,7 @@ use App\Services\Auth\AuthService;
 use App\Services\Auth\TotpAuthenticator;
 use App\Services\Cms\AboutEntityCmsService;
 use App\Services\Cms\CmsTargetRegistry;
+use App\Services\Page\AboutNavigationCardService;
 use App\Services\Cms\CmsWorkflowService;
 use App\Services\Content\PersonService;
 use App\Services\Content\ProfileAdminService;
@@ -422,6 +424,8 @@ class AppServiceProvider extends ServiceProvider
             CacheServiceInterface::class => CacheService::class,
             AboutEntityCmsServiceInterface::class => AboutEntityCmsService::class,
             AdmissionsPageServiceInterface::class => AdmissionsPageService::class,
+            AboutNavigationCardServiceInterface::class => AboutNavigationCardService::class,
+            \App\Contracts\Page\FacultySubpageCardServiceInterface::class => \App\Services\Page\FacultySubpageCardService::class,
             AboutPageServiceInterface::class => AboutPageService::class,
             CampusLifePageServiceInterface::class => CampusLifePageService::class,
             AuditServiceInterface::class => AuditService::class,
