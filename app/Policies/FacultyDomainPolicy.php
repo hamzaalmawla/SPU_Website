@@ -11,6 +11,7 @@ use App\Models\Faculty\FacultyHighlight;
 use App\Models\Faculty\FacultyLab;
 use App\Models\Faculty\FacultyPage;
 use App\Models\Faculty\FacultyStudentProject;
+use App\Models\Faculty\FacultySubpageCard;
 use App\Models\Person\FacultyMember;
 use App\Models\User\User;
 
@@ -49,7 +50,7 @@ final class FacultyDomainPolicy
 
         $userScope = is_string($user->faculty_scope_slug) ? $user->faculty_scope_slug : '';
 
-        return $userScope !== '' && $this->recordScope($record) === $userScope;
+        return $userScope !== '' && $this->recordScope($record) === $this->canonicalScope($userScope);
     }
 
     public function viewAny(User $user): bool
@@ -62,10 +63,23 @@ final class FacultyDomainPolicy
         return $this->update($user, $record);
     }
 
+    private function canonicalScope(string $scope): string
+    {
+        return Faculty::query()
+            ->where('faculty_scope_slug', $scope)
+            ->orWhere('public_slug', $scope)
+            ->orWhere('slug', $scope)
+            ->value('public_slug') ?: $scope;
+    }
+
     private function recordScope(mixed $record): ?string
     {
         if ($record instanceof Faculty) {
             return $record->faculty_scope_slug ?? $record->public_slug ?? $record->slug;
+        }
+
+        if ($record instanceof FacultySubpageCard) {
+            return $record->faculty_slug;
         }
 
         if ($record instanceof FacultyPage || $record instanceof FacultyHighlight || $record instanceof FacultyLab || $record instanceof FacultyStudentProject || $record instanceof Alumni || $record instanceof HonorStudent || $record instanceof FacultyMember) {

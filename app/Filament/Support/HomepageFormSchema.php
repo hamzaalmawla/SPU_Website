@@ -36,7 +36,6 @@ final class HomepageFormSchema
             'research_studies' => self::researchStudiesFields($prefix),
             'events_activities' => self::eventsActivitiesFields($prefix),
             'medical_facilities_services' => self::medicalFacilitiesFields($prefix),
-            'bottom_stats' => self::bottomStatsFields($prefix),
             'footer' => self::footerFields($prefix),
         };
     }

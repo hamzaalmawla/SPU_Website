@@ -1,10 +1,10 @@
 @extends('layouts.public')
 
 @section('content')
-    <div class="bg-white font-hacen text-spu-blue">
+    <div class="bg-white font-hacen text-spu-blue overflow-x-hidden">
         @include('public.about.partials.hero', ['title' => $directorate->title, 'summary' => $directorate->summary, 'image' => null])
 
-        <section class="dir-detail-section bg-[#faf9fb] font-hacen" aria-labelledby="directorate-overview-heading">
+        <section class="dir-detail-section bg-[#faf9fb] font-hacen overflow-x-hidden" aria-labelledby="directorate-overview-heading">
             <div class="container mx-auto max-w-6xl px-6">
                 <div class="grid gap-10 lg:grid-cols-5">
                     <div class="lg:col-span-3">

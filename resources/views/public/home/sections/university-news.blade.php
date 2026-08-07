@@ -1,9 +1,9 @@
 <section id="home-news" class="py-7.5 mt-[70px] bg-white font-hacen overflow-hidden reveal">
     <div class="container">
         <div class="flex items-center justify-between relative mb-10">
-            <h2 class="text-[42px] font-bold text-[#1e2652] tracking-tight">{{ $section->payload->title }}</h2>
+            <h2 class="text-[clamp(1.85rem,7vw,2.625rem)] font-bold text-[#1e2652] tracking-tight">{{ $section->payload->title }}</h2>
             @if ($section->payload->sectionAction)
-                <div class="flex items-center absolute top-4.5 gap-6 rtl:left-0 ltr:right-0">
+                <div class="section-header__controls flex items-center absolute top-4.5 gap-6 rtl:left-0 ltr:right-0">
                     <a href="{{ $section->payload->sectionAction->url }}" class="bg-[#1e2652] text-white w-[195px] h-[40px] text-center justify-center rounded-[12px] text-sm font-bold flex items-center gap-3 hover:bg-opacity-90 transition-all" @if ($section->payload->sectionAction->target) target="{{ $section->payload->sectionAction->target }}" rel="noreferrer" @endif>{{ $section->payload->sectionAction->label }}</a>
                 </div>
             @endif

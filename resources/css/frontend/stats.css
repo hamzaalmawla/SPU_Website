@@ -67,14 +67,20 @@
         container-type: inline-size;
         display: flex;
         flex-direction: column;
-        /* gap: 1rem; */
-        min-height: clamp(14.5rem, 78cqw, 17.5rem);
+        min-height: 14.5rem;
         border: 1px solid #eee;
         border-radius: 1.65rem;
         background: white;
         box-shadow: 1px 7px 6px 2px #eeeeeed0;
-        padding: clamp(1.35rem, 9cqw, 2rem);
+        padding: 1.35rem;
         transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.32s ease, box-shadow 0.32s ease, background-color 0.32s ease;
+    }
+
+    @supports (container-type: inline-size) {
+        .stats-card {
+            min-height: clamp(14.5rem, 78cqw, 17.5rem);
+            padding: clamp(1.35rem, 9cqw, 2rem);
+        }
     }
 
     .stats-card__top {

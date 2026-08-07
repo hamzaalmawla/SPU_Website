@@ -4,8 +4,8 @@
 
 @layer components {
     .page-hero {
-        padding-top: clamp(15rem, 22vw, 16.5rem);
-        padding-bottom: clamp(5rem, 8vw, 6.25rem);
+        padding-top: clamp(8rem, 13vw, 16.5rem);
+        padding-bottom: clamp(4rem, 8vw, 6.25rem);
     }
 
     .page-hero::before {
@@ -19,6 +19,11 @@
 
     .home-hero {
         min-height: clamp(46rem, 100vh, 58rem);
+    }
+
+    .home-hero,
+    .home-hero__inner {
+        min-height: clamp(46rem, 100svh, 58rem);
     }
 
     .home-hero__overlay,
@@ -43,9 +48,9 @@
         display: grid;
         align-items: end;
         gap: 2rem;
-        min-height: clamp(46rem, 100vh, 58rem);
-        padding-bottom: clamp(13rem, 22vw, 10rem);
-        padding-top: clamp(16rem, 8vw, 16rem);
+        min-height: clamp(46rem, 100svh, 58rem);
+        padding-bottom: clamp(8rem, 16vw, 13rem);
+        padding-top: clamp(8.5rem, 13vw, 16rem);
     }
 
     .home-hero__content {
@@ -312,6 +317,18 @@
 
         .home-hero__metrics {
             grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-height: 640px) and (max-width: 1023px) {
+        .home-hero,
+        .home-hero__inner {
+            min-height: 38rem;
+        }
+
+        .home-hero__inner {
+            padding-top: 7rem;
+            padding-bottom: 6rem;
         }
     }
 }

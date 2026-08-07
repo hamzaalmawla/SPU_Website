@@ -6,9 +6,13 @@ namespace App\Filament\Resources;
 
 use App\Contracts\Page\FacultySubpageCardServiceInterface;
 use App\Filament\Resources\FacultySubpageCardResource\Pages;
+use App\Models\Faculty\Faculty;
 use App\Models\Faculty\FacultySubpageCard;
+use App\Models\User\User;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Get;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Set;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
@@ -20,6 +24,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Gate;
 
@@ -42,6 +47,55 @@ class FacultySubpageCardResource extends Resource
     public static function canAccess(): bool
     {
         return Gate::allows('manage-faculties');
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        if (static::scopedFacultySlug() !== null) {
+            $query->where('faculty_slug', static::scopedFacultySlug());
+        }
+
+        return $query;
+    }
+
+    private static function scopedFacultySlug(): ?string
+    {
+        $user = auth()->user();
+
+        if (! $user instanceof User || $user->role_slug !== 'faculty_editor') {
+            return null;
+        }
+
+        $scope = trim((string) ($user->faculty_scope_slug ?? ''));
+
+        if ($scope === '') {
+            return null;
+        }
+
+        return Faculty::query()
+            ->where('faculty_scope_slug', $scope)
+            ->orWhere('public_slug', $scope)
+            ->orWhere('slug', $scope)
+            ->value('public_slug') ?: $scope;
+    }
+
+    /** @return array<string, string> */
+    private static function facultyOptions(): array
+    {
+        $options = Faculty::query()
+            ->where('is_enabled', true)
+            ->pluck('public_slug', 'public_slug')
+            ->all();
+
+        if (static::scopedFacultySlug() !== null) {
+            $scope = static::scopedFacultySlug();
+
+            return array_filter($options, fn (string $slug): bool => $slug === $scope);
+        }
+
+        return $options;
     }
 
     public static function form(Form $form): Form
@@ -178,25 +232,17 @@ class FacultySubpageCardResource extends Resource
                     ->form([
                         Select::make('faculty_slug')
                             ->label('Faculty')
-                            ->options(fn (): array => \App\Models\Faculty\Faculty::query()
-                                ->where('is_enabled', true)
-                                ->pluck('public_slug', 'public_slug')
-                                ->all())
+                            ->options(fn (): array => static::facultyOptions())
+                            ->default(static::scopedFacultySlug())
+                            ->hidden(fn (): bool => static::scopedFacultySlug() !== null)
                             ->searchable()
-                            ->required(),
+                            ->required()
+                            ->live()
+                            ->afterStateUpdated(fn (Set $set): mixed => $set('subpage_slug', null)),
                         Select::make('subpage_slug')
                             ->label('Subpage')
-                            ->options([
-                                'overview' => 'Overview',
-                                'departments' => 'Departments',
-                                'study-plan' => 'Study Plan',
-                                'labs' => 'Laboratories',
-                                'projects' => 'Projects',
-                                'alumni' => 'Alumni',
-                                'valedictorians' => 'Honor List',
-                                'training' => 'Training',
-                                'research' => 'Research',
-                            ])
+                            ->options(fn (Get $get): array => app(FacultySubpageCardServiceInterface::class)
+                                ->availableSubpageOptions((string) ($get('faculty_slug') ?? '')))
                             ->searchable()
                             ->required(),
                         TextInput::make('title_override_ar')
@@ -211,8 +257,21 @@ class FacultySubpageCardResource extends Resource
                     ->action(function (array $data): void {
                         $service = app(FacultySubpageCardServiceInterface::class);
 
+                        $facultySlug = (string) ($data['faculty_slug'] ?? '') !== ''
+                            ? (string) $data['faculty_slug']
+                            : (string) (static::scopedFacultySlug() ?? '');
+
+                        if ($facultySlug === '') {
+                            Notification::make()
+                                ->title('A faculty must be selected')
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
                         $existing = FacultySubpageCard::query()
-                            ->where('faculty_slug', $data['faculty_slug'])
+                            ->where('faculty_slug', $facultySlug)
                             ->where('subpage_slug', $data['subpage_slug'])
                             ->exists();
 
@@ -226,7 +285,7 @@ class FacultySubpageCardResource extends Resource
                         }
 
                         $service->createCard(
-                            facultySlug: $data['faculty_slug'],
+                            facultySlug: $facultySlug,
                             subpageSlug: $data['subpage_slug'],
                             titleOverrideAr: $data['title_override_ar'] ?? null,
                             titleOverrideEn: $data['title_override_en'] ?? null,

@@ -532,17 +532,7 @@ trait ManagesFacultyHomepage
     {
         $existing = collect($this->navCards)->pluck('subpage_slug')->all();
 
-        return collect([
-            'overview' => __('admin.faculty_workspace.subpages.overview'),
-            'departments' => __('admin.faculty_workspace.subpages.departments'),
-            'study-plan' => __('admin.faculty_workspace.subpages.study_plan'),
-            'labs' => __('admin.faculty_workspace.subpages.labs'),
-            'projects' => __('admin.faculty_workspace.subpages.projects'),
-            'alumni' => __('admin.faculty_workspace.subpages.alumni'),
-            'valedictorians' => __('admin.faculty_workspace.subpages.valedictorians'),
-            'training' => __('admin.faculty_workspace.subpages.training'),
-            'research' => __('admin.faculty_workspace.subpages.research'),
-        ])
+        return collect($this->subpageCardService->availableSubpageOptions($this->facultyScope))
             ->filter(fn (string $label, string $slug): bool => ! in_array($slug, $existing, true))
             ->all();
     }

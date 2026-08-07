@@ -397,7 +397,7 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
     {
         return match ($key) {
             'hero' => 'hero',
-            'hero_stats', 'bottom_stats' => 'stats',
+            'hero_stats' => 'stats',
             'footer' => 'footer',
             default => 'listing',
         };

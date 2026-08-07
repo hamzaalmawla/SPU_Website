@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="bg-white font-hacen text-spu-blue">
-        <section id="about-dynamic-section" class="relative overflow-x-visible bg-white py-24 font-hacen">
+        <section id="about-dynamic-section" class="relative overflow-x-hidden bg-white py-24 font-hacen">
             <div class="container relative z-10 mt-14">
                 <span class="sr-only">{{ $locale === 'ar' ? 'الرئيسية' : 'Home' }}</span>
 
@@ -10,7 +10,7 @@
                     <h1 class="mb-5 w-full min-w-0 text-5xl font-black uppercase tracking-tighter text-spu-blue md:text-7xl">{{ $about->title }}</h1>
                 </div>
 
-                <div class="grid grid-cols-1 gap-4 overflow-visible lg:grid-cols-12">
+                <div class="grid grid-cols-1 gap-4 lg:grid-cols-12">
                     <div class="reveal-left relative z-20 flex flex-col justify-center gap-6 overflow-visible lg:col-span-5">
                         <div class="relative mx-auto w-full overflow-visible">
                             <div class="relative z-10 h-[411px] w-full max-w-[448px] overflow-hidden shadow-xl">

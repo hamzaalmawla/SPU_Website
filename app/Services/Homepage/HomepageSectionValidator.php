@@ -88,7 +88,7 @@ final class HomepageSectionValidator
                 'content.overlay' => ['nullable', 'array'],
                 'content.alignment' => ['nullable', 'array'],
             ],
-            'hero_stats', 'bottom_stats' => [
+            'hero_stats' => [
                 'title' => ['required', 'string', 'max:255'],
                 'stats' => ['required', 'array', 'min:4'],
                 'stats.*.value' => ['required', 'string', 'max:100'],

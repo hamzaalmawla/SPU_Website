@@ -88,7 +88,7 @@
         </div>
     </section>
 
-    <section id="services" x-data="campusLifeReveal()" x-init="init()" class="pb-8 pt-24 font-hacen">
+    <section id="services" x-data="campusLifeReveal()" x-init="init()" class="pb-8 pt-24 font-hacen overflow-x-hidden">
         <span id="activities" class="invisible absolute -mt-24"></span>
         <span id="career" class="invisible absolute -mt-24"></span>
         <div class="container mb-8">

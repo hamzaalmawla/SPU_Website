@@ -114,6 +114,7 @@ use App\Models\Faculty\FacultyHighlight;
 use App\Models\Faculty\FacultyLab;
 use App\Models\Faculty\FacultyPage;
 use App\Models\Faculty\FacultyStudentProject;
+use App\Models\Faculty\FacultySubpageCard;
 use App\Models\Form\DynamicFormSubmission;
 use App\Models\Media\MediaAsset;
 use App\Models\Navigation\MenuItem;
@@ -375,6 +376,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(FacultyStudentProject::class, FacultyDomainPolicy::class);
         Gate::policy(Alumni::class, FacultyDomainPolicy::class);
         Gate::policy(HonorStudent::class, FacultyDomainPolicy::class);
+        Gate::policy(FacultySubpageCard::class, FacultyDomainPolicy::class);
 
         Gate::define('manage-users', [UserPolicy::class, 'manageUsers']);
         Gate::define('manage-settings', [UserPolicy::class, 'manageSettings']);

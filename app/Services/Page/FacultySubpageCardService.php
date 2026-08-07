@@ -6,11 +6,64 @@ namespace App\Services\Page;
 
 use App\Contracts\Page\FacultySubpageCardServiceInterface;
 use App\DTOs\Faculty\FacultySubpageCardDTO;
+use App\Models\Faculty\Faculty;
+use App\Models\Faculty\FacultyPage;
 use App\Models\Faculty\FacultySubpageCard;
 use Illuminate\Support\Collection;
 
 final class FacultySubpageCardService implements FacultySubpageCardServiceInterface
 {
+    public function hasAnyCards(string $facultySlug): bool
+    {
+        return FacultySubpageCard::query()
+            ->where('faculty_slug', $facultySlug)
+            ->exists();
+    }
+
+    /** @return array<string, string> */
+    public function availableSubpageOptions(string $facultySlug): array
+    {
+        $faculty = Faculty::query()
+            ->where('faculty_scope_slug', $facultySlug)
+            ->orWhere('public_slug', $facultySlug)
+            ->orWhere('slug', $facultySlug)
+            ->first();
+
+        $slugs = ['overview', 'departments', 'study-plan', 'labs', 'projects', 'alumni', 'valedictorians', 'research'];
+
+        if ($faculty instanceof Faculty) {
+            if ($faculty->public_slug === 'pharmacy') {
+                $slugs[] = 'training';
+            }
+
+            $custom = FacultyPage::query()
+                ->where('faculty_id', $faculty->getKey())
+                ->where('is_enabled', true)
+                ->pluck('slug')
+                ->all();
+
+            foreach ($custom as $slug) {
+                if (! in_array($slug, $slugs, true)) {
+                    $slugs[] = $slug;
+                }
+            }
+        } elseif ($facultySlug === 'pharmacy') {
+            $slugs[] = 'training';
+        }
+
+        $options = [];
+
+        foreach ($slugs as $slug) {
+            if (! is_string($slug) || $slug === '' || $slug === 'study-plan-course') {
+                continue;
+            }
+
+            $options[$slug] = __('admin.faculty_workspace.subpages.'.str_replace('-', '_', $slug));
+        }
+
+        return $options;
+    }
+
     /** @return Collection<int, FacultySubpageCardDTO> */
     public function getAllCards(string $facultySlug): Collection
     {

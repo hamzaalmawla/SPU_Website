@@ -1854,11 +1854,15 @@ final class FacultyPageService implements FacultyPageServiceInterface
             return false;
         }
 
-        $facultySlug = (string) $faculty->getKey();
-        $visibleSlugs = app(\App\Contracts\Page\FacultySubpageCardServiceInterface::class)
-            ->getVisibleSubpageSlugs($facultySlug);
+        $facultySlug = $this->publicSlug($faculty);
+        $cardService = app(\App\Contracts\Page\FacultySubpageCardServiceInterface::class);
+        $visibleSlugs = $cardService->getVisibleSubpageSlugs($facultySlug);
 
         if ($visibleSlugs === []) {
+            if ($cardService->hasAnyCards($facultySlug)) {
+                return false;
+            }
+
             return $subpageSlug !== 'training' || $this->publicSlug($faculty) === 'pharmacy';
         }
 

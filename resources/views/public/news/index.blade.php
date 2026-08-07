@@ -65,9 +65,9 @@
 
     <section id="last-news" class="bg-white py-20 font-hacen">
         <div class="container">
-            <div class="mb-12 flex items-center justify-between gap-4">
-                <h2 class="text-5xl font-bold text-[#202759]">{{ $page['lastNewsTitle'] ?? ($isAr ? 'آخر الأخبار' : 'Last News') }}</h2>
-                <a href="/{{ $locale }}/news/articles" class="rounded border border-slate-300 px-10 py-2 text-sm font-bold text-[#202759] transition-colors hover:bg-slate-50">{{ $page['lastNewsViewAllLabel'] ?? ($isAr ? 'عرض الكل' : 'View All News') }}</a>
+            <div class="mb-12 flex flex-wrap items-center justify-between gap-4">
+                <h2 class="text-3xl font-bold text-[#202759] md:text-5xl">{{ $page['lastNewsTitle'] ?? ($isAr ? 'آخر الأخبار' : 'Last News') }}</h2>
+                <a href="/{{ $locale }}/news/articles" class="rounded border border-slate-300 px-6 py-2 text-sm font-bold text-[#202759] transition-colors hover:bg-slate-50">{{ $page['lastNewsViewAllLabel'] ?? ($isAr ? 'عرض الكل' : 'View All News') }}</a>
             </div>
 
             <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
@@ -101,9 +101,9 @@
 
     <section class="bg-white py-24 font-hacen">
         <div class="container">
-            <div class="mb-12 flex items-center justify-between gap-4">
-                <h2 class="text-5xl font-bold text-[#202759]">{{ $page['announcementsTitle'] ?? ($isAr ? 'الإعلانات' : 'Announcements') }}</h2>
-                <a href="/{{ $locale }}/news/announcements" class="rounded border border-slate-300 px-8 py-2 text-sm font-bold text-[#202759] transition-colors hover:bg-slate-50">{{ $page['announcementsViewAllLabel'] ?? ($isAr ? 'عرض كافة الإعلانات' : 'View All Announcements') }}</a>
+            <div class="mb-12 flex flex-wrap items-center justify-between gap-4">
+                <h2 class="text-3xl font-bold text-[#202759] md:text-5xl">{{ $page['announcementsTitle'] ?? ($isAr ? 'الإعلانات' : 'Announcements') }}</h2>
+                <a href="/{{ $locale }}/news/announcements" class="rounded border border-slate-300 px-6 py-2 text-sm font-bold text-[#202759] transition-colors hover:bg-slate-50">{{ $page['announcementsViewAllLabel'] ?? ($isAr ? 'عرض كافة الإعلانات' : 'View All Announcements') }}</a>
             </div>
 
             <div class="grid items-stretch gap-8 lg:grid-cols-12">

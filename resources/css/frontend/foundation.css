@@ -73,6 +73,42 @@ body {
     font-family: var(--font-hacen);
     font-variant-ligatures: common-ligatures contextual;
     text-rendering: optimizeLegibility;
+    overflow-wrap: break-word;
+}
+
+/**
+ * Fluid media: never let images, video or embeds exceed their container.
+ * Elements with explicit Tailwind height classes (h-full, h-[..]) win over
+ * the element selector, so aspect-ratio / object-cover layouts are untouched.
+ */
+img,
+video,
+canvas {
+    max-width: 100%;
+    height: auto;
+}
+
+iframe,
+embed {
+    max-width: 100%;
+}
+
+/**
+ * Prevent iOS Safari from auto-zooming when focusing form controls whose
+ * computed font-size is below 16px. Applies only to the actual fields.
+ */
+@media (max-width: 1024px) {
+    input[type='text'],
+    input[type='email'],
+    input[type='search'],
+    input[type='tel'],
+    input[type='number'],
+    input[type='password'],
+    input[type='date'],
+    select,
+    textarea {
+        font-size: 16px;
+    }
 }
 
 /**

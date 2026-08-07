@@ -67,6 +67,14 @@
     left: 1rem;
 }
 
+/* Mobile: cap the graph viewport height (inline style uses 80vh) so the
+   controls and board stay usable on phones. */
+@media (max-width: 767px) {
+    [data-study-plan-viewport] {
+        height: 62svh !important;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     [data-study-plan] *,
     [data-study-plan] *::before,

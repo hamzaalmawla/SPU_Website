@@ -21,7 +21,7 @@
                 </div>
             </section>
 
-            <section class="bg-white py-24 font-hacen">
+            <section class="bg-white py-24 font-hacen overflow-x-hidden">
                 <div class="container mx-auto">
                     <h2 class="reveal reveal-up mb-16 text-center text-4xl font-black text-spu-blue md:text-5xl">{{ $history['foundingTitle'] }}</h2>
                     <div class="history-vision-grid">
@@ -40,7 +40,7 @@
                 </div>
             </section>
 
-            <section class="bg-section py-24 font-hacen">
+            <section class="bg-section py-24 font-hacen overflow-x-hidden">
                 <div class="container mx-auto px-6">
                     <h2 class="reveal reveal-up mb-16 text-center text-4xl font-black text-spu-blue md:text-5xl">{{ $history['timelineTitle'] }}</h2>
                     <div class="history-timeline">

@@ -15,6 +15,7 @@ final class FacultyModuleSeeder extends Seeder
         foreach ($this->faculties() as $index => $faculty) {
             $facultyId = $this->seedFaculty($faculty, $index + 1);
             $this->seedPages($facultyId, $faculty);
+            $this->seedSubpageCards($faculty, $facultyId);
             $this->seedDepartments($facultyId, $faculty);
             $this->seedHighlights($facultyId, $faculty);
             $this->seedLabs($facultyId, $faculty);
@@ -90,6 +91,43 @@ final class FacultyModuleSeeder extends Seeder
         foreach ($pages as $sort => $slug) {
             $pageId = $this->upsertPage($facultyId, $faculty, $slug, $sort + 1);
             $this->upsertPageTranslations($pageId, $faculty, $slug);
+        }
+    }
+
+    /** @param array<string, mixed> $faculty */
+    private function seedSubpageCards(array $faculty, int $facultyId): void
+    {
+        $facultySlug = $faculty['public_slug'];
+        $pages = ['overview', 'departments', 'study-plan', 'study-plan-course', 'labs', 'projects', 'research', 'alumni', 'valedictorians'];
+
+        if ($facultySlug === 'pharmacy') {
+            $pages[] = 'training';
+        }
+
+        DB::table('faculty_subpage_cards')
+            ->where('faculty_slug', $facultySlug)
+            ->whereNotIn('subpage_slug', $pages)
+            ->delete();
+
+        foreach ($pages as $sort => $slug) {
+            $now = now();
+            $inserted = DB::table('faculty_subpage_cards')->insertOrIgnore([
+                'faculty_slug' => $facultySlug,
+                'subpage_slug' => $slug,
+                'sort_order' => $sort + 1,
+                'is_visible' => true,
+                'status' => 'published',
+                'published_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            if ($inserted === 0) {
+                DB::table('faculty_subpage_cards')
+                    ->where('faculty_slug', $facultySlug)
+                    ->where('subpage_slug', $slug)
+                    ->update(['sort_order' => $sort + 1, 'updated_at' => $now]);
+            }
         }
     }
 

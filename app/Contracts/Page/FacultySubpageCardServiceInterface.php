@@ -15,6 +15,11 @@ interface FacultySubpageCardServiceInterface
     /** @return array<int, string> */
     public function getVisibleSubpageSlugs(string $facultySlug): array;
 
+    public function hasAnyCards(string $facultySlug): bool;
+
+    /** @return array<string, string> */
+    public function availableSubpageOptions(string $facultySlug): array;
+
     public function createCard(
         string $facultySlug,
         string $subpageSlug,
