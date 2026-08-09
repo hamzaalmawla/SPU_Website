@@ -36,7 +36,7 @@
                         <div class="min-h-24 border-b border-e border-slate-100 p-2 {{ $day['inMonth'] ? 'bg-white' : 'bg-slate-50 text-slate-400' }}">
                             <time datetime="{{ $day['date'] }}" class="text-xs font-bold">{{ $day['day'] }}</time>
                             @foreach ($day['events'] as $event)
-                                <a href="/{{ $locale }}/news/events-list#{{ $event->id }}" class="mt-2 block rounded bg-spu-red/10 px-2 py-1 text-[10px] font-bold leading-4 text-spu-red hover:bg-spu-red hover:text-white">{{ $event->title }}</a>
+                                <a href="{{ $event->detailUrl }}" class="mt-2 block rounded bg-spu-red/10 px-2 py-1 text-[10px] font-bold leading-4 text-spu-red hover:bg-spu-red hover:text-white">{{ $event->title }}</a>
                             @endforeach
                         </div>
                     @endforeach
@@ -55,7 +55,7 @@
                                 <p>{{ $event->timeLabel }}</p>
                                 <p>{{ $event->location }}</p>
                             </div>
-                            <a href="/{{ $locale }}/news/events-list#{{ $event->id }}" class="mt-5 inline-flex text-sm font-bold text-spu-red">{{ $page['detailsLabel'] }}</a>
+                            <a href="{{ $event->detailUrl }}" class="mt-5 inline-flex text-sm font-bold text-spu-red">{{ $page['detailsLabel'] }}</a>
                         </div>
                     </article>
                 @empty

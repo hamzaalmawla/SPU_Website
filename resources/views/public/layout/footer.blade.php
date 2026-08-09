@@ -15,6 +15,10 @@
         $contactLinks = $homepageFooterPayload->contactLinks;
     }
 
+    if (($hideFooterSocials ?? false) === true || request()->routeIs('public.news.show')) {
+        $socialLinks = [];
+    }
+
     $footerBrandTitle = $useHomepageFooter
         ? ($homepageBrandBlock['title'] ?? $homepageFooterPayload->title ?? $footerSettings->brandTitle)
         : $footerSettings->brandTitle;
@@ -173,7 +177,7 @@
                         $legalLabel = is_array($link) ? ($link['label'] ?? '') : ($link->label ?? '');
                         $legalTarget = is_array($link) ? ($link['target'] ?? null) : ($link->target ?? null);
                     @endphp
-                    @if ($legalUrl !== '')
+                    @if ($legalUrl !== '' && $legalUrl !== '#')
                         <a href="{{ $legalUrl }}" @if ($legalTarget) target="{{ $legalTarget }}" @endif @if ($legalTarget === '_blank') rel="noreferrer" @endif class="text-white/50 transition-colors hover:text-white">{{ $legalLabel }}</a>
                     @endif
                 @endforeach

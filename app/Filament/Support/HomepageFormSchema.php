@@ -4,10 +4,15 @@ declare(strict_types=1);
 
 namespace App\Filament\Support;
 
+use App\Contracts\News\NewsServiceInterface;
+use App\Contracts\Research\ResearchPageServiceInterface;
+use App\DTOs\Content\ArticleCardDTO;
+use App\DTOs\Content\ResearchCardDTO;
 use App\Filament\Components\PageUrlSelect;
 use Filament\Forms\Components\Component;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 
@@ -36,7 +41,68 @@ final class HomepageFormSchema
             'research_studies' => self::researchStudiesFields($prefix),
             'events_activities' => self::eventsActivitiesFields($prefix),
             'medical_facilities_services' => self::medicalFacilitiesFields($prefix),
+            'bottom_stats' => self::heroStatsFields($prefix),
             'footer' => self::footerFields($prefix),
+        };
+    }
+
+    /** @return array<int, Component> */
+    public static function selectionFieldsForSection(string $sectionKey, string $prefix): array
+    {
+        return match ($sectionKey) {
+            'university_news' => [
+                Section::make(__('admin.homepage_selection.news_heading'))
+                    ->description(__('admin.homepage_selection.news_help'))
+                    ->schema([
+                        Repeater::make("{$prefix}.article_ids")
+                            ->label(__('admin.homepage_selection.selected_news'))
+                            ->schema([
+                                Select::make('article_id')
+                                    ->label(__('admin.homepage_selection.news_article'))
+                                    ->options(fn (): array => self::newsOptions(''))
+                                    ->searchable()
+                                    ->preload()
+                                    ->required()
+                                    ->distinct()
+                                    ->disableOptionsWhenSelectedInSiblingRepeaterItems()
+                                    ->getSearchResultsUsing(fn (string $search): array => self::newsOptions($search))
+                                    ->getOptionLabelUsing(fn (mixed $value): ?string => self::newsOptionLabel($value)),
+                            ])
+                            ->minItems(1)
+                            ->maxItems(8)
+                            ->defaultItems(0)
+                            ->reorderable()
+                            ->collapsible()
+                            ->itemLabel(fn (array $state): ?string => self::newsOptionLabel($state['article_id'] ?? null)),
+                    ]),
+            ],
+            'research_studies' => [
+                Section::make(__('admin.homepage_selection.research_heading'))
+                    ->description(__('admin.homepage_selection.research_help'))
+                    ->schema([
+                        Repeater::make("{$prefix}.publication_slugs")
+                            ->label(__('admin.homepage_selection.selected_research'))
+                            ->schema([
+                                Select::make('publication_slug')
+                                    ->label(__('admin.homepage_selection.research_publication'))
+                                    ->options(fn (): array => self::researchOptions(''))
+                                    ->searchable()
+                                    ->preload()
+                                    ->required()
+                                    ->distinct()
+                                    ->disableOptionsWhenSelectedInSiblingRepeaterItems()
+                                    ->getSearchResultsUsing(fn (string $search): array => self::researchOptions($search))
+                                    ->getOptionLabelUsing(fn (mixed $value): ?string => self::researchOptionLabel($value)),
+                            ])
+                            ->minItems(1)
+                            ->maxItems(10)
+                            ->defaultItems(0)
+                            ->reorderable()
+                            ->collapsible()
+                            ->itemLabel(fn (array $state): ?string => self::researchOptionLabel($state['publication_slug'] ?? null)),
+                    ]),
+            ],
+            default => [],
         };
     }
 
@@ -252,30 +318,6 @@ final class HomepageFormSchema
                     ->maxLength(255),
                 ...self::sectionActionFields($prefix),
             ]),
-            Repeater::make("{$prefix}.articles")
-                ->label('News Cards')
-                ->schema([
-                    self::mediaField('image', 'Image'),
-                    TextInput::make('title')
-                        ->label('Title')
-                        ->required()
-                        ->maxLength(255),
-                    Textarea::make('excerpt')
-                        ->label('Excerpt')
-                        ->rows(2)
-                        ->maxLength(500),
-                    TextInput::make('publish_date')
-                        ->label('Publish Date')
-                        ->maxLength(50),
-                    TextInput::make('category')
-                        ->label('Category')
-                        ->maxLength(100),
-                    PageUrlSelect::make('cta_url', 'CTA URL', self::localeFromPrefix($prefix)),
-                ])
-                ->columns(2)
-                ->collapsible()
-                ->collapsed()
-                ->defaultItems(0),
         ];
     }
 
@@ -289,34 +331,47 @@ final class HomepageFormSchema
                     ->maxLength(255),
                 ...self::sectionActionFields($prefix),
             ]),
-            Repeater::make("{$prefix}.research_items")
-                ->label('Research Cards')
-                ->schema([
-                    self::mediaField('image', 'Image'),
-                    TextInput::make('title')
-                        ->label('Title')
-                        ->required()
-                        ->maxLength(255),
-                    Textarea::make('excerpt')
-                        ->label('Excerpt')
-                        ->rows(2)
-                        ->maxLength(500),
-                    TextInput::make('publish_date')
-                        ->label('Publish Date')
-                        ->maxLength(50),
-                    TextInput::make('category')
-                        ->label('Category')
-                        ->maxLength(100),
-                    TextInput::make('authors')
-                        ->label('Authors')
-                        ->maxLength(500),
-                    PageUrlSelect::make('cta_url', 'CTA URL', self::localeFromPrefix($prefix)),
-                ])
-                ->columns(2)
-                ->collapsible()
-                ->collapsed()
-                ->defaultItems(0),
         ];
+    }
+
+    /** @return array<int|string, string> */
+    private static function newsOptions(string $search): array
+    {
+        return app(NewsServiceInterface::class)
+            ->getHomepageArticleCards(app()->getLocale(), [], $search, 50)
+            ->mapWithKeys(fn (ArticleCardDTO $card): array => [$card->id => $card->title])
+            ->all();
+    }
+
+    private static function newsOptionLabel(mixed $value): ?string
+    {
+        if (! is_numeric($value)) {
+            return null;
+        }
+
+        return app(NewsServiceInterface::class)
+            ->getHomepageArticleCards(app()->getLocale(), [(int) $value], null, 1)
+            ->first()?->title;
+    }
+
+    /** @return array<string, string> */
+    private static function researchOptions(string $search): array
+    {
+        return app(ResearchPageServiceInterface::class)
+            ->getHomepagePublicationCards(app()->getLocale(), [], $search, 50)
+            ->mapWithKeys(fn (ResearchCardDTO $card): array => [$card->slug => $card->title])
+            ->all();
+    }
+
+    private static function researchOptionLabel(mixed $value): ?string
+    {
+        if (! is_string($value) || $value === '') {
+            return null;
+        }
+
+        return app(ResearchPageServiceInterface::class)
+            ->getHomepagePublicationCards(app()->getLocale(), [$value], null, 1)
+            ->first()?->title;
     }
 
     /** @return array<int, Component> */
@@ -481,7 +536,7 @@ final class HomepageFormSchema
                         ->label('Platform')
                         ->required()
                         ->maxLength(50),
-                    PageUrlSelect::make('url', 'URL', self::localeFromPrefix($prefix), true),
+                            PageUrlSelect::make('url', 'URL', self::localeFromPrefix($prefix), true),
                     self::mediaField('icon', 'Icon'),
                 ])
                 ->columns(3)
@@ -539,7 +594,7 @@ final class HomepageFormSchema
                         ->label('Label')
                         ->required()
                         ->maxLength(255),
-                            PageUrlSelect::make('url', 'URL', self::localeFromPrefix($prefix), true),
+                    PageUrlSelect::make('url', 'URL', self::localeFromPrefix($prefix), true),
                 ])
                 ->columns(2)
                 ->collapsible()

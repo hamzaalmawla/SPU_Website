@@ -10,11 +10,11 @@
     <title>{{ $title ?? __('admin.auth.panel_title') }}</title>
     <style>
         :root {
-            --spu-blue: #082b5f;
-            --spu-blue-2: #0d3f83;
-            --spu-red: #b4232a;
-            --spu-gold: #d6a342;
-            --spu-ink: #172033;
+            --spu-blue: #202759;
+            --spu-blue-2: #151b43;
+            --spu-red: #6f1616;
+            --spu-gold: #caa949;
+            --spu-ink: #20243a;
             --spu-muted: #667085;
             --spu-border: #d9e2ef;
         }
@@ -25,11 +25,12 @@
             min-height: 100vh;
             font-family: "Inter", "Segoe UI", Tahoma, Arial, sans-serif;
             color: var(--spu-ink);
-            background: radial-gradient(circle at top left, rgba(214, 163, 66, 0.22), transparent 32rem), linear-gradient(135deg, #071f49 0%, #0a316b 46%, #f4f7fb 46.2%, #ffffff 100%);
+            background: radial-gradient(circle at top left, rgba(202, 169, 73, 0.2), transparent 32rem), linear-gradient(135deg, #151b43 0%, #202759 46%, #f4f5f8 46.2%, #ffffff 100%);
         }
         [dir="rtl"] body {
             font-family: Tahoma, Arial, "Segoe UI", sans-serif;
-            background: radial-gradient(circle at top right, rgba(214, 163, 66, 0.22), transparent 32rem), linear-gradient(225deg, #071f49 0%, #0a316b 46%, #f4f7fb 46.2%, #ffffff 100%);
+            font-family: "SPU Arabic", Tahoma, Arial, sans-serif;
+            background: radial-gradient(circle at top right, rgba(202, 169, 73, 0.2), transparent 32rem), linear-gradient(225deg, #151b43 0%, #202759 46%, #f4f5f8 46.2%, #ffffff 100%);
         }
         .auth-shell { display: grid; min-height: 100vh; grid-template-columns: minmax(0, 1fr) minmax(22rem, 30rem); gap: clamp(2rem, 6vw, 5rem); align-items: center; padding: clamp(1.25rem, 4vw, 4rem); }
         .brand-panel { color: #fff; max-width: 42rem; }
@@ -62,7 +63,9 @@
         .primary-button { width: 100%; min-height: 3.15rem; border: 0; border-radius: 1rem; background: linear-gradient(135deg, var(--spu-blue), var(--spu-blue-2)); color: #fff; cursor: pointer; font-size: 1rem; font-weight: 900; box-shadow: 0 .85rem 1.6rem rgba(8, 43, 95, .28); }
         .primary-button:focus { outline: .22rem solid rgba(214, 163, 66, .32); outline-offset: .15rem; }
         .security-note { margin: 1.25rem 0 0; color: var(--spu-muted); font-size: .82rem; line-height: 1.65; }
-        @media (max-width: 900px) { body { background: linear-gradient(180deg, #071f49 0%, #0a316b 42%, #f4f7fb 42.2%, #ffffff 100%); } .auth-shell { grid-template-columns: 1fr; gap: 1.5rem; align-items: start; } .brand-panel h1 { margin-top: 1.4rem; } }
+        @font-face { font-family: "SPU Arabic"; src: url("/fonts/Hacen Tunisia Regular.ttf") format("truetype"); font-display: swap; font-weight: 400; }
+        @font-face { font-family: "SPU Arabic"; src: url("/fonts/Hacen Tunisia Bold Regular.ttf") format("truetype"); font-display: swap; font-weight: 700; }
+        @media (max-width: 900px) { body { background: linear-gradient(180deg, #151b43 0%, #202759 42%, #f4f5f8 42.2%, #ffffff 100%); } .auth-shell { grid-template-columns: 1fr; gap: 1.5rem; align-items: start; } .brand-panel h1 { margin-top: 1.4rem; } }
     </style>
 </head>
 <body>

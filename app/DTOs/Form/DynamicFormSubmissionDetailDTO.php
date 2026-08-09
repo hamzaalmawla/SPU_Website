@@ -28,5 +28,12 @@ final readonly class DynamicFormSubmissionDetailDTO
         public string $submittedAt,
         public array $sections,
         public array $attachments,
+        public ?string $referenceNumber = null,
+        public ?string $readAt = null,
+        public ?int $assignedToUserId = null,
+        public ?string $assignedToName = null,
+        public ?string $internalNotes = null,
+        public ?string $statusChangedAt = null,
+        public ?string $emailDeliveryStatus = null,
     ) {}
 }

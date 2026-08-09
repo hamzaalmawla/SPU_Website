@@ -24,8 +24,16 @@
                         </div>
                     @endif
 
-                    <form method="POST" action="{{ route('public.contact.submit', ['locale' => $locale]) }}" class="grid gap-6">
+                    @if (!empty($isPreview))
+                        <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800" role="status">
+                            {{ $locale === 'ar' ? 'وضع المعاينة: لن يتم إرسال هذا النموذج.' : 'Preview mode: this form will not submit.' }}
+                        </div>
+                    @endif
+
+                    <form method="POST" action="{{ route('public.contact.submit', ['locale' => $locale]) }}" class="grid gap-6" @if(!empty($isPreview)) onsubmit="return false" @endif>
                         @csrf
+                        <fieldset @disabled(!empty($isPreview))>
+                        <input type="text" name="website" value="" tabindex="-1" autocomplete="off" class="absolute -left-[9999px] h-px w-px overflow-hidden" aria-label="Website">
 
                         <div class="grid gap-6 md:grid-cols-2">
                             <div class="space-y-2">
@@ -60,6 +68,7 @@
                             <button type="submit"
                                 class="bg-spu-red px-8 py-3 font-bold text-white transition-all hover:bg-spu-red/90 hover:shadow-lg active:scale-95">{{ $contact->form['submit'] }}</button>
                         </div>
+                        </fieldset>
                     </form>
                 </div>
 

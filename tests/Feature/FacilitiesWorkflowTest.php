@@ -1998,7 +1998,7 @@ final class FacilitiesWorkflowTest extends TestCase
         yield 'building construction engineering' => ['facultySlug' => 'building-construction-engineering', 'profileSlug' => 'ammar-ghada', 'englishTitle' => 'Structural Performance of Fiber-Reinforced Concrete in Seismic Zones', 'arabicTitle' => 'الأداء الإنشائي للخرسانة المسلحة بالألياف في المناطق الزلزالية'];
         yield 'dentistry' => ['facultySlug' => 'dentistry', 'profileSlug' => 'talaat-abu-hatab', 'englishTitle' => 'AI-Driven Predictive Models for Early Dental Caries Detection', 'arabicTitle' => 'نماذج تنبؤية مدفوعة بالذكاء الاصطناعي للكشف المبكر عن تسوس الأسنان'];
         yield 'medicine' => ['facultySlug' => 'medicine', 'profileSlug' => 'ayman-ali', 'englishTitle' => 'Clinical Simulation Training Impact on Medical Student Diagnostic Accuracy', 'arabicTitle' => 'تأثير تدريب المحاكاة السريرية على دقة تشخيص طلاب الطب'];
-        yield 'petroleum' => ['facultySlug' => 'petroleum', 'profileSlug' => 'mahmoud-hadid', 'englishTitle' => 'Deep Learning Framework for Reservoir Permeability Prediction', 'arabicTitle' => 'إطار التعلم العميق للتنبؤ بنفاذية المكامن'];
+        yield 'petroleum' => ['facultySlug' => 'petroleum', 'profileSlug' => 'mahmoud-hadid', 'englishTitle' => 'Renewable Energy Integration Challenges in the Syrian Power Grid', 'arabicTitle' => 'تحديات دمج الطاقة المتجددة في الشبكة الكهربائية السورية'];
         yield 'pharmacy' => ['facultySlug' => 'pharmacy', 'profileSlug' => 'hossam-shahrour', 'englishTitle' => 'Machine Learning Applications in Pharmaceutical Quality Control', 'arabicTitle' => 'تطبيقات تعلم الآلة في مراقبة جودة الأدوية'];
     }
 

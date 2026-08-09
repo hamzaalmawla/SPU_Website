@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Contracts\Research;
 
+use App\DTOs\Content\ResearchCardDTO;
 use App\DTOs\Research\ResearchConferenceRegistrationDTO;
 use App\DTOs\Research\ResearchDetailPageDTO;
 use App\DTOs\Research\ResearchPageDTO;
+use Illuminate\Support\Collection;
 
 interface ResearchPageServiceInterface
 {
@@ -21,6 +23,9 @@ interface ResearchPageServiceInterface
     public function facultyPublications(string $facultySlug, string $locale): ResearchPageDTO;
 
     public function publication(string $locale, string $slug): ?ResearchDetailPageDTO;
+
+    /** @param array<int, string> $publicationSlugs @return Collection<int, ResearchCardDTO> */
+    public function getHomepagePublicationCards(string $locale, array $publicationSlugs = [], ?string $search = null, int $limit = 50): Collection;
 
     /** @return array<string, mixed> */
     public function getEditablePayload(string $targetKey): array;

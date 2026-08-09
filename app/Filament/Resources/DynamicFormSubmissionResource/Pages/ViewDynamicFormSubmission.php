@@ -10,6 +10,7 @@ use App\Enums\FormSubmissionStatus;
 use App\Exceptions\ConflictException;
 use App\Filament\Resources\DynamicFormSubmissionResource;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Illuminate\Contracts\Support\Htmlable;
@@ -34,6 +35,7 @@ class ViewDynamicFormSubmission extends ViewRecord
     {
         $this->record = $this->resolveRecord($record);
         $this->authorizeAccess();
+        $this->reviewService->markAsRead((int) $this->record->getKey(), (int) auth()->id());
     }
 
     public function getTitle(): string|Htmlable
@@ -64,6 +66,40 @@ class ViewDynamicFormSubmission extends ViewRecord
                 ])),
         ];
 
+        if ($details->readAt !== null) {
+            $actions[] = Action::make('mark_unread')
+                ->label(__('form_submissions.actions.mark_unread'))
+                ->icon('heroicon-o-envelope')
+                ->color('gray')
+                ->action(function (): void {
+                    $this->reviewService->markAsUnread((int) $this->getRecord()->getKey(), (int) auth()->id());
+                    $this->details = null;
+                    Notification::make()->title(__('form_submissions.notifications.marked_unread'))->success()->send();
+                });
+        }
+
+        $actions[] = Action::make('assign_to_me')
+            ->label(__('form_submissions.actions.assign_to_me'))
+            ->icon('heroicon-o-user-plus')
+            ->color('gray')
+            ->action(function (): void {
+                $this->reviewService->assign((int) $this->getRecord()->getKey(), (int) auth()->id(), (int) auth()->id());
+                $this->details = null;
+                Notification::make()->title(__('form_submissions.notifications.assigned'))->success()->send();
+            });
+
+        $actions[] = Action::make('internal_notes')
+            ->label(__('form_submissions.actions.internal_notes'))
+            ->icon('heroicon-o-pencil-square')
+            ->color('gray')
+            ->form([Textarea::make('notes')->label(__('form_submissions.detail.internal_notes'))->rows(5)])
+            ->fillForm(['notes' => $details->internalNotes])
+            ->action(function (array $data): void {
+                $this->reviewService->updateInternalNotes((int) $this->getRecord()->getKey(), is_string($data['notes'] ?? null) ? $data['notes'] : null, (int) auth()->id());
+                $this->details = null;
+                Notification::make()->title(__('form_submissions.notifications.notes_saved'))->success()->send();
+            });
+
         if (! $details->status instanceof FormSubmissionStatus || $details->inbox === null) {
             return $actions;
         }
@@ -80,7 +116,8 @@ class ViewDynamicFormSubmission extends ViewRecord
                     'status' => __('form_submissions.statuses.'.$nextStatus->value),
                 ]))
                 ->modalSubmitActionLabel(__('form_submissions.actions.confirm'))
-                ->action(fn (): mixed => $this->transition($expectedStatus, $nextStatus));
+                ->form([Textarea::make('reason')->label(__('form_submissions.detail.reason'))->rows(4)])
+                ->action(fn (array $data): mixed => $this->transition($expectedStatus, $nextStatus, is_string($data['reason'] ?? null) ? $data['reason'] : null));
         }
 
         return $actions;
@@ -111,7 +148,7 @@ class ViewDynamicFormSubmission extends ViewRecord
         );
     }
 
-    private function transition(FormSubmissionStatus $expectedStatus, FormSubmissionStatus $nextStatus): mixed
+    private function transition(FormSubmissionStatus $expectedStatus, FormSubmissionStatus $nextStatus, ?string $reason = null): mixed
     {
         try {
             $transitioned = $this->reviewService->transitionStatus(
@@ -119,6 +156,7 @@ class ViewDynamicFormSubmission extends ViewRecord
                 $expectedStatus,
                 $nextStatus,
                 (int) auth()->id(),
+                $reason,
             );
 
             if (! $transitioned) {

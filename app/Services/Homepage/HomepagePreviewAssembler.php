@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Homepage;
 
+use App\Contracts\Homepage\HomepageContentSelectionServiceInterface;
 use App\Contracts\Homepage\HomepagePreviewAssemblerInterface;
 use App\Contracts\Homepage\HomepageSectionServiceInterface;
 use App\DTOs\Homepage\HomepageDTO;
@@ -15,6 +16,7 @@ final class HomepagePreviewAssembler implements HomepagePreviewAssemblerInterfac
 {
     public function __construct(
         private readonly HomepageSectionServiceInterface $homepageSectionService,
+        private readonly HomepageContentSelectionServiceInterface $contentSelectionService,
     ) {}
 
     /**
@@ -58,6 +60,11 @@ final class HomepagePreviewAssembler implements HomepagePreviewAssemblerInterfac
         if ($previewSections === []) {
             return $fallbackHomepage;
         }
+
+        $previewSections = array_map(
+            fn ($section) => $this->contentSelectionService->hydrateSection($section, $locale),
+            $previewSections,
+        );
 
         return new HomepageDTO(
             locale: $locale,

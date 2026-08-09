@@ -31,7 +31,12 @@ final class ContactMessagePolicy
 
     public function update(User $user, ContactMessage $contactMessage): bool
     {
-        return false;
+        return in_array($user->role_slug, ['super_admin', 'editor'], true);
+    }
+
+    public function updateReview(User $user, ContactMessage $contactMessage): bool
+    {
+        return in_array($user->role_slug, ['super_admin', 'editor'], true);
     }
 
     public function delete(User $user, ContactMessage $contactMessage): bool

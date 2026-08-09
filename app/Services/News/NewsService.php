@@ -315,6 +315,40 @@ final class NewsService implements NewsServiceInterface
         }, 300);
     }
 
+    public function getHomepageArticleCards(string $locale, array $articleIds = [], ?string $search = null, int $limit = 50): Collection
+    {
+        $ids = array_values(array_unique(array_map(
+            static fn (mixed $id): int => (int) $id,
+            array_filter($articleIds, static fn (mixed $id): bool => is_numeric($id) && (int) $id > 0),
+        )));
+        $normalizedSearch = is_string($search) ? trim($search) : '';
+        $query = NewsArticle::query()
+            ->public()
+            ->whereHas('category', fn (Builder $categoryQuery): Builder => $categoryQuery->where('type', 'news'))
+            ->with(['translations', 'coverMedia', 'category.translations'])
+            ->when($ids !== [], fn (Builder $query): Builder => $query->whereKey($ids))
+            ->when($normalizedSearch !== '', function (Builder $query) use ($normalizedSearch): void {
+                $query->whereHas('translations', fn (Builder $translationQuery): Builder => $translationQuery
+                    ->where('title', 'like', '%'.$normalizedSearch.'%'));
+            });
+
+        if ($ids === []) {
+            $this->applyNewestArticleOrder($query);
+        }
+
+        $cards = $query
+            ->limit(max(1, min($limit, 100)))
+            ->get()
+            ->map(fn (NewsArticle $article): ArticleCardDTO => $this->mapArticleCard($article, $locale));
+
+        if ($ids !== []) {
+            $order = array_flip($ids);
+            $cards = $cards->sortBy(fn (ArticleCardDTO $card): int => $order[$card->id] ?? PHP_INT_MAX);
+        }
+
+        return $cards->values();
+    }
+
     public function getRelatedArticleCards(string $slug, string $locale, int $limit = 3): Collection
     {
         return $this->newsCache()->remember('news:related:'.$locale.':'.$slug.':'.$limit, function () use ($slug, $locale, $limit): Collection {
@@ -850,7 +884,7 @@ final class NewsService implements NewsServiceInterface
             remainingCapacity: $remainingCapacity,
             isRegisterable: $isRegisterable,
             registrationUrl: $isRegisterable ? '/'.$locale.'/news/events-list/register?event='.rawurlencode($id) : null,
-            detailUrl: $past ? '/'.$locale.'/news/events-list/past?event='.rawurlencode($id) : '/'.$locale.'/news/events-list#'.rawurlencode($id),
+            detailUrl: '/'.$locale.'/news/events-list/'.rawurlencode($id),
             participants: is_string($event['participants'] ?? null) ? $event['participants'] : null,
             highlights: array_values(array_filter(is_array($event['highlights'] ?? null) ? $event['highlights'] : [], 'is_string')),
             speakers: $speakers,

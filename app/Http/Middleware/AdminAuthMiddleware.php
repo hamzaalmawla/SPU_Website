@@ -62,7 +62,8 @@ final class AdminAuthMiddleware
     {
         return $this->authService->checkRole($user, 'super_admin')
             || $this->authService->checkRole($user, 'editor')
-            || $this->authService->checkRole($user, 'faculty_editor');
+            || $this->authService->checkRole($user, 'faculty_editor')
+            || $this->authService->checkRole($user, 'hr');
     }
 
     private function adminSessionTimedOut(Request $request): bool

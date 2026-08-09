@@ -62,6 +62,19 @@ final class DynamicFormSubmissionTest extends TestCase
         $this->assertDatabaseCount('dynamic_form_submissions', 0);
     }
 
+    public function test_dynamic_form_honeypot_rejects_automated_submission(): void
+    {
+        $this->postJson('/en/forms/conference-registration/submissions', [
+            'fullName' => 'Automated Applicant',
+            'email' => 'bot@example.com',
+            'affiliation' => 'Spam service',
+            'role' => 'attendee',
+            'website' => 'https://spam.example',
+        ])->assertUnprocessable();
+
+        $this->assertDatabaseCount('dynamic_form_submissions', 0);
+    }
+
     public function test_job_application_submission_stores_cv_file_privately(): void
     {
         Storage::fake('local');

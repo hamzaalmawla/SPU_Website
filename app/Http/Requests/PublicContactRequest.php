@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 final class PublicContactRequest extends FormRequest
 {
@@ -23,6 +24,7 @@ final class PublicContactRequest extends FormRequest
             'email' => ['required', 'string', 'email:rfc', 'max:255'],
             'subject' => ['required', 'string', 'max:180'],
             'message' => ['required', 'string', 'max:5000'],
+            'website' => ['nullable', 'string', 'max:255'],
         ];
     }
 
@@ -37,5 +39,14 @@ final class PublicContactRequest extends FormRequest
             'subject' => $isArabic ? 'الموضوع' : 'subject',
             'message' => $isArabic ? 'الرسالة' : 'message',
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            if (is_string($this->input('website')) && trim($this->input('website')) !== '') {
+                $validator->errors()->add('form', $this->route('locale') === 'ar' ? 'تعذر إرسال النموذج.' : 'The form could not be submitted.');
+            }
+        });
     }
 }

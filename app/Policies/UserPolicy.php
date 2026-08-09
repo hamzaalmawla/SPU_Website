@@ -51,6 +51,21 @@ final class UserPolicy
         return $this->hasAnyRole($user, ['editor', 'faculty_editor']);
     }
 
+    public function manageJobs(User $user): bool
+    {
+        return $this->hasAnyRole($user, ['editor', 'hr']);
+    }
+
+    public function publishJobs(User $user): bool
+    {
+        return $this->hasAnyRole($user, ['editor', 'hr']);
+    }
+
+    public function previewJobs(User $user): bool
+    {
+        return $this->hasAnyRole($user, ['editor', 'hr']);
+    }
+
     public function update(User $user, User $targetUser): bool
     {
         return false;

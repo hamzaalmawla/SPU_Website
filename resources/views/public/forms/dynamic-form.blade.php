@@ -1,6 +1,8 @@
 <div x-data="dynamicFormView()" x-cloak>
     <template x-if="$store.dynamicForm.schema">
     <div>
+    <input type="text" name="website" value="" data-form-honeypot tabindex="-1" autocomplete="off" class="absolute -left-[9999px] h-px w-px overflow-hidden" aria-label="Website">
+    <div x-show="$store.dynamicForm.isPreview" class="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800" x-text="$store.dynamicForm.isPreview ? previewText() : ''"></div>
     <div x-show="$store.dynamicForm.submitted" class="rounded-2xl border border-green-200 bg-green-50 p-8 text-center">
         <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
             <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
@@ -14,7 +16,7 @@
         <div class="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700" x-text="$store.dynamicForm.submitError"></div>
     </template>
 
-    <div x-show="!$store.dynamicForm.submitted && $store.dynamicForm.isMultiStep">
+    <fieldset x-bind:disabled="$store.dynamicForm.isPreview" x-show="!$store.dynamicForm.submitted && $store.dynamicForm.isMultiStep">
         <div class="mb-8">
             <div class="flex items-center justify-between">
                 <template x-for="(step, idx) in $store.dynamicForm.schema.steps" x-bind:key="idx">
@@ -64,9 +66,9 @@
                 </button>
             </div>
         </form>
-    </div>
+    </fieldset>
 
-    <div x-show="!$store.dynamicForm.submitted && !$store.dynamicForm.isMultiStep">
+    <fieldset x-bind:disabled="$store.dynamicForm.isPreview" x-show="!$store.dynamicForm.submitted && !$store.dynamicForm.isMultiStep">
         <form x-on:submit.prevent="$store.dynamicForm.handleSubmit()" class="space-y-5">
             <template x-for="field in $store.dynamicForm.schema.fields" x-bind:key="field.name">
                 @include('public.forms.partials.dynamic-field')
@@ -77,7 +79,7 @@
                 <span x-show="$store.dynamicForm.submitting" class="inline-flex items-center gap-2"><svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg><span x-text="submittingText()"></span></span>
             </button>
         </form>
-    </div>
+    </fieldset>
     </div>
     </template>
 </div>

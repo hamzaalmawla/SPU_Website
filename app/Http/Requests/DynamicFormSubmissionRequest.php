@@ -25,6 +25,7 @@ final class DynamicFormSubmissionRequest extends FormRequest
             'event_id' => ['nullable', 'required_with:event_source', 'string', 'max:80'],
             'job_id' => ['nullable', 'string', 'max:80'],
             'job_slug' => ['nullable', 'string', 'max:160', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'],
+            'website' => ['nullable', 'string', 'max:255'],
         ]);
     }
 
@@ -35,6 +36,10 @@ final class DynamicFormSubmissionRequest extends FormRequest
 
             if (! in_array($this->formId(), $service->allowedFormIds(), true)) {
                 $validator->errors()->add('form', 'Unsupported dynamic form.');
+            }
+
+            if (is_string($this->input('website')) && trim($this->input('website')) !== '') {
+                $validator->errors()->add('form', 'The form could not be submitted.');
             }
         });
     }
@@ -47,7 +52,7 @@ final class DynamicFormSubmissionRequest extends FormRequest
         $eventId = is_string($payload['event_id'] ?? null) ? $payload['event_id'] : null;
         $jobId = is_string($payload['job_id'] ?? null) ? $payload['job_id'] : null;
         $jobSlug = is_string($payload['job_slug'] ?? null) ? $payload['job_slug'] : null;
-        unset($payload['event_source'], $payload['event_id'], $payload['job_id'], $payload['job_slug']);
+        unset($payload['event_source'], $payload['event_id'], $payload['job_id'], $payload['job_slug'], $payload['website']);
 
         foreach ($payload as $field => $value) {
             if ($value instanceof UploadedFile) {

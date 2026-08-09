@@ -15,6 +15,9 @@ use App\Contracts\Faculty\FacultyStudyPlanEditorServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
 use App\Contracts\Form\DynamicFormSubmissionReviewServiceInterface;
 use App\Contracts\Form\DynamicFormSubmissionServiceInterface;
+use App\Contracts\Form\ContactMessageReviewServiceInterface;
+use App\Contracts\Form\FormSubmissionNotificationServiceInterface;
+use App\Contracts\Homepage\HomepageContentSelectionServiceInterface;
 use App\Contracts\Homepage\HomepagePreviewAssemblerInterface;
 use App\Contracts\Homepage\HomepagePublishingServiceInterface;
 use App\Contracts\Homepage\HomepageSectionServiceInterface;
@@ -150,6 +153,9 @@ use App\Services\Faculty\FacultyStudyPlanEditorService;
 use App\Services\Faculty\FacultyStudyPlanLinkService;
 use App\Services\Form\DynamicFormSubmissionReviewService;
 use App\Services\Form\DynamicFormSubmissionService;
+use App\Services\Form\ContactMessageReviewService;
+use App\Services\Form\FormSubmissionNotificationService;
+use App\Services\Homepage\HomepageContentSelectionService;
 use App\Services\Homepage\HomepageDraftReader;
 use App\Services\Homepage\HomepagePreviewAssembler;
 use App\Services\Homepage\HomepagePublishingService;
@@ -251,6 +257,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\View\View as ViewContract;
@@ -297,6 +304,10 @@ class AppServiceProvider extends ServiceProvider
             $data = $view->getData();
 
             if (($data['isPreview'] ?? false) === true) {
+                return;
+            }
+
+            if (! Schema::hasTable('homepage_sections')) {
                 return;
             }
 
@@ -385,9 +396,12 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('manage-menu', [MenuItemPolicy::class, 'manage']);
         Gate::define('manage-news', [NewsArticlePolicy::class, 'manage']);
         Gate::define('manage-faculties', [FacultyDomainPolicy::class, 'manage']);
+        Gate::define('manage-jobs', [UserPolicy::class, 'manageJobs']);
         Gate::define('manage-media', [UserPolicy::class, 'manageMedia']);
         Gate::define('publish-content', [UserPolicy::class, 'publishContent']);
         Gate::define('preview-content', [UserPolicy::class, 'previewContent']);
+        Gate::define('publish-jobs', [UserPolicy::class, 'publishJobs']);
+        Gate::define('preview-jobs', [UserPolicy::class, 'previewJobs']);
         Gate::define('view-audit-log', [UserPolicy::class, 'viewAuditLog']);
     }
 
@@ -438,6 +452,8 @@ class AppServiceProvider extends ServiceProvider
             ContactPageServiceInterface::class => ContactPageService::class,
             DynamicFormSubmissionReviewServiceInterface::class => DynamicFormSubmissionReviewService::class,
             DynamicFormSubmissionServiceInterface::class => DynamicFormSubmissionService::class,
+            ContactMessageReviewServiceInterface::class => ContactMessageReviewService::class,
+            FormSubmissionNotificationServiceInterface::class => FormSubmissionNotificationService::class,
             EServicesPageServiceInterface::class => EServicesPageService::class,
             FacultyStudyPlanEditorServiceInterface::class => FacultyStudyPlanEditorService::class,
             FacultyStudyPlanLinkServiceInterface::class => FacultyStudyPlanLinkService::class,
@@ -451,6 +467,7 @@ class AppServiceProvider extends ServiceProvider
             NewsServiceInterface::class => NewsService::class,
             SeoMetadataServiceInterface::class => SeoMetadataService::class,
             HomepagePreviewAssemblerInterface::class => HomepagePreviewAssembler::class,
+            HomepageContentSelectionServiceInterface::class => HomepageContentSelectionService::class,
             HomepageSectionServiceInterface::class => HomepageSectionService::class,
             LegacyCleanedRowServiceInterface::class => LegacyCleanedRowService::class,
             LegacyCategoryMatrixExporterInterface::class => LegacyCategoryMatrixExporter::class,

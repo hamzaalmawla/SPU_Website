@@ -8,6 +8,7 @@ use App\Enums\FormSubmissionInbox;
 use App\Enums\FormSubmissionStatus;
 use App\Filament\Resources\DynamicFormSubmissionResource\Pages;
 use App\Models\Form\DynamicFormSubmission;
+use App\Models\User\User;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -33,12 +34,16 @@ class DynamicFormSubmissionResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('admin.navigation.groups.contact');
+        return auth()->user()?->role_slug === 'hr'
+            ? __('admin.navigation.groups.job_board')
+            : __('admin.navigation.groups.contact');
     }
 
     public static function getNavigationLabel(): string
     {
-        return __('admin.navigation.items.dynamic_form_submissions');
+        return auth()->user()?->role_slug === 'hr'
+            ? __('admin.navigation.items.job_applications')
+            : __('admin.navigation.items.dynamic_form_submissions');
     }
 
     public static function getModelLabel(): string
@@ -49,6 +54,18 @@ class DynamicFormSubmissionResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return __('form_submissions.resource.plural_model');
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        $count = self::getEloquentQuery()->whereNull('read_at')->count();
+
+        return $count > 0 ? (string) $count : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'danger';
     }
 
     public static function getRecordTitle(?Model $record): string
@@ -73,7 +90,14 @@ class DynamicFormSubmissionResource extends Resource
             ->flatMap(fn (FormSubmissionInbox $inbox): array => $inbox->formIds())
             ->all();
 
-        return parent::getEloquentQuery()->whereIn('form_id', $formIds);
+        $query = parent::getEloquentQuery()->whereIn('form_id', $formIds);
+        $user = auth()->user();
+
+        if ($user instanceof User && $user->role_slug === 'hr') {
+            $query->where('form_id', 'job-application');
+        }
+
+        return $query;
     }
 
     public static function canCreate(): bool
@@ -100,6 +124,11 @@ class DynamicFormSubmissionResource extends Resource
     {
         return $table
             ->columns([
+                TextColumn::make('reference_number')
+                    ->label(__('form_submissions.detail.reference'))
+                    ->searchable()
+                    ->copyable()
+                    ->sortable(),
                 TextColumn::make('applicant_name')
                     ->label(__('form_submissions.columns.applicant'))
                     ->description(fn (DynamicFormSubmission $record): ?string => $record->applicant_email)
@@ -137,6 +166,11 @@ class DynamicFormSubmissionResource extends Resource
                     ->badge()
                     ->color(fn (string $state): string => self::statusColor($state))
                     ->sortable(),
+                TextColumn::make('read_at')
+                    ->label(__('form_submissions.columns.read'))
+                    ->state(fn (DynamicFormSubmission $record): string => $record->read_at ? __('form_submissions.values.read') : __('form_submissions.values.unread'))
+                    ->badge()
+                    ->color(fn (DynamicFormSubmission $record): string => $record->read_at ? 'gray' : 'danger'),
                 TextColumn::make('created_at')
                     ->label(__('form_submissions.columns.submitted_at'))
                     ->dateTime()

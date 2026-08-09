@@ -145,6 +145,25 @@ final class NewsWorkflowTest extends TestCase
             ->assertDontSee('Separate Announcement');
     }
 
+    public function test_homepage_news_selector_returns_published_articles_in_requested_order(): void
+    {
+        $first = $this->createPublishedArticle('news', 'homepage-first', 'Homepage First');
+        $second = $this->createPublishedArticle('news', 'homepage-second', 'Homepage Second');
+        $this->createPublishedArticle('announcement', 'homepage-announcement', 'Homepage Announcement');
+
+        $cards = app(NewsServiceInterface::class)->getHomepageArticleCards('en', [
+            (int) $second->getKey(),
+            (int) $first->getKey(),
+        ]);
+
+        $this->assertSame(['Homepage Second', 'Homepage First'], $cards->pluck('title')->all());
+        $this->assertSame([
+            '/en/news/'.$second->getKey(),
+            '/en/news/'.$first->getKey(),
+        ], $cards->pluck('url')->all());
+        $this->assertNotContains('Homepage Announcement', $cards->pluck('title')->all());
+    }
+
     public function test_past_events_are_newest_first_while_upcoming_events_remain_nearest_first(): void
     {
         $news = app(NewsServiceInterface::class);
@@ -212,14 +231,28 @@ final class NewsWorkflowTest extends TestCase
     public function test_all_dedicated_event_routes_render_without_catch_all_fallback(): void
     {
         $this->get('/en/news/events')->assertOk()->assertSee('Events Calendar');
-        $this->get('/en/news/events-list')->assertOk()->assertSee('University Events')->assertSee('evt-001', false);
+        $this->get('/en/news/events-list')
+            ->assertOk()
+            ->assertSee('University Events')
+            ->assertSee('href="/en/news/events-list/evt-001"', false);
+        $this->get('/en/news/events-list/evt-001')
+            ->assertOk()
+            ->assertSee('Annual Research Symposium &amp; Innovation Showcase', false)
+            ->assertDontSee('Workshop on AI Tools for Academic Research')
+            ->assertSee('href="/ar/news/events-list/evt-001"', false);
+        $this->get('/en/news/events?month=2026-11')
+            ->assertOk()
+            ->assertSee('href="/en/news/events-list/evt-001"', false)
+            ->assertDontSee('/en/news/events-list#evt-001', false);
         $this->get('/en/news/events-list/register?event=evt-001')
             ->assertOk()
             ->assertHeader('X-Cache', 'BYPASS')
             ->assertSee('data-event-id="evt-001"', false)
             ->assertSee('href="/ar/news/events-list/register?event=evt-001"', false);
         $this->get('/en/news/events-list/past?event=evt-past-002')->assertOk()->assertSee('Workshop on Academic Writing');
+        $this->get('/en/news/events-list/evt-past-002')->assertOk()->assertSee('Workshop on Academic Writing');
         $this->get('/en/news/events-list/register?event=evt-past-002')->assertOk()->assertSee('Event Not Found');
+        $this->get('/en/news/events-list/missing-event')->assertNotFound();
     }
 
     public function test_event_category_filter_is_functional(): void

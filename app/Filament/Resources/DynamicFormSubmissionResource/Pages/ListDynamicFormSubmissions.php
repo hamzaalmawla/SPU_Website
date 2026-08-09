@@ -6,6 +6,7 @@ namespace App\Filament\Resources\DynamicFormSubmissionResource\Pages;
 
 use App\Enums\FormSubmissionInbox;
 use App\Filament\Resources\DynamicFormSubmissionResource;
+use App\Models\User\User;
 use Filament\Resources\Components\Tab;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Database\Eloquent\Builder;
@@ -21,7 +22,7 @@ class ListDynamicFormSubmissions extends ListRecords
     {
         $tabs = [];
 
-        foreach (FormSubmissionInbox::cases() as $inbox) {
+        foreach ($this->visibleInboxes() as $inbox) {
             $tabs[$inbox->value] = Tab::make(__('form_submissions.inboxes.'.$inbox->value))
                 ->icon($this->inboxIcon($inbox))
                 ->badge(fn (): int => $this->inboxCount($inbox))
@@ -33,7 +34,7 @@ class ListDynamicFormSubmissions extends ListRecords
 
     public function getDefaultActiveTab(): string
     {
-        return FormSubmissionInbox::EVENT_REGISTRATIONS->value;
+        return $this->visibleInboxes()[0]->value;
     }
 
     public function getBreadcrumb(): string
@@ -45,7 +46,7 @@ class ListDynamicFormSubmissions extends ListRecords
     protected function getViewData(): array
     {
         return [
-            'inboxTasks' => collect(FormSubmissionInbox::cases())
+            'inboxTasks' => collect($this->visibleInboxes())
                 ->map(fn (FormSubmissionInbox $inbox): array => [
                     'label' => __('form_submissions.inboxes.'.$inbox->value),
                     'description' => __('form_submissions.workspace.tasks.'.$inbox->value),
@@ -61,6 +62,7 @@ class ListDynamicFormSubmissions extends ListRecords
     {
         return DynamicFormSubmissionResource::getEloquentQuery()
             ->whereIn('form_id', $inbox->formIds())
+            ->whereNull('read_at')
             ->count();
     }
 
@@ -72,5 +74,15 @@ class ListDynamicFormSubmissions extends ListRecords
             FormSubmissionInbox::ADMISSIONS => 'heroicon-o-academic-cap',
             FormSubmissionInbox::SUGGESTIONS => 'heroicon-o-chat-bubble-left-right',
         };
+    }
+
+    /** @return list<FormSubmissionInbox> */
+    private function visibleInboxes(): array
+    {
+        $user = auth()->user();
+
+        return $user instanceof User && $user->role_slug === 'hr'
+            ? [FormSubmissionInbox::JOBS]
+            : FormSubmissionInbox::cases();
     }
 }

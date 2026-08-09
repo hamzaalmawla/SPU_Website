@@ -22,12 +22,12 @@ final class PageUrlSelect
         return Select::make($name)
             ->label($label)
             ->searchable()
-            ->preload()
             ->native(false)
             ->placeholder('Select a page...')
             ->formatStateUsing(fn (mixed $state): mixed => self::normalizeUrl($state, $locale))
             ->dehydrateStateUsing(fn (mixed $state): mixed => self::normalizeUrl($state, $locale))
-            ->options(fn (?string $state): array => self::buildOptions($state, $locale))
+            ->getSearchResultsUsing(fn (string $search): array => self::searchOptions($search, $locale))
+            ->getOptionLabelUsing(fn (mixed $value): ?string => self::optionLabel($value, $locale))
             ->helperText('Search and choose an internal page. The URL is filled in automatically.')
             ->required($required);
     }
@@ -63,50 +63,83 @@ final class PageUrlSelect
     {
         $locale = self::resolveLocale($locale);
         $currentValue = self::normalizeUrl($currentValue, $locale);
+        $groups = self::baseOptions($locale);
 
-        /** @var SitemapServiceInterface $sitemapService */
-        $sitemapService = app(SitemapServiceInterface::class);
-        $entries = $sitemapService->generateEntries();
+        if (is_string($currentValue) && $currentValue !== '') {
+            $flat = self::flattenGroups($groups);
+
+            if (! array_key_exists($currentValue, $flat)) {
+                $groups = ['Custom / External' => [$currentValue => $currentValue.' (custom/external link)']] + $groups;
+            }
+        }
+
+        return $groups;
+    }
+
+    private static function optionLabel(mixed $value, ?string $locale): ?string
+    {
+        $value = self::normalizeUrl($value, $locale);
+
+        if (! is_string($value) || $value === '') {
+            return null;
+        }
+
+        $options = self::flattenGroups(self::baseOptions($locale));
+
+        return $options[$value] ?? $value;
+    }
+
+    /** @return array<string, array<string, string>> */
+    private static function baseOptions(?string $locale): array
+    {
+        $locale = self::resolveLocale($locale);
+
+        $request = request();
+        $cacheKey = 'filament.page-url-options.'.$locale;
+        $cached = $request->attributes->get($cacheKey);
+
+        if (is_array($cached)) {
+            return $cached;
+        }
+
+        $entries = $request->attributes->get('filament.page-url-options.entries');
+
+        if (! is_array($entries)) {
+            /** @var SitemapServiceInterface $sitemapService */
+            $sitemapService = app(SitemapServiceInterface::class);
+            $entries = $sitemapService->generateEntries()->all();
+            $request->attributes->set('filament.page-url-options.entries', $entries);
+        }
 
         $groups = [];
+
         foreach ($entries as $entry) {
             $path = parse_url($entry->loc, PHP_URL_PATH);
             if (! is_string($path)) {
                 continue;
             }
 
-            // Path is always /{locale}/... — extract locale from second segment
             $parts = explode('/', $path);
             $entryLocale = $parts[1] ?? '';
             if ($entryLocale !== $locale) {
                 continue;
             }
 
-            // Strip locale prefix: /ar/campus-life/hospital → /campus-life/hospital
-            $relativePath = '/' . implode('/', array_slice($parts, 2));
-            $publicPath = '/' . $locale . ($relativePath === '/' ? '' : $relativePath);
+            $relativePath = '/'.implode('/', array_slice($parts, 2));
+            $publicPath = '/'.$locale.($relativePath === '/' ? '' : $relativePath);
             if ($relativePath === '/') {
                 $groups['Homepage'][$publicPath] = __('Homepage');
+
                 continue;
             }
 
             $segments = array_values(array_filter(explode('/', $relativePath)));
             $firstSegment = $segments[0] ?? '';
-            $groupName = self::groupName($firstSegment);
-            $label = self::buildLabel($segments, $locale);
-
-            $groups[$groupName][$publicPath] = $label;
+            $groups[self::groupName($firstSegment)][$publicPath] = self::buildLabel($segments, $locale);
         }
 
         ksort($groups);
-
-        // Preserve existing custom/external values at the top
-        if ($currentValue !== null && $currentValue !== '') {
-            $flat = self::flattenGroups($groups);
-            if (! array_key_exists($currentValue, $flat)) {
-                $groups = ['Custom / External' => [$currentValue => $currentValue . ' (custom/external link)']] + $groups;
-            }
-        }
+        $request->attributes->set($cacheKey, $groups);
 
         return $groups;
     }

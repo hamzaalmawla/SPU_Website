@@ -77,6 +77,9 @@ interface NewsServiceInterface
     /** @return Collection<int, ArticleCardDTO> */
     public function getLatestArticleCards(string $locale, int $limit = 5, ?string $categoryType = null): Collection;
 
+    /** @param array<int, int> $articleIds @return Collection<int, ArticleCardDTO> */
+    public function getHomepageArticleCards(string $locale, array $articleIds = [], ?string $search = null, int $limit = 50): Collection;
+
     /** @return Collection<int, ArticleCardDTO> */
     public function getRelatedArticleCards(string $slug, string $locale, int $limit = 3): Collection;
 

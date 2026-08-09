@@ -83,6 +83,30 @@ final class ResearchPublicPagesTest extends TestCase
         $this->assertSame(['structured data', 'migration'], $item['keywords'] ?? null);
     }
 
+    public function test_homepage_research_selector_uses_public_database_publications_and_detail_links(): void
+    {
+        $publication = ResearchPublication::query()->create([
+            'published_at' => '2026-01-15',
+            'publication_year' => 2026,
+            'is_enabled' => true,
+        ]);
+        ResearchPublicationTranslation::query()->create([
+            'research_publication_id' => $publication->getKey(),
+            'locale' => 'en',
+            'title' => 'Homepage Database Research',
+            'excerpt' => 'Research selected from the public database catalog.',
+            'authors' => 'Researcher One; Researcher Two',
+        ]);
+        $research = app(ResearchPageServiceInterface::class);
+        $cards = $research->getHomepagePublicationCards('en', [], 'Homepage Database Research');
+
+        $this->assertCount(1, $cards);
+        $this->assertSame('Homepage Database Research', $cards->first()?->title);
+        $this->assertSame(['Researcher One', 'Researcher Two'], $cards->first()?->authors);
+        $this->assertStringStartsWith('/en/research/publications/', (string) $cards->first()?->url);
+        $this->get((string) $cards->first()?->url)->assertOk()->assertSee('Homepage Database Research');
+    }
+
     public function test_arabic_research_landing_returns_ok_with_arabic_content(): void
     {
         $this->get('/ar/research')

@@ -25,6 +25,7 @@ interface HomepageSectionServiceInterface
         'research_studies',
         'events_activities',
         'medical_facilities_services',
+        'bottom_stats',
         'footer',
     ];
 

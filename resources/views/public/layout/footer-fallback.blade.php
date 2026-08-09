@@ -6,7 +6,7 @@
                 {{ $navigation->footerSettings->brandSummary ?? __('public.footer_mission') }}
             </p>
 
-            @if ($navigation->socialContact->socialLinks !== [])
+            @if (($hideFooterSocials ?? false) !== true && ! request()->routeIs('public.news.show') && $navigation->socialContact->socialLinks !== [])
                 <div class="flex items-center gap-6 text-[22px]">
                     @foreach ($navigation->socialContact->socialLinks as $link)
                         @continue(! ($link->isEnabled ?? true))
@@ -83,7 +83,9 @@
         @if ($navigation->footerSettings->legalLinks !== [])
             <div class="flex flex-wrap items-center justify-center gap-6 text-[14px]">
                 @foreach ($navigation->footerSettings->legalLinks as $link)
-                    <a href="{{ $link->url }}" @if ($link->target) target="{{ $link->target }}" @endif @if ($link->target === '_blank') rel="noreferrer" @endif class="text-white/50 transition-colors hover:text-white">{{ $link->label }}</a>
+                    @if ($link->url !== '' && $link->url !== '#')
+                        <a href="{{ $link->url }}" @if ($link->target) target="{{ $link->target }}" @endif @if ($link->target === '_blank') rel="noreferrer" @endif class="text-white/50 transition-colors hover:text-white">{{ $link->label }}</a>
+                    @endif
                 @endforeach
             </div>
         @endif

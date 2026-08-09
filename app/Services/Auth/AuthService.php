@@ -268,7 +268,7 @@ final class AuthService implements AuthServiceInterface
 
     private function canAccessAdmin(User $user): bool
     {
-        return in_array($user->role_slug, ['super_admin', 'editor', 'faculty_editor'], true);
+        return in_array($user->role_slug, ['super_admin', 'editor', 'faculty_editor', 'hr'], true);
     }
 
     private function activeSuperAdminCount(): int

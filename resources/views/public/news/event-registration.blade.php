@@ -11,7 +11,7 @@
                     <a href="/{{ $locale }}/news/events-list" class="mt-6 inline-flex rounded bg-spu-red px-6 py-3 text-sm font-bold text-white">{{ $page['backLabel'] }}</a>
                 </div>
             @else
-                <div class="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_400px]" x-data="dynamicFormShell()" data-form-id="{{ $event->formId }}" data-locale="{{ $locale }}" data-event-source="news-events" data-event-id="{{ $event->id }}">
+                <div class="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_400px]" x-data="dynamicFormShell()" data-form-id="{{ $event->formId }}" data-locale="{{ $locale }}" data-event-source="news-events" data-event-id="{{ $event->id }}" data-preview="{{ !empty($isPreview) ? '1' : '0' }}">
                     <div>
                         <article class="overflow-hidden rounded-2xl bg-white shadow-sm">
                             <img src="{{ $event->imageUrl }}" alt="{{ $event->title }}" class="h-72 w-full object-cover">

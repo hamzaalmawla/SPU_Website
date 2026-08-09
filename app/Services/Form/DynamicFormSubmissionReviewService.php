@@ -6,6 +6,7 @@ namespace App\Services\Form;
 
 use App\Contracts\Form\DynamicFormSubmissionReviewServiceInterface;
 use App\Contracts\Form\DynamicFormSubmissionServiceInterface;
+use App\Contracts\Form\FormSubmissionNotificationServiceInterface;
 use App\Contracts\Shared\AuditServiceInterface;
 use App\DTOs\Form\DynamicFormSubmissionAttachmentDTO;
 use App\DTOs\Form\DynamicFormSubmissionDetailDTO;
@@ -34,6 +35,7 @@ final class DynamicFormSubmissionReviewService implements DynamicFormSubmissionR
     public function __construct(
         private readonly DynamicFormSubmissionServiceInterface $submissionService,
         private readonly AuditServiceInterface $auditService,
+        private readonly FormSubmissionNotificationServiceInterface $notificationService,
     ) {}
 
     public function getDetails(int $submissionId, string $adminLocale): DynamicFormSubmissionDetailDTO
@@ -65,6 +67,13 @@ final class DynamicFormSubmissionReviewService implements DynamicFormSubmissionR
             submittedAt: $submission->created_at?->toIso8601String() ?? '',
             sections: $this->detailSections($formId, $payload, $submission, $locale),
             attachments: $this->attachments($formId, $submission->files_json, $locale),
+            referenceNumber: is_string($submission->reference_number) ? $submission->reference_number : null,
+            readAt: $submission->read_at?->toIso8601String(),
+            assignedToUserId: is_numeric($submission->assigned_to_user_id) ? (int) $submission->assigned_to_user_id : null,
+            assignedToName: $submission->assignedTo?->name,
+            internalNotes: is_string($submission->internal_notes) ? $submission->internal_notes : null,
+            statusChangedAt: $submission->status_changed_at?->toIso8601String(),
+            emailDeliveryStatus: is_string($submission->email_delivery_status) ? $submission->email_delivery_status : null,
         );
     }
 
@@ -73,8 +82,9 @@ final class DynamicFormSubmissionReviewService implements DynamicFormSubmissionR
         FormSubmissionStatus $expectedStatus,
         FormSubmissionStatus $newStatus,
         int $actorId,
+        ?string $reason = null,
     ): bool {
-        return DB::transaction(function () use ($submissionId, $expectedStatus, $newStatus, $actorId): bool {
+        $changed = DB::transaction(function () use ($submissionId, $expectedStatus, $newStatus, $actorId, $reason): bool {
             $submission = DynamicFormSubmission::query()->findOrFail($submissionId);
             $actor = $this->authorizedActor($actorId, 'transitionStatus', $submission);
             $formId = (string) $submission->form_id;
@@ -94,6 +104,7 @@ final class DynamicFormSubmissionReviewService implements DynamicFormSubmissionR
                 ->where('status', $expectedStatus->value)
                 ->update([
                     'status' => $newStatus->value,
+                    'status_changed_at' => now(),
                     'updated_at' => now(),
                 ]);
 
@@ -112,6 +123,7 @@ final class DynamicFormSubmissionReviewService implements DynamicFormSubmissionR
                     'to' => $newStatus->value,
                     'form' => $formId,
                     'inbox' => $inbox->value,
+                    'reason' => $reason,
                 ],
             );
 
@@ -121,6 +133,66 @@ final class DynamicFormSubmissionReviewService implements DynamicFormSubmissionR
 
             return true;
         });
+
+        if ($changed) {
+            $this->notificationService->queueDynamicStatusChanged($submissionId, $expectedStatus, $newStatus);
+        }
+
+        return $changed;
+    }
+
+    public function markAsRead(int $submissionId, int $actorId): bool
+    {
+        $submission = DynamicFormSubmission::query()->findOrFail($submissionId);
+        $actor = $this->authorizedActor($actorId, 'updateReview', $submission);
+
+        if ($submission->read_at !== null) {
+            return true;
+        }
+
+        $submission->forceFill(['read_at' => now(), 'read_by_user_id' => $actor->getKey()])->save();
+        $this->auditService->log('dynamic_form_submission.read', (int) $actor->getKey(), DynamicFormSubmission::class, $submissionId);
+
+        return true;
+    }
+
+    public function markAsUnread(int $submissionId, int $actorId): bool
+    {
+        $submission = DynamicFormSubmission::query()->findOrFail($submissionId);
+        $actor = $this->authorizedActor($actorId, 'updateReview', $submission);
+        $submission->forceFill(['read_at' => null, 'read_by_user_id' => null])->save();
+        $this->auditService->log('dynamic_form_submission.unread', (int) $actor->getKey(), DynamicFormSubmission::class, $submissionId);
+
+        return true;
+    }
+
+    public function assign(int $submissionId, ?int $assigneeId, int $actorId): bool
+    {
+        $submission = DynamicFormSubmission::query()->findOrFail($submissionId);
+        $actor = $this->authorizedActor($actorId, 'updateReview', $submission);
+
+        if ($assigneeId !== null && ! User::query()->whereKey($assigneeId)->whereIn('role_slug', ['super_admin', 'editor', 'hr'])->exists()) {
+            throw new \InvalidArgumentException('The selected reviewer is not eligible.');
+        }
+
+        $submission->forceFill([
+            'assigned_to_user_id' => $assigneeId,
+            'assigned_at' => $assigneeId === null ? null : now(),
+            'assigned_by_user_id' => $assigneeId === null ? null : $actor->getKey(),
+        ])->save();
+        $this->auditService->log('dynamic_form_submission.assigned', (int) $actor->getKey(), DynamicFormSubmission::class, $submissionId, ['assignee' => $assigneeId]);
+
+        return true;
+    }
+
+    public function updateInternalNotes(int $submissionId, ?string $notes, int $actorId): bool
+    {
+        $submission = DynamicFormSubmission::query()->findOrFail($submissionId);
+        $actor = $this->authorizedActor($actorId, 'updateReview', $submission);
+        $submission->forceFill(['internal_notes' => $notes !== null ? trim($notes) : null])->save();
+        $this->auditService->log('dynamic_form_submission.notes_updated', (int) $actor->getKey(), DynamicFormSubmission::class, $submissionId);
+
+        return true;
     }
 
     public function resolveAttachment(

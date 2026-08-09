@@ -71,6 +71,19 @@ class ContactPageTest extends TestCase
         ]);
     }
 
+    public function test_contact_honeypot_rejects_automated_submission(): void
+    {
+        $this->post('/en/contact', [
+            'name' => 'Automated Visitor',
+            'email' => 'bot@example.com',
+            'subject' => 'Spam',
+            'message' => 'Automated content.',
+            'website' => 'https://spam.example',
+        ])->assertSessionHasErrors('form');
+
+        $this->assertDatabaseCount('contact_messages', 0);
+    }
+
     public function test_contact_page_content_is_cms_managed(): void
     {
         $service = app(ContactPageServiceInterface::class);

@@ -26,7 +26,7 @@
                         <img src="{{ $event->imageUrl }}" alt="{{ $event->title }}" class="h-60 w-full object-cover">
                         <div class="p-7">
                             <div class="flex items-center justify-between gap-3 text-xs font-bold"><span class="text-spu-red">{{ $event->categoryLabel }}</span><span class="text-emerald-700">{{ $page['freeLabel'] }}</span></div>
-                            <h3 class="mt-3 text-xl font-bold text-spu-blue">{{ $event->title }}</h3>
+                            <h3 class="mt-3 text-xl font-bold text-spu-blue"><a href="{{ $event->detailUrl }}" class="transition hover:text-spu-red focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-spu-red">{{ $event->title }}</a></h3>
                             <p class="mt-3 text-sm leading-7 text-slate-600">{{ $event->summary }}</p>
                             <div class="mt-5 grid gap-2 text-xs text-slate-500 sm:grid-cols-2"><span>{{ $event->dateLabel }}</span><span>{{ $event->timeLabel }}</span><span class="sm:col-span-2">{{ $event->location }}</span></div>
                             <div class="mt-6 flex items-center justify-between gap-4">
@@ -37,6 +37,7 @@
                                     <a href="{{ $event->registrationUrl }}" class="rounded bg-spu-red px-5 py-2.5 text-xs font-bold text-white transition hover:bg-spu-blue">{{ $page['registerLabel'] }}</a>
                                 @endif
                             </div>
+                            <a href="{{ $event->detailUrl }}" class="mt-5 inline-flex text-xs font-bold text-spu-red hover:text-spu-blue">{{ $page['detailsLabel'] }}</a>
                         </div>
                     </article>
                 @empty

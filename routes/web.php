@@ -167,6 +167,9 @@ Route::prefix('{locale}')
                 Route::get('/events-list', 'eventsList')->name('events-list');
                 Route::get('/events-list/register', 'eventRegistration')->name('events-list.register');
                 Route::get('/events-list/past', 'pastEvent')->name('events-list.past');
+                Route::get('/events-list/{event}', 'eventDetail')
+                    ->where(['event' => '[A-Za-z0-9\-]+'])
+                    ->name('events-list.show');
                 Route::get('/gallery', 'gallery')->name('gallery');
                 Route::get('/article', 'redirectLegacyArticle')->name('article.legacy');
                 Route::get('/{article}', 'show')->name('show');

@@ -13,6 +13,7 @@ export function registerDynamicFormStore(Alpine) {
         currentStep: 0,
         completedSteps: [],
         context: {},
+        isPreview: false,
 
         get schema() {
             return this.activeFormId ? getFormSchema(this.activeFormId) : null;
@@ -46,6 +47,7 @@ export function registerDynamicFormStore(Alpine) {
             this.currentStep = 0;
             this.completedSteps = [];
             this.context = context || {};
+            this.isPreview = context?.preview === true;
 
             const form = this.schema;
             if (!form) return;
@@ -74,6 +76,7 @@ export function registerDynamicFormStore(Alpine) {
             this.currentStep = 0;
             this.completedSteps = [];
             this.context = {};
+            this.isPreview = false;
         },
 
         fields() {
@@ -160,6 +163,8 @@ export function registerDynamicFormStore(Alpine) {
         },
 
         async handleSubmit() {
+            if (this.isPreview) return;
+
             if (this.isMultiStep) {
                 if (!this.validateStep(this.currentStep)) return;
                 if (!this.completedSteps.includes(this.currentStep)) this.completedSteps.push(this.currentStep);
@@ -175,6 +180,8 @@ export function registerDynamicFormStore(Alpine) {
         },
 
         async submit() {
+            if (this.isPreview) return;
+
             this.submitting = true;
             this.submitError = '';
             this.errors = {};
@@ -184,6 +191,7 @@ export function registerDynamicFormStore(Alpine) {
                 if (!Object.prototype.hasOwnProperty.call(this.files, key)) body.append(key, this.formData[key]);
             });
             Object.keys(this.files).forEach((key) => body.append(key, this.files[key]));
+            body.append('website', document.querySelector('[data-form-honeypot]')?.value || '');
             if (this.context.eventSource) body.append('event_source', this.context.eventSource);
             if (this.context.eventId) body.append('event_id', this.context.eventId);
             if (this.context.jobId) body.append('job_id', this.context.jobId);

@@ -57,6 +57,11 @@ return [
         'locale' => 'لغة المشاركة',
         'status' => 'الحالة',
         'submitted_at' => 'تاريخ التقديم',
+        'read' => 'حالة القراءة',
+        'reference' => 'رقم المرجع',
+        'assigned_to' => 'المراجع المكلف',
+        'internal_notes' => 'ملاحظات داخلية',
+        'reason' => 'سبب القرار',
     ],
     'filters' => [
         'form_type' => 'نوع المشاركة',
@@ -84,6 +89,9 @@ return [
     ],
     'actions' => [
         'review' => 'مراجعة',
+        'mark_unread' => 'تحديد كغير مقروء',
+        'assign_to_me' => 'تعييني كمراجع',
+        'internal_notes' => 'ملاحظات داخلية',
         'back_to_inbox' => 'العودة إلى القائمة',
         'download_attachment' => 'تنزيل آمن',
         'confirm_heading' => 'تأكيد تغيير الحالة',
@@ -105,6 +113,9 @@ return [
         'illegal' => 'تغيير الحالة غير متاح',
         'illegal_description' => 'تغيير الحالة هذا غير مسموح به في قائمة هذه المشاركة.',
         'failed' => 'لم تتغير الحالة',
+        'marked_unread' => 'تم تحديد الطلب كغير مقروء',
+        'assigned' => 'تم تكليفك بالطلب',
+        'notes_saved' => 'تم حفظ الملاحظات الداخلية',
         'safe_error' => 'تعذر إكمال الطلب بأمان. حاول مجدداً أو تواصل مع مسؤول النظام.',
     ],
     'values' => [
@@ -116,6 +127,10 @@ return [
         'not_provided' => 'غير مقدم',
         'no_submitted_fields' => 'لا توجد بيانات مقدمة متاحة.',
         'structured_hidden' => 'تم إخفاء البيانات المنظمة القديمة من شاشة المراجعة.',
+        'unassigned' => 'غير مكلف',
+        'read' => 'مقروء',
+        'unread' => 'غير مقروء',
+        'no_internal_notes' => 'لم تتم إضافة ملاحظات داخلية.',
     ],
     'fields' => [
         'fullName' => 'الاسم الكامل',

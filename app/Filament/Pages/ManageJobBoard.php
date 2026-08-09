@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
-use App\Models\User\User;
+use Illuminate\Support\Facades\Gate;
 
 final class ManageJobBoard extends ManageCampusLife
 {
@@ -16,16 +16,17 @@ final class ManageJobBoard extends ManageCampusLife
 
     public static function canAccess(): bool
     {
-        $user = auth()->user();
-
-        return parent::canAccess()
-            && $user instanceof User
-            && $user->role_slug !== 'faculty_editor';
+        return Gate::allows('manage-jobs');
     }
 
     public static function getNavigationLabel(): string
     {
         return __('admin.navigation.items.job_board');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('admin.navigation.groups.job_board');
     }
 
     public function getTitle(): string
@@ -41,5 +42,10 @@ final class ManageJobBoard extends ManageCampusLife
     protected function showsTargetSelector(): bool
     {
         return false;
+    }
+
+    protected function publishAbility(): string
+    {
+        return 'publish-jobs';
     }
 }

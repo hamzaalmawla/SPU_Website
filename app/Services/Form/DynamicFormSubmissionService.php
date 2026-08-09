@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Form;
 
 use App\Contracts\Form\DynamicFormSubmissionServiceInterface;
+use App\Contracts\Form\FormSubmissionNotificationServiceInterface;
 use App\Contracts\News\NewsServiceInterface;
 use App\Contracts\Page\CampusLifePageServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
@@ -12,10 +13,8 @@ use App\DTOs\CampusLife\CampusLifeJobDTO;
 use App\DTOs\Form\DynamicFormSubmissionDataDTO;
 use App\DTOs\News\NewsEventDTO;
 use App\DTOs\Research\ResearchConferenceRegistrationDTO;
-use App\Mail\EventRegistrationReceived;
 use App\Models\Form\DynamicFormSubmission;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -30,6 +29,7 @@ final class DynamicFormSubmissionService implements DynamicFormSubmissionService
         private readonly NewsServiceInterface $newsService,
         private readonly CampusLifePageServiceInterface $campusLifePageService,
         private readonly ResearchPageServiceInterface $researchPageService,
+        private readonly FormSubmissionNotificationServiceInterface $notificationService,
     ) {}
 
     /** @return array<int, string> */
@@ -146,12 +146,15 @@ final class DynamicFormSubmissionService implements DynamicFormSubmissionService
                 $files[$field] = $this->storeFile($data->formId, $file);
             }
 
-            DynamicFormSubmission::query()->create([
+            $submission = DynamicFormSubmission::query()->create([
+                'reference_number' => 'SPU-FORM-'.strtoupper((string) Str::ulid()),
                 'form_id' => $data->formId,
                 'locale' => $data->locale,
                 'applicant_name' => $this->applicantName($payload),
                 'applicant_email' => is_string($payload['email'] ?? null) ? $payload['email'] : null,
                 'status' => 'new',
+                'status_changed_at' => now(),
+                'email_delivery_status' => is_string($payload['email'] ?? null) ? 'pending' : 'not_applicable',
                 'payload_json' => $payload,
                 'files_json' => $files,
                 'ip_address' => $data->ipAddress,
@@ -167,13 +170,7 @@ final class DynamicFormSubmissionService implements DynamicFormSubmissionService
             throw $exception;
         }
 
-        if (($payload['_context']['source'] ?? null) === 'news-events' && is_string($payload['email'] ?? null)) {
-            Mail::to($payload['email'])->queue(new EventRegistrationReceived(
-                applicantName: $this->applicantName($payload) ?? $payload['email'],
-                eventTitle: (string) ($payload['_context']['event_title'] ?? ''),
-                contentLocale: $data->locale,
-            ));
-        }
+        $this->notificationService->queueDynamicReceived((int) $submission->getKey());
 
         return true;
     }
@@ -256,7 +253,12 @@ final class DynamicFormSubmissionService implements DynamicFormSubmissionService
     /** @return array<string, string|int|null> */
     private function storeFile(string $formId, UploadedFile $file): array
     {
-        $extension = $file->getClientOriginalExtension() ?: 'bin';
+        $extension = strtolower((string) $file->extension());
+
+        if ($extension === '' || ! preg_match('/^[a-z0-9]{1,10}$/', $extension)) {
+            throw new \RuntimeException('The submission attachment has an unsafe file type.');
+        }
+
         $path = Storage::disk('local')->putFileAs(
             'dynamic-form-submissions/'.$formId.'/'.now()->format('Y/m'),
             $file,

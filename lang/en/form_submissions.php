@@ -57,6 +57,11 @@ return [
         'locale' => 'Submission language',
         'status' => 'Status',
         'submitted_at' => 'Submitted',
+        'read' => 'Read state',
+        'reference' => 'Reference number',
+        'assigned_to' => 'Assigned reviewer',
+        'internal_notes' => 'Internal notes',
+        'reason' => 'Decision reason',
     ],
     'filters' => [
         'form_type' => 'Submission type',
@@ -84,6 +89,9 @@ return [
     ],
     'actions' => [
         'review' => 'Review',
+        'mark_unread' => 'Mark unread',
+        'assign_to_me' => 'Assign to me',
+        'internal_notes' => 'Internal notes',
         'back_to_inbox' => 'Back to inbox',
         'download_attachment' => 'Secure download',
         'confirm_heading' => 'Confirm status change',
@@ -105,6 +113,9 @@ return [
         'illegal' => 'Status change unavailable',
         'illegal_description' => 'That status change is not allowed for this submission inbox.',
         'failed' => 'Status was not changed',
+        'marked_unread' => 'Submission marked unread',
+        'assigned' => 'Submission assigned',
+        'notes_saved' => 'Internal notes saved',
         'safe_error' => 'The request could not be completed safely. Try again or contact an administrator.',
     ],
     'values' => [
@@ -116,6 +127,10 @@ return [
         'not_provided' => 'Not provided',
         'no_submitted_fields' => 'No submitted fields are available.',
         'structured_hidden' => 'Older structured data is hidden from this review screen.',
+        'unassigned' => 'Unassigned',
+        'read' => 'Read',
+        'unread' => 'Unread',
+        'no_internal_notes' => 'No internal notes have been added.',
     ],
     'fields' => [
         'fullName' => 'Full name',

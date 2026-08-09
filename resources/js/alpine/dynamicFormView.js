@@ -6,6 +6,7 @@ export function createDynamicFormShell() {
                 eventId: this.$el.dataset.eventId || '',
                 jobId: this.$el.dataset.jobId || '',
                 jobSlug: this.$el.dataset.jobSlug || '',
+                preview: this.$el.dataset.preview === '1',
             });
         },
     };
@@ -40,6 +41,7 @@ export function createDynamicFormView() {
         nextText() { return this.isAr ? 'التالي' : 'Next'; },
         submitText() { return this.isAr ? this.store.schema?.submitLabelAr || 'إرسال' : this.store.schema?.submitLabelEn || 'Submit'; },
         submittingText() { return this.isAr ? 'جاري الإرسال...' : 'Submitting...'; },
+        previewText() { return this.isAr ? 'وضع المعاينة: لن يتم إرسال هذا النموذج.' : 'Preview mode: this form will not submit.'; },
         uploadText() { return this.isAr ? 'اضغط للرفع' : 'Click to upload'; },
         allowedText(field) { return field.accept ? 'Allowed: ' + field.accept : 'PDF, DOC, DOCX'; },
         setValue(field, value) { this.store.setFieldValue(field.name, value); },

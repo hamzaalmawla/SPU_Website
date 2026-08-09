@@ -91,6 +91,11 @@
 - [ ] `APP_KEY`, `DB_PASSWORD`, and `ADMIN_PASSWORD` are unique production secrets stored outside git
 - [ ] Application DB user is least-privileged and is not `root`
 - [ ] Session cookies use `SESSION_SECURE_COOKIE=true`, `SESSION_HTTP_ONLY=true`, and `SESSION_SAME_SITE=lax` or stricter
+- [ ] `MAIL_MAILER` uses a verified production transport and `MAIL_FROM_ADDRESS` is authorized by the mail provider
+- [ ] `FORM_ADMIN_RECIPIENTS` is reviewed, or eligible admin/editor recipients are confirmed
+- [ ] HR account is provisioned explicitly with `HrUserSeeder`, and its credentials are stored outside git
+- [ ] A supervised queue worker processes form receipts, status updates, and staff notifications
+- [ ] `failed_jobs` monitoring and queue retry procedures are tested
 
 ## 11. Rollback Readiness
 

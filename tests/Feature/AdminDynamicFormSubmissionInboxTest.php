@@ -218,7 +218,26 @@ final class AdminDynamicFormSubmissionInboxTest extends TestCase
         $this->get(route('admin.form-submissions.attachments.download', [
             'submission' => $submission->id,
             'field' => 'cvFile',
-        ]))->assertForbidden();
+            ]))->assertForbidden();
+    }
+
+    public function test_hr_only_sees_and_reviews_job_applications(): void
+    {
+        $hr = User::factory()->create(['role_slug' => 'hr']);
+        $job = $this->submission('job-application', ['fullName' => 'Job Applicant']);
+        $admissions = $this->submission('admissions-application', ['fullName' => 'Admissions Applicant']);
+
+        $this->actingAs($hr, 'web');
+
+        $component = Livewire::test(ListDynamicFormSubmissions::class);
+        $tabs = $component->instance()->getCachedTabs();
+
+        $this->assertSame([FormSubmissionInbox::JOBS->value], array_keys($tabs));
+        $this->assertSame([$job->id], $component->instance()->getTableRecords()->pluck('id')->all());
+        $this->assertTrue(DynamicFormSubmissionResource::canAccess());
+
+        $this->get(DynamicFormSubmissionResource::getUrl('view', ['record' => $job]))->assertOk();
+        $this->get(DynamicFormSubmissionResource::getUrl('view', ['record' => $admissions]))->assertNotFound();
     }
 
     /**

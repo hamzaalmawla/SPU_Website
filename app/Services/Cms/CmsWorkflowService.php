@@ -546,7 +546,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
     {
         $user = User::query()->find($userId);
 
-        if (! $user instanceof User || Gate::forUser($user)->denies('preview-content')) {
+        if (! $user instanceof User || Gate::forUser($user)->denies($this->previewAbilityForTarget($target))) {
             throw new AuthorizationException('This user is not authorized to preview CMS content.');
         }
 
@@ -557,7 +557,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
     {
         $user = User::query()->find($userId);
 
-        if (! $user instanceof User || Gate::forUser($user)->denies('publish-content')) {
+        if (! $user instanceof User || Gate::forUser($user)->denies($this->publishAbilityForTarget($target))) {
             throw new AuthorizationException('This user is not authorized to publish CMS content.');
         }
 
@@ -568,7 +568,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
     private function authorizeTargetWrite(CmsTargetDTO $target, int $userId, ?array $payload = null): void
     {
         $user = User::query()->find($userId);
-        $ability = $this->manageAbilityForArea($target->area);
+        $ability = $this->manageAbilityForTarget($target);
 
         if (! $user instanceof User || (bool) $user->is_locked || Gate::forUser($user)->denies($ability)) {
             throw new AuthorizationException('This user is not authorized to manage this CMS target.');
@@ -608,6 +608,27 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
             'news' => 'manage-news',
             default => 'manage-pages',
         };
+    }
+
+    private function manageAbilityForTarget(CmsTargetDTO $target): string
+    {
+        return $target->key === 'campus_life.jobs'
+            ? 'manage-jobs'
+            : $this->manageAbilityForArea($target->area);
+    }
+
+    private function previewAbilityForTarget(CmsTargetDTO $target): string
+    {
+        return $target->key === 'campus_life.jobs'
+            ? 'preview-jobs'
+            : 'preview-content';
+    }
+
+    private function publishAbilityForTarget(CmsTargetDTO $target): string
+    {
+        return $target->key === 'campus_life.jobs'
+            ? 'publish-jobs'
+            : 'publish-content';
     }
 
     /** @param array<string, mixed> $payload */

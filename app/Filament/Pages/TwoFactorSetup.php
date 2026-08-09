@@ -64,7 +64,7 @@ class TwoFactorSetup extends Page implements HasForms
 
         return $user instanceof User
             && ! $user->isAccountLocked()
-            && in_array($user->role_slug, ['super_admin', 'editor', 'faculty_editor'], true);
+            && in_array($user->role_slug, ['super_admin', 'editor', 'faculty_editor', 'hr'], true);
     }
 
     public static function getNavigationGroup(): ?string

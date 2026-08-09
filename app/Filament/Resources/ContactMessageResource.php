@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\ContactMessageResource\Pages;
+use App\Enums\ContactMessageStatus;
 use App\Models\Contact\ContactMessage;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Textarea;
@@ -44,6 +45,18 @@ class ContactMessageResource extends Resource
         return __('admin.navigation.items.contact_messages');
     }
 
+    public static function getNavigationBadge(): ?string
+    {
+        $count = self::getEloquentQuery()->whereNull('read_at')->count();
+
+        return $count > 0 ? (string) $count : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'danger';
+    }
+
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery();
@@ -67,7 +80,8 @@ class ContactMessageResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Section::make('Message')->schema([
+            Section::make(__('contact_messages.sections.message'))->schema([
+                TextInput::make('reference_number')->label(__('contact_messages.fields.reference'))->disabled(),
                 TextInput::make('name')->disabled(),
                 TextInput::make('email')->disabled(),
                 TextInput::make('subject')->disabled(),
@@ -75,11 +89,14 @@ class ContactMessageResource extends Resource
                 Textarea::make('message')->rows(8)->disabled()->columnSpanFull(),
             ])->columns(2),
 
-            Section::make('Request')->schema([
-                TextInput::make('status')->disabled(),
+            Section::make(__('contact_messages.sections.workflow'))->schema([
+                TextInput::make('status')->label(__('contact_messages.fields.status'))->disabled(),
+                TextInput::make('assignedTo.name')->label(__('contact_messages.fields.assigned_to'))->disabled(),
+                Textarea::make('internal_notes')->label(__('contact_messages.fields.internal_notes'))->disabled()->rows(4)->columnSpanFull(),
+                TextInput::make('email_delivery_status')->label(__('contact_messages.fields.email_delivery'))->disabled(),
                 TextInput::make('ip_address')->label('IP Address')->disabled(),
                 TextInput::make('user_agent')->label('User Agent')->disabled()->columnSpanFull(),
-                TextInput::make('created_at')->label('Submitted')->disabled(),
+                TextInput::make('created_at')->label(__('contact_messages.fields.submitted'))->disabled(),
             ])->columns(2),
         ]);
     }
@@ -92,6 +109,11 @@ class ContactMessageResource extends Resource
                     ->searchable()
                     ->sortable()
                     ->limit(50),
+                TextColumn::make('reference_number')
+                    ->label(__('contact_messages.fields.reference'))
+                    ->searchable()
+                    ->copyable()
+                    ->sortable(),
                 TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
@@ -102,9 +124,15 @@ class ContactMessageResource extends Resource
                     ->badge()
                     ->sortable(),
                 TextColumn::make('status')
+                    ->formatStateUsing(fn (string $state): string => __('contact_messages.statuses.'.$state))
                     ->badge()
                     ->color(fn (string $state): string => $state === 'new' ? 'success' : 'gray')
                     ->sortable(),
+                TextColumn::make('read_at')
+                    ->label(__('form_submissions.columns.read'))
+                    ->state(fn (ContactMessage $record): string => $record->read_at ? __('form_submissions.values.read') : __('form_submissions.values.unread'))
+                    ->badge()
+                    ->color(fn (ContactMessage $record): string => $record->read_at ? 'gray' : 'danger'),
                 TextColumn::make('created_at')
                     ->label('Submitted')
                     ->dateTime()
@@ -114,7 +142,7 @@ class ContactMessageResource extends Resource
                 SelectFilter::make('locale')
                     ->options(['ar' => 'Arabic', 'en' => 'English']),
                 SelectFilter::make('status')
-                    ->options(['new' => 'New']),
+                    ->options(collect(ContactMessageStatus::cases())->mapWithKeys(fn (ContactMessageStatus $status): array => [$status->value => __('contact_messages.statuses.'.$status->value)])->all()),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),

@@ -80,6 +80,23 @@ class AdminAuthFlowTest extends TestCase
         ]);
     }
 
+    public function test_hr_login_can_enter_the_admin_panel(): void
+    {
+        User::factory()->create([
+            'email' => 'hr@example.com',
+            'password' => 'password',
+            'role_slug' => 'hr',
+        ]);
+
+        $this->post('/admin/login', [
+            'email' => 'hr@example.com',
+            'password' => 'password',
+        ])->assertRedirect('/admin');
+
+        $this->get('/admin/manage-job-board')->assertOk();
+        $this->get('/admin/manage-homepage')->assertForbidden();
+    }
+
     public function test_admin_login_without_remember_me_does_not_create_persistent_remember_token(): void
     {
         $user = User::factory()->create([

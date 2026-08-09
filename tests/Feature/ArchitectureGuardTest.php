@@ -380,8 +380,8 @@ final class ArchitectureGuardTest extends TestCase
         $expectedKeys = [
             'hero',
             'hero_stats',
-            'academic_faculties',
             'achievements_highlights',
+            'academic_faculties',
             'choose_your_path',
             'university_news',
             'research_studies',

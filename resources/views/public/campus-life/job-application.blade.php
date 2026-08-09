@@ -31,7 +31,7 @@
         </div>
     </section>
 
-    <section class="bg-white py-12 font-hacen md:py-16" x-data="dynamicFormShell()" data-form-id="job-application" data-locale="{{ $locale }}" data-job-id="{{ $selectedJob['id'] ?? '' }}" data-job-slug="{{ $selectedJob['slug'] ?? '' }}">
+    <section class="bg-white py-12 font-hacen md:py-16" x-data="dynamicFormShell()" data-form-id="job-application" data-locale="{{ $locale }}" data-job-id="{{ $selectedJob['id'] ?? '' }}" data-job-slug="{{ $selectedJob['slug'] ?? '' }}" data-preview="{{ !empty($isPreview) ? '1' : '0' }}">
         <div class="container mx-auto">
             <div class="mx-auto">
                 <div class="mb-8 rounded-2xl border border-spu-blue/10 bg-spu-blue/[0.03] p-6">

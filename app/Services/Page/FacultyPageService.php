@@ -1358,10 +1358,6 @@ final class FacultyPageService implements FacultyPageServiceInterface
                     return false;
                 }
 
-                if ($filters['semester'] !== '' && (string) ($item['semesterKey'] ?? '') !== (string) $filters['semester']) {
-                    return false;
-                }
-
                 return $filters['academic_phase'] === '' || (string) ($item['academicPhase'] ?? '') === (string) $filters['academic_phase'];
             })
             ->values()

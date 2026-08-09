@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
+use App\Contracts\Homepage\HomepageContentSelectionServiceInterface;
 use App\Contracts\Homepage\HomepagePublishingServiceInterface;
 use App\Contracts\Homepage\HomepageSectionServiceInterface;
 use App\Contracts\Shared\PreviewServiceInterface;
@@ -62,6 +63,8 @@ class ManageHomepage extends Page implements HasForms
 
     private PreviewServiceInterface $previewService;
 
+    private HomepageContentSelectionServiceInterface $contentSelectionService;
+
     /** @var Collection<int, HomepageSectionDTO>|null */
     private ?Collection $sections = null;
 
@@ -71,10 +74,12 @@ class ManageHomepage extends Page implements HasForms
         HomepageSectionServiceInterface $sectionService,
         HomepagePublishingServiceInterface $publishingService,
         PreviewServiceInterface $previewService,
+        HomepageContentSelectionServiceInterface $contentSelectionService,
     ): void {
         $this->sectionService = $sectionService;
         $this->publishingService = $publishingService;
         $this->previewService = $previewService;
+        $this->contentSelectionService = $contentSelectionService;
     }
 
     public static function canAccess(): bool
@@ -389,7 +394,10 @@ class ManageHomepage extends Page implements HasForms
 
     private function sectionToFormData(HomepageSectionDTO $section): array
     {
+        $selectionPayload = $section->arabicPayload ?? $section->englishPayload ?? $section->payload;
+
         return [
+            'selection' => $this->selectionToFormArray($selectionPayload, $section->key),
             'ar' => $this->payloadToFormArray($section->arabicPayload ?? $section->payload, $section->arabicTranslation, $section->key),
             'en' => $this->payloadToFormArray($section->englishPayload ?? $section->payload, $section->englishTranslation, $section->key),
         ];
@@ -452,9 +460,64 @@ class ManageHomepage extends Page implements HasForms
         ];
     }
 
+    /** @return array<string, array<int, array<string, int|string>>> */
+    private function selectionToFormArray(HomepageSectionDataDTO $payload, string $sectionKey): array
+    {
+        $articleIds = $payload->content['selectedArticleIds'] ?? $payload->content['selected_article_ids'] ?? [];
+        $publicationSlugs = $payload->content['selectedResearchSlugs'] ?? $payload->content['selected_research_slugs'] ?? [];
+
+        if ($sectionKey === 'university_news' && (! is_array($articleIds) || $articleIds === [])) {
+            $livePayload = $this->contentSelectionService->hydratePayload($payload, $sectionKey, app()->getLocale());
+            $articleIds = array_map(static fn (ArticleCardDTO $article): int => $article->id, $livePayload->articles);
+        }
+
+        if ($sectionKey === 'research_studies' && (! is_array($publicationSlugs) || $publicationSlugs === [])) {
+            $livePayload = $this->contentSelectionService->hydratePayload($payload, $sectionKey, app()->getLocale());
+            $publicationSlugs = array_map(static fn (ResearchCardDTO $item): string => $item->slug, $livePayload->researchItems);
+        }
+
+        return [
+            'article_ids' => array_values(array_map(
+                static fn (mixed $id): array => ['article_id' => (int) $id],
+                array_filter(is_array($articleIds) ? $articleIds : [], static fn (mixed $id): bool => is_numeric($id) && (int) $id > 0),
+            )),
+            'publication_slugs' => array_values(array_map(
+                static fn (mixed $slug): array => ['publication_slug' => (string) $slug],
+                array_filter(is_array($publicationSlugs) ? $publicationSlugs : [], static fn (mixed $slug): bool => is_string($slug) && $slug !== ''),
+            )),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  array<string, mixed>  $selection
+     * @return array<string, mixed>
+     */
+    private function withHomepageSelection(array $data, string $sectionKey, array $selection): array
+    {
+        if ($sectionKey === 'university_news') {
+            $data['content']['selectionMode'] = 'manual';
+            $data['content']['selectedArticleIds'] = array_values(array_map(
+                static fn (array $item): int => (int) ($item['article_id'] ?? 0),
+                array_filter($selection['article_ids'] ?? [], static fn (mixed $item): bool => is_array($item) && is_numeric($item['article_id'] ?? null) && (int) $item['article_id'] > 0),
+            ));
+        }
+
+        if ($sectionKey === 'research_studies') {
+            $data['content']['selectionMode'] = 'manual';
+            $data['content']['selectedResearchSlugs'] = array_values(array_map(
+                static fn (array $item): string => (string) ($item['publication_slug'] ?? ''),
+                array_filter($selection['publication_slugs'] ?? [], static fn (mixed $item): bool => is_array($item) && is_string($item['publication_slug'] ?? null) && $item['publication_slug'] !== ''),
+            ));
+        }
+
+        return $data;
+    }
+
     private function emptySectionData(string $key): array
     {
         return [
+            'selection' => [],
             'ar' => [],
             'en' => [],
         ];
@@ -470,6 +533,9 @@ class ManageHomepage extends Page implements HasForms
 
         foreach (HomepageSectionServiceInterface::SECTION_KEYS as $key) {
             $sectionData = $formData[$key] ?? ['ar' => [], 'en' => []];
+            $selection = is_array($sectionData['selection'] ?? null) ? $sectionData['selection'] : [];
+            $arabicData = $this->withHomepageSelection($sectionData['ar'] ?? [], $key, $selection);
+            $englishData = $this->withHomepageSelection($sectionData['en'] ?? [], $key, $selection);
             $sortOrder++;
 
             $existingSection = $this->sections?->first(fn (HomepageSectionDTO $s) => $s->key === $key);
@@ -479,7 +545,7 @@ class ManageHomepage extends Page implements HasForms
                 key: $key,
                 sortOrder: $sortOrder,
                 isEnabled: $existingSection?->isEnabled ?? true,
-                payload: $this->formArrayToPayload($sectionData['ar'] ?? [], $key),
+                payload: $this->formArrayToPayload($arabicData, $key),
                 arabicTranslation: new HomepageSectionTranslationDTO(
                     locale: 'ar',
                     headline: $sectionData['ar']['headline'] ?? null,
@@ -492,8 +558,8 @@ class ManageHomepage extends Page implements HasForms
                     body: $sectionData['en']['subheadline'] ?? null,
                     ctaLabel: $sectionData['en']['primary_cta_label'] ?? null,
                 ),
-                arabicPayload: $this->formArrayToPayload($sectionData['ar'] ?? [], $key),
-                englishPayload: $this->formArrayToPayload($sectionData['en'] ?? [], $key),
+                arabicPayload: $this->formArrayToPayload($arabicData, $key),
+                englishPayload: $this->formArrayToPayload($englishData, $key),
             );
         }
 
@@ -861,6 +927,9 @@ class ManageHomepage extends Page implements HasForms
                         : ['label' => (string) $link],
                     is_array($item['links'] ?? null) ? $item['links'] : [],
                 )),
+                'cta_label' => is_array($item['action'] ?? null) ? ($item['action']['label'] ?? null) : null,
+                'cta_url' => is_array($item['action'] ?? null) ? ($item['action']['url'] ?? null) : null,
+                'action' => $item['action'] ?? null,
             ], static fn (mixed $value): bool => $value !== null && $value !== []),
             $items,
         ));
@@ -1071,6 +1140,7 @@ class ManageHomepage extends Page implements HasForms
         foreach (HomepageSectionServiceInterface::SECTION_KEYS as $key) {
             $tabs[] = Tab::make($sectionLabels[$key] ?? $key)
                 ->schema([
+                    ...HomepageFormSchema::selectionFieldsForSection($key, "{$key}.selection"),
                     Tabs::make("{$key}_locales")
                         ->tabs([
                             Tab::make('العربية (AR)')

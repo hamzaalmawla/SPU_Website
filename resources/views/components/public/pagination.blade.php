@@ -32,6 +32,7 @@
         <span class="inline-flex h-11 items-center rounded-[6px] border border-spu-red bg-spu-red px-4 text-xs font-bold text-white sm:hidden">
             {{ $isAr ? 'صفحة' : 'Page' }} {{ $currentPage }} {{ $isAr ? 'من' : 'of' }} {{ $totalPages }}
         </span>
+        <span class="sr-only">{{ $currentPage }} / {{ $totalPages }}</span>
 
         <div class="hidden items-center gap-2 sm:flex">
             @php($previousPage = null)

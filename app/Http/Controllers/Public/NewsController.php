@@ -149,6 +149,20 @@ final class NewsController extends Controller
         ]));
     }
 
+    public function eventDetail(Request $request, string $locale, string $event): View
+    {
+        $page = $this->newsService->getEventsPageContent($locale);
+        $newsEvent = $this->newsService->findNewsEvent($event, $locale);
+        abort_if($newsEvent === null, 404);
+        $path = '/news/events-list/'.rawurlencode($event);
+
+        return view('public.news.event-detail', $this->sharedPayload($request, $locale, $path, [
+            'page' => $page,
+            'event' => $newsEvent,
+            'seo' => $this->seo($locale, $path, $newsEvent->title, $newsEvent->summary, $newsEvent->imageUrl),
+        ]));
+    }
+
     public function gallery(Request $request, string $locale): View
     {
         $category = is_string($request->query('category')) && $request->query('category') !== '' ? $request->query('category') : null;
@@ -173,6 +187,7 @@ final class NewsController extends Controller
             'article' => $newsArticle,
             'relatedArticles' => $this->newsService->getRelatedArticleCards($article, $locale, 3),
             'adjacentArticles' => $this->newsService->getAdjacentArticleCards($article, $locale),
+            'hideFooterSocials' => true,
             'seo' => $this->seo(
                 $locale,
                 '/news/'.$article,

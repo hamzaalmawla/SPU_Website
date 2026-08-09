@@ -2,7 +2,7 @@
 
 @section('content')
     @php
-        $homepageSections = collect($homepage->sections)->sortBy('sortOrder');
+        $homepageSections = collect($homepage->sections);
     @endphp
 
     <div data-homepage>

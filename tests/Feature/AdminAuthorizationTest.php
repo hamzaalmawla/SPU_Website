@@ -70,6 +70,9 @@ class AdminAuthorizationTest extends TestCase
             'faculty_scope_slug' => 'medicine',
         ]);
 
+        $hr = new User;
+        $hr->forceFill(['name' => 'HR User', 'email' => 'hr@example.com', 'role_slug' => 'hr']);
+
         $this->assertTrue(Gate::forUser($superAdmin)->allows('manage-users'));
         $this->assertTrue(Gate::forUser($superAdmin)->allows('manage-settings'));
         $this->assertTrue(Gate::forUser($superAdmin)->allows('manage-homepage'));
@@ -99,5 +102,13 @@ class AdminAuthorizationTest extends TestCase
         $this->assertFalse(Gate::forUser($facultyEditor)->allows('publish-content'));
         $this->assertTrue(Gate::forUser($facultyEditor)->allows('preview-content'));
         $this->assertFalse(Gate::forUser($facultyEditor)->allows('view-audit-log'));
+
+        $this->assertTrue(Gate::forUser($hr)->allows('manage-jobs'));
+        $this->assertTrue(Gate::forUser($hr)->allows('publish-jobs'));
+        $this->assertTrue(Gate::forUser($hr)->allows('preview-jobs'));
+        $this->assertFalse(Gate::forUser($hr)->allows('manage-faculties'));
+        $this->assertFalse(Gate::forUser($hr)->allows('manage-pages'));
+        $this->assertFalse(Gate::forUser($hr)->allows('publish-content'));
+        $this->assertFalse(Gate::forUser($hr)->allows('manage-settings'));
     }
 }

@@ -16,6 +16,7 @@ use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Support\Enums\MaxWidth;
 use Filament\View\PanelsRenderHook;
 use Filament\Widgets;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -34,13 +35,18 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->brandName(fn (): string => __('admin.panel.brand'))
+            ->brandLogo(fn (): string => asset('images/single-logo.png'))
+            ->brandLogoHeight('2.35rem')
+            ->favicon(asset('images/single-logo.png'))
             ->authGuard((string) config('auth.admin_guard', 'web'))
             ->login([AuthController::class, 'create'])
             ->colors([
-                'primary' => Color::hex('#0f6471'),
+                'primary' => Color::hex('#202759'),
                 'danger' => Color::Red,
                 'warning' => Color::Amber,
             ])
+            ->maxContentWidth(MaxWidth::Full)
+            ->sidebarCollapsibleOnDesktop()
             ->unsavedChangesAlerts()
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')

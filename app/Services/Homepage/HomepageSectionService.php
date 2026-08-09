@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Homepage;
 
+use App\Contracts\Homepage\HomepageContentSelectionServiceInterface;
 use App\Contracts\Homepage\HomepageSectionServiceInterface;
 use App\Contracts\Shared\AuditServiceInterface;
 use App\DTOs\Homepage\HomepageDTO;
@@ -40,6 +41,7 @@ final class HomepageSectionService implements HomepageSectionServiceInterface
         private readonly AuthFactory $authFactory,
         private readonly HomepageDraftReader $draftReader,
         private readonly HomepageSectionValidator $validator,
+        private readonly HomepageContentSelectionServiceInterface $contentSelectionService,
     ) {}
 
     /**
@@ -79,7 +81,10 @@ final class HomepageSectionService implements HomepageSectionServiceInterface
                 continue;
             }
 
-            $sectionDto = $this->draftReader->mapSection($section, $locale);
+            $sectionDto = $this->contentSelectionService->hydrateSection(
+                $this->draftReader->mapSection($section, $locale),
+                $locale,
+            );
 
             if ($this->draftReader->hasRenderablePayloadForLocale($sectionDto, $locale)) {
                 $sections[] = $sectionDto;

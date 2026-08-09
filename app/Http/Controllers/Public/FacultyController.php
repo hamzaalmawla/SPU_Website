@@ -256,7 +256,7 @@ final class FacultyController extends Controller
             $query['year'] = $year;
         }
 
-        if ($semester !== '' && in_array($semester, $semesters, true)) {
+        if ($semester !== '' && ($semesters === [] || in_array($semester, $semesters, true))) {
             $query['semester'] = $semester;
         }
 

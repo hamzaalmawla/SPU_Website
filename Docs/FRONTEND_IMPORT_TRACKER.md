@@ -12,7 +12,11 @@ The 175-page reference inventory remains the route baseline. Counts are provisio
 |---|---|---|---|
 | Done | P0 | Governance | `AGENTS.MD` now defines full-site completion, reference parity, and production readiness as mandatory scope. |
 | Done | P0 | Dynamic forms | Guard schema-dependent markup so closing a successful form cannot dereference a null schema. |
+| Done | P0 | Public Form Operations | Contact and dynamic submissions now have bilingual receipts/admin alerts, references, unread tracking, assignment, internal notes, audited status transitions, queued-mail state tracking, preview protection, honeypots, private attachment handling, and focused AR/EN review tests. |
+| Done | P0 | HR Access | Added the restricted `hr` admin role with bilingual job-board editing/publishing, job-application-only inbox access, private CV review/download, status actions, HR notifications, explicit credential provisioning, and authorization tests. |
 | Done | P0 | Homepage News | Render each homepage news card as a keyboard-accessible link to its article DTO URL. |
+| Done | P0 | Homepage Curation | Replaced homepage news and research snapshots with ordered admin selections of published domain records; public and protected preview rendering now resolve current localized content and canonical detail URLs, with publish-time availability validation. |
+| Done | P0 | Event Details | Added canonical localized detail routes for upcoming and past events and connected the news landing page, events calendar, and event catalog to the selected event instead of the generic upcoming-events list. |
 | Done | P0 | Locale switching | Reuse contextual language-switch DTOs in the footer so switching locale preserves the current page. |
 | Done | P0 | Browser locale | Bare-domain requests now negotiate AR/EN from the browser `Accept-Language` preference while explicit locale URLs remain authoritative. |
 | Done | P0 | Shared runtime | Removed generic-page slug/template metadata, ported the missing admissions hero, corrected the dormant footer-logo seed, and restored the reference header stacking level. |
@@ -40,6 +44,7 @@ The 175-page reference inventory remains the route baseline. Counts are provisio
 | Done | P1 | Campus Life | Completed job-board filtering, selected-job application context, sharing, pagination, related jobs, and safe landing portal guidance. |
 | Done | P1 | Virtual Tour | Added CMS-managed scenes with accessible switching, pan/zoom, hotspots, autoplay, thumbnails, fullscreen fallback, RTL, and reduced motion. |
 | Done | P2 | Shared UX | Normalized RTL sliders, dynamic reveals, counters, keyboard behavior, focus/autoplay handling, and reduced motion. |
+| Done | P2 | Admin UX | Unified Filament and admin authentication styling with the SPU navy/red/gold system, responsive editor surfaces, restrained scrollbars, dark mode, real Arabic font weights, panel branding, and a collapsible desktop sidebar. |
 | Done | P1 | Final Route Batch | Completed Suggestions/Complaints secure workflow, News Articles shell CMS, and Pharmacy-only training editor; no reference routes remain partial. |
 | In Progress | P0 | Legacy continuity | Current evidence covers 11,917 generated URLs: 101 resolver-ready, 8,637 requiring mappings, 3,166 blocked on private targets, and 13 gallery routes blocked for a missing approved target module. |
 | Pending | P2 | Production content | Remove fake/sample contact data, broken settings assets, placeholders, and developer-facing public metadata. |
@@ -149,8 +154,16 @@ Frontend files:
 | Passed | `php artisan route:list --path=forms` |
 | Passed | `php artisan view:cache` |
 | Passed | `npm run build` |
+| Passed | Homepage CMS, homepage selector, event detail, admin authentication/localization, and admin news workspace regression suites; 62 focused tests / 441 assertions. |
+| Passed | `vendor/bin/phpstan analyse` for changed homepage, news, research, and Filament service/page files. |
+| Passed | `npm run test`; 15 frontend tests. |
 | Passed | `php artisan test "tests\Feature\DynamicFormSubmissionTest.php"` |
 | Passed | `php artisan test "tests\Feature\DynamicFormPageRenderingTest.php"` |
+| Passed | `php artisan test --testsuite=Unit` - 3,269 tests / 16,247 assertions. |
+| Passed | Public contact, dynamic submission, contact review, and dynamic review regression tests - 35 tests / 223 assertions. |
+| Passed | `php artisan test "tests\Feature\AdmissionsCampusRouteCorrectnessTest.php"` - 9 tests / 281 assertions after removing inert fallback legal links. |
+| Passed | Homepage Blade regression group - 79 tests / 245 assertions; News workflow - 19 tests / 119 assertions; Facilities project/directory regressions pass. |
+| Passed | Full Feature suite after aligning the Petroleum fixture with the current managed dataset: 908 tests / 7,504 assertions. |
 | Passed | `php artisan test "tests\Feature\CampusLifeWorkflowTest.php"` with extended timeout; 21 tests / 149 assertions. |
 | Passed | `php artisan test "tests\Feature\HeaderNavigationRenderingTest.php"` |
 | Passed | `php artisan test "tests\Feature\HeaderNavigationRenderingTest.php" "tests\Feature\DynamicFormPageRenderingTest.php"` |
@@ -162,6 +175,8 @@ Frontend files:
 | Passed | `php artisan continuity:validate-redirects` |
 | Passed | `php artisan continuity:validate-seo` after reseeding `LandingPageSeeder`; 8 published pages / 2 locales / 0 issues. |
 | Passed | `php artisan launch:validate`; warnings remain for unmapped file-continuity inventory and local cache tag support with `CACHE_STORE=database`. |
+| Passed | `php artisan test tests/Unit/ContactMessageReviewServiceTest.php tests/Feature/DynamicFormSubmissionTest.php tests/Feature/ContactPageTest.php` - 21 tests / 141 assertions. |
+| Passed | `php artisan migrate` applied the pending workflow and related local schema migrations; `php artisan migrate:status` now reports them as ran. |
 
 ## Legacy Continuity Checkpoint - 2026-07-30
 

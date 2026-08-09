@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Homepage;
 
+use App\Contracts\Homepage\HomepageContentSelectionServiceInterface;
 use App\Contracts\Homepage\HomepageSectionServiceInterface;
 use App\DTOs\Homepage\HomepageSectionDataDTO;
 use App\DTOs\Shared\ValidationMessageDTO;
@@ -20,13 +21,17 @@ use Illuminate\Validation\Rule;
  */
 final class HomepageSectionValidator
 {
+    public function __construct(
+        private readonly HomepageContentSelectionServiceInterface $contentSelectionService,
+    ) {}
+
     public function validateSectionPayload(string $key, HomepageSectionDataDTO $payload, string $locale): ValidationResultDTO
     {
         $this->assertApprovedKey($key);
 
         $normalizedPayload = HomepagePayloadMapper::sectionDataToArray($payload);
         $validator = Validator::make($normalizedPayload, $this->rulesForSection($key));
-        $this->applyConditionalRules($validator, $key, $normalizedPayload);
+        $this->applyConditionalRules($validator, $key, $normalizedPayload, $locale);
 
         if (! in_array($locale, ['ar', 'en'], true)) {
             $validator->errors()->add('locale', 'The locale must be either ar or en.');
@@ -88,7 +93,7 @@ final class HomepageSectionValidator
                 'content.overlay' => ['nullable', 'array'],
                 'content.alignment' => ['nullable', 'array'],
             ],
-            'hero_stats' => [
+            'hero_stats', 'bottom_stats' => [
                 'title' => ['required', 'string', 'max:255'],
                 'stats' => ['required', 'array', 'min:4'],
                 'stats.*.value' => ['required', 'string', 'max:100'],
@@ -139,7 +144,7 @@ final class HomepageSectionValidator
             ],
             'university_news' => [
                 'title' => ['required', 'string', 'max:255'],
-                'articles' => ['required', 'array', 'min:1'],
+                'articles' => ['nullable', 'array'],
                 'articles.*.imageUrl' => ['required', 'string', $this->assetPathRule()],
                 'articles.*.title' => ['required', 'string', 'max:255'],
                 'articles.*.excerpt' => ['nullable', 'string', 'max:500'],
@@ -148,10 +153,12 @@ final class HomepageSectionValidator
                 'articles.*.badgeTag' => ['nullable', 'string', 'max:120'],
                 'articles.*.url' => ['required', 'string', $this->linkRule()],
                 'content.selectionMode' => ['nullable', Rule::in(['manual', 'fallback'])],
+                'content.selectedArticleIds' => ['nullable', 'array', 'min:1'],
+                'content.selectedArticleIds.*' => ['required', 'integer', 'distinct', 'min:1'],
             ],
             'research_studies' => [
                 'title' => ['required', 'string', 'max:255'],
-                'researchItems' => ['required', 'array', 'min:1'],
+                'researchItems' => ['nullable', 'array'],
                 'researchItems.*.imageUrl' => ['nullable', 'string', $this->assetPathRule()],
                 'researchItems.*.title' => ['required', 'string', 'max:255'],
                 'researchItems.*.summary' => ['nullable', 'string', 'max:500'],
@@ -161,6 +168,8 @@ final class HomepageSectionValidator
                 'researchItems.*.authors.*' => ['required', 'string', 'max:120'],
                 'researchItems.*.url' => ['required', 'string', $this->linkRule()],
                 'content.selectionMode' => ['nullable', Rule::in(['manual', 'fallback'])],
+                'content.selectedResearchSlugs' => ['nullable', 'array', 'min:1'],
+                'content.selectedResearchSlugs.*' => ['required', 'string', 'distinct', 'max:255'],
             ],
             'events_activities' => [
                 'title' => ['required', 'string', 'max:255'],
@@ -237,9 +246,9 @@ final class HomepageSectionValidator
     /**
      * @param  array<string, mixed>  $payload
      */
-    private function applyConditionalRules(\Illuminate\Validation\Validator $validator, string $key, array $payload): void
+    private function applyConditionalRules(\Illuminate\Validation\Validator $validator, string $key, array $payload, string $locale): void
     {
-        $validator->after(function (\Illuminate\Validation\Validator $validator) use ($key, $payload): void {
+        $validator->after(function (\Illuminate\Validation\Validator $validator) use ($key, $payload, $locale): void {
             if ($key === 'hero') {
                 $images = [];
                 $contentImages = $payload['content']['images'] ?? [];
@@ -270,6 +279,21 @@ final class HomepageSectionValidator
                     && ! is_string($contactBlock['email'] ?? null)
                 ) {
                     $validator->errors()->add('content.contactBlock', 'The contact block must include address, phone, or email.');
+                }
+            }
+
+            if (in_array($key, ['university_news', 'research_studies'], true)) {
+                $selectionMode = $payload['content']['selectionMode'] ?? null;
+                $cardsKey = $key === 'university_news' ? 'articles' : 'researchItems';
+
+                if ($selectionMode === 'manual') {
+                    $sectionPayload = HomepagePayloadMapper::sectionDataFromArray($payload);
+
+                    if (! $this->contentSelectionService->hasValidManualSelection($sectionPayload, $key, $locale)) {
+                        $validator->errors()->add('content', 'Every selected homepage item must still be published and publicly available.');
+                    }
+                } elseif ($this->listOfArrays($payload[$cardsKey] ?? []) === []) {
+                    $validator->errors()->add($cardsKey, 'The section must include at least one item.');
                 }
             }
         });

@@ -44,8 +44,16 @@
                     <dd class="mt-1 text-sm font-medium text-gray-950 dark:text-white">{{ $details->formLabel }}</dd>
                 </div>
                 <div>
+                    <dt class="text-xs font-semibold text-gray-500 dark:text-gray-400">{{ __('form_submissions.detail.reference') }}</dt>
+                    <dd class="mt-1 text-sm font-medium text-gray-950 dark:text-white">{{ $details->referenceNumber ?: __('form_submissions.values.not_available') }}</dd>
+                </div>
+                <div>
                     <dt class="text-xs font-semibold text-gray-500 dark:text-gray-400">{{ __('form_submissions.detail.inbox') }}</dt>
                     <dd class="mt-1 text-sm font-medium text-gray-950 dark:text-white">{{ $details->inboxLabel }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs font-semibold text-gray-500 dark:text-gray-400">{{ __('form_submissions.detail.assigned_to') }}</dt>
+                    <dd class="mt-1 text-sm font-medium text-gray-950 dark:text-white">{{ $details->assignedToName ?: __('form_submissions.values.unassigned') }}</dd>
                 </div>
                 <div>
                     <dt class="text-xs font-semibold text-gray-500 dark:text-gray-400">{{ __('form_submissions.detail.locale') }}</dt>
@@ -144,5 +152,10 @@
                 </dl>
             </details>
         @endif
+
+        <section class="fi-section p-5" aria-labelledby="submission-notes-heading">
+            <h2 id="submission-notes-heading" class="text-base font-bold text-gray-950 dark:text-white">{{ __('form_submissions.detail.internal_notes') }}</h2>
+            <p class="mt-3 whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">{{ $details->internalNotes ?: __('form_submissions.values.no_internal_notes') }}</p>
+        </section>
     </div>
 </x-filament-panels::page>

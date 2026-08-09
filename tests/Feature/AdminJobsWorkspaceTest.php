@@ -63,6 +63,23 @@ final class AdminJobsWorkspaceTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_hr_can_open_only_the_dedicated_job_board_workspace(): void
+    {
+        $hr = User::factory()->create([
+            'role_slug' => 'hr',
+            'is_locked' => false,
+        ]);
+
+        $this->actingAs($hr, 'web')
+            ->withSession(['admin_locale' => 'en'])
+            ->get('/admin/manage-job-board')
+            ->assertOk()
+            ->assertSee('Manage job opportunities')
+            ->assertDontSee('Choose a Campus Life page');
+
+        $this->get('/admin/manage-campus-life')->assertForbidden();
+    }
+
     public function test_campus_life_selector_omits_job_board_while_dedicated_route_keeps_it(): void
     {
         $this->actingAs($this->editor(), 'web');

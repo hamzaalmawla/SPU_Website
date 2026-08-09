@@ -14,31 +14,34 @@
         @if ($section->payload->researchItems !== [])
             <div id="research-priorities-track" x-ref="researchTrack" class="flex gap-8 overflow-x-auto no-scrollbar scroll-smooth pb-10" style="will-change: scroll-position;" role="region" aria-roledescription="{{ __('public.carousel') }}" aria-label="{{ $section->payload->title }}" tabindex="0" @keydown="handleSliderKey($event)">
                 @foreach ($section->payload->researchItems as $item)
-                    <article class="reveal-item research-card w-[289px] h-[348.03px] shrink-0 relative bg-white rounded-[25px] shadow-[0_10px_30px_rgba(0,0,0,0.05)] overflow-hidden flex flex-col group" style="transform: translateZ(0);" role="group" aria-roledescription="{{ __('public.slide') }}" aria-label="{{ __('public.slide_position', ['current' => $loop->iteration, 'total' => count($section->payload->researchItems)]) }}">
+                    <article class="reveal-item research-card relative flex h-[430px] w-[min(82vw,320px)] shrink-0 flex-col overflow-hidden rounded-[25px] bg-white shadow-[0_10px_30px_rgba(0,0,0,0.05)] group sm:w-[320px]" style="transform: translateZ(0);" role="group" aria-roledescription="{{ __('public.slide') }}" aria-label="{{ __('public.slide_position', ['current' => $loop->iteration, 'total' => count($section->payload->researchItems)]) }}">
+                        @if ($item->url)
+                            <a href="{{ $item->url }}" class="absolute inset-0 z-20 rounded-[25px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-spu-red" aria-label="{{ $locale === 'ar' ? 'عرض البحث: '.$item->title : 'View research: '.$item->title }}" data-research-card-link></a>
+                        @endif
                         @if ($item->imageUrl)
-                            <div class="relative h-[50%] overflow-hidden bg-gray-100">
-                                <img src="{{ $item->imageUrl }}" alt="{{ $item->title }}" loading="lazy" decoding="async" width="289" height="174" class="w-full h-full object-cover" style="transform: translateZ(0);">
+                            <div class="relative h-[180px] shrink-0 overflow-hidden bg-gray-100">
+                                <img src="{{ $item->imageUrl }}" alt="{{ $item->title }}" loading="lazy" decoding="async" width="320" height="180" class="h-full w-full object-cover" style="transform: translateZ(0);">
                                 @if ($item->categoryLabel)
-                                    <div class="absolute top-4 left-4 px-4 py-1.5 rounded-lg text-white text-[11px] font-bold bg-spu-blue">{{ $item->categoryLabel }}</div>
+                                    <div class="absolute start-4 top-4 rounded-lg bg-spu-blue px-4 py-1.5 text-[11px] font-bold text-white">{{ $item->categoryLabel }}</div>
                                 @endif
                             </div>
                         @endif
-                        <div class="px-4 pt-2 h-[40%] flex flex-col justify-between items-start flex-1 border-b-[3px] border-transparent group-hover:border-spu-red transition-colors duration-200">
-                            <div>
-                                <h3 class="text-[18px] font-bold text-spu-blue mb-1 leading-tight">{{ $item->title }}</h3>
+                        <div class="flex min-h-0 flex-1 flex-col items-start border-b-[3px] border-transparent p-5 transition-colors duration-200 group-hover:border-spu-red">
+                            <div class="min-h-0 overflow-hidden">
+                                <h3 class="line-clamp-4 text-[18px] font-bold leading-[1.35] text-spu-blue">{{ $item->title }}</h3>
                                 @if ($item->summary)
-                                    <p class="text-gray-500 text-[14px] py-4 line-clamp-2">{{ $item->summary }}</p>
+                                    <p class="mt-3 line-clamp-2 text-[14px] leading-6 text-gray-500">{{ $item->summary }}</p>
                                 @endif
                                 @if ($item->authors !== [])
-                                    <p class="text-gray-400 text-[12px]">{{ implode(' • ', $item->authors) }}</p>
+                                    <p class="mt-2 line-clamp-1 text-[12px] text-gray-400">{{ implode(' • ', $item->authors) }}</p>
                                 @endif
                             </div>
                             @if ($item->url)
-                                <div class="mt-2 mb-2">
-                                    <a href="{{ $item->url }}" class="research-card__action" @if (! empty($item->target)) target="{{ $item->target }}" rel="noreferrer" @endif>
+                                <div class="mt-auto pt-4">
+                                    <span class="research-card__action">
                                         <span>{{ $locale === 'ar' ? 'عرض التفاصيل' : 'View Details' }}</span>
-                                        <img src="/images/icon-chevron-right-outline.svg" alt="" class="w-4 h-4 transition-transform duration-200 ease-in-out rtl:rotate-180" aria-hidden="true">
-                                    </a>
+                                        <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-4 w-4 transition-transform duration-200 ease-in-out rtl:rotate-180" aria-hidden="true">
+                                    </span>
                                 </div>
                             @endif
                         </div>

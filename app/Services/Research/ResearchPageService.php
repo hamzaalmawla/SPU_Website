@@ -6,6 +6,7 @@ namespace App\Services\Research;
 
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
+use App\DTOs\Content\ResearchCardDTO;
 use App\DTOs\Research\ResearchConferenceRegistrationDTO;
 use App\DTOs\Research\ResearchDetailPageDTO;
 use App\DTOs\Research\ResearchPageDTO;
@@ -14,6 +15,7 @@ use App\Models\Research\ResearchPublication;
 use App\Models\Research\ResearchPublicationTranslation;
 use App\Models\Shared\MigrationLog;
 use App\Support\MediaUrlResolver;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 final class ResearchPageService implements ResearchPageServiceInterface
@@ -151,6 +153,80 @@ final class ResearchPageService implements ResearchPageServiceInterface
             'next' => $next,
             'themes' => $this->content()['themes']['items'] ?? [],
         ], '/research/publications/'.$slug, $item['image'] ?? '/images/uni-main-place.JPG');
+    }
+
+    public function getHomepagePublicationCards(string $locale, array $publicationSlugs = [], ?string $search = null, int $limit = 50): Collection
+    {
+        $slugs = array_values(array_unique(array_filter(
+            array_map(static fn (mixed $slug): string => is_string($slug) ? trim($slug) : '', $publicationSlugs),
+            static fn (string $slug): bool => $slug !== '',
+        )));
+        $normalizedSearch = is_string($search) ? trim($search) : '';
+        $items = collect($this->homepagePublicationItems($locale));
+
+        if ($slugs !== []) {
+            $order = array_flip($slugs);
+            $items = $items
+                ->filter(fn (array $item): bool => isset($order[(string) ($item['slug'] ?? '')]))
+                ->sortBy(fn (array $item): int => $order[(string) ($item['slug'] ?? '')] ?? PHP_INT_MAX);
+        } elseif ($normalizedSearch !== '') {
+            $needle = Str::lower($normalizedSearch);
+            $items = $items->filter(function (array $item) use ($needle): bool {
+                $haystack = Str::lower(implode(' ', [
+                    (string) ($item['title'] ?? ''),
+                    (string) ($item['author'] ?? ''),
+                    (string) ($item['faculty'] ?? ''),
+                    (string) ($item['category'] ?? $item['type'] ?? ''),
+                ]));
+
+                return str_contains($haystack, $needle);
+            });
+        }
+
+        return $items
+            ->take(max(1, min($limit, 100)))
+            ->map(function (array $item) use ($locale): ResearchCardDTO {
+                $slug = (string) ($item['slug'] ?? '');
+                $authors = preg_split('/\s*(?:,|;|\||•)\s*/u', (string) ($item['author'] ?? ''), -1, PREG_SPLIT_NO_EMPTY);
+
+                return new ResearchCardDTO(
+                    id: abs((int) crc32($slug)),
+                    locale: $locale,
+                    title: (string) ($item['title'] ?? ''),
+                    slug: $slug,
+                    summary: is_string($item['summary'] ?? null) && $item['summary'] !== '' ? $item['summary'] : null,
+                    imageUrl: is_string($item['image'] ?? null) && $item['image'] !== '' ? $item['image'] : null,
+                    publishedAt: is_string($item['publicationDate'] ?? null) && $item['publicationDate'] !== ''
+                        ? $item['publicationDate']
+                        : (is_string($item['year'] ?? null) && $item['year'] !== '' ? $item['year'] : null),
+                    url: '/'.$locale.'/research/publications/'.rawurlencode($slug),
+                    categoryLabel: (string) ($item['category'] ?? $item['type'] ?? ''),
+                    authors: is_array($authors) ? array_values($authors) : [],
+                );
+            })
+            ->values();
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function homepagePublicationItems(string $locale): array
+    {
+        $cacheKey = 'homepage.research-publication-options.'.$locale;
+        $cached = request()->attributes->get($cacheKey);
+
+        if (is_array($cached)) {
+            return $cached;
+        }
+
+        $content = $this->publishedLocalizedPayload('research.publications', $locale);
+        $content = is_array($content) ? $content : ['items' => []];
+        $content = $this->withDatabasePublications($content, $locale);
+        $items = $this->newestPublicationItems(array_map(
+            fn (array $item): array => $this->sanitizePublication($item),
+            $this->arrayList($content['items'] ?? []),
+        ));
+        request()->attributes->set($cacheKey, $items);
+
+        return $items;
     }
 
     public function getEditablePayload(string $targetKey): array

@@ -58,6 +58,28 @@ class ResearchCardPropertyTest extends TestCase
         $this->assertStringContainsString('Dr. Beta', $html);
     }
 
+    public function test_entire_research_card_links_to_its_publication_detail(): void
+    {
+        $item = self::makeResearchItem([
+            'title' => 'A very long imported research publication title that must not hide its detail action',
+            'url' => '/en/research/publications/imported-publication',
+        ]);
+        $section = self::makeSection('research_studies', [
+            'title' => 'Research',
+            'researchItems' => [$item],
+        ]);
+
+        $html = view('public.partials.homepage-section', [
+            'section' => $section,
+            'locale' => 'en',
+        ])->render();
+
+        $this->assertStringContainsString('href="/en/research/publications/imported-publication"', $html);
+        $this->assertStringContainsString('data-research-card-link', $html);
+        $this->assertStringContainsString('line-clamp-4', $html);
+        $this->assertStringContainsString('View Details', $html);
+    }
+
     public static function researchCountProvider(): array
     {
         return array_map(fn ($n) => [$n], range(0, 5));

@@ -11,6 +11,8 @@ use App\Events\PageUnpublished;
 use App\Listeners\InvalidateHomepageCache;
 use App\Listeners\InvalidatePageCache;
 use App\Listeners\LogDraftConflict;
+use App\Listeners\TrackFormMailSent;
+use Illuminate\Mail\Events\MessageSent;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
@@ -32,5 +34,6 @@ class EventServiceProvider extends ServiceProvider
         Event::listen(PageUnpublished::class, InvalidatePageCache::class);
         Event::listen(HomepagePublished::class, InvalidateHomepageCache::class);
         Event::listen(DraftConflictDetected::class, LogDraftConflict::class);
+        Event::listen(MessageSent::class, TrackFormMailSent::class);
     }
 }

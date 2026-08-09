@@ -20,6 +20,10 @@ This project must not launch with copied local `.env` values. Use `.env.producti
 | `CACHE_STORE` | `redis` unless a tag-compatible production alternative is explicitly approved |
 | `SESSION_DRIVER` | `redis` unless an approved production session store is documented |
 | `QUEUE_CONNECTION` | `redis` or another production queue backend with workers configured |
+| `MAIL_MAILER` | Real production transport such as `smtp`, never `log` |
+| `MAIL_FROM_ADDRESS` | Verified sender address on the production mail domain |
+| `FORM_ADMIN_RECIPIENTS` | Optional comma-separated operational recipients; eligible admin/editor users are also notified |
+| `HR_EMAIL` / `HR_PASSWORD` | Required only when explicitly running `HrUserSeeder`; store credentials outside git and rotate the bootstrap password |
 
 ## Launch Gate
 
@@ -39,3 +43,25 @@ php artisan tinker --execute="dump(config('app.env'), config('app.debug'), confi
 ```
 
 Expected output must show `production`, `false`, HTTPS URL, Redis or an approved production backend, secure session flags, and `lax` or stricter SameSite policy.
+
+## Form Mail Operations
+
+Public form receipts, status updates, and staff notifications are queued. Run a continuously supervised worker in production, for example:
+
+```bash
+php artisan queue:work redis --queue=default --tries=3 --timeout=120
+```
+
+After each deployment, restart workers so they load the current release:
+
+```bash
+php artisan queue:restart
+```
+
+Monitor `failed_jobs` and the form submission/contact message delivery fields. `sent` records indicate that the configured mail transport accepted the message; they are not recipient-provider delivery confirmations.
+
+Provision the restricted HR login only after setting the HR secrets:
+
+```bash
+php artisan db:seed --class=HrUserSeeder --force
+```

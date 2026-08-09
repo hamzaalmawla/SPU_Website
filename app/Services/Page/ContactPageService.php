@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Page;
 
+use App\Contracts\Form\FormSubmissionNotificationServiceInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Page\ContactPageServiceInterface;
 use App\Contracts\Settings\SettingsServiceInterface;
@@ -20,6 +21,7 @@ final class ContactPageService implements ContactPageServiceInterface
     public function __construct(
         private readonly CmsWorkflowServiceInterface $cmsWorkflowService,
         private readonly SettingsServiceInterface $settingsService,
+        private readonly FormSubmissionNotificationServiceInterface $notificationService,
     ) {}
 
     public function getPage(string $locale): ContactPageDTO
@@ -68,16 +70,21 @@ final class ContactPageService implements ContactPageServiceInterface
 
     public function submit(ContactSubmissionDataDTO $submission): bool
     {
-        ContactMessage::query()->create([
+        $message = ContactMessage::query()->create([
+            'reference_number' => 'SPU-CONTACT-'.strtoupper((string) \Illuminate\Support\Str::ulid()),
             'locale' => $submission->locale,
             'name' => $submission->name,
             'email' => $submission->email,
             'subject' => $submission->subject,
             'message' => $submission->message,
             'status' => 'new',
+            'status_changed_at' => now(),
+            'email_delivery_status' => 'pending',
             'ip_address' => $submission->ipAddress,
             'user_agent' => $submission->userAgent,
         ]);
+
+        $this->notificationService->queueContactReceived((int) $message->getKey());
 
         return true;
     }

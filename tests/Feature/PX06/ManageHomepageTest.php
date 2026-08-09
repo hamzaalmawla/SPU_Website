@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\PX06;
 
+use App\Contracts\Homepage\HomepageContentSelectionServiceInterface;
+use App\DTOs\Content\ArticleCardDTO;
+use App\DTOs\Content\ResearchCardDTO;
 use App\DTOs\Homepage\HomepageSectionDataDTO;
 use App\DTOs\Homepage\HomepageSectionTranslationDTO;
 use App\Filament\Pages\ManageHomepage;
@@ -11,7 +14,9 @@ use App\Models\User\User;
 use App\Support\HomepagePayloadMapper;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Mockery;
 use ReflectionMethod;
+use ReflectionProperty;
 use Tests\TestCase;
 
 /**
@@ -335,6 +340,57 @@ class ManageHomepageTest extends TestCase
         $this->assertSame('View Event Details', $form['content']['event_cta_label'] ?? null);
     }
 
+    public function test_homepage_news_and_research_selections_are_shared_between_locales(): void
+    {
+        $news = $this->invokeWithHomepageSelection([], 'university_news', [
+            'article_ids' => [
+                ['article_id' => 42],
+                ['article_id' => 7],
+            ],
+        ]);
+        $research = $this->invokeWithHomepageSelection([], 'research_studies', [
+            'publication_slugs' => [
+                ['publication_slug' => 'second-publication'],
+                ['publication_slug' => 'first-publication'],
+            ],
+        ]);
+
+        $this->assertSame('manual', $news['content']['selectionMode']);
+        $this->assertSame([42, 7], $news['content']['selectedArticleIds']);
+        $this->assertSame('manual', $research['content']['selectionMode']);
+        $this->assertSame(['second-publication', 'first-publication'], $research['content']['selectedResearchSlugs']);
+    }
+
+    public function test_empty_selections_are_initialized_from_live_homepage_cards(): void
+    {
+        app()->setLocale('ar');
+        $selectionService = Mockery::mock(HomepageContentSelectionServiceInterface::class);
+        $selectionService->shouldReceive('hydratePayload')
+            ->once()
+            ->with(Mockery::type(HomepageSectionDataDTO::class), 'university_news', 'ar')
+            ->andReturn(new HomepageSectionDataDTO(articles: [
+                new ArticleCardDTO(19, 'ar', 'Live News', 'live-news', null, null, '2026-08-08', '/ar/news/19', 'News'),
+            ]));
+        $selectionService->shouldReceive('hydratePayload')
+            ->once()
+            ->with(Mockery::type(HomepageSectionDataDTO::class), 'research_studies', 'ar')
+            ->andReturn(new HomepageSectionDataDTO(researchItems: [
+                new ResearchCardDTO(7, 'ar', 'Live Research', 'live-research', null, null, '2026', '/ar/research/publications/live-research', 'Research'),
+            ]));
+        $page = new ManageHomepage;
+        $property = new ReflectionProperty(ManageHomepage::class, 'contentSelectionService');
+        $property->setAccessible(true);
+        $property->setValue($page, $selectionService);
+        $method = new ReflectionMethod(ManageHomepage::class, 'selectionToFormArray');
+        $method->setAccessible(true);
+
+        $news = $method->invoke($page, new HomepageSectionDataDTO, 'university_news');
+        $research = $method->invoke($page, new HomepageSectionDataDTO, 'research_studies');
+
+        $this->assertSame([['article_id' => 19]], $news['article_ids']);
+        $this->assertSame([['publication_slug' => 'live-research']], $research['publication_slugs']);
+    }
+
     private function invokeFormArrayToPayload(array $data, string $sectionKey = ''): HomepageSectionDataDTO
     {
         $method = new ReflectionMethod(ManageHomepage::class, 'formArrayToPayload');
@@ -354,6 +410,15 @@ class ManageHomepageTest extends TestCase
             new HomepageSectionTranslationDTO(locale: 'en'),
             $sectionKey,
         );
+    }
+
+    /** @param array<string, mixed> $data @param array<string, mixed> $selection @return array<string, mixed> */
+    private function invokeWithHomepageSelection(array $data, string $sectionKey, array $selection): array
+    {
+        $method = new ReflectionMethod(ManageHomepage::class, 'withHomepageSelection');
+        $method->setAccessible(true);
+
+        return $method->invoke(new ManageHomepage, $data, $sectionKey, $selection);
     }
 
     private function createUser(string $role): User
