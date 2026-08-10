@@ -43,7 +43,7 @@
                 @if ($footerLogo)
                     <img src="{{ $footerLogo }}" alt="" class="mb-5 h-12 w-auto brightness-0 invert" aria-hidden="true">
                 @endif
-                <h2 class="mb-6 text-[24px] font-bold uppercase leading-tight tracking-wider">{{ $footerBrandTitle }}</h2>
+                <h2 class="mb-6 text-[24px] font-bold uppercase leading-tight ltr:tracking-wider">{{ $footerBrandTitle }}</h2>
 
                 @if ($footerBrandSummary)
                     <p class="mb-8 max-w-[320px] text-[16px] leading-[1.6] text-white/70">
@@ -76,7 +76,7 @@
             @if ($useHomepageFooter && $homepageFooterPayload->footerColumns !== [])
                 @foreach ($homepageFooterPayload->footerColumns as $column)
                     <div class="lg:col-span-2">
-                        <h3 class="mb-8 text-[18px] font-bold uppercase tracking-widest text-white/50">{{ $column->title }}</h3>
+                        <h3 class="mb-8 text-[18px] font-bold uppercase ltr:tracking-widest text-white/50">{{ $column->title }}</h3>
                         <ul class="flex flex-col gap-4">
                             @foreach ($column->links as $link)
                                 <li><a href="{{ $link->url }}" class="text-[16px] text-white/80 transition-colors hover:text-white">{{ $link->label }}</a></li>
@@ -88,7 +88,7 @@
 
             @if (! $useHomepageFooter && $footerItems !== [])
                 <div class="lg:col-span-2">
-                    <h3 class="mb-8 text-[18px] font-bold uppercase tracking-widest text-white/50">
+                    <h3 class="mb-8 text-[18px] font-bold uppercase ltr:tracking-widest text-white/50">
                         {{ __('public.footer_explore') }}
                     </h3>
                     <ul class="flex flex-col gap-4">
@@ -106,7 +106,7 @@
             @endif
 
             <div class="lg:col-span-3">
-                <h3 class="mb-8 text-[18px] font-bold uppercase tracking-widest text-white/50">
+                <h3 class="mb-8 text-[18px] font-bold uppercase ltr:tracking-widest text-white/50">
                     {{ __('public.footer_contact') }}
                 </h3>
                 <div class="flex flex-col gap-6">
@@ -153,7 +153,7 @@
 
             @if ($mapEmbedUrl)
                 <div class="flex flex-col items-start lg:col-span-3 lg:items-end">
-                    <h3 class="mb-8 w-full text-left text-[18px] font-bold uppercase tracking-widest text-white/50 {{ $isArabic ? 'lg:text-right' : 'lg:text-left' }}">
+                    <h3 class="mb-8 w-full text-left text-[18px] font-bold uppercase ltr:tracking-widest text-white/50 {{ $isArabic ? 'lg:text-right' : 'lg:text-left' }}">
                         {{ __('public.footer_location') }}
                     </h3>
                     <div class="group h-[180px] w-full overflow-hidden rounded-[12px] border border-white/10 shadow-2xl">

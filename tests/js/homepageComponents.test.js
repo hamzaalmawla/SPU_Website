@@ -4,6 +4,7 @@ import { afterEach, test } from 'node:test';
 import { createCalendarApp } from '../../resources/js/alpine/calendarApp.js';
 import { createHeroSlider } from '../../resources/js/alpine/heroSlider.js';
 import { createHonorPanel } from '../../resources/js/alpine/honorPanel.js';
+import { createPathSlider } from '../../resources/js/alpine/pathSlider.js';
 import { createStatsCounter } from '../../resources/js/alpine/statsCounter.js';
 
 const originalWindow = globalThis.window;
@@ -84,4 +85,25 @@ test('counters retain their server-rendered value under reduced motion', () => {
     counter.init();
 
     assert.equal(target.textContent, '1250');
+});
+
+test('path cards flip open on tap and close on second tap when the device cannot hover', () => {
+    globalThis.window = { matchMedia: () => ({ matches: false }) };
+
+    const slider = createPathSlider();
+
+    slider.togglePathCard(2);
+    assert.equal(slider.activePathCard, 2);
+
+    slider.togglePathCard(2);
+    assert.equal(slider.activePathCard, null);
+});
+
+test('path cards ignore taps on hover-capable devices', () => {
+    globalThis.window = { matchMedia: () => ({ matches: true }) };
+
+    const slider = createPathSlider();
+    slider.togglePathCard(2);
+
+    assert.equal(slider.activePathCard, null);
 });

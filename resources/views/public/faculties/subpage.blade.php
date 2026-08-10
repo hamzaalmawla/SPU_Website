@@ -126,7 +126,7 @@
                         <h2 class="text-[30px] font-bold leading-tight text-spu-blue md:text-[38px]">{{ $isAr ? 'الأهداف الأكاديمية' : 'Academic Objectives' }}</h2>
                         <div class="mt-4 h-[3px] w-14 rounded-full" style="background-color: {{ $accent }}"></div>
                         <p class="mt-6 text-[15px] leading-8 text-slate-600">{{ $secondSection['body'] ?? ($subpage['body'] ?? $faculty['description']) }}</p>
-                        <div class="cms-grid-stats mt-8 gap-3">
+                        <div class="cms-grid-stats cms-grid-stats-cols-4 mt-8 gap-3">
                             @foreach (array_slice($stats, 0, 4) as $stat)
                                 <div class="rounded-[8px] border border-slate-100 bg-white p-5 shadow-[0_10px_28px_rgba(9,17,68,0.05)]">
                                     <p class="text-[28px] font-bold leading-none" style="color: {{ $accent }}" dir="ltr">{{ $stat['value'] ?? '' }}</p>
@@ -195,7 +195,7 @@
     @elseif ($page->subpageSlug === 'departments')
         <section class="bg-white py-16 font-hacen lg:py-24">
             <div class="container">
-                <div class="cms-grid-stats mx-auto max-w-[1080px] gap-4">
+                <div class="cms-grid-stats cms-grid-stats-cols-3 mx-auto max-w-[1080px] gap-4">
                     <div class="rounded-[8px] bg-section p-6 text-center">
                         <p class="text-3xl font-bold" style="color: {{ $accent }}" dir="ltr">{{ count($page->items) }}</p>
                         <p class="mt-2 text-xs font-bold uppercase tracking-[0.16em] text-spu-blue/45">{{ $isAr ? 'أقسام' : 'Departments' }}</p>

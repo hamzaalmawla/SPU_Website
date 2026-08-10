@@ -45,6 +45,42 @@
         background: linear-gradient(180deg, #202759 0%, #182048 100%);
     }
 
+    /* Flip faces: hover (desktop) / focus (keyboard) reveal the back panel,
+       and the Alpine-driven .path-card--active covers coarse-pointer devices
+       where hover is unavailable. */
+    .path-card-front,
+    .path-card-back {
+        transition: transform 0.5s ease-in-out;
+    }
+
+    .path-card-front {
+        transform: translateY(0);
+    }
+
+    .path-card-back {
+        transform: translateY(100%);
+    }
+
+    .path-card:focus-within .path-card-front,
+    .path-card--active .path-card-front {
+        transform: translateY(-100%);
+    }
+
+    .path-card:focus-within .path-card-back,
+    .path-card--active .path-card-back {
+        transform: translateY(0);
+    }
+
+    @media (hover: hover) {
+        .path-card:hover .path-card-front {
+            transform: translateY(-100%);
+        }
+
+        .path-card:hover .path-card-back {
+            transform: translateY(0);
+        }
+    }
+
     .path-card:hover::before {
         opacity: 0.88;
         transform: scale(1.02);

@@ -1,4 +1,4 @@
-<section id="home-paths" x-data="pathSlider()" class="py-8 mt-[150px] relative font-hacen reveal" style="background-color: #EAF3FF40;">
+<section id="home-paths" x-data="pathSlider()" class="py-8 mt-[60px] md:mt-[150px] relative font-hacen reveal" style="background-color: #EAF3FF40;">
     <div class="container relative">
         <div class="flex flex-col md:flex-row items-center gap-[52px] relative">
             <div class="w-full relative md:w-[322px] h-[435px] text-center bg-[#1e2652] rounded-[24px] flex flex-col justify-center items-start text-white shrink-0 overflow-hidden group shadow-[0_30px_80px_rgba(17,26,63,0.18)] z-20">
@@ -22,10 +22,10 @@
                     <button type="button" @click="slidePaths('next')" class="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-controls="home-paths-track" aria-label="{{ __('public.next') }}"><img src="/images/icon-chevron-right-outline.svg" class="w-3.5 h-3.5 rtl:rotate-180" alt=""></button>
                 </div>
 
-                <div id="home-paths-track" x-ref="pathsTrack" class="flex h-[390px] w-full snap-x snap-mandatory flex-nowrap gap-6 bg-transparent overflow-x-auto overflow-y-hidden no-scrollbar scroll-smooth overscroll-x-contain px-2 pt-2 pb-5 items-start z-10" role="region" aria-roledescription="{{ __('public.carousel') }}" aria-label="{{ $section->payload->title }}" tabindex="0" @keydown="handleSliderKey($event)">
+                <div id="home-paths-track" x-ref="pathsTrack" class="flex h-[390px] w-full snap-x snap-mandatory flex-nowrap gap-6 bg-transparent overflow-x-auto overflow-y-hidden no-scrollbar scroll-smooth overscroll-x-contain ps-2 pe-6 pt-2 pb-5 items-start z-10" role="region" aria-roledescription="{{ __('public.carousel') }}" aria-label="{{ $section->payload->title }}" tabindex="0" @keydown="handleSliderKey($event)">
                     @foreach ($section->payload->items as $item)
                         <article class="reveal-item path-card snap-start w-[292px] h-[380px] shrink-0 relative rounded-[28px] border border-gray-100 bg-white shadow-[0_15px_35px_rgba(20,30,70,0.06)] transition-all duration-300 group overflow-hidden" role="group" aria-roledescription="{{ __('public.slide') }}" aria-label="{{ __('public.slide_position', ['current' => $loop->iteration, 'total' => count($section->payload->items)]) }}">
-                            <div class="absolute inset-0 bg-white flex flex-col items-center justify-center p-8 transition-transform duration-500 ease-in-out group-hover:-translate-y-full group-focus-within:-translate-y-full">
+                            <div class="path-card-front absolute inset-0 bg-white flex flex-col items-center justify-center p-8" @click="togglePathCard({{ $loop->index }})">
                                 <div class="absolute top-0 left-0 w-full h-[6px] bg-spu-red"></div>
                                 @if (!empty($item['icon']))
                                     <div class="w-20 h-20 rounded-2xl bg-slate-50 text-spu-blue flex items-center justify-center mb-8 shadow-sm">
@@ -34,7 +34,7 @@
                                 @endif
                                 <h3 class="text-[26px] font-bold text-[#1e2652] leading-tight text-center">{{ $item['title'] ?? '' }}</h3>
                             </div>
-                            <div class="absolute inset-0 bg-[#1e2652] text-white p-7 flex flex-col translate-y-full transition-transform duration-500 ease-in-out group-hover:translate-y-0 group-focus-within:translate-y-0">
+                            <div class="path-card-back absolute inset-0 bg-[#1e2652] text-white p-7 flex flex-col">
                                 <h4 class="text-lg font-bold mb-6 opacity-90 border-b border-white/10 pb-2">{{ $item['title'] ?? '' }}</h4>
                                 @if (!empty($item['links']))
                                     <ul class="space-y-4 mb-6 flex-1">
@@ -51,9 +51,7 @@
                                     </ul>
                                 @endif
 
-                                @if (! empty($item['action']['url']) && ! empty($item['action']['label']))
-                                    <a href="{{ $item['action']['url'] }}" class="mt-auto inline-flex items-center justify-center rounded-lg bg-spu-red px-4 py-2.5 text-sm font-bold text-white transition hover:bg-white hover:text-spu-blue focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white" @if (! empty($item['action']['target'])) target="{{ $item['action']['target'] }}" rel="noreferrer" @endif>{{ $item['action']['label'] }}</a>
-                                @endif
+                              
 
                             </div>
                         </article>

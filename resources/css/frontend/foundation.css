@@ -63,51 +63,55 @@
 
 /**
  * Base HTML & Body Styles
+ * Wrapped in @layer base so Tailwind utility classes (h-full, w-full, etc.)
+ * can override element-level resets in the cascade.
  */
-html {
-    scroll-behavior: smooth;
-}
+@layer base {
+    html {
+        scroll-behavior: smooth;
+    }
 
-body {
-    overflow-x: hidden;
-    font-family: var(--font-hacen);
-    font-variant-ligatures: common-ligatures contextual;
-    text-rendering: optimizeLegibility;
-    overflow-wrap: break-word;
-}
+    body {
+        overflow-x: hidden;
+        font-family: var(--font-hacen);
+        font-variant-ligatures: common-ligatures contextual;
+        text-rendering: optimizeLegibility;
+        overflow-wrap: break-word;
+    }
 
-/**
- * Fluid media: never let images, video or embeds exceed their container.
- * Elements with explicit Tailwind height classes (h-full, h-[..]) win over
- * the element selector, so aspect-ratio / object-cover layouts are untouched.
- */
-img,
-video,
-canvas {
-    max-width: 100%;
-    height: auto;
-}
+    /**
+     * Fluid media: never let images, video or embeds exceed their container.
+     * Tailwind utilities (h-full, h-[..], object-cover) override height: auto
+     * because @layer utilities has higher priority than @layer base.
+     */
+    img,
+    video,
+    canvas {
+        max-width: 100%;
+        height: auto;
+    }
 
-iframe,
-embed {
-    max-width: 100%;
-}
+    iframe,
+    embed {
+        max-width: 100%;
+    }
 
-/**
- * Prevent iOS Safari from auto-zooming when focusing form controls whose
- * computed font-size is below 16px. Applies only to the actual fields.
- */
-@media (max-width: 1024px) {
-    input[type='text'],
-    input[type='email'],
-    input[type='search'],
-    input[type='tel'],
-    input[type='number'],
-    input[type='password'],
-    input[type='date'],
-    select,
-    textarea {
-        font-size: 16px;
+    /**
+     * Prevent iOS Safari from auto-zooming when focusing form controls whose
+     * computed font-size is below 16px. Applies only to the actual fields.
+     */
+    @media (max-width: 1024px) {
+        input[type='text'],
+        input[type='email'],
+        input[type='search'],
+        input[type='tel'],
+        input[type='number'],
+        input[type='password'],
+        input[type='date'],
+        select,
+        textarea {
+            font-size: 16px;
+        }
     }
 }
 
@@ -129,44 +133,46 @@ embed {
  * - 'mark': Mark positioning for diacritics
  * - 'mkmk': Mark-to-mark positioning for stacked diacritics
  */
-[lang="ar"],
-[dir="rtl"] {
-    font-family: var(--font-hacen);
-    unicode-bidi: isolate;
+@layer base {
+    [lang="ar"],
+    [dir="rtl"] {
+        font-family: var(--font-hacen);
+        unicode-bidi: isolate;
 
-    /* Enable critical OpenType features for Arabic */
-    font-feature-settings: 
-        "calt" 1,  /* Contextual alternates - essential for Arabic joining */
-        "liga" 1,  /* Standard ligatures */
-        "rlig" 1,  /* Required ligatures */
-        "clig" 1,  /* Contextual ligatures */
-        "kern" 1,  /* Kerning */
-        "mark" 1,  /* Mark positioning */
-        "mkmk" 1;  /* Mark-to-mark positioning */
-    
-    font-variant-ligatures: common-ligatures contextual;
-    
-    /* Optimize text rendering for complex scripts */
-    text-rendering: optimizeLegibility;
-    
-    /* Font smoothing for better on-screen appearance */
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    
-    /* Ensure proper word breaking for Arabic */
-    word-break: normal;
-    overflow-wrap: break-word;
-    
-    /* Optimize for Arabic text flow */
-    hyphens: none;
-}
+        /* Enable critical OpenType features for Arabic */
+        font-feature-settings: 
+            "calt" 1,  /* Contextual alternates - essential for Arabic joining */
+            "liga" 1,  /* Standard ligatures */
+            "rlig" 1,  /* Required ligatures */
+            "clig" 1,  /* Contextual ligatures */
+            "kern" 1,  /* Kerning */
+            "mark" 1,  /* Mark positioning */
+            "mkmk" 1;  /* Mark-to-mark positioning */
+        
+        font-variant-ligatures: common-ligatures contextual;
+        
+        /* Optimize text rendering for complex scripts */
+        text-rendering: optimizeLegibility;
+        
+        /* Font smoothing for better on-screen appearance */
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        
+        /* Ensure proper word breaking for Arabic */
+        word-break: normal;
+        overflow-wrap: break-word;
+        
+        /* Optimize for Arabic text flow */
+        hyphens: none;
+    }
 
-/**
- * Inherit Arabic rendering properties to all child elements
- * This ensures consistent rendering throughout the document tree
- */
-[lang="ar"] *,
-[dir="rtl"] * {
-    font-feature-settings: inherit;
-    text-rendering: inherit;
+    /**
+     * Inherit Arabic rendering properties to all child elements
+     * This ensures consistent rendering throughout the document tree
+     */
+    [lang="ar"] *,
+    [dir="rtl"] * {
+        font-feature-settings: inherit;
+        text-rendering: inherit;
+    }
 }

@@ -1,8 +1,10 @@
+@if ($section->payload->stats !== [])
+@php($statsCount = count($section->payload->stats))
+@php($statsGridCols = $statsCount >= 4 ? 'stats-grid-cols-4' : ($statsCount === 3 ? 'stats-grid-cols-3' : ($statsCount === 2 ? 'stats-grid-cols-2' : '')))
 <section x-data="statsCounter()" class="stats-section relative z-20 w-full overflow-hidden font-hacen reveal scroll-mt-24">
     <div class="container">
         <div class="stats-shell reveal-item">
-            @if ($section->payload->stats !== [])
-                <div class="stats-shell__grid">
+            <div class="stats-shell__grid {{ $statsGridCols }}">
                     @foreach ($section->payload->stats as $stat)
                         <article class="stats-card" style="--card-accent: #caa949;">
                             <div class="stats-card__top">
@@ -30,8 +32,8 @@
                             <span class="stats-card-line" aria-hidden="true"></span>
                         </article>
                     @endforeach
-                </div>
-            @endif
+            </div>
         </div>
     </div>
 </section>
+@endif

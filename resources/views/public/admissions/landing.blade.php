@@ -49,7 +49,7 @@
     <section class="relative z-10 -mt-14 font-hacen">
         <div class="container">
             <div class="relative overflow-hidden rounded-lg bg-spu-blue shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_8px_10px_-6px_rgba(0,0,0,0.1)]">
-                <div class="cms-grid-stats">
+                <div class="cms-grid-stats cms-grid-stats-cols-4">
                     @foreach (($landing['trustBar'] ?? []) as $item)
                         <div class="relative flex flex-col items-center gap-3 px-6 py-10 text-center">
                             @if (! $loop->first)

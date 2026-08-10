@@ -1,4 +1,4 @@
-<section x-data="facultiesSlider()" class="mt-[120px] bg-white font-hacen relative">
+<section x-data="facultiesSlider()" class="mt-[60px] md:mt-[120px] bg-white font-hacen relative">
     <div class="container relative">
         <div class="flex flex-col md:flex-row items-center gap-[52px] relative">
             <div class="w-full relative md:w-[322px] h-[435px] text-center bg-[#1e2652] rounded-[24px] flex flex-col justify-center items-start text-white shrink-0 overflow-hidden group z-20 shadow-[0_30px_80px_rgba(17,26,63,0.18)]">
@@ -32,7 +32,7 @@
                     </button>
                 </div>
 
-                <div id="academic-faculties-track" x-ref="facultiesTrack" class="flex h-[390px] w-full snap-x snap-mandatory flex-nowrap gap-6 bg-transparent overflow-x-auto overflow-y-hidden no-scrollbar scroll-smooth overscroll-x-contain px-2 pb-5 items-start z-10" role="region" aria-roledescription="{{ __('public.carousel') }}" aria-label="{{ $section->payload->title }}" tabindex="0" @keydown="handleSliderKey($event)">
+                <div id="academic-faculties-track" x-ref="facultiesTrack" class="flex h-[390px] w-full snap-x snap-mandatory flex-nowrap gap-6 bg-transparent overflow-x-auto overflow-y-hidden no-scrollbar scroll-smooth overscroll-x-contain ps-2 pe-6 pb-5 items-start z-10" role="region" aria-roledescription="{{ __('public.carousel') }}" aria-label="{{ $section->payload->title }}" tabindex="0" @keydown="handleSliderKey($event)">
                     @foreach ($section->payload->items as $item)
                         <article @mouseenter="setActiveFaculty({{ $loop->index }})" @mouseleave="clearActiveFaculty()" :class="facultyCardClass({{ $loop->index }})" class="faculty-card snap-start w-[292px] h-[380px] shrink-0 relative bg-white rounded-[24px] border border-gray-100 shadow-[0_10px_30px_rgba(0,0,0,0.03)] flex flex-col items-center text-center transition-all duration-300 group overflow-hidden" role="group" aria-roledescription="{{ __('public.slide') }}" aria-label="{{ __('public.slide_position', ['current' => $loop->iteration, 'total' => count($section->payload->items)]) }}">
                             @if (! empty($item['accent']))

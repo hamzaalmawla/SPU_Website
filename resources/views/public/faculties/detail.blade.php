@@ -50,7 +50,7 @@
     <div class="bg-white pb-10 pt-6 font-hacen">
         <div class="container">
             <div class="mx-auto max-w-[1100px] overflow-hidden rounded-lg bg-spu-blue shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_8px_10px_-6px_rgba(0,0,0,0.1)]">
-                <div class="cms-grid-stats">
+                <div class="cms-grid-stats cms-grid-stats-cols-4">
                     @foreach (array_slice($page->stats, 0, 4) as $stat)
                         <div class="relative flex flex-col items-center gap-2 px-6 py-8 text-center">
                             @if (! $loop->first)
@@ -160,7 +160,9 @@
         <section id="stats" class="relative z-20 font-hacen">
             <div class="bg-spu-blue">
                 <div class="container">
-                    <div class="cms-grid-stats gap-4">
+                    @php($_statsCount = count($page->stats))
+                    @php($_statsCols = $_statsCount >= 4 ? 'cms-grid-stats-cols-4' : ($_statsCount === 3 ? 'cms-grid-stats-cols-3' : ($_statsCount === 2 ? 'cms-grid-stats-cols-2' : '')))
+                    <div class="cms-grid-stats {{ $_statsCols }} gap-4">
                         @foreach ($page->stats as $stat)
                             <div class="p-8 text-center md:p-10">
                                 @if (! empty($stat['icon']))

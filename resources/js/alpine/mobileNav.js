@@ -29,7 +29,7 @@ export function createMobileNav() {
             this.openMenu = null;
             this.searchOpen = false;
 
-            if (window.innerWidth < 1536) {
+            if (window.innerWidth < 1280) {
                 this.mobileNav = false;
             }
         },

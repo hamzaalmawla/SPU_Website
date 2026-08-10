@@ -68,7 +68,9 @@ class HomepageInteractionAccessibilityTest extends TestCase
 
         $this->assertStringContainsString('x-show="isSecondary(index)" type="button"', $honorHtml);
         $this->assertStringContainsString(':aria-hidden="isHidden(index)"', $honorHtml);
-        $this->assertStringContainsString('group-focus-within:translate-y-0', $pathHtml);
+        $this->assertStringContainsString('class="path-card-front', $pathHtml);
+        $this->assertStringContainsString('class="path-card-back', $pathHtml);
+        $this->assertStringContainsString('@click="togglePathCard(0)"', $pathHtml);
         $this->assertStringContainsString('href="/en/admissions"', $pathHtml);
     }
 

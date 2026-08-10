@@ -77,7 +77,7 @@
                 </div>
                 <div class="grid grid-cols-7 gap-y-3 sm:gap-y-4">
                     <template x-for="day in calendarDays" :key="day.date">
-                        <button type="button" @click="selectDate(day.date)" class="relative mx-auto flex aspect-square w-full max-w-[50px] items-center justify-center rounded-[14px] transition-colors sm:h-[56px] sm:w-[56px] sm:max-w-[56px]" :class="dayButtonClass(day)" :aria-label="dayLabel(day)" :aria-pressed="isDateSelected(day)">
+                        <button type="button" @click="selectDate(day.date)" class="relative mx-auto flex aspect-square w-full max-w-[50px] items-center justify-center rounded-[14px] transition-colors after:absolute after:-inset-1 after:content-[''] sm:h-[56px] sm:w-[56px] sm:max-w-[56px]" :class="dayButtonClass(day)" :aria-label="dayLabel(day)" :aria-pressed="isDateSelected(day)">
                             <span class="text-[18px] font-semibold transition-colors sm:text-[20px]" translate="no" :class="dayNumberClass(day)" x-text="day.dayNumber"></span>
                             <span x-show="showEventMarker(day)" class="absolute bottom-[6px] left-1/2 h-[4px] w-[4px] -translate-x-1/2 rounded-full bg-[#27316d]"></span>
                         </button>
@@ -88,7 +88,7 @@
 
         <div class="mt-10">
             @foreach ($calendarHighlights as $highlight)
-                <div class="inline-block rounded-2xl border border-slate-100 px-5 py-3 mr-4 mb-4">
+                <div class="inline-block rounded-2xl border border-slate-100 px-5 py-3 me-4 mb-4">
                     @if (! empty($highlight['label']))<p class="font-medium text-spu-blue">{{ $highlight['label'] }}</p>@endif
                     @if (! empty($highlight['date']))<p class="mt-1 text-sm text-slate-400">{{ $highlight['date'] }}</p>@endif
                 </div>

@@ -46,7 +46,7 @@
             </div>
         </div>
 
-        <div id="honor-panels" class="relative h-[500px] w-full">
+        <div id="honor-panels" class="relative h-[360px] md:h-[500px] w-full">
             <template x-for="(item, index) in items" :key="itemKey(item, index)">
                 <div class="absolute transition-all duration-[1800ms] [transition-timing-function:cubic-bezier(0.25,1,0.5,1)] rounded-[40px] overflow-hidden group" :class="panelClass(index)" role="group" aria-roledescription="{{ __('public.slide') }}" :aria-label="itemLabel(index)" :aria-hidden="isHidden(index)">
                     <img :src="item.image" :alt="itemAlt(item)" class="absolute inset-0 w-full h-full object-cover transition-transform duration-[3000ms] group-hover:scale-110">

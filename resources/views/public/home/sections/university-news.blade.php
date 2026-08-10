@@ -18,7 +18,7 @@
                             <div class="relative h-[210px] overflow-hidden">
                                 <img src="{{ $article->imageUrl }}" alt="{{ $article->title }}" loading="lazy" decoding="async" width="400" height="210" class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110">
                                 @if ($article->categoryLabel)
-                                    <div class="absolute top-4 left-4 px-4 py-1 rounded-md text-white text-[11px] font-bold z-10 bg-spu-blue">{{ $article->categoryLabel }}</div>
+                                    <div class="absolute top-4 start-4 px-4 py-1 rounded-md text-white text-[11px] font-bold z-10 bg-spu-blue">{{ $article->categoryLabel }}</div>
                                 @endif
                                 <div class="absolute bottom-0 left-0 w-full h-[3px] bg-spu-red opacity-80 z-10 transition-transform duration-500 group-hover:scale-x-110"></div>
                             </div>

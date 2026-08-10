@@ -21,12 +21,12 @@
              x-transition:leave="transition ease-in duration-1000"
              x-transition:leave-start="opacity-100"
              x-transition:leave-end="opacity-0"
-             class="absolute inset-0"
+             class="absolute inset-0 w-full h-full overflow-hidden transition-all duration-[1000ms] [transition-timing-function:cubic-bezier(0.25,1,0.5,1)]"
              role="group"
              aria-roledescription="{{ __('public.slide') }}"
              :aria-label="slideLabel({{ $loop->index }})"
              :aria-hidden="isHidden({{ $loop->index }})">
-            <img src="{{ $img }}" alt="{{ $section->payload->title }}" class="h-full w-full object-cover" @if ($loop->first) fetchpriority="high" @else loading="lazy" decoding="async" @endif width="1920" height="800">
+            <img src="{{ $img }}" alt="{{ $loop->first ? $section->payload->title : ($section->payload->slideAlts[$loop->index] ?? $section->payload->title.' '.($loop->index + 1)) }}" class="h-full w-full object-cover" @if ($loop->first) fetchpriority="high" @else loading="lazy" decoding="async" @endif width="1920" height="800">
         </div>
     @endforeach
 

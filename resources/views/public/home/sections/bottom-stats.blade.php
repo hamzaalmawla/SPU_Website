@@ -1,9 +1,10 @@
 @if ($section->payload->stats !== [])
+    @php($statsCount = count($section->payload->stats))
     <section x-data="statsCounter()" class="bg-white py-8 font-hacen reveal">
         <div class="container">
             <div class="relative overflow-hidden rounded-[28px] bg-spu-blue px-6 py-10 shadow-[0_20px_50px_rgba(32,39,89,0.18)] md:px-10" dir="{{ $locale === 'ar' ? 'rtl' : 'ltr' }}">
                 <div class="absolute inset-0 opacity-10" aria-hidden="true" style="background-image: radial-gradient(circle, #fff 1px, transparent 1px); background-size: 24px 24px;"></div>
-                <div class="relative z-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+                <div class="relative z-10 grid gap-8 {{ $statsCount === 3 ? 'md:grid-cols-3' : 'md:grid-cols-2' }}">
                     @foreach ($section->payload->stats as $stat)
                         <div class="text-center text-white">
                             <div class="flex items-baseline justify-center">

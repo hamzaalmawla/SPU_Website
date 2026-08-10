@@ -23,17 +23,17 @@
         @keydown.window.meta.k.prevent="openSearch()"
         @click.outside="closeForOutsideClick()"
         :class="headerClass()">
-    <div class="container">
+    <div class="container site-nav-container">
         @include('public.layout.emergency-notice')
 
         <div class="site-nav-shell" :class="shellClass()">
             <div class="site-nav-shell__main">
                 <a href="/{{ $locale }}" aria-label="{{ __('public.home') }}" class="site-nav-brand">
-                    <img src="/images/logo-spu.png" alt="{{ __('public.spu_logo_alt') }}" class="h-auto w-[9.25rem] sm:w-[11rem] xl:w-[13.5rem]">
+                    <img src="/images/logo-spu.png" alt="{{ __('public.spu_logo_alt') }}" width="562" height="118" class="h-auto w-[9.25rem] sm:w-[10rem] lg:w-[11rem] xl:w-[13.5rem]">
                 </a>
 
-                <nav class="hidden flex-1 justify-center 2xl:flex" aria-label="{{ __('public.primary_navigation') }}">
-                    <ul class="site-nav-list">
+                <nav class="hidden w-full justify-center lg:flex lg:flex-1 lg:basis-auto lg:w-auto lg:items-center" aria-label="{{ __('public.primary_navigation') }}">
+                    <ul class="site-nav-list lg:w-full">
                         @foreach ($navigation->header->items as $item)
                             <li class="site-nav-item"
                                 @if (!empty($item->children))
@@ -121,7 +121,7 @@
 
                     @if ($navigation->applyCta)
                         <a href="{{ $navigation->applyCta->url }}"
-                           class="hidden items-center gap-2 rounded-full bg-spu-red px-5 py-2.5 text-xs font-bold uppercase tracking-[0.08em] text-white shadow-[0_8px_24px_rgba(111,22,22,0.25)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(111,22,22,0.3)] 2xl:inline-flex"
+                           class="hidden items-center gap-2 rounded-full bg-spu-red px-5 py-2.5 text-xs font-bold uppercase tracking-[0.08em] text-white shadow-[0_8px_24px_rgba(111,22,22,0.25)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(111,22,22,0.3)] lg:inline-flex"
                            @if ($navigation->applyCta->target) target="{{ $navigation->applyCta->target }}" rel="noreferrer" @endif>
                             <span>{{ $navigation->applyCta->label }}</span>
                         </a>
@@ -160,7 +160,7 @@
                     <button type="button"
                             @click="toggleMobile()"
                             aria-label="{{ __('public.toggle_navigation') }}"
-                            class="site-nav-menu-btn 2xl:hidden">
+                            class="site-nav-menu-btn lg:hidden">
                         <img :src="mobileToggleIcon()" class="h-5 w-5" alt="">
                     </button>
                 </div>

@@ -36,7 +36,40 @@
 
 .cms-grid-stats {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 13.5rem), 1fr));
+    /* Default: single column (mobile-first, <800px) */
+    grid-template-columns: minmax(0, 1fr);
+}
+
+/* 800px–1664px: 2×2 grid for 3 or 4 stat boxes */
+@media (min-width: 800px) {
+
+    .cms-grid-stats.cms-grid-stats-cols-2,
+    .cms-grid-stats.cms-grid-stats-cols-3,
+    .cms-grid-stats.cms-grid-stats-cols-4 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* 1664px and above: all boxes in one row */
+@media (min-width: 1664px) {
+    .cms-grid-stats.cms-grid-stats-cols-2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .cms-grid-stats.cms-grid-stats-cols-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .cms-grid-stats.cms-grid-stats-cols-4 {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+/* Grids without explicit col modifier: auto-fit as before */
+@media (min-width: 800px) {
+    .cms-grid-stats:not(.cms-grid-stats-cols-2):not(.cms-grid-stats-cols-3):not(.cms-grid-stats-cols-4) {
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 13.5rem), 1fr));
+    }
 }
 
 .cms-grid-compact {

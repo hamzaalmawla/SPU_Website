@@ -1,58 +1,63 @@
 /**
  * Scroll-reveal animation system.
- * Uses IntersectionObserver (reveal-sections.js) to add .reveal-visible.
+ * Uses IntersectionObserver (scrollReveal.js) to add .reveal-visible.
+ *
+ * Hidden states are scoped under a `.js` class that is added synchronously by
+ * an inline script in the public layout <head>. When JavaScript is disabled
+ * (or fails before that script runs), content stays visible instead of being
+ * permanently hidden on a blank page.
  */
 
-/* ── Base hidden state ── */
-.reveal {
+/* ── Base hidden state (only when JS is active) ── */
+.js .reveal {
     opacity: 0;
 }
 
-.reveal-visible {
-    opacity: 1;
-    transition: opacity 0.6s ease-out;
-}
-
-/* ── Directional reveals ── */
-.reveal-up {
+.js .reveal-up {
     opacity: 0;
     transform: translateY(40px);
 }
 
-.reveal-up.reveal-visible {
+.js .reveal-left {
+    opacity: 0;
+    transform: translateX(-50px);
+}
+
+.js .reveal-right {
+    opacity: 0;
+    transform: translateX(50px);
+}
+
+.js .reveal .reveal-item {
+    opacity: 0;
+}
+
+/* ── Visible states ── */
+.js .reveal-visible {
+    opacity: 1;
+    transition: opacity 0.6s ease-out;
+}
+
+.js .reveal-up.reveal-visible {
     opacity: 1;
     transform: translateY(0);
     transition: opacity 0.7s ease-out, transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.reveal-left {
-    opacity: 0;
-    transform: translateX(-50px);
-}
-
-.reveal-left.reveal-visible {
+.js .reveal-left.reveal-visible {
     opacity: 1;
     transform: translateX(0);
     transition: opacity 0.7s ease-out, transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.reveal-right {
-    opacity: 0;
-    transform: translateX(50px);
-}
-
-.reveal-right.reveal-visible {
+.js .reveal-right.reveal-visible {
     opacity: 1;
     transform: translateX(0);
     transition: opacity 0.7s ease-out, transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* ── Stagger delays for child items ── */
-.reveal .reveal-item {
-    opacity: 0;
-}
-
-.reveal-visible .reveal-item {
+.js .reveal-visible .reveal-item {
     opacity: 1;
 }
 

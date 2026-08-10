@@ -31,27 +31,29 @@ body {
     filter: brightness(0) saturate(100%) invert(16%) sepia(21%) saturate(2361%) hue-rotate(193deg) brightness(97%) contrast(97%);
 }
 
-[data-campus-reveal] {
+/* Scoped under `.js` (added by the public layout <head>) so content
+   stays visible when JavaScript is unavailable. */
+.js [data-campus-reveal] {
     opacity: 0;
     transform: translateY(48px);
     transition: opacity 0.8s ease-out, transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-[data-campus-reveal].is-visible {
+.js [data-campus-reveal].is-visible {
     opacity: 1;
     transform: translateY(0);
 }
 
-[data-campus-reveal="left"] {
+.js [data-campus-reveal="left"] {
     transform: translateX(-60px) translateY(0);
 }
 
-[data-campus-reveal="right"] {
+.js [data-campus-reveal="right"] {
     transform: translateX(60px) translateY(0);
 }
 
-[data-campus-reveal="left"].is-visible,
-[data-campus-reveal="right"].is-visible {
+.js [data-campus-reveal="left"].is-visible,
+.js [data-campus-reveal="right"].is-visible {
     transform: translateX(0) translateY(0);
 }
 

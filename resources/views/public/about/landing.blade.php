@@ -63,7 +63,9 @@
 
             <div class="relative mt-20 bg-spu-blue text-white shadow-2xl">
                 <div class="container">
-                    <div class="cms-grid-stats relative z-10 gap-0">
+                    @php($_statsCount = count($about->stats))
+                    @php($_statsCols = $_statsCount >= 4 ? 'cms-grid-stats-cols-4' : ($_statsCount === 3 ? 'cms-grid-stats-cols-3' : ($_statsCount === 2 ? 'cms-grid-stats-cols-2' : '')))
+                    <div class="cms-grid-stats {{ $_statsCols }} relative z-10 gap-0">
                         @foreach ($about->stats as $stat)
                             <div class="group py-8 text-center">
                                 @if (! empty($stat['icon']))

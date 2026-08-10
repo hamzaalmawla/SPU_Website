@@ -49,7 +49,9 @@
 
     <section class="py-16 font-hacen">
         <div class="container">
-            <div class="cms-grid-stats gap-4 md:gap-6">
+            @php($_statsCount = count($landing['stats'] ?? []))
+            @php($_statsCols = $_statsCount >= 4 ? 'cms-grid-stats-cols-4' : ($_statsCount === 3 ? 'cms-grid-stats-cols-3' : ($_statsCount === 2 ? 'cms-grid-stats-cols-2' : '')))
+            <div class="cms-grid-stats {{ $_statsCols }} gap-4 md:gap-6">
                 @foreach (($landing['stats'] ?? []) as $stat)
                     <div class="group relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-6 text-center shadow-[0_4px_20px_rgba(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] md:p-8">
                         <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-spu-blue/5 text-spu-blue transition-colors duration-300 group-hover:bg-spu-blue group-hover:text-white">

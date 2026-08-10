@@ -66,7 +66,9 @@
                     @endif
 
                     @if ($page['stats'] !== [])
-                        <div class="cms-grid-stats mb-8 gap-4">
+                        @php($_statsCount = count($page['stats']))
+                        @php($_statsCols = $_statsCount >= 4 ? 'cms-grid-stats-cols-4' : ($_statsCount === 3 ? 'cms-grid-stats-cols-3' : ($_statsCount === 2 ? 'cms-grid-stats-cols-2' : '')))
+                        <div class="cms-grid-stats {{ $_statsCols }} mb-8 gap-4">
                             @foreach ($page['stats'] as $stat)
                                 <div class="rounded-[18px] bg-spu-blue p-5 text-white">
                                     <p class="text-3xl font-black" translate="no">{{ $stat['value'] ?? '' }}</p>

@@ -13,7 +13,7 @@
         position: absolute;
         inset: 0 0 auto 0;
         height: 16rem;
-        background: linear-gradient(180deg, rgba(7,12,32,0.32) 0%, rgba(7,12,32,0.08) 62%, rgba(7,12,32,0) 100%);
+        background: linear-gradient(180deg, rgba(7, 12, 32, 0.32) 0%, rgba(7, 12, 32, 0.08) 62%, rgba(7, 12, 32, 0) 100%);
         pointer-events: none;
     }
 
@@ -39,8 +39,8 @@
 
     .home-hero__ambient {
         background:
-            radial-gradient(circle at 78% 24%, rgba(212,163,71,0.22) 0%, rgba(212,163,71,0) 30%),
-            radial-gradient(circle at 18% 82%, rgba(43,125,179,0.18) 0%, rgba(43,125,179,0) 34%);
+            radial-gradient(circle at 78% 24%, rgba(212, 163, 71, 0.22) 0%, rgba(212, 163, 71, 0) 30%),
+            radial-gradient(circle at 18% 82%, rgba(43, 125, 179, 0.18) 0%, rgba(43, 125, 179, 0) 34%);
         mix-blend-mode: screen;
     }
 
@@ -62,11 +62,11 @@
         display: inline-flex;
         align-items: center;
         gap: 0.9rem;
-        border: 1px solid rgba(255,255,255,0.14);
+        border: 1px solid rgba(255, 255, 255, 0.14);
         border-radius: 9999px;
-        background: rgba(255,255,255,0.08);
+        background: rgba(255, 255, 255, 0.08);
         padding: 0.7rem 1rem;
-        color: rgba(255,255,255,0.82);
+        color: rgba(255, 255, 255, 0.82);
         font-size: 0.76rem;
         font-weight: 800;
         letter-spacing: 0.18em;
@@ -80,7 +80,7 @@
         width: 2.75rem;
         height: 1px;
         border-radius: 9999px;
-        background: linear-gradient(90deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.94) 100%);
+        background: linear-gradient(90deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.94) 100%);
     }
 
     .home-hero__title {
@@ -89,7 +89,7 @@
         color: #ffffff;
         font-size: clamp(3rem, 5vw, 5.8rem);
         font-weight: 700;
-        line-height: 0.92;
+        line-height: 1.05;
         letter-spacing: -0.045em;
         text-wrap: balance;
     }
@@ -97,7 +97,7 @@
     .home-hero__summary {
         margin-top: 1.4rem;
         max-width: 39rem;
-        color: rgba(255,255,255,0.95);
+        color: rgba(255, 255, 255, 0.95);
         font-size: clamp(1.05rem, 1.65vw, 1.3rem);
         line-height: 1.8;
     }
@@ -126,17 +126,17 @@
         color: #ffffff;
         font-size: 0.92rem;
         font-weight: 800;
-        box-shadow: 0 18px 36px rgba(8,13,36,0.22);
+        box-shadow: 0 18px 36px rgba(8, 13, 36, 0.22);
     }
 
     .home-hero__primary-btn:hover {
         transform: translateY(-2px);
-        box-shadow: 0 22px 42px rgba(8,13,36,0.26);
+        box-shadow: 0 22px 42px rgba(8, 13, 36, 0.26);
     }
 
     .home-hero__secondary-btn {
-        border: 1px solid rgba(255,255,255,0.16);
-        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        background: rgba(255, 255, 255, 0.08);
         padding: 1rem 1.35rem;
         color: #ffffff;
         font-size: 0.92rem;
@@ -147,26 +147,26 @@
 
     .home-hero__secondary-btn:hover {
         transform: translateY(-2px);
-        border-color: rgba(255,255,255,0.26);
-        background: rgba(255,255,255,0.14);
+        border-color: rgba(255, 255, 255, 0.26);
+        background: rgba(255, 255, 255, 0.14);
     }
 
     .home-hero__panel {
         justify-self: end;
         width: 100%;
         max-width: 25rem;
-        border: 1px solid rgba(255,255,255,0.84);
+        border: 1px solid rgba(255, 255, 255, 0.84);
         border-radius: 2rem;
-        background: linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(247,249,255,0.9) 100%);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(247, 249, 255, 0.9) 100%);
         padding: 1.35rem;
         color: #202759;
-        box-shadow: 0 28px 70px rgba(8,14,40,0.18), inset 0 1px 0 rgba(255,255,255,0.88);
+        box-shadow: 0 28px 70px rgba(8, 14, 40, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.88);
         backdrop-filter: blur(18px) saturate(165%);
         -webkit-backdrop-filter: blur(18px) saturate(165%);
     }
 
     .home-hero__panel-eyebrow {
-        color: rgba(32,39,89,0.52);
+        color: rgba(32, 39, 89, 0.52);
         font-size: 0.76rem;
         font-weight: 800;
         letter-spacing: 0.18em;
@@ -184,7 +184,7 @@
 
     .home-hero__panel-copy {
         margin-top: 0.7rem;
-        color: rgba(32,39,89,0.66);
+        color: rgba(32, 39, 89, 0.66);
         font-size: 0.96rem;
         line-height: 1.75;
     }
@@ -201,8 +201,8 @@
         justify-content: space-between;
         gap: 0.9rem;
         border-radius: 1.15rem;
-        border: 1px solid rgba(32,39,89,0.08);
-        background: rgba(255,255,255,0.78);
+        border: 1px solid rgba(32, 39, 89, 0.08);
+        background: rgba(255, 255, 255, 0.78);
         padding: 0.95rem 1rem;
         color: #202759;
         font-size: 0.95rem;
@@ -214,7 +214,7 @@
         transform: translateX(4px);
         background: #ffffff;
         color: #6f1616;
-        box-shadow: 0 14px 28px rgba(11,19,50,0.08);
+        box-shadow: 0 14px 28px rgba(11, 19, 50, 0.08);
     }
 
     .home-hero__metrics {
@@ -226,7 +226,7 @@
 
     .home-hero__metric {
         border-radius: 1.15rem;
-        background: rgba(32,39,89,0.04);
+        background: rgba(32, 39, 89, 0.04);
         padding: 0.95rem 0.85rem;
     }
 
@@ -239,7 +239,7 @@
 
     .home-hero__metric-label {
         margin-top: 0.45rem;
-        color: rgba(32,39,89,0.58);
+        color: rgba(32, 39, 89, 0.58);
         font-size: 0.72rem;
         font-weight: 800;
         line-height: 1.4;
@@ -258,13 +258,13 @@
         width: 2.2rem;
         height: 0.32rem;
         border-radius: 9999px;
-        background: rgba(32,39,89,0.16);
+        background: rgba(32, 39, 89, 0.16);
         transition: transform 0.22s ease, background-color 0.22s ease, width 0.22s ease;
     }
 
     .home-hero__slider-dot:hover {
         transform: translateY(-1px);
-        background: rgba(32,39,89,0.3);
+        background: rgba(32, 39, 89, 0.3);
     }
 
     .home-hero__slider-dot--active,
@@ -274,10 +274,10 @@
     }
 
     .home-hero__scroll-link {
-        border: 1px solid rgba(255,255,255,0.16);
-        background: rgba(10,15,40,0.28);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        background: rgba(10, 15, 40, 0.28);
         padding: 0.85rem 1.15rem;
-        color: rgba(255,255,255,0.86);
+        color: rgba(255, 255, 255, 0.86);
         font-size: 0.76rem;
         font-weight: 800;
         letter-spacing: 0.18em;
@@ -288,7 +288,7 @@
 
     .home-hero__scroll-link:hover {
         transform: translateY(-2px);
-        background: rgba(10,15,40,0.36);
+        background: rgba(10, 15, 40, 0.36);
         color: #ffffff;
     }
 
@@ -316,11 +316,12 @@
         }
 
         .home-hero__metrics {
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
         }
     }
 
     @media (max-height: 640px) and (max-width: 1023px) {
+
         .home-hero,
         .home-hero__inner {
             min-height: 38rem;
@@ -331,4 +332,18 @@
             padding-bottom: 6rem;
         }
     }
+}
+
+/**
+ * No-JS safety net for hero content animated via Alpine :class bindings.
+ * Alpine adds `opacity-0 translate-y-6` before it boots; without JS those
+ * classes are never removed, making the hero text permanently invisible.
+ * When the `.js` sentinel class is absent we force the content visible.
+ */
+:not(.js) .home-hero .opacity-0 {
+    opacity: 1 !important;
+}
+
+:not(.js) .home-hero .translate-y-6 {
+    transform: none !important;
 }
