@@ -35,12 +35,12 @@
                     <div class="absolute bottom-4 left-4 max-w-[70%] rounded bg-spu-blue/90 px-4 py-3 text-white rtl:left-auto rtl:right-4"><p class="text-sm font-bold" x-text="activeTitle"></p><p class="mt-1 text-xs text-white/75" x-text="activeSummary"></p></div>
                 </div>
                 <div class="flex flex-wrap items-center justify-between gap-3 bg-spu-blue p-3 text-white" aria-label="{{ $content['tour']['controlLabel'] ?? '' }}">
-                    <div class="flex items-center gap-2">
+                    <div class="flex flex-wrap items-center gap-2">
                         <button type="button" x-on:click="previous" class="rounded border border-white/25 px-3 py-2 text-xs font-bold" aria-label="{{ $content['tour']['previousLabel'] ?? '' }}">&larr;</button>
                         <button type="button" x-on:click="next" class="rounded border border-white/25 px-3 py-2 text-xs font-bold" aria-label="{{ $content['tour']['nextLabel'] ?? '' }}">&rarr;</button>
                         <button type="button" x-on:click="toggleAutoplay" class="rounded border border-white/25 px-3 py-2 text-xs font-bold" x-bind:aria-label="autoplayLabel" x-text="autoplayLabel"></button>
                     </div>
-                    <div class="flex items-center gap-2">
+                    <div class="flex flex-wrap items-center gap-2">
                         <button type="button" x-on:click="zoomOut" class="grid h-9 w-9 place-items-center rounded border border-white/25 font-bold" aria-label="{{ $content['tour']['zoomOutLabel'] ?? '' }}">-</button>
                         <output class="min-w-12 text-center text-xs font-bold" x-text="zoomLabel"></output>
                         <button type="button" x-on:click="zoomIn" class="grid h-9 w-9 place-items-center rounded border border-white/25 font-bold" aria-label="{{ $content['tour']['zoomInLabel'] ?? '' }}">+</button>

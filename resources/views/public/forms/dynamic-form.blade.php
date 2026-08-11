@@ -18,9 +18,9 @@
 
     <fieldset x-bind:disabled="$store.dynamicForm.isPreview" x-show="!$store.dynamicForm.submitted && $store.dynamicForm.isMultiStep">
         <div class="mb-8">
-            <div class="flex items-center justify-between">
+             <div class="flex min-w-max items-center justify-between overflow-x-auto pb-2">
                 <template x-for="(step, idx) in $store.dynamicForm.schema.steps" x-bind:key="idx">
-                    <div class="flex flex-1 items-center">
+                     <div class="flex min-w-[3.25rem] flex-1 items-center">
                         <button type="button" x-on:click="$store.dynamicForm.goToStep(idx)" class="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 text-xs font-bold transition-all" x-bind:class="stepButtonClass(idx)">
                             <template x-if="$store.dynamicForm.completedSteps.includes(idx) && idx !== $store.dynamicForm.currentStep">
                                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
@@ -52,7 +52,7 @@
                 </template>
             </div>
 
-            <div class="flex items-center justify-between border-t border-gray-100 pt-4">
+             <div class="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-4">
                 <button type="button" x-show="$store.dynamicForm.currentStep > 0" x-on:click="$store.dynamicForm.prevStep()" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-gray-50">
                     <svg class="h-4 w-4 rtl:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
                     <span x-text="previousText()"></span>

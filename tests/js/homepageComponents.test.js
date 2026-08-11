@@ -5,6 +5,7 @@ import { createCalendarApp } from '../../resources/js/alpine/calendarApp.js';
 import { createHeroSlider } from '../../resources/js/alpine/heroSlider.js';
 import { createHonorPanel } from '../../resources/js/alpine/honorPanel.js';
 import { createPathSlider } from '../../resources/js/alpine/pathSlider.js';
+import { createResearchSlider } from '../../resources/js/alpine/researchSlider.js';
 import { createStatsCounter } from '../../resources/js/alpine/statsCounter.js';
 
 const originalWindow = globalThis.window;
@@ -106,4 +107,23 @@ test('path cards ignore taps on hover-capable devices', () => {
     slider.togglePathCard(2);
 
     assert.equal(slider.activePathCard, null);
+});
+
+test('research slider advances by the rendered card width and gap', () => {
+    globalThis.window = {
+        getComputedStyle: () => ({ direction: 'ltr', columnGap: '32px', gap: '32px' }),
+        matchMedia: () => ({ matches: false }),
+    };
+
+    const scrollCalls = [];
+    const slider = createResearchSlider();
+    const track = {
+        querySelector: () => ({ getBoundingClientRect: () => ({ width: 262 }) }),
+        scrollBy: (options) => scrollCalls.push(options),
+    };
+    slider.$refs = { researchTrack: track };
+
+    slider.slide('next');
+
+    assert.deepEqual(scrollCalls, [{ left: 294, behavior: 'smooth' }]);
 });

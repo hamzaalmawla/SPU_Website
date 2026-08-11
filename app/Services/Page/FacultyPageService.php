@@ -218,14 +218,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
         }
 
         $facultySlug = $this->canonicalFacultySlug($facultySlug);
-        $filters = match ($subpageSlug) {
-            'alumni', 'valedictorians' => $this->studentListFilters($filters),
-            'projects' => $this->paginationFilters($filters),
-            'labs' => $this->labFilters($filters),
-            'research' => $this->researchFilters($filters),
-            'study-plan', 'study-plan-course' => $this->studyPlanFilters($filters, $subpageSlug === 'study-plan-course'),
-            default => [],
-        };
+        $filters = $this->normalizeSubpageFilters($subpageSlug, $filters);
         $filterKey = md5((string) json_encode($filters));
 
         return $this->facilitiesCache()->remember("public.facilities.{$facultySlug}.{$subpageSlug}.{$locale}.{$filterKey}", function () use ($facultySlug, $subpageSlug, $locale, $filters): ?FacultySubpageDTO {
@@ -279,6 +272,8 @@ final class FacultyPageService implements FacultyPageServiceInterface
         if (! in_array($subpageSlug, self::SUBPAGE_SLUGS, true)) {
             return null;
         }
+
+        $filters = $this->normalizeSubpageFilters($subpageSlug, $filters);
 
         $translation = $page instanceof FacultyPage ? $this->pageTranslation($page, $locale) : null;
         $pagePayload = $page instanceof FacultyPage && is_array($page->payload_json) ? $this->localizedPayload($page->payload_json, $locale) : [];
@@ -1262,6 +1257,23 @@ final class FacultyPageService implements FacultyPageServiceInterface
     private function isStudentListSubpage(string $subpageSlug): bool
     {
         return in_array($subpageSlug, ['alumni', 'valedictorians'], true);
+    }
+
+    /** @param array<string, mixed> $filters @return array<string, mixed> */
+    private function normalizeSubpageFilters(string $subpageSlug, array $filters): array
+    {
+        if (in_array($subpageSlug, ['study-plan', 'study-plan-course'], true) && array_key_exists('_invalid', $filters)) {
+            return $filters;
+        }
+
+        return match ($subpageSlug) {
+            'alumni', 'valedictorians' => $this->studentListFilters($filters),
+            'projects' => $this->paginationFilters($filters),
+            'labs' => $this->labFilters($filters),
+            'research' => $this->researchFilters($filters),
+            'study-plan', 'study-plan-course' => $this->studyPlanFilters($filters, $subpageSlug === 'study-plan-course'),
+            default => [],
+        };
     }
 
     /** @param array<string, mixed> $filters @return array{q: string, year: string, department: string, faculty: string, semester: string, academic_phase: string, page: int} */

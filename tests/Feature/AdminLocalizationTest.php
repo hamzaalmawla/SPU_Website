@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Contracts\Media\MediaServiceInterface;
+use App\DTOs\Media\MediaUploadResultDTO;
 use App\Filament\Pages\ManageSettings;
 use App\Filament\Resources\PageResource;
+use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -85,5 +88,32 @@ class AdminLocalizationTest extends TestCase
         $this->assertStringContainsString('.spu-media-preview', $css);
         $this->assertStringContainsString('@media (prefers-reduced-motion: reduce)', $css);
         $this->assertStringContainsString('overflow-wrap: anywhere', $css);
+    }
+
+    public function test_media_picker_uses_stored_mime_for_extensionless_image_urls(): void
+    {
+        $user = User::factory()->create(['role_slug' => 'super_admin']);
+        $this->actingAs($user, 'web');
+
+        $media = new MediaUploadResultDTO(
+            mediaId: 42,
+            disk: 'public',
+            path: 'media/image/2026/08/image.bin',
+            url: '/media/image/42',
+            mimeType: 'image/png',
+            size: 1024,
+            originalName: 'student.png',
+        );
+
+        $this->mock(MediaServiceInterface::class)
+            ->shouldReceive('find')
+            ->once()
+            ->with(42, $user->getKey())
+            ->andReturn($media);
+
+        $reflection = new \ReflectionMethod(MediaPicker::class, 'preview');
+        $preview = $reflection->invoke(null, '/media/image/42', 42);
+
+        $this->assertStringContainsString('<img src="/media/image/42"', (string) $preview);
     }
 }

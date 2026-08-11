@@ -6,12 +6,12 @@
     @endphp
 
     <section class="relative overflow-hidden bg-section font-hacen">
-        <div class="container relative z-10 grid items-start gap-10 pb-32 pt-44 lg:grid-cols-[1fr_1.2fr] lg:pb-40 lg:pt-48">
+        <div class="container relative z-10 grid items-start gap-8 pb-20 pt-32 md:gap-10 md:pb-32 md:pt-40 lg:grid-cols-[1fr_1.2fr] lg:pb-40 lg:pt-48">
             <div class="flex flex-col gap-10 pt-4">
-                <h1 class="text-[50px] font-bold leading-[1.06] tracking-[-0.96px] text-spu-blue">{{ $landing['hero']['title'] ?? '' }}</h1>
-                <p class="max-w-[580px] text-[30px] font-bold leading-[37px] text-[#46464f]">{{ $landing['hero']['summary'] ?? '' }}</p>
+                <h1 class="text-[clamp(2.25rem,9vw,3.125rem)] font-bold leading-[1.08] tracking-[-0.96px] text-spu-blue">{{ $landing['hero']['title'] ?? '' }}</h1>
+                <p class="max-w-[580px] text-[clamp(1.25rem,5vw,1.875rem)] font-bold leading-[1.35] text-[#46464f]">{{ $landing['hero']['summary'] ?? '' }}</p>
 
-                @if (! empty($landing['hero']['primaryUrl']) || ! empty($landing['hero']['secondaryUrl']))<div class="flex flex-wrap items-center gap-[23px]">
+                @if (! empty($landing['hero']['primaryUrl']) || ! empty($landing['hero']['secondaryUrl']))<div class="flex flex-wrap items-center gap-3 md:gap-[23px]">
                     @if (! empty($landing['hero']['primaryUrl']))<a href="{{ $landing['hero']['primaryUrl'] }}" class="inline-flex h-[54px] items-center justify-center rounded-[6px] bg-spu-red px-8 text-xs font-bold uppercase tracking-[1.2px] text-white transition hover:opacity-90">{{ $landing['hero']['ctaPrimary'] ?? '' }}</a>@endif
                     @if (! empty($landing['hero']['secondaryUrl']))<a href="{{ $landing['hero']['secondaryUrl'] }}" class="inline-flex h-[54px] items-center justify-center rounded-[6px] border border-[#c7c5d0] bg-white px-8 text-xs font-bold uppercase tracking-[1.2px] text-spu-blue transition hover:bg-slate-50">{{ $landing['hero']['ctaSecondary'] ?? '' }}</a>@endif
                 </div>@endif

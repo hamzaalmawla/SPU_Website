@@ -3,14 +3,14 @@
 @section('content')
     @php($landing = $page->landing)
 
-    <section class="page-hero relative min-h-[680px] overflow-hidden font-hacen">
+    <section class="page-hero relative min-h-[560px] overflow-hidden font-hacen md:min-h-[680px]">
         <div class="absolute inset-0">
             <img src="{{ $landing['hero']['image'] ?? '/images/admissions-hero-campus.webp' }}" alt="" class="h-full w-full object-cover" aria-hidden="true">
             <div class="absolute inset-0 bg-gradient-to-b from-spu-blue/70 via-spu-blue/50 to-spu-blue/80"></div>
             <div class="absolute inset-0 bg-gradient-to-r from-spu-blue/30 to-transparent"></div>
         </div>
 
-        <div class="container relative z-10 flex min-h-[680px] items-center justify-center text-center">
+        <div class="container relative z-10 flex min-h-[560px] items-center justify-center text-center md:min-h-[680px]">
             <div class="mx-auto max-w-[860px]">
                 <div class="mb-6 inline-flex items-center gap-3 rounded-full border border-white/15 bg-white/8 px-5 py-2.5 backdrop-blur-md">
                     <span class="h-px w-8 bg-gradient-to-r from-transparent to-white/80"></span>
@@ -18,8 +18,8 @@
                     <span class="h-px w-8 bg-gradient-to-l from-transparent to-white/80"></span>
                 </div>
 
-                <h1 class="text-5xl font-bold leading-[1.08] tracking-tight text-white md:text-6xl lg:text-[68px]">{{ $landing['hero']['title'] ?? '' }}</h1>
-                <p class="mx-auto mt-6 max-w-[640px] text-lg font-bold leading-relaxed text-white/90">{{ $landing['hero']['summary'] ?? '' }}</p>
+                <h1 class="text-[clamp(2.25rem,10vw,4.25rem)] font-bold leading-[1.08] tracking-tight text-white md:text-6xl lg:text-[68px]">{{ $landing['hero']['title'] ?? '' }}</h1>
+                <p class="mx-auto mt-6 max-w-[640px] text-base font-bold leading-relaxed text-white/90 md:text-lg">{{ $landing['hero']['summary'] ?? '' }}</p>
 
                 <div class="mt-10 flex flex-wrap items-center justify-center gap-3">
                     @foreach (($landing['hero']['quickLinks'] ?? []) as $link)

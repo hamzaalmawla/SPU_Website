@@ -32,7 +32,7 @@
                     <img src="/images/logo-spu.png" alt="{{ __('public.spu_logo_alt') }}" width="562" height="118" class="h-auto w-[9.25rem] sm:w-[10rem] lg:w-[11rem] xl:w-[13.5rem]">
                 </a>
 
-                <nav class="hidden w-full justify-center lg:flex lg:flex-1 lg:basis-auto lg:w-auto lg:items-center" aria-label="{{ __('public.primary_navigation') }}">
+                <nav class="hidden w-full justify-center xl:flex xl:flex-1 xl:basis-auto xl:w-auto xl:items-center" aria-label="{{ __('public.primary_navigation') }}">
                     <ul class="site-nav-list lg:w-full">
                         @foreach ($navigation->header->items as $item)
                             <li class="site-nav-item"
@@ -121,7 +121,7 @@
 
                     @if ($navigation->applyCta)
                         <a href="{{ $navigation->applyCta->url }}"
-                           class="hidden items-center gap-2 rounded-full bg-spu-red px-5 py-2.5 text-xs font-bold uppercase tracking-[0.08em] text-white shadow-[0_8px_24px_rgba(111,22,22,0.25)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(111,22,22,0.3)] lg:inline-flex"
+                            class="hidden items-center gap-2 rounded-full bg-spu-red px-5 py-2.5 text-xs font-bold uppercase tracking-[0.08em] text-white shadow-[0_8px_24px_rgba(111,22,22,0.25)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(111,22,22,0.3)] xl:inline-flex"
                            @if ($navigation->applyCta->target) target="{{ $navigation->applyCta->target }}" rel="noreferrer" @endif>
                             <span>{{ $navigation->applyCta->label }}</span>
                         </a>
@@ -160,7 +160,7 @@
                     <button type="button"
                             @click="toggleMobile()"
                             aria-label="{{ __('public.toggle_navigation') }}"
-                            class="site-nav-menu-btn lg:hidden">
+                            class="site-nav-menu-btn xl:hidden">
                         <img :src="mobileToggleIcon()" class="h-5 w-5" alt="">
                     </button>
                 </div>

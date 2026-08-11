@@ -6,7 +6,7 @@
     @php($data = $page->data)
 
     <section class="bg-white font-hacen" dir="{{ $direction }}">
-        <div class="relative mx-auto h-[85vh] overflow-hidden">
+        <div class="relative mx-auto min-h-[32rem] h-[min(85svh,42rem)] overflow-hidden md:h-[85vh]">
             <img src="{{ $data['hero']['backgroundImage'] ?? '/images/uni-main-place.JPG' }}" alt="SPU Campus" class="absolute inset-0 h-full w-full object-cover" aria-hidden="true">
             <div class="absolute inset-0 bg-spu-blue/50"></div>
             <div class="container relative z-10 flex min-h-[520px] items-center justify-center pt-14 md:min-h-[540px]">

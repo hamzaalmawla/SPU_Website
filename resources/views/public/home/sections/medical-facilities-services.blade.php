@@ -2,11 +2,11 @@
     <div class="container">
         <h2 class="text-4xl lg:text-5xl font-bold text-spu-blue mb-10">{{ $section->payload->title }}</h2>
 
-        <div class="grid grid-cols-12 gap-4 md:gap-8 mb-16">
+        <div class="mb-16 grid grid-cols-1 gap-4 md:grid-cols-12 md:gap-8">
             @isset($section->payload->items[0])
                 @php($mainItem = $section->payload->items[0])
                 @php($mainImage = $mainItem['imageUrl'] ?? ($mainItem['image'] ?? null))
-                <article class="col-span-7 bg-white rounded-[2rem] shadow-xl overflow-hidden flex flex-col group hover:shadow-2xl transition-all duration-500">
+                <article class="col-span-1 flex flex-col overflow-hidden rounded-[2rem] bg-white shadow-xl transition-all duration-500 group hover:shadow-2xl md:col-span-7">
                     @if ($mainImage)
                         <div class="h-64 md:h-[350px] overflow-hidden relative">
                             <img src="{{ $mainImage }}" alt="{{ $mainItem['title'] ?? '' }}" loading="lazy" decoding="async" width="840" height="350" class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110">
@@ -33,7 +33,7 @@
             @endisset
 
             @if (isset($section->payload->items[1]) || isset($section->payload->items[2]))
-                <div class="col-span-5 grid grid-cols-1 gap-4 md:gap-8">
+                    <div class="col-span-1 grid grid-cols-1 gap-4 md:col-span-5 md:gap-8">
                     @foreach ([1, 2] as $index)
                         @isset($section->payload->items[$index])
                             @php($sideItem = $section->payload->items[$index])

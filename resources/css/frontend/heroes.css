@@ -18,12 +18,12 @@
     }
 
     .home-hero {
-        min-height: clamp(46rem, 100vh, 58rem);
+        min-height: clamp(38rem, 100svh, 58rem);
     }
 
     .home-hero,
     .home-hero__inner {
-        min-height: clamp(46rem, 100svh, 58rem);
+        min-height: clamp(38rem, 100svh, 58rem);
     }
 
     .home-hero__overlay,
@@ -297,6 +297,11 @@
     }
 
     @media (min-width: 1024px) {
+        .home-hero,
+        .home-hero__inner {
+            min-height: clamp(46rem, 100svh, 58rem);
+        }
+
         .home-hero__inner {
             grid-template-columns: minmax(0, 1.14fr) minmax(20rem, 24.5rem);
             gap: 3rem;

@@ -108,7 +108,7 @@ final class MediaPicker
                     ->key(self::componentKey($statePath, $label, $type))
                     ->label($label)
                     ->helperText(__('admin.media_picker.existing_value_help'))
-                    ->content(fn (Get $get): HtmlString|string => self::preview($get($statePath)))
+                    ->content(fn (Get $get): HtmlString|string => self::preview($get($statePath), $get($mediaIdPath)))
                     ->hintActions([
                         self::chooseOrUploadAction($statePath, $mediaIdPath, $type),
                         self::clearAction($statePath, $mediaIdPath),
@@ -130,7 +130,7 @@ final class MediaPicker
                     ->key(self::componentKey($statePath, $label, $type))
                     ->label($label)
                     ->helperText(__('admin.media_picker.choose_help'))
-                    ->content(fn (Get $get): HtmlString|string => self::preview($get($statePath)))
+                    ->content(fn (Get $get): HtmlString|string => self::preview($get($statePath), $get($mediaIdPath)))
                     ->hintActions([
                         self::chooseOrUploadAction($statePath, $mediaIdPath, $type),
                         self::clearAction($statePath, $mediaIdPath),
@@ -252,7 +252,7 @@ final class MediaPicker
                     ->required($required),
                 Placeholder::make($statePath.'_preview')
                     ->label(__('admin.media_picker.selected_file'))
-                    ->content(fn (Get $get): HtmlString|string => self::preview(self::selectedUrl($get($statePath)))),
+                    ->content(fn (Get $get): HtmlString|string => self::preview(self::selectedUrl($get($statePath)), $get($statePath))),
             ]);
     }
 
@@ -473,7 +473,7 @@ final class MediaPicker
         return $title.$media->originalName.' ('.strtoupper($media->mediaType).', '.self::formatFileSize($media->size).')';
     }
 
-    private static function preview(mixed $value): HtmlString|string
+    private static function preview(mixed $value, mixed $mediaId = null): HtmlString|string
     {
         $url = is_string($value) ? MediaUrlResolver::resolve($value) : null;
 
@@ -485,7 +485,7 @@ final class MediaPicker
         $filename = self::filenameFromUrl($url);
         $escapedFilename = e($filename);
 
-        if (preg_match('/\.(jpe?g|png|gif|webp)(\?.*)?$/i', $url) === 1) {
+        if (self::isImageMedia($mediaId) || preg_match('/\.(jpe?g|png|gif|webp)(\?.*)?$/i', $url) === 1) {
             $alt = e(__('admin.media_picker.preview_alt', ['file' => $filename]));
 
             return new HtmlString('<span class="spu-media-preview"><img src="'.$escapedUrl.'" alt="'.$alt.'" /><span>'.$escapedFilename.'</span></span>');
@@ -494,6 +494,23 @@ final class MediaPicker
         $ariaLabel = e(__('admin.media_picker.open_file', ['file' => $filename]));
 
         return new HtmlString('<a class="spu-media-preview spu-media-preview--link" href="'.$escapedUrl.'" target="_blank" rel="noopener noreferrer" aria-label="'.$ariaLabel.'">'.$escapedFilename.'</a>');
+    }
+
+    private static function isImageMedia(mixed $mediaId): bool
+    {
+        $userId = auth()->id();
+
+        if (! is_numeric($userId) || (! is_int($mediaId) && ! is_string($mediaId)) || ! is_numeric($mediaId)) {
+            return false;
+        }
+
+        try {
+            $media = app(MediaServiceInterface::class)->find($mediaId, (int) $userId);
+
+            return $media instanceof MediaUploadResultDTO && str_starts_with($media->mimeType, 'image/');
+        } catch (Throwable) {
+            return false;
+        }
     }
 
     private static function filenameFromUrl(string $url): string

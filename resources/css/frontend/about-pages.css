@@ -197,7 +197,8 @@
 }
 
 .filter-dropdown {
-    min-width: 280px;
+     width: min(100%, 280px);
+     min-width: 0;
     padding: 0.75rem 3rem 0.75rem 1.5rem;
     border: 1px solid rgba(32, 39, 89, 0.12);
     border-radius: 6px;
@@ -798,7 +799,8 @@
 }
 
 .staff-filter-select {
-    min-width: 260px;
+    width: min(100%, 260px);
+    min-width: 0;
     padding: 0.7rem 3rem 0.7rem 1.5rem;
     border: 1px solid rgba(32, 39, 89, 0.14);
     border-radius: 6px;

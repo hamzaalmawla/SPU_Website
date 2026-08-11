@@ -6,15 +6,15 @@
         $heroLinks = $page['heroLinks'] ?? [];
     @endphp
 
-    <section class="relative flex h-screen items-center justify-center overflow-hidden py-24">
+    <section class="relative flex min-h-[32rem] h-[min(38rem,100svh)] items-center justify-center overflow-hidden py-24 md:h-screen">
         <div class="absolute inset-0 z-0">
             <img src="{{ $page['heroImage'] ?? '/images/slider-1.webp' }}" alt="{{ $pageTitle }}" class="h-full w-full object-cover">
             <div class="absolute inset-0 bg-spu-blue/40"></div>
         </div>
 
-        <div class="container relative top-26 z-10 text-center text-white">
-            <h1 class="mb-6 text-[48px] font-bold uppercase tracking-[0.4em] text-spu-gold">{{ $page['heroTitle'] ?? $pageTitle }}</h1>
-            <p class="mb-8 text-[30px] font-bold leading-tight">{{ $page['pageDescription'] ?? $pageDescription }}</p>
+        <div class="container relative z-10 pt-16 text-center text-white md:pt-20">
+            <h1 class="mb-6 text-[clamp(2.15rem,10vw,3rem)] font-bold uppercase tracking-[0.12em] text-spu-gold sm:tracking-[0.22em] md:tracking-[0.4em]">{{ $page['heroTitle'] ?? $pageTitle }}</h1>
+            <p class="mb-8 text-[clamp(1.15rem,5vw,1.875rem)] font-bold leading-tight">{{ $page['pageDescription'] ?? $pageDescription }}</p>
 
             <div class="mt-12 space-y-4">
                 <div class="flex flex-wrap items-center justify-center gap-4">
@@ -72,9 +72,9 @@
 
             <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
                 @foreach ($lastNews as $news)
-                    <article class="group relative h-[500px] overflow-hidden rounded-[8px] border-2 border-[#CBD5E1B2] bg-white transition-all duration-300 hover:shadow-2xl {{ $loop->iteration === 4 ? 'lg:col-span-2' : 'col-span-1' }}">
+                    <article class="group relative min-h-[430px] overflow-hidden rounded-[8px] border-2 border-[#CBD5E1B2] bg-white transition-all duration-300 hover:shadow-2xl md:h-[500px] {{ $loop->iteration === 4 ? 'lg:col-span-2' : 'col-span-1' }}">
                         <a href="{{ $news->url ?? '#' }}" class="block">
-                            <div class="relative w-full overflow-hidden {{ $loop->iteration === 4 ? 'h-[60%]' : 'h-[55%]' }}">
+                                <div class="relative w-full overflow-hidden {{ $loop->iteration === 4 ? 'h-[260px] md:h-[60%]' : 'h-[240px] md:h-[55%]' }}">
                                 <img src="{{ $news->imageUrl ?: '/images/news/researches.jpeg' }}" onerror="this.onerror=null;this.src='/images/news/researches.jpeg'" alt="{{ $news->title }}" class="h-full w-full object-cover">
                                 <div class="absolute left-5 top-5 rtl:left-auto rtl:right-5">
                                     <span class="rounded-lg bg-white px-5 py-1.5 text-[12px] font-bold text-[#202759] shadow-sm">{{ $news->categoryLabel ?: ($page['newsFallbackCategory'] ?? ($isAr ? 'أخبار' : 'News')) }}</span>
@@ -84,7 +84,7 @@
 
                         <div class="p-8">
                             <div class="relative">
-                                <a href="{{ $news->url ?? '#' }}" class="absolute top-[-60px] z-10 max-h-[62px] w-[300px] overflow-hidden bg-white px-5 py-[3px] text-[18px] font-bold text-[#202759] {{ $isAr ? 'right-[-32px]' : 'left-[-32px]' }}">{{ $news->title }}</a>
+                                <a href="{{ $news->url ?? '#' }}" class="absolute top-[-3.25rem] z-10 max-h-[4.25rem] w-[min(300px,calc(100% - 2rem))] overflow-hidden bg-white px-4 py-[3px] text-[17px] font-bold text-[#202759] sm:px-5 sm:text-[18px] {{ $isAr ? 'right-4 md:right-[-32px]' : 'left-4 md:left-[-32px]' }}">{{ $news->title }}</a>
                                 @if ($news->publishedAt)
                                     <p class="mb-5 text-[14px] font-medium lowercase text-[#c0392b]" translate="no">{{ $news->publishedAt }}</p>
                                 @endif
@@ -133,13 +133,13 @@
                 <div id="announcements" class="lg:col-span-8">
                     <div class="h-full overflow-hidden rounded-[12px] border border-slate-200 bg-white">
                         @forelse ($announcements as $announcement)
-                            <article class="group flex gap-8 p-10 {{ ! $loop->last ? 'border-b border-slate-100' : '' }}">
+                            <article class="group flex flex-col gap-4 p-5 sm:flex-row sm:gap-8 sm:p-10 {{ ! $loop->last ? 'border-b border-slate-100' : '' }}">
                                 <div class="flex-shrink-0 pt-1">
                                     <img src="{{ $loop->odd ? '/images/icon-envelope-outline.svg' : '/images/icon-file-outline.svg' }}" alt="" class="h-7 w-7" aria-hidden="true">
                                 </div>
                                 <div class="flex-grow">
-                                    <div class="mb-3 flex items-start justify-between gap-6">
-                                        <h3 class="text-2xl font-bold leading-tight text-[#202759]">{{ $announcement->title }}</h3>
+                                    <div class="mb-3 flex flex-wrap items-start justify-between gap-3 sm:gap-6">
+                                        <h3 class="min-w-0 flex-1 text-xl font-bold leading-tight text-[#202759] sm:text-2xl">{{ $announcement->title }}</h3>
                                         <span class="whitespace-nowrap rounded-md bg-[#202759] px-4 py-1.5 text-[11px] font-bold uppercase tracking-widest text-white">{{ $page['newLabel'] ?? ($isAr ? 'جديد' : 'New') }}</span>
                                     </div>
                                     @if ($announcement->excerpt)

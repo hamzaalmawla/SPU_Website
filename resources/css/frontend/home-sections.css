@@ -337,7 +337,19 @@
 
         .section-header__controls {
             position: static !important;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.75rem;
             width: 100%;
+        }
+
+        .section-header__controls > a {
+            width: 100%;
+            max-width: none;
+        }
+
+        .section-header__controls > .slider-nav-btn {
+            flex: 0 0 3rem;
         }
     }
 

@@ -6,7 +6,7 @@
      x-transition:leave-start="opacity-100 translate-y-0"
      x-transition:leave-end="opacity-0 -translate-y-2"
      style="display: none;"
-     class="site-nav-mobile-panel lg:hidden">
+      class="site-nav-mobile-panel xl:hidden">
     <div class="site-nav-mobile-list">
         @foreach ($navigation->header->items as $item)
             <div class="site-nav-mobile-card">

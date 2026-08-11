@@ -80,6 +80,23 @@ final class FacilitiesWorkflowTest extends TestCase
         $this->assertContains('متفوق عربي فقط', array_column($englishHonor?->items ?? [], 'title'));
     }
 
+    public function test_honor_student_preview_defaults_missing_filters(): void
+    {
+        $facilities = app(FacultyPageServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $targetKey = 'facilities.artificial-intelligence.valedictorians';
+        $payload = $facilities->getEditablePayload($targetKey);
+        $payload['translations']['ar']['title'] = 'معاينة قائمة شرف الذكاء الاصطناعي';
+
+        $workflow->saveDraft($targetKey, $payload, (int) $author->getKey());
+        $preview = $workflow->preview($targetKey, 'ar', (int) $author->getKey());
+
+        $this->get($preview->previewUrl)
+            ->assertOk()
+            ->assertSee('معاينة قائمة شرف الذكاء الاصطناعي');
+    }
+
     public function test_facilities_hub_workflow_draft_does_not_leak_until_published(): void
     {
         $facilities = app(FacultyPageServiceInterface::class);
@@ -751,6 +768,71 @@ final class FacilitiesWorkflowTest extends TestCase
         $honorData = $honorComponent->get('data');
         $this->assertCount(1, $honorData['en_content']['items'] ?? []);
         $this->assertSame('Filtered Honor Student', $honorData['en_content']['items'][array_key_first($honorData['en_content']['items'])]['title'] ?? null);
+    }
+
+    public function test_student_editor_pairs_locales_and_deleting_a_filtered_row_publishes(): void
+    {
+        $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
+
+        $facilities = app(FacultyPageServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $targetKey = 'facilities.artificial-intelligence.valedictorians';
+        $payload = $facilities->getEditablePayload($targetKey);
+        $payload['translations']['en']['items'] = [
+            ['title' => 'Keep Student', 'academicYear' => '2026', 'department' => 'Computer Science', 'faculty' => 'AI Engineering', 'gpa' => '3.80', 'image' => '/images/slider-1.webp'],
+            ['title' => 'Remove Student', 'academicYear' => '2025', 'department' => 'Robotics', 'faculty' => 'AI Engineering', 'gpa' => '3.95', 'image' => '/images/slider-2.webp'],
+        ];
+        $payload['translations']['ar']['items'] = [
+            ['title' => 'الطالب الباقي', 'academicYear' => '2026', 'department' => 'علوم الحاسوب', 'faculty' => 'هندسة الذكاء الاصطناعي', 'gpa' => '3.80', 'image' => '/images/slider-1.webp'],
+            ['title' => 'الطالب المحذوف', 'academicYear' => '2025', 'department' => 'الروبوتات', 'faculty' => 'هندسة الذكاء الاصطناعي', 'gpa' => '3.95', 'image' => '/images/slider-2.webp'],
+        ];
+
+        $workflow->saveDraft($targetKey, $payload, (int) $author->getKey());
+
+        $component = Livewire::test(ManageArtificialIntelligenceFaculty::class)
+            ->set('data.target_key', $targetKey)
+            ->set('data.record_search', 'Remove Student')
+            ->call('loadTarget', $targetKey)
+            ->assertSee('اسم الطالب (بالعربية)');
+
+        /** @var array<string, mixed> $data */
+        $data = $component->get('data');
+        $this->assertCount(1, $data['student_records'] ?? []);
+        $recordKey = array_key_first($data['student_records']);
+        $this->assertSame('Remove Student', $data['student_records'][$recordKey]['titleEn'] ?? null);
+        $this->assertSame('الطالب المحذوف', $data['student_records'][$recordKey]['titleAr'] ?? null);
+
+        $component
+            ->set('data.student_records.'.$recordKey.'.image', '/images/slider-3.webp')
+            ->set('data.student_records.'.$recordKey.'.titleEn', 'Updated Remove Student')
+            ->set('data.student_records.'.$recordKey.'.titleAr', 'طالب محذوف محدث')
+            ->call('save');
+
+        $editedDraft = CmsDraft::query()->where('target_key', $targetKey)->latest('id')->firstOrFail();
+        $editedEnglish = collect($editedDraft->payload_json['translations']['en']['items'] ?? [])->firstWhere('title', 'Updated Remove Student');
+        $editedArabic = collect($editedDraft->payload_json['translations']['ar']['items'] ?? [])->firstWhere('title', 'طالب محذوف محدث');
+        $this->assertSame('/images/slider-3.webp', $editedEnglish['image'] ?? null);
+        $this->assertSame('/images/slider-3.webp', $editedArabic['image'] ?? null);
+
+        $component
+            ->set('data.student_records', [])
+            ->call('save');
+
+        $deletedDraft = CmsDraft::query()->where('target_key', $targetKey)->latest('id')->firstOrFail();
+        $this->assertSame(['Keep Student'], collect($deletedDraft->payload_json['translations']['en']['items'] ?? [])->pluck('title')->all());
+        $this->assertSame(['الطالب الباقي'], collect($deletedDraft->payload_json['translations']['ar']['items'] ?? [])->pluck('title')->all());
+
+        $component->call('publish');
+
+        $this->get('/en/facilities/artificial-intelligence/valedictorians')
+            ->assertOk()
+            ->assertDontSee('Remove Student')
+            ->assertSee('Keep Student');
+
+        $this->get('/en/facilities/artificial-intelligence/valedictorians?q=Remove%20Student')
+            ->assertOk()
+            ->assertSee('Showing 0-0 of 0');
     }
 
     public function test_manage_medicine_faculty_does_not_load_filterable_students_until_filtered_and_preserves_hidden_rows_on_add(): void

@@ -28,6 +28,8 @@
   }
 
   .honor-select {
+    width: min(100%, 220px);
+    min-width: 0;
     min-height: 30px;
     border-radius: 6px;
     border: 1px solid rgba(32, 39, 89, 0.14);

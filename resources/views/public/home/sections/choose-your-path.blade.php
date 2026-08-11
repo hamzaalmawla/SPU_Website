@@ -5,7 +5,7 @@
                 <div class="absolute inset-0 opacity-[0.15] z-0 animate-slow-pan" style="background-image: radial-gradient(circle, #ffffff 1px, transparent 1px); background-size: 30px 30px;"></div>
                 <div class="relative z-10 w-full px-6 flex flex-col h-full justify-center text-right">
                     @php($pathTitleParts = preg_split('/\s+/u', (string) $section->payload->title, 2))
-                    <h2 class="text-[45px] text-center w-full font-bold leading-tight mb-12 transition-all duration-500">
+                    <h2 class="mb-12 w-full text-center text-[clamp(2rem,10vw,2.8125rem)] font-bold leading-tight transition-all duration-500">
                         <span class="sr-only">{{ $section->payload->title }}</span>
                         <span>{{ $pathTitleParts[0] ?? $section->payload->title }}</span>
                         @if (! empty($pathTitleParts[1]))
@@ -17,7 +17,7 @@
             </div>
 
             <div class="flex-1 min-w-0 w-full relative">
-                <div class="flex gap-3 absolute -top-26 z-50 rtl:left-0 ltr:right-0">
+                <div class="relative z-50 mb-4 flex justify-end gap-3 md:absolute md:-top-26 md:mb-0 md:ltr:right-0 md:rtl:left-0">
                     <button type="button" @click="slidePaths('previous')" class="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-controls="home-paths-track" aria-label="{{ __('public.previous') }}"><img src="/images/icon-chevron-left-outline.svg" class="w-3.5 h-3.5 rtl:rotate-180" alt=""></button>
                     <button type="button" @click="slidePaths('next')" class="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-controls="home-paths-track" aria-label="{{ __('public.next') }}"><img src="/images/icon-chevron-right-outline.svg" class="w-3.5 h-3.5 rtl:rotate-180" alt=""></button>
                 </div>
@@ -51,8 +51,12 @@
                                     </ul>
                                 @endif
 
-                              
-
+                                @if (! empty($item['action']['url']) && ! empty($item['action']['label']))
+                                    <a href="{{ $item['action']['url'] }}" class="mt-auto inline-flex items-center gap-2 font-bold text-white transition-all hover:gap-3" @if (! empty($item['action']['target'])) target="{{ $item['action']['target'] }}" rel="noreferrer" @endif>
+                                        <span>{{ $item['action']['label'] }}</span>
+                                        <img src="/images/icon-arrow-right-outline.svg" class="h-4 w-4 brightness-0 invert rtl:rotate-180" alt="">
+                                    </a>
+                                @endif
                             </div>
                         </article>
                     @endforeach

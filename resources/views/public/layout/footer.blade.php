@@ -153,7 +153,7 @@
 
             @if ($mapEmbedUrl)
                 <div class="flex flex-col items-start lg:col-span-3 lg:items-end">
-                    <h3 class="mb-8 w-full text-left text-[18px] font-bold uppercase ltr:tracking-widest text-white/50 {{ $isArabic ? 'lg:text-right' : 'lg:text-left' }}">
+                    <h3 class="mb-8 w-full text-start text-[18px] font-bold uppercase ltr:tracking-widest text-white/50 {{ $isArabic ? 'text-right' : 'text-left' }}">
                         {{ __('public.footer_location') }}
                     </h3>
                     <div class="group h-[180px] w-full overflow-hidden rounded-[12px] border border-white/10 shadow-2xl">

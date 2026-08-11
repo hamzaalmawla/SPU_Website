@@ -164,6 +164,9 @@ trait ManagesFacultyHomepage
         $studyPlanWorkspace = $isStudyPlan && is_string($studyPlanDepartmentId) && is_string($studyPlanTermId)
             ? $this->studyPlanEditorService->buildWorkspace($payload, $studyPlanDepartmentId, $studyPlanTermId)
             : [];
+        $studentRecords = $this->hasFilterableRecords($targetKey)
+            ? $this->studentRecordsForForm($targetKey, $payload)
+            : [];
 
         $this->form->fill([
             'target_key' => $targetKey,
@@ -172,6 +175,11 @@ trait ManagesFacultyHomepage
             'record_search' => (string) ($this->data['record_search'] ?? ''),
             'record_department_filter' => (string) ($this->data['record_department_filter'] ?? ''),
             'record_year_filter' => (string) ($this->data['record_year_filter'] ?? ''),
+            'student_record_keys' => array_values(array_filter(array_map(
+                static fn (array $item): string => (string) ($item['_cmsKey'] ?? ''),
+                $studentRecords,
+            ), static fn (string $key): bool => $key !== '')),
+            'student_records' => $studentRecords,
             'study_plan_workspace' => $studyPlanWorkspace,
             'ar_content' => $this->contentForForm($targetKey, is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [], $studyPlanDepartmentId, $studyPlanTermId),
             'en_content' => $this->contentForForm($targetKey, is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [], $studyPlanDepartmentId, $studyPlanTermId),
@@ -193,6 +201,7 @@ trait ManagesFacultyHomepage
                 Hidden::make('target_key')->required(),
                 Hidden::make('study_plan_department_id'),
                 Hidden::make('study_plan_term_id'),
+                Hidden::make('student_record_keys')->dehydrated(),
                 Section::make(__('admin.faculty_workspace.editing_tools'))->schema([
                     TextInput::make('record_search')
                         ->label(__('admin.faculty_workspace.fields.search'))
@@ -223,6 +232,8 @@ trait ManagesFacultyHomepage
                     ])
                     ->persistTabInQueryString('locale')
                     ->columnSpanFull(),
+                $this->bilingualStudentFields()
+                    ->visible(fn (): bool => $this->hasFilterableRecords($this->currentTargetKeyForSchema())),
                 $this->studyPlanWorkspaceFields()
                     ->visible(fn (): bool => $this->subpageSlugFromTarget($this->currentTargetKeyForSchema()) === 'study-plan'),
             ])
@@ -640,15 +651,30 @@ trait ManagesFacultyHomepage
     {
         $targetKey = (string) ($state['target_key'] ?? $this->defaultTargetKey());
         $this->assertManagedTarget($targetKey);
+        $arContent = is_array($state['ar_content'] ?? null) ? $state['ar_content'] : [];
+        $enContent = is_array($state['en_content'] ?? null) ? $state['en_content'] : [];
+
+        if ($this->hasFilterableRecords($targetKey)) {
+            [$arItems, $enItems, $visibleKeys] = $this->studentItemsFromForm($state);
+            $usePairedRecords = $this->hasActiveRecordFilters()
+                || $this->listOfArrays($state['student_records'] ?? []) !== [];
+
+            if ($usePairedRecords) {
+                $arContent['items'] = $arItems;
+                $enContent['items'] = $enItems;
+                $arContent['_filteredRecordKeys'] = $visibleKeys;
+                $enContent['_filteredRecordKeys'] = $visibleKeys;
+            }
+        }
 
         $payload = [
             'translations' => [
                 'ar' => $targetKey === $this->defaultTargetKey()
-                    ? $this->normalizeContent(is_array($state['ar_content'] ?? null) ? $state['ar_content'] : [])
-                    : $this->normalizeSubpageContent($targetKey, 'ar', is_array($state['ar_content'] ?? null) ? $state['ar_content'] : []),
+                    ? $this->normalizeContent($arContent)
+                    : $this->normalizeSubpageContent($targetKey, 'ar', $arContent),
                 'en' => $targetKey === $this->defaultTargetKey()
-                    ? $this->normalizeContent(is_array($state['en_content'] ?? null) ? $state['en_content'] : [])
-                    : $this->normalizeSubpageContent($targetKey, 'en', is_array($state['en_content'] ?? null) ? $state['en_content'] : []),
+                    ? $this->normalizeContent($enContent)
+                    : $this->normalizeSubpageContent($targetKey, 'en', $enContent),
             ],
         ];
 
@@ -667,6 +693,75 @@ trait ManagesFacultyHomepage
             (string) ($state['study_plan_department_id'] ?? ''),
             (string) ($state['study_plan_term_id'] ?? ''),
         );
+    }
+
+    private function bilingualStudentFields(): Section
+    {
+        $subpageSlug = $this->subpageSlugFromTarget($this->currentTargetKeyForSchema());
+        $isAlumni = $subpageSlug === 'alumni';
+        $fields = [
+            Hidden::make('_cmsKey')->dehydrated(),
+            Hidden::make('id')->dehydrated(),
+            Hidden::make('_originalTitleEn')->dehydrated(),
+            Hidden::make('_originalTitleAr')->dehydrated(),
+            TextInput::make('titleEn')
+                ->label(__($isAlumni ? 'admin.faculty_workspace.editor.fields.graduate_name_en' : 'admin.faculty_workspace.editor.fields.student_name_en'))
+                ->required()
+                ->maxLength(180),
+            TextInput::make('titleAr')
+                ->label(__($isAlumni ? 'admin.faculty_workspace.editor.fields.graduate_name_ar' : 'admin.faculty_workspace.editor.fields.student_name_ar'))
+                ->required()
+                ->maxLength(180),
+        ];
+
+        if ($isAlumni) {
+            $fields = [
+                ...$fields,
+                TextInput::make('graduationYear')->label(__('admin.faculty_workspace.editor.fields.graduation_year'))->maxLength(20),
+                TextInput::make('semester')->label(__('admin.faculty_workspace.editor.fields.semester_en'))->maxLength(80),
+                TextInput::make('semesterAr')->label(__('admin.faculty_workspace.editor.fields.semester_ar'))->maxLength(80),
+                TextInput::make('department')->label(__('admin.faculty_workspace.editor.fields.department_en'))->maxLength(160),
+                TextInput::make('departmentAr')->label(__('admin.faculty_workspace.editor.fields.department_ar'))->maxLength(160),
+                TextInput::make('faculty')->label(__('admin.faculty_workspace.editor.fields.faculty_en'))->maxLength(180),
+                TextInput::make('facultyAr')->label(__('admin.faculty_workspace.editor.fields.faculty_ar'))->maxLength(180),
+                TextInput::make('degree')->label(__('admin.faculty_workspace.editor.fields.degree_en'))->maxLength(120),
+                TextInput::make('degreeAr')->label(__('admin.faculty_workspace.editor.fields.degree_ar'))->maxLength(120),
+                TextInput::make('academicPhase')->label(__('admin.faculty_workspace.editor.fields.academic_phase_en'))->maxLength(120),
+                TextInput::make('academicPhaseAr')->label(__('admin.faculty_workspace.editor.fields.academic_phase_ar'))->maxLength(120),
+                MediaPicker::image('image', __('admin.faculty_workspace.editor.fields.image')),
+            ];
+        } else {
+            $fields = [
+                ...$fields,
+                TextInput::make('academicYear')->label(__('admin.faculty_workspace.editor.fields.academic_year'))->maxLength(40),
+                TextInput::make('semester')->label(__('admin.faculty_workspace.editor.fields.semester_en'))->maxLength(80),
+                TextInput::make('semesterAr')->label(__('admin.faculty_workspace.editor.fields.semester_ar'))->maxLength(80),
+                TextInput::make('department')->label(__('admin.faculty_workspace.editor.fields.department_en'))->maxLength(160),
+                TextInput::make('departmentAr')->label(__('admin.faculty_workspace.editor.fields.department_ar'))->maxLength(160),
+                TextInput::make('faculty')->label(__('admin.faculty_workspace.editor.fields.faculty_en'))->maxLength(180),
+                TextInput::make('facultyAr')->label(__('admin.faculty_workspace.editor.fields.faculty_ar'))->maxLength(180),
+                TextInput::make('gpa')->label(__('admin.faculty_workspace.editor.fields.gpa'))->maxLength(20),
+                MediaPicker::image('image', __('admin.faculty_workspace.editor.fields.image')),
+            ];
+        }
+
+        $sectionLabel = $isAlumni
+            ? __('admin.faculty_workspace.editor.sections.alumni')
+            : __('admin.faculty_workspace.editor.sections.honor_students');
+
+        return Section::make($sectionLabel)
+            ->description(__('admin.faculty_workspace.editor.help.bilingual_records'))
+            ->schema([
+                Repeater::make('student_records')
+                    ->label($sectionLabel)
+                    ->schema($fields)
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ])
+            ->columnSpanFull();
     }
 
     /** @return array<int, Section> */
@@ -1084,28 +1179,7 @@ trait ManagesFacultyHomepage
     /** @return array<int, Section> */
     private function alumniSubpageFields(string $prefix): array
     {
-        return [
-            Section::make(__('admin.faculty_workspace.editor.sections.alumni'))->schema([
-                Repeater::make($prefix.'.items')
-                    ->label(__('admin.faculty_workspace.editor.sections.alumni'))
-                    ->schema([
-                        Hidden::make('_cmsKey'),
-                        TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.graduate_name'))->required()->maxLength(180),
-                        TextInput::make('graduationYear')->label(__('admin.faculty_workspace.editor.fields.graduation_year'))->maxLength(20),
-                        TextInput::make('semester')->label(__('admin.faculty_workspace.editor.fields.semester'))->maxLength(80),
-                        TextInput::make('department')->label(__('admin.faculty_workspace.editor.fields.department'))->maxLength(160),
-                        TextInput::make('faculty')->label(__('admin.faculty_workspace.editor.fields.faculty'))->maxLength(180),
-                        TextInput::make('degree')->label(__('admin.faculty_workspace.editor.fields.degree'))->maxLength(120),
-                        TextInput::make('academicPhase')->label(__('admin.faculty_workspace.editor.fields.academic_phase'))->maxLength(120),
-                        MediaPicker::image('image', __('admin.faculty_workspace.editor.fields.image')),
-                    ])
-                    ->columns(2)
-                    ->defaultItems(0)
-                    ->reorderable()
-                    ->collapsible()
-                    ->columnSpanFull(),
-            ]),
-        ];
+        return [];
     }
 
     /** @return array<int, Section> */
@@ -1116,23 +1190,6 @@ trait ManagesFacultyHomepage
                 Textarea::make($prefix.'.payload.quote')
                     ->label(__('admin.faculty_workspace.editor.fields.honor_quote'))
                     ->rows(2)
-                    ->columnSpanFull(),
-                Repeater::make($prefix.'.items')
-                    ->label(__('admin.faculty_workspace.editor.sections.honor_students'))
-                    ->schema([
-                        Hidden::make('_cmsKey'),
-                        TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.student_name'))->required()->maxLength(180),
-                        TextInput::make('academicYear')->label(__('admin.faculty_workspace.editor.fields.academic_year'))->maxLength(40),
-                        TextInput::make('semester')->label(__('admin.faculty_workspace.editor.fields.semester'))->maxLength(80),
-                        TextInput::make('department')->label(__('admin.faculty_workspace.editor.fields.department'))->maxLength(160),
-                        TextInput::make('faculty')->label(__('admin.faculty_workspace.editor.fields.faculty'))->maxLength(180),
-                        TextInput::make('gpa')->label(__('admin.faculty_workspace.editor.fields.gpa'))->maxLength(20),
-                        MediaPicker::image('image', __('admin.faculty_workspace.editor.fields.image')),
-                    ])
-                    ->columns(2)
-                    ->defaultItems(0)
-                    ->reorderable()
-                    ->collapsible()
                     ->columnSpanFull(),
             ]),
         ];
@@ -1226,6 +1283,200 @@ trait ManagesFacultyHomepage
         return $content;
     }
 
+    /** @param array<string, mixed> $payload @return array<int, array<string, mixed>> */
+    private function studentRecordsForForm(string $targetKey, array $payload): array
+    {
+        if (! $this->hasActiveRecordFilters()) {
+            return [];
+        }
+
+        $arItems = $this->recordItemsWithKeys($this->listOfArrays($payload['translations']['ar']['items'] ?? []));
+        $enItems = $this->recordItemsWithKeys($this->listOfArrays($payload['translations']['en']['items'] ?? []));
+        $arByKey = collect($arItems)->keyBy(fn (array $item): string => (string) ($item['_cmsKey'] ?? ''));
+        $records = [];
+        $processedIndexes = [];
+
+        foreach (array_values($enItems) as $index => $enItem) {
+            $key = (string) ($enItem['_cmsKey'] ?? 'record-position-'.$index);
+            $arItem = $arByKey->get($key);
+
+            if (! is_array($arItem)) {
+                $arItem = $arItems[$index] ?? [];
+            }
+
+            if (! $this->studentRecordMatchesFilters($targetKey, $enItem, $arItem)) {
+                continue;
+            }
+
+            $records[] = $this->studentRecordForForm($enItem, $arItem, $key);
+            $processedIndexes[$index] = true;
+        }
+
+        foreach (array_values($arItems) as $index => $arItem) {
+            if (isset($processedIndexes[$index])) {
+                continue;
+            }
+
+            $enItem = $enItems[$index] ?? [];
+            $key = (string) ($enItem['_cmsKey'] ?? $arItem['_cmsKey'] ?? 'record-position-'.$index);
+
+            if ($this->studentRecordMatchesFilters($targetKey, $enItem, $arItem)) {
+                $records[] = $this->studentRecordForForm($enItem, $arItem, $key);
+            }
+        }
+
+        return $records;
+    }
+
+    /** @param array<string, mixed> $enItem @param array<string, mixed> $arItem @return array<string, mixed> */
+    private function studentRecordForForm(array $enItem, array $arItem, string $key): array
+    {
+        $record = [
+            '_cmsKey' => $key,
+            'id' => $enItem['id'] ?? ($arItem['id'] ?? null),
+            'titleEn' => $this->studentPairValue($enItem, $arItem, 'title'),
+            'titleAr' => $this->studentPairValue($arItem, $enItem, 'title'),
+            'image' => $this->studentPairValue($enItem, $arItem, 'image'),
+            'semester' => $this->studentPairValue($enItem, $arItem, 'semester'),
+            'semesterAr' => $this->studentPairValue($arItem, $enItem, 'semester'),
+            'department' => $this->studentPairValue($enItem, $arItem, 'department'),
+            'departmentAr' => $this->studentPairValue($arItem, $enItem, 'department'),
+            'faculty' => $this->studentPairValue($enItem, $arItem, 'faculty'),
+            'facultyAr' => $this->studentPairValue($arItem, $enItem, 'faculty'),
+            'degree' => $this->studentPairValue($enItem, $arItem, 'degree'),
+            'degreeAr' => $this->studentPairValue($arItem, $enItem, 'degree'),
+            'academicPhase' => $this->studentPairValue($enItem, $arItem, 'academicPhase'),
+            'academicPhaseAr' => $this->studentPairValue($arItem, $enItem, 'academicPhase'),
+            'isMemorial' => $this->studentPairValue($enItem, $arItem, 'isMemorial'),
+        ];
+        $record['_originalTitleEn'] = $record['titleEn'];
+        $record['_originalTitleAr'] = $record['titleAr'];
+
+        foreach (['graduationYear', 'academicYear', 'gpa'] as $keyName) {
+            if (array_key_exists($keyName, $enItem) || array_key_exists($keyName, $arItem)) {
+                $record[$keyName] = $this->studentPairValue($enItem, $arItem, $keyName);
+            }
+        }
+
+        return $record;
+    }
+
+    /** @param array<string, mixed> $primary @param array<string, mixed> $fallback */
+    private function studentPairValue(array $primary, array $fallback, string $key): mixed
+    {
+        return ($primary[$key] ?? null) !== null && ($primary[$key] ?? '') !== ''
+            ? $primary[$key]
+            : ($fallback[$key] ?? null);
+    }
+
+    /** @param array<string, mixed> $enItem @param array<string, mixed> $arItem */
+    private function studentRecordMatchesFilters(string $targetKey, array $enItem, array $arItem): bool
+    {
+        return $this->recordMatchesFilters($targetKey, $enItem)
+            || $this->recordMatchesFilters($targetKey, $arItem);
+    }
+
+    /** @param array<string, mixed> $state @return array{0: array<int, array<string, mixed>>, 1: array<int, array<string, mixed>>, 2: array<int, string>} */
+    private function studentItemsFromForm(array $state): array
+    {
+        $records = $this->listOfArrays($state['student_records'] ?? []);
+        $visibleKeys = array_values(array_filter(
+            array_map(static fn (mixed $key): string => is_scalar($key) ? (string) $key : '', is_array($state['student_record_keys'] ?? null) ? $state['student_record_keys'] : []),
+            static fn (string $key): bool => $key !== '',
+        ));
+
+        if ($records === [] && ! $this->hasActiveRecordFilters()) {
+            return [
+                $this->listOfArrays($state['ar_content']['items'] ?? []),
+                $this->listOfArrays($state['en_content']['items'] ?? []),
+                [],
+            ];
+        }
+
+        if ($visibleKeys === [] && $records !== []) {
+            $records = $this->recordItemsWithKeys($records);
+            $visibleKeys = array_values(array_filter(array_map(
+                static fn (array $item): string => (string) ($item['_cmsKey'] ?? ''),
+                $records,
+            )));
+        }
+
+        $legacyEnItems = $this->recordItemsWithKeys($this->listOfArrays($state['en_content']['items'] ?? []));
+        $legacyArItems = $this->recordItemsWithKeys($this->listOfArrays($state['ar_content']['items'] ?? []));
+        $legacyEnByKey = collect($legacyEnItems)->keyBy(fn (array $item): string => (string) ($item['_cmsKey'] ?? ''));
+        $legacyArByKey = collect($legacyArItems)->keyBy(fn (array $item): string => (string) ($item['_cmsKey'] ?? ''));
+
+        foreach ($records as &$record) {
+            $key = (string) ($record['_cmsKey'] ?? '');
+            $legacyEn = $legacyEnByKey->get($key);
+            $legacyAr = $legacyArByKey->get($key);
+
+            if (is_array($legacyEn)) {
+                $originalTitle = (string) ($record['_originalTitleEn'] ?? $record['titleEn'] ?? '');
+                if ((string) ($record['titleEn'] ?? '') === $originalTitle && array_key_exists('title', $legacyEn)) {
+                    $record['titleEn'] = $legacyEn['title'];
+                }
+            }
+
+            if (is_array($legacyAr)) {
+                $originalTitle = (string) ($record['_originalTitleAr'] ?? $record['titleAr'] ?? '');
+                if ((string) ($record['titleAr'] ?? '') === $originalTitle && array_key_exists('title', $legacyAr)) {
+                    $record['titleAr'] = $legacyAr['title'];
+                }
+                foreach (['semester', 'department', 'faculty', 'degree', 'academicPhase'] as $field) {
+                    if (array_key_exists($field, $legacyAr)) {
+                        $record[$field.'Ar'] = $legacyAr[$field];
+                    }
+                }
+            }
+        }
+        unset($record);
+
+        return [
+            $this->studentItemsForLocale($records, 'ar'),
+            $this->studentItemsForLocale($records, 'en'),
+            $visibleKeys,
+        ];
+    }
+
+    /** @param array<int, array<string, mixed>> $records @return array<int, array<string, mixed>> */
+    private function studentItemsForLocale(array $records, string $locale): array
+    {
+        $items = [];
+        $localizedSuffix = $locale === 'ar' ? 'Ar' : 'En';
+
+        foreach ($records as $record) {
+            $item = [
+                '_cmsKey' => (string) ($record['_cmsKey'] ?? ''),
+                'title' => (string) ($record['title'.$localizedSuffix] ?? ''),
+                'image' => $record['image'] ?? null,
+                'isMemorial' => $record['isMemorial'] ?? false,
+            ];
+
+            if (array_key_exists('id', $record) && $record['id'] !== null && $record['id'] !== '') {
+                $item['id'] = $record['id'];
+            }
+
+            foreach (['graduationYear', 'academicYear', 'gpa'] as $key) {
+                if (array_key_exists($key, $record)) {
+                    $item[$key] = $record[$key];
+                }
+            }
+
+            foreach (['semester', 'department', 'faculty', 'degree', 'academicPhase'] as $key) {
+                $localizedKey = $locale === 'ar' ? $key.'Ar' : $key;
+
+                if (array_key_exists($localizedKey, $record)) {
+                    $item[$key] = $record[$localizedKey];
+                }
+            }
+
+            $items[] = $item;
+        }
+
+        return $this->recordItemsWithKeys($items);
+    }
+
     /** @return array<string, mixed> */
     private function normalizeSubpageContent(string $targetKey, string $locale, array $content): array
     {
@@ -1259,6 +1510,10 @@ trait ManagesFacultyHomepage
             return $content;
         }
 
+        $filteredRecordKeys = is_array($content['_filteredRecordKeys'] ?? null)
+            ? array_values(array_filter(array_map('strval', $content['_filteredRecordKeys']), static fn (string $key): bool => $key !== ''))
+            : null;
+        unset($content['_filteredRecordKeys']);
         $content['items'] = $this->listOfArrays($content['items'] ?? []);
         $content['items'] = array_map(function (array $item) use ($subpageSlug): array {
             if ($subpageSlug === 'departments') {
@@ -1291,7 +1546,7 @@ trait ManagesFacultyHomepage
         }, $content['items']);
 
         if ($this->hasFilterableRecords($targetKey)) {
-            $content = $this->mergeFilterableRecordContent($targetKey, $locale, $content);
+            $content = $this->mergeFilterableRecordContent($targetKey, $locale, $content, $filteredRecordKeys);
         }
 
         $content['items'] = array_map(fn (array $item): array => $this->withoutKeys($item, ['_cmsKey']), $content['items']);
@@ -1406,14 +1661,19 @@ trait ManagesFacultyHomepage
     private function recordItemsWithKeys(array $items): array
     {
         return array_map(function (array $item, int $index): array {
-            $item['_cmsKey'] = (string) ($item['_cmsKey'] ?? sha1($index.'|'.$this->recordSearchText($item)));
+            $existingKey = $item['_cmsKey'] ?? null;
+            $item['_cmsKey'] = is_scalar($existingKey) && (string) $existingKey !== ''
+                ? (string) $existingKey
+                : (isset($item['id']) && is_scalar($item['id']) && (string) $item['id'] !== ''
+                    ? 'record-id-'.(string) $item['id']
+                    : 'record-position-'.$index);
 
             return $item;
         }, $items, array_keys($items));
     }
 
-    /** @param array<string, mixed> $content @return array<string, mixed> */
-    private function mergeFilterableRecordContent(string $targetKey, string $locale, array $content): array
+    /** @param array<string, mixed> $content @param array<int, string>|null $visibleKeys @return array<string, mixed> */
+    private function mergeFilterableRecordContent(string $targetKey, string $locale, array $content, ?array $visibleKeys = null): array
     {
         $basePayload = $this->cmsWorkflowService->latestEditableDraftPayload($targetKey, $this->authenticatedUserId()) ?? $this->facultyPageService->getEditablePayload($targetKey);
         $baseContent = is_array($basePayload['translations'][$locale] ?? null) ? $basePayload['translations'][$locale] : [];
@@ -1429,10 +1689,13 @@ trait ManagesFacultyHomepage
         $editedByKey = collect($editedItems)->keyBy(fn (array $item): string => (string) ($item['_cmsKey'] ?? ''));
         $seenKeys = [];
 
-        $content['items'] = array_map(function (array $baseItem) use ($targetKey, $editedByKey, &$seenKeys): array {
+        $content['items'] = array_values(array_filter(array_map(function (array $baseItem) use ($targetKey, $editedByKey, $visibleKeys, &$seenKeys): ?array {
             $key = (string) ($baseItem['_cmsKey'] ?? '');
+            $isVisible = is_array($visibleKeys)
+                ? in_array($key, $visibleKeys, true)
+                : $this->recordMatchesFilters($targetKey, $baseItem);
 
-            if ($this->recordMatchesFilters($targetKey, $baseItem)) {
+            if ($isVisible) {
                 $seenKeys[] = $key;
 
                 $editedItem = $editedByKey->get($key);
@@ -1440,10 +1703,12 @@ trait ManagesFacultyHomepage
                 if (is_array($editedItem)) {
                     return $editedItem;
                 }
+
+                return null;
             }
 
             return $baseItem;
-        }, $baseItems);
+        }, $baseItems), static fn (?array $item): bool => is_array($item)));
 
         foreach ($editedItems as $editedItem) {
             $key = (string) ($editedItem['_cmsKey'] ?? '');

@@ -9,10 +9,6 @@
 @layer components {
 
     /* ── Shell: the outer card ── */
-    .site-nav-container {
-        @apply xl:px-8;
-    }
-
     .site-nav-shell {
         position: relative;
         isolation: isolate;
@@ -157,7 +153,7 @@
         display: grid;
         gap: 0.2rem;
         min-width: 16rem;
-        max-height: calc(100vh - 6rem);
+        max-height: calc(100svh - 6rem);
         padding: 0.5rem;
         border: 1px solid rgba(225, 231, 245, 0.8);
         border-radius: 16px;
@@ -234,7 +230,8 @@
         align-items: center;
         gap: 0.6rem;
         border-radius: 10px;
-        padding: 0.5rem 0.9rem 0.5rem 1.4rem;
+        padding-block: 0.5rem;
+        padding-inline: 1.4rem 0.9rem;
         color: #202759;
         font-size: 0.85rem;
         font-weight: 500;
@@ -314,7 +311,7 @@
         margin-top: 0.05rem;
         border-top: 1px solid rgba(32, 39, 89, 0.06);
         padding: 0.5rem 0.75rem 0.75rem;
-        max-height: calc(100vh - 5rem);
+        max-height: calc(100svh - 5rem);
         overflow-y: auto;
         overscroll-behavior: contain;
     }
@@ -420,7 +417,7 @@
     }
 
     .site-nav-mobile-featured {
-        padding-left: 1.5rem;
+        padding-inline-start: 1.5rem;
         font-size: 0.84rem;
         font-weight: 500;
     }
@@ -455,18 +452,8 @@
     /*
      * ── Responsive padding system ──
      *
-     * Container already provides lg:px-[80px] (80px) at ≥1024px.
-     * site-nav-container adds xl:px-8 (32px) at ≥1280px only.
-     * Reference (≥1400px): 80 + 32 + shell 1.5rem(24px) = 136px = 9.7% of 1400px ✓
-     *
-     * At 1024–1279px: container 80px only → shell px = 4% × 1024 - 80 ≈ 0
-     *   → keep shell padding small: 0.75rem (12px) → total 92px = 9.0% of 1024px ✓
-     * At 1280–1527px: container 80 + nav-container 32 = 112px → shell px = 0.75rem
-     *   → total 124px = 8.6%–9.7% across the range ✓
-     * At ≥1528px: same as 1280+ but single row
-     *
-     * Below 1024px (hamburger): container px-5/px-8, no nav-container extra
-     *   → shell px scales at ~4% of viewport
+     * The shell uses the hamburger layout through tablet widths and switches
+     * to the full navigation only when the xl breakpoint has enough room.
      */
 
     /* 700px – 767px */
@@ -483,56 +470,18 @@
         }
     }
 
-    /* ── 1024px–1279px (lg): two-row layout ── */
-    /* Row 1: logo (left) + actions (right) */
-    /* Row 2: nav links full-width centered */
-    @media (min-width: 1024px) and (max-width: 1279px) {
-        .site-nav-shell__main {
-            flex-wrap: wrap;
-            row-gap: 0;
-            padding: 0.75rem 1rem 0;
-            justify-content: flex-start;
-        }
+     /* ── 1024px–1279px: tablet navigation ── */
+     @media (min-width: 1024px) and (max-width: 1279px) {
+         .site-nav-shell__main {
+             flex-wrap: nowrap;
+             gap: 0.75rem;
+             padding: 0.7rem 1rem;
+         }
 
-        .site-nav-brand {
-            order: 1;
-            flex-shrink: 0;
-        }
-
-        .site-nav-actions {
-            order: 2;
-            flex-shrink: 0;
-            margin-inline-start: auto;
-        }
-
-        .site-nav-shell__main>nav {
-            order: 3 !important;
-            width: 100% !important;
-            flex: 0 0 100% !important;
-            display: flex !important;
-            justify-content: center;
-            border-top: 1px solid rgba(32, 39, 89, 0.06);
-            padding: 0.3rem 0;
-            margin-top: 0.1rem;
-            margin-inline-start: 0;
-        }
-
-        .site-nav-list {
-            width: 100%;
-        }
-
-        .site-nav-link {
-            font-size: 0.875rem;
-            padding: 0.5rem 0.7rem;
-        }
-    }
-
-    /* RTL two-row: inner nav row stays centered (not row-reversed) */
-    @media (min-width: 1024px) and (max-width: 1279px) {
-        [dir='rtl'] .site-nav-shell__main>nav {
-            flex-direction: row;
-        }
-    }
+         .site-nav-shell__main > nav {
+             display: none !important;
+         }
+     }
 
     /* ── ≥1280px (xl): single row, comfortable spacing ── */
     @media (min-width: 1280px) {
