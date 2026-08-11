@@ -70,7 +70,8 @@ class HomepageInteractionAccessibilityTest extends TestCase
         $this->assertStringContainsString(':aria-hidden="isHidden(index)"', $honorHtml);
         $this->assertStringContainsString('class="path-card-front', $pathHtml);
         $this->assertStringContainsString('class="path-card-back', $pathHtml);
-        $this->assertStringContainsString('@click="togglePathCard(0)"', $pathHtml);
+        $this->assertStringContainsString(':class="{ \'path-card--active\': activePathCard === 0 }"', $pathHtml);
+        $this->assertStringContainsString('@click="handlePathCardTap($event, 0)"', $pathHtml);
         $this->assertStringContainsString('href="/en/admissions"', $pathHtml);
     }
 

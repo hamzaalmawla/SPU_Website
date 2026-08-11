@@ -46,23 +46,28 @@
             </div>
         </div>
 
-        <div id="honor-panels" class="relative h-[360px] md:h-[500px] w-full">
+        <div id="honor-panels" class="relative h-[480px] md:h-[500px] w-full">
             <template x-for="(item, index) in items" :key="itemKey(item, index)">
-                <div class="absolute transition-all duration-[1800ms] [transition-timing-function:cubic-bezier(0.25,1,0.5,1)] rounded-[40px] overflow-hidden group" :class="panelClass(index)" role="group" aria-roledescription="{{ __('public.slide') }}" :aria-label="itemLabel(index)" :aria-hidden="isHidden(index)">
+                <div class="absolute transition-all duration-[1800ms] [transition-timing-function:cubic-bezier(0.25,1,0.5,1)] rounded-[28px] md:rounded-[40px] overflow-hidden group" :class="panelClass(index)" role="group" aria-roledescription="{{ __('public.slide') }}" :aria-label="itemLabel(index)" :aria-hidden="isHidden(index)">
                     <img :src="item.image" :alt="itemAlt(item)" class="absolute inset-0 w-full h-full object-cover transition-transform duration-[3000ms] group-hover:scale-110">
-                    <div x-show="isPrimary(index)" x-transition:enter="transition ease-out duration-[1200ms] delay-[600ms]" x-transition:enter-start="opacity-0 translate-y-12" x-transition:enter-end="opacity-100 translate-y-0" class="absolute inset-0 bg-gradient-to-t from-spu-blue/95 via-spu-blue/40 to-transparent flex flex-col justify-end p-10 text-white">
-                        <div class="flex items-center gap-3 mb-4">
-                            <template x-if="item.typeTag"><span class="honor-panel-pill text-white/90 px-4 py-1 rounded-full bg-spu-red text-[10px] font-bold uppercase" x-text="item.typeTag"></span></template>
-                            <template x-if="item.meta"><span class="text-white/70 text-sm" x-text="item.meta"></span></template>
+                    <div x-show="isPrimary(index)" x-transition:enter="transition ease-out duration-[1200ms] delay-[600ms]" x-transition:enter-start="opacity-0 translate-y-12" x-transition:enter-end="opacity-100 translate-y-0" class="absolute inset-0 flex flex-col justify-between p-6 md:p-10 text-white">
+                        <div class="absolute inset-0 bg-gradient-to-t from-spu-blue/95 via-spu-blue/45 to-transparent pointer-events-none"></div>
+
+                        <div class="relative flex items-start">
+                            <template x-if="item.typeTag"><span class="honor-panel-pill text-white/95 px-3.5 py-1.5 md:px-4 rounded-full bg-spu-red/95 text-[9px] md:text-[10px] font-bold uppercase tracking-wider whitespace-nowrap shadow-lg" x-text="item.typeTag"></span></template>
                         </div>
-                        <h3 class="text-2xl lg:text-4xl font-bold mb-4" x-text="item.title"></h3>
-                        <template x-if="item.summary"><p class="text-white/80 leading-relaxed mb-6 line-clamp-2" x-text="item.summary"></p></template>
-                        <template x-if="hasAction(item)">
-                            <a :href="item.action.url" class="honor-panel-cta text-white/90 inline-flex items-center gap-3 font-bold group/link" x-bind:target="actionTarget(item)" x-bind:rel="actionRel(item)">
-                                <span class="border-b-2 border-spu-red pb-1" x-text="item.action.label"></span>
-                                <img src="/images/icon-arrow-right-outline.svg" class="w-4 h-4 brightness-0 invert transition-transform group-hover/link:translate-x-2 rtl:rotate-180" alt="">
-                            </a>
-                        </template>
+
+                        <div class="relative">
+                            <template x-if="item.meta"><p class="text-white/75 text-xs md:text-sm font-semibold tracking-wide mb-2 md:mb-3" x-text="item.meta"></p></template>
+                            <h3 class="text-xl sm:text-2xl lg:text-4xl font-bold leading-snug text-balance line-clamp-3 mb-2.5 md:mb-4" x-text="item.title"></h3>
+                            <template x-if="item.summary"><p class="text-white/80 text-sm md:text-base leading-relaxed mb-4 md:mb-6 line-clamp-2" x-text="item.summary"></p></template>
+                            <template x-if="hasAction(item)">
+                                <a :href="item.action.url" class="honor-panel-cta text-white/90 inline-flex items-center gap-2.5 md:gap-3 text-sm md:text-base font-bold group/link" x-bind:target="actionTarget(item)" x-bind:rel="actionRel(item)">
+                                    <span class="border-b-2 border-spu-red pb-1" x-text="item.action.label"></span>
+                                    <img src="/images/icon-arrow-right-outline.svg" class="w-4 h-4 brightness-0 invert transition-transform group-hover/link:translate-x-2 rtl:rotate-180" alt="">
+                                </a>
+                            </template>
+                        </div>
                     </div>
                     <button x-show="isSecondary(index)" type="button" class="absolute inset-0 hidden bg-black/30 hover:bg-black/10 transition-colors cursor-pointer focus-visible:outline focus-visible:outline-4 focus-visible:-outline-offset-4 focus-visible:outline-white lg:block" @click="handleManual('goto', index)" :aria-label="itemLabel(index)"></button>
                 </div>

@@ -1,6 +1,6 @@
 <section id="home-news" class="py-7.5 mt-[70px] bg-white font-hacen overflow-hidden reveal">
     <div class="container">
-        <div class="flex items-center justify-between relative mb-10">
+            <div class="flex flex-wrap items-center justify-between gap-y-4 relative mb-10">
             <h2 class="text-[clamp(1.85rem,7vw,2.625rem)] font-bold text-[#1e2652] tracking-tight">{{ $section->payload->title }}</h2>
             @if ($section->payload->sectionAction)
                 <div class="section-header__controls flex items-center absolute top-4.5 gap-6 rtl:left-0 ltr:right-0">

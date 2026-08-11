@@ -38,11 +38,16 @@
         pointer-events: none;
         transition: opacity 0.38s ease, transform 0.38s ease;
     }
-    .path-card:hover {
-        transform: translateY(-12px);
-        box-shadow: 0 42px 128px rgba(32, 39, 89, 0.26);
-        border-color: rgba(32, 39, 89, 0.22);
-        background: linear-gradient(180deg, #202759 0%, #182048 100%);
+    /* Hover-only effects are gated behind (hover: hover) so touch devices
+       never get a stuck "lift" state on tap; taps flip the card instead
+       via the Alpine-driven .path-card--active class. */
+    @media (hover: hover) {
+        .path-card:hover {
+            transform: translateY(-12px);
+            box-shadow: 0 42px 128px rgba(32, 39, 89, 0.26);
+            border-color: rgba(32, 39, 89, 0.22);
+            background: linear-gradient(180deg, #202759 0%, #182048 100%);
+        }
     }
 
     /* Flip faces: hover (desktop) / focus (keyboard) reveal the back panel,
@@ -81,10 +86,12 @@
         }
     }
 
-    .path-card:hover::before {
-        opacity: 0.88;
-        transform: scale(1.02);
-        background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.08), transparent 18%), radial-gradient(circle at bottom left, rgba(47, 78, 233, 0.16), transparent 22%);
+    @media (hover: hover) {
+        .path-card:hover::before {
+            opacity: 0.88;
+            transform: scale(1.02);
+            background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.08), transparent 18%), radial-gradient(circle at bottom left, rgba(47, 78, 233, 0.16), transparent 22%);
+        }
     }
 
     .path-card-icon {
@@ -95,12 +102,14 @@
         backdrop-filter: blur(6px);
     }
 
-    .path-card:hover .path-card-icon {
-        transform: translateY(-2px) scale(1.02);
-        background: rgba(255, 255, 255, 0.12);
-        color: #ffffff;
-        border-color: rgba(255, 255, 255, 0.2);
-        box-shadow: 0 16px 32px rgba(32, 39, 89, 0.22);
+    @media (hover: hover) {
+        .path-card:hover .path-card-icon {
+            transform: translateY(-2px) scale(1.02);
+            background: rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 16px 32px rgba(32, 39, 89, 0.22);
+        }
     }
 
     .path-card .path-card-accent {
@@ -109,9 +118,11 @@
         transition: opacity 0.38s ease, transform 0.38s ease;
     }
 
-    .path-card:hover .path-card-accent {
-        opacity: 1;
-        transform: translateY(0);
+    @media (hover: hover) {
+        .path-card:hover .path-card-accent {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     .path-card h3,
@@ -120,16 +131,16 @@
         color: var(--color-spu-blue);
     }
 
-    .path-card:hover h3 {
-        color: #ffffff;
+    @media (hover: hover) {
+        .path-card:hover h3 {
+            color: #ffffff;
+        }
     }
 
-    .path-card:hover ul li {
-        color: rgba(255, 255, 255, 0.85);
-    }
-
+    /* The links list only renders on the dark back face, so its base color
+       must stay readable without relying on hover (touch tap / keyboard flip). */
     .path-card ul li {
-        color: rgba(32, 39, 89, 0.82);
+        color: rgba(255, 255, 255, 0.85);
         font-size: 0.95rem;
         line-height: 1.8;
     }
@@ -144,9 +155,11 @@
         transition: transform 0.35s ease, background-color 0.35s ease;
     }
 
-    .path-card:hover ul li span:first-child {
-        transform: scale(1.15);
-        background: rgba(255, 255, 255, 0.95);
+    @media (hover: hover) {
+        .path-card:hover ul li span:first-child {
+            transform: scale(1.15);
+            background: rgba(255, 255, 255, 0.95);
+        }
     }
 
     .path-card-footer i {
@@ -155,16 +168,15 @@
         transform: translateX(0);
     }
 
-    .path-card:hover .path-card-footer i {
-        color: #ffffff;
-    }
+    @media (hover: hover) {
+        .path-card:hover .path-card-footer i {
+            color: #ffffff;
+            transform: translateX(8px);
+        }
 
-    .path-card:hover .path-card-footer i {
-        transform: translateX(8px);
-    }
-
-    [dir='rtl'] .path-card:hover .path-card-footer i {
-        transform: translateX(-8px);
+        [dir='rtl'] .path-card:hover .path-card-footer i {
+            transform: translateX(-8px);
+        }
     }
 
     .path-card-footer {
@@ -183,20 +195,22 @@
         transition: transform 0.35s ease, color 0.35s ease, opacity 0.35s ease;
     }
 
-    .path-card:hover .path-card-footer {
-        color: #ffffff;
-        border-color: rgba(255, 255, 255, 0.16);
-        transform: translateX(2px);
-        animation: pathCardPulse 2.1s ease-in-out infinite alternate;
-    }
+    @media (hover: hover) {
+        .path-card:hover .path-card-footer {
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.16);
+            transform: translateX(2px);
+            animation: pathCardPulse 2.1s ease-in-out infinite alternate;
+        }
 
-    .path-card:hover .path-card-footer span {
-        transform: translateX(4px);
-        opacity: 0.96;
-    }
+        .path-card:hover .path-card-footer span {
+            transform: translateX(4px);
+            opacity: 0.96;
+        }
 
-    .path-card:hover .path-card-footer i {
-        transform: translateX(8px);
+        .path-card:hover .path-card-footer i {
+            transform: translateX(8px);
+        }
     }
 
     @keyframes pathCardPulse {

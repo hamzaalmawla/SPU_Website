@@ -453,7 +453,7 @@
      * ── Responsive padding system ──
      *
      * The shell uses the hamburger layout through tablet widths and switches
-     * to the full navigation only when the xl breakpoint has enough room.
+     * to the full navigation only when the nav breakpoint (1520px) has enough room.
      */
 
     /* 700px – 767px */
@@ -470,8 +470,8 @@
         }
     }
 
-     /* ── 1024px–1279px: tablet navigation ── */
-     @media (min-width: 1024px) and (max-width: 1279px) {
+     /* ── 1024px–1519px: tablet navigation ── */
+     @media (min-width: 1024px) and (max-width: 1519px) {
          .site-nav-shell__main {
              flex-wrap: nowrap;
              gap: 0.75rem;
@@ -483,8 +483,8 @@
          }
      }
 
-    /* ── ≥1280px (xl): single row, comfortable spacing ── */
-    @media (min-width: 1280px) {
+    /* ── ≥1520px (nav): single row, comfortable spacing ── */
+    @media (min-width: 1520px) {
         .site-nav-shell__main {
             flex-wrap: nowrap;
             gap: 1.25rem;

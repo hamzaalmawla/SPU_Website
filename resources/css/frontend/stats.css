@@ -4,7 +4,7 @@
 
 @layer components {
     .stats-section {
-        margin-top: -10.5rem;
+        margin-top: -12rem;
         padding-bottom: 3rem;
     }
 
@@ -206,7 +206,7 @@
         }
     }
 
-    /* 800px–1664px: 2×2 grid for 3 or 4 stat boxes */
+    /* 800px–1023px (tablet): 2×2 grid for 3 or 4 stat boxes */
     @media (min-width: 800px) {
 
         .stats-shell__grid.stats-grid-cols-2,
@@ -217,8 +217,8 @@
 
     }
 
-    /* 1664px and above: all boxes in one row */
-    @media (min-width: 1664px) {
+    /* 1024px (laptop) and above: all boxes in one row */
+    @media (min-width: 1024px) {
         .stats-shell__grid.stats-grid-cols-2 {
             grid-template-columns: repeat(2, minmax(0, 1fr));
         }
@@ -247,12 +247,17 @@
 
     @media (max-width: 799px) {
         .stats-section {
-            margin-top: -3.75rem;
+            margin-top: -4rem;
             padding-bottom: 2.5rem;
         }
+    }
 
-        .stats-shell__grid {
-            grid-template-columns: minmax(0, 1fr);
+    /* 800px–1023px (tablet): hero reserves only ~8–10rem bottom space,
+       so the default -12rem pull covers the hero content. Reduce the
+       overlap to keep the stat boxes clear of the hero text/buttons. */
+    @media (min-width: 800px) and (max-width: 1023px) {
+        .stats-section {
+            margin-top: -6rem;
         }
     }
 

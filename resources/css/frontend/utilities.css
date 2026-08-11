@@ -40,7 +40,7 @@
     grid-template-columns: minmax(0, 1fr);
 }
 
-/* 800px–1664px: 2×2 grid for 3 or 4 stat boxes */
+/* 800px–1023px (tablet): 2×2 grid for 3 or 4 stat boxes */
 @media (min-width: 800px) {
 
     .cms-grid-stats.cms-grid-stats-cols-2,
@@ -50,8 +50,8 @@
     }
 }
 
-/* 1664px and above: all boxes in one row */
-@media (min-width: 1664px) {
+/* 1024px (laptop) and above: all boxes in one row */
+@media (min-width: 1024px) {
     .cms-grid-stats.cms-grid-stats-cols-2 {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }

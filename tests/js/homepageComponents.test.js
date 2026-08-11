@@ -109,6 +109,20 @@ test('path cards ignore taps on hover-capable devices', () => {
     assert.equal(slider.activePathCard, null);
 });
 
+test('path card taps on links navigate without toggling the card', () => {
+    globalThis.window = { matchMedia: () => ({ matches: false }) };
+
+    const slider = createPathSlider();
+    const linkEvent = { target: { closest: (selector) => (selector === 'a, button' ? {} : null) } };
+    const plainEvent = { target: { closest: () => null } };
+
+    slider.handlePathCardTap(linkEvent, 1);
+    assert.equal(slider.activePathCard, null);
+
+    slider.handlePathCardTap(plainEvent, 1);
+    assert.equal(slider.activePathCard, 1);
+});
+
 test('research slider advances by the rendered card width and gap', () => {
     globalThis.window = {
         getComputedStyle: () => ({ direction: 'ltr', columnGap: '32px', gap: '32px' }),

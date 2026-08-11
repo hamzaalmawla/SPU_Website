@@ -24,8 +24,8 @@
 
                 <div id="home-paths-track" x-ref="pathsTrack" class="flex h-[390px] w-full snap-x snap-mandatory flex-nowrap gap-6 bg-transparent overflow-x-auto overflow-y-hidden no-scrollbar scroll-smooth overscroll-x-contain ps-2 pe-6 pt-2 pb-5 items-start z-10" role="region" aria-roledescription="{{ __('public.carousel') }}" aria-label="{{ $section->payload->title }}" tabindex="0" @keydown="handleSliderKey($event)">
                     @foreach ($section->payload->items as $item)
-                        <article class="reveal-item path-card snap-start w-[292px] h-[380px] shrink-0 relative rounded-[28px] border border-gray-100 bg-white shadow-[0_15px_35px_rgba(20,30,70,0.06)] transition-all duration-300 group overflow-hidden" role="group" aria-roledescription="{{ __('public.slide') }}" aria-label="{{ __('public.slide_position', ['current' => $loop->iteration, 'total' => count($section->payload->items)]) }}">
-                            <div class="path-card-front absolute inset-0 bg-white flex flex-col items-center justify-center p-8" @click="togglePathCard({{ $loop->index }})">
+                        <article class="reveal-item path-card snap-start w-[292px] h-[380px] shrink-0 relative rounded-[28px] border border-gray-100 bg-white shadow-[0_15px_35px_rgba(20,30,70,0.06)] transition-all duration-300 group overflow-hidden" role="group" aria-roledescription="{{ __('public.slide') }}" aria-label="{{ __('public.slide_position', ['current' => $loop->iteration, 'total' => count($section->payload->items)]) }}" :class="{ 'path-card--active': activePathCard === {{ $loop->index }} }" @click="handlePathCardTap($event, {{ $loop->index }})">
+                            <div class="path-card-front absolute inset-0 bg-white flex flex-col items-center justify-center p-8">
                                 <div class="absolute top-0 left-0 w-full h-[6px] bg-spu-red"></div>
                                 @if (!empty($item['icon']))
                                     <div class="w-20 h-20 rounded-2xl bg-slate-50 text-spu-blue flex items-center justify-center mb-8 shadow-sm">

@@ -9,6 +9,11 @@ export function createPathSlider() {
             this.activePathCard = this.activePathCard === index ? null : index;
         },
 
+        handlePathCardTap(event, index) {
+            if (event.target.closest('a, button')) return;
+            this.togglePathCard(index);
+        },
+
         slidePaths(action) {
             const track = this.$refs.pathsTrack;
             if (!track) return;
