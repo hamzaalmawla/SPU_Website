@@ -265,7 +265,7 @@ final class AboutPageService implements AboutPageServiceInterface
                     name: (string) $translation->full_name,
                     role: (string) ($translation->position ?: $translation->title ?: ''),
                     image: $member->photoMedia instanceof MediaAsset
-                        ? MediaUrlResolver::resolve($member->photoMedia->path, $member->photoMedia->disk)
+                        ? MediaUrlResolver::resolveImage($member->photoMedia->webp_path, $member->photoMedia->path, $member->photoMedia->disk)
                         : MediaUrlResolver::resolveLegacy($legacyPhoto),
                     facultySlug: $facultySlug,
                     facultyName: $facultySlug !== null ? ($facultyLabels[$facultySlug] ?? null) : null,

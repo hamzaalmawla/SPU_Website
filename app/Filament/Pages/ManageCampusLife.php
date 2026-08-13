@@ -1237,6 +1237,56 @@ class ManageCampusLife extends Page implements HasForms
                     ->columnSpanFull(),
             ])->columns(2),
 
+            Section::make('Latest Notice')->schema([
+                TextInput::make($prefix.'.notice.eyebrow')->label('Eyebrow')->required()->maxLength(120),
+                TextInput::make($prefix.'.notice.title')->label('Title')->required()->maxLength(160),
+                TextInput::make($prefix.'.notice.date')->label('Effective Date')->required()->maxLength(120),
+                Textarea::make($prefix.'.notice.summary')->label('Summary')->required()->rows(3)->columnSpanFull(),
+            ])->columns(3),
+
+            Section::make('Schedule')->schema([
+                TextInput::make($prefix.'.schedule.title')->label('Title')->required()->maxLength(160),
+                TextInput::make($prefix.'.schedule.arrivalLabel')->label('Arrival Label')->required()->maxLength(120),
+                TextInput::make($prefix.'.schedule.arrivalValue')->label('Arrival Times')->required()->maxLength(120),
+                TextInput::make($prefix.'.schedule.departureLabel')->label('Departure Label')->required()->maxLength(120),
+                TextInput::make($prefix.'.schedule.departureValue')->label('Departure Times')->required()->maxLength(120),
+                Textarea::make($prefix.'.schedule.summary')->label('Summary')->required()->rows(2)->columnSpanFull(),
+                Textarea::make($prefix.'.schedule.note')->label('Note')->required()->rows(2)->columnSpanFull(),
+            ])->columns(3),
+
+            Section::make('Routes')->schema([
+                TextInput::make($prefix.'.routes.title')->label('Title')->required()->maxLength(160),
+                Textarea::make($prefix.'.routes.summary')->label('Summary')->required()->rows(2)->columnSpanFull(),
+                Textarea::make($prefix.'.routes.note')->label('Note')->required()->rows(2)->columnSpanFull(),
+                Repeater::make($prefix.'.routes.items')
+                    ->label('Route Names')
+                    ->schema([
+                        TextInput::make('number')->label('Number')->required()->maxLength(20),
+                        TextInput::make('name')->label('Route Name')->required()->maxLength(160),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ])->columns(2),
+
+            Section::make('Fees and Payment')->schema([
+                TextInput::make($prefix.'.fees.title')->label('Title')->required()->maxLength(160),
+                Textarea::make($prefix.'.fees.summary')->label('Summary')->required()->rows(3)->columnSpanFull(),
+                Repeater::make($prefix.'.fees.steps')
+                    ->label('Steps')
+                    ->schema([
+                        TextInput::make('title')->required()->maxLength(160),
+                        Textarea::make('body')->required()->rows(2),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ])->columns(2),
+
             Section::make('Success Panel')->schema([
                 TextInput::make($prefix.'.success.title')->label('Title')->required()->maxLength(160),
                 MediaPicker::image($prefix.'.success.image', 'Image', true),
@@ -1770,6 +1820,8 @@ class ManageCampusLife extends Page implements HasForms
         $payload['type'] = 'transport';
         $payload['hero']['breadcrumbs'] = $this->listOfArrays($payload['hero']['breadcrumbs'] ?? []);
         $payload['cards'] = $this->listOfArrays($payload['cards'] ?? []);
+        $payload['routes']['items'] = $this->listOfArrays($payload['routes']['items'] ?? []);
+        $payload['fees']['steps'] = $this->listOfArrays($payload['fees']['steps'] ?? []);
         $payload['success']['links'] = $this->listOfArrays($payload['success']['links'] ?? []);
 
         return $payload;

@@ -30,7 +30,7 @@ class SettingsShellTest extends TestCase
 
         $this->assertSame('Apply now', $settings->applyCta->label);
         $this->assertSame('/en/admissions', $settings->applyCta->url);
-        $this->assertSame('/e-services/it-support', $settings->studentPortalUrl);
+        $this->assertSame('https://my.spu.edu.sy/ar/login', $settings->studentPortalUrl);
         $this->assertSame('/e-services/staff-email', $settings->staffAccessUrl);
     }
 

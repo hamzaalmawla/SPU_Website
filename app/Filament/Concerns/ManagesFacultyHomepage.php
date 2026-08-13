@@ -1325,7 +1325,7 @@ trait ManagesFacultyHomepage
             }
         }
 
-        return $records;
+        return $this->deduplicateStudentRecords($records);
     }
 
     /** @param array<string, mixed> $enItem @param array<string, mixed> $arItem @return array<string, mixed> */
@@ -1379,7 +1379,8 @@ trait ManagesFacultyHomepage
     /** @param array<string, mixed> $state @return array{0: array<int, array<string, mixed>>, 1: array<int, array<string, mixed>>, 2: array<int, string>} */
     private function studentItemsFromForm(array $state): array
     {
-        $records = $this->listOfArrays($state['student_records'] ?? []);
+        $records = $this->deduplicateStudentRecords($this->listOfArrays($state['student_records'] ?? []));
+        $records = $this->studentRecordsWithKeys($records);
         $visibleKeys = array_values(array_filter(
             array_map(static fn (mixed $key): string => is_scalar($key) ? (string) $key : '', is_array($state['student_record_keys'] ?? null) ? $state['student_record_keys'] : []),
             static fn (string $key): bool => $key !== '',
@@ -1387,8 +1388,8 @@ trait ManagesFacultyHomepage
 
         if ($records === [] && ! $this->hasActiveRecordFilters()) {
             return [
-                $this->listOfArrays($state['ar_content']['items'] ?? []),
-                $this->listOfArrays($state['en_content']['items'] ?? []),
+                $this->assignNewRecordKeys($this->listOfArrays($state['ar_content']['items'] ?? [])),
+                $this->assignNewRecordKeys($this->listOfArrays($state['en_content']['items'] ?? [])),
                 [],
             ];
         }
@@ -1428,6 +1429,10 @@ trait ManagesFacultyHomepage
                         $record[$field.'Ar'] = $legacyAr[$field];
                     }
                 }
+            }
+
+            if (is_array($legacyEn) && is_array($legacyAr)) {
+                $record['image'] = $this->studentPairValue($legacyEn, $legacyAr, 'image');
             }
         }
         unset($record);
@@ -1672,16 +1677,88 @@ trait ManagesFacultyHomepage
         }, $items, array_keys($items));
     }
 
+    /** @param array<int, array<string, mixed>> $items @return array<int, array<string, mixed>> */
+    private function pairLocaleItems(array $items): array
+    {
+        $items = $this->recordItemsWithKeys($items);
+        $seen = [];
+
+        return array_values(array_filter($items, static function (array $item) use (&$seen): bool {
+            $key = (string) ($item['_cmsKey'] ?? '');
+
+            if ($key === '' || isset($seen[$key])) {
+                return false;
+            }
+
+            $seen[$key] = true;
+
+            return true;
+        }));
+    }
+
+    /** @param array<int, array<string, mixed>> $records @return array<int, array<string, mixed>> */
+    private function deduplicateStudentRecords(array $records): array
+    {
+        $seen = [];
+
+        return array_values(array_filter($records, function (array $record) use (&$seen): bool {
+            $signature = json_encode([
+                isset($record['id']) && is_scalar($record['id']) ? (string) $record['id'] : null,
+                $record['titleEn'] ?? null,
+                $record['titleAr'] ?? null,
+                $record['academicYear'] ?? $record['graduationYear'] ?? null,
+                $record['semester'] ?? null,
+                $record['semesterAr'] ?? null,
+                $record['department'] ?? null,
+                $record['departmentAr'] ?? null,
+                $record['faculty'] ?? null,
+                $record['facultyAr'] ?? null,
+                $record['degree'] ?? null,
+                $record['degreeAr'] ?? null,
+                $record['academicPhase'] ?? null,
+                $record['academicPhaseAr'] ?? null,
+                $record['gpa'] ?? null,
+                $record['image'] ?? null,
+            ]);
+
+            if (! is_string($signature) || isset($seen[$signature])) {
+                return false;
+            }
+
+            $seen[$signature] = true;
+
+            return true;
+        }));
+    }
+
     /** @param array<string, mixed> $content @param array<int, string>|null $visibleKeys @return array<string, mixed> */
     private function mergeFilterableRecordContent(string $targetKey, string $locale, array $content, ?array $visibleKeys = null): array
     {
         $basePayload = $this->cmsWorkflowService->latestEditableDraftPayload($targetKey, $this->authenticatedUserId()) ?? $this->facultyPageService->getEditablePayload($targetKey);
         $baseContent = is_array($basePayload['translations'][$locale] ?? null) ? $basePayload['translations'][$locale] : [];
-        $baseItems = $this->recordItemsWithKeys($this->listOfArrays($baseContent['items'] ?? []));
-        $editedItems = $this->recordItemsWithKeys($this->listOfArrays($content['items'] ?? []));
+        $baseItems = $this->deduplicateLocaleItems($this->recordItemsWithKeys($this->listOfArrays($baseContent['items'] ?? [])));
+        $editedItems = $this->recordItemsWithKeys($this->assignNewRecordKeys($this->listOfArrays($content['items'] ?? [])));
 
         if (! $this->hasActiveRecordFilters()) {
-            $content['items'] = [...$baseItems, ...$editedItems];
+            $editedByKey = collect($editedItems)->keyBy(fn (array $item): string => (string) ($item['_cmsKey'] ?? ''));
+            $seenKeys = [];
+            $content['items'] = array_values(array_map(function (array $baseItem) use ($editedByKey, &$seenKeys): array {
+                $key = (string) ($baseItem['_cmsKey'] ?? '');
+                $seenKeys[] = $key;
+
+                return $editedByKey->get($key) ?? $baseItem;
+            }, $baseItems));
+
+            foreach ($editedItems as $editedItem) {
+                $key = (string) ($editedItem['_cmsKey'] ?? '');
+
+                if ($key === '' || in_array($key, $seenKeys, true)) {
+                    continue;
+                }
+
+                $content['items'][] = $editedItem;
+                $seenKeys[] = $key;
+            }
 
             return $content;
         }
@@ -1721,6 +1798,70 @@ trait ManagesFacultyHomepage
         }
 
         return $content;
+    }
+
+    /** @param array<int, array<string, mixed>> $records @return array<int, array<string, mixed>> */
+    private function studentRecordsWithKeys(array $records): array
+    {
+        return array_map(function (array $record): array {
+            if (is_scalar($record['_cmsKey'] ?? null) && (string) $record['_cmsKey'] !== '') {
+                return $record;
+            }
+
+            $record['_cmsKey'] = isset($record['id']) && is_scalar($record['id']) && (string) $record['id'] !== ''
+                ? 'record-id-'.(string) $record['id']
+                : 'record-new-'.substr(hash('sha256', (string) json_encode([
+                    $record['titleEn'] ?? null,
+                    $record['titleAr'] ?? null,
+                    $record['academicYear'] ?? $record['graduationYear'] ?? null,
+                    $record['semester'] ?? null,
+                    $record['semesterAr'] ?? null,
+                    $record['department'] ?? null,
+                    $record['departmentAr'] ?? null,
+                    $record['faculty'] ?? null,
+                    $record['facultyAr'] ?? null,
+                    $record['degree'] ?? null,
+                    $record['degreeAr'] ?? null,
+                    $record['academicPhase'] ?? null,
+                    $record['academicPhaseAr'] ?? null,
+                    $record['gpa'] ?? null,
+                    $record['image'] ?? null,
+                ])), 0, 20);
+
+            return $record;
+        }, $records);
+    }
+
+    /** @param array<int, array<string, mixed>> $items @return array<int, array<string, mixed>> */
+    private function deduplicateLocaleItems(array $items): array
+    {
+        $seen = [];
+
+        return array_values(array_filter($items, function (array $item) use (&$seen): bool {
+            $signature = json_encode($this->withoutKeys($item, ['_cmsKey']), JSON_UNESCAPED_UNICODE);
+
+            if (! is_string($signature) || isset($seen[$signature])) {
+                return false;
+            }
+
+            $seen[$signature] = true;
+
+            return true;
+        }));
+    }
+
+    /** @param array<int, array<string, mixed>> $items @return array<int, array<string, mixed>> */
+    private function assignNewRecordKeys(array $items): array
+    {
+        return array_map(function (array $item): array {
+            if (isset($item['_cmsKey']) || (isset($item['id']) && is_scalar($item['id']) && (string) $item['id'] !== '')) {
+                return $item;
+            }
+
+            $item['_cmsKey'] = 'record-new-'.substr(hash('sha256', (string) json_encode($item)), 0, 20);
+
+            return $item;
+        }, $items);
     }
 
     /** @param array<string, mixed> $payload @return array<string, string> */

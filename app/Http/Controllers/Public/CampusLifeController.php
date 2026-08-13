@@ -13,6 +13,7 @@ use App\DTOs\CampusLife\CampusLifeSectionDTO;
 use App\DTOs\Navigation\LanguageSwitchLinkDTO;
 use App\Http\Controllers\Controller;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 final class CampusLifeController extends Controller
@@ -55,6 +56,15 @@ final class CampusLifeController extends Controller
             'seo' => $this->sectionSeo($locale, $page),
             'page' => $page,
         ]);
+    }
+
+    public function transportRegistration(string $locale): RedirectResponse
+    {
+        $portalUrl = $this->settingsService->getStudentPortalUrl();
+
+        abort_if($portalUrl === null, 503, $locale === 'ar' ? 'بوابة الطالب غير متاحة حالياً.' : 'The student portal is currently unavailable.');
+
+        return redirect()->away($portalUrl);
     }
 
     public function careerJobBoard(Request $request, string $locale): View

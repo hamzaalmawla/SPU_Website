@@ -500,7 +500,7 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
     {
         $media = $mediaId !== null ? MediaAsset::query()->find($mediaId) : null;
 
-        return $media instanceof MediaAsset ? MediaUrlResolver::resolve($media->webp_path ?: $media->path, $media->disk) : null;
+        return $media instanceof MediaAsset ? MediaUrlResolver::resolveImage($media->webp_path, $media->path, $media->disk) : null;
     }
 
     private function findArticle(string $targetKey): ?NewsArticle

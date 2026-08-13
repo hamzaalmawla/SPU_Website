@@ -1075,6 +1075,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 ...$project,
             ];
             $payload['year'] = (string) ($project['academicYear'] ?? $project['year'] ?? $payload['year'] ?? '');
+            $payload = $this->resolveProjectImages($payload);
 
             return [
                 ...$payload,
@@ -1084,7 +1085,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
 
         $facultyTitle = (string) $this->facultyTranslation($faculty, $locale)->name;
 
-        return [
+        return $this->resolveProjectImages([
             ...$project,
             'facultyTitle' => $facultyTitle,
             'facultySlug' => $this->publicSlug($faculty),
@@ -1095,7 +1096,26 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'gallery' => $this->stringList($project['gallery'] ?? []),
             'technologies' => $this->stringList($project['technologies'] ?? []),
             'teamMembers' => $this->arrayList($project['teamMembers'] ?? []),
-        ];
+        ]);
+    }
+
+    /** @param array<string, mixed> $project @return array<string, mixed> */
+    private function resolveProjectImages(array $project): array
+    {
+        foreach (['image'] as $key) {
+            if (is_string($project[$key] ?? null)) {
+                $project[$key] = MediaUrlResolver::resolve($project[$key]);
+            }
+        }
+
+        if (is_array($project['gallery'] ?? null)) {
+            $project['gallery'] = array_values(array_filter(array_map(
+                static fn (mixed $image): ?string => is_string($image) ? MediaUrlResolver::resolve($image) : null,
+                $project['gallery'],
+            )));
+        }
+
+        return $project;
     }
 
     /** @return array<string, mixed> */
@@ -1196,7 +1216,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
                     'academicPhase' => $locale === 'ar' ? 'خريج' : 'Graduate',
                     'image' => $alumni->photoMedia === null
                         ? MediaUrlResolver::resolveLegacy($legacyPhoto)
-                        : MediaUrlResolver::resolve($alumni->photoMedia->path, $alumni->photoMedia->disk),
+                        : MediaUrlResolver::resolveImage($alumni->photoMedia->webp_path, $alumni->photoMedia->path, $alumni->photoMedia->disk),
                 ];
             })->values()->all();
     }
@@ -1224,7 +1244,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
                     'faculty' => $this->facultyTranslation($faculty, $locale)->name,
                     'image' => $student->photoMedia === null
                         ? MediaUrlResolver::resolveLegacy($legacyPhoto)
-                        : MediaUrlResolver::resolve($student->photoMedia->path, $student->photoMedia->disk),
+                        : MediaUrlResolver::resolveImage($student->photoMedia->webp_path, $student->photoMedia->path, $student->photoMedia->disk),
                     'isMemorial' => $this->isMemorialHonorStudent($metadata),
                 ];
             })->values()->all();

@@ -1444,6 +1444,8 @@ final class ResearchPageService implements ResearchPageServiceInterface
             $item['facultySlug'] = $this->canonicalFacultySlug(strtolower(trim((string) ($item['facultySlug'] ?? ''))));
             $item['themeSlug'] = strtolower(trim((string) ($item['themeSlug'] ?? '')));
             $item['status'] = strtolower(trim((string) ($item['status'] ?? '')));
+            $item['image'] = $this->resolveContentImage($item['image'] ?? null);
+            $item['gallery'] = array_map(fn (mixed $image): mixed => $this->resolveContentImage($image), $this->arrayList($item['gallery'] ?? []));
 
             return $item;
         }, $this->arrayList($content['items'] ?? []));
@@ -1526,6 +1528,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
     /** @param array<string, mixed> $item @return array<string, mixed> */
     private function sanitizePublication(array $item): array
     {
+        $item['image'] = $this->resolveContentImage($item['image'] ?? null);
         $doi = trim((string) ($item['doi'] ?? ''));
 
         if (! $this->isPublishableDoi($doi)) {
@@ -1554,6 +1557,19 @@ final class ResearchPageService implements ResearchPageServiceInterface
         $item['isOpenAccess'] = $downloads !== [];
 
         return $item;
+    }
+
+    private function resolveContentImage(mixed $value): mixed
+    {
+        if (! is_string($value) || trim($value) === '') {
+            return $value;
+        }
+
+        if (str_starts_with($value, '/')) {
+            return $value;
+        }
+
+        return MediaUrlResolver::resolve($value) ?? $value;
     }
 
     /** @param array<string, mixed> $content @return array<string, mixed> */
@@ -1914,6 +1930,8 @@ final class ResearchPageService implements ResearchPageServiceInterface
     /** @param array<string, mixed> $item @param array<string, mixed> $data */
     private function detailDto(string $locale, string $type, string $slug, array $item, array $data, string $path, string $image): ResearchDetailPageDTO
     {
+        $resolvedImage = $this->resolveContentImage($image);
+        $image = is_string($resolvedImage) ? $resolvedImage : $image;
         $localizedItem = $this->localized($item, $locale);
         $localizedItem = $type === 'publication' && is_array($localizedItem) ? $this->sanitizePublication($localizedItem) : $localizedItem;
         $localizedData = $this->localized($data, $locale);
@@ -2010,7 +2028,11 @@ final class ResearchPageService implements ResearchPageServiceInterface
         foreach ($value as $key => $item) {
             $normalized[$key] = $key === 'downloads'
                 ? $item
-                : $this->normalizeUrls($item, $locale);
+                : (in_array($key, ['image', 'icon', 'backgroundImage', 'heroImage', 'imageHero', 'imageLeft', 'imageRight'], true)
+                    ? $this->resolveContentImage($item)
+                    : (in_array($key, ['gallery', 'images'], true) && is_array($item)
+                        ? array_map(fn (mixed $image): mixed => $this->resolveContentImage($image), $item)
+                        : $this->normalizeUrls($item, $locale)));
         }
 
         return $normalized;

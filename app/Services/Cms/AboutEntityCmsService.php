@@ -1148,7 +1148,7 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
 
         $media = MediaAsset::query()->find($mediaId);
 
-        return $media instanceof MediaAsset ? MediaUrlResolver::resolve($media->path, $media->disk) : null;
+        return $media instanceof MediaAsset ? MediaUrlResolver::resolveImage($media->webp_path, $media->path, $media->disk) : null;
     }
 
     /** @param array<string, mixed> $payload */

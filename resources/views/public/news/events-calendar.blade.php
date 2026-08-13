@@ -1,65 +1,104 @@
 @extends('layouts.public')
 
 @section('content')
-    <section class="relative flex min-h-[285px] items-end overflow-hidden pt-24 font-hacen">
+    @php
+        $weekdays = $locale === 'ar'
+            ? [
+                ['short' => 'أحد', 'full' => 'الأحد'],
+                ['short' => 'اثن', 'full' => 'الاثنين'],
+                ['short' => 'ثلا', 'full' => 'الثلاثاء'],
+                ['short' => 'أرب', 'full' => 'الأربعاء'],
+                ['short' => 'خمي', 'full' => 'الخميس'],
+                ['short' => 'جمع', 'full' => 'الجمعة'],
+                ['short' => 'سبت', 'full' => 'السبت'],
+            ]
+            : [
+                ['short' => 'Sun', 'full' => 'Sunday'],
+                ['short' => 'Mon', 'full' => 'Monday'],
+                ['short' => 'Tue', 'full' => 'Tuesday'],
+                ['short' => 'Wed', 'full' => 'Wednesday'],
+                ['short' => 'Thu', 'full' => 'Thursday'],
+                ['short' => 'Fri', 'full' => 'Friday'],
+                ['short' => 'Sat', 'full' => 'Saturday'],
+            ];
+    @endphp
+
+    <section class="events-calendar-hero relative flex min-h-[300px] items-end overflow-hidden pt-24 font-hacen sm:min-h-[340px]">
         <img src="{{ $page['heroImage'] }}" alt="{{ $page['calendarTitle'] }}" class="absolute inset-0 h-full w-full object-cover">
-        <div class="absolute inset-0 bg-spu-blue/75"></div>
-        <div class="container relative z-10 pb-12 text-center text-white">
-            <h1 class="text-4xl font-bold">{{ $page['calendarTitle'] }}</h1>
-            <p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-white/80">{{ $page['summary'] }}</p>
+        <div class="absolute inset-0 bg-gradient-to-b from-spu-blue/45 via-spu-blue/70 to-spu-blue/95"></div>
+        <div class="container relative z-10 pb-10 text-center text-white sm:pb-14">
+            <p class="events-calendar-eyebrow">{{ $locale === 'ar' ? 'أخبار وفعاليات' : 'News & Events' }}</p>
+            <h1 class="mt-3 text-[clamp(2rem,7vw,3.75rem)] font-bold leading-tight">{{ $page['calendarTitle'] }}</h1>
+            <p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-white/80 sm:text-base">{{ $page['summary'] }}</p>
         </div>
     </section>
 
-    <section class="bg-section py-14 font-hacen md:py-20">
-        <div class="container max-w-[1120px]">
-            <form method="GET" action="/{{ $locale }}/news/events" class="mx-auto flex max-w-md items-end gap-3 rounded-xl bg-white p-5 shadow-sm">
-                <label class="flex-1 text-sm font-bold text-spu-blue">
-                    <span class="mb-2 block">{{ $page['calendarTitle'] }}</span>
-                    <input type="month" name="month" value="{{ $month }}" class="w-full rounded border border-slate-200 px-3 py-2" required>
+    <section class="events-calendar-section bg-section py-10 font-hacen sm:py-14 lg:py-20">
+        <div class="container max-w-[1200px]">
+            <form method="GET" action="/{{ $locale }}/news/events" class="events-calendar-filter">
+                <label class="events-calendar-filter-field">
+                    <span>{{ $page['calendarTitle'] }}</span>
+                    <input type="month" name="month" value="{{ $month }}" required aria-label="{{ $page['calendarTitle'] }}">
                 </label>
-                <button type="submit" class="rounded bg-spu-red px-5 py-2.5 text-sm font-bold text-white">{{ $page['detailsLabel'] }}</button>
+                <button type="submit" class="events-calendar-filter-submit">{{ $page['detailsLabel'] }}</button>
             </form>
 
-            <div class="mt-10 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                <div class="flex items-center justify-between bg-spu-blue px-5 py-4 text-white">
-                    <a href="/{{ $locale }}/news/events?month={{ $previousMonth }}" class="rounded border border-white/30 px-3 py-2 text-xs font-bold" aria-label="{{ __('public.previous') }}">{{ __('public.previous') }}</a>
-                    <h2 class="text-lg font-bold">{{ $monthLabel }}</h2>
-                    <a href="/{{ $locale }}/news/events?month={{ $nextMonth }}" class="rounded border border-white/30 px-3 py-2 text-xs font-bold" aria-label="{{ __('public.next') }}">{{ __('public.next') }}</a>
+            <div class="events-calendar-card mt-8 sm:mt-10">
+                <div class="events-calendar-toolbar">
+                    <a href="/{{ $locale }}/news/events?month={{ $previousMonth }}" class="events-calendar-nav" aria-label="{{ __('public.previous') }}">
+                        <span aria-hidden="true">{{ $locale === 'ar' ? '→' : '←' }}</span>
+                        <span>{{ __('public.previous') }}</span>
+                    </a>
+                    <h2>{{ $monthLabel }}</h2>
+                    <a href="/{{ $locale }}/news/events?month={{ $nextMonth }}" class="events-calendar-nav" aria-label="{{ __('public.next') }}">
+                        <span>{{ __('public.next') }}</span>
+                        <span aria-hidden="true">{{ $locale === 'ar' ? '←' : '→' }}</span>
+                    </a>
                 </div>
-                <div class="grid grid-cols-7 border-b border-slate-200 bg-slate-50 text-center text-[11px] font-bold text-spu-blue">
-                    @foreach (($locale === 'ar' ? ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']) as $weekday)
-                        <div class="px-1 py-3">{{ $weekday }}</div>
+                <div class="events-calendar-weekdays" aria-hidden="true">
+                    @foreach ($weekdays as $weekday)
+                        <div title="{{ $weekday['full'] }}"><span class="sm:hidden">{{ $weekday['short'] }}</span><span class="hidden sm:inline">{{ $weekday['full'] }}</span></div>
                     @endforeach
                 </div>
-                <div class="grid grid-cols-7">
+                <div class="events-calendar-grid">
                     @foreach ($days as $day)
-                        <div class="min-h-24 border-b border-e border-slate-100 p-2 {{ $day['inMonth'] ? 'bg-white' : 'bg-slate-50 text-slate-400' }}">
-                            <time datetime="{{ $day['date'] }}" class="text-xs font-bold">{{ $day['day'] }}</time>
+                        <div class="events-calendar-day {{ $day['inMonth'] ? 'is-current-month' : 'is-outside-month' }}">
+                            <time datetime="{{ $day['date'] }}">{{ $day['day'] }}</time>
                             @foreach ($day['events'] as $event)
-                                <a href="{{ $event->detailUrl }}" class="mt-2 block rounded bg-spu-red/10 px-2 py-1 text-[10px] font-bold leading-4 text-spu-red hover:bg-spu-red hover:text-white">{{ $event->title }}</a>
+                                <a href="{{ $event->detailUrl }}" class="events-calendar-event" title="{{ $event->title }}">{{ $event->title }}</a>
                             @endforeach
                         </div>
                     @endforeach
                 </div>
             </div>
 
-            <div class="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div class="events-month-heading mt-10 sm:mt-14">
+                <div>
+                    <p class="events-calendar-eyebrow text-spu-red">{{ $locale === 'ar' ? 'ضمن الشهر المحدد' : 'Selected month' }}</p>
+                    <h2>{{ $page['upcomingTitle'] }}</h2>
+                </div>
+                <span class="events-month-count">{{ $events->count() }}</span>
+            </div>
+
+            <div class="events-month-grid mt-5 sm:mt-7">
                 @forelse ($events as $event)
-                    <article class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                        <img src="{{ $event->imageUrl }}" alt="{{ $event->title }}" class="h-48 w-full object-cover">
-                        <div class="p-6">
-                            <p class="text-xs font-bold text-spu-red">{{ $event->dateLabel }}</p>
-                            <h2 class="mt-2 text-lg font-bold text-spu-blue">{{ $event->title }}</h2>
-                            <p class="mt-3 text-sm leading-6 text-slate-600">{{ $event->summary }}</p>
-                            <div class="mt-4 space-y-1 text-xs text-slate-500">
-                                <p>{{ $event->timeLabel }}</p>
-                                <p>{{ $event->location }}</p>
+                    <article class="events-month-card">
+                        <div class="events-month-card-media">
+                            <img src="{{ $event->imageUrl }}" alt="{{ $event->title }}" loading="lazy">
+                            <p>{{ $event->dateLabel }}</p>
+                        </div>
+                        <div class="events-month-card-body">
+                            <h3><a href="{{ $event->detailUrl }}">{{ $event->title }}</a></h3>
+                            <p class="events-month-card-summary">{{ $event->summary }}</p>
+                            <div class="events-month-card-meta">
+                                <span>{{ $event->timeLabel }}</span>
+                                <span>{{ $event->location }}</span>
                             </div>
-                            <a href="{{ $event->detailUrl }}" class="mt-5 inline-flex text-sm font-bold text-spu-red">{{ $page['detailsLabel'] }}</a>
+                            <a href="{{ $event->detailUrl }}" class="events-month-card-link">{{ $page['detailsLabel'] }} <span aria-hidden="true">{{ $locale === 'ar' ? '←' : '→' }}</span></a>
                         </div>
                     </article>
                 @empty
-                    <p class="col-span-full py-14 text-center text-slate-500">{{ $page['emptyLabel'] }}</p>
+                    <p class="events-calendar-empty">{{ $page['emptyLabel'] }}</p>
                 @endforelse
             </div>
         </div>

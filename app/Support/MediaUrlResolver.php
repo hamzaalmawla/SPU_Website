@@ -40,7 +40,27 @@ final class MediaUrlResolver
             return self::resolveLegacy($value);
         }
 
-        if (preg_match('#^(https?:)?//#', $value) === 1 || str_starts_with($value, '/')) {
+        if (preg_match('#^(https?:)?//#', $value) === 1) {
+            $diskName = $disk ?? (string) config('filesystems.media_disk', 'public');
+            $configuredUrl = (string) config('filesystems.disks.'.$diskName.'.url', '');
+            $valueHost = parse_url($value, PHP_URL_HOST);
+            $configuredHost = parse_url($configuredUrl, PHP_URL_HOST);
+
+            if ($diskName === 'public'
+                && (string) config('filesystems.disks.public.driver') === 'local'
+                && is_string($valueHost)
+                && ($valueHost === $configuredHost || in_array($valueHost, ['localhost', '127.0.0.1', '::1'], true))) {
+                $path = parse_url($value, PHP_URL_PATH);
+
+                if (is_string($path) && $path !== '') {
+                    return UrlSanitizer::sanitize($path, ['http', 'https'], true);
+                }
+            }
+
+            return UrlSanitizer::sanitize($value, ['http', 'https'], true);
+        }
+
+        if (str_starts_with($value, '/')) {
             return UrlSanitizer::sanitize($value, ['http', 'https'], true);
         }
 
@@ -55,9 +75,32 @@ final class MediaUrlResolver
                 return UrlSanitizer::sanitize('/'.ltrim($value, '/'), ['http', 'https'], true);
             }
 
-            return UrlSanitizer::sanitize(Storage::disk($diskName)->url($value), ['http', 'https'], true);
+            $url = Storage::disk($diskName)->url($value);
+
+            // Keep local filesystem URLs host-relative so uploads work behind any
+            // configured domain, proxy, or XAMPP virtual host.
+            if ($diskName === 'public' && (string) config('filesystems.disks.public.driver') === 'local') {
+                $publicUrl = (string) config('filesystems.disks.public.url', '/storage');
+                $path = parse_url($url, PHP_URL_PATH);
+
+                if (is_string($path) && $path !== '') {
+                    return UrlSanitizer::sanitize($path, ['http', 'https'], true);
+                }
+
+                return UrlSanitizer::sanitize('/'.ltrim(str_replace($publicUrl, '', $url), '/'), ['http', 'https'], true);
+            }
+
+            return UrlSanitizer::sanitize($url, ['http', 'https'], true);
         } catch (Throwable) {
             return UrlSanitizer::sanitize('/'.ltrim($value, '/'), ['http', 'https'], true);
         }
+    }
+
+    public static function resolveImage(?string $webpPath, ?string $originalPath, ?string $disk = null): ?string
+    {
+        return self::resolve(
+            is_string($webpPath) && $webpPath !== '' ? $webpPath : $originalPath,
+            $disk,
+        );
     }
 }

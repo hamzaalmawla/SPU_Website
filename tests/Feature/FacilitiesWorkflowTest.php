@@ -835,6 +835,45 @@ final class FacilitiesWorkflowTest extends TestCase
             ->assertSee('Showing 0-0 of 0');
     }
 
+    public function test_student_media_uses_host_relative_webp_url_and_new_row_is_not_duplicated(): void
+    {
+        $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
+
+        $facilities = app(FacultyPageServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $targetKey = 'facilities.artificial-intelligence.valedictorians';
+        $payload = $facilities->getEditablePayload($targetKey);
+        $payload['translations']['en']['items'] = [];
+        $payload['translations']['ar']['items'] = [];
+        $workflow->saveDraft($targetKey, $payload, (int) $author->getKey());
+
+        $component = Livewire::test(ManageArtificialIntelligenceFaculty::class)
+            ->set('data.target_key', $targetKey)
+            ->call('loadTarget', $targetKey);
+
+        $component
+            ->set('data.student_records', [[
+                '_cmsKey' => 'record-new-student',
+                'titleEn' => 'New Student',
+                'titleAr' => 'طالب جديد',
+                'academicYear' => '2026',
+                'gpa' => '3.90',
+                'image' => '/storage/media/image/2026/08/student.webp',
+            ]])
+            ->set('data.student_record_keys', ['record-new-student'])
+            ->call('save');
+
+        $draft = CmsDraft::query()->where('target_key', $targetKey)->latest('id')->firstOrFail();
+        $english = $draft->payload_json['translations']['en']['items'] ?? [];
+        $arabic = $draft->payload_json['translations']['ar']['items'] ?? [];
+
+        $this->assertCount(1, $english);
+        $this->assertCount(1, $arabic);
+        $this->assertSame('/storage/media/image/2026/08/student.webp', $english[0]['image'] ?? null);
+        $this->assertSame('/storage/media/image/2026/08/student.webp', $arabic[0]['image'] ?? null);
+    }
+
     public function test_manage_medicine_faculty_does_not_load_filterable_students_until_filtered_and_preserves_hidden_rows_on_add(): void
     {
         $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');

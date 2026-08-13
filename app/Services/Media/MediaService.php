@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Media;
 
 use App\Contracts\Media\MediaServiceInterface;
+use App\Contracts\Media\ImageConversionServiceInterface;
 use App\Contracts\Shared\AuditServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
 use App\DTOs\Media\MediaUploadResultDTO;
@@ -36,6 +37,7 @@ final class MediaService implements MediaServiceInterface
         private readonly AuditServiceInterface $auditService,
         private readonly MediaFileValidator $fileValidator,
         private readonly CacheServiceInterface $cacheService,
+        private readonly ImageConversionServiceInterface $imageConversionService,
     ) {
         $this->diskName = (string) config('filesystems.media_disk', 'public');
         $this->disk = Storage::disk($this->diskName);
@@ -131,6 +133,15 @@ final class MediaService implements MediaServiceInterface
             'faculty_scope_slug' => $facultyScope,
         ]);
 
+        $webp = $this->imageConversionService->convert($this->diskName, $storedPath, $mimeType);
+
+        if ($webp !== null) {
+            $asset->forceFill([
+                'webp_path' => $webp->path,
+                'srcset_json' => [$webp->width.'w' => MediaUrlResolver::resolve($webp->path, $this->diskName)],
+            ])->save();
+        }
+
         $this->auditService->log(
             action: 'media.uploaded',
             userId: $uploaderId,
@@ -139,6 +150,7 @@ final class MediaService implements MediaServiceInterface
             metadata: [
                 'mime_type' => $mimeType,
                 'size_bytes' => $size,
+                'webp_path' => $webp?->path,
             ],
         );
 
@@ -316,6 +328,55 @@ final class MediaService implements MediaServiceInterface
             ->whereNotNull('title_en')
             ->where('title_en', '<>', '')
             ->count() === count($ids);
+    }
+
+    public function convertImages(int $userId, ?int $limit = null): int
+    {
+        $this->authorizeMediaClassWrite($userId, 'create');
+        $user = User::query()->findOrFail($userId);
+        $query = MediaAsset::query()
+            ->where('library_scope', 'main')
+            ->where('media_type', 'image')
+            ->whereIn('mime_type', ['image/jpeg', 'image/png'])
+            ->where(function (Builder $builder): void {
+                $builder->whereNull('webp_path')->orWhere('webp_path', '');
+            });
+
+        if ($user->role_slug === 'faculty_editor') {
+            $query->where('faculty_scope_slug', $user->faculty_scope_slug);
+        }
+
+        if ($limit !== null) {
+            $query->limit(max(1, $limit));
+        }
+
+        $converted = 0;
+
+        foreach ($query->get() as $asset) {
+            $this->authorizeMediaWrite($userId, 'update', $asset);
+            $webp = $this->imageConversionService->convert($asset->disk, $asset->path, $asset->mime_type);
+
+            if ($webp === null) {
+                continue;
+            }
+
+            $asset->forceFill([
+                'webp_path' => $webp->path,
+                'srcset_json' => [$webp->width.'w' => MediaUrlResolver::resolve($webp->path, $asset->disk)],
+            ])->save();
+            $converted++;
+
+            $this->auditService->log('media.webp_converted', $userId, MediaAsset::class, (int) $asset->getKey(), [
+                'source_path' => $asset->path,
+                'webp_path' => $webp->path,
+            ]);
+        }
+
+        if ($converted > 0) {
+            $this->invalidatePublicMediaCache();
+        }
+
+        return $converted;
     }
 
     public function find(int|string $mediaId, int $userId): ?MediaUploadResultDTO
@@ -598,7 +659,7 @@ final class MediaService implements MediaServiceInterface
             mediaId: (int) $asset->id,
             disk: $asset->disk,
             path: $asset->path,
-            url: MediaUrlResolver::resolve($asset->path, $asset->disk),
+            url: MediaUrlResolver::resolveImage($asset->webp_path, $asset->path, $asset->disk),
             mimeType: $asset->mime_type,
             size: (int) $asset->size_bytes,
             originalName: $asset->original_name,

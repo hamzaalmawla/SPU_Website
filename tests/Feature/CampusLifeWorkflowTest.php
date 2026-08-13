@@ -157,6 +157,35 @@ final class CampusLifeWorkflowTest extends TestCase
             ->assertDontSee('Transport Preview Workflow');
     }
 
+    public function test_transport_page_exposes_operational_schedule_routes_fees_and_portal_registration(): void
+    {
+        $this->get('/en/campus-life/transport')
+            ->assertOk()
+            ->assertSee('Exam-period transport programme')
+            ->assertSee('Arrival and departure times')
+            ->assertSee('Route coverage')
+            ->assertSee('Transport fees and payment')
+            ->assertSee('id="schedule"', false)
+            ->assertSee('id="routes"', false)
+            ->assertSee('id="fees"', false)
+            ->assertSee('/en/campus-life/transport/registration', false)
+            ->assertSee('Al-Baramkeh');
+
+        $this->get('/ar/campus-life/transport')
+            ->assertOk()
+            ->assertSee('برنامج النقل خلال فترات الامتحانات')
+            ->assertSee('مواعيد القدوم والمغادرة')
+            ->assertSee('تغطية الخطوط')
+            ->assertSee('رسوم النقل والدفع')
+            ->assertSee('البرامكة');
+    }
+
+    public function test_transport_registration_redirects_to_configured_student_portal(): void
+    {
+        $this->get('/en/campus-life/transport/registration')
+            ->assertRedirect('https://my.spu.edu.sy/ar/login');
+    }
+
     public function test_campus_life_clubs_activities_workflow_draft_does_not_leak_until_published(): void
     {
         $campusLife = app(CampusLifePageServiceInterface::class);

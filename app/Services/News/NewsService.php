@@ -69,7 +69,7 @@ final class NewsService implements NewsServiceInterface
 
     public function getEventsPageContent(string $locale): array
     {
-        return $this->publishedLocalizedPayload('news.events', $locale) ?? $this->eventsPageFallback($locale);
+        return $this->normalizeEventsPageContent($this->publishedLocalizedPayload('news.events', $locale) ?? $this->eventsPageFallback($locale), $locale);
     }
 
     public function buildPreviewEventsPage(string $locale, array $content): array
@@ -570,13 +570,9 @@ final class NewsService implements NewsServiceInterface
     private function mediaUrl(?MediaAsset $media, ?string $legacyPath = null): ?string
     {
         if ($media instanceof MediaAsset) {
-            $path = $media->webp_path ?: $media->path;
-
-            if (is_string($path) && $path !== '') {
-                return $media->disk === 'legacy'
-                    ? MediaUrlResolver::resolveLegacy($path)
-                    : MediaUrlResolver::resolve($path, $media->disk);
-            }
+            return $media->disk === 'legacy'
+                ? MediaUrlResolver::resolveLegacy($media->path)
+                : MediaUrlResolver::resolveImage($media->webp_path, $media->path, $media->disk);
         }
 
         return MediaUrlResolver::resolveLegacy($legacyPath);
@@ -723,6 +719,9 @@ final class NewsService implements NewsServiceInterface
             $fallback[$key] = is_string($candidate) || is_numeric($candidate) ? (string) $candidate : $value;
         }
 
+        $fallback['heroImage'] = $this->resolvedContentImage($fallback['heroImage'], '/images/slider-1.webp');
+        $fallback['seoImage'] = $this->resolvedContentImage($fallback['seoImage'], '/images/slider-1.webp');
+
         return $fallback;
     }
 
@@ -744,6 +743,8 @@ final class NewsService implements NewsServiceInterface
             $candidate = $content[$key] ?? $value;
             $fallback[$key] = is_string($candidate) || is_numeric($candidate) ? (string) $candidate : $value;
         }
+
+        $fallback['heroImage'] = $this->resolvedContentImage($fallback['heroImage'], '/images/slider-1.webp');
 
         $fallback['title'] = $fallback['pageTitle'];
         $fallback['headline'] = $fallback['pageTitle'];
@@ -796,12 +797,16 @@ final class NewsService implements NewsServiceInterface
             $defaults[$key] = is_string($candidate) || is_numeric($candidate) ? (string) $candidate : $value;
         }
 
+        $defaults['heroImage'] = $this->resolvedContentImage($defaults['heroImage'], '/images/slider-1.webp');
+
         $defaults['categories'] = array_values(array_filter(
             is_array($content['categories'] ?? null) ? $content['categories'] : [],
             static fn (mixed $category): bool => is_array($category) && is_string($category['id'] ?? null) && is_string($category['label'] ?? null),
         ));
         $defaults['upcoming'] = $this->normalizeEventRecords($content['upcoming'] ?? [], false);
         $defaults['past'] = $this->normalizeEventRecords($content['past'] ?? [], true);
+        $defaults['upcoming'] = array_map(fn (array $event): array => $this->normalizeEventImage($event), $defaults['upcoming']);
+        $defaults['past'] = array_map(fn (array $event): array => $this->normalizeEventImage($event), $defaults['past']);
 
         return $defaults;
     }
@@ -875,7 +880,7 @@ final class NewsService implements NewsServiceInterface
             location: (string) ($event['location'] ?? ''),
             categoryId: (string) ($event['categoryId'] ?? ''),
             categoryLabel: (string) ($event['categoryLabel'] ?? ''),
-            imageUrl: (string) ($event['image'] ?? '/images/uni-main-place.JPG'),
+            imageUrl: $this->resolvedContentImage((string) ($event['image'] ?? ''), '/images/uni-main-place.JPG'),
             isPast: $past,
             isFeatured: (bool) ($event['featured'] ?? false),
             formId: $formId,
@@ -891,6 +896,21 @@ final class NewsService implements NewsServiceInterface
             results: is_string($event['results'] ?? null) ? $event['results'] : null,
             gallery: array_values(array_filter(is_array($event['gallery'] ?? null) ? $event['gallery'] : [], 'is_string')),
         );
+    }
+
+    /** @param array<string, mixed> $event @return array<string, mixed> */
+    private function normalizeEventImage(array $event): array
+    {
+        $event['image'] = $this->resolvedContentImage((string) ($event['image'] ?? ''), '/images/uni-main-place.JPG');
+
+        return $event;
+    }
+
+    private function resolvedContentImage(string $value, string $fallback): string
+    {
+        $value = trim($value);
+
+        return $value === '' ? $fallback : (MediaUrlResolver::resolve($value) ?? $fallback);
     }
 
     /** @return array<string, mixed> */

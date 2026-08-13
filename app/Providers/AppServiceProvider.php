@@ -82,6 +82,7 @@ use App\Contracts\Legacy\LegacyUrlContinuityInventoryServiceInterface;
 use App\Contracts\Legacy\LegacyUrlContinuityTriageServiceInterface;
 use App\Contracts\Legacy\LegacyUrlNormalizerInterface;
 use App\Contracts\Media\MediaServiceInterface;
+use App\Contracts\Media\ImageConversionServiceInterface;
 use App\Contracts\Navigation\MenuServiceInterface;
 use App\Contracts\Navigation\NavigationServiceInterface;
 use App\Contracts\News\NewsAdminWorkflowServiceInterface;
@@ -222,6 +223,7 @@ use App\Services\Legacy\LegacyUrlNormalizer;
 use App\Services\Legacy\ModuleRunners\LegacyLinksImportModuleRunner;
 use App\Services\Legacy\QueryResolvers\LegacyNewsQueryResolver;
 use App\Services\Media\MediaFileValidator;
+use App\Services\Media\ImageConversionService;
 use App\Services\Media\MediaService;
 use App\Services\Navigation\MenuService;
 use App\Services\Navigation\NavigationService;
@@ -460,6 +462,7 @@ class AppServiceProvider extends ServiceProvider
             FacultyPageServiceInterface::class => FacultyPageService::class,
             SitemapServiceInterface::class => SitemapService::class,
             MediaServiceInterface::class => MediaService::class,
+            ImageConversionServiceInterface::class => ImageConversionService::class,
             SlugServiceInterface::class => SlugService::class,
             MenuServiceInterface::class => MenuService::class,
             NewsAdminWorkflowServiceInterface::class => NewsAdminWorkflowService::class,

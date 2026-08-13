@@ -107,6 +107,7 @@ Route::prefix('{locale}')
             ->name('public.campus-life.')
             ->group(function (): void {
                 Route::get('/', 'landing')->name('landing');
+                Route::get('/transport/registration', 'transportRegistration')->name('transport.registration');
                 Route::get('/career-development/jobs', 'careerJobBoard')->name('career-development.jobs');
                 Route::get('/career-development/jobs/apply', 'careerJobApplication')->name('career-development.jobs.apply');
                 Route::get('/career-development/jobs/{job}', 'careerJobDetail')

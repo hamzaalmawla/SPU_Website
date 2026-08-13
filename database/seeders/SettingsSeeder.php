@@ -61,7 +61,7 @@ class SettingsSeeder extends Seeder
                 'type' => 'text',
                 'locale' => '',
                 'value_json' => null,
-                'value_text' => '/e-services/it-support',
+                'value_text' => 'https://my.spu.edu.sy/ar/login',
                 'is_public' => true,
             ],
             [

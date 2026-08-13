@@ -60,11 +60,20 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
         $published = $this->cmsWorkflowService->getPublishedPayload($targetKey);
 
         if (is_array($published['translations']['ar'] ?? null) && is_array($published['translations']['en'] ?? null)) {
+            $translations = [
+                'ar' => $published['translations']['ar'],
+                'en' => $published['translations']['en'],
+            ];
+
+            if ($targetKey === 'campus_life.transport') {
+                $translations = [
+                    'ar' => $this->completeTransportPayload($translations['ar'], 'ar'),
+                    'en' => $this->completeTransportPayload($translations['en'], 'en'),
+                ];
+            }
+
             return [
-                'translations' => [
-                    'ar' => $published['translations']['ar'],
-                    'en' => $published['translations']['en'],
-                ],
+                'translations' => $translations,
             ];
         }
 
@@ -95,8 +104,8 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
 
         return [
             'translations' => [
-                'ar' => $this->normalizeUrls($this->localized($payload, 'ar'), 'ar'),
-                'en' => $this->normalizeUrls($this->localized($payload, 'en'), 'en'),
+                'ar' => $this->normalizeUrls($targetKey === 'campus_life.transport' ? $this->completeTransportPayload($this->localized($payload, 'ar'), 'ar') : $this->localized($payload, 'ar'), 'ar'),
+                'en' => $this->normalizeUrls($targetKey === 'campus_life.transport' ? $this->completeTransportPayload($this->localized($payload, 'en'), 'en') : $this->localized($payload, 'en'), 'en'),
             ],
         ];
     }
@@ -112,6 +121,10 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
 
         if ($payload === null) {
             return null;
+        }
+
+        if ($slug === 'transport') {
+            $payload = $this->completeTransportPayload($payload, $locale);
         }
 
         return $this->sectionDto($slug, $locale, $this->normalizeUrls($payload, $locale));
@@ -215,6 +228,10 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
 
         if ($slug === null) {
             return null;
+        }
+
+        if ($slug === 'transport') {
+            $section = $this->completeTransportPayload($section, $locale);
         }
 
         return $this->sectionDto($slug, $locale, $this->normalizeUrls($section, $locale));
@@ -804,13 +821,105 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
             'cards' => [
                 ['titleEn' => 'Schedule', 'titleAr' => 'الجدول الزمني', 'descriptionEn' => 'Practical campus routes aligned with academic class timings.', 'descriptionAr' => 'مسارات عملية للحرم الجامعي متوافقة مع مواعيد المحاضرات الأكاديمية.', 'ctaEn' => 'Get Schedule', 'ctaAr' => 'عرض الجدول', 'href' => '/campus-life/transport#schedule', 'icon' => '/images/time.svg'],
                 ['titleEn' => 'Routes', 'titleAr' => 'المسارات', 'descriptionEn' => 'Extensive coverage across major districts and central pickup points.', 'descriptionAr' => 'تغطية واسعة للأحياء الرئيسية ونقاط التجمع المركزية.', 'ctaEn' => 'Learn more', 'ctaAr' => 'اعرف المزيد', 'href' => '/campus-life/transport#routes', 'icon' => '/images/icon-map-outline.svg'],
-                ['titleEn' => 'Registration', 'titleAr' => 'التسجيل', 'descriptionEn' => 'Simple online process to secure your seat for the semester.', 'descriptionAr' => 'عملية إلكترونية بسيطة لحجز مقعدك خلال الفصل الدراسي.', 'ctaEn' => 'Register now', 'ctaAr' => 'سجل الآن', 'href' => '/e-services', 'icon' => '/images/icon-user-graduate-outline.svg'],
+                ['titleEn' => 'Registration', 'titleAr' => 'التسجيل', 'descriptionEn' => 'Open the student portal to register for a transport seat.', 'descriptionAr' => 'افتح بوابة الطالب للتسجيل على مقعد في النقل الجامعي.', 'ctaEn' => 'Register now', 'ctaAr' => 'سجل الآن', 'href' => '/campus-life/transport/registration', 'icon' => '/images/icon-user-graduate-outline.svg', 'target' => '_blank'],
                 ['titleEn' => 'Fees', 'titleAr' => 'الرسوم', 'descriptionEn' => 'Clear plans and installment details through your student portal.', 'descriptionAr' => 'خطط ورسوم واضحة مع تفاصيل التقسيط عبر بوابة الطالب.', 'ctaEn' => 'View details', 'ctaAr' => 'عرض التفاصيل', 'href' => '/campus-life/transport#fees', 'icon' => '/images/icon-file-outline.svg'],
+            ],
+            'notice' => [
+                'eyebrowEn' => 'LATEST TRANSPORT NOTICE',
+                'eyebrowAr' => 'آخر تعميم للنقل',
+                'titleEn' => 'Exam-period transport programme',
+                'titleAr' => 'برنامج النقل خلال فترات الامتحانات',
+                'summaryEn' => 'The supplied university notice covers transport to and from campus during the summer-term examinations for the 2025/2026 academic year.',
+                'summaryAr' => 'يتضمن تعميم الجامعة برنامج النقل من وإلى مقر الجامعة خلال امتحانات الفصل الصيفي من العام الدراسي 2025/2026.',
+                'dateEn' => 'Effective from 15 August 2026',
+                'dateAr' => 'اعتباراً من 15/8/2026',
+            ],
+            'schedule' => [
+                'titleEn' => 'Arrival and departure times',
+                'titleAr' => 'مواعيد القدوم والمغادرة',
+                'summaryEn' => 'Times vary by route. The official notice shows morning arrival waves and return departures for the examination period.',
+                'summaryAr' => 'تختلف المواعيد بحسب الخط. يوضح التعميم موجات القدوم الصباحية ومواعيد المغادرة خلال فترة الامتحانات.',
+                'arrivalLabelEn' => 'Arrival to campus',
+                'arrivalLabelAr' => 'القدوم إلى الجامعة',
+                'arrivalValueEn' => '06:45–07:15 · 08:50–09:15',
+                'arrivalValueAr' => '06:45–07:15 · 08:50–09:15',
+                'departureLabelEn' => 'Return from campus',
+                'departureLabelAr' => 'المغادرة من الجامعة',
+                'departureValueEn' => '11:00 · 13:00 · 15:30',
+                'departureValueAr' => '11:00 · 13:00 · 15:30',
+                'noteEn' => 'Not every route uses every departure. Check the latest notice or confirm with the Transport Office before travelling.',
+                'noteAr' => 'لا يستخدم كل خط جميع مواعيد المغادرة. يرجى مراجعة آخر تعميم أو التأكد من مكتب النقل قبل الانطلاق.',
+            ],
+            'routes' => [
+                'titleEn' => 'Route coverage',
+                'titleAr' => 'تغطية الخطوط',
+                'summaryEn' => 'The latest notice covers 30 lines serving Damascus and surrounding areas. These are the main route names shown in the published programme.',
+                'summaryAr' => 'يشمل آخر تعميم 30 خطاً تخدم دمشق والمناطق المحيطة بها. فيما يلي أسماء الخطوط الرئيسية الظاهرة في البرنامج المنشور.',
+                'noteEn' => 'Pickup order and intermediate stops can change by examination day. Confirm your exact stop with the Transport Office.',
+                'noteAr' => 'قد يتغير ترتيب نقاط الانطلاق والمواقف الوسيطة بحسب يوم الامتحان. يرجى تأكيد موقفك المحدد مع مكتب النقل.',
+                'items' => [
+                    ['number' => '01', 'nameEn' => 'Al-Baramkeh', 'nameAr' => 'البرامكة'],
+                    ['number' => '02', 'nameEn' => 'Al-Moadhamieh', 'nameAr' => 'المعضمية'],
+                    ['number' => '03', 'nameEn' => 'Bab Sharqi', 'nameAr' => 'باب شرقي'],
+                    ['number' => '04', 'nameEn' => 'Mezzeh Sheikh Saad', 'nameAr' => 'مزة شيخ سعد'],
+                    ['number' => '05', 'nameEn' => 'Qudsaya Suburb', 'nameAr' => 'ضاحية قدسيا'],
+                    ['number' => '06', 'nameEn' => 'Dummar Project', 'nameAr' => 'مشروع دمر'],
+                    ['number' => '07', 'nameEn' => 'Qudsaya', 'nameAr' => 'قدسيا'],
+                    ['number' => '08', 'nameEn' => 'Masaken', 'nameAr' => 'مساكن'],
+                    ['number' => '09', 'nameEn' => 'Barzeh', 'nameAr' => 'برزة'],
+                    ['number' => '10', 'nameEn' => 'Al-Mazzeh', 'nameAr' => 'المزة'],
+                    ['number' => '11', 'nameEn' => 'Al-Midan', 'nameAr' => 'الميدان'],
+                    ['number' => '12', 'nameEn' => 'Al-Maliki', 'nameAr' => 'المالكي'],
+                    ['number' => '13', 'nameEn' => 'Jaramana', 'nameAr' => 'جرمانا'],
+                    ['number' => '14', 'nameEn' => 'Baghdad Street', 'nameAr' => 'شارع بغداد'],
+                    ['number' => '15', 'nameEn' => 'Daraa Highway', 'nameAr' => 'أوتوستراد درعا'],
+                ],
+            ],
+            'fees' => [
+                'titleEn' => 'Transport fees and payment',
+                'titleAr' => 'رسوم النقل والدفع',
+                'summaryEn' => 'The supplied examination-period notice does not publish fee amounts. Current transport fees, payment deadlines, and installment options should be confirmed through the student portal or the Transport Office.',
+                'summaryAr' => 'لا يتضمن تعميم فترة الامتحانات المرفق قيم الرسوم. يجب تأكيد رسوم النقل الحالية ومواعيد الدفع وخيارات التقسيط عبر بوابة الطالب أو مكتب النقل.',
+                'steps' => [
+                    ['titleEn' => 'Check the current amount', 'titleAr' => 'تحقق من القيمة الحالية', 'bodyEn' => 'Open the student portal and review the transport charge for your active semester and route.', 'bodyAr' => 'افتح بوابة الطالب وراجع رسم النقل للفصل الحالي والخط الذي اخترته.'],
+                    ['titleEn' => 'Complete registration', 'titleAr' => 'أكمل التسجيل', 'bodyEn' => 'Choose your route and submit the transport registration before the published deadline.', 'bodyAr' => 'اختر خطك وأرسل طلب التسجيل على النقل قبل الموعد المحدد في التعميم.'],
+                    ['titleEn' => 'Ask before paying', 'titleAr' => 'استفسر قبل الدفع', 'bodyEn' => 'For a route, fee, or payment question, confirm the details with the Transport Office.', 'bodyAr' => 'للاستفسار عن الخط أو الرسوم أو الدفع، يرجى تأكيد التفاصيل مع مكتب النقل.'],
+                ],
             ],
             'success' => ['image' => '/images/campus-transport.webp', 'imageAltEn' => 'University transport bus at a campus stop', 'imageAltAr' => 'حافلة نقل جامعية عند موقف في الحرم الجامعي', 'titleEn' => 'Dedicated to Your Success', 'titleAr' => 'ملتزمون بنجاحك', 'descriptionEn' => 'Beyond the classroom, we ensure that every student has the tools and support systems needed to thrive. Our campus services are designed with accessibility and efficiency in mind.', 'descriptionAr' => 'خارج القاعة الصفية، نضمن حصول كل طالب على أدوات وأنظمة الدعم اللازمة للتفوق. صممت خدمات الحرم الجامعي مع مراعاة سهولة الوصول والكفاءة.', 'links' => [['labelEn' => 'Quality Assured', 'labelAr' => 'جودة موثوقة', 'icon' => '/images/icon-check-circle-outline.svg'], ['labelEn' => 'Portal Support', 'labelAr' => 'دعم البوابة', 'icon' => '/images/icon-users-outline.svg']]],
             'seoDescriptionEn' => 'Find SPU student transport schedules, routes, registration guidance, fees, and portal support.',
             'seoDescriptionAr' => 'اطلع على جداول ومسارات النقل الطلابي والتسجيل والرسوم ودعم البوابة في SPU.',
         ];
+    }
+
+    /** @param array<string, mixed> $payload @return array<string, mixed> */
+    private function completeTransportPayload(array $payload, string $locale): array
+    {
+        $completed = array_replace_recursive(
+            $this->localized($this->transportPayload(), $locale),
+            $payload,
+        );
+
+        $completed['cards'] = array_map(function (mixed $card) use ($locale): mixed {
+            if (! is_array($card)) {
+                return $card;
+            }
+
+            $title = mb_strtolower(trim((string) ($card['title'] ?? '')));
+            $registrationTitle = $locale === 'ar' ? 'التسجيل' : 'registration';
+            $feesTitle = $locale === 'ar' ? 'الرسوم' : 'fees';
+
+            if ($title === $registrationTitle) {
+                $card['href'] = '/campus-life/transport/registration';
+                $card['target'] = '_blank';
+            } elseif ($title === $feesTitle) {
+                $card['href'] = '/campus-life/transport#fees';
+            }
+
+            return $card;
+        }, is_array($completed['cards'] ?? null) ? $completed['cards'] : []);
+
+        return $completed;
     }
 
     /** @return array<string, mixed> */

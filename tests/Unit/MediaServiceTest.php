@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Unit;
 
 use App\Contracts\Media\MediaServiceInterface;
+use App\Contracts\Media\ImageConversionServiceInterface;
+use App\DTOs\Media\WebpConversionResultDTO;
 use App\DTOs\Shared\PaginatedResultDTO;
 use App\Filament\Support\MediaPicker;
 use App\Models\Media\MediaAsset;
@@ -68,6 +70,50 @@ class MediaServiceTest extends TestCase
         ]);
     }
 
+    public function test_upload_persists_webp_derivative_when_converter_succeeds(): void
+    {
+        $this->mock(ImageConversionServiceInterface::class)
+            ->shouldReceive('convert')
+            ->once()
+            ->andReturn(new WebpConversionResultDTO('media/image/2026/08/photo.webp', 800, 640, 480));
+        $this->app->forgetInstance(MediaServiceInterface::class);
+        $this->service = app(MediaServiceInterface::class);
+
+        $result = $this->service->upload([
+            'file' => UploadedFile::fake()->create('photo.jpg', 500, 'image/jpeg'),
+            'uploaded_by' => $this->actor->id,
+            'title_ar' => 'صورة',
+            'title_en' => 'Photo',
+            'alt_text_ar' => 'وصف',
+            'alt_text_en' => 'Description',
+        ]);
+
+        $this->assertDatabaseHas('media_assets', [
+            'id' => $result->mediaId,
+            'webp_path' => 'media/image/2026/08/photo.webp',
+        ]);
+        $this->assertSame('/storage/media/image/2026/08/photo.webp', $result->url);
+    }
+
+    public function test_upload_remains_successful_when_webp_conversion_is_unavailable(): void
+    {
+        $this->mock(ImageConversionServiceInterface::class)
+            ->shouldReceive('convert')
+            ->once()
+            ->andReturnNull();
+        $this->app->forgetInstance(MediaServiceInterface::class);
+        $this->service = app(MediaServiceInterface::class);
+
+        $result = $this->service->upload([
+            'file' => UploadedFile::fake()->create('photo.jpg', 500, 'image/jpeg'),
+            'uploaded_by' => $this->actor->id,
+            'title_en' => 'Photo',
+        ]);
+
+        $this->assertNotNull($result->mediaId);
+        $this->assertDatabaseHas('media_assets', ['id' => $result->mediaId, 'webp_path' => null]);
+    }
+
     public function test_uploading_same_file_twice_reuses_existing_asset(): void
     {
         $file = UploadedFile::fake()->create('duplicate.pdf', 500, 'application/pdf');
@@ -105,6 +151,14 @@ class MediaServiceTest extends TestCase
         ]);
 
         $this->assertSame($uploaded->url, MediaPicker::selectedUrl($uploaded->mediaId));
+    }
+
+    public function test_local_absolute_media_urls_are_normalized_to_host_relative_urls(): void
+    {
+        $this->assertSame(
+            '/storage/media/image/2026/08/student.webp',
+            MediaUrlResolver::resolve('http://localhost/storage/media/image/2026/08/student.webp', 'public'),
+        );
     }
 
     public function test_media_picker_preview_uses_accessible_filename_without_displaying_raw_url(): void

@@ -228,7 +228,7 @@ final class ProfilePageService implements ProfilePageServiceInterface
     private function resolveMemberImage(FacultyMember $member): ?string
     {
         if ($member->photoMedia instanceof MediaAsset) {
-            return MediaUrlResolver::resolve($member->photoMedia->path, $member->photoMedia->disk);
+            return MediaUrlResolver::resolveImage($member->photoMedia->webp_path, $member->photoMedia->path, $member->photoMedia->disk);
         }
 
         return MediaUrlResolver::resolveLegacy($member->legacy_photo_path);

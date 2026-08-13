@@ -255,6 +255,27 @@ final class NewsWorkflowTest extends TestCase
         $this->get('/en/news/events-list/missing-event')->assertNotFound();
     }
 
+    public function test_events_calendar_has_responsive_bilingual_layout_and_month_navigation(): void
+    {
+        $this->get('/en/news/events?month=2026-11')
+            ->assertOk()
+            ->assertSee('events-calendar-filter', false)
+            ->assertSee('events-calendar-toolbar', false)
+            ->assertSee('events-calendar-weekdays', false)
+            ->assertSee('events-calendar-day', false)
+            ->assertSee('events-month-grid', false)
+            ->assertSee('Annual Research Symposium &amp; Innovation Showcase', false)
+            ->assertSee('/en/news/events?month=2026-10', false)
+            ->assertSee('/en/news/events?month=2026-12', false);
+
+        $this->get('/ar/news/events?month=2026-11')
+            ->assertOk()
+            ->assertSee('<html lang="ar" dir="rtl">', false)
+            ->assertSee('تقويم الفعاليات')
+            ->assertSee('الأحد')
+            ->assertSee('منتدى البحث السنوي ومعرض الابتكار');
+    }
+
     public function test_event_category_filter_is_functional(): void
     {
         $this->get('/en/news/events-list?category=sports')
