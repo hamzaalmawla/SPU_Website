@@ -120,6 +120,16 @@
                             </dd></div>
                         @endif
                     </dl>
+                    <div class="mt-6 border-t border-slate-100 pt-6" x-data="pageShare" data-share-url="{{ url('/'.$locale.'/research/publications/'.($item['slug'] ?? '')) }}" data-share-title="{{ $item['title'] ?? '' }}">
+                        <h3 class="text-[13px] font-bold uppercase tracking-[0.12em] text-spu-red">{{ $locale === 'ar' ? 'مشاركة المنشور' : 'Share Publication' }}</h3>
+                        <div class="mt-3 grid grid-cols-2 gap-2">
+                            <button type="button" x-on:click="share" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-spu-blue transition hover:border-spu-blue">{{ $locale === 'ar' ? 'مشاركة' : 'Share' }}</button>
+                            <button type="button" x-on:click="copy" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-spu-blue transition hover:border-spu-blue">
+                                <span x-show="!copied">{{ $locale === 'ar' ? 'نسخ الرابط' : 'Copy link' }}</span>
+                                <span x-show="copied" x-cloak>{{ $locale === 'ar' ? 'تم النسخ' : 'Copied' }}</span>
+                            </button>
+                        </div>
+                    </div>
                 </aside>
             </div>
         </div>

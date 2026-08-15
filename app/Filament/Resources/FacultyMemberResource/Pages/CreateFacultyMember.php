@@ -50,4 +50,9 @@ class CreateFacultyMember extends CreateRecord
 
         return FacultyMember::query()->findOrFail($prepared->entityId);
     }
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('edit', ['record' => $this->record]);
+    }
 }

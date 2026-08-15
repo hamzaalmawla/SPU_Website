@@ -25,6 +25,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 
@@ -35,6 +36,19 @@ class PersonResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
 
     protected static ?int $navigationSort = 1;
+
+    public static function getRecordTitle(?Model $record): string
+    {
+        if (! $record instanceof Person) {
+            return self::getModelLabel();
+        }
+
+        $locale = app()->getLocale() === 'en' ? 'en' : 'ar';
+        $name = $record->translations->firstWhere('locale', $locale)?->name;
+        $arabicName = $record->translations->firstWhere('locale', 'ar')?->name;
+
+        return filled($name) ? trim((string) $name) : (filled($arabicName) ? trim((string) $arabicName) : $record->slug);
+    }
 
     public static function canAccess(): bool
     {
@@ -53,23 +67,23 @@ class PersonResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->with('translations');
+        return parent::getEloquentQuery()->with(['translations', 'appointments.translations']);
     }
 
     public static function form(Form $form): Form
     {
         return $form->schema([
             Section::make('Where this person appears')->schema([
-                Select::make('category')->required()->default('dean')->options([
+                Select::make('category')->nullable()->options([
                     'dean' => 'Dean - shown on About Leadership',
                     'rector' => 'Rector - main leadership profile',
                     'vice_president' => 'Vice President - leadership profile',
                     'council' => 'Council Member - leadership profile',
                     'director' => 'Director - profile only',
-                ])->native(false),
+                ])->native(false)->helperText('Legacy: use Appointments below instead.'),
                 Select::make('faculty_scope_slug')
-                    ->label('Faculty for dean cards')
-                    ->helperText('Choose this for deans so the Leadership faculty filter works.')
+                    ->label('Faculty scope')
+                    ->helperText('Legacy field for faculty filtering.')
                     ->options(self::facultyOptions())
                     ->searchable()
                     ->native(false),
@@ -80,9 +94,34 @@ class PersonResource extends Resource
                     ->minValue(0)
                     ->step(10)
                     ->helperText('Lower numbers appear first. You can also reorder people from the list.'),
-                MediaPicker::image('image', 'Profile Image'),
                 Toggle::make('is_enabled')->label('Visible to editors')->default(true),
             ])->columns(2),
+            Section::make('Placements (cards)')->schema([
+                Repeater::make('appointments')->relationship()->schema([
+                    Select::make('type')->required()->options([
+                        'rector' => 'Rector',
+                        'vice_president' => 'Vice President',
+                        'dean' => 'Dean',
+                        'council' => 'Council Member',
+                        'director' => 'Director',
+                        'faculty_member' => 'Faculty Member',
+                        'researcher' => 'Researcher',
+                    ])->native(false),
+                    Select::make('faculty_id')
+                        ->label('Faculty')
+                        ->options(fn (): array => self::facultyIdOptions())
+                        ->searchable()
+                        ->native(false)
+                        ->nullable(),
+                    TextInput::make('role_override')
+                        ->label('Role override')
+                        ->helperText('e.g., "Dean of Medicine" or "Professor of Surgery"')
+                        ->nullable()
+                        ->maxLength(255),
+                    TextInput::make('sort_order')->numeric()->default(0)->minValue(0),
+                    Toggle::make('is_enabled')->default(true),
+                ])->columns(2)->defaultItems(0)->addActionLabel('Add Placement'),
+            ])->collapsible()->columnSpanFull(),
             Tabs::make('Profile text')->tabs([
                 Tabs\Tab::make('Arabic')->schema([
                     Hidden::make('translations.ar.locale')->default('ar'),
@@ -99,10 +138,16 @@ class PersonResource extends Resource
                     Textarea::make('translations.en.quote')->label('English quote')->rows(3)->columnSpanFull(),
                 ])->columns(2),
             ])->columnSpanFull(),
+            Section::make('Media')->schema([
+                MediaPicker::assetImage('photo_media_id', 'Profile Photo'),
+                MediaPicker::assetDocument('cv_media_id', 'CV Document'),
+            ])->columns(2)->collapsible()->collapsed(),
             Section::make('Contact details')->schema([
                 TextInput::make('email')->email()->maxLength(255),
                 TextInput::make('phone')->maxLength(255),
                 TextInput::make('office_location')->maxLength(255),
+                TextInput::make('orcid_url')->label('ORCID URL')->url()->maxLength(255),
+                TextInput::make('scholar_url')->label('Google Scholar URL')->url()->maxLength(255),
                 Hidden::make('profile_url'),
             ])->columns(2)->collapsible()->collapsed(),
             Section::make('Advanced URL and titles')->schema([
@@ -151,7 +196,14 @@ class PersonResource extends Resource
             TextColumn::make('slug')->searchable()->sortable(),
             TextColumn::make('category')->badge()->sortable(),
             TextColumn::make('faculty_scope_slug')->label('Faculty')->badge()->sortable(),
-            TextColumn::make('translations.name')->label('Names')->listWithLineBreaks()->limit(40),
+            TextColumn::make('translations.name')
+                ->label('Names')
+                ->searchable(query: fn (Builder $query, string $search): Builder => $query->whereHas(
+                    'translations',
+                    fn (Builder $q): Builder => $q->where('name', 'like', "%{$search}%")
+                ))
+                ->listWithLineBreaks()
+                ->limit(40),
             IconColumn::make('is_enabled')->boolean(),
             TextColumn::make('publication_status')->badge()->sortable(),
             TextColumn::make('updated_at')->dateTime()->sortable(),
@@ -196,6 +248,22 @@ class PersonResource extends Resource
         ];
     }
 
+    /** @return array<int, string> */
+    private static function facultyIdOptions(): array
+    {
+        return \App\Models\Faculty\Faculty::query()
+            ->enabled()
+            ->with('translations')
+            ->orderBy('sort_order')
+            ->get()
+            ->mapWithKeys(fn (\App\Models\Faculty\Faculty $f): array => [
+                (int) $f->getKey() => $f->translations->firstWhere('locale', 'en')?->name
+                    ?? $f->translations->firstWhere('locale', 'ar')?->name
+                    ?? (string) $f->slug,
+            ])
+            ->all();
+    }
+
     /** @param array<string, mixed> $data @return array<string, mixed> */
     public static function preparePersonFormData(array $data, ?int $ignoreId = null): array
     {
@@ -235,7 +303,7 @@ class PersonResource extends Resource
 
     private static function profilePath(string $slug): string
     {
-        return '/about/profile/person/'.$slug;
+        return '/about/profile/'.$slug;
     }
 
     private static function nextSortOrder(): int

@@ -47,6 +47,7 @@ class ManageArtificialIntelligenceFaculty extends Page implements HasForms
             'facilities.artificial-intelligence.research' => __('admin.cms.targets.facilities.research'),
             'facilities.artificial-intelligence.alumni' => 'Alumni',
             'facilities.artificial-intelligence.valedictorians' => 'Valedictorians',
+            'facilities.artificial-intelligence.members' => __('admin.cms.targets.facilities.members'),
         ];
     }
 

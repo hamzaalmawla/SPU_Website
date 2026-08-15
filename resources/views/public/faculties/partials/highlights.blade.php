@@ -1,6 +1,6 @@
 @php
     $navigation = isset($navigationItems) ? $navigationItems->keyBy('slug') : collect();
-    $orderedSlugs = ['departments', 'study-plan', 'projects', 'alumni', 'valedictorians', 'labs', 'training'];
+    $orderedSlugs = ['departments', 'study-plan', 'projects', 'alumni', 'valedictorians', 'labs', 'training', 'members'];
     $cards = collect($orderedSlugs)
         ->map(fn (string $slug) => $navigation->get($slug))
         ->filter()

@@ -47,6 +47,7 @@ class ManageBuildingConstructionEngineeringFaculty extends Page implements HasFo
             'facilities.building-construction-engineering.research' => __('admin.cms.targets.facilities.research'),
             'facilities.building-construction-engineering.alumni' => 'Alumni',
             'facilities.building-construction-engineering.valedictorians' => 'Valedictorians',
+            'facilities.building-construction-engineering.members' => __('admin.cms.targets.facilities.members'),
         ];
     }
 

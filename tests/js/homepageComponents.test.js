@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { afterEach, test } from 'node:test';
+import dayjs from 'dayjs';
 
 import { createCalendarApp } from '../../resources/js/alpine/calendarApp.js';
 import { createHeroSlider } from '../../resources/js/alpine/heroSlider.js';
@@ -60,9 +61,10 @@ test('hero and honor autoplay remain stopped under reduced motion', () => {
     assert.equal(honor.itemLabel(0), 'Show item 1 / 2');
 });
 
-test('calendar preserves the first chronological event and stops autoplay', () => {
+test('calendar selects the current day on init and stops autoplay', () => {
     installReducedMotionBrowser();
     const calendar = createCalendarApp();
+    const today = dayjs().format('YYYY-MM-DD');
     calendar.$el = root({
         events: JSON.stringify([
             { id: 2, title: 'Later', startsAt: '2026-08-20' },
@@ -72,8 +74,8 @@ test('calendar preserves the first chronological event and stops autoplay', () =
 
     calendar.init();
 
-    assert.equal(calendar.selectedDate, '2026-08-10');
-    assert.equal(calendar.selectedEvent.title, 'First');
+    assert.equal(calendar.selectedDate, today);
+    assert.equal(calendar.viewDate.format('YYYY-MM-DD'), dayjs().startOf('month').format('YYYY-MM-DD'));
     assert.equal(calendar.carouselInterval, null);
 });
 

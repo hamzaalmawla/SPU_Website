@@ -266,6 +266,25 @@
         z-index: 1;
     }
 
+    /* ── Search panel (anchored to the search button) ── */
+    .site-search-panel {
+        transform-origin: top right;
+    }
+
+    [dir='rtl'] .site-search-panel {
+        transform-origin: top left;
+    }
+
+    @media (max-width: 767px) {
+        #site-search-panel {
+            position: fixed !important;
+            inset-inline: 1rem !important;
+            top: 5.5rem !important;
+            width: auto !important;
+            max-width: none !important;
+        }
+    }
+
     .site-nav-lang {
         display: inline-flex;
         align-items: center;

@@ -107,8 +107,7 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
                 : null;
         }
         $path = match ($type) {
-            'person' => '/about/profile/person/'.$slug,
-            'faculty-member' => '/about/profile/faculty-member/'.$slug,
+            'person', 'faculty-member' => '/about/profile/'.$slug,
             'directorate' => '/about/directorates/'.$slug,
             'partnership' => '/about/partnerships',
         };
@@ -272,11 +271,11 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             publications: [],
             councilMemberships: [],
             cvUrl: null,
-            profileUrl: '/'.$locale.'/about/profile/person/'.$slug,
+            profileUrl: '/'.$locale.'/about/profile/'.$slug,
             seoTitle: $name.' - '.config('app.name', 'SPU'),
             seoDescription: $bio ?? $name,
             seoImage: $this->nullableString($payload['image'] ?? null),
-            path: '/'.$locale.'/about/profile/person/'.$slug,
+            path: '/'.$locale.'/about/profile/'.$slug,
         );
     }
 
@@ -341,11 +340,11 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             publications: [],
             councilMemberships: [],
             cvUrl: $this->mediaUrl($this->nullableInt($payload['cv_media_id'] ?? null)),
-            profileUrl: '/'.$locale.'/about/profile/faculty-member/'.$slug,
+            profileUrl: '/'.$locale.'/about/profile/'.$slug,
             seoTitle: $name.' - '.config('app.name', 'SPU'),
             seoDescription: $bio ?? $name,
             seoImage: $image,
-            path: '/'.$locale.'/about/profile/faculty-member/'.$slug,
+            path: '/'.$locale.'/about/profile/'.$slug,
         );
     }
 
@@ -990,7 +989,7 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
 
     private function personProfilePath(string $slug): string
     {
-        return '/about/profile/person/'.$slug;
+        return '/about/profile/'.$slug;
     }
 
     private function assertSupportedType(string $type): void

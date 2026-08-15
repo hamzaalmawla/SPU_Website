@@ -339,11 +339,8 @@ final class SitemapService implements SitemapServiceInterface
         foreach (Directorate::query()->public()->pluck('slug') as $slug) {
             $paths[] = '/about/directorates/'.$slug;
         }
-        foreach (Person::query()->public()->pluck('slug') as $slug) {
-            $paths[] = '/about/profile/person/'.$slug;
-        }
-        foreach (FacultyMember::query()->public()->pluck('slug') as $slug) {
-            $paths[] = '/about/profile/faculty-member/'.$slug;
+        foreach (Person::query()->public()->pluck('slug')->unique() as $slug) {
+            $paths[] = '/about/profile/'.$slug;
         }
 
         foreach (array_unique($paths) as $path) {

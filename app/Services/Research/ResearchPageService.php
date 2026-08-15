@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Services\Research;
 
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Page\ProfilePageServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
+use App\DTOs\Content\ProfilePageDTO;
 use App\DTOs\Content\ResearchCardDTO;
 use App\DTOs\Research\ResearchConferenceRegistrationDTO;
 use App\DTOs\Research\ResearchDetailPageDTO;
@@ -34,6 +36,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
 
     public function __construct(
         private readonly CmsWorkflowServiceInterface $cmsWorkflowService,
+        private readonly ProfilePageServiceInterface $profilePageService,
     ) {}
 
     public function landing(string $locale): ResearchPageDTO
@@ -496,6 +499,28 @@ final class ResearchPageService implements ResearchPageServiceInterface
 
         if ($cmsPage instanceof ResearchDetailPageDTO) {
             return $cmsPage;
+        }
+
+        // Prefer the canonical database profile so /research/researchers/{slug}
+        // and /about/profile/{slug} show the same live data.
+        $databaseProfile = $this->databaseResearcherProfile($locale, $slug);
+
+        if ($databaseProfile !== null) {
+            $item = [
+                'slug' => $slug,
+                'name' => $databaseProfile['name'],
+                'title' => $databaseProfile['role'],
+                'image' => $databaseProfile['image'],
+                'faculty' => $databaseProfile['faculty']['name'] ?? '',
+                'department' => $databaseProfile['department'] ?? '',
+                'email' => $databaseProfile['email'] ?? '',
+            ];
+
+            return $this->detailDto($locale, 'researcher', $slug, $item, [
+                'item' => $item,
+                'profile' => $databaseProfile,
+                'publications' => $databaseProfile['publications'] ?? [],
+            ], '/research/researchers/'.$slug, $databaseProfile['image'] ?? '/images/uni-main-place.JPG');
         }
 
         $item = $this->researcherSourceItem($slug);
@@ -2173,6 +2198,60 @@ final class ResearchPageService implements ResearchPageServiceInterface
             ],
             'publications' => $this->uniqueProfilePublications([...$enrichedPublications, ...$publications]),
             'isResearcher' => true,
+        ];
+    }
+
+    /** @return array<string, mixed>|null */
+    private function databaseResearcherProfile(string $locale, string $slug): ?array
+    {
+        $dto = $this->profilePageService->getProfile($locale, 'person', $slug)
+            ?? $this->profilePageService->getProfile($locale, 'faculty_member', $slug);
+
+        if (! $dto instanceof ProfilePageDTO) {
+            return null;
+        }
+
+        return [
+            'name' => $dto->name,
+            'role' => $dto->position ?? $dto->title ?? '',
+            'faculty' => [
+                'name' => $dto->facultyName ?? '',
+                'slug' => '',
+            ],
+            'department' => $dto->departmentName ?? '',
+            'description' => $dto->bio ?? '',
+            'biography' => $dto->bio !== null && $dto->bio !== '' ? [$dto->bio] : [],
+            'education' => array_map(
+                fn ($edu): array => [
+                    'degree' => $edu->degree,
+                    'institution' => $edu->institution,
+                    'year' => $edu->yearEnd ?? $edu->yearStart ?? '',
+                ],
+                $dto->educations
+            ),
+            'courses' => [],
+            'expertise' => $dto->specializations ?? [],
+            'researchStats' => [
+                'publications' => count($dto->publications),
+                'citations' => 0,
+            ],
+            'publications' => array_map(
+                fn (array $pub): array => [
+                    'title' => $pub['title'] ?? '',
+                    'year' => $pub['year'] ?? '',
+                    'journal' => $pub['publisher'] ?? '',
+                    'links' => [
+                        'local' => '#',
+                        'scholar' => $pub['externalUrl'] ?? '',
+                    ],
+                ],
+                $dto->publications
+            ),
+            'office' => $dto->officeLocation !== null ? ['fullAddress' => $dto->officeLocation] : null,
+            'email' => $dto->email ?? '',
+            'image' => $dto->image ?? '/images/uni-main-place.JPG',
+            'orcidUrl' => $dto->socialLinks['orcid'] ?? '',
+            'scholarUrl' => $dto->socialLinks['scholar'] ?? '',
         ];
     }
 

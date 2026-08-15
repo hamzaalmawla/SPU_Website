@@ -69,9 +69,12 @@
                             <span class="flex w-full cursor-not-allowed items-center justify-center rounded-lg bg-slate-200 px-5 py-3 text-sm font-bold text-slate-500">{{ $labels['applicationsClosed'] ?? '' }}</span>
                         @endif
                         <a href="{{ $boardUrl }}" class="mt-3 flex w-full items-center justify-center rounded-lg border border-slate-200 px-5 py-3 text-sm font-bold text-spu-blue transition hover:border-spu-blue">{{ $labels['back'] ?? '' }}</a>
-                        <div class="mt-3 grid grid-cols-2 gap-2" x-data="{ copied: false, url: @js($canonicalUrl), async share() { if (navigator.share) { await navigator.share({ title: @js((string) ($job['title'] ?? '')), url: this.url }); } else { await this.copy(); } }, async copy() { await navigator.clipboard.writeText(this.url); this.copied = true; window.setTimeout(() => this.copied = false, 1800); } }">
-                            <button type="button" x-on:click="share()" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-spu-blue transition hover:border-spu-blue">{{ $labels['share'] ?? '' }}</button>
-                            <button type="button" x-on:click="copy()" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-spu-blue transition hover:border-spu-blue"><span x-show="!copied">{{ $labels['copyLink'] ?? '' }}</span><span x-show="copied" x-cloak>{{ $labels['copied'] ?? '' }}</span></button>
+                        <div class="mt-3 grid grid-cols-2 gap-2" x-data="pageShare" data-share-url="{{ $canonicalUrl }}" data-share-title="{{ $job['title'] ?? '' }}">
+                            <button type="button" x-on:click="share" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-spu-blue transition hover:border-spu-blue">{{ $labels['share'] ?? '' }}</button>
+                            <button type="button" x-on:click="copy" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-spu-blue transition hover:border-spu-blue">
+                                <span x-show="!copied">{{ $labels['copyLink'] ?? '' }}</span>
+                                <span x-show="copied" x-cloak>{{ $labels['copied'] ?? '' }}</span>
+                            </button>
                         </div>
                     </div>
                 </aside>

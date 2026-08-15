@@ -1379,6 +1379,8 @@ final class FacilitiesWorkflowTest extends TestCase
             $expectedTargets[] = 'facilities.pharmacy.training';
         }
 
+        $expectedTargets[] = 'facilities.'.$facultySlug.'.members';
+
         $reflection = new \ReflectionClass($pageClass);
         $method = $reflection->getMethod('targetOptions');
         $method->setAccessible(true);

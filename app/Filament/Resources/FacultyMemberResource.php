@@ -7,6 +7,7 @@ namespace App\Filament\Resources;
 use App\Contracts\Shared\SlugServiceInterface;
 use App\Filament\Resources\FacultyMemberResource\Pages;
 use App\Filament\Support\MediaPicker;
+use App\Models\Faculty\Department;
 use App\Models\Person\FacultyMember;
 use App\Models\User\User;
 use Filament\Forms\Components\Hidden;
@@ -27,6 +28,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 
@@ -39,6 +41,19 @@ class FacultyMemberResource extends Resource
     protected static ?int $navigationSort = 2;
 
     protected static ?string $navigationLabel = 'Faculty Members';
+
+    public static function getRecordTitle(?Model $record): string
+    {
+        if (! $record instanceof FacultyMember) {
+            return self::getModelLabel();
+        }
+
+        $locale = app()->getLocale() === 'en' ? 'en' : 'ar';
+        $name = $record->translations->firstWhere('locale', $locale)?->full_name;
+        $arabicName = $record->translations->firstWhere('locale', 'ar')?->full_name;
+
+        return filled($name) ? trim((string) $name) : (filled($arabicName) ? trim((string) $arabicName) : $record->slug);
+    }
 
     public static function canAccess(): bool
     {
@@ -77,11 +92,30 @@ class FacultyMemberResource extends Resource
                     ->getOptionLabelFromRecordUsing(fn ($record) => $record->translations->firstWhere('locale', 'ar')?->name ?? $record->translations->first()?->name ?? '#'.$record->id)
                     ->searchable()
                     ->preload()
-                    ->native(false),
+                    ->native(false)
+                    ->live(),
                 Select::make('department_id')
                     ->label('Department')
-                    ->relationship('department', 'id', modifyQueryUsing: fn (Builder $query): Builder => self::scopeDepartmentOptions($query))
-                    ->getOptionLabelFromRecordUsing(fn ($record) => $record->translations->firstWhere('locale', 'ar')?->name ?? $record->translations->first()?->name ?? '#'.$record->id)
+                    ->options(function (Get $get): array {
+                        $facultyId = $get('faculty_id');
+                        $query = Department::query()
+                            ->with('translations')
+                            ->when(is_numeric($facultyId), fn (Builder $q): Builder => $q->where('faculty_id', (int) $facultyId));
+
+                        $user = auth()->user();
+                        if ($user instanceof User && $user->role_slug === 'faculty_editor') {
+                            $scope = (string) $user->faculty_scope_slug;
+                            $query->whereHas('faculty', function (Builder $fq) use ($scope): void {
+                                $fq->where('faculty_scope_slug', $scope)
+                                    ->orWhere('public_slug', $scope)
+                                    ->orWhere('slug', $scope);
+                            });
+                        }
+
+                        return $query->get()->mapWithKeys(fn ($record): array => [
+                            $record->id => $record->translations->firstWhere('locale', 'ar')?->name ?? $record->translations->first()?->name ?? '#'.$record->id,
+                        ])->all();
+                    })
                     ->searchable()
                     ->preload()
                     ->native(false),
@@ -161,7 +195,13 @@ class FacultyMemberResource extends Resource
         return $table->columns([
             TextColumn::make('sort_order')->label('Order')->sortable(),
             TextColumn::make('slug')->searchable()->sortable(),
-            TextColumn::make('translations.full_name')->label('Name')->searchable()->limit(40),
+            TextColumn::make('translations.full_name')
+                ->label('Name')
+                ->searchable(query: fn (Builder $query, string $search): Builder => $query->whereHas(
+                    'translations',
+                    fn (Builder $q): Builder => $q->where('full_name', 'like', "%{$search}%")
+                ))
+                ->limit(40),
             TextColumn::make('translations.title')->label('Title')->limit(20),
             TextColumn::make('translations.position')->label('Position')->limit(20),
             TextColumn::make('faculty.translations.name')->label('Faculty')->limit(30),
@@ -255,7 +295,7 @@ class FacultyMemberResource extends Resource
 
     private static function profilePath(string $slug): string
     {
-        return '/about/profile/faculty-member/'.$slug;
+        return '/about/profile/'.$slug;
     }
 
     private static function nextSortOrder(): int

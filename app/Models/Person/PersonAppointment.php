@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Models\Person;
 
 use App\Models\Faculty\Council;
+use App\Models\Faculty\Department;
+use App\Models\Faculty\Faculty;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,11 +14,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class CouncilMember extends Model
+class PersonAppointment extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['council_id', 'faculty_member_id', 'person_id', 'legacy_photo_path', 'legacy_cv_path', 'legacy_ar_cv_path', 'sort_order', 'is_enabled'];
+    protected $fillable = [
+        'person_id',
+        'type',
+        'faculty_id',
+        'department_id',
+        'council_id',
+        'role_override',
+        'sort_order',
+        'is_enabled',
+    ];
 
     protected function casts(): array
     {
@@ -27,24 +38,29 @@ class CouncilMember extends Model
         ];
     }
 
-    public function council(): BelongsTo
-    {
-        return $this->belongsTo(Council::class);
-    }
-
-    public function facultyMember(): BelongsTo
-    {
-        return $this->belongsTo(FacultyMember::class);
-    }
-
     public function person(): BelongsTo
     {
         return $this->belongsTo(Person::class);
     }
 
+    public function faculty(): BelongsTo
+    {
+        return $this->belongsTo(Faculty::class);
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    public function council(): BelongsTo
+    {
+        return $this->belongsTo(Council::class);
+    }
+
     public function translations(): HasMany
     {
-        return $this->hasMany(CouncilMemberTranslation::class)->orderBy('locale');
+        return $this->hasMany(PersonAppointmentTranslation::class)->orderBy('locale');
     }
 
     public function scopeEnabled(Builder $query): Builder

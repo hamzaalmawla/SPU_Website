@@ -101,14 +101,46 @@
                 </nav>
 
                 <div class="site-nav-actions">
-                    <button type="button"
-                            @click="toggleSearch()"
-                            class="site-nav-lang"
-                            :aria-expanded="searchOpen.toString()"
-                            aria-controls="site-search-panel">
-                        <img src="/images/icon-search-outline.svg" alt="" class="h-[1rem] w-[1rem]" aria-hidden="true">
-                        <span class="sr-only">{{ __('public.search') }}</span>
-                    </button>
+                    <div class="site-search-wrap relative">
+                        <button type="button"
+                                @click="toggleSearch()"
+                                class="site-nav-lang"
+                                :aria-expanded="searchOpen.toString()"
+                                aria-controls="site-search-panel">
+                            <img src="/images/icon-search-outline.svg" alt="" class="h-[1rem] w-[1rem]" aria-hidden="true">
+                            <span class="sr-only">{{ __('public.search') }}</span>
+                        </button>
+
+                        <div id="site-search-panel"
+                             x-show="searchOpen"
+                             x-transition:enter="transition duration-200 ease-out"
+                             x-transition:enter-start="opacity-0 -translate-y-2 scale-[0.98]"
+                             x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                             x-transition:leave="transition duration-150 ease-in"
+                             x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                             x-transition:leave-end="opacity-0 -translate-y-1 scale-[0.98]"
+                             style="display: none;"
+                             class="site-search-panel absolute right-0 top-[calc(100%+0.75rem)] z-50 w-[min(22rem,calc(100vw-2rem))] rounded-[14px] border border-spu-blue/10 bg-white p-3 shadow-[0_24px_52px_rgba(11,19,50,0.14)]">
+                            <label class="sr-only" for="site-search-input">{{ __('public.search') }}</label>
+                            <input id="site-search-input"
+                                   x-ref="siteSearch"
+                                   x-model="searchQuery"
+                                   type="search"
+                                   class="w-full rounded-[10px] border border-spu-blue/10 px-3 py-2 text-sm font-semibold text-spu-blue outline-none transition focus:border-spu-red"
+                                   placeholder="{{ __('public.search_placeholder') }}">
+                            <div class="mt-2 grid gap-1" x-show="searchResults.length">
+                                <template x-for="item in searchResults" :key="searchResultKey(item)">
+                                    <a :href="item.url"
+                                        @click="closeSearchResult()"
+                                       class="rounded-[8px] px-3 py-2 text-sm font-semibold text-spu-blue transition hover:bg-spu-blue/5"
+                                       x-text="item.label"></a>
+                                </template>
+                            </div>
+                             <p class="mt-2 px-1 text-xs font-semibold text-spu-blue/45" x-show="needsLongerSearchQuery()">
+                                 {{ __('public.search_hint') }}
+                            </p>
+                        </div>
+                    </div>
 
                     @foreach ($languageSwitch as $switchLink)
                         @if (!$switchLink->isCurrent)
@@ -126,36 +158,6 @@
                             <span>{{ $navigation->applyCta->label }}</span>
                         </a>
                     @endif
-
-                    <div id="site-search-panel"
-                         x-show="searchOpen"
-                         x-transition:enter="transition duration-200 ease-out"
-                         x-transition:enter-start="opacity-0 -translate-y-2 scale-[0.98]"
-                         x-transition:enter-end="opacity-100 translate-y-0 scale-100"
-                         x-transition:leave="transition duration-150 ease-in"
-                         x-transition:leave-start="opacity-100 translate-y-0 scale-100"
-                         x-transition:leave-end="opacity-0 -translate-y-1 scale-[0.98]"
-                         style="display: none;"
-                         class="absolute right-0 top-[calc(100%+0.75rem)] z-50 w-[min(22rem,calc(100vw-2rem))] rounded-[14px] border border-spu-blue/10 bg-white p-3 shadow-[0_24px_52px_rgba(11,19,50,0.14)] rtl:left-0 rtl:right-auto">
-                        <label class="sr-only" for="site-search-input">{{ __('public.search') }}</label>
-                        <input id="site-search-input"
-                               x-ref="siteSearch"
-                               x-model="searchQuery"
-                               type="search"
-                               class="w-full rounded-[10px] border border-spu-blue/10 px-3 py-2 text-sm font-semibold text-spu-blue outline-none transition focus:border-spu-red"
-                               placeholder="{{ __('public.search_placeholder') }}">
-                        <div class="mt-2 grid gap-1" x-show="searchResults.length">
-                            <template x-for="item in searchResults" :key="searchResultKey(item)">
-                                <a :href="item.url"
-                                    @click="closeSearchResult()"
-                                   class="rounded-[8px] px-3 py-2 text-sm font-semibold text-spu-blue transition hover:bg-spu-blue/5"
-                                   x-text="item.label"></a>
-                            </template>
-                        </div>
-                         <p class="mt-2 px-1 text-xs font-semibold text-spu-blue/45" x-show="needsLongerSearchQuery()">
-                             {{ __('public.search_hint') }}
-                        </p>
-                    </div>
 
                     <button type="button"
                             @click="toggleMobile()"

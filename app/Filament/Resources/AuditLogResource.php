@@ -144,6 +144,10 @@ class AuditLogResource extends Resource
 
                 TextColumn::make('user.name')
                     ->label('User')
+                    ->searchable(query: fn (Builder $query, string $search): Builder => $query->whereHas(
+                        'user',
+                        fn (Builder $q): Builder => $q->where('name', 'like', "%{$search}%")
+                    ))
                     ->placeholder('System')
                     ->sortable(),
 

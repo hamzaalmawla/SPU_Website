@@ -309,7 +309,7 @@ final class PreviewController extends Controller
                 'profile' => $profile,
                 'seo' => $this->seoMetadataService->buildFallback($locale, [
                     'path' => $profile->path,
-                    'locale_paths' => ['ar' => '/ar/about/profile/faculty-member/'.$profile->slug, 'en' => '/en/about/profile/faculty-member/'.$profile->slug],
+                    'locale_paths' => ['ar' => '/ar/about/profile/'.$profile->slug, 'en' => '/en/about/profile/'.$profile->slug],
                     'title' => $profile->seoTitle,
                     'meta_description' => $profile->seoDescription,
                     'og_title' => $profile->seoTitle,
@@ -335,7 +335,7 @@ final class PreviewController extends Controller
                 'profile' => $profile,
                 'seo' => $this->seoMetadataService->buildFallback($locale, [
                     'path' => $profile->path,
-                    'locale_paths' => ['ar' => '/ar/about/profile/person/'.$profile->slug, 'en' => '/en/about/profile/person/'.$profile->slug],
+                    'locale_paths' => ['ar' => '/ar/about/profile/'.$profile->slug, 'en' => '/en/about/profile/'.$profile->slug],
                     'title' => $profile->seoTitle,
                     'meta_description' => $profile->seoDescription,
                     'og_title' => $profile->seoTitle,

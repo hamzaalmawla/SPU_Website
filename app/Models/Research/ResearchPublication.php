@@ -6,6 +6,7 @@ namespace App\Models\Research;
 
 use App\Models\Media\MediaAsset;
 use App\Models\Person\FacultyMember;
+use App\Models\Person\Person;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -19,6 +20,7 @@ class ResearchPublication extends Model
 
     protected $fillable = [
         'faculty_member_id',
+        'person_id',
         'category_key',
         'published_at',
         'publication_year',
@@ -52,6 +54,11 @@ class ResearchPublication extends Model
     public function facultyMember(): BelongsTo
     {
         return $this->belongsTo(FacultyMember::class);
+    }
+
+    public function person(): BelongsTo
+    {
+        return $this->belongsTo(Person::class);
     }
 
     public function fileMedia(): BelongsTo

@@ -107,6 +107,7 @@ return [
                 'valedictorians' => 'الطلبة الأوائل',
                 'training' => 'التدريب',
                 'research' => 'البحث العلمي',
+                'members' => 'أعضاء الهيئة الأكاديمية',
             ],
             'admissions' => [
                 'landing' => 'القبول والتسجيل',
@@ -749,6 +750,7 @@ return [
             'training' => 'التدريب',
             'alumni' => 'الخريجون',
             'valedictorians' => 'الطلبة الأوائل',
+            'members' => 'أعضاء الهيئة الأكاديمية',
         ],
         'descriptions' => [
             'homepage' => 'مقدمة الكلية وروابطها وأهم معلوماتها.',
@@ -761,6 +763,7 @@ return [
             'training' => 'فرص وبرامج التدريب المرتبطة بالكلية.',
             'alumni' => 'دليل الخريجين وقصصهم ومعلوماتهم.',
             'valedictorians' => 'الطلبة الأوائل حسب العام والتخصص.',
+            'members' => 'أعضاء الهيئة الأكاديمية وبطاقاتهم وروابط ملفاتهم.',
         ],
         'fields' => [
             'department' => 'القسم',
@@ -790,6 +793,7 @@ return [
             'valedictorians' => 'الطلبة الأوائل',
             'training' => 'التدريب',
             'research' => 'البحث العلمي',
+            'members' => 'أعضاء الهيئة الأكاديمية',
         ],
         'notifications' => [
             'draft_saved' => 'تم حفظ مسودة الكلية',
@@ -897,6 +901,9 @@ return [
                 'team_members' => 'أعضاء الفريق',
                 'member_name' => 'اسم العضو',
                 'member_role' => 'دور العضو',
+                'documents' => 'الوثائق',
+                'document_label' => 'عنوان الوثيقة',
+                'document_file' => 'ملف PDF',
                 'graduate_name' => 'اسم الخريج',
                 'graduation_year' => 'سنة التخرج',
                 'semester' => 'الفصل',

@@ -29,7 +29,7 @@ final class FacultySubpageCardService implements FacultySubpageCardServiceInterf
             ->orWhere('slug', $facultySlug)
             ->first();
 
-        $slugs = ['overview', 'departments', 'study-plan', 'labs', 'projects', 'alumni', 'valedictorians', 'research'];
+        $slugs = ['overview', 'departments', 'study-plan', 'labs', 'projects', 'alumni', 'valedictorians', 'research', 'members'];
 
         if ($faculty instanceof Faculty) {
             if ($faculty->public_slug === 'pharmacy') {

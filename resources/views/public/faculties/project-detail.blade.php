@@ -37,7 +37,6 @@
         $previousLabel = $isAr ? 'السابق' : 'Previous';
         $nextLabel = $isAr ? 'التالي' : 'Next';
         $viewAllLabel = $isAr ? 'عرض جميع المشاريع' : 'View All Projects';
-        $createdByLabel = $isAr ? 'أعده' : 'Created By';
         $detailsLabel = $isAr ? 'عرض التفاصيل' : 'View Details';
         $facultyProjectsUrl = '/'.$locale.'/facilities/'.$page->facultySlug.'/projects';
         $initials = function (string $value): string {
@@ -160,6 +159,17 @@
                         </div>
                     </div>
 
+                    <div class="rounded-[6px] border border-slate-200 bg-white p-6 shadow-sm" x-data="pageShare" data-share-url="{{ url('/'.$locale.'/facilities/'.$page->facultySlug.'/projects/'.($project['slug'] ?? '')) }}" data-share-title="{{ $project['title'] ?? '' }}">
+                        <h3 class="text-[13px] font-bold uppercase tracking-[0.04em] text-slate-400">{{ $isAr ? 'مشاركة المشروع' : 'Share Project' }}</h3>
+                        <div class="mt-4 grid grid-cols-2 gap-2">
+                            <button type="button" x-on:click="share" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-spu-blue transition hover:border-spu-blue">{{ $isAr ? 'مشاركة' : 'Share' }}</button>
+                            <button type="button" x-on:click="copy" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-spu-blue transition hover:border-spu-blue">
+                                <span x-show="!copied">{{ $isAr ? 'نسخ الرابط' : 'Copy link' }}</span>
+                                <span x-show="copied" x-cloak>{{ $isAr ? 'تم النسخ' : 'Copied' }}</span>
+                            </button>
+                        </div>
+                    </div>
+
                     @if (! empty($project['supervisor']))
                         <div class="rounded-[6px] border border-slate-200 bg-white p-6 shadow-sm">
                             <h3 class="text-[13px] font-bold uppercase tracking-[0.04em] text-slate-400">{{ $supervisorLabel }}</h3>
@@ -168,19 +178,6 @@
                                 <div>
                                     <p class="text-[13px] font-bold text-spu-blue">{{ $project['supervisor'] }}</p>
                                     <p class="text-[11px] text-slate-400">{{ $supervisorLabel }}</p>
-                                </div>
-                            </a>
-                        </div>
-                    @endif
-
-                    @if (! empty($project['createdBy']))
-                        <div class="rounded-[6px] border border-slate-200 bg-white p-6 shadow-sm">
-                            <h3 class="text-[13px] font-bold uppercase tracking-[0.04em] text-slate-400">{{ $createdByLabel }}</h3>
-                            <a href="/{{ $locale }}/facilities/{{ $page->facultySlug }}/alumni" class="mt-3 flex items-center gap-3 transition hover:opacity-80">
-                                <div class="flex h-10 w-10 items-center justify-center rounded-full text-[12px] font-bold text-white" style="background-color: {{ $accent }}">{{ $initials((string) $project['createdBy']) }}</div>
-                                <div>
-                                    <p class="text-[13px] font-bold text-spu-blue">{{ $project['createdBy'] }}</p>
-                                    <p class="text-[11px] text-slate-400">{{ $createdByLabel }}</p>
                                 </div>
                             </a>
                         </div>
@@ -215,6 +212,46 @@
                             </div>
                         </div>
                     @endif
+
+                    <div class="rounded-[6px] border border-slate-200 bg-white p-6 shadow-sm">
+                        <h3 class="text-[13px] font-bold uppercase tracking-[0.04em] text-slate-400">{{ $isAr ? 'الوثائق' : 'Documents' }}</h3>
+                        <ul class="mt-4 space-y-3">
+                            @forelse (($project['documents'] ?? []) as $document)
+                                <li>
+                                    @if (! empty($document['file']))
+                                        <a href="{{ $document['file'] }}" download class="inline-flex w-full items-center gap-2 rounded-[4px] border border-spu-red/20 bg-spu-red/5 px-3 py-2 text-[12px] font-bold text-spu-red transition hover:bg-spu-red hover:text-white">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="h-4 w-4 shrink-0" aria-hidden="true">
+                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                                <path d="m7 10 5 5 5-5"></path>
+                                                <path d="M12 15V3"></path>
+                                            </svg>
+                                            <span>{{ $document['label'] ?? ($isAr ? 'تحميل' : 'Download') }}</span>
+                                        </a>
+                                    @else
+                                        <span class="inline-flex w-full cursor-not-allowed items-center gap-2 rounded-[4px] border border-slate-200 bg-slate-50 px-3 py-2 text-[12px] font-bold text-slate-400">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="h-4 w-4 shrink-0" aria-hidden="true">
+                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                                <path d="m7 10 5 5 5-5"></path>
+                                                <path d="M12 15V3"></path>
+                                            </svg>
+                                            <span>{{ $document['label'] ?? ($isAr ? 'تحميل' : 'Download') }}</span>
+                                        </span>
+                                    @endif
+                                </li>
+                            @empty
+                                <li>
+                                    <span class="inline-flex w-full cursor-not-allowed items-center gap-2 rounded-[4px] border border-slate-200 bg-slate-50 px-3 py-2 text-[12px] font-bold text-slate-400">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="h-4 w-4 shrink-0" aria-hidden="true">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                            <path d="m7 10 5 5 5-5"></path>
+                                            <path d="M12 15V3"></path>
+                                        </svg>
+                                        <span>{{ $isAr ? 'تحميل' : 'Download' }}</span>
+                                    </span>
+                                </li>
+                            @endforelse
+                        </ul>
+                    </div>
                 </aside>
             </div>
         </div>

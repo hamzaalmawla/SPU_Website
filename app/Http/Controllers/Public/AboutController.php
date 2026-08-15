@@ -167,17 +167,22 @@ final class AboutController extends Controller
         ]));
     }
 
-    public function profile(Request $request, string $locale, string $source, string $slug): View
+    public function profile(Request $request, string $locale, string $slug): View
     {
-        $profile = $this->profilePageService->getProfile($locale, $source, $slug);
+        $profile = $this->profilePageService->getProfile($locale, 'person', $slug);
         abort_if($profile === null, 404);
 
-        $path = '/about/profile/'.$source.'/'.$slug;
+        $path = '/about/profile/'.$slug;
 
         return view('public.about.profile', $this->sharedPayload($request, $locale, $path, [
             'profile' => $profile,
             'seo' => $this->seo($locale, $path, $profile->seoTitle, $profile->seoDescription, $profile->seoImage),
         ]));
+    }
+
+    public function profileLegacy(Request $request, string $locale, string $source, string $slug): RedirectResponse
+    {
+        return redirect('/'.$locale.'/about/profile/'.$slug, 301);
     }
 
     public function redirectLegacyProfile(Request $request, string $locale): RedirectResponse
@@ -187,9 +192,8 @@ final class AboutController extends Controller
 
         $profile = $this->profilePageService->resolveLegacyProfile($locale, trim($identifier));
         abort_if($profile === null, 404);
-        $source = $profile->sourceType === 'faculty_member' ? 'faculty-member' : 'person';
 
-        return redirect('/'.$locale.'/about/profile/'.$source.'/'.$profile->slug, 301);
+        return redirect('/'.$locale.'/about/profile/'.$profile->slug, 301);
     }
 
     private function contentPage(Request $request, string $locale, string $slug): View

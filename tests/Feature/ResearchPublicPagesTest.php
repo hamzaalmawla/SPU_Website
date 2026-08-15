@@ -278,11 +278,10 @@ final class ResearchPublicPagesTest extends TestCase
             ->assertOk()
             ->assertSee('Professional Biography')
             ->assertSee('Dr. Ayman Ali')
-            ->assertSee('View all on Google Scholar')
-            ->assertSee('Faculty of Medicine Dean Office')
-            ->assertSee('Education')
-            ->assertSee('Courses Taught')
-            ->assertSee('Clinical Medicine');
+            ->assertSee('Dean of Medicine')
+            ->assertSee('Leads academic programs and clinical training in the Faculty of Medicine.')
+            ->assertDontSee('View all on Google Scholar')
+            ->assertDontSee('Courses Taught');
     }
 
     public function test_publication_detail_renders_imported_data_and_navigation(): void

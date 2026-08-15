@@ -47,6 +47,7 @@ class ManageDentistryFaculty extends Page implements HasForms
             'facilities.dentistry.research' => __('admin.cms.targets.facilities.research'),
             'facilities.dentistry.alumni' => 'Alumni',
             'facilities.dentistry.valedictorians' => 'Valedictorians',
+            'facilities.dentistry.members' => __('admin.cms.targets.facilities.members'),
         ];
     }
 

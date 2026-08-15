@@ -22,6 +22,7 @@
         $heroTitle = $isLabDetail ? ($selectedLab['title'] ?? '') : ($subpage['title'] ?? '');
         $heroSummary = match ($page->subpageSlug) {
             'labs' => $isLabDetail ? null : count($page->items).($isAr ? ' مخابر بحثية وتدريبية' : ' research and training labs'),
+            'members' => count($page->items).($isAr ? ' عضو هيئة أكاديمية' : ' faculty members'),
             'projects', 'alumni', 'valedictorians' => null,
             default => $subpage['summary'] ?? null,
         };
@@ -521,6 +522,45 @@
                     <blockquote class="mx-auto mt-14 max-w-3xl border-y border-slate-100 px-6 py-8 text-center text-xl font-bold leading-9 text-spu-blue">
                         {{ $subpage['payload']['quote'] }}
                     </blockquote>
+                @endif
+            </div>
+        </section>
+    @elseif ($page->subpageSlug === 'members')
+        <section class="bg-white py-14 font-hacen md:py-18">
+            <div class="container">
+                <p class="mb-8 text-center text-sm font-bold text-slate-600" role="status">
+                    {{ $isAr ? 'عدد الأعضاء: '.count($page->items) : count($page->items).' members' }}
+                </p>
+
+                @if ($page->items !== [])
+                    <div class="staff-grid">
+                        @foreach ($page->items as $member)
+                            <a href="{{ $member['profileUrl'] ?? '#' }}" class="staff-card block transition hover:-translate-y-1 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-blue">
+                                <div class="staff-card-media">
+                                    @if (! empty($member['image']))
+                                        <img src="{{ $member['image'] }}" alt="{{ $member['name'] ?? '' }}" loading="lazy">
+                                    @else
+                                        <div class="flex h-full items-center justify-center bg-slate-100">
+                                            <img src="/images/icon-user-graduate-outline.svg" alt="" class="h-16 w-16 opacity-30" aria-hidden="true">
+                                        </div>
+                                    @endif
+                                </div>
+                                <div class="staff-card-body">
+                                    <h2 class="staff-card-name">{{ $member['name'] ?? '' }}</h2>
+                                    @if (! empty($member['position']))
+                                        <p class="staff-card-role">{{ $member['position'] }}</p>
+                                    @endif
+                                    @if (! empty($member['department']))
+                                        <p class="mt-3 text-xs font-bold text-slate-500">{{ $member['department'] }}</p>
+                                    @endif
+                                </div>
+                            </a>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="mx-auto max-w-2xl rounded-xl border border-slate-200 bg-slate-50 px-6 py-12 text-center">
+                        <p class="font-bold text-slate-700">{{ $isAr ? 'لا يوجد أعضاء هيئة أكاديمية منشورون حالياً.' : 'No published faculty members are available yet.' }}</p>
+                    </div>
                 @endif
             </div>
         </section>

@@ -783,6 +783,7 @@ trait ManagesFacultyHomepage
             'valedictorians' => [...$sections, ...$this->valedictoriansSubpageFields($prefix)],
             'training' => [...$sections, ...$this->trainingSubpageFields($prefix)],
             'research' => [...$sections, ...$this->researchSubpageFields($prefix)],
+            'members' => [...$sections, ...$this->membersSubpageFields($prefix)],
             default => throw new \InvalidArgumentException('Unsupported faculty subpage target.'),
         };
     }
@@ -798,6 +799,12 @@ trait ManagesFacultyHomepage
                 Textarea::make($prefix.'.body')->label(__('admin.faculty_workspace.editor.fields.body'))->rows(4)->columnSpanFull(),
             ])->columns(2)->collapsed(),
         ];
+    }
+
+    /** @return array<int, Section> */
+    private function membersSubpageFields(string $prefix): array
+    {
+        return [];
     }
 
     /** @return array<int, Section> */
@@ -1166,6 +1173,17 @@ trait ManagesFacultyHomepage
                             ->reorderable()
                             ->collapsible()
                             ->columnSpanFull(),
+                        Repeater::make('documents')
+                            ->label(__('admin.faculty_workspace.editor.fields.documents'))
+                            ->schema([
+                                TextInput::make('label')->label(__('admin.faculty_workspace.editor.fields.document_label'))->required()->maxLength(180),
+                                MediaPicker::document('file', __('admin.faculty_workspace.editor.fields.document_file')),
+                            ])
+                            ->columns(2)
+                            ->defaultItems(0)
+                            ->reorderable()
+                            ->collapsible()
+                            ->columnSpanFull(),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -1249,6 +1267,14 @@ trait ManagesFacultyHomepage
                         ->values()
                         ->all();
                     $item['teamMembers'] = $this->listOfArrays($item['teamMembers'] ?? []);
+                    $item['documents'] = collect(is_array($item['documents'] ?? null) ? $item['documents'] : [])
+                        ->map(static fn (mixed $doc): array => [
+                            'label' => is_array($doc) ? (string) ($doc['label'] ?? '') : '',
+                            'file' => is_array($doc) ? (string) ($doc['file'] ?? '') : '',
+                        ])
+                        ->filter(static fn (array $doc): bool => $doc['label'] !== '' && $doc['file'] !== '')
+                        ->values()
+                        ->all();
 
                     return $item;
                 }, $this->listOfArrays($content['items'] ?? []));
@@ -1509,7 +1535,7 @@ trait ManagesFacultyHomepage
             return $content;
         }
 
-        if ($subpageSlug === 'research') {
+        if ($subpageSlug === 'research' || $subpageSlug === 'members') {
             unset($content['items'], $content['stats'], $content['dean']);
 
             return $content;

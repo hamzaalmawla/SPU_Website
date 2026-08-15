@@ -17,10 +17,20 @@ class PersonTranslation extends Model
         'locale',
         'name',
         'role',
+        'title',
+        'position',
         'bio',
         'quote',
         'education',
+        'specializations',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'specializations' => 'array',
+        ];
+    }
 
     public function person(): BelongsTo
     {

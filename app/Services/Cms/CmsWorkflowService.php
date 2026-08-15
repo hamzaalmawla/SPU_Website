@@ -2035,7 +2035,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
     /** @param array<string, mixed> $payload */
     private function hasBodyLikeContent(array $payload): bool
     {
-        foreach (['body', 'content', 'description', 'summary', 'excerpt', 'subheadline', 'role', 'position', 'intro', 'availabilityGuidance', 'paymentGuidance', 'scheduleGuidance', 'downloadGuidance', 'applicationGuidance'] as $key) {
+        foreach (['body', 'content', 'description', 'summary', 'excerpt', 'subheadline', 'role', 'position', 'bio', 'intro', 'availabilityGuidance', 'paymentGuidance', 'scheduleGuidance', 'downloadGuidance', 'applicationGuidance'] as $key) {
             if ($this->filledString($payload[$key] ?? null)) {
                 return true;
             }

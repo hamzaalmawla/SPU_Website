@@ -26,6 +26,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
 use App\Filament\Components\PageUrlSelect;
 
@@ -43,7 +44,16 @@ class PageResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
-    protected static ?string $recordTitleAttribute = 'slug';
+    public static function getRecordTitle(?Model $record): string
+    {
+        if (! $record instanceof Page) {
+            return self::getModelLabel();
+        }
+
+        $translation = $record->translations->first();
+
+        return filled($translation?->title) ? trim((string) $translation->title) : $record->slug;
+    }
 
     public static function canAccess(): bool
     {

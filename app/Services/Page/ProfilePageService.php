@@ -10,12 +10,15 @@ use App\DTOs\Content\ProfilePageDTO;
 use App\Models\Faculty\Department;
 use App\Models\Faculty\Faculty;
 use App\Models\Media\MediaAsset;
-use App\Models\Person\CouncilMember;
 use App\Models\Person\FacultyMember;
 use App\Models\Person\FacultyMemberEducation;
+use App\Models\Person\FacultyMemberEducationTranslation;
 use App\Models\Person\FacultyMemberTranslation;
 use App\Models\Person\Person;
+use App\Models\Person\PersonAppointment;
+use App\Models\Person\PersonAppointmentTranslation;
 use App\Models\Person\PersonEducation;
+use App\Models\Person\PersonEducationTranslation;
 use App\Models\Person\PersonTranslation;
 use App\Models\Research\ResearchPublication;
 use App\Support\MediaUrlResolver;
@@ -26,27 +29,15 @@ final class ProfilePageService implements ProfilePageServiceInterface
 {
     public function getProfile(string $locale, string $source, string $slug): ?ProfilePageDTO
     {
-        return match ($source) {
-            'person' => $this->resolvePersonProfile($locale, $slug),
-            'faculty-member' => $this->resolveFacultyMemberProfile($locale, $slug),
-            default => null,
-        };
+        return $this->resolveUnifiedProfile($locale, $slug);
     }
 
     public function resolveLegacyProfile(string $locale, string $identifier): ?ProfilePageDTO
     {
-        foreach (['person', 'faculty-member'] as $source) {
-            $profile = $this->getProfile($locale, $source, $identifier);
-
-            if ($profile instanceof ProfilePageDTO) {
-                return $profile;
-            }
-        }
-
-        return null;
+        return $this->resolveUnifiedProfile($locale, $identifier);
     }
 
-    private function resolvePersonProfile(string $locale, string $slug): ?ProfilePageDTO
+    private function resolveUnifiedProfile(string $locale, string $slug): ?ProfilePageDTO
     {
         $person = Person::query()
             ->public()
@@ -55,16 +46,63 @@ final class ProfilePageService implements ProfilePageServiceInterface
                 'translations' => fn ($query) => $query->whereIn('locale', $this->fallbackLocales($locale)),
                 'educations' => fn ($query) => $query->enabled(),
                 'educations.translations',
+                'researchPublications' => fn ($query) => $query->enabled()->limit(20),
+                'researchPublications.translations',
+                'councilMemberships' => fn ($query) => $query->enabled()->whereHas('council', fn ($councilQuery) => $councilQuery->enabled()),
+                'councilMemberships.translations',
+                'councilMemberships.council.translations',
+                'appointments' => fn ($query) => $query->enabled()->with(['translations', 'faculty.translations', 'department.translations']),
+                'photoMedia',
+                'cvMedia',
             ])
             ->first();
 
-        if (! $person instanceof Person) {
-            return null;
+        if ($person instanceof Person) {
+            return $this->buildPersonProfileDto($person, $locale);
         }
 
+        $facultyMember = FacultyMember::query()
+            ->public()
+            ->where('slug', $slug)
+            ->with([
+                'translations' => fn ($query) => $query->whereIn('locale', $this->fallbackLocales($locale)),
+                'educations' => fn ($query) => $query->enabled(),
+                'educations.translations',
+                'researchPublications' => fn ($query) => $query->enabled()->limit(20),
+                'researchPublications.translations',
+                'councilMemberships' => fn ($query) => $query->enabled()->whereHas('council', fn ($councilQuery) => $councilQuery->enabled()),
+                'councilMemberships.translations',
+                'councilMemberships.council.translations',
+                'photoMedia',
+                'cvMedia',
+            ])
+            ->first();
+
+        if ($facultyMember instanceof FacultyMember) {
+            return $this->buildFacultyMemberProfileDto($facultyMember, $locale);
+        }
+
+        return null;
+    }
+
+    private function buildPersonProfileDto(Person $person, string $locale): ?ProfilePageDTO
+    {
         $translation = $this->personTranslation($person, $locale);
         if (! $translation instanceof PersonTranslation) {
             return null;
+        }
+
+        $facultyAppointment = $this->primaryFacultyAppointment($person->appointments);
+        $facultyName = $this->appointmentFacultyName($facultyAppointment, $locale);
+        $departmentName = $this->appointmentDepartmentName($facultyAppointment, $locale);
+
+        $leadershipAppointment = $this->primaryLeadershipAppointment($person->appointments);
+        $position = $translation->position ?? $translation->role ?? '';
+        if ($leadershipAppointment instanceof PersonAppointment) {
+            $aptTrans = $this->appointmentTranslation($leadershipAppointment, $locale);
+            if ($aptTrans instanceof PersonAppointmentTranslation && $aptTrans->role_override) {
+                $position = $aptTrans->role_override;
+            }
         }
 
         return new ProfilePageDTO(
@@ -73,59 +111,52 @@ final class ProfilePageService implements ProfilePageServiceInterface
             sourceType: 'person',
             slug: (string) $person->slug,
             name: (string) $translation->name,
-            title: $person->title,
-            position: $person->position ?? $translation->role,
-            category: $person->category,
-            facultyName: $this->personFacultyName($person, $locale),
-            departmentName: null,
+            title: $translation->title ?? $person->title,
+            position: $position,
+            category: $leadershipAppointment?->type ?? $person->category,
+            facultyName: $facultyName,
+            departmentName: $departmentName,
             email: $person->email,
             phone: $person->phone,
-            image: $person->image,
+            image: $this->resolvePersonImage($person),
             bio: $translation->bio,
             quote: $translation->quote,
-            specializations: null,
+            specializations: $this->normalizeStringList($translation->specializations),
             officeLocation: $person->office_location,
             socialLinks: $this->safeExternalLinks($person->social_links),
             educations: $this->mapPersonEducations($person->educations, $locale),
-            publications: [],
-            councilMemberships: [],
-            cvUrl: null,
-            profileUrl: '/'.$locale.'/about/profile/person/'.$slug,
+            publications: $this->mapPublications($person->researchPublications, $locale),
+            councilMemberships: $this->mapCouncilMemberships($person->councilMemberships, $locale),
+            cvUrl: $this->resolveCvUrl($person),
+            profileUrl: '/'.$locale.'/about/profile/'.$person->slug,
             seoTitle: (string) $translation->name.' - '.config('app.name', 'SPU'),
             seoDescription: $translation->bio ?? (string) $translation->name,
-            seoImage: $person->image,
-            path: '/'.$locale.'/about/profile/person/'.$slug,
+            seoImage: $this->resolvePersonImage($person),
+            path: '/'.$locale.'/about/profile/'.$person->slug,
         );
     }
 
-    private function resolveFacultyMemberProfile(string $locale, string $slug): ?ProfilePageDTO
+    private function buildFacultyMemberProfileDto(FacultyMember $member, string $locale): ?ProfilePageDTO
     {
-        $member = FacultyMember::query()
-            ->public()
-            ->where('slug', $slug)
-            ->with([
-                'translations' => fn ($query) => $query->whereIn('locale', $this->fallbackLocales($locale)),
-                'faculty.translations',
-                'department.translations',
-                'educations' => fn ($query) => $query->enabled(),
-                'educations.translations',
-                'researchPublications' => fn ($query) => $query->enabled()->limit(20),
-                'researchPublications.translations',
-                'councilMemberships' => fn ($query) => $query->enabled()->whereHas('council', fn ($councilQuery) => $councilQuery->enabled()),
-                'councilMemberships.translations',
-                'councilMemberships.council.translations',
-                'cvMedia',
-                'photoMedia',
-            ])
-            ->first();
-
-        if (! $member instanceof FacultyMember) {
+        $translation = $this->facultyMemberTranslation($member, $locale);
+        if (! $translation instanceof FacultyMemberTranslation) {
             return null;
         }
 
-        $translation = $this->facultyTranslation($member, $locale);
-        if (! $translation instanceof FacultyMemberTranslation) {
-            return null;
+        $facultyName = null;
+        if ($member->faculty instanceof Faculty) {
+            $facultyTranslation = $member->faculty->translations->firstWhere('locale', $locale)
+                ?? $member->faculty->translations->firstWhere('locale', 'ar')
+                ?? $member->faculty->translations->first();
+            $facultyName = $facultyTranslation?->name;
+        }
+
+        $departmentName = null;
+        if ($member->department instanceof Department) {
+            $deptTranslation = $member->department->translations->firstWhere('locale', $locale)
+                ?? $member->department->translations->firstWhere('locale', 'ar')
+                ?? $member->department->translations->first();
+            $departmentName = $deptTranslation?->name;
         }
 
         return new ProfilePageDTO(
@@ -136,26 +167,26 @@ final class ProfilePageService implements ProfilePageServiceInterface
             name: (string) $translation->full_name,
             title: $translation->title,
             position: $translation->position,
-            category: null,
-            facultyName: $this->facultyName($member, $locale),
-            departmentName: $this->departmentName($member, $locale),
+            category: 'faculty_member',
+            facultyName: $facultyName,
+            departmentName: $departmentName,
             email: $member->email,
             phone: $member->phone,
-            image: $this->resolveMemberImage($member),
+            image: $this->resolveFacultyMemberImage($member),
             bio: $translation->bio,
             quote: null,
             specializations: $this->normalizeStringList($translation->specializations),
             officeLocation: $member->office_location,
             socialLinks: $this->safeExternalLinks($member->social_links),
-            educations: $this->mapFacultyEducations($member->educations, $locale),
+            educations: $this->mapFacultyMemberEducations($member->educations, $locale),
             publications: $this->mapPublications($member->researchPublications, $locale),
             councilMemberships: $this->mapCouncilMemberships($member->councilMemberships, $locale),
-            cvUrl: $this->resolveCvUrl($member),
-            profileUrl: '/'.$locale.'/about/profile/faculty-member/'.$slug,
+            cvUrl: $this->resolveFacultyMemberCvUrl($member),
+            profileUrl: '/'.$locale.'/about/profile/'.$member->slug,
             seoTitle: (string) $translation->full_name.' - '.config('app.name', 'SPU'),
             seoDescription: $translation->bio ?? (string) $translation->full_name,
-            seoImage: $this->resolveMemberImage($member),
-            path: '/'.$locale.'/about/profile/faculty-member/'.$slug,
+            seoImage: $this->resolveFacultyMemberImage($member),
+            path: '/'.$locale.'/about/profile/'.$member->slug,
         );
     }
 
@@ -166,81 +197,77 @@ final class ProfilePageService implements ProfilePageServiceInterface
             ?? $person->translations->firstWhere('locale', 'en');
     }
 
-    private function personFacultyName(Person $person, string $locale): ?string
+    private function primaryFacultyAppointment(Collection $appointments): ?PersonAppointment
     {
-        if (! is_string($person->faculty_scope_slug) || $person->faculty_scope_slug === '') {
-            return null;
-        }
-
-        $faculty = Faculty::query()
-            ->where(function ($query) use ($person): void {
-                $query->where('faculty_scope_slug', $person->faculty_scope_slug)
-                    ->orWhere('public_slug', $person->faculty_scope_slug)
-                    ->orWhere('slug', $person->faculty_scope_slug);
-            })
-            ->with('translations')
-            ->first();
-
-        if (! $faculty instanceof Faculty) {
-            return null;
-        }
-
-        $translation = $faculty->translations->firstWhere('locale', $locale)
-            ?? $faculty->translations->firstWhere('locale', 'ar')
-            ?? $faculty->translations->firstWhere('locale', 'en');
-
-        return is_string($translation?->name) ? $translation->name : null;
+        return $appointments->firstWhere('type', 'faculty_member');
     }
 
-    private function facultyTranslation(FacultyMember $member, string $locale): ?FacultyMemberTranslation
+    private function primaryLeadershipAppointment(Collection $appointments): ?PersonAppointment
     {
-        return $member->translations->firstWhere('locale', $locale)
-            ?? $member->translations->firstWhere('locale', 'ar')
-            ?? $member->translations->firstWhere('locale', 'en');
+        $types = ['rector', 'vice_president', 'dean', 'council', 'director'];
+        foreach ($types as $type) {
+            $apt = $appointments->firstWhere('type', $type);
+            if ($apt instanceof PersonAppointment) {
+                return $apt;
+            }
+        }
+
+        return null;
     }
 
-    private function facultyName(FacultyMember $member, string $locale): ?string
+    private function appointmentTranslation(PersonAppointment $appointment, string $locale): ?PersonAppointmentTranslation
     {
-        if (! $member->faculty instanceof Faculty) {
+        return $appointment->translations->firstWhere('locale', $locale)
+            ?? $appointment->translations->firstWhere('locale', 'ar')
+            ?? $appointment->translations->firstWhere('locale', 'en');
+    }
+
+    private function appointmentFacultyName(?PersonAppointment $appointment, string $locale): ?string
+    {
+        if (! $appointment instanceof PersonAppointment || ! $appointment->faculty instanceof Faculty) {
             return null;
         }
 
-        $translation = $member->faculty->translations->firstWhere('locale', $locale)
-            ?? $member->faculty->translations->firstWhere('locale', 'ar')
-            ?? $member->faculty->translations->first();
+        $translation = $appointment->faculty->translations->firstWhere('locale', $locale)
+            ?? $appointment->faculty->translations->firstWhere('locale', 'ar')
+            ?? $appointment->faculty->translations->first();
 
         return $translation?->name;
     }
 
-    private function departmentName(FacultyMember $member, string $locale): ?string
+    private function appointmentDepartmentName(?PersonAppointment $appointment, string $locale): ?string
     {
-        if (! $member->department instanceof Department) {
+        if (! $appointment instanceof PersonAppointment || ! $appointment->department instanceof Department) {
             return null;
         }
 
-        $translation = $member->department->translations->firstWhere('locale', $locale)
-            ?? $member->department->translations->firstWhere('locale', 'ar')
-            ?? $member->department->translations->first();
+        $translation = $appointment->department->translations->firstWhere('locale', $locale)
+            ?? $appointment->department->translations->firstWhere('locale', 'ar')
+            ?? $appointment->department->translations->first();
 
         return $translation?->name;
     }
 
-    private function resolveMemberImage(FacultyMember $member): ?string
+    private function resolvePersonImage(Person $person): ?string
     {
-        if ($member->photoMedia instanceof MediaAsset) {
-            return MediaUrlResolver::resolveImage($member->photoMedia->webp_path, $member->photoMedia->path, $member->photoMedia->disk);
+        if ($person->photoMedia instanceof MediaAsset) {
+            return MediaUrlResolver::resolveImage($person->photoMedia->webp_path, $person->photoMedia->path, $person->photoMedia->disk);
         }
 
-        return MediaUrlResolver::resolveLegacy($member->legacy_photo_path);
+        if (is_string($person->image) && $person->image !== '') {
+            return $person->image;
+        }
+
+        return MediaUrlResolver::resolveLegacy($person->legacy_photo_path);
     }
 
-    private function resolveCvUrl(FacultyMember $member): ?string
+    private function resolveCvUrl(Person $person): ?string
     {
-        if ($member->cvMedia instanceof MediaAsset) {
-            return MediaUrlResolver::resolve($member->cvMedia->path, $member->cvMedia->disk);
+        if ($person->cvMedia instanceof MediaAsset) {
+            return MediaUrlResolver::resolve($person->cvMedia->path, $person->cvMedia->disk);
         }
 
-        return MediaUrlResolver::resolveLegacy($member->legacy_cv_path ?? $member->legacy_ar_cv_path);
+        return MediaUrlResolver::resolveLegacy($person->legacy_cv_path ?? $person->legacy_ar_cv_path);
     }
 
     /** @param Collection<int, PersonEducation> $educations @return array<int, EducationDTO> */
@@ -252,34 +279,7 @@ final class ProfilePageService implements ProfilePageServiceInterface
                     ?? $education->translations->firstWhere('locale', 'ar')
                     ?? $education->translations->firstWhere('locale', 'en');
 
-                if ($translation === null) {
-                    return null;
-                }
-
-                return new EducationDTO(
-                    degree: $translation->degree,
-                    institution: $translation->institution,
-                    fieldOfStudy: $translation->field_of_study,
-                    yearStart: $translation->year_start,
-                    yearEnd: $translation->year_end,
-                    description: $translation->description,
-                );
-            })
-            ->filter(fn (mixed $education): bool => $education instanceof EducationDTO)
-            ->values()
-            ->all();
-    }
-
-    /** @param Collection<int, FacultyMemberEducation> $educations @return array<int, EducationDTO> */
-    private function mapFacultyEducations(Collection $educations, string $locale): array
-    {
-        return $educations
-            ->map(function ($education) use ($locale) {
-                $translation = $education->translations->firstWhere('locale', $locale)
-                    ?? $education->translations->firstWhere('locale', 'ar')
-                    ?? $education->translations->firstWhere('locale', 'en');
-
-                if ($translation === null) {
+                if (! $translation instanceof PersonEducationTranslation) {
                     return null;
                 }
 
@@ -327,7 +327,7 @@ final class ProfilePageService implements ProfilePageServiceInterface
             ->all();
     }
 
-    /** @param Collection<int, CouncilMember> $memberships @return array<int, array<string, mixed>> */
+    /** @param Collection<int, \App\Models\Person\CouncilMember> $memberships @return array<int, array<string, mixed>> */
     private function mapCouncilMemberships(Collection $memberships, string $locale): array
     {
         return $memberships
@@ -421,5 +421,57 @@ final class ProfilePageService implements ProfilePageServiceInterface
             ->all();
 
         return $safeLinks !== [] ? $safeLinks : null;
+    }
+
+    private function facultyMemberTranslation(FacultyMember $member, string $locale): ?FacultyMemberTranslation
+    {
+        return $member->translations->firstWhere('locale', $locale)
+            ?? $member->translations->firstWhere('locale', 'ar')
+            ?? $member->translations->firstWhere('locale', 'en');
+    }
+
+    private function resolveFacultyMemberImage(FacultyMember $member): ?string
+    {
+        if ($member->photoMedia instanceof MediaAsset) {
+            return MediaUrlResolver::resolveImage($member->photoMedia->webp_path, $member->photoMedia->path, $member->photoMedia->disk);
+        }
+
+        return MediaUrlResolver::resolveLegacy($member->legacy_photo_path);
+    }
+
+    private function resolveFacultyMemberCvUrl(FacultyMember $member): ?string
+    {
+        if ($member->cvMedia instanceof MediaAsset) {
+            return MediaUrlResolver::resolve($member->cvMedia->path, $member->cvMedia->disk);
+        }
+
+        return MediaUrlResolver::resolveLegacy($member->legacy_cv_path ?? $member->legacy_ar_cv_path);
+    }
+
+    /** @param Collection<int, FacultyMemberEducation> $educations @return array<int, EducationDTO> */
+    private function mapFacultyMemberEducations(Collection $educations, string $locale): array
+    {
+        return $educations
+            ->map(function ($education) use ($locale) {
+                $translation = $education->translations->firstWhere('locale', $locale)
+                    ?? $education->translations->firstWhere('locale', 'ar')
+                    ?? $education->translations->firstWhere('locale', 'en');
+
+                if (! $translation instanceof FacultyMemberEducationTranslation) {
+                    return null;
+                }
+
+                return new EducationDTO(
+                    degree: $translation->degree,
+                    institution: $translation->institution,
+                    fieldOfStudy: $translation->field_of_study,
+                    yearStart: $translation->year_start,
+                    yearEnd: $translation->year_end,
+                    description: $translation->description,
+                );
+            })
+            ->filter(fn (mixed $education): bool => $education instanceof EducationDTO)
+            ->values()
+            ->all();
     }
 }

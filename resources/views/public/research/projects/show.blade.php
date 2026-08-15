@@ -17,7 +17,26 @@
                         @endforeach
                     </dl></div>
                 </div>
-                <aside class="lg:sticky lg:top-8 lg:self-start"><div class="rounded-[10px] border border-[#dde2ea] bg-white p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)]"><h3 class="text-[14px] font-bold uppercase tracking-[0.1em] text-spu-blue">{{ $locale === 'ar' ? 'معلومات المشروع' : 'Project Info' }}</h3><dl class="mt-5 space-y-4"><div><dt class="text-[10px] font-medium uppercase tracking-[0.1em] text-[#6f7280]">{{ $locale === 'ar' ? 'الحالة' : 'Status' }}</dt><dd class="mt-1">@include('public.research.partials.status', ['status' => $item['status'] ?? '', 'locale' => $locale])</dd></div><div><dt class="text-[10px] font-medium uppercase tracking-[0.1em] text-[#6f7280]">{{ $locale === 'ar' ? 'الكلية' : 'Faculty' }}</dt><dd class="mt-1 text-[14px] font-medium text-spu-blue">{{ $item['faculty'] ?? '' }}</dd></div><div><dt class="text-[10px] font-medium uppercase tracking-[0.1em] text-[#6f7280]">{{ $locale === 'ar' ? 'سنة البدء' : 'Start Year' }}</dt><dd class="mt-1 text-[14px] font-medium text-spu-blue">{{ $item['startYear'] ?? '' }}</dd></div></dl></div></aside>
+                <aside class="lg:sticky lg:top-8 lg:self-start">
+                    <div class="rounded-[10px] border border-[#dde2ea] bg-white p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+                        <h3 class="text-[14px] font-bold uppercase tracking-[0.1em] text-spu-blue">{{ $locale === 'ar' ? 'معلومات المشروع' : 'Project Info' }}</h3>
+                        <dl class="mt-5 space-y-4">
+                            <div><dt class="text-[10px] font-medium uppercase tracking-[0.1em] text-[#6f7280]">{{ $locale === 'ar' ? 'الحالة' : 'Status' }}</dt><dd class="mt-1">@include('public.research.partials.status', ['status' => $item['status'] ?? '', 'locale' => $locale])</dd></div>
+                            <div><dt class="text-[10px] font-medium uppercase tracking-[0.1em] text-[#6f7280]">{{ $locale === 'ar' ? 'الكلية' : 'Faculty' }}</dt><dd class="mt-1 text-[14px] font-medium text-spu-blue">{{ $item['faculty'] ?? '' }}</dd></div>
+                            <div><dt class="text-[10px] font-medium uppercase tracking-[0.1em] text-[#6f7280]">{{ $locale === 'ar' ? 'سنة البدء' : 'Start Year' }}</dt><dd class="mt-1 text-[14px] font-medium text-spu-blue">{{ $item['startYear'] ?? '' }}</dd></div>
+                        </dl>
+                    </div>
+                    <div class="mt-4 rounded-[10px] border border-[#dde2ea] bg-white p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)]" x-data="pageShare" data-share-url="{{ url('/'.$locale.'/research/projects/'.($item['slug'] ?? '')) }}" data-share-title="{{ $item['title'] ?? '' }}">
+                        <h3 class="text-[14px] font-bold uppercase tracking-[0.1em] text-spu-blue">{{ $locale === 'ar' ? 'مشاركة المشروع' : 'Share Project' }}</h3>
+                        <div class="mt-4 grid grid-cols-2 gap-2">
+                            <button type="button" x-on:click="share" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-spu-blue transition hover:border-spu-blue">{{ $locale === 'ar' ? 'مشاركة' : 'Share' }}</button>
+                            <button type="button" x-on:click="copy" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-spu-blue transition hover:border-spu-blue">
+                                <span x-show="!copied">{{ $locale === 'ar' ? 'نسخ الرابط' : 'Copy link' }}</span>
+                                <span x-show="copied" x-cloak>{{ $locale === 'ar' ? 'تم النسخ' : 'Copied' }}</span>
+                            </button>
+                        </div>
+                    </div>
+                </aside>
             </div>
         </div>
     </section>

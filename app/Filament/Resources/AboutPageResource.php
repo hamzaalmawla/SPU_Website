@@ -21,6 +21,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
 
 class AboutPageResource extends Resource
@@ -30,6 +31,17 @@ class AboutPageResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-building-library';
 
     protected static ?int $navigationSort = 3;
+
+    public static function getRecordTitle(?Model $record): string
+    {
+        if (! $record instanceof AboutPage) {
+            return self::getModelLabel();
+        }
+
+        $translation = $record->translations->first();
+
+        return filled($translation?->title) ? trim((string) $translation->title) : $record->slug;
+    }
 
     public static function canAccess(): bool
     {
@@ -77,6 +89,14 @@ class AboutPageResource extends Resource
     {
         return $table->columns([
             TextColumn::make('slug')->searchable()->sortable(),
+            TextColumn::make('translations.title')
+                ->label('Title')
+                ->searchable(query: fn (Builder $query, string $search): Builder => $query->whereHas(
+                    'translations',
+                    fn (Builder $q): Builder => $q->where('title', 'like', "%{$search}%")
+                ))
+                ->listWithLineBreaks()
+                ->limit(40),
             TextColumn::make('template')->sortable(),
             TextColumn::make('status')->badge()->sortable(),
             IconColumn::make('is_enabled')->boolean(),

@@ -81,7 +81,7 @@ Route::prefix('{locale}')
                 Route::get('/{faculty}/{subpage}', 'subpage')
                     ->where([
                         'faculty' => 'medicine|dentistry|pharmacy|artificial-intelligence|building-construction-engineering|petroleum|business-administration',
-                        'subpage' => 'overview|departments|labs|projects|alumni|valedictorians|training|research',
+                        'subpage' => 'overview|departments|labs|projects|alumni|valedictorians|training|research|members',
                     ])
                     ->name('subpage');
             });
@@ -137,12 +137,15 @@ Route::prefix('{locale}')
                 Route::get('/{section}', 'content')
                     ->where(['section' => 'quality-policy|ethical-charter|organizational-structure|accreditation|why-spu'])
                     ->name('content');
-                Route::get('/profile/{source}/{slug}', 'profile')
+                Route::get('/profile/{slug}', 'profile')
+                    ->where(['slug' => '[A-Za-z0-9\-]+'])
+                    ->name('profile');
+                Route::get('/profile/{source}/{slug}', 'profileLegacy')
                     ->where([
                         'source' => 'person|faculty-member',
                         'slug' => '[A-Za-z0-9\-]+',
                     ])
-                    ->name('profile');
+                    ->name('profile.legacy.source');
             });
 
         Route::get('/preview', PreviewController::class)->name('preview.show');

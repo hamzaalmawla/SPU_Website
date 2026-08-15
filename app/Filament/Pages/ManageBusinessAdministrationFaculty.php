@@ -47,6 +47,7 @@ class ManageBusinessAdministrationFaculty extends Page implements HasForms
             'facilities.business-administration.research' => __('admin.cms.targets.facilities.research'),
             'facilities.business-administration.alumni' => 'Alumni',
             'facilities.business-administration.valedictorians' => 'Valedictorians',
+            'facilities.business-administration.members' => __('admin.cms.targets.facilities.members'),
         ];
     }
 

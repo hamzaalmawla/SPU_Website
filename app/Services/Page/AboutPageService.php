@@ -216,64 +216,57 @@ final class AboutPageService implements AboutPageServiceInterface
         int $requestedPage = 1,
     ): StaffDirectoryDTO {
         $facultyLabels = $this->staffFacultyLabels($locale);
+
         $people = Person::query()
             ->public()
-            ->whereIn('category', ['rector', 'vice_president', 'dean', 'council'])
-            ->with('translations')
+            ->whereHas('appointments', fn ($q) => $q->enabled()->whereIn('type', ['rector', 'vice_president', 'dean', 'council', 'director', 'faculty_member']))
+            ->with(['translations', 'appointments' => fn ($q) => $q->enabled()->with(['translations', 'faculty']),
+                'photoMedia',
+            ])
             ->orderBy('sort_order')
-            ->get()
-            ->map(function (Person $person) use ($locale, $facultyLabels): StaffDirectoryItemDTO {
+            ->get();
+
+        $allItems = $people
+            ->map(function (Person $person) use ($locale, $facultyLabels): ?StaffDirectoryItemDTO {
                 $translation = $this->personTranslation($person, $locale);
-                $facultySlug = is_string($person->faculty_scope_slug) && $person->faculty_scope_slug !== ''
-                    ? $person->faculty_scope_slug
-                    : null;
+                $apt = $this->primaryDisplayAppointment($person->appointments);
+
+                $role = $translation->role ?? '';
+                if ($apt !== null) {
+                    $aptTrans = $apt->translations->firstWhere('locale', $locale)
+                        ?? $apt->translations->firstWhere('locale', 'ar')
+                        ?? $apt->translations->firstWhere('locale', 'en');
+                    if ($aptTrans?->role_override) {
+                        $role = $aptTrans->role_override;
+                    } elseif ($apt->type === 'faculty_member') {
+                        $role = $translation->position ?: $translation->title ?: '';
+                    }
+                }
+
+                $facultySlug = null;
+                if ($apt?->faculty instanceof Faculty) {
+                    $facultySlug = (string) ($apt->faculty->faculty_scope_slug ?: $apt->faculty->public_slug ?: $apt->faculty->slug);
+                } elseif (is_string($person->faculty_scope_slug) && $person->faculty_scope_slug !== '') {
+                    $facultySlug = $person->faculty_scope_slug;
+                }
+
+                $image = $person->photoMedia instanceof MediaAsset
+                    ? MediaUrlResolver::resolveImage($person->photoMedia->webp_path, $person->photoMedia->path, $person->photoMedia->disk)
+                    : (is_string($person->image) && $person->image !== '' ? $person->image : MediaUrlResolver::resolveLegacy($person->legacy_photo_path));
 
                 return new StaffDirectoryItemDTO(
                     sourceType: 'person',
                     slug: (string) $person->slug,
                     name: (string) $translation->name,
-                    role: (string) $translation->role,
-                    image: $person->image,
-                    facultySlug: $facultySlug,
-                    facultyName: $facultySlug !== null ? ($facultyLabels[$facultySlug] ?? null) : null,
-                );
-            });
-        $facultyMembers = FacultyMember::query()
-            ->public()
-            ->with(['translations', 'faculty.translations', 'photoMedia'])
-            ->orderBy('sort_order')
-            ->get();
-        $legacyMediaByTargetId = $this->legacyMediaByTargetId('faculty_members', $facultyMembers->pluck('id')->all());
-        $facultyMembers = $facultyMembers
-            ->map(function (FacultyMember $member) use ($locale, $facultyLabels, $legacyMediaByTargetId): ?StaffDirectoryItemDTO {
-                $translation = $this->facultyMemberTranslation($member, $locale);
-
-                if (! $translation instanceof FacultyMemberTranslation) {
-                    return null;
-                }
-
-                $legacyPhoto = $member->legacy_photo_path
-                    ?? ($legacyMediaByTargetId[(int) $member->getKey()]['legacy_photo'] ?? null);
-
-                $facultySlug = $member->faculty instanceof Faculty
-                    ? (string) ($member->faculty->faculty_scope_slug ?: $member->faculty->public_slug ?: $member->faculty->slug)
-                    : null;
-
-                return new StaffDirectoryItemDTO(
-                    sourceType: 'faculty-member',
-                    slug: (string) $member->slug,
-                    name: (string) $translation->full_name,
-                    role: (string) ($translation->position ?: $translation->title ?: ''),
-                    image: $member->photoMedia instanceof MediaAsset
-                        ? MediaUrlResolver::resolveImage($member->photoMedia->webp_path, $member->photoMedia->path, $member->photoMedia->disk)
-                        : MediaUrlResolver::resolveLegacy($legacyPhoto),
+                    role: $role,
+                    image: $image,
                     facultySlug: $facultySlug,
                     facultyName: $facultySlug !== null ? ($facultyLabels[$facultySlug] ?? null) : null,
                 );
             })
             ->filter(fn (?StaffDirectoryItemDTO $item): bool => $item !== null)
             ->values();
-        $allItems = $people->concat($facultyMembers)->values();
+
         $availableFacultySlugs = $allItems
             ->pluck('facultySlug')
             ->filter(fn (mixed $slug): bool => is_string($slug) && $slug !== '')
@@ -307,10 +300,14 @@ final class AboutPageService implements AboutPageServiceInterface
 
     public function getLeadershipProfiles(string $locale): Collection
     {
-        return $this->mapPersons(
-            Person::query()->public()->with('translations')->orderBy('sort_order')->get(),
-            $locale,
-        );
+        $people = Person::query()
+            ->public()
+            ->whereHas('appointments', fn ($q) => $q->enabled()->whereIn('type', ['rector', 'vice_president', 'dean', 'council', 'director']))
+            ->with(['translations', 'appointments' => fn ($q) => $q->enabled()->with('translations')])
+            ->orderBy('sort_order')
+            ->get();
+
+        return $this->mapPersons($people, $locale);
     }
 
     public function getLeadershipDirectory(string $locale, ?string $requestedFaculty = null): LeadershipDirectoryDTO
@@ -432,19 +429,33 @@ final class AboutPageService implements AboutPageServiceInterface
     public function mapPerson(Person $person, string $locale): PersonDTO
     {
         $translation = $this->personTranslation($person, $locale);
+        $apt = $this->primaryDisplayAppointment($person->appointments);
+
+        $category = $person->category;
+        $facultySlug = $person->faculty_scope_slug;
+        if ($apt !== null) {
+            if (! is_string($category) || $category === '') {
+                $category = $apt->type;
+            }
+            if (! is_string($facultySlug) || $facultySlug === '') {
+                if ($apt->faculty instanceof Faculty) {
+                    $facultySlug = (string) ($apt->faculty->faculty_scope_slug ?: $apt->faculty->public_slug ?: $apt->faculty->slug);
+                }
+            }
+        }
 
         return new PersonDTO(
             id: (int) $person->getKey(),
             slug: (string) $person->slug,
             name: (string) $translation->name,
             role: (string) $translation->role,
-            category: $person->category,
-            facultySlug: $person->faculty_scope_slug,
+            category: is_string($category) && $category !== '' ? $category : null,
+            facultySlug: is_string($facultySlug) && $facultySlug !== '' ? $facultySlug : null,
             bio: $translation->bio,
             quote: $translation->quote,
             image: $person->image,
             email: $person->email,
-            profileUrl: '/'.$locale.'/about/profile/person/'.$person->slug,
+            profileUrl: '/'.$locale.'/about/profile/'.$person->slug,
         );
     }
 
@@ -452,6 +463,20 @@ final class AboutPageService implements AboutPageServiceInterface
     private function mapPersons(Collection $persons, string $locale): Collection
     {
         return $persons->map(fn (Person $person): PersonDTO => $this->mapPerson($person, $locale))->values();
+    }
+
+    /** @param Collection<int, \App\Models\Person\PersonAppointment> $appointments */
+    private function primaryDisplayAppointment(Collection $appointments): ?\App\Models\Person\PersonAppointment
+    {
+        $priority = ['rector', 'vice_president', 'dean', 'council', 'director', 'faculty_member', 'researcher'];
+        foreach ($priority as $type) {
+            $apt = $appointments->firstWhere('type', $type);
+            if ($apt instanceof \App\Models\Person\PersonAppointment) {
+                return $apt;
+            }
+        }
+
+        return $appointments->first();
     }
 
     /** @param Collection<int, Directorate> $directorates @return Collection<int, DirectorateDTO> */

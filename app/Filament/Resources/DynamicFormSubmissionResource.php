@@ -139,10 +139,10 @@ class DynamicFormSubmissionResource extends Resource
                     ->label(__('form_submissions.columns.context_title'))
                     ->state(fn (DynamicFormSubmission $record): ?string => self::contextTitle($record))
                     ->searchable(query: fn (Builder $query, string $search): Builder => $query->where(
-                        fn (Builder $query): Builder => $query
-                            ->where('payload_json->_context->event_title', 'like', "%{$search}%")
-                            ->orWhere('payload_json->_context->job_title', 'like', "%{$search}%")
-                            ->orWhere('payload_json->subject', 'like', "%{$search}%"),
+                        fn (Builder $q): Builder => $q
+                            ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(payload_json, '$.\"_context\".\"event_title\"')) LIKE ?", ["%{$search}%"])
+                            ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(payload_json, '$.\"_context\".\"job_title\"')) LIKE ?", ["%{$search}%"])
+                            ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(payload_json, '$.\"subject\"')) LIKE ?", ["%{$search}%"]),
                     ))
                     ->wrap()
                     ->placeholder(__('form_submissions.values.no_context_title')),

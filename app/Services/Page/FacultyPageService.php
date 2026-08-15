@@ -37,6 +37,9 @@ use App\Models\Faculty\FacultyPageTranslation;
 use App\Models\Faculty\FacultyStudentProject;
 use App\Models\Faculty\FacultyStudentProjectTranslation;
 use App\Models\Faculty\FacultyTranslation;
+use App\Models\Media\MediaAsset;
+use App\Models\Person\FacultyMember;
+use App\Models\Person\Person;
 use App\Models\Shared\MigrationLog;
 use App\Support\MediaUrlResolver;
 use Illuminate\Database\Eloquent\Builder;
@@ -53,7 +56,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
         'business' => 'business-administration',
     ];
 
-    private const SUBPAGE_SLUGS = ['overview', 'departments', 'study-plan', 'study-plan-course', 'labs', 'projects', 'alumni', 'valedictorians', 'training', 'research'];
+    private const SUBPAGE_SLUGS = ['overview', 'departments', 'study-plan', 'study-plan-course', 'labs', 'projects', 'alumni', 'valedictorians', 'training', 'research', 'members'];
 
     private const ALUMNI_LIST_PER_PAGE = 12;
 
@@ -892,6 +895,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'valedictorians' => $locale === 'ar' ? 'قائمة الشرف' : 'Honor List',
             'training' => $locale === 'ar' ? 'التدريب' : 'Training',
             'research' => $locale === 'ar' ? 'البحث العلمي' : 'Research',
+            'members' => $locale === 'ar' ? 'أعضاء الهيئة الأكاديمية' : 'Faculty Members',
         ];
 
         return $faculty->pages
@@ -935,9 +939,131 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'valedictorians' => $this->honorItems($faculty, $locale),
             'training' => $this->localizedPayloadList(($page instanceof FacultyPage && is_array($page->payload_json) ? ($page->payload_json['items'] ?? []) : []), $locale),
             'research' => $this->researchPageService->facultyPublications($this->publicSlug($faculty), $locale)->data['items'] ?? [],
+            'members' => $this->memberItems($faculty, $locale),
             'study-plan', 'study-plan-course' => [],
             default => [],
         };
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function memberItems(Faculty $faculty, string $locale): array
+    {
+        $people = Person::query()
+            ->public()
+            ->whereHas('appointments', fn ($q) => $q->enabled()->where('type', 'faculty_member')->where('faculty_id', $faculty->getKey()))
+            ->with([
+                'translations',
+                'appointments' => fn ($q) => $q->enabled()->where('type', 'faculty_member')->where('faculty_id', $faculty->getKey())->with(['translations', 'department.translations']),
+                'photoMedia',
+            ])
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+        $facultyMembers = FacultyMember::query()
+            ->public()
+            ->where('faculty_id', $faculty->getKey())
+            ->with(['translations', 'department.translations', 'photoMedia'])
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+        $personItems = $people
+            ->map(function (Person $person) use ($locale): ?array {
+                $slug = (string) $person->slug;
+                if (preg_match('/^[A-Za-z0-9-]+$/', $slug) !== 1) {
+                    return null;
+                }
+
+                $translation = $person->translations->firstWhere('locale', $locale)
+                    ?? $person->translations->firstWhere('locale', 'ar')
+                    ?? $person->translations->firstWhere('locale', 'en');
+
+                if ($translation === null) {
+                    return null;
+                }
+
+                $apt = $person->appointments->first();
+                $role = $translation->position ?: $translation->title ?: '';
+                if ($apt !== null) {
+                    $aptTrans = $apt->translations->firstWhere('locale', $locale)
+                        ?? $apt->translations->firstWhere('locale', 'ar')
+                        ?? $apt->translations->firstWhere('locale', 'en');
+                    if ($aptTrans?->role_override) {
+                        $role = $aptTrans->role_override;
+                    }
+                }
+
+                $department = null;
+                if ($apt?->department instanceof Department) {
+                    $department = $this->departmentTranslation($apt->department, $locale)->name ?? null;
+                }
+
+                $image = $person->photoMedia instanceof MediaAsset
+                    ? MediaUrlResolver::resolveImage($person->photoMedia->webp_path, $person->photoMedia->path, $person->photoMedia->disk)
+                    : (is_string($person->image) && $person->image !== '' ? $person->image : MediaUrlResolver::resolveLegacy($person->legacy_photo_path));
+
+                return [
+                    'slug' => $slug,
+                    'name' => (string) $translation->name,
+                    'position' => $role,
+                    'department' => $department,
+                    'image' => $image,
+                    'profileUrl' => $this->url($locale, '/about/profile/'.$slug),
+                    'sort_order' => (int) $person->sort_order,
+                ];
+            })
+            ->filter(fn (?array $item): bool => $item !== null);
+
+        $facultyMemberItems = $facultyMembers
+            ->map(function (FacultyMember $member) use ($locale): ?array {
+                $slug = (string) $member->slug;
+                if (preg_match('/^[A-Za-z0-9-]+$/', $slug) !== 1) {
+                    return null;
+                }
+
+                $translation = $member->translations->firstWhere('locale', $locale)
+                    ?? $member->translations->firstWhere('locale', 'ar')
+                    ?? $member->translations->firstWhere('locale', 'en');
+
+                if ($translation === null) {
+                    return null;
+                }
+
+                $department = null;
+                if ($member->department instanceof Department) {
+                    $department = $this->departmentTranslation($member->department, $locale)->name ?? null;
+                }
+
+                $image = $member->photoMedia instanceof MediaAsset
+                    ? MediaUrlResolver::resolveImage($member->photoMedia->webp_path, $member->photoMedia->path, $member->photoMedia->disk)
+                    : MediaUrlResolver::resolveLegacy($member->legacy_photo_path);
+
+                return [
+                    'slug' => $slug,
+                    'name' => (string) $translation->full_name,
+                    'position' => $translation->position ?: $translation->title ?: '',
+                    'department' => $department,
+                    'image' => $image,
+                    'profileUrl' => $this->url($locale, '/about/profile/'.$slug),
+                    'sort_order' => (int) $member->sort_order,
+                ];
+            })
+            ->filter(fn (?array $item): bool => $item !== null);
+
+        return collect($personItems->values()->all())
+            ->merge($facultyMemberItems->values()->all())
+            ->sortBy('sort_order')
+            ->values()
+            ->map(fn (array $item): array => [
+                'slug' => $item['slug'],
+                'name' => $item['name'],
+                'position' => $item['position'],
+                'department' => $item['department'],
+                'image' => $item['image'],
+                'profileUrl' => $item['profileUrl'],
+            ])
+            ->all();
     }
 
     /** @return array<int, array<string, mixed>> */
@@ -1096,6 +1222,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'gallery' => $this->stringList($project['gallery'] ?? []),
             'technologies' => $this->stringList($project['technologies'] ?? []),
             'teamMembers' => $this->arrayList($project['teamMembers'] ?? []),
+            'documents' => $this->arrayList($project['documents'] ?? []),
         ]);
     }
 
@@ -1112,6 +1239,15 @@ final class FacultyPageService implements FacultyPageServiceInterface
             $project['gallery'] = array_values(array_filter(array_map(
                 static fn (mixed $image): ?string => is_string($image) ? MediaUrlResolver::resolve($image) : null,
                 $project['gallery'],
+            )));
+        }
+
+        if (is_array($project['documents'] ?? null)) {
+            $project['documents'] = array_values(array_filter(array_map(
+                static fn (mixed $doc): ?array => is_array($doc) && is_string($doc['file'] ?? null)
+                    ? ['label' => (string) ($doc['label'] ?? ''), 'file' => MediaUrlResolver::resolve($doc['file'])]
+                    : null,
+                $project['documents'],
             )));
         }
 
@@ -1709,6 +1845,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'valedictorians' => $locale === 'ar' ? 'قائمة الشرف' : 'Honor List',
             'training' => $locale === 'ar' ? 'التدريب' : 'Training',
             'research' => $locale === 'ar' ? 'أحدث الأبحاث' : 'Latest Research',
+            'members' => $locale === 'ar' ? 'أعضاء الهيئة الأكاديمية' : 'Faculty Members',
         ];
 
         return $titles[$subpageSlug] ?? $subpageSlug;
@@ -1865,6 +2002,14 @@ final class FacultyPageService implements FacultyPageServiceInterface
         return $student->translations->firstWhere('locale', $locale)
             ?? $student->translations->firstWhere('locale', 'ar')
             ?? $student->translations->first();
+    }
+
+    private function memberTranslation(FacultyMember $member, string $locale): ?FacultyMemberTranslation
+    {
+        return $member->translations->firstWhere('locale', $locale)
+            ?? $member->translations->firstWhere('locale', 'ar')
+            ?? $member->translations->firstWhere('locale', 'en')
+            ?? null;
     }
 
     private function publicSlug(Faculty $faculty): string

@@ -21,6 +21,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
 
 class DirectorateResource extends Resource
@@ -30,6 +31,17 @@ class DirectorateResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-squares-2x2';
 
     protected static ?int $navigationSort = 4;
+
+    public static function getRecordTitle(?Model $record): string
+    {
+        if (! $record instanceof Directorate) {
+            return self::getModelLabel();
+        }
+
+        $translation = $record->translations->first();
+
+        return filled($translation?->title) ? trim((string) $translation->title) : $record->slug;
+    }
 
     public static function canAccess(): bool
     {
@@ -76,7 +88,14 @@ class DirectorateResource extends Resource
     {
         return $table->columns([
             TextColumn::make('slug')->searchable()->sortable(),
-            TextColumn::make('translations.title')->label('Titles')->listWithLineBreaks()->limit(40),
+            TextColumn::make('translations.title')
+                ->label('Titles')
+                ->searchable(query: fn (Builder $query, string $search): Builder => $query->whereHas(
+                    'translations',
+                    fn (Builder $q): Builder => $q->where('title', 'like', "%{$search}%")
+                ))
+                ->listWithLineBreaks()
+                ->limit(40),
             IconColumn::make('is_enabled')->boolean(),
             TextColumn::make('publication_status')->badge()->sortable(),
             TextColumn::make('updated_at')->dateTime()->sortable(),

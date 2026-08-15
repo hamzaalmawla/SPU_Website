@@ -245,7 +245,7 @@ class NewsArticleResource extends Resource
                     ->getStateUsing(fn (NewsArticle $record): string => self::localizedTitle($record))
                     ->description(fn (NewsArticle $record): string => self::usesArabicFallback($record) ? __('admin.news_article.table.arabic_fallback') : '')
                     ->limit(70)
-                    ->searchable(query: fn (Builder $query, string $search): Builder => $query->orWhereHas(
+                    ->searchable(query: fn (Builder $query, string $search): Builder => $query->whereHas(
                         'translations',
                         fn (Builder $translationQuery): Builder => $translationQuery
                             ->where('title', 'like', "%{$search}%")

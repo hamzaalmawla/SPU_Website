@@ -107,6 +107,7 @@ return [
                 'valedictorians' => 'Honor Students',
                 'training' => 'Training',
                 'research' => 'Research',
+                'members' => 'Faculty Members',
             ],
             'admissions' => [
                 'landing' => 'Admissions',
@@ -749,6 +750,7 @@ return [
             'training' => 'Training',
             'alumni' => 'Alumni',
             'valedictorians' => 'Honor students',
+            'members' => 'Faculty members',
         ],
         'descriptions' => [
             'homepage' => 'Faculty introduction, key links, and important information.',
@@ -761,6 +763,7 @@ return [
             'training' => 'Faculty training opportunities and programs.',
             'alumni' => 'Alumni directory, stories, and information.',
             'valedictorians' => 'Honor students by year and specialization.',
+            'members' => 'Faculty members, their cards, and profile links.',
         ],
         'fields' => [
             'department' => 'Department',
@@ -790,6 +793,7 @@ return [
             'valedictorians' => 'Honor students',
             'training' => 'Training',
             'research' => 'Research',
+            'members' => 'Faculty Members',
         ],
         'notifications' => [
             'draft_saved' => 'Faculty draft saved',
@@ -897,6 +901,9 @@ return [
                 'team_members' => 'Team members',
                 'member_name' => 'Member name',
                 'member_role' => 'Member role',
+                'documents' => 'Documents',
+                'document_label' => 'Document label',
+                'document_file' => 'PDF file',
                 'graduate_name' => 'Graduate name',
                 'graduation_year' => 'Graduation year',
                 'semester' => 'Semester',

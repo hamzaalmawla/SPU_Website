@@ -11,11 +11,13 @@ import { createCampusLifeGallery } from './alpine/campusLifeGallery.js';
 import { createCampusLifeReveal } from './alpine/campusLifeReveal.js';
 import { createNewsGalleryViewer } from './alpine/newsGalleryViewer.js';
 import { createNewsShare } from './alpine/newsShare.js';
+import { createPageShare } from './alpine/pageShare.js';
 import { createVirtualTour } from './alpine/virtualTour.js';
 import { registerDynamicFormStore } from './alpine/dynamicFormStore.js';
 import { createDynamicFormShell, createDynamicFormView } from './alpine/dynamicFormView.js';
 import { initStudyPlanPages } from './alpine/studyPlan.js';
 import { initRevealSections }   from './alpine/scrollReveal.js';
+import { createVirtualizedSchedule } from './alpine/virtualizedSchedule.js';
 
 // Alpine components (x-data="name()")
 Alpine.data('mobileNav',       createMobileNav);
@@ -29,9 +31,11 @@ Alpine.data('campusLifeGallery', createCampusLifeGallery);
 Alpine.data('campusLifeReveal', createCampusLifeReveal);
 Alpine.data('newsGalleryViewer', createNewsGalleryViewer);
 Alpine.data('newsShare', createNewsShare);
+Alpine.data('pageShare', createPageShare);
 Alpine.data('virtualTour', createVirtualTour);
 Alpine.data('dynamicFormShell', createDynamicFormShell);
 Alpine.data('dynamicFormView', createDynamicFormView);
+Alpine.data('virtualizedSchedule', createVirtualizedSchedule);
 registerDynamicFormStore(Alpine);
 
 window.Alpine = Alpine;

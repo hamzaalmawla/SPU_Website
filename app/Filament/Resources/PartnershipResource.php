@@ -21,6 +21,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
 
 class PartnershipResource extends Resource
@@ -30,6 +31,17 @@ class PartnershipResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-link';
 
     protected static ?int $navigationSort = 2;
+
+    public static function getRecordTitle(?Model $record): string
+    {
+        if (! $record instanceof Partnership) {
+            return self::getModelLabel();
+        }
+
+        $translation = $record->translations->first();
+
+        return filled($translation?->name) ? trim((string) $translation->name) : $record->slug;
+    }
 
     public static function canAccess(): bool
     {
@@ -88,7 +100,14 @@ class PartnershipResource extends Resource
         return $table->columns([
             TextColumn::make('slug')->searchable()->sortable(),
             TextColumn::make('category_key')->badge()->sortable(),
-            TextColumn::make('translations.name')->label('Names')->listWithLineBreaks()->limit(40),
+            TextColumn::make('translations.name')
+                ->label('Names')
+                ->searchable(query: fn (Builder $query, string $search): Builder => $query->whereHas(
+                    'translations',
+                    fn (Builder $q): Builder => $q->where('name', 'like', "%{$search}%")
+                ))
+                ->listWithLineBreaks()
+                ->limit(40),
             IconColumn::make('is_enabled')->boolean(),
             TextColumn::make('publication_status')->badge()->sortable(),
             TextColumn::make('updated_at')->dateTime()->sortable(),

@@ -108,11 +108,12 @@ class AboutNavigationCardResource extends Resource
                         return $locale === 'ar' ? $dto->resolvedTitleAr : $dto->resolvedTitleEn;
                     })
                     ->description(fn (AboutNavigationCard $record): string => $record->target_key)
-                    ->searchable(query: function ($query, string $search) {
-                        $query->where('target_key', 'like', "%{$search}%")
+                    ->searchable(query: fn (Builder $query, string $search): Builder => $query->where(
+                        fn (Builder $q): Builder => $q
+                            ->where('target_key', 'like', "%{$search}%")
                             ->orWhere('title_override_ar', 'like', "%{$search}%")
-                            ->orWhere('title_override_en', 'like', "%{$search}%");
-                    }),
+                            ->orWhere('title_override_en', 'like', "%{$search}%")
+                    )),
                 TextColumn::make('status')
                     ->label(__('admin.about_navigation_card.table.status'))
                     ->badge()
