@@ -340,7 +340,97 @@ nothing. Do not spend time there.
 
 ---
 
-## 11. Quick reference — approval tokens
+## 11. Performance and caching
+
+Measured 2026-08-21. Read this before "optimising" anything here.
+
+### What is already in place
+
+| Layer | Setting | Why |
+|---|---|---|
+| Laravel page cache | `CachePublicPages`, 300s, applied to the `{locale}` group | serves rendered HTML without re-querying |
+| Cache store | `file` | benchmarked at 0.1 ms/read vs 0.5 ms for `database`, and it keeps page HTML out of MySQL |
+| Config/route/view | `artisan optimize` | required after every deploy |
+| Static assets | `Cache-Control: immutable, 1 year` for hashed build output | Vite puts a content hash in every filename |
+| Legacy media | `Cache-Control: public, 30 days` | filenames are stable but files can be replaced in place |
+| Images | resized to max 2400px, re-encoded | `public/images` went from **89 MB to 22 MB** |
+
+### The CSRF token must never be cached
+
+`CachePublicPages` masks the token going into the cache and substitutes the
+requesting visitor's own token coming out. Without that, one visitor's
+per-session token is served to everyone and **every AJAX form post from a cached
+page fails with a 419** — `resources/js/alpine/dynamicFormStore.js` sends the
+`<meta name="csrf-token">` value as `X-CSRF-TOKEN`.
+
+`tests/Feature/PublicPageCacheCsrfTest.php` guards this. If you change what the
+cache stores, keep those tests passing.
+
+### Three blockers that need root / WHM — none is fixable from the cPanel account
+
+These are the largest remaining wins, and both were verified, not assumed:
+
+1. **OPcache is not installed for `ea-php84`.** There is no `opcache.so` anywhere
+   under `/opt/cpanel/ea-php84`. Framework boot measures **333 ms** on every
+   single request because ~8,000 PHP files are re-parsed each time. Installing
+   `ea-php84-php-opcache` in WHM → EasyApache 4 is typically a 2–4× improvement
+   in time-to-first-byte and is the single highest-value change available.
+
+2. **Nothing is compressed.** nginx terminates TLS on :80/:443, does not gzip,
+   and strips `Accept-Encoding` before proxying to Apache — verified by
+   requesting Apache directly from the server with an explicit
+   `Accept-Encoding: gzip` and still receiving `Content-Length: 328750`. So
+   neither the `mod_deflate` rules in `public/.htaccess` nor
+   `zlib.output_compression` in `public/.user.ini` can fire. **Both are correct
+   configuration and will start working the moment nginx gzip is enabled** — do
+   not delete them thinking they are dead code. A public page is ~250 KB of HTML
+   that would compress to roughly 30 KB.
+
+3. **The PHP-FPM pool is tuned far too small.** `pm_max_children = 5`,
+   `pm_max_requests = 20`, `pm_process_idle_timeout = 10`. Recycling a worker
+   every 20 requests means a cold PHP process constantly — which, with no
+   OPcache, re-parses the whole framework each time. Raising `pm_max_requests`
+   to ~1000 and `pm_max_children` to ~16 would remove most of that. cPanel's
+   `LangPHP::php_set_vhost_versions` accepts the pool parameters and returns
+   success but **silently ignores them**, and
+   `/var/cpanel/userdata/…php_fpm.yaml` is root-owned, so this needs WHM too.
+
+`/etc/nginx` is not readable from the account, so items 2 and 3 need the host.
+
+### Why full-page edge caching is not enabled
+
+nginx caching is enabled for the vhost, but it never stores a public page,
+because every response carries two `Set-Cookie` headers (XSRF + session) and
+`Cache-Control: private`. Making anonymous public pages cacheable at the edge
+would mean not starting a session on them — which breaks `@csrf` on the contact
+and complaints forms unless those routes are handled separately. That is a
+deliberate design decision, not an oversight; do not strip the cookies without
+solving the CSRF story first.
+
+### The research CMS targets are not set up on v2
+
+There are **no `research.*` rows in `cms_target_contents`** at all, so the
+research pages render from `ResearchPageService`'s static fixture fallback. The
+publications archive still works and lists the 253 migrated database
+publications, and it is linked from `/ar/research`, so it is crawlable — but
+`appendResearchPublicationEntries` and `appendResearchCatalogEntries` both
+correctly refuse to put unpublished targets in the sitemap, so those ~506 URLs
+are absent from `sitemap.xml`.
+
+Fix this by publishing the research targets through the admin, not by weakening
+the sitemap guard: `SitemapServiceTest` asserts the sitemap contains only
+published entries, and the fixture fallback must never leak into it.
+
+### Zero-byte legacy files
+
+17 of the 33,560 files in `downloads/files` are **0 bytes** on the old server.
+`is_file()` returns true for them, so any repair script that only checks
+existence will happily write a path that renders as a broken image. Check
+`filesize($p) > 0` as well.
+
+---
+
+## 12. Quick reference — approval tokens
 
 Imports are gated so they cannot run by accident:
 

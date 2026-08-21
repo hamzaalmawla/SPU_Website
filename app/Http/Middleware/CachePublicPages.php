@@ -19,6 +19,18 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 final class CachePublicPages
 {
+    /**
+     * Stand-in written into cached HTML in place of the CSRF token.
+     *
+     * The public layout renders <meta name="csrf-token"> on every page, and
+     * resources/js/alpine/dynamicFormStore.js sends it as X-CSRF-TOKEN. Caching
+     * the rendered token would hand one visitor's per-session token to everyone
+     * who hits the cache, so every AJAX form post from a cached page would fail
+     * CSRF with a 419. The token is swapped out on the way into the cache and
+     * back in, per request, on the way out.
+     */
+    private const CSRF_PLACEHOLDER = '__SPU_CSRF_TOKEN_PLACEHOLDER__';
+
     public function __construct(
         private readonly CacheServiceInterface $cacheService,
         private readonly AuthFactory $authFactory,
@@ -160,7 +172,7 @@ final class CachePublicPages
         return [
             'status' => $response->getStatusCode(),
             'headers' => $this->filterHeaders($response),
-            'content' => (string) $response->getContent(),
+            'content' => $this->maskCsrfToken($request, (string) $response->getContent()),
         ];
     }
 
@@ -196,7 +208,7 @@ final class CachePublicPages
      */
     private function restoreResponse(array $payload): Response
     {
-        $response = new HttpResponse($payload['content'], $payload['status']);
+        $response = new HttpResponse($this->restoreCsrfToken($payload['content']), $payload['status']);
 
         foreach ($payload['headers'] as $name => $values) {
             foreach ($values as $value) {
@@ -205,6 +217,35 @@ final class CachePublicPages
         }
 
         return $response;
+    }
+
+    /**
+     * Replace this request's CSRF token with a placeholder before caching.
+     *
+     * The token is a 40-character random string, so an exact replace cannot
+     * collide with page content.
+     */
+    private function maskCsrfToken(Request $request, string $content): string
+    {
+        $token = $request->hasSession() ? $request->session()->token() : null;
+
+        if (! is_string($token) || $token === '') {
+            return $content;
+        }
+
+        return str_replace($token, self::CSRF_PLACEHOLDER, $content);
+    }
+
+    /**
+     * Put the current visitor's own CSRF token back into cached HTML.
+     */
+    private function restoreCsrfToken(string $content): string
+    {
+        if (! str_contains($content, self::CSRF_PLACEHOLDER)) {
+            return $content;
+        }
+
+        return str_replace(self::CSRF_PLACEHOLDER, csrf_token(), $content);
     }
 
     private function withCacheHeader(Response $response, string $value): Response

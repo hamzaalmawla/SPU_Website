@@ -1,3 +1,66 @@
+<IfModule mod_authz_core.c>
+    # Never serve dotfiles or PHP ini overrides from the web root.
+    <FilesMatch "^\.(?:user\.ini|env|htaccess|htpasswd|git.*)$">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Transfer optimisation
+#
+# There is no OPcache on this host, so PHP boot dominates time-to-first-byte and
+# cannot be fixed from here. What can be fixed is everything after it: a public
+# page is ~250 KB of HTML, and the site's audience is largely on slow
+# connections, so compression and asset caching are where the real time goes.
+# ─────────────────────────────────────────────────────────────────────────────
+
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css
+    AddOutputFilterByType DEFLATE application/javascript application/x-javascript text/javascript
+    AddOutputFilterByType DEFLATE application/json application/ld+json
+    AddOutputFilterByType DEFLATE application/xml application/rss+xml application/atom+xml
+    AddOutputFilterByType DEFLATE image/svg+xml application/vnd.ms-fontobject
+    AddOutputFilterByType DEFLATE font/ttf font/otf application/x-font-ttf
+
+    # Already-compressed payloads gain nothing and cost CPU.
+    SetEnvIfNoCase Request_URI \.(?:gif|jpe?g|png|webp|avif|ico|zip|gz|bz2|rar|7z|pdf|mp4|webm|mp3|woff2?)$ no-gzip dont-vary
+</IfModule>
+
+<IfModule mod_headers.c>
+    # Correct caching for content negotiated on encoding.
+    <FilesMatch "\.(?:css|js|svg|json|xml)$">
+        Header append Vary Accept-Encoding
+    </FilesMatch>
+
+    # Vite writes a content hash into every build filename, so these can be
+    # cached permanently - a new deploy produces a new filename.
+    <FilesMatch "\.(?:css|js|woff2?|ttf|otf|eot)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+
+    # Legacy media keeps its original filename forever, so it is safe to cache
+    # for a long time, but not immutable - a file could be replaced in place.
+    <FilesMatch "\.(?:jpe?g|png|gif|webp|avif|svg|ico|pdf|mp4|webm|mp3)$">
+        Header set Cache-Control "public, max-age=2592000"
+    </FilesMatch>
+</IfModule>
+
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css                  "access plus 1 year"
+    ExpiresByType application/javascript    "access plus 1 year"
+    ExpiresByType text/javascript           "access plus 1 year"
+    ExpiresByType font/woff2                "access plus 1 year"
+    ExpiresByType font/ttf                  "access plus 1 year"
+    ExpiresByType image/jpeg                "access plus 1 month"
+    ExpiresByType image/png                 "access plus 1 month"
+    ExpiresByType image/webp                "access plus 1 month"
+    ExpiresByType image/avif                "access plus 1 month"
+    ExpiresByType image/svg+xml             "access plus 1 month"
+    ExpiresByType image/x-icon              "access plus 1 month"
+    ExpiresByType application/pdf           "access plus 1 month"
+</IfModule>
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes

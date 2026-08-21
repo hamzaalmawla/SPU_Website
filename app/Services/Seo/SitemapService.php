@@ -294,6 +294,19 @@ final class SitemapService implements SitemapServiceInterface
      */
     private function appendResearchPublicationEntries(Collection $entries, string $baseUrl): void
     {
+        // Mirror appendResearchCatalogEntries: the archive only belongs in the
+        // sitemap once its CMS target is published. ResearchPageService falls back
+        // to static fixture content when nothing is published, and listing that
+        // would put unpublished URLs into the sitemap.
+        $publishedArchive = CmsTargetContent::query()
+            ->where('target_key', 'research.publications')
+            ->where('status', PublicationStatus::Published->value)
+            ->first();
+
+        if (! $publishedArchive instanceof CmsTargetContent) {
+            return;
+        }
+
         $slugsByLocale = collect(['ar', 'en'])->mapWithKeys(fn (string $locale): array => [
             $locale => $this->publicationSlugs($locale),
         ]);
@@ -312,7 +325,7 @@ final class SitemapService implements SitemapServiceInterface
             foreach (['ar', 'en'] as $locale) {
                 $entries->push(new SitemapEntryDTO(
                     loc: $baseUrl.'/'.$locale.$path,
-                    lastmod: now()->toW3cString(),
+                    lastmod: $publishedArchive->updated_at?->toW3cString() ?? now()->toW3cString(),
                     changefreq: null,
                     priority: null,
                     alternates: $alternates,
