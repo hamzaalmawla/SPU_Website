@@ -3,11 +3,44 @@
         Options -MultiViews -Indexes
     </IfModule>
 
+    # The front controller is app.php, not index.php — see the comment in app.php.
+    DirectoryIndex app.php
+
     RewriteEngine On
 
+    # Force HTTPS. The X-Forwarded-Proto check keeps this from looping when a
+    # TLS-terminating proxy (cPanel's nginx layer) forwards to Apache over http.
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
     # Preserved legacy static trees must never execute old application code.
+    RewriteRule ^_legacy/.*\.(?:php[0-9]?|phtml|phar|cgi|pl|py|sh|asp|aspx|jsp|exe|dll|com|bat|cmd|ps1|sql|bak|conf|config|ini|log|htaccess|htpasswd|env)(?:\.|$) - [R=404,L,NC]
+    RewriteRule ^_legacy/(?:.*/)?\.[^/]+$ - [R=404,L,NC]
     RewriteRule ^(?:downloads/files(?:/.*)?|downloads/files2(?:/.*)?|images(?:/.*)?|pdf(?:/.*)?|cv_bank(?:/.*)?|(?:med|dent|pharm|info|petrol|admin|research|hospital|dent_clinic|alumni|clubs)/images(?:/.*)?)\.(?:php[0-9]?|phtml|phar|cgi|pl|py|sh|asp|aspx|jsp|exe|dll|com|bat|cmd|ps1|sql|bak|conf|config|ini|log)(?:\.|$) - [R=404,L,NC]
     RewriteRule ^(?:downloads/files|downloads/files2|images|pdf|cv_bank|(?:med|dent|pharm|info|petrol|admin|research|hospital|dent_clinic|alumni|clubs)/images)/(?:.*\/)?\.[^/]+$ - [R=404,L,NC]
+
+    # Legacy static file continuity.
+    # Old media stays in the old document root and is exposed read-only under
+    # _legacy/. These are INTERNAL rewrites, not redirects: an old file URL keeps
+    # its original address and answers 200, which is what must happen after
+    # cutover. The !-f guard means a same-named new-site file always wins.
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^downloads/(files2|files)/(.*)$ /_legacy/downloads/$1/$2 [L]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^images/(.*)$ /_legacy/images/$1 [L]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^cv_bank/(.*)$ /_legacy/cv_bank/$1 [L]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^(med|dent|pharm|info|petrol|admin|research|hospital|dent_clinic|alumni|clubs)/images/(.*)$ /_legacy/$1/images/$2 [L]
+
+    # A literal /index.php request is a legacy router URL, not a request for the
+    # front controller. Route it through app.php so REQUEST_URI stays /index.php
+    # and the continuity middleware sees the real path.
+    RewriteRule ^index\.php$ app.php [L,QSA]
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
@@ -25,5 +58,5 @@
     # Send Requests To Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteRule ^ index.php [L]
+    RewriteRule ^ app.php [L]
 </IfModule>

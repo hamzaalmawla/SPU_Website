@@ -29,8 +29,14 @@ Route::get('/', BrowserLocaleRedirectController::class)->name('root');
 Route::get('/sitemap.xml', [SitemapController::class, 'sitemap'])->name('sitemap');
 Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
 
+// Unprefixed reference paths negotiate a locale and redirect to /{locale}/...
+// The leading lookahead keeps legacy URLs out of this route: paths such as
+// /research/index.php?dir=items&page=show are old-site router URLs, and if they
+// matched here they would 302 to /ar/research/index.php — a redirect that lands
+// on a 404. They must fall through to a real 404 so RedirectContinuityMiddleware
+// logs them into unresolved_legacy_requests for triage instead.
 Route::get('/{referencePath}', BrowserLocaleRedirectController::class)
-    ->where('referencePath', '(?:about|admissions|research|campus-life|e-services|news|contact|facilities|projects|virtual-tour)(?:/.*)?')
+    ->where('referencePath', '(?!.*\.php$)(?:about|admissions|research|campus-life|e-services|news|contact|facilities|projects|virtual-tour)(?:/.*)?')
     ->name('reference.locale');
 
 Route::prefix('{locale}')
