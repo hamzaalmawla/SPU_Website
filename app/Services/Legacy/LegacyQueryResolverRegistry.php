@@ -12,6 +12,7 @@ use App\Services\Legacy\QueryResolvers\LegacyCategoryRouteQueryResolver;
 use App\Services\Legacy\QueryResolvers\LegacyFunctionalRouteQueryResolver;
 use App\Services\Legacy\QueryResolvers\LegacyNewsQueryResolver;
 use App\Services\Legacy\QueryResolvers\LegacyResearchQueryResolver;
+use App\Services\Legacy\QueryResolvers\LegacySubsiteContentQueryResolver;
 use App\Services\Legacy\QueryResolvers\LegacySubsiteHomeQueryResolver;
 use App\Services\Legacy\QueryResolvers\LegacyUnsupportedLanguageQueryResolver;
 
@@ -22,6 +23,8 @@ final class LegacyQueryResolverRegistry implements LegacyQueryResolverRegistryIn
 
     private readonly LegacyUnsupportedLanguageQueryResolver $unsupportedLanguageResolver;
 
+    private readonly LegacySubsiteContentQueryResolver $subsiteContentResolver;
+
     public function __construct(
         LegacyNewsQueryResolver $newsResolver,
         LegacyCategoryRouteQueryResolver $categoryRouteResolver,
@@ -29,9 +32,14 @@ final class LegacyQueryResolverRegistry implements LegacyQueryResolverRegistryIn
         LegacySubsiteHomeQueryResolver $subsiteHomeResolver,
         LegacyUnsupportedLanguageQueryResolver $unsupportedLanguageResolver,
         LegacyResearchQueryResolver $researchResolver,
+        LegacySubsiteContentQueryResolver $subsiteContentResolver,
     ) {
         $this->unsupportedLanguageResolver = $unsupportedLanguageResolver;
-        $this->resolvers = [$subsiteHomeResolver, $functionalRouteResolver, $categoryRouteResolver, $newsResolver, $researchResolver];
+        $this->subsiteContentResolver = $subsiteContentResolver;
+        // Order matters: precise, per-record resolvers run first. The subsite
+        // content resolver is last because it is a section-level equivalent and
+        // must never pre-empt a resolver that can name the exact record.
+        $this->resolvers = [$subsiteHomeResolver, $functionalRouteResolver, $categoryRouteResolver, $newsResolver, $researchResolver, $subsiteContentResolver];
     }
 
     public function resolve(NormalizedLegacyUrlDTO $url): ?LegacyQueryResolutionDTO
@@ -45,7 +53,14 @@ final class LegacyQueryResolverRegistry implements LegacyQueryResolverRegistryIn
         }
 
         if ($this->isPrivateMembersArchive($url) && ! $this->isPublicResearchRequest($url)) {
-            return null;
+            // The private members archive must never resolve to a specific
+            // imported record. The URL can still reach the public section that
+            // replaced it, so only the section-level resolver is offered the
+            // request - it points at pages that are already public and reveals
+            // nothing about the archived records themselves.
+            return $this->subsiteContentResolver->canResolve($url)
+                ? $this->subsiteContentResolver->resolve($url)
+                : null;
         }
 
         foreach ($this->resolvers as $resolver) {

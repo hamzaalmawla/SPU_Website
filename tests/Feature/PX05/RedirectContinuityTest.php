@@ -147,12 +147,21 @@ class RedirectContinuityTest extends TestCase
         $response->assertNotFound();
     }
 
-    public function test_legacy_public_admin_index_is_logged_but_admin_login_still_skips(): void
+    public function test_legacy_public_admin_index_resolves_to_the_faculty_but_admin_login_still_skips(): void
     {
-        $this->get('/admin/index.php?page=list&dir=items&service=73&lang=1');
+        // service=73 is the Business faculty subsite (tens digit 7) publishing
+        // faculty news (units digit 3), so it resolves to that faculty's page.
+        // It must never be treated as the new Laravel /admin panel.
+        $this->get('/admin/index.php?page=list&dir=items&service=73&lang=1')
+            ->assertRedirect('/ar/facilities/business-administration')
+            ->assertStatus(301);
+
+        // A service that does not belong to the admin subsite's decade is a
+        // mismatch and stays unresolved for triage.
+        $this->get('/admin/index.php?page=list&dir=items&service=3&lang=1')
+            ->assertNotFound();
 
         $this->assertDatabaseHas('unresolved_legacy_requests', [
-            'handler' => 'admin:items:list',
             'subsite' => 'admin',
             'old_site_id' => 7,
         ]);

@@ -52,8 +52,7 @@ final class LegacyCategoryRouteQueryResolver implements LegacyQueryModuleResolve
 
     public function canResolve(NormalizedLegacyUrlDTO $url): bool
     {
-        $sourceId = $this->sourceId($url);
-        $mapping = $sourceId !== null ? (self::ROUTES[$sourceId] ?? null) : null;
+        $mapping = $this->mapping($url);
 
         return $url->requestType === 'legacy_router'
             && $url->subsite->key === 'root'
@@ -63,6 +62,35 @@ final class LegacyCategoryRouteQueryResolver implements LegacyQueryModuleResolve
             && (int) ($url->service ?? 0) === $mapping['service'];
     }
 
+    /**
+     * Reviewed hand-mapped routes win; the generated allow-list in
+     * config/legacy_category_routes.php fills in the rest.
+     *
+     * That file lists only ids that were visible, non-link rows with a real title
+     * on the old site, so an unknown, hidden or retired cat_id resolves to
+     * nothing here and still returns a real 404.
+     *
+     * @return array{service: int, path: string}|null
+     */
+    private function mapping(NormalizedLegacyUrlDTO $url): ?array
+    {
+        $sourceId = $this->sourceId($url);
+
+        if ($sourceId === null) {
+            return null;
+        }
+
+        if (isset(self::ROUTES[$sourceId])) {
+            return self::ROUTES[$sourceId];
+        }
+
+        /** @var array<int, array{service: int, path: string}> $generated */
+        $generated = config('legacy_category_routes', []);
+        $entry = $generated[$sourceId] ?? null;
+
+        return is_array($entry) && isset($entry['service'], $entry['path']) ? $entry : null;
+    }
+
     public function resolve(NormalizedLegacyUrlDTO $url): ?LegacyQueryResolutionDTO
     {
         if (! $this->canResolve($url)) {
@@ -70,7 +98,9 @@ final class LegacyCategoryRouteQueryResolver implements LegacyQueryModuleResolve
         }
 
         $sourceId = $this->sourceId($url);
-        if ($sourceId === null) {
+        $mapping = $this->mapping($url);
+
+        if ($sourceId === null || $mapping === null) {
             return null;
         }
 
@@ -78,7 +108,7 @@ final class LegacyCategoryRouteQueryResolver implements LegacyQueryModuleResolve
             module: 'legacy_category_route',
             sourceTable: 'jx_categories',
             sourceId: $sourceId,
-            targetUrl: '/'.$url->language->locale.self::ROUTES[$sourceId]['path'],
+            targetUrl: '/'.$url->language->locale.$mapping['path'],
             statusCode: 301,
             confidence: 'high',
             notes: 'Resolved reviewed root navigation category by exact source ID, service, bilingual title, and legacy destination evidence.',

@@ -50,7 +50,14 @@ final class ContinuityService implements ContinuityServiceInterface
         }
 
         if ($this->isPrivateMembersArchive($normalizedPath, $queryString)) {
-            return null;
+            // The old /members/ archive stays private: it must never resolve to an
+            // imported staff record, and LegacyQueryResolverRegistry enforces that
+            // by offering these URLs only to the section-level resolver. What the
+            // URL may still do is reach the public section that replaced it — the
+            // staff directory or the publications index — both already public.
+            // Returning a blanket null here would send ~3,400 old URLs to a 404
+            // for a privacy reason that the resolver layer already handles.
+            return $this->legacyQueryRedirectResolver->resolve($normalizedPath, $queryString);
         }
 
         $referenceAlias = $this->resolveReferenceHtmlAlias($normalizedPath, $queryString, $preferredLocale);

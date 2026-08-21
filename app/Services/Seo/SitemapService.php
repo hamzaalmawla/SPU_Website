@@ -87,6 +87,7 @@ final class SitemapService implements SitemapServiceInterface
         $this->appendEServicesEntries($entries, $baseUrl);
         $this->appendFacultyResearchEntries($entries, $baseUrl);
         $this->appendResearchCatalogEntries($entries, $baseUrl);
+        $this->appendResearchPublicationEntries($entries, $baseUrl);
         $this->appendCmsRouteEntries($entries, $baseUrl);
         $this->appendNewsArticleEntries($entries, $baseUrl);
 
@@ -247,6 +248,75 @@ final class SitemapService implements SitemapServiceInterface
                         alternates: $alternates,
                     ));
                 }
+            }
+        }
+    }
+
+    /**
+     * Every publication slug for a locale, walking the archive's pagination.
+     *
+     * The listing returns six items a page, so reading only the first page would
+     * put six of several hundred publications in the sitemap.
+     *
+     * @return array<int, string>
+     */
+    private function publicationSlugs(string $locale): array
+    {
+        $slugs = [];
+        $page = 1;
+        $maxPages = 500; // hard stop; the archive is a few dozen pages
+
+        do {
+            $data = $this->researchPageService->publications($locale, ['page' => $page])->data;
+
+            foreach ($data['items'] ?? [] as $item) {
+                if (is_array($item) && is_string($item['slug'] ?? null) && $item['slug'] !== '') {
+                    $slugs[$item['slug']] = true;
+                }
+            }
+
+            $totalPages = (int) ($data['pagination']['total_pages'] ?? 1);
+            $page++;
+        } while ($page <= $totalPages && $page <= $maxPages);
+
+        return array_keys($slugs);
+    }
+
+    /**
+     * Research publication detail pages.
+     *
+     * appendResearchCatalogEntries covers centers, projects and themes, but the
+     * publications archive itself was left out. With the legacy publications
+     * migrated, that is several hundred real pages a search engine could not
+     * discover from the sitemap.
+     *
+     * @param Collection<int, SitemapEntryDTO> $entries
+     */
+    private function appendResearchPublicationEntries(Collection $entries, string $baseUrl): void
+    {
+        $slugsByLocale = collect(['ar', 'en'])->mapWithKeys(fn (string $locale): array => [
+            $locale => $this->publicationSlugs($locale),
+        ]);
+
+        // Only list a slug where both locales resolve, so every entry and its
+        // hreflang alternate point at a page that actually renders.
+        $slugs = array_values(array_intersect(...array_values($slugsByLocale->all())));
+
+        foreach ($slugs as $slug) {
+            $path = '/research/publications/'.$slug;
+            $alternates = collect(['ar', 'en'])->map(fn (string $locale): array => [
+                'locale' => $locale,
+                'url' => $baseUrl.'/'.$locale.$path,
+            ])->all();
+
+            foreach (['ar', 'en'] as $locale) {
+                $entries->push(new SitemapEntryDTO(
+                    loc: $baseUrl.'/'.$locale.$path,
+                    lastmod: now()->toW3cString(),
+                    changefreq: null,
+                    priority: null,
+                    alternates: $alternates,
+                ));
             }
         }
     }

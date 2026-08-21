@@ -405,7 +405,7 @@ final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
                 'legacy_source_id' => $sourceId,
                 'legacy_service_type' => $serviceType,
                 'legacy_url' => $this->stringValue($row, 'url'),
-                'legacy_cover_path' => $this->stringValue($row, 'photo'),
+                'legacy_cover_path' => $this->legacyPhotoPath($this->stringValue($row, 'photo')),
             ]);
 
             foreach ($translations as $locale => $translation) {
@@ -477,7 +477,7 @@ final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
                 ['kind' => 'file', 'column' => 'ar_file'],
                 ['kind' => 'file', 'column' => 'en_file'],
             ] as $index => $definition) {
-                $path = $this->stringValue($row, $definition['column']);
+                $path = $this->legacyPhotoPath($this->stringValue($row, $definition['column']));
 
                 if ($itemId === null || $path === null) {
                     continue;
@@ -637,5 +637,30 @@ final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
     private function countSkip(array &$counts, string $reason): void
     {
         $counts[$reason] = ($counts[$reason] ?? 0) + 1;
+    }
+
+    /**
+     * Turn a legacy image column into a path the media resolver can use.
+     *
+     * The old CMS stored these as a bare filename and prefixed the download
+     * directory at render time. legacy_cover_path is consumed as a path, so a
+     * bare filename would resolve to "/<file>" at the web root and 404.
+     */
+    private function legacyPhotoPath(?string $value): ?string
+    {
+        $value = is_string($value) ? trim(str_replace('\\', '/', $value)) : '';
+
+        if ($value === '') {
+            return null;
+        }
+
+        // Already absolute, already a URL, or already carries a directory.
+        if (str_starts_with($value, '/') || preg_match('#^(https?:)?//#i', $value) === 1 || str_contains($value, '/')) {
+            return $value;
+        }
+
+        $directory = trim((string) config('legacy_media.photo_directory', 'downloads/files'), '/');
+
+        return $directory === '' ? $value : $directory.'/'.$value;
     }
 }
