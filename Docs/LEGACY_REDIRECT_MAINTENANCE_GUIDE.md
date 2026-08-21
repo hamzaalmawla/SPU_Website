@@ -11,6 +11,10 @@ one-line "cleanup".
 
 Last verified: 2026-08-21 · 97.3% of a 2,000-URL random sample resolving · 0 broken redirects.
 
+> **Before cutover, read `Docs/V2_PRE_CUTOVER_ACTIONS.md`.** It lists the content
+> decisions and the three server changes that need WHM/root — including placeholder
+> research content that is currently public.
+
 ---
 
 ## 1. The five invariants
