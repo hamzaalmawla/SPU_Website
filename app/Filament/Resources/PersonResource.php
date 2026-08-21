@@ -97,7 +97,7 @@ class PersonResource extends Resource
                 Toggle::make('is_enabled')->label('Visible to editors')->default(true),
             ])->columns(2),
             Section::make('Placements (cards)')->schema([
-                Repeater::make('appointments')->relationship()->schema([
+                Repeater::make('appointments')->schema([
                     Select::make('type')->required()->options([
                         'rector' => 'Rector',
                         'vice_president' => 'Vice President',

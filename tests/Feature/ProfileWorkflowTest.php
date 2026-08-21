@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Content\ProfileAdminServiceInterface;
+use App\Contracts\Page\AboutPageServiceInterface;
 use App\Contracts\Page\ProfilePageServiceInterface;
 use App\DTOs\Content\EducationDataDTO;
 use App\DTOs\Content\FacultyMemberDataDTO;
@@ -56,13 +57,117 @@ final class ProfileWorkflowTest extends TestCase
         $this->get('/en/about/profile/person/profile-person')->assertNotFound();
         $this->publishPerson((int) $person->id);
 
-        $this->get('/en/about/profile/person/profile-person')
+        $this->get('/en/about/profile/profile-person')
             ->assertOk()
             ->assertSee('English Profile')
             ->assertSee('PhD');
 
         $this->get('/en/about/profile?slug=profile-person')
-            ->assertRedirect('/en/about/profile/person/profile-person');
+            ->assertRedirect('/en/about/profile/profile-person');
+    }
+
+    public function test_unified_person_appointments_and_metadata_publish_through_cms(): void
+    {
+        $person = $this->adminService->createPerson($this->personData('unified-person'), (int) $this->admin->getKey());
+        $stored = app(AboutEntityCmsServiceInterface::class)->getStoredData('entity.person.'.$person->id);
+        $this->assertNotNull($stored);
+
+        $faculty = Faculty::query()->where('public_slug', 'medicine')->firstOrFail();
+        $payload = $stored->payload;
+        $payload['category'] = null;
+        $payload['appointments'] = [[
+            'type' => 'dean',
+            'faculty_id' => $faculty->id,
+            'department_id' => null,
+            'council_id' => null,
+            'role_override' => 'Dean Override',
+            'sort_order' => 0,
+            'is_enabled' => true,
+        ]];
+        $payload['orcid_url'] = 'https://orcid.org/0000-0000-0000-0001';
+        $payload['scholar_url'] = 'https://scholar.google.com/citations?user=unified';
+
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $workflow->saveDraft('entity.person.'.$person->id, $payload, (int) $this->admin->getKey());
+        $this->assertTrue($workflow->publish('entity.person.'.$person->id, (int) $this->admin->getKey()));
+
+        $this->assertDatabaseHas('persons', [
+            'id' => $person->id,
+            'category' => null,
+            'orcid_url' => 'https://orcid.org/0000-0000-0000-0001',
+        ]);
+        $this->assertDatabaseHas('person_appointments', [
+            'person_id' => $person->id,
+            'type' => 'dean',
+            'faculty_id' => $faculty->id,
+        ]);
+        $this->assertDatabaseHas('person_appointment_translations', [
+            'locale' => 'en',
+            'role_override' => 'Dean Override',
+        ]);
+
+        $leadership = app(AboutPageServiceInterface::class)->getLeadershipProfiles('en');
+        $published = $leadership->firstWhere('slug', 'unified-person');
+        $this->assertNotNull($published);
+        $this->assertSame('Dean Override', $published->role);
+    }
+
+    public function test_unified_person_dry_run_does_not_create_person_records(): void
+    {
+        $faculty = Faculty::query()->where('public_slug', 'medicine')->firstOrFail();
+        $member = $this->adminService->createFacultyMember(
+            $this->facultyMemberData('dry-run-member', (int) $faculty->getKey()),
+            (int) $this->admin->getKey(),
+        );
+
+        $this->artisan('app:sync-unified-persons', ['--dry-run' => true])
+            ->assertSuccessful();
+
+        $this->assertDatabaseMissing('persons', ['slug' => 'dry-run-member']);
+        $this->assertNotNull($member->id);
+    }
+
+    public function test_unpublished_profile_publications_are_hidden(): void
+    {
+        $person = $this->adminService->createPerson($this->personData('publication-owner'), (int) $this->admin->getKey());
+        $this->publishPerson((int) $person->id);
+
+        foreach ([null, now()->addYear()] as $publishedAt) {
+            $publication = ResearchPublication::query()->create([
+                'person_id' => $person->id,
+                'published_at' => $publishedAt,
+                'is_enabled' => true,
+            ]);
+            ResearchPublicationTranslation::query()->create([
+                'research_publication_id' => $publication->id,
+                'locale' => 'en',
+                'title' => 'Hidden Profile Publication',
+            ]);
+        }
+
+        $this->get('/en/about/profile/publication-owner')
+            ->assertOk()
+            ->assertDontSee('Hidden Profile Publication');
+    }
+
+    public function test_database_researcher_publications_link_to_detail_pages(): void
+    {
+        $person = $this->adminService->createPerson($this->personData('research-profile'), (int) $this->admin->getKey());
+        $this->publishPerson((int) $person->id);
+        $publication = ResearchPublication::query()->create([
+            'person_id' => $person->id,
+            'published_at' => '2024-01-01',
+            'is_enabled' => true,
+        ]);
+        ResearchPublicationTranslation::query()->create([
+            'research_publication_id' => $publication->id,
+            'locale' => 'en',
+            'title' => 'Profile Research Publication',
+        ]);
+
+        $this->get('/en/research/researchers/research-profile')
+            ->assertOk()
+            ->assertSee('/en/research/publications/profile-research-publication-'.$publication->id, false);
     }
 
     public function test_shared_public_shell_assets_are_present(): void
@@ -89,10 +194,14 @@ final class ProfileWorkflowTest extends TestCase
         $this->publishFacultyMember((int) $member->id);
 
         $this->get('/en/about/profile/person/shared-profile')
+            ->assertRedirect('/en/about/profile/shared-profile?source=person');
+        $this->get('/en/about/profile/shared-profile?source=person')
             ->assertOk()
             ->assertSee('English Profile');
 
         $this->get('/en/about/profile/faculty-member/shared-profile')
+            ->assertRedirect('/en/about/profile/shared-profile?source=faculty-member');
+        $this->get('/en/about/profile/shared-profile?source=faculty-member')
             ->assertOk()
             ->assertSee('English Faculty Member');
     }
@@ -110,7 +219,11 @@ final class ProfileWorkflowTest extends TestCase
         $this->get('/en/about/directorates/staff?faculty=medicine')
             ->assertOk()
             ->assertSee('English Faculty Member')
-            ->assertSee('/en/about/profile/faculty-member/directory-member', false);
+            ->assertSee('/en/about/profile/directory-member', false);
+
+        $this->get('/sitemap.xml')
+            ->assertOk()
+            ->assertSee('/en/about/profile/directory-member', false);
     }
 
     public function test_missing_profile_and_education_translations_are_handled_without_errors(): void
@@ -123,7 +236,7 @@ final class ProfileWorkflowTest extends TestCase
         ]);
         $person->educations()->create(['sort_order' => 0, 'is_enabled' => true]);
 
-        $this->get('/en/about/profile/person/missing-translations')->assertNotFound();
+        $this->get('/en/about/profile/missing-translations')->assertNotFound();
     }
 
     public function test_legacy_specialization_shapes_are_normalized_before_rendering(): void
@@ -139,7 +252,7 @@ final class ProfileWorkflowTest extends TestCase
 
         $this->assertNotNull($profile);
         $this->assertSame(['Applied AI', 'Digital Health'], $profile->specializations);
-        $this->get('/en/about/profile/faculty-member/specialist')
+        $this->get('/en/about/profile/specialist')
             ->assertOk()
             ->assertSee('Applied AI');
     }

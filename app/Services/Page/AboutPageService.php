@@ -219,7 +219,13 @@ final class AboutPageService implements AboutPageServiceInterface
 
         $people = Person::query()
             ->public()
-            ->whereHas('appointments', fn ($q) => $q->enabled()->whereIn('type', ['rector', 'vice_president', 'dean', 'council', 'director', 'faculty_member']))
+            ->where(function ($query): void {
+                $query
+                    ->whereIn('category', ['rector', 'vice_president', 'dean', 'council', 'director'])
+                    ->orWhereHas('appointments', fn ($appointmentQuery) => $appointmentQuery
+                        ->enabled()
+                        ->whereIn('type', ['rector', 'vice_president', 'dean', 'council', 'director', 'faculty_member']));
+            })
             ->with(['translations', 'appointments' => fn ($q) => $q->enabled()->with(['translations', 'faculty']),
                 'photoMedia',
             ])
@@ -267,6 +273,44 @@ final class AboutPageService implements AboutPageServiceInterface
             ->filter(fn (?StaffDirectoryItemDTO $item): bool => $item !== null)
             ->values();
 
+        $facultyMembers = FacultyMember::query()
+            ->public()
+            ->with(['translations', 'faculty.translations', 'photoMedia'])
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+        $legacyMediaByTargetId = $this->legacyMediaByTargetId('faculty_members', $facultyMembers->pluck('id')->all());
+        $facultyMemberItems = $facultyMembers
+            ->map(function (FacultyMember $member) use ($locale, $facultyLabels, $legacyMediaByTargetId): ?StaffDirectoryItemDTO {
+                $translation = $this->facultyMemberTranslation($member, $locale);
+                if (! $translation instanceof FacultyMemberTranslation) {
+                    return null;
+                }
+
+                $facultySlug = $member->faculty instanceof Faculty
+                    ? (string) ($member->faculty->faculty_scope_slug ?: $member->faculty->public_slug ?: $member->faculty->slug)
+                    : null;
+                $legacyPhoto = $member->legacy_photo_path
+                    ?? ($legacyMediaByTargetId[(int) $member->getKey()]['legacy_photo'] ?? null);
+                $image = $member->photoMedia instanceof MediaAsset
+                    ? MediaUrlResolver::resolveImage($member->photoMedia->webp_path, $member->photoMedia->path, $member->photoMedia->disk)
+                    : MediaUrlResolver::resolveLegacy($legacyPhoto);
+
+                return new StaffDirectoryItemDTO(
+                    sourceType: 'faculty-member',
+                    slug: (string) $member->slug,
+                    name: (string) $translation->full_name,
+                    role: (string) ($translation->position ?: $translation->title ?: ''),
+                    image: $image,
+                    facultySlug: $facultySlug,
+                    facultyName: $facultySlug !== null ? ($facultyLabels[$facultySlug] ?? null) : null,
+                );
+            })
+            ->filter(fn (?StaffDirectoryItemDTO $item): bool => $item !== null)
+            ->reject(fn (StaffDirectoryItemDTO $item): bool => $allItems->contains('slug', $item->slug))
+            ->values();
+        $allItems = $allItems->concat($facultyMemberItems)->values();
+
         $availableFacultySlugs = $allItems
             ->pluck('facultySlug')
             ->filter(fn (mixed $slug): bool => is_string($slug) && $slug !== '')
@@ -302,7 +346,13 @@ final class AboutPageService implements AboutPageServiceInterface
     {
         $people = Person::query()
             ->public()
-            ->whereHas('appointments', fn ($q) => $q->enabled()->whereIn('type', ['rector', 'vice_president', 'dean', 'council', 'director']))
+            ->where(function ($query): void {
+                $query
+                    ->whereIn('category', ['rector', 'vice_president', 'dean', 'council', 'director'])
+                    ->orWhereHas('appointments', fn ($appointmentQuery) => $appointmentQuery
+                        ->enabled()
+                        ->whereIn('type', ['rector', 'vice_president', 'dean', 'council', 'director']));
+            })
             ->with(['translations', 'appointments' => fn ($q) => $q->enabled()->with('translations')])
             ->orderBy('sort_order')
             ->get();
@@ -444,11 +494,21 @@ final class AboutPageService implements AboutPageServiceInterface
             }
         }
 
+        $role = (string) $translation->role;
+        if ($apt !== null) {
+            $appointmentTranslation = $apt->translations->firstWhere('locale', $locale)
+                ?? $apt->translations->firstWhere('locale', 'ar')
+                ?? $apt->translations->firstWhere('locale', 'en');
+            if (is_string($appointmentTranslation?->role_override) && $appointmentTranslation->role_override !== '') {
+                $role = $appointmentTranslation->role_override;
+            }
+        }
+
         return new PersonDTO(
             id: (int) $person->getKey(),
             slug: (string) $person->slug,
             name: (string) $translation->name,
-            role: (string) $translation->role,
+            role: $role,
             category: is_string($category) && $category !== '' ? $category : null,
             facultySlug: is_string($facultySlug) && $facultySlug !== '' ? $facultySlug : null,
             bio: $translation->bio,

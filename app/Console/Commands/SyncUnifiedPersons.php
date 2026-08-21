@@ -54,9 +54,15 @@ class SyncUnifiedPersons extends Command
         $stats = ['created' => 0, 'updated' => 0, 'appointments' => 0, 'publications' => 0, 'councils' => 0, 'educations' => 0];
 
         foreach ($members as $member) {
-            $person = $this->resolvePerson($member, $dryRun);
+            $person = $this->resolvePerson($member, ! $dryRun);
 
             if (! $person instanceof Person) {
+                if ($dryRun) {
+                    $stats['created']++;
+                    $this->line('  → Would create person (' . $member->slug . ')');
+                    continue;
+                }
+
                 $this->error('Could not resolve person for faculty_member slug=' . $member->slug);
                 continue;
             }
@@ -102,7 +108,7 @@ class SyncUnifiedPersons extends Command
         return self::SUCCESS;
     }
 
-    private function resolvePerson(FacultyMember $member): ?Person
+    private function resolvePerson(FacultyMember $member, bool $createIfMissing = true): ?Person
     {
         if ($member->slug) {
             $existing = Person::query()->where('slug', $member->slug)->first();
@@ -131,6 +137,10 @@ class SyncUnifiedPersons extends Command
             if ($existing instanceof Person) {
                 return $existing;
             }
+        }
+
+        if (! $createIfMissing) {
+            return null;
         }
 
         return Person::create([

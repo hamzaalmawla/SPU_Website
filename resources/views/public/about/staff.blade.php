@@ -41,7 +41,7 @@
                 @if ($directory->items->isNotEmpty())
                     <div class="staff-grid reveal reveal-up reveal-delay-1">
                         @foreach ($directory->items as $person)
-                            <a href="{{ route('public.about.profile', ['locale' => $locale, 'source' => $person->sourceType, 'slug' => $person->slug]) }}" class="staff-card reveal reveal-up block transition hover:-translate-y-1 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-blue">
+                            <a href="{{ route('public.about.profile', ['locale' => $locale, 'slug' => $person->slug]) }}" class="staff-card reveal reveal-up block transition hover:-translate-y-1 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-blue">
                             <div class="staff-card-media">@if ($person->image)<img src="{{ $person->image }}" alt="{{ $person->name }}" loading="lazy">@else<div class="flex h-full items-center justify-center bg-slate-100"><img src="/images/icon-user-graduate-outline.svg" alt="" class="h-16 w-16 opacity-30" aria-hidden="true"></div>@endif</div>
                             <div class="staff-card-body">
                                 <h2 class="staff-card-name">{{ $person->name }}</h2>

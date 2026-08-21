@@ -2205,7 +2205,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
     private function databaseResearcherProfile(string $locale, string $slug): ?array
     {
         $dto = $this->profilePageService->getProfile($locale, 'person', $slug)
-            ?? $this->profilePageService->getProfile($locale, 'faculty_member', $slug);
+            ?? $this->profilePageService->getProfile($locale, 'faculty-member', $slug);
 
         if (! $dto instanceof ProfilePageDTO) {
             return null;
@@ -2241,7 +2241,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
                     'year' => $pub['year'] ?? '',
                     'journal' => $pub['publisher'] ?? '',
                     'links' => [
-                        'local' => '#',
+                        'local' => ! empty($pub['slug']) ? '/research/publications/'.$pub['slug'] : '#',
                         'scholar' => $pub['externalUrl'] ?? '',
                     ],
                 ],

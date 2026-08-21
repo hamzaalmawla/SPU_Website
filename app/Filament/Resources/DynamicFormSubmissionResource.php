@@ -138,12 +138,18 @@ class DynamicFormSubmissionResource extends Resource
                 TextColumn::make('context_title')
                     ->label(__('form_submissions.columns.context_title'))
                     ->state(fn (DynamicFormSubmission $record): ?string => self::contextTitle($record))
-                    ->searchable(query: fn (Builder $query, string $search): Builder => $query->where(
-                        fn (Builder $q): Builder => $q
-                            ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(payload_json, '$.\"_context\".\"event_title\"')) LIKE ?", ["%{$search}%"])
-                            ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(payload_json, '$.\"_context\".\"job_title\"')) LIKE ?", ["%{$search}%"])
-                            ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(payload_json, '$.\"subject\"')) LIKE ?", ["%{$search}%"]),
-                    ))
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        $extract = $query->getModel()->getConnection()->getDriverName() === 'sqlite'
+                            ? static fn (string $path): string => "json_extract(payload_json, '{$path}')"
+                            : static fn (string $path): string => "JSON_UNQUOTE(JSON_EXTRACT(payload_json, '{$path}'))";
+                        $term = "%{$search}%";
+
+                        return $query->where(function (Builder $q) use ($extract, $term): void {
+                            $q->whereRaw($extract('$._context.event_title').' LIKE ?', [$term])
+                                ->orWhereRaw($extract('$._context.job_title').' LIKE ?', [$term])
+                                ->orWhereRaw($extract('$.subject').' LIKE ?', [$term]);
+                        });
+                    })
                     ->wrap()
                     ->placeholder(__('form_submissions.values.no_context_title')),
                 TextColumn::make('request_target')

@@ -24,7 +24,11 @@ return new class extends Migration
 
         Schema::table('news_article_translations', function (Blueprint $table): void {
             $table->index(['locale', 'title'], 'idx_news_article_translations_locale_title');
-            $table->index(['locale', DB::raw('excerpt(255)')], 'idx_news_article_translations_locale_excerpt');
+            if (DB::connection()->getDriverName() === 'mysql') {
+                $table->index(['locale', DB::raw('excerpt(255)')], 'idx_news_article_translations_locale_excerpt');
+            } else {
+                $table->index(['locale'], 'idx_news_article_translations_locale_excerpt');
+            }
         });
 
         Schema::table('news_category_translations', function (Blueprint $table): void {

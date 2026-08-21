@@ -73,6 +73,8 @@ final class AboutEntityCmsWorkflowTest extends TestCase
         $this->assertSame('Published Person', $person->translations->firstWhere('locale', 'en')?->name);
         $this->assertSame(1, Person::query()->public()->count());
         $this->get('/en/about/profile/person/workflow-person')
+            ->assertRedirect('/en/about/profile/workflow-person');
+        $this->get('/en/about/profile/workflow-person')
             ->assertOk()
             ->assertSee('Published Person');
 
@@ -85,7 +87,7 @@ final class AboutEntityCmsWorkflowTest extends TestCase
 
         $person->refresh()->load('translations');
         $this->assertSame('Published Person', $person->translations->firstWhere('locale', 'en')?->name);
-        $this->get('/en/about/profile/person/workflow-person')
+        $this->get('/en/about/profile/workflow-person')
             ->assertOk()
             ->assertSee('Published Person')
             ->assertDontSee('Protected Draft Person');
@@ -125,6 +127,8 @@ final class AboutEntityCmsWorkflowTest extends TestCase
         $this->assertSame($prepared->payload['cv_media_id'], $member->cv_media_id);
         $this->assertSame('PhD', $member->educations->first()?->translations->firstWhere('locale', 'en')?->degree);
         $this->get('/en/about/profile/faculty-member/workflow-faculty-member')
+            ->assertRedirect('/en/about/profile/workflow-faculty-member');
+        $this->get('/en/about/profile/workflow-faculty-member')
             ->assertOk()
             ->assertSee('Published Faculty Member')
             ->assertSee('PhD');
@@ -140,7 +144,7 @@ final class AboutEntityCmsWorkflowTest extends TestCase
         $this->workflow->saveDraft($targetKey, $updated->payload, (int) $this->editor->getKey());
 
         $this->assertSame('Published Faculty Member', $member->fresh()->translations->firstWhere('locale', 'en')?->full_name);
-        $this->get('/en/about/profile/faculty-member/workflow-faculty-member')
+        $this->get('/en/about/profile/workflow-faculty-member')
             ->assertOk()
             ->assertSee('Published Faculty Member')
             ->assertDontSee('Protected Faculty Draft');
@@ -257,14 +261,14 @@ final class AboutEntityCmsWorkflowTest extends TestCase
         $this->workflow->publish($targetKey, (int) $this->editor->getKey());
 
         $invalid = $prepared->payload;
-        unset($invalid['category']);
+        unset($invalid['translations']['en']['name']);
         $this->workflow->saveDraft($targetKey, $invalid, (int) $this->editor->getKey());
 
         try {
             $this->workflow->schedule($targetKey, now()->addMinute(), (int) $this->editor->getKey());
             $this->fail('Invalid entity content was scheduled.');
         } catch (ValidationException $exception) {
-            $this->assertArrayHasKey('category', $exception->errors());
+            $this->assertArrayHasKey('translations.en.name', $exception->errors());
         }
 
         $replacement = $this->entities->prepareDraft(

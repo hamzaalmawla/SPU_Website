@@ -24,7 +24,6 @@ class PersonAppointment extends Model
         'faculty_id',
         'department_id',
         'council_id',
-        'role_override',
         'sort_order',
         'is_enabled',
     ];

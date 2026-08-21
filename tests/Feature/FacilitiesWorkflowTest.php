@@ -1806,7 +1806,7 @@ final class FacilitiesWorkflowTest extends TestCase
             ->assertOk()
             ->assertSee('href="/storage/course-materials/verified.pdf"', false)
             ->assertDontSee('/storage/../private/unsafe.pdf', false)
-            ->assertDontSee('/en/about/profile/faculty-member/missing-profile', false)
+            ->assertDontSee('/en/about/profile/missing-profile', false)
             ->assertDontSee('href="#"', false);
     }
 
@@ -2020,7 +2020,7 @@ final class FacilitiesWorkflowTest extends TestCase
 
             $this->assertNotNull($page);
             $this->assertNotEmpty($page->latestResearch);
-            $this->assertSame('/'.$locale.'/about/profile/person/'.$profileSlug, $page->deanProfile?->path);
+            $this->assertSame('/'.$locale.'/about/profile/'.$profileSlug, $page->deanProfile?->path);
             $this->assertSame($title, $page->latestResearch[0]['title'] ?? null);
             $this->assertStringStartsWith('/'.$locale.'/research/publications/', (string) ($page->latestResearch[0]['url'] ?? ''));
 
@@ -2030,8 +2030,8 @@ final class FacilitiesWorkflowTest extends TestCase
                 ->assertSee('aria-labelledby="overview-latest-research-title"', false)
                 ->assertSee($title)
                 ->assertSee('/'.$locale.'/research/publications/'.($page->latestResearch[0]['slug'] ?? ''), false)
-                ->assertSee('/'.$locale.'/about/profile/person/'.$profileSlug, false)
-                ->assertDontSee('/'.$locale.'/about/profile/person/'.$facultySlug.'-dean', false)
+                ->assertSee('/'.$locale.'/about/profile/'.$profileSlug, false)
+                ->assertDontSee('/'.$locale.'/about/profile/'.$facultySlug.'-dean', false)
                 ->assertDontSee('SPU-'.strtoupper($facultySlug).'-', false)
                 ->assertSee('dir="'.($locale === 'ar' ? 'rtl' : 'ltr').'"', false);
         }
@@ -2080,8 +2080,8 @@ final class FacilitiesWorkflowTest extends TestCase
             foreach (['ar', 'en'] as $locale) {
                 $this->get('/'.$locale.'/facilities/'.$case['facultySlug'].'/overview')
                     ->assertOk()
-                    ->assertDontSee('/'.$locale.'/about/profile/person/'.$case['profileSlug'], false)
-                    ->assertDontSee('/'.$locale.'/about/profile/person/'.$case['facultySlug'].'-dean', false);
+                    ->assertDontSee('/'.$locale.'/about/profile/'.$case['profileSlug'], false)
+                    ->assertDontSee('/'.$locale.'/about/profile/'.$case['facultySlug'].'-dean', false);
             }
         }
     }

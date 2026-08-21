@@ -342,6 +342,9 @@ final class SitemapService implements SitemapServiceInterface
         foreach (Person::query()->public()->pluck('slug')->unique() as $slug) {
             $paths[] = '/about/profile/'.$slug;
         }
+        foreach (FacultyMember::query()->public()->pluck('slug')->unique() as $slug) {
+            $paths[] = '/about/profile/'.$slug;
+        }
 
         foreach (array_unique($paths) as $path) {
             $alternates = collect(['ar', 'en'])->map(fn (string $locale): array => [

@@ -32,6 +32,7 @@
         $technologiesLabel = $isAr ? 'التقنيات' : 'Technologies';
         $teamLabel = $isAr ? 'الفريق' : 'Team';
         $supervisorLabel = $isAr ? 'المشرف' : 'Supervisor';
+        $createdByLabel = $isAr ? 'أعده' : 'Created By';
         $galleryLabel = $isAr ? 'معرض المشروع' : 'Project Gallery';
         $relatedLabel = $isAr ? 'مشاريع ذات صلة' : 'Related Projects';
         $previousLabel = $isAr ? 'السابق' : 'Previous';
@@ -178,6 +179,19 @@
                                 <div>
                                     <p class="text-[13px] font-bold text-spu-blue">{{ $project['supervisor'] }}</p>
                                     <p class="text-[11px] text-slate-400">{{ $supervisorLabel }}</p>
+                                </div>
+                            </a>
+                        </div>
+                    @endif
+
+                    @if (! empty($project['createdBy']))
+                        <div class="rounded-[6px] border border-slate-200 bg-white p-6 shadow-sm">
+                            <h3 class="text-[13px] font-bold uppercase tracking-[0.04em] text-slate-400">{{ $createdByLabel }}</h3>
+                            <a href="/{{ $locale }}/facilities/{{ $page->facultySlug }}/alumni" class="mt-3 flex items-center gap-3 transition hover:opacity-80">
+                                <div class="flex h-10 w-10 items-center justify-center rounded-full text-[12px] font-bold text-white" style="background-color: {{ $accent }}">{{ $initials((string) $project['createdBy']) }}</div>
+                                <div>
+                                    <p class="text-[13px] font-bold text-spu-blue">{{ $project['createdBy'] }}</p>
+                                    <p class="text-[11px] text-slate-400">{{ $createdByLabel }}</p>
                                 </div>
                             </a>
                         </div>

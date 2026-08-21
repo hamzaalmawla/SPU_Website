@@ -36,6 +36,10 @@ final class MediaUrlResolver
             return null;
         }
 
+        if (! app()->bound('config')) {
+            return UrlSanitizer::sanitize($value, ['http', 'https'], true);
+        }
+
         if ($disk === 'legacy') {
             return self::resolveLegacy($value);
         }

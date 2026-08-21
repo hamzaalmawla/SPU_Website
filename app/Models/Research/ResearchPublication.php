@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models\Research;
 
+use App\Enums\PublicationStatus;
 use App\Models\Media\MediaAsset;
 use App\Models\Person\FacultyMember;
 use App\Models\Person\Person;
@@ -84,5 +85,45 @@ class ResearchPublication extends Model
     public function scopeEnabled(Builder $query): Builder
     {
         return $query->where('is_enabled', true);
+    }
+
+    public function scopePublic(Builder $query): Builder
+    {
+        return $query
+            ->enabled()
+            ->where(function (Builder $publicationQuery): void {
+                $publicationQuery
+                    ->where(function (Builder $legacyQuery): void {
+                        $legacyQuery
+                            ->where('legacy_source_table', 'jx_member_categories')
+                            ->where('extraction_status', 'published');
+                    })
+                    ->orWhere(function (Builder $nativeQuery): void {
+                        $nativeQuery
+                            ->whereNull('legacy_source_table')
+                            ->whereNotNull('published_at')
+                            ->whereDate('published_at', '<=', today());
+                    });
+            })
+            ->where(function (Builder $ownershipQuery): void {
+                $ownershipQuery
+                    ->where(function (Builder $legacyQuery): void {
+                        $legacyQuery
+                            ->where('legacy_source_table', 'jx_member_categories')
+                            ->where('extraction_status', 'published');
+                    })
+                    ->orWhere(function (Builder $nativeQuery): void {
+                        $nativeQuery
+                            ->whereNull('legacy_source_table')
+                            ->whereNull('faculty_member_id');
+                    })
+                    ->orWhereHas('facultyMember', function (Builder $memberQuery): void {
+                        $memberQuery
+                            ->where('is_enabled', true)
+                            ->where('publication_status', PublicationStatus::Published->value)
+                            ->whereNotNull('published_at')
+                            ->where('published_at', '<=', now());
+                    });
+            });
     }
 }

@@ -40,7 +40,7 @@
                             <blockquote class="staff-quote mt-8 max-w-xl text-[0.95rem] font-medium leading-[1.8] text-gray-600">
                                  {{ $rector->quote ?: $rectorQuote }}
                             </blockquote>
-                            <a href="{{ route('public.about.profile', ['locale' => $locale, 'source' => 'person', 'slug' => $rector->slug]) }}" class="mt-10 inline-flex items-center gap-3 text-xs font-black uppercase tracking-[0.14em] text-spu-blue transition hover:text-spu-red">
+                            <a href="{{ route('public.about.profile', ['locale' => $locale, 'slug' => $rector->slug]) }}" class="mt-10 inline-flex items-center gap-3 text-xs font-black uppercase tracking-[0.14em] text-spu-blue transition hover:text-spu-red">
                                 <span>{{ $locale === 'ar' ? 'اقرأ الملف الكامل' : 'Read Full Profile' }}</span>
                                 <img src="/images/icon-arrow-right-outline.svg" alt="" class="h-3 w-3 rtl:rotate-180" aria-hidden="true">
                             </a>
@@ -53,7 +53,7 @@
                          <div class="section-title-wrapper"><h2 class="section-title">{{ $vicePresidentsTitle }}</h2></div>
                         <div class="vp-grid">
                             @foreach ($vicePresidents as $person)
-                                <a href="{{ route('public.about.profile', ['locale' => $locale, 'source' => 'person', 'slug' => $person->slug]) }}" class="vp-card reveal reveal-up block transition hover:-translate-y-1 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-blue">
+                                <a href="{{ route('public.about.profile', ['locale' => $locale, 'slug' => $person->slug]) }}" class="vp-card reveal reveal-up block transition hover:-translate-y-1 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-blue">
                                     <div class="vp-card-media">@if ($person->image)<img src="{{ $person->image }}" alt="{{ $person->name }}">@else<div class="flex h-full items-center justify-center bg-slate-100"><img src="/images/icon-user-graduate-outline.svg" alt="" class="h-16 w-16 opacity-30" aria-hidden="true"></div>@endif</div>
                                     <div class="vp-card-body">
                                         <h3 class="mb-2 text-lg font-black leading-tight text-spu-blue">{{ $person->name }}</h3>
@@ -84,7 +84,7 @@
                         </button>
                         <div id="leadership-deans" class="deans-grid" aria-live="polite">
                             @foreach ($deans as $person)
-                                <a href="{{ route('public.about.profile', ['locale' => $locale, 'source' => 'person', 'slug' => $person->slug]) }}"
+                                <a href="{{ route('public.about.profile', ['locale' => $locale, 'slug' => $person->slug]) }}"
                                    class="dean-card reveal reveal-up block transition hover:-translate-y-1 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-blue"
                                    x-show="deanVisible({{ $loop->index }}, '{{ $person->facultySlug }}')"
                                    :inert="! deanVisible({{ $loop->index }}, '{{ $person->facultySlug }}')"

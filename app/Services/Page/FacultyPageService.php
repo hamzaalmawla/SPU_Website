@@ -1053,6 +1053,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
 
         return collect($personItems->values()->all())
             ->merge($facultyMemberItems->values()->all())
+            ->unique('slug')
             ->sortBy('sort_order')
             ->values()
             ->map(fn (array $item): array => [

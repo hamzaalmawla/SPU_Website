@@ -67,16 +67,35 @@ test('calendar selects the current day on init and stops autoplay', () => {
     const today = dayjs().format('YYYY-MM-DD');
     calendar.$el = root({
         events: JSON.stringify([
-            { id: 2, title: 'Later', startsAt: '2026-08-20' },
-            { id: 1, title: 'First', startsAt: '2026-08-10' },
+            { id: 2, title: 'Later', startsAt: dayjs(today).add(1, 'day').format('YYYY-MM-DD') },
+            { id: 1, title: 'Today', startsAt: today },
         ]),
     });
 
     calendar.init();
 
     assert.equal(calendar.selectedDate, today);
+    assert.equal(calendar.selectedEvent.title, 'Today');
     assert.equal(calendar.viewDate.format('YYYY-MM-DD'), dayjs().startOf('month').format('YYYY-MM-DD'));
     assert.equal(calendar.carouselInterval, null);
+});
+
+test('calendar falls forward to the next event when today is empty', () => {
+    installReducedMotionBrowser();
+    const calendar = createCalendarApp();
+    const nextEventDate = dayjs().add(5, 'day').format('YYYY-MM-DD');
+    calendar.$el = root({
+        events: JSON.stringify([
+            { id: 1, title: 'Past', startsAt: dayjs().subtract(1, 'day').format('YYYY-MM-DD') },
+            { id: 2, title: 'Next', startsAt: nextEventDate },
+        ]),
+    });
+
+    calendar.init();
+
+    assert.equal(calendar.selectedDate, nextEventDate);
+    assert.equal(calendar.selectedEvent.title, 'Next');
+    assert.equal(calendar.viewDate.format('YYYY-MM-DD'), dayjs(nextEventDate).startOf('month').format('YYYY-MM-DD'));
 });
 
 test('counters retain their server-rendered value under reduced motion', () => {

@@ -25,6 +25,8 @@ use App\Models\Person\FacultyMemberEducation;
 use App\Models\Person\FacultyMemberEducationTranslation;
 use App\Models\Person\FacultyMemberTranslation;
 use App\Models\Person\Person;
+use App\Models\Person\PersonAppointment;
+use App\Models\Person\PersonAppointmentTranslation;
 use App\Models\Person\PersonEducation;
 use App\Models\Person\PersonTranslation;
 use App\Models\User\User;
@@ -247,6 +249,23 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
         }
 
         $bio = $this->nullableString($translation['bio'] ?? null);
+        $appointment = $this->primaryAppointmentPayload($payload);
+        $position = $this->nullableString($payload['position'] ?? null) ?? $this->nullableString($translation['role'] ?? null);
+        if ($appointment !== null && $this->nullableString($appointment['role_override'] ?? null) !== null) {
+            $position = $this->nullableString($appointment['role_override']);
+        }
+        $socialLinks = is_array($payload['social_links'] ?? null) ? $payload['social_links'] : [];
+        if ($this->nullableString($payload['orcid_url'] ?? null) !== null) {
+            $socialLinks['orcid'] = $payload['orcid_url'];
+        }
+        if ($this->nullableString($payload['scholar_url'] ?? null) !== null) {
+            $socialLinks['scholar'] = $payload['scholar_url'];
+        }
+
+        $facultyName = $appointment !== null
+            ? ($this->facultyName($this->nullableInt($appointment['faculty_id'] ?? null), $locale)
+                ?? $this->nullableString($payload['faculty_scope_slug'] ?? null))
+            : $this->nullableString($payload['faculty_scope_slug'] ?? null);
 
         return new ProfilePageDTO(
             locale: $locale,
@@ -255,26 +274,28 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             slug: $slug,
             name: $name,
             title: $this->nullableString($payload['title'] ?? null),
-            position: $this->nullableString($payload['position'] ?? null) ?? $this->nullableString($translation['role'] ?? null),
+            position: $position,
             category: $this->nullableString($payload['category'] ?? null),
-            facultyName: $this->nullableString($payload['faculty_scope_slug'] ?? null),
+            facultyName: $facultyName,
             departmentName: null,
             email: $this->nullableString($payload['email'] ?? null),
             phone: $this->nullableString($payload['phone'] ?? null),
-            image: $this->nullableString($payload['image'] ?? null),
+            image: $this->mediaUrl($this->nullableInt($payload['photo_media_id'] ?? null))
+                ?? $this->nullableString($payload['image'] ?? null),
             bio: $bio,
             quote: $this->nullableString($translation['quote'] ?? null),
             specializations: null,
             officeLocation: $this->nullableString($payload['office_location'] ?? null),
-            socialLinks: is_array($payload['social_links'] ?? null) ? $payload['social_links'] : null,
+            socialLinks: $socialLinks !== [] ? $socialLinks : null,
             educations: $educations,
             publications: [],
             councilMemberships: [],
-            cvUrl: null,
+            cvUrl: $this->mediaUrl($this->nullableInt($payload['cv_media_id'] ?? null)),
             profileUrl: '/'.$locale.'/about/profile/'.$slug,
             seoTitle: $name.' - '.config('app.name', 'SPU'),
             seoDescription: $bio ?? $name,
-            seoImage: $this->nullableString($payload['image'] ?? null),
+            seoImage: $this->mediaUrl($this->nullableInt($payload['photo_media_id'] ?? null))
+                ?? $this->nullableString($payload['image'] ?? null),
             path: '/'.$locale.'/about/profile/'.$slug,
         );
     }
@@ -406,7 +427,7 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
         $model = match ($type) {
             'person' => Person::query()->create([
                 'slug' => $slug,
-                'category' => $this->requiredString($payload, 'category'),
+                'category' => $this->nullableString($payload['category'] ?? null),
                 'publication_status' => PublicationStatus::Draft->value,
                 'published_at' => null,
                 'is_enabled' => (bool) ($payload['is_enabled'] ?? false),
@@ -444,7 +465,7 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
         $person = Person::query()->findOrFail($id);
         $person->forceFill([
             'slug' => $this->requiredString($payload, 'slug'),
-            'category' => $this->requiredString($payload, 'category'),
+            'category' => $this->nullableString($payload['category'] ?? null),
             'title' => $this->nullableString($payload['title'] ?? null),
             'position' => $this->nullableString($payload['position'] ?? null),
             'faculty_scope_slug' => $this->nullableString($payload['faculty_scope_slug'] ?? null),
@@ -454,6 +475,10 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             'image' => $this->nullableString($payload['image'] ?? null),
             'profile_url' => $this->nullableString($payload['profile_url'] ?? null),
             'social_links' => is_array($payload['social_links'] ?? null) ? $payload['social_links'] : null,
+            'photo_media_id' => $this->nullableInt($payload['photo_media_id'] ?? null),
+            'cv_media_id' => $this->nullableInt($payload['cv_media_id'] ?? null),
+            'orcid_url' => $this->nullableString($payload['orcid_url'] ?? null),
+            'scholar_url' => $this->nullableString($payload['scholar_url'] ?? null),
             'sort_order' => (int) ($payload['sort_order'] ?? 0),
             'is_enabled' => (bool) ($payload['is_enabled'] ?? false),
             'publication_status' => PublicationStatus::Published->value,
@@ -464,8 +489,11 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             $person->translations()->updateOrCreate(['locale' => $locale], [
                 'name' => $this->requiredString($translation, 'name'),
                 'role' => $this->requiredString($translation, 'role'),
+                'title' => $this->nullableString($translation['title'] ?? null),
+                'position' => $this->nullableString($translation['position'] ?? null),
                 'bio' => $this->nullableString($translation['bio'] ?? null),
                 'quote' => $this->nullableString($translation['quote'] ?? null),
+                'specializations' => is_array($translation['specializations'] ?? null) ? $translation['specializations'] : null,
             ]);
         }
 
@@ -504,6 +532,8 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             $educationQuery->whereNotIn('id', $keptEducationIds);
         }
         $educationQuery->delete();
+
+        $this->syncPersonAppointments($person, $payload);
     }
 
     /** @param array<string, mixed> $payload */
@@ -630,7 +660,11 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
     /** @return array<string, mixed>|null */
     private function storedPersonPayload(int $id): ?array
     {
-        $person = Person::query()->with(['translations', 'educations.translations'])->find($id);
+        $person = Person::query()->with([
+            'translations',
+            'educations.translations',
+            'appointments.translations',
+        ])->find($id);
         if (! $person instanceof Person) {
             return null;
         }
@@ -649,14 +683,21 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             'image' => $person->image,
             'profile_url' => $person->profile_url,
             'social_links' => $person->social_links,
+            'photo_media_id' => $person->photo_media_id,
+            'cv_media_id' => $person->cv_media_id,
+            'orcid_url' => $person->orcid_url,
+            'scholar_url' => $person->scholar_url,
             'sort_order' => (int) $person->sort_order,
             'is_enabled' => (bool) $person->is_enabled,
             'translations' => $person->translations->mapWithKeys(fn (PersonTranslation $translation): array => [(string) $translation->locale => [
                 'locale' => (string) $translation->locale,
                 'name' => (string) $translation->name,
                 'role' => (string) $translation->role,
+                'title' => $translation->title,
+                'position' => $translation->position,
                 'bio' => $translation->bio,
                 'quote' => $translation->quote,
+                'specializations' => $translation->specializations,
             ]])->all(),
             'educations' => $person->educations->map(fn (PersonEducation $education): array => [
                 'id' => (int) $education->getKey(),
@@ -672,6 +713,21 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
                     'description' => $translation->description,
                 ]])->all(),
             ])->values()->all(),
+            'appointments' => $person->appointments->map(function (PersonAppointment $appointment): array {
+                $roleOverride = $appointment->translations->firstWhere('locale', 'en')?->role_override
+                    ?? $appointment->translations->firstWhere('locale', 'ar')?->role_override;
+
+                return [
+                    'id' => (int) $appointment->getKey(),
+                    'type' => (string) $appointment->type,
+                    'faculty_id' => $appointment->faculty_id,
+                    'department_id' => $appointment->department_id,
+                    'council_id' => $appointment->council_id,
+                    'role_override' => $roleOverride,
+                    'sort_order' => (int) $appointment->sort_order,
+                    'is_enabled' => (bool) $appointment->is_enabled,
+                ];
+            })->values()->all(),
         ];
     }
 
@@ -792,6 +848,25 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             }
         }
 
+        if ($type === 'person' && array_key_exists('appointments', $payload)) {
+            $payload['appointments'] = collect($this->listValue($payload['appointments'] ?? null))
+                ->filter(static fn (mixed $appointment): bool => is_array($appointment))
+                ->map(function (array $appointment): array {
+                    return [
+                        'id' => $this->nullableInt($appointment['id'] ?? null),
+                        'type' => $this->stringValue($appointment['type'] ?? null),
+                        'faculty_id' => $this->nullableInt($appointment['faculty_id'] ?? null),
+                        'department_id' => $this->nullableInt($appointment['department_id'] ?? null),
+                        'council_id' => $this->nullableInt($appointment['council_id'] ?? null),
+                        'role_override' => $this->nullableString($appointment['role_override'] ?? null),
+                        'sort_order' => (int) ($appointment['sort_order'] ?? 0),
+                        'is_enabled' => (bool) ($appointment['is_enabled'] ?? false),
+                    ];
+                })
+                ->values()
+                ->all();
+        }
+
         if (in_array($type, ['person', 'faculty-member'], true)) {
             $payload['educations'] = collect($this->listValue($payload['educations'] ?? null))
                 ->filter(static fn (mixed $education): bool => is_array($education))
@@ -839,8 +914,10 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
         if ($this->stringValue($payload['slug'] ?? null) === '') {
             $errors['slug'][] = 'The slug is required.';
         }
-        if ($type === 'person' && $this->stringValue($payload['category'] ?? null) === '') {
-            $errors['category'][] = 'The category is required.';
+        if ($type === 'person') {
+            $this->validatePersonAppointments($errors, $payload);
+            $this->appendMediaErrors($errors, 'photo_media_id', $payload['photo_media_id'] ?? null, 'image/');
+            $this->appendMediaErrors($errors, 'cv_media_id', $payload['cv_media_id'] ?? null, 'application/');
         }
         if ($type === 'partnership') {
             if (! in_array($payload['category_key'] ?? null, ['academic', 'research', 'clinical'], true)) {
@@ -916,6 +993,97 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
         if (! $media instanceof MediaAsset || $media->library_scope !== 'main' || ! str_starts_with((string) $media->mime_type, $expectedMimePrefix)) {
             $errors[$field][] = 'The selected media file is unavailable or has the wrong type.';
         }
+    }
+
+    /** @param array<string, array<int, string>> $errors @param array<string, mixed> $payload */
+    private function validatePersonAppointments(array &$errors, array $payload): void
+    {
+        $allowedTypes = ['rector', 'vice_president', 'dean', 'council', 'director', 'faculty_member', 'researcher'];
+
+        foreach ($this->listValue($payload['appointments'] ?? null) as $index => $appointment) {
+            if (! is_array($appointment)) {
+                continue;
+            }
+
+            $type = $this->stringValue($appointment['type'] ?? null);
+            if (! in_array($type, $allowedTypes, true)) {
+                $errors['appointments.'.$index.'.type'][] = 'A valid appointment type is required.';
+            }
+
+            $facultyId = $this->nullableInt($appointment['faculty_id'] ?? null);
+            $departmentId = $this->nullableInt($appointment['department_id'] ?? null);
+            if ($facultyId !== null && ! Faculty::query()->whereKey($facultyId)->exists()) {
+                $errors['appointments.'.$index.'.faculty_id'][] = 'The selected faculty does not exist.';
+            }
+            if ($departmentId !== null && ($facultyId === null || ! Department::query()->whereKey($departmentId)->where('faculty_id', $facultyId)->exists())) {
+                $errors['appointments.'.$index.'.department_id'][] = 'The selected department must belong to the selected faculty.';
+            }
+        }
+    }
+
+    /** @param array<string, mixed> $payload @return array<string, mixed>|null */
+    private function primaryAppointmentPayload(array $payload): ?array
+    {
+        $priority = ['rector', 'vice_president', 'dean', 'council', 'director', 'faculty_member', 'researcher'];
+        $appointments = collect($this->listValue($payload['appointments'] ?? null))
+            ->filter(static fn (mixed $appointment): bool => is_array($appointment) && (bool) ($appointment['is_enabled'] ?? false));
+
+        foreach ($priority as $type) {
+            $appointment = $appointments->firstWhere('type', $type);
+            if (is_array($appointment)) {
+                return $appointment;
+            }
+        }
+
+        $appointment = $appointments->first();
+
+        return is_array($appointment) ? $appointment : null;
+    }
+
+    /** @param array<string, mixed> $payload */
+    private function syncPersonAppointments(Person $person, array $payload): void
+    {
+        if (! array_key_exists('appointments', $payload)) {
+            return;
+        }
+
+        $keptAppointmentIds = [];
+        foreach ($this->listValue($payload['appointments'] ?? null) as $appointmentPayload) {
+            if (! is_array($appointmentPayload) || $this->stringValue($appointmentPayload['type'] ?? null) === '') {
+                continue;
+            }
+
+            $appointmentId = $this->nullableInt($appointmentPayload['id'] ?? null);
+            $appointment = $appointmentId !== null
+                ? PersonAppointment::query()->where('person_id', $person->getKey())->findOrFail($appointmentId)
+                : new PersonAppointment();
+
+            $appointment->fill([
+                'type' => $this->stringValue($appointmentPayload['type']),
+                'faculty_id' => $this->nullableInt($appointmentPayload['faculty_id'] ?? null),
+                'department_id' => $this->nullableInt($appointmentPayload['department_id'] ?? null),
+                'council_id' => $this->nullableInt($appointmentPayload['council_id'] ?? null),
+                'sort_order' => (int) ($appointmentPayload['sort_order'] ?? 0),
+                'is_enabled' => (bool) ($appointmentPayload['is_enabled'] ?? false),
+            ]);
+            $appointment->person()->associate($person);
+            $appointment->save();
+            $keptAppointmentIds[] = (int) $appointment->getKey();
+
+            $roleOverride = $this->nullableString($appointmentPayload['role_override'] ?? null);
+            foreach (['ar', 'en'] as $locale) {
+                $appointment->translations()->updateOrCreate(
+                    ['locale' => $locale],
+                    ['role_override' => $roleOverride],
+                );
+            }
+        }
+
+        $appointmentQuery = $person->appointments();
+        if ($keptAppointmentIds !== []) {
+            $appointmentQuery->whereNotIn('id', $keptAppointmentIds);
+        }
+        $appointmentQuery->delete();
     }
 
     private function updatePublicationState(string $targetKey, PublicationStatus $status, bool $clearPublishedAt, bool $scheduledOnly = false): bool

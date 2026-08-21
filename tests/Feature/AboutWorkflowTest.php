@@ -364,7 +364,7 @@ final class AboutWorkflowTest extends TestCase
         $sitemap = $this->get('/sitemap.xml')->assertOk()->getContent();
         $this->assertStringContainsString('/en/about/directorates/scientific-research', (string) $sitemap);
         $this->assertStringContainsString('/ar/about/accreditation', (string) $sitemap);
-        $this->assertStringContainsString('/en/about/profile/person/rector', (string) $sitemap);
+        $this->assertStringContainsString('/en/about/profile/rector', (string) $sitemap);
     }
 
     public function test_imported_about_pages_render_redirects_and_have_curated_editors(): void
@@ -528,7 +528,7 @@ final class AboutWorkflowTest extends TestCase
             ->assertSee('/ar/about/leadership?faculty=medicine', false)
             ->assertSee('Dr. Ayman Ali')
             ->assertSee('Dr. Ammar Ghada')
-            ->assertSee('/en/about/profile/person/ayman-ali', false);
+            ->assertSee('/en/about/profile/ayman-ali', false);
 
         $this->assertSame(7, substr_count((string) $response->getContent(), 'class="dean-card reveal'));
 
@@ -646,7 +646,7 @@ final class AboutWorkflowTest extends TestCase
             ->assertOk()
             ->assertSee('1 results')
             ->assertSee('Dr. Mahmoud Hadid')
-            ->assertDontSee('/en/about/profile/person/ayman-ali', false)
+            ->assertDontSee('/en/about/profile/ayman-ali', false)
             ->assertSee('/ar/about/directorates/staff?faculty=petroleum', false)
             ->assertDontSee('Staff pagination');
     }
