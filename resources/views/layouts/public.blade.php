@@ -41,7 +41,6 @@
                 @endif
             @endforeach
         @endif
-        <link rel="preconnect" href="https://fonts.bunny.net">
         <link rel="icon" href="{{ asset('images/single-logo.png') }}" type="image/png">
         <link rel="manifest" href="{{ asset('site.webmanifest') }}">
         @php
