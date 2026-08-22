@@ -6,6 +6,7 @@ namespace App\Services\Legacy;
 
 use App\Contracts\Legacy\LegacyCleanedRowServiceInterface;
 use App\Contracts\Legacy\LegacyFacultyProfileImportServiceInterface;
+use App\Contracts\Shared\CacheServiceInterface;
 use App\Contracts\Shared\SlugServiceInterface;
 use App\DTOs\Legacy\LegacyCleanedRowDTO;
 use App\DTOs\Legacy\LegacyFacultyProfileImportResultDTO;
@@ -37,6 +38,7 @@ final class LegacyFacultyProfileImportService implements LegacyFacultyProfileImp
         private readonly OldDatabaseConnection $oldDatabase,
         private readonly LegacyCleanedRowServiceInterface $cleanedRowService,
         private readonly SlugServiceInterface $slugService,
+        private readonly CacheServiceInterface $cacheService,
     ) {}
 
     public function import(bool $write = false, ?string $approval = null, ?string $batch = null, bool $enable = false): LegacyFacultyProfileImportResultDTO
@@ -120,6 +122,10 @@ final class LegacyFacultyProfileImportService implements LegacyFacultyProfileImp
             $targetId = $this->writeFacultyMember($row, $cleaned, $facultyId, $names, $enable);
             $this->writeSuccess($batch, $sourceId, $targetId, $row, $names, $enable);
             $importedRows++;
+        }
+
+        if ($importedRows > 0 && ! $this->cacheService->flushTags(['facilities', 'public-pages', 'seo', 'sitemap'])) {
+            $this->cacheService->flushAll();
         }
 
         return new LegacyFacultyProfileImportResultDTO(

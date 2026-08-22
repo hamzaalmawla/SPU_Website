@@ -27,6 +27,15 @@
 </IfModule>
 
 <IfModule mod_headers.c>
+    # These also cover physical static and internally rewritten legacy files,
+    # which do not pass through Laravel's security-header middleware.
+    <FilesMatch "\.(?:css|js|json|xml|jpe?g|png|gif|webp|avif|svg|ico|pdf|mp4|webm|mp3|woff2?|ttf|otf|eot)$">
+        Header always set X-Content-Type-Options "nosniff"
+        Header always set Referrer-Policy "no-referrer"
+        Header always set X-Frame-Options "SAMEORIGIN"
+        Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+    </FilesMatch>
+
     # Correct caching for content negotiated on encoding.
     <FilesMatch "\.(?:css|js|svg|json|xml)$">
         Header append Vary Accept-Encoding
@@ -71,16 +80,28 @@
 
     RewriteEngine On
 
-    # Force HTTPS. The X-Forwarded-Proto check keeps this from looping when a
-    # TLS-terminating proxy (cPanel's nginx layer) forwards to Apache over http.
+    # Force HTTPS to the production canonical origin. Never reflect HTTP_HOST:
+    # it is client-controlled and can poison redirects. The staging host guard
+    # overlay runs before this block and remains authoritative on staging.
     RewriteCond %{HTTPS} !=on
     RewriteCond %{HTTP:X-Forwarded-Proto} !=https
-    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+    RewriteRule ^ https://spu.edu.sy%{REQUEST_URI} [R=301,L,NE]
+
+    # app.php is an internal implementation detail. Also reject PATH_INFO forms
+    # of both front-controller names before Apache can execute a physical PHP
+    # file. THE_REQUEST prevents these rules matching our internal rewrites.
+    RewriteCond %{THE_REQUEST} \s/+app\.php(?:[/?\s]) [NC]
+    RewriteRule ^app\.php(?:/.*)?$ - [R=404,L,NC]
+
+    RewriteCond %{THE_REQUEST} \s/+index\.php/ [NC]
+    RewriteRule ^index\.php/.*$ - [R=404,L,NC]
 
     # Preserved legacy static trees must never execute old application code.
     RewriteRule ^_legacy/.*\.(?:php[0-9]?|phtml|phar|cgi|pl|py|sh|asp|aspx|jsp|exe|dll|com|bat|cmd|ps1|sql|bak|conf|config|ini|log|htaccess|htpasswd|env)(?:\.|$) - [R=404,L,NC]
+    RewriteRule ^_legacy/.*\.(?:html?|xhtml|xml|svgz?)(?:\.|$) - [R=404,L,NC]
     RewriteRule ^_legacy/(?:.*/)?\.[^/]+$ - [R=404,L,NC]
     RewriteRule ^(?:downloads/files(?:/.*)?|downloads/files2(?:/.*)?|images(?:/.*)?|pdf(?:/.*)?|cv_bank(?:/.*)?|(?:med|dent|pharm|info|petrol|admin|research|hospital|dent_clinic|alumni|clubs)/images(?:/.*)?)\.(?:php[0-9]?|phtml|phar|cgi|pl|py|sh|asp|aspx|jsp|exe|dll|com|bat|cmd|ps1|sql|bak|conf|config|ini|log)(?:\.|$) - [R=404,L,NC]
+    RewriteRule ^(?:downloads/files(?:/.*)?|downloads/files2(?:/.*)?|images(?:/.*)?|pdf(?:/.*)?|cv_bank(?:/.*)?|(?:med|dent|pharm|info|petrol|admin|research|hospital|dent_clinic|alumni|clubs)/images(?:/.*)?)\.(?:html?|xhtml|xml|svgz?)(?:\.|$) - [R=404,L,NC]
     RewriteRule ^(?:downloads/files|downloads/files2|images|pdf|cv_bank|(?:med|dent|pharm|info|petrol|admin|research|hospital|dent_clinic|alumni|clubs)/images)/(?:.*\/)?\.[^/]+$ - [R=404,L,NC]
 
     # Legacy static file continuity.

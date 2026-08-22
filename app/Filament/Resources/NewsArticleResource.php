@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources;
 
+use App\Contracts\News\NewsArticleCmsServiceInterface;
 use App\Filament\Resources\NewsArticleResource\Pages;
 use App\Filament\Support\MediaPicker;
 use App\Models\News\NewsArticle;
@@ -354,22 +355,10 @@ class NewsArticleResource extends Resource
     /** @return array<int, string> */
     private static function editorialTypeOptions(): array
     {
-        $categories = NewsCategory::query()
-            ->enabled()
-            ->whereIn('slug', ['news', 'announcements'])
-            ->orderBy('sort_order')
-            ->orderBy('id')
-            ->get()
-            ->unique('type');
-
         $options = [];
 
-        foreach (['news', 'announcement'] as $type) {
-            $category = $categories->firstWhere('type', $type);
-
-            if ($category instanceof NewsCategory) {
-                $options[(int) $category->getKey()] = __('admin.news_article.types.'.$type);
-            }
+        foreach (app(NewsArticleCmsServiceInterface::class)->editorialTypeOptions() as $categoryId => $type) {
+            $options[$categoryId] = __('admin.news_article.types.'.$type);
         }
 
         return $options;

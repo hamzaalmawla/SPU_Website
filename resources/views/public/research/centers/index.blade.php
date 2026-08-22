@@ -4,6 +4,9 @@
 
 @section('content')
     @php($data = $page->data)
+    @if (! $page->isAvailable)
+        @include('public.research.partials.empty-state', ['locale' => $locale, 'direction' => $direction])
+    @else
 
     <section class="bg-white font-hacen" dir="{{ $direction }}">
         <div class="relative h-[370px] overflow-hidden">
@@ -39,4 +42,5 @@
         </div></div></div>
         <div id="research-laboratories" class="mx-auto mt-[80px] max-w-[1090px] px-6"><h2 class="mb-[48px] text-[32px] font-bold leading-tight text-spu-blue">{{ $data['laboratories']['title'] ?? '' }}</h2><div class="grid grid-cols-1 gap-[38px] md:grid-cols-2 lg:grid-cols-3">@foreach (($data['laboratories']['items'] ?? []) as $lab)<article class="overflow-hidden rounded-[10px] border border-[#d4d8e2] bg-white shadow-[0_4px_10px_rgba(0,0,0,0.08)] transition-all hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(32,39,89,0.12)]"><div class="relative h-[170px] overflow-hidden"><img src="{{ $lab['image'] ?? '/images/uni-main-place.JPG' }}" alt="{{ $lab['title'] ?? '' }}" class="h-full w-full object-cover"><span class="absolute left-4 top-4 rounded-[4px] bg-white/90 px-3 py-1.5 text-[10px] font-semibold text-spu-blue backdrop-blur-sm rtl:left-auto rtl:right-4">{{ $lab['faculty'] ?? '' }}</span></div><div class="p-5"><h3 class="text-[18px] font-bold leading-[1.35] text-spu-blue">{{ $lab['title'] ?? '' }}</h3><p class="mt-3 text-[13px] leading-[1.7] text-[#33405d]">{{ $lab['summary'] ?? '' }}</p><div class="mt-4 space-y-2 text-[13px] text-[#33405d]"><div>♙ {{ $lab['director'] ?? '' }}</div><div>▣ {{ $lab['projects'] ?? '' }}</div><div>▤ {{ $lab['publications'] ?? '' }}</div><div>✉ {{ $lab['contact'] ?? '' }}</div></div><a href="{{ $lab['ctaUrl'] ?? '#' }}" class="mt-5 inline-flex h-[36px] w-full items-center justify-center rounded-[8px] bg-spu-blue text-[11px] font-bold text-white transition hover:bg-[#171d47]">{{ $lab['cta'] ?? '' }}</a></div></article>@endforeach</div></div>
     </section>
+    @endif
 @endsection

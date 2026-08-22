@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources;
 
 use App\Contracts\Page\AboutNavigationCardServiceInterface;
+use App\DTOs\About\AboutNavigationCardDTO;
 use App\Filament\Resources\AboutNavigationCardResource\Pages;
 use App\Models\Page\AboutNavigationCard;
 use Filament\Forms\Components\DateTimePicker;
@@ -101,7 +102,7 @@ class AboutNavigationCardResource extends Resource
                         $service = app(AboutNavigationCardServiceInterface::class);
                         $dto = $service->getAllCards()->firstWhere('id', (int) $record->getKey());
 
-                        if (! $dto instanceof \App\DTOs\About\AboutNavigationCardDTO) {
+                        if (! $dto instanceof AboutNavigationCardDTO) {
                             return $record->target_key;
                         }
 
@@ -144,7 +145,7 @@ class AboutNavigationCardResource extends Resource
                     ]),
             ])
             ->actions([
-                Tables\Actions\Action::make('moveUp')
+                Action::make('moveUp')
                     ->label('')
                     ->icon('heroicon-o-chevron-up')
                     ->color('gray')
@@ -153,7 +154,7 @@ class AboutNavigationCardResource extends Resource
                         $service = app(AboutNavigationCardServiceInterface::class);
                         $service->moveUp((int) $record->getKey());
                     }),
-                Tables\Actions\Action::make('moveDown')
+                Action::make('moveDown')
                     ->label('')
                     ->icon('heroicon-o-chevron-down')
                     ->color('gray')
@@ -236,15 +237,7 @@ class AboutNavigationCardResource extends Resource
                     ->form([
                         Select::make('target_key')
                             ->label(__('admin.about_navigation_card.fields.target_key'))
-                            ->options(function (): array {
-                                $existingKeys = AboutNavigationCard::query()->pluck('target_key')->all();
-                                $allTargets = app(\App\Contracts\Cms\CmsTargetRegistryInterface::class)->forArea('about');
-
-                                return $allTargets
-                                    ->filter(fn ($target) => $target->key !== 'about.landing' && $target->publicPath !== null && ! in_array($target->key, $existingKeys, true))
-                                    ->mapWithKeys(fn ($target): array => [$target->key => __($target->labelKey) . ' (' . $target->key . ')'])
-                                    ->all();
-                            })
+                            ->options(fn (): array => app(AboutNavigationCardServiceInterface::class)->availableTargetOptions())
                             ->searchable()
                             ->required(),
                     ])

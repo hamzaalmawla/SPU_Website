@@ -180,6 +180,54 @@ class TwoFactorChallengeTest extends TestCase
             ->assertRedirect('/admin/login');
     }
 
+    public function test_privileged_production_user_must_confirm_enrollment_before_admin_access(): void
+    {
+        config()->set('auth.two_factor.require_for_privileged_roles', true);
+        config()->set('auth.two_factor.privileged_roles', ['super_admin', 'editor', 'faculty_editor', 'hr']);
+        $user = User::factory()->create([
+            'role_slug' => 'super_admin',
+            'two_factor_enabled' => false,
+            'two_factor_confirmed_at' => null,
+        ]);
+
+        $this->actingAs($user, 'web');
+
+        $this->get('/admin')
+            ->assertRedirect(route('filament.admin.pages.two-factor-setup'));
+
+        $this->get('/admin/two-factor-setup')->assertOk();
+    }
+
+    public function test_unconfirmed_enabled_flag_does_not_bypass_required_enrollment(): void
+    {
+        config()->set('auth.two_factor.require_for_privileged_roles', true);
+        $user = User::factory()->create([
+            'role_slug' => 'editor',
+            'two_factor_enabled' => true,
+            'two_factor_confirmed_at' => null,
+        ]);
+
+        $this->actingAs($user, 'web');
+
+        $this->get('/admin')
+            ->assertRedirect(route('filament.admin.pages.two-factor-setup'));
+    }
+
+    public function test_non_privileged_role_is_not_forced_into_enrollment(): void
+    {
+        config()->set('auth.two_factor.require_for_privileged_roles', true);
+        config()->set('auth.two_factor.privileged_roles', ['super_admin']);
+        $user = User::factory()->create([
+            'role_slug' => 'editor',
+            'two_factor_enabled' => false,
+        ]);
+
+        $this->actingAs($user, 'web');
+
+        $this->get('/admin')
+            ->assertOk();
+    }
+
     // ------------------------------------------------------------------
     // Helpers
     // ------------------------------------------------------------------

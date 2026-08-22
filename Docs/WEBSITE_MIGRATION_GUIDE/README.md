@@ -1,5 +1,11 @@
 # SPU Website Migration Guide
 
+> Historical context notice (2026-08-21): the foundation-stage description below
+> records the repository state when this guide was authored and is retained as
+> migration evidence. It is not the current implementation status. Current
+> remediation execution is tracked in
+> `../CURRENT_REMEDIATION_EXECUTION_CHECKLIST.md`; no deployment or sign-off is claimed.
+
 ## Purpose
 
 This package explains how to migrate `spu.edu.sy` from the legacy platform to the new Laravel platform without unnecessarily sacrificing discoverability in Google, Bing, or Webometrics.

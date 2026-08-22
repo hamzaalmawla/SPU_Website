@@ -119,6 +119,33 @@ final class LegacyNewsPublicationServiceTest extends TestCase
             ->assertSee('Attachments');
     }
 
+    public function test_publication_keeps_uncertain_duplicate_groups_private(): void
+    {
+        $editor = User::factory()->create(['role_slug' => 'editor', 'is_locked' => false]);
+        $article = $this->importedArticle(7005);
+        $log = MigrationLog::query()->where('module', 'news')->where('source_id', 7005)->firstOrFail();
+        $log->forceFill([
+            'metadata' => [
+                'duplicate_title_status' => 'uncertain',
+                'duplicate_disposition' => 'import',
+            ],
+        ])->save();
+
+        $result = app(LegacyNewsPublicationServiceInterface::class)->publish(
+            [7005],
+            [],
+            (int) $editor->getKey(),
+            true,
+            'publish-legacy-news',
+            'uncertain-duplicate',
+        );
+
+        $this->assertSame(0, $result->publishedRows);
+        $this->assertSame(['duplicate_disposition_required' => 1], $result->blockReasonCounts);
+        $this->assertSame('draft', $article->fresh()->status);
+        $this->assertFalse((bool) $article->fresh()->is_enabled);
+    }
+
     public function test_publication_allows_approved_arabic_source_fallback_without_synthesizing_english(): void
     {
         $editor = User::factory()->create(['role_slug' => 'editor', 'is_locked' => false]);

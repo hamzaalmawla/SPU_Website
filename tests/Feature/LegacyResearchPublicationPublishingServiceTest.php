@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Contracts\Legacy\LegacyResearchPublicationPublishingServiceInterface;
+use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Models\Research\ResearchPublication;
 use App\Models\Shared\MigrationLog;
 use App\Models\User\User;
@@ -60,9 +61,56 @@ final class LegacyResearchPublicationPublishingServiceTest extends TestCase
             'is_enabled' => 1,
             'extraction_status' => 'published',
         ]);
+        $this->assertSame(
+            'legacy-public-research-9001',
+            app(ResearchPageServiceInterface::class)->publicationSlugForLegacyId('9001'),
+        );
 
         $replay = $service->publishImported((int) $actor->getKey(), true, 'publish-legacy-research', 'public-research');
         $this->assertSame(1, $replay->alreadyPublishedRows);
         $this->assertSame(1, MigrationLog::query()->where('module', 'research_publication')->count());
+    }
+
+    public function test_duplicate_review_records_are_private_by_default_and_require_explicit_inclusion(): void
+    {
+        $actor = User::factory()->create(['role_slug' => 'editor', 'is_locked' => false]);
+        $publication = ResearchPublication::query()->create([
+            'legacy_source_table' => 'jx_member_categories',
+            'legacy_source_id' => 9002,
+            'extraction_status' => 'duplicate_review',
+            'is_enabled' => false,
+        ]);
+        $publication->translations()->create(['locale' => 'en', 'title' => 'Duplicate review research']);
+        MigrationLog::query()->create([
+            'module' => 'research',
+            'batch_name' => 'structured-import',
+            'source_table' => 'jx_member_categories',
+            'source_id' => 9002,
+            'target_table' => 'research_publications',
+            'target_id' => $publication->getKey(),
+            'status' => 'success',
+        ]);
+
+        $service = app(LegacyResearchPublicationPublishingServiceInterface::class);
+        $private = $service->publishImported((int) $actor->getKey(), batch: 'private-review');
+
+        $this->assertSame(0, $private->eligibleRows);
+        $this->assertSame(['duplicate_review' => 1], $private->blockedReasonCounts);
+        $this->assertFalse((bool) $publication->fresh()->is_enabled);
+
+        $included = $service->publishImported(
+            (int) $actor->getKey(),
+            write: true,
+            approval: 'publish-legacy-research',
+            batch: 'approved-review',
+            includeDuplicateReview: true,
+        );
+
+        $this->assertSame(1, $included->publishedRows);
+        $this->assertDatabaseHas('research_publications', [
+            'id' => $publication->getKey(),
+            'is_enabled' => 1,
+            'extraction_status' => 'published',
+        ]);
     }
 }

@@ -4,6 +4,9 @@
 
 @section('content')
     @php($data = $page->data)
+    @if (! $page->isAvailable)
+        @include('public.research.partials.empty-state', ['locale' => $locale, 'direction' => $direction])
+    @else
     @include('public.research.partials.page-hero', ['hero' => $data['hero'] ?? [], 'locale' => $locale, 'direction' => $direction])
     <section class="bg-white pb-[80px] pt-[60px] font-hacen" dir="{{ $direction }}">
         <div class="container">
@@ -29,4 +32,5 @@
             @include('public.research.partials.listing-pagination', ['data' => $data, 'basePath' => ($isPreview ?? false) && isset($preview) ? '/'.$locale.'/preview' : '/'.$locale.'/research/projects', 'baseQuery' => ($isPreview ?? false) && isset($preview) ? ['token' => $preview->token] : [], 'locale' => $locale])
         </div>
     </section>
+    @endif
 @endsection

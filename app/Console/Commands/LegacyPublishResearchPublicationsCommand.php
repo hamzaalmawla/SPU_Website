@@ -14,7 +14,7 @@ final class LegacyPublishResearchPublicationsCommand extends Command
         {--write : Enable imported research publications for the public archive}
         {--approve= : Required publication token}
         {--batch= : Optional publication batch name}
-        {--exclude-duplicate-review : Keep duplicate-title review records private}
+        {--include-duplicate-review : Explicitly include duplicate-title review records}
         {--json : Output machine-readable JSON}';
 
     protected $description = 'Publish imported legacy research publications through an approval-gated archive workflow.';
@@ -31,7 +31,7 @@ final class LegacyPublishResearchPublicationsCommand extends Command
             write: (bool) $this->option('write'),
             approval: is_string($this->option('approve')) ? $this->option('approve') : null,
             batch: is_string($this->option('batch')) ? $this->option('batch') : null,
-            includeDuplicateReview: ! (bool) $this->option('exclude-duplicate-review'),
+            includeDuplicateReview: (bool) $this->option('include-duplicate-review'),
         );
         $payload = [
             'written' => $result->written,

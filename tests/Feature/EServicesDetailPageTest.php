@@ -7,7 +7,6 @@ namespace Tests\Feature;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Page\EServicesPageServiceInterface;
 use App\Contracts\Seo\SitemapServiceInterface;
-use App\DTOs\EServices\EServicesDetailPageDTO;
 use App\Filament\Pages\ManageEServicesPage;
 use App\Models\Settings\Setting;
 use App\Models\User\User;
@@ -29,6 +28,10 @@ final class EServicesDetailPageTest extends TestCase
 
     public function test_all_detail_pages_render_in_arabic_and_english_with_localized_metadata(): void
     {
+        foreach (['library', 'staff-email', 'it-support'] as $slug) {
+            $this->publishDetail($slug);
+        }
+
         foreach (['ar', 'en'] as $locale) {
             foreach (['library', 'staff-email', 'it-support'] as $slug) {
                 $this->get("/{$locale}/e-services/{$slug}")
@@ -88,6 +91,8 @@ final class EServicesDetailPageTest extends TestCase
     public function test_detail_html_aliases_land_on_functional_pages(): void
     {
         foreach (['library', 'staff-email', 'it-support'] as $slug) {
+            $this->publishDetail($slug);
+
             $this->followingRedirects()
                 ->get("/en/e-services/{$slug}.html")
                 ->assertOk();
@@ -101,14 +106,14 @@ final class EServicesDetailPageTest extends TestCase
         $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
         $payload = [
             'translations' => [
-                'ar' => $this->detailPayload($pages->getDetailPage('ar', 'staff-email'), 'معاينة بريد الموظفين'),
-                'en' => $this->detailPayload($pages->getDetailPage('en', 'staff-email'), 'Managed Staff Email Guidance'),
+                'ar' => $this->detailPayload('ar', 'staff-email', 'معاينة بريد الموظفين'),
+                'en' => $this->detailPayload('en', 'staff-email', 'Managed Staff Email Guidance'),
             ],
         ];
 
         $workflow->saveDraft('e_services.staff-email', $payload, (int) $author->id);
 
-        $this->get('/en/e-services/staff-email')->assertOk()->assertDontSee('Managed Staff Email Guidance');
+        $this->get('/en/e-services/staff-email')->assertNotFound();
 
         $preview = $workflow->preview('e_services.staff-email', 'en', (int) $author->id);
         $this->get($preview->previewUrl)
@@ -120,15 +125,15 @@ final class EServicesDetailPageTest extends TestCase
         $this->get('/en/e-services/staff-email')->assertOk()->assertSee('Managed Staff Email Guidance');
 
         $this->assertTrue($workflow->unpublish('e_services.staff-email', (int) $author->id));
-        $this->get('/en/e-services/staff-email')->assertOk()->assertDontSee('Managed Staff Email Guidance');
+        $this->get('/en/e-services/staff-email')->assertNotFound();
     }
 
     public function test_detail_readiness_rejects_mismatched_structure_and_unsafe_library_urls(): void
     {
         $pages = app(EServicesPageServiceInterface::class);
         $workflow = app(CmsWorkflowServiceInterface::class);
-        $arabic = $this->detailPayload($pages->getDetailPage('ar', 'library'));
-        $english = $this->detailPayload($pages->getDetailPage('en', 'library'));
+        $arabic = $this->detailPayload('ar', 'library');
+        $english = $this->detailPayload('en', 'library');
         $english['sections'][0]['id'] = 'different-id';
         $english['resources']['links'][0]['url'] = 'http://www.doabooks.org';
         $english['cta']['url'] = 'javascript:alert(1)';
@@ -146,18 +151,17 @@ final class EServicesDetailPageTest extends TestCase
 
         $preview = $pages->buildDetailPreviewPage('en', 'library', $english);
         $this->assertSame('', $preview->ctaUrl);
-        $this->assertCount(2, $preview->relatedLinks);
+        $this->assertCount(1, $preview->relatedLinks);
     }
 
     public function test_detail_target_can_be_scheduled_and_the_schedule_can_be_unpublished(): void
     {
-        $pages = app(EServicesPageServiceInterface::class);
         $workflow = app(CmsWorkflowServiceInterface::class);
         $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
         $workflow->saveDraft('e_services.it-support', [
             'translations' => [
-                'ar' => $this->detailPayload($pages->getDetailPage('ar', 'it-support')),
-                'en' => $this->detailPayload($pages->getDetailPage('en', 'it-support')),
+                'ar' => $this->detailPayload('ar', 'it-support'),
+                'en' => $this->detailPayload('en', 'it-support'),
             ],
         ], (int) $author->id);
 
@@ -169,6 +173,10 @@ final class EServicesDetailPageTest extends TestCase
 
     public function test_admin_editor_selects_each_independent_detail_target(): void
     {
+        foreach (['library', 'staff-email', 'it-support'] as $slug) {
+            $this->publishDetail($slug);
+        }
+
         $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail());
 
         $component = Livewire::test(ManageEServicesPage::class)
@@ -194,13 +202,12 @@ final class EServicesDetailPageTest extends TestCase
 
     public function test_sitemap_uses_published_cms_details_without_seeded_settings(): void
     {
-        $pages = app(EServicesPageServiceInterface::class);
         $workflow = app(CmsWorkflowServiceInterface::class);
         $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
         $workflow->saveDraft('e_services.library', [
             'translations' => [
-                'ar' => $this->detailPayload($pages->getDetailPage('ar', 'library')),
-                'en' => $this->detailPayload($pages->getDetailPage('en', 'library')),
+                'ar' => $this->detailPayload('ar', 'library'),
+                'en' => $this->detailPayload('en', 'library'),
             ],
         ], (int) $author->id);
         $this->assertTrue($workflow->publish('e_services.library', (int) $author->id));
@@ -213,21 +220,71 @@ final class EServicesDetailPageTest extends TestCase
     }
 
     /** @return array<string, mixed> */
-    private function detailPayload(EServicesDetailPageDTO $page, ?string $heroTitle = null): array
+    private function detailPayload(string $locale, string $slug, ?string $heroTitle = null): array
     {
+        $isArabic = $locale === 'ar';
+        $titles = [
+            'library' => $isArabic ? 'المكتبة الإلكترونية' : 'E-Library',
+            'staff-email' => $isArabic ? 'البريد الإلكتروني للموظفين' : 'Staff Email',
+            'it-support' => $isArabic ? 'الدعم التقني' : 'IT Support',
+        ];
+        $title = $heroTitle ?? $titles[$slug];
+        $resources = $slug === 'library' ? [
+            'title' => $isArabic ? 'مصادر مفتوحة موثقة' : 'Verified open resources',
+            'links' => [
+                ['id' => 'doab', 'title' => 'DOAB', 'url' => 'https://www.doabooks.org'],
+                ['id' => 'doaj', 'title' => 'DOAJ', 'url' => 'https://doaj.org'],
+                ['id' => 'archive', 'title' => 'Internet Archive', 'url' => 'https://archive.org'],
+                ['id' => 'wdl', 'title' => 'World Digital Library', 'url' => 'https://www.loc.gov/collections/world-digital-library/about-this-collection/'],
+            ],
+        ] : ['title' => '', 'links' => []];
+
         return [
             'hero' => [
-                'eyebrow' => $page->heroEyebrow,
-                'title' => $heroTitle ?? $page->heroTitle,
-                'summary' => $page->heroSummary,
-                'image' => $page->heroImage,
+                'eyebrow' => $isArabic ? 'الخدمات الإلكترونية' : 'E-Services',
+                'title' => $title,
+                'summary' => $isArabic ? 'إرشادات وصول رسمية وآمنة للخدمة.' : 'Official, safe service access guidance.',
+                'image' => '/images/slider-3.webp',
             ],
-            'intro' => ['title' => $page->introTitle, 'body' => $page->introBody],
-            'sections' => $page->sections,
-            'resources' => ['title' => $page->resourceLinksTitle, 'links' => $page->resourceLinks],
-            'cta' => ['title' => $page->ctaTitle, 'body' => $page->ctaBody, 'label' => $page->ctaLabel, 'url' => $page->ctaUrl],
-            'relatedLinks' => $page->relatedLinks,
-            'seo' => ['title' => $page->seoTitle, 'description' => $page->seoDescription, 'image' => $page->seoImage],
+            'intro' => [
+                'title' => $isArabic ? 'إرشادات الخدمة' : 'Service guidance',
+                'body' => $isArabic ? 'استخدم الروابط الرسمية المنشورة في هذه الصفحة.' : 'Use the official links published on this page.',
+            ],
+            'sections' => [[
+                'id' => 'access',
+                'title' => $isArabic ? 'الوصول' : 'Access',
+                'body' => $isArabic ? 'اتبع خطوات الوصول الآمنة.' : 'Follow the safe access steps.',
+            ]],
+            'resources' => $resources,
+            'cta' => [
+                'title' => $isArabic ? 'هل تحتاج إلى مساعدة؟' : 'Need help?',
+                'body' => $isArabic ? 'تواصل مع فريق الجامعة للمساعدة.' : 'Contact the university team for assistance.',
+                'label' => $isArabic ? 'تواصل معنا' : 'Contact us',
+                'url' => $slug === 'it-support' ? "/{$locale}/contact?topic=it-support#contact-form" : "/{$locale}/e-services/it-support",
+            ],
+            'relatedLinks' => [
+                ['id' => 'library', 'title' => $isArabic ? 'المكتبة' : 'Library', 'url' => "/{$locale}/e-services/library"],
+                ['id' => 'support', 'title' => $isArabic ? 'الدعم التقني' : 'IT Support', 'url' => "/{$locale}/e-services/it-support"],
+            ],
+            'seo' => [
+                'title' => $title.' | SPU',
+                'description' => $isArabic ? 'إرشادات رسمية للخدمات الإلكترونية في الجامعة.' : 'Official guidance for university electronic services.',
+                'image' => '/images/slider-3.webp',
+            ],
         ];
+    }
+
+    private function publishDetail(string $slug): void
+    {
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $workflow->saveDraft('e_services.'.$slug, [
+            'translations' => [
+                'ar' => $this->detailPayload('ar', $slug),
+                'en' => $this->detailPayload('en', $slug),
+            ],
+        ], (int) $author->id);
+
+        $this->assertTrue($workflow->publish('e_services.'.$slug, (int) $author->id));
     }
 }

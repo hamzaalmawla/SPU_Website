@@ -172,15 +172,21 @@ class SeoMetadataServicePropertyTest extends TestCase
     {
         $result = $this->seoService->resolveHreflang($localePathMap);
 
-        // Output count must match input count
+        $hasArabicDefault = array_key_exists('ar', $localePathMap);
+
+        // Arabic is the site's default locale, so Arabic-capable sets include
+        // one additional x-default alternate.
         $this->assertCount(
-            count($localePathMap),
+            count($localePathMap) + ($hasArabicDefault ? 1 : 0),
             $result,
-            'Hreflang output count must match input locale count'
+            'Hreflang output count must include x-default when Arabic exists'
         );
 
-        // Output locales must exactly match input locales
+        // Output locales must match input locales plus the optional default.
         $inputLocales = array_keys($localePathMap);
+        if ($hasArabicDefault) {
+            $inputLocales[] = 'x-default';
+        }
         $outputLocales = array_map(fn (array $entry) => $entry['locale'], $result);
         sort($inputLocales);
         sort($outputLocales);

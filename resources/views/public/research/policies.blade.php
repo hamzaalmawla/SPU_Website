@@ -4,6 +4,9 @@
 
 @section('content')
     @php($data = $page->data)
+    @if (! $page->isAvailable)
+        @include('public.research.partials.empty-state', ['locale' => $locale, 'direction' => $direction])
+    @else
     @include('public.research.partials.page-hero', ['hero' => $data['hero'] ?? [], 'locale' => $locale, 'direction' => $direction])
 
     <section class="bg-white py-12 font-hacen md:py-16" dir="{{ $direction }}">
@@ -54,4 +57,5 @@
             </div>
         </div>
     </section>
+    @endif
 @endsection

@@ -26,6 +26,9 @@ use DateTimeInterface;
  */
 interface PageServiceInterface
 {
+    /** @return list<int> */
+    public function invalidParentIds(int $pageId): array;
+
     /**
      * Create a page shell used by the homepage and top-level landing pages.
      */

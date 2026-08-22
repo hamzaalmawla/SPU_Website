@@ -66,7 +66,7 @@ final class LegacyNewsApprovalPacketService implements LegacyNewsApprovalPacketS
         }
 
         $sourceCounts = [];
-        $titleCounts = [];
+        $titleGroups = [];
 
         foreach ($rows as $row) {
             $sourceKey = $row['source_table'].':'.$row['source_id'];
@@ -78,10 +78,26 @@ final class LegacyNewsApprovalPacketService implements LegacyNewsApprovalPacketS
 
                     if ($title !== null) {
                         $key = $row['service_type'].'|'.$titleField.'|'.$title;
-                        $titleCounts[$key] = ($titleCounts[$key] ?? 0) + 1;
+                        $titleGroups[$key][] = [
+                            'source_key' => $sourceKey,
+                            'fingerprint' => $this->duplicateFingerprint($row),
+                        ];
                     }
                 }
             }
+        }
+
+        $duplicateGroups = [];
+        foreach ($titleGroups as $key => $groupRows) {
+            $fingerprintCounts = [];
+            foreach ($groupRows as $groupRow) {
+                $fingerprint = (string) $groupRow['fingerprint'];
+                $fingerprintCounts[$fingerprint] = ($fingerprintCounts[$fingerprint] ?? 0) + 1;
+            }
+            $duplicateGroups[$key] = [
+                'rows' => $groupRows,
+                'fingerprint_counts' => $fingerprintCounts,
+            ];
         }
 
         $approved = [];
@@ -97,12 +113,27 @@ final class LegacyNewsApprovalPacketService implements LegacyNewsApprovalPacketS
                 $reasons[] = 'duplicate_source_id';
             }
 
+            $hasMateriallyDistinctTitle = false;
+            $requiresDuplicateDisposition = false;
+
             foreach (['ar_name', 'en_name'] as $titleField) {
                 $title = $this->normalizedTitle($row[$titleField]);
+                $key = $row['service_type'].'|'.$titleField.'|'.$title;
+                $group = $title !== null ? ($duplicateGroups[$key] ?? null) : null;
 
-                if ($title !== null && ($titleCounts[$row['service_type'].'|'.$titleField.'|'.$title] ?? 0) > 1) {
-                    $reasons[] = 'duplicate_'.$titleField;
+                if (is_array($group) && count($group['rows']) > 1) {
+                    $fingerprint = $this->duplicateFingerprint($row);
+                    if (($group['fingerprint_counts'][$fingerprint] ?? 0) === 1) {
+                        $hasMateriallyDistinctTitle = true;
+                    } else {
+                        $requiresDuplicateDisposition = true;
+                        $reasons[] = 'duplicate_'.$titleField;
+                    }
                 }
+            }
+
+            if ($requiresDuplicateDisposition) {
+                $reasons[] = 'duplicate_disposition_required';
             }
 
             $reasons = array_values(array_unique($reasons));
@@ -121,9 +152,11 @@ final class LegacyNewsApprovalPacketService implements LegacyNewsApprovalPacketS
             $row['approval_decision'] = 'import';
             $row['approved_target'] = 'news';
             $row['approved_by'] = $approvedBy;
-            $row['approval_basis'] = $allowArabicFallback
-                ? 'visible_supported_non_link_non_duplicate_disabled_draft_arabic_fallback_approved'
-                : 'visible_supported_non_link_non_placeholder_non_duplicate_disabled_draft';
+            $row['approval_basis'] = $hasMateriallyDistinctTitle
+                ? 'visible_supported_materially_distinct_title_group_source_id_slug_disabled_draft'
+                : ($allowArabicFallback
+                    ? 'visible_supported_non_link_non_duplicate_disabled_draft_arabic_fallback_approved'
+                    : 'visible_supported_non_link_non_placeholder_non_duplicate_disabled_draft');
             $approved[] = $row;
             $service = (int) $row['service_type'];
             $serviceCounts[$service] = ($serviceCounts[$service] ?? 0) + 1;
@@ -152,7 +185,8 @@ final class LegacyNewsApprovalPacketService implements LegacyNewsApprovalPacketS
                 $allowArabicFallback
                     ? 'English Under Construction placeholders are omitted and Arabic source content is the approved display fallback'
                     : 'placeholder translations are rejected',
-                'no orphan or existing mapping', 'no duplicate source or same-service localized title',
+                'no orphan or existing mapping',
+                'same-title rows with different content/child evidence may be retained; uncertain groups remain private until canonical or redirect disposition',
                 'invalid legacy dates may be normalized to null because imports remain disabled drafts',
             ],
             'summary' => [
@@ -231,6 +265,16 @@ final class LegacyNewsApprovalPacketService implements LegacyNewsApprovalPacketS
         }
 
         return $value;
+    }
+
+    /** @param array<string, string> $row */
+    private function duplicateFingerprint(array $row): string
+    {
+        return implode('|', [
+            $row['ar_content_length'],
+            $row['en_content_length'],
+            $row['child_total_count'],
+        ]);
     }
 
     private function uniqueBase(string $directory, string $disk): string

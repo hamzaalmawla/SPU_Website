@@ -2,6 +2,14 @@
 
 Last updated: 2026-07-09
 
+> Current execution note (2026-08-21): this master plan remains the historical
+> migration blueprint. `Docs/CURRENT_REMEDIATION_EXECUTION_CHECKLIST.md` is the
+> authoritative status map for the current remediation. Local code changes are not
+> deployed; the local automated suite is green but accessibility needs browser QA; host,
+> proxy, front-controller, OPcache, gzip, and PHP-FPM verification remains; cPanel
+> shell is disabled; caching optimization is deferred and nginx private/full-page
+> caching must remain disabled. Do not infer cutover approval or sign-off.
+
 ## Purpose
 
 This is the final operational blueprint for completing the old SPU website migration and preserving every valuable old URL when the Laravel website replaces the old website.

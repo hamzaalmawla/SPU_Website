@@ -20,6 +20,11 @@
                     </span>
                 </div>
             </div>
+            @if ($this->requiresTwoFactor())
+                <p class="mt-3 text-sm text-warning-800 dark:text-warning-200">
+                    Confirm enrollment before accessing privileged production administration features.
+                </p>
+            @endif
         @endif
 
         {{-- Enrollment Flow --}}

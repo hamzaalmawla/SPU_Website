@@ -19,10 +19,13 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
         private readonly CmsWorkflowServiceInterface $cmsWorkflowService,
     ) {}
 
-    public function getLanding(string $locale): CampusLifePageDTO
+    public function getLanding(string $locale): ?CampusLifePageDTO
     {
-        $landing = $this->publishedLocalizedPayload('campus_life.landing', $locale)
-            ?? $this->localized($this->landingPayload(), $locale);
+        $landing = $this->publishedLocalizedPayload('campus_life.landing', $locale);
+
+        if ($landing === null) {
+            return null;
+        }
 
         return $this->landingDto($locale, $this->safeLandingPayload($this->normalizeUrls($landing, $locale), $locale));
     }
@@ -115,11 +118,6 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
         $payload = $this->publishedLocalizedPayload('campus_life.'.$slug, $locale);
 
         if ($payload === null) {
-            $fallback = $this->sectionPayloads()[$slug] ?? null;
-            $payload = is_array($fallback) ? $this->localized($fallback, $locale) : null;
-        }
-
-        if ($payload === null) {
             return null;
         }
 
@@ -130,18 +128,24 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
         return $this->sectionDto($slug, $locale, $this->normalizeUrls($payload, $locale));
     }
 
-    public function getCareerJobBoard(string $locale, array $filters = []): CampusLifeSectionDTO
+    public function getCareerJobBoard(string $locale, array $filters = []): ?CampusLifeSectionDTO
     {
-        $payload = $this->publishedLocalizedPayload('campus_life.jobs', $locale)
-            ?? $this->localized($this->jobBoardPayload(), $locale);
+        $payload = $this->publishedLocalizedPayload('campus_life.jobs', $locale);
+
+        if ($payload === null) {
+            return null;
+        }
 
         return $this->jobBoardDto($locale, $payload, $filters, false);
     }
 
     public function getCareerJobDetail(string $slug, string $locale): ?CampusLifeSectionDTO
     {
-        $payload = $this->publishedLocalizedPayload('campus_life.jobs', $locale)
-            ?? $this->localized($this->jobBoardPayload(), $locale);
+        $payload = $this->publishedLocalizedPayload('campus_life.jobs', $locale);
+
+        if ($payload === null) {
+            return null;
+        }
         $jobs = $this->publicJobs($payload);
         $job = $this->jobBySlug($jobs, $slug);
 
@@ -182,8 +186,11 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
 
     public function findOpenCareerJob(string $slug, string $locale): ?CampusLifeJobDTO
     {
-        $payload = $this->publishedLocalizedPayload('campus_life.jobs', $locale)
-            ?? $this->localized($this->jobBoardPayload(), $locale);
+        $payload = $this->publishedLocalizedPayload('campus_life.jobs', $locale);
+
+        if ($payload === null) {
+            return null;
+        }
         $job = $this->jobBySlug($this->publicJobs($payload), $slug);
 
         if (! is_array($job)) {
@@ -1019,16 +1026,16 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
     {
         $weekdayToScheduleIndex = [6 => 0, 0 => 1, 1 => 2, 2 => 3, 3 => 4, 4 => 5, 5 => 6];
         $index = $weekdayToScheduleIndex[(int) date('w')] ?? 0;
-        
+
         $today = $schedule[$index] ?? $schedule[0];
-        
+
         // Normalize day field for the current locale
         $today['day'] = $today['dayEn'] ?? $today['day'] ?? '';
         $today['time'] = $today['timeEn'] ?? $today['time'] ?? '';
-        
+
         // Add real-time status checking
         $today = array_merge($today, $this->calculateRealTimeStatus($today));
-        
+
         return $today;
     }
 
@@ -1037,7 +1044,7 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
     {
         $isEmergency = (bool) ($daySchedule['isEmergency'] ?? false);
         $timeString = $daySchedule['timeEn'] ?? '';
-        
+
         // If emergency only or no time specified, mark as not regular hours
         if ($isEmergency || empty($timeString) || str_contains($timeString, 'Emergency')) {
             return [
@@ -1046,13 +1053,13 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
                 'currentStatus' => 'emergency',
             ];
         }
-        
+
         // Parse time range (e.g., "8:00 AM - 4:00 PM")
         $timeStatus = $this->parseTimeRange($timeString);
-        
+
         return [
             'isOpen' => $timeStatus['isOpen'],
-            'isClosed' => !$timeStatus['isOpen'],
+            'isClosed' => ! $timeStatus['isOpen'],
             'currentStatus' => $timeStatus['isOpen'] ? 'open' : 'closed',
             'opensAt' => $timeStatus['opensAt'] ?? null,
             'closesAt' => $timeStatus['closesAt'] ?? null,
@@ -1064,40 +1071,40 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
     private function parseTimeRange(string $timeRange): array
     {
         preg_match('/(\d{1,2}):(\d{2})\s*(AM|PM)?\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)?/i', $timeRange, $matches);
-        
+
         if (empty($matches)) {
             return ['isOpen' => false];
         }
-        
+
         $openHour = (int) $matches[1];
         $openMin = (int) $matches[2];
         $openPeriod = strtoupper($matches[3] ?? 'AM');
-        
+
         $closeHour = (int) $matches[4];
         $closeMin = (int) $matches[5];
         $closePeriod = strtoupper($matches[6] ?? 'PM');
-        
+
         // Convert to 24-hour format
         if ($openPeriod === 'PM' && $openHour !== 12) {
             $openHour += 12;
         } elseif ($openPeriod === 'AM' && $openHour === 12) {
             $openHour = 0;
         }
-        
+
         if ($closePeriod === 'PM' && $closeHour !== 12) {
             $closeHour += 12;
         } elseif ($closePeriod === 'AM' && $closeHour === 12) {
             $closeHour = 0;
         }
-        
-        $now = new \DateTime();
+
+        $now = new \DateTime;
         $currentMinutes = ((int) $now->format('H')) * 60 + ((int) $now->format('i'));
         $openMinutes = $openHour * 60 + $openMin;
         $closeMinutes = $closeHour * 60 + $closeMin;
-        
+
         $isOpen = $currentMinutes >= $openMinutes && $currentMinutes < $closeMinutes;
         $minutesUntilClose = $isOpen ? $closeMinutes - $currentMinutes : null;
-        
+
         return [
             'isOpen' => $isOpen,
             'opensAt' => sprintf('%02d:%02d', $openHour, $openMin),

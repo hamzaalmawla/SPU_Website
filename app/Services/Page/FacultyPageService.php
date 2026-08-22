@@ -8,6 +8,7 @@ use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
 use App\Contracts\Page\AboutPageServiceInterface;
 use App\Contracts\Page\FacultyPageServiceInterface;
+use App\Contracts\Page\FacultySubpageCardServiceInterface;
 use App\Contracts\Page\ProfilePageServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
@@ -396,10 +397,12 @@ final class FacultyPageService implements FacultyPageServiceInterface
 
     public function resolveLegacyProjectUrl(string $projectId, string $locale): ?string
     {
-        foreach ($this->frontendProjectData() as $facultySlug => $projects) {
-            if (collect($projects)->contains(fn (array $project): bool => ($project['id'] ?? null) === $projectId)) {
-                return '/'.$locale.'/facilities/'.$facultySlug.'/projects/'.rawurlencode($projectId);
-            }
+        $project = FacultyStudentProject::query()->enabled()->where('slug', $projectId)->with('faculty')->first();
+
+        if ($project instanceof FacultyStudentProject
+            && $project->faculty instanceof Faculty
+            && $project->faculty->is_enabled) {
+            return '/'.$locale.'/facilities/'.$this->publicSlug($project->faculty).'/projects/'.rawurlencode($projectId);
         }
 
         return null;
@@ -1112,32 +1115,21 @@ final class FacultyPageService implements FacultyPageServiceInterface
     /** @return array<int, array<string, mixed>> */
     private function projectItems(Faculty $faculty, string $locale): array
     {
-        $frontendProjects = $this->frontendProjectItems($this->publicSlug($faculty), $locale);
+        return $faculty->studentProjects
+            ->map(function (FacultyStudentProject $project) use ($faculty, $locale): array {
+                $translation = $this->projectTranslation($project, $locale);
 
-        if ($frontendProjects !== []) {
-            return collect($frontendProjects)
-                ->map(fn (array $project): array => [
-                    ...$project,
-                    'detailRoute' => $this->projectDetailRoute($faculty, $locale, (string) ($project['slug'] ?? '')),
-                ])
-                ->values()
-                ->all();
-        }
-
-        return $faculty->studentProjects->map(function (FacultyStudentProject $project) use ($faculty, $locale): array {
-            $translation = $this->projectTranslation($project, $locale);
-
-            return [
-                'slug' => (string) $project->slug,
-                'title' => (string) $translation->title,
-                'summary' => (string) ($translation->summary ?? ''),
-                'tag' => $translation->tag,
-                'team' => $translation->team,
-                'supervisor' => $translation->supervisor,
-                'image' => $project->image,
-                'detailRoute' => $this->projectDetailRoute($faculty, $locale, (string) $project->slug),
-            ];
-        })->values()->all();
+                return [
+                    'slug' => (string) $project->slug,
+                    'title' => (string) $translation->title,
+                    'summary' => (string) ($translation->summary ?? ''),
+                    'tag' => $translation->tag,
+                    'team' => $translation->team,
+                    'supervisor' => $translation->supervisor,
+                    'image' => $project->image,
+                    'detailRoute' => $this->projectDetailRoute($faculty, $locale, (string) $project->slug),
+                ];
+            })->values()->all();
     }
 
     /** @param array<string, mixed> $project @param array<int, array<string, mixed>> $projects */
@@ -1194,22 +1186,6 @@ final class FacultyPageService implements FacultyPageServiceInterface
     /** @param array<string, mixed> $project @return array<string, mixed> */
     private function projectDetailPayload(Faculty $faculty, array $project, string $locale): array
     {
-        $frontendProject = $this->frontendProjectDetail($this->publicSlug($faculty), (string) ($project['slug'] ?? ''), $locale);
-
-        if ($frontendProject !== []) {
-            $payload = [
-                ...$frontendProject,
-                ...$project,
-            ];
-            $payload['year'] = (string) ($project['academicYear'] ?? $project['year'] ?? $payload['year'] ?? '');
-            $payload = $this->resolveProjectImages($payload);
-
-            return [
-                ...$payload,
-                'detailRoute' => $this->projectDetailRoute($faculty, $locale, (string) ($project['slug'] ?? '')),
-            ];
-        }
-
         $facultyTitle = (string) $this->facultyTranslation($faculty, $locale)->name;
 
         return $this->resolveProjectImages([
@@ -1253,75 +1229,6 @@ final class FacultyPageService implements FacultyPageServiceInterface
         }
 
         return $project;
-    }
-
-    /** @return array<string, mixed> */
-    private function frontendProjectDetail(string $facultySlug, string $projectSlug, string $locale): array
-    {
-        $project = collect($this->frontendProjectData()[$facultySlug] ?? [])->firstWhere('id', $projectSlug);
-
-        if (! is_array($project)) {
-            return [];
-        }
-
-        return $this->localizedFrontendProject($project, $locale);
-    }
-
-    /** @return array<int, array<string, mixed>> */
-    private function frontendProjectItems(string $facultySlug, string $locale): array
-    {
-        return collect($this->frontendProjectData()[$facultySlug] ?? [])
-            ->map(fn (array $project): array => $this->localizedFrontendProject($project, $locale))
-            ->values()
-            ->all();
-    }
-
-    /** @param array<string, mixed> $project @return array<string, mixed> */
-    private function localizedFrontendProject(array $project, string $locale): array
-    {
-        $isAr = $locale === 'ar';
-        $teamMembers = collect($project['teamMembers'] ?? [])->map(fn (array $member): array => [
-            'name' => (string) ($isAr ? $member['nameAr'] : $member['nameEn']),
-            'role' => (string) ($isAr ? $member['roleAr'] : $member['roleEn']),
-        ])->values()->all();
-
-        return [
-            'slug' => (string) ($project['id'] ?? ''),
-            'title' => (string) ($isAr ? $project['titleAr'] : $project['titleEn']),
-            'summary' => (string) ($isAr ? $project['summaryAr'] : $project['summaryEn']),
-            'tag' => (string) ($isAr ? $project['tagAr'] : $project['tagEn']),
-            'team' => (string) ($isAr ? $project['createdByAr'] : $project['createdByEn']),
-            'supervisor' => (string) ($isAr ? $project['supervisorAr'] : $project['supervisorEn']),
-            'image' => $project['image'],
-            'facultyTitle' => (string) ($isAr ? $project['facultyAr'] : $project['facultyEn']),
-            'facultySlug' => (string) $project['facultySlug'],
-            'facultyColor' => (string) $project['facultyColor'],
-            'year' => (string) $project['year'],
-            'createdBy' => (string) ($isAr ? $project['createdByAr'] : $project['createdByEn']),
-            'createdById' => (string) ($project['createdById'] ?? ''),
-            'status' => (string) ($isAr ? ($project['statusAr'] ?? $project['status'] ?? 'مكتمل') : ($project['statusEn'] ?? $project['status'] ?? 'Completed')),
-            'longDescription' => $this->stringList($isAr ? ($project['longDescAr'] ?? []) : ($project['longDescEn'] ?? [])),
-            'gallery' => $project['gallery'],
-            'technologies' => $project['technologies'],
-            'teamMembers' => $teamMembers,
-            'supervisorId' => (string) ($project['supervisorId'] ?? ''),
-        ];
-    }
-
-    /** @return array<string, array<int, array<string, mixed>>> */
-    private function frontendProjectData(): array
-    {
-        static $data = null;
-
-        if (is_array($data)) {
-            return $data;
-        }
-
-        $path = resource_path('data/frontend-faculty-projects.json');
-        $decoded = is_file($path) ? json_decode((string) file_get_contents($path), true) : [];
-        $data = is_array($decoded) ? $decoded : [];
-
-        return $data;
     }
 
     private function projectDetailRoute(Faculty $faculty, string $locale, string $projectSlug): string
@@ -2029,7 +1936,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
         }
 
         $facultySlug = $this->publicSlug($faculty);
-        $cardService = app(\App\Contracts\Page\FacultySubpageCardServiceInterface::class);
+        $cardService = app(FacultySubpageCardServiceInterface::class);
         $visibleSlugs = $cardService->getVisibleSubpageSlugs($facultySlug);
 
         if ($visibleSlugs === []) {

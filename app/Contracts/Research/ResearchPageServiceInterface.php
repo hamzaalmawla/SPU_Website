@@ -83,6 +83,14 @@ interface ResearchPageServiceInterface
 
     public function publicationSlugForLegacyId(string $id): ?string;
 
+    public function isPubliclyAvailablePath(string $locale, string $path): bool;
+
+    /** @param array<int, mixed> $columns @return array<int, mixed> */
+    public function filterFooterColumns(string $locale, array $columns): array;
+
+    /** @param array<int, array<string, mixed>> $items @return array<int, array<string, mixed>> */
+    public function filterNavigationItems(array $items): array;
+
     /** @param array<string, mixed> $content */
     public function buildPreviewLanding(string $locale, array $content): ResearchPageDTO;
 

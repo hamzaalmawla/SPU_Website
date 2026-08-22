@@ -40,6 +40,15 @@ final class CampusLifeJobsTest extends TestCase
         parent::setUp();
 
         $this->seed(DatabaseSeeder::class);
+
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $workflow->saveDraft(
+            'campus_life.jobs',
+            app(CampusLifePageServiceInterface::class)->getEditablePayload('campus_life.jobs'),
+            (int) $author->getKey(),
+        );
+        $workflow->publish('campus_life.jobs', (int) $author->getKey());
     }
 
     public function test_job_target_is_registered_under_career_development_and_has_a_curated_editor(): void

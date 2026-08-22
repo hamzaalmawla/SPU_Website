@@ -6,6 +6,8 @@ namespace Tests\Feature\PX05;
 
 use App\Models\Page\Page;
 use App\Models\Page\PageTranslation;
+use App\Models\Research\ResearchPublication;
+use App\Models\Research\ResearchPublicationTranslation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -59,6 +61,41 @@ class SitemapTest extends TestCase
 
         $this->assertStringContainsString('hreflang="ar"', $content);
         $this->assertStringContainsString('hreflang="en"', $content);
+        $this->assertStringContainsString('hreflang="x-default"', $content);
+    }
+
+    public function test_sitemap_uses_w3c_lastmod_values(): void
+    {
+        $page = $this->seedPublishedPage('w3c-page');
+        $page->forceFill(['updated_at' => '2026-08-21 14:30:00'])->save();
+
+        $content = $this->get('/sitemap.xml')->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression(
+            '/<lastmod>2026-08-21T14:30:00\+00:00<\/lastmod>/',
+            $content,
+        );
+    }
+
+    public function test_real_published_publications_do_not_require_cms_archive_payload(): void
+    {
+        $publication = ResearchPublication::create([
+            'published_at' => now()->subDay(),
+            'is_enabled' => true,
+        ]);
+
+        foreach (['ar' => 'منشور حقيقي', 'en' => 'Real Publication'] as $locale => $title) {
+            ResearchPublicationTranslation::create([
+                'research_publication_id' => $publication->id,
+                'locale' => $locale,
+                'title' => $title,
+            ]);
+        }
+
+        $content = $this->get('/sitemap.xml')->assertOk()->getContent();
+
+        $this->assertStringContainsString('/ar/research/publications/real-publication-'.$publication->id, $content);
+        $this->assertStringContainsString('/en/research/publications/real-publication-'.$publication->id, $content);
     }
 
     public function test_sitemap_excludes_admin_and_preview_urls(): void

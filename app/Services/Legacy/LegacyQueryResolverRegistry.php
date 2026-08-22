@@ -8,6 +8,7 @@ use App\Contracts\Legacy\LegacyQueryModuleResolverInterface;
 use App\Contracts\Legacy\LegacyQueryResolverRegistryInterface;
 use App\DTOs\Legacy\LegacyQueryResolutionDTO;
 use App\DTOs\Legacy\NormalizedLegacyUrlDTO;
+use App\Services\Legacy\QueryResolvers\LegacyAlumniQueryResolver;
 use App\Services\Legacy\QueryResolvers\LegacyCategoryRouteQueryResolver;
 use App\Services\Legacy\QueryResolvers\LegacyFunctionalRouteQueryResolver;
 use App\Services\Legacy\QueryResolvers\LegacyNewsQueryResolver;
@@ -33,13 +34,14 @@ final class LegacyQueryResolverRegistry implements LegacyQueryResolverRegistryIn
         LegacyUnsupportedLanguageQueryResolver $unsupportedLanguageResolver,
         LegacyResearchQueryResolver $researchResolver,
         LegacySubsiteContentQueryResolver $subsiteContentResolver,
+        LegacyAlumniQueryResolver $alumniResolver,
     ) {
         $this->unsupportedLanguageResolver = $unsupportedLanguageResolver;
         $this->subsiteContentResolver = $subsiteContentResolver;
         // Order matters: precise, per-record resolvers run first. The subsite
         // content resolver is last because it is a section-level equivalent and
         // must never pre-empt a resolver that can name the exact record.
-        $this->resolvers = [$subsiteHomeResolver, $functionalRouteResolver, $categoryRouteResolver, $newsResolver, $researchResolver, $subsiteContentResolver];
+        $this->resolvers = [$subsiteHomeResolver, $functionalRouteResolver, $categoryRouteResolver, $newsResolver, $researchResolver, $alumniResolver, $subsiteContentResolver];
     }
 
     public function resolve(NormalizedLegacyUrlDTO $url): ?LegacyQueryResolutionDTO

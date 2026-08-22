@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources;
 
+use App\Contracts\Content\ProfileAdminServiceInterface;
 use App\Contracts\Shared\SlugServiceInterface;
 use App\Filament\Resources\PersonResource\Pages;
 use App\Filament\Support\MediaPicker;
@@ -251,17 +252,7 @@ class PersonResource extends Resource
     /** @return array<int, string> */
     private static function facultyIdOptions(): array
     {
-        return \App\Models\Faculty\Faculty::query()
-            ->enabled()
-            ->with('translations')
-            ->orderBy('sort_order')
-            ->get()
-            ->mapWithKeys(fn (\App\Models\Faculty\Faculty $f): array => [
-                (int) $f->getKey() => $f->translations->firstWhere('locale', 'en')?->name
-                    ?? $f->translations->firstWhere('locale', 'ar')?->name
-                    ?? (string) $f->slug,
-            ])
-            ->all();
+        return app(ProfileAdminServiceInterface::class)->facultyOptions((int) auth()->id());
     }
 
     /** @param array<string, mixed> $data @return array<string, mixed> */
@@ -308,6 +299,6 @@ class PersonResource extends Resource
 
     private static function nextSortOrder(): int
     {
-        return ((int) (Person::query()->max('sort_order') ?? 0)) + 10;
+        return app(ProfileAdminServiceInterface::class)->nextPersonSortOrder();
     }
 }

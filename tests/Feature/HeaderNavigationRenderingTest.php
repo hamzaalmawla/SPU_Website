@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Research\ResearchPageServiceInterface;
+use App\Models\User\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -17,6 +20,15 @@ final class HeaderNavigationRenderingTest extends TestCase
         parent::setUp();
 
         $this->seed(DatabaseSeeder::class);
+
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $research = app(ResearchPageServiceInterface::class);
+
+        foreach (['research.index', 'research.publications', 'research.themes'] as $targetKey) {
+            $workflow->saveDraft($targetKey, $research->getEditablePayload($targetKey), (int) $author->getKey());
+            $this->assertTrue($workflow->publish($targetKey, (int) $author->getKey()));
+        }
     }
 
     public function test_header_renders_frontend_navigation_additions(): void

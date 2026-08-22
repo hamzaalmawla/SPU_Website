@@ -31,6 +31,42 @@ final class CachePublicPages
      */
     private const CSRF_PLACEHOLDER = '__SPU_CSRF_TOKEN_PLACEHOLDER__';
 
+    private const BROWSER_CACHE_CONTROL = 'private, no-store, max-age=0';
+
+    /**
+     * These are the query parameters used by public routes when a route name
+     * is not available (for example, when this middleware is tested directly).
+     * Named routes below narrow this list further to avoid irrelevant query
+     * values fragmenting otherwise identical page caches.
+     *
+     * @var list<string>
+     */
+    private const SUPPORTED_QUERY_PARAMETERS = [
+        'academic_phase',
+        'category',
+        'course',
+        'department',
+        'event',
+        'expertise',
+        'faculty',
+        'id',
+        'job',
+        'lab',
+        'month',
+        'page',
+        'q',
+        'search',
+        'semester',
+        'slug',
+        'source',
+        'status',
+        'tab',
+        'theme',
+        'topic',
+        'type',
+        'year',
+    ];
+
     public function __construct(
         private readonly CacheServiceInterface $cacheService,
         private readonly AuthFactory $authFactory,
@@ -78,6 +114,10 @@ final class CachePublicPages
             return true;
         }
 
+        if ($this->hasSessionState($request) || $this->hasPrivateRequestHeaders($request)) {
+            return true;
+        }
+
         if ($request->is('admin') || $request->is('admin/*')) {
             return true;
         }
@@ -88,13 +128,56 @@ final class CachePublicPages
 
         if (in_array($request->route()?->getName(), [
             'public.contact',
+            'public.e-services.suggestions-complaints',
             'public.news.events-list.register',
             'public.research.conferences.register',
         ], true)) {
             return true;
         }
 
+        if ($request->is('*/e-services/suggestions-complaints')) {
+            return true;
+        }
+
         return $this->isPreviewRequest($request);
+    }
+
+    private function hasSessionState(Request $request): bool
+    {
+        if (! $request->hasSession()) {
+            return false;
+        }
+
+        $session = $request->session();
+
+        if ($session->hasOldInput() || $session->has('errors')) {
+            return true;
+        }
+
+        foreach (['_flash.old', '_flash.new'] as $flashKey) {
+            if (is_array($session->get($flashKey, [])) && $session->get($flashKey, []) !== []) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function hasPrivateRequestHeaders(Request $request): bool
+    {
+        if ($request->headers->has('Authorization')) {
+            return true;
+        }
+
+        foreach (['Cache-Control', 'Pragma'] as $header) {
+            $value = $request->headers->get($header);
+
+            if (is_string($value) && preg_match('/(?:^|,)\s*(?:no-cache|no-store)(?:\s*=\s*[^,]*)?\s*(?:,|$)/i', $value) === 1) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function isPreviewRequest(Request $request): bool
@@ -120,7 +203,7 @@ final class CachePublicPages
     private function buildCacheKey(Request $request): string
     {
         $locale = $request->route('locale');
-        $normalizedQuery = $this->normalizeQuery($request->query());
+        $normalizedQuery = $this->normalizeQuery($request);
         $queryString = http_build_query($normalizedQuery);
 
         return 'public_pages:'.sha1(implode('|', [
@@ -147,20 +230,96 @@ final class CachePublicPages
     }
 
     /**
-     * @param  array<string, mixed>  $query
-     * @return array<string, mixed>
+     * @return array<string, string|int>
      */
-    private function normalizeQuery(array $query): array
+    private function normalizeQuery(Request $request): array
     {
-        ksort($query);
+        $allowedParameters = $this->supportedQueryParameters($request);
+        $query = [];
 
-        foreach ($query as $key => $value) {
-            if (is_array($value)) {
-                $query[$key] = $this->normalizeQuery($value);
+        foreach ($allowedParameters as $key) {
+            if (! array_key_exists($key, $request->query())) {
+                continue;
+            }
+
+            $value = $this->canonicalQueryValue($key, $request->query($key));
+
+            if ($value !== null) {
+                $query[$key] = $value;
             }
         }
 
+        ksort($query);
+
         return $query;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function supportedQueryParameters(Request $request): array
+    {
+        $routeName = $request->route()?->getName();
+
+        if (! is_string($routeName)) {
+            return self::SUPPORTED_QUERY_PARAMETERS;
+        }
+
+        return match ($routeName) {
+            'public.alumni.index' => ['q', 'year', 'faculty', 'department', 'page'],
+            'public.about.leadership' => ['faculty'],
+            'public.about.directorates.staff' => ['faculty', 'page'],
+            'public.about.partnerships' => ['category', 'q', 'page'],
+            'public.about.profile' => ['source'],
+            'public.admissions.section' => $request->route('section') === 'documents' ? ['tab'] : [],
+            'public.campus-life.career-development.jobs' => ['q', 'category', 'type', 'page'],
+            'public.campus-life.career-development.jobs.apply' => ['job'],
+            'public.facilities.subpage' => match ($request->route('subpage')) {
+                'alumni', 'valedictorians' => ['q', 'year', 'department', 'faculty', 'semester', 'academic_phase', 'page'],
+                'projects', 'research' => ['page'],
+                'labs' => ['lab', 'page'],
+                default => [],
+            },
+            'public.facilities.study-plan' => ['department'],
+            'public.facilities.study-plan.course' => ['department', 'course', 'type'],
+            'public.news.articles' => ['category', 'search', 'page'],
+            'public.news.announcements' => ['category', 'page'],
+            'public.news.events' => ['month'],
+            'public.news.events-list' => ['category'],
+            'public.news.events-list.register', 'public.news.events-list.past' => ['event'],
+            'public.news.gallery' => ['category', 'page'],
+            'public.research.repository', 'public.research.publications.index' => ['q', 'faculty', 'type', 'year', 'page'],
+            'public.research.projects.index' => ['q', 'status', 'faculty', 'theme', 'page'],
+            'public.research.researchers.index' => ['q', 'faculty', 'expertise', 'page'],
+            'public.research.expert-finder' => ['q', 'faculty', 'page'],
+            'public.research.conferences.register' => ['event'],
+            default => [],
+        };
+    }
+
+    private function canonicalQueryValue(string $key, mixed $value): string|int|null
+    {
+        if (! is_scalar($value)) {
+            return null;
+        }
+
+        $value = (string) $value;
+
+        if ($key === 'page') {
+            $page = filter_var($value, FILTER_VALIDATE_INT);
+
+            return is_int($page) && $page > 1 ? $page : null;
+        }
+
+        if ($key === 'q') {
+            $value = trim($value);
+        }
+
+        if ($key === 'source' && ! in_array($value, ['person', 'faculty-member'], true)) {
+            return null;
+        }
+
+        return $value === '' ? null : $value;
     }
 
     private function serializeResponse(Request $request, Response $response): ?array
@@ -251,6 +410,7 @@ final class CachePublicPages
     private function withCacheHeader(Response $response, string $value): Response
     {
         $response->headers->set('X-Cache', $value);
+        $response->headers->set('Cache-Control', self::BROWSER_CACHE_CONTROL);
 
         return $response;
     }

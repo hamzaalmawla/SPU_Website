@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use Closure;
+use Illuminate\Contracts\Cache\Factory as CacheFactory;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 /**
  * Verifies incoming webhook requests using HMAC-SHA256 signature.
@@ -19,6 +22,11 @@ use Symfony\Component\HttpFoundation\Response;
 final class VerifyWebhookSignature
 {
     private const MAX_TIMESTAMP_SKEW_SECONDS = 300;
+
+    public function __construct(
+        private readonly CacheFactory $cacheFactory,
+        private readonly LoggerInterface $logger = new NullLogger,
+    ) {}
 
     /**
      * Handle an incoming request.
@@ -51,7 +59,23 @@ final class VerifyWebhookSignature
 
         $nonceKey = 'webhook:nonce:'.hash('sha256', (string) $nonce);
 
-        if (! Cache::add($nonceKey, true, now()->addSeconds(self::MAX_TIMESTAMP_SKEW_SECONDS))) {
+        try {
+            $nonceAccepted = $this->cacheFactory
+                ->store((string) config('cache.webhook_store', 'webhook'))
+                ->add($nonceKey, true, now()->addSeconds(self::MAX_TIMESTAMP_SKEW_SECONDS));
+        } catch (Throwable $exception) {
+            try {
+                $this->logger->error('Webhook replay protection is unavailable.', [
+                    'exception' => $exception::class,
+                ]);
+            } catch (Throwable) {
+                // A logging failure must not expose the webhook or fail open.
+            }
+
+            abort(503, 'Webhook replay protection is unavailable.');
+        }
+
+        if (! $nonceAccepted) {
             abort(403, 'Forbidden.');
         }
 

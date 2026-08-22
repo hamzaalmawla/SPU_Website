@@ -18,6 +18,7 @@ use App\DTOs\Cms\CmsPublishReadinessDTO;
 use App\DTOs\Cms\CmsTargetDTO;
 use App\Enums\PublicationStatus;
 use App\Exceptions\ConflictException;
+use App\Jobs\InvalidateCmsCache;
 use App\Models\Cms\CmsDraft;
 use App\Models\Cms\CmsTargetContent;
 use App\Models\Shared\PreviewToken;
@@ -27,7 +28,9 @@ use DateTimeInterface;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 final class CmsWorkflowService implements CmsWorkflowServiceInterface
 {
@@ -139,7 +142,13 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
         $draft = $this->requireLatestEditableDraft($target->key);
         $this->assertReadyForPublish($target->key, is_array($draft->payload_json) ? $draft->payload_json : []);
 
-        return DB::transaction(fn (): bool => $this->publishDraft($draft, $userId));
+        $published = DB::transaction(fn (): bool => $this->publishDraft($draft, $userId));
+
+        if ($published) {
+            $this->invalidatePublishedTarget($target->key, $userId, 'cms.published');
+        }
+
+        return $published;
     }
 
     public function schedule(string $targetKey, DateTimeInterface $publishAt, int $userId): bool
@@ -415,6 +424,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
             }
 
             if (DB::transaction(fn (): bool => $this->publishDraft($draft, $userId))) {
+                $this->invalidatePublishedTarget($draft->target_key, $userId, 'cms.published');
                 $published++;
             }
         }
@@ -456,8 +466,6 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
             'updated_by' => $userId,
         ])->save();
 
-        $this->invalidatePublishedTarget($draft->target_key, $userId, 'cms.published');
-
         return true;
     }
 
@@ -465,19 +473,36 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
     {
         $this->previewTokenStore->invalidateCmsTarget($targetKey);
 
-        $tags = ['public-pages', 'public-shell', 'seo', 'sitemap', 'cms', 'cms:'.$targetKey];
-
-        if (str_starts_with($targetKey, 'news.') || str_starts_with($targetKey, 'entity.news-article.')) {
-            $tags[] = 'news';
-        }
-
-        if (! $this->cacheService->flushTags($tags)) {
-            $this->cacheService->flushAll();
-        }
+        $this->scheduleCacheInvalidationAfterCommit($targetKey);
 
         $this->auditService->log($auditAction, $userId, CmsTargetContent::class, null, [
             'target_key' => $targetKey,
         ]);
+    }
+
+    private function scheduleCacheInvalidationAfterCommit(string $targetKey): void
+    {
+        DB::afterCommit(function () use ($targetKey): void {
+            try {
+                InvalidateCmsCache::invalidate($this->cacheService, $targetKey);
+            } catch (Throwable $exception) {
+                Log::error('CMS cache invalidation failed after commit; queueing a retry.', [
+                    'target_key' => $targetKey,
+                    'exception' => $exception::class,
+                    'message' => $exception->getMessage(),
+                ]);
+
+                try {
+                    InvalidateCmsCache::dispatch($targetKey);
+                } catch (Throwable $queueException) {
+                    Log::error('CMS cache invalidation retry could not be queued.', [
+                        'target_key' => $targetKey,
+                        'exception' => $queueException::class,
+                        'message' => $queueException->getMessage(),
+                    ]);
+                }
+            }
+        });
     }
 
     private function assertReadyForPublish(string $targetKey, array $payload): void

@@ -46,8 +46,20 @@ export function createMobileNav() {
             this.openMenu = id;
         },
 
-        closeDropdown() {
-            this.openMenu = null;
+        openDropdownForFocus(id) {
+            this.openMenu = id;
+        },
+
+        closeDropdownForFocus(event) {
+            if (!event.currentTarget.contains(event.relatedTarget)) {
+                this.openMenu = null;
+            }
+        },
+
+        closeDropdown(event) {
+            if (!event?.currentTarget?.contains(document.activeElement)) {
+                this.openMenu = null;
+            }
         },
 
         isDropdownOpen(id) {
@@ -77,11 +89,38 @@ export function createMobileNav() {
 
         toggleMobile() {
             this.mobileNav = !this.mobileNav;
-            if (!this.mobileNav) this.openMenu = null;
+            this.searchOpen = false;
+            this.openMenu = null;
+
+            if (this.mobileNav) {
+                this.$nextTick(() => this.$el.querySelector('#site-mobile-navigation a[href], #site-mobile-navigation button')?.focus());
+            }
         },
 
         toggleDropdown(id) {
             this.openMenu = this.openMenu === id ? null : id;
+        },
+
+        handleEscape() {
+            if (this.searchOpen) {
+                this.searchOpen = false;
+                this.searchQuery = '';
+                this.$nextTick(() => this.$refs.searchToggle?.focus());
+                return;
+            }
+
+            if (this.openMenu !== null) {
+                const id = this.openMenu;
+                this.openMenu = null;
+                const scope = this.mobileNav ? '#site-mobile-navigation ' : 'nav ';
+                this.$nextTick(() => this.$el.querySelector(`${scope}[data-dropdown-trigger="${id}"]`)?.focus());
+                return;
+            }
+
+            if (this.mobileNav) {
+                this.mobileNav = false;
+                this.$nextTick(() => this.$refs.mobileToggle?.focus());
+            }
         },
 
         toggleSearch() {

@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\DynamicFormSubmissionAttachmentController;
 use App\Http\Controllers\Admin\TwoFactorChallengeController;
 use App\Http\Controllers\Public\AboutController;
 use App\Http\Controllers\Public\AdmissionsController;
+use App\Http\Controllers\Public\AlumniController;
 use App\Http\Controllers\Public\BrowserLocaleRedirectController;
 use App\Http\Controllers\Public\CampusLifeController;
 use App\Http\Controllers\Public\DynamicFormSubmissionController;
@@ -54,6 +55,7 @@ Route::prefix('{locale}')
             ->middleware('throttle:public-form')
             ->name('public.e-services.suggestions-complaints.submit');
         Route::get('/virtual-tour', VirtualTourController::class)->name('public.virtual-tour');
+        Route::get('/alumni', [AlumniController::class, 'index'])->name('public.alumni.index');
 
         Route::controller(FacultyController::class)
             ->prefix('faculties')

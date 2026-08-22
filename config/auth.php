@@ -52,6 +52,14 @@ return [
         'absolute_timeout_minutes' => (int) env('ADMIN_SESSION_ABSOLUTE_TIMEOUT_MINUTES', 480),
     ],
 
+    'two_factor' => [
+        'require_for_privileged_roles' => (bool) env('REQUIRE_PRIVILEGED_ADMIN_2FA', env('APP_ENV', 'production') === 'production'),
+        'privileged_roles' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('PRIVILEGED_ADMIN_2FA_ROLES', 'super_admin,editor,faculty_editor,hr')),
+        ))),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | User Providers

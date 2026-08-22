@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Page\CampusLifePageServiceInterface;
+use App\Contracts\Page\EServicesPageServiceInterface;
+use App\Models\User\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -29,6 +33,8 @@ final class MissingFrontendPagesTest extends TestCase
 
     public function test_job_board_and_detail_pages_render(): void
     {
+        $this->publishCampusLifeJobs();
+
         $this->get('/en/campus-life/career-development/jobs')
             ->assertOk()
             ->assertSee('Job Board')
@@ -45,6 +51,12 @@ final class MissingFrontendPagesTest extends TestCase
 
     public function test_suggestions_complaints_page_renders_and_stores_submission(): void
     {
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $author = $this->superAdmin();
+        $payload = app(EServicesPageServiceInterface::class)->getSuggestionsComplaintsEditablePayload();
+        $workflow->saveDraft('e_services.suggestions-complaints', $payload, (int) $author->id);
+        $this->assertTrue($workflow->publish('e_services.suggestions-complaints', (int) $author->id));
+
         $this->get('/en/e-services/suggestions-complaints')
             ->assertOk()
             ->assertSee('Suggestions &amp; Complaints', false)
@@ -82,5 +94,19 @@ final class MissingFrontendPagesTest extends TestCase
             ->assertDontSee('Page Shell')
             ->assertDontSee('<dt>Slug</dt>', false)
             ->assertDontSee('<dt>Template</dt>', false);
+    }
+
+    private function publishCampusLifeJobs(): void
+    {
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $author = $this->superAdmin();
+        $payload = app(CampusLifePageServiceInterface::class)->getEditablePayload('campus_life.jobs');
+        $workflow->saveDraft('campus_life.jobs', $payload, (int) $author->id);
+        $this->assertTrue($workflow->publish('campus_life.jobs', (int) $author->id));
+    }
+
+    private function superAdmin(): User
+    {
+        return User::query()->where('role_slug', 'super_admin')->firstOrFail();
     }
 }

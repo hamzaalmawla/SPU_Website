@@ -9,6 +9,13 @@ use Illuminate\Support\Collection;
 
 interface FacultySubpageCardServiceInterface
 {
+    public function scopedFacultySlug(int $userId): ?string;
+
+    /** @return array<string, string> */
+    public function facultyOptions(int $userId): array;
+
+    public function cardExists(string $facultySlug, string $subpageSlug): bool;
+
     /** @return Collection<int, FacultySubpageCardDTO> */
     public function getAllCards(string $facultySlug): Collection;
 
@@ -23,25 +30,27 @@ interface FacultySubpageCardServiceInterface
     public function createCard(
         string $facultySlug,
         string $subpageSlug,
+        int $userId,
         ?string $titleOverrideAr = null,
         ?string $titleOverrideEn = null,
         ?int $sortOrder = null,
     ): FacultySubpageCardDTO;
 
-    public function updateCard(int $id, array $data): bool;
+    /** @param array<string, mixed> $data */
+    public function updateCard(int $id, array $data, int $userId): bool;
 
-    public function deleteCard(int $id): bool;
+    public function deleteCard(int $id, int $userId): bool;
 
-    public function toggleVisibility(int $id): bool;
+    public function toggleVisibility(int $id, int $userId): bool;
 
     /** @param array<int, int> $orderedIds */
-    public function reorder(array $orderedIds): bool;
+    public function reorder(array $orderedIds, int $userId): bool;
 
-    public function publish(int $id): bool;
+    public function publish(int $id, int $userId): bool;
 
-    public function unpublish(int $id): bool;
+    public function unpublish(int $id, int $userId): bool;
 
-    public function moveUp(int $id): bool;
+    public function moveUp(int $id, int $userId): bool;
 
-    public function moveDown(int $id): bool;
+    public function moveDown(int $id, int $userId): bool;
 }

@@ -27,6 +27,7 @@ final class NewsWorkflowTest extends TestCase
         parent::setUp();
 
         $this->seed(DatabaseSeeder::class);
+        $this->publishTestOwnedEventsAndGallery();
     }
 
     public function test_news_index_workflow_draft_does_not_leak_until_published(): void
@@ -230,6 +231,8 @@ final class NewsWorkflowTest extends TestCase
 
     public function test_all_dedicated_event_routes_render_without_catch_all_fallback(): void
     {
+        $eventMonth = now()->addMonths(3)->format('Y-m');
+
         $this->get('/en/news/events')->assertOk()->assertSee('Events Calendar');
         $this->get('/en/news/events-list')
             ->assertOk()
@@ -240,7 +243,7 @@ final class NewsWorkflowTest extends TestCase
             ->assertSee('Annual Research Symposium &amp; Innovation Showcase', false)
             ->assertDontSee('Workshop on AI Tools for Academic Research')
             ->assertSee('href="/ar/news/events-list/evt-001"', false);
-        $this->get('/en/news/events?month=2026-11')
+        $this->get('/en/news/events?month='.$eventMonth)
             ->assertOk()
             ->assertSee('href="/en/news/events-list/evt-001"', false)
             ->assertDontSee('/en/news/events-list#evt-001', false);
@@ -257,7 +260,9 @@ final class NewsWorkflowTest extends TestCase
 
     public function test_events_calendar_has_responsive_bilingual_layout_and_month_navigation(): void
     {
-        $this->get('/en/news/events?month=2026-11')
+        $eventMonth = now()->addMonths(3)->startOfMonth();
+
+        $this->get('/en/news/events?month='.$eventMonth->format('Y-m'))
             ->assertOk()
             ->assertSee('events-calendar-filter', false)
             ->assertSee('events-calendar-toolbar', false)
@@ -265,10 +270,10 @@ final class NewsWorkflowTest extends TestCase
             ->assertSee('events-calendar-day', false)
             ->assertSee('events-month-grid', false)
             ->assertSee('Annual Research Symposium &amp; Innovation Showcase', false)
-            ->assertSee('/en/news/events?month=2026-10', false)
-            ->assertSee('/en/news/events?month=2026-12', false);
+            ->assertSee('/en/news/events?month='.$eventMonth->copy()->subMonth()->format('Y-m'), false)
+            ->assertSee('/en/news/events?month='.$eventMonth->copy()->addMonth()->format('Y-m'), false);
 
-        $this->get('/ar/news/events?month=2026-11')
+        $this->get('/ar/news/events?month='.$eventMonth->format('Y-m'))
             ->assertOk()
             ->assertSee('<html lang="ar" dir="rtl">', false)
             ->assertSee('تقويم الفعاليات')
@@ -394,6 +399,14 @@ final class NewsWorkflowTest extends TestCase
         $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
         $payload = $news->getEditablePayload('news.gallery');
 
+        foreach (['ar', 'en'] as $locale) {
+            foreach ($payload['translations'][$locale]['items'] as &$item) {
+                $item['mediaId'] = null;
+                $item['imageUrl'] = '/images/slider-1.webp';
+            }
+            unset($item);
+        }
+
         $workflow->saveDraft('news.gallery', $payload, (int) $author->id);
         $readiness = $workflow->readiness('news.gallery');
 
@@ -444,17 +457,19 @@ final class NewsWorkflowTest extends TestCase
         return $article;
     }
 
-    private function createGalleryMedia(string $titleEn, string $titleAr): MediaAsset
+    private function createGalleryMedia(string $titleEn, string $titleAr, string $id = 'gallery-image'): MediaAsset
     {
+        $filename = $id.'.jpg';
+
         return MediaAsset::query()->create([
             'disk' => 'public',
             'directory' => 'gallery',
-            'filename' => 'gallery-image.jpg',
-            'original_name' => 'gallery-image.jpg',
+            'filename' => $filename,
+            'original_name' => $filename,
             'mime_type' => 'image/jpeg',
             'extension' => 'jpg',
             'size_bytes' => 1024,
-            'checksum' => hash('sha256', $titleEn),
+            'checksum' => hash('sha256', $id.'|'.$titleEn),
             'media_type' => 'image',
             'library_scope' => 'main',
             'metadata_status' => 'reviewed',
@@ -464,7 +479,60 @@ final class NewsWorkflowTest extends TestCase
             'title_en' => $titleEn,
             'alt_text_ar' => 'وصف الصورة للاختبار',
             'alt_text_en' => 'Gallery image test description',
-            'path' => 'gallery/gallery-image.jpg',
+            'path' => 'gallery/'.$filename,
         ]);
+    }
+
+    private function publishTestOwnedEventsAndGallery(): void
+    {
+        $news = app(NewsServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $authorId = (int) User::query()->where('role_slug', 'super_admin')->firstOrFail()->getKey();
+        $events = $news->getEditablePayload('news.events');
+
+        foreach (['ar', 'en'] as $locale) {
+            foreach ($events['translations'][$locale]['upcoming'] as $index => &$event) {
+                $start = now()->addMonths(3)->startOfMonth()->addDays(14 + $index);
+                $event['startsAt'] = $start->toIso8601String();
+                $event['endsAt'] = $start->addHours(4)->toIso8601String();
+            }
+            unset($event);
+
+            foreach ($events['translations'][$locale]['past'] as $index => &$event) {
+                $start = now()->subMonths($index + 2);
+                $event['startsAt'] = $start->toIso8601String();
+                $event['endsAt'] = $start->addHours(4)->toIso8601String();
+            }
+            unset($event);
+        }
+
+        $workflow->saveDraft('news.events', $events, $authorId);
+        $this->assertTrue($workflow->publish('news.events', $authorId));
+
+        $gallery = $news->getEditablePayload('news.gallery');
+        $arabicItems = collect($gallery['translations']['ar']['items'])->keyBy('id');
+
+        foreach ($gallery['translations']['en']['items'] as $item) {
+            $id = (string) $item['id'];
+            $arabicItem = $arabicItems->get($id);
+            $media = $this->createGalleryMedia(
+                (string) $item['title'],
+                is_array($arabicItem) ? (string) $arabicItem['title'] : (string) $item['title'],
+                $id,
+            );
+
+            foreach (['ar', 'en'] as $locale) {
+                foreach ($gallery['translations'][$locale]['items'] as &$localizedItem) {
+                    if (($localizedItem['id'] ?? null) === $id) {
+                        $localizedItem['mediaId'] = (int) $media->getKey();
+                        unset($localizedItem['imageUrl']);
+                    }
+                }
+                unset($localizedItem);
+            }
+        }
+
+        $workflow->saveDraft('news.gallery', $gallery, $authorId);
+        $this->assertTrue($workflow->publish('news.gallery', $authorId));
     }
 }

@@ -34,6 +34,10 @@ class ContactPageTest extends TestCase
             ->assertSee('Get In Touch')
             ->assertSee('Campus Location')
             ->assertSee('Campus Map')
+            ->assertSee('alt="CONTACT US"', false)
+            ->assertSee('title="Campus Location"', false)
+            ->assertSee('aria-label="Visit the university on Facebook"', false)
+            ->assertSee('aria-invalid="false"', false)
             ->assertSee('/en/contact', false)
             ->assertSee('/en/contact#campus-map', false)
             ->assertSee('https://www.google.com/maps/embed', false);

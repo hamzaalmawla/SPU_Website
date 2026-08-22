@@ -4,6 +4,26 @@ This tracker records frontend additions from `C:\Users\hamza\Spu-Website\Spu-Web
 
 The project is now in full-site completion scope. A route is not `Done` unless its specialized behavior, backend data flow, CMS workflow, assets, AR/EN presentation, accessibility, and tests are complete where applicable. Route existence or static markup alone does not establish parity.
 
+## Current Remediation Status - 2026-08-21
+
+The route-import history below is implementation evidence, not current launch
+approval. `Docs/CURRENT_REMEDIATION_EXECUTION_CHECKLIST.md` is authoritative for
+the active remediation.
+
+- Public runtime use of the remediated frontend fixtures has been removed in the
+  current working tree. Real CMS content and product decisions are still required;
+  empty/404 states do not establish production content parity.
+- Publication sitemap code is fixed locally, including independently eligible
+  database publications, but deployment and production-like sitemap validation are pending.
+- Accessibility fixes are implemented with automated coverage; AR/EN browser,
+  keyboard, screen-reader, responsive, and reduced-motion QA are pending.
+- Local dependency audits are clean as of 2026-08-21. The current remediation test
+  automated set is green locally, but no deployment, launch approval, or sign-off is claimed.
+- Canonical host/proxy/front-controller hardening is local only. cPanel shell is
+  disabled; host deployment verification, OPcache, gzip, and PHP-FPM work remain.
+- Additional caching optimization is explicitly deferred. nginx private/full-page
+  caching of dynamic Laravel responses must remain disabled and be host-verified.
+
 ## Full-Site Parity Backlog
 
 The 175-page reference inventory remains the route baseline. Counts are provisional until every path has a dedicated implementation, approved redirect, or documented retirement decision.
@@ -31,7 +51,8 @@ The 175-page reference inventory remains the route baseline. Counts are provisio
 | Done | P1 | News Gallery | Added bilingual Media Library curation, filters, featured selection, pagination, keyboard-accessible image viewing, preview/publish workflows, media readiness checks, and cache invalidation. |
 | Done | P1 | Facilities | Implemented all seven faculty research pages with central publication data, bilingual CMS workflows, faculty scope, server pagination, canonical links, SEO, sitemap, assets, and tests. Gallery and project-pagination parity remain tracked separately. |
 | Done | P1 | Faculty Directories | Completed 33 department, lab, project, alumni, and valedictorian routes with family-wide AR/EN evidence, server pagination, related lab details, managed media, and query-preserving navigation. |
-| In Progress | P1 | Faculty Projects | Matched the reference six-faculty project listing/detail structure and added bilingual CMS detail fields with published-content precedence. Final reference dataset reconciliation, asset verification, and full parity evidence remain. |
+| Done | P1 | Global Alumni Directory | Added localized `/ar/alumni` and `/en/alumni` directories backed by published alumni records, verified faculty/year/department filters, search, pagination, RTL/LTR rendering, SEO, sitemap coverage, and safe list-only legacy continuity. Unknown and per-record alumni URLs remain 404. |
+| In Progress | P1 | Faculty Projects | Fixture-backed public project records are excluded locally; real bilingual CMS/database records, asset verification, deployment, and full parity evidence remain. |
 | Done | P1 | Faculty Overviews | Completed all seven overview routes with eligible central research, safe canonical dean/profile links, bilingual CMS/preview behavior, and family-wide tests. |
 | Done | P1 | Campus Life Jobs | Added one bilingual CMS job catalog covering board, application, and eight details with filters, preview/publication, status/expiry enforcement, trusted application context, private CV storage, JobPosting metadata, and tests. |
 | Done | P1 | Faculty Study Plans | Completed all 14 study-plan/course routes with accessible dialogs and graph controls, validated selectors, safe resources/profiles, localized query preservation, and family-wide tests. |
@@ -47,8 +68,8 @@ The 175-page reference inventory remains the route baseline. Counts are provisio
 | Done | P2 | Admin UX | Unified Filament and admin authentication styling with the SPU navy/red/gold system, responsive editor surfaces, restrained scrollbars, dark mode, real Arabic font weights, panel branding, and a collapsible desktop sidebar. |
 | Done | P1 | Final Route Batch | Completed Suggestions/Complaints secure workflow, News Articles shell CMS, and Pharmacy-only training editor; no reference routes remain partial. |
 | In Progress | P0 | Legacy continuity | Current evidence covers 11,917 generated URLs: 101 resolver-ready, 8,637 requiring mappings, 3,166 blocked on private targets, and 13 gallery routes blocked for a missing approved target module. |
-| Pending | P2 | Production content | Remove fake/sample contact data, broken settings assets, placeholders, and developer-facing public metadata. |
-| Pending | P2 | Production gate | Verify clean dependency installation, full tests, frontend build, queues, scheduler, cache, storage, security headers, monitoring, SEO, and launch checks. |
+| In Progress | P0 | Production content | Runtime fixture fallbacks are removed locally, but reviewed AR/EN CMS content and explicit retain/retire/navigation decisions remain. See REM-01 and REM-02. |
+| Pending | P0 | Production gate | Local dependency audits and the full automated suite are green. Deployment, browser QA, host/proxy/front-controller checks, queues, scheduler, storage, security, monitoring, SEO, rollback, and sign-off remain. |
 
 ## Reported Content Pages
 
@@ -141,6 +162,11 @@ Frontend files:
 | Done | Tests cover routes, redirects, CMS targets, public rendering, CMS editor saves for imported content pages, dynamic form submissions/uploads, and rendered form-page shells. |
 
 ## Latest Verification
+
+This section is a cumulative historical log. A `Passed` row below is not evidence
+that the current uncommitted remediation or production host has passed the same
+gate. Current status is tracked only in
+`Docs/CURRENT_REMEDIATION_EXECUTION_CHECKLIST.md`.
 
 | Status | Check |
 |---|---|
@@ -236,5 +262,5 @@ Frontend files:
 - Rank remains null where the source has no explicit Q1-Q4 evidence. Ambiguous `jx_councils`/`jx_councils1` IDs remain unlinked rather than assigning papers to the wrong researcher.
 - Public research DTO mapping now prefers structured author, citation, publisher, DOI, rank, year, and keywords. Imported records are public archive entries while cPanel media reconciliation remains pending.
 - Added `Docs/LEGACY_RESEARCH_PUBLICATION_MAPPING.md` as the authoritative field and confidence policy.
-- Published all `289` imported research records in batch `approved-public-research-20260731`. The public research archive now returns `297` records per locale: `289` imported legacy records plus `8` existing curated records. Imported records retain unknown dates, unresolved owners, duplicate-review provenance, and deferred file references without fabricated values.
+- The historical `approved-public-research-20260731` batch published all `289` imported research records, but duplicate-review records are now fail-closed by default. Re-publication requires `--include-duplicate-review` plus the existing publication approval; source-ID slugs, unknown dates, unresolved owners, duplicate provenance, and deferred file references remain source-authentic.
 - Enabled public service-1 `/members/` query continuity for imported records; service-2 teaching/archive URLs remain private and are not redirected.

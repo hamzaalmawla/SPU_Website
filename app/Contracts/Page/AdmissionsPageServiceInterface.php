@@ -9,7 +9,7 @@ use App\DTOs\Admissions\AdmissionsSectionDTO;
 
 interface AdmissionsPageServiceInterface
 {
-    public function getLanding(string $locale): AdmissionsPageDTO;
+    public function getLanding(string $locale): ?AdmissionsPageDTO;
 
     public function getSection(string $slug, string $locale): ?AdmissionsSectionDTO;
 

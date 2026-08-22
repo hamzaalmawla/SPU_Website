@@ -11,6 +11,9 @@ use DateTimeInterface;
 
 interface NewsArticleCmsServiceInterface
 {
+    /** @return array<int, string> Category IDs keyed to editorial type values. */
+    public function editorialTypeOptions(): array;
+
     public function prepareDraft(NewsArticleCmsDataDTO $data, int $userId): NewsArticleCmsDataDTO;
 
     public function getStoredData(string $targetKey): ?NewsArticleCmsDataDTO;

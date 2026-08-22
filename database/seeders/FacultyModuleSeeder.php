@@ -19,7 +19,6 @@ final class FacultyModuleSeeder extends Seeder
             $this->seedDepartments($facultyId, $faculty);
             $this->seedHighlights($facultyId, $faculty);
             $this->seedLabs($facultyId, $faculty);
-            $this->seedProjects($facultyId, $faculty);
             $this->seedAlumni($facultyId, $faculty);
             $this->seedHonorStudents($facultyId, $faculty);
         }
@@ -301,66 +300,6 @@ final class FacultyModuleSeeder extends Seeder
                 );
             }
         }
-    }
-
-    /** @param array<string, mixed> $faculty */
-    private function seedProjects(int $facultyId, array $faculty): void
-    {
-        $templates = $this->researchProjects($faculty);
-
-        DB::table('faculty_student_projects')
-            ->where('faculty_id', $facultyId)
-            ->whereNotIn('slug', collect($templates)->pluck('slug')->all())
-            ->update(['is_enabled' => false, 'updated_at' => now()]);
-
-        foreach ($templates as $index => $project) {
-            $now = now();
-            DB::table('faculty_student_projects')->updateOrInsert(
-                ['faculty_id' => $facultyId, 'slug' => $project['slug']],
-                ['image' => $project['image'], 'sort_order' => $index + 1, 'is_enabled' => true, 'created_at' => $now, 'updated_at' => $now],
-            );
-            $projectId = (int) DB::table('faculty_student_projects')->where('faculty_id', $facultyId)->where('slug', $project['slug'])->value('id');
-
-            foreach (['ar', 'en'] as $locale) {
-                DB::table('faculty_student_project_translations')->updateOrInsert(
-                    ['faculty_student_project_id' => $projectId, 'locale' => $locale],
-                    [
-                        'title' => $project[$locale]['title'],
-                        'summary' => $project[$locale]['summary'],
-                        'tag' => $project[$locale]['tag'],
-                        'team' => $project[$locale]['team'],
-                        'supervisor' => $project[$locale]['supervisor'],
-                        'created_at' => $now,
-                        'updated_at' => $now,
-                    ],
-                );
-            }
-        }
-    }
-
-    /** @param array<string, mixed> $faculty @return array<int, array<string, mixed>> */
-    private function researchProjects(array $faculty): array
-    {
-        $templates = [
-            ['titleEn' => 'AI Diagnosis Support for Rural Health Centers', 'titleAr' => 'دعم التشخيص الذكي للمراكز الصحية الريفية', 'summaryEn' => 'A mobile-first platform providing primary diagnosis tools using computer vision.', 'summaryAr' => 'منصة مهيأة للهاتف توفر أدوات تشخيص أولية باستخدام الرؤية الحاسوبية.', 'tagEn' => 'Health Tech', 'tagAr' => 'تقنيات صحية'],
-            ['titleEn' => 'AI Diagnosis Support for Rural Health Centers', 'titleAr' => 'دعم التشخيص الذكي للمراكز الصحية الريفية', 'summaryEn' => 'A mobile-first platform providing primary diagnosis tools using computer vision.', 'summaryAr' => 'منصة مهيأة للهاتف توفر أدوات تشخيص أولية باستخدام الرؤية الحاسوبية.', 'tagEn' => 'Software Systems', 'tagAr' => 'أنظمة برمجية'],
-            ['titleEn' => 'Predictive Analytics for Local Economic Trends', 'titleAr' => 'تحليلات تنبؤية للاتجاهات الاقتصادية المحلية', 'summaryEn' => 'Analyzing market data to provide actionable insights for Syrian SMEs.', 'summaryAr' => 'تحليل بيانات السوق لتقديم مؤشرات قابلة للتطبيق للمشاريع المحلية.', 'tagEn' => 'Software Systems', 'tagAr' => 'أنظمة برمجية'],
-            ['titleEn' => 'Clinical Appointment Flow Optimizer', 'titleAr' => 'تحسين تدفق المواعيد السريرية', 'summaryEn' => 'A scheduling prototype that reduces clinic wait time through demand forecasting.', 'summaryAr' => 'نموذج جدولة يقلل وقت الانتظار في العيادات عبر التنبؤ بالطلب.', 'tagEn' => 'Health Tech', 'tagAr' => 'تقنيات صحية'],
-            ['titleEn' => 'Smart Campus Services Dashboard', 'titleAr' => 'لوحة خدمات جامعية ذكية', 'summaryEn' => 'A service dashboard that tracks requests, response times, and student support patterns.', 'summaryAr' => 'لوحة خدمات تتابع الطلبات وأوقات الاستجابة وأنماط دعم الطلاب.', 'tagEn' => 'Software Systems', 'tagAr' => 'أنظمة برمجية'],
-            ['titleEn' => 'Evidence-Based Learning Repository', 'titleAr' => 'مستودع تعلم قائم على الدليل', 'summaryEn' => 'A searchable media archive for supervised projects, case notes, and learning resources.', 'summaryAr' => 'أرشيف وسائط قابل للبحث للمشاريع المشرفة وملاحظات الحالات وموارد التعلم.', 'tagEn' => 'Research', 'tagAr' => 'بحث علمي'],
-        ];
-
-        return collect(range(0, 11))->map(function (int $index) use ($faculty, $templates): array {
-            $template = $templates[$index % count($templates)];
-            $number = $index + 1;
-
-            return [
-                'slug' => $faculty['public_slug'].'-project-'.$number,
-                'image' => '/images/Gemini_Generated_Image_c89yjwc89yjwc89y.webp',
-                'en' => ['title' => $template['titleEn'], 'summary' => $template['summaryEn'], 'tag' => $template['tagEn'], 'team' => 'Student team & student name, '.$faculty['en']['name'], 'supervisor' => $index % 2 === 0 ? 'Prof. Mays Hassan' : 'Dr. Ahmad Nassar'],
-                'ar' => ['title' => $template['titleAr'], 'summary' => $template['summaryAr'], 'tag' => $template['tagAr'], 'team' => 'فريق طلابي واسم الطالب، '.$faculty['ar']['name'], 'supervisor' => $index % 2 === 0 ? 'أ. ميس حسن' : 'د. أحمد نصار'],
-            ];
-        })->all();
     }
 
     /** @return array<string, mixed> */

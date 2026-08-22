@@ -127,7 +127,10 @@ class TwoFactorSetup extends Page implements HasForms
         if ($this->twoFactorEnabled) {
             $actions[] = $this->showRecoveryCodesAction();
             $actions[] = $this->regenerateRecoveryCodesAction();
-            $actions[] = $this->disableAction();
+
+            if (! $this->requiresTwoFactor()) {
+                $actions[] = $this->disableAction();
+            }
         }
 
         return $actions;
@@ -143,6 +146,16 @@ class TwoFactorSetup extends Page implements HasForms
             ->action(function (array $data): void {
                 $this->startEnrollment($data);
             });
+    }
+
+    public function requiresTwoFactor(): bool
+    {
+        /** @var User|null $user */
+        $user = auth()->user();
+
+        return $user instanceof User
+            && (bool) config('auth.two_factor.require_for_privileged_roles', false)
+            && in_array($user->role_slug, (array) config('auth.two_factor.privileged_roles', []), true);
     }
 
     private function disableAction(): Action
@@ -243,6 +256,8 @@ class TwoFactorSetup extends Page implements HasForms
 
     public function disableTwoFactor(array $data = []): void
     {
+        abort_if($this->requiresTwoFactor(), 403, 'Two-factor authentication is required for this account.');
+
         /** @var User $user */
         $user = auth()->user();
         $this->assertCurrentPassword($user, $data);

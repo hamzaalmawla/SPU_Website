@@ -182,6 +182,36 @@ class PageServiceIntegrationTest extends TestCase
         $this->assertSame('Draft Headline', $published->englishTranslation->headline);
     }
 
+    public function test_due_schedule_does_not_publish_when_scheduling_actor_is_locked(): void
+    {
+        $page = $this->createPageWithTranslations();
+        $actor = $this->author();
+
+        $this->assertTrue($this->pageService()->schedulePublish($page->id, now()->addHour(), $actor->id));
+        Page::query()->whereKey($page->id)->update(['publish_at' => now()->subMinute()]);
+        $actor->forceFill(['is_locked' => true])->save();
+
+        $this->assertSame(0, $this->pageService()->publishDueScheduled());
+        $this->assertDatabaseHas('pages', ['id' => $page->id, 'status' => 'scheduled']);
+    }
+
+    public function test_due_schedule_does_not_publish_after_actor_is_demoted_out_of_faculty_scope(): void
+    {
+        $page = $this->createPageWithTranslations();
+        $actor = $this->author();
+
+        Page::query()->whereKey($page->id)->update(['faculty_scope_slug' => 'dentistry']);
+        $this->assertTrue($this->pageService()->schedulePublish($page->id, now()->addHour(), $actor->id));
+        Page::query()->whereKey($page->id)->update(['publish_at' => now()->subMinute()]);
+        $actor->forceFill([
+            'role_slug' => 'faculty_editor',
+            'faculty_scope_slug' => 'medicine',
+        ])->save();
+
+        $this->assertSame(0, $this->pageService()->publishDueScheduled());
+        $this->assertDatabaseHas('pages', ['id' => $page->id, 'status' => 'scheduled']);
+    }
+
     // ──────────────────────────────────────────────────────────────
     //  Draft pages excluded from public queries
     // ──────────────────────────────────────────────────────────────

@@ -16,7 +16,7 @@ final class LegacyNewsApprovalPacketServiceTest extends TestCase
         Storage::disk('local')->put('service3.csv', $this->packet([
             $this->row(1, 'First safe story', contentLength: 100),
             $this->row(2, 'Duplicate title', contentLength: 50),
-            $this->row(3, 'Duplicate title', contentLength: 60),
+            $this->row(3, 'Duplicate title', contentLength: 50),
             $this->row(4, 'Hidden story', visible: 0, contentLength: 70, blockers: 'hidden_source'),
         ]));
 
@@ -39,7 +39,27 @@ final class LegacyNewsApprovalPacketServiceTest extends TestCase
         $this->assertStringContainsString('project-owner', $approved);
         $this->assertStringNotContainsString('Hidden story', $approved);
         $this->assertStringContainsString('duplicate_en_name', $rejected);
+        $this->assertStringContainsString('duplicate_disposition_required', $rejected);
         $this->assertStringContainsString('"writes_content": false', $manifest);
+    }
+
+    public function test_builder_retains_same_title_rows_when_content_evidence_is_materially_distinct(): void
+    {
+        Storage::fake('local');
+        Storage::disk('local')->put('distinct.csv', $this->packet([
+            $this->row(20, 'Same title, different record', contentLength: 50),
+            $this->row(21, 'Same title, different record', contentLength: 150),
+        ]));
+
+        $result = app(LegacyNewsApprovalPacketServiceInterface::class)->build(
+            inputs: ['distinct.csv'],
+            approvedBy: 'project-owner',
+        );
+
+        $this->assertSame(2, $result->approvedRows);
+        $this->assertSame(0, $result->rejectedRows);
+        $approved = Storage::disk('local')->get($result->paths[0]);
+        $this->assertStringContainsString('materially_distinct_title_group_source_id_slug', $approved);
     }
 
     public function test_builder_can_explicitly_approve_arabic_fallback_without_creating_an_english_translation(): void

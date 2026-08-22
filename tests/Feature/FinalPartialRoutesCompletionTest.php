@@ -40,7 +40,14 @@ final class FinalPartialRoutesCompletionTest extends TestCase
     public function test_campus_landing_only_renders_verified_portals_and_removes_unverified_figures(): void
     {
         $service = app(CampusLifePageServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $author = $this->superAdmin();
+        $payload = $service->getEditablePayload('campus_life.landing');
+        $workflow->saveDraft('campus_life.landing', $payload, (int) $author->id);
+        $this->assertTrue($workflow->publish('campus_life.landing', (int) $author->id));
+
         $page = $service->getLanding('en');
+        $this->assertNotNull($page);
 
         $this->assertSame([], $page->landing['stats']);
         $this->assertNotEmpty($page->landing['portalGuidance']);
@@ -56,15 +63,35 @@ final class FinalPartialRoutesCompletionTest extends TestCase
             ->assertDontSee('8,500')
             ->assertDontSee('96%');
 
-        $workflow = app(CmsWorkflowServiceInterface::class);
-        $author = $this->superAdmin();
-        $workflow->saveDraft('campus_life.landing', $service->getEditablePayload('campus_life.landing'), (int) $author->id);
-        $this->assertTrue($workflow->publish('campus_life.landing', (int) $author->id));
         $this->get('/sitemap.xml')->assertOk()->assertSee('/en/campus-life');
     }
 
-    public function test_all_five_routes_render_in_both_directions_with_locale_alternates(): void
+    public function test_all_five_published_routes_render_in_both_directions_with_locale_alternates(): void
     {
+        $author = $this->superAdmin();
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $payloads = [
+            'campus_life.landing' => app(CampusLifePageServiceInterface::class)->getEditablePayload('campus_life.landing'),
+            'campus_life.virtual_tour' => app(VirtualTourPageServiceInterface::class)->getEditablePayload(),
+            'e_services.suggestions-complaints' => app(EServicesPageServiceInterface::class)->getSuggestionsComplaintsEditablePayload(),
+            'news.articles' => app(NewsServiceInterface::class)->getEditablePayload('news.articles'),
+            'facilities.pharmacy.training' => app(FacultyPageServiceInterface::class)->getEditablePayload('facilities.pharmacy.training'),
+        ];
+
+        foreach (['ar', 'en'] as $locale) {
+            $payloads['facilities.pharmacy.training']['translations'][$locale]['seoTitle'] = $locale === 'ar' ? 'تدريب الصيدلة' : 'Pharmacy Training';
+            $payloads['facilities.pharmacy.training']['translations'][$locale]['seoDescription'] = $locale === 'ar' ? 'التدريب العملي في كلية الصيدلة.' : 'Practical training at the Faculty of Pharmacy.';
+            $payloads['facilities.pharmacy.training']['translations'][$locale]['seoImage'] = '/images/pharmacy-place.jpg';
+            foreach ($payloads['facilities.pharmacy.training']['translations'][$locale]['payload']['facts'] ?? [] as $index => $fact) {
+                $payloads['facilities.pharmacy.training']['translations'][$locale]['payload']['facts'][$index]['verified'] = true;
+            }
+        }
+
+        foreach ($payloads as $targetKey => $payload) {
+            $workflow->saveDraft($targetKey, $payload, (int) $author->id);
+            $this->assertTrue($workflow->publish($targetKey, (int) $author->id));
+        }
+
         foreach (['campus-life', 'virtual-tour', 'e-services/suggestions-complaints', 'news/articles', 'facilities/pharmacy/training'] as $path) {
             $this->get('/ar/'.$path)
                 ->assertOk()

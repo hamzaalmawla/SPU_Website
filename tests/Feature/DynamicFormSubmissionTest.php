@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\News\NewsServiceInterface;
+use App\Contracts\Page\CampusLifePageServiceInterface;
+use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Mail\EventRegistrationReceived;
 use App\Models\Form\DynamicFormSubmission;
+use App\Models\User\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -22,6 +27,7 @@ final class DynamicFormSubmissionTest extends TestCase
         parent::setUp();
 
         $this->seed(DatabaseSeeder::class);
+        $this->publishRegistrationContexts();
     }
 
     public function test_conference_registration_submission_is_stored(): void
@@ -295,5 +301,52 @@ final class DynamicFormSubmissionTest extends TestCase
             ->assertJsonValidationErrors(['email', 'phone', 'applicantType', 'targetFaculty', 'secondaryCertificate', 'certificateCountry', 'agreeToTerms']);
 
         $this->assertDatabaseCount('dynamic_form_submissions', 0);
+    }
+
+    private function publishRegistrationContexts(): void
+    {
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $authorId = (int) $author->getKey();
+        $workflow = app(CmsWorkflowServiceInterface::class);
+
+        $jobs = app(CampusLifePageServiceInterface::class)->getEditablePayload('campus_life.jobs');
+        foreach (['ar', 'en'] as $locale) {
+            foreach ($jobs['translations'][$locale]['jobs'] as &$job) {
+                $job['status'] = 'open';
+                $job['applicationEligible'] = true;
+                $job['postedDate'] = now()->subDay()->toDateString();
+                $job['closeDate'] = now()->addYear()->toDateString();
+            }
+            unset($job);
+        }
+        $workflow->saveDraft('campus_life.jobs', $jobs, $authorId);
+        $this->assertTrue($workflow->publish('campus_life.jobs', $authorId));
+
+        $events = app(NewsServiceInterface::class)->getEditablePayload('news.events');
+        foreach (['ar', 'en'] as $locale) {
+            foreach ($events['translations'][$locale]['upcoming'] as $index => &$event) {
+                $event['startsAt'] = now()->addMonths(3)->addDays($index)->toIso8601String();
+                $event['endsAt'] = now()->addMonths(3)->addDays($index)->addHours(4)->toIso8601String();
+            }
+            unset($event);
+        }
+        $workflow->saveDraft('news.events', $events, $authorId);
+        $this->assertTrue($workflow->publish('news.events', $authorId));
+
+        $conferences = app(ResearchPageServiceInterface::class)->getEditablePayload('research.conferences');
+        foreach (['ar', 'en'] as $locale) {
+            foreach ($conferences['translations'][$locale]['upcoming'] as $index => &$conference) {
+                $conference['date'] = now()->addMonths($index + 2)->format('F Y');
+            }
+            unset($conference);
+
+            foreach ($conferences['translations'][$locale]['past'] as &$conference) {
+                $conference['hasProceedings'] = false;
+                unset($conference['proceedingsUrl']);
+            }
+            unset($conference);
+        }
+        $workflow->saveDraft('research.conferences', $conferences, $authorId);
+        $this->assertTrue($workflow->publish('research.conferences', $authorId));
     }
 }

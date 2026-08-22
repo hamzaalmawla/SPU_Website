@@ -153,6 +153,7 @@ final class MediaService implements MediaServiceInterface
                 'webp_path' => $webp?->path,
             ],
         );
+        $this->invalidatePublicMediaCache();
 
         return $this->toDto($asset);
     }
@@ -464,6 +465,8 @@ final class MediaService implements MediaServiceInterface
             );
         }
 
+        $this->invalidatePublicMediaCache();
+
         return $this->toDto($asset);
     }
 
@@ -548,6 +551,7 @@ final class MediaService implements MediaServiceInterface
                 'source_path' => $promoted->source_path,
             ],
         );
+        $this->invalidatePublicMediaCache();
 
         return $this->toDto($promoted);
     }
@@ -822,7 +826,7 @@ final class MediaService implements MediaServiceInterface
 
     private function invalidatePublicMediaCache(): void
     {
-        if (! $this->cacheService->flushTags(['media', 'news', 'public-pages', 'public-shell', 'seo'])) {
+        if (! $this->cacheService->flushTags(['media', 'news', 'facilities', 'public-pages', 'public-shell', 'seo'])) {
             $this->cacheService->flushAll();
         }
     }

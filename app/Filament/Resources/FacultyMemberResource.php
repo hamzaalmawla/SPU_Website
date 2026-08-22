@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources;
 
+use App\Contracts\Content\ProfileAdminServiceInterface;
 use App\Contracts\Shared\SlugServiceInterface;
 use App\Filament\Resources\FacultyMemberResource\Pages;
 use App\Filament\Support\MediaPicker;
-use App\Models\Faculty\Department;
 use App\Models\Person\FacultyMember;
 use App\Models\User\User;
 use Filament\Forms\Components\Hidden;
@@ -98,23 +98,11 @@ class FacultyMemberResource extends Resource
                     ->label('Department')
                     ->options(function (Get $get): array {
                         $facultyId = $get('faculty_id');
-                        $query = Department::query()
-                            ->with('translations')
-                            ->when(is_numeric($facultyId), fn (Builder $q): Builder => $q->where('faculty_id', (int) $facultyId));
 
-                        $user = auth()->user();
-                        if ($user instanceof User && $user->role_slug === 'faculty_editor') {
-                            $scope = (string) $user->faculty_scope_slug;
-                            $query->whereHas('faculty', function (Builder $fq) use ($scope): void {
-                                $fq->where('faculty_scope_slug', $scope)
-                                    ->orWhere('public_slug', $scope)
-                                    ->orWhere('slug', $scope);
-                            });
-                        }
-
-                        return $query->get()->mapWithKeys(fn ($record): array => [
-                            $record->id => $record->translations->firstWhere('locale', 'ar')?->name ?? $record->translations->first()?->name ?? '#'.$record->id,
-                        ])->all();
+                        return app(ProfileAdminServiceInterface::class)->departmentOptions(
+                            is_numeric($facultyId) ? (int) $facultyId : null,
+                            (int) auth()->id(),
+                        );
                     })
                     ->searchable()
                     ->preload()
@@ -242,22 +230,6 @@ class FacultyMemberResource extends Resource
         });
     }
 
-    private static function scopeDepartmentOptions(Builder $query): Builder
-    {
-        $user = auth()->user();
-        if (! $user instanceof User || $user->role_slug !== 'faculty_editor') {
-            return $query;
-        }
-
-        $scope = (string) $user->faculty_scope_slug;
-
-        return $query->whereHas('faculty', function (Builder $facultyQuery) use ($scope): void {
-            $facultyQuery->where('faculty_scope_slug', $scope)
-                ->orWhere('public_slug', $scope)
-                ->orWhere('slug', $scope);
-        });
-    }
-
     /** @param array<string, mixed> $data @return array<string, mixed> */
     public static function prepareFacultyMemberFormData(array $data, ?int $ignoreId = null): array
     {
@@ -300,6 +272,6 @@ class FacultyMemberResource extends Resource
 
     private static function nextSortOrder(): int
     {
-        return ((int) (FacultyMember::query()->max('sort_order') ?? 0)) + 10;
+        return app(ProfileAdminServiceInterface::class)->nextFacultyMemberSortOrder();
     }
 }

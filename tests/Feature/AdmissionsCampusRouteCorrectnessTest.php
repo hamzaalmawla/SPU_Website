@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Page\AdmissionsPageServiceInterface;
+use App\Contracts\Page\CampusLifePageServiceInterface;
+use App\Models\User\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -21,6 +25,8 @@ final class AdmissionsCampusRouteCorrectnessTest extends TestCase
 
     public function test_admissions_landing_links_imported_routes_in_both_locales(): void
     {
+        $this->publishAdmissionsDefaults(['landing']);
+
         foreach ([
             'en' => ['Filling Vacancies', 'Graduation &amp; National Exams'],
             'ar' => ['ملء الشواغر', 'التخرج والامتحانات الوطنية'],
@@ -36,6 +42,8 @@ final class AdmissionsCampusRouteCorrectnessTest extends TestCase
 
     public function test_career_development_job_board_cta_uses_dedicated_route_in_both_locales(): void
     {
+        $this->publishCampusLifeDefault('career-development');
+
         foreach (['en', 'ar'] as $locale) {
             $this->get('/'.$locale.'/campus-life/career-development')
                 ->assertOk()
@@ -59,6 +67,8 @@ final class AdmissionsCampusRouteCorrectnessTest extends TestCase
 
     public function test_documents_query_state_selects_accessible_tabs_and_preserves_locale_switch(): void
     {
+        $this->publishAdmissionsDefaults(['documents']);
+
         foreach ([
             'study-system' => 'studySystem',
             'academic-warnings' => 'warnings',
@@ -81,6 +91,7 @@ final class AdmissionsCampusRouteCorrectnessTest extends TestCase
     public function test_all_remaining_admissions_routes_are_localized_rtl_safe_and_free_of_inert_or_fabricated_actions(): void
     {
         $slugs = ['requirements', 'tuition', 'faq', 'how-to-apply', 'transfer', 'calendar', 'documents', 'filling-vacancies'];
+        $this->publishAdmissionsDefaults($slugs);
         $forbidden = [
             'href="#"',
             '$15,000',
@@ -104,10 +115,12 @@ final class AdmissionsCampusRouteCorrectnessTest extends TestCase
         }
     }
 
-    public function test_landing_uses_approved_assets_localized_alt_text_and_responsive_layout(): void
+    public function test_landing_uses_approved_media_conversion_assets_localized_alt_text_and_responsive_layout(): void
     {
+        $this->publishAdmissionsDefaults(['landing']);
+
         $this->assertSame(
-            'c3ab5bf2b996fe39e7326f47b14863c0fedf92bcaf60c31334bf79093e7fa878',
+            '1aaa08459a380239cfc0da5c96184433951913b4dcc2460942e43d6602b96431',
             hash_file('sha256', public_path('images/admissions-hero-campus.webp')),
         );
         $this->assertSame(
@@ -133,6 +146,8 @@ final class AdmissionsCampusRouteCorrectnessTest extends TestCase
 
     public function test_requirements_transfer_and_faq_render_accessible_server_fallbacks(): void
     {
+        $this->publishAdmissionsDefaults(['requirements', 'transfer', 'faq']);
+
         foreach (['en' => 'ltr', 'ar' => 'rtl'] as $locale => $direction) {
             $this->get('/'.$locale.'/admissions/requirements')
                 ->assertOk()
@@ -161,6 +176,8 @@ final class AdmissionsCampusRouteCorrectnessTest extends TestCase
 
     public function test_unavailable_tuition_calendar_documents_and_vacancies_show_transparent_guidance(): void
     {
+        $this->publishAdmissionsDefaults(['tuition', 'calendar', 'documents', 'filling-vacancies']);
+
         $this->get('/en/admissions/tuition')
             ->assertOk()
             ->assertSee('Verified tuition amounts are not currently published')
@@ -186,6 +203,8 @@ final class AdmissionsCampusRouteCorrectnessTest extends TestCase
 
     public function test_how_to_apply_exposes_real_localized_application_form_without_self_loop(): void
     {
+        $this->publishAdmissionsDefaults(['how-to-apply']);
+
         foreach (['en', 'ar'] as $locale) {
             $this->get('/'.$locale.'/admissions/how-to-apply')
                 ->assertOk()
@@ -195,5 +214,33 @@ final class AdmissionsCampusRouteCorrectnessTest extends TestCase
                 ->assertSee('/'.$locale.'/admissions/how-to-apply#application')
                 ->assertDontSee('admissions-step-card__button" href="/'.$locale.'/admissions/how-to-apply"', false);
         }
+    }
+
+    /** @param list<string> $slugs */
+    private function publishAdmissionsDefaults(array $slugs): void
+    {
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $admissions = app(AdmissionsPageServiceInterface::class);
+
+        foreach ($slugs as $slug) {
+            $targetKey = 'admissions.'.$slug;
+            $workflow->saveDraft($targetKey, $admissions->getEditablePayload($targetKey), (int) $author->getKey());
+            $this->assertTrue($workflow->publish($targetKey, (int) $author->getKey()));
+        }
+    }
+
+    private function publishCampusLifeDefault(string $slug): void
+    {
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $targetKey = 'campus_life.'.$slug;
+
+        $workflow->saveDraft(
+            $targetKey,
+            app(CampusLifePageServiceInterface::class)->getEditablePayload($targetKey),
+            (int) $author->getKey(),
+        );
+        $this->assertTrue($workflow->publish($targetKey, (int) $author->getKey()));
     }
 }

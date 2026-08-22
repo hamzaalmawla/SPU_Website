@@ -28,6 +28,7 @@ final class CampusLifeController extends Controller
     public function landing(Request $request, string $locale): View
     {
         $page = $this->campusLifePageService->getLanding($locale);
+        abort_if($page === null, 404);
 
         return view('public.campus-life.landing', [
             'locale' => $locale,
@@ -70,6 +71,7 @@ final class CampusLifeController extends Controller
     public function careerJobBoard(Request $request, string $locale): View
     {
         $page = $this->campusLifePageService->getCareerJobBoard($locale, $request->only(['q', 'category', 'type', 'page']));
+        abort_if($page === null, 404);
         $query = $this->pageQuery($page);
 
         return view('public.campus-life.job-board', [

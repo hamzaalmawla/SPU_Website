@@ -134,7 +134,22 @@ export function registerDynamicFormStore(Alpine) {
                 }
             });
 
+            if (!valid) this.focusFirstError();
+
             return valid;
+        },
+
+        fieldId(name) {
+            const formId = (this.activeFormId || 'form').toString().replace(/[^a-zA-Z0-9_-]+/g, '-');
+            const fieldName = (name || 'field').toString().replace(/[^a-zA-Z0-9_-]+/g, '-');
+            return `dynamic-${formId}-${fieldName}`;
+        },
+
+        focusFirstError() {
+            const firstName = Object.keys(this.errors)[0];
+            if (!firstName) return;
+
+            window.setTimeout(() => document.getElementById(this.fieldId(firstName))?.focus(), 0);
         },
 
         validateStep(stepIndex) {
@@ -211,6 +226,7 @@ export function registerDynamicFormStore(Alpine) {
                     const payload = await response.json();
                     this.errors = Object.fromEntries(Object.keys(payload.errors || {}).map((key) => [key, true]));
                     this.submitError = this.locale === 'ar' ? 'يرجى مراجعة الحقول المطلوبة.' : 'Please review the required fields.';
+                    this.focusFirstError();
                     return;
                 }
 

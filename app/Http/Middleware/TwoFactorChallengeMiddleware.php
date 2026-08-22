@@ -10,8 +10,8 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Redirects authenticated users with 2FA enabled to the TOTP challenge page
- * unless they have already verified their code for this session.
+ * Enforces production enrollment for privileged users and challenges confirmed
+ * TOTP users unless they have verified this session.
  */
 final class TwoFactorChallengeMiddleware
 {
@@ -28,10 +28,23 @@ final class TwoFactorChallengeMiddleware
             return $next($request);
         }
 
-        // Only challenge users who have 2FA enabled.
         $twoFactorEnabled = (bool) ($user->two_factor_enabled ?? false);
+        $twoFactorConfirmed = ($user->two_factor_confirmed_at ?? null) !== null;
+        $requiresEnrollment = $this->requiresConfirmedTwoFactor($user)
+            && (! $twoFactorEnabled || ! $twoFactorConfirmed);
 
-        if (! $twoFactorEnabled) {
+        if ($requiresEnrollment) {
+            if ($request->routeIs('filament.admin.pages.two-factor-setup')
+                || $this->isEnrollmentLivewireRequest($request)
+                || $request->routeIs('admin.logout')
+                || $request->routeIs('filament.admin.auth.logout')) {
+                return $next($request);
+            }
+
+            return redirect()->route('filament.admin.pages.two-factor-setup');
+        }
+
+        if (! $twoFactorEnabled || ! $twoFactorConfirmed) {
             return $next($request);
         }
 
@@ -56,5 +69,47 @@ final class TwoFactorChallengeMiddleware
         }
 
         return redirect()->route($challengeRoute);
+    }
+
+    private function requiresConfirmedTwoFactor(object $user): bool
+    {
+        if (! (bool) config('auth.two_factor.require_for_privileged_roles', false)) {
+            return false;
+        }
+
+        $role = $user->role_slug ?? null;
+
+        return is_string($role)
+            && in_array($role, (array) config('auth.two_factor.privileged_roles', []), true);
+    }
+
+    private function isEnrollmentLivewireRequest(Request $request): bool
+    {
+        if (! $request->routeIs('livewire.update', '*.livewire.update')) {
+            return false;
+        }
+
+        $components = $request->input('components');
+        if (! is_array($components) || $components === []) {
+            return false;
+        }
+
+        foreach ($components as $component) {
+            if (! is_array($component)) {
+                return false;
+            }
+
+            $snapshot = $component['snapshot'] ?? null;
+            if (is_string($snapshot)) {
+                $snapshot = json_decode($snapshot, true);
+            }
+
+            if (! is_array($snapshot)
+                || ($snapshot['memo']['name'] ?? null) !== 'app.filament.pages.two-factor-setup') {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

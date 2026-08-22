@@ -2,6 +2,15 @@
 
 Last updated: 2026-07-09
 
+> Superseding operational note (2026-08-21): counts and completed migration lanes
+> below remain historical handoff evidence. For current remediation status use
+> `Docs/CURRENT_REMEDIATION_EXECUTION_CHECKLIST.md`. Fixture-backed public runtime
+> fallbacks have been removed locally, but real CMS content/product decisions,
+> deployment, sitemap host verification, browser accessibility QA, a green current
+> test suite, and host OPcache/gzip/PHP-FPM work remain. cPanel shell is disabled;
+> additional caching optimization is deferred and nginx private/full-page caching
+> must remain disabled. No cutover or sign-off is implied.
+
 ## Short Answer
 
 Overall legacy migration progress is about `25%` of the classified migration scope.

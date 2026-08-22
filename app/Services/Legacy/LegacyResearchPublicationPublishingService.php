@@ -28,7 +28,7 @@ final class LegacyResearchPublicationPublishingService implements LegacyResearch
         bool $write = false,
         ?string $approval = null,
         ?string $batch = null,
-        bool $includeDuplicateReview = true,
+        bool $includeDuplicateReview = false,
     ): LegacyResearchPublicationPublicationResultDTO {
         $batch = trim((string) $batch) ?: 'legacy-research-publication-'.$this->timestamp();
         if ($write && $approval !== self::APPROVAL_TOKEN) {
@@ -115,7 +115,7 @@ final class LegacyResearchPublicationPublishingService implements LegacyResearch
                 $published++;
             }
 
-            if ($published > 0 && ! $this->cacheService->flushTags(['research', 'public-pages', 'seo', 'sitemap'])) {
+            if ($published > 0 && ! $this->cacheService->flushTags(['research', 'facilities', 'public-pages', 'seo', 'sitemap'])) {
                 $this->cacheService->flushAll();
             }
         }

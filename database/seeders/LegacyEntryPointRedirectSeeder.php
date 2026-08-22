@@ -14,9 +14,11 @@ use Illuminate\Support\Facades\DB;
  * Scope rules (see Docs/OLD_TO_NEW_REDIRECT_MIGRATION_COMPLETE.md):
  *
  *  - Only URLs whose new equivalent is proven are listed here. Old modules with
- *    no public equivalent on the new site (/alumni/, /downloads/, /members/,
+ *    no public equivalent on the new site (/downloads/, /members/,
  *    dent_conf_search.php) are deliberately absent so they keep returning a real
- *    404 and get logged into unresolved_legacy_requests for triage.
+ *    404 and get logged into unresolved_legacy_requests for triage. Alumni list
+ *    queries are handled separately by the reviewed query resolver; unknown and
+ *    per-record alumni URLs remain 404.
  *  - Nothing here points an unknown URL at the homepage.
  *  - Retired languages (old language ids 3/6/7 = German, Spanish, French) use the
  *    approved 302 fallback to /en, matching old_database.unsupported_language_continuity.

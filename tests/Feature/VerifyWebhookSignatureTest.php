@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 final class VerifyWebhookSignatureTest extends TestCase
@@ -20,6 +21,7 @@ final class VerifyWebhookSignatureTest extends TestCase
 
         $this->seed(DatabaseSeeder::class);
         config(['services.webhook.secret' => self::TEST_SECRET]);
+        Cache::store((string) config('cache.webhook_store', 'webhook'))->clear();
     }
 
     public function test_valid_signature_allows_request(): void
@@ -107,6 +109,24 @@ final class VerifyWebhookSignatureTest extends TestCase
             ...$headers,
             'CONTENT_TYPE' => 'application/json',
         ], $body)->assertOk();
+
+        $this->call('POST', '/webhook/incoming', [], [], [], [
+            ...$headers,
+            'CONTENT_TYPE' => 'application/json',
+        ], $body)->assertForbidden();
+    }
+
+    public function test_replay_nonce_survives_application_cache_flush(): void
+    {
+        $body = json_encode(['event' => 'test']);
+        $headers = $this->signedHeaders((string) $body, nonce: 'surviving-nonce');
+
+        $this->call('POST', '/webhook/incoming', [], [], [], [
+            ...$headers,
+            'CONTENT_TYPE' => 'application/json',
+        ], $body)->assertOk();
+
+        Cache::store((string) config('cache.default'))->clear();
 
         $this->call('POST', '/webhook/incoming', [], [], [], [
             ...$headers,

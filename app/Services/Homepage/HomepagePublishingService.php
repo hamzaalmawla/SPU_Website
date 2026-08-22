@@ -296,7 +296,17 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
             ->each(function (HomepageDraft $draft) use (&$published): void {
                 $actorId = $this->scheduledPublishActorId($draft);
 
-                if ($actorId !== null && $this->publish((int) $draft->getKey(), $actorId)) {
+                if ($actorId === null) {
+                    return;
+                }
+
+                try {
+                    $didPublish = $this->publish((int) $draft->getKey(), $actorId);
+                } catch (AuthorizationException) {
+                    return;
+                }
+
+                if ($didPublish) {
                     $published++;
                 }
             });
@@ -465,13 +475,11 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
 
     private function scheduledPublishActorId(HomepageDraft $draft): ?int
     {
-        foreach ([$draft->approved_by, $draft->updated_by, $draft->created_by] as $actorId) {
-            if (is_numeric($actorId) && User::query()->whereKey((int) $actorId)->exists()) {
-                return (int) $actorId;
-            }
-        }
+        $actorId = $draft->approved_by ?? $draft->updated_by ?? $draft->created_by;
 
-        return null;
+        return is_numeric($actorId) && User::query()->whereKey((int) $actorId)->exists()
+            ? (int) $actorId
+            : null;
     }
 
     private function nextDraftVersion(): int
@@ -562,7 +570,7 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
 
         $gateAbility = $ability === 'publish' ? 'publish-content' : 'manage-homepage';
 
-        if (! $user instanceof User || Gate::forUser($user)->denies($gateAbility)) {
+        if (! $user instanceof User || (bool) $user->is_locked || Gate::forUser($user)->denies($gateAbility)) {
             throw new AuthorizationException('This user is not authorized to manage the homepage.');
         }
     }

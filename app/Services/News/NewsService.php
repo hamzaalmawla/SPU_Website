@@ -69,7 +69,7 @@ final class NewsService implements NewsServiceInterface
 
     public function getEventsPageContent(string $locale): array
     {
-        return $this->normalizeEventsPageContent($this->publishedLocalizedPayload('news.events', $locale) ?? $this->eventsPageFallback($locale), $locale);
+        return $this->normalizeEventsPageContent($this->publishedLocalizedPayload('news.events', $locale) ?? [], $locale);
     }
 
     public function buildPreviewEventsPage(string $locale, array $content): array
@@ -153,7 +153,7 @@ final class NewsService implements NewsServiceInterface
 
     public function getGalleryPageContent(string $locale): array
     {
-        return $this->publishedLocalizedPayload('news.gallery', $locale) ?? $this->galleryPageFallback($locale);
+        return $this->publishedLocalizedPayload('news.gallery', $locale) ?? $this->normalizeGalleryPageContent([], $locale);
     }
 
     public function buildPreviewGalleryPage(string $locale, array $content): array

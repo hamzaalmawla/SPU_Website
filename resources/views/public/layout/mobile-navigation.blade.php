@@ -1,4 +1,5 @@
-<div x-show="mobileNav"
+<div id="site-mobile-navigation"
+     x-show="mobileNav"
      x-transition:enter="transition duration-250 ease-out"
      x-transition:enter-start="opacity-0 -translate-y-3"
      x-transition:enter-end="opacity-100 translate-y-0"
@@ -11,7 +12,7 @@
         @foreach ($navigation->header->items as $item)
             <div class="site-nav-mobile-card">
                 <div class="site-nav-mobile-row">
-                    <a href="{{ $item->resolvedUrl ?? '#' }}"
+                     <a @if($item->resolvedUrl) href="{{ $item->resolvedUrl }}" @else aria-disabled="true" @endif
                        @click="closeAll()"
                        class="site-nav-mobile-link {{ $item->isActive ? 'site-nav-mobile-link--active' : '' }}"
                        @if ($item->openInNewTab) target="_blank" rel="noreferrer" @endif>
@@ -19,9 +20,12 @@
                     </a>
 
                     @if (!empty($item->children))
-                        <button type="button"
+                         <button type="button"
+                                data-dropdown-trigger="{{ $loop->index }}"
                                 @click.prevent="toggleDropdown('{{ $loop->index }}')"
                                 aria-label="{{ __('public.toggle_submenu') }}"
+                                :aria-expanded="isDropdownOpen('{{ $loop->index }}').toString()"
+                                aria-controls="site-mobile-submenu-{{ $loop->index }}"
                                 class="site-nav-mobile-toggle">
                             <img src="/images/icon-chevron-down-outline.svg" class="h-2.5 w-2.5 transition-transform duration-200" :class="mobileChevronClass('{{ $loop->index }}')" alt="">
                         </button>
@@ -29,7 +33,8 @@
                 </div>
 
                 @if (!empty($item->children))
-                    <div x-show="isDropdownOpen('{{ $loop->index }}')"
+                     <div id="site-mobile-submenu-{{ $loop->index }}"
+                          x-show="isDropdownOpen('{{ $loop->index }}')"
                          x-transition:enter="transition duration-200 ease-out"
                          x-transition:enter-start="opacity-0 -translate-y-2"
                          x-transition:enter-end="opacity-100 translate-y-0"
@@ -46,14 +51,14 @@
                             @if (!empty($child->children))
                                 @php $hasRenderedGroup = true; @endphp
                                 <div class="site-nav-mobile-group">
-                                    <a href="{{ $child->resolvedUrl ?? '#' }}"
+                                     <a @if($child->resolvedUrl) href="{{ $child->resolvedUrl }}" @else aria-disabled="true" @endif
                                        @click="closeAll()"
                                        class="site-nav-mobile-group-header"
                                        @if ($child->openInNewTab ?? false) target="_blank" rel="noreferrer" @endif>
                                         {{ $child->label }}
                                     </a>
                                     @foreach ($child->children as $featured)
-                                        <a href="{{ $featured->resolvedUrl ?? '#' }}"
+                                         <a @if($featured->resolvedUrl) href="{{ $featured->resolvedUrl }}" @else aria-disabled="true" @endif
                                            @click="closeAll()"
                                            class="site-nav-mobile-child site-nav-mobile-featured"
                                            @if ($featured->openInNewTab ?? false) target="_blank" rel="noreferrer" @endif>
@@ -66,7 +71,7 @@
                                     <div class="my-2 border-t border-spu-blue/10"></div>
                                     @php $flatDividerRendered = true; @endphp
                                 @endif
-                                <a href="{{ $child->resolvedUrl ?? '#' }}"
+                                 <a @if($child->resolvedUrl) href="{{ $child->resolvedUrl }}" @else aria-disabled="true" @endif
                                    @click="closeAll()"
                                    class="site-nav-mobile-child"
                                    @if ($child->openInNewTab ?? false) target="_blank" rel="noreferrer" @endif>

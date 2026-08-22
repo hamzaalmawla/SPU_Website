@@ -35,6 +35,66 @@ final class ProfileAdminService implements ProfileAdminServiceInterface
         private readonly MediaServiceInterface $mediaService,
     ) {}
 
+    /** @return array<int, string> */
+    public function facultyOptions(int $userId): array
+    {
+        $user = User::query()->findOrFail($userId);
+        $query = Faculty::query()->enabled()->with('translations')->orderBy('sort_order');
+
+        if ($user->role_slug === 'faculty_editor') {
+            $scope = (string) ($user->faculty_scope_slug ?? '');
+            $query->where(function ($facultyQuery) use ($scope): void {
+                $facultyQuery->where('faculty_scope_slug', $scope)
+                    ->orWhere('public_slug', $scope)
+                    ->orWhere('slug', $scope);
+            });
+        } elseif (! in_array($user->role_slug, ['super_admin', 'editor'], true)) {
+            throw new AuthorizationException('You are not authorized to view faculty profile options.');
+        }
+
+        return $query->get()->mapWithKeys(fn (Faculty $faculty): array => [
+            (int) $faculty->getKey() => $faculty->translations->firstWhere('locale', 'en')?->name
+                ?? $faculty->translations->firstWhere('locale', 'ar')?->name
+                ?? (string) $faculty->slug,
+        ])->all();
+    }
+
+    /** @return array<int, string> */
+    public function departmentOptions(?int $facultyId, int $userId): array
+    {
+        $user = User::query()->findOrFail($userId);
+        $query = Department::query()
+            ->with('translations')
+            ->when($facultyId !== null, fn ($departmentQuery) => $departmentQuery->where('faculty_id', $facultyId));
+
+        if ($user->role_slug === 'faculty_editor') {
+            $scope = (string) ($user->faculty_scope_slug ?? '');
+            $query->whereHas('faculty', function ($facultyQuery) use ($scope): void {
+                $facultyQuery->where('faculty_scope_slug', $scope)
+                    ->orWhere('public_slug', $scope)
+                    ->orWhere('slug', $scope);
+            });
+        } elseif (! in_array($user->role_slug, ['super_admin', 'editor'], true)) {
+            throw new AuthorizationException('You are not authorized to view department profile options.');
+        }
+
+        return $query->get()->mapWithKeys(fn (Department $department): array => [
+            (int) $department->getKey() => $department->translations->firstWhere('locale', 'ar')?->name
+                ?? $department->translations->first()?->name
+                ?? '#'.$department->getKey(),
+        ])->all();
+    }
+
+    public function nextPersonSortOrder(): int
+    {
+        return ((int) (Person::query()->max('sort_order') ?? 0)) + 10;
+    }
+
+    public function nextFacultyMemberSortOrder(): int
+    {
+        return ((int) (FacultyMember::query()->max('sort_order') ?? 0)) + 10;
+    }
+
     public function getPersonData(int $id): ?PersonDataDTO
     {
         $person = Person::query()->with(['translations', 'educations.translations'])->find($id);
@@ -524,7 +584,7 @@ final class ProfileAdminService implements ProfileAdminServiceInterface
 
     private function invalidatePublicProfiles(): void
     {
-        if (! $this->cacheService->flushTags(['public-pages', 'public-shell', 'about', 'seo'])) {
+        if (! $this->cacheService->flushTags(['public-pages', 'public-shell', 'about', 'facilities', 'seo', 'sitemap'])) {
             $this->cacheService->flushAll();
         }
     }

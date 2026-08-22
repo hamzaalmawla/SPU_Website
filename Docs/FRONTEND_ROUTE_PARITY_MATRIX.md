@@ -18,6 +18,23 @@ Reference paths are mapped to their Laravel `/{locale}` equivalents for module c
 
 Columns: `Route`, `CMS`, `Behavior`, `Assets`, and `Tests`. `Overall` is conservative and does not treat route existence alone as parity.
 
+## Current Remediation Overlay - 2026-08-21
+
+The per-route rows below record implemented reference-route parity at the time they
+were written. They do not establish current production content readiness or launch
+sign-off. The following overlay supersedes any broader current-state inference:
+
+| Affected slice | Code status | Remaining parity evidence |
+|---|---|---|
+| Admissions, Campus Life, E-Services, Research, News Events/Gallery, faculty projects | Fixture/sample-backed public fallbacks removed locally where remediated. | Publish reviewed AR/EN CMS/database content or approve retirement/navigation changes; deploy and verify empty, 404, listing, detail, and asset behavior. |
+| Research publication sitemap | Fixed locally so eligible published database records do not depend on a synthetic CMS archive payload. | Deploy and validate canonical sitemap output and draft exclusion. |
+| Cross-cutting accessibility | Navigation, forms, announcements, labels, iframe titles, inert links, and related semantics remediated locally with automated coverage. | Manual AR/EN mobile/desktop keyboard, screen-reader, focus, and reduced-motion QA. |
+| Origin and front controller | Canonical host/proxy/front-controller hardening implemented locally. | Host deployment and proxy/header/redirect/path probes. |
+
+Until that evidence exists, `Complete` below means implementation parity evidence,
+not production-ready content, browser accessibility approval, deployment, or sign-off.
+See `Docs/CURRENT_REMEDIATION_EXECUTION_CHECKLIST.md`.
+
 ## Home
 
 | Reference path | Route | CMS | Behavior | Assets | Tests | Overall | Primary gap |
@@ -259,6 +276,9 @@ Columns: `Route`, `CMS`, `Behavior`, `Assets`, and `Tests`. `Overall` is conserv
 | Query compatibility | Profile, article, facilities hub, and shared project detail are resolved; selected-job context and some course/lab flows remain. |
 
 ## Verified Priority Gaps
+
+This is a historical backlog snapshot and is superseded for current execution by
+`Docs/CURRENT_REMEDIATION_EXECUTION_CHECKLIST.md`.
 
 | Priority | Slice |
 |---|---|

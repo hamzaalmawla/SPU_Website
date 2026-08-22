@@ -280,9 +280,11 @@ your changes and re-running, before assuming you caused it.
 
 ## 8. Deploying to the cPanel host
 
-There is **no SSH** (port 22 closed, no SSH UAPI module). Server work goes through
-the cPanel API token plus a temporary cron-driven exec bridge, which is created
-for the task and **removed afterwards** — do not leave it in place.
+There is **no SSH**, and cPanel shell/Terminal is disabled. The previously used
+temporary cron-driven execution bridge is historical evidence, not an approved
+current deployment method. Do not recreate a web/cron command bridge without a
+separate security approval. The host/operator must provide or execute an approved
+deployment mechanism and retain command output.
 
 Layout (cPanel forces subdomain document roots under `public_html`, hence the split):
 
@@ -331,7 +333,7 @@ Do not "fix" these by adding fallbacks. Each is a content decision.
 
 | Lane | Why it 404s |
 |---|---|
-| `/alumni/**` (210 URLs) | 4,939 alumni records are imported, but the new site has **no alumni page** to send them to. Build the section, or retire the URLs deliberately. |
+| `/alumni/**` | Reviewed `graduated_students` list queries redirect to the localized global alumni directory with verified faculty filters. Unknown paths, record/detail guesses, and unverified query variants remain honest 404s. The legacy `d` value is a faculty code, not a record ID. |
 | ~27 root category ids | Visible on the old site but with an **empty body**. There is no content to redirect to. |
 | 2 root ids | The old row was an external link, not a page. |
 | 194 news drafts | Blocked as `incomplete_ar_content`. Empty pages should not go live. |
@@ -348,11 +350,16 @@ nothing. Do not spend time there.
 
 Measured 2026-08-21. Read this before "optimising" anything here.
 
+Current remediation decision: additional application/full-page caching
+optimization is explicitly deferred. nginx private/full-page caching for dynamic
+Laravel responses must remain disabled. The measurements below are historical
+staging evidence and do not prove the current working tree is deployed.
+
 ### What is already in place
 
 | Layer | Setting | Why |
 |---|---|---|
-| Laravel page cache | `CachePublicPages`, 300s, applied to the `{locale}` group | serves rendered HTML without re-querying |
+| Laravel page cache | Historical staging configuration; no new optimization is approved in the current remediation | must not be treated as current deployment evidence |
 | Cache store | `file` | benchmarked at 0.1 ms/read vs 0.5 ms for `database`, and it keeps page HTML out of MySQL |
 | Config/route/view | `artisan optimize` | required after every deploy |
 | Static assets | `Cache-Control: immutable, 1 year` for hashed build output | Vite puts a content hash in every filename |
@@ -401,29 +408,29 @@ These are the largest remaining wins, and both were verified, not assumed:
 
 `/etc/nginx` is not readable from the account, so items 2 and 3 need the host.
 
-### Why full-page edge caching is not enabled
+### Why full-page edge caching must remain disabled
 
-nginx caching is enabled for the vhost, but it never stores a public page,
-because every response carries two `Set-Cookie` headers (XSRF + session) and
-`Cache-Control: private`. Making anonymous public pages cacheable at the edge
-would mean not starting a session on them — which breaks `@csrf` on the contact
-and complaints forms unless those routes are handled separately. That is a
-deliberate design decision, not an oversight; do not strip the cookies without
-solving the CSRF story first.
+Do not rely on cookies or `Cache-Control: private` as the only protection against
+an nginx cache configuration mistake. nginx `fastcgi_cache`/`proxy_cache` must be
+off or explicitly bypass dynamic Laravel responses, including public HTML, forms,
+admin, authenticated, preview, and non-GET traffic. Static asset caching and proxy
+buffering are separate. A future edge-cache design requires its own reviewed
+session/CSRF/publication/invalidation model and is outside this remediation.
 
-### The research CMS targets are not set up on v2
+### Historical staging finding: research CMS targets were not set up on v2
 
-There are **no `research.*` rows in `cms_target_contents`** at all, so the
-research pages render from `ResearchPageService`'s static fixture fallback. The
-publications archive still works and lists the 253 migrated database
-publications, and it is linked from `/ar/research`, so it is crawlable — but
-`appendResearchPublicationEntries` and `appendResearchCatalogEntries` both
-correctly refuse to put unpublished targets in the sitemap, so those ~506 URLs
-are absent from `sitemap.xml`.
+At inspection time there were **no `research.*` rows in `cms_target_contents`**,
+so research pages rendered from `ResearchPageService`'s static fixture fallback.
+The publications archive listed the 253 migrated database publications and was
+linked from `/ar/research`, but `appendResearchPublicationEntries` and
+`appendResearchCatalogEntries` required published targets, so those ~506 URLs
+were absent from that staging sitemap.
 
-Fix this by publishing the research targets through the admin, not by weakening
-the sitemap guard: `SitemapServiceTest` asserts the sitemap contains only
-published entries, and the fixture fallback must never leak into it.
+Current local code removes public fixture-backed output and fixes publication
+sitemap eligibility so real published database publications do not require a
+synthetic CMS payload. Real CMS content/product decisions are still needed for
+the retained sections. Deployment and sitemap validation remain pending; do not
+weaken draft/publication guards or restore fixture fallbacks.
 
 ### Zero-byte legacy files
 

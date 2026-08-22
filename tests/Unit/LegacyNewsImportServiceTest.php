@@ -168,6 +168,45 @@ final class LegacyNewsImportServiceTest extends TestCase
         $this->assertDatabaseCount('news_articles', 0);
     }
 
+    public function test_materially_distinct_title_rows_are_retained_with_source_id_slugs_and_uncertain_rows_need_canonical_or_redirect_disposition(): void
+    {
+        $legacy = app('db')->connection('legacy_mysql')->table('jx_categories');
+        $base = [
+            'ar_name' => 'عنوان عربي', 'en_name' => 'Material story', 'ar_brief' => '', 'en_brief' => '',
+            'ar_data' => '<p>Arabic body</p>', 'en_data' => '', 'photo' => null, 'url' => null,
+            'is_visible' => 1, 'is_link' => 0, 'category_order' => 5, 'start_date' => null, 'end_date' => null,
+        ];
+        $legacy->insert([
+            array_merge($base, ['id' => 5, 'service_type' => 3, 'en_data' => '<p>Short body</p>']),
+            array_merge($base, ['id' => 6, 'service_type' => 3, 'en_data' => '<p>Materially different longer body.</p>']),
+            array_merge($base, ['id' => 7, 'service_type' => 3, 'en_name' => 'Uncertain story', 'en_data' => '<p>Same body</p>']),
+            array_merge($base, ['id' => 8, 'service_type' => 3, 'en_name' => 'Uncertain story', 'en_data' => '<p>Same body</p>']),
+        ]);
+
+        Storage::disk('local')->put('duplicate-dispositions.csv', $this->packet([
+            $this->approvalRow(5, 3),
+            $this->approvalRow(6, 3),
+            $this->approvalRow(7, 3, decision: 'canonical'),
+            $this->approvalRow(8, 3, decision: 'redirect', target: 'redirect'),
+        ]));
+
+        $result = app(LegacyNewsImportServiceInterface::class)->import(
+            write: true,
+            approval: 'phase6-news',
+            batch: 'duplicate-policy',
+            input: 'duplicate-dispositions.csv',
+        );
+
+        $this->assertSame(3, $result->importedRows);
+        $this->assertSame(1, $result->skipReasonCounts['redirect_disposition_requires_continuity_packet']);
+        $this->assertSame('material-story-5', NewsArticle::query()->where('legacy_source_id', 5)->value('slug'));
+        $this->assertSame('material-story-6', NewsArticle::query()->where('legacy_source_id', 6)->value('slug'));
+        $this->assertSame('uncertain-story-7', NewsArticle::query()->where('legacy_source_id', 7)->value('slug'));
+        $this->assertDatabaseMissing('news_articles', ['legacy_source_id' => 8]);
+        $this->assertDatabaseCount('legacy_exact_redirects', 0);
+        $this->assertSame('canonical', MigrationLog::query()->where('source_id', 7)->where('status', 'success')->firstOrFail()->metadata['duplicate_disposition']);
+    }
+
     private function createLegacyTables(): void
     {
         Schema::connection('legacy_mysql')->create('jx_categories', function ($table): void {

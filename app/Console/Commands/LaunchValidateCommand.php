@@ -29,6 +29,8 @@ final class LaunchValidateCommand extends Command
     /** @var list<array{check: string, status: string, message: string}> */
     private array $results = [];
 
+    private bool $productionValidation = false;
+
     public function __construct(
         private readonly HomepageSectionServiceInterface $homepageService,
         private readonly PageServiceInterface $pageService,
@@ -44,6 +46,7 @@ final class LaunchValidateCommand extends Command
     public function handle(): int
     {
         $env = (string) $this->option('environment');
+        $this->productionValidation = $env === 'production';
         $this->info("Running launch validation for environment: {$env}");
         $this->newLine();
 
@@ -66,7 +69,11 @@ final class LaunchValidateCommand extends Command
         $this->newLine();
         $this->reportResults();
 
-        $failures = array_filter($this->results, fn (array $r): bool => $r['status'] === 'FAIL');
+        $failures = array_filter(
+            $this->results,
+            fn (array $r): bool => $r['status'] === 'FAIL'
+                || ($this->productionValidation && $r['status'] === 'WARN'),
+        );
 
         return $failures !== [] ? self::FAILURE : self::SUCCESS;
     }
@@ -76,9 +83,6 @@ final class LaunchValidateCommand extends Command
      */
     private function checkProductionEnvironment(): void
     {
-        $isActualProduction = config('app.env') === 'production';
-        $failStatus = $isActualProduction ? 'FAIL' : 'WARN';
-
         $checks = [
             ['APP_DEBUG', 'false', config('app.debug') === false],
             ['CACHE_STORE', 'redis', config('cache.default') === 'redis'],
@@ -92,7 +96,7 @@ final class LaunchValidateCommand extends Command
         foreach ($checks as [$setting, $expected, $pass]) {
             $this->record(
                 "Production env: {$setting}",
-                $pass ? 'PASS' : $failStatus,
+                $pass ? 'PASS' : 'FAIL',
                 $pass
                     ? "{$setting} is correctly set to {$expected}"
                     : "CRITICAL: {$setting} must be {$expected} in production",
@@ -104,7 +108,7 @@ final class LaunchValidateCommand extends Command
         $hasKey = is_string($appKey) && strlen($appKey) > 10;
         $this->record(
             'Production env: APP_KEY',
-            $hasKey ? 'PASS' : $failStatus,
+            $hasKey ? 'PASS' : 'FAIL',
             $hasKey ? 'APP_KEY is set' : 'CRITICAL: APP_KEY is missing or too short',
         );
 
@@ -113,8 +117,38 @@ final class LaunchValidateCommand extends Command
         $isHttps = is_string($appUrl) && str_starts_with($appUrl, 'https://');
         $this->record(
             'Production env: APP_URL',
-            $isHttps ? 'PASS' : $failStatus,
+            $isHttps ? 'PASS' : 'FAIL',
             $isHttps ? 'APP_URL uses HTTPS' : 'CRITICAL: APP_URL should use HTTPS in production',
+        );
+
+        $canonicalUrl = (string) config('edge.canonical_url');
+        $canonicalHost = parse_url($canonicalUrl, PHP_URL_HOST);
+        $appHost = is_string($appUrl) ? parse_url($appUrl, PHP_URL_HOST) : null;
+        $canonicalValid = str_starts_with($canonicalUrl, 'https://')
+            && is_string($canonicalHost)
+            && $canonicalHost !== ''
+            && $canonicalHost === $appHost
+            && (bool) config('edge.enforce_canonical_host');
+        $trustedProxies = config('edge.trusted_proxies', []);
+        $proxyTrustValid = is_array($trustedProxies)
+            && $trustedProxies !== []
+            && ! in_array('*', $trustedProxies, true)
+            && ! in_array('0.0.0.0/0', $trustedProxies, true)
+            && ! in_array('::/0', $trustedProxies, true);
+
+        $this->record(
+            'Production edge: canonical origin',
+            $canonicalValid ? 'PASS' : 'FAIL',
+            $canonicalValid
+                ? "Canonical host enforcement targets {$canonicalUrl}"
+                : 'CRITICAL: canonical HTTPS origin must match APP_URL and host enforcement must be enabled',
+        );
+        $this->record(
+            'Production edge: trusted proxies',
+            $proxyTrustValid ? 'PASS' : 'FAIL',
+            $proxyTrustValid
+                ? 'Trusted proxies are explicitly scoped'
+                : 'CRITICAL: trusted proxies must be explicit and must not trust every client',
         );
     }
 
@@ -212,8 +246,10 @@ final class LaunchValidateCommand extends Command
             $hreflang = $this->seoService->resolveHreflang(['ar' => '/ar', 'en' => '/en']);
             $this->record(
                 'Hreflang reciprocity',
-                count($hreflang) === 2 ? 'PASS' : 'FAIL',
-                count($hreflang) === 2 ? 'Hreflang tags are reciprocal' : 'Hreflang count mismatch',
+                collect($hreflang)->pluck('locale')->sort()->values()->all() === ['ar', 'en', 'x-default'] ? 'PASS' : 'FAIL',
+                collect($hreflang)->pluck('locale')->sort()->values()->all() === ['ar', 'en', 'x-default']
+                    ? 'Hreflang tags are reciprocal and include x-default'
+                    : 'Hreflang locales are incomplete',
             );
         } catch (\Throwable $e) {
             $this->record('Canonical/hreflang correctness', 'FAIL', $e->getMessage());
@@ -223,12 +259,26 @@ final class LaunchValidateCommand extends Command
     private function checkSitemapPresence(): void
     {
         try {
-            $xml = $this->sitemapService->renderXml();
-            $valid = str_contains($xml, '<?xml') && str_contains($xml, '<urlset');
+            $canonicalUrl = rtrim((string) config('edge.canonical_url'), '/');
+            $response = app()->handle(HttpRequest::create($canonicalUrl.'/sitemap.xml', 'GET'));
+            $xml = $response->getContent();
+            $entries = $this->sitemapService->generateEntries();
+            $originValid = $entries->every(fn ($entry): bool => str_starts_with($entry->loc, $canonicalUrl.'/'));
+            $lastmodsValid = $entries->every(
+                fn ($entry): bool => preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/', $entry->lastmod) === 1,
+            );
+            $valid = $response->getStatusCode() === 200
+                && is_string($xml)
+                && str_contains($xml, '<?xml')
+                && str_contains($xml, '<urlset')
+                && $originValid
+                && $lastmodsValid;
             $this->record(
                 'Sitemap presence',
                 $valid ? 'PASS' : 'FAIL',
-                $valid ? 'Sitemap XML is valid' : 'Sitemap XML is malformed or empty',
+                $valid
+                    ? "Sitemap endpoint is valid and all URLs use {$canonicalUrl}"
+                    : 'Sitemap endpoint, canonical hosts, or W3C lastmod values are invalid',
             );
         } catch (\Throwable $e) {
             $this->record('Sitemap presence', 'FAIL', $e->getMessage());
@@ -238,17 +288,25 @@ final class LaunchValidateCommand extends Command
     private function checkRobotsTxt(string $env): void
     {
         try {
-            $response = app()->handle(HttpRequest::create('/robots.txt', 'GET'));
-            $content = $response->getContent();
-            $hasSitemap = is_string($content) && str_contains($content, 'Sitemap:');
-            $allowsOrBlocks = is_string($content) && (str_contains($content, 'Allow: /') || str_contains($content, 'Disallow: /'));
+            $canonicalUrl = rtrim((string) config('edge.canonical_url'), '/');
+            $response = app()->handle(HttpRequest::create($canonicalUrl.'/robots.txt', 'GET'));
+            $runtimeContent = $response->getContent();
+            $staticPath = public_path('robots.txt');
+            $content = $env === 'production' && is_file($staticPath)
+                ? file_get_contents($staticPath)
+                : $runtimeContent;
+            $hasSitemap = is_string($content) && str_contains($content, 'Sitemap: '.$canonicalUrl.'/sitemap.xml');
+            $indexingCorrect = is_string($content) && ($env === 'production'
+                ? str_contains($content, 'Allow: /') && ! str_contains($content, 'Disallow: /')
+                : str_contains($content, 'Disallow: /'));
+            $valid = $response->getStatusCode() === 200 && $hasSitemap && $indexingCorrect;
 
             $this->record(
                 'robots.txt correctness',
-                $response->getStatusCode() === 200 && $hasSitemap && $allowsOrBlocks ? 'PASS' : 'FAIL',
-                $response->getStatusCode() === 200 && $hasSitemap && $allowsOrBlocks
-                    ? "robots.txt is reachable and contains sitemap/indexing directives for {$env}"
-                    : 'robots.txt is missing required sitemap or indexing directives',
+                $valid ? 'PASS' : 'FAIL',
+                $valid
+                    ? "Deploy-effective robots.txt has correct sitemap and indexing directives for {$env}"
+                    : 'robots.txt does not match the deploy-effective canonical sitemap or indexing policy',
             );
         } catch (\Throwable $e) {
             $this->record('robots.txt correctness', 'FAIL', $e->getMessage());
@@ -389,7 +447,7 @@ final class LaunchValidateCommand extends Command
         $this->newLine();
         $this->info("Launch Validation Summary: {$total} checks — {$passed} passed, {$warnings} warnings, {$failed} failed");
 
-        if ($failed > 0) {
+        if ($failed > 0 || ($this->productionValidation && $warnings > 0)) {
             $this->error('Launch validation FAILED. Fix critical issues before proceeding.');
         } else {
             $this->info('Launch validation PASSED.');

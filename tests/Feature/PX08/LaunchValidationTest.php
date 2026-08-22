@@ -36,12 +36,13 @@ class LaunchValidationTest extends TestCase
             ->assertFailed();
     }
 
-    public function test_launch_validate_accepts_environment_option(): void
+    public function test_production_validation_fails_when_production_requirements_are_not_met(): void
     {
         $this->seedValidData();
 
         $this->artisan('launch:validate', ['--environment' => 'production'])
-            ->assertSuccessful();
+            ->expectsOutputToContain('Production edge: canonical origin')
+            ->assertFailed();
     }
 
     public function test_launch_validate_continues_all_checks_even_on_failure(): void

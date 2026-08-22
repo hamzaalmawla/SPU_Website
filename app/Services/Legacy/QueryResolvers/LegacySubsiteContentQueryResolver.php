@@ -29,8 +29,9 @@ use App\DTOs\Legacy\NormalizedLegacyUrlDTO;
  * Deliberately not covered here:
  *  - subsite "root", which keeps its precise per-record resolvers;
  *  - "members", which stays a private archive;
- *  - "alumni", which has no public equivalent on the new site and must keep
- *    returning a real 404 so it lands in unresolved_legacy_requests for triage.
+ *  - unknown alumni URLs and alumni record/detail URLs, which must keep
+ *    returning a real 404. The dedicated alumni list resolver handles only
+ *    reviewed graduated-students list signatures.
  */
 final class LegacySubsiteContentQueryResolver implements LegacyQueryModuleResolverInterface
 {

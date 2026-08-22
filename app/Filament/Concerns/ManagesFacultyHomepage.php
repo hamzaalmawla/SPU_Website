@@ -10,8 +10,8 @@ use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
 use App\Contracts\Page\FacultyPageServiceInterface;
 use App\Contracts\Page\FacultySubpageCardServiceInterface;
 use App\Exceptions\ConflictException;
+use App\Filament\Components\PageUrlSelect;
 use App\Filament\Support\MediaPicker;
-use App\Models\Faculty\Faculty;
 use App\Models\User\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
@@ -32,7 +32,6 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use App\Filament\Components\PageUrlSelect;
 
 trait ManagesFacultyHomepage
 {
@@ -450,25 +449,25 @@ trait ManagesFacultyHomepage
 
     public function toggleNavVisibility(int $cardId): void
     {
-        $this->subpageCardService->toggleVisibility($cardId);
+        $this->subpageCardService->toggleVisibility($cardId, (int) auth()->id());
         $this->loadNavCards();
     }
 
     public function moveNavUp(int $cardId): void
     {
-        $this->subpageCardService->moveUp($cardId);
+        $this->subpageCardService->moveUp($cardId, (int) auth()->id());
         $this->loadNavCards();
     }
 
     public function moveNavDown(int $cardId): void
     {
-        $this->subpageCardService->moveDown($cardId);
+        $this->subpageCardService->moveDown($cardId, (int) auth()->id());
         $this->loadNavCards();
     }
 
     public function deleteNavCard(int $cardId): void
     {
-        $this->subpageCardService->deleteCard($cardId);
+        $this->subpageCardService->deleteCard($cardId, (int) auth()->id());
         Notification::make()->title(__('admin.faculty_workspace.navigation.card_deleted'))->success()->send();
         $this->loadNavCards();
     }
@@ -485,13 +484,14 @@ trait ManagesFacultyHomepage
                 'title_override_en' => $card['title_override_en'] ?? null,
                 'is_visible' => (bool) ($card['is_visible'] ?? false),
                 'sort_order' => (int) ($card['sort_order'] ?? 0),
-            ]);
+            ], (int) auth()->id());
         }
         Notification::make()->title(__('admin.faculty_workspace.navigation.cards_saved'))->success()->send();
         $this->loadNavCards();
     }
 
     public ?array $navAddForm = null;
+
     public bool $navAddModal = false;
 
     public function openNavAddModal(): void
@@ -515,12 +515,7 @@ trait ManagesFacultyHomepage
             return;
         }
 
-        $existing = \App\Models\Faculty\FacultySubpageCard::query()
-            ->where('faculty_slug', $this->facultyScope)
-            ->where('subpage_slug', $slug)
-            ->exists();
-
-        if ($existing) {
+        if ($this->subpageCardService->cardExists($this->facultyScope, $slug)) {
             Notification::make()->title(__('admin.faculty_workspace.navigation.card_exists'))->danger()->send();
 
             return;
@@ -529,6 +524,7 @@ trait ManagesFacultyHomepage
         $this->subpageCardService->createCard(
             facultySlug: $this->facultyScope,
             subpageSlug: $slug,
+            userId: (int) auth()->id(),
             titleOverrideAr: ($this->navAddForm['title_ar'] ?? '') !== '' ? $this->navAddForm['title_ar'] : null,
             titleOverrideEn: ($this->navAddForm['title_en'] ?? '') !== '' ? $this->navAddForm['title_en'] : null,
         );

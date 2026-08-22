@@ -199,7 +199,7 @@ php artisan legacy-import:news legacy-import-private/reviewed-root-news.csv --di
 
 Every approved article is imported as a disabled draft with no publish or schedule date and `noindex,nofollow` SEO. The import does not create continuity redirects, does not copy one locale into another, and keeps attachment files deferred for separate media reconciliation.
 
-The conservative approval builder rejects hidden, external-link, placeholder, empty, orphaned, already-mapped, duplicate-source, and same-service duplicate localized-title records. Invalid legacy dates may normalize to null because the records remain unpublished drafts. The importer independently rechecks source visibility, external-link state, content/child evidence, service, translations, and prior imports; packet approval cannot bypass those checks.
+The conservative approval builder rejects hidden, external-link, placeholder, empty, orphaned, already-mapped, duplicate-source, and uncertain same-service localized-title groups. Same-title rows with materially different content/child evidence may be retained, but use deterministic source-ID slugs. Identical or uncertain groups remain private until the reviewed packet records an explicit `canonical` or `redirect` disposition; redirects are applied only through the separate approval-gated continuity workflow. Invalid legacy dates may normalize to null because the records remain unpublished drafts. The importer independently rechecks source visibility, external-link state, content/child evidence, service, translations, duplicate-group evidence, and prior imports; packet approval cannot bypass those checks.
 
 Applied root news/announcement review batch on 2026-07-29:
 
@@ -243,7 +243,7 @@ Applied Arabic-fallback transfer batch on 2026-07-31:
 - Combined target state: `2285` articles = `1097` news + `1188` announcements; `8` are published and `2277` remain disabled drafts.
 - Locale state: `957` articles have no source English translation and use presentation fallback only; no synthetic EN rows were created.
 - Media state: `9565` attachment references remain unresolved because the legacy public files will be retrieved from cPanel.
-- Remaining source dispositions: `753` rows are not standalone imports after importer revalidation. They remain hidden, external-link, empty, duplicate-title, missing-title, or duplicate-source review cases and must receive explicit mapping/merge/retirement decisions.
+- Remaining source dispositions: `753` rows are not standalone imports after importer revalidation. They remain hidden, external-link, empty, duplicate-title, missing-title, or duplicate-source review cases and must receive explicit mapping, canonical/redirect, or retirement decisions; no automatic duplicate merge is implied.
 - Importer scalability was corrected to stream only identity columns during source duplicate checks instead of loading every legacy body into memory.
 
 Applied complete-text publication batch on 2026-07-31:
@@ -292,7 +292,7 @@ Applied public research archive batch on 2026-07-31:
 - Dry run: `289` requested and eligible; `0` blocked.
 - Published: `289` imported research records through the approval-gated publication service.
 - Public eligibility: imported records use `extraction_status=published`; missing historical dates remain null and are never replaced with the migration timestamp.
-- Duplicate review: all `36` duplicate-title records are public per the explicit archive-display decision, while their `duplicate_review` provenance remains available for later correction.
+- Duplicate review: duplicate-title research records are private by default. Inclusion requires `--include-duplicate-review` together with the existing `--approve=publish-legacy-research` publication approval; source-ID slugs remain stable when records are included. The historical `approved-public-research-20260731` batch must therefore be re-reviewed rather than treated as an automatic duplicate approval.
 - Files: `241` legacy file references remain deferred and are not rendered as downloads until cPanel files are verified.
 - Replay: `289` already published; no duplicate publication logs were created.
 - Public continuity: enabled service-1 member URLs resolve to localized research publication slugs; service-2 member routes remain private and unresolved.

@@ -38,10 +38,11 @@ final class DynamicFormSubmissionReviewService implements DynamicFormSubmissionR
         private readonly FormSubmissionNotificationServiceInterface $notificationService,
     ) {}
 
-    public function getDetails(int $submissionId, string $adminLocale): DynamicFormSubmissionDetailDTO
+    public function getDetails(int $submissionId, string $adminLocale, int $actorId): DynamicFormSubmissionDetailDTO
     {
         $locale = $adminLocale === 'ar' ? 'ar' : 'en';
         $submission = DynamicFormSubmission::query()->findOrFail($submissionId);
+        $this->authorizedActor($actorId, 'view', $submission);
         $formId = (string) $submission->form_id;
         $payload = is_array($submission->payload_json) ? $submission->payload_json : [];
         $inbox = FormSubmissionInbox::tryFromFormId($formId);

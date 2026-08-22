@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Tests\Unit;
 
 use App\Contracts\Legacy\LegacyPhaseSixSettingsImportServiceInterface;
+use App\Contracts\Shared\CacheServiceInterface;
 use App\Models\Legacy\LegacyContentMapping;
 use App\Models\Legacy\LegacyReviewItem;
 use App\Models\Settings\Setting;
 use App\Models\Shared\MigrationLog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
 use Tests\TestCase;
@@ -55,9 +55,10 @@ final class LegacyPhaseSixSettingsImportServiceTest extends TestCase
         Storage::fake('local');
         Storage::disk('local')->put('legacy-import-exports/phase6-settings/test_safe_mappings.csv', $this->safeMappingsCsv());
         $this->createMappingRows();
-        Cache::put('settings.public.ar', 'stale');
-        Cache::put('settings.social_contact.ar', 'stale');
-        Cache::put('settings.student_portal_url', 'stale');
+        $cacheService = app(CacheServiceInterface::class);
+        foreach (['settings.public.ar', 'settings.social_contact.ar', 'settings.student_portal_url'] as $key) {
+            $cacheService->remember($key, static fn (): string => 'stale');
+        }
 
         $result = app(LegacyPhaseSixSettingsImportServiceInterface::class)->import(
             inputPath: 'legacy-import-exports/phase6-settings/test_safe_mappings.csv',
@@ -72,9 +73,9 @@ final class LegacyPhaseSixSettingsImportServiceTest extends TestCase
         $this->assertSame(2, MigrationLog::query()->where('module', 'settings')->where('status', 'success')->count());
         $this->assertSame(2, LegacyReviewItem::query()->where('mapping_status', 'approved')->count());
         $this->assertSame('settings', LegacyContentMapping::query()->value('target_table'));
-        $this->assertFalse(Cache::has('settings.public.ar'));
-        $this->assertFalse(Cache::has('settings.social_contact.ar'));
-        $this->assertFalse(Cache::has('settings.student_portal_url'));
+        $this->assertSame('fresh', $cacheService->remember('settings.public.ar', static fn (): string => 'fresh'));
+        $this->assertSame('fresh', $cacheService->remember('settings.social_contact.ar', static fn (): string => 'fresh'));
+        $this->assertSame('fresh', $cacheService->remember('settings.student_portal_url', static fn (): string => 'fresh'));
     }
 
     private function safeMappingsCsv(): string

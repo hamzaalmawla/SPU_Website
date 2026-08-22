@@ -589,6 +589,38 @@ class HomepageCmsWorkflowTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['action' => 'homepage.schedule']);
     }
 
+    public function test_due_homepage_schedule_revalidates_locked_actor(): void
+    {
+        $actor = $this->author();
+        $draft = $this->publishingService()->saveDraft(
+            new HomepageDraftDataDTO(sections: $this->homepageService()->getSections()->all()),
+            $actor->id,
+        );
+
+        $this->assertTrue($this->publishingService()->schedulePublish($draft->id, now()->addHour(), $actor->id));
+        HomepageDraft::query()->whereKey($draft->id)->update(['scheduled_at' => now()->subMinute()]);
+        $actor->forceFill(['is_locked' => true])->save();
+
+        $this->assertSame(0, $this->publishingService()->publishDueScheduled());
+        $this->assertDatabaseHas('homepage_drafts', ['id' => $draft->id, 'status' => 'scheduled']);
+    }
+
+    public function test_due_homepage_schedule_revalidates_actor_publish_permission(): void
+    {
+        $actor = $this->author();
+        $draft = $this->publishingService()->saveDraft(
+            new HomepageDraftDataDTO(sections: $this->homepageService()->getSections()->all()),
+            $actor->id,
+        );
+
+        $this->assertTrue($this->publishingService()->schedulePublish($draft->id, now()->addHour(), $actor->id));
+        HomepageDraft::query()->whereKey($draft->id)->update(['scheduled_at' => now()->subMinute()]);
+        $actor->forceFill(['role_slug' => 'faculty_editor', 'faculty_scope_slug' => 'medicine'])->save();
+
+        $this->assertSame(0, $this->publishingService()->publishDueScheduled());
+        $this->assertDatabaseHas('homepage_drafts', ['id' => $draft->id, 'status' => 'scheduled']);
+    }
+
     private function homepageService(): HomepageSectionServiceInterface
     {
         return app(HomepageSectionServiceInterface::class);

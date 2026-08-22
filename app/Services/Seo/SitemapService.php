@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Seo;
 
+use App\Contracts\Career\AlumniDirectoryServiceInterface;
 use App\Contracts\Page\PageServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Contracts\Seo\SeoMetadataServiceInterface;
@@ -19,7 +20,10 @@ use App\Models\Page\AboutPage;
 use App\Models\Page\Page;
 use App\Models\Person\FacultyMember;
 use App\Models\Person\Person;
+use App\Models\Research\ResearchPublication;
 use App\Models\Settings\Setting;
+use Carbon\CarbonImmutable;
+use DateTimeInterface;
 use Illuminate\Support\Collection;
 
 final class SitemapService implements SitemapServiceInterface
@@ -33,6 +37,7 @@ final class SitemapService implements SitemapServiceInterface
         private readonly CacheServiceInterface $cacheService,
         private readonly SeoMetadataServiceInterface $seoMetadataService,
         private readonly ResearchPageServiceInterface $researchPageService,
+        private readonly AlumniDirectoryServiceInterface $alumniDirectoryService,
     ) {}
 
     public function generateEntries(): Collection
@@ -50,7 +55,7 @@ final class SitemapService implements SitemapServiceInterface
             ->get();
 
         $entries = new Collection;
-        $baseUrl = rtrim((string) config('app.url', 'http://localhost'), '/');
+        $baseUrl = rtrim((string) config('edge.canonical_url', config('app.url')), '/');
 
         foreach ($pages as $page) {
             $isHomepageShell = (bool) $page->is_homepage_shell;
@@ -58,6 +63,10 @@ final class SitemapService implements SitemapServiceInterface
             $localesWithTranslation = [];
             foreach (['ar', 'en'] as $locale) {
                 if ($this->isSitemapRenderable($page, $locale)) {
+                    if ($page->slug === 'research' && ! $this->researchPageService->isPubliclyAvailablePath($locale, '/research')) {
+                        continue;
+                    }
+
                     $localesWithTranslation[] = $locale;
                 }
             }
@@ -75,7 +84,7 @@ final class SitemapService implements SitemapServiceInterface
 
                 $entries->push(new SitemapEntryDTO(
                     loc: $loc,
-                    lastmod: $page->updated_at?->toW3cString() ?? $page->published_at->toW3cString(),
+                    lastmod: $this->w3c($page->updated_at ?? $page->published_at),
                     changefreq: null,
                     priority: null,
                     alternates: $alternates,
@@ -86,12 +95,36 @@ final class SitemapService implements SitemapServiceInterface
         $this->appendAboutEntries($entries, $baseUrl);
         $this->appendEServicesEntries($entries, $baseUrl);
         $this->appendFacultyResearchEntries($entries, $baseUrl);
+        $this->appendAlumniEntries($entries, $baseUrl);
         $this->appendResearchCatalogEntries($entries, $baseUrl);
         $this->appendResearchPublicationEntries($entries, $baseUrl);
         $this->appendCmsRouteEntries($entries, $baseUrl);
         $this->appendNewsArticleEntries($entries, $baseUrl);
 
         return $entries->unique(fn (SitemapEntryDTO $entry): string => $entry->loc)->values();
+    }
+
+    /** @param Collection<int, SitemapEntryDTO> $entries */
+    private function appendAlumniEntries(Collection $entries, string $baseUrl): void
+    {
+        if (! $this->alumniDirectoryService->isAvailable()) {
+            return;
+        }
+
+        $alternates = collect(['ar', 'en'])->map(fn (string $locale): array => [
+            'locale' => $locale,
+            'url' => $baseUrl.'/'.$locale.'/alumni',
+        ])->all();
+
+        foreach (['ar', 'en'] as $locale) {
+            $entries->push(new SitemapEntryDTO(
+                loc: $baseUrl.'/'.$locale.'/alumni',
+                lastmod: $this->w3c(now()),
+                changefreq: null,
+                priority: null,
+                alternates: $alternates,
+            ));
+        }
     }
 
     /** @param Collection<int, SitemapEntryDTO> $entries */
@@ -130,7 +163,7 @@ final class SitemapService implements SitemapServiceInterface
             foreach ($locales as $locale) {
                 $entries->push(new SitemapEntryDTO(
                     loc: $baseUrl.'/'.$locale.$path,
-                    lastmod: $content->updated_at?->toW3cString() ?? now()->toW3cString(),
+                    lastmod: $this->w3c($content->updated_at),
                     changefreq: null,
                     priority: null,
                     alternates: $alternates,
@@ -161,7 +194,7 @@ final class SitemapService implements SitemapServiceInterface
             foreach ($locales as $locale) {
                 $entries->push(new SitemapEntryDTO(
                     loc: $baseUrl.'/'.$locale.$path,
-                    lastmod: $article->updated_at?->toW3cString() ?? $article->published_at?->toW3cString() ?? now()->toW3cString(),
+                    lastmod: $this->w3c($article->updated_at ?? $article->published_at),
                     changefreq: null,
                     priority: null,
                     alternates: $alternates,
@@ -190,7 +223,7 @@ final class SitemapService implements SitemapServiceInterface
             foreach (['ar', 'en'] as $locale) {
                 $entries->push(new SitemapEntryDTO(
                     loc: $baseUrl.'/'.$locale.$path,
-                    lastmod: $faculty->updated_at?->toW3cString() ?? now()->toW3cString(),
+                    lastmod: $this->w3c($faculty->updated_at),
                     changefreq: null,
                     priority: null,
                     alternates: $alternates,
@@ -207,12 +240,11 @@ final class SitemapService implements SitemapServiceInterface
             'research.projects' => 'projects',
             'research.themes' => 'themes',
         ] as $targetKey => $segment) {
-            $publishedContent = CmsTargetContent::query()
-                ->where('target_key', $targetKey)
-                ->where('status', PublicationStatus::Published->value)
-                ->first();
+            $locales = collect(['ar', 'en'])
+                ->filter(fn (string $locale): bool => $this->researchPageService->isPubliclyAvailablePath($locale, '/research/'.$segment))
+                ->values();
 
-            if (! $publishedContent instanceof CmsTargetContent) {
+            if ($locales->isEmpty()) {
                 continue;
             }
 
@@ -231,15 +263,18 @@ final class SitemapService implements SitemapServiceInterface
             $slugs = array_values(array_intersect(...array_values($slugLists->all())));
             $basePath = '/research/'.$segment;
             $paths = [$basePath, ...array_map(static fn (string $slug): string => $basePath.'/'.$slug, $slugs)];
-            $lastmod = $publishedContent->updated_at?->toW3cString() ?? now()->toW3cString();
+            $lastmod = $this->w3c(CmsTargetContent::query()
+                ->where('target_key', $targetKey)
+                ->where('status', PublicationStatus::Published->value)
+                ->value('updated_at'));
 
             foreach ($paths as $path) {
-                $alternates = collect(['ar', 'en'])->map(fn (string $locale): array => [
+                $alternates = $locales->map(fn (string $locale): array => [
                     'locale' => $locale,
                     'url' => $baseUrl.'/'.$locale.$path,
                 ])->all();
 
-                foreach (['ar', 'en'] as $locale) {
+                foreach ($locales as $locale) {
                     $entries->push(new SitemapEntryDTO(
                         loc: $baseUrl.'/'.$locale.$path,
                         lastmod: $lastmod,
@@ -290,22 +325,29 @@ final class SitemapService implements SitemapServiceInterface
      * migrated, that is several hundred real pages a search engine could not
      * discover from the sitemap.
      *
-     * @param Collection<int, SitemapEntryDTO> $entries
+     * @param  Collection<int, SitemapEntryDTO>  $entries
      */
     private function appendResearchPublicationEntries(Collection $entries, string $baseUrl): void
     {
-        // Mirror appendResearchCatalogEntries: the archive only belongs in the
-        // sitemap once its CMS target is published. ResearchPageService falls back
-        // to static fixture content when nothing is published, and listing that
-        // would put unpublished URLs into the sitemap.
         $publishedArchive = CmsTargetContent::query()
             ->where('target_key', 'research.publications')
             ->where('status', PublicationStatus::Published->value)
             ->first();
 
-        if (! $publishedArchive instanceof CmsTargetContent) {
+        $hasPublishedRecords = ResearchPublication::query()->public()->exists();
+
+        // A published CMS archive may contribute authored detail pages. Real
+        // migrated records are independently eligible and must not need a fake
+        // CMS payload merely to become discoverable.
+        if (! $hasPublishedRecords
+            && ! $this->researchPageService->isPubliclyAvailablePath('en', '/research/publications')) {
             return;
         }
+
+        $lastmod = $this->w3c(
+            ResearchPublication::query()->public()->max('updated_at')
+                ?? $publishedArchive?->updated_at,
+        );
 
         $slugsByLocale = collect(['ar', 'en'])->mapWithKeys(fn (string $locale): array => [
             $locale => $this->publicationSlugs($locale),
@@ -325,7 +367,7 @@ final class SitemapService implements SitemapServiceInterface
             foreach (['ar', 'en'] as $locale) {
                 $entries->push(new SitemapEntryDTO(
                     loc: $baseUrl.'/'.$locale.$path,
-                    lastmod: $publishedArchive->updated_at?->toW3cString() ?? now()->toW3cString(),
+                    lastmod: $lastmod,
                     changefreq: null,
                     priority: null,
                     alternates: $alternates,
@@ -358,12 +400,12 @@ final class SitemapService implements SitemapServiceInterface
             ])->all();
             $updatedAt = Setting::query()->where('group_key', $source['group'])->max('updated_at')
                 ?? CmsTargetContent::query()->where('target_key', $source['target'])->value('updated_at')
-                ?? now()->toW3cString();
+                ?? now();
 
             foreach ($locales as $locale) {
                 $entries->push(new SitemapEntryDTO(
                     loc: $baseUrl.'/'.$locale.$path,
-                    lastmod: (string) $updatedAt,
+                    lastmod: $this->w3c($updatedAt),
                     changefreq: null,
                     priority: null,
                     alternates: $alternates,
@@ -403,7 +445,7 @@ final class SitemapService implements SitemapServiceInterface
         }
 
         $updatedAt = AboutPage::query()->max('updated_at');
-        $lastmod = is_string($updatedAt) ? $updatedAt : now()->toW3cString();
+        $lastmod = $this->w3c($updatedAt);
         $paths = [
             '/about',
             '/about/vision-mission',
@@ -483,6 +525,12 @@ final class SitemapService implements SitemapServiceInterface
                 $xml .= '    <xhtml:link rel="alternate" hreflang="'.$hreflang.'" href="'.$href.'" />'."\n";
             }
 
+            $defaultAlternate = collect($entry->alternates)->firstWhere('locale', 'ar');
+            if (is_array($defaultAlternate) && is_string($defaultAlternate['url'] ?? null)) {
+                $href = htmlspecialchars($defaultAlternate['url'], ENT_XML1, 'UTF-8');
+                $xml .= '    <xhtml:link rel="alternate" hreflang="x-default" href="'.$href.'" />'."\n";
+            }
+
             $xml .= '  </url>'."\n";
         }
 
@@ -511,6 +559,23 @@ final class SitemapService implements SitemapServiceInterface
         }
 
         return $alternates;
+    }
+
+    private function w3c(mixed $value): string
+    {
+        try {
+            if ($value instanceof DateTimeInterface) {
+                return CarbonImmutable::instance($value)->toW3cString();
+            }
+
+            if (is_string($value) && trim($value) !== '') {
+                return CarbonImmutable::parse($value)->toW3cString();
+            }
+        } catch (\Throwable) {
+            // Invalid persisted timestamps should not make the sitemap invalid.
+        }
+
+        return now()->toW3cString();
     }
 
     private function buildPagePath(Page $page, string $locale): string

@@ -12,7 +12,7 @@ The old `/members/` data contains:
 
 Batch `approved-structured-research-import-20260731` imported all `289` candidates into the new relational research schema as disabled review records before the separate archive publication decision below.
 
-Publication batch `approved-public-research-20260731` subsequently enabled all `289` imported records for the public research archive. The records remain source-authentic: unknown dates remain unknown, duplicate-title status remains in provenance, and missing files remain deferred rather than exposed as broken downloads.
+Publication batch `approved-public-research-20260731` historically enabled all `289` imported records for the public research archive. The approved duplicate-title policy is now fail-closed: duplicate-review records remain private unless the publisher supplies `--include-duplicate-review` alongside the existing publication approval. Records remain source-authentic, unknown dates remain unknown, and missing files remain deferred rather than exposed as broken downloads.
 
 ## Field Mapping
 
@@ -89,9 +89,10 @@ The public publication command is dry-run-first and requires an unlocked publish
 ```bash
 php artisan legacy-import:publish-research --actor=<publisher-user-id> --batch=<batch> --json
 php artisan legacy-import:publish-research --actor=<publisher-user-id> --write --approve=publish-legacy-research --batch=<batch> --json
+php artisan legacy-import:publish-research --actor=<publisher-user-id> --write --approve=publish-legacy-research --include-duplicate-review --batch=<batch> --json
 ```
 
-The publication gate requires successful import provenance and a source title. It does not require a fabricated date, rank, owner, or file. Legacy records become public through `extraction_status=published`; native records retain their ordinary date-based public rules.
+The publication gate requires successful import provenance and a source title. Duplicate-review records are blocked unless explicitly included. It does not require a fabricated date, rank, owner, or file. Legacy records become public through `extraction_status=published`; native records retain their ordinary date-based public rules.
 
 Public service-1 `/members/index.php?page=show&ex=2&dir=items&ser=1&cat_id=<id>` requests now resolve to the localized Laravel research publication URL when the imported source record is enabled. Other `/members/` services remain private and unresolved.
 

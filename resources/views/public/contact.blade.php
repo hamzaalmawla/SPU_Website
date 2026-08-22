@@ -3,7 +3,7 @@
 @section('content')
     <section class="relative flex h-[400px] items-center justify-center overflow-hidden font-hacen">
         <div class="absolute inset-0 z-0">
-            <img src="{{ $contact->hero['bgImage'] }}" alt="Contact Hero" class="h-full w-full object-cover">
+            <img src="{{ $contact->hero['bgImage'] }}" alt="{{ $contact->hero['title'] }}" class="h-full w-full object-cover">
             <div class="absolute inset-0 bg-spu-blue/60 backdrop-blur-[2px]"></div>
         </div>
 
@@ -19,7 +19,7 @@
                     <h2 class="text-3xl font-bold text-spu-blue">{{ $contact->form['title'] }}</h2>
 
                     @if (session('contact_status'))
-                        <div class="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-bold text-green-800">
+                        <div class="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-bold text-green-800" role="status" aria-live="polite">
                             {{ session('contact_status') }}
                         </div>
                     @endif
@@ -38,30 +38,30 @@
                         <div class="grid gap-6 md:grid-cols-2">
                             <div class="space-y-2">
                                 <label for="contact-name" class="text-sm font-medium text-slate-600">{{ $contact->form['fields']['name']['label'] }}</label>
-                                <input id="contact-name" name="name" type="text" value="{{ old('name') }}" required
+                                <input id="contact-name" name="name" type="text" value="{{ old('name') }}" required aria-required="true" aria-invalid="{{ $errors->has('name') ? 'true' : 'false' }}" @if($errors->has('name')) aria-describedby="contact-name-error" @endif
                                     class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 outline-none transition-all focus:border-spu-red/50 focus:ring-4 focus:ring-spu-red/5">
-                                @error('name')<p class="text-xs font-bold text-spu-red">{{ $message }}</p>@enderror
+                                @error('name')<p id="contact-name-error" class="text-xs font-bold text-spu-red" role="alert">{{ $message }}</p>@enderror
                             </div>
                             <div class="space-y-2">
                                 <label for="contact-email" class="text-sm font-medium text-slate-600">{{ $contact->form['fields']['email']['label'] }}</label>
-                                <input id="contact-email" name="email" type="email" value="{{ old('email') }}" required
+                                <input id="contact-email" name="email" type="email" value="{{ old('email') }}" required aria-required="true" aria-invalid="{{ $errors->has('email') ? 'true' : 'false' }}" @if($errors->has('email')) aria-describedby="contact-email-error" @endif
                                     class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 outline-none transition-all focus:border-spu-red/50 focus:ring-4 focus:ring-spu-red/5">
-                                @error('email')<p class="text-xs font-bold text-spu-red">{{ $message }}</p>@enderror
+                                @error('email')<p id="contact-email-error" class="text-xs font-bold text-spu-red" role="alert">{{ $message }}</p>@enderror
                             </div>
                         </div>
 
                         <div class="space-y-2">
                             <label for="contact-subject" class="text-sm font-medium text-slate-600">{{ $contact->form['fields']['subject']['label'] }}</label>
-                            <input id="contact-subject" name="subject" type="text" value="{{ old('subject', $prefilledSubject ?? '') }}" required
+                            <input id="contact-subject" name="subject" type="text" value="{{ old('subject', $prefilledSubject ?? '') }}" required aria-required="true" aria-invalid="{{ $errors->has('subject') ? 'true' : 'false' }}" @if($errors->has('subject')) aria-describedby="contact-subject-error" @endif
                                 class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 outline-none transition-all focus:border-spu-red/50 focus:ring-4 focus:ring-spu-red/5">
-                            @error('subject')<p class="text-xs font-bold text-spu-red">{{ $message }}</p>@enderror
+                            @error('subject')<p id="contact-subject-error" class="text-xs font-bold text-spu-red" role="alert">{{ $message }}</p>@enderror
                         </div>
 
                         <div class="space-y-2">
                             <label for="contact-message" class="text-sm font-medium text-slate-600">{{ $contact->form['fields']['message']['label'] }}</label>
-                            <textarea id="contact-message" name="message" rows="6" required
+                            <textarea id="contact-message" name="message" rows="6" required aria-required="true" aria-invalid="{{ $errors->has('message') ? 'true' : 'false' }}" @if($errors->has('message')) aria-describedby="contact-message-error" @endif
                                 class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 outline-none transition-all focus:border-spu-red/50 focus:ring-4 focus:ring-spu-red/5">{{ old('message') }}</textarea>
-                            @error('message')<p class="text-xs font-bold text-spu-red">{{ $message }}</p>@enderror
+                            @error('message')<p id="contact-message-error" class="text-xs font-bold text-spu-red" role="alert">{{ $message }}</p>@enderror
                         </div>
 
                         <div>
@@ -125,7 +125,8 @@
                             <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">{{ $contact->socialsTitle }}</p>
                             <div class="flex gap-3">
                                 @foreach ($contact->socials as $social)
-                                    <a href="{{ $social['url'] }}" rel="noreferrer" class="flex h-10 w-10 items-center justify-center rounded-full bg-[#1e2756] text-white transition-all hover:bg-spu-red">
+                                    @php($socialLabel = [0 => 'Facebook', 1 => 'Instagram', 2 => 'YouTube'][$loop->index] ?? ($locale === 'ar' ? 'شبكة اجتماعية' : 'Social network'))
+                                    <a href="{{ $social['url'] }}" rel="noreferrer" aria-label="{{ $locale === 'ar' ? 'زيارة صفحة الجامعة على '.$socialLabel : 'Visit the university on '.$socialLabel }}" class="flex h-10 w-10 items-center justify-center rounded-full bg-[#1e2756] text-white transition-all hover:bg-spu-red">
                                         <img src="{{ $social['icon'] }}" alt="" class="h-5 w-5 brightness-0 invert transition-opacity" aria-hidden="true">
                                     </a>
                                 @endforeach
@@ -146,7 +147,7 @@
         <div class="relative h-[400px]">
             <div class="inset-0 relative h-full w-full">
                 <div class="absolute top-0 left-0 z-10 h-full w-full bg-spu-blue/20"></div>
-                <iframe src="{{ $contact->location['embedUrl'] }}"
+                <iframe src="{{ $contact->location['embedUrl'] }}" title="{{ $contact->location['title'] }}"
                     class="h-full w-full border-0 grayscale-[0.2] transition-all duration-700 hover:grayscale-0"
                     allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
             </div>

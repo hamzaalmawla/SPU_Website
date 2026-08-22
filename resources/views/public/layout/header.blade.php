@@ -18,7 +18,7 @@
 <header id="site-header" class="absolute top-0 z-[200] w-full pt-3 font-hacen"
         x-data="mobileNav()"
         data-search-items="{{ json_encode($searchItems, JSON_THROW_ON_ERROR) }}"
-        @keydown.escape.window="closeAll()"
+        @keydown.escape.window="handleEscape()"
         @keydown.window.ctrl.k.prevent="openSearch()"
         @keydown.window.meta.k.prevent="openSearch()"
         @click.outside="closeForOutsideClick()"
@@ -38,20 +38,32 @@
                             <li class="site-nav-item"
                                 @if (!empty($item->children))
                                     @mouseenter="openDropdown('{{ $loop->index }}')"
-                                    @mouseleave="closeDropdown()"
+                                    @mouseleave="closeDropdown($event)"
+                                    @focusin="openDropdownForFocus('{{ $loop->index }}')"
+                                    @focusout="closeDropdownForFocus($event)"
                                 @endif>
-                                <a href="{{ $item->resolvedUrl ?? '#' }}"
+                                @if (!empty($item->children))
+                                <button type="button"
+                                   class="site-nav-link {{ $item->isActive ? 'site-nav-link--active' : '' }}"
+                                   data-dropdown-trigger="{{ $loop->index }}"
+                                   @click="toggleDropdown('{{ $loop->index }}')"
+                                   :aria-expanded="isDropdownOpen('{{ $loop->index }}').toString()"
+                                   aria-controls="site-nav-dropdown-{{ $loop->index }}">
+                                    <span>{{ $item->label }}</span>
+                                    <img src="/images/icon-chevron-down-outline.svg" alt="" class="site-nav-link__chevron" aria-hidden="true">
+                                </button>
+                                @elseif ($item->resolvedUrl)
+                                <a href="{{ $item->resolvedUrl }}"
                                    class="site-nav-link {{ $item->isActive ? 'site-nav-link--active' : '' }}"
                                    @if ($item->isActive) aria-current="page" @endif
-                                   @if ($item->openInNewTab) target="_blank" rel="noreferrer" @endif>
-                                    <span>{{ $item->label }}</span>
-                                    @if (!empty($item->children))
-                                        <img src="/images/icon-chevron-down-outline.svg" alt="" class="site-nav-link__chevron" aria-hidden="true">
-                                    @endif
-                                </a>
+                                   @if ($item->openInNewTab) target="_blank" rel="noreferrer" @endif><span>{{ $item->label }}</span></a>
+                                @else
+                                <span class="site-nav-link" aria-disabled="true"><span>{{ $item->label }}</span></span>
+                                @endif
 
                                 @if (!empty($item->children))
-                                     <div x-show="isDropdownOpen('{{ $loop->index }}')"
+                                     <div id="site-nav-dropdown-{{ $loop->index }}"
+                                          x-show="isDropdownOpen('{{ $loop->index }}')"
                                          x-transition:enter="transition duration-200 ease-out"
                                          x-transition:enter-start="opacity-0 -translate-y-2 scale-[0.97]"
                                          x-transition:enter-end="opacity-100 translate-y-0 scale-100"
@@ -68,13 +80,13 @@
                                             @if (!empty($child->children))
                                                 @php $hasRenderedGroup = true; @endphp
                                                 <div class="site-nav-dropdown-group">
-                                                    <a href="{{ $child->resolvedUrl ?? '#' }}"
+                                                     <a @if($child->resolvedUrl) href="{{ $child->resolvedUrl }}" @else aria-disabled="true" @endif
                                                        class="site-nav-dropdown-group-header"
                                                        @if ($child->openInNewTab ?? false) target="_blank" rel="noreferrer" @endif>
                                                         {{ $child->label }}
                                                     </a>
                                                     @foreach ($child->children as $featured)
-                                                        <a href="{{ $featured->resolvedUrl ?? '#' }}"
+                                                         <a @if($featured->resolvedUrl) href="{{ $featured->resolvedUrl }}" @else aria-disabled="true" @endif
                                                            class="site-nav-dropdown-featured"
                                                            @if ($featured->openInNewTab ?? false) target="_blank" rel="noreferrer" @endif>
                                                             {{ $featured->label }}
@@ -86,7 +98,7 @@
                                                     <div class="my-2 border-t border-spu-blue/10"></div>
                                                     @php $flatDividerRendered = true; @endphp
                                                 @endif
-                                                <a href="{{ $child->resolvedUrl ?? '#' }}"
+                                                 <a @if($child->resolvedUrl) href="{{ $child->resolvedUrl }}" @else aria-disabled="true" @endif
                                                    class="site-nav-dropdown-link"
                                                    @if ($child->openInNewTab ?? false) target="_blank" rel="noreferrer" @endif>
                                                     {{ $child->label }}
@@ -102,7 +114,8 @@
 
                 <div class="site-nav-actions">
                     <div class="site-search-wrap relative">
-                        <button type="button"
+                         <button type="button"
+                                x-ref="searchToggle"
                                 @click="toggleSearch()"
                                 class="site-nav-lang"
                                 :aria-expanded="searchOpen.toString()"
@@ -159,9 +172,12 @@
                         </a>
                     @endif
 
-                    <button type="button"
+                     <button type="button"
+                            x-ref="mobileToggle"
                             @click="toggleMobile()"
                             aria-label="{{ __('public.toggle_navigation') }}"
+                            :aria-expanded="mobileNav.toString()"
+                            aria-controls="site-mobile-navigation"
                             class="site-nav-menu-btn nav:hidden">
                         <img :src="mobileToggleIcon()" class="h-5 w-5" alt="">
                     </button>

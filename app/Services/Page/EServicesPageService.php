@@ -12,6 +12,7 @@ use App\DTOs\EServices\EServicesPageContentDTO;
 use App\DTOs\EServices\EServicesPageDTO;
 use App\DTOs\Settings\SettingsDTO;
 use App\DTOs\Settings\SettingValueDTO;
+use App\Models\Cms\CmsTargetContent;
 
 final class EServicesPageService implements EServicesPageServiceInterface
 {
@@ -30,7 +31,7 @@ final class EServicesPageService implements EServicesPageServiceInterface
         $published = $this->cmsWorkflowService->getPublishedPayload('e_services.suggestions-complaints');
         $content = is_array($published['translations'][$locale] ?? null)
             ? $published['translations'][$locale]
-            : $this->suggestionsComplaintsFallback($locale);
+            : [];
 
         return $this->suggestionsComplaintsPageFromContent($locale, $content);
     }
@@ -132,11 +133,6 @@ final class EServicesPageService implements EServicesPageServiceInterface
             ? $publishedPayload['translations'][$locale]
             : null;
 
-        if (! is_array($content)) {
-            $settings = $this->settingsService->getGroup($this->detailSettingsGroup($slug), $locale);
-            $content = collect($settings->values)->firstWhere('key', 'content')?->jsonValue ?? [];
-        }
-
         return $this->detailPageFromArray($locale, $slug, is_array($content) ? $content : []);
     }
 
@@ -177,6 +173,12 @@ final class EServicesPageService implements EServicesPageServiceInterface
 
         if (is_array($publishedContent)) {
             return $this->contentFromArray($publishedContent);
+        }
+
+        // Legacy managed settings remain readable until this target enters the
+        // CMS workflow. Once explicitly unpublished, content must stay hidden.
+        if (CmsTargetContent::query()->where('target_key', 'e_services')->exists()) {
+            return $this->contentFromArray([]);
         }
 
         $settings = $this->settingsService->getGroup('e_services_page', $locale);
@@ -375,11 +377,6 @@ final class EServicesPageService implements EServicesPageServiceInterface
             'library', 'staff-email', 'it-support' => 'e_services.'.$slug,
             default => throw new \InvalidArgumentException('Unsupported E-Services detail page.'),
         };
-    }
-
-    private function detailSettingsGroup(string $slug): string
-    {
-        return 'e_services_'.str_replace('-', '_', $slug).'_page';
     }
 
     /** @return array<int, array<string, string>> */

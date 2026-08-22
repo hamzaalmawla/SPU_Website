@@ -10,7 +10,7 @@ use App\Enums\FormSubmissionStatus;
 
 interface DynamicFormSubmissionReviewServiceInterface
 {
-    public function getDetails(int $submissionId, string $adminLocale): DynamicFormSubmissionDetailDTO;
+    public function getDetails(int $submissionId, string $adminLocale, int $actorId): DynamicFormSubmissionDetailDTO;
 
     public function transitionStatus(
         int $submissionId,

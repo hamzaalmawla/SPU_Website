@@ -34,6 +34,14 @@ class SettingsShellTest extends TestCase
         $this->assertSame('/e-services/staff-email', $settings->staffAccessUrl);
     }
 
+    public function test_external_portal_urls_fail_closed_outside_exact_host_allowlist(): void
+    {
+        config()->set('security.trusted_portal_hosts', ['portal.spu.edu.sy']);
+
+        $this->assertNull($this->settingsService()->getStudentPortalUrl());
+        $this->assertSame('/e-services/staff-email', $this->settingsService()->getStaffAccessUrl());
+    }
+
     public function test_emergency_notice_payload_resolves_when_configured(): void
     {
         $updated = $this->settingsService()->updateGroup(

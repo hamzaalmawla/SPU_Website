@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Navigation;
 
 use App\Contracts\Navigation\MenuServiceInterface;
+use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Contracts\Shared\AuditServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
 use App\DTOs\Navigation\MenuItemDataDTO;
@@ -76,6 +77,7 @@ final class MenuService implements MenuServiceInterface
         private readonly CacheServiceInterface $cacheService,
         private readonly AuditServiceInterface $auditService,
         private readonly HtmlSanitizer $htmlSanitizer,
+        private readonly ?ResearchPageServiceInterface $researchPageService = null,
         private readonly ?AuthFactory $authFactory = null,
     ) {}
 
@@ -469,6 +471,12 @@ final class MenuService implements MenuServiceInterface
     private function resolveItemUrl(MenuItem $item, string $locale): ?string
     {
         if ($item->target_kind === 'page' && $item->pageTarget instanceof Page) {
+            if ($item->pageTarget->slug === 'research'
+                && $this->researchPageService instanceof ResearchPageServiceInterface
+                && ! $this->researchPageService->isPubliclyAvailablePath($locale, '/research')) {
+                return null;
+            }
+
             return $this->resolvePageUrl($item->pageTarget, $locale);
         }
 
@@ -481,7 +489,18 @@ final class MenuService implements MenuServiceInterface
             return route($item->route_name, $parameters, false);
         }
 
-        return is_string($item->url) && $item->url !== '' ? $item->url : null;
+        if (! is_string($item->url) || $item->url === '') {
+            return null;
+        }
+
+        $urlPath = (string) (parse_url($item->url, PHP_URL_PATH) ?: '');
+        if (preg_match('~(?:^|/)research(?:/|$)~', $urlPath) === 1
+            && $this->researchPageService instanceof ResearchPageServiceInterface
+            && ! $this->researchPageService->isPubliclyAvailablePath($locale, $item->url)) {
+            return null;
+        }
+
+        return $item->url;
     }
 
     private function resolvePageUrl(Page $page, string $locale): ?string

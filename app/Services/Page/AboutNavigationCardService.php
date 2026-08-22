@@ -6,6 +6,7 @@ namespace App\Services\Page;
 
 use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Page\AboutNavigationCardServiceInterface;
+use App\Contracts\Shared\CacheServiceInterface;
 use App\DTOs\About\AboutNavigationCardDTO;
 use App\DTOs\Cms\CmsTargetDTO;
 use App\Models\Page\AboutNavigationCard;
@@ -15,7 +16,23 @@ final class AboutNavigationCardService implements AboutNavigationCardServiceInte
 {
     public function __construct(
         private readonly CmsTargetRegistryInterface $targetRegistry,
+        private readonly CacheServiceInterface $cacheService,
     ) {}
+
+    /** @return array<string, string> */
+    public function availableTargetOptions(): array
+    {
+        $existingKeys = AboutNavigationCard::query()->pluck('target_key')->all();
+
+        return $this->targetRegistry->forArea('about')
+            ->filter(fn (CmsTargetDTO $target): bool => $target->key !== 'about.landing'
+                && $target->publicPath !== null
+                && ! in_array($target->key, $existingKeys, true))
+            ->mapWithKeys(fn (CmsTargetDTO $target): array => [
+                $target->key => __($target->labelKey).' ('.$target->key.')',
+            ])
+            ->all();
+    }
 
     /** @return array<int, array<string, string>> */
     public function getVisibleCards(string $locale): array
@@ -102,6 +119,8 @@ final class AboutNavigationCardService implements AboutNavigationCardServiceInte
             'status' => 'draft',
         ]);
 
+        $this->invalidatePublicCache();
+
         return $this->mapToDto($card);
     }
 
@@ -113,7 +132,7 @@ final class AboutNavigationCardService implements AboutNavigationCardServiceInte
             return false;
         }
 
-        return $card->update([
+        $updated = $card->update([
             'title_override_ar' => $data['title_override_ar'] ?? $card->title_override_ar,
             'title_override_en' => $data['title_override_en'] ?? $card->title_override_en,
             'sort_order' => $data['sort_order'] ?? $card->sort_order,
@@ -121,6 +140,12 @@ final class AboutNavigationCardService implements AboutNavigationCardServiceInte
             'status' => $data['status'] ?? $card->status,
             'publish_at' => $data['publish_at'] ?? $card->publish_at,
         ]);
+
+        if ($updated) {
+            $this->invalidatePublicCache();
+        }
+
+        return $updated;
     }
 
     public function deleteCard(int $id): bool
@@ -131,7 +156,13 @@ final class AboutNavigationCardService implements AboutNavigationCardServiceInte
             return false;
         }
 
-        return $card->delete();
+        $deleted = (bool) $card->delete();
+
+        if ($deleted) {
+            $this->invalidatePublicCache();
+        }
+
+        return $deleted;
     }
 
     public function toggleVisibility(int $id): bool
@@ -142,7 +173,13 @@ final class AboutNavigationCardService implements AboutNavigationCardServiceInte
             return false;
         }
 
-        return $card->update(['is_visible' => ! $card->is_visible]);
+        $updated = $card->update(['is_visible' => ! $card->is_visible]);
+
+        if ($updated) {
+            $this->invalidatePublicCache();
+        }
+
+        return $updated;
     }
 
     /** @param array<int, int> $orderedIds */
@@ -151,6 +188,8 @@ final class AboutNavigationCardService implements AboutNavigationCardServiceInte
         foreach ($orderedIds as $index => $id) {
             AboutNavigationCard::query()->whereKey($id)->update(['sort_order' => $index + 1]);
         }
+
+        $this->invalidatePublicCache();
 
         return true;
     }
@@ -180,10 +219,16 @@ final class AboutNavigationCardService implements AboutNavigationCardServiceInte
             return false;
         }
 
-        return $card->update([
+        $updated = $card->update([
             'status' => 'draft',
             'published_at' => null,
         ]);
+
+        if ($updated) {
+            $this->invalidatePublicCache();
+        }
+
+        return $updated;
     }
 
     public function publish(int $id): bool
@@ -194,11 +239,17 @@ final class AboutNavigationCardService implements AboutNavigationCardServiceInte
             return false;
         }
 
-        return $card->update([
+        $updated = $card->update([
             'status' => 'published',
             'published_at' => now(),
             'publish_at' => null,
         ]);
+
+        if ($updated) {
+            $this->invalidatePublicCache();
+        }
+
+        return $updated;
     }
 
     public function schedule(int $id, string $publishAt): bool
@@ -209,11 +260,17 @@ final class AboutNavigationCardService implements AboutNavigationCardServiceInte
             return false;
         }
 
-        return $card->update([
+        $updated = $card->update([
             'status' => 'scheduled',
             'publish_at' => new \DateTimeImmutable($publishAt),
             'published_at' => null,
         ]);
+
+        if ($updated) {
+            $this->invalidatePublicCache();
+        }
+
+        return $updated;
     }
 
     public function unpublish(int $id): bool
@@ -224,11 +281,17 @@ final class AboutNavigationCardService implements AboutNavigationCardServiceInte
             return false;
         }
 
-        return $card->update([
+        $updated = $card->update([
             'status' => 'draft',
             'published_at' => null,
             'publish_at' => null,
         ]);
+
+        if ($updated) {
+            $this->invalidatePublicCache();
+        }
+
+        return $updated;
     }
 
     public function moveUp(int $id): bool
@@ -251,6 +314,8 @@ final class AboutNavigationCardService implements AboutNavigationCardServiceInte
         $temp = (int) $previous->sort_order;
         $previous->update(['sort_order' => $card->sort_order]);
         $card->update(['sort_order' => $temp]);
+
+        $this->invalidatePublicCache();
 
         return true;
     }
@@ -276,7 +341,39 @@ final class AboutNavigationCardService implements AboutNavigationCardServiceInte
         $next->update(['sort_order' => $card->sort_order]);
         $card->update(['sort_order' => $temp]);
 
+        $this->invalidatePublicCache();
+
         return true;
+    }
+
+    public function publishDueScheduled(): int
+    {
+        $published = 0;
+
+        AboutNavigationCard::query()
+            ->where('status', 'scheduled')
+            ->whereNotNull('publish_at')
+            ->where('publish_at', '<=', now())
+            ->orderBy('publish_at')
+            ->orderBy('id')
+            ->get()
+            ->each(function (AboutNavigationCard $card) use (&$published): void {
+                $updated = $card->update([
+                    'status' => 'published',
+                    'published_at' => now(),
+                    'publish_at' => null,
+                ]);
+
+                if ($updated) {
+                    $published++;
+                }
+            });
+
+        if ($published > 0) {
+            $this->invalidatePublicCache();
+        }
+
+        return $published;
     }
 
     private function mapToDto(AboutNavigationCard $card): AboutNavigationCardDTO
@@ -297,6 +394,13 @@ final class AboutNavigationCardService implements AboutNavigationCardServiceInte
             resolvedTitleEn: $card->title_override_en ?? ($target instanceof CmsTargetDTO ? __($target->labelKey, [], 'en') : $card->target_key),
             publicPath: $target instanceof CmsTargetDTO ? $target->publicPath : null,
         );
+    }
+
+    private function invalidatePublicCache(): void
+    {
+        if (! $this->cacheService->flushTags(['public-pages', 'public-shell', 'about', 'navigation', 'seo', 'sitemap'])) {
+            $this->cacheService->flushAll();
+        }
     }
 
     /** @return array<int, array<string, string>> */

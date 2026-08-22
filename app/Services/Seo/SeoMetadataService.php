@@ -91,7 +91,7 @@ final class SeoMetadataService implements SeoMetadataServiceInterface
 
     public function resolveCanonical(string $path, string $locale): string
     {
-        $baseUrl = rtrim((string) config('app.url', 'http://localhost'), '/');
+        $baseUrl = rtrim((string) config('edge.canonical_url', config('app.url')), '/');
 
         if (preg_match('/^https?:\/\//i', $path) === 1) {
             return $path;
@@ -109,6 +109,7 @@ final class SeoMetadataService implements SeoMetadataServiceInterface
     public function resolveHreflang(array $localePathMap): array
     {
         $hreflang = [];
+        $defaultUrl = null;
 
         foreach ($localePathMap as $locale => $path) {
             if (! is_string($locale) || ! is_string($path)) {
@@ -118,6 +119,17 @@ final class SeoMetadataService implements SeoMetadataServiceInterface
             $hreflang[] = [
                 'locale' => $locale,
                 'url' => $this->resolveCanonical($path, $locale),
+            ];
+
+            if ($locale === 'ar') {
+                $defaultUrl = $this->resolveCanonical($path, $locale);
+            }
+        }
+
+        if ($defaultUrl !== null) {
+            $hreflang[] = [
+                'locale' => 'x-default',
+                'url' => $defaultUrl,
             ];
         }
 

@@ -9,6 +9,9 @@
         $isExpertFinder = $page->type === 'expert-finder';
         $basePath = '/'.$locale.'/research/'.($isExpertFinder ? 'expert-finder' : 'researchers');
     @endphp
+    @if (! $page->isAvailable)
+        @include('public.research.partials.empty-state', ['locale' => $locale, 'direction' => $direction])
+    @else
     @include('public.research.partials.page-hero', ['hero' => $data['hero'] ?? [], 'locale' => $locale, 'direction' => $direction])
 
     <section class="bg-white py-12 font-hacen md:py-16" dir="{{ $direction }}">
@@ -76,4 +79,5 @@
             @include('public.research.partials.listing-pagination', ['data' => $data, 'basePath' => $basePath, 'locale' => $locale])
         </div>
     </section>
+    @endif
 @endsection

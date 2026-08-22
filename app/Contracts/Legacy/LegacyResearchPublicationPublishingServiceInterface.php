@@ -13,6 +13,6 @@ interface LegacyResearchPublicationPublishingServiceInterface
         bool $write = false,
         ?string $approval = null,
         ?string $batch = null,
-        bool $includeDuplicateReview = true,
+        bool $includeDuplicateReview = false,
     ): LegacyResearchPublicationPublicationResultDTO;
 }

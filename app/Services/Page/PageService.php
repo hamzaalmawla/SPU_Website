@@ -76,6 +76,31 @@ final class PageService implements PageServiceInterface
         private readonly ?PreviewTokenStore $previewTokenStore = null,
     ) {}
 
+    /** @return list<int> */
+    public function invalidParentIds(int $pageId): array
+    {
+        $excludedIds = [$pageId];
+        $frontier = $excludedIds;
+
+        while ($frontier !== []) {
+            $children = Page::query()
+                ->whereIn('parent_id', $frontier)
+                ->pluck('id')
+                ->map(static fn (mixed $id): int => (int) $id)
+                ->all();
+            $children = array_values(array_diff($children, $excludedIds));
+
+            if ($children === []) {
+                break;
+            }
+
+            $excludedIds = array_values(array_unique(array_merge($excludedIds, $children)));
+            $frontier = $children;
+        }
+
+        return $excludedIds;
+    }
+
     public function createPageShell(PageShellDataDTO $payload, int $userId): PageDTO
     {
         $this->authorizePageClassWrite($userId, 'create');
@@ -102,6 +127,7 @@ final class PageService implements PageServiceInterface
             'template' => $page->template,
             'status' => $page->status,
         ]);
+        $this->touchPageCaches((int) $page->getKey());
 
         return $this->publicReadService->mapPageToDto($page->fresh(['translations', 'seoMeta']));
     }
@@ -319,6 +345,7 @@ final class PageService implements PageServiceInterface
         $updated = $page->update([
             'status' => PublicationStatus::Scheduled->value,
             'publish_at' => $scheduledAt,
+            'approved_by' => $userId,
             'updated_by' => $userId,
         ]);
 
@@ -352,7 +379,17 @@ final class PageService implements PageServiceInterface
                     ->orderBy('scheduled_at')
                     ->first();
 
-                if ($actorId !== null && $this->publishResolvedDraft($page->loadMissing(['translations', 'seoMeta']), $draft, $actorId)) {
+                if ($actorId === null) {
+                    return;
+                }
+
+                try {
+                    $this->authorizePageWrite($actorId, 'publish', $page);
+                } catch (AuthorizationException) {
+                    return;
+                }
+
+                if ($this->publishResolvedDraft($page->loadMissing(['translations', 'seoMeta']), $draft, $actorId)) {
                     $published++;
                 }
             });
@@ -516,6 +553,12 @@ final class PageService implements PageServiceInterface
 
     private function touchPageCaches(int $pageId): void
     {
+        foreach (['ar', 'en'] as $locale) {
+            foreach (['header', 'footer', 'utility'] as $treeType) {
+                $this->cacheService->forget('menu.tree.'.$treeType.'.'.$locale);
+            }
+        }
+
         if (! $this->cacheService->flushTags(['pages', 'public-pages', 'public-shell', 'seo', 'sitemap', 'navigation', 'settings'])) {
             $this->cacheService->flushAll();
         }
@@ -623,8 +666,17 @@ final class PageService implements PageServiceInterface
     {
         $user = User::query()->find($userId);
 
-        if (! $user instanceof User || Gate::forUser($user)->denies($ability, $page)) {
+        if (! $user instanceof User || (bool) $user->is_locked || Gate::forUser($user)->denies($ability, $page)) {
             throw new AuthorizationException('This user is not authorized to modify the requested page.');
+        }
+
+        if ($user->role_slug === 'faculty_editor') {
+            $userScope = trim((string) ($user->faculty_scope_slug ?? ''));
+            $pageScope = trim((string) ($page->faculty_scope_slug ?? ''));
+
+            if ($userScope === '' || $pageScope === '' || $userScope !== $pageScope) {
+                throw new AuthorizationException('This faculty editor is not authorized to modify this page.');
+            }
         }
     }
 
@@ -632,7 +684,7 @@ final class PageService implements PageServiceInterface
     {
         $user = User::query()->find($userId);
 
-        if (! $user instanceof User || Gate::forUser($user)->denies($ability, Page::class)) {
+        if (! $user instanceof User || (bool) $user->is_locked || Gate::forUser($user)->denies($ability, Page::class)) {
             throw new AuthorizationException('This user is not authorized to create pages.');
         }
     }
@@ -656,13 +708,11 @@ final class PageService implements PageServiceInterface
 
     private function scheduledPublishActorId(Page $page): ?int
     {
-        foreach ([$page->approved_by, $page->updated_by, $page->created_by] as $actorId) {
-            if (is_numeric($actorId) && User::query()->whereKey((int) $actorId)->exists()) {
-                return (int) $actorId;
-            }
-        }
+        $actorId = $page->approved_by ?? $page->updated_by ?? $page->created_by;
 
-        return null;
+        return is_numeric($actorId) && User::query()->whereKey((int) $actorId)->exists()
+            ? (int) $actorId
+            : null;
     }
 
     private function invalidatePreviewTokens(int $pageId, int $userId, string $reason): void

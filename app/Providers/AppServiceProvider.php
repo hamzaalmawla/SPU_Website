@@ -6,6 +6,7 @@ namespace App\Providers;
 
 use App\Contracts\Auth\AuthServiceInterface;
 use App\Contracts\Auth\TotpAuthenticatorInterface;
+use App\Contracts\Career\AlumniDirectoryServiceInterface;
 use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
@@ -13,9 +14,9 @@ use App\Contracts\Content\PersonServiceInterface;
 use App\Contracts\Content\ProfileAdminServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanEditorServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
+use App\Contracts\Form\ContactMessageReviewServiceInterface;
 use App\Contracts\Form\DynamicFormSubmissionReviewServiceInterface;
 use App\Contracts\Form\DynamicFormSubmissionServiceInterface;
-use App\Contracts\Form\ContactMessageReviewServiceInterface;
 use App\Contracts\Form\FormSubmissionNotificationServiceInterface;
 use App\Contracts\Homepage\HomepageContentSelectionServiceInterface;
 use App\Contracts\Homepage\HomepagePreviewAssemblerInterface;
@@ -81,8 +82,8 @@ use App\Contracts\Legacy\LegacyStudentProfileImportServiceInterface;
 use App\Contracts\Legacy\LegacyUrlContinuityInventoryServiceInterface;
 use App\Contracts\Legacy\LegacyUrlContinuityTriageServiceInterface;
 use App\Contracts\Legacy\LegacyUrlNormalizerInterface;
-use App\Contracts\Media\MediaServiceInterface;
 use App\Contracts\Media\ImageConversionServiceInterface;
+use App\Contracts\Media\MediaServiceInterface;
 use App\Contracts\Navigation\MenuServiceInterface;
 use App\Contracts\Navigation\NavigationServiceInterface;
 use App\Contracts\News\NewsAdminWorkflowServiceInterface;
@@ -95,6 +96,7 @@ use App\Contracts\Page\CampusLifePageServiceInterface;
 use App\Contracts\Page\ContactPageServiceInterface;
 use App\Contracts\Page\EServicesPageServiceInterface;
 use App\Contracts\Page\FacultyPageServiceInterface;
+use App\Contracts\Page\FacultySubpageCardServiceInterface;
 use App\Contracts\Page\PageServiceInterface;
 use App\Contracts\Page\ProfilePageServiceInterface;
 use App\Contracts\Page\VirtualTourPageServiceInterface;
@@ -144,17 +146,17 @@ use App\Policies\PagePolicy;
 use App\Policies\UserPolicy;
 use App\Services\Auth\AuthService;
 use App\Services\Auth\TotpAuthenticator;
+use App\Services\Career\AlumniDirectoryService;
 use App\Services\Cms\AboutEntityCmsService;
 use App\Services\Cms\CmsTargetRegistry;
-use App\Services\Page\AboutNavigationCardService;
 use App\Services\Cms\CmsWorkflowService;
 use App\Services\Content\PersonService;
 use App\Services\Content\ProfileAdminService;
 use App\Services\Faculty\FacultyStudyPlanEditorService;
 use App\Services\Faculty\FacultyStudyPlanLinkService;
+use App\Services\Form\ContactMessageReviewService;
 use App\Services\Form\DynamicFormSubmissionReviewService;
 use App\Services\Form\DynamicFormSubmissionService;
-use App\Services\Form\ContactMessageReviewService;
 use App\Services\Form\FormSubmissionNotificationService;
 use App\Services\Homepage\HomepageContentSelectionService;
 use App\Services\Homepage\HomepageDraftReader;
@@ -222,20 +224,22 @@ use App\Services\Legacy\LegacyUrlContinuityTriageService;
 use App\Services\Legacy\LegacyUrlNormalizer;
 use App\Services\Legacy\ModuleRunners\LegacyLinksImportModuleRunner;
 use App\Services\Legacy\QueryResolvers\LegacyNewsQueryResolver;
-use App\Services\Media\MediaFileValidator;
 use App\Services\Media\ImageConversionService;
+use App\Services\Media\MediaFileValidator;
 use App\Services\Media\MediaService;
 use App\Services\Navigation\MenuService;
 use App\Services\Navigation\NavigationService;
 use App\Services\News\NewsAdminWorkflowService;
 use App\Services\News\NewsArticleCmsService;
 use App\Services\News\NewsService;
+use App\Services\Page\AboutNavigationCardService;
 use App\Services\Page\AboutPageService;
 use App\Services\Page\AdmissionsPageService;
 use App\Services\Page\CampusLifePageService;
 use App\Services\Page\ContactPageService;
 use App\Services\Page\EServicesPageService;
 use App\Services\Page\FacultyPageService;
+use App\Services\Page\FacultySubpageCardService;
 use App\Services\Page\PageDraftService;
 use App\Services\Page\PagePublicReadService;
 use App\Services\Page\PagePublishabilityValidator;
@@ -317,8 +321,13 @@ class AppServiceProvider extends ServiceProvider
                 ? $data['locale']
                 : 'ar';
             $homepage = app(HomepageSectionServiceInterface::class)->getPublicHomepage($locale);
+            $footer = $homepage->findSection('footer');
+            $footerColumns = $footer?->payload !== null
+                ? app(ResearchPageServiceInterface::class)->filterFooterColumns($locale, $footer->payload->footerColumns)
+                : [];
 
-            $view->with('homepageFooterSection', $homepage->findSection('footer'));
+            $view->with('homepageFooterSection', $footer);
+            $view->with('homepageFooterColumns', $footerColumns);
         });
     }
 
@@ -440,10 +449,11 @@ class AppServiceProvider extends ServiceProvider
     {
         return [
             CacheServiceInterface::class => CacheService::class,
+            AlumniDirectoryServiceInterface::class => AlumniDirectoryService::class,
             AboutEntityCmsServiceInterface::class => AboutEntityCmsService::class,
             AdmissionsPageServiceInterface::class => AdmissionsPageService::class,
             AboutNavigationCardServiceInterface::class => AboutNavigationCardService::class,
-            \App\Contracts\Page\FacultySubpageCardServiceInterface::class => \App\Services\Page\FacultySubpageCardService::class,
+            FacultySubpageCardServiceInterface::class => FacultySubpageCardService::class,
             AboutPageServiceInterface::class => AboutPageService::class,
             CampusLifePageServiceInterface::class => CampusLifePageService::class,
             AuditServiceInterface::class => AuditService::class,

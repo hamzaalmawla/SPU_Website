@@ -16,6 +16,8 @@ class NavigationSeeder extends Seeder
 {
     public function run(): void
     {
+        // Keep target rows seeded so a later CMS publish can restore them without a reseed.
+        // MenuService applies the research availability policy at public resolution time.
         $items = $this->items();
         $this->disableExistingSeededParents($items);
 

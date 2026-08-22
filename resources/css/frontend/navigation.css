@@ -97,6 +97,18 @@
         word-break: keep-all;
     }
 
+    button.site-nav-link {
+        border: 0;
+        background: transparent;
+        cursor: pointer;
+        font-family: inherit;
+    }
+
+    .site-nav-link:focus-visible {
+        outline: 2px solid #6f1616;
+        outline-offset: 2px;
+    }
+
     .site-nav-link:hover {
         color: #202759;
         background: rgba(32, 39, 89, 0.04);
@@ -139,6 +151,11 @@
     }
 
     .site-nav-item:hover .site-nav-link__chevron {
+        color: #6f1616;
+        transform: rotate(180deg);
+    }
+
+    .site-nav-link[aria-expanded='true'] .site-nav-link__chevron {
         color: #6f1616;
         transform: rotate(180deg);
     }

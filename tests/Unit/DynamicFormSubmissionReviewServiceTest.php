@@ -24,11 +24,14 @@ final class DynamicFormSubmissionReviewServiceTest extends TestCase
 
     private DynamicFormSubmissionReviewServiceInterface $service;
 
+    private int $reviewerId;
+
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->service = app(DynamicFormSubmissionReviewServiceInterface::class);
+        $this->reviewerId = (int) User::factory()->create(['role_slug' => 'editor'])->getKey();
     }
 
     public function test_inbox_maps_all_supported_forms_and_statuses_have_inbox_specific_transitions(): void
@@ -63,7 +66,7 @@ final class DynamicFormSubmissionReviewServiceTest extends TestCase
 
         foreach ($forms as $formId => [$payload, $expectedOrder]) {
             $submission = $this->submission($formId, $payload);
-            $details = $this->service->getDetails((int) $submission->getKey(), 'en');
+            $details = $this->service->getDetails((int) $submission->getKey(), 'en', $this->reviewerId);
             $submittedFields = $this->section($details->sections, 'submitted_fields')->fields;
 
             $this->assertSame($expectedOrder, array_map(static fn ($field): string => $field->key, $submittedFields));
@@ -86,7 +89,7 @@ final class DynamicFormSubmissionReviewServiceTest extends TestCase
             ],
         ]);
 
-        $details = $this->service->getDetails((int) $submission->getKey(), 'ar');
+        $details = $this->service->getDetails((int) $submission->getKey(), 'ar', $this->reviewerId);
         $submittedFields = $this->section($details->sections, 'submitted_fields')->fields;
         $role = $this->field($submittedFields, 'role');
         $specialNeeds = $this->field($submittedFields, 'specialNeeds');
@@ -111,7 +114,7 @@ final class DynamicFormSubmissionReviewServiceTest extends TestCase
             'role' => 'retired-speaker-role',
         ]);
 
-        $details = $this->service->getDetails((int) $submission->getKey(), 'ar');
+        $details = $this->service->getDetails((int) $submission->getKey(), 'ar', $this->reviewerId);
         $role = $this->field($this->section($details->sections, 'submitted_fields')->fields, 'role');
 
         $this->assertTrue($role->isLegacyValue);
@@ -138,6 +141,20 @@ final class DynamicFormSubmissionReviewServiceTest extends TestCase
         $this->assertSame('in_review', $audit->metadata['to'] ?? null);
         $this->assertSame('admissions-application', $audit->metadata['form'] ?? null);
         $this->assertSame('admissions', $audit->metadata['inbox'] ?? null);
+    }
+
+    public function test_details_reject_an_actor_without_submission_review_access_before_returning_pii(): void
+    {
+        $submission = $this->submission('admissions-application', ['fullName' => 'Private Applicant']);
+        $unauthorized = User::factory()->create(['role_slug' => 'faculty_editor']);
+
+        $this->expectException(AuthorizationException::class);
+
+        $this->service->getDetails(
+            (int) $submission->getKey(),
+            'en',
+            (int) $unauthorized->getKey(),
+        );
     }
 
     public function test_stale_transition_is_rejected_without_second_audit_event(): void

@@ -31,6 +31,7 @@ final class EServicesController extends Controller
     public function __invoke(Request $request, string $locale): View
     {
         $page = $this->eServicesPageService->getPage($locale);
+        abort_if($page->hero['title'] === '' || $page->seoTitle === '', 404);
 
         return view('public.e-services', [
             'locale' => $locale,
@@ -47,6 +48,7 @@ final class EServicesController extends Controller
     public function suggestionsComplaints(Request $request, string $locale): View
     {
         $page = $this->eServicesPageService->getSuggestionsComplaintsPage($locale);
+        abort_if($page->hero['title'] === '' || $page->seoTitle === '', 404);
 
         return view('public.e-services-suggestions-complaints', [
             'locale' => $locale,

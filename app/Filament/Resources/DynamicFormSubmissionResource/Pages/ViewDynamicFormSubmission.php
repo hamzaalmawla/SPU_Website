@@ -145,6 +145,7 @@ class ViewDynamicFormSubmission extends ViewRecord
         return $this->details ??= $this->reviewService->getDetails(
             (int) $this->getRecord()->getKey(),
             app()->getLocale(),
+            (int) auth()->id(),
         );
     }
 

@@ -10,7 +10,7 @@ use App\DTOs\CampusLife\CampusLifeSectionDTO;
 
 interface CampusLifePageServiceInterface
 {
-    public function getLanding(string $locale): CampusLifePageDTO;
+    public function getLanding(string $locale): ?CampusLifePageDTO;
 
     /** @param array<string, mixed> $landing */
     public function buildPreviewLanding(string $locale, array $landing): CampusLifePageDTO;
@@ -18,7 +18,7 @@ interface CampusLifePageServiceInterface
     public function getSection(string $slug, string $locale): ?CampusLifeSectionDTO;
 
     /** @param array<string, mixed> $filters */
-    public function getCareerJobBoard(string $locale, array $filters = []): CampusLifeSectionDTO;
+    public function getCareerJobBoard(string $locale, array $filters = []): ?CampusLifeSectionDTO;
 
     public function getCareerJobDetail(string $slug, string $locale): ?CampusLifeSectionDTO;
 

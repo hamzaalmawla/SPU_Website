@@ -8,6 +8,7 @@ use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Page\FacultyPageServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
 use App\DTOs\Research\ResearchPageDTO;
+use App\Enums\PublicationStatus;
 use App\Filament\Pages\ManageArtificialIntelligenceFaculty;
 use App\Filament\Pages\ManageBuildingConstructionEngineeringFaculty;
 use App\Filament\Pages\ManageBusinessAdministrationFaculty;
@@ -26,8 +27,14 @@ use App\Models\Faculty\Faculty;
 use App\Models\Faculty\FacultyLab;
 use App\Models\Faculty\FacultyLabTranslation;
 use App\Models\Faculty\FacultyPage;
+use App\Models\Faculty\FacultyStudentProject;
+use App\Models\Faculty\FacultyStudentProjectTranslation;
 use App\Models\Media\MediaAsset;
+use App\Models\Person\FacultyMember;
+use App\Models\Person\FacultyMemberTranslation;
 use App\Models\Person\Person;
+use App\Models\Research\ResearchPublication;
+use App\Models\Research\ResearchPublicationTranslation;
 use App\Models\Shared\MigrationLog;
 use App\Models\User\User;
 use Database\Seeders\DatabaseSeeder;
@@ -577,6 +584,7 @@ final class FacilitiesWorkflowTest extends TestCase
 
     public function test_manage_medicine_faculty_uses_page_specific_subpage_templates(): void
     {
+        $this->createFacultyProjects('medicine');
         $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
 
         Livewire::test(ManageMedicineFaculty::class)
@@ -653,8 +661,9 @@ final class FacilitiesWorkflowTest extends TestCase
             ->assertSee('المحاضرات والملفات');
     }
 
-    public function test_published_faculty_project_cms_content_overrides_reference_detail_fallback_in_both_locales(): void
+    public function test_published_faculty_project_cms_content_controls_database_project_detail_in_both_locales(): void
     {
+        $this->createFacultyProjects('medicine');
         $facilities = app(FacultyPageServiceInterface::class);
         $workflow = app(CmsWorkflowServiceInterface::class);
         $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
@@ -1249,6 +1258,8 @@ final class FacilitiesWorkflowTest extends TestCase
     public function test_six_project_routes_have_bounded_server_pagination_and_localized_links(): void
     {
         foreach ($this->projectFacultySlugs() as $facultySlug) {
+            $this->createFacultyProjects($facultySlug, 7);
+
             foreach (['ar', 'en'] as $locale) {
                 $path = '/'.$locale.'/facilities/'.$facultySlug.'/projects';
 
@@ -1427,8 +1438,10 @@ final class FacilitiesWorkflowTest extends TestCase
     }
 
     #[DataProvider('facultyResearchPageProvider')]
-    public function test_faculty_research_pages_render_localized_reference_publications(string $facultySlug, string $englishTitle, string $arabicTitle): void
+    public function test_faculty_research_pages_render_localized_database_publications(string $facultySlug, string $englishTitle, string $arabicTitle): void
     {
+        $this->createFacultyResearchPublication($facultySlug, $englishTitle, $arabicTitle);
+
         $this->get('/en/facilities/'.$facultySlug.'/research')
             ->assertOk()
             ->assertSee('Latest Research')
@@ -1487,6 +1500,11 @@ final class FacilitiesWorkflowTest extends TestCase
 
     public function test_faculty_research_workflow_previews_and_publishes_page_copy(): void
     {
+        $this->createFacultyResearchPublication(
+            'medicine',
+            'Clinical Simulation Training Impact on Medical Student Diagnostic Accuracy',
+            'تأثير تدريب المحاكاة السريرية على دقة تشخيص طلاب الطب',
+        );
         $facilities = app(FacultyPageServiceInterface::class);
         $workflow = app(CmsWorkflowServiceInterface::class);
         $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
@@ -1655,44 +1673,79 @@ final class FacilitiesWorkflowTest extends TestCase
 
     public function test_faculty_project_cards_link_to_project_detail_page(): void
     {
+        $this->createFacultyProjects('artificial-intelligence');
+
         $this->get('/en/facilities/artificial-intelligence/projects')
             ->assertOk()
             ->assertSee('/en/facilities/artificial-intelligence/projects/artificial-intelligence-project-1', false);
     }
 
-    public function test_faculty_project_detail_page_renders_imported_frontend_layout(): void
+    public function test_migrated_project_with_generated_style_slug_remains_public(): void
     {
+        $faculty = Faculty::query()->where('public_slug', 'petroleum')->firstOrFail();
+        $project = FacultyStudentProject::query()->create([
+            'faculty_id' => (int) $faculty->getKey(),
+            'slug' => 'petroleum-project-42',
+            'sort_order' => 1,
+            'is_enabled' => true,
+        ]);
+
+        foreach (['ar' => 'مشروع بترولي مهاجر', 'en' => 'Migrated Petroleum Project'] as $locale => $title) {
+            FacultyStudentProjectTranslation::query()->create([
+                'faculty_student_project_id' => (int) $project->getKey(),
+                'locale' => $locale,
+                'title' => $title,
+                'summary' => 'Verified migrated project.',
+            ]);
+        }
+
+        Cache::flush();
+
+        $this->get('/en/facilities/petroleum/projects')
+            ->assertOk()
+            ->assertSee('Migrated Petroleum Project')
+            ->assertSee('/en/facilities/petroleum/projects/petroleum-project-42', false);
+        $this->get('/en/facilities/petroleum/projects/petroleum-project-42')
+            ->assertOk()
+            ->assertSee('Migrated Petroleum Project');
+        $this->get('/en/projects/detail?id=petroleum-project-42')
+            ->assertRedirect('/en/facilities/petroleum/projects/petroleum-project-42');
+    }
+
+    public function test_faculty_project_detail_page_renders_database_project_layout(): void
+    {
+        $this->createFacultyProjects('artificial-intelligence', 2, 'AI Diagnosis Support for Rural Health Centers');
+
         $this->get('/en/facilities/artificial-intelligence/projects/artificial-intelligence-project-1')
             ->assertOk()
             ->assertSee('AI Diagnosis Support for Rural Health Centers')
-            ->assertSee('Ahmad Al-Masri')
-            ->assertSee('Samar Haddad')
-            ->assertSee('TensorFlow')
+            ->assertSee('Test Supervisor')
             ->assertSee('Project Gallery')
             ->assertSee('Related Projects')
-            ->assertSee('Smart Traffic Management System')
+            ->assertSee('Test artificial-intelligence Project 2')
             ->assertSee('View All Projects');
     }
 
     #[DataProvider('frontendProjectDetailProvider')]
-    public function test_frontend_project_detail_data_is_imported_for_facility(string $facultySlug, string $projectSlug, string $expectedTitle, string $expectedTechnology): void
+    public function test_database_project_detail_is_available_for_facility(string $facultySlug, string $projectSlug, string $expectedTitle): void
     {
+        $this->createFacultyProjects($facultySlug, 1, $expectedTitle);
+
         $this->get('/en/facilities/'.$facultySlug.'/projects/'.$projectSlug)
             ->assertOk()
             ->assertSee($expectedTitle)
-            ->assertSee($expectedTechnology)
-            ->assertSee('Project Gallery')
-            ->assertSee('Related Projects');
+            ->assertSee('Test Supervisor')
+            ->assertSee('Project Gallery');
     }
 
-    /** @return iterable<string, array{facultySlug: string, projectSlug: string, expectedTitle: string, expectedTechnology: string}> */
+    /** @return iterable<string, array{facultySlug: string, projectSlug: string, expectedTitle: string}> */
     public static function frontendProjectDetailProvider(): iterable
     {
-        yield 'business' => ['business-administration', 'business-administration-project-1', 'Predictive Analytics for Local Economic Trends', 'Tableau'];
-        yield 'construction' => ['building-construction-engineering', 'building-construction-engineering-project-1', 'Structural Health Monitoring Dashboard', 'Arduino'];
-        yield 'dentistry' => ['dentistry', 'dentistry-project-1', 'Digital Impression Analysis System', 'Open3D'];
-        yield 'medicine' => ['medicine', 'medicine-project-1', 'Clinical Appointment Flow Optimizer', 'OptaPlanner'];
-        yield 'pharmacy' => ['pharmacy', 'pharmacy-project-1', 'Evidence-Based Learning Repository', 'Elasticsearch'];
+        yield 'business' => ['business-administration', 'business-administration-project-1', 'Predictive Analytics for Local Economic Trends'];
+        yield 'construction' => ['building-construction-engineering', 'building-construction-engineering-project-1', 'Structural Health Monitoring Dashboard'];
+        yield 'dentistry' => ['dentistry', 'dentistry-project-1', 'Digital Impression Analysis System'];
+        yield 'medicine' => ['medicine', 'medicine-project-1', 'Clinical Appointment Flow Optimizer'];
+        yield 'pharmacy' => ['pharmacy', 'pharmacy-project-1', 'Evidence-Based Learning Repository'];
     }
 
     public function test_all_study_plan_and_course_routes_render_in_both_locales_with_valid_selector_state(): void
@@ -1952,6 +2005,7 @@ final class FacilitiesWorkflowTest extends TestCase
 
     public function test_manage_artificial_intelligence_faculty_uses_page_specific_templates(): void
     {
+        $this->createFacultyProjects('artificial-intelligence');
         $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
 
         Livewire::test(ManageArtificialIntelligenceFaculty::class)
@@ -1975,6 +2029,7 @@ final class FacilitiesWorkflowTest extends TestCase
 
     public function test_registered_faculty_subpage_target_hydrates_when_page_shell_is_missing(): void
     {
+        $this->createFacultyProjects('petroleum');
         $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
 
         $faculty = Faculty::query()->where('public_slug', 'petroleum')->firstOrFail();
@@ -1992,8 +2047,10 @@ final class FacilitiesWorkflowTest extends TestCase
             ->assertSee('المشرف');
     }
 
-    public function test_reference_faculty_and_project_queries_redirect_to_canonical_routes(): void
+    public function test_legacy_faculty_and_database_project_queries_redirect_to_canonical_routes(): void
     {
+        $this->createFacultyProjects('artificial-intelligence');
+
         $this->get('/en/facilities?id=ai-engineering')
             ->assertRedirect('/en/facilities/artificial-intelligence');
 
@@ -2013,6 +2070,7 @@ final class FacilitiesWorkflowTest extends TestCase
         string $englishTitle,
         string $arabicTitle,
     ): void {
+        $this->createFacultyResearchPublication($facultySlug, $englishTitle, $arabicTitle);
         $facilities = app(FacultyPageServiceInterface::class);
 
         foreach (['en' => $englishTitle, 'ar' => $arabicTitle] as $locale => $title) {
@@ -2045,6 +2103,7 @@ final class FacilitiesWorkflowTest extends TestCase
 
         foreach (self::facultyOverviewProvider() as $case) {
             $facultySlug = $case['facultySlug'];
+            $this->createFacultyResearchPublication($facultySlug, $case['englishTitle'], $case['arabicTitle']);
             $targetKey = 'facilities.'.$facultySlug.'.overview';
             $payload = $facilities->getEditablePayload($targetKey);
             $englishTitle = 'Draft family overview '.$facultySlug;
@@ -2089,6 +2148,7 @@ final class FacilitiesWorkflowTest extends TestCase
     public function test_faculty_overviews_hide_latest_research_region_when_central_publications_are_empty(): void
     {
         $this->mock(ResearchPageServiceInterface::class, function ($mock): void {
+            $mock->shouldReceive('filterFooterColumns')->andReturn([]);
             $mock->shouldReceive('facultyPublications')->andReturnUsing(
                 fn (string $facultySlug, string $locale): ResearchPageDTO => new ResearchPageDTO(
                     locale: $locale,
@@ -2183,5 +2243,73 @@ final class FacilitiesWorkflowTest extends TestCase
             'petroleum',
             'pharmacy',
         ];
+    }
+
+    private function createFacultyProjects(string $facultySlug, int $count = 1, ?string $firstEnglishTitle = null): void
+    {
+        $faculty = Faculty::query()->where('public_slug', $facultySlug)->firstOrFail();
+
+        for ($index = 1; $index <= $count; $index++) {
+            $project = FacultyStudentProject::query()->create([
+                'faculty_id' => (int) $faculty->getKey(),
+                'slug' => $facultySlug.'-project-'.$index,
+                'image' => '/images/Gemini_Generated_Image_c89yjwc89yjwc89y.webp',
+                'sort_order' => $index,
+                'is_enabled' => true,
+            ]);
+
+            foreach (['ar', 'en'] as $locale) {
+                FacultyStudentProjectTranslation::query()->create([
+                    'faculty_student_project_id' => (int) $project->getKey(),
+                    'locale' => $locale,
+                    'title' => $locale === 'en'
+                        ? ($index === 1 && $firstEnglishTitle !== null ? $firstEnglishTitle : 'Test '.$facultySlug.' Project '.$index)
+                        : 'مشروع اختباري '.$index,
+                    'summary' => $locale === 'en' ? 'Test-owned database project summary.' : 'ملخص مشروع اختباري مملوك للاختبار.',
+                    'tag' => $locale === 'en' ? 'Database Project' : 'مشروع قاعدة بيانات',
+                    'team' => $locale === 'en' ? 'Test Student Team' : 'فريق طلاب اختباري',
+                    'supervisor' => $locale === 'en' ? 'Test Supervisor' : 'مشرف اختباري',
+                ]);
+            }
+        }
+
+        Cache::flush();
+    }
+
+    private function createFacultyResearchPublication(string $facultySlug, string $englishTitle, string $arabicTitle): void
+    {
+        $faculty = Faculty::query()->where('public_slug', $facultySlug)->firstOrFail();
+        $member = FacultyMember::query()->create([
+            'slug' => 'test-researcher-'.$facultySlug,
+            'faculty_id' => (int) $faculty->getKey(),
+            'is_enabled' => true,
+            'publication_status' => PublicationStatus::Published->value,
+            'published_at' => now()->subDay(),
+        ]);
+        foreach (['ar' => 'باحث اختباري', 'en' => 'Test Researcher'] as $locale => $name) {
+            FacultyMemberTranslation::query()->create([
+                'faculty_member_id' => (int) $member->getKey(),
+                'locale' => $locale,
+                'full_name' => $name,
+                'position' => $locale === 'en' ? 'Researcher' : 'باحث',
+            ]);
+        }
+        $publication = ResearchPublication::query()->create([
+            'faculty_member_id' => (int) $member->getKey(),
+            'published_at' => now()->subDay(),
+            'publication_year' => (int) now()->format('Y'),
+            'is_enabled' => true,
+        ]);
+
+        foreach (['ar' => $arabicTitle, 'en' => $englishTitle] as $locale => $title) {
+            ResearchPublicationTranslation::query()->create([
+                'research_publication_id' => (int) $publication->getKey(),
+                'locale' => $locale,
+                'title' => $title,
+                'excerpt' => $locale === 'en' ? 'Test-owned faculty research summary.' : 'ملخص بحث كلية مملوك للاختبار.',
+            ]);
+        }
+
+        Cache::flush();
     }
 }

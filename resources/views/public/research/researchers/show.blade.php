@@ -168,9 +168,13 @@
                                         $facultySlug = $profile['faculty']['slug'] ?? '';
                                         $courseHref = in_array($facultySlug, ['medicine', 'dentistry', 'pharmacy', 'artificial-intelligence', 'business-administration', 'petroleum', 'building-construction-engineering'], true)
                                             ? '/'.$locale.'/facilities/'.$facultySlug.'/study-plan/course?department='.($course['departmentId'] ?? '').'&course='.($course['id'] ?? '')
-                                            : '#';
+                                            : null;
                                     @endphp
-                                    <a href="{{ $courseHref }}" class="group flex items-center gap-4 rounded-xl border border-spu-blue/[0.06] bg-spu-blue/[0.03] p-5 transition-all hover:-translate-y-0.5 hover:border-spu-blue/[0.15] hover:bg-white hover:shadow-[0_8px_24px_rgba(32,39,89,0.1)] {{ $courseHref === '#' ? 'pointer-events-none opacity-70' : '' }}">
+                                    @if ($courseHref)
+                                    <a href="{{ $courseHref }}" class="group flex items-center gap-4 rounded-xl border border-spu-blue/[0.06] bg-spu-blue/[0.03] p-5 transition-all hover:-translate-y-0.5 hover:border-spu-blue/[0.15] hover:bg-white hover:shadow-[0_8px_24px_rgba(32,39,89,0.1)]">
+                                    @else
+                                    <div class="flex items-center gap-4 rounded-xl border border-spu-blue/[0.06] bg-spu-blue/[0.03] p-5 opacity-70">
+                                    @endif
                                         <div class="min-w-0 flex-1">
                                             <span class="block text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">{{ $course['code'] ?? '' }}</span>
                                             <h4 class="mt-0.5 truncate text-[0.9375rem] font-bold text-spu-blue">{{ $course['name'] ?? '' }}</h4>
@@ -178,7 +182,7 @@
                                         <div class="text-spu-blue/30 transition-all group-hover:text-spu-red">
                                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
                                         </div>
-                                    </a>
+                                    @if ($courseHref)</a>@else</div>@endif
                                 @endforeach
                             </div>
                         </div>

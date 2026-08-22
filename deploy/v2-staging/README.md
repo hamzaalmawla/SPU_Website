@@ -1,5 +1,12 @@
 # v2.spu.edu.sy — staging overlay
 
+> Current-state note (2026-08-21): this file records a prior deployed staging
+> snapshot plus reconstruction requirements. The current working-tree remediation
+> has not been deployed or verified on the host. The byte-identity statement below
+> is historical evidence only. See
+> `Docs/CURRENT_REMEDIATION_EXECUTION_CHECKLIST.md`; do not infer deployment,
+> cutover approval, or sign-off.
+
 Everything the deployed host has that the repository does not. Nothing about the
 v2 deployment should exist only on cPanel; if it does, it is lost the moment the
 account is rebuilt.
@@ -123,15 +130,28 @@ Not files, so not in git. Recreate through cPanel or its API:
 | Subdomain | `v2.spu.edu.sy`, docroot `public_html/spu_v2/public` |
 | PHP version | `ea-php84` — **on this vhost only**; `spu.edu.sy` stays on `ea-php83` |
 | SSL | the account's wildcard `*.spu.edu.sy` certificate |
-| nginx caching | enabled for the vhost |
+| nginx dynamic private/full-page caching | must remain disabled; host verification pending |
+| nginx static asset caching / proxy buffering | may be configured separately; do not treat it as permission to cache Laravel HTML |
 | Databases | `spuedu_v2` (app) and a **SELECT-only** user on `spuedu_db` (legacy) |
 
 Cron (the app's own scheduler and queue worker):
 
+cPanel shell/Terminal and SSH are disabled. The commands/configuration in this
+runbook require an approved host/operator deployment mechanism. Do not introduce a
+temporary web or cron execution bridge merely to obtain shell-equivalent access.
+
 ```cron
-* * * * * /opt/cpanel/ea-php84/root/usr/bin/php /home/spuedu/spu_v2_app/artisan schedule:run
-* * * * * /opt/cpanel/ea-php84/root/usr/bin/php /home/spuedu/spu_v2_app/artisan queue:work --stop-when-empty --max-time=50
+* * * * * /usr/bin/flock -n /home/spuedu/spu_v2_app/storage/framework/scheduler.lock /opt/cpanel/ea-php84/root/usr/bin/php /home/spuedu/spu_v2_app/artisan schedule:run >> /home/spuedu/spu_v2_app/storage/logs/scheduler.log 2>&1
+* * * * * /usr/bin/flock -n /home/spuedu/spu_v2_app/storage/framework/queue-default.lock /opt/cpanel/ea-php84/root/usr/bin/php /home/spuedu/spu_v2_app/artisan queue:work database --queue=default --stop-when-empty --max-time=50 --tries=3 --timeout=40 >> /home/spuedu/spu_v2_app/storage/logs/queue.log 2>&1
 ```
+
+Confirm the host's `flock` path before installation. The queue timeout is below
+the 50-second cron worker lifetime and must remain below `retry_after`. Review
+`php artisan queue:failed` at least daily, alert on any new row, retain the job
+ID/error, correct the cause, and use `queue:retry <id>` only after review. Alert
+if `scheduler.log` has no new output for five minutes; test both alerts before
+cutover. Laravel task-level `withoutOverlapping()` remains in place, while the
+outer lock prevents concurrent scheduler/worker processes.
 
 ---
 
@@ -145,8 +165,18 @@ Not in git and must not be. The deployed values differ from
 - `SESSION_DRIVER=database`, `QUEUE_CONNECTION=database` — same reason.
 - `OLD_DB_*` points at `spuedu_db` through a **SELECT-only** user, so the new
   site can never write to the legacy database.
+- `APP_CANONICAL_URL=https://v2.spu.edu.sy` and
+  `ENFORCE_CANONICAL_HOST=false` — the staging `.htaccess` host guard remains
+  the overlay's authority and no application redirect can escape to production.
+- Trusted proxies are fixed in repository bootstrap to `127.0.0.1,::1`; only the
+  documented local cPanel nginx hop may supply forwarded scheme/host headers.
 
 Credentials are recorded outside the repo, on the operator's machine.
+
+The canonical host, trusted-proxy, HTTPS, and front-controller hardening in the
+current working tree is pending deployment. After deployment, verify the real
+proxy topology and probe canonical/noncanonical hosts, forwarded-header spoofing,
+redirect loops, `/app.php`, `/app.php/*`, and `/index.php/*` before changing DNS.
 
 ---
 
@@ -165,3 +195,21 @@ Two pieces of that work *are* in git, because they are code:
 - `database/seeders/LegacyEntryPointRedirectSeeder.php` — the 25 deterministic
   redirect rows.
 - `config/legacy_category_routes.php` — the generated 277-id allow-list.
+
+---
+
+## 8. Current host work still required
+
+- Install and verify OPcache in the effective PHP-FPM web runtime.
+- Enable and verify gzip (or an approved equivalent) at nginx, or correctly pass
+  compression negotiation upstream.
+- Apply and verify reviewed PHP-FPM pool limits in WHM/root configuration.
+- Keep nginx private/full-page caching disabled for dynamic Laravel responses.
+- Do not add application/full-page caching optimization in this remediation; it is
+  explicitly deferred.
+- Deploy and verify fixture-fallback removal, publication sitemap changes,
+  accessibility changes, and origin/front-controller hardening.
+- Make the current test set green and complete manual AR/EN browser accessibility QA.
+
+None of these items is complete merely because the corresponding local code or
+historical staging configuration exists.

@@ -2,6 +2,17 @@
 
 use Illuminate\Support\Str;
 
+$cacheRelease = Str::slug((string) env(
+    'CACHE_RELEASE',
+    env('APP_RELEASE', env('RELEASE_VERSION', env('APP_ENV', 'dev'))),
+));
+$cacheRelease = $cacheRelease !== '' ? $cacheRelease : 'dev';
+$configuredPrefix = trim((string) env('CACHE_PREFIX', ''));
+$cachePrefix = $configuredPrefix === ''
+    ? Str::slug((string) env('APP_NAME', 'laravel')).'-cache-'.$cacheRelease.'-'
+    : rtrim($configuredPrefix, '-').'-'.$cacheRelease.'-';
+$cacheAppName = Str::slug((string) env('APP_NAME', 'laravel'));
+
 return [
 
     /*
@@ -16,6 +27,20 @@ return [
     */
 
     'default' => env('CACHE_STORE', 'database'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Dedicated State Stores
+    |--------------------------------------------------------------------------
+    |
+    | These stores must not be the application cache store. Public cache
+    | invalidation is allowed to clear the application store, but it must not
+    | erase webhook replay protection or rate-limit state.
+    |
+    */
+
+    'limiter' => env('CACHE_LIMITER', 'rate-limiter'),
+    'webhook_store' => env('CACHE_WEBHOOK_STORE', 'webhook'),
 
     /*
     |--------------------------------------------------------------------------
@@ -78,6 +103,22 @@ return [
             'lock_connection' => env('REDIS_CACHE_LOCK_CONNECTION', 'default'),
         ],
 
+        'webhook' => [
+            'driver' => env('WEBHOOK_CACHE_DRIVER', env('APP_ENV') === 'testing' ? 'array' : 'file'),
+            'connection' => env('REDIS_WEBHOOK_CONNECTION', 'default'),
+            'path' => storage_path('framework/cache/webhook'),
+            'lock_path' => storage_path('framework/cache/webhook'),
+            'prefix' => env('WEBHOOK_CACHE_PREFIX', $cacheAppName.'-webhook-'.$cacheRelease.'-'),
+        ],
+
+        'rate-limiter' => [
+            'driver' => env('RATE_LIMIT_CACHE_DRIVER', env('APP_ENV') === 'testing' ? 'array' : 'file'),
+            'connection' => env('REDIS_RATE_LIMIT_CONNECTION', 'default'),
+            'path' => storage_path('framework/cache/rate-limiter'),
+            'lock_path' => storage_path('framework/cache/rate-limiter'),
+            'prefix' => env('RATE_LIMIT_CACHE_PREFIX', $cacheAppName.'-rate-limit-'.$cacheRelease.'-'),
+        ],
+
         'dynamodb' => [
             'driver' => 'dynamodb',
             'key' => env('AWS_ACCESS_KEY_ID'),
@@ -112,6 +153,8 @@ return [
     |
     */
 
-    'prefix' => env('CACHE_PREFIX', Str::slug((string) env('APP_NAME', 'laravel')).'-cache-'),
+    'release' => $cacheRelease,
+
+    'prefix' => $cachePrefix,
 
 ];

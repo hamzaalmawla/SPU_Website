@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources;
 
+use App\Contracts\Page\PageServiceInterface;
+use App\Filament\Components\PageUrlSelect;
 use App\Filament\Resources\PageResource\Pages;
 use App\Filament\Support\MediaPicker;
 use App\Models\Page\Page;
@@ -24,11 +26,8 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Schema;
-use App\Filament\Components\PageUrlSelect;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * Filament resource for managing bilingual landing pages.
@@ -102,15 +101,6 @@ class PageResource extends Resource
                         $translation = $record->translations->first();
 
                         return $translation?->title ?? $record->slug;
-                    })
-                    ->sortable(query: function ($query, string $direction) {
-                        $query->orderBy(
-                            DB::table('page_translations')
-                                ->select('title')
-                                ->whereColumn('page_translations.page_id', 'pages.id')
-                                ->limit(1),
-                            $direction,
-                        );
                     })
                     ->searchable(query: function ($query, string $search) {
                         $query->whereHas('translations', function ($q) use ($search) {
@@ -418,7 +408,7 @@ class PageResource extends Resource
 
         $scope = is_string($user->faculty_scope_slug) ? $user->faculty_scope_slug : '';
 
-        if ($scope === '' || ! Schema::hasColumn('pages', 'faculty_scope_slug')) {
+        if ($scope === '') {
             return $query->whereRaw('1 = 0');
         }
 
@@ -444,26 +434,6 @@ class PageResource extends Resource
             return [];
         }
 
-        $excludedIds = [(int) $record->getKey()];
-        $frontier = $excludedIds;
-
-        while ($frontier !== []) {
-            $children = Page::query()
-                ->whereIn('parent_id', $frontier)
-                ->pluck('id')
-                ->map(static fn (mixed $id): int => (int) $id)
-                ->all();
-
-            $children = array_values(array_diff($children, $excludedIds));
-
-            if ($children === []) {
-                break;
-            }
-
-            $excludedIds = array_values(array_unique(array_merge($excludedIds, $children)));
-            $frontier = $children;
-        }
-
-        return $excludedIds;
+        return app(PageServiceInterface::class)->invalidParentIds((int) $record->getKey());
     }
 }

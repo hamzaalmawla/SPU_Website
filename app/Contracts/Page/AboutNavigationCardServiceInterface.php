@@ -9,6 +9,9 @@ use Illuminate\Support\Collection;
 
 interface AboutNavigationCardServiceInterface
 {
+    /** @return array<string, string> */
+    public function availableTargetOptions(): array;
+
     /** @return array<int, array<string, string>> */
     public function getVisibleCards(string $locale): array;
 
@@ -44,4 +47,6 @@ interface AboutNavigationCardServiceInterface
     public function moveUp(int $id): bool;
 
     public function moveDown(int $id): bool;
+
+    public function publishDueScheduled(): int;
 }

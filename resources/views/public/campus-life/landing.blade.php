@@ -2,6 +2,7 @@
 
 @section('content')
     @php($landing = $page->landing)
+    @php($hasDestination = static fn (mixed $url): bool => is_string($url) && trim($url) !== '' && trim($url) !== '#')
 
     <section class="page-hero relative min-h-[560px] overflow-hidden font-hacen md:min-h-[680px]">
         <div class="absolute inset-0">
@@ -23,7 +24,7 @@
 
                 <div class="mt-10 flex flex-wrap items-center justify-center gap-3">
                     @foreach (($landing['hero']['quickLinks'] ?? []) as $link)
-                        <a href="{{ $link['href'] ?? '#' }}" class="group inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/8 px-5 py-2.5 text-sm font-bold text-white backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-white/30 hover:bg-white/15 hover:shadow-[0_8px_24px_rgba(0,0,0,0.15)]">
+                        <a @if($hasDestination($link['href'] ?? null)) href="{{ $link['href'] }}" @else aria-disabled="true" @endif class="group inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/8 px-5 py-2.5 text-sm font-bold text-white backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-white/30 hover:bg-white/15 hover:shadow-[0_8px_24px_rgba(0,0,0,0.15)]">
                             <span>{{ $link['label'] ?? '' }}</span>
                             <img src="/images/icon-arrow-right-outline.svg" alt="" class="h-2.5 w-2.5 opacity-60 transition-transform duration-300 group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5" aria-hidden="true">
                         </a>
@@ -111,7 +112,7 @@
                                     <p class="text-7xl font-bold tracking-tight text-spu-blue/[0.06]">{{ $service['number'] ?? '' }}</p>
                                     <h3 class="-mt-2 text-[32px] font-bold leading-tight tracking-tight text-spu-blue">{{ $service['title'] ?? '' }}</h3>
                                     <p class="mt-4 max-w-[500px] text-lg leading-relaxed text-slate-500 {{ ($service['imagePosition'] ?? '') === 'left' ? 'lg:ms-auto' : '' }}">{{ $service['summary'] ?? '' }}</p>
-                                    <a href="{{ $service['href'] ?? '#' }}" class="group mt-8 inline-flex items-center gap-2.5 rounded-full border border-spu-blue/10 bg-spu-blue/[0.03] px-6 py-3 text-base font-bold text-spu-red transition-all duration-300 hover:border-spu-red/20 hover:bg-spu-red/[0.04] hover:shadow-[0_4px_16px_rgba(111,22,22,0.08)]"><span>{{ $service['link'] ?? '' }}</span><img src="/images/icon-arrow-right-outline.svg" alt="" class="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1" aria-hidden="true"></a>
+                                    <a @if($hasDestination($service['href'] ?? null)) href="{{ $service['href'] }}" @else aria-disabled="true" @endif class="group mt-8 inline-flex items-center gap-2.5 rounded-full border border-spu-blue/10 bg-spu-blue/[0.03] px-6 py-3 text-base font-bold text-spu-red transition-all duration-300 hover:border-spu-red/20 hover:bg-spu-red/[0.04] hover:shadow-[0_4px_16px_rgba(111,22,22,0.08)]"><span>{{ $service['link'] ?? '' }}</span><img src="/images/icon-arrow-right-outline.svg" alt="" class="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1" aria-hidden="true"></a>
                                 </div>
                             </div>
                             <div class="w-full shrink-0 lg:w-[500px]" data-campus-reveal="{{ ($service['imagePosition'] ?? '') === 'right' ? 'right' : 'left' }}"><div class="relative overflow-hidden rounded-3xl shadow-[0_12px_40px_rgba(0,0,0,0.1)] transition-all duration-700 hover:shadow-[0_20px_60px_rgba(0,0,0,0.14)]"><img src="{{ $service['image'] ?? '' }}" alt="{{ $service['title'] ?? '' }}" class="h-[360px] w-full object-cover transition-transform duration-700 hover:scale-[1.03]"><div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-spu-blue/10 to-transparent"></div></div></div>

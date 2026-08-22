@@ -6,6 +6,8 @@ namespace Tests\Feature;
 
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 /**
@@ -29,6 +31,16 @@ final class PublicPageCacheCsrfTest extends TestCase
         // The homepage 404s without published sections, and this test is about
         // what the page cache stores, so it needs a real renderable page.
         $this->seed(DatabaseSeeder::class);
+
+        Route::middleware(['web', 'cache.public'])
+            ->get('/testing/cache-form', function (Request $request) {
+                return response(
+                    '<form><input name="name" value="'.e((string) old('name')).'"><output>'.e((string) session('form_flash')).'</output><span data-errors="'.($request->session()->has('errors') ? '1' : '0').'">form</span></form>',
+                    200,
+                    ['Content-Type' => 'text/html'],
+                );
+            })
+            ->name('testing.cache-form');
     }
 
     public function test_cached_public_pages_do_not_share_one_csrf_token_between_visitors(): void
@@ -76,6 +88,88 @@ final class PublicPageCacheCsrfTest extends TestCase
 
         $this->assertNotNull($token);
         $this->assertSame(session()->token(), $token);
+    }
+
+    public function test_form_old_input_errors_and_flash_data_are_not_shared_between_clients(): void
+    {
+        $first = $this->withSession([
+            '_old_input' => ['name' => 'First client input'],
+            '_flash.new' => ['form_flash'],
+            'form_flash' => 'First client flash',
+            'errors' => ['name' => ['First client error']],
+        ])->get('/testing/cache-form');
+
+        $first->assertHeader('X-Cache', 'BYPASS')
+            ->assertSee('First client input')
+            ->assertSee('First client flash')
+            ->assertSee('data-errors="1"', false);
+
+        $this->flushSession();
+
+        $this->get('/testing/cache-form')
+            ->assertHeader('X-Cache', 'MISS')
+            ->assertDontSee('First client input')
+            ->assertDontSee('First client flash')
+            ->assertSee('data-errors="0"', false);
+    }
+
+    public function test_cache_responses_are_never_browser_cacheable(): void
+    {
+        $this->get('/ar')
+            ->assertHeader('X-Cache', 'MISS')
+            ->assertHeader('Cache-Control', 'max-age=0, no-store, private');
+
+        $this->get('/ar')
+            ->assertHeader('X-Cache', 'HIT')
+            ->assertHeader('Cache-Control', 'max-age=0, no-store, private');
+
+        $this->get('/ar', ['Cache-Control' => 'no-cache'])
+            ->assertHeader('X-Cache', 'BYPASS')
+            ->assertHeader('Cache-Control', 'max-age=0, no-store, private');
+    }
+
+    public function test_authorization_and_no_cache_requests_bypass_the_internal_cache(): void
+    {
+        foreach ([
+            ['Authorization' => 'Bearer test-token'],
+            ['Pragma' => 'no-cache'],
+        ] as $headers) {
+            $this->get('/ar', $headers)
+                ->assertHeader('X-Cache', 'BYPASS')
+                ->assertHeader('Cache-Control', 'max-age=0, no-store, private');
+        }
+    }
+
+    public function test_suggestions_and_complaints_get_requests_always_bypass_the_cache(): void
+    {
+        $this->get('/en/e-services/suggestions-complaints')
+            ->assertNotFound()
+            ->assertHeader('X-Cache', 'BYPASS')
+            ->assertHeader('Cache-Control', 'max-age=0, no-store, private');
+    }
+
+    public function test_unknown_query_parameters_do_not_fragment_the_public_page_cache(): void
+    {
+        $this->get('/ar?utm_source=first-client')
+            ->assertHeader('X-Cache', 'MISS');
+
+        $this->get('/ar?utm_source=second-client')
+            ->assertHeader('X-Cache', 'HIT');
+    }
+
+    public function test_supported_filters_are_retained_and_equivalent_page_values_are_canonicalized(): void
+    {
+        $this->get('/en/research/publications?q=cache-filter&page=01')
+            ->assertOk()
+            ->assertHeader('X-Cache', 'MISS');
+
+        $this->get('/en/research/publications?q=cache-filter&page=1')
+            ->assertOk()
+            ->assertHeader('X-Cache', 'HIT');
+
+        $this->get('/en/research/publications?q=other-filter&page=2')
+            ->assertOk()
+            ->assertHeader('X-Cache', 'MISS');
     }
 
     private function csrfTokenFrom(string $html): ?string

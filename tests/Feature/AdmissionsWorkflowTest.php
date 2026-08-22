@@ -37,8 +37,7 @@ final class AdmissionsWorkflowTest extends TestCase
         $workflow->saveDraft('admissions.landing', $payload, (int) $author->id);
 
         $this->get('/en/admissions')
-            ->assertOk()
-            ->assertDontSee('Admissions Published Workflow');
+            ->assertNotFound();
 
         $this->assertTrue($workflow->publish('admissions.landing', (int) $author->id));
 
@@ -59,8 +58,7 @@ final class AdmissionsWorkflowTest extends TestCase
         $workflow->saveDraft('admissions.requirements', $payload, (int) $author->id);
 
         $this->get('/en/admissions/requirements')
-            ->assertOk()
-            ->assertDontSee('Requirements Published Workflow');
+            ->assertNotFound();
 
         $this->assertTrue($workflow->publish('admissions.requirements', (int) $author->id));
 
@@ -87,8 +85,7 @@ final class AdmissionsWorkflowTest extends TestCase
             ->assertSee('Preview mode');
 
         $this->get('/en/admissions')
-            ->assertOk()
-            ->assertDontSee('Admissions Preview Workflow');
+            ->assertNotFound();
     }
 
     public function test_admissions_section_preview_renders_draft_snapshot(): void
@@ -109,8 +106,7 @@ final class AdmissionsWorkflowTest extends TestCase
             ->assertSee('Preview mode');
 
         $this->get('/en/admissions/requirements')
-            ->assertOk()
-            ->assertDontSee('Requirements Preview Workflow');
+            ->assertNotFound();
     }
 
     public function test_manage_admissions_uses_structured_fields_instead_of_json_payload_textareas(): void
@@ -178,10 +174,17 @@ final class AdmissionsWorkflowTest extends TestCase
         $this->get('/en/admissions/study-system')->assertRedirect('/en/admissions/documents?tab=study-system');
         $this->get('/en/admissions/academic-warnings')->assertRedirect('/en/admissions/documents?tab=academic-warnings');
 
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $admissions = app(AdmissionsPageServiceInterface::class);
+
         foreach ([
             'admissions.filling-vacancies' => ['path' => '/en/admissions/filling-vacancies', 'state' => 'en_filling_vacancies', 'title' => 'Filling Vacant Seats'],
             'admissions.graduation-exams' => ['path' => '/en/admissions/graduation-exams', 'state' => 'en_graduation_exams', 'title' => 'Graduation & National Examinations'],
         ] as $targetKey => $case) {
+            $workflow->saveDraft($targetKey, $admissions->getEditablePayload($targetKey), (int) $author->getKey());
+            $this->assertTrue($workflow->publish($targetKey, (int) $author->getKey()));
+
             $this->get($case['path'])
                 ->assertOk()
                 ->assertSee($case['title'])
@@ -190,7 +193,7 @@ final class AdmissionsWorkflowTest extends TestCase
 
         $this->assertFileExists(public_path('images/admission/front-img.jpg'));
 
-        $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
+        $this->actingAs($author, 'web');
 
         foreach ([
             'admissions.filling-vacancies' => 'en_filling_vacancies',

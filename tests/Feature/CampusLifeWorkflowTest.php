@@ -37,8 +37,7 @@ final class CampusLifeWorkflowTest extends TestCase
         $workflow->saveDraft('campus_life.landing', $payload, (int) $author->id);
 
         $this->get('/en/campus-life')
-            ->assertOk()
-            ->assertDontSee('Published Campus Life Workflow');
+            ->assertNotFound();
 
         $this->assertTrue($workflow->publish('campus_life.landing', (int) $author->id));
 
@@ -65,8 +64,7 @@ final class CampusLifeWorkflowTest extends TestCase
             ->assertSee('Preview mode');
 
         $this->get('/en/campus-life')
-            ->assertOk()
-            ->assertDontSee('Campus Life Preview Workflow');
+            ->assertNotFound();
     }
 
     public function test_campus_life_services_workflow_draft_does_not_leak_until_published(): void
@@ -81,8 +79,7 @@ final class CampusLifeWorkflowTest extends TestCase
         $workflow->saveDraft('campus_life.services', $payload, (int) $author->id);
 
         $this->get('/en/campus-life/services')
-            ->assertOk()
-            ->assertDontSee('Published Campus Services Workflow');
+            ->assertNotFound();
 
         $this->assertTrue($workflow->publish('campus_life.services', (int) $author->id));
 
@@ -109,8 +106,7 @@ final class CampusLifeWorkflowTest extends TestCase
             ->assertSee('Preview mode');
 
         $this->get('/en/campus-life/services')
-            ->assertOk()
-            ->assertDontSee('Campus Services Preview Workflow');
+            ->assertNotFound();
     }
 
     public function test_campus_life_transport_workflow_draft_does_not_leak_until_published(): void
@@ -125,8 +121,7 @@ final class CampusLifeWorkflowTest extends TestCase
         $workflow->saveDraft('campus_life.transport', $payload, (int) $author->id);
 
         $this->get('/en/campus-life/transport')
-            ->assertOk()
-            ->assertDontSee('Published Transport Workflow');
+            ->assertNotFound();
 
         $this->assertTrue($workflow->publish('campus_life.transport', (int) $author->id));
 
@@ -153,12 +148,13 @@ final class CampusLifeWorkflowTest extends TestCase
             ->assertSee('Preview mode');
 
         $this->get('/en/campus-life/transport')
-            ->assertOk()
-            ->assertDontSee('Transport Preview Workflow');
+            ->assertNotFound();
     }
 
     public function test_transport_page_exposes_operational_schedule_routes_fees_and_portal_registration(): void
     {
+        $this->publishCampusLifeTarget('campus_life.transport');
+
         $this->get('/en/campus-life/transport')
             ->assertOk()
             ->assertSee('Exam-period transport programme')
@@ -186,6 +182,14 @@ final class CampusLifeWorkflowTest extends TestCase
             ->assertRedirect('https://my.spu.edu.sy/ar/login');
     }
 
+    public function test_transport_registration_rejects_unapproved_portal_host(): void
+    {
+        config()->set('security.trusted_portal_hosts', ['portal.spu.edu.sy']);
+
+        $this->get('/en/campus-life/transport/registration')
+            ->assertStatus(503);
+    }
+
     public function test_campus_life_clubs_activities_workflow_draft_does_not_leak_until_published(): void
     {
         $campusLife = app(CampusLifePageServiceInterface::class);
@@ -198,8 +202,7 @@ final class CampusLifeWorkflowTest extends TestCase
         $workflow->saveDraft('campus_life.clubs-activities', $payload, (int) $author->id);
 
         $this->get('/en/campus-life/clubs-activities')
-            ->assertOk()
-            ->assertDontSee('Published Clubs Workflow');
+            ->assertNotFound();
 
         $this->assertTrue($workflow->publish('campus_life.clubs-activities', (int) $author->id));
 
@@ -226,8 +229,7 @@ final class CampusLifeWorkflowTest extends TestCase
             ->assertSee('Preview mode');
 
         $this->get('/en/campus-life/clubs-activities')
-            ->assertOk()
-            ->assertDontSee('Clubs Preview Workflow');
+            ->assertNotFound();
     }
 
     public function test_campus_life_career_development_workflow_draft_does_not_leak_until_published(): void
@@ -242,8 +244,7 @@ final class CampusLifeWorkflowTest extends TestCase
         $workflow->saveDraft('campus_life.career-development', $payload, (int) $author->id);
 
         $this->get('/en/campus-life/career-development')
-            ->assertOk()
-            ->assertDontSee('Published Career Workflow');
+            ->assertNotFound();
 
         $this->assertTrue($workflow->publish('campus_life.career-development', (int) $author->id));
 
@@ -270,8 +271,7 @@ final class CampusLifeWorkflowTest extends TestCase
             ->assertSee('Preview mode');
 
         $this->get('/en/campus-life/career-development')
-            ->assertOk()
-            ->assertDontSee('Career Preview Workflow');
+            ->assertNotFound();
     }
 
     public function test_remaining_campus_life_subpage_workflows_drafts_do_not_leak_until_published(): void
@@ -293,8 +293,7 @@ final class CampusLifeWorkflowTest extends TestCase
             $workflow->saveDraft($targetKey, $payload, (int) $author->id);
 
             $this->get('/en/campus-life/'.$slug)
-                ->assertOk()
-                ->assertDontSee($title);
+                ->assertNotFound();
 
             $this->assertTrue($workflow->publish($targetKey, (int) $author->id));
 
@@ -329,8 +328,7 @@ final class CampusLifeWorkflowTest extends TestCase
                 ->assertSee('Preview mode');
 
             $this->get('/en/campus-life/'.$slug)
-                ->assertOk()
-                ->assertDontSee($title);
+                ->assertNotFound();
         }
     }
 
@@ -383,6 +381,8 @@ final class CampusLifeWorkflowTest extends TestCase
             'campus_life.exam-instructions' => ['path' => '/en/campus-life/exam-instructions', 'state' => 'en_exam_instructions', 'title' => 'Exam Instructions'],
             'campus_life.exam-penalties' => ['path' => '/en/campus-life/exam-penalties', 'state' => 'en_exam_penalties', 'title' => 'Exam Penalties'],
         ] as $targetKey => $case) {
+            $this->publishCampusLifeTarget($targetKey);
+
             $this->get($case['path'])
                 ->assertOk()
                 ->assertSee($case['title']);
@@ -630,5 +630,15 @@ final class CampusLifeWorkflowTest extends TestCase
 
         $this->assertSame('Curated Health Insurance', $draft->payload_json['translations']['en']['hero']['title'] ?? null);
         $this->assertContains('Curated Health Section', $sectionTitles);
+    }
+
+    private function publishCampusLifeTarget(string $targetKey): void
+    {
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $payload = app(CampusLifePageServiceInterface::class)->getEditablePayload($targetKey);
+
+        $workflow->saveDraft($targetKey, $payload, (int) $author->id);
+        $this->assertTrue($workflow->publish($targetKey, (int) $author->id));
     }
 }

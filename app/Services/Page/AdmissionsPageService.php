@@ -17,10 +17,13 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
         private readonly MediaServiceInterface $mediaService,
     ) {}
 
-    public function getLanding(string $locale): AdmissionsPageDTO
+    public function getLanding(string $locale): ?AdmissionsPageDTO
     {
-        $landing = $this->publishedLocalizedPayload('admissions.landing', $locale)
-            ?? $this->localized($this->landingPayload(), $locale);
+        $landing = $this->publishedLocalizedPayload('admissions.landing', $locale);
+
+        if ($landing === null) {
+            return null;
+        }
 
         return $this->landingDto($locale, $this->sanitizeLanding($this->normalizeUrls($landing, $locale), $locale));
     }
@@ -51,11 +54,6 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
     public function getSection(string $slug, string $locale): ?AdmissionsSectionDTO
     {
         $payload = $this->publishedLocalizedPayload('admissions.'.$slug, $locale);
-
-        if ($payload === null) {
-            $sections = $this->sectionPayloads($locale);
-            $payload = $sections[$slug] ?? null;
-        }
 
         if ($payload === null) {
             return null;

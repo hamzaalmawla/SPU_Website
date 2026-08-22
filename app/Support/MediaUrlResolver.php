@@ -16,6 +16,10 @@ final class MediaUrlResolver
         }
 
         $value = trim(str_replace('\\', '/', $value));
+        if (self::hasUnsafeLegacyExtension($value)) {
+            return null;
+        }
+
         if (preg_match('#^(https?:)?//#i', $value) === 1) {
             return UrlSanitizer::sanitize($value, ['http', 'https'], true);
         }
@@ -106,5 +110,16 @@ final class MediaUrlResolver
             is_string($webpPath) && $webpPath !== '' ? $webpPath : $originalPath,
             $disk,
         );
+    }
+
+    private static function hasUnsafeLegacyExtension(string $value): bool
+    {
+        $path = parse_url($value, PHP_URL_PATH);
+        $path = rawurldecode(is_string($path) ? $path : $value);
+
+        return preg_match(
+            '/\.(?:html?|xhtml|xml|svgz?|php[0-9]?|phtml|phar|cgi|pl|py|sh|asp|aspx|jsp|exe|dll|com|bat|cmd|ps1)(?:\.|$)/i',
+            $path,
+        ) === 1;
     }
 }

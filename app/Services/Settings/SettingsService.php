@@ -229,7 +229,7 @@ final class SettingsService implements SettingsServiceInterface
             (int) config('cache.settings_ttl', 21600),
         );
 
-        return is_string($value) && $value !== '' ? UrlSanitizer::sanitize($value) : null;
+        return is_string($value) && $value !== '' ? $this->trustedPortalUrl($value) : null;
     }
 
     public function getStaffAccessUrl(): ?string
@@ -240,7 +240,7 @@ final class SettingsService implements SettingsServiceInterface
             (int) config('cache.settings_ttl', 21600),
         );
 
-        return is_string($value) && $value !== '' ? UrlSanitizer::sanitize($value) : null;
+        return is_string($value) && $value !== '' ? $this->trustedPortalUrl($value) : null;
     }
 
     public function getEmergencyNotice(string $locale): EmergencyNoticeDTO
@@ -563,11 +563,14 @@ final class SettingsService implements SettingsServiceInterface
             $this->cacheService->forget($this->staffAccessCacheKey());
         }
 
-        $flushed = $this->cacheService->flushTags(
+        $tags = match (true) {
+            $group === 'seo' => ['public-pages', 'public-shell', 'seo', 'sitemap', 'settings'],
             in_array($group, ['navigation', 'footer', 'public_shell', 'contact_page', 'e_services_page'], true)
-                ? ['public-pages', 'public-shell', 'settings', 'navigation']
-                : ['settings'],
-        );
+                => ['public-pages', 'public-shell', 'settings', 'navigation'],
+            default => ['settings'],
+        };
+
+        $flushed = $this->cacheService->flushTags($tags);
 
         if (! $flushed) {
             $this->cacheService->flushAll();
@@ -655,6 +658,32 @@ final class SettingsService implements SettingsServiceInterface
             textValue: $this->keyLooksLikeUrl($value->key) ? UrlSanitizer::sanitize($value->textValue) : $value->textValue,
             isPublic: $value->isPublic,
         );
+    }
+
+    private function trustedPortalUrl(string $value): ?string
+    {
+        if (str_starts_with($value, '/') && ! str_starts_with($value, '//')) {
+            return UrlSanitizer::sanitize($value);
+        }
+
+        $url = UrlSanitizer::sanitize($value, ['https'], true);
+        if ($url === null) {
+            return null;
+        }
+
+        $parts = parse_url($url);
+        $host = is_array($parts) && is_string($parts['host'] ?? null)
+            ? strtolower($parts['host'])
+            : null;
+
+        if ($host === null
+            || isset($parts['user'], $parts['pass'])
+            || ! in_array($host, (array) config('security.trusted_portal_hosts', []), true)
+        ) {
+            return null;
+        }
+
+        return $url;
     }
 
     /**

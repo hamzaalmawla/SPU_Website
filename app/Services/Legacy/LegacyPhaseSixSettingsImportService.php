@@ -393,5 +393,9 @@ final class LegacyPhaseSixSettingsImportService implements LegacyPhaseSixSetting
 
         $this->cacheService->forget('settings.student_portal_url');
         $this->cacheService->forget('settings.staff_access_url');
+
+        if (! $this->cacheService->flushTags(['public-pages', 'public-shell', 'sitemap'])) {
+            $this->cacheService->flushAll();
+        }
     }
 }

@@ -1,6 +1,7 @@
 @php
     $isArabic = $locale === 'ar';
     $homepageFooterPayload = $homepageFooterSection?->payload ?? null;
+    $homepageFooterColumns = $homepageFooterColumns ?? $homepageFooterPayload?->footerColumns ?? [];
     $homepageFooterContent = is_array($homepageFooterPayload?->content ?? null) ? $homepageFooterPayload->content : [];
     $homepageBrandBlock = is_array($homepageFooterContent['brandBlock'] ?? null) ? $homepageFooterContent['brandBlock'] : [];
     $useHomepageFooter = $homepageFooterPayload !== null && ($homepageFooterSection?->isEnabled ?? false);
@@ -73,8 +74,8 @@
                 @endif
             </div>
 
-            @if ($useHomepageFooter && $homepageFooterPayload->footerColumns !== [])
-                @foreach ($homepageFooterPayload->footerColumns as $column)
+            @if ($useHomepageFooter && $homepageFooterColumns !== [])
+                @foreach ($homepageFooterColumns as $column)
                     <div class="lg:col-span-2">
                         <h3 class="mb-8 text-[18px] font-bold uppercase ltr:tracking-widest text-white/50">{{ $column->title }}</h3>
                         <ul class="flex flex-col gap-4">
@@ -157,7 +158,7 @@
                         {{ __('public.footer_location') }}
                     </h3>
                     <div class="group h-[180px] w-full overflow-hidden rounded-[12px] border border-white/10 shadow-2xl">
-                        <iframe src="{{ $mapEmbedUrl }}" class="h-full w-full grayscale-[0.3] opacity-80 transition-all duration-700 group-hover:grayscale-0 group-hover:opacity-100" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                        <iframe src="{{ $mapEmbedUrl }}" title="{{ $locale === 'ar' ? 'موقع الجامعة السورية الخاصة' : 'Syrian Private University location' }}" class="h-full w-full grayscale-[0.3] opacity-80 transition-all duration-700 group-hover:grayscale-0 group-hover:opacity-100" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
                     </div>
                 </div>
             @endif

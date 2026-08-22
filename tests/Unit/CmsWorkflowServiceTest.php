@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
+use App\Contracts\Cms\AboutEntityCmsServiceInterface;
+use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\News\NewsArticleCmsServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
+use App\Contracts\Shared\CacheServiceInterface;
 use App\Enums\PublicationStatus;
 use App\Exceptions\ConflictException;
 use App\Models\Cms\CmsDraft;
@@ -14,17 +18,28 @@ use App\Models\Shared\PreviewToken;
 use App\Models\User\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\RefreshDatabaseState;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Mockery;
 use Tests\TestCase;
 
 final class CmsWorkflowServiceTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function beginDatabaseTransaction(): void
+    {
+        // Each test gets a fresh schema from setUp instead.
+    }
+
     private CmsWorkflowServiceInterface $service;
 
     protected function setUp(): void
     {
+        // These tests deliberately exercise post-commit callbacks, so they
+        // cannot run inside RefreshDatabase's outer transaction.
+        RefreshDatabaseState::$migrated = false;
         parent::setUp();
 
         $this->service = app(CmsWorkflowServiceInterface::class);
@@ -179,6 +194,74 @@ final class CmsWorkflowServiceTest extends TestCase
         $this->assertTrue($this->service->unpublish('contact', (int) $user->getKey()));
         $this->assertNull($this->service->getPublishedPayload('contact'));
         $this->assertDatabaseHas('audit_logs', ['action' => 'cms.unpublished']);
+    }
+
+    public function test_publish_invalidates_cache_after_commit(): void
+    {
+        $user = User::factory()->create(['role_slug' => 'editor']);
+        $cacheCalls = 0;
+        $cache = Mockery::mock(CacheServiceInterface::class);
+        $cache->shouldReceive('flushTags')
+            ->once()
+            ->with(['public-pages', 'public-shell', 'seo', 'sitemap', 'cms', 'cms:contact'])
+            ->andReturnUsing(function () use (&$cacheCalls): bool {
+                $cacheCalls++;
+                $this->assertSame(0, DB::connection()->transactionLevel());
+                $this->assertDatabaseHas('cms_target_contents', [
+                    'target_key' => 'contact',
+                    'status' => PublicationStatus::Published->value,
+                ]);
+
+                return true;
+            });
+        $cache->shouldReceive('forget')->times(8)->andReturn(true);
+
+        $this->app->instance(CacheServiceInterface::class, $cache);
+        $this->app->forgetInstance(CmsWorkflowServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+
+        $workflow->saveDraft('contact', $this->completePayload('تواصل معنا', 'Contact us'), (int) $user->getKey());
+        $workflow->publish('contact', (int) $user->getKey());
+
+        $this->assertSame(1, $cacheCalls);
+
+    }
+
+    public function test_failed_publish_transaction_does_not_invalidate_cache(): void
+    {
+        $user = User::factory()->create(['role_slug' => 'editor']);
+        $cache = Mockery::mock(CacheServiceInterface::class);
+        $cache->shouldReceive('flushTags')->never();
+        $cache->shouldReceive('flushAll')->never();
+        $cache->shouldReceive('forget')->never();
+
+        $about = Mockery::mock(AboutEntityCmsServiceInterface::class);
+        $about->shouldReceive('authorizeTarget')->andReturn(true);
+        $about->shouldReceive('publishErrors')->andReturn([]);
+        $about->shouldReceive('markDraft')->andReturn(true);
+        $about->shouldReceive('publishTarget')->andThrow(new \RuntimeException('publish failed'));
+
+        $news = Mockery::mock(NewsArticleCmsServiceInterface::class);
+        $news->shouldReceive('authorizeTarget')->andReturn(true);
+        $news->shouldReceive('publishErrors')->andReturn([]);
+        $news->shouldReceive('markDraft')->andReturn(true);
+
+        $this->app->instance(CacheServiceInterface::class, $cache);
+        $this->app->instance(AboutEntityCmsServiceInterface::class, $about);
+        $this->app->instance(NewsArticleCmsServiceInterface::class, $news);
+        $this->app->forgetInstance(CmsTargetRegistryInterface::class);
+        $this->app->forgetInstance(CmsWorkflowServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+
+        $workflow->saveDraft('contact', $this->completePayload('تواصل معنا', 'Contact us'), (int) $user->getKey());
+
+        $this->expectException(\RuntimeException::class);
+
+        try {
+            $workflow->publish('contact', (int) $user->getKey());
+        } finally {
+            $this->assertDatabaseMissing('cms_target_contents', ['target_key' => 'contact']);
+        }
     }
 
     public function test_published_draft_is_not_returned_as_editable(): void

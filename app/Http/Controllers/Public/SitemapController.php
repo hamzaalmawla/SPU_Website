@@ -6,7 +6,6 @@ namespace App\Http\Controllers\Public;
 
 use App\Contracts\Seo\SitemapServiceInterface;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
 /**
@@ -33,11 +32,11 @@ final class SitemapController extends Controller
     /**
      * Return robots.txt with environment-aware noindex directives.
      */
-    public function robots(Request $request): Response
+    public function robots(): Response
     {
         $isProduction = $this->detectProduction();
 
-        $sitemapUrl = url('/sitemap.xml');
+        $sitemapUrl = rtrim((string) config('edge.canonical_url'), '/').'/sitemap.xml';
 
         if ($isProduction) {
             $content = implode("\n", [

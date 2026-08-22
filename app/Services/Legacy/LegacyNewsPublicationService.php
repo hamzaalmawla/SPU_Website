@@ -64,13 +64,14 @@ final class LegacyNewsPublicationService implements LegacyNewsPublicationService
             ->with(['category', 'translations', 'seoMeta', 'attachments.mediaAsset'])
             ->get()
             ->keyBy(fn (NewsArticle $article): int => (int) $article->legacy_source_id);
-        $importedTargetIds = MigrationLog::query()
+        $importLogs = MigrationLog::query()
             ->where('module', 'news')
             ->where('source_table', 'jx_categories')
             ->where('target_table', 'news_articles')
             ->where('status', 'success')
             ->whereIn('source_id', $sourceIds)
-            ->pluck('target_id', 'source_id');
+            ->get(['source_id', 'target_id', 'metadata'])
+            ->keyBy('source_id');
 
         $eligible = [];
         $alreadyPublished = 0;
@@ -78,7 +79,14 @@ final class LegacyNewsPublicationService implements LegacyNewsPublicationService
 
         foreach ($sourceIds as $sourceId) {
             $article = $articles->get($sourceId);
-            $reason = $this->blockReason($article, $sourceId, $importedTargetIds->get($sourceId), $allowDeferredMedia);
+            $importLog = $importLogs->get($sourceId);
+            $reason = $this->blockReason(
+                $article,
+                $sourceId,
+                $importLog?->target_id,
+                $allowDeferredMedia,
+                is_array($importLog?->metadata) ? $importLog->metadata : [],
+            );
 
             if ($reason === 'already_published') {
                 $alreadyPublished++;
@@ -160,8 +168,14 @@ final class LegacyNewsPublicationService implements LegacyNewsPublicationService
         );
     }
 
-    private function blockReason(?NewsArticle $article, int $sourceId, mixed $importedTargetId, bool $allowDeferredMedia): ?string
-    {
+    /** @param array<string, mixed> $importMetadata */
+    private function blockReason(
+        ?NewsArticle $article,
+        int $sourceId,
+        mixed $importedTargetId,
+        bool $allowDeferredMedia,
+        array $importMetadata = [],
+    ): ?string {
         if (! $article instanceof NewsArticle || (int) $importedTargetId !== (int) $article->getKey()) {
             return 'missing_import_provenance';
         }
@@ -170,6 +184,10 @@ final class LegacyNewsPublicationService implements LegacyNewsPublicationService
         }
         if ($article->status !== 'draft' || (bool) $article->is_enabled) {
             return 'invalid_publication_state';
+        }
+        if (($importMetadata['duplicate_title_status'] ?? null) === 'uncertain'
+            && ($importMetadata['duplicate_disposition'] ?? null) !== 'canonical') {
+            return 'duplicate_disposition_required';
         }
         if ($article->category === null || ! (bool) $article->category->is_enabled) {
             return 'disabled_or_missing_category';

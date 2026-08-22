@@ -70,7 +70,7 @@
             <div class="flex flex-col items-start lg:col-span-3 lg:items-end">
                 <h3 class="mb-8 w-full text-[18px] font-bold uppercase tracking-widest text-white/50">{{ __('public.campus_map') }}</h3>
                 <div class="group h-[180px] w-full overflow-hidden rounded-[12px] border border-white/10 shadow-2xl">
-                    <iframe src="{{ $navigation->footerSettings->mapEmbedUrl }}" class="h-full w-full grayscale-[0.3] opacity-80 transition-all duration-700 group-hover:grayscale-0 group-hover:opacity-100" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                    <iframe src="{{ $navigation->footerSettings->mapEmbedUrl }}" title="{{ $locale === 'ar' ? 'موقع الجامعة السورية الخاصة' : 'Syrian Private University location' }}" class="h-full w-full grayscale-[0.3] opacity-80 transition-all duration-700 group-hover:grayscale-0 group-hover:opacity-100" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
                 </div>
             </div>
         @endif

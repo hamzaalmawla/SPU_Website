@@ -16,5 +16,6 @@ final readonly class ResearchPageDTO
         public string $seoDescription,
         public string $seoImage,
         public string $path,
+        public bool $isAvailable = true,
     ) {}
 }

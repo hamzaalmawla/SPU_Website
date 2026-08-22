@@ -96,6 +96,6 @@ class AdminPanelProvider extends PanelProvider
                 AdminLocaleMiddleware::class,
                 AdminAuthMiddleware::class,
                 TwoFactorChallengeMiddleware::class,
-            ]);
+            ], isPersistent: true);
     }
 }

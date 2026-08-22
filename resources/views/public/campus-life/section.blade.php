@@ -6,6 +6,9 @@
         $type = $section['type'] ?? $page->sectionSlug;
         $hero = $section['hero'] ?? [];
         $breadcrumbs = $hero['breadcrumbs'] ?? [];
+        $heroTitleClasses = $type === 'services' ? 'mt-2 text-4xl md:text-5xl' : 'mt-3 text-3xl md:text-4xl';
+        $scheduleGridClasses = $type === 'dental' ? 'gap-[94px]' : 'gap-10';
+        $schedulePanelClasses = $type === 'dental' ? 'p-10' : 'p-12';
     @endphp
 
     @if (in_array($type, ['services', 'clubs-activities'], true))
@@ -15,10 +18,10 @@
             <div class="absolute inset-0"><div class="container flex h-full flex-col items-center justify-center text-center text-white">
                 <nav class="flex flex-wrap items-center justify-center gap-2 text-xs font-semibold text-white/85">
                     @foreach ($breadcrumbs as $crumb)
-                        <span class="inline-flex items-center gap-2"><a href="{{ $crumb['href'] ?? '#' }}" class="transition hover:text-white">{{ $crumb['label'] ?? '' }}</a>@if (! $loop->last)<img src="/images/icon-chevron-right-outline.svg" alt="" class="h-2.5 w-2.5 brightness-0 invert rtl:rotate-180" aria-hidden="true">@endif</span>
+                        <span class="inline-flex items-center gap-2">@if($loop->last)<span aria-current="page">{{ $crumb['label'] ?? '' }}</span>@elseif(!empty($crumb['href']) && $crumb['href'] !== '#')<a href="{{ $crumb['href'] }}" class="transition hover:text-white">{{ $crumb['label'] ?? '' }}</a>@else<span>{{ $crumb['label'] ?? '' }}</span>@endif @if (! $loop->last)<img src="/images/icon-chevron-right-outline.svg" alt="" class="h-2.5 w-2.5 brightness-0 invert rtl:rotate-180" aria-hidden="true">@endif</span>
                     @endforeach
                 </nav>
-                <h1 class="mt-{{ $type === 'services' ? '2' : '3' }} {{ $type === 'services' ? 'text-4xl md:text-5xl' : 'text-3xl md:text-4xl' }} font-bold leading-tight">{{ $hero['title'] ?? '' }}</h1>
+                <h1 class="{{ $heroTitleClasses }} font-bold leading-tight">{{ $hero['title'] ?? '' }}</h1>
             </div></div>
         </section>
 
@@ -30,7 +33,7 @@
                         @foreach (($section['services']['items'] ?? []) as $card)
                             <article class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_8px_20px_rgba(15,23,42,0.08)] transition duration-200 hover:-translate-y-1 hover:shadow-[0_14px_30px_rgba(15,23,42,0.12)] {{ ($card['wide'] ?? false) ? 'lg:col-span-3' : 'lg:col-span-2' }}">
                                 <img src="{{ $card['image'] ?? '' }}" alt="{{ $card['title'] ?? '' }}" class="h-40 w-full object-cover">
-                                <div class="p-4"><h3 class="text-base font-bold text-spu-blue">{{ $card['title'] ?? '' }}</h3><div class="mt-3 rounded-md bg-[#f3f7fe] p-3 text-xs leading-5 text-slate-700"><p class="flex items-center gap-2 font-semibold text-spu-blue"><img src="/images/icon-file-outline.svg" alt="" class="h-3 w-3" aria-hidden="true"><span>{{ $section['services']['accessLabel'] ?? '' }}</span></p><p class="mt-1">{{ $card['access'] ?? '' }}</p></div><a href="{{ $card['href'] ?? '#' }}" class="mt-4 inline-flex items-center gap-2 text-xs font-bold text-spu-blue transition hover:text-spu-red"><span>{{ $section['services']['detailsLabel'] ?? '' }}</span><img src="/images/icon-arrow-right-outline.svg" alt="" class="h-2.5 w-2.5 rtl:rotate-180" aria-hidden="true"></a></div>
+                                <div class="p-4"><h3 class="text-base font-bold text-spu-blue">{{ $card['title'] ?? '' }}</h3><div class="mt-3 rounded-md bg-[#f3f7fe] p-3 text-xs leading-5 text-slate-700"><p class="flex items-center gap-2 font-semibold text-spu-blue"><img src="/images/icon-file-outline.svg" alt="" class="h-3 w-3" aria-hidden="true"><span>{{ $section['services']['accessLabel'] ?? '' }}</span></p><p class="mt-1">{{ $card['access'] ?? '' }}</p></div>@if(!empty($card['href']) && $card['href'] !== '#')<a href="{{ $card['href'] }}" class="mt-4 inline-flex items-center gap-2 text-xs font-bold text-spu-blue transition hover:text-spu-red"><span>{{ $section['services']['detailsLabel'] ?? '' }}</span><img src="/images/icon-arrow-right-outline.svg" alt="" class="h-2.5 w-2.5 rtl:rotate-180" aria-hidden="true"></a>@endif</div>
                             </article>
                         @endforeach
                     </div>
@@ -63,7 +66,7 @@
         <section class="bg-white py-24 font-hacen"><div class="container"><div class="mb-16 text-center"><h2 class="text-5xl font-bold text-spu-blue">{{ $section['sectionHeader']['title'] ?? '' }}</h2></div>
             @if ($type === 'dental')<div class="grid grid-cols-1 gap-6 md:grid-cols-3">@foreach (($section['services'] ?? []) as $service)<div class="flex h-full flex-col rounded-[12px] border border-[#C3C6D180] bg-white p-10 transition-all duration-300 hover:border-slate-200 hover:shadow-xl {{ $loop->first || $loop->last ? 'md:col-span-2' : 'md:col-span-1' }}"><div class="mb-6 flex items-start justify-between"><h3 class="text-2xl font-bold text-[#1e2d5b]">{{ $service['title'] ?? '' }}</h3><div class="flex items-center justify-center"><img src="{{ $service['icon'] ?? '' }}" class="h-12 w-12 object-contain transition-transform duration-300 group-hover:scale-110" alt=""></div></div><p class="max-w-2xl text-lg leading-relaxed text-slate-500">{{ $service['description'] ?? '' }}</p></div>@endforeach</div>
             @else<div class="cms-grid-wide gap-6">@foreach (($section['departments'] ?? []) as $dept)<div class="group flex h-full flex-col rounded-[8px] border border-[#C3C6D180] bg-white p-10 transition-all duration-300 hover:border-slate-200 hover:shadow-xl"><div class="mb-6 flex items-start justify-between"><h3 class="text-2xl font-bold text-[#1e2d5b]">{{ $dept['title'] ?? '' }}</h3><div class="flex items-center justify-center"><img src="{{ $dept['icon'] ?? '' }}" class="h-12 w-12 bg-white text-black" alt=""></div></div><p class="text-lg leading-relaxed text-slate-500">{{ $dept['description'] ?? '' }}</p></div>@endforeach</div>@endif
-        </div><div id="weekly-schedule" class="container mt-24 pb-20"><div class="mb-16 text-center"><h2 class="text-5xl font-bold text-[#1e2d5b]">{{ $section['scheduleSection']['title'] ?? '' }}</h2></div><div class="grid items-stretch gap-{{ $type === 'dental' ? '[94px]' : '10' }} lg:grid-cols-2"><div class="flex flex-col items-center justify-center rounded-[8px] bg-[#1e2d5b] p-{{ $type === 'dental' ? '10' : '12' }} text-center text-white shadow-xl"><div class="mb-6"><img src="/images/time.svg" alt="" class="h-[97px] w-[97px] brightness-0 invert" aria-hidden="true"></div><div class="mb-8 space-y-3"><div class="text-2xl font-bold">{{ $section['today']['day'] ?? now()->format('l') }}</div><div class="text-lg font-semibold text-white/80">{{ $section['today']['time'] ?? '' }}</div><div class="inline-block rounded-full px-6 py-1.5 text-sm font-bold shadow-sm transition-colors duration-300 
+        </div><div id="weekly-schedule" class="container mt-24 pb-20"><div class="mb-16 text-center"><h2 class="text-5xl font-bold text-[#1e2d5b]">{{ $section['scheduleSection']['title'] ?? '' }}</h2></div><div class="grid items-stretch {{ $scheduleGridClasses }} lg:grid-cols-2"><div class="flex flex-col items-center justify-center rounded-[8px] bg-[#1e2d5b] {{ $schedulePanelClasses }} text-center text-white shadow-xl"><div class="mb-6"><img src="/images/time.svg" alt="" class="h-[97px] w-[97px] brightness-0 invert" aria-hidden="true"></div><div class="mb-8 space-y-3"><div class="text-2xl font-bold">{{ $section['today']['day'] ?? now()->format('l') }}</div><div class="text-lg font-semibold text-white/80">{{ $section['today']['time'] ?? '' }}</div><div class="inline-block rounded-full px-6 py-1.5 text-sm font-bold shadow-sm transition-colors duration-300{{ ' ' }}
 @php
     $statusClass = 'bg-white text-[#1e2d5b]';
     $statusText = $section['scheduleSection']['status'] ?? '';
@@ -99,7 +102,7 @@
                     <nav class="flex flex-wrap items-center justify-center gap-2 text-xs font-semibold text-white/85">
                         @foreach ($breadcrumbs as $crumb)
                             <span class="inline-flex items-center gap-2">
-                                <a href="{{ $crumb['href'] ?? '#' }}" class="transition hover:text-white">{{ $crumb['label'] ?? '' }}</a>
+                                @if($loop->last)<span aria-current="page">{{ $crumb['label'] ?? '' }}</span>@elseif(!empty($crumb['href']) && $crumb['href'] !== '#')<a href="{{ $crumb['href'] }}" class="transition hover:text-white">{{ $crumb['label'] ?? '' }}</a>@else<span>{{ $crumb['label'] ?? '' }}</span>@endif
                                 @if (! $loop->last)
                                     <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-2.5 w-2.5 brightness-0 invert rtl:rotate-180" aria-hidden="true">
                                 @endif

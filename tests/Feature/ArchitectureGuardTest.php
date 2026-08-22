@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Contracts\Homepage\HomepageSectionServiceInterface;
+use App\DTOs\Form\DynamicFormSubmissionDetailDTO;
+use App\DTOs\Form\SecureFormSubmissionDownloadDTO;
 use Tests\TestCase;
 
 /**
@@ -17,7 +19,7 @@ use Tests\TestCase;
  * - Middleware does not query Eloquent or contain domain persistence logic
  * - DTOs remain final readonly constructor-only data carriers unless allowlisted
  * - Support helpers remain DB-free except documented legacy import exceptions
- * - Filament pages/resources do not import forbidden models
+ * - Filament pages/resources do not perform direct business database access
  * - Controllers and Filament do not call Actions directly
  * - Homepage section keys match the documented contract
  * - All service contracts have bindings in AppServiceProvider
@@ -372,6 +374,89 @@ final class ArchitectureGuardTest extends TestCase
         );
     }
 
+    public function test_filament_database_access_is_limited_to_framework_model_rehydration(): void
+    {
+        $frameworkModelRehydration = [
+            'app/Filament/Resources/DirectorateResource/Pages/CreateDirectorate.php' => '/return\s+Directorate::query\(\)->findOrFail\(\$prepared->entityId\);/',
+            'app/Filament/Resources/FacultyMemberResource/Pages/CreateFacultyMember.php' => '/return\s+FacultyMember::query\(\)->findOrFail\(\$prepared->entityId\);/',
+            'app/Filament/Resources/NewsArticleResource/Pages/CreateNewsArticle.php' => '/return\s+NewsArticle::query\(\)->findOrFail\(\$prepared->articleId\);/',
+            'app/Filament/Resources/PartnershipResource/Pages/CreatePartnership.php' => '/return\s+Partnership::query\(\)->findOrFail\(\$prepared->entityId\);/',
+            'app/Filament/Resources/PersonResource/Pages/CreatePerson.php' => '/return\s+Person::query\(\)->findOrFail\(\$prepared->entityId\);/',
+        ];
+        $violations = [];
+
+        foreach ($this->filamentFiles() as $file) {
+            $content = file_get_contents($file);
+            if ($content === false) {
+                continue;
+            }
+
+            $relativePath = $this->relativePath($file);
+            foreach ($this->directFilamentDatabaseUsageViolations($content) as $violation) {
+                if ($violation === 'calls ::query()' && isset($frameworkModelRehydration[$relativePath])) {
+                    $queryCount = preg_match_all('/\b[A-Z][A-Za-z0-9_]*::query\s*\(/', $content);
+                    if ($queryCount === 1 && preg_match($frameworkModelRehydration[$relativePath], $content) === 1) {
+                        continue;
+                    }
+                }
+
+                $violations[] = $relativePath.' '.$violation;
+            }
+        }
+
+        $this->assertEmpty(
+            $violations,
+            "Filament business reads and writes must cross service contracts:\n".implode("\n", $violations)
+        );
+    }
+
+    public function test_sensitive_service_contract_methods_require_an_actor_and_enforce_policy_before_pii_mapping(): void
+    {
+        $sensitiveReturnTypes = [
+            DynamicFormSubmissionDetailDTO::class,
+            SecureFormSubmissionDownloadDTO::class,
+        ];
+        $violations = [];
+
+        foreach ($this->phpFilesIn(app_path('Contracts')) as $file) {
+            $content = file_get_contents($file);
+            if ($content === false || ! preg_match('/namespace\s+([\w\\\\]+);/', $content, $namespaceMatch)
+                || ! preg_match('/interface\s+(\w+)/', $content, $interfaceMatch)) {
+                continue;
+            }
+
+            $interface = $namespaceMatch[1].'\\'.$interfaceMatch[1];
+            foreach ((new \ReflectionClass($interface))->getMethods() as $method) {
+                $returnType = $method->getReturnType();
+                if (! $returnType instanceof \ReflectionNamedType || ! in_array($returnType->getName(), $sensitiveReturnTypes, true)) {
+                    continue;
+                }
+
+                $actor = collect($method->getParameters())
+                    ->first(fn (\ReflectionParameter $parameter): bool => $parameter->getName() === 'actorId');
+                if (! $actor instanceof \ReflectionParameter
+                    || ! $actor->getType() instanceof \ReflectionNamedType
+                    || $actor->getType()?->getName() !== 'int') {
+                    $violations[] = $interface.'::'.$method->getName().'() does not require int $actorId';
+                }
+            }
+        }
+
+        $service = file_get_contents(app_path('Services/Form/DynamicFormSubmissionReviewService.php'));
+        $authorization = is_string($service)
+            ? strpos($service, '$this->authorizedActor($actorId, \'view\', $submission);')
+            : false;
+        $piiMapping = is_string($service) ? strpos($service, 'applicantName:') : false;
+        if ($authorization === false || $piiMapping === false || $authorization > $piiMapping) {
+            $violations[] = 'DynamicFormSubmissionReviewService::getDetails() does not authorize before mapping PII';
+        }
+
+        $this->assertEmpty(
+            $violations,
+            "Sensitive service methods must require and enforce actor authorization:\n".implode("\n", $violations)
+        );
+    }
+
     /**
      * The homepage section keys constant must match the documented 11-key contract.
      */
@@ -505,6 +590,29 @@ final class ArchitectureGuardTest extends TestCase
             '/->save\s*\(/' => 'calls ->save()',
         ];
 
+        $violations = [];
+
+        foreach ($patterns as $pattern => $message) {
+            if (preg_match($pattern, $content) === 1) {
+                $violations[] = $message;
+            }
+        }
+
+        return $violations;
+    }
+
+    /** @return list<string> */
+    private function directFilamentDatabaseUsageViolations(string $content): array
+    {
+        $patterns = [
+            '/^use\s+Illuminate\\\\Support\\\\Facades\\\\DB;/m' => 'imports DB facade',
+            '/^use\s+Illuminate\\\\Support\\\\Facades\\\\Schema;/m' => 'imports Schema facade',
+            '/\bDB::/' => 'uses DB facade',
+            '/\bSchema::/' => 'uses Schema facade',
+            '/\b[A-Z][A-Za-z0-9_]*::query\s*\(/' => 'calls ::query()',
+            '/\b[A-Z][A-Za-z0-9_]*::(?:where|find|create|updateOrCreate|firstOrCreate)\s*\(/' => 'calls a direct static persistence method',
+            '/\$(?:record|this->record)->(?:save|update|delete)\s*\(/' => 'writes a resource record directly',
+        ];
         $violations = [];
 
         foreach ($patterns as $pattern => $message) {

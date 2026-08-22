@@ -257,6 +257,19 @@ class MediaServiceTest extends TestCase
         );
     }
 
+    public function test_legacy_browser_active_and_dangerous_double_extensions_are_rejected(): void
+    {
+        foreach (['page.html', 'feed.xml', 'logo.svg', 'photo.php.jpg', 'document.pdf.html'] as $path) {
+            $this->assertNull(MediaUrlResolver::resolveLegacy($path), $path);
+        }
+    }
+
+    public function test_legacy_approved_images_and_pdfs_remain_available(): void
+    {
+        $this->assertSame('/archive/photo.jpg', MediaUrlResolver::resolveLegacy('archive/photo.jpg'));
+        $this->assertSame('/archive/notice.pdf', MediaUrlResolver::resolveLegacy('archive/notice.pdf'));
+    }
+
     public function test_upload_rejects_disallowed_mime_type(): void
     {
         $file = UploadedFile::fake()->create('malware.exe', 100, 'application/x-msdownload');

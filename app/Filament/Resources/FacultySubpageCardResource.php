@@ -6,10 +6,8 @@ namespace App\Filament\Resources;
 
 use App\Contracts\Page\FacultySubpageCardServiceInterface;
 use App\Filament\Resources\FacultySubpageCardResource\Pages;
-use App\Models\Faculty\Faculty;
 use App\Models\Faculty\FacultySubpageCard;
-use App\Models\User\User;
-use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Component;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -62,45 +60,24 @@ class FacultySubpageCardResource extends Resource
 
     private static function scopedFacultySlug(): ?string
     {
-        $user = auth()->user();
-
-        if (! $user instanceof User || $user->role_slug !== 'faculty_editor') {
-            return null;
-        }
-
-        $scope = trim((string) ($user->faculty_scope_slug ?? ''));
-
-        if ($scope === '') {
-            return null;
-        }
-
-        return Faculty::query()
-            ->where('faculty_scope_slug', $scope)
-            ->orWhere('public_slug', $scope)
-            ->orWhere('slug', $scope)
-            ->value('public_slug') ?: $scope;
+        return app(FacultySubpageCardServiceInterface::class)->scopedFacultySlug((int) auth()->id());
     }
 
     /** @return array<string, string> */
     private static function facultyOptions(): array
     {
-        $options = Faculty::query()
-            ->where('is_enabled', true)
-            ->pluck('public_slug', 'public_slug')
-            ->all();
-
-        if (static::scopedFacultySlug() !== null) {
-            $scope = static::scopedFacultySlug();
-
-            return array_filter($options, fn (string $slug): bool => $slug === $scope);
-        }
-
-        return $options;
+        return app(FacultySubpageCardServiceInterface::class)->facultyOptions((int) auth()->id());
     }
 
     public static function form(Form $form): Form
     {
-        return $form->schema([
+        return $form->schema(static::cardFields());
+    }
+
+    /** @return array<int, Component> */
+    private static function cardFields(): array
+    {
+        return [
             TextInput::make('title_override_ar')
                 ->label('Title Override (AR)')
                 ->maxLength(255)
@@ -117,13 +94,12 @@ class FacultySubpageCardResource extends Resource
             Toggle::make('is_visible')
                 ->label('Visible')
                 ->default(true),
-        ]);
+        ];
     }
 
     public static function table(Table $table): Table
     {
         return $table
-            ->reorderable('sort_order')
             ->defaultSort('sort_order')
             ->columns([
                 TextColumn::make('faculty_slug')
@@ -147,7 +123,7 @@ class FacultySubpageCardResource extends Resource
                     ->boolean()
                     ->action(function (FacultySubpageCard $record): void {
                         $service = app(FacultySubpageCardServiceInterface::class);
-                        $service->toggleVisibility((int) $record->getKey());
+                        $service->toggleVisibility((int) $record->getKey(), (int) auth()->id());
                     }),
                 TextColumn::make('sort_order')
                     ->label('Sort Order')
@@ -156,36 +132,53 @@ class FacultySubpageCardResource extends Resource
             ->filters([
                 SelectFilter::make('faculty_slug')
                     ->label('Faculty')
-                    ->options(fn (): array => FacultySubpageCard::query()
-                        ->distinct()
-                        ->pluck('faculty_slug', 'faculty_slug')
-                        ->all()),
+                    ->options(fn (): array => static::facultyOptions()),
             ])
             ->actions([
-                Tables\Actions\Action::make('moveUp')
+                Action::make('moveUp')
                     ->label('')
                     ->icon('heroicon-o-chevron-up')
                     ->color('gray')
                     ->tooltip('Move Up')
                     ->action(function (FacultySubpageCard $record): void {
                         $service = app(FacultySubpageCardServiceInterface::class);
-                        $service->moveUp((int) $record->getKey());
+                        $service->moveUp((int) $record->getKey(), (int) auth()->id());
                     }),
-                Tables\Actions\Action::make('moveDown')
+                Action::make('moveDown')
                     ->label('')
                     ->icon('heroicon-o-chevron-down')
                     ->color('gray')
                     ->tooltip('Move Down')
                     ->action(function (FacultySubpageCard $record): void {
                         $service = app(FacultySubpageCardServiceInterface::class);
-                        $service->moveDown((int) $record->getKey());
+                        $service->moveDown((int) $record->getKey(), (int) auth()->id());
                     }),
-                Tables\Actions\EditAction::make()
+                Action::make('edit')
+                    ->icon('heroicon-o-pencil-square')
                     ->modalHeading('Edit Faculty Subpage Card')
-                    ->modalWidth('lg'),
-                Tables\Actions\DeleteAction::make()
+                    ->modalWidth('lg')
+                    ->fillForm(fn (FacultySubpageCard $record): array => [
+                        'title_override_ar' => $record->title_override_ar,
+                        'title_override_en' => $record->title_override_en,
+                        'sort_order' => $record->sort_order,
+                        'is_visible' => $record->is_visible,
+                    ])
+                    ->form(static::cardFields())
+                    ->action(function (FacultySubpageCard $record, array $data): void {
+                        app(FacultySubpageCardServiceInterface::class)->updateCard(
+                            (int) $record->getKey(),
+                            $data,
+                            (int) auth()->id(),
+                        );
+                    }),
+                Action::make('delete')
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->requiresConfirmation()
                     ->modalHeading('Delete Faculty Subpage Card')
-                    ->label('Delete'),
+                    ->label('Delete')
+                    ->action(fn (FacultySubpageCard $record): bool => app(FacultySubpageCardServiceInterface::class)
+                        ->deleteCard((int) $record->getKey(), (int) auth()->id())),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -194,10 +187,11 @@ class FacultySubpageCardResource extends Resource
                         ->icon('heroicon-o-paper-airplane')
                         ->color('success')
                         ->requiresConfirmation()
+                        ->visible(fn (): bool => Gate::allows('publish-content'))
                         ->action(function (Collection $records): void {
                             $service = app(FacultySubpageCardServiceInterface::class);
                             foreach ($records as $record) {
-                                $service->publish((int) $record->getKey());
+                                $service->publish((int) $record->getKey(), (int) auth()->id());
                             }
 
                             Notification::make()
@@ -210,10 +204,11 @@ class FacultySubpageCardResource extends Resource
                         ->icon('heroicon-o-x-circle')
                         ->color('danger')
                         ->requiresConfirmation()
+                        ->visible(fn (): bool => Gate::allows('publish-content'))
                         ->action(function (Collection $records): void {
                             $service = app(FacultySubpageCardServiceInterface::class);
                             foreach ($records as $record) {
-                                $service->unpublish((int) $record->getKey());
+                                $service->unpublish((int) $record->getKey(), (int) auth()->id());
                             }
 
                             Notification::make()
@@ -270,12 +265,7 @@ class FacultySubpageCardResource extends Resource
                             return;
                         }
 
-                        $existing = FacultySubpageCard::query()
-                            ->where('faculty_slug', $facultySlug)
-                            ->where('subpage_slug', $data['subpage_slug'])
-                            ->exists();
-
-                        if ($existing) {
+                        if ($service->cardExists($facultySlug, (string) $data['subpage_slug'])) {
                             Notification::make()
                                 ->title('This subpage card already exists for this faculty')
                                 ->danger()
@@ -287,6 +277,7 @@ class FacultySubpageCardResource extends Resource
                         $service->createCard(
                             facultySlug: $facultySlug,
                             subpageSlug: $data['subpage_slug'],
+                            userId: (int) auth()->id(),
                             titleOverrideAr: $data['title_override_ar'] ?? null,
                             titleOverrideEn: $data['title_override_en'] ?? null,
                         );

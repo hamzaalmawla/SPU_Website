@@ -76,8 +76,9 @@ final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
         $rows = $approvedIds === []
             ? collect()
             : $this->oldDatabase->table(self::SOURCE_TABLE)->whereIn('id', $approvedIds)->get()->keyBy('id');
-        $childSourceIds = $this->childSourceIds($approvedIds);
-        [$sourceIds, $sourceTitleCounts] = $this->sourceIdentityEvidence();
+        $childCounts = $this->childCounts();
+        $childSourceIds = array_fill_keys(array_keys($childCounts), true);
+        [$sourceIds, $sourceTitleGroups] = $this->sourceIdentityEvidence($childCounts);
         $categories = [];
         $importableRows = 0;
         $importedRows = 0;
@@ -149,16 +150,16 @@ final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
 
                 continue;
             }
-            $duplicateSourceTitle = false;
-            foreach ($translations as $locale => $translation) {
-                $titleKey = $serviceType.'|'.$locale.'|'.$this->normalizedTitle($translation['title']);
-                if (($sourceTitleCounts[$titleKey] ?? 0) > 1) {
-                    $duplicateSourceTitle = true;
-                    break;
-                }
-            }
-            if ($duplicateSourceTitle) {
-                $this->countSkip($skipReasonCounts, 'duplicate_source_title');
+            $duplicateStatus = $this->duplicateTitleStatus(
+                $serviceType,
+                $translations,
+                $sourceTitleGroups,
+                $this->sourceDuplicateFingerprint($row, (int) ($childCounts[$sourceId] ?? 0)),
+            );
+            $duplicateDisposition = (string) ($packetRow['approval_decision'] ?? 'import');
+
+            if ($duplicateStatus === 'uncertain' && $duplicateDisposition !== 'canonical') {
+                $this->countSkip($skipReasonCounts, 'duplicate_disposition_required');
                 $skippedRows++;
 
                 continue;
@@ -185,6 +186,8 @@ final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
                 trim($input),
                 $disk,
                 $inputChecksum,
+                $duplicateStatus,
+                $duplicateDisposition,
             );
             $createdTranslations += $translationCount;
             $createdAttachments += $attachmentCount;
@@ -209,7 +212,7 @@ final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
     }
 
     /**
-     * @return array{0: int, 1: array<int, array{service_type: int}>, 2: int, 3: array<string, int>}
+     * @return array{0: int, 1: array<int, array{service_type: int, approval_decision: string}>, 2: int, 3: array<string, int>}
      */
     private function approvedPacketRows(string $input, string $disk): array
     {
@@ -285,8 +288,18 @@ final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
 
                 continue;
             }
-            if ($decision !== 'import') {
+            if (! in_array($decision, ['import', 'canonical', 'redirect'], true)) {
                 $this->countSkip($reasons, $decision === '' ? 'blank_approval_decision' : 'approval_decision_not_import');
+                $skipped++;
+
+                continue;
+            }
+            if ($decision === 'redirect') {
+                if ($target !== 'redirect') {
+                    $this->countSkip($reasons, 'redirect_disposition_requires_redirect_target');
+                } else {
+                    $this->countSkip($reasons, 'redirect_disposition_requires_continuity_packet');
+                }
                 $skipped++;
 
                 continue;
@@ -323,7 +336,10 @@ final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
             }
 
             $sourceId = (int) $packetRow['source_id'];
-            $candidates[$sourceId][] = ['service_type' => (int) $packetRow['service_type']];
+            $candidates[$sourceId][] = [
+                'service_type' => (int) $packetRow['service_type'],
+                'approval_decision' => $decision,
+            ];
         }
 
         $approved = [];
@@ -386,14 +402,25 @@ final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
      * @param  array<string, array{title: string, excerpt: ?string, body: ?string}>  $translations
      * @return array{0: int, 1: int}
      */
-    private function writeArticle(object $row, int $sourceId, int $serviceType, NewsCategory $category, array $translations, string $batch, string $input, string $disk, string $inputChecksum): array
-    {
-        return DB::transaction(function () use ($row, $sourceId, $serviceType, $category, $translations, $batch, $input, $disk, $inputChecksum): array {
+    private function writeArticle(
+        object $row,
+        int $sourceId,
+        int $serviceType,
+        NewsCategory $category,
+        array $translations,
+        string $batch,
+        string $input,
+        string $disk,
+        string $inputChecksum,
+        string $duplicateStatus,
+        string $duplicateDisposition,
+    ): array {
+        return DB::transaction(function () use ($row, $sourceId, $serviceType, $category, $translations, $batch, $input, $disk, $inputChecksum, $duplicateStatus, $duplicateDisposition): array {
             $title = $translations['en']['title'] ?? $translations['ar']['title'];
             $article = NewsArticle::query()->create([
                 'news_category_id' => (int) $category->getKey(),
                 'cover_media_id' => null,
-                'slug' => $this->slugService->generate($title, NewsArticle::class, 'en', null, 80),
+                'slug' => $this->legacySlug($title, $sourceId),
                 'status' => 'draft',
                 'published_at' => null,
                 'scheduled_at' => null,
@@ -453,6 +480,9 @@ final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
                     'legacy_photo' => $this->stringValue($row, 'photo'),
                     'attachments_deferred' => true,
                     'locale_fallback_policy' => isset($translations['en']) ? null : 'display_arabic_source_in_english',
+                    'duplicate_title_status' => $duplicateStatus,
+                    'duplicate_disposition' => $duplicateDisposition,
+                    'slug_source_id' => $sourceId,
                 ],
             ]);
 
@@ -505,21 +535,6 @@ final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
         return $created;
     }
 
-    /** @param list<int> $sourceIds @return array<int, true> */
-    private function childSourceIds(array $sourceIds): array
-    {
-        if ($sourceIds === [] || ! $this->oldDatabase->schema()->hasTable('jx_items')) {
-            return [];
-        }
-
-        return $this->oldDatabase->table('jx_items')
-            ->whereIn('category_id', $sourceIds)
-            ->distinct()
-            ->pluck('category_id')
-            ->mapWithKeys(static fn (mixed $sourceId): array => [(int) $sourceId => true])
-            ->all();
-    }
-
     private function hasContentOrChildren(object $row, bool $hasChildren): bool
     {
         if ($hasChildren) {
@@ -535,13 +550,16 @@ final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
         return false;
     }
 
-    /** @return array{array<int, true>, array<string, int>} */
-    private function sourceIdentityEvidence(): array
+    /** @param array<int, int> $childCounts @return array{array<int, true>, array<string, array{rows: int, fingerprints: array<string, int>}>} */
+    private function sourceIdentityEvidence(array $childCounts = []): array
     {
         $ids = [];
-        $titleCounts = [];
+        $titleGroups = [];
+        $lengthFunction = $this->oldDatabase->connection()->getDriverName() === 'sqlite' ? 'LENGTH' : 'CHAR_LENGTH';
         $rows = $this->oldDatabase->table(self::SOURCE_TABLE)
             ->select(['id', 'service_type', 'is_visible', 'is_link', 'ar_name', 'en_name'])
+            ->selectRaw($lengthFunction.'(ar_data) as ar_content_length')
+            ->selectRaw($lengthFunction.'(en_data) as en_content_length')
             ->lazyById(500, 'id');
 
         foreach ($rows as $row) {
@@ -560,11 +578,73 @@ final class LegacyNewsImportService implements LegacyNewsImportServiceInterface
                 }
 
                 $key = $service.'|'.$locale.'|'.$this->normalizedTitle($title);
-                $titleCounts[$key] = ($titleCounts[$key] ?? 0) + 1;
+                $group = $titleGroups[$key] ?? ['rows' => 0, 'fingerprints' => []];
+                $group['rows']++;
+                $fingerprint = $this->sourceDuplicateFingerprint($row, (int) ($childCounts[$id] ?? 0));
+                $group['fingerprints'][$fingerprint] = ($group['fingerprints'][$fingerprint] ?? 0) + 1;
+                $titleGroups[$key] = $group;
             }
         }
 
-        return [$ids, $titleCounts];
+        return [$ids, $titleGroups];
+    }
+
+    /** @param array<string, array{title: string, excerpt: ?string, body: ?string}> $translations @param array<string, array{rows: int, fingerprints: array<string, int>}> $titleGroups */
+    private function duplicateTitleStatus(int $serviceType, array $translations, array $titleGroups, string $sourceFingerprint): string
+    {
+        $status = 'unique';
+
+        foreach ($translations as $locale => $translation) {
+            $key = $serviceType.'|'.$locale.'|'.$this->normalizedTitle($translation['title']);
+            $group = $titleGroups[$key] ?? null;
+
+            if (! is_array($group) || $group['rows'] < 2) {
+                continue;
+            }
+
+            if (($group['fingerprints'][$sourceFingerprint] ?? 0) > 1) {
+                return 'uncertain';
+            }
+
+            $status = 'materially_distinct';
+        }
+
+        return $status;
+    }
+
+    /** @return array<int, int> */
+    private function childCounts(): array
+    {
+        if (! $this->oldDatabase->schema()->hasTable('jx_items')) {
+            return [];
+        }
+
+        return $this->oldDatabase->table('jx_items')
+            ->select('category_id')
+            ->selectRaw('COUNT(*) as child_total_count')
+            ->groupBy('category_id')
+            ->get()
+            ->mapWithKeys(static fn (object $row): array => [(int) $row->category_id => (int) $row->child_total_count])
+            ->all();
+    }
+
+    private function sourceDuplicateFingerprint(object $row, int $childCount): string
+    {
+        return implode('|', [
+            (string) ($row->ar_content_length ?? strlen((string) $this->value($row, 'ar_data', ''))),
+            (string) ($row->en_content_length ?? strlen((string) $this->value($row, 'en_data', ''))),
+            (string) $childCount,
+        ]);
+    }
+
+    private function legacySlug(string $title, int $sourceId): string
+    {
+        $suffix = '-'.$sourceId;
+        $baseLength = max(20, 80 - strlen($suffix));
+        $base = $this->slugService->generate($title, NewsArticle::class, 'en', null, $baseLength);
+        $base = rtrim(substr($base, 0, $baseLength), '-');
+
+        return $this->slugService->generate($base.$suffix, NewsArticle::class, 'en', null, 80);
     }
 
     private function normalizedTitle(string $title): string

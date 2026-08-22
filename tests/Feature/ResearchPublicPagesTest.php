@@ -8,6 +8,7 @@ use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Filament\Pages\ManageResearch;
 use App\Models\Cms\CmsDraft;
+use App\Models\Legacy\LegacyExactRedirect;
 use App\Models\Media\MediaAsset;
 use App\Models\Research\LegacyResearchFileReference;
 use App\Models\Research\ResearchPublication;
@@ -28,6 +29,7 @@ final class ResearchPublicPagesTest extends TestCase
         parent::setUp();
 
         $this->seed(DatabaseSeeder::class);
+        $this->publishResearchCatalogs();
     }
 
     public function test_english_research_landing_returns_ok_with_frontend_content(): void
@@ -36,7 +38,7 @@ final class ResearchPublicPagesTest extends TestCase
             ->assertOk()
             ->assertSee('Research at SPU')
             ->assertSee('Expert Finder')
-            ->assertSee('Conferences &amp; Seminars', false)
+            ->assertDontSee('Conferences &amp; Seminars', false)
             ->assertSee('FEATURED PUBLICATION')
             ->assertSee('Research Gateway')
             ->assertSee('/en/research/publications/ai-dental-diagnostics', false);
@@ -280,8 +282,7 @@ final class ResearchPublicPagesTest extends TestCase
             ->assertSee('Dr. Ayman Ali')
             ->assertSee('Dean of Medicine')
             ->assertSee('Leads academic programs and clinical training in the Faculty of Medicine.')
-            ->assertDontSee('View all on Google Scholar')
-            ->assertDontSee('Courses Taught');
+            ->assertDontSee('View all on Google Scholar');
     }
 
     public function test_publication_detail_renders_imported_data_and_navigation(): void
@@ -408,6 +409,15 @@ final class ResearchPublicPagesTest extends TestCase
 
     public function test_legacy_query_detail_redirects_to_canonical_publication_route(): void
     {
+        LegacyExactRedirect::query()->create([
+            'legacy_path' => '/en/research/detail',
+            'query_signature' => 'id=pub-002',
+            'destination_url' => '/en/research/publications/ai-dental-diagnostics',
+            'status_code' => 301,
+            'locale' => 'en',
+            'is_active' => true,
+        ]);
+
         $this->get('/en/research/detail?id=pub-002')
             ->assertRedirect('/en/research/publications/ai-dental-diagnostics');
     }
@@ -441,7 +451,7 @@ final class ResearchPublicPagesTest extends TestCase
             ->assertDontSee('name="citation_doi"', false);
     }
 
-    public function test_research_experts_use_published_cms_payload_for_finder_and_profile(): void
+    public function test_research_experts_use_published_cms_payload_for_finder_but_not_cms_only_profiles(): void
     {
         $user = User::factory()->create(['role_slug' => 'super_admin']);
         $payload = [
@@ -462,14 +472,7 @@ final class ResearchPublicPagesTest extends TestCase
         $mainContent = explode('</main>', explode('<main', $response->getContent(), 2)[1] ?? '', 2)[0] ?? '';
         $this->assertStringNotContainsString('Dr. Ayman Ali', $mainContent);
 
-        $this->get('/en/research/researchers/cms-expert')
-            ->assertOk()
-            ->assertSee('Dr. CMS Expert')
-            ->assertSee('CMS Research Professor')
-            ->assertSee('CMS professional biography.')
-            ->assertSee('CMS Expert Office')
-            ->assertSee('CMS Research Methods')
-            ->assertSee('CMS Profile Publication');
+        $this->get('/en/research/researchers/cms-expert')->assertNotFound();
     }
 
     public function test_research_centers_support_draft_preview_publish_detail_and_unpublish(): void
@@ -516,7 +519,7 @@ final class ResearchPublicPagesTest extends TestCase
         $this->assertTrue($workflow->unpublish('research.centers', (int) $user->getKey()));
         $this->get('/en/research/centers')
             ->assertOk()
-            ->assertSee('Research Centers &amp; Labs', false)
+            ->assertDontSee('Research Centers &amp; Labs', false)
             ->assertDontSee('CMS Center for Applied AI');
     }
 
@@ -626,8 +629,10 @@ final class ResearchPublicPagesTest extends TestCase
 
         $this->assertTrue($workflow->unpublish('research.projects', (int) $user->getKey()));
         $this->assertTrue($workflow->unpublish('research.themes', (int) $user->getKey()));
-        $this->get('/en/research/projects')->assertOk()->assertSee('Research Projects')->assertDontSee('CMS Seismic Project');
-        $this->get('/en/research/themes')->assertOk()->assertSee('Research Themes')->assertDontSee('CMS AI Theme');
+        $this->assertSame([], $research->projects('en')->data['items'] ?? []);
+        $this->assertSame([], $research->themes('en')->data['items'] ?? []);
+        $this->get('/en/research/projects/earthquake-resistant-concrete-syria')->assertNotFound();
+        $this->get('/en/research/themes/ai-ml')->assertNotFound();
     }
 
     public function test_research_admin_loads_and_serializes_project_and_theme_catalogs(): void
@@ -666,6 +671,9 @@ final class ResearchPublicPagesTest extends TestCase
         $user = User::factory()->create(['role_slug' => 'editor']);
         $workflow = app(CmsWorkflowServiceInterface::class);
         $research = app(ResearchPageServiceInterface::class);
+
+        $workflow->unpublish('research.projects', (int) $user->getKey());
+        $workflow->unpublish('research.themes', (int) $user->getKey());
 
         foreach (['research.projects', 'research.themes'] as $targetKey) {
             $workflow->saveDraft($targetKey, $research->getEditablePayload($targetKey), (int) $user->getKey());
@@ -1170,5 +1178,17 @@ final class ResearchPublicPagesTest extends TestCase
     private function mainContent(string $html): string
     {
         return explode('</main>', explode('<main', $html, 2)[1] ?? '', 2)[0] ?? '';
+    }
+
+    private function publishResearchCatalogs(): void
+    {
+        $research = app(ResearchPageServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+
+        foreach (['research.index', 'research.publications', 'research.centers', 'research.projects', 'research.themes', 'research.experts'] as $targetKey) {
+            $workflow->saveDraft($targetKey, $research->getEditablePayload($targetKey), (int) $author->getKey());
+            $this->assertTrue($workflow->publish($targetKey, (int) $author->getKey()));
+        }
     }
 }

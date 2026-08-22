@@ -3,7 +3,7 @@
     <div>
     <input type="text" name="website" value="" data-form-honeypot tabindex="-1" autocomplete="off" class="absolute -left-[9999px] h-px w-px overflow-hidden" aria-label="Website">
     <div x-show="$store.dynamicForm.isPreview" class="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800" x-text="$store.dynamicForm.isPreview ? previewText() : ''"></div>
-    <div x-show="$store.dynamicForm.submitted" class="rounded-2xl border border-green-200 bg-green-50 p-8 text-center">
+    <div x-show="$store.dynamicForm.submitted" class="rounded-2xl border border-green-200 bg-green-50 p-8 text-center" role="status" aria-live="polite" aria-atomic="true">
         <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
             <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
         </div>
@@ -13,7 +13,7 @@
     </div>
 
     <template x-if="$store.dynamicForm.submitError">
-        <div class="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700" x-text="$store.dynamicForm.submitError"></div>
+        <div class="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700" role="alert" aria-live="assertive" x-text="$store.dynamicForm.submitError"></div>
     </template>
 
     <fieldset x-bind:disabled="$store.dynamicForm.isPreview" x-show="!$store.dynamicForm.submitted && $store.dynamicForm.isMultiStep">
@@ -45,7 +45,7 @@
             <p class="mt-1 text-xs text-gray-500"><span x-text="currentStepLabel"></span><span x-text="$store.dynamicForm.currentStep + 1"></span><span> / </span><span x-text="$store.dynamicForm.totalSteps"></span></p>
         </div>
 
-        <form x-on:submit.prevent="$store.dynamicForm.handleSubmit()" class="space-y-5">
+        <form x-on:submit.prevent="$store.dynamicForm.handleSubmit()" class="space-y-5" novalidate>
             <div class="grid gap-5 sm:grid-cols-2">
                 <template x-for="field in $store.dynamicForm.currentStepFields" x-bind:key="field.name">
                     @include('public.forms.partials.dynamic-field')
@@ -69,7 +69,7 @@
     </fieldset>
 
     <fieldset x-bind:disabled="$store.dynamicForm.isPreview" x-show="!$store.dynamicForm.submitted && !$store.dynamicForm.isMultiStep">
-        <form x-on:submit.prevent="$store.dynamicForm.handleSubmit()" class="space-y-5">
+        <form x-on:submit.prevent="$store.dynamicForm.handleSubmit()" class="space-y-5" novalidate>
             <template x-for="field in $store.dynamicForm.schema.fields" x-bind:key="field.name">
                 @include('public.forms.partials.dynamic-field')
             </template>

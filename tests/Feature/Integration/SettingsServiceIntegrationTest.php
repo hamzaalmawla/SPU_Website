@@ -29,6 +29,8 @@ class SettingsServiceIntegrationTest extends TestCase
 
     public function test_write_then_read_returns_written_text_value(): void
     {
+        config()->set('security.trusted_portal_hosts', ['portal-updated.spu.edu.sy']);
+
         // Write a new student portal URL value.
         $this->assertTrue(
             $this->settingsService()->updateGroup(

@@ -1,5 +1,10 @@
 # Launch Readiness Checklist
 
+Current execution status is maintained in
+`Docs/CURRENT_REMEDIATION_EXECUTION_CHECKLIST.md`. This checklist defines gates;
+unchecked items remain unverified. No deployment or sign-off is implied by local
+implementation or by historical evidence below.
+
 ## 1. Routing
 
 - [ ] `GET /` redirects to `/ar`
@@ -59,8 +64,15 @@
 - [ ] User management restricted to `super_admin` role
 - [ ] Audit log viewer is read-only and filterable
 - [ ] Role-based visibility: `super_admin` sees all, `editor` sees allowed areas, `faculty_editor` sees scoped areas
+- [ ] Every privileged production role has confirmed TOTP; enrollment, challenge, recovery, and logout escape paths are tested
 
 ## 7. Cache
+
+Current decision: additional application/full-page caching optimization is
+deferred. nginx private/full-page caching of dynamic Laravel responses must remain
+disabled. Do not check cache items based on configuration inspection alone; verify
+that sessions, CSRF, previews, drafts, forms, and personalized/admin responses are
+never replayed by an edge cache.
 
 - [ ] Public page cache keys include locale
 - [ ] Cache bypassed for authenticated users, admin routes, preview requests, non-GET
@@ -70,6 +82,7 @@
 - [ ] Menu update invalidates navigation cache
 - [ ] `X-Cache` header present on public responses (HIT/MISS/BYPASS)
 - [ ] `cache:warm` command warms homepage, navigation, settings, and sitemap
+- [ ] nginx `fastcgi_cache`/`proxy_cache` is disabled or bypassed for all dynamic Laravel responses
 
 ## 8. Audit
 
@@ -96,6 +109,10 @@
 - [ ] HR account is provisioned explicitly with `HrUserSeeder`, and its credentials are stored outside git
 - [ ] A supervised queue worker processes form receipts, status updates, and staff notifications
 - [ ] `failed_jobs` monitoring and queue retry procedures are tested
+- [ ] Scheduler/queue cron uses `flock`; scheduler-output freshness and failed-job alerts are tested
+- [ ] Daily rotating logs and retention match the production environment baseline
+- [ ] Exact trusted portal hosts are reviewed and unapproved redirect destinations fail closed
+- [ ] Release artifact SHA-256 manifest, lockfiles, Vite manifest, dependency audits, and deployed release identity are verified
 
 ## 11. Rollback Readiness
 
@@ -170,7 +187,7 @@ Manual QA is required before public launch even when automated tests pass.
 
 ## 13. Latest Automated Release Evidence
 
-Evidence date: 2026-06-16
+Evidence date: 2026-06-16 (historical, superseded for current release status)
 
 | Gate | Command | Result | Status Impact |
 | --- | --- | --- | --- |
@@ -188,3 +205,12 @@ Evidence boundaries:
 | Rollback review | Not completed by this evidence. Keep rollback checks unchecked until reviewed/tested. |
 | Product sign-off | Not completed by this evidence. Keep product sign-off unchecked until product/design approval. |
 | Security and performance review | Automated tests support confidence but do not replace focused review. Keep review gates unchecked until reviewed. |
+
+Current remediation boundary (2026-08-21): `php artisan test` passed 4,240 tests
+with 24,442 assertions, `npm test` passed 24 tests, `npm run build` passed, and
+local Composer/npm dependency audits were clean. Accessibility changes still await
+manual browser QA; sitemap and canonical host/proxy/front-controller fixes await
+deployment and host verification; cPanel shell is disabled; OPcache, gzip, and
+PHP-FPM changes remain host/root tasks. Additional caching optimization is deferred
+and nginx private/full-page caching must remain disabled. These local results do not
+constitute staging validation, deployment evidence, or launch approval.

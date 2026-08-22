@@ -40,13 +40,15 @@ class NavigationShellTest extends TestCase
 
     public function test_utility_navigation_payload_resolves_for_ar_and_en(): void
     {
+        config()->set('security.trusted_portal_hosts', ['my.spu.edu.sy']);
+
         $ar = $this->navigationService()->getFullNavigationPayload('ar', 'ar/about');
         $en = $this->navigationService()->getFullNavigationPayload('en', 'en/about');
 
         $this->assertSame('مساعدة وصول الطلاب', $ar->utility->items[0]->label);
         $this->assertSame('Student Access Help', $en->utility->items[0]->label);
         $this->assertSame('/en/e-services/it-support', $en->utility->items[0]->resolvedUrl);
-        $this->assertSame('/e-services/it-support', $en->studentPortalUrl);
+        $this->assertSame('https://my.spu.edu.sy/ar/login', $en->studentPortalUrl);
         $this->assertSame('/e-services/staff-email', $en->staffAccessUrl);
         $this->assertSame('Apply now', $en->applyCta?->label);
     }

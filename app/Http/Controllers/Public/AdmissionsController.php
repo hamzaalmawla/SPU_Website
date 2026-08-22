@@ -28,6 +28,7 @@ final class AdmissionsController extends Controller
     public function landing(Request $request, string $locale): View
     {
         $page = $this->admissionsPageService->getLanding($locale);
+        abort_if($page === null, 404);
 
         return view('public.admissions.landing', [
             'locale' => $locale,

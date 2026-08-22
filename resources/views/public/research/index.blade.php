@@ -5,6 +5,9 @@
 @section('content')
     @php($data = $page->data)
 
+    @if (! $page->isAvailable)
+        @include('public.research.partials.empty-state', ['locale' => $locale, 'direction' => $direction])
+    @else
     <section class="bg-white font-hacen" dir="{{ $direction }}">
         <div class="relative mx-auto min-h-[32rem] h-[min(85svh,42rem)] overflow-hidden md:h-[85vh]">
             <img src="{{ $data['hero']['backgroundImage'] ?? '/images/uni-main-place.JPG' }}" alt="SPU Campus" class="absolute inset-0 h-full w-full object-cover" aria-hidden="true">
@@ -93,4 +96,5 @@
             </div>
         </div>
     </section>
+    @endif
 @endsection

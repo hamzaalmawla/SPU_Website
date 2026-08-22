@@ -35,6 +35,29 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
         private readonly HtmlSanitizer $htmlSanitizer,
     ) {}
 
+    /** @return array<int, string> */
+    public function editorialTypeOptions(): array
+    {
+        $categories = NewsCategory::query()
+            ->enabled()
+            ->whereIn('slug', ['news', 'announcements'])
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get()
+            ->unique('type')
+            ->keyBy('type');
+        $options = [];
+
+        foreach (['news', 'announcement'] as $type) {
+            $category = $categories->get($type);
+            if ($category instanceof NewsCategory) {
+                $options[(int) $category->getKey()] = $type;
+            }
+        }
+
+        return $options;
+    }
+
     public function prepareDraft(NewsArticleCmsDataDTO $data, int $userId): NewsArticleCmsDataDTO
     {
         $article = $data->articleId !== null ? NewsArticle::query()->find($data->articleId) : null;

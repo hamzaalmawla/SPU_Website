@@ -25,6 +25,8 @@ class EServicesPageTest extends TestCase
 
     public function test_e_services_page_renders_frontend_sections_and_dropdown_links(): void
     {
+        $this->publishLanding();
+
         $this->get('/en/e-services')
             ->assertOk()
             ->assertHeader('Content-Security-Policy')
@@ -57,7 +59,7 @@ class EServicesPageTest extends TestCase
     {
         $service = app(EServicesPageServiceInterface::class);
         $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
-        $current = $service->getContent('en');
+        $current = $this->contentDto('en');
 
         $this->assertTrue($service->updatePage(
             'en',
@@ -86,13 +88,14 @@ class EServicesPageTest extends TestCase
 
     public function test_e_services_workflow_draft_does_not_leak_until_published(): void
     {
-        $service = app(EServicesPageServiceInterface::class);
+        $this->publishLanding();
+
         $workflow = app(CmsWorkflowServiceInterface::class);
         $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
         $payload = [
             'translations' => [
-                'ar' => $this->eServicesContentArray($service->getContent('ar'), 'الخدمات المنشورة'),
-                'en' => $this->eServicesContentArray($service->getContent('en'), 'Published E-Services Workflow'),
+                'ar' => $this->eServicesContentArray('ar', 'الخدمات المنشورة'),
+                'en' => $this->eServicesContentArray('en', 'Published E-Services Workflow'),
             ],
         ];
 
@@ -108,21 +111,25 @@ class EServicesPageTest extends TestCase
             ->assertOk()
             ->assertSee('Published E-Services Workflow');
 
+        $this->assertTrue($workflow->unpublish('e_services', (int) $author->id));
+        $this->get('/en/e-services')->assertNotFound();
+
         $this->assertDatabaseHas('cms_target_contents', [
             'target_key' => 'e_services',
-            'status' => 'published',
+            'status' => 'draft',
         ]);
     }
 
     public function test_e_services_workflow_preview_renders_draft_snapshot(): void
     {
-        $service = app(EServicesPageServiceInterface::class);
+        $this->publishLanding();
+
         $workflow = app(CmsWorkflowServiceInterface::class);
         $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
         $payload = [
             'translations' => [
-                'ar' => $this->eServicesContentArray($service->getContent('ar'), 'معاينة الخدمات'),
-                'en' => $this->eServicesContentArray($service->getContent('en'), 'E-Services Preview Workflow'),
+                'ar' => $this->eServicesContentArray('ar', 'معاينة الخدمات'),
+                'en' => $this->eServicesContentArray('en', 'E-Services Preview Workflow'),
             ],
         ];
 
@@ -140,17 +147,79 @@ class EServicesPageTest extends TestCase
     }
 
     /** @return array<string, mixed> */
-    private function eServicesContentArray(EServicesPageContentDTO $content, string $title): array
+    private function eServicesContentArray(string $locale, ?string $title = null): array
     {
+        $isArabic = $locale === 'ar';
+
         return [
-            'hero' => array_merge($content->hero, ['title' => $title]),
-            'digitalServices' => $content->digitalServices,
-            'supportCards' => $content->supportCards,
+            'hero' => [
+                'eyebrow' => $isArabic ? 'بوابة الحرم الجامعي الرقمية' : 'DIGITAL CAMPUS GATEWAY',
+                'title' => $title ?? ($isArabic ? 'الخدمات الإلكترونية الجامعية' : 'University E-Services'),
+                'summary' => $isArabic ? 'وصول رسمي وآمن إلى خدمات الجامعة الرقمية.' : 'Official, safe access to university digital services.',
+                'imageHero' => '/images/slider-3.webp',
+                'imageLeft' => '/images/slider-3.webp',
+                'imageRight' => '/images/slider-3.webp',
+            ],
+            'digitalServices' => [
+                'title' => $isArabic ? 'الخدمات الرقمية' : 'Digital Services',
+                'services' => [
+                    $this->serviceItem('portal-access', $isArabic ? 'دخول الطالب' : 'Student Portal Access', "/{$locale}/e-services#portal-access"),
+                    $this->serviceItem('library', $isArabic ? 'المكتبة' : 'Library', "/{$locale}/e-services/library"),
+                    $this->serviceItem('staff-email', $isArabic ? 'بريد الموظفين' : 'Staff Email', "/{$locale}/e-services/staff-email"),
+                    $this->serviceItem('it-support', $isArabic ? 'الدعم التقني' : 'IT Support', "/{$locale}/e-services/it-support"),
+                    $this->serviceItem('appeals-forms', $isArabic ? 'الاعتراضات والنماذج' : 'Appeals & Forms', "/{$locale}/e-services#appeals-forms"),
+                ],
+            ],
+            'supportCards' => [
+                ['id' => 'access-help', 'eyebrow' => '01', 'title' => $isArabic ? 'مساعدة دخول الطالب' : 'Student Access Help', 'summary' => $isArabic ? 'إرشادات الدخول الآمن.' : 'Safe access guidance.'],
+                ['id' => 'guidance', 'eyebrow' => '02', 'title' => $isArabic ? 'إرشادات الخدمة' : 'Service Guidance', 'summary' => $isArabic ? 'استخدم الروابط الرسمية.' : 'Use official links.'],
+            ],
             'seo' => [
-                'title' => $content->seoTitle,
-                'description' => $content->seoDescription,
-                'image' => $content->seoImage,
+                'title' => $isArabic ? 'الخدمات الإلكترونية | SPU' : 'E-Services | SPU',
+                'description' => $isArabic ? 'خدمات الجامعة الإلكترونية الرسمية.' : 'Official university electronic services.',
+                'image' => '/images/slider-3.webp',
             ],
         ];
+    }
+
+    /** @return array<string, string> */
+    private function serviceItem(string $id, string $title, string $url): array
+    {
+        return [
+            'id' => $id,
+            'title' => $title,
+            'summary' => 'Official service guidance.',
+            'icon' => '/images/icon-file-outline.svg',
+            'url' => $url,
+            'button' => 'Open service',
+        ];
+    }
+
+    private function contentDto(string $locale): EServicesPageContentDTO
+    {
+        $content = $this->eServicesContentArray($locale);
+
+        return new EServicesPageContentDTO(
+            hero: $content['hero'],
+            digitalServices: $content['digitalServices'],
+            supportCards: $content['supportCards'],
+            seoTitle: $content['seo']['title'],
+            seoDescription: $content['seo']['description'],
+            seoImage: $content['seo']['image'],
+        );
+    }
+
+    private function publishLanding(): void
+    {
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $workflow->saveDraft('e_services', [
+            'translations' => [
+                'ar' => $this->eServicesContentArray('ar'),
+                'en' => $this->eServicesContentArray('en'),
+            ],
+        ], (int) $author->id);
+
+        $this->assertTrue($workflow->publish('e_services', (int) $author->id));
     }
 }
