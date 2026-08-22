@@ -14,7 +14,7 @@
         @if ($section->payload->researchItems !== [])
             <div id="research-priorities-track" x-ref="researchTrack" class="flex gap-8 pe-6 overflow-x-auto no-scrollbar scroll-smooth pb-10" style="will-change: scroll-position;" role="region" aria-roledescription="{{ __('public.carousel') }}" aria-label="{{ $section->payload->title }}" tabindex="0" @keydown="handleSliderKey($event)">
                 @foreach ($section->payload->researchItems as $item)
-                    <article class="reveal-item research-card relative flex h-[430px] w-[min(82vw,320px)] shrink-0 flex-col overflow-hidden rounded-[25px] bg-white shadow-[0_10px_30px_rgba(0,0,0,0.05)] group sm:w-[320px]" style="transform: translateZ(0);" role="group" aria-roledescription="{{ __('public.slide') }}" aria-label="{{ __('public.slide_position', ['current' => $loop->iteration, 'total' => count($section->payload->researchItems)]) }}">
+                    <article class="reveal-item research-card relative flex h-[430px] w-[min(82vw,320px)] shrink-0 flex-col overflow-hidden rounded-[25px] bg-white shadow-card group sm:w-[320px]" style="transform: translateZ(0);" role="group" aria-roledescription="{{ __('public.slide') }}" aria-label="{{ __('public.slide_position', ['current' => $loop->iteration, 'total' => count($section->payload->researchItems)]) }}">
                         @if ($item->url)
                             <a href="{{ $item->url }}" class="absolute inset-0 z-20 rounded-[25px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-spu-red" aria-label="{{ $locale === 'ar' ? 'عرض البحث: '.$item->title : 'View research: '.$item->title }}" data-research-card-link></a>
                         @endif

@@ -1,7 +1,7 @@
 <section id="home-paths" x-data="pathSlider()" class="py-8 mt-[60px] md:mt-[150px] relative font-hacen reveal" style="background-color: #EAF3FF40;">
     <div class="container relative">
         <div class="flex flex-col md:flex-row items-center gap-[52px] relative">
-            <div class="w-full relative md:w-[322px] h-[435px] text-center bg-[#1e2652] rounded-[24px] flex flex-col justify-center items-start text-white shrink-0 overflow-hidden group shadow-[0_30px_80px_rgba(17,26,63,0.18)] z-20">
+            <div class="w-full relative md:w-[322px] h-[435px] text-center bg-[#1e2652] rounded-[24px] flex flex-col justify-center items-start text-white shrink-0 overflow-hidden group shadow-panel z-20">
                 <div class="absolute inset-0 opacity-[0.15] z-0 animate-slow-pan" style="background-image: radial-gradient(circle, #ffffff 1px, transparent 1px); background-size: 30px 30px;"></div>
                 <div class="relative z-10 w-full px-6 flex flex-col h-full justify-center text-right">
                     @php($pathTitleParts = preg_split('/\s+/u', (string) $section->payload->title, 2))
@@ -24,11 +24,11 @@
 
                 <div id="home-paths-track" x-ref="pathsTrack" class="flex h-[390px] w-full snap-x snap-mandatory flex-nowrap gap-6 bg-transparent overflow-x-auto overflow-y-hidden no-scrollbar scroll-smooth overscroll-x-contain ps-2 pe-6 pt-2 pb-5 items-start z-10" role="region" aria-roledescription="{{ __('public.carousel') }}" aria-label="{{ $section->payload->title }}" tabindex="0" @keydown="handleSliderKey($event)">
                     @foreach ($section->payload->items as $item)
-                        <article class="reveal-item path-card snap-start w-[292px] h-[380px] shrink-0 relative rounded-[28px] border border-gray-100 bg-white shadow-[0_15px_35px_rgba(20,30,70,0.06)] transition-all duration-300 group overflow-hidden" role="group" aria-roledescription="{{ __('public.slide') }}" aria-label="{{ __('public.slide_position', ['current' => $loop->iteration, 'total' => count($section->payload->items)]) }}" :class="{ 'path-card--active': activePathCard === {{ $loop->index }} }" @click="handlePathCardTap($event, {{ $loop->index }})">
+                        <article class="reveal-item path-card snap-start w-[292px] h-[380px] shrink-0 relative rounded-[28px] border border-gray-100 bg-white shadow-card-elevated transition-all duration-300 group overflow-hidden" role="group" aria-roledescription="{{ __('public.slide') }}" aria-label="{{ __('public.slide_position', ['current' => $loop->iteration, 'total' => count($section->payload->items)]) }}" :class="{ 'path-card--active': activePathCard === {{ $loop->index }} }" @click="handlePathCardTap($event, {{ $loop->index }})">
                             <div class="path-card-front absolute inset-0 bg-white flex flex-col items-center justify-center p-8">
                                 <div class="absolute top-0 left-0 w-full h-[6px] bg-spu-red"></div>
                                 @if (!empty($item['icon']))
-                                    <div class="w-20 h-20 rounded-2xl bg-slate-50 text-spu-blue flex items-center justify-center mb-8 shadow-sm">
+                                    <div class="w-20 h-20 rounded-2xl bg-slate-50 text-spu-blue flex items-center justify-center mb-8 shadow-card-sm">
                                         <span class="block h-10 w-10 bg-current" aria-hidden="true" style="-webkit-mask: url('{{ $item['icon'] }}') center / contain no-repeat; mask: url('{{ $item['icon'] }}') center / contain no-repeat;"></span>
                                     </div>
                                 @endif

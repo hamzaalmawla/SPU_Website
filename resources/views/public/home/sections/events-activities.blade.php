@@ -29,7 +29,7 @@
         <h2 class="mb-8 text-[34px] font-bold tracking-tight text-[#1e2652] sm:mb-10 sm:text-[42px] lg:text-[52px]">{{ $sectionTitle }}</h2>
 
         <div class="grid grid-cols-1 gap-10 xl:grid-cols-[minmax(0,560px)_minmax(0,1fr)] xl:items-stretch">
-            <div class="overflow-hidden rounded-[20px] bg-white shadow-[0_18px_40px_rgba(0,0,0,0.22)] h-full flex flex-col relative" role="region" aria-roledescription="{{ __('public.carousel') }}" aria-label="{{ $sectionTitle }}" tabindex="0" @keydown="handleCarouselKey($event)">
+            <div class="overflow-hidden rounded-[20px] bg-white shadow-panel-elevated h-full flex flex-col relative" role="region" aria-roledescription="{{ __('public.carousel') }}" aria-label="{{ $sectionTitle }}" tabindex="0" @keydown="handleCarouselKey($event)">
                 <template x-if="selectedEvent">
                     <article :key="activeEventIndex" x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100" class="flex flex-1 flex-col">
                         <div class="relative h-[220px] overflow-hidden md:h-[250px]">
@@ -64,7 +64,7 @@
                 </template>
             </div>
 
-            <div class="rounded-[28px] bg-white px-6 py-7 shadow-[0_18px_40px_rgba(0,0,0,0.18)] sm:px-8 sm:py-8 lg:px-7 xl:min-h-[440px] xl:px-8 h-full">
+            <div class="rounded-[28px] bg-white px-6 py-7 shadow-panel-elevated sm:px-8 sm:py-8 lg:px-7 xl:min-h-[440px] xl:px-8 h-full">
                 <div class="mb-7 flex items-start justify-between gap-4">
                     <div class="flex items-end gap-5 text-[#1e2652]">
                         <span class="text-[21px] font-bold" x-text="monthLabel"></span>

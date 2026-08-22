@@ -54,7 +54,7 @@
                         <div class="absolute inset-0 bg-gradient-to-t from-spu-blue/95 via-spu-blue/45 to-transparent pointer-events-none"></div>
 
                         <div class="relative flex items-start">
-                            <template x-if="item.typeTag"><span class="honor-panel-pill text-white/95 px-3.5 py-1.5 md:px-4 rounded-full bg-spu-red/95 text-[9px] md:text-[10px] font-bold uppercase tracking-wider whitespace-nowrap shadow-lg" x-text="item.typeTag"></span></template>
+                            <template x-if="item.typeTag"><span class="honor-panel-pill text-white/95 px-3.5 py-1.5 md:px-4 rounded-full bg-spu-red/95 text-[9px] md:text-[10px] font-bold uppercase tracking-wider whitespace-nowrap shadow-card-elevated" x-text="item.typeTag"></span></template>
                         </div>
 
                         <div class="relative">

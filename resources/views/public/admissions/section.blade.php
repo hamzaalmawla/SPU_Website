@@ -25,7 +25,7 @@
                 <div class="container mx-auto px-6">
                     <div class="mx-auto flex max-w-[760px] flex-wrap items-center justify-center border-b border-slate-200 text-center text-xs font-black tracking-wide text-slate-700" role="tablist" aria-label="{{ $title }}">
                         @foreach (($section['tabs'] ?? []) as $tab)
-                            <button type="button" id="requirements-tab-{{ $tab['id'] ?? '' }}" role="tab" aria-controls="requirements-panel-{{ $tab['id'] ?? '' }}" class="px-7 pb-4 transition hover:text-spu-red {{ $loop->first ? 'border-b-2 border-spu-red text-spu-red' : 'border-b-2 border-transparent' }}" data-tab="{{ $tab['id'] ?? '' }}" x-bind:class="underlineButtonClass($el)" aria-selected="{{ $loop->first ? 'true' : 'false' }}" x-bind:aria-selected="isActive($el.dataset.tab)" tabindex="{{ $loop->first ? '0' : '-1' }}" x-bind:tabindex="tabIndex($el.dataset.tab)" x-on:click="setActiveTab($event)" x-on:keydown="moveTab($event)">{{ $tab['label'] ?? '' }}</button>
+                            <button type="button" id="requirements-tab-{{ $tab['id'] ?? '' }}" role="tab" aria-controls="requirements-panel-{{ $tab['id'] ?? '' }}" class="px-7 pb-4 transition hover:text-spu-red" data-tab="{{ $tab['id'] ?? '' }}" x-bind:class="underlineButtonClass($el)" aria-selected="{{ $loop->first ? 'true' : 'false' }}" x-bind:aria-selected="isActive($el.dataset.tab)" tabindex="{{ $loop->first ? '0' : '-1' }}" x-bind:tabindex="tabIndex($el.dataset.tab)" x-on:click="setActiveTab($event)" x-on:keydown="moveTab($event)">{{ $tab['label'] ?? '' }}</button>
                         @endforeach
                     </div>
 
@@ -244,7 +244,7 @@
                     @php
                         $tabId = $tab['id'] ?? '';
                     @endphp
-                    <a href="/{{ $locale }}/admissions/documents?tab={{ $documentTabQueries[$tabId] ?? 'admission-checklist' }}" id="documents-tab-{{ $tabId }}" role="tab" aria-controls="documents-panel-{{ $tabId }}" class="whitespace-nowrap px-5 pb-4 pt-5 transition hover:text-spu-red md:px-8 {{ $activeDocumentTab === $tabId ? 'border-b-2 border-spu-red text-spu-red' : 'border-b-2 border-transparent' }}" data-tab="{{ $tabId }}" x-bind:class="tabButtonClass($el)" aria-selected="{{ $activeDocumentTab === $tabId ? 'true' : 'false' }}" x-bind:aria-selected="isTab($el.dataset.tab)" tabindex="{{ $activeDocumentTab === $tabId ? '0' : '-1' }}" x-bind:tabindex="tabIndex($el.dataset.tab)" x-on:click.prevent="setTab($event)" x-on:keydown="moveTab($event)">{{ $tab['label'] ?? '' }}</a>
+                    <a href="/{{ $locale }}/admissions/documents?tab={{ $documentTabQueries[$tabId] ?? 'admission-checklist' }}" id="documents-tab-{{ $tabId }}" role="tab" aria-controls="documents-panel-{{ $tabId }}" class="whitespace-nowrap px-5 pb-4 pt-5 transition hover:text-spu-red md:px-8" data-tab="{{ $tabId }}" x-bind:class="tabButtonClass($el)" aria-selected="{{ $activeDocumentTab === $tabId ? 'true' : 'false' }}" x-bind:aria-selected="isTab($el.dataset.tab)" tabindex="{{ $activeDocumentTab === $tabId ? '0' : '-1' }}" x-bind:tabindex="tabIndex($el.dataset.tab)" x-on:click.prevent="setTab($event)" x-on:keydown="moveTab($event)">{{ $tab['label'] ?? '' }}</a>
                 @endforeach
             </div></div></section>
 
@@ -253,7 +253,7 @@
                     <section id="documents-panel-checklist" class="bg-white py-16 md:py-20" role="tabpanel" aria-labelledby="documents-tab-checklist" data-documents-panel="checklist" x-show="isTab('checklist')" x-bind:hidden="!isTab('checklist')" {{ $activeDocumentTab === 'checklist' ? '' : 'hidden' }}><div class="container mx-auto px-6">
                         <div class="mx-auto mb-10 flex max-w-[760px] flex-wrap items-center justify-center gap-2" role="tablist" aria-label="{{ $checklistTab['label'] ?? '' }}">
                             @foreach (($tab['subTabs'] ?? []) as $sub)
-                                <button type="button" id="documents-sub-tab-{{ $sub['id'] ?? '' }}" role="tab" aria-controls="documents-sub-panel-{{ $sub['id'] ?? '' }}" aria-selected="{{ $loop->first ? 'true' : 'false' }}" x-bind:aria-selected="isSubTab($el.dataset.subTab)" class="rounded-md px-5 py-2.5 text-xs font-black transition {{ $loop->first ? 'bg-spu-blue text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200' }}" data-sub-tab="{{ $sub['id'] ?? '' }}" x-bind:class="subTabButtonClass($el)" x-on:click="setSubTab($event)">{{ $sub['label'] ?? '' }}</button>
+                                <button type="button" id="documents-sub-tab-{{ $sub['id'] ?? '' }}" role="tab" aria-controls="documents-sub-panel-{{ $sub['id'] ?? '' }}" aria-selected="{{ $loop->first ? 'true' : 'false' }}" x-bind:aria-selected="isSubTab($el.dataset.subTab)" class="rounded-md px-5 py-2.5 text-xs font-black transition" data-sub-tab="{{ $sub['id'] ?? '' }}" x-bind:class="subTabButtonClass($el)" x-on:click="setSubTab($event)">{{ $sub['label'] ?? '' }}</button>
                             @endforeach
                         </div>
                         @foreach (($tab['subTabs'] ?? []) as $sub)
@@ -292,7 +292,7 @@
             <section class="bg-white pb-28 pt-20"><div class="container mx-auto max-w-[1060px] px-6">
                 <div class="mx-auto flex w-full max-w-full items-center justify-start overflow-x-auto rounded-xl border border-slate-200 bg-white p-1 shadow-[0_8px_24px_rgba(32,39,89,0.10)] sm:justify-center" role="tablist" aria-label="{{ $title }}">
                     @foreach (($section['tabs'] ?? []) as $tab)
-                        <button type="button" id="transfer-tab-{{ $tab['id'] ?? '' }}" role="tab" aria-controls="transfer-panel-{{ $tab['id'] ?? '' }}" class="min-w-[160px] shrink-0 rounded-lg px-4 py-3 text-sm font-black transition sm:min-w-[180px] sm:px-5 sm:py-4 sm:text-base {{ $loop->first ? 'bg-spu-red text-white' : 'text-slate-600 hover:text-spu-red' }}" data-tab="{{ $tab['id'] ?? '' }}" x-bind:class="pillButtonClass($el)" aria-selected="{{ $loop->first ? 'true' : 'false' }}" x-bind:aria-selected="isActive($el.dataset.tab)" tabindex="{{ $loop->first ? '0' : '-1' }}" x-bind:tabindex="tabIndex($el.dataset.tab)" x-on:click="setActiveTab($event)" x-on:keydown="moveTab($event)">{{ $tab['label'] ?? '' }}</button>
+                        <button type="button" id="transfer-tab-{{ $tab['id'] ?? '' }}" role="tab" aria-controls="transfer-panel-{{ $tab['id'] ?? '' }}" class="min-w-[160px] shrink-0 rounded-lg px-4 py-3 text-sm font-black transition sm:min-w-[180px] sm:px-5 sm:py-4 sm:text-base" data-tab="{{ $tab['id'] ?? '' }}" x-bind:class="pillButtonClass($el)" aria-selected="{{ $loop->first ? 'true' : 'false' }}" x-bind:aria-selected="isActive($el.dataset.tab)" tabindex="{{ $loop->first ? '0' : '-1' }}" x-bind:tabindex="tabIndex($el.dataset.tab)" x-on:click="setActiveTab($event)" x-on:keydown="moveTab($event)">{{ $tab['label'] ?? '' }}</button>
                     @endforeach
                 </div>
                 @foreach (($section['tabs'] ?? []) as $tab)

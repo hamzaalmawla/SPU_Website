@@ -6,7 +6,7 @@
             @isset($section->payload->items[0])
                 @php($mainItem = $section->payload->items[0])
                 @php($mainImage = $mainItem['imageUrl'] ?? ($mainItem['image'] ?? null))
-                <article class="col-span-1 flex flex-col overflow-hidden rounded-[2rem] bg-white shadow-xl transition-all duration-500 group hover:shadow-2xl md:col-span-12 lg:col-span-7">
+                <article class="col-span-1 flex flex-col overflow-hidden rounded-[2rem] bg-white shadow-card-elevated transition-all duration-500 group hover:shadow-panel md:col-span-12 lg:col-span-7">
                     @if ($mainImage)
                         <div class="h-64 md:h-[350px] overflow-hidden relative">
                             <img src="{{ $mainImage }}" alt="{{ $mainItem['title'] ?? '' }}" loading="lazy" decoding="async" width="840" height="350" class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110">
@@ -38,7 +38,7 @@
                         @isset($section->payload->items[$index])
                             @php($sideItem = $section->payload->items[$index])
                             @php($sideImage = $sideItem['imageUrl'] ?? ($sideItem['image'] ?? null))
-                            <article class="bg-white rounded-[2rem] shadow-lg overflow-hidden flex flex-col flex-1 group hover:shadow-xl transition-all">
+                            <article class="bg-white rounded-[2rem] shadow-card-elevated overflow-hidden flex flex-col flex-1 group hover:shadow-panel transition-all">
                                 @if ($sideImage)
                                     <div class="h-40 md:h-48 overflow-hidden"><img src="{{ $sideImage }}" alt="{{ $sideItem['title'] ?? '' }}" loading="lazy" decoding="async" width="560" height="192" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"></div>
                                 @endif
@@ -58,7 +58,7 @@
 
         @if ($section->payload->stats !== [])
             @php($statsCount = count($section->payload->stats))
-            <div class="bg-spu-blue rounded-[24px] py-12 px-8 shadow-2xl relative overflow-hidden">
+            <div class="bg-spu-blue rounded-[24px] py-12 px-8 shadow-panel relative overflow-hidden">
                 <div class="cms-grid-stats gap-12 relative z-10 {{ $statsCount >= 4 ? 'cms-grid-stats-cols-4' : ($statsCount === 3 ? 'cms-grid-stats-cols-3' : ($statsCount === 2 ? 'cms-grid-stats-cols-2' : '')) }}">
                     @foreach ($section->payload->stats as $stat)
                         <div class="flex flex-col items-center justify-center text-center px-4">

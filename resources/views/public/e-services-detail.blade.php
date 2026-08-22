@@ -6,7 +6,7 @@
             <img src="{{ $page->heroImage }}" alt="" class="absolute inset-0 h-full w-full object-cover" aria-hidden="true">
             <div class="absolute inset-0 bg-gradient-to-b from-[#121938]/80 via-[#202759]/75 to-[#202759]/95"></div>
             <div class="container relative z-10 flex min-h-[25rem] flex-col justify-end pb-14 pt-20 text-white sm:min-h-[29rem] sm:pb-20">
-                <nav aria-label="{{ $locale === 'ar' ? 'مسار التنقل' : 'Breadcrumb' }}" class="mb-8 flex flex-wrap items-center gap-2 text-sm font-semibold text-white/75">
+                <nav aria-label="{{ $locale === 'ar' ? 'مسار التنقل' : '' }}" class="mb-8 flex flex-wrap items-center gap-2 text-sm font-semibold text-white/75">
                     <a href="/{{ $locale }}" class="rounded-sm transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">{{ $locale === 'ar' ? 'الرئيسية' : 'Home' }}</a>
                     <span aria-hidden="true">/</span>
                     <a href="/{{ $locale }}/e-services" class="rounded-sm transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">{{ $locale === 'ar' ? 'الخدمات الإلكترونية' : 'E-Services' }}</a>

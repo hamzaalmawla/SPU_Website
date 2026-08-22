@@ -1,7 +1,7 @@
 <section x-data="facultiesSlider()" class="mt-[60px] md:mt-[120px] bg-white font-hacen relative">
     <div class="container relative">
         <div class="flex flex-col md:flex-row items-center gap-[52px] relative">
-            <div class="w-full relative md:w-[322px] h-[435px] text-center bg-[#1e2652] rounded-[24px] flex flex-col justify-center items-start text-white shrink-0 overflow-hidden group z-20 shadow-[0_30px_80px_rgba(17,26,63,0.18)]">
+            <div class="w-full relative md:w-[322px] min-h-[435px] text-center bg-[#1e2652] rounded-[24px] flex flex-col justify-center items-start text-white shrink-0 overflow-hidden group z-20 shadow-panel">
                 <div class="absolute inset-0 opacity-[0.15] z-0 animate-slow-pan" style="background-image: radial-gradient(circle, #ffffff 1px, transparent 1px); background-size: 30px 30px;"></div>
                 <div class="relative z-10 w-full px-6 flex flex-col h-full justify-center text-right">
                     @php($facultyTitleParts = preg_split('/\s+/u', (string) $section->payload->title, 2))
@@ -14,7 +14,7 @@
                         @endif
                     </h2>
                     @if ($section->payload->sectionAction)
-                        <a href="{{ $section->payload->sectionAction->url }}" class="bg-white mx-auto absolute inset-x-0 bottom-10 w-[195px] h-[40px] text-spu-blue justify-center rounded-[10px] font-bold text-[16px] flex items-center gap-2 hover:bg-gray-100 transition-all shadow-lg group/btn overflow-hidden" @if ($section->payload->sectionAction->target) target="{{ $section->payload->sectionAction->target }}" rel="noreferrer" @endif>
+                        <a href="{{ $section->payload->sectionAction->url }}" class="bg-white mx-auto absolute inset-x-0 bottom-10 w-[195px] h-[40px] text-spu-blue justify-center rounded-[10px] font-bold text-[16px] flex items-center gap-2 hover:bg-gray-100 transition-all shadow-card-elevated group/btn overflow-hidden" @if ($section->payload->sectionAction->target) target="{{ $section->payload->sectionAction->target }}" rel="noreferrer" @endif>
                             <span>{{ $section->payload->sectionAction->label }}</span>
                             <img src="/images/icon-arrow-right-outline.svg" class="w-2.5 h-2.5 mt-1 transition-transform group-hover:translate-x-1 rtl:rotate-180" alt="">
                         </a>
@@ -32,9 +32,9 @@
                     </button>
                 </div>
 
-                <div id="academic-faculties-track" x-ref="facultiesTrack" class="flex h-[390px] w-full snap-x snap-mandatory flex-nowrap gap-6 bg-transparent overflow-x-auto overflow-y-hidden no-scrollbar scroll-smooth overscroll-x-contain ps-2 pe-6 pb-5 items-start z-10" role="region" aria-roledescription="{{ __('public.carousel') }}" aria-label="{{ $section->payload->title }}" tabindex="0" @keydown="handleSliderKey($event)">
+                <div id="academic-faculties-track" x-ref="facultiesTrack" class="flex min-h-[390px] h-auto w-full snap-x snap-mandatory flex-nowrap gap-6 bg-transparent overflow-x-auto overflow-y-visible no-scrollbar scroll-smooth overscroll-x-contain ps-2 pe-6 pb-5 items-stretch z-10" role="region" aria-roledescription="{{ __('public.carousel') }}" aria-label="{{ $section->payload->title }}" tabindex="0" @keydown="handleSliderKey($event)">
                     @foreach ($section->payload->items as $item)
-                        <article @mouseenter="setActiveFaculty({{ $loop->index }})" @mouseleave="clearActiveFaculty()" :class="facultyCardClass({{ $loop->index }})" class="faculty-card snap-start w-[292px] h-[380px] shrink-0 relative bg-white rounded-[24px] border border-gray-100 shadow-[0_10px_30px_rgba(0,0,0,0.03)] flex flex-col items-center text-center transition-all duration-300 group overflow-hidden" role="group" aria-roledescription="{{ __('public.slide') }}" aria-label="{{ __('public.slide_position', ['current' => $loop->iteration, 'total' => count($section->payload->items)]) }}">
+                        <article @mouseenter="setActiveFaculty({{ $loop->index }})" @mouseleave="clearActiveFaculty()" :class="facultyCardClass({{ $loop->index }})" class="faculty-card snap-start w-[292px] min-h-[380px] h-auto shrink-0 relative bg-white rounded-[24px] border border-gray-100 shadow-card-sm flex flex-col items-center justify-between text-center transition-all duration-300 group overflow-hidden" role="group" aria-roledescription="{{ __('public.slide') }}" aria-label="{{ __('public.slide_position', ['current' => $loop->iteration, 'total' => count($section->payload->items)]) }}">
                             @if (! empty($item['accent']))
                                 <div class="absolute top-0 left-0 w-full h-0 group-hover:h-[6px] z-50 transition-all duration-300 ease-in-out" style="background-color: {{ $item['accent'] }};"></div>
                             @endif
@@ -44,11 +44,11 @@
                                     <img src="{{ $image }}" alt="{{ $item['title'] ?? '' }}" loading="lazy" decoding="async" width="110" height="110" class="relative z-10 w-[110px] h-[110px] object-contain transition-transform duration-500">
                                 </div>
                             @endif
-                            <div class="px-4 mb-4">
+                            <div class="flex flex-1 items-center px-4 mb-4">
                                 <h3 class="text-[20px] font-bold leading-tight transition-colors duration-300 text-gray-800">{{ $item['title'] ?? '' }}</h3>
                             </div>
                             @if (! empty($item['metric']))
-                                <div class="px-10 py-2.5 rounded-[8px] text-white font-bold text-[12px] mb-6 shadow-sm" @if (! empty($item['accent'])) style="background-color: {{ $item['accent'] }};" @endif>{{ $item['metric'] }}</div>
+                                <div class="px-10 py-2.5 rounded-[8px] text-white font-bold text-[12px] mb-6 shadow-card-sm" @if (! empty($item['accent'])) style="background-color: {{ $item['accent'] }};" @endif>{{ $item['metric'] }}</div>
                             @endif
                             @if (! empty($item['action']['url']) && ! empty($item['action']['label']))
                                 <a href="{{ $item['action']['url'] }}" class="mt-auto mb-6 flex items-center gap-2 text-[13px] font-extrabold transition-all duration-300 group-hover:gap-3" @if (! empty($item['accent'])) style="color: {{ $item['accent'] }};" @endif @if (! empty($item['action']['target'])) target="{{ $item['action']['target'] }}" rel="noreferrer" @endif>

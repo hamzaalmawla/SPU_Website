@@ -30,6 +30,30 @@
     scrollbar-width: none;
 }
 
+main nav[aria-label="Breadcrumb"],
+main nav[aria-label="مسار التنقل"],
+main nav:has(> ol),
+main nav:has(> a + img),
+main nav:has(> span > a + img) {
+    flex-wrap: nowrap;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    white-space: nowrap;
+}
+
+main nav[aria-label="Breadcrumb"]::-webkit-scrollbar,
+main nav[aria-label="مسار التنقل"]::-webkit-scrollbar,
+main nav:has(> ol)::-webkit-scrollbar,
+main nav:has(> a + img)::-webkit-scrollbar,
+main nav:has(> span > a + img)::-webkit-scrollbar {
+    display: none;
+}
+
+main nav:has(> ol) ol {
+    flex-wrap: nowrap;
+}
+
 [x-cloak] {
     display: none !important;
 }
