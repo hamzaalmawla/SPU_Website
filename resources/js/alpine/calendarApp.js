@@ -67,13 +67,8 @@ export function createCalendarApp() {
                 .sort((a, b) => a.dateKey.localeCompare(b.dateKey));
 
             const today = dayjs().format('YYYY-MM-DD');
-            const initialDate = this.eventsByDate[today]?.length > 0
-                ? today
-                : this.rawEvents.find((event) => event.dateKey >= today)?.dateKey
-                    ?? this.rawEvents[0]?.dateKey
-                    ?? today;
-            this.selectedDate = initialDate;
-            this.viewDate = dayjs(initialDate).startOf('month');
+            this.selectedDate = today;
+            this.viewDate = dayjs(today).startOf('month');
             this.activeEventIndex = 0;
         },
 

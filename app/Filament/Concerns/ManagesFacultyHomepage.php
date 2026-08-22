@@ -1134,7 +1134,6 @@ trait ManagesFacultyHomepage
                         TextInput::make('tag')->label(__('admin.faculty_workspace.editor.fields.category'))->maxLength(120),
                         TextInput::make('team')->label(__('admin.faculty_workspace.editor.fields.team'))->maxLength(180),
                         TextInput::make('supervisor')->label(__('admin.faculty_workspace.editor.fields.supervisor'))->maxLength(180),
-                        TextInput::make('createdBy')->label(__('admin.faculty_workspace.editor.fields.created_by'))->maxLength(180),
                         TextInput::make('academicYear')->label(__('admin.faculty_workspace.editor.fields.academic_year'))->maxLength(40),
                         TextInput::make('status')->label(__('admin.faculty_workspace.editor.fields.status'))->maxLength(80),
                         MediaPicker::image('image', __('admin.faculty_workspace.editor.fields.image')),

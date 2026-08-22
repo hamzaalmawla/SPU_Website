@@ -893,7 +893,6 @@ return [
                 'category' => 'التصنيف',
                 'team' => 'فريق العمل',
                 'supervisor' => 'المشرف',
-                'created_by' => 'إعداد المشروع بواسطة',
                 'status' => 'حالة المشروع',
                 'long_description' => 'وصف المشروع',
                 'paragraph' => 'فقرة الوصف',

@@ -166,7 +166,7 @@
     }
 
     .home-hero__panel-eyebrow {
-        color: rgba(32, 39, 89, 0.52);
+        color: #4d5575;
         font-size: 0.76rem;
         font-weight: 800;
         letter-spacing: 0.18em;
@@ -239,7 +239,7 @@
 
     .home-hero__metric-label {
         margin-top: 0.45rem;
-        color: rgba(32, 39, 89, 0.58);
+        color: #4d5575;
         font-size: 0.72rem;
         font-weight: 800;
         line-height: 1.4;

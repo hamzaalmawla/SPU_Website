@@ -64,6 +64,7 @@
         flex-wrap: nowrap;
         align-items: center;
         justify-content: center;
+        gap: 0.5rem;
     }
 
     .site-nav-item {
@@ -219,7 +220,7 @@
     .site-nav-dropdown-group {
         display: flex;
         flex-direction: column;
-        gap: 0.15rem;
+        gap: 0.5rem;
         padding: 0.25rem 0;
     }
 
@@ -412,7 +413,7 @@
 
     .site-nav-mobile-children {
         display: grid;
-        gap: 0.3rem;
+        gap: 0.5rem;
         padding: 0.2rem 0.4rem 0.5rem;
     }
 
@@ -436,7 +437,7 @@
     .site-nav-mobile-group {
         display: flex;
         flex-direction: column;
-        gap: 0.2rem;
+        gap: 0.5rem;
     }
 
     .site-nav-mobile-group-header {

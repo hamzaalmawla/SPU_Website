@@ -1194,7 +1194,6 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'facultySlug' => $this->publicSlug($faculty),
             'facultyColor' => $faculty->accent_color ?: '#202759',
             'year' => (string) ($project['year'] ?? $project['academicYear'] ?? ''),
-            'createdBy' => (string) ($project['createdBy'] ?? ''),
             'longDescription' => $this->stringList($project['longDescription'] ?? []),
             'gallery' => $this->stringList($project['gallery'] ?? []),
             'technologies' => $this->stringList($project['technologies'] ?? []),

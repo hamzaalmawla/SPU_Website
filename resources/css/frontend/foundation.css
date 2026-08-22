@@ -67,6 +67,11 @@
  * can override element-level resets in the cascade.
  */
 @layer base {
+    :where(button, a, input:not([type='hidden'])) {
+        min-width: 44px;
+        min-height: 44px;
+    }
+
     html {
         scroll-behavior: smooth;
     }
@@ -101,6 +106,7 @@
      * computed font-size is below 16px. Applies only to the actual fields.
      */
     @media (max-width: 1024px) {
+
         input[type='text'],
         input[type='email'],
         input[type='search'],
@@ -134,34 +140,42 @@
  * - 'mkmk': Mark-to-mark positioning for stacked diacritics
  */
 @layer base {
+
     [lang="ar"],
     [dir="rtl"] {
         font-family: var(--font-hacen);
         unicode-bidi: isolate;
 
         /* Enable critical OpenType features for Arabic */
-        font-feature-settings: 
-            "calt" 1,  /* Contextual alternates - essential for Arabic joining */
-            "liga" 1,  /* Standard ligatures */
-            "rlig" 1,  /* Required ligatures */
-            "clig" 1,  /* Contextual ligatures */
-            "kern" 1,  /* Kerning */
-            "mark" 1,  /* Mark positioning */
-            "mkmk" 1;  /* Mark-to-mark positioning */
-        
+        font-feature-settings:
+            "calt" 1,
+            /* Contextual alternates - essential for Arabic joining */
+            "liga" 1,
+            /* Standard ligatures */
+            "rlig" 1,
+            /* Required ligatures */
+            "clig" 1,
+            /* Contextual ligatures */
+            "kern" 1,
+            /* Kerning */
+            "mark" 1,
+            /* Mark positioning */
+            "mkmk" 1;
+        /* Mark-to-mark positioning */
+
         font-variant-ligatures: common-ligatures contextual;
-        
+
         /* Optimize text rendering for complex scripts */
         text-rendering: optimizeLegibility;
-        
+
         /* Font smoothing for better on-screen appearance */
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
-        
+
         /* Ensure proper word breaking for Arabic */
         word-break: normal;
         overflow-wrap: break-word;
-        
+
         /* Optimize for Arabic text flow */
         hyphens: none;
     }

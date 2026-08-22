@@ -12,6 +12,11 @@
             .project-detail-layout {
                 grid-template-columns: minmax(0, 1fr) 340px;
             }
+
+            .project-gallery,
+            .project-related {
+                grid-column: 1;
+            }
         }
     </style>
 @endpush
@@ -32,7 +37,6 @@
         $technologiesLabel = $isAr ? 'التقنيات' : 'Technologies';
         $teamLabel = $isAr ? 'الفريق' : 'Team';
         $supervisorLabel = $isAr ? 'المشرف' : 'Supervisor';
-        $createdByLabel = $isAr ? 'أعده' : 'Created By';
         $galleryLabel = $isAr ? 'معرض المشروع' : 'Project Gallery';
         $relatedLabel = $isAr ? 'مشاريع ذات صلة' : 'Related Projects';
         $previousLabel = $isAr ? 'السابق' : 'Previous';
@@ -81,64 +85,6 @@
                         @endforeach
                     </div>
 
-                    <div class="mt-12">
-                        <h2 class="text-[18px] font-bold text-spu-blue">{{ $galleryLabel }}</h2>
-                        @if (! empty($project['gallery']))
-                            <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
-                                @foreach ($project['gallery'] as $image)
-                                    <div class="aspect-[4/3] overflow-hidden rounded-[4px] bg-slate-100">
-                                        <img src="{{ $image }}" alt="" class="h-full w-full object-cover transition duration-500 hover:scale-[1.03]">
-                                    </div>
-                                @endforeach
-                            </div>
-                        @else
-                            <p class="mt-3 text-sm text-slate-500">{{ $isAr ? 'لا توجد صور منشورة لهذا المشروع حالياً.' : 'No project gallery is currently published.' }}</p>
-                        @endif
-                    </div>
-
-                    @if (! empty($page->relatedProjects))
-                        <div class="mt-14 border-t border-slate-100 pt-10">
-                            <h2 class="text-[18px] font-bold text-spu-blue">{{ $relatedLabel }}</h2>
-                            <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-3">
-                                @foreach ($page->relatedProjects as $related)
-                                    <article class="overflow-hidden rounded-[6px] border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-md">
-                                        <div class="relative aspect-[1.72] overflow-hidden bg-slate-100">
-                                            <img src="{{ $related['image'] ?? '/images/Gemini_Generated_Image_c89yjwc89yjwc89y.webp' }}" alt="{{ $related['title'] ?? '' }}" class="h-full w-full object-cover transition duration-500 hover:scale-[1.03]">
-                                        </div>
-                                        <div class="p-4">
-                                            <h3 class="line-clamp-2 text-[13px] font-bold leading-[20px] text-spu-blue">{{ $related['title'] ?? '' }}</h3>
-                                            @if (is_string($related['detailRoute'] ?? null) && $related['detailRoute'] !== '#')
-                                                <a href="{{ $related['detailRoute'] }}" class="mt-3 inline-flex items-center gap-1.5 text-[11px] font-bold text-spu-red transition hover:text-spu-blue">
-                                                    <span>{{ $detailsLabel }}</span>
-                                                    <img src="/images/icon-arrow-right-outline.svg" alt="" class="h-3 w-3 rtl:rotate-180" aria-hidden="true">
-                                                </a>
-                                            @endif
-                                        </div>
-                                    </article>
-                                @endforeach
-                            </div>
-                        </div>
-                    @endif
-
-                    <div class="mt-10 flex items-center justify-between border-t border-slate-100 pt-6">
-                        @if (is_array($page->previousProject) && is_string($page->previousProject['detailRoute'] ?? null) && $page->previousProject['detailRoute'] !== '#')
-                            <a href="{{ $page->previousProject['detailRoute'] }}" class="group inline-flex items-center gap-2 text-[12px] font-bold text-slate-500 transition hover:text-spu-blue">
-                                <img src="/images/icon-chevron-left-outline.svg" alt="" class="h-3 w-3 transition group-hover:-translate-x-0.5 rtl:rotate-180" aria-hidden="true">
-                                <span>{{ $previousLabel }}</span>
-                            </a>
-                        @else
-                            <span></span>
-                        @endif
-                        <a href="{{ $facultyProjectsUrl }}" class="text-[12px] font-bold text-spu-red transition hover:text-spu-blue">{{ $viewAllLabel }}</a>
-                        @if (is_array($page->nextProject) && is_string($page->nextProject['detailRoute'] ?? null) && $page->nextProject['detailRoute'] !== '#')
-                            <a href="{{ $page->nextProject['detailRoute'] }}" class="group inline-flex items-center gap-2 text-[12px] font-bold text-slate-500 transition hover:text-spu-blue">
-                                <span>{{ $nextLabel }}</span>
-                                <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-3 w-3 transition group-hover:translate-x-0.5 rtl:rotate-180" aria-hidden="true">
-                            </a>
-                        @else
-                            <span></span>
-                        @endif
-                    </div>
                 </div>
 
                 <aside class="space-y-8">
@@ -179,19 +125,6 @@
                                 <div>
                                     <p class="text-[13px] font-bold text-spu-blue">{{ $project['supervisor'] }}</p>
                                     <p class="text-[11px] text-slate-400">{{ $supervisorLabel }}</p>
-                                </div>
-                            </a>
-                        </div>
-                    @endif
-
-                    @if (! empty($project['createdBy']))
-                        <div class="rounded-[6px] border border-slate-200 bg-white p-6 shadow-sm">
-                            <h3 class="text-[13px] font-bold uppercase tracking-[0.04em] text-slate-400">{{ $createdByLabel }}</h3>
-                            <a href="/{{ $locale }}/facilities/{{ $page->facultySlug }}/alumni" class="mt-3 flex items-center gap-3 transition hover:opacity-80">
-                                <div class="flex h-10 w-10 items-center justify-center rounded-full text-[12px] font-bold text-white" style="background-color: {{ $accent }}">{{ $initials((string) $project['createdBy']) }}</div>
-                                <div>
-                                    <p class="text-[13px] font-bold text-spu-blue">{{ $project['createdBy'] }}</p>
-                                    <p class="text-[11px] text-slate-400">{{ $createdByLabel }}</p>
                                 </div>
                             </a>
                         </div>
@@ -267,7 +200,66 @@
                         </ul>
                     </div>
                 </aside>
+
+                <div class="project-gallery mt-12">
+                    <h2 class="text-[18px] font-bold text-spu-blue">{{ $galleryLabel }}</h2>
+                    @if (! empty($project['gallery']))
+                        <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                            @foreach ($project['gallery'] as $image)
+                                <div class="aspect-[4/3] overflow-hidden rounded-[4px] bg-slate-100">
+                                    <img src="{{ $image }}" alt="" class="h-full w-full object-cover transition duration-500 hover:scale-[1.03]">
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <p class="mt-3 text-sm text-slate-500">{{ $isAr ? 'لا توجد صور منشورة لهذا المشروع حالياً.' : 'No project gallery is currently published.' }}</p>
+                    @endif
+                </div>
+
+                @if (! empty($page->relatedProjects))
+                    <div class="project-related mt-14 border-t border-slate-100 pt-10">
+                        <h2 class="text-[18px] font-bold text-spu-blue">{{ $relatedLabel }}</h2>
+                        <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-3">
+                            @foreach ($page->relatedProjects as $related)
+                                <article class="overflow-hidden rounded-[6px] border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-md">
+                                    <div class="relative aspect-[1.72] overflow-hidden bg-slate-100">
+                                        <img src="{{ $related['image'] ?? '/images/Gemini_Generated_Image_c89yjwc89yjwc89y.webp' }}" alt="{{ $related['title'] ?? '' }}" class="h-full w-full object-cover transition duration-500 hover:scale-[1.03]">
+                                    </div>
+                                    <div class="p-4">
+                                        <h3 class="line-clamp-2 text-[13px] font-bold leading-[20px] text-spu-blue">{{ $related['title'] ?? '' }}</h3>
+                                        @if (is_string($related['detailRoute'] ?? null) && $related['detailRoute'] !== '#')
+                                            <a href="{{ $related['detailRoute'] }}" class="mt-3 inline-flex items-center gap-1.5 text-[11px] font-bold text-spu-red transition hover:text-spu-blue">
+                                                <span>{{ $detailsLabel }}</span>
+                                                <img src="/images/icon-arrow-right-outline.svg" alt="" class="h-3 w-3 rtl:rotate-180" aria-hidden="true">
+                                            </a>
+                                        @endif
+                                    </div>
+                                </article>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
             </div>
+            <div class="mt-10 flex items-center justify-between border-t border-slate-100 pt-6">
+                        @if (is_array($page->previousProject) && is_string($page->previousProject['detailRoute'] ?? null) && $page->previousProject['detailRoute'] !== '#')
+                            <a href="{{ $page->previousProject['detailRoute'] }}" class="group inline-flex items-center gap-2 text-[12px] font-bold text-slate-500 transition hover:text-spu-blue">
+                                <img src="/images/icon-chevron-left-outline.svg" alt="" class="h-3 w-3 transition group-hover:-translate-x-0.5 rtl:rotate-180" aria-hidden="true">
+                                <span>{{ $previousLabel }}</span>
+                            </a>
+                        @else
+                            <span></span>
+                        @endif
+                        <a href="{{ $facultyProjectsUrl }}" class="text-[12px] font-bold text-spu-red transition hover:text-spu-blue">{{ $viewAllLabel }}</a>
+                        @if (is_array($page->nextProject) && is_string($page->nextProject['detailRoute'] ?? null) && $page->nextProject['detailRoute'] !== '#')
+                            <a href="{{ $page->nextProject['detailRoute'] }}" class="group inline-flex items-center gap-2 text-[12px] font-bold text-slate-500 transition hover:text-spu-blue">
+                                <span>{{ $nextLabel }}</span>
+                                <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-3 w-3 transition group-hover:translate-x-0.5 rtl:rotate-180" aria-hidden="true">
+                            </a>
+                        @else
+                            <span></span>
+                        @endif
+                    </div>
         </div>
     </section>
 @endsection

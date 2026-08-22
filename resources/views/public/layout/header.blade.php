@@ -141,7 +141,7 @@
                                    type="search"
                                    class="w-full rounded-[10px] border border-spu-blue/10 px-3 py-2 text-sm font-semibold text-spu-blue outline-none transition focus:border-spu-red"
                                    placeholder="{{ __('public.search_placeholder') }}">
-                            <div class="mt-2 grid gap-1" x-show="searchResults.length">
+                            <div class="mt-2 grid " x-show="searchResults.length">
                                 <template x-for="item in searchResults" :key="searchResultKey(item)">
                                     <a :href="item.url"
                                         @click="closeSearchResult()"

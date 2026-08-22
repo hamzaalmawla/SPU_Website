@@ -25,9 +25,6 @@
         "OpenCV",
         "Flutter"
       ],
-      "createdByEn": "Ahmad Al-Masri",
-      "createdByAr": "أحمد المسري",
-      "createdById": "student-0",
       "teamMembers": [
         {
           "nameEn": "Samar Haddad",
@@ -91,9 +88,6 @@
         "IoT",
         "React"
       ],
-      "createdByEn": "Samar Haddad",
-      "createdByAr": "سمر حداد",
-      "createdById": "student-1",
       "teamMembers": [
         {
           "nameEn": "Khaled Ibrahim",
@@ -157,9 +151,6 @@
         "Django",
         "PostgreSQL"
       ],
-      "createdByEn": "Khaled Ibrahim",
-      "createdByAr": "خالد إبراهيم",
-      "createdById": "student-2",
       "teamMembers": [
         {
           "nameEn": "Nour Daoud",
@@ -223,9 +214,6 @@
         "InfluxDB",
         "Grafana"
       ],
-      "createdByEn": "Nour Daoud",
-      "createdByAr": "نور داود",
-      "createdById": "student-3",
       "teamMembers": [
         {
           "nameEn": "Rami Qassem",
@@ -289,9 +277,6 @@
         "Node.js",
         "MongoDB"
       ],
-      "createdByEn": "Rami Qassem",
-      "createdByAr": "رامي قاسم",
-      "createdById": "student-4",
       "teamMembers": [
         {
           "nameEn": "Huda Fares",
@@ -355,9 +340,6 @@
         "FastAPI",
         "Redis"
       ],
-      "createdByEn": "Huda Fares",
-      "createdByAr": "هدى فارس",
-      "createdById": "student-5",
       "teamMembers": [
         {
           "nameEn": "Ahmad Al-Masri",
@@ -421,9 +403,6 @@
         "Docker",
         "GitHub Actions"
       ],
-      "createdByEn": "Ahmad Al-Masri",
-      "createdByAr": "أحمد المسري",
-      "createdById": "student-0",
       "teamMembers": [
         {
           "nameEn": "Samar Haddad",
@@ -487,9 +466,6 @@
         "Flask",
         "Elasticsearch"
       ],
-      "createdByEn": "Samar Haddad",
-      "createdByAr": "سمر حداد",
-      "createdById": "student-1",
       "teamMembers": [
         {
           "nameEn": "Khaled Ibrahim",
@@ -553,9 +529,6 @@
         "OpenCV",
         "TensorFlow"
       ],
-      "createdByEn": "Khaled Ibrahim",
-      "createdByAr": "خالد إبراهيم",
-      "createdById": "student-2",
       "teamMembers": [
         {
           "nameEn": "Nour Daoud",
@@ -619,9 +592,6 @@
         "Pandas",
         "Streamlit"
       ],
-      "createdByEn": "Nour Daoud",
-      "createdByAr": "نور داود",
-      "createdById": "student-3",
       "teamMembers": [
         {
           "nameEn": "Rami Qassem",
@@ -685,9 +655,6 @@
         "Python",
         "MQTT"
       ],
-      "createdByEn": "Rami Qassem",
-      "createdByAr": "رامي قاسم",
-      "createdById": "student-4",
       "teamMembers": [
         {
           "nameEn": "Huda Fares",
@@ -751,9 +718,6 @@
         "C#",
         "Firebase"
       ],
-      "createdByEn": "Huda Fares",
-      "createdByAr": "هدى فارس",
-      "createdById": "student-5",
       "teamMembers": [
         {
           "nameEn": "Ahmad Al-Masri",
@@ -819,9 +783,6 @@
         "SQL",
         "Excel"
       ],
-      "createdByEn": "Ahmad Al-Masri",
-      "createdByAr": "أحمد المسري",
-      "createdById": "student-0",
       "teamMembers": [
         {
           "nameEn": "Samar Haddad",
@@ -885,9 +846,6 @@
         "Google Ads API",
         "MongoDB"
       ],
-      "createdByEn": "Samar Haddad",
-      "createdByAr": "سمر حداد",
-      "createdById": "student-1",
       "teamMembers": [
         {
           "nameEn": "Khaled Ibrahim",
@@ -951,9 +909,6 @@
         "Excel",
         "Power BI"
       ],
-      "createdByEn": "Khaled Ibrahim",
-      "createdByAr": "خالد إبراهيم",
-      "createdById": "student-2",
       "teamMembers": [
         {
           "nameEn": "Nour Daoud",
@@ -1017,9 +972,6 @@
         "Scikit-learn",
         "PostgreSQL"
       ],
-      "createdByEn": "Nour Daoud",
-      "createdByAr": "نور داود",
-      "createdById": "student-3",
       "teamMembers": [
         {
           "nameEn": "Rami Qassem",
@@ -1083,9 +1035,6 @@
         "Pandas",
         "Matplotlib"
       ],
-      "createdByEn": "Rami Qassem",
-      "createdByAr": "رامي قاسم",
-      "createdById": "student-4",
       "teamMembers": [
         {
           "nameEn": "Huda Fares",
@@ -1149,9 +1098,6 @@
         "FastAPI",
         "Redis"
       ],
-      "createdByEn": "Huda Fares",
-      "createdByAr": "هدى فارس",
-      "createdById": "student-5",
       "teamMembers": [
         {
           "nameEn": "Ahmad Al-Masri",
@@ -1215,9 +1161,6 @@
         "Docker",
         "Node-RED"
       ],
-      "createdByEn": "Ahmad Al-Masri",
-      "createdByAr": "أحمد المسري",
-      "createdById": "student-0",
       "teamMembers": [
         {
           "nameEn": "Samar Haddad",
@@ -1281,9 +1224,6 @@
         "Firebase",
         "Chart.js"
       ],
-      "createdByEn": "Samar Haddad",
-      "createdByAr": "سمر حداد",
-      "createdById": "student-1",
       "teamMembers": [
         {
           "nameEn": "Khaled Ibrahim",
@@ -1347,9 +1287,6 @@
         "PostgreSQL",
         "D3.js"
       ],
-      "createdByEn": "Khaled Ibrahim",
-      "createdByAr": "خالد إبراهيم",
-      "createdById": "student-2",
       "teamMembers": [
         {
           "nameEn": "Nour Daoud",
@@ -1413,9 +1350,6 @@
         "SQL",
         "Tableau"
       ],
-      "createdByEn": "Nour Daoud",
-      "createdByAr": "نور داود",
-      "createdById": "student-3",
       "teamMembers": [
         {
           "nameEn": "Rami Qassem",
@@ -1479,9 +1413,6 @@
         "Excel",
         "SQL"
       ],
-      "createdByEn": "Rami Qassem",
-      "createdByAr": "رامي قاسم",
-      "createdById": "student-4",
       "teamMembers": [
         {
           "nameEn": "Huda Fares",
@@ -1545,9 +1476,6 @@
         "MongoDB",
         "Tailwind"
       ],
-      "createdByEn": "Huda Fares",
-      "createdByAr": "هدى فارس",
-      "createdById": "student-5",
       "teamMembers": [
         {
           "nameEn": "Ahmad Al-Masri",
@@ -1613,9 +1541,6 @@
         "Grafana",
         "MQTT"
       ],
-      "createdByEn": "Ahmad Al-Masri",
-      "createdByAr": "أحمد المسري",
-      "createdById": "student-0",
       "teamMembers": [
         {
           "nameEn": "Samar Haddad",
@@ -1679,9 +1604,6 @@
         "Unity",
         "SQL"
       ],
-      "createdByEn": "Samar Haddad",
-      "createdByAr": "سمر حداد",
-      "createdById": "student-1",
       "teamMembers": [
         {
           "nameEn": "Khaled Ibrahim",
@@ -1745,9 +1667,6 @@
         "PostgreSQL",
         "React"
       ],
-      "createdByEn": "Khaled Ibrahim",
-      "createdByAr": "خالد إبراهيم",
-      "createdById": "student-2",
       "teamMembers": [
         {
           "nameEn": "Nour Daoud",
@@ -1811,9 +1730,6 @@
         "GIS",
         "QGIS"
       ],
-      "createdByEn": "Nour Daoud",
-      "createdByAr": "نور داود",
-      "createdById": "student-3",
       "teamMembers": [
         {
           "nameEn": "Rami Qassem",
@@ -1877,9 +1793,6 @@
         "AutoCAD",
         "ETABS"
       ],
-      "createdByEn": "Rami Qassem",
-      "createdByAr": "رامي قاسم",
-      "createdById": "student-4",
       "teamMembers": [
         {
           "nameEn": "Huda Fares",
@@ -1943,9 +1856,6 @@
         "Pandas",
         "Streamlit"
       ],
-      "createdByEn": "Huda Fares",
-      "createdByAr": "هدى فارس",
-      "createdById": "student-5",
       "teamMembers": [
         {
           "nameEn": "Ahmad Al-Masri",
@@ -2009,9 +1919,6 @@
         "SQL",
         "Node.js"
       ],
-      "createdByEn": "Ahmad Al-Masri",
-      "createdByAr": "أحمد المسري",
-      "createdById": "student-0",
       "teamMembers": [
         {
           "nameEn": "Samar Haddad",
@@ -2075,9 +1982,6 @@
         "GIS",
         "AutoCAD"
       ],
-      "createdByEn": "Samar Haddad",
-      "createdByAr": "سمر حداد",
-      "createdById": "student-1",
       "teamMembers": [
         {
           "nameEn": "Khaled Ibrahim",
@@ -2141,9 +2045,6 @@
         "Ladybug",
         "Rhino"
       ],
-      "createdByEn": "Khaled Ibrahim",
-      "createdByAr": "خالد إبراهيم",
-      "createdById": "student-2",
       "teamMembers": [
         {
           "nameEn": "Nour Daoud",
@@ -2207,9 +2108,6 @@
         "Node.js",
         "MongoDB"
       ],
-      "createdByEn": "Nour Daoud",
-      "createdByAr": "نور داود",
-      "createdById": "student-3",
       "teamMembers": [
         {
           "nameEn": "Rami Qassem",
@@ -2273,9 +2171,6 @@
         "Pandas",
         "Streamlit"
       ],
-      "createdByEn": "Rami Qassem",
-      "createdByAr": "رامي قاسم",
-      "createdById": "student-4",
       "teamMembers": [
         {
           "nameEn": "Huda Fares",
@@ -2339,9 +2234,6 @@
         "Python",
         "AWS"
       ],
-      "createdByEn": "Huda Fares",
-      "createdByAr": "هدى فارس",
-      "createdById": "student-5",
       "teamMembers": [
         {
           "nameEn": "Ahmad Al-Masri",
@@ -2407,9 +2299,6 @@
         "Python",
         "DICOM"
       ],
-      "createdByEn": "Ahmad Al-Masri",
-      "createdByAr": "أحمد المسري",
-      "createdById": "student-0",
       "teamMembers": [
         {
           "nameEn": "Samar Haddad",
@@ -2473,9 +2362,6 @@
         "VTK",
         "Three.js"
       ],
-      "createdByEn": "Samar Haddad",
-      "createdByAr": "سمر حداد",
-      "createdById": "student-1",
       "teamMembers": [
         {
           "nameEn": "Khaled Ibrahim",
@@ -2539,9 +2425,6 @@
         "Keras",
         "OpenCV"
       ],
-      "createdByEn": "Khaled Ibrahim",
-      "createdByAr": "خالد إبراهيم",
-      "createdById": "student-2",
       "teamMembers": [
         {
           "nameEn": "Nour Daoud",
@@ -2605,9 +2488,6 @@
         "Node.js",
         "Chart.js"
       ],
-      "createdByEn": "Nour Daoud",
-      "createdByAr": "نور داود",
-      "createdById": "student-3",
       "teamMembers": [
         {
           "nameEn": "Rami Qassem",
@@ -2671,9 +2551,6 @@
         "MySQL",
         "Vue.js"
       ],
-      "createdByEn": "Rami Qassem",
-      "createdByAr": "رامي قاسم",
-      "createdById": "student-4",
       "teamMembers": [
         {
           "nameEn": "Huda Fares",
@@ -2737,9 +2614,6 @@
         "PostgreSQL",
         "DICOM"
       ],
-      "createdByEn": "Huda Fares",
-      "createdByAr": "هدى فارس",
-      "createdById": "student-5",
       "teamMembers": [
         {
           "nameEn": "Ahmad Al-Masri",
@@ -2803,9 +2677,6 @@
         "MongoDB",
         "React"
       ],
-      "createdByEn": "Ahmad Al-Masri",
-      "createdByAr": "أحمد المسري",
-      "createdById": "student-0",
       "teamMembers": [
         {
           "nameEn": "Samar Haddad",
@@ -2869,9 +2740,6 @@
         "Oculus SDK",
         "Blender"
       ],
-      "createdByEn": "Samar Haddad",
-      "createdByAr": "سمر حداد",
-      "createdById": "student-1",
       "teamMembers": [
         {
           "nameEn": "Khaled Ibrahim",
@@ -2935,9 +2803,6 @@
         "Pandas",
         "Streamlit"
       ],
-      "createdByEn": "Khaled Ibrahim",
-      "createdByAr": "خالد إبراهيم",
-      "createdById": "student-2",
       "teamMembers": [
         {
           "nameEn": "Nour Daoud",
@@ -3001,9 +2866,6 @@
         "Python",
         "MATLAB"
       ],
-      "createdByEn": "Nour Daoud",
-      "createdByAr": "نور داود",
-      "createdById": "student-3",
       "teamMembers": [
         {
           "nameEn": "Rami Qassem",
@@ -3067,9 +2929,6 @@
         "PostgreSQL",
         "React"
       ],
-      "createdByEn": "Rami Qassem",
-      "createdByAr": "رامي قاسم",
-      "createdById": "student-4",
       "teamMembers": [
         {
           "nameEn": "Huda Fares",
@@ -3133,9 +2992,6 @@
         "Firebase",
         "AdMob"
       ],
-      "createdByEn": "Huda Fares",
-      "createdByAr": "هدى فارس",
-      "createdById": "student-5",
       "teamMembers": [
         {
           "nameEn": "Ahmad Al-Masri",
@@ -3201,9 +3057,6 @@
         "React",
         "PostgreSQL"
       ],
-      "createdByEn": "Ahmad Al-Masri",
-      "createdByAr": "أحمد المسري",
-      "createdById": "student-0",
       "teamMembers": [
         {
           "nameEn": "Samar Haddad",
@@ -3267,9 +3120,6 @@
         "Spring Boot",
         "MySQL"
       ],
-      "createdByEn": "Samar Haddad",
-      "createdByAr": "سمر حداد",
-      "createdById": "student-1",
       "teamMembers": [
         {
           "nameEn": "Khaled Ibrahim",
@@ -3333,9 +3183,6 @@
         "InfluxDB",
         "Kafka"
       ],
-      "createdByEn": "Khaled Ibrahim",
-      "createdByAr": "خالد إبراهيم",
-      "createdById": "student-2",
       "teamMembers": [
         {
           "nameEn": "Nour Daoud",
@@ -3399,9 +3246,6 @@
         "OpenCV",
         "DICOM"
       ],
-      "createdByEn": "Nour Daoud",
-      "createdByAr": "نور داود",
-      "createdById": "student-3",
       "teamMembers": [
         {
           "nameEn": "Rami Qassem",
@@ -3465,9 +3309,6 @@
         "Node.js",
         "TensorFlow"
       ],
-      "createdByEn": "Rami Qassem",
-      "createdByAr": "رامي قاسم",
-      "createdById": "student-4",
       "teamMembers": [
         {
           "nameEn": "Huda Fares",
@@ -3531,9 +3372,6 @@
         "Leaflet",
         "PostgreSQL"
       ],
-      "createdByEn": "Huda Fares",
-      "createdByAr": "هدى فارس",
-      "createdById": "student-5",
       "teamMembers": [
         {
           "nameEn": "Ahmad Al-Masri",
@@ -3597,9 +3435,6 @@
         "Haptic SDK",
         "Oculus"
       ],
-      "createdByEn": "Ahmad Al-Masri",
-      "createdByAr": "أحمد المسري",
-      "createdById": "student-0",
       "teamMembers": [
         {
           "nameEn": "Samar Haddad",
@@ -3663,9 +3498,6 @@
         "FastAPI",
         "React"
       ],
-      "createdByEn": "Samar Haddad",
-      "createdByAr": "سمر حداد",
-      "createdById": "student-1",
       "teamMembers": [
         {
           "nameEn": "Khaled Ibrahim",
@@ -3729,9 +3561,6 @@
         "MongoDB",
         "D3.js"
       ],
-      "createdByEn": "Khaled Ibrahim",
-      "createdByAr": "خالد إبراهيم",
-      "createdById": "student-2",
       "teamMembers": [
         {
           "nameEn": "Nour Daoud",
@@ -3795,9 +3624,6 @@
         "PostgreSQL",
         "Chart.js"
       ],
-      "createdByEn": "Nour Daoud",
-      "createdByAr": "نور داود",
-      "createdById": "student-3",
       "teamMembers": [
         {
           "nameEn": "Rami Qassem",
@@ -3861,9 +3687,6 @@
         "Python",
         "Excel"
       ],
-      "createdByEn": "Rami Qassem",
-      "createdByAr": "رامي قاسم",
-      "createdById": "student-4",
       "teamMembers": [
         {
           "nameEn": "Huda Fares",
@@ -3927,9 +3750,6 @@
         "React",
         "MongoDB"
       ],
-      "createdByEn": "Huda Fares",
-      "createdByAr": "هدى فارس",
-      "createdById": "student-5",
       "teamMembers": [
         {
           "nameEn": "Ahmad Al-Masri",
@@ -3995,9 +3815,6 @@
         "Django",
         "React"
       ],
-      "createdByEn": "Ahmad Al-Masri",
-      "createdByAr": "أحمد المسري",
-      "createdById": "student-0",
       "teamMembers": [
         {
           "nameEn": "Samar Haddad",
@@ -4061,9 +3878,6 @@
         "PostgreSQL",
         "Redis"
       ],
-      "createdByEn": "Samar Haddad",
-      "createdByAr": "سمر حداد",
-      "createdById": "student-1",
       "teamMembers": [
         {
           "nameEn": "Khaled Ibrahim",
@@ -4127,9 +3941,6 @@
         "Node.js",
         "MongoDB"
       ],
-      "createdByEn": "Khaled Ibrahim",
-      "createdByAr": "خالد إبراهيم",
-      "createdById": "student-2",
       "teamMembers": [
         {
           "nameEn": "Nour Daoud",
@@ -4193,9 +4004,6 @@
         "PostgreSQL",
         "Celery"
       ],
-      "createdByEn": "Nour Daoud",
-      "createdByAr": "نور داود",
-      "createdById": "student-3",
       "teamMembers": [
         {
           "nameEn": "Rami Qassem",
@@ -4259,9 +4067,6 @@
         "MongoDB",
         "React"
       ],
-      "createdByEn": "Rami Qassem",
-      "createdByAr": "رامي قاسم",
-      "createdById": "student-4",
       "teamMembers": [
         {
           "nameEn": "Huda Fares",
@@ -4325,9 +4130,6 @@
         "Pandas",
         "Streamlit"
       ],
-      "createdByEn": "Huda Fares",
-      "createdByAr": "هدى فارس",
-      "createdById": "student-5",
       "teamMembers": [
         {
           "nameEn": "Ahmad Al-Masri",
@@ -4391,9 +4193,6 @@
         "PostgreSQL",
         "Python"
       ],
-      "createdByEn": "Ahmad Al-Masri",
-      "createdByAr": "أحمد المسري",
-      "createdById": "student-0",
       "teamMembers": [
         {
           "nameEn": "Samar Haddad",
@@ -4457,9 +4256,6 @@
         "Node.js",
         "TensorFlow"
       ],
-      "createdByEn": "Samar Haddad",
-      "createdByAr": "سمر حداد",
-      "createdById": "student-1",
       "teamMembers": [
         {
           "nameEn": "Khaled Ibrahim",
@@ -4523,9 +4319,6 @@
         "Matplotlib",
         "Streamlit"
       ],
-      "createdByEn": "Khaled Ibrahim",
-      "createdByAr": "خالد إبراهيم",
-      "createdById": "student-2",
       "teamMembers": [
         {
           "nameEn": "Nour Daoud",
@@ -4589,9 +4382,6 @@
         "PostgreSQL",
         "Plotly"
       ],
-      "createdByEn": "Nour Daoud",
-      "createdByAr": "نور داود",
-      "createdById": "student-3",
       "teamMembers": [
         {
           "nameEn": "Rami Qassem",
@@ -4655,9 +4445,6 @@
         "MongoDB",
         "React"
       ],
-      "createdByEn": "Rami Qassem",
-      "createdByAr": "رامي قاسم",
-      "createdById": "student-4",
       "teamMembers": [
         {
           "nameEn": "Huda Fares",
@@ -4721,9 +4508,6 @@
         "Node.js",
         "Redis"
       ],
-      "createdByEn": "Huda Fares",
-      "createdByAr": "هدى فارس",
-      "createdById": "student-5",
       "teamMembers": [
         {
           "nameEn": "Ahmad Al-Masri",

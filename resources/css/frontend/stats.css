@@ -29,7 +29,7 @@
     }
 
     .stats-shell__eyebrow {
-        color: rgba(32, 39, 89, 0.55);
+        color: #4d5575;
         font-size: 0.8rem;
         font-weight: 800;
         letter-spacing: 0.16em;
@@ -48,7 +48,7 @@
 
     .stats-shell__copy {
         max-width: 44rem;
-        color: rgba(32, 39, 89, 0.66);
+        color: #4d5575;
         font-size: 1rem;
         line-height: 1.8;
     }
@@ -118,7 +118,7 @@
     }
 
     .stats-card__eyebrow {
-        color: rgba(32, 39, 89, 0.46);
+        color: #4d5575;
         font-size: 0.72rem;
         font-weight: 800;
         letter-spacing: 0.16em;
@@ -165,7 +165,7 @@
 
     .stats-card-summary {
         margin-top: 0.75rem;
-        color: rgba(32, 39, 89, 0.64);
+        color: #4d5575;
         font-size: clamp(0.82rem, 4.2cqw, 0.95rem);
         line-height: 1.75;
     }

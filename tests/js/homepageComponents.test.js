@@ -80,7 +80,7 @@ test('calendar selects the current day on init and stops autoplay', () => {
     assert.equal(calendar.carouselInterval, null);
 });
 
-test('calendar falls forward to the next event when today is empty', () => {
+test('calendar stays on today when today has no events', () => {
     installReducedMotionBrowser();
     const calendar = createCalendarApp();
     const nextEventDate = dayjs().add(5, 'day').format('YYYY-MM-DD');
@@ -93,9 +93,9 @@ test('calendar falls forward to the next event when today is empty', () => {
 
     calendar.init();
 
-    assert.equal(calendar.selectedDate, nextEventDate);
-    assert.equal(calendar.selectedEvent.title, 'Next');
-    assert.equal(calendar.viewDate.format('YYYY-MM-DD'), dayjs(nextEventDate).startOf('month').format('YYYY-MM-DD'));
+    assert.equal(calendar.selectedDate, dayjs().format('YYYY-MM-DD'));
+    assert.equal(calendar.selectedEvent, null);
+    assert.equal(calendar.viewDate.format('YYYY-MM-DD'), dayjs().startOf('month').format('YYYY-MM-DD'));
 });
 
 test('counters retain their server-rendered value under reduced motion', () => {

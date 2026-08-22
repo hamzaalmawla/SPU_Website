@@ -893,7 +893,6 @@ return [
                 'category' => 'Category',
                 'team' => 'Project team',
                 'supervisor' => 'Supervisor',
-                'created_by' => 'Created by',
                 'status' => 'Project status',
                 'long_description' => 'Project description',
                 'paragraph' => 'Description paragraph',

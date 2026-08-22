@@ -15,7 +15,7 @@
         </div>
 
         <div class="container">
-            <div class="relative -mt-[6.5rem] flex flex-col gap-6 border-b border-spu-blue/10 md:flex-row md:items-center md:gap-8">
+            <div style="margin-top: -7rem;" class="relative  flex flex-col gap-6 border-b border-spu-blue/10 md:flex-row md:items-center md:gap-8">
                 <div class="shrink-0">
                     <div class="h-[160px] w-[160px] overflow-hidden rounded-full border-[6px] border-white bg-[#f6f8fc] shadow-[0_8px_32px_rgba(32,39,89,0.2)] md:h-[260px] md:w-[260px]">
                         @if ($profile->image)
@@ -26,10 +26,10 @@
                     </div>
                 </div>
 
-                <div class="flex-1">
-                    <h1 class="text-[1.875rem] mb-4 font-bold leading-tight text-white/90">{{ $profile->name }}</h1>
+                <div class="flex-1 ">
+                    <h1 class="text-[1.875rem] mb-3  font-bold leading-tight text-white/90">{{ $profile->name }}</h1>
 
-                    <div class="my-1 flex flex-wrap items-center gap-2">
+                    <div class="my-1 flex flex-wrap items-center gap-1">
                         @if ($profile->position !== null)
                             <span class="inline-flex items-center rounded-full bg-spu-red px-3 py-1 text-xs font-bold uppercase tracking-[0.05em] text-white">{{ $profile->position }}</span>
                         @endif
