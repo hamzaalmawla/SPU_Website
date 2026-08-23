@@ -215,3 +215,89 @@ cannot place lands there with its normalised shape, subsite and old language id.
 
 Sort by `hit_count` descending in the first 48 hours: anything with real traffic
 is a URL worth mapping that the migration missed.
+
+---
+
+## E. Deployment attempt, 2026-08-23 — rolled back
+
+The release was deployed to `v2.spu.edu.sy` and **rolled back the same session**.
+The site is running the pre-remediation code again and is fully healthy: 89
+working navigation links, every legacy redirect landing on 200, media intact.
+
+Recording this so the next attempt does not repeat it.
+
+### E1 — Why it was rolled back: 30 dead navigation links
+
+The release removes the public fixture fallback for Admissions, Campus Life and
+E-Services as well as Research — but only Research has the matching
+retire-from-navigation logic and the designed empty state.
+
+With no CMS content published for the other sections, deploying produced:
+
+| Section | Before deploy | After deploy |
+|---|---|---|
+| `/ar/admissions` and 9 sub-pages | 200 | **404** |
+| `/ar/campus-life` and 13 sub-pages | 200 | **404** |
+| `/ar/e-services` sub-pages (4) | 200 | **404** |
+| `/ar/research/*` | 200 (placeholder) | 200 (empty state) — correct |
+
+**30 of 73 navigation links returned 404**, and legacy redirects that target
+`/campus-life/career-development/jobs` began landing on a 404 — the exact
+"redirect that lands on a 404" failure the maintenance guide forbids.
+
+Placeholder content is bad; a main menu that is 40% dead is worse. Hence the
+rollback.
+
+### E2 — What must happen before redeploying
+
+Either publish reviewed bilingual CMS content for `admissions.*`,
+`campus-life.*` and `e-services.*`, **or** give those sections the same
+treatment Research already has:
+
+- an `isAvailable` flag on the page DTO,
+- the empty-state partial instead of a 404,
+- retire-from-navigation when unavailable,
+- and re-point any legacy redirect whose target would become unavailable.
+
+Verify with a full navigation sweep and a legacy-redirect probe **before**
+lifting maintenance mode, not after.
+
+### E3 — The backup recipe in `deploy/v2-staging/README.md` was wrong
+
+The rollback initially failed because the backup archive was created with:
+
+```bash
+tar czf app_code.tar.gz -C "$APP" --exclude=vendor --exclude=public ...
+```
+
+`--exclude=public` matches **every** path segment named `public`, so it silently
+excluded all 118 files under `resources/views/public/` — the entire public view
+tree. Restoring from that archive produced a half-reverted tree, and pruning
+"files not in the backup" then deleted live views, taking the whole site to 500.
+
+Two rules for any future rollback:
+
+1. **Anchor tar excludes**: use `--exclude=./public` / `--exclude=./vendor`, and
+   verify the archive contains what you expect before trusting it
+   (`tar tzf archive.tar.gz | grep -c resources/views/public`).
+2. **`tar x` does not delete.** Extracting an old archive over a newer tree
+   leaves every file the deploy *added* in place, which mixes old classes with
+   new views. Do a clean replace of the code trees, or rebuild the known-good
+   tree from git — which is what finally restored service here
+   (`git archive 8ce7913 app bootstrap config database lang resources routes …`).
+
+The most reliable rollback source is git, not a hand-rolled tar: the deployed
+commit is known, so `git archive <commit>` reproduces it exactly.
+
+### E4 — Also fixed during the attempt
+
+- `RATE_LIMIT_CACHE_DRIVER` is the **driver** for the `rate-limiter` store and
+  already defaults to `file`. Setting it to the store name breaks cache
+  resolution with `Driver [rate-limiter] is not supported`. Leave it unset.
+- The release's `public/.htaccess` forces HTTPS to a hard-coded
+  `https://spu.edu.sy`. On the staging host that 301s plain-HTTP traffic to the
+  **live production site**. The staging overlay must rewrite that origin to
+  `https://v2.spu.edu.sy` — the host guard alone does not prevent it, because the
+  guard only rejects requests whose `Host` is not `v2.spu.edu.sy`.
+- The release needs `storage/framework/cache/webhook` and
+  `storage/framework/cache/rate-limiter` to exist and be writable.
