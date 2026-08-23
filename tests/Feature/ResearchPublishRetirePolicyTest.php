@@ -29,14 +29,23 @@ final class ResearchPublishRetirePolicyTest extends TestCase
             $navigation = app(NavigationServiceInterface::class)->getHeaderNavigation($locale);
             $urls = $this->navigationUrls($navigation->items);
 
+            // CMS-only sections. Nothing is published for them, and they have no
+            // database equivalent, so they must not appear in navigation at all.
             self::assertNotContains('/'.$locale.'/research', $urls);
-            self::assertNotContains('/'.$locale.'/research/publications', $urls);
             self::assertNotContains('/'.$locale.'/research/projects', $urls);
-            self::assertNotContains('/'.$locale.'/research/researchers', $urls);
             self::assertNotContains('/'.$locale.'/research/conferences', $urls);
             self::assertNotContains('/'.$locale.'/research/library', $urls);
             self::assertNotContains('/'.$locale.'/research/office', $urls);
             self::assertNotContains('/'.$locale.'/research/policies', $urls);
+
+            // Database-backed sections follow their data, not the fixture. Retiring
+            // one that holds genuine records would hide real material behind an
+            // empty state — on production the publications archive carries the
+            // migrated legacy publications and is exposed for exactly this reason.
+            // The seeded dataset here has public researcher profiles and no
+            // research publications, so the expectations are inverted.
+            self::assertNotContains('/'.$locale.'/research/publications', $urls);
+            self::assertContains('/'.$locale.'/research/researchers', $urls);
         }
 
         $this->get('/en/research')

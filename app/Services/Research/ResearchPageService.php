@@ -42,17 +42,25 @@ final class ResearchPageService implements ResearchPageServiceInterface
 
     public function landing(string $locale): ResearchPageDTO
     {
+        // Same contract as centers()/themes(): published CMS content is the only
+        // source of public output. editableLandingContent() reads the frontend
+        // fixture and is kept solely to seed the CMS editor — using it here put
+        // "Research at SPU" and the rest of the placeholder landing on the public
+        // page whenever nothing was published, which is what
+        // PublicContentIntegrityTest guards against.
         $cmsContent = $this->publishedLocalizedPayload('research.index', $locale);
 
-        if (is_array($cmsContent)) {
-            $cmsContent = $this->sanitizeLandingContent($cmsContent);
+        $isAvailable = is_array($cmsContent);
+        $data = $isAvailable ? $this->sanitizeLandingContent($cmsContent) : [];
 
-            return $this->pageDto($locale, 'landing', $cmsContent, '/research', $cmsContent['hero'] ?? [], true);
-        }
-
-        $fallback = $this->editableLandingContent($locale);
-
-        return $this->pageDto($locale, 'landing', $fallback, '/research', $fallback['hero'] ?? [], $fallback !== []);
+        return $this->pageDto(
+            $locale,
+            'landing',
+            $data,
+            '/research',
+            is_array($data['hero'] ?? null) ? $data['hero'] : [],
+            $isAvailable,
+        );
     }
 
     public function repository(string $locale, array $filters = []): ResearchPageDTO
@@ -677,8 +685,11 @@ final class ResearchPageService implements ResearchPageServiceInterface
         $section = $segments[1] ?? null;
 
         return match ($section) {
-            null => $this->publishedLocalizedPayload('research.index', $locale) !== null
-                || $this->editableLandingContent($locale) !== [],
+            // The landing page is editorial chrome with no database equivalent, so
+            // it is only reachable once reviewed content is published. Falling back
+            // to the fixture here kept /research permanently in the navigation and
+            // pointing at placeholder content.
+            null => $this->publishedLocalizedPayload('research.index', $locale) !== null,
             'repository', 'publications' => count($segments) === 2
                 ? $this->publicationsArchiveAvailable($locale)
                 : count($segments) === 3 && $this->publication($locale, (string) $segments[2]) instanceof ResearchDetailPageDTO,

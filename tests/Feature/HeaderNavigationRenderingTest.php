@@ -45,8 +45,13 @@ final class HeaderNavigationRenderingTest extends TestCase
             ->assertSee('Damascus Research Center')
             ->assertSee('Announcements')
             ->assertSee('Media Gallery')
-            ->assertSee('site-nav-dropdown-group-header', false)
-            ->assertSee('site-nav-dropdown-featured', false)
+            // The research menu was deliberately given a flat dropdown with its own
+            // treatment in "fix: repair public navigation and research profiles",
+            // so it no longer emits the grouped header/featured markup. Research
+            // was the only three-level menu, which is why that markup disappeared
+            // entirely rather than moving elsewhere. Assert the layout that is
+            // actually rendered, and keep verifying the links themselves.
+            ->assertSee('site-nav-dropdown--research', false)
             ->assertSee('/en/campus-life/career-development/jobs')
             ->assertSee('/en/research/publications/machine-learning-pharmaceutical-quality-control');
     }
