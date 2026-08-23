@@ -42,7 +42,25 @@
                                     @focusin="openDropdownForFocus('{{ $loop->index }}')"
                                     @focusout="closeDropdownForFocus($event)"
                                 @endif>
-                                @if (!empty($item->children))
+                                @if (!empty($item->children) && $item->resolvedUrl)
+                                <div class="site-nav-link-composite">
+                                    <a href="{{ $item->resolvedUrl }}"
+                                       class="site-nav-link {{ $item->isActive ? 'site-nav-link--active' : '' }}"
+                                       @if ($item->isActive) aria-current="page" @endif
+                                       @if ($item->openInNewTab) target="_blank" rel="noreferrer" @endif>
+                                        <span>{{ $item->label }}</span>
+                                    </a>
+                                    <button type="button"
+                                       class="site-nav-dropdown-toggle"
+                                       data-dropdown-trigger="{{ $loop->index }}"
+                                       @click.stop="toggleDropdown('{{ $loop->index }}')"
+                                       :aria-expanded="isDropdownOpen('{{ $loop->index }}').toString()"
+                                       aria-controls="site-nav-dropdown-{{ $loop->index }}"
+                                       aria-label="{{ __('public.toggle_submenu') }}">
+                                        <img src="/images/icon-chevron-down-outline.svg" alt="" class="site-nav-link__chevron" aria-hidden="true">
+                                    </button>
+                                </div>
+                                @elseif (!empty($item->children))
                                 <button type="button"
                                    class="site-nav-link {{ $item->isActive ? 'site-nav-link--active' : '' }}"
                                    data-dropdown-trigger="{{ $loop->index }}"
@@ -62,6 +80,10 @@
                                 @endif
 
                                 @if (!empty($item->children))
+                                     @php
+                                         $isResearchMenu = $item->resolvedUrl !== null
+                                             && preg_match('~/research/?$~', (string) parse_url($item->resolvedUrl, PHP_URL_PATH)) === 1;
+                                     @endphp
                                      <div id="site-nav-dropdown-{{ $loop->index }}"
                                           x-show="isDropdownOpen('{{ $loop->index }}')"
                                          x-transition:enter="transition duration-200 ease-out"
@@ -71,13 +93,13 @@
                                          x-transition:leave-start="opacity-100 translate-y-0 scale-100"
                                          x-transition:leave-end="opacity-0 -translate-y-1 scale-[0.97]"
                                          style="display: none;"
-                                         class="site-nav-dropdown">
+                                         class="site-nav-dropdown {{ $isResearchMenu ? 'site-nav-dropdown--research' : '' }}">
                                         @php
                                             $flatDividerRendered = false;
                                             $hasRenderedGroup = false;
                                         @endphp
                                         @foreach ($item->children as $child)
-                                            @if (!empty($child->children))
+                                            @if (!empty($child->children) && ! $isResearchMenu)
                                                 @php $hasRenderedGroup = true; @endphp
                                                 <div class="site-nav-dropdown-group">
                                                      <a @if($child->resolvedUrl) href="{{ $child->resolvedUrl }}" @else aria-disabled="true" @endif
@@ -166,7 +188,7 @@
 
                     @if ($navigation->applyCta)
                         <a href="{{ $navigation->applyCta->url }}"
-                            class="hidden items-center gap-2 rounded-full bg-spu-red px-5 py-2.5 text-xs font-bold uppercase tracking-[0.08em] text-white shadow-[0_8px_24px_rgba(111,22,22,0.25)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(111,22,22,0.3)] nav:inline-flex"
+                            class="site-nav-apply hidden items-center gap-2 rounded-full bg-spu-red px-5 py-2.5 text-xs font-bold uppercase tracking-[0.08em] text-white shadow-[0_8px_24px_rgba(111,22,22,0.25)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(111,22,22,0.3)] nav:inline-flex"
                            @if ($navigation->applyCta->target) target="{{ $navigation->applyCta->target }}" rel="noreferrer" @endif>
                             <span>{{ $navigation->applyCta->label }}</span>
                         </a>

@@ -48,6 +48,37 @@ final class ProfilePageService implements ProfilePageServiceInterface
         return $this->resolveUnifiedProfile($locale, $slug);
     }
 
+    /** @return array<int, ProfilePageDTO> */
+    public function getPublicProfiles(string $locale): array
+    {
+        $slugs = Person::query()
+            ->public()
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->pluck('slug')
+            ->merge(
+                FacultyMember::query()
+                    ->public()
+                    ->orderBy('sort_order')
+                    ->orderBy('id')
+                    ->pluck('slug'),
+            )
+            ->unique()
+            ->values();
+
+        $profiles = [];
+
+        foreach ($slugs as $slug) {
+            $profile = $this->resolveUnifiedProfile($locale, (string) $slug);
+
+            if ($profile instanceof ProfilePageDTO) {
+                $profiles[] = $profile;
+            }
+        }
+
+        return $profiles;
+    }
+
     public function resolveLegacyProfile(string $locale, string $identifier): ?ProfilePageDTO
     {
         return $this->resolveUnifiedProfile($locale, $identifier);

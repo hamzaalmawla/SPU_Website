@@ -3,9 +3,9 @@
         <div class="flex flex-col md:flex-row items-center gap-[52px] relative">
             <div class="w-full relative md:w-[322px] min-h-[435px] text-center bg-[#1e2652] rounded-[24px] flex flex-col justify-center items-start text-white shrink-0 overflow-hidden group z-20 shadow-panel">
                 <div class="absolute inset-0 opacity-[0.15] z-0 animate-slow-pan" style="background-image: radial-gradient(circle, #ffffff 1px, transparent 1px); background-size: 30px 30px;"></div>
-                <div class="relative z-10 w-full px-6 flex flex-col h-full justify-center text-right">
+                <div class="relative z-10 w-full px-6 pt-16 pb-24 flex flex-col h-full justify-start text-right">
                     @php($facultyTitleParts = preg_split('/\s+/u', (string) $section->payload->title, 2))
-                    <h2 class="mb-12 w-full text-center text-[clamp(2rem,10vw,2.8125rem)] font-bold leading-tight transition-all duration-500">
+                    <h2 class="w-full text-center text-[clamp(2rem,10vw,2.8125rem)] font-bold leading-tight transition-all duration-500">
                         <span class="sr-only">{{ $section->payload->title }}</span>
                         <span>{{ $facultyTitleParts[0] ?? $section->payload->title }}</span>
                         @if (! empty($facultyTitleParts[1]))

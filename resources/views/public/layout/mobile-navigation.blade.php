@@ -46,9 +46,11 @@
                         @php
                             $flatDividerRendered = false;
                             $hasRenderedGroup = false;
+                            $isResearchMenu = $item->resolvedUrl !== null
+                                && preg_match('~/research/?$~', (string) parse_url($item->resolvedUrl, PHP_URL_PATH)) === 1;
                         @endphp
                         @foreach ($item->children as $child)
-                            @if (!empty($child->children))
+                            @if (!empty($child->children) && ! $isResearchMenu)
                                 @php $hasRenderedGroup = true; @endphp
                                 <div class="site-nav-mobile-group">
                                      <a @if($child->resolvedUrl) href="{{ $child->resolvedUrl }}" @else aria-disabled="true" @endif

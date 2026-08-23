@@ -50,7 +50,9 @@ final class ResearchPageService implements ResearchPageServiceInterface
             return $this->pageDto($locale, 'landing', $cmsContent, '/research', $cmsContent['hero'] ?? [], true);
         }
 
-        return $this->pageDto($locale, 'landing', [], '/research', [], false);
+        $fallback = $this->editableLandingContent($locale);
+
+        return $this->pageDto($locale, 'landing', $fallback, '/research', $fallback['hero'] ?? [], $fallback !== []);
     }
 
     public function repository(string $locale, array $filters = []): ResearchPageDTO
@@ -463,7 +465,16 @@ final class ResearchPageService implements ResearchPageServiceInterface
             return $this->pageDto($locale, 'researchers', $this->withFilteredResearchers($cmsContent, $filters), '/research/researchers', $cmsContent['hero'] ?? [], true);
         }
 
-        return $this->pageDto($locale, 'researchers', $this->withFilteredResearchers([], $filters), '/research/researchers', [], false);
+        $databaseContent = $this->databaseResearchersContent($locale);
+
+        return $this->pageDto(
+            $locale,
+            'researchers',
+            $this->withFilteredResearchers($databaseContent, $filters),
+            '/research/researchers',
+            [],
+            $databaseContent['items'] !== [],
+        );
     }
 
     public function researcher(string $locale, string $slug): ?ResearchDetailPageDTO
@@ -501,7 +512,16 @@ final class ResearchPageService implements ResearchPageServiceInterface
             return $this->pageDto($locale, 'expert-finder', $this->withFilteredResearchers($cmsContent, $filters, false), '/research/expert-finder', $cmsContent['hero'] ?? [], true);
         }
 
-        return $this->pageDto($locale, 'expert-finder', $this->withFilteredResearchers([], $filters, false), '/research/expert-finder', [], false);
+        $databaseContent = $this->databaseResearchersContent($locale);
+
+        return $this->pageDto(
+            $locale,
+            'expert-finder',
+            $this->withFilteredResearchers($databaseContent, $filters, false),
+            '/research/expert-finder',
+            [],
+            $databaseContent['items'] !== [],
+        );
     }
 
     public function conferences(string $locale): ResearchPageDTO
@@ -657,7 +677,8 @@ final class ResearchPageService implements ResearchPageServiceInterface
         $section = $segments[1] ?? null;
 
         return match ($section) {
-            null => $this->publishedLocalizedPayload('research.index', $locale) !== null,
+            null => $this->publishedLocalizedPayload('research.index', $locale) !== null
+                || $this->editableLandingContent($locale) !== [],
             'repository', 'publications' => count($segments) === 2
                 ? $this->publicationsArchiveAvailable($locale)
                 : count($segments) === 3 && $this->publication($locale, (string) $segments[2]) instanceof ResearchDetailPageDTO,
@@ -672,9 +693,11 @@ final class ResearchPageService implements ResearchPageServiceInterface
                 : count($segments) === 3 && $this->theme($locale, (string) $segments[2]) instanceof ResearchDetailPageDTO,
             'researchers' => count($segments) === 2
                 ? $this->publishedLocalizedPayload('research.experts', $locale) !== null
+                    || $this->profilePageService->getPublicProfiles($locale) !== []
                 : count($segments) === 3 && $this->researcher($locale, (string) $segments[2]) instanceof ResearchDetailPageDTO,
             'expert-finder' => count($segments) === 2
-                && $this->publishedLocalizedPayload('research.experts', $locale) !== null,
+                && ($this->publishedLocalizedPayload('research.experts', $locale) !== null
+                    || $this->profilePageService->getPublicProfiles($locale) !== []),
             'conferences' => $this->conferencePathAvailable($locale, $path, $segments),
             'library' => count($segments) === 2
                 && $this->publishedLocalizedPayload('research.library', $locale) !== null,
@@ -1959,6 +1982,31 @@ final class ResearchPageService implements ResearchPageServiceInterface
         $content['items'] = $researchers;
 
         return $content;
+    }
+
+    /** @return array<string, mixed> */
+    private function databaseResearchersContent(string $locale): array
+    {
+        $items = array_map(
+            static fn (ProfilePageDTO $profile): array => [
+                'slug' => $profile->slug,
+                'name' => $profile->name,
+                'title' => $profile->title ?? $profile->position ?? '',
+                'role' => $profile->position ?? $profile->title ?? '',
+                'faculty' => $profile->facultyName ?? '',
+                'department' => $profile->departmentName ?? '',
+                'image' => $profile->image ?? '/images/uni-main-place.JPG',
+                'publications' => count($profile->publications),
+                'expertise' => $profile->specializations ?? [],
+                'expertiseSlugs' => [],
+            ],
+            $this->profilePageService->getPublicProfiles($locale),
+        );
+
+        return [
+            'items' => $items,
+            'researchers' => $items,
+        ];
     }
 
     /** @param array<string, mixed> $item @return array<string, mixed> */

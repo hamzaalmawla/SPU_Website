@@ -98,6 +98,49 @@
         word-break: keep-all;
     }
 
+    .site-nav-link-composite {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 10px;
+        transition: background-color 0.25s ease;
+    }
+
+    .site-nav-link-composite:hover {
+        background: rgba(32, 39, 89, 0.04);
+    }
+
+    .site-nav-link-composite .site-nav-link {
+        padding-inline-end: 0.35rem;
+    }
+
+    .site-nav-link-composite .site-nav-link:hover {
+        background: transparent;
+    }
+
+    .site-nav-dropdown-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.75rem;
+        height: 2.25rem;
+        margin-inline-end: 0.35rem;
+        border: 0;
+        border-radius: 7px;
+        background: transparent;
+        cursor: pointer;
+    }
+
+    .site-nav-dropdown-toggle:hover,
+    .site-nav-dropdown-toggle:focus-visible {
+        background: transparent;
+        outline: none;
+    }
+
+    .site-nav-dropdown-toggle[aria-expanded='true'] .site-nav-link__chevron {
+        color: #6f1616;
+        transform: rotate(180deg);
+    }
+
     button.site-nav-link {
         border: 0;
         background: transparent;
@@ -197,6 +240,20 @@
         border-top: 1px solid rgba(225, 231, 245, 0.8);
         border-left: 1px solid rgba(225, 231, 245, 0.8);
         background: rgba(255, 255, 255, 0.99);
+    }
+
+    .site-nav-dropdown--research {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 25rem;
+        min-width: 25rem;
+        gap: 0.1rem 0.35rem;
+        padding: 0.5rem;
+    }
+
+    .site-nav-dropdown--research .site-nav-dropdown-link {
+        min-height: 2.5rem;
+        padding: 0.6rem 0.7rem;
+        font-size: 0.84rem;
     }
 
     .site-nav-dropdown-link {
@@ -524,17 +581,39 @@
     @media (min-width: 1520px) {
         .site-nav-shell__main {
             flex-wrap: nowrap;
-            gap: 1.25rem;
-            padding: 0.75rem 1.5rem;
+            gap: 0.65rem;
+            padding: 0.75rem 1rem;
+        }
+
+        .site-nav-shell__main > nav {
+            min-width: 0;
+            padding-inline-start: 1.25rem;
+        }
+
+        .site-nav-brand img {
+            width: 10.5rem !important;
         }
 
         .site-nav-link {
-            font-size: 0.95rem;
-            padding: 0.6rem 0.85rem;
+            font-size: 0.88rem;
+            padding: 0.6rem 0.55rem;
         }
 
         .site-nav-list {
-            gap: 0.5rem;
+            gap: 0.1rem;
+        }
+
+        .site-nav-actions {
+            gap: 0.25rem;
+        }
+
+        .site-nav-lang {
+            padding-inline: 0.55rem;
+        }
+
+        .site-nav-apply {
+            padding: 0.65rem 1rem;
+            font-size: 0.7rem;
         }
     }
 
