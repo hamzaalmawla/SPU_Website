@@ -7,6 +7,8 @@ namespace Database\Seeders;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Page\AdmissionsPageServiceInterface;
 use App\Contracts\Page\CampusLifePageServiceInterface;
+use App\Contracts\Page\EServicesPageServiceInterface;
+use App\Contracts\Settings\SettingsServiceInterface;
 use App\Models\User\User;
 use Illuminate\Database\Seeder;
 use Throwable;
@@ -47,25 +49,36 @@ class AuthoredPageContentSeeder extends Seeder
         'campus_life.virtual_tour',
     ];
 
-    /*
-     * E-Services is deliberately absent, and it needs its own migration pass.
+    /**
+     * E-Services detail slugs, and the legacy settings group each one came from.
      *
-     * Two separate mechanisms are at work there:
+     * Two mechanisms are in play, which is why this group has to move as a unit:
      *
-     *  - The landing (getContent) still falls back to the legacy settings group
-     *    "e_services_page", but only until a CmsTargetContent row exists for the
-     *    "e_services" key. Publishing that key alone therefore cuts the landing's
-     *    fallback and blanks it.
+     *  - The landing (getContent) falls back to the "e_services_page" settings
+     *    group, but only while no CmsTargetContent row exists for "e_services".
+     *    Publishing that key alone cuts the fallback and blanks the landing.
      *  - The detail pages (getDetailPage) read published CMS payload only. Their
-     *    former source, the per-slug settings groups named
-     *    "e_services_{slug_with_underscores}_page", is no longer read by any code
-     *    path, so they 404 until their targets are published.
+     *    former source, detailSettingsGroup(), was removed, so they 404 until
+     *    their targets are published.
      *
-     * A correct migration publishes "e_services" and all four
-     * "e_services.{slug}" targets together, sourcing each from its settings group
-     * so nothing is invented. That needs the production settings rows to read
-     * from, so it is not attempted blind from here.
+     * So either the landing and all four details migrate together, or none of
+     * them do. Content is read from the settings rows themselves, so nothing is
+     * invented; if the landing has no bilingual settings content the whole group
+     * is skipped rather than risk blanking a working page.
+     *
+     * Only these three have a legacy settings group; Setting::GROUP_KEYS is the
+     * authority and calling getGroup() with anything else throws.
+     * "suggestions-complaints" is deliberately absent: it has never been settings
+     * backed and exposes its own getSuggestionsComplaintsEditablePayload().
+     *
+     * @var array<string, string>
      */
+    private const E_SERVICES_SETTINGS_GROUPS = [
+        'e_services' => 'e_services_page',
+        'e_services.library' => 'e_services_library_page',
+        'e_services.staff-email' => 'e_services_staff_email_page',
+        'e_services.it-support' => 'e_services_it_support_page',
+    ];
 
     public function run(): void
     {
@@ -115,6 +128,10 @@ class AuthoredPageContentSeeder extends Seeder
             }
         }
 
+        $eServices = $this->publishEServices($actorId);
+        $published += $eServices['published'];
+        $skipped += $eServices['skipped'];
+
         $this->command?->info(sprintf(
             'Authored page content: %d published, %d skipped, %d failed.',
             $published,
@@ -154,6 +171,70 @@ class AuthoredPageContentSeeder extends Seeder
 
         return is_array($published['translations']['ar'] ?? null)
             && is_array($published['translations']['en'] ?? null);
+    }
+
+    /**
+     * Migrate the E-Services landing and its four detail pages together.
+     *
+     * @return array{published: int, skipped: int}
+     */
+    private function publishEServices(int $actorId): array
+    {
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $settings = app(SettingsServiceInterface::class);
+
+        $group = static fn (string $g, string $locale): ?array => collect(
+            $settings->getGroup($g, $locale)->values
+        )->firstWhere('key', 'content')?->jsonValue;
+
+        $payloads = [];
+        $sources = self::E_SERVICES_SETTINGS_GROUPS;
+
+        foreach ($sources as $targetKey => $settingsGroup) {
+            $ar = $group($settingsGroup, 'ar');
+            $en = $group($settingsGroup, 'en');
+
+            if (is_array($ar) && $ar !== [] && is_array($en) && $en !== []) {
+                $payloads[$targetKey] = ['translations' => ['ar' => $ar, 'en' => $en]];
+            }
+        }
+
+        // The landing is the gate: without it, publishing anything here would cut
+        // the settings fallback and leave the section worse than before.
+        if (! isset($payloads['e_services'])) {
+            $this->command?->warn('  e_services: no bilingual settings content for the landing; group skipped.');
+
+            return ['published' => 0, 'skipped' => count($sources)];
+        }
+
+        // Suggestions & complaints keeps its own payload source rather than a
+        // settings group, so it is added here once the landing has cleared.
+        $suggestions = app(EServicesPageServiceInterface::class)->getSuggestionsComplaintsEditablePayload();
+
+        if (is_array($suggestions['translations']['ar'] ?? null) && is_array($suggestions['translations']['en'] ?? null)) {
+            $payloads['e_services.suggestions-complaints'] = $suggestions;
+        }
+
+        $published = 0;
+        $skipped = 0;
+
+        foreach ($payloads as $targetKey => $payload) {
+            if ($this->alreadyPublished($workflow, $targetKey)) {
+                $skipped++;
+
+                continue;
+            }
+
+            try {
+                $workflow->saveDraft($targetKey, $payload, $actorId);
+                $workflow->publish($targetKey, $actorId);
+                $published++;
+            } catch (Throwable $e) {
+                $this->command?->warn(sprintf('  %s: %s', $targetKey, $e->getMessage()));
+            }
+        }
+
+        return ['published' => $published, 'skipped' => $skipped + (count($sources) - count($payloads))];
     }
 
     /**

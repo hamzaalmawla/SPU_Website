@@ -114,20 +114,38 @@ final class AuthoredPageContentSeederTest extends TestCase
         );
     }
 
-    public function test_e_services_landing_keeps_its_settings_fallback(): void
+    public function test_e_services_migrates_as_a_group_and_keeps_working(): void
     {
         $this->seed(AuthoredPageContentSeeder::class);
 
-        // The landing falls back to the legacy "e_services_page" settings group,
-        // but only while no CmsTargetContent row exists for the "e_services" key.
-        // Publishing that key alone would cut the fallback and blank the page, so
-        // the seeder must never create it. E-Services needs its own migration
-        // pass that publishes the landing and all four detail targets together.
-        self::assertFalse(
+        // The landing is the gate. Publishing "e_services" cuts its legacy
+        // settings fallback, so it may only be published together with the detail
+        // targets — otherwise the section ends up worse than before.
+        self::assertTrue(
             CmsTargetContent::query()->where('target_key', 'e_services')->exists(),
-            'Publishing e_services alone cuts the landing fallback and blanks the page.',
+            'The landing should have migrated once bilingual settings content was available.',
         );
 
-        $this->get('/ar/e-services')->assertOk();
+        foreach (['library', 'staff-email', 'it-support', 'suggestions-complaints'] as $slug) {
+            self::assertTrue(
+                CmsTargetContent::query()->where('target_key', 'e_services.'.$slug)->exists(),
+                sprintf('e_services.%s must migrate in the same pass as the landing.', $slug),
+            );
+        }
+
+        foreach (['ar', 'en'] as $locale) {
+            $this->get('/'.$locale.'/e-services')->assertOk();
+        }
+    }
+
+    public function test_e_services_detail_pages_resolve_after_migration(): void
+    {
+        $this->seed(AuthoredPageContentSeeder::class);
+
+        foreach (['library', 'staff-email', 'it-support'] as $slug) {
+            $this->get('/ar/e-services/'.$slug)->assertOk();
+        }
+
+        $this->get('/ar/e-services/suggestions-complaints')->assertOk();
     }
 }
