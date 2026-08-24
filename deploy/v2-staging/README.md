@@ -213,3 +213,50 @@ Two pieces of that work *are* in git, because they are code:
 
 None of these items is complete merely because the corresponding local code or
 historical staging configuration exists.
+
+---
+
+## 8. Packaging the release — two traps that have caused outages
+
+### 8.1 Never ship `bootstrap/cache/`
+
+A release tarball built as:
+
+```bash
+tar czf app.tar.gz app bootstrap config database lang resources routes artisan composer.json composer.lock
+```
+
+carries **your machine's** `bootstrap/cache/packages.php`. Locally that manifest
+lists dev packages; the server runs `composer install --no-dev`, so on boot it
+tries to load e.g. `Laravel\Pail\PailServiceProvider`, which is not installed —
+and every page returns 500.
+
+This is only survivable when the deploy also runs `composer install`, because
+`package:discover` regenerates the manifest. A code-only deploy that skips
+composer inherits the stale file and takes the whole site down.
+
+Exclude it, and let the server regenerate:
+
+```bash
+tar czf app.tar.gz --exclude=./bootstrap/cache \
+  app bootstrap config database lang resources routes artisan composer.json composer.lock
+```
+
+Recovery, if it has already happened:
+
+```bash
+rm -f bootstrap/cache/{packages,services,config,routes-v7,events,blade-icons}.php
+rm -rf bootstrap/cache/filament
+php artisan optimize
+```
+
+### 8.2 Anchor every tar exclude
+
+`--exclude=public` matches **every** path segment named `public`, including
+`resources/views/public/`. See §E3 in `Docs/V2_PRE_CUTOVER_ACTIONS.md` — an
+unanchored exclude silently produced a backup missing 118 view files. Always
+write `--exclude=./public`, and verify before trusting the archive:
+
+```bash
+tar tzf app_code.tar.gz | grep -c resources/views/public/
+```
