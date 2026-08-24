@@ -114,15 +114,18 @@ final class AuthoredPageContentSeederTest extends TestCase
         );
     }
 
-    public function test_e_services_is_left_alone_because_seeding_it_would_blank_its_detail_pages(): void
+    public function test_e_services_landing_keeps_its_settings_fallback(): void
     {
         $this->seed(AuthoredPageContentSeeder::class);
 
-        // EServicesPageService returns empty content as soon as an "e_services"
-        // CmsTargetContent row exists, so the seeder must never create one.
+        // The landing falls back to the legacy "e_services_page" settings group,
+        // but only while no CmsTargetContent row exists for the "e_services" key.
+        // Publishing that key alone would cut the fallback and blank the page, so
+        // the seeder must never create it. E-Services needs its own migration
+        // pass that publishes the landing and all four detail targets together.
         self::assertFalse(
             CmsTargetContent::query()->where('target_key', 'e_services')->exists(),
-            'Seeding e_services would blank the detail pages it was meant to restore.',
+            'Publishing e_services alone cuts the landing fallback and blanks the page.',
         );
 
         $this->get('/ar/e-services')->assertOk();

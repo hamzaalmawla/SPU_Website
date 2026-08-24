@@ -12,9 +12,9 @@ use Illuminate\Database\Seeder;
 use Throwable;
 
 /**
- * Publishes the Admissions, Campus Life and E-Services content that has always
- * lived in the page services into the CMS, so the public site keeps rendering it
- * after the fixture/fallback removal.
+ * Publishes the Admissions and Campus Life content that has always lived in the
+ * page services into the CMS, so the public site keeps rendering it after the
+ * fixture/fallback removal.
  *
  * Why this exists
  * ---------------
@@ -23,7 +23,7 @@ use Throwable;
  * material (fabricated centres, projects and publications) that should never
  * have been public.
  *
- * Admissions, Campus Life and E-Services are a different case. Their payloads are
+ * Admissions and Campus Life are a different case. Their payloads are
  * real, reviewed, bilingual SPU content — deliberately conservative copy that
  * points applicants at the Admissions directorate rather than inventing
  * requirements, and sections describing facilities the university actually has
@@ -48,14 +48,23 @@ class AuthoredPageContentSeeder extends Seeder
     ];
 
     /*
-     * E-Services is deliberately absent.
+     * E-Services is deliberately absent, and it needs its own migration pass.
      *
-     * Its detail pages still read from legacy managed settings, and
-     * EServicesPageService now returns empty content as soon as a CmsTargetContent
-     * row exists for the "e_services" key. Seeding that target would therefore
-     * blank the very pages it was meant to restore. E-Services must be migrated
-     * through its own admin screen, with all four detail targets published in the
-     * same pass.
+     * Two separate mechanisms are at work there:
+     *
+     *  - The landing (getContent) still falls back to the legacy settings group
+     *    "e_services_page", but only until a CmsTargetContent row exists for the
+     *    "e_services" key. Publishing that key alone therefore cuts the landing's
+     *    fallback and blanks it.
+     *  - The detail pages (getDetailPage) read published CMS payload only. Their
+     *    former source, the per-slug settings groups named
+     *    "e_services_{slug_with_underscores}_page", is no longer read by any code
+     *    path, so they 404 until their targets are published.
+     *
+     * A correct migration publishes "e_services" and all four
+     * "e_services.{slug}" targets together, sourcing each from its settings group
+     * so nothing is invented. That needs the production settings rows to read
+     * from, so it is not attempted blind from here.
      */
 
     public function run(): void
