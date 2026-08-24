@@ -301,3 +301,57 @@ commit is known, so `git archive <commit>` reproduces it exactly.
   guard only rejects requests whose `Host` is not `v2.spu.edu.sy`.
 - The release needs `storage/framework/cache/webhook` and
   `storage/framework/cache/rate-limiter` to exist and be writable.
+
+---
+
+## F. Deployment, 2026-08-24 — succeeded
+
+The release is **deployed and live** on `v2.spu.edu.sy`.
+
+What made this attempt work where 2026-08-23 failed: the content behind the
+fixture removal was migrated instead of deleted, and the verification that had
+been run *after* lifting maintenance was run before it.
+
+### F1 — Content migrated, not deleted
+
+`AuthoredPageContentSeeder` published **29 CMS targets** from the content that
+already existed in the page services and settings — 10 Admissions, 14 Campus
+Life, 5 E-Services. Nothing was invented; every payload came from
+`getEditablePayload()` or the legacy settings group that used to back the page.
+
+The seeder skips any target that already has published content, so re-running it
+can never overwrite an editor's work.
+
+### F2 — Result
+
+| Check | Before (2026-08-23 attempt) | Now |
+|---|---|---|
+| Dead navigation links | 30 of 73 | **1** (`/ar/student-life`, pre-existing) |
+| Legacy redirects landing on 404 | yes | **none** |
+| Invented research publications public | 8 | **0** |
+| Real migrated publications listed | mixed with placeholders | **clean** |
+| Research landing | placeholder content | designed empty state |
+
+`http://v2.spu.edu.sy` now redirects to `https://v2.spu.edu.sy`, not to
+production — the staging overlay rewrites the release's hard-coded canonical
+origin, as §E4 requires.
+
+### F3 — Rollback point
+
+`/home/spuedu/.spu_backups/20260824_124824` holds the code archive, `.env`,
+web root, database dump, and `DEPLOYED_COMMIT`. The archive was verified to
+contain all 118 `resources/views/public/` files before the deploy proceeded —
+the check that §E3 exists to enforce.
+
+### F4 — Still outstanding
+
+Nothing in §A changed on the content side except that the sections now render
+their real content. Still open:
+
+- **§B** — the three WHM/root items (OPcache, nginx gzip, FPM pool). Untouched.
+- **§A1** — research centres, projects, themes and researchers remain retired
+  behind the empty state. They have no legacy equivalent, so they need SPU to
+  author real bilingual content or an explicit decision to retire them.
+- **§A2–A4** — unchanged.
+- `/ar/student-life` 404s and is linked from navigation. It predates this work;
+  either point it at `/ar/campus-life` or remove the menu entry.

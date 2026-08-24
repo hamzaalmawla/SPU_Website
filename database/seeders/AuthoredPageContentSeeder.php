@@ -234,7 +234,11 @@ class AuthoredPageContentSeeder extends Seeder
             }
         }
 
-        return ['published' => $published, 'skipped' => $skipped + (count($sources) - count($payloads))];
+        // $payloads can exceed $sources by one (suggestions-complaints is not
+        // settings backed), so clamp rather than report a negative skip count.
+        $unavailable = max(0, count($sources) - count($payloads));
+
+        return ['published' => $published, 'skipped' => $skipped + $unavailable];
     }
 
     /**
