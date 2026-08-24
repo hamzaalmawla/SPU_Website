@@ -120,20 +120,37 @@ final class ResearchPublicPagesTest extends TestCase
 
     public function test_discovered_research_listing_routes_return_ok(): void
     {
+        // Data-backed listings always render: "no matching records" is an ordinary
+        // empty-results state, not a retirement.
         foreach ([
             '/en/research/repository',
             '/en/research/publications',
+            '/en/research/researchers',
+            '/en/research/expert-finder',
+        ] as $uri) {
+            $this->get($uri)->assertOk();
+        }
+
+        // Published CMS sections render normally. setUp() publishes centers,
+        // projects and themes.
+        foreach ([
             '/en/research/centers',
             '/en/research/projects',
             '/en/research/themes',
-            '/en/research/researchers',
-            '/en/research/expert-finder',
+        ] as $uri) {
+            $this->get($uri)->assertOk();
+        }
+
+        // The rest are CMS-only with nothing published, so they are retired and
+        // 404. They must never render a page telling visitors content is awaiting
+        // review.
+        foreach ([
             '/en/research/conferences',
             '/en/research/library',
             '/en/research/office',
             '/en/research/policies',
         ] as $uri) {
-            $this->get($uri)->assertOk();
+            $this->get($uri)->assertNotFound();
         }
     }
 
@@ -516,11 +533,12 @@ final class ResearchPublicPagesTest extends TestCase
             ->assertSee('مركز CMS للذكاء التطبيقي')
             ->assertSee('رسالة مركز محكومة من CMS.');
 
+        // Unpublishing retires the section outright. It is CMS-only with no
+        // database equivalent and is dropped from navigation, so it 404s rather
+        // than rendering a page that tells visitors content is pending review.
         $this->assertTrue($workflow->unpublish('research.centers', (int) $user->getKey()));
-        $this->get('/en/research/centers')
-            ->assertOk()
-            ->assertDontSee('Research Centers &amp; Labs', false)
-            ->assertDontSee('CMS Center for Applied AI');
+        $this->get('/en/research/centers')->assertNotFound();
+        $this->get('/ar/research/centers')->assertNotFound();
     }
 
     public function test_research_admin_loads_and_serializes_center_catalog_without_publication_fallback(): void

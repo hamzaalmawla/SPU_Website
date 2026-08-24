@@ -48,15 +48,20 @@ final class ResearchPublishRetirePolicyTest extends TestCase
             self::assertContains('/'.$locale.'/research/researchers', $urls);
         }
 
-        $this->get('/en/research')
-            ->assertOk()
-            ->assertSee('Research content is not currently available')
-            ->assertDontSee('Research at SPU')
-            ->assertDontSee('href="/en/research"', false);
-        $this->get('/ar/research')
-            ->assertOk()
-            ->assertSee('محتوى البحث العلمي غير متاح حالياً')
-            ->assertDontSee('href="/ar/research"', false);
+        // A retired section must be gone, not apologising. The "content is not
+        // currently available" page exposed the editorial workflow to visitors,
+        // so the landing now redirects to the archive that holds the real
+        // migrated research instead.
+        foreach (['ar', 'en'] as $locale) {
+            $this->get('/'.$locale.'/research')
+                ->assertRedirect('/'.$locale.'/research/publications');
+
+            $this->followingRedirects()->get('/'.$locale.'/research')
+                ->assertOk()
+                ->assertDontSee('Research at SPU')
+                ->assertDontSee('Research content is not currently available')
+                ->assertDontSee('محتوى البحث العلمي غير متاح حالياً', false);
+        }
     }
 
     public function test_published_bilingual_research_target_is_restored_to_ar_and_en_navigation_after_retire(): void

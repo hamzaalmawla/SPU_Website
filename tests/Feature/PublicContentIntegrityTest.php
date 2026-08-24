@@ -43,7 +43,11 @@ final class PublicContentIntegrityTest extends TestCase
             'title' => 'Research publication '.$publication->getKey(),
         ]);
 
-        $this->get('/en/research')->assertOk()->assertDontSee('Research at SPU');
+        // The landing is retired until SPU publishes it, so it no longer renders
+        // at all - it sends visitors to the archive that holds the real migrated
+        // research. Either way the fixture copy must never reach the public.
+        $this->get('/en/research')->assertRedirect('/en/research/publications');
+        $this->followingRedirects()->get('/en/research')->assertOk()->assertDontSee('Research at SPU');
         $this->get('/en/research/publications')->assertOk()->assertDontSee('Research publication '.$publication->getKey());
         $this->get('/en/research/publications/ai-dental-diagnostics')->assertNotFound();
         $this->get('/en/news/events-list/evt-001')->assertNotFound();

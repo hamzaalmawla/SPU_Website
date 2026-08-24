@@ -78,7 +78,10 @@ final class LegacySubsiteContentQueryResolver implements LegacyQueryModuleResolv
      * @var array<string, string>
      */
     private const SECTIONS = [
-        'research' => ['index' => 8, 'path' => '/research'],
+        // The research landing is retired until SPU publishes it, so the old
+        // research subsite resolves to the archive that actually holds its
+        // material - the migrated legacy publications.
+        'research' => ['index' => 8, 'path' => '/research/publications'],
         'hospital' => ['index' => 9, 'path' => '/campus-life/hospital'],
         'dent_clinic' => ['index' => 10, 'path' => '/campus-life/dental'],
         'clubs' => ['index' => 12, 'path' => '/campus-life/clubs-activities'],

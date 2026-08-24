@@ -25,9 +25,23 @@ final class ResearchController extends Controller
         private readonly SeoMetadataServiceInterface $seoMetadataService,
     ) {}
 
-    public function index(Request $request, string $locale): View
+    public function index(Request $request, string $locale): View|RedirectResponse
     {
-        return $this->renderPage($request, $locale, $this->researchPageService->landing($locale), 'public.research.index', '/research');
+        $page = $this->researchPageService->landing($locale);
+
+        // The research landing is editorial chrome with no database equivalent, so
+        // it is unavailable until SPU publishes it. Research itself is not empty -
+        // the publications archive carries the migrated legacy research - so send
+        // visitors there instead of showing an apology page.
+        //
+        // Safe to redirect unconditionally: the publications archive always
+        // renders. It is data-backed, so "no matching records" is an ordinary
+        // empty-results state with working filters, not a retirement.
+        if (! $page->isAvailable) {
+            return redirect()->to('/'.$locale.'/research/publications');
+        }
+
+        return $this->renderPage($request, $locale, $page, 'public.research.index', '/research');
     }
 
     public function repository(Request $request, string $locale): View
@@ -62,7 +76,7 @@ final class ResearchController extends Controller
 
     public function centers(Request $request, string $locale): View
     {
-        return $this->renderPage($request, $locale, $this->researchPageService->centers($locale), 'public.research.centers.index', '/research/centers');
+        return $this->renderRetirableSection($request, $locale, $this->researchPageService->centers($locale), 'public.research.centers.index', '/research/centers');
     }
 
     public function center(Request $request, string $locale, string $slug): View
@@ -75,7 +89,7 @@ final class ResearchController extends Controller
 
     public function projects(Request $request, string $locale): View
     {
-        return $this->renderPage($request, $locale, $this->researchPageService->projects($locale, $request->only(['q', 'status', 'faculty', 'theme', 'page'])), 'public.research.projects.index', '/research/projects');
+        return $this->renderRetirableSection($request, $locale, $this->researchPageService->projects($locale, $request->only(['q', 'status', 'faculty', 'theme', 'page'])), 'public.research.projects.index', '/research/projects');
     }
 
     public function project(Request $request, string $locale, string $slug): View
@@ -88,7 +102,7 @@ final class ResearchController extends Controller
 
     public function themes(Request $request, string $locale): View
     {
-        return $this->renderPage($request, $locale, $this->researchPageService->themes($locale), 'public.research.themes.index', '/research/themes');
+        return $this->renderRetirableSection($request, $locale, $this->researchPageService->themes($locale), 'public.research.themes.index', '/research/themes');
     }
 
     public function theme(Request $request, string $locale, string $slug): View
@@ -119,7 +133,7 @@ final class ResearchController extends Controller
 
     public function conferences(Request $request, string $locale): View
     {
-        return $this->renderPage($request, $locale, $this->researchPageService->conferences($locale), 'public.research.conferences', '/research/conferences');
+        return $this->renderRetirableSection($request, $locale, $this->researchPageService->conferences($locale), 'public.research.conferences', '/research/conferences');
     }
 
     public function conferenceRegistration(Request $request, string $locale): View
@@ -135,17 +149,17 @@ final class ResearchController extends Controller
 
     public function library(Request $request, string $locale): View
     {
-        return $this->renderPage($request, $locale, $this->researchPageService->library($locale), 'public.research.library', '/research/library');
+        return $this->renderRetirableSection($request, $locale, $this->researchPageService->library($locale), 'public.research.library', '/research/library');
     }
 
     public function office(Request $request, string $locale): View
     {
-        return $this->renderPage($request, $locale, $this->researchPageService->office($locale), 'public.research.office', '/research/office');
+        return $this->renderRetirableSection($request, $locale, $this->researchPageService->office($locale), 'public.research.office', '/research/office');
     }
 
     public function policies(Request $request, string $locale): View
     {
-        return $this->renderPage($request, $locale, $this->researchPageService->policies($locale), 'public.research.policies', '/research/policies');
+        return $this->renderRetirableSection($request, $locale, $this->researchPageService->policies($locale), 'public.research.policies', '/research/policies');
     }
 
     public function legacyDetail(Request $request, string $locale): RedirectResponse
@@ -155,6 +169,27 @@ final class ResearchController extends Controller
         abort_if($slug === null, 404);
 
         return redirect()->route('public.research.publications.show', ['locale' => $locale, 'slug' => $slug]);
+    }
+
+    /**
+     * Render a CMS-only research section, or 404 if it has been retired.
+     *
+     * These sections have no database equivalent, so when nothing is published
+     * there is genuinely nothing to show. The alternative - an empty-state page
+     * reading "this section will appear after bilingual content is published and
+     * reviewed" - exposes our editorial workflow to visitors and reads as an
+     * unfinished site, so it must never be public. None of these paths appear in
+     * navigation while unavailable, so a real 404 costs nothing.
+     *
+     * Data-backed pages (publications, researchers) deliberately do NOT use this:
+     * an archive whose filters return nothing is a normal empty-results state,
+     * not a retirement, and must keep rendering.
+     */
+    private function renderRetirableSection(Request $request, string $locale, ResearchPageDTO $page, string $view, string $suffix): View
+    {
+        abort_if(! $page->isAvailable, 404);
+
+        return $this->renderPage($request, $locale, $page, $view, $suffix);
     }
 
     private function renderPage(Request $request, string $locale, ResearchPageDTO $page, string $view, string $suffix): View
