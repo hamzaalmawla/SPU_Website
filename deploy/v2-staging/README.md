@@ -97,6 +97,13 @@ APP=/home/spuedu/spu_v2_app
 WEB=/home/spuedu/public_html/spu_v2/public
 OLD=/home/spuedu/public_html
 
+# Cache stores the release expects. Missing directories fail at runtime, not at
+# deploy time, so create them before the first request.
+mkdir -p "$APP/storage/framework/cache/data" \
+         "$APP/storage/framework/cache/webhook" \
+         "$APP/storage/framework/cache/rate-limiter"
+chmod -R 775 "$APP/storage" "$APP/bootstrap/cache"
+
 # public_path() must resolve, or @vite silently emits no stylesheet and the
 # whole site renders unstyled.
 ln -sfn "$WEB" "$APP/public"
@@ -170,6 +177,15 @@ Not in git and must not be. The deployed values differ from
   the overlay's authority and no application redirect can escape to production.
 - Trusted proxies are fixed in repository bootstrap to `127.0.0.1,::1`; only the
   documented local cPanel nginx hop may supply forwarded scheme/host headers.
+- `RELEASE_VERSION=v2-<YYYYMMDDHHMM>` — namespaces the cache keys per release, so
+  a deploy cannot serve entries built by the previous one. Bump it on every
+  deploy; the value itself is arbitrary as long as it changes.
+- `CACHE_WEBHOOK_STORE=webhook` — keeps webhook replay state in its own store so
+  ordinary cache invalidation cannot clear it. This matches the config default;
+  it is set explicitly so the isolation is visible in the environment.
+- `RATE_LIMIT_CACHE_DRIVER` must stay **unset**. It selects the *driver* for the
+  `rate-limiter` store and already defaults to `file`. Setting it to the store
+  name breaks boot with `Driver [rate-limiter] is not supported`.
 
 Credentials are recorded outside the repo, on the operator's machine.
 
