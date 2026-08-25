@@ -913,3 +913,125 @@ Most importantly, this reconciliation applies to the available local snapshot, n
 | Publication tests | `tests/Feature/LegacyResearchPublicationPublishingServiceTest.php` |
 | Public-page tests | `tests/Feature/ResearchPublicPagesTest.php` |
 | Private record-level evidence | `storage/app/private/legacy-import-exports/members-review-packets/20260728_180031/` |
+
+---
+
+## 14. Independent verification against the live databases — 2026-08-24
+
+The report above reconciles a **local** legacy snapshot dated 2026-03-29 and a
+**local** current database. This section records an independent check of the same
+claims against the **live legacy database** (`spuedu_db`, read through a
+SELECT-only user) and the **deployed production database** (`spuedu_v2`).
+
+Method: read-only queries only. Nothing was written to either database.
+
+### 14.1 Every numeric claim verified
+
+| Claim in this report | Verified value | Source |
+|---|---|---|
+| `jx_member_categories` total | **349** | live legacy DB |
+| Service-1 rows | **302** | live legacy DB |
+| Hidden service-1 excluded (4) | **4** | live legacy DB |
+| Titleless service-1 excluded (9) | **9** | live legacy DB |
+| Service-2 excluded (47) | **47** | live legacy DB |
+| `research_publications` imported (289) | **289** | production |
+| Translations (549) | **549** | production |
+| Deferred file references (241) | **241** | production |
+| Normalized `research_files` (0) | **0** | production |
+| Authors present (156) | **156** | production |
+| Citation present (69) | **69** | production |
+| Publisher present (59) | **59** | production |
+| Validated DOI (11) | **11** | production |
+| Citation-backed year (63) | **63** | production |
+| Keywords present (225) | **225** | production |
+| Explicit journal rank (0) | **0** | production |
+| Safely linked owner (5) | **5** | production |
+
+No discrepancy was found. One apparent mismatch — a naive count of non-empty
+`keywords` returns 289 — resolves in the report's favour: 121 translation rows
+store an empty JSON array `[]`, and excluding those gives exactly **225**
+publications with genuine keywords. The report's figure is the correct one.
+
+### 14.2 §3.4 scope limitation — closed
+
+§3.4 states that research may have been added to the live old website after the
+2026-03-29 snapshot, and that "a fresh read-only production export or documented
+research API is still required for a final delta import."
+
+Queried directly against the live legacy database:
+
+- `jx_member_categories` holds **349 rows** — identical to the snapshot;
+- the service-type split is identical (302 service-1, 47 service-2);
+- the highest legacy category id is **380**, and the highest `legacy_source_id`
+  present in `research_publications` is also **380**.
+
+**There is no delta.** The migration is complete with respect to the live legacy
+research source as of this date. No further export or research API is needed for
+this table. (Re-check before cutover if the old site remains editable.)
+
+### 14.3 §2 "material discrepancy" — not present in production
+
+The executive summary flags that all 289 publications were enabled with
+`extraction_status=published`, contradicting the fail-closed duplicate policy.
+
+That describes the **local** database. Production is correct:
+
+| `extraction_status` | Count | Public? |
+|---|---:|---|
+| `published` | **253** | enabled |
+| `duplicate_review` | **36** | **held private** |
+
+The 36 duplicate-title records identified in §8.1 are not public. The
+publication step was run with `--exclude-duplicate-review`, which is the policy
+this report asks for. The discrepancy is a local-environment artifact, not a
+production defect.
+
+### 14.4 §9.2 deferred files — the missing evidence now exists
+
+§9.2 gives the reason no normalized `research_files` were created: the migration
+had no verified evidence of physical file existence, exact public path, MIME
+type, extension consistency, or byte size.
+
+Each of the 241 `legacy_research_file_references.legacy_path` values was resolved
+against the legacy document root, retrying case-insensitively:
+
+| Result | Count |
+|---|---:|
+| Resolved to a real file | **231** |
+| Genuinely missing | 10 |
+
+All 231 live under `downloads/files`. By type: **227 PDF**, 2 JPG, 1 DOC,
+1 DOCX. Byte sizes are readable, and the paths already serve publicly — three
+sampled files returned HTTP 200 with `Content-Type: application/pdf` and their
+full byte length from `v2.spu.edu.sy`, because `downloads/files` is symlinked
+into the web root for legacy media continuity.
+
+So the blocking evidence is available: existence, exact public path, extension
+and size are all confirmed, and MIME type is being served correctly today.
+
+**231 research publications have a downloadable paper on the server that the site
+does not currently offer.** This is the largest remaining content gap in the
+research migration, and it is now a mechanical task rather than a research one.
+
+The 10 unresolved paths should stay unresolved: a reference with no file behind
+it must not become a public download link.
+
+### 14.5 Locale coverage, confirmed
+
+| Locale | Publications |
+|---|---:|
+| Arabic | 288 |
+| English | 261 |
+| Both | 260 |
+
+Consistent with §8.2: one record (source ID `380`) has no Arabic title, and 28
+have no English title. 288 + 261 = 549 translations.
+
+### 14.6 What this section does not claim
+
+- It does not re-verify the §8.3 empty-body list or the §8.1 duplicate pairs
+  record by record; those remain editorial review items.
+- It does not assert the 231 files are the *correct* paper for each publication —
+  only that the referenced path exists, is readable, and is already served.
+  Attaching them is still an editorial action.
+- It does not change any data. Everything in this section is read-only evidence.
