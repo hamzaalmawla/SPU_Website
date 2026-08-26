@@ -300,7 +300,7 @@ final class LegacyResearchPublicationImportService implements LegacyResearchPubl
                     'research_publication_id' => (int) $publication->getKey(),
                     'legacy_source_table' => self::ATTACHMENT_TABLE,
                     'legacy_source_id' => (int) ($attachment['source_id'] ?? 0),
-                    'legacy_path' => (string) $path,
+                    'legacy_path' => $this->legacyMediaPath((string) $path),
                     'label_ar' => $attachment['label_ar'] ?? null,
                     'label_en' => $attachment['label_en'] ?? null,
                     'sort_order' => $index,
@@ -632,5 +632,35 @@ final class LegacyResearchPublicationImportService implements LegacyResearchPubl
                 'source_sha256' => $sourceHash,
             ],
         ]);
+    }
+
+    /**
+     * Turn a legacy attachment column into a path the media resolver can use.
+     *
+     * jx_member_items stores these as a bare filename and the old CMS prefixed
+     * the download directory at render time. legacy_path is consumed as a path by
+     * MediaUrlResolver::resolveLegacy(), so a bare filename resolves to "/<file>"
+     * at the web root and 404s - and because publicationDownloads() renders these
+     * references directly, that surfaces as a broken download link on a live
+     * publication page rather than as a missing one.
+     *
+     * Same rule as LegacyNewsImportService::legacyPhotoPath(); see
+     * Docs/LEGACY_REDIRECT_MAINTENANCE_GUIDE.md invariant 1.4.
+     */
+    private function legacyMediaPath(?string $value): ?string
+    {
+        $value = is_string($value) ? trim(str_replace('\\', '/', $value)) : '';
+
+        if ($value === '') {
+            return null;
+        }
+
+        if (str_starts_with($value, '/') || preg_match('#^(https?:)?//#i', $value) === 1 || str_contains($value, '/')) {
+            return $value;
+        }
+
+        $directory = trim((string) config('legacy_media.photo_directory', 'downloads/files'), '/');
+
+        return $directory === '' ? $value : $directory.'/'.$value;
     }
 }
