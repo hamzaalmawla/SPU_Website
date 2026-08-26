@@ -1035,3 +1035,64 @@ have no English title. 288 + 261 = 549 translations.
   only that the referenced path exists, is readable, and is already served.
   Attaching them is still an editorial action.
 - It does not change any data. Everything in this section is read-only evidence.
+
+---
+
+## 15. §9 resolved — 2026-08-25
+
+§9.2 deferred the 241 attachment paths because the migration lacked verified
+evidence of file existence, exact public path, MIME type, extension consistency
+and byte size. That evidence was gathered and the gap is now closed.
+
+### 15.1 The deferral was masking a live defect
+
+`legacy_path` held a **bare filename**, because `jx_member_items` stores it that
+way and the old CMS prefixed the download directory at render time.
+
+`ResearchPageService::publicationDownloads()` renders these references directly.
+So the references were not merely unused — each one produced a **visible download
+button pointing at `/<filename>` on the web root**, which 404s. Verified before
+the fix: the publication for legacy source `11` offered
+`/1497694182_1496475427_dryeser.pdf` → **404**.
+
+A broken download is worse than an absent one, so this outranked normalization.
+
+### 15.2 Outcome
+
+Each path was resolved against the legacy document root, retrying
+case-insensitively because the filesystem is case-sensitive and the old CMS was
+not:
+
+| Result | Count |
+|---|---:|
+| Resolved to a real file | **231** |
+| No file behind the reference — pruned | 10 |
+
+All 231 live under `downloads/files`: **227 PDF**, 2 JPG, 1 DOC, 1 DOCX. Their
+`status` is now `resolved`.
+
+Verified after the fix: the previously broken link returns **200
+`application/pdf`, 684,521 bytes**, and a random sample of 12 repaired paths all
+return 200. These serve through the existing legacy-media symlink, so no file was
+copied and no storage was consumed.
+
+The 10 pruned references had no file on the server. Removing them is deliberate:
+a reference with nothing behind it must not render a download link.
+
+### 15.3 Why `research_files` is still 0
+
+Normalized `research_files` rows require a `MediaAsset`, which means importing
+each file into managed storage. That is not needed for the files to work — the
+legacy-media path serves them correctly today — and it would duplicate roughly
+227 PDFs into an account with limited quota.
+
+The remaining reason to normalize would be editorial: letting staff replace or
+retitle a paper through the admin. That is a product decision, not a migration
+gap, and the report should no longer be read as blocking on it.
+
+### 15.4 Source fixed, not just the data
+
+`LegacyResearchPublicationImportService` now routes attachment paths through
+`legacyMediaPath()`, so a re-import cannot reintroduce the bare-filename form.
+`legacy-import:repair-research-file-paths` is dry-run by default and requires
+`--prune` before deleting anything. Five tests cover both.
