@@ -116,6 +116,46 @@ main nav:has(> ol) ol {
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 18.5rem), 1fr));
 }
 
+@media (max-width: 767px) {
+    #home-news .cms-grid-news {
+        display: flex;
+        gap: 1.25rem;
+        margin-inline: -1rem;
+        padding-inline: 1rem;
+        overflow-x: auto;
+        overscroll-behavior-inline: contain;
+        scroll-snap-type: x mandatory;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #home-news .cms-grid-news::-webkit-scrollbar {
+        display: none;
+    }
+
+    #home-news .news-slide {
+        flex: 0 0 85%;
+        max-width: 85%;
+        scroll-snap-align: center;
+    }
+
+    #home-news .news-slide h3,
+    #home-news .news-slide p {
+        display: -webkit-box;
+        overflow: hidden;
+        line-height: 1.6;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 3;
+    }
+}
+
+@media (max-width: 400px) {
+    #home-news .news-slide {
+        flex-basis: 90%;
+        max-width: 90%;
+    }
+}
+
 .cms-grid-mini {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
