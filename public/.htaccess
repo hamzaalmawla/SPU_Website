@@ -101,6 +101,19 @@
     RewriteRule ^_legacy/.*\.(?:html?|xhtml|xml|svgz?)(?:\.|$) - [R=404,L,NC]
     RewriteRule ^_legacy/(?:.*/)?\.[^/]+$ - [R=404,L,NC]
     RewriteRule ^(?:downloads/files(?:/.*)?|downloads/files2(?:/.*)?|images(?:/.*)?|pdf(?:/.*)?|cv_bank(?:/.*)?|(?:med|dent|pharm|info|petrol|admin|research|hospital|dent_clinic|alumni|clubs)/images(?:/.*)?)\.(?:php[0-9]?|phtml|phar|cgi|pl|py|sh|asp|aspx|jsp|exe|dll|com|bat|cmd|ps1|sql|bak|conf|config|ini|log)(?:\.|$) - [R=404,L,NC]
+    # Markup and SVG are blocked only for requests that would FALL THROUGH to the
+    # legacy trees. The prefixes above are shared: /images/ is both the mount point
+    # for the old site's uploads and the directory holding this application's own
+    # committed icon set. Without the !-f guard this rule 404s our own SVGs before
+    # the file is ever looked up — which is exactly what it did in production,
+    # taking out all 37 icons (search, language, social, chevrons) site-wide.
+    #
+    # The guard preserves the security intent in full: a legacy upload never has a
+    # file of its own under this document root, so it still matches and is still
+    # refused. Only developer-committed assets that physically exist here are let
+    # through. Media-library uploads are unaffected — they are served from /storage,
+    # not /images, so this cannot become an editor-controlled XSS path.
+    RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^(?:downloads/files(?:/.*)?|downloads/files2(?:/.*)?|images(?:/.*)?|pdf(?:/.*)?|cv_bank(?:/.*)?|(?:med|dent|pharm|info|petrol|admin|research|hospital|dent_clinic|alumni|clubs)/images(?:/.*)?)\.(?:html?|xhtml|xml|svgz?)(?:\.|$) - [R=404,L,NC]
     RewriteRule ^(?:downloads/files|downloads/files2|images|pdf|cv_bank|(?:med|dent|pharm|info|petrol|admin|research|hospital|dent_clinic|alumni|clubs)/images)/(?:.*\/)?\.[^/]+$ - [R=404,L,NC]
 

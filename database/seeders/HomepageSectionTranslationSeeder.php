@@ -290,7 +290,7 @@ class HomepageSectionTranslationSeeder extends Seeder
                     'meta' => $l === 'ar' ? 'شؤون الطلاب والتواصل المجتمعي' : 'Student Affairs and Outreach',
                     'action' => $this->action(
                         $l === 'ar' ? 'اكتشف التفاصيل' : 'View Details',
-                        '/'.$l.'/student-life',
+                        '/'.$l.'/campus-life',
                     ),
                 ],
             ],
@@ -535,7 +535,7 @@ class HomepageSectionTranslationSeeder extends Seeder
                     'startsAt' => '2026-03-30',
                     'timeLabel' => 'Student Life',
                     'location' => $l === 'ar' ? 'الحرم الجامعي' : 'Main Campus',
-                    'url' => '/'.$l.'/student-life',
+                    'url' => '/'.$l.'/campus-life',
                 ],
             ],
             'content' => [
@@ -585,7 +585,7 @@ class HomepageSectionTranslationSeeder extends Seeder
                         : ['Access portals', 'Schedules', 'Services', 'Academic resources'],
                     'action' => $this->action(
                         $l === 'ar' ? 'عرض المصادر' : 'View Student Resources',
-                        '/'.$l.'/student-life',
+                        '/'.$l.'/campus-life',
                     ),
                 ],
                 [
@@ -707,7 +707,7 @@ class HomepageSectionTranslationSeeder extends Seeder
                         $this->action($l === 'ar' ? 'الكليات' : 'Faculties', '/'.$l.'/faculties'),
                         $this->action($l === 'ar' ? 'القبول والتسجيل' : 'Admissions', '/'.$l.'/admissions'),
                         $this->action($l === 'ar' ? 'البحث العلمي' : 'Research', '/'.$l.'/research'),
-                        $this->action($l === 'ar' ? 'الحياة الجامعية' : 'Student Life', '/'.$l.'/student-life'),
+                        $this->action($l === 'ar' ? 'الحياة الجامعية' : 'Student Life', '/'.$l.'/campus-life'),
                         $this->action($l === 'ar' ? 'الأخبار' : 'News', '/'.$l.'/news'),
                     ],
                 ],
