@@ -143,7 +143,21 @@ final class NewsWorkflowTest extends TestCase
         $this->get('/en/news/articles')
             ->assertOk()
             ->assertSeeInOrder(['Newer Legacy News', 'Older Legacy News'])
+            ->assertSee('data-news-grid="articles"', false)
+            ->assertSee('data-news-card', false)
+            ->assertSee('grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3', false)
+            ->assertSee('content-media-image h-full w-full', false)
+            ->assertDontSee('md:h-[500px]', false)
+            ->assertDontSee('top-[-3.25rem]', false)
             ->assertDontSee('Separate Announcement');
+
+        $this->get('/en/news')
+            ->assertOk()
+            ->assertSee('data-news-grid="landing"', false)
+            ->assertSee('data-news-card', false)
+            ->assertSee('grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3', false)
+            ->assertDontSee('md:h-[500px]', false)
+            ->assertDontSee('top-[-3.25rem]', false);
     }
 
     public function test_homepage_news_selector_returns_published_articles_in_requested_order(): void

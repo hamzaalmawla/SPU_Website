@@ -41,32 +41,32 @@
                 @endforeach
             </form>
 
-            <div class="cms-grid-news mt-8 gap-7">
+            <div data-news-grid="articles" class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 xl:gap-7">
                 @forelse ($articles->items as $article)
-                    <article id="article-{{ $article->id }}" class="overflow-hidden rounded-[6px] border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-md">
+                    <article id="article-{{ $article->id }}" data-news-card class="group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_34px_rgba(32,39,89,0.07)] transition duration-300 hover:-translate-y-1 hover:border-spu-blue/20 hover:shadow-[0_22px_52px_rgba(32,39,89,0.13)]">
                         <a href="{{ $article->url }}" class="block">
-                            <div class="relative aspect-[1.58] overflow-hidden bg-slate-100">
-                                <img src="{{ $article->imageUrl ?: '/images/news/researches.jpeg' }}" onerror="this.onerror=null;this.src='/images/news/researches.jpeg'" alt="{{ $article->title }}" loading="lazy" class="h-full w-full object-cover transition duration-500 hover:scale-[1.03]">
+                            <div class="relative aspect-[16/10] overflow-hidden border-b border-slate-100 bg-slate-100">
+                                <img src="{{ $article->imageUrl ?: '/images/news/researches.jpeg' }}" onerror="this.onerror=null;this.src='/images/news/researches.jpeg'" alt="{{ $article->title }}" loading="lazy" class="content-media-image h-full w-full">
                                 @if ($article->category)
-                                    <span class="absolute left-3 top-3 rounded-[3px] bg-white px-2.5 py-1 text-[10px] font-bold text-spu-blue shadow-sm rtl:left-auto rtl:right-3">{{ $article->category->name }}</span>
+                                    <span class="absolute start-4 top-4 max-w-[calc(100%_-_2rem)] truncate rounded-full bg-white/95 px-3.5 py-1.5 text-[11px] font-bold text-spu-blue shadow-md backdrop-blur-sm">{{ $article->category->name }}</span>
                                 @endif
                             </div>
                         </a>
 
-                        <div class="p-6">
-                            <a href="{{ $article->url }}" class="block" aria-label="{{ $article->title }}">
-                                <h2 class="text-[16px] font-bold leading-[21px] text-spu-blue">{{ $article->title }}</h2>
-                            </a>
+                        <div class="flex flex-1 flex-col p-5 sm:p-6">
                             @if ($article->publishedAt)
-                                <p class="mt-2 text-[11px] font-bold text-spu-red" translate="no">{{ $article->publishedAt }}</p>
+                                <p class="text-[12px] font-bold text-spu-red" translate="no">{{ $article->publishedAt }}</p>
                             @endif
+                            <a href="{{ $article->url }}" class="mt-3 block rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-red" aria-label="{{ $article->title }}">
+                                <h2 class="line-clamp-3 text-[18px] font-bold leading-[1.45] text-spu-blue transition-colors group-hover:text-spu-red sm:text-[19px]">{{ $article->title }}</h2>
+                            </a>
                             @if ($article->excerpt)
-                                <p class="mt-4 min-h-[68px] text-[13px] font-medium leading-[22px] text-slate-600">{{ $article->excerpt }}</p>
+                                <p class="mt-4 line-clamp-3 text-[14px] font-medium leading-7 text-slate-600">{{ $article->excerpt }}</p>
                             @endif
 
-                            <a href="{{ $article->url }}" class="mt-5 inline-flex items-center gap-2 text-[12px] font-bold text-spu-red transition hover:text-spu-blue">
+                            <a href="{{ $article->url }}" class="mt-auto flex items-center justify-between gap-3 border-t border-slate-100 pt-5 text-[12px] font-bold text-spu-blue transition-colors hover:text-spu-red">
                                 <span>{{ $page['readMoreLabel'] }}</span>
-                                <img src="/images/icon-arrow-right-outline.svg" alt="" class="h-3 w-3 rtl:rotate-180" aria-hidden="true">
+                                <img src="/images/icon-arrow-right-outline.svg" alt="" class="h-3 w-3 shrink-0 rtl:rotate-180" aria-hidden="true">
                             </a>
                         </div>
                     </article>

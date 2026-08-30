@@ -1222,10 +1222,12 @@ final class FacilitiesWorkflowTest extends TestCase
         $this->get('/en/facilities/medicine/alumni')
             ->assertOk()
             ->assertSee('/storage/faculty/student-photo.jpg', false)
+            ->assertSee('content-media-image h-full w-full', false)
             ->assertDontSee('/images/unkown.jpeg', false);
         $this->get('/en/facilities/medicine/valedictorians')
             ->assertOk()
             ->assertSee('/storage/faculty/student-photo.jpg', false)
+            ->assertSee('content-media-image h-full w-full', false)
             ->assertDontSee('/images/unkown.jpeg', false);
 
         $facilities = app(FacultyPageServiceInterface::class);

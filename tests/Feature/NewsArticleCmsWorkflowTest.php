@@ -89,6 +89,24 @@ final class NewsArticleCmsWorkflowTest extends TestCase
         ]);
     }
 
+    public function test_filament_create_does_not_require_optional_seo_metadata(): void
+    {
+        $this->actingAs($this->editor, 'web');
+        $payload = $this->payload('Article without SEO metadata');
+        unset($payload['seoMeta']);
+
+        Livewire::test(CreateNewsArticle::class)
+            ->assertSet('data.seoMeta', [])
+            ->fillForm($payload)
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $article = NewsArticle::query()->where('slug', 'article-without-seo-metadata')->firstOrFail();
+        $draft = CmsDraft::query()->where('target_key', $this->targetKey($article))->latest('id')->firstOrFail();
+
+        $this->assertSame([], $draft->payload_json['seo_meta'] ?? null);
+    }
+
     public function test_published_article_draft_is_isolated_and_protected_preview_renders_revision(): void
     {
         $article = $this->publishedArticle('Published article');

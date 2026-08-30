@@ -46,6 +46,7 @@ final class EServicesDetailPageTest extends TestCase
         }
 
         $this->get('/en/e-services/library')
+            ->assertSee('aria-label="Breadcrumb"', false)
             ->assertSee('Verified open resources')
             ->assertSee('https://www.doabooks.org', false)
             ->assertSee('https://doaj.org', false)

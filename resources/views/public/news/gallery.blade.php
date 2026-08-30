@@ -29,7 +29,7 @@
             @php($galleryIndex = 0)
             @if ($featured)
                 <button type="button" data-gallery-item data-gallery-index="{{ $galleryIndex++ }}" data-src="{{ $featured->imageUrl }}" data-alt="{{ $featured->altText }}" data-title="{{ $featured->title }}" data-caption="{{ $featured->caption }}" x-on:click="open" class="group relative mt-10 block h-[440px] w-full overflow-hidden rounded-2xl bg-slate-100 text-start shadow-sm" aria-label="{{ $page['openLabel'] }}: {{ $featured->title }}">
-                    <img src="{{ $featured->imageUrl }}" alt="{{ $featured->altText }}" class="h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]">
+                    <img src="{{ $featured->imageUrl }}" alt="{{ $featured->altText }}" class="content-media-image h-full w-full">
                     <span class="absolute inset-0 bg-gradient-to-t from-spu-blue/90 via-transparent to-transparent"></span>
                     <span class="absolute inset-x-0 bottom-0 p-7 text-white md:p-10"><span class="text-xs font-bold text-white/70">{{ $featured->categoryLabel }} · {{ $featured->dateLabel }}</span><strong class="mt-2 block text-2xl">{{ $featured->title }}</strong>@if($featured->caption)<span class="mt-2 block text-sm text-white/80">{{ $featured->caption }}</span>@endif</span>
                 </button>
@@ -38,7 +38,7 @@
             <div class="mt-7 grid gap-6 md:grid-cols-2">
                 @forelse ($galleryItems->items as $item)
                     <button type="button" id="{{ $item->id }}" data-gallery-item data-gallery-index="{{ $galleryIndex++ }}" data-src="{{ $item->imageUrl }}" data-alt="{{ $item->altText }}" data-title="{{ $item->title }}" data-caption="{{ $item->caption }}" x-on:click="open" class="group overflow-hidden rounded-xl border border-slate-200 bg-white text-start shadow-sm" aria-label="{{ $page['openLabel'] }}: {{ $item->title }}">
-                        <span class="block h-64 overflow-hidden"><img src="{{ $item->imageUrl }}" alt="{{ $item->altText }}" loading="lazy" class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"></span>
+                        <span class="block h-64 overflow-hidden"><img src="{{ $item->imageUrl }}" alt="{{ $item->altText }}" loading="lazy" class="content-media-image h-full w-full"></span>
                         <span class="block p-5"><span class="text-xs font-bold text-spu-red">{{ $item->categoryLabel }} · {{ $item->dateLabel }}</span><strong class="mt-2 block text-lg text-spu-blue">{{ $item->title }}</strong></span>
                     </button>
                 @empty

@@ -80,14 +80,6 @@
     background: rgba(32, 39, 89, 0.06);
   }
 
-  .honor-card__media img {
-    transition: transform 350ms ease;
-  }
-
-  .honor-card:hover .honor-card__media img {
-    transform: scale(1.045);
-  }
-
   .honor-card__gpa {
     position: absolute;
     right: 7px;

@@ -33,7 +33,7 @@
                 <template x-if="selectedEvent">
                     <article :key="activeEventIndex" x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100" class="flex flex-1 flex-col">
                         <div class="relative h-[220px] overflow-hidden md:h-[250px]">
-                            <img :src="selectedEventImage()" :alt="selectedEventAlt()" class="h-full w-full object-cover transition-transform duration-700 hover:scale-110">
+                            <img :src="selectedEventImage()" :alt="selectedEventAlt()" class="content-media-image h-full w-full">
                             <div class="absolute inset-x-6 top-6 w-fit rounded-[10px] bg-[#27316d] px-7 py-2 text-[15px] font-bold text-white rtl:right-6 rtl:left-auto ltr:left-6 ltr:right-auto" x-text="selectedEvent.type"></div>
                         </div>
                         <div class="flex flex-1 flex-col bg-[#edf2fa] px-8 py-6 md:px-8 md:py-5">

@@ -64,6 +64,8 @@ class NewsCardPropertyTest extends TestCase
         $this->assertStringContainsString('March 15, 2026', $html);
         $this->assertStringContainsString('Campus', $html);
         $this->assertStringContainsString('href="/en/news/full-article"', $html);
+        $this->assertStringContainsString('class="content-media-image h-full w-full"', $html);
+        $this->assertStringNotContainsString('object-cover', $html);
     }
 
     public function test_news_card_omits_optional_fields_when_null(): void

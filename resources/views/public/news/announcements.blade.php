@@ -29,7 +29,7 @@
             @if ($featured)
                 <article class="grid overflow-hidden rounded-xl border border-spu-red/20 bg-section shadow-[0_18px_45px_rgba(9,17,68,0.08)] lg:grid-cols-[0.9fr_1.1fr]">
                     <a href="{{ $featured->url }}" class="block min-h-[250px] overflow-hidden bg-slate-100">
-                        <img src="{{ $featured->imageUrl ?: '/images/news/researches.jpeg' }}" alt="{{ $featured->title }}" class="h-full w-full object-cover transition duration-500 hover:scale-[1.03]">
+                        <img src="{{ $featured->imageUrl ?: '/images/news/researches.jpeg' }}" alt="{{ $featured->title }}" class="content-media-image h-full w-full">
                     </a>
                     <div class="flex flex-col justify-center p-7 lg:p-10">
                         <p class="text-[11px] font-bold uppercase tracking-[0.15em] text-spu-red">{{ $page['featuredLabel'] }}</p>

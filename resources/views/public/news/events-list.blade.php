@@ -23,7 +23,7 @@
             <div class="mt-10 grid gap-7 md:grid-cols-2">
                 @forelse ($upcomingEvents as $event)
                     <article id="{{ $event->id }}" class="scroll-mt-28 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                        <img src="{{ $event->imageUrl }}" alt="{{ $event->title }}" class="h-60 w-full object-cover">
+                        <img src="{{ $event->imageUrl }}" alt="{{ $event->title }}" class="content-media-image h-60 w-full">
                         <div class="p-7">
                             <div class="flex items-center justify-between gap-3 text-xs font-bold"><span class="text-spu-red">{{ $event->categoryLabel }}</span><span class="text-emerald-700">{{ $page['freeLabel'] }}</span></div>
                             <h3 class="mt-3 text-xl font-bold text-spu-blue"><a href="{{ $event->detailUrl }}" class="transition hover:text-spu-red focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-spu-red">{{ $event->title }}</a></h3>
@@ -49,7 +49,7 @@
             <div class="mt-8 grid gap-5 md:grid-cols-3">
                 @foreach ($pastEvents as $event)
                     <a href="{{ $event->detailUrl }}" class="group overflow-hidden rounded-xl border border-slate-200 bg-section">
-                        <img src="{{ $event->imageUrl }}" alt="{{ $event->title }}" loading="lazy" class="h-44 w-full object-cover transition duration-500 group-hover:scale-[1.03]">
+                        <img src="{{ $event->imageUrl }}" alt="{{ $event->title }}" loading="lazy" class="content-media-image h-44 w-full">
                         <div class="p-5"><p class="text-xs font-bold text-spu-red">{{ $event->dateLabel }}</p><h3 class="mt-2 font-bold text-spu-blue">{{ $event->title }}</h3><span class="mt-4 inline-flex text-xs font-bold text-spu-red">{{ $page['detailsLabel'] }}</span></div>
                     </a>
                 @endforeach

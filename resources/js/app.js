@@ -18,6 +18,7 @@ import { createDynamicFormShell, createDynamicFormView } from './alpine/dynamicF
 import { initStudyPlanPages } from './alpine/studyPlan.js';
 import { initRevealSections }   from './alpine/scrollReveal.js';
 import { createVirtualizedSchedule } from './alpine/virtualizedSchedule.js';
+import { registerHomepageComponents } from './homepage.js';
 
 // Alpine components (x-data="name()")
 Alpine.data('mobileNav',       createMobileNav);
@@ -37,6 +38,7 @@ Alpine.data('dynamicFormShell', createDynamicFormShell);
 Alpine.data('dynamicFormView', createDynamicFormView);
 Alpine.data('virtualizedSchedule', createVirtualizedSchedule);
 registerDynamicFormStore(Alpine);
+registerHomepageComponents(Alpine);
 
 window.Alpine = Alpine;
 
@@ -50,15 +52,6 @@ function whenDomReady() {
     });
 }
 
-async function registerPageComponents() {
-    if (!document.querySelector('[data-homepage]')) {
-        return;
-    }
-
-    const { registerHomepageComponents } = await import('./homepage.js');
-    registerHomepageComponents(Alpine);
-}
-
 function initAfterAlpineStart() {
     requestAnimationFrame(() => {
         requestAnimationFrame(() => {
@@ -70,7 +63,6 @@ function initAfterAlpineStart() {
 
 async function bootAlpine() {
     await whenDomReady();
-    await registerPageComponents();
 
     Alpine.start();
     initAfterAlpineStart();

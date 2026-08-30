@@ -70,12 +70,13 @@ final class HeaderNavigationRenderingTest extends TestCase
             ->assertSee('معرض الوسائط');
     }
 
-    public function test_header_uses_the_reference_stacking_level(): void
+    public function test_header_is_stable_from_first_paint_and_uses_the_reference_stacking_level(): void
     {
         $this->get('/en')
             ->assertOk()
-            ->assertSee('id="site-header" class="absolute top-0 z-[200]', false);
+            ->assertSee('id="site-header" class="fixed inset-x-0 top-0 z-[200]', false)
+            ->assertSee('src="/images/icon-bars-outline.svg" :src="mobileToggleIcon()"', false);
 
-        $this->assertStringContainsString('z-[200]', (string) file_get_contents(resource_path('js/alpine/mobileNav.js')));
+        $this->assertStringNotContainsString('headerClass()', (string) file_get_contents(resource_path('views/public/layout/header.blade.php')));
     }
 }

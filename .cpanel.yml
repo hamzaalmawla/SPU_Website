@@ -1,0 +1,4 @@
+---
+deployment:
+  tasks:
+    - /bin/bash deploy/v2-staging/publish-svg-assets.sh

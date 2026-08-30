@@ -123,6 +123,20 @@ for f in med dent pharm info petrol admin research hospital dent_clinic alumni c
 done
 ```
 
+The cPanel Git deployment is defined in the repository's `.cpanel.yml`. It runs
+`deploy/v2-staging/publish-svg-assets.sh`, which publishes every tracked SVG
+under `public/images` into `$WEB/images` and fails if representative navigation
+icons are missing. This explicit copy is required because `$APP/public` is a
+symlink to the separate cPanel document root; updating the application checkout
+alone does not publish newly tracked static files into that document root.
+
+After each deployment, verify both root-level and nested icon paths:
+
+```bash
+curl --fail --head https://v2.spu.edu.sy/images/icon-search-outline.svg
+curl --fail --head https://v2.spu.edu.sy/images/icons/check-circle.svg
+```
+
 `cv_bank` is deliberately **not** linked — it holds applicant CVs and was
 removed from scope. Do not re-add it without an explicit decision.
 

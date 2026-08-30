@@ -68,6 +68,8 @@ class HomepageInteractionAccessibilityTest extends TestCase
 
         $this->assertStringContainsString('x-show="isSecondary(index)" type="button"', $honorHtml);
         $this->assertStringContainsString(':aria-hidden="isHidden(index)"', $honorHtml);
+        $this->assertStringContainsString('content-media-image content-media-image--dark', $honorHtml);
+        $this->assertStringNotContainsString('object-cover', $honorHtml);
         $this->assertStringContainsString('class="path-card-front', $pathHtml);
         $this->assertStringContainsString('class="path-card-back', $pathHtml);
         $this->assertStringContainsString(':class="{ \'path-card--active\': activePathCard === 0 }"', $pathHtml);

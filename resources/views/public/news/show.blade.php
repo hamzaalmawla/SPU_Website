@@ -48,7 +48,7 @@
             </header>
 
             <figure class="mt-7 overflow-hidden rounded-[4px] bg-spu-blue">
-                <img src="{{ $article->imageUrl ?: '/images/news/researches.jpeg' }}" onerror="this.onerror=null;this.src='/images/news/researches.jpeg'" alt="{{ $article->title }}" class="h-[250px] w-full object-cover md:h-[390px]">
+                <img src="{{ $article->imageUrl ?: '/images/news/researches.jpeg' }}" onerror="this.onerror=null;this.src='/images/news/researches.jpeg'" alt="{{ $article->title }}" class="content-media-image h-[250px] w-full md:h-[390px]">
             </figure>
 
             <div class="mx-auto mt-8 text-[14px] font-medium leading-7 text-slate-700">
@@ -123,7 +123,7 @@
                         <article class="overflow-hidden rounded-[6px] border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-md">
                             <a href="{{ $related->url }}" class="block">
                                 <div class="relative aspect-[1.58] overflow-hidden bg-slate-100">
-                                    <img src="{{ $related->imageUrl ?: '/images/news/researches.jpeg' }}" onerror="this.onerror=null;this.src='/images/news/researches.jpeg'" alt="{{ $related->title }}" loading="lazy" class="h-full w-full object-cover transition duration-500 hover:scale-[1.03]">
+                                    <img src="{{ $related->imageUrl ?: '/images/news/researches.jpeg' }}" onerror="this.onerror=null;this.src='/images/news/researches.jpeg'" alt="{{ $related->title }}" loading="lazy" class="content-media-image h-full w-full">
                                     @if ($related->categoryLabel)
                                         <span class="absolute left-3 top-3 rounded-[3px] bg-white px-2.5 py-1 text-[10px] font-bold text-spu-blue shadow-sm rtl:left-auto rtl:right-3">{{ $related->categoryLabel }}</span>
                                     @endif
