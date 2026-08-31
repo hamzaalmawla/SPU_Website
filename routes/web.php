@@ -42,7 +42,7 @@ Route::get('/{referencePath}', BrowserLocaleRedirectController::class)
 
 Route::prefix('{locale}')
     ->where(['locale' => 'ar|en'])
-    ->middleware(['locale', 'cache.public'])
+    ->middleware(['locale', 'cache.public', 'minify.html'])
     ->group(function (): void {
         Route::get('/', HomeController::class)->name('public.home');
         Route::get('/e-services', EServicesController::class)->name('public.e-services');

@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\AdminAuthMiddleware;
 use App\Http\Middleware\CachePublicPages;
+use App\Http\Middleware\MinifyPublicHtml;
 use App\Http\Middleware\EnforcePublicOrigin;
 use App\Http\Middleware\LocaleSetterMiddleware;
 use App\Http\Middleware\RedirectContinuityMiddleware;
@@ -41,6 +42,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin.auth' => AdminAuthMiddleware::class,
             'two.factor' => TwoFactorChallengeMiddleware::class,
             'cache.public' => CachePublicPages::class,
+            'minify.html' => MinifyPublicHtml::class,
             'verify.webhook' => VerifyWebhookSignature::class,
         ]);
 
