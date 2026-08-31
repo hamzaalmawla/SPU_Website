@@ -267,18 +267,55 @@ final class LaunchValidateCommand extends Command
             $lastmodsValid = $entries->every(
                 fn ($entry): bool => preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/', $entry->lastmod) === 1,
             );
+            // The entry point serves an index, so reaching it proves very little
+            // on its own — a valid index pointing at missing children would pass
+            // any shape check. Follow it into every child instead.
+            $isIndex = is_string($xml) && str_contains($xml, '<sitemapindex');
+            $childrenValid = true;
+            $childCount = 0;
+
+            if ($isIndex) {
+                preg_match_all('#<sitemap>\s*<loc>([^<]+)</loc>#', (string) $xml, $matches);
+                $children = $matches[1] ?? [];
+                $childCount = count($children);
+                $childrenValid = $childCount > 0;
+
+                foreach ($children as $child) {
+                    $child = html_entity_decode($child, ENT_XML1 | ENT_QUOTES, 'UTF-8');
+
+                    if (! str_starts_with($child, $canonicalUrl.'/')) {
+                        $childrenValid = false;
+
+                        break;
+                    }
+
+                    $childResponse = app()->handle(HttpRequest::create($child, 'GET'));
+                    $childXml = $childResponse->getContent();
+
+                    if ($childResponse->getStatusCode() !== 200
+                        || ! is_string($childXml)
+                        || ! str_contains($childXml, '<urlset')) {
+                        $childrenValid = false;
+
+                        break;
+                    }
+                }
+            }
+
             $valid = $response->getStatusCode() === 200
                 && is_string($xml)
                 && str_contains($xml, '<?xml')
-                && str_contains($xml, '<urlset')
+                && ($isIndex ? $childrenValid : str_contains($xml, '<urlset'))
                 && $originValid
                 && $lastmodsValid;
             $this->record(
                 'Sitemap presence',
                 $valid ? 'PASS' : 'FAIL',
                 $valid
-                    ? "Sitemap endpoint is valid and all URLs use {$canonicalUrl}"
-                    : 'Sitemap endpoint, canonical hosts, or W3C lastmod values are invalid',
+                    ? ($isIndex
+                        ? "Sitemap index and its {$childCount} child document(s) are valid and all URLs use {$canonicalUrl}"
+                        : "Sitemap endpoint is valid and all URLs use {$canonicalUrl}")
+                    : 'Sitemap endpoint, child documents, canonical hosts, or W3C lastmod values are invalid',
             );
         } catch (\Throwable $e) {
             $this->record('Sitemap presence', 'FAIL', $e->getMessage());
