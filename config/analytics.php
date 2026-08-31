@@ -86,6 +86,9 @@ return [
             'https://www.googletagmanager.com',
             'https://www.google-analytics.com',
             'https://*.google-analytics.com',
+            // A CSP wildcard requires at least one label, so *.analytics.google.com
+            // does not match the bare host that consent mode posts to.
+            'https://analytics.google.com',
             'https://*.analytics.google.com',
         ] : [],
     ],

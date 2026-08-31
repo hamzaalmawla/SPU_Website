@@ -60,6 +60,16 @@ final class CacheService implements CacheServiceInterface
 
         $value = $callback();
 
+        // A null result is already treated as a miss on read, so storing one
+        // buys nothing and costs an entry. On the file driver that is a real
+        // file per key, never garbage-collected, on an account with limited
+        // quota. It adds up where nulls are common: every 404 under the locale
+        // group reaches this, and a crawler walking legacy URLs after cutover
+        // would leave one inode per distinct dead URL per TTL.
+        if ($value === null) {
+            return null;
+        }
+
         try {
             if (! $repository->put($cacheKey, $value, $ttlSeconds)) {
                 $this->logFailure('write', new \RuntimeException('Cache store rejected the write.'));

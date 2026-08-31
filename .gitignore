@@ -42,5 +42,11 @@ TODO.md
 /public/sitemap.xml
 /public/sitemaps
 
+# Never commit this. Apache's front controller only reaches Laravel when no
+# physical file matches, so a committed robots.txt silently shadows
+# SitemapController@robots and ships `Allow: /` to whatever host it lands on.
+# The staging overlay places its own disallow-all copy on the host.
+/public/robots.txt
+
 # Legacy media mount; symlinked on the server, never committed.
 /public/downloads

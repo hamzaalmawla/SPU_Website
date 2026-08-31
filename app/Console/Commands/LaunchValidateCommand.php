@@ -343,8 +343,13 @@ final class LaunchValidateCommand extends Command
             $canonicalUrl = rtrim((string) config('edge.canonical_url'), '/');
             $response = app()->handle(HttpRequest::create($canonicalUrl.'/robots.txt', 'GET'));
             $runtimeContent = $response->getContent();
+            // Apache reaches the front controller only when no physical file
+            // matches, so a robots.txt on disk wins in every environment - not
+            // just production. Validating the route while the web server serves
+            // a file that says the opposite is how a staging disallow-all turns
+            // into `Allow: /` on the live domain without anything going red.
             $staticPath = public_path('robots.txt');
-            $content = $env === 'production' && is_file($staticPath)
+            $content = is_file($staticPath)
                 ? file_get_contents($staticPath)
                 : $runtimeContent;
             $hasSitemap = is_string($content) && str_contains($content, 'Sitemap: '.$canonicalUrl.'/sitemap.xml');

@@ -1,5 +1,0 @@
-# AUTO-GENERATED FILE. DO NOT EDIT.
-User-agent: *
-Allow: /
-
-Sitemap: https://spu.edu.sy/sitemap.xml

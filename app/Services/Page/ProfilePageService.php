@@ -10,6 +10,7 @@ use App\DTOs\Content\ProfilePageDTO;
 use App\Models\Faculty\Department;
 use App\Models\Faculty\Faculty;
 use App\Models\Media\MediaAsset;
+use App\Models\Person\CouncilMember;
 use App\Models\Person\FacultyMember;
 use App\Models\Person\FacultyMemberEducation;
 use App\Models\Person\FacultyMemberEducationTranslation;
@@ -49,14 +50,22 @@ final class ProfilePageService implements ProfilePageServiceInterface
     }
 
     /**
-     * Mirrors exactly what getProfile() treats as a resolvable profile: a public
-     * Person, or failing that a public FacultyMember, with this slug. Neither
-     * DTO builder can return null once a row is found, so existence is the whole
-     * of the question — and answering it this way costs two indexed lookups
-     * instead of two hydrations with nine eager-loaded relations each.
+     * Mirrors what getProfile() treats as a resolvable profile: a public Person,
+     * or failing that a public FacultyMember, with this slug AND a translation
+     * the builders can actually use — answered with indexed existence queries
+     * rather than two hydrations of nine eager-loaded relations each.
      *
-     * Locale plays no part. It only constrains which translations getProfile()
-     * eager-loads; it never decides whether the profile resolves.
+     * The translation clause is not defensive padding. buildPersonProfileDto()
+     * and buildFacultyMemberProfileDto() both return null when no translation
+     * resolves, and fallbackLocales() always tries the request locale, then ar,
+     * then en. A public row carrying neither an ar nor an en translation is
+     * therefore a profile that exists in the database and 404s on the web.
+     * Without this clause the navigation would render a link to it and the
+     * sitemap would publish its URL — the precise defect the availability check
+     * exists to prevent.
+     *
+     * Locale plays no part beyond that: it selects which translation is shown,
+     * never whether one resolves, because the fallback covers both locales.
      */
     public function hasPublicProfile(string $slug): bool
     {
@@ -64,14 +73,26 @@ final class ProfilePageService implements ProfilePageServiceInterface
             return false;
         }
 
-        return Person::query()->public()->where('slug', $slug)->exists()
-            || FacultyMember::query()->public()->where('slug', $slug)->exists();
+        return Person::query()->public()->where('slug', $slug)->whereHas(
+            'translations',
+            fn ($query) => $query->whereIn('locale', ['ar', 'en']),
+        )->exists()
+            || FacultyMember::query()->public()->where('slug', $slug)->whereHas(
+                'translations',
+                fn ($query) => $query->whereIn('locale', ['ar', 'en']),
+            )->exists();
     }
 
     public function hasAnyPublicProfile(): bool
     {
-        return Person::query()->public()->exists()
-            || FacultyMember::query()->public()->exists();
+        return Person::query()->public()->whereHas(
+            'translations',
+            fn ($query) => $query->whereIn('locale', ['ar', 'en']),
+        )->exists()
+            || FacultyMember::query()->public()->whereHas(
+                'translations',
+                fn ($query) => $query->whereIn('locale', ['ar', 'en']),
+            )->exists();
     }
 
     /** @return array<int, ProfilePageDTO> */
@@ -431,7 +452,7 @@ final class ProfilePageService implements ProfilePageServiceInterface
         return (Str::slug($title) ?: 'research-publication').'-'.((int) ($sourceId ?? $publication->getKey()));
     }
 
-    /** @param Collection<int, \App\Models\Person\CouncilMember> $memberships @return array<int, array<string, mixed>> */
+    /** @param Collection<int, CouncilMember> $memberships @return array<int, array<string, mixed>> */
     private function mapCouncilMemberships(Collection $memberships, string $locale): array
     {
         return $memberships

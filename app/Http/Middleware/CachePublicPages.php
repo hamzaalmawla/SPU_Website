@@ -362,7 +362,18 @@ final class CachePublicPages
     {
         $headers = $response->headers->all();
 
-        unset($headers['cache-control'], $headers['date'], $headers['set-cookie'], $headers['x-cache']);
+        // content-length must not survive into the cache: restoring a cached
+        // response expands the CSRF placeholder into a full token, so a stored
+        // length would describe the body before that substitution and truncate
+        // it. Symfony does not currently set the header, which is exactly why
+        // this is worth closing now rather than discovering later.
+        unset(
+            $headers['cache-control'],
+            $headers['date'],
+            $headers['set-cookie'],
+            $headers['x-cache'],
+            $headers['content-length'],
+        );
 
         return $headers;
     }
