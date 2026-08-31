@@ -1,6 +1,14 @@
 # Syrian Private University — Website Foundation
 
-The official website platform for [Syrian Private University](https://spu.edu.sy), built as a bilingual (Arabic / English) CMS with a Filament v3 admin panel. This repository covers the homepage, navigation shell, landing-page builder, and admin foundation — the base layer that all future university modules build on.
+The official website platform for [Syrian Private University](https://spu.edu.sy), built as a bilingual
+(Arabic / English) CMS with a Filament v3 admin panel. It covers the full public site — About, Admissions,
+Campus Life, Contact, E-Services, Facilities, News and Events, Research, Alumni and the Virtual Tour — plus
+the admin panel that manages them and the legacy URL continuity layer that carries the old site's addresses
+forward.
+
+The build is deployed at `v2.spu.edu.sy` and is being prepared to take over `spu.edu.sy`. Launch gates and
+their current status live in `Docs/CURRENT_REMEDIATION_EXECUTION_CHECKLIST.md`; nothing in this README
+implies deployment or launch approval.
 
 ## Stack
 
@@ -8,8 +16,8 @@ The official website platform for [Syrian Private University](https://spu.edu.sy
 |-------|-----------|
 | Framework | Laravel 12 (PHP 8.2+) |
 | Admin Panel | Filament v3 |
-| Database | MySQL 8 |
-| Cache / Queue / Session | Redis |
+| Database | MariaDB 10.11 in production; MySQL 8 compatible. Tests run on SQLite, so keep SQL portable |
+| Cache / Queue / Session | File cache, database queue and sessions in production — **there is no Redis on the host.** Redis is supported by the code and used nowhere live |
 | Frontend | Tailwind CSS 4, Alpine.js 3, Vite 7 |
 | Icons | Static SVG assets / inline SVG |
 | Sanitization | HTMLPurifier 4 |
@@ -37,7 +45,10 @@ php artisan serve
 
 Admin login uses `ADMIN_EMAIL` and `ADMIN_PASSWORD` from your environment. Local development falls back to `local-development-password` only when `ADMIN_PASSWORD` is unset.
 
-> **Note:** Set `CACHE_STORE=array` in `.env` for local development. The default `database` driver does not support cache tags. Use `redis` in production.
+> **Note:** Set `CACHE_STORE=array` in `.env` for local development. The default `database` driver does not
+> support cache tags. Production runs `CACHE_STORE=file` — the host has neither Redis nor Memcached, and `file`
+> benchmarks around 5x faster than `database` while keeping page HTML out of the database.
+> See `deploy/v2-staging/README.md` section 6.
 
 ## Architecture
 
@@ -58,22 +69,24 @@ Request → Middleware → Controller → Service → Model → Database
 
 ```
 app/
-├── Contracts/          15 service interfaces
-├── DTOs/               60 data transfer objects (final readonly)
-├── Services/           23 service implementations
-├── Models/             51 Eloquent models
+├── Contracts/          105 service interfaces
+├── DTOs/               179 data transfer objects (final readonly)
+├── Services/           135 service implementations
+├── Models/             89 Eloquent models
 ├── Http/
-│   ├── Controllers/    6 thin controllers
-│   └── Middleware/     8 custom middleware
+│   ├── Controllers/    21 thin controllers
+│   └── Middleware/     9 custom middleware
 ├── Filament/
-│   ├── Pages/          4 admin pages
-│   ├── Resources/      4 admin resources
-│   └── Support/        HomepageFormSchema (extracted field builders)
-├── Policies/           6 authorization policies
-├── Support/            HomepagePayloadMapper, HtmlSanitizer
-├── Console/Commands/   8 artisan commands
+│   ├── Pages/          22 admin pages
+│   ├── Resources/      16 admin resources
+│   └── Support/        extracted form-schema builders
+├── Policies/           11 authorization policies
+├── Support/            payload mappers, HtmlSanitizer, media URL resolution
+├── Console/Commands/   71 artisan commands
 └── Providers/          AppServiceProvider (all bindings)
 ```
+
+Counts move as the site grows — `ArchitectureGuardTest` is what actually holds the layering, not this diagram.
 
 ## Features
 
@@ -146,7 +159,7 @@ Faculty editors see only pages and media matching their `faculty_scope_slug`.
 
 ## Caching
 
-- **Driver:** Redis with tag-based invalidation (production), array (local)
+- **Driver:** file with tag-based invalidation (production), array (local). Redis is supported by the code but is not available on the host
 - **Public pages:** Cached with locale in the key, bypassed for authenticated users, admin routes, preview flows, and non-GET requests
 - **Invalidation:** Publish/update/delete operations flush the corresponding cache tags immediately for both AR and EN
 - **Headers:** `X-Cache: HIT | MISS | BYPASS` on every public response
@@ -220,16 +233,17 @@ Key settings:
 | `APP_ENV` | local | production |
 | `APP_DEBUG` | true | false |
 | `APP_URL` | http://localhost | https://spu.edu.sy |
-| `CACHE_STORE` | array | redis |
-| `SESSION_DRIVER` | database | redis |
-| `QUEUE_CONNECTION` | database | redis |
+| `CACHE_STORE` | array | file |
+| `SESSION_DRIVER` | database | database |
+| `QUEUE_CONNECTION` | database | database |
 | `SESSION_SECURE_COOKIE` | false | true |
 | `SESSION_ENCRYPT` | false | true |
 | `SENTRY_LARAVEL_DSN` | (empty) | (your DSN) |
 
 ## Database
 
-37 migrations covering CMS tables, legacy continuity, and domain model foundations. 10 seeders for local development and production baseline data.
+84 migrations covering CMS tables, legacy continuity, and the full domain model. 35 seeders for local
+development and production baseline data.
 
 ```bash
 php artisan migrate:fresh --seed    # Full reset with seed data
@@ -260,30 +274,27 @@ npm run build         # Production asset build
 
 ## Current Scope
 
-This repository is the **homepage + admin panel foundation**. The following are in scope:
+`AGENTS.MD` is authoritative: this repository is in **full-site completion and production-readiness scope**.
+The foundation-only phase restriction previously recorded here is obsolete — every module it listed as out of
+scope is built and deployed.
 
-- ✅ Public homepage (11 sections, bilingual)
-- ✅ Navigation shell (header, footer, utility)
-- ✅ Generic landing-page builder
-- ✅ Admin panel / CMS foundation
-- ✅ Draft / preview / publish workflow
-- ✅ Menu builder
-- ✅ Settings management
-- ✅ Media library
-- ✅ Audit logging
-- ✅ Legacy URL continuity
-- ✅ SEO layer (sitemap, robots.txt, canonical, hreflang)
+Built:
 
-The following are **out of scope** for this phase:
+- Public homepage (11 CMS sections, bilingual) and the navigation shell
+- About, Admissions, Campus Life, Contact, E-Services, Facilities, News and Events, Research, Alumni, Virtual Tour
+- Faculty pages, subpages, profiles, projects, study plans, course pages, alumni and valedictorian directories
+- Dynamic forms, registrations, applications, server-side filtering and pagination
+- Admin panel and CMS coverage for managed content, with draft / preview / publish / schedule workflows
+- Menu builder, settings, media library, audit logging
+- Legacy URL continuity and the SEO layer (sitemap, robots.txt, canonical, hreflang)
 
-- Full Facilities module
-- Full Research repository
-- Full News module
-- Full Events module
-- Full Admissions module
-- Full Contact / CRM system
+Migrated content in the deployed database: 2,093 published articles (1,090 news and 1,003 announcements),
+289 research publications, 260 faculty members, 4,939 alumni.
 
-Domain models for these modules exist in the database schema as foundations for future development.
+What remains before this can become the primary domain is tracked as gates, not as scope — see
+`Docs/CURRENT_REMEDIATION_EXECUTION_CHECKLIST.md` and `Docs/launch-readiness-checklist.md`. Several of those
+gates are host-level (OPcache, compression and PHP-FPM pool sizing all need WHM/root) and cannot be closed
+from this repository.
 
 ## License
 

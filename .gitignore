@@ -34,3 +34,6 @@ TODO.md
 /STUDENT_GUIDE
 /Thesis
 
+
+# Agent worktrees are local scratch, never part of a release.
+.claude/worktrees/

@@ -157,4 +157,25 @@ return [
 
     'prefix' => $cachePrefix,
 
+    /*
+    |--------------------------------------------------------------------------
+    | Public Page Cache Lifetime
+    |--------------------------------------------------------------------------
+    |
+    | How long CachePublicPages keeps a rendered public response. This key was
+    | read but never defined, so it silently sat at the 300-second fallback and
+    | every public page was re-rendered twelve times an hour whether or not
+    | anything had changed. On a host with no OPcache and a five-worker FPM pool
+    | that is the difference between serving a page and queueing behind one.
+    |
+    | An hour is safe here because invalidation does not rely on expiry: twenty
+    | services flush the 'public-pages' tag on every write path, and scheduled
+    | publishing runs through those same services via content:publish-scheduled,
+    | so newly published content still appears immediately. Expiry is only the
+    | backstop for a flush that never happened.
+    |
+    */
+
+    'public_page_ttl' => (int) env('CACHE_PUBLIC_PAGE_TTL', 3600),
+
 ];
