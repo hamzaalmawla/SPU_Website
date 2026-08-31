@@ -94,6 +94,7 @@
         @endif
         @stack('styles')
         @stack('head')
+        @include('public.layout.analytics')
     </head>
     <body class="min-h-screen antialiased font-hacen">
         <a class="skip-link" href="#main-content">{{ $locale === 'ar' ? 'انتقل إلى المحتوى الرئيسي' : 'Skip to main content' }}</a>

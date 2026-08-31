@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Public;
 use App\Contracts\Navigation\NavigationServiceInterface;
 use App\Contracts\News\NewsServiceInterface;
 use App\Contracts\Seo\SeoMetadataServiceInterface;
+use App\Contracts\Seo\StructuredDataServiceInterface;
 use App\Contracts\Settings\SettingsServiceInterface;
 use App\DTOs\Navigation\LanguageSwitchLinkDTO;
 use App\Http\Controllers\Controller;
@@ -21,6 +22,7 @@ final class NewsController extends Controller
         private readonly NavigationServiceInterface $navigationService,
         private readonly SettingsServiceInterface $settingsService,
         private readonly SeoMetadataServiceInterface $seoMetadataService,
+        private readonly StructuredDataServiceInterface $structuredDataService,
     ) {}
 
     public function index(Request $request, string $locale): View
@@ -40,7 +42,7 @@ final class NewsController extends Controller
             'pageTitle' => (string) ($page['pageTitle'] ?? ''),
             'pageDescription' => (string) ($page['pageDescription'] ?? ''),
             'seo' => $this->seo($locale, '/news', (string) ($page['pageTitle'] ?? ''), (string) ($page['pageDescription'] ?? ''), (string) ($page['heroImage'] ?? '')),
-        ]));
+        ], $this->newsTrail($locale)));
     }
 
     public function articles(Request $request, string $locale): View
@@ -60,7 +62,7 @@ final class NewsController extends Controller
             'pageTitle' => (string) $page['title'],
             'pageDescription' => (string) $page['summary'],
             'seo' => $this->seo($locale, '/news/articles', (string) $page['seoTitle'], (string) $page['seoDescription'], (string) $page['seoImage']),
-        ]));
+        ], $this->newsTrail($locale, $locale === 'ar' ? 'المقالات' : 'Articles', '/news/articles')));
     }
 
     public function announcements(Request $request, string $locale): View
@@ -86,7 +88,7 @@ final class NewsController extends Controller
                 (string) $page['pageDescription'],
                 (string) $page['heroImage'],
             ),
-        ]));
+        ], $this->newsTrail($locale, $locale === 'ar' ? 'الإعلانات' : 'Announcements', '/news/announcements')));
     }
 
     public function events(Request $request, string $locale): View
@@ -175,7 +177,7 @@ final class NewsController extends Controller
             'galleryItems' => $listing['items'],
             'activeCategory' => $category,
             'seo' => $this->seo($locale, '/news/gallery', (string) $page['title'], (string) $page['summary'], (string) $page['heroImage']),
-        ]));
+        ], $this->newsTrail($locale, $locale === 'ar' ? 'معرض الصور' : 'Gallery', '/news/gallery')));
     }
 
     public function show(Request $request, string $locale, string $article): View
@@ -196,7 +198,7 @@ final class NewsController extends Controller
                 $newsArticle->ogImage,
                 $newsArticle->robots,
             ),
-        ]));
+        ], $this->newsTrail($locale, $newsArticle->title, '/news/'.$article)));
     }
 
     public function redirectLegacyArticle(Request $request, string $locale): RedirectResponse
@@ -210,17 +212,46 @@ final class NewsController extends Controller
         return redirect($article->url, 301);
     }
 
-    /** @param array<string, mixed> $payload @return array<string, mixed> */
-    private function sharedPayload(Request $request, string $locale, string $path, array $payload): array
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<int, array{name: string, url: string}>  $breadcrumbs  Crumbs after the implicit homepage crumb.
+     * @return array<string, mixed>
+     */
+    private function sharedPayload(Request $request, string $locale, string $path, array $payload, array $breadcrumbs = []): array
     {
-        return array_merge([
+        $defaults = [
             'locale' => $locale,
             'direction' => $locale === 'ar' ? 'rtl' : 'ltr',
             'navigation' => $this->navigationService->getFullNavigationPayload($locale, $request->path()),
             'settings' => $this->settingsService->getPublicSettings($locale),
             'languageSwitch' => $this->languageSwitchLinks($locale, $path),
             'isPreview' => false,
-        ], $payload);
+        ];
+
+        if ($breadcrumbs !== []) {
+            $defaults['structuredData'] = $this->structuredDataService->breadcrumbs($locale, $breadcrumbs)->data;
+        }
+
+        return array_merge($defaults, $payload);
+    }
+
+    /**
+     * Build a breadcrumb trail rooted at the news section.
+     *
+     * @return array<int, array{name: string, url: string}>
+     */
+    private function newsTrail(string $locale, ?string $label = null, ?string $path = null): array
+    {
+        $trail = [[
+            'name' => $locale === 'ar' ? 'الأخبار' : 'News',
+            'url' => '/'.$locale.'/news',
+        ]];
+
+        if ($label !== null && $label !== '' && $path !== null && $path !== '') {
+            $trail[] = ['name' => $label, 'url' => '/'.$locale.$path];
+        }
+
+        return $trail;
     }
 
     private function seo(string $locale, string $path, string $title, string $description, ?string $image = null, string $robots = 'index,follow'): mixed

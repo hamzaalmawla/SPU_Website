@@ -1,5 +1,6 @@
 <?php
 
+use App\Contracts\ErrorPage\ErrorPageRendererInterface;
 use App\Http\Middleware\AdminAuthMiddleware;
 use App\Http\Middleware\CachePublicPages;
 use App\Http\Middleware\MinifyPublicHtml;
@@ -14,6 +15,8 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Sentry\Laravel\Integration;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -50,4 +53,27 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         Integration::handles($exceptions);
+
+        // Branded, bilingual error pages.
+        //
+        // Views live in resources/views/errors/{status}.blade.php, which
+        // Laravel resolves on its own as `errors::{status}` — that path alone
+        // already covers raw 500s and maintenance-mode 503s, and it renders
+        // the self-contained standalone shell.
+        //
+        // This callback adds the layer Laravel has no hook for: for the
+        // application-level statuses it attempts the full public shell
+        // (navigation, footer, language switch) and silently degrades back to
+        // the standalone view when the services behind that shell are
+        // unreachable. ErrorPageRenderer returns null — deferring completely
+        // to Laravel — for JSON/API callers, and while APP_DEBUG is on for
+        // non-HTTP exceptions so the debug page survives.
+        //
+        // Typed to HttpExceptionInterface on purpose: AuthenticationException,
+        // ValidationException and HttpResponseException must keep reaching
+        // Laravel's own handling, which runs after render callbacks, so admin
+        // login redirects and form validation redirects are unaffected.
+        $exceptions->render(function (HttpExceptionInterface $e, Request $request): ?Response {
+            return app(ErrorPageRendererInterface::class)->render($e, $request);
+        });
     })->create();

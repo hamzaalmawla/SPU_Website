@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Contracts\Analytics\AnalyticsServiceInterface;
 use App\Contracts\Auth\AuthServiceInterface;
 use App\Contracts\Auth\TotpAuthenticatorInterface;
 use App\Contracts\Career\AlumniDirectoryServiceInterface;
@@ -12,6 +13,8 @@ use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Content\PersonServiceInterface;
 use App\Contracts\Content\ProfileAdminServiceInterface;
+use App\Contracts\ErrorPage\ErrorPageRendererInterface;
+use App\Contracts\ErrorPage\ErrorPageServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanEditorServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
 use App\Contracts\Form\ContactMessageReviewServiceInterface;
@@ -103,12 +106,14 @@ use App\Contracts\Page\VirtualTourPageServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Contracts\Seo\SeoMetadataServiceInterface;
 use App\Contracts\Seo\SitemapServiceInterface;
+use App\Contracts\Seo\StructuredDataServiceInterface;
 use App\Contracts\Settings\SettingsServiceInterface;
 use App\Contracts\Shared\AuditServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
 use App\Contracts\Shared\ContinuityServiceInterface;
 use App\Contracts\Shared\PreviewServiceInterface;
 use App\Contracts\Shared\SlugServiceInterface;
+use App\DTOs\ErrorPage\ErrorPageContentDTO;
 use App\Http\Responses\LogoutResponse;
 use App\Models\Career\Alumni;
 use App\Models\Career\HonorStudent;
@@ -144,6 +149,7 @@ use App\Policies\NewsArticlePolicy;
 use App\Policies\NewsCategoryPolicy;
 use App\Policies\PagePolicy;
 use App\Policies\UserPolicy;
+use App\Services\Analytics\AnalyticsService;
 use App\Services\Auth\AuthService;
 use App\Services\Auth\TotpAuthenticator;
 use App\Services\Career\AlumniDirectoryService;
@@ -152,6 +158,8 @@ use App\Services\Cms\CmsTargetRegistry;
 use App\Services\Cms\CmsWorkflowService;
 use App\Services\Content\PersonService;
 use App\Services\Content\ProfileAdminService;
+use App\Services\ErrorPage\ErrorPageRenderer;
+use App\Services\ErrorPage\ErrorPageService;
 use App\Services\Faculty\FacultyStudyPlanEditorService;
 use App\Services\Faculty\FacultyStudyPlanLinkService;
 use App\Services\Form\ContactMessageReviewService;
@@ -252,6 +260,7 @@ use App\Services\Preview\PreviewTokenStore;
 use App\Services\Research\ResearchPageService;
 use App\Services\Seo\SeoMetadataService;
 use App\Services\Seo\SitemapService;
+use App\Services\Seo\StructuredDataService;
 use App\Services\Settings\SettingsService;
 use App\Services\Shared\AuditService;
 use App\Services\Shared\CacheService;
@@ -302,6 +311,63 @@ class AppServiceProvider extends ServiceProvider
         $this->registerAuthorization();
         $this->configureRateLimiting();
         $this->registerPublicHomepageFooterComposer();
+        $this->registerPublicAnalyticsComposer();
+        $this->registerErrorPageComposer();
+    }
+
+    /**
+     * Supply the analytics tag to the public layout.
+     *
+     * Config-only, so this adds no query and no measurable work per request.
+     * The snippet is null (and the layout emits nothing) unless analytics is
+     * configured, and always null inside the tokenized preview shell.
+     */
+    private function registerPublicAnalyticsComposer(): void
+    {
+        View::composer('layouts.public', function (ViewContract $view): void {
+            $isPreview = ($view->getData()['isPreview'] ?? false) === true;
+
+            $view->with('analytics', app(AnalyticsServiceInterface::class)->snippet($isPreview));
+        });
+    }
+
+    /**
+     * Supply $error to every error view.
+     *
+     * Registered for both the dotted names used by ErrorPageRenderer and the
+     * `errors::` namespace Laravel resolves internally, so the views render
+     * identically whether the branded renderer or the framework's own default
+     * handling reaches them.
+     *
+     * ErrorPageService is deliberately free of database, cache and translator
+     * access, so this composer is safe to run while those are unavailable —
+     * which is exactly when a 500 or 503 renders.
+     */
+    private function registerErrorPageComposer(): void
+    {
+        $statuses = [403, 404, 419, 429, 500, 503];
+        $views = [];
+
+        foreach ($statuses as $status) {
+            $views[] = 'errors.'.$status;
+            $views[] = 'errors::'.$status;
+        }
+
+        View::composer($views, function (ViewContract $view): void {
+            // ErrorPageRenderer already supplies a fully built DTO.
+            if (($view->getData()['error'] ?? null) instanceof ErrorPageContentDTO) {
+                return;
+            }
+
+            $status = (int) preg_replace('/\\D/', '', $view->name());
+            $request = request();
+
+            $view->with('error', app(ErrorPageServiceInterface::class)->content(
+                $status > 0 ? $status : 500,
+                $request->path(),
+                $request->headers->get('Accept-Language'),
+            ));
+        });
     }
 
     private function registerPublicHomepageFooterComposer(): void
@@ -449,6 +515,9 @@ class AppServiceProvider extends ServiceProvider
     {
         return [
             CacheServiceInterface::class => CacheService::class,
+            AnalyticsServiceInterface::class => AnalyticsService::class,
+            ErrorPageServiceInterface::class => ErrorPageService::class,
+            ErrorPageRendererInterface::class => ErrorPageRenderer::class,
             AlumniDirectoryServiceInterface::class => AlumniDirectoryService::class,
             AboutEntityCmsServiceInterface::class => AboutEntityCmsService::class,
             AdmissionsPageServiceInterface::class => AdmissionsPageService::class,
@@ -479,6 +548,7 @@ class AppServiceProvider extends ServiceProvider
             NewsArticleCmsServiceInterface::class => NewsArticleCmsService::class,
             NewsServiceInterface::class => NewsService::class,
             SeoMetadataServiceInterface::class => SeoMetadataService::class,
+            StructuredDataServiceInterface::class => StructuredDataService::class,
             HomepagePreviewAssemblerInterface::class => HomepagePreviewAssembler::class,
             HomepageContentSelectionServiceInterface::class => HomepageContentSelectionService::class,
             HomepageSectionServiceInterface::class => HomepageSectionService::class,
