@@ -104,6 +104,8 @@ use App\Contracts\Page\PageServiceInterface;
 use App\Contracts\Page\ProfilePageServiceInterface;
 use App\Contracts\Page\VirtualTourPageServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
+use App\Contracts\Search\SearchIndexServiceInterface;
+use App\Contracts\Search\SiteSearchServiceInterface;
 use App\Contracts\Seo\SeoMetadataServiceInterface;
 use App\Contracts\Seo\SitemapServiceInterface;
 use App\Contracts\Seo\StructuredDataServiceInterface;
@@ -138,6 +140,7 @@ use App\Models\Person\Person;
 use App\Models\Shared\AuditLog;
 use App\Models\User\User;
 use App\Observers\AboutDomainAuditObserver;
+use App\Observers\SearchIndexObserver;
 use App\Policies\AuditLogPolicy;
 use App\Policies\ContactMessagePolicy;
 use App\Policies\DynamicFormSubmissionPolicy;
@@ -258,6 +261,8 @@ use App\Services\Page\VirtualTourPageService;
 use App\Services\Preview\PreviewService;
 use App\Services\Preview\PreviewTokenStore;
 use App\Services\Research\ResearchPageService;
+use App\Services\Search\SearchIndexService;
+use App\Services\Search\SiteSearchService;
 use App\Services\Seo\SeoMetadataService;
 use App\Services\Seo\SitemapService;
 use App\Services\Seo\StructuredDataService;
@@ -403,6 +408,14 @@ class AppServiceProvider extends ServiceProvider
         Directorate::observe(AboutDomainAuditObserver::class);
         Partnership::observe(AboutDomainAuditObserver::class);
         Person::observe(AboutDomainAuditObserver::class);
+
+        // Publishing, unpublishing and editing all end in a model write, so
+        // observing the content models keeps the derived search index in step
+        // with every editorial path at once. Seeders run under
+        // WithoutModelEvents, so bulk seeding does not pay for this.
+        foreach (SearchIndexObserver::observedModels() as $model) {
+            $model::observe(SearchIndexObserver::class);
+        }
     }
 
     private function enforceProductionSecurityConfiguration(): void
@@ -492,6 +505,13 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('public-form', function (Request $request): Limit {
             return Limit::perMinute(20)->by('public-form|'.$request->ip());
+        });
+
+        // Search runs an indexed scan, so it is cheaper than a form post but
+        // far from free on a five-worker server. 30/min per IP is generous for
+        // a person refining a query and hostile to a scraper walking the index.
+        RateLimiter::for('public-search', function (Request $request): Limit {
+            return Limit::perMinute(30)->by('public-search|'.$request->ip());
         });
 
         RateLimiter::for('two-factor', function (Request $request): Limit {
@@ -620,6 +640,8 @@ class AppServiceProvider extends ServiceProvider
             PersonServiceInterface::class => PersonService::class,
             ProfileAdminServiceInterface::class => ProfileAdminService::class,
             ResearchPageServiceInterface::class => ResearchPageService::class,
+            SearchIndexServiceInterface::class => SearchIndexService::class,
+            SiteSearchServiceInterface::class => SiteSearchService::class,
             SettingsServiceInterface::class => SettingsService::class,
             NavigationServiceInterface::class => NavigationService::class,
             TotpAuthenticatorInterface::class => TotpAuthenticator::class,

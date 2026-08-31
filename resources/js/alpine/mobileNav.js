@@ -6,6 +6,7 @@ export function createMobileNav() {
         searchOpen: false,
         searchQuery: '',
         searchItems: [],
+        searchAllLabel: '',
 
         init() {
             try {
@@ -13,6 +14,8 @@ export function createMobileNav() {
             } catch {
                 this.searchItems = [];
             }
+
+            this.searchAllLabel = this.$el.dataset.searchAllLabel || '';
 
             window.addEventListener('scroll', () => {
                 this.stickyNav = window.scrollY > 40;
@@ -85,6 +88,12 @@ export function createMobileNav() {
 
         needsLongerSearchQuery() {
             return this.searchQuery.length > 0 && this.searchQuery.length < 2;
+        },
+
+        // Label for the "see every result" submit button. The localized string
+        // arrives from the server with a placeholder so no copy lives in JS.
+        allSearchResultsLabel() {
+            return this.searchAllLabel.replace('__QUERY__', this.searchQuery.trim());
         },
 
         toggleMobile() {

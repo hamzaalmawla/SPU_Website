@@ -11,6 +11,11 @@ Artisan::command('inspire', function () {
 Schedule::command('audit:prune')->dailyAt('02:30')->withoutOverlapping();
 Schedule::command('content:publish-scheduled')->everyMinute()->withoutOverlapping();
 
+// The search index is kept live by model observers, but indirect changes — a
+// faculty being disabled, or an importer run with model events off — can leave
+// it behind. A nightly rebuild reconciles it; it is idempotent by design.
+Schedule::command('search:index')->dailyAt('03:10')->withoutOverlapping();
+
 /*
 |--------------------------------------------------------------------------
 | Legacy Import Commands

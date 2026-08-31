@@ -48,6 +48,36 @@ return [
     // Header
     'search_placeholder' => 'Search pages...',
     'search_hint' => 'Type at least 2 characters.',
+    'search_all_results_for' => 'See all results for “:query”',
+    'search_quick_links' => 'Quick links',
+
+    // Site search
+    'search_page_title' => 'Search',
+    'search_page_description' => 'Search university news, research, people and pages.',
+    'search_landmark' => 'Site search',
+    'search_results_for' => 'Search results for “:query”',
+    'search_field_label' => 'Search term',
+    'search_site_placeholder' => 'Search news, research, people or pages...',
+    'search_submit' => 'Search',
+    'search_results_count' => 'Results: :count',
+    'search_filter_label' => 'Filter by content type',
+    'search_min_length' => 'Type at least 2 characters to search.',
+    'search_capped_notice' => 'Showing the top :count matches. Narrow your search for more precise results.',
+    'search_empty_title' => 'Search the university site',
+    'search_empty_text' => 'Type what you are looking for above: a news item, a publication, a member of staff, or any page on the site.',
+    'search_no_results_title' => 'No results found',
+    'search_no_results_text' => 'Nothing matched “:query”.',
+    'search_suggestions_title' => 'You could try:',
+    'search_suggestion_spelling' => 'Checking the spelling, or using fewer words.',
+    'search_suggestion_broaden' => 'Broader terms, for example “medicine” rather than “faculty of human medicine”.',
+    'search_suggestion_filter' => 'Clearing the filter to see every kind of content.',
+    'search_types' => [
+        'all' => 'All',
+        'news' => 'News',
+        'research' => 'Research',
+        'people' => 'People',
+        'pages' => 'Pages',
+    ],
 
     // News
     'news_article_page' => 'News Article Page',

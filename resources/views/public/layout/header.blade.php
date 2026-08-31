@@ -18,6 +18,7 @@
 <header id="site-header" class="absolute top-0 z-[200] w-full pt-3 font-hacen"
         x-data="mobileNav()"
         data-search-items="{{ json_encode($searchItems, JSON_THROW_ON_ERROR) }}"
+        data-search-all-label="{{ __('public.search_all_results_for', ['query' => '__QUERY__']) }}"
         @keydown.escape.window="handleEscape()"
         @keydown.window.ctrl.k.prevent="openSearch()"
         @keydown.window.meta.k.prevent="openSearch()"
@@ -156,18 +157,43 @@
                              x-transition:leave-end="opacity-0 -translate-y-1 scale-[0.98]"
                              style="display: none;"
                              class="site-search-panel absolute right-0 top-[calc(100%+0.75rem)] z-50 w-[min(22rem,calc(100vw-2rem))] rounded-[14px] border border-spu-blue/10 bg-white p-3 shadow-[0_24px_52px_rgba(11,19,50,0.14)]">
-                            <label class="sr-only" for="site-search-input">{{ __('public.search') }}</label>
-                            <input id="site-search-input"
-                                   x-ref="siteSearch"
-                                   x-model="searchQuery"
-                                   type="search"
-                                   class="w-full rounded-[10px] border border-spu-blue/10 px-3 py-2 text-sm font-semibold text-spu-blue outline-none transition focus:border-spu-red"
-                                   placeholder="{{ __('public.search_placeholder') }}">
-                            <div class="mt-2 grid " x-show="searchResults.length">
+                            {{-- Enter submits to the real results page. The nav-label
+                                 suggestions below stay as a fast jump for people who
+                                 already know which page they want. --}}
+                            <form method="GET"
+                                  action="/{{ $locale }}/search"
+                                  role="search"
+                                  aria-label="{{ __('public.search_landmark') }}">
+                                <label class="sr-only" for="site-search-input">{{ __('public.search_field_label') }}</label>
+                                <div class="flex items-center gap-2">
+                                    <input id="site-search-input"
+                                           x-ref="siteSearch"
+                                           x-model="searchQuery"
+                                           type="search"
+                                           name="q"
+                                           autocomplete="off"
+                                           maxlength="100"
+                                           class="w-full rounded-[10px] border border-spu-blue/10 px-3 py-2 text-sm font-semibold text-spu-blue outline-none transition focus:border-spu-red focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-spu-blue"
+                                           placeholder="{{ __('public.search_site_placeholder') }}">
+                                    <button type="submit"
+                                            class="shrink-0 rounded-[10px] bg-spu-red px-3 py-2 text-xs font-bold text-white transition hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-spu-blue">
+                                        {{ __('public.search_submit') }}
+                                    </button>
+                                </div>
+
+                                <button type="submit"
+                                        class="mt-2 block w-full rounded-[8px] px-3 py-2 text-start text-xs font-bold text-spu-red transition hover:bg-spu-blue/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-spu-blue"
+                                        x-show="searchQuery.trim().length >= 2"
+                                        x-text="allSearchResultsLabel()"
+                                        style="display: none;"></button>
+                            </form>
+
+                            <div class="mt-2 grid" x-show="searchResults.length" style="display: none;">
+                                <p class="px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.08em] text-spu-blue/45">{{ __('public.search_quick_links') }}</p>
                                 <template x-for="item in searchResults" :key="searchResultKey(item)">
                                     <a :href="item.url"
                                         @click="closeSearchResult()"
-                                       class="rounded-[8px] px-3 py-2 text-sm font-semibold text-spu-blue transition hover:bg-spu-blue/5"
+                                       class="rounded-[8px] px-3 py-2 text-sm font-semibold text-spu-blue transition hover:bg-spu-blue/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-spu-blue"
                                        x-text="item.label"></a>
                                 </template>
                             </div>

@@ -9,6 +9,28 @@
      style="display: none;"
        class="site-nav-mobile-panel nav:hidden">
     <div class="site-nav-mobile-list">
+        {{-- The header's search panel is desktop-only, so the mobile menu carries
+             its own real search form rather than leaving phone visitors without
+             any way to search the site. --}}
+        <form method="GET"
+              action="/{{ $locale }}/search"
+              role="search"
+              aria-label="{{ __('public.search_landmark') }}"
+              class="mb-3 flex items-center gap-2">
+            <label class="sr-only" for="site-mobile-search-input">{{ __('public.search_field_label') }}</label>
+            <input id="site-mobile-search-input"
+                   type="search"
+                   name="q"
+                   autocomplete="off"
+                   maxlength="100"
+                   placeholder="{{ __('public.search_site_placeholder') }}"
+                   class="w-full rounded-[10px] border border-spu-blue/10 px-3 py-2.5 text-sm font-semibold text-spu-blue outline-none transition focus:border-spu-red focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-spu-blue">
+            <button type="submit"
+                    class="shrink-0 rounded-[10px] bg-spu-red px-4 py-2.5 text-xs font-bold text-white transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-spu-blue">
+                {{ __('public.search_submit') }}
+            </button>
+        </form>
+
         @foreach ($navigation->header->items as $item)
             <div class="site-nav-mobile-card">
                 <div class="site-nav-mobile-row">
