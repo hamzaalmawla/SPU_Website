@@ -37,7 +37,7 @@ Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
 // on a 404. They must fall through to a real 404 so RedirectContinuityMiddleware
 // logs them into unresolved_legacy_requests for triage instead.
 Route::get('/{referencePath}', BrowserLocaleRedirectController::class)
-    ->where('referencePath', '(?!.*\.php$)(?:about|admissions|research|campus-life|e-services|news|contact|facilities|projects|virtual-tour)(?:/.*)?')
+    ->where('referencePath', '(?!.*\.php$)(?:about|admissions|alumni|research|campus-life|e-services|news|contact|facilities|projects|virtual-tour)(?:/.*)?')
     ->name('reference.locale');
 
 Route::prefix('{locale}')

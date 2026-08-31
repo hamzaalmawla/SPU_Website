@@ -461,3 +461,177 @@ Publishing requires an actor with the **`editor`** role — note that
 publish content in the admin panel. `content.editor@spu.edu.sy` exists as the
 migration's publishing actor. Whether that gate is intentional is still an open
 question for the team.
+
+---
+
+## 13. Legacy entry-point coverage (added 2026-08-29)
+
+The old homepage links a set of entry points that had no rule on the new site.
+They are not obscure: they are the site's own top-level navigation, and they were
+about to 404 the moment DNS moved. This section records what was added, the
+evidence behind each destination, and what was deliberately left alone.
+
+### 13.1 How the evidence was gathered
+
+Three independent sources, all re-runnable:
+
+1. **The live old homepage** — `curl https://spu.edu.sy/` and extract every
+   `href`. It links the subsite roots as *relative* paths (`med`, `dent`,
+   `admin`, …) plus six `service=N` content lists and the honour-roll page.
+2. **The live old sitemap** — `https://spu.edu.sy/sitemap.xml`, 28,765 `<loc>`
+   entries. This is what search engines were actually fed, and it disagrees with
+   the homepage about spelling: the sitemap uses the `index.php` form throughout.
+3. **The live pages themselves** — each list page was fetched and its body diffed
+   against the shared template to see what content it actually holds, rather than
+   inferring from the service number alone.
+
+Destinations were then confirmed to answer **200** on the deployed site
+(`v2.spu.edu.sy`) and asserted in `tests/Feature/PX05/LegacyEntryPointContinuityTest.php`.
+
+### 13.2 Bare subsite directory roots
+
+Apache answered `/med` with a 301 to `/med/`, which served that subsite's
+`index.php`. `LegacyEntryPointRedirectSeeder` already mapped the
+`/med/index.php` spelling but not the bare one, so the form the old homepage
+actually links returned a 404.
+
+Laravel normalises the trailing slash away — `Request::path()` reports `med` for
+both `/med` and `/med/` — so one row covers both spellings.
+
+| Legacy root | Destination | Evidence |
+|---|---|---|
+| `/med` | `/ar/facilities/medicine` | 301→`/med/`→200; matches the existing `/med/index.php` row |
+| `/dent` | `/ar/facilities/dentistry` | as above |
+| `/pharm` | `/ar/facilities/pharmacy` | as above |
+| `/info` | `/ar/facilities/artificial-intelligence` | as above |
+| `/petrol` | `/ar/facilities/petroleum` | as above |
+| `/hospital` | `/ar/campus-life/hospital` | as above |
+| `/dent_clinic` | `/ar/campus-life/dental` | as above |
+| `/clubs` | `/ar/campus-life/clubs-activities` | as above |
+
+Each destination mirrors the `index.php` row that already existed, so the two
+spellings of one subsite can never disagree.
+
+`/research` and `/alumni` are **not** in that table on purpose — see 13.5.
+
+### 13.3 Root `service=N` content lists
+
+These are section indexes, not records. No per-record resolver can place them:
+`LegacyNewsQueryResolver` only answers `page=show` URLs carrying a legacy id, and
+`LegacySubsiteContentQueryResolver` deliberately offers no section-level
+catch-all for the root subsite (see §1.2). They now live in
+`LegacyFunctionalRouteQueryResolver` as exact reviewed query signatures.
+
+| service | What the live page holds | Destination |
+|---|---|---|
+| 3 | news — Webometrics ranking, competition results | `/{locale}/news` |
+| 4 | announcements — "إعلان عن…", course notices | `/{locale}/news/announcements` |
+| 5 | partnership MoUs — "الاتفاقيات التي أبرمتها" | `/{locale}/about/partnerships` |
+| 6 | community service — responsibility text, photo library | `/{locale}/news` |
+| 7 | achievements — rankings, awards, published research | `/{locale}/news` |
+| 10 | events — competitions, book fair, receptions | `/{locale}/news/events-list` |
+
+Services 5, 6, 7 and 10 use the destination `config/legacy_category_routes.php`
+already assigns to the same service id, so a list URL and a record URL from one
+service agree on where they land. Services 3 and 4 have no row in that generated
+file on purpose — their *records* belong to `LegacyNewsQueryResolver` — but their
+*list* pages are still section indexes, and the new site has a dedicated route
+for each. This does not contradict §5: that instruction is about the per-record
+`cat_id` allow-list, not the section index.
+
+Both `lang=1` and `lang=2` are registered; the resolver localises the
+destination from the URL's own language.
+
+### 13.4 Per-faculty honour rolls
+
+`/{faculty}/index.php?page=list&ex=2&dir=good_students&lang=1` served each
+faculty's "لائحة الشرف". `good_students` was not in
+`LegacySubsiteContentQueryResolver`'s allowed `dir` list, so all six returned 404.
+It is now a `PEOPLE_DIRS` entry resolving to `/{locale}/facilities/{slug}/valedictorians`
+— the new site's first-class subpage for exactly this material, labelled
+"قائمة الشرف" / "Honor List" in `FacultyPageService`.
+
+Covers `med`, `dent`, `pharm`, `info`, `petrol` and `admin` (Business).
+
+These pages carry student names and grades, so the destination matters. The
+`valedictorians` subpage is the section SPU already publishes through the CMS and
+is editorially gated the same way, so this resolves an old public list to the new
+public list and reveals nothing that is not already public. It never names an
+individual record — the same boundary invariant 1.5 draws around `/members/`. A
+`good_students` URL under `/members/` still returns 404, because the members
+branch runs first.
+
+### 13.5 The `/admin` collision — why the CMS did not move
+
+On the old site `/admin/` is the **Faculty of Business Administration**. On the
+new site `/admin` is the Filament CMS. The obvious fear is that every indexed
+Business Administration link lands on a sign-in page after cutover.
+
+**It does not, and the sitemap is why.** All **1,955** indexed Business
+Administration URLs use the `/admin/index.php` spelling. Not one uses bare
+`/admin` or `/admin/`:
+
+```bash
+grep -c "spu.edu.sy/admin" old_urls.txt          # 1955
+grep "spu.edu.sy/admin" old_urls.txt \
+  | sed 's|https://spu.edu.sy||; s|?.*||' \
+  | sort | uniq -c                                # 1955 /admin/index.php
+```
+
+`/admin/index.php` is already mapped, and `RedirectContinuityMiddleware::shouldSkip()`
+already exempts that exact path from the admin skip-list so continuity can claim
+it. The indexed corpus is therefore covered today. Its typed query variants —
+including the honour roll added in 13.4 — resolve through the same exemption.
+
+That leaves only the bare root, and it was left with the CMS deliberately:
+
+- **Moving the panel is the larger risk.** The path is referenced in ~96 hardcoded
+  literals across ~20 test files plus every Filament-generated URL. Relocating it
+  to rescue a single URL that no search engine has indexed trades a small,
+  measured exposure for a large, unmeasured one.
+- **Redirecting bare `/admin` would break the CMS entry point.** Filament serves
+  the dashboard *at* `/admin`. A rule there would bounce authenticated staff off
+  their own dashboard, and a staff member with an expired session would be sent
+  to a public faculty page with no way back.
+- **The current behaviour is an honest answer, not a wrong one.** An
+  unauthenticated visitor is sent to a sign-in page — clearly not the faculty
+  page they wanted, and clearly not a page pretending to be it. §1.2's objection
+  is to answers that *look* right while being wrong.
+
+Nothing about the admin surface was changed: not the panel path, the route group,
+the middleware skip-list, or the guest redirect.
+
+**Recommended post-launch decision for SPU:** relocate the CMS panel from
+`/admin` to `/cms`, then map bare `/admin` and `/admin/` to
+`/ar/facilities/business-administration`. Doing it *after* cutover decouples a
+large internal change from the DNS move, so the two cannot fail together, and it
+can be scheduled when staff can be told the new URL. This is a decision for the
+university, not a code change to make silently.
+
+### 13.6 Left as honest 404s — open decisions for SPU
+
+| URL | Why it stays a 404 |
+|---|---|
+| `/index.php?lang=…&dir=html&ex=1&page=good_students` | The old **root** honour page renders its heading and nothing else — 11 characters of body against the empty-page template, versus 113 for the contact page. There is no university-wide honour list on the new site; the honour rolls are per faculty. Sending it to `/facilities` would name a faculties index, not an honour list. **Decision needed:** does SPU want a university-wide honour page? If it publishes one, add a single signature to `LegacyFunctionalRouteQueryResolver`. |
+| Root `service=` ids other than 3, 4, 5, 6, 7, 10 | Only the six the old homepage links were reviewed against live content. `service=8`, `11` and `16` appear in the sitemap but were not reviewed, so they stay 404 and get logged for triage rather than absorbed by a pattern. |
+| `/members/**` honour rolls | Private archive, invariant 1.5. |
+
+### 13.7 Re-probing coverage before cutover
+
+`continuity:validate-redirects` gained a `--probe` flag. Rule validation alone
+cannot catch the failure this guide cares about most — a well-formed rule whose
+destination no longer answers — so `--probe` requests every active app-relative
+destination through the application's own router and reports anything that is not
+a direct 200, plus anything that redirects again when it should land in one hop.
+
+```bash
+php artisan continuity:validate-redirects --probe
+```
+
+Run it after `artisan optimize:clear` and before cutover. It exits non-zero if any
+destination is broken, so it can gate a deploy.
+
+Note that three campus-life destinations (`hospital`, `dental`,
+`clubs-activities`) are **editorial CMS content**, not seeded structure. They are
+live on the deployed site, but a database without that content published will
+report them as broken — that is the check working, not a false alarm.
