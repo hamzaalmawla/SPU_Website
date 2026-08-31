@@ -37,3 +37,10 @@ TODO.md
 
 # Agent worktrees are local scratch, never part of a release.
 .claude/worktrees/
+
+# Generated at deploy time by `sitemap:generate`.
+/public/sitemap.xml
+/public/sitemaps
+
+# Legacy media mount; symlinked on the server, never committed.
+/public/downloads

@@ -221,7 +221,7 @@ final class ProfileWorkflowTest extends TestCase
             ->assertSee('English Faculty Member')
             ->assertSee('/en/about/profile/directory-member', false);
 
-        $this->get('/sitemap.xml')
+        $this->get('/sitemaps/sitemap-people.xml')
             ->assertOk()
             ->assertSee('/en/about/profile/directory-member', false);
     }

@@ -6,8 +6,8 @@
                 @if ($section->payload->sectionAction)
                     <a href="{{ $section->payload->sectionAction->url }}" class="flex h-10 w-auto min-w-0 flex-1 items-center justify-center gap-3 rounded-[12px] bg-[#1e2652] text-center text-sm font-bold text-white transition-all hover:bg-opacity-90 md:w-full md:max-w-[195px] md:flex-none" @if ($section->payload->sectionAction->target) target="{{ $section->payload->sectionAction->target }}" rel="noreferrer" @endif>{{ $section->payload->sectionAction->label }}</a>
                 @endif
-                <button type="button" @click="slide('previous')" class="slider-nav-btn w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-controls="research-priorities-track" aria-label="{{ __('public.previous') }}"><img src="/images/icon-chevron-left-outline.svg" class="w-3.5 h-3.5 rtl:rotate-180" alt=""></button>
-                <button type="button" @click="slide('next')" class="slider-nav-btn w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-controls="research-priorities-track" aria-label="{{ __('public.next') }}"><img src="/images/icon-chevron-right-outline.svg" class="w-3.5 h-3.5 rtl:rotate-180" alt=""></button>
+                <button type="button" @click="slide('previous')" class="slider-nav-btn w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-controls="research-priorities-track" aria-label="{{ __('public.previous') }}"><img src="/images/icon-chevron-left-outline.svg" class="w-3.5 h-3.5 rtl:rotate-180" alt="" width="24" height="24" loading="lazy" decoding="async"></button>
+                <button type="button" @click="slide('next')" class="slider-nav-btn w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-controls="research-priorities-track" aria-label="{{ __('public.next') }}"><img src="/images/icon-chevron-right-outline.svg" class="w-3.5 h-3.5 rtl:rotate-180" alt="" width="24" height="24" loading="lazy" decoding="async"></button>
             </div>
         </div>
 
@@ -20,7 +20,8 @@
                         @endif
                         @if ($item->imageUrl)
                             <div class="relative h-[180px] shrink-0 overflow-hidden bg-gray-100">
-                                <img src="{{ $item->imageUrl }}" alt="{{ $item->title }}" loading="lazy" decoding="async" width="320" height="180" class="h-full w-full object-cover" style="transform: translateZ(0);">
+                                @php($researchSrcset = \App\Support\MediaUrlResolver::legacySrcset($item->imageUrl))
+                                <img src="{{ $item->imageUrl }}" @if ($researchSrcset) srcset="{{ $researchSrcset }}" sizes="(max-width: 768px) 100vw, 320px" @endif alt="{{ $item->title }}" loading="lazy" decoding="async" width="320" height="180" class="h-full w-full object-cover" style="transform: translateZ(0);">
                                 @if ($item->categoryLabel)
                                     <div class="absolute start-4 top-4 rounded-lg bg-spu-blue px-4 py-1.5 text-[11px] font-bold text-white">{{ $item->categoryLabel }}</div>
                                 @endif
@@ -40,7 +41,7 @@
                                 <div class="mt-auto pt-4">
                                     <span class="research-card__action">
                                         <span>{{ $locale === 'ar' ? 'عرض التفاصيل' : 'View Details' }}</span>
-                                        <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-4 w-4 transition-transform duration-200 ease-in-out rtl:rotate-180" aria-hidden="true">
+                                        <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-4 w-4 transition-transform duration-200 ease-in-out rtl:rotate-180" aria-hidden="true" width="24" height="24" loading="lazy" decoding="async">
                                     </span>
                                 </div>
                             @endif

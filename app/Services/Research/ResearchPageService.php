@@ -636,6 +636,33 @@ final class ResearchPageService implements ResearchPageServiceInterface
         return $this->pageDto($locale, 'policies', $this->normalizedPoliciesContent([]), '/research/policies', [], false);
     }
 
+    /**
+     * Every publication slug for a locale, in one pass.
+     *
+     * The sitemap used to walk the archive's pagination to collect these, but
+     * publications() rebuilds the whole item list on every page before slicing
+     * it, so reading fifty pages meant assembling the corpus fifty times. That
+     * was the bulk of a ten-second sitemap response.
+     *
+     * @return array<int, string>
+     */
+    public function publicationSitemapSlugs(string $locale): array
+    {
+        $cmsContent = $this->publishedLocalizedPayload('research.publications', $locale);
+        $content = $this->withDatabasePublications(is_array($cmsContent) ? $cmsContent : [], $locale);
+        $slugs = [];
+
+        foreach ($this->arrayList($content['items'] ?? []) as $item) {
+            $slug = is_array($item) && is_string($item['slug'] ?? null) ? trim($item['slug']) : '';
+
+            if ($slug !== '') {
+                $slugs[$slug] = true;
+            }
+        }
+
+        return array_keys($slugs);
+    }
+
     public function publicationSlugForLegacyId(string $id): ?string
     {
         if (ctype_digit($id)) {

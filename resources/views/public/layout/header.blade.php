@@ -30,7 +30,7 @@
         <div class="site-nav-shell" :class="shellClass()">
             <div class="site-nav-shell__main">
                 <a href="/{{ $locale }}" aria-label="{{ __('public.home') }}" class="site-nav-brand">
-                    <img src="/images/logo-spu.png" alt="{{ __('public.spu_logo_alt') }}" width="562" height="118" class="h-auto w-[9.25rem] sm:w-[10rem] lg:w-[11rem] xl:w-[13.5rem]">
+                    <img src="/images/logo-spu.png" alt="{{ __('public.spu_logo_alt') }}" width="562" height="118" class="h-auto w-[9.25rem] sm:w-[10rem] lg:w-[11rem] xl:w-[13.5rem]" decoding="async">
                 </a>
 
                 <nav class="hidden w-full justify-center nav:flex nav:flex-1 nav:basis-auto nav:w-auto nav:items-center" aria-label="{{ __('public.primary_navigation') }}">
@@ -58,7 +58,7 @@
                                        :aria-expanded="isDropdownOpen('{{ $loop->index }}').toString()"
                                        aria-controls="site-nav-dropdown-{{ $loop->index }}"
                                        aria-label="{{ __('public.toggle_submenu') }}">
-                                        <img src="/images/icon-chevron-down-outline.svg" alt="" class="site-nav-link__chevron" aria-hidden="true">
+                                        <img src="/images/icon-chevron-down-outline.svg" alt="" class="site-nav-link__chevron" aria-hidden="true" width="24" height="24" decoding="async">
                                     </button>
                                 </div>
                                 @elseif (!empty($item->children))
@@ -69,7 +69,7 @@
                                    :aria-expanded="isDropdownOpen('{{ $loop->index }}').toString()"
                                    aria-controls="site-nav-dropdown-{{ $loop->index }}">
                                     <span>{{ $item->label }}</span>
-                                    <img src="/images/icon-chevron-down-outline.svg" alt="" class="site-nav-link__chevron" aria-hidden="true">
+                                    <img src="/images/icon-chevron-down-outline.svg" alt="" class="site-nav-link__chevron" aria-hidden="true" width="24" height="24" decoding="async">
                                 </button>
                                 @elseif ($item->resolvedUrl)
                                 <a href="{{ $item->resolvedUrl }}"
@@ -143,7 +143,7 @@
                                 class="site-nav-lang"
                                 :aria-expanded="searchOpen.toString()"
                                 aria-controls="site-search-panel">
-                            <img src="/images/icon-search-outline.svg" alt="" class="h-[1rem] w-[1rem]" aria-hidden="true">
+                            <img src="/images/icon-search-outline.svg" alt="" class="h-[1rem] w-[1rem]" aria-hidden="true" width="24" height="24" decoding="async">
                             <span class="sr-only">{{ __('public.search') }}</span>
                         </button>
 
@@ -206,7 +206,7 @@
                     @foreach ($languageSwitch as $switchLink)
                         @if (!$switchLink->isCurrent)
                             <a href="{{ $switchLink->url }}" class="site-nav-lang" data-language-switch>
-                                <img src="/images/ic_outline-language.svg" alt="{{ __('public.language') }}" class="h-[1rem] w-[1rem]">
+                                <img src="/images/ic_outline-language.svg" alt="{{ __('public.language') }}" class="h-[1rem] w-[1rem]" width="29" height="29" decoding="async">
                                 <span>{{ $switchLink->label }}</span>
                             </a>
                         @endif
@@ -227,7 +227,7 @@
                             :aria-expanded="mobileNav.toString()"
                             aria-controls="site-mobile-navigation"
                             class="site-nav-menu-btn nav:hidden">
-                        <img :src="mobileToggleIcon()" class="h-5 w-5" alt="">
+                        <img :src="mobileToggleIcon()" class="h-5 w-5" alt="" width="24" height="24" decoding="async">
                     </button>
                 </div>
             </div>

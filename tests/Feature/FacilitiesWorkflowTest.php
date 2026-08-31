@@ -1600,7 +1600,7 @@ final class FacilitiesWorkflowTest extends TestCase
             ->assertSee('إعدادات صفحة البحث العلمي')
             ->assertSee('عنوان محركات البحث');
 
-        $sitemap = $this->get('/sitemap.xml')->assertOk()->getContent();
+        $sitemap = $this->get('/sitemaps/sitemap-faculties.xml')->assertOk()->getContent();
 
         foreach (['artificial-intelligence', 'business-administration', 'building-construction-engineering', 'dentistry', 'medicine', 'petroleum', 'pharmacy'] as $facultySlug) {
             $this->assertStringContainsString('/en/facilities/'.$facultySlug.'/research', $sitemap);

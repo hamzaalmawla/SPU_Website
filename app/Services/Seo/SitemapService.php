@@ -11,6 +11,7 @@ use App\Contracts\Seo\SeoMetadataServiceInterface;
 use App\Contracts\Seo\SitemapServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
 use App\DTOs\Seo\SitemapEntryDTO;
+use App\DTOs\Seo\SitemapWriteReportDTO;
 use App\Enums\PublicationStatus;
 use App\Models\Cms\CmsTargetContent;
 use App\Models\Content\Directorate;
@@ -25,12 +26,24 @@ use App\Models\Settings\Setting;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Support\Collection;
+use RuntimeException;
 
 final class SitemapService implements SitemapServiceInterface
 {
     private const CACHE_KEY = 'sitemap:xml';
 
     private const CACHE_TTL = 3600;
+
+    /**
+     * Freshness sentinel, stored *under* the "sitemap" cache tag.
+     *
+     * Every publish path already flushes that tag, which drops the sentinel, so
+     * staleness is detected without adding a call to any of the fifteen places
+     * that invalidate content.
+     */
+    private const FRESH_MARKER_KEY = 'sitemap:static-files-fresh';
+
+    private const FRESH_MARKER_TTL = 604800;
 
     public function __construct(
         private readonly PageServiceInterface $pageService,
@@ -41,6 +54,68 @@ final class SitemapService implements SitemapServiceInterface
     ) {}
 
     public function generateEntries(): Collection
+    {
+        $entries = new Collection;
+        $baseUrl = $this->baseUrl();
+
+        // Order is load bearing: it is the order the single-document sitemap
+        // has always emitted, and the admin page picker groups by it.
+        $this->appendPageEntries($entries, $baseUrl);
+        $this->appendAboutStaticEntries($entries, $baseUrl);
+        $this->appendAboutProfileEntries($entries, $baseUrl);
+        $this->appendEServicesEntries($entries, $baseUrl);
+        $this->appendFacultyResearchEntries($entries, $baseUrl);
+        $this->appendAlumniEntries($entries, $baseUrl);
+        $this->appendResearchCatalogEntries($entries, $baseUrl);
+        $this->appendResearchPublicationEntries($entries, $baseUrl);
+        $this->appendCmsRouteEntries($entries, $baseUrl);
+        $this->appendNewsArticleEntries($entries, $baseUrl);
+
+        return $entries->unique(fn (SitemapEntryDTO $entry): string => $entry->loc)->values();
+    }
+
+    public function generateSectionEntries(string $section): Collection
+    {
+        $entries = new Collection;
+        $baseUrl = $this->baseUrl();
+
+        switch ($section) {
+            case 'pages':
+                $this->appendPageEntries($entries, $baseUrl);
+                break;
+            case 'news':
+                $this->appendNewsArticleEntries($entries, $baseUrl);
+                break;
+            case 'research':
+                $this->appendResearchCatalogEntries($entries, $baseUrl);
+                $this->appendResearchPublicationEntries($entries, $baseUrl);
+                break;
+            case 'faculties':
+                $this->appendFacultyResearchEntries($entries, $baseUrl);
+                break;
+            case 'people':
+                $this->appendAboutProfileEntries($entries, $baseUrl);
+                break;
+            case 'static':
+                $this->appendAboutStaticEntries($entries, $baseUrl);
+                $this->appendEServicesEntries($entries, $baseUrl);
+                $this->appendAlumniEntries($entries, $baseUrl);
+                $this->appendCmsRouteEntries($entries, $baseUrl);
+                break;
+            default:
+                return $entries;
+        }
+
+        return $entries->unique(fn (SitemapEntryDTO $entry): string => $entry->loc)->values();
+    }
+
+    private function baseUrl(): string
+    {
+        return rtrim((string) config('edge.canonical_url', config('app.url')), '/');
+    }
+
+    /** @param Collection<int, SitemapEntryDTO> $entries */
+    private function appendPageEntries(Collection $entries, string $baseUrl): void
     {
         $pages = Page::query()
             ->with(['translations'])
@@ -54,15 +129,16 @@ final class SitemapService implements SitemapServiceInterface
             ->orderBy('id')
             ->get();
 
-        $entries = new Collection;
-        $baseUrl = rtrim((string) config('edge.canonical_url', config('app.url')), '/');
+        // Ancestor walks used to lazy-load ->parent per page, one query per
+        // level per page. The tree is small, so read it once and walk in memory.
+        $ancestors = $this->ancestorMap();
 
         foreach ($pages as $page) {
             $isHomepageShell = (bool) $page->is_homepage_shell;
 
             $localesWithTranslation = [];
             foreach (['ar', 'en'] as $locale) {
-                if ($this->isSitemapRenderable($page, $locale)) {
+                if ($this->isSitemapRenderable($page, $locale, $ancestors)) {
                     if ($page->slug === 'research' && ! $this->researchPageService->isPubliclyAvailablePath($locale, '/research')) {
                         continue;
                     }
@@ -75,12 +151,12 @@ final class SitemapService implements SitemapServiceInterface
                 continue;
             }
 
-            $alternates = $this->buildAlternates($page, $localesWithTranslation, $baseUrl, $isHomepageShell);
+            $alternates = $this->buildAlternates($page, $localesWithTranslation, $baseUrl, $isHomepageShell, $ancestors);
 
             foreach ($localesWithTranslation as $locale) {
                 $loc = $isHomepageShell
                     ? $baseUrl.'/'.$locale
-                    : $baseUrl.$this->buildPagePath($page, $locale);
+                    : $baseUrl.$this->buildPagePath($page, $locale, $ancestors);
 
                 $entries->push(new SitemapEntryDTO(
                     loc: $loc,
@@ -91,17 +167,23 @@ final class SitemapService implements SitemapServiceInterface
                 ));
             }
         }
+    }
 
-        $this->appendAboutEntries($entries, $baseUrl);
-        $this->appendEServicesEntries($entries, $baseUrl);
-        $this->appendFacultyResearchEntries($entries, $baseUrl);
-        $this->appendAlumniEntries($entries, $baseUrl);
-        $this->appendResearchCatalogEntries($entries, $baseUrl);
-        $this->appendResearchPublicationEntries($entries, $baseUrl);
-        $this->appendCmsRouteEntries($entries, $baseUrl);
-        $this->appendNewsArticleEntries($entries, $baseUrl);
-
-        return $entries->unique(fn (SitemapEntryDTO $entry): string => $entry->loc)->values();
+    /**
+     * Every page keyed by id, carrying only the columns the ancestor walk reads.
+     *
+     * Unpublished ancestors matter (a child under a disabled parent must not be
+     * listed), so this is deliberately not filtered to the published set.
+     *
+     * @return array<int, Page>
+     */
+    private function ancestorMap(): array
+    {
+        return Page::query()
+            ->select(['id', 'parent_id', 'slug', 'is_homepage_shell', 'is_enabled', 'status', 'published_at', 'publish_at'])
+            ->get()
+            ->keyBy('id')
+            ->all();
     }
 
     /** @param Collection<int, SitemapEntryDTO> $entries */
@@ -288,36 +370,6 @@ final class SitemapService implements SitemapServiceInterface
     }
 
     /**
-     * Every publication slug for a locale, walking the archive's pagination.
-     *
-     * The listing returns six items a page, so reading only the first page would
-     * put six of several hundred publications in the sitemap.
-     *
-     * @return array<int, string>
-     */
-    private function publicationSlugs(string $locale): array
-    {
-        $slugs = [];
-        $page = 1;
-        $maxPages = 500; // hard stop; the archive is a few dozen pages
-
-        do {
-            $data = $this->researchPageService->publications($locale, ['page' => $page])->data;
-
-            foreach ($data['items'] ?? [] as $item) {
-                if (is_array($item) && is_string($item['slug'] ?? null) && $item['slug'] !== '') {
-                    $slugs[$item['slug']] = true;
-                }
-            }
-
-            $totalPages = (int) ($data['pagination']['total_pages'] ?? 1);
-            $page++;
-        } while ($page <= $totalPages && $page <= $maxPages);
-
-        return array_keys($slugs);
-    }
-
-    /**
      * Research publication detail pages.
      *
      * appendResearchCatalogEntries covers centers, projects and themes, but the
@@ -350,7 +402,7 @@ final class SitemapService implements SitemapServiceInterface
         );
 
         $slugsByLocale = collect(['ar', 'en'])->mapWithKeys(fn (string $locale): array => [
-            $locale => $this->publicationSlugs($locale),
+            $locale => $this->researchPageService->publicationSitemapSlugs($locale),
         ]);
 
         // Only list a slug where both locales resolve, so every entry and its
@@ -437,15 +489,22 @@ final class SitemapService implements SitemapServiceInterface
             ->exists();
     }
 
-    /** @param Collection<int, SitemapEntryDTO> $entries */
-    private function appendAboutEntries(Collection $entries, string $baseUrl): void
+    /**
+     * The fixed About section pages.
+     *
+     * Split from the profile pages so the "static" and "people" child sitemaps
+     * can be generated independently; together they emit what the single
+     * appendAboutEntries() used to.
+     *
+     * @param  Collection<int, SitemapEntryDTO>  $entries
+     */
+    private function appendAboutStaticEntries(Collection $entries, string $baseUrl): void
     {
         if (! AboutPage::query()->exists()) {
             return;
         }
 
-        $updatedAt = AboutPage::query()->max('updated_at');
-        $lastmod = $this->w3c($updatedAt);
+        $lastmod = $this->w3c(AboutPage::query()->max('updated_at'));
         $paths = [
             '/about',
             '/about/vision-mission',
@@ -461,6 +520,23 @@ final class SitemapService implements SitemapServiceInterface
             '/about/organizational-structure',
         ];
 
+        $this->pushBilingualPaths($entries, $baseUrl, array_unique($paths), $lastmod);
+    }
+
+    /**
+     * Directorate and person profile pages.
+     *
+     * @param  Collection<int, SitemapEntryDTO>  $entries
+     */
+    private function appendAboutProfileEntries(Collection $entries, string $baseUrl): void
+    {
+        if (! AboutPage::query()->exists()) {
+            return;
+        }
+
+        $lastmod = $this->w3c(AboutPage::query()->max('updated_at'));
+        $paths = [];
+
         foreach (Directorate::query()->public()->pluck('slug') as $slug) {
             $paths[] = '/about/directorates/'.$slug;
         }
@@ -471,7 +547,16 @@ final class SitemapService implements SitemapServiceInterface
             $paths[] = '/about/profile/'.$slug;
         }
 
-        foreach (array_unique($paths) as $path) {
+        $this->pushBilingualPaths($entries, $baseUrl, array_unique($paths), $lastmod);
+    }
+
+    /**
+     * @param  Collection<int, SitemapEntryDTO>  $entries
+     * @param  array<int|string, string>  $paths
+     */
+    private function pushBilingualPaths(Collection $entries, string $baseUrl, array $paths, string $lastmod): void
+    {
+        foreach ($paths as $path) {
             $alternates = collect(['ar', 'en'])->map(fn (string $locale): array => [
                 'locale' => $locale,
                 'url' => $baseUrl.'/'.$locale.$path,
@@ -493,15 +578,258 @@ final class SitemapService implements SitemapServiceInterface
     {
         return $this->cacheService->tags('sitemap')->remember(
             self::CACHE_KEY,
-            fn (): string => $this->buildXml(),
+            fn (): string => $this->buildUrlsetXml($this->generateEntries()),
             self::CACHE_TTL,
         );
     }
 
-    private function buildXml(): string
+    /**
+     * The sitemap index.
+     *
+     * Deliberately free of database work. This is the document every crawler
+     * hits first, and on a five worker pool it must never be able to become the
+     * slow request that starves the site.
+     *
+     * <lastmod> is omitted here: it is optional on a sitemapindex entry, search
+     * engines read the children's own lastmod values, and computing it would
+     * mean querying every section to render the cheap document.
+     */
+    public function renderIndexXml(): string
     {
-        $entries = $this->generateEntries();
+        $baseUrl = $this->baseUrl();
 
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>'."\n";
+        $xml .= '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'."\n";
+
+        foreach ($this->sectionDocumentNames() as $document) {
+            $loc = $baseUrl.'/sitemaps/sitemap-'.$document.'.xml';
+            $xml .= '  <sitemap>'."\n";
+            $xml .= '    <loc>'.htmlspecialchars($loc, ENT_XML1, 'UTF-8').'</loc>'."\n";
+            $xml .= '  </sitemap>'."\n";
+        }
+
+        $xml .= '</sitemapindex>'."\n";
+
+        return $xml;
+    }
+
+    public function sectionDocumentNames(): array
+    {
+        $documents = [];
+
+        foreach (self::SECTIONS as $section) {
+            $documents[] = $section;
+
+            for ($part = 2; $part <= $this->sectionPartCount($section); $part++) {
+                $documents[] = $section.'-'.$part;
+            }
+        }
+
+        return $documents;
+    }
+
+    public function renderSectionXml(string $section): ?string
+    {
+        $parsed = $this->parseSectionDocument($section);
+
+        if ($parsed === null) {
+            return null;
+        }
+
+        [$name, $part] = $parsed;
+
+        return $this->cacheService->tags('sitemap')->remember(
+            self::CACHE_KEY.':section:'.$name.':'.$part,
+            function () use ($name, $part): string {
+                $entries = $this->generateSectionEntries($name)
+                    ->slice(($part - 1) * self::MAX_URLS_PER_SITEMAP, self::MAX_URLS_PER_SITEMAP)
+                    ->values();
+
+                return $this->buildUrlsetXml($entries);
+            },
+            self::CACHE_TTL,
+        );
+    }
+
+    /**
+     * @return array{0: string, 1: int}|null
+     */
+    private function parseSectionDocument(string $document): ?array
+    {
+        $document = strtolower(trim($document));
+
+        if (in_array($document, self::SECTIONS, true)) {
+            return [$document, 1];
+        }
+
+        if (preg_match('/^([a-z]+)-(\d+)$/', $document, $matches) !== 1) {
+            return null;
+        }
+
+        $name = $matches[1];
+        $part = (int) $matches[2];
+
+        if (! in_array($name, self::SECTIONS, true) || $part < 2) {
+            return null;
+        }
+
+        return [$name, $part];
+    }
+
+    /**
+     * How many documents a section needs.
+     *
+     * Read from the generated files on disk rather than by counting URLs: the
+     * index must stay free of database work, and the writer is the only thing
+     * that can split a section in the first place.
+     */
+    private function sectionPartCount(string $section): int
+    {
+        $parts = 1;
+
+        while (is_file($this->staticDirectory().'/sitemap-'.$section.'-'.($parts + 1).'.xml')) {
+            $parts++;
+
+            if ($parts > 100) {
+                break;
+            }
+        }
+
+        return $parts;
+    }
+
+    private function staticDirectory(): string
+    {
+        return public_path('sitemaps');
+    }
+
+    /**
+     * Write the index and every child sitemap into public/, where the web
+     * server answers them without entering PHP at all.
+     *
+     * This is the whole point of the change: /sitemap.xml took 10.1s to build,
+     * it sits outside the public page cache, and the pool is five workers, so
+     * two concurrent crawler hits on an expired cache could stall the site.
+     */
+    public function writeStaticFiles(): SitemapWriteReportDTO
+    {
+        $directory = $this->staticDirectory();
+
+        if (! is_dir($directory) && ! mkdir($directory, 0755, true) && ! is_dir($directory)) {
+            throw new RuntimeException('Unable to create '.$directory);
+        }
+
+        $written = [];
+        $counts = [];
+        $totalUrls = 0;
+        $totalBytes = 0;
+
+        foreach (self::SECTIONS as $section) {
+            $entries = $this->generateSectionEntries($section);
+            $chunks = $entries->isEmpty()
+                ? [new Collection]
+                : $entries->chunk(self::MAX_URLS_PER_SITEMAP)->values()->all();
+
+            foreach ($chunks as $index => $chunk) {
+                $document = $index === 0 ? $section : $section.'-'.($index + 1);
+                $path = $directory.'/sitemap-'.$document.'.xml';
+                $bytes = $this->atomicWrite($path, $this->buildUrlsetXml(Collection::make($chunk)->values()));
+
+                $written[] = $path;
+                $counts['sitemap-'.$document.'.xml'] = $chunk->count();
+                $totalUrls += $chunk->count();
+                $totalBytes += $bytes;
+            }
+        }
+
+        // The index is written last and reads the parts from disk, so it can
+        // never reference a child that has not been written yet.
+        $indexPath = public_path('sitemap.xml');
+        $totalBytes += $this->atomicWrite($indexPath, $this->renderIndexXml());
+        $written[] = $indexPath;
+
+        $this->removeStaleDocuments($directory, $written);
+        $this->cacheService->flushTag('sitemap');
+        $this->markStaticFilesFresh();
+
+        return new SitemapWriteReportDTO(
+            documentCount: count($written),
+            urlCount: $totalUrls,
+            totalBytes: $totalBytes,
+            urlCountsByDocument: $counts,
+        );
+    }
+
+    public function staticFilesAreStale(): bool
+    {
+        if (! is_file(public_path('sitemap.xml'))) {
+            return true;
+        }
+
+        return $this->cacheService->tags('sitemap')->remember(
+            self::FRESH_MARKER_KEY,
+            static fn (): bool => false,
+            self::FRESH_MARKER_TTL,
+        ) !== true;
+    }
+
+    public function markStaticFilesStale(): void
+    {
+        $this->cacheService->tags('sitemap')->forget(self::FRESH_MARKER_KEY);
+    }
+
+    private function markStaticFilesFresh(): void
+    {
+        $tagged = $this->cacheService->tags('sitemap');
+        $tagged->forget(self::FRESH_MARKER_KEY);
+        $tagged->remember(self::FRESH_MARKER_KEY, static fn (): bool => true, self::FRESH_MARKER_TTL);
+    }
+
+    /**
+     * Write via a temporary file and rename, so a crawler never reads a
+     * half-written sitemap.
+     */
+    private function atomicWrite(string $path, string $contents): int
+    {
+        $temporary = $path.'.'.bin2hex(random_bytes(6)).'.tmp';
+
+        if (file_put_contents($temporary, $contents) === false) {
+            throw new RuntimeException('Unable to write '.$temporary);
+        }
+
+        @chmod($temporary, 0644);
+
+        if (! rename($temporary, $path)) {
+            @unlink($temporary);
+
+            throw new RuntimeException('Unable to move '.$temporary.' into place');
+        }
+
+        return strlen($contents);
+    }
+
+    /**
+     * Delete child documents left behind by an earlier, larger run.
+     *
+     * @param  array<int, string>  $keep
+     */
+    private function removeStaleDocuments(string $directory, array $keep): void
+    {
+        $existing = glob($directory.'/sitemap-*.xml');
+
+        if ($existing === false) {
+            return;
+        }
+
+        foreach ($existing as $path) {
+            if (! in_array($path, $keep, true)) {
+                @unlink($path);
+            }
+        }
+    }
+
+    private function buildUrlsetXml(Collection $entries): string
+    {
         $xml = '<?xml version="1.0" encoding="UTF-8"?>'."\n";
         $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"';
         $xml .= ' xmlns:xhtml="http://www.w3.org/1999/xhtml">'."\n";
@@ -541,16 +869,17 @@ final class SitemapService implements SitemapServiceInterface
 
     /**
      * @param  array<int, string>  $locales
+     * @param  array<int, Page>  $ancestors
      * @return array<int, array<string, string>>
      */
-    private function buildAlternates(Page $page, array $locales, string $baseUrl, bool $isHomepageShell): array
+    private function buildAlternates(Page $page, array $locales, string $baseUrl, bool $isHomepageShell, array $ancestors): array
     {
         $alternates = [];
 
         foreach ($locales as $locale) {
             $url = $isHomepageShell
                 ? $baseUrl.'/'.$locale
-                : $baseUrl.$this->buildPagePath($page, $locale);
+                : $baseUrl.$this->buildPagePath($page, $locale, $ancestors);
 
             $alternates[] = [
                 'locale' => $locale,
@@ -578,19 +907,20 @@ final class SitemapService implements SitemapServiceInterface
         return now()->toW3cString();
     }
 
-    private function buildPagePath(Page $page, string $locale): string
+    /** @param array<int, Page> $ancestors */
+    private function buildPagePath(Page $page, string $locale, array $ancestors): string
     {
         $segments = [];
         $cursor = $page;
 
         while ($cursor->parent_id !== null) {
-            $cursor->loadMissing('parent');
+            $parent = $ancestors[(int) $cursor->parent_id] ?? null;
 
-            if (! $cursor->parent instanceof Page) {
+            if (! $parent instanceof Page) {
                 break;
             }
 
-            $cursor = $cursor->parent;
+            $cursor = $parent;
 
             if (! (bool) $cursor->is_homepage_shell) {
                 $segments[] = (string) $cursor->slug;
@@ -603,7 +933,8 @@ final class SitemapService implements SitemapServiceInterface
         return '/'.$locale.'/'.implode('/', array_filter($segments));
     }
 
-    private function isSitemapRenderable(Page $page, string $locale): bool
+    /** @param array<int, Page> $ancestors */
+    private function isSitemapRenderable(Page $page, string $locale, array $ancestors): bool
     {
         if ($page->translations->firstWhere('locale', $locale) === null) {
             return false;
@@ -612,13 +943,13 @@ final class SitemapService implements SitemapServiceInterface
         $cursor = $page;
 
         while ($cursor->parent_id !== null) {
-            $cursor->loadMissing('parent');
+            $parent = $ancestors[(int) $cursor->parent_id] ?? null;
 
-            if (! $cursor->parent instanceof Page) {
+            if (! $parent instanceof Page) {
                 return false;
             }
 
-            $cursor = $cursor->parent;
+            $cursor = $parent;
 
             if (! (bool) $cursor->is_enabled || $cursor->status !== PublicationStatus::Published->value || $cursor->published_at === null) {
                 return false;

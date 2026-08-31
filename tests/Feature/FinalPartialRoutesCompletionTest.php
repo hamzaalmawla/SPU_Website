@@ -63,7 +63,7 @@ final class FinalPartialRoutesCompletionTest extends TestCase
             ->assertDontSee('8,500')
             ->assertDontSee('96%');
 
-        $this->get('/sitemap.xml')->assertOk()->assertSee('/en/campus-life');
+        $this->get('/sitemaps/sitemap-static.xml')->assertOk()->assertSee('/en/campus-life');
     }
 
     public function test_all_five_published_routes_render_in_both_directions_with_locale_alternates(): void
@@ -120,7 +120,7 @@ final class FinalPartialRoutesCompletionTest extends TestCase
         $preview = $workflow->preview('campus_life.virtual_tour', 'en', (int) $author->id);
         $this->get($preview->previewUrl)->assertOk()->assertSee('Editable Campus Photo Tour')->assertSee('Preview mode');
         $this->assertTrue($workflow->publish('campus_life.virtual_tour', (int) $author->id));
-        $this->get('/sitemap.xml')->assertOk()->assertSee('/en/virtual-tour');
+        $this->get('/sitemaps/sitemap-static.xml')->assertOk()->assertSee('/en/virtual-tour');
 
         $this->get('/en/virtual-tour')
             ->assertOk()
@@ -154,7 +154,7 @@ final class FinalPartialRoutesCompletionTest extends TestCase
         $preview = $workflow->preview('e_services.suggestions-complaints', 'en', (int) $author->id);
         $this->get($preview->previewUrl)->assertOk()->assertSee('Published Feedback Desk');
         $this->assertTrue($workflow->publish('e_services.suggestions-complaints', (int) $author->id));
-        $this->get('/sitemap.xml')->assertOk()->assertSee('/en/e-services/suggestions-complaints');
+        $this->get('/sitemaps/sitemap-static.xml')->assertOk()->assertSee('/en/e-services/suggestions-complaints');
 
         $this->post('/en/e-services/suggestions-complaints', [
             'fullName' => 'Secure Reviewer',
@@ -214,7 +214,7 @@ final class FinalPartialRoutesCompletionTest extends TestCase
         $preview = $workflow->preview('news.articles', 'en', (int) $author->id);
         $this->get($preview->previewUrl)->assertOk()->assertSee('Published Article Library');
         $this->assertTrue($workflow->publish('news.articles', (int) $author->id));
-        $this->get('/sitemap.xml')->assertOk()->assertSee('/en/news/articles');
+        $this->get('/sitemaps/sitemap-static.xml')->assertOk()->assertSee('/en/news/articles');
 
         $this->get('/en/news/articles?search=University')
             ->assertOk()
@@ -265,7 +265,7 @@ final class FinalPartialRoutesCompletionTest extends TestCase
         $preview = $workflow->preview('facilities.pharmacy.training', 'en', (int) $author->id);
         $this->get($preview->previewUrl)->assertOk()->assertSee('Published Pharmacy Training');
         $this->assertTrue($workflow->publish('facilities.pharmacy.training', (int) $author->id));
-        $this->get('/sitemap.xml')->assertOk()->assertSee('/en/facilities/pharmacy/training');
+        $this->get('/sitemaps/sitemap-static.xml')->assertOk()->assertSee('/en/facilities/pharmacy/training');
         $this->get('/en/facilities/pharmacy/training')->assertOk()->assertSee('Published Pharmacy Training');
         $this->assertTrue($workflow->unpublish('facilities.pharmacy.training', (int) $author->id));
         $workflow->saveDraft('facilities.pharmacy.training', $payload, (int) $author->id);

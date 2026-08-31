@@ -29,6 +29,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', BrowserLocaleRedirectController::class)->name('root');
 
 Route::get('/sitemap.xml', [SitemapController::class, 'sitemap'])->name('sitemap');
+Route::get('/sitemaps/sitemap-{section}.xml', [SitemapController::class, 'section'])
+    ->where('section', '[a-z]+(?:-[0-9]+)?')
+    ->name('sitemap.section');
 Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
 
 // Unprefixed reference paths negotiate a locale and redirect to /{locale}/...

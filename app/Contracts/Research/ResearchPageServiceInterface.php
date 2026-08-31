@@ -83,6 +83,13 @@ interface ResearchPageServiceInterface
 
     public function publicationSlugForLegacyId(string $id): ?string;
 
+    /**
+     * Every publication slug for a locale, gathered in a single pass.
+     *
+     * @return array<int, string>
+     */
+    public function publicationSitemapSlugs(string $locale): array;
+
     public function isPubliclyAvailablePath(string $locale, string $path): bool;
 
     /** @param array<int, mixed> $columns @return array<int, mixed> */

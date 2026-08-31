@@ -42,7 +42,7 @@
         <div class="mb-16 grid grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-12">
             <div class="flex flex-col items-start lg:col-span-4">
                 @if ($footerLogo)
-                    <img src="{{ $footerLogo }}" alt="" class="mb-5 h-12 w-auto brightness-0 invert" aria-hidden="true">
+                    <img src="{{ $footerLogo }}" alt="" class="mb-5 h-12 w-auto brightness-0 invert" aria-hidden="true" loading="lazy" decoding="async">
                 @endif
                 <h2 class="mb-6 text-[24px] font-bold uppercase leading-tight ltr:tracking-wider">{{ $footerBrandTitle }}</h2>
 
@@ -67,7 +67,7 @@
                                 };
                             @endphp
                             <a href="{{ $link->url }}" target="_blank" rel="noreferrer" class="text-white/80 transition-all hover:scale-110 hover:text-spu-red" aria-label="{{ $link->platform ?? 'Social' }}">
-                                <img src="{{ $icon }}" alt="" class="h-5 w-5 brightness-0 invert transition-opacity" aria-hidden="true">
+                                <img src="{{ $icon }}" alt="" class="h-5 w-5 brightness-0 invert transition-opacity" aria-hidden="true" width="24" height="24" loading="lazy" decoding="async">
                             </a>
                         @endforeach
                     </div>
@@ -113,7 +113,7 @@
                 <div class="flex flex-col gap-6">
                     @if (! $useHomepageFooter && $footerSettings->address)
                         <div class="flex items-start gap-4">
-                            <img src="/images/icon-map-outline.svg" alt="" class="mt-1.5 h-4 w-4 shrink-0 brightness-0 invert" aria-hidden="true">
+                            <img src="/images/icon-map-outline.svg" alt="" class="mt-1.5 h-4 w-4 shrink-0 brightness-0 invert" aria-hidden="true" width="24" height="24" loading="lazy" decoding="async">
                             <span class="text-[15px] leading-relaxed text-white/80">
                                 {{ $footerSettings->address }}
                             </span>
@@ -122,14 +122,14 @@
 
                     @if (! $useHomepageFooter && $footerSettings->phone)
                         <div class="flex items-start gap-4">
-                            <img src="/images/icon-phone-outline.svg" alt="" class="mt-1.5 h-4 w-4 shrink-0 brightness-0 invert" aria-hidden="true">
+                            <img src="/images/icon-phone-outline.svg" alt="" class="mt-1.5 h-4 w-4 shrink-0 brightness-0 invert" aria-hidden="true" width="24" height="24" loading="lazy" decoding="async">
                             <span class="ltr text-[15px] leading-relaxed text-white/80">{{ $footerSettings->phone }}</span>
                         </div>
                     @endif
 
                     @if (! $useHomepageFooter && $footerSettings->email)
                         <div class="flex items-start gap-4">
-                            <img src="/images/icon-envelope-outline.svg" alt="" class="mt-1.5 h-4 w-4 shrink-0 brightness-0 invert" aria-hidden="true">
+                            <img src="/images/icon-envelope-outline.svg" alt="" class="mt-1.5 h-4 w-4 shrink-0 brightness-0 invert" aria-hidden="true" width="24" height="24" loading="lazy" decoding="async">
                             <span class="ltr text-[15px] leading-relaxed text-white/80">{{ $footerSettings->email }}</span>
                         </div>
                     @endif
@@ -145,7 +145,7 @@
                             };
                         @endphp
                         <div class="flex items-start gap-4">
-                            <img src="{{ $icon }}" alt="" class="mt-1.5 h-4 w-4 shrink-0 brightness-0 invert" aria-hidden="true">
+                            <img src="{{ $icon }}" alt="" class="mt-1.5 h-4 w-4 shrink-0 brightness-0 invert" aria-hidden="true" width="24" height="24" loading="lazy" decoding="async">
                             <span class="text-[15px] leading-relaxed text-white/80 {{ in_array($type, ['phone', 'email'], true) ? 'ltr' : '' }}">{{ $link->label }}: {{ $link->value }}</span>
                         </div>
                     @endforeach
