@@ -33,7 +33,7 @@
                 <template x-if="selectedEvent">
                     <article :key="activeEventIndex" x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100" class="flex flex-1 flex-col">
                         <div class="relative h-[220px] overflow-hidden md:h-[250px]">
-                            <img :src="selectedEventImage()" :alt="selectedEventAlt()" class="h-full w-full object-cover transition-transform duration-700 hover:scale-110">
+                            <img :src="selectedEventImage()" :alt="selectedEventAlt()" class="h-full w-full object-cover transition-transform duration-700 hover:scale-110" width="560" height="250" loading="lazy" decoding="async">
                             <div class="absolute inset-x-6 top-6 w-fit rounded-[10px] bg-[#27316d] px-7 py-2 text-[15px] font-bold text-white rtl:right-6 rtl:left-auto ltr:left-6 ltr:right-auto" x-text="selectedEvent.type"></div>
                         </div>
                         <div class="flex flex-1 flex-col bg-[#edf2fa] px-8 py-6 md:px-8 md:py-5">
@@ -42,7 +42,7 @@
                             <p class="mb-6 text-[17px] leading-[1.65] text-[#55627c]" x-text="selectedEvent.description"></p>
                             <a :href="selectedEventLink()" class="inline-flex w-fit items-center gap-2 text-[18px] font-bold text-[#1e2652] transition-all ease-in-out delay-75 hover:text-spu-red">
                                  <span>{{ $eventCtaLabel }}</span>
-                                <img src="/images/icon-chevron-right-outline.svg" class="w-2.5 h-2.5 rtl:rotate-180" alt="">
+                                <img src="/images/icon-chevron-right-outline.svg" class="w-2.5 h-2.5 rtl:rotate-180" alt="" width="24" height="24" loading="lazy" decoding="async">
                             </a>
                             <div class="mt-auto pt-5">
                                 <div class="border-t border-[#9c2a2a]/20"></div>
@@ -71,8 +71,8 @@
                         <span class="text-[40px] font-black leading-none sm:text-[48px]" translate="no" x-text="selectedYear"></span>
                     </div>
                     <div class="flex items-center gap-2 text-[#111111]">
-                        <button type="button" @click="prevMonth()" class="flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-gray-100"><img src="/images/icon-chevron-left-outline.svg" class="w-3.5 h-3.5 rtl:rotate-180" alt="{{ __('public.previous') }}"></button>
-                        <button type="button" @click="nextMonth()" class="flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-gray-100"><img src="/images/icon-chevron-right-outline.svg" class="w-3.5 h-3.5 rtl:rotate-180" alt="{{ __('public.next') }}"></button>
+                        <button type="button" @click="prevMonth()" class="flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-gray-100"><img src="/images/icon-chevron-left-outline.svg" class="w-3.5 h-3.5 rtl:rotate-180" alt="{{ __('public.previous') }}" width="24" height="24" loading="lazy" decoding="async"></button>
+                        <button type="button" @click="nextMonth()" class="flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-gray-100"><img src="/images/icon-chevron-right-outline.svg" class="w-3.5 h-3.5 rtl:rotate-180" alt="{{ __('public.next') }}" width="24" height="24" loading="lazy" decoding="async"></button>
                     </div>
                 </div>
                 <div class="grid grid-cols-7 gap-y-3 sm:gap-y-4">

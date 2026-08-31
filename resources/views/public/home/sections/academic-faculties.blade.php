@@ -16,7 +16,7 @@
                     @if ($section->payload->sectionAction)
                         <a href="{{ $section->payload->sectionAction->url }}" class="bg-white mx-auto absolute inset-x-0 bottom-10 w-[195px] h-[40px] text-spu-blue justify-center rounded-[10px] font-bold text-[16px] flex items-center gap-2 hover:bg-gray-100 transition-all shadow-card-elevated group/btn overflow-hidden" @if ($section->payload->sectionAction->target) target="{{ $section->payload->sectionAction->target }}" rel="noreferrer" @endif>
                             <span>{{ $section->payload->sectionAction->label }}</span>
-                            <img src="/images/icon-arrow-right-outline.svg" class="w-2.5 h-2.5 mt-1 transition-transform group-hover:translate-x-1 rtl:rotate-180" alt="">
+                            <img src="/images/icon-arrow-right-outline.svg" class="w-2.5 h-2.5 mt-1 transition-transform group-hover:translate-x-1 rtl:rotate-180" alt="" width="24" height="24" loading="lazy" decoding="async">
                         </a>
                     @endif
                 </div>
@@ -25,10 +25,10 @@
             <div class="flex-1 min-w-0 w-full relative">
                 <div class="relative z-50 mb-4 flex justify-end gap-3 md:absolute md:-top-20 md:mb-0 md:ltr:right-0 md:rtl:left-0">
                     <button @click="slideFaculties('previous')" type="button" class="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-controls="academic-faculties-track" aria-label="{{ __('public.previous') }}">
-                        <img src="/images/icon-chevron-left-outline.svg" class="w-3.5 h-3.5 rtl:rotate-180" alt="">
+                        <img src="/images/icon-chevron-left-outline.svg" class="w-3.5 h-3.5 rtl:rotate-180" alt="" width="24" height="24" loading="lazy" decoding="async">
                     </button>
                     <button @click="slideFaculties('next')" type="button" class="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-controls="academic-faculties-track" aria-label="{{ __('public.next') }}">
-                        <img src="/images/icon-chevron-right-outline.svg" class="w-3.5 h-3.5 rtl:rotate-180" alt="">
+                        <img src="/images/icon-chevron-right-outline.svg" class="w-3.5 h-3.5 rtl:rotate-180" alt="" width="24" height="24" loading="lazy" decoding="async">
                     </button>
                 </div>
 
@@ -53,7 +53,7 @@
                             @if (! empty($item['action']['url']) && ! empty($item['action']['label']))
                                 <a href="{{ $item['action']['url'] }}" class="mt-auto mb-6 flex items-center gap-2 text-[13px] font-extrabold transition-all duration-300 group-hover:gap-3" @if (! empty($item['accent'])) style="color: {{ $item['accent'] }};" @endif @if (! empty($item['action']['target'])) target="{{ $item['action']['target'] }}" rel="noreferrer" @endif>
                                     <span>{{ $item['action']['label'] }}</span>
-                                    <img src="/images/icon-arrow-right-outline.svg" class="w-2.5 h-2.5 opacity-70 group-hover:opacity-100 transition-all rtl:rotate-180" alt="">
+                                    <img src="/images/icon-arrow-right-outline.svg" class="w-2.5 h-2.5 opacity-70 group-hover:opacity-100 transition-all rtl:rotate-180" alt="" width="24" height="24" loading="lazy" decoding="async">
                                 </a>
                             @endif
                         </article>

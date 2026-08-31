@@ -195,7 +195,7 @@ final class CacheInvalidationWorkflowTest extends TestCase
             'published_at' => now(),
         ]);
 
-        $this->get('/sitemap.xml')
+        $this->get('/sitemaps/sitemap-people.xml')
             ->assertOk()
             ->assertSee('/en/about/profile/cached-profile', false);
 
@@ -205,7 +205,7 @@ final class CacheInvalidationWorkflowTest extends TestCase
             (int) $admin->getKey(),
         ));
 
-        $this->get('/sitemap.xml')
+        $this->get('/sitemaps/sitemap-people.xml')
             ->assertOk()
             ->assertSee('/en/about/profile/updated-cached-profile', false)
             ->assertDontSee('/en/about/profile/cached-profile', false);

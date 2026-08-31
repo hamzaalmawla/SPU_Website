@@ -9,7 +9,8 @@
                 <article class="col-span-1 flex flex-col overflow-hidden rounded-[2rem] bg-white shadow-card-elevated transition-all duration-500 group hover:shadow-panel md:col-span-12 lg:col-span-7">
                     @if ($mainImage)
                         <div class="h-64 md:h-[350px] overflow-hidden relative">
-                            <img src="{{ $mainImage }}" alt="{{ $mainItem['title'] ?? '' }}" loading="lazy" decoding="async" width="840" height="350" class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110">
+                            @php($mainSrcset = \App\Support\MediaUrlResolver::legacySrcset($mainImage))
+                            <img src="{{ $mainImage }}" @if ($mainSrcset) srcset="{{ $mainSrcset }}" sizes="(max-width: 1024px) 100vw, 840px" @endif alt="{{ $mainItem['title'] ?? '' }}" loading="lazy" decoding="async" width="840" height="350" class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110">
                             <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
                         </div>
                     @endif
@@ -20,7 +21,7 @@
                             @if (! empty($mainItem['features']))
                             <ul class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                                     @foreach ($mainItem['features'] as $feature)
-                                        <li class="flex items-center gap-3"><div class="w-6 h-6 rounded-full bg-green-500/30 flex items-center justify-center shrink-0"><img src="/images/icons/check-circle.svg" class="w-3 h-3 brightness-105 invert" alt=""></div><span class="text-spu-blue font-medium text-sm">{{ $feature }}</span></li>
+                                        <li class="flex items-center gap-3"><div class="w-6 h-6 rounded-full bg-green-500/30 flex items-center justify-center shrink-0"><img src="/images/icons/check-circle.svg" class="w-3 h-3 brightness-105 invert" alt="" width="24" height="24" loading="lazy" decoding="async"></div><span class="text-spu-blue font-medium text-sm">{{ $feature }}</span></li>
                                     @endforeach
                                 </ul>
                             @endif
@@ -40,13 +41,14 @@
                             @php($sideImage = $sideItem['imageUrl'] ?? ($sideItem['image'] ?? null))
                             <article class="bg-white rounded-[2rem] shadow-card-elevated overflow-hidden flex flex-col flex-1 group hover:shadow-panel transition-all">
                                 @if ($sideImage)
-                                    <div class="h-40 md:h-48 overflow-hidden"><img src="{{ $sideImage }}" alt="{{ $sideItem['title'] ?? '' }}" loading="lazy" decoding="async" width="560" height="192" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"></div>
+                                    @php($sideSrcset = \App\Support\MediaUrlResolver::legacySrcset($sideImage))
+                                    <div class="h-40 md:h-48 overflow-hidden"><img src="{{ $sideImage }}" @if ($sideSrcset) srcset="{{ $sideSrcset }}" sizes="(max-width: 1024px) 100vw, 560px" @endif alt="{{ $sideItem['title'] ?? '' }}" loading="lazy" decoding="async" width="560" height="192" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"></div>
                                 @endif
                                 <div class="p-5 md:p-6">
                                     @if (! empty($sideItem['title']))<h4 class="text-xl font-bold text-spu-blue mb-2">{{ $sideItem['title'] }}</h4>@endif
                                     @if (! empty($sideItem['summary']))<p class="text-gray-500 text-sm line-clamp-2">{{ $sideItem['summary'] }}</p>@endif
                                     @if (! empty($sideItem['action']['url']) && ! empty($sideItem['action']['label']))
-                                        <a href="{{ $sideItem['action']['url'] }}" class="text-spu-blue font-bold text-sm flex items-center gap-2 hover:text-spu-red transition-colors mt-2" @if (! empty($sideItem['action']['target'])) target="{{ $sideItem['action']['target'] }}" rel="noreferrer" @endif><span>{{ $sideItem['action']['label'] }}</span><img src="/images/icon-chevron-right-outline.svg" class="w-2.5 h-2.5 rtl:rotate-180" alt=""></a>
+                                        <a href="{{ $sideItem['action']['url'] }}" class="text-spu-blue font-bold text-sm flex items-center gap-2 hover:text-spu-red transition-colors mt-2" @if (! empty($sideItem['action']['target'])) target="{{ $sideItem['action']['target'] }}" rel="noreferrer" @endif><span>{{ $sideItem['action']['label'] }}</span><img src="/images/icon-chevron-right-outline.svg" class="w-2.5 h-2.5 rtl:rotate-180" alt="" width="24" height="24" loading="lazy" decoding="async"></a>
                                     @endif
                                 </div>
                             </article>

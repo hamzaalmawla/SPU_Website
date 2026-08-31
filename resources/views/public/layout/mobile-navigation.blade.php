@@ -49,7 +49,7 @@
                                 :aria-expanded="isDropdownOpen('{{ $loop->index }}').toString()"
                                 aria-controls="site-mobile-submenu-{{ $loop->index }}"
                                 class="site-nav-mobile-toggle">
-                            <img src="/images/icon-chevron-down-outline.svg" class="h-2.5 w-2.5 transition-transform duration-200" :class="mobileChevronClass('{{ $loop->index }}')" alt="">
+                            <img src="/images/icon-chevron-down-outline.svg" class="h-2.5 w-2.5 transition-transform duration-200" :class="mobileChevronClass('{{ $loop->index }}')" alt="" width="24" height="24" loading="lazy" decoding="async">
                         </button>
                     @endif
                 </div>
@@ -113,7 +113,7 @@
                @click="closeAll()"
                class="mt-2 flex items-center justify-center gap-2 rounded-xl bg-spu-red px-5 py-3.5 text-sm font-bold text-white shadow-[0_8px_24px_rgba(111,22,22,0.2)]"
                @if ($navigation->applyCta->target) target="{{ $navigation->applyCta->target }}" rel="noreferrer" @endif>
-                <img src="/images/icon-user-graduate-outline.svg" alt="" class="h-5 w-5">
+                <img src="/images/icon-user-graduate-outline.svg" alt="" class="h-5 w-5" width="24" height="24" loading="lazy" decoding="async">
                 <span>{{ $navigation->applyCta->label }}</span>
             </a>
         @endif

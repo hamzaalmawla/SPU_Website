@@ -41,15 +41,15 @@
                 <h2 class="text-3xl lg:text-4xl font-bold text-spu-blue">{{ $sectionTitle }}</h2>
             </div>
             <div class="flex gap-3">
-                <button @click="handleManual('prev')" type="button" class="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-controls="honor-panels" aria-label="{{ __('public.previous') }}"><img src="/images/icon-chevron-left-outline.svg" class="w-4 h-4 rtl:rotate-180" alt=""></button>
-                <button @click="handleManual('next')" type="button" class="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-controls="honor-panels" aria-label="{{ __('public.next') }}"><img src="/images/icon-chevron-right-outline.svg" class="w-4 h-4 rtl:rotate-180" alt=""></button>
+                <button @click="handleManual('prev')" type="button" class="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-controls="honor-panels" aria-label="{{ __('public.previous') }}"><img src="/images/icon-chevron-left-outline.svg" class="w-4 h-4 rtl:rotate-180" alt="" width="24" height="24" loading="lazy" decoding="async"></button>
+                <button @click="handleManual('next')" type="button" class="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-controls="honor-panels" aria-label="{{ __('public.next') }}"><img src="/images/icon-chevron-right-outline.svg" class="w-4 h-4 rtl:rotate-180" alt="" width="24" height="24" loading="lazy" decoding="async"></button>
             </div>
         </div>
 
         <div id="honor-panels" class="relative h-[480px] md:h-[500px] w-full">
             <template x-for="(item, index) in items" :key="itemKey(item, index)">
                 <div class="absolute transition-all duration-[1800ms] [transition-timing-function:cubic-bezier(0.25,1,0.5,1)] rounded-[28px] md:rounded-[40px] overflow-hidden group" :class="panelClass(index)" role="group" aria-roledescription="{{ __('public.slide') }}" :aria-label="itemLabel(index)" :aria-hidden="isHidden(index)">
-                    <img :src="item.image" :alt="itemAlt(item)" class="absolute inset-0 w-full h-full object-cover transition-transform duration-[3000ms] group-hover:scale-110">
+                    <img :src="item.image" :alt="itemAlt(item)" class="absolute inset-0 w-full h-full object-cover transition-transform duration-[3000ms] group-hover:scale-110" width="560" height="500" loading="lazy" decoding="async">
                     <div x-show="isPrimary(index)" x-transition:enter="transition ease-out duration-[1200ms] delay-[600ms]" x-transition:enter-start="opacity-0 translate-y-12" x-transition:enter-end="opacity-100 translate-y-0" class="absolute inset-0 flex flex-col justify-between p-6 md:p-10 text-white">
                         <div class="absolute inset-0 bg-gradient-to-t from-spu-blue/95 via-spu-blue/45 to-transparent pointer-events-none"></div>
 
@@ -64,7 +64,7 @@
                             <template x-if="hasAction(item)">
                                 <a :href="item.action.url" class="honor-panel-cta text-white/90 inline-flex items-center gap-2.5 md:gap-3 text-sm md:text-base font-bold group/link" x-bind:target="actionTarget(item)" x-bind:rel="actionRel(item)">
                                     <span class="border-b-2 border-spu-red pb-1" x-text="item.action.label"></span>
-                                    <img src="/images/icon-arrow-right-outline.svg" class="w-4 h-4 brightness-0 invert transition-transform group-hover/link:translate-x-2 rtl:rotate-180" alt="">
+                                    <img src="/images/icon-arrow-right-outline.svg" class="w-4 h-4 brightness-0 invert transition-transform group-hover/link:translate-x-2 rtl:rotate-180" alt="" width="24" height="24" loading="lazy" decoding="async">
                                 </a>
                             </template>
                         </div>

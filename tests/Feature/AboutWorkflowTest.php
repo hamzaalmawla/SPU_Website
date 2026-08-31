@@ -361,7 +361,11 @@ final class AboutWorkflowTest extends TestCase
             ->assertSee('الخدمات الرئيسية')
             ->assertSee('تواصل معنا');
 
-        $sitemap = $this->get('/sitemap.xml')->assertOk()->getContent();
+        // These About URLs are split across two child sitemaps now: the fixed
+        // section pages sit in "static", the directorate and person profiles in
+        // "people".
+        $sitemap = (string) $this->get('/sitemaps/sitemap-static.xml')->assertOk()->getContent()
+            .(string) $this->get('/sitemaps/sitemap-people.xml')->assertOk()->getContent();
         $this->assertStringContainsString('/en/about/directorates/scientific-research', (string) $sitemap);
         $this->assertStringContainsString('/ar/about/accreditation', (string) $sitemap);
         $this->assertStringContainsString('/en/about/profile/rector', (string) $sitemap);

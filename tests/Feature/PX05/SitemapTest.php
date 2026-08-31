@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\PX05;
 
+use App\Contracts\Seo\SitemapServiceInterface;
 use App\Models\Page\Page;
 use App\Models\Page\PageTranslation;
 use App\Models\Research\ResearchPublication;
@@ -29,9 +30,14 @@ class SitemapTest extends TestCase
         $response->assertOk();
         $response->assertHeader('Content-Type', 'application/xml');
 
+        // /sitemap.xml is the index now; the URLs live in its children.
         $xml = simplexml_load_string($response->getContent());
         $this->assertNotFalse($xml, 'Response must be valid XML');
-        $this->assertSame('urlset', $xml->getName());
+        $this->assertSame('sitemapindex', $xml->getName());
+
+        $children = simplexml_load_string($this->childSitemap('pages'));
+        $this->assertNotFalse($children, 'Each child sitemap must be valid XML');
+        $this->assertSame('urlset', $children->getName());
     }
 
     public function test_sitemap_contains_only_published_enabled_pages(): void
@@ -40,10 +46,7 @@ class SitemapTest extends TestCase
         $this->seedDraftPage('draft-page');
         $this->seedDisabledPage('disabled-page');
 
-        $response = $this->get('/sitemap.xml');
-
-        $response->assertOk();
-        $content = $response->getContent();
+        $content = $this->allSitemapContent();
 
         $this->assertStringContainsString('published-page', $content);
         $this->assertStringNotContainsString('draft-page', $content);
@@ -54,10 +57,7 @@ class SitemapTest extends TestCase
     {
         $page = $this->seedPublishedPage('bilingual-page', bothLocales: true);
 
-        $response = $this->get('/sitemap.xml');
-
-        $response->assertOk();
-        $content = $response->getContent();
+        $content = $this->childSitemap('pages');
 
         $this->assertStringContainsString('hreflang="ar"', $content);
         $this->assertStringContainsString('hreflang="en"', $content);
@@ -69,7 +69,7 @@ class SitemapTest extends TestCase
         $page = $this->seedPublishedPage('w3c-page');
         $page->forceFill(['updated_at' => '2026-08-21 14:30:00'])->save();
 
-        $content = $this->get('/sitemap.xml')->assertOk()->getContent();
+        $content = $this->childSitemap('pages');
 
         $this->assertMatchesRegularExpression(
             '/<lastmod>2026-08-21T14:30:00\+00:00<\/lastmod>/',
@@ -92,7 +92,7 @@ class SitemapTest extends TestCase
             ]);
         }
 
-        $content = $this->get('/sitemap.xml')->assertOk()->getContent();
+        $content = $this->childSitemap('research');
 
         $this->assertStringContainsString('/ar/research/publications/real-publication-'.$publication->id, $content);
         $this->assertStringContainsString('/en/research/publications/real-publication-'.$publication->id, $content);
@@ -102,12 +102,33 @@ class SitemapTest extends TestCase
     {
         $this->seedPublishedPage('normal-page');
 
-        $response = $this->get('/sitemap.xml');
-
-        $content = $response->getContent();
+        $content = $this->allSitemapContent();
 
         $this->assertStringNotContainsString('/admin', $content);
         $this->assertStringNotContainsString('/preview', $content);
+    }
+
+    /**
+     * The body of one child sitemap.
+     */
+    private function childSitemap(string $section): string
+    {
+        return (string) $this->get('/sitemaps/sitemap-'.$section.'.xml')->assertOk()->getContent();
+    }
+
+    /**
+     * The index plus every child, so assertions about what may never appear
+     * anywhere in the sitemap still cover the whole set after the split.
+     */
+    private function allSitemapContent(): string
+    {
+        $content = (string) $this->get('/sitemap.xml')->assertOk()->getContent();
+
+        foreach (SitemapServiceInterface::SECTIONS as $section) {
+            $content .= $this->childSitemap($section);
+        }
+
+        return $content;
     }
 
     private function seedPublishedPage(string $slug, bool $bothLocales = false): Page

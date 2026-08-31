@@ -18,8 +18,8 @@
 
             <div class="flex-1 min-w-0 w-full relative">
                 <div class="relative z-50 mb-4 flex justify-end gap-3 md:absolute md:-top-26 md:mb-0 md:ltr:right-0 md:rtl:left-0">
-                    <button type="button" @click="slidePaths('previous')" class="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-controls="home-paths-track" aria-label="{{ __('public.previous') }}"><img src="/images/icon-chevron-left-outline.svg" class="w-3.5 h-3.5 rtl:rotate-180" alt=""></button>
-                    <button type="button" @click="slidePaths('next')" class="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-controls="home-paths-track" aria-label="{{ __('public.next') }}"><img src="/images/icon-chevron-right-outline.svg" class="w-3.5 h-3.5 rtl:rotate-180" alt=""></button>
+                    <button type="button" @click="slidePaths('previous')" class="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-controls="home-paths-track" aria-label="{{ __('public.previous') }}"><img src="/images/icon-chevron-left-outline.svg" class="w-3.5 h-3.5 rtl:rotate-180" alt="" width="24" height="24" loading="lazy" decoding="async"></button>
+                    <button type="button" @click="slidePaths('next')" class="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-controls="home-paths-track" aria-label="{{ __('public.next') }}"><img src="/images/icon-chevron-right-outline.svg" class="w-3.5 h-3.5 rtl:rotate-180" alt="" width="24" height="24" loading="lazy" decoding="async"></button>
                 </div>
 
                 <div id="home-paths-track" x-ref="pathsTrack" class="flex h-[390px] w-full snap-x snap-mandatory flex-nowrap gap-6 bg-transparent overflow-x-auto overflow-y-hidden no-scrollbar scroll-smooth overscroll-x-contain ps-2 pe-6 pt-2 pb-5 items-start z-10" role="region" aria-roledescription="{{ __('public.carousel') }}" aria-label="{{ $section->payload->title }}" tabindex="0" @keydown="handleSliderKey($event)">
@@ -54,7 +54,7 @@
                                 @if (! empty($item['action']['url']) && ! empty($item['action']['label']))
                                     <a href="{{ $item['action']['url'] }}" class="mt-auto inline-flex items-center gap-2 font-bold text-white transition-all hover:gap-3" @if (! empty($item['action']['target'])) target="{{ $item['action']['target'] }}" rel="noreferrer" @endif>
                                         <span>{{ $item['action']['label'] }}</span>
-                                        <img src="/images/icon-arrow-right-outline.svg" class="h-4 w-4 brightness-0 invert rtl:rotate-180" alt="">
+                                        <img src="/images/icon-arrow-right-outline.svg" class="h-4 w-4 brightness-0 invert rtl:rotate-180" alt="" width="24" height="24" loading="lazy" decoding="async">
                                     </a>
                                 @endif
                             </div>

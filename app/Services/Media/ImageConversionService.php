@@ -74,6 +74,52 @@ final class ImageConversionService implements ImageConversionServiceInterface
         }
     }
 
+    public function convertToDisk(
+        string $sourceAbsolutePath,
+        string $destinationDisk,
+        string $destinationPath,
+        ?int $maxWidth = null,
+    ): ?WebpConversionResultDTO {
+        $driver = $this->driverName();
+
+        if ($driver === null || ! is_file($sourceAbsolutePath) || ! is_readable($sourceAbsolutePath)) {
+            return null;
+        }
+
+        try {
+            $contents = file_get_contents($sourceAbsolutePath);
+
+            if (! is_string($contents) || $contents === '') {
+                return null;
+            }
+
+            $manager = $driver === 'imagick' ? ImageManager::imagick() : ImageManager::gd();
+            $image = $manager->read($contents);
+
+            if ($maxWidth !== null && $maxWidth > 0 && $image->width() > $maxWidth) {
+                $image = $image->scaleDown(width: $maxWidth);
+            }
+
+            $encoded = $image->encode(new WebpEncoder(
+                quality: (int) config('media.webp.quality', 82),
+                strip: true,
+            ));
+
+            if (! Storage::disk($destinationDisk)->put($destinationPath, $encoded->toString())) {
+                return null;
+            }
+
+            return new WebpConversionResultDTO(
+                path: $destinationPath,
+                sizeBytes: $encoded->size(),
+                width: $image->width(),
+                height: $image->height(),
+            );
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
     private function driverName(): ?string
     {
         $configured = (string) config('media.webp.driver', 'auto');

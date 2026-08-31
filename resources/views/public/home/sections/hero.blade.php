@@ -64,7 +64,7 @@
                         @if ($section->payload->primaryAction)
                             <a href="{{ $section->payload->primaryAction->url }}" class="home-hero__primary-btn rounded-[8px]" @if ($section->payload->primaryAction->target) target="{{ $section->payload->primaryAction->target }}" rel="noreferrer" @endif>
                                 <span>{{ $section->payload->primaryAction->label }}</span>
-                                <img src="/images/icon-arrow-right-outline.svg" class="w-3.5 h-3.5 brightness-0 invert rtl:rotate-180" alt="">
+                                <img src="/images/icon-arrow-right-outline.svg" class="w-3.5 h-3.5 brightness-0 invert rtl:rotate-180" alt="" width="24" height="24" decoding="async">
                             </a>
                         @endif
 
@@ -82,13 +82,13 @@
     @if (count($images) > 1)
         <div class="absolute inset-x-0 bottom-6 z-20 flex items-center justify-center gap-3" aria-label="{{ __('public.carousel_controls') }}">
             <button type="button" @click="manualPrevious()" class="flex h-10 w-10 items-center justify-center rounded-full border border-white/40 bg-spu-blue/50 transition hover:bg-spu-blue focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white" aria-label="{{ __('public.previous') }}">
-                <img src="/images/icon-chevron-left-outline.svg" class="h-3.5 w-3.5 brightness-0 invert rtl:rotate-180" alt="">
+                <img src="/images/icon-chevron-left-outline.svg" class="h-3.5 w-3.5 brightness-0 invert rtl:rotate-180" alt="" width="24" height="24" decoding="async">
             </button>
             @foreach ($images as $image)
                 <button type="button" @click="goTo({{ $loop->index }})" class="h-2 rounded-full bg-white transition-all" :class="dotClass({{ $loop->index }})" :aria-label="slideLabel({{ $loop->index }})" :aria-current="isCurrent({{ $loop->index }})"></button>
             @endforeach
             <button type="button" @click="manualNext()" class="flex h-10 w-10 items-center justify-center rounded-full border border-white/40 bg-spu-blue/50 transition hover:bg-spu-blue focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white" aria-label="{{ __('public.next') }}">
-                <img src="/images/icon-chevron-right-outline.svg" class="h-3.5 w-3.5 brightness-0 invert rtl:rotate-180" alt="">
+                <img src="/images/icon-chevron-right-outline.svg" class="h-3.5 w-3.5 brightness-0 invert rtl:rotate-180" alt="" width="24" height="24" decoding="async">
             </button>
         </div>
     @endif

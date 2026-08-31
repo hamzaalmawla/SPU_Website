@@ -18,15 +18,32 @@ final class SitemapController extends Controller
     ) {}
 
     /**
-     * Return the XML sitemap with correct Content-Type.
+     * Return the sitemap index.
+     *
+     * In production `public/sitemap.xml` is pre-generated and the web server
+     * answers it without entering PHP; this action is the fallback for when
+     * that file has not been written yet.
      */
     public function sitemap(): Response
     {
-        return new Response(
-            $this->sitemapService->renderXml(),
-            200,
-            ['Content-Type' => 'application/xml'],
-        );
+        return $this->xml($this->sitemapService->renderIndexXml());
+    }
+
+    /**
+     * Return one child sitemap. Fallback for a missing pre-generated file.
+     */
+    public function section(string $section): Response
+    {
+        $xml = $this->sitemapService->renderSectionXml($section);
+
+        abort_if($xml === null, 404);
+
+        return $this->xml($xml);
+    }
+
+    private function xml(string $body): Response
+    {
+        return new Response($body, 200, ['Content-Type' => 'application/xml']);
     }
 
     /**

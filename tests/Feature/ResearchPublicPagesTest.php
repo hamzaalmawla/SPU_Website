@@ -570,7 +570,7 @@ final class ResearchPublicPagesTest extends TestCase
         );
         $workflow->publish('research.centers', (int) $user->getKey());
 
-        $this->get('/sitemap.xml')
+        $this->get('/sitemaps/sitemap-research.xml')
             ->assertOk()
             ->assertSee('/en/research/centers</loc>', false)
             ->assertSee('/ar/research/centers</loc>', false)
@@ -697,14 +697,14 @@ final class ResearchPublicPagesTest extends TestCase
             $workflow->saveDraft($targetKey, $research->getEditablePayload($targetKey), (int) $user->getKey());
         }
 
-        $this->get('/sitemap.xml')
+        $this->get('/sitemaps/sitemap-research.xml')
             ->assertOk()
             ->assertDontSee('/en/research/projects/earthquake-resistant-concrete-syria', false)
             ->assertDontSee('/en/research/themes/ai-ml', false);
 
         $workflow->publish('research.projects', (int) $user->getKey());
         $workflow->publish('research.themes', (int) $user->getKey());
-        $this->get('/sitemap.xml')
+        $this->get('/sitemaps/sitemap-research.xml')
             ->assertOk()
             ->assertSee('/en/research/projects</loc>', false)
             ->assertSee('/ar/research/projects/earthquake-resistant-concrete-syria', false)
@@ -713,7 +713,7 @@ final class ResearchPublicPagesTest extends TestCase
 
         $workflow->unpublish('research.projects', (int) $user->getKey());
         $workflow->unpublish('research.themes', (int) $user->getKey());
-        $this->get('/sitemap.xml')
+        $this->get('/sitemaps/sitemap-research.xml')
             ->assertOk()
             ->assertDontSee('/en/research/projects/earthquake-resistant-concrete-syria', false)
             ->assertDontSee('/en/research/themes/ai-ml', false);

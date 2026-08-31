@@ -10,7 +10,7 @@
                             <div class="stats-card__top">
                                 @if ($stat->icon)
                                     <div class="stats-icon-badge">
-                                        <img src="{{ $stat->icon }}" alt="{{ $stat->label }}" class="h-7 w-7 object-contain brightness-0 text-white invert sm:h-8 sm:w-8">
+                                        <img src="{{ $stat->icon }}" alt="{{ $stat->label }}" class="h-7 w-7 object-contain brightness-0 text-white invert sm:h-8 sm:w-8" width="32" height="32" loading="lazy" decoding="async">
                                     </div>
                                 @endif
                             </div>
