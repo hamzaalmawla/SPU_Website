@@ -195,6 +195,65 @@ WHM.
 
 ---
 
+### B4 — What to actually send the host, and why they should say yes
+
+B1, B2 and B3 have been open since 2026-08-21 with no provider movement. The
+account-level server report obtained on 2026-08-31 changes the argument, because
+it shows the machine is not under pressure:
+
+| Measure | Value |
+|---|---|
+| CPU count | 96 |
+| Server load | 3.26 (about 3% of capacity) |
+| Memory used | 40.01% |
+| Swap used | 0.65% |
+| `sshd` | up |
+| Database | MariaDB 10.11.18 |
+| Apache / nginx | 2.4.68 / both running |
+
+So this account is capped at five PHP workers on a box that is asleep. The
+request is not for more resources; it is to stop throttling an account on
+hardware that is 97% idle. Note also that `sshd` is running at server level —
+enabling jailed shell for this account is a per-account setting, not a new
+service, which is the whole of REM-07.
+
+Suggested wording:
+
+> We are preparing spu.edu.sy for a platform migration and need three
+> account-level changes that require WHM. Measured from outside, the site
+> degrades from 1.05s to a 7.9s median at twelve concurrent requests, while the
+> server reports load 3.26 across 96 CPUs and 40% memory. The bottleneck is our
+> account's configuration, not the machine.
+>
+> 1. Install and enable `ea-php84-php-opcache` for the `v2.spu.edu.sy` vhost.
+>    There is currently no `opcache.so` anywhere under `/opt/cpanel/ea-php84`,
+>    so roughly 8,000 PHP files are re-parsed on every request — a measured
+>    333ms of pure framework boot per hit. Suggested values: `enable=1`,
+>    `memory_consumption=192`, `max_accelerated_files=20000`,
+>    `validate_timestamps=1`, `revalidate_freq=60`.
+>
+> 2. Enable gzip at nginx for `text/html`, `text/css`, `application/javascript`,
+>    `application/json` and `image/svg+xml`, or pass `Accept-Encoding` through to
+>    Apache. Requesting Apache directly with an explicit `Accept-Encoding: gzip`
+>    still returns uncompressed bytes, so nginx is neither compressing nor
+>    forwarding the negotiation. Our `mod_deflate` rules are already in place and
+>    start working the moment either is done.
+>
+> 3. Raise the PHP-FPM pool for this account from `pm.max_children=5`,
+>    `pm.max_requests=20`, `pm.process_idle_timeout=10` to `16`, `1000` and `60`.
+>    Recycling a worker every twenty requests means an almost permanently cold
+>    process. Note that cPanel's `LangPHP::php_set_vhost_versions` accepts these
+>    parameters and silently ignores them, and
+>    `/var/cpanel/userdata/spuedu/*.php_fpm.yaml` is root-owned, so this has to
+>    be done in WHM.
+>
+> Separately: please enable jailed SSH for this account. `sshd` is already
+> running on the server; we need an auditable way to deploy that is not a web or
+> cron execution bridge.
+
+`deploy/v2-staging/host-diagnostics.sh` collects the account-side evidence that
+can be gathered without WHM. It is read-only and does not deploy anything.
+
 ## C. At cutover
 
 Do not execute this section until the current checklist is complete and an
