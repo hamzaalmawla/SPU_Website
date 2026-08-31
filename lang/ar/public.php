@@ -48,6 +48,36 @@ return [
     // Header
     'search_placeholder' => 'ابحث عن صفحة...',
     'search_hint' => 'اكتب حرفين على الأقل.',
+    'search_all_results_for' => 'عرض كل النتائج عن «:query»',
+    'search_quick_links' => 'روابط سريعة',
+
+    // Site search
+    'search_page_title' => 'البحث في الموقع',
+    'search_page_description' => 'ابحث في أخبار الجامعة وأبحاثها وأعضاء هيئتها التدريسية وصفحاتها.',
+    'search_landmark' => 'البحث في الموقع',
+    'search_results_for' => 'نتائج البحث عن «:query»',
+    'search_field_label' => 'كلمة البحث',
+    'search_site_placeholder' => 'ابحث عن خبر أو باحث أو صفحة...',
+    'search_submit' => 'ابحث',
+    'search_results_count' => 'عدد النتائج: :count',
+    'search_filter_label' => 'تصفية حسب نوع المحتوى',
+    'search_min_length' => 'اكتب حرفين على الأقل لبدء البحث.',
+    'search_capped_notice' => 'نعرض أفضل :count نتيجة. حدّد كلمات بحثك للحصول على نتائج أدق.',
+    'search_empty_title' => 'ابحث في موقع الجامعة',
+    'search_empty_text' => 'اكتب ما تبحث عنه في الحقل أعلاه: خبراً، أو بحثاً منشوراً، أو اسم عضو هيئة تدريسية، أو صفحة من صفحات الموقع.',
+    'search_no_results_title' => 'لم نعثر على أي نتيجة',
+    'search_no_results_text' => 'لا توجد نتائج مطابقة لـ «:query».',
+    'search_suggestions_title' => 'يمكنك تجربة ما يلي:',
+    'search_suggestion_spelling' => 'تأكّد من الإملاء، أو استخدم كلمات أقل.',
+    'search_suggestion_broaden' => 'استخدم مصطلحات أعم، مثل «الطب» بدلاً من «كلية الطب البشري».',
+    'search_suggestion_filter' => 'أزل التصفية لعرض جميع أنواع المحتوى.',
+    'search_types' => [
+        'all' => 'الكل',
+        'news' => 'الأخبار',
+        'research' => 'الأبحاث',
+        'people' => 'الأشخاص',
+        'pages' => 'الصفحات',
+    ],
 
     // News
     'news_article_page' => 'صفحة الخبر',

@@ -19,6 +19,7 @@ use App\Http\Controllers\Public\PageController;
 use App\Http\Controllers\Public\PreviewController;
 use App\Http\Controllers\Public\PublicContactController;
 use App\Http\Controllers\Public\ResearchController;
+use App\Http\Controllers\Public\SearchController;
 use App\Http\Controllers\Public\SitemapController;
 use App\Http\Controllers\Public\VirtualTourController;
 use App\Http\Middleware\AdminLocaleMiddleware;
@@ -56,6 +57,12 @@ Route::prefix('{locale}')
             ->name('public.e-services.suggestions-complaints.submit');
         Route::get('/virtual-tour', VirtualTourController::class)->name('public.virtual-tour');
         Route::get('/alumni', [AlumniController::class, 'index'])->name('public.alumni.index');
+
+        // Must stay ahead of the /{slugPath} catch-all at the end of this group,
+        // which would otherwise swallow /search and look for a CMS page.
+        Route::get('/search', SearchController::class)
+            ->middleware('throttle:public-search')
+            ->name('public.search');
 
         Route::controller(FacultyController::class)
             ->prefix('faculties')

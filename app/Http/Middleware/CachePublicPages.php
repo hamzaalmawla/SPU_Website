@@ -131,6 +131,11 @@ final class CachePublicPages
             'public.e-services.suggestions-complaints',
             'public.news.events-list.register',
             'public.research.conferences.register',
+            // Search results are per-query and effectively unbounded in
+            // variation. Caching whole rendered pages for arbitrary visitor
+            // input would fill the page cache with single-use entries; the
+            // search service caches its own ranked id list instead.
+            'public.search',
         ], true)) {
             return true;
         }
