@@ -59,6 +59,11 @@ final class SitemapController extends Controller
             $content = implode("\n", [
                 'User-agent: *',
                 'Allow: /',
+                // Search results are noindex, but that only stops them being
+                // listed - a crawler still fetches every one it finds. The
+                // route deliberately bypasses the page cache, so each fetch
+                // renders the full shell and occupies one of five PHP workers.
+                'Disallow: /*/search',
                 '',
                 'Sitemap: '.$sitemapUrl,
             ]);

@@ -37,7 +37,15 @@ final class RobotsIndexingPolicyTest extends TestCase
         $content = (string) $this->get('/robots.txt')->assertOk()->getContent();
 
         $this->assertStringContainsString('Allow: /', $content);
-        $this->assertStringNotContainsString('Disallow: /', $content);
+
+        // The invariant is that production is not blanket-disallowed, not that
+        // it carries no Disallow at all: specific path rules are legitimate, and
+        // a plain substring check cannot tell `Disallow: /` from
+        // `Disallow: /*/search`.
+        $directives = array_map('trim', preg_split('/\R/', $content) ?: []);
+
+        $this->assertNotContains('Disallow: /', $directives, 'Production must never be blanket-disallowed.');
+        $this->assertContains('Disallow: /*/search', $directives, 'Uncached search results should stay out of the crawl budget.');
     }
 
     public function test_robots_always_points_at_the_canonical_sitemap_entry_point(): void
