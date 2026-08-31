@@ -11,6 +11,7 @@ use App\Filament\Components\PageUrlSelect;
 use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Component;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
@@ -36,6 +37,7 @@ use Illuminate\Validation\ValidationException;
 class ManageResearch extends Page implements HasForms
 {
     use InteractsWithForms;
+
     protected static ?string $navigationIcon = 'heroicon-o-academic-cap';
 
     protected static ?string $slug = 'manage-research';
@@ -86,16 +88,18 @@ class ManageResearch extends Page implements HasForms
 
     public function mount(): void
     {
-        $requestedTarget = request()->query('target', 'research.publications');
+        $requestedTarget = request()->query('target', 'research.index');
         $targetKey = is_string($requestedTarget) && array_key_exists($requestedTarget, $this->targetOptions())
             ? $requestedTarget
-            : 'research.publications';
+            : 'research.index';
 
         $this->loadTarget($targetKey);
     }
 
     public function form(Form $form): Form
     {
+        $targetKey = $this->formTargetKey();
+
         return $form
             ->schema([
                 Hidden::make('target_key')->required(),
@@ -103,15 +107,47 @@ class ManageResearch extends Page implements HasForms
                     ->tabs([
                         Tab::make(__('admin.research_workspace.locales.ar'))
                             ->extraAttributes(['dir' => 'rtl', 'lang' => 'ar'])
-                            ->schema([...$this->landingFields('ar'), ...$this->publicationFields('ar'), ...$this->centerFields('ar'), ...$this->projectFields('ar'), ...$this->themeFields('ar'), ...$this->expertFields('ar'), ...$this->conferenceFields('ar'), ...$this->libraryFields('ar'), ...$this->officeFields('ar'), ...$this->policyFields('ar')]),
+                            ->schema($this->targetFields($targetKey, 'ar')),
                         Tab::make(__('admin.research_workspace.locales.en'))
                             ->extraAttributes(['dir' => 'ltr', 'lang' => 'en'])
-                            ->schema([...$this->landingFields('en'), ...$this->publicationFields('en'), ...$this->centerFields('en'), ...$this->projectFields('en'), ...$this->themeFields('en'), ...$this->expertFields('en'), ...$this->conferenceFields('en'), ...$this->libraryFields('en'), ...$this->officeFields('en'), ...$this->policyFields('en')]),
+                            ->schema($this->targetFields($targetKey, 'en')),
                     ])
                     ->persistTabInQueryString('locale')
                     ->columnSpanFull(),
             ])
             ->statePath('data');
+    }
+
+    private function formTargetKey(): string
+    {
+        $stateTarget = $this->data['target_key'] ?? null;
+        if (is_string($stateTarget) && array_key_exists($stateTarget, $this->targetOptions())) {
+            return $stateTarget;
+        }
+
+        $requestedTarget = request()->query('target', 'research.index');
+
+        return is_string($requestedTarget) && array_key_exists($requestedTarget, $this->targetOptions())
+            ? $requestedTarget
+            : 'research.index';
+    }
+
+    /** @return array<int, Component> */
+    private function targetFields(string $targetKey, string $locale): array
+    {
+        return match ($targetKey) {
+            'research.index' => $this->landingFields($locale),
+            'research.publications' => $this->publicationFields($locale),
+            'research.centers' => $this->centerFields($locale),
+            'research.projects' => $this->projectFields($locale),
+            'research.themes' => $this->themeFields($locale),
+            'research.experts' => $this->expertFields($locale),
+            'research.conferences' => $this->conferenceFields($locale),
+            'research.library' => $this->libraryFields($locale),
+            'research.office' => $this->officeFields($locale),
+            'research.policies' => $this->policyFields($locale),
+            default => [],
+        };
     }
 
     public function loadTarget(string $targetKey): void
@@ -337,7 +373,7 @@ class ManageResearch extends Page implements HasForms
 
     private function currentTargetKey(): string
     {
-        $targetKey = (string) ($this->data['target_key'] ?? 'research.publications');
+        $targetKey = (string) ($this->data['target_key'] ?? 'research.index');
         $this->assertResearchTarget($targetKey);
 
         return $targetKey;
@@ -1119,7 +1155,7 @@ class ManageResearch extends Page implements HasForms
     /** @param array<string, mixed> $state @return array<string, mixed> */
     private function payloadFromForm(array $state): array
     {
-        $targetKey = (string) ($state['target_key'] ?? 'research.publications');
+        $targetKey = (string) ($state['target_key'] ?? 'research.index');
         [$stateKey, $normalizer] = match ($targetKey) {
             'research.index' => ['landing', 'normalizeLandingContent'],
             'research.centers' => ['centers', 'normalizeCenterContent'],

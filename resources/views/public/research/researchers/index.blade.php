@@ -59,7 +59,7 @@
 
             <div class="mx-auto grid max-w-[1200px] gap-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 @forelse (($data['items'] ?? []) as $researcher)
-                    <a href="/{{ $locale }}/research/researchers/{{ $researcher['slug'] ?? '' }}" class="group flex flex-col items-center text-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-blue">
+                    <a href="{{ $researcher['profileUrl'] ?? '/'.$locale.'/about/profile/'.($researcher['slug'] ?? '') }}" class="group flex flex-col items-center text-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-blue">
                         <div class="relative mb-4 h-28 w-28 overflow-hidden rounded-full border-2 border-spu-blue/10 transition-all group-hover:border-spu-red">
                             <img src="{{ $researcher['image'] ?? '/images/unkown.jpeg' }}" alt="{{ $researcher['name'] ?? '' }}" class="h-full w-full object-cover object-top">
                         </div>

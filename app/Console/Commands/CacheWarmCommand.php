@@ -10,6 +10,8 @@ use App\Contracts\Page\PageServiceInterface;
 use App\Contracts\Seo\SitemapServiceInterface;
 use App\Contracts\Settings\SettingsServiceInterface;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Http\Kernel as HttpKernel;
+use Illuminate\Http\Request;
 
 /**
  * Cache warm command for pre-populating public page caches.
@@ -35,6 +37,7 @@ final class CacheWarmCommand extends Command
         private readonly PageServiceInterface $pageService,
         private readonly SettingsServiceInterface $settingsService,
         private readonly SitemapServiceInterface $sitemapService,
+        private readonly HttpKernel $httpKernel,
     ) {
         parent::__construct();
     }
@@ -51,6 +54,7 @@ final class CacheWarmCommand extends Command
         $this->warmLandingPages($locales);
         $this->warmNavigationPayloads($locales);
         $this->warmSettingsPayloads($locales);
+        $this->warmPublicHtml($locales);
 
         if ($this->option('include-sitemap')) {
             $this->warmSitemap();
@@ -180,6 +184,40 @@ final class CacheWarmCommand extends Command
         } catch (\Throwable $e) {
             $this->warn("  ⚠ Sitemap unavailable: {$e->getMessage()}");
             $this->warnings++;
+        }
+    }
+
+    /** @param list<string> $locales */
+    private function warmPublicHtml(array $locales): void
+    {
+        $paths = ['', '/about', '/admissions', '/facilities', '/campus-life', '/news', '/news/articles'];
+        $origin = rtrim((string) config('app.url'), '/');
+
+        foreach ($locales as $locale) {
+            foreach ($paths as $path) {
+                $uri = '/'.$locale.$path;
+                $request = Request::create($origin.$uri, 'GET', server: [
+                    'HTTP_HOST' => (string) parse_url($origin, PHP_URL_HOST),
+                    'HTTPS' => str_starts_with($origin, 'https://') ? 'on' : 'off',
+                ]);
+
+                try {
+                    $response = $this->httpKernel->handle($request);
+
+                    if ($response->getStatusCode() >= 200 && $response->getStatusCode() < 400) {
+                        $this->info("  ✓ Public HTML ({$uri}) warmed");
+                        $this->warmed++;
+                    } else {
+                        $this->warn("  ⚠ Public HTML ({$uri}) returned {$response->getStatusCode()}");
+                        $this->warnings++;
+                    }
+
+                    $this->httpKernel->terminate($request, $response);
+                } catch (\Throwable $exception) {
+                    $this->warn("  ⚠ Public HTML ({$uri}) unavailable: {$exception->getMessage()}");
+                    $this->warnings++;
+                }
+            }
         }
     }
 }

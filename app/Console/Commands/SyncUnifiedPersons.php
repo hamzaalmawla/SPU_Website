@@ -13,7 +13,7 @@ use App\Models\Person\PersonEducation;
 use App\Models\Person\PersonEducationTranslation;
 use App\Models\Person\PersonTranslation;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class SyncUnifiedPersons extends Command
 {
@@ -29,10 +29,12 @@ class SyncUnifiedPersons extends Command
 
         if (! $force && ! $dryRun) {
             $this->warn('This command mutates person data. Use --dry-run first, or --force to run.');
+
             return self::FAILURE;
         }
 
         $query = FacultyMember::query()->with([
+            'canonicalPerson',
             'translations',
             'educations.translations',
             'photoMedia',
@@ -49,7 +51,7 @@ class SyncUnifiedPersons extends Command
         }
 
         $members = $query->get();
-        $this->info('Faculty members to sync: ' . $members->count());
+        $this->info('Faculty members to sync: '.$members->count());
 
         $stats = ['created' => 0, 'updated' => 0, 'appointments' => 0, 'publications' => 0, 'councils' => 0, 'educations' => 0];
 
@@ -59,11 +61,13 @@ class SyncUnifiedPersons extends Command
             if (! $person instanceof Person) {
                 if ($dryRun) {
                     $stats['created']++;
-                    $this->line('  → Would create person (' . $member->slug . ')');
+                    $this->line('  → Would create person ('.$member->slug.')');
+
                     continue;
                 }
 
-                $this->error('Could not resolve person for faculty_member slug=' . $member->slug);
+                $this->error('Could not resolve person for faculty_member slug='.$member->slug);
+
                 continue;
             }
 
@@ -82,9 +86,10 @@ class SyncUnifiedPersons extends Command
                 $stats['councils'] += $this->syncCouncilMemberships($person, $member);
                 $stats['publications'] += $this->syncPublications($person, $member);
                 $stats['educations'] += $this->syncEducations($person, $member);
+                $member->forceFill(['person_id' => $person->getKey()])->save();
             }
 
-            $this->line('  → ' . ($person->wasRecentlyCreated ? 'Created' : 'Updated') . ' person #' . $person->id . ' (' . $person->slug . ')');
+            $this->line('  → '.($person->wasRecentlyCreated ? 'Created' : 'Updated').' person #'.$person->id.' ('.$person->slug.')');
         }
 
         $persons = Person::query()
@@ -93,23 +98,27 @@ class SyncUnifiedPersons extends Command
             ->with('translations')
             ->get();
 
-        $this->info('Existing persons to create leadership appointments: ' . $persons->count());
+        $this->info('Existing persons to create leadership appointments: '.$persons->count());
 
         foreach ($persons as $person) {
             if (! $dryRun) {
                 $stats['appointments'] += $this->syncLeadershipAppointment($person);
             }
-            $this->line('  → leadership appointment for person #' . $person->id . ' (' . $person->slug . ') category=' . $person->category);
+            $this->line('  → leadership appointment for person #'.$person->id.' ('.$person->slug.') category='.$person->category);
         }
 
         $this->newLine();
-        $this->info('Stats: ' . json_encode($stats));
+        $this->info('Stats: '.json_encode($stats));
 
         return self::SUCCESS;
     }
 
     private function resolvePerson(FacultyMember $member, bool $createIfMissing = true): ?Person
     {
+        if ($member->canonicalPerson instanceof Person) {
+            return $member->canonicalPerson;
+        }
+
         if ($member->slug) {
             $existing = Person::query()->where('slug', $member->slug)->first();
             if ($existing instanceof Person) {
@@ -164,19 +173,15 @@ class SyncUnifiedPersons extends Command
     private function syncPersonFromFacultyMember(Person $person, FacultyMember $member): void
     {
         $fields = [
-            'email' => $member->email ?? $person->email,
-            'phone' => $member->phone ?? $person->phone,
-            'office_location' => $member->office_location ?? $person->office_location,
-            'social_links' => $member->social_links ?? $person->social_links,
-            'sort_order' => $member->sort_order ?? $person->sort_order,
-            'is_enabled' => $member->is_enabled ?? $person->is_enabled,
-            'publication_status' => $member->publication_status ?? $person->publication_status,
-            'published_at' => $member->published_at ?? $person->published_at,
-            'photo_media_id' => $member->photo_media_id ?? $person->photo_media_id,
-            'cv_media_id' => $member->cv_media_id ?? $person->cv_media_id,
-            'legacy_photo_path' => $member->legacy_photo_path ?? $person->legacy_photo_path,
-            'legacy_cv_path' => $member->legacy_cv_path ?? $person->legacy_cv_path,
-            'legacy_ar_cv_path' => $member->legacy_ar_cv_path ?? $person->legacy_ar_cv_path,
+            'email' => $person->email ?? $member->email,
+            'phone' => $person->phone ?? $member->phone,
+            'office_location' => $person->office_location ?? $member->office_location,
+            'social_links' => $person->social_links ?? $member->social_links,
+            'photo_media_id' => $person->photo_media_id ?? $member->photo_media_id,
+            'cv_media_id' => $person->cv_media_id ?? $member->cv_media_id,
+            'legacy_photo_path' => $person->legacy_photo_path ?? $member->legacy_photo_path,
+            'legacy_cv_path' => $person->legacy_cv_path ?? $member->legacy_cv_path,
+            'legacy_ar_cv_path' => $person->legacy_ar_cv_path ?? $member->legacy_ar_cv_path,
         ];
 
         $person->fill($fields);
@@ -188,12 +193,12 @@ class SyncUnifiedPersons extends Command
             $pt = PersonTranslation::query()
                 ->firstOrNew(['person_id' => $person->id, 'locale' => $ft->locale]);
 
-            $pt->name = $ft->full_name ?? $pt->name ?? '';
-            $pt->title = $ft->title ?? $pt->title ?? '';
-            $pt->position = $ft->position ?? $pt->position ?? '';
-            $pt->role = $ft->position ?? $pt->role ?? '';
-            $pt->bio = $ft->bio ?? $pt->bio ?? '';
-            $pt->specializations = $ft->specializations ?? $pt->specializations ?? null;
+            $pt->name = $pt->name ?: ($ft->full_name ?? '');
+            $pt->title = $pt->title ?: ($ft->title ?? '');
+            $pt->position = $pt->position ?: ($ft->position ?? '');
+            $pt->role = $pt->role ?: ($ft->position ?? '');
+            $pt->bio = $pt->bio ?: ($ft->bio ?? '');
+            $pt->specializations = $pt->specializations ?: ($ft->specializations ?? null);
             $pt->save();
         }
     }
@@ -372,14 +377,14 @@ class SyncUnifiedPersons extends Command
             }
         }
         if ($base === '') {
-            $base = $member->translations->first()?->full_name ?? 'faculty-member-' . $member->id;
+            $base = $member->translations->first()?->full_name ?? 'faculty-member-'.$member->id;
         }
 
-        $slug = \Illuminate\Support\Str::slug($base);
+        $slug = Str::slug($base);
         $original = $slug;
         $counter = 1;
         while (Person::query()->where('slug', $slug)->exists()) {
-            $slug = $original . '-' . $counter++;
+            $slug = $original.'-'.$counter++;
         }
 
         return $slug;

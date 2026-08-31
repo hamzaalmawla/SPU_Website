@@ -59,9 +59,9 @@ final class HomepageFormSchema
                             ->schema([
                                 Select::make('article_id')
                                     ->label(__('admin.homepage_selection.news_article'))
-                                    ->options(fn (): array => self::newsOptions(''))
+                                    ->options(fn (): array => [])
                                     ->searchable()
-                                    ->preload()
+                                    ->preload(false)
                                     ->required()
                                     ->distinct()
                                     ->disableOptionsWhenSelectedInSiblingRepeaterItems()
@@ -85,9 +85,9 @@ final class HomepageFormSchema
                             ->schema([
                                 Select::make('publication_slug')
                                     ->label(__('admin.homepage_selection.research_publication'))
-                                    ->options(fn (): array => self::researchOptions(''))
+                                    ->options(fn (): array => [])
                                     ->searchable()
-                                    ->preload()
+                                    ->preload(false)
                                     ->required()
                                     ->distinct()
                                     ->disableOptionsWhenSelectedInSiblingRepeaterItems()
@@ -536,7 +536,7 @@ final class HomepageFormSchema
                         ->label('Platform')
                         ->required()
                         ->maxLength(50),
-                            PageUrlSelect::make('url', 'URL', self::localeFromPrefix($prefix), true),
+                    PageUrlSelect::make('url', 'URL', self::localeFromPrefix($prefix), true),
                     self::mediaField('icon', 'Icon'),
                 ])
                 ->columns(3)

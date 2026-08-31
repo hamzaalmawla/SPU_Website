@@ -19,6 +19,7 @@ use App\Filament\Resources\FacultyMemberResource;
 use App\Models\Faculty\Department;
 use App\Models\Faculty\Faculty;
 use App\Models\Media\MediaAsset;
+use App\Models\Person\FacultyMember;
 use App\Models\Person\FacultyMemberTranslation;
 use App\Models\Person\Person;
 use App\Models\Research\ResearchPublication;
@@ -127,6 +128,34 @@ final class ProfileWorkflowTest extends TestCase
         $this->assertNotNull($member->id);
     }
 
+    public function test_unified_person_sync_links_legacy_member_without_overwriting_canonical_identity(): void
+    {
+        $person = $this->adminService->createPerson($this->personData('linked-profile'), (int) $this->admin->getKey());
+        $member = $this->adminService->createFacultyMember($this->facultyMemberData('linked-profile'), (int) $this->admin->getKey());
+        $this->publishPerson((int) $person->id);
+        $this->publishFacultyMember((int) $member->id);
+
+        $this->artisan('app:sync-unified-persons', ['--slug' => 'linked-profile', '--force' => true])
+            ->assertSuccessful();
+
+        $this->assertSame(
+            (int) $person->id,
+            (int) FacultyMember::query()->findOrFail($member->id)->person_id,
+        );
+        $this->assertSame(
+            ['linked-profile'],
+            collect(app(ProfilePageServiceInterface::class)->getPublicProfiles('en'))
+                ->where('slug', 'linked-profile')
+                ->pluck('slug')
+                ->values()
+                ->all(),
+        );
+        $this->get('/en/about/profile/linked-profile')
+            ->assertOk()
+            ->assertSee('English Profile')
+            ->assertDontSee('English Faculty Member');
+    }
+
     public function test_unpublished_profile_publications_are_hidden(): void
     {
         $person = $this->adminService->createPerson($this->personData('publication-owner'), (int) $this->admin->getKey());
@@ -166,8 +195,30 @@ final class ProfileWorkflowTest extends TestCase
         ]);
 
         $this->get('/en/research/researchers/research-profile')
+            ->assertRedirect('/en/about/profile/research-profile');
+        $this->get('/en/about/profile/research-profile')
             ->assertOk()
             ->assertSee('/en/research/publications/profile-research-publication-'.$publication->id, false);
+    }
+
+    public function test_same_person_uses_one_profile_from_leadership_staff_and_research(): void
+    {
+        foreach (['en', 'ar'] as $locale) {
+            $canonicalUrl = '/'.$locale.'/about/profile/ayman-ali';
+
+            $this->get('/'.$locale.'/about/leadership?faculty=medicine')
+                ->assertOk()
+                ->assertSee($canonicalUrl, false);
+            $this->get('/'.$locale.'/about/directorates/staff?faculty=medicine')
+                ->assertOk()
+                ->assertSee($canonicalUrl, false);
+            $this->get('/'.$locale.'/research/researchers')
+                ->assertOk()
+                ->assertSee($canonicalUrl, false);
+            $this->get('/'.$locale.'/research/researchers/ayman-ali')
+                ->assertRedirect($canonicalUrl);
+            $this->get($canonicalUrl)->assertOk();
+        }
     }
 
     public function test_shared_public_shell_assets_are_present(): void
@@ -186,7 +237,7 @@ final class ProfileWorkflowTest extends TestCase
         }
     }
 
-    public function test_profile_sources_do_not_collide_when_slugs_match(): void
+    public function test_legacy_profile_sources_converge_on_one_canonical_person_profile(): void
     {
         $person = $this->adminService->createPerson($this->personData('shared-profile'), (int) $this->admin->getKey());
         $member = $this->adminService->createFacultyMember($this->facultyMemberData('shared-profile'), (int) $this->admin->getKey());
@@ -194,16 +245,18 @@ final class ProfileWorkflowTest extends TestCase
         $this->publishFacultyMember((int) $member->id);
 
         $this->get('/en/about/profile/person/shared-profile')
-            ->assertRedirect('/en/about/profile/shared-profile?source=person');
+            ->assertRedirect('/en/about/profile/shared-profile');
         $this->get('/en/about/profile/shared-profile?source=person')
-            ->assertOk()
-            ->assertSee('English Profile');
+            ->assertRedirect('/en/about/profile/shared-profile');
 
         $this->get('/en/about/profile/faculty-member/shared-profile')
-            ->assertRedirect('/en/about/profile/shared-profile?source=faculty-member');
+            ->assertRedirect('/en/about/profile/shared-profile');
         $this->get('/en/about/profile/shared-profile?source=faculty-member')
+            ->assertRedirect('/en/about/profile/shared-profile');
+        $this->get('/en/about/profile/shared-profile')
             ->assertOk()
-            ->assertSee('English Faculty Member');
+            ->assertSee('English Profile')
+            ->assertDontSee('English Faculty Member');
     }
 
     public function test_managed_faculty_member_appears_in_staff_directory_with_canonical_profile_link(): void

@@ -384,9 +384,10 @@ final class MenuService implements MenuServiceInterface
 
     private function mapItem(MenuItem $item, string $locale, ?string $currentPath): ?MenuItemDTO
     {
+        $childModels = $item->relationLoaded('children') ? $item->children->all() : [];
         $children = array_values(array_filter(array_map(
             fn (MenuItem $child): ?MenuItemDTO => $this->mapItem($child, $locale, $currentPath),
-            $item->children->all(),
+            $childModels,
         )));
 
         $resolvedUrl = $this->resolveItemUrl($item, $locale);

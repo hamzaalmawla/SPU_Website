@@ -24,7 +24,7 @@
             'excerpt' => $pub['excerpt'] ?? null,
             'externalUrl' => $pub['externalUrl'] ?? null,
             'links' => [
-                'local' => '#',
+                'local' => ! empty($pub['slug']) ? '/'.$locale.'/research/publications/'.$pub['slug'] : '',
                 'scholar' => $pub['externalUrl'] ?? '',
             ]
         ], $profile->publications);

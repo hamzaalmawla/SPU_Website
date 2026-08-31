@@ -331,9 +331,9 @@ class NavigationSeeder extends Seeder
                     ['label' => 'إطار التعلم العميق للتنبؤ بنفاذية المكامن', 'target_kind' => 'url', 'url' => '/ar/research/publications/deep-learning-reservoir-permeability'],
                 ]],
                 ['label' => 'الباحثون', 'target_kind' => 'url', 'url' => '/ar/research/researchers', 'children' => [
-                    ['label' => 'د. مهيب النقري - الذكاء الاصطناعي', 'target_kind' => 'url', 'url' => '/ar/research/researchers/mouhib-alnoukari'],
-                    ['label' => 'د. أيمن علي - الطب', 'target_kind' => 'url', 'url' => '/ar/research/researchers/ayman-ali'],
-                    ['label' => 'د. محمود حديد - هندسة البترول', 'target_kind' => 'url', 'url' => '/ar/research/researchers/mahmoud-hadid'],
+                    ['label' => 'د. مهيب النقري - الذكاء الاصطناعي', 'target_kind' => 'url', 'url' => '/ar/about/profile/mouhib-alnoukari'],
+                    ['label' => 'د. أيمن علي - الطب', 'target_kind' => 'url', 'url' => '/ar/about/profile/ayman-ali'],
+                    ['label' => 'د. محمود حديد - هندسة البترول', 'target_kind' => 'url', 'url' => '/ar/about/profile/mahmoud-hadid'],
                 ]],
                 ['label' => 'مجالات البحث', 'target_kind' => 'url', 'url' => '/ar/research/themes', 'children' => [
                     ['label' => 'الذكاء الاصطناعي وتعلم الآلة', 'target_kind' => 'url', 'url' => '/ar/research/themes/ai-ml'],
@@ -363,9 +363,9 @@ class NavigationSeeder extends Seeder
                 ['label' => 'Deep Learning for Reservoir Permeability', 'target_kind' => 'url', 'url' => '/en/research/publications/deep-learning-reservoir-permeability'],
             ]],
             ['label' => 'Researchers', 'target_kind' => 'url', 'url' => '/en/research/researchers', 'children' => [
-                ['label' => 'Dr. Mouhib Alnoukari - AI', 'target_kind' => 'url', 'url' => '/en/research/researchers/mouhib-alnoukari'],
-                ['label' => 'Dr. Ayman Ali - Medicine', 'target_kind' => 'url', 'url' => '/en/research/researchers/ayman-ali'],
-                ['label' => 'Dr. Mahmoud Hadid - Petroleum', 'target_kind' => 'url', 'url' => '/en/research/researchers/mahmoud-hadid'],
+                ['label' => 'Dr. Mouhib Alnoukari - AI', 'target_kind' => 'url', 'url' => '/en/about/profile/mouhib-alnoukari'],
+                ['label' => 'Dr. Ayman Ali - Medicine', 'target_kind' => 'url', 'url' => '/en/about/profile/ayman-ali'],
+                ['label' => 'Dr. Mahmoud Hadid - Petroleum', 'target_kind' => 'url', 'url' => '/en/about/profile/mahmoud-hadid'],
             ]],
             ['label' => 'Research Themes', 'target_kind' => 'url', 'url' => '/en/research/themes', 'children' => [
                 ['label' => 'Artificial Intelligence & Machine Learning', 'target_kind' => 'url', 'url' => '/en/research/themes/ai-ml'],

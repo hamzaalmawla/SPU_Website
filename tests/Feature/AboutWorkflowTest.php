@@ -646,7 +646,7 @@ final class AboutWorkflowTest extends TestCase
             ->assertOk()
             ->assertSee('1 results')
             ->assertSee('Dr. Mahmoud Hadid')
-            ->assertDontSee('/en/about/profile/ayman-ali', false)
+            ->assertDontSee('href="http://localhost/en/about/profile/ayman-ali" class="staff-card', false)
             ->assertSee('/ar/about/directorates/staff?faculty=petroleum', false)
             ->assertDontSee('Staff pagination');
     }

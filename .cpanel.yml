@@ -1,4 +1,11 @@
 ---
 deployment:
   tasks:
+    - /usr/bin/env npm ci --no-audit --no-fund
+    - /usr/bin/env npm run build
     - /bin/bash deploy/v2-staging/publish-svg-assets.sh
+    - /opt/cpanel/ea-php84/root/usr/bin/php artisan migrate --force
+    - /opt/cpanel/ea-php84/root/usr/bin/php artisan optimize
+    - /opt/cpanel/ea-php84/root/usr/bin/php artisan cache:warm --include-sitemap
+    - /opt/cpanel/ea-php84/root/usr/bin/php artisan launch:validate --environment=production
+    - /opt/cpanel/ea-php84/root/usr/bin/php artisan queue:restart

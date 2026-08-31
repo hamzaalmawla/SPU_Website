@@ -123,12 +123,20 @@ for f in med dent pharm info petrol admin research hospital dent_clinic alumni c
 done
 ```
 
-The cPanel Git deployment is defined in the repository's `.cpanel.yml`. It runs
-`deploy/v2-staging/publish-svg-assets.sh`, which publishes every tracked SVG
-under `public/images` into `$WEB/images` and fails if representative navigation
-icons are missing. This explicit copy is required because `$APP/public` is a
-symlink to the separate cPanel document root; updating the application checkout
-alone does not publish newly tracked static files into that document root.
+The cPanel Git deployment is defined in the repository's `.cpanel.yml`. It
+installs locked frontend dependencies, builds the current Vite assets, publishes
+tracked SVGs, applies migrations, builds Laravel and Filament production caches,
+and restarts queue workers. Deployment must fail rather than serve stale CSS,
+JavaScript, icons, schema, or component manifests. The explicit SVG copy remains
+necessary because `$APP/public` is a symlink to the separate cPanel document
+root.
+
+`DatabaseSeeder` is intentionally blocked when `APP_ENV=production`. Never run
+`migrate:fresh`, `db:wipe`, or `db:seed` against a production content database.
+The deployment runs `launch:validate --environment=production` after migrations,
+optimization, and cache warming; a missing homepage, public content path,
+sitemap, SEO configuration, cache behavior, or audit capability must fail the
+deployment rather than reach the live site.
 
 After each deployment, verify both root-level and nested icon paths:
 

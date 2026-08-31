@@ -13,5 +13,7 @@ interface ProfilePageServiceInterface
     /** @return array<int, ProfilePageDTO> */
     public function getPublicProfiles(string $locale): array;
 
+    public function hasPublicProfiles(): bool;
+
     public function resolveLegacyProfile(string $locale, string $identifier): ?ProfilePageDTO;
 }

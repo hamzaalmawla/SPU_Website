@@ -468,7 +468,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
         $cmsContent = $this->publishedLocalizedPayload('research.experts', $locale);
 
         if (is_array($cmsContent)) {
-            $cmsContent = $this->normalizedCmsExpertsContent($cmsContent);
+            $cmsContent = $this->canonicalCmsResearchersContent($locale, $this->normalizedCmsExpertsContent($cmsContent));
 
             return $this->pageDto($locale, 'researchers', $this->withFilteredResearchers($cmsContent, $filters), '/research/researchers', $cmsContent['hero'] ?? [], true);
         }
@@ -515,7 +515,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
         $cmsContent = $this->publishedLocalizedPayload('research.experts', $locale);
 
         if (is_array($cmsContent)) {
-            $cmsContent = $this->normalizedCmsExpertsContent($cmsContent);
+            $cmsContent = $this->canonicalCmsResearchersContent($locale, $this->normalizedCmsExpertsContent($cmsContent));
 
             return $this->pageDto($locale, 'expert-finder', $this->withFilteredResearchers($cmsContent, $filters, false), '/research/expert-finder', $cmsContent['hero'] ?? [], true);
         }
@@ -684,7 +684,12 @@ final class ResearchPageService implements ResearchPageServiceInterface
 
         $section = $segments[1] ?? null;
 
-        return match ($section) {
+        $availabilityKey = 'research.public-path-availability.'.hash('sha256', $locale.'|/'.implode('/', $segments));
+        if (request()->attributes->has($availabilityKey)) {
+            return (bool) request()->attributes->get($availabilityKey);
+        }
+
+        $available = match ($section) {
             // The landing page is editorial chrome with no database equivalent, so
             // it is only reachable once reviewed content is published. Falling back
             // to the fixture here kept /research permanently in the navigation and
@@ -704,11 +709,11 @@ final class ResearchPageService implements ResearchPageServiceInterface
                 : count($segments) === 3 && $this->theme($locale, (string) $segments[2]) instanceof ResearchDetailPageDTO,
             'researchers' => count($segments) === 2
                 ? $this->publishedLocalizedPayload('research.experts', $locale) !== null
-                    || $this->profilePageService->getPublicProfiles($locale) !== []
+                    || $this->profilePageService->hasPublicProfiles()
                 : count($segments) === 3 && $this->researcher($locale, (string) $segments[2]) instanceof ResearchDetailPageDTO,
             'expert-finder' => count($segments) === 2
                 && ($this->publishedLocalizedPayload('research.experts', $locale) !== null
-                    || $this->profilePageService->getPublicProfiles($locale) !== []),
+                    || $this->profilePageService->hasPublicProfiles()),
             'conferences' => $this->conferencePathAvailable($locale, $path, $segments),
             'library' => count($segments) === 2
                 && $this->publishedLocalizedPayload('research.library', $locale) !== null,
@@ -718,6 +723,10 @@ final class ResearchPageService implements ResearchPageServiceInterface
                 && $this->publishedLocalizedPayload('research.policies', $locale) !== null,
             default => false,
         };
+
+        request()->attributes->set($availabilityKey, $available);
+
+        return $available;
     }
 
     /** @param array<int, mixed> $columns @return array<int, mixed> */
@@ -827,7 +836,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
 
     private function publicationsArchiveAvailable(string $locale): bool
     {
-        if ($this->databasePublicationItems($locale) !== []) {
+        if (ResearchPublication::query()->public()->exists()) {
             return true;
         }
 
@@ -1357,6 +1366,12 @@ final class ResearchPageService implements ResearchPageServiceInterface
     /** @return array<int, array<string, mixed>> */
     private function databasePublicationItems(string $locale): array
     {
+        $cacheKey = 'research.database-publication-items.'.$locale;
+        $cached = request()->attributes->get($cacheKey);
+        if (is_array($cached)) {
+            return $cached;
+        }
+
         $publications = ResearchPublication::query()
             ->public()
             ->with(['translations', 'facultyMember.faculty.translations', 'fileMedia', 'files.mediaAsset', 'legacyFileReferences'])
@@ -1366,6 +1381,8 @@ final class ResearchPageService implements ResearchPageServiceInterface
             ->get();
 
         if ($publications->isEmpty()) {
+            request()->attributes->set($cacheKey, []);
+
             return [];
         }
 
@@ -1379,11 +1396,15 @@ final class ResearchPageService implements ResearchPageServiceInterface
             ->map(fn (mixed $sourceId): int => (int) $sourceId)
             ->all();
 
-        return $publications
+        $items = $publications
             ->map(fn (ResearchPublication $publication): ?array => $this->databasePublicationItem($publication, $locale, $sourceIds[(int) $publication->getKey()] ?? null))
             ->filter(fn (?array $publication): bool => $publication !== null)
             ->values()
             ->all();
+
+        request()->attributes->set($cacheKey, $items);
+
+        return $items;
     }
 
     private function databasePublicationItem(ResearchPublication $publication, string $locale, ?int $sourceId): ?array
@@ -1529,7 +1550,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
         $content = $this->publishedLocalizedPayload('research.experts', $locale);
 
         if (is_array($content)) {
-            $content = $this->normalizedCmsExpertsContent($content);
+            $content = $this->canonicalCmsResearchersContent($locale, $this->normalizedCmsExpertsContent($content));
 
             return $this->arrayList($content['researchers'] ?? $content['items'] ?? []);
         }
@@ -1999,24 +2020,56 @@ final class ResearchPageService implements ResearchPageServiceInterface
     private function databaseResearchersContent(string $locale): array
     {
         $items = array_map(
-            static fn (ProfilePageDTO $profile): array => [
-                'slug' => $profile->slug,
-                'name' => $profile->name,
-                'title' => $profile->title ?? $profile->position ?? '',
-                'role' => $profile->position ?? $profile->title ?? '',
-                'faculty' => $profile->facultyName ?? '',
-                'department' => $profile->departmentName ?? '',
-                'image' => $profile->image ?? '/images/uni-main-place.JPG',
-                'publications' => count($profile->publications),
-                'expertise' => $profile->specializations ?? [],
-                'expertiseSlugs' => [],
-            ],
+            fn (ProfilePageDTO $profile): array => $this->profileResearcherItem($profile),
             $this->profilePageService->getPublicProfiles($locale),
         );
 
         return [
             'items' => $items,
             'researchers' => $items,
+        ];
+    }
+
+    /** @param array<string, mixed> $content @return array<string, mixed> */
+    private function canonicalCmsResearchersContent(string $locale, array $content): array
+    {
+        $profiles = [];
+        foreach ($this->profilePageService->getPublicProfiles($locale) as $profile) {
+            $profiles[$profile->slug] = $profile;
+        }
+
+        $items = [];
+        foreach ($this->arrayList($content['researchers'] ?? $content['items'] ?? []) as $item) {
+            $slug = (string) ($item['slug'] ?? $item['id'] ?? '');
+            $profile = $profiles[$slug] ?? null;
+
+            if (! $profile instanceof ProfilePageDTO) {
+                continue;
+            }
+
+            $items[] = array_replace($item, $this->profileResearcherItem($profile));
+        }
+
+        $content['items'] = $items;
+        $content['researchers'] = $items;
+
+        return $content;
+    }
+
+    /** @return array<string, mixed> */
+    private function profileResearcherItem(ProfilePageDTO $profile): array
+    {
+        return [
+            'slug' => $profile->slug,
+            'name' => $profile->name,
+            'title' => $profile->title ?? $profile->position ?? '',
+            'role' => $profile->position ?? $profile->title ?? '',
+            'faculty' => $profile->facultyName ?? '',
+            'department' => $profile->departmentName ?? '',
+            'image' => $profile->image ?? '/images/uni-main-place.JPG',
+            'publications' => count($profile->publications),
+            'expertise' => $profile->specializations,
+            'profileUrl' => $profile->profileUrl,
         ];
     }
 

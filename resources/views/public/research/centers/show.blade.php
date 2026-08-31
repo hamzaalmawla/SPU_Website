@@ -38,7 +38,7 @@
                             <h2 id="affiliated-faculty-heading" class="text-[13px] font-bold uppercase tracking-[0.12em] text-spu-red">{{ $locale === 'ar' ? 'الباحثون المنتسبون' : 'Affiliated Researchers' }}</h2>
                             <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 @foreach ($data['faculty'] as $researcher)
-                                    <a href="/{{ $locale }}/research/researchers/{{ $researcher['slug'] ?? '' }}" class="group rounded-[8px] border border-slate-100 p-4 transition hover:border-spu-blue/20 hover:shadow-[0_4px_12px_rgba(32,39,89,0.06)]">
+                                    <a href="{{ $researcher['profileUrl'] ?? '/'.$locale.'/about/profile/'.($researcher['slug'] ?? '') }}" class="group rounded-[8px] border border-slate-100 p-4 transition hover:border-spu-blue/20 hover:shadow-[0_4px_12px_rgba(32,39,89,0.06)]">
                                         <div class="flex items-center gap-3">
                                             <img src="{{ $researcher['image'] ?? '/images/uni-main-place.JPG' }}" alt="{{ $researcher['name'] ?? '' }}" class="h-12 w-12 rounded-full object-cover">
                                             <div>

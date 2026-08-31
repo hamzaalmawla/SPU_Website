@@ -279,21 +279,24 @@ final class ResearchPublicPagesTest extends TestCase
             '/en/research/themes/energy-systems',
             '/en/research/themes/data-science',
             '/en/research/themes/structural-engineering',
-            '/en/research/researchers/ayman-ali',
-            '/en/research/researchers/mouhib-alnoukari',
         ] as $uri) {
             $this->get($uri)->assertOk();
         }
+
+        $this->get('/en/research/researchers/ayman-ali')->assertRedirect('/en/about/profile/ayman-ali');
+        $this->get('/en/research/researchers/mouhib-alnoukari')->assertRedirect('/en/about/profile/mouhib-alnoukari');
     }
 
-    public function test_researcher_cards_link_to_researcher_profile_pages(): void
+    public function test_researcher_cards_link_to_canonical_person_profiles(): void
     {
         $this->get('/en/research/researchers')
             ->assertOk()
-            ->assertSee('/en/research/researchers/ayman-ali', false)
+            ->assertSee('/en/about/profile/ayman-ali', false)
             ->assertSee('Dr. Ayman Ali');
 
         $this->get('/en/research/researchers/ayman-ali')
+            ->assertRedirect('/en/about/profile/ayman-ali');
+        $this->get('/en/about/profile/ayman-ali')
             ->assertOk()
             ->assertSee('Professional Biography')
             ->assertSee('Dr. Ayman Ali')
@@ -468,7 +471,7 @@ final class ResearchPublicPagesTest extends TestCase
             ->assertDontSee('name="citation_doi"', false);
     }
 
-    public function test_research_experts_use_published_cms_payload_for_finder_but_not_cms_only_profiles(): void
+    public function test_research_experts_use_cms_for_selection_but_exclude_noncanonical_profiles(): void
     {
         $user = User::factory()->create(['role_slug' => 'super_admin']);
         $payload = [
@@ -485,7 +488,7 @@ final class ResearchPublicPagesTest extends TestCase
         $response = $this->get('/en/research/expert-finder')
             ->assertOk()
             ->assertSee('CMS Expert Finder')
-            ->assertSee('Dr. CMS Expert');
+            ->assertDontSee('Dr. CMS Expert');
         $mainContent = explode('</main>', explode('<main', $response->getContent(), 2)[1] ?? '', 2)[0] ?? '';
         $this->assertStringNotContainsString('Dr. Ayman Ali', $mainContent);
 

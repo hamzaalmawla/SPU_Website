@@ -21,6 +21,7 @@ class FacultyMember extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'person_id',
         'slug',
         'faculty_id',
         'department_id',
@@ -53,6 +54,11 @@ class FacultyMember extends Model
     public function faculty(): BelongsTo
     {
         return $this->belongsTo(Faculty::class);
+    }
+
+    public function canonicalPerson(): BelongsTo
+    {
+        return $this->belongsTo(Person::class, 'person_id');
     }
 
     public function department(): BelongsTo
