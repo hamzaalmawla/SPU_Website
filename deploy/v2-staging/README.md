@@ -266,7 +266,26 @@ rm -rf bootstrap/cache/filament
 php artisan optimize
 ```
 
-### 8.2 Anchor every tar exclude
+### 8.2 Always `view:clear` before `npm run build`
+
+`resources/css/app.css` declares `@source 'storage/framework/views/*.php'`, so
+Tailwind scans whatever compiled Blade views happen to exist on the build
+machine. Stale compiled views from earlier work keep classes alive that the
+current templates no longer use, and they end up in the shipped stylesheet.
+
+Measured on the same source tree: **326,209 bytes with 203 compiled views
+present, 300,212 bytes after `php artisan view:clear`** - 26 KB of dead CSS,
+which matters here because nothing on this origin is compressed.
+
+```bash
+php artisan view:clear && npm run build
+```
+
+This is build hygiene, not a Tailwind configuration problem. Do not "fix" it by
+changing the `@source` glob: it exists so that classes generated inside Blade
+expressions survive the purge.
+
+### 8.3 Anchor every tar exclude
 
 `--exclude=public` matches **every** path segment named `public`, including
 `resources/views/public/`. See §E3 in `Docs/V2_PRE_CUTOVER_ACTIONS.md` — an
