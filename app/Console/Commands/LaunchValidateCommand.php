@@ -6,6 +6,8 @@ namespace App\Console\Commands;
 
 use App\Contracts\Homepage\HomepageSectionServiceInterface;
 use App\Contracts\Page\PageServiceInterface;
+use App\Contracts\Search\SearchIndexServiceInterface;
+use App\Contracts\Search\SiteSearchServiceInterface;
 use App\Contracts\Seo\SeoMetadataServiceInterface;
 use App\Contracts\Seo\SitemapServiceInterface;
 use App\Contracts\Shared\AuditServiceInterface;
@@ -65,6 +67,8 @@ final class LaunchValidateCommand extends Command
         $this->checkCacheBehavior();
         $this->checkCacheTagSupport();
         $this->checkAuditBehavior();
+        $this->checkSearchIndex();
+        $this->checkStaticSitemapFiles();
 
         $this->newLine();
         $this->reportResults();
@@ -83,11 +87,22 @@ final class LaunchValidateCommand extends Command
      */
     private function checkProductionEnvironment(): void
     {
+        // These asserted redis for cache, session and queue. The deployed host has
+        // neither Redis nor Memcached - it runs file and database drivers by
+        // design (deploy/v2-staging/README.md section 6) - so the production gate
+        // could never pass, which makes a gate worse than useless.
+        //
+        // What actually matters is that nothing production-critical is running on
+        // a driver that forgets: `array` loses state between requests, and `sync`
+        // runs queued work inside the web request instead of a worker.
+        $persistentCacheStores = ['redis', 'memcached', 'file', 'database', 'dynamodb'];
+        $persistentSessionDrivers = ['redis', 'memcached', 'file', 'database', 'cookie'];
+
         $checks = [
             ['APP_DEBUG', 'false', config('app.debug') === false],
-            ['CACHE_STORE', 'redis', config('cache.default') === 'redis'],
-            ['SESSION_DRIVER', 'redis', config('session.driver') === 'redis'],
-            ['QUEUE_CONNECTION', 'redis', config('queue.default') === 'redis'],
+            ['CACHE_STORE', 'a persistent store', in_array(config('cache.default'), $persistentCacheStores, true)],
+            ['SESSION_DRIVER', 'a persistent driver', in_array(config('session.driver'), $persistentSessionDrivers, true)],
+            ['QUEUE_CONNECTION', 'a real queue, not sync', config('queue.default') !== 'sync' && config('queue.default') !== null],
             ['SESSION_SECURE_COOKIE', 'true', config('session.secure') === true],
             ['SESSION_ENCRYPT', 'true', config('session.encrypt') === true],
             ['SESSION_HTTP_ONLY', 'true', config('session.http_only') === true],
@@ -446,6 +461,68 @@ final class LaunchValidateCommand extends Command
             );
         } catch (\Throwable $e) {
             $this->record('Audit behavior', 'FAIL', $e->getMessage());
+        }
+    }
+
+    /**
+     * The search index and the static sitemaps are both build artefacts: neither
+     * is in git, and neither is produced by deploying code. Miss the commands and
+     * the site comes up with a search box that finds nothing and a sitemap served
+     * from PHP on a five-worker pool — both silent, both visible only to users.
+     */
+    private function checkSearchIndex(): void
+    {
+        try {
+            $indexService = app(SearchIndexServiceInterface::class);
+
+            if (! $indexService->isAvailable()) {
+                $this->record('Search index', 'FAIL', 'Search index storage is unavailable');
+
+                return;
+            }
+
+            $results = app(SiteSearchServiceInterface::class)->search('ar', 'الجامعة');
+
+            $this->record(
+                'Search index',
+                $results->total > 0 ? 'PASS' : 'FAIL',
+                $results->total > 0
+                    ? "Search index is populated and queryable ({$results->total} result(s) for a known term)"
+                    : 'Search returns nothing. Run `php artisan search:index` — the index is a build artefact and is not created by deploying code',
+            );
+        } catch (\Throwable $e) {
+            $this->record('Search index', 'FAIL', $e->getMessage());
+        }
+    }
+
+    private function checkStaticSitemapFiles(): void
+    {
+        try {
+            $indexExists = is_file(public_path('sitemap.xml'));
+            $children = glob(public_path('sitemaps').'/sitemap-*.xml') ?: [];
+            $stale = $this->sitemapService->staticFilesAreStale();
+
+            if (! $indexExists || $children === []) {
+                // The dynamic route still answers correctly, so this is only fatal
+                // when we are gating a real launch.
+                $this->record(
+                    'Static sitemap files',
+                    $this->productionValidation ? 'FAIL' : 'WARN',
+                    'No pre-generated sitemap on disk; every crawler hit will enter PHP. Run `php artisan sitemap:generate`',
+                );
+
+                return;
+            }
+
+            $this->record(
+                'Static sitemap files',
+                $stale ? 'WARN' : 'PASS',
+                $stale
+                    ? 'Pre-generated sitemap exists but content has changed since it was written; run `php artisan sitemap:generate`'
+                    : 'Sitemap index and '.count($children).' child document(s) are pre-generated and current',
+            );
+        } catch (\Throwable $e) {
+            $this->record('Static sitemap files', 'FAIL', $e->getMessage());
         }
     }
 
