@@ -702,13 +702,17 @@ final class ResearchPageService implements ResearchPageServiceInterface
             'themes' => count($segments) === 2
                 ? $this->publishedLocalizedPayload('research.themes', $locale) !== null
                 : count($segments) === 3 && $this->theme($locale, (string) $segments[2]) instanceof ResearchDetailPageDTO,
+            // Availability only asks whether the profile resolves. Building the
+            // researcher DTO to find out hydrated the person and six relations
+            // per menu item, which is how rendering the navigation came to cost
+            // over two hundred queries on every cold request.
             'researchers' => count($segments) === 2
                 ? $this->publishedLocalizedPayload('research.experts', $locale) !== null
-                    || $this->profilePageService->getPublicProfiles($locale) !== []
-                : count($segments) === 3 && $this->researcher($locale, (string) $segments[2]) instanceof ResearchDetailPageDTO,
+                    || $this->profilePageService->hasAnyPublicProfile()
+                : count($segments) === 3 && $this->profilePageService->hasPublicProfile((string) $segments[2]),
             'expert-finder' => count($segments) === 2
                 && ($this->publishedLocalizedPayload('research.experts', $locale) !== null
-                    || $this->profilePageService->getPublicProfiles($locale) !== []),
+                    || $this->profilePageService->hasAnyPublicProfile()),
             'conferences' => $this->conferencePathAvailable($locale, $path, $segments),
             'library' => count($segments) === 2
                 && $this->publishedLocalizedPayload('research.library', $locale) !== null,

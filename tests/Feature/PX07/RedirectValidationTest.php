@@ -6,6 +6,7 @@ namespace Tests\Feature\PX07;
 
 use App\Models\Legacy\LegacyExactRedirect;
 use App\Models\Legacy\LegacyPatternRule;
+use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -140,5 +141,64 @@ class RedirectValidationTest extends TestCase
 
         $this->assertFalse((bool) $exact->fresh()->is_active);
         $this->assertFalse((bool) $pattern->fresh()->is_active);
+    }
+
+    public function test_probe_flag_passes_when_every_destination_answers(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        LegacyExactRedirect::create([
+            'legacy_path' => '/probe-ok',
+            'destination_url' => '/ar/news',
+            'status_code' => 301,
+            'is_active' => true,
+        ]);
+
+        $this->artisan('continuity:validate-redirects', ['--probe' => true])
+            ->assertSuccessful();
+    }
+
+    public function test_probe_flag_reports_a_destination_that_does_not_answer(): void
+    {
+        // The failure the maintenance guide forbids: a well-formed rule whose
+        // destination is a 404. Rule validation alone cannot see this.
+        LegacyExactRedirect::create([
+            'legacy_path' => '/probe-broken',
+            'destination_url' => '/ar/this-page-does-not-exist',
+            'status_code' => 301,
+            'is_active' => true,
+        ]);
+
+        $this->artisan('continuity:validate-redirects', ['--probe' => true])
+            ->expectsOutputToContain('/ar/this-page-does-not-exist')
+            ->assertFailed();
+    }
+
+    public function test_probe_flag_ignores_inactive_rules(): void
+    {
+        LegacyExactRedirect::create([
+            'legacy_path' => '/probe-inactive',
+            'destination_url' => '/ar/this-page-does-not-exist',
+            'status_code' => 301,
+            'is_active' => false,
+        ]);
+
+        $this->artisan('continuity:validate-redirects', ['--probe' => true])
+            ->assertSuccessful();
+    }
+
+    public function test_probe_flag_is_opt_in(): void
+    {
+        LegacyExactRedirect::create([
+            'legacy_path' => '/probe-not-requested',
+            'destination_url' => '/ar/this-page-does-not-exist',
+            'status_code' => 301,
+            'is_active' => true,
+        ]);
+
+        // Without --probe the command only validates rule integrity, so a broken
+        // destination must not change its result.
+        $this->artisan('continuity:validate-redirects')
+            ->assertSuccessful();
     }
 }
