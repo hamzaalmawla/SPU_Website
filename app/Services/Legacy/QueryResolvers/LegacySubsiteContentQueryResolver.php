@@ -90,11 +90,28 @@ final class LegacySubsiteContentQueryResolver implements LegacyQueryModuleResolv
     /**
      * Legacy "dir" values that address people rather than content.
      *
+     * "good_students" is the old per-faculty honour roll ("لائحة الشرف"). Each
+     * faculty subsite served one at
+     * /{faculty}/index.php?page=list&ex=2&dir=good_students&lang=1 — verified at
+     * 200 on the live old site for med, dent, pharm, info, petrol and admin on
+     * 2026-08-29. The new site has a first-class faculty subpage for exactly
+     * this material, "valedictorians" (labelled "قائمة الشرف" / "Honor List" in
+     * FacultyPageService), so the old list resolves to the new list.
+     *
+     * These pages carry student names and grades, so the destination matters:
+     * "valedictorians" is the section SPU already publishes through the CMS, and
+     * it is editorially gated the same way. This resolves an old public list to
+     * the new public list and exposes nothing that is not already public — it
+     * never names an individual record, which is the same boundary invariant 1.5
+     * draws around the private members archive. A "good_students" URL under
+     * /members/ still returns null, because the members branch above runs first.
+     *
      * @var array<string, string>
      */
     private const PEOPLE_DIRS = [
         'councils' => '/members',
         'member_items' => '/research',
+        'good_students' => '/valedictorians',
     ];
 
     /**
@@ -113,7 +130,7 @@ final class LegacySubsiteContentQueryResolver implements LegacyQueryModuleResolv
     public function canResolve(NormalizedLegacyUrlDTO $url): bool
     {
         return $url->requestType === 'legacy_router'
-            && in_array($url->dir, ['items', 'councils', 'member_items', 'photos'], true)
+            && in_array($url->dir, ['items', 'councils', 'member_items', 'photos', 'good_students'], true)
             // "show" is a detail URL and "list" is the section index; both land on
             // the same current section, which is the index page either way.
             && in_array($url->page, ['show', 'list'], true)

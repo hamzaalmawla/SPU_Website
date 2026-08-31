@@ -11,6 +11,11 @@ return [
     'canonical_host' => (string) (parse_url($canonicalUrl, PHP_URL_HOST) ?: 'spu.edu.sy'),
     'enforce_canonical_host' => (bool) env('ENFORCE_CANONICAL_HOST', $appEnvironment === 'production'),
 
+    // The proxy does not compress, so Blade's indentation is shipped verbatim to
+    // every visitor - 42% of the homepage response when measured. Turn this off
+    // the day gzip is enabled upstream, or when debugging rendered markup.
+    'minify_html' => (bool) env('MINIFY_HTML', true),
+
     // cPanel's nginx-to-Apache hop is local. Never use "*" here: forwarded
     // headers from arbitrary internet clients must not become authoritative.
     'trusted_proxies' => ['127.0.0.1', '::1'],

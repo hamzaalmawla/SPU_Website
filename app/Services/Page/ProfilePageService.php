@@ -48,6 +48,32 @@ final class ProfilePageService implements ProfilePageServiceInterface
         return $this->resolveUnifiedProfile($locale, $slug);
     }
 
+    /**
+     * Mirrors exactly what getProfile() treats as a resolvable profile: a public
+     * Person, or failing that a public FacultyMember, with this slug. Neither
+     * DTO builder can return null once a row is found, so existence is the whole
+     * of the question — and answering it this way costs two indexed lookups
+     * instead of two hydrations with nine eager-loaded relations each.
+     *
+     * Locale plays no part. It only constrains which translations getProfile()
+     * eager-loads; it never decides whether the profile resolves.
+     */
+    public function hasPublicProfile(string $slug): bool
+    {
+        if ($slug === '') {
+            return false;
+        }
+
+        return Person::query()->public()->where('slug', $slug)->exists()
+            || FacultyMember::query()->public()->where('slug', $slug)->exists();
+    }
+
+    public function hasAnyPublicProfile(): bool
+    {
+        return Person::query()->public()->exists()
+            || FacultyMember::query()->public()->exists();
+    }
+
     /** @return array<int, ProfilePageDTO> */
     public function getPublicProfiles(string $locale): array
     {
