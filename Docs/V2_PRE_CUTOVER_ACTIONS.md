@@ -92,6 +92,16 @@ Unknown `/alumni/**` paths, record/detail guesses, and unverified query variants
 remain honest 404s and are logged for triage. The legacy `d` value is a faculty
 code, not an alumni record ID, so no per-record continuity is claimed.
 
+**Resolved 2026-08-29 — the bare `/alumni` root.** The old homepage links
+`alumni` as a relative path, and Apache answered it with a 301 to `/alumni/`.
+That spelling had no rule and 404'd, because `alumni` was missing from the
+unprefixed reference-route whitelist in `routes/web.php` while every sibling
+section (`about`, `news`, `research`, …) was listed. Adding it to that one
+alternation makes `/alumni` negotiate the visitor's locale and land on
+`/ar/alumni` or `/en/alumni`, exactly like the other unprefixed section paths.
+This is a routing fix, not a new redirect rule — the per-record policy above is
+unchanged.
+
 ### A3 — Content held back pending review
 
 Both are correct defaults; releasing them is an editorial call.
@@ -215,6 +225,32 @@ cannot place lands there with its normalised shape, subsite and old language id.
 
 Sort by `hit_count` descending in the first 48 hours: anything with real traffic
 is a URL worth mapping that the migration missed.
+
+**Before cutover, not after — run the destination probe:**
+
+```bash
+php artisan optimize:clear
+php artisan continuity:validate-redirects --probe
+```
+
+`--probe` (added 2026-08-29) requests every active app-relative destination
+through the application's own router and fails if any does not answer 200, or if
+one redirects again when it should land in one hop. Rule validation on its own
+cannot see a well-formed rule pointing at a page that no longer exists, which is
+the failure that is hardest to notice from the outside.
+
+Three campus-life destinations (`hospital`, `dental`, `clubs-activities`) are
+editorial CMS content. They are live on the deployed site, but if that content is
+ever unpublished the probe will report them — that is the check working.
+
+**Two entry-point families to watch specifically**, both newly mapped in
+§13 of `Docs/LEGACY_REDIRECT_MAINTENANCE_GUIDE.md`: the bare subsite roots
+(`/med`, `/dent`, …) and the root `service=N` content lists. Both are linked
+directly from the old homepage, so they will take real traffic immediately.
+
+Also expect `/index.php?...page=good_students` (the old root honour page) to
+appear in the queue. It is a deliberate 404 — the old page was empty and there is
+no university-wide honour list to send it to. See §13.6.
 
 ---
 
