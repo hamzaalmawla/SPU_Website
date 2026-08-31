@@ -48,7 +48,7 @@ final class EdgeRequestTest extends TestCase
 
         $this->assertIsString($rules);
         $this->assertStringContainsString('Header always set X-Content-Type-Options "nosniff"', $rules);
-        $this->assertStringContainsString('Header always set Referrer-Policy "no-referrer"', $rules);
+        $this->assertStringContainsString('Header always set Referrer-Policy "strict-origin-when-cross-origin"', $rules);
         $this->assertStringContainsString('(?:html?|xhtml|xml|svgz?)', $rules);
         $this->assertStringContainsString('(?:php[0-9]?|phtml|phar|cgi', $rules);
     }

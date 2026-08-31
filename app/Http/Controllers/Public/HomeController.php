@@ -8,6 +8,7 @@ use App\Contracts\Homepage\HomepageSectionServiceInterface;
 use App\Contracts\Navigation\NavigationServiceInterface;
 use App\Contracts\Page\PageServiceInterface;
 use App\Contracts\Seo\SeoMetadataServiceInterface;
+use App\Contracts\Seo\StructuredDataServiceInterface;
 use App\Contracts\Settings\SettingsServiceInterface;
 use App\DTOs\Homepage\HomepageDTO;
 use App\DTOs\Homepage\HomepageSectionDTO;
@@ -23,6 +24,7 @@ final class HomeController extends Controller
         private readonly SettingsServiceInterface $settingsService,
         private readonly PageServiceInterface $pageService,
         private readonly SeoMetadataServiceInterface $seoMetadataService,
+        private readonly StructuredDataServiceInterface $structuredDataService,
     ) {}
 
     public function __invoke(Request $request, string $locale): View
@@ -47,6 +49,9 @@ final class HomeController extends Controller
                     'locale_paths' => ['ar' => '/ar', 'en' => '/en'],
                 ]),
             'languageSwitch' => $navigation->languageSwitchLinks,
+            // CollegeOrUniversity + WebSite (with SearchAction) as a single
+            // @graph, sourced from editor-managed settings.
+            'structuredData' => $this->structuredDataService->homepage($locale)->data,
             'isPreview' => false,
         ]);
     }

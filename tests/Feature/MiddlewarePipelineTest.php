@@ -57,7 +57,7 @@ class MiddlewarePipelineTest extends TestCase
         $response = $this->get('/en')
             ->assertOk()
             ->assertHeader('X-Content-Type-Options', 'nosniff')
-            ->assertHeader('Referrer-Policy', 'no-referrer')
+            ->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
             ->assertHeader('X-Frame-Options', 'SAMEORIGIN')
             ->assertHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()')
             ->assertHeader('Content-Security-Policy');
@@ -72,7 +72,7 @@ class MiddlewarePipelineTest extends TestCase
         $this->get('/admin/login')
             ->assertOk()
             ->assertHeader('X-Content-Type-Options', 'nosniff')
-            ->assertHeader('Referrer-Policy', 'no-referrer')
+            ->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
             ->assertHeader('X-Frame-Options', 'SAMEORIGIN');
     }
 
