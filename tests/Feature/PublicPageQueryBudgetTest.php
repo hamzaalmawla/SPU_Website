@@ -27,20 +27,23 @@ final class PublicPageQueryBudgetTest extends TestCase
      * Measured on a cold cache, which is the worst case and the only case that
      * matters — a cache hit runs no queries at all. Budgets sit a little above
      * the measured figures so ordinary work does not trip them: /ar and /en
-     * measure 84, /ar/about 75, /ar/news 76.
+     * measure 71, /ar/about 62, /ar/news 63.
      *
-     * Two known repeats are still in there and are worth a later pass: the
-     * research availability check re-reads cms_target_contents 23 times for 10
-     * distinct keys across the three navigation trees, and mapItem lazy-loads
-     * children on menu items one level below the eager-loaded depth.
+     * These are worst-case numbers. Each page is measured with the cache
+     * flushed, so the published-payload cache cannot carry between them; in
+     * production it survives until a publish, and the saving is larger.
+     *
+     * One known repeat remains and is worth a later pass: mapItem lazy-loads
+     * children on menu items one level below the eager-loaded depth, about
+     * thirteen queries that each return nothing.
      *
      * @var array<string, int>
      */
     private const BUDGETS = [
-        '/ar' => 92,
-        '/en' => 92,
-        '/ar/about' => 83,
-        '/ar/news' => 84,
+        '/ar' => 79,
+        '/en' => 79,
+        '/ar/about' => 70,
+        '/ar/news' => 71,
     ];
 
     protected function setUp(): void

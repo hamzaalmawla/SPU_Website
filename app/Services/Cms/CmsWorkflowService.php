@@ -379,17 +379,49 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
     }
 
     /** @return array<string, mixed>|null */
+    /**
+     * Published payloads are read constantly and written rarely. Rendering one
+     * public page asked this question 23 times for 10 distinct keys, because the
+     * research availability check consults it for every menu item across the
+     * header, footer and utility trees — roughly a third of the query cost of a
+     * cold render, all of it re-reading rows that had not changed.
+     *
+     * Caching is safe rather than convenient here: every publish path already
+     * flushes the 'cms' and 'cms:<key>' tags through InvalidateCmsCache, and it
+     * does so inline inside DB::afterCommit, so freshness does not depend on a
+     * queue worker running. No publish path reads through this method, so a
+     * cached value can never feed back into a write.
+     *
+     * The absence of a payload is cached too, wrapped in an array. A bare null
+     * reads as a cache miss, so unpublished targets — the ones the availability
+     * check asks about most — would otherwise re-query on every single call and
+     * gain nothing at all.
+     */
     public function getPublishedPayload(string $targetKey): ?array
     {
+        // Stays outside the cached closure so an unknown key still throws
+        // rather than being answered from cache.
         $this->requireTarget($targetKey);
 
-        $content = CmsTargetContent::query()
-            ->where('target_key', $targetKey)
-            ->where('status', PublicationStatus::Published->value)
-            ->first();
+        $cached = $this->cacheService
+            ->tags(['cms', 'cms:'.$targetKey])
+            ->remember(
+                'cms.published-payload.'.$targetKey,
+                function () use ($targetKey): array {
+                    $content = CmsTargetContent::query()
+                        ->where('target_key', $targetKey)
+                        ->where('status', PublicationStatus::Published->value)
+                        ->first();
 
-        return $content instanceof CmsTargetContent && is_array($content->payload_json)
-            ? $content->payload_json
+                    return ['payload' => $content instanceof CmsTargetContent && is_array($content->payload_json)
+                        ? $content->payload_json
+                        : null];
+                },
+                (int) config('cache.public_page_ttl', 3600),
+            );
+
+        return is_array($cached) && is_array($cached['payload'] ?? null)
+            ? $cached['payload']
             : null;
     }
 
