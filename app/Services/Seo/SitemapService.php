@@ -766,11 +766,48 @@ final class SitemapService implements SitemapServiceInterface
             return true;
         }
 
+        // The written files carry absolute URLs, so they are only valid for the
+        // host they were generated under. At cutover the canonical origin moves
+        // from v2.spu.edu.sy to spu.edu.sy, and nothing about that touches the
+        // cache — the freshness marker would keep reporting current while every
+        // <loc> advertised the host being retired. Apache serves these before
+        // PHP is reached, so the mistake would be invisible from inside the
+        // application and, without shell access, unfixable from outside it.
+        if ($this->staticFilesAdvertiseAForeignOrigin()) {
+            return true;
+        }
+
         return $this->cacheService->tags('sitemap')->remember(
             self::FRESH_MARKER_KEY,
             static fn (): bool => false,
             self::FRESH_MARKER_TTL,
         ) !== true;
+    }
+
+    /**
+     * Whether the sitemap on disk was written for a different canonical origin.
+     *
+     * Read from the file rather than tracked alongside it: a marker can drift
+     * from what was actually written, and the bytes Apache serves cannot.
+     */
+    public function staticFilesAdvertiseAForeignOrigin(): bool
+    {
+        $index = @file_get_contents(public_path('sitemap.xml'));
+
+        if (! is_string($index) || $index === '') {
+            return false;
+        }
+
+        if (preg_match('#<loc>\s*([^<\s]+)\s*</loc>#', $index, $match) !== 1) {
+            return false;
+        }
+
+        $written = parse_url(html_entity_decode($match[1], ENT_XML1 | ENT_QUOTES, 'UTF-8'), PHP_URL_HOST);
+        $expected = parse_url($this->baseUrl(), PHP_URL_HOST);
+
+        return is_string($written)
+            && is_string($expected)
+            && strcasecmp($written, $expected) !== 0;
     }
 
     public function markStaticFilesStale(): void

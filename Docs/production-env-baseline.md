@@ -20,9 +20,9 @@ This project must not launch with copied local `.env` values. Use `.env.producti
 | `SESSION_HTTP_ONLY` | `true` |
 | `SESSION_SAME_SITE` | `lax` or stricter after browser testing |
 | `SESSION_ENCRYPT` | `true` for production hardening |
-| `CACHE_STORE` | `redis` unless a tag-compatible production alternative is explicitly approved |
-| `SESSION_DRIVER` | `redis` unless an approved production session store is documented |
-| `QUEUE_CONNECTION` | `redis` or another production queue backend with workers configured |
+| `CACHE_STORE` | `file` on the current cPanel host, which has no Redis or Memcached. Any persistent store is acceptable; `array` is not. |
+| `SESSION_DRIVER` | `database` on the current host. Any persistent driver is acceptable; `array` is not. |
+| `QUEUE_CONNECTION` | `database` **only where a worker is actually running**. Where the worker cron cannot be installed, use `sync`: queued mail with no consumer discards contact messages silently while showing the sender a success page. `launch:validate` checks that the queue drains rather than which driver is set. |
 | `MAIL_MAILER` | Real production transport such as `smtp`, never `log` |
 | `MAIL_FROM_ADDRESS` | Verified sender address on the production mail domain |
 | `FORM_ADMIN_RECIPIENTS` | Optional comma-separated operational recipients; eligible admin/editor users are also notified |
@@ -60,7 +60,7 @@ change; do not replace these addresses with `*` or a public CIDR.
 Public form receipts, status updates, and staff notifications are queued. Run a continuously supervised worker in production, for example:
 
 ```bash
-php artisan queue:work redis --queue=default --tries=3 --timeout=120
+php artisan queue:work database --queue=default --tries=3 --timeout=120
 ```
 
 After each deployment, restart workers so they load the current release:

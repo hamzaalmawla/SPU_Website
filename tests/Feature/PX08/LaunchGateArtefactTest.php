@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Tests\Feature\PX08;
 
 use App\Contracts\Search\SearchIndexServiceInterface;
+use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
@@ -70,13 +72,40 @@ final class LaunchGateArtefactTest extends TestCase
     {
         config()->set('cache.default', 'array');
         config()->set('session.driver', 'array');
-        config()->set('queue.default', 'sync');
 
         $output = $this->runValidate('production');
 
         $this->assertStringContainsString('CRITICAL: CACHE_STORE', $output);
         $this->assertStringContainsString('CRITICAL: SESSION_DRIVER', $output);
-        $this->assertStringContainsString('CRITICAL: QUEUE_CONNECTION', $output);
+    }
+
+    public function test_an_inline_queue_is_accepted_because_it_needs_no_worker(): void
+    {
+        // On a host where the worker cron cannot be installed, sync is the
+        // configuration that actually delivers contact messages. Rejecting it
+        // on principle would push the site toward the silent-loss setup.
+        config()->set('queue.default', 'sync');
+
+        $this->assertStringContainsString('delivered without a worker', $this->runValidate());
+    }
+
+    public function test_a_queue_nobody_is_consuming_fails_the_gate(): void
+    {
+        config()->set('queue.default', 'database');
+
+        DB::table('jobs')->insert([
+            'queue' => 'default',
+            'payload' => '{}',
+            'attempts' => 0,
+            'reserved_at' => null,
+            'available_at' => now()->subHour()->getTimestamp(),
+            'created_at' => now()->subHour()->getTimestamp(),
+        ]);
+
+        $output = $this->runValidate();
+
+        $this->assertStringContainsString('No worker is consuming the queue', $output);
+        $this->assertStringContainsString('silently discarded', $output);
     }
 
     private function runValidate(string $environment = 'staging'): string
@@ -88,6 +117,6 @@ final class LaunchGateArtefactTest extends TestCase
 
     private function seedSearchableContent(): void
     {
-        $this->seed(\Database\Seeders\DatabaseSeeder::class);
+        $this->seed(DatabaseSeeder::class);
     }
 }

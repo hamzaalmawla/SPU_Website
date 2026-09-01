@@ -6,6 +6,8 @@ namespace Tests\Feature;
 
 use App\Contracts\Page\ProfilePageServiceInterface;
 use App\Enums\PublicationStatus;
+use App\Models\Faculty\Faculty;
+use App\Models\Person\FacultyMember;
 use App\Models\Person\Person;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -81,6 +83,51 @@ final class ProfileAvailabilityTest extends TestCase
             app(ProfilePageServiceInterface::class)->hasAnyPublicProfile(),
             'A directory of profiles that all 404 is not a directory worth linking.',
         );
+    }
+
+    public function test_a_translationless_person_does_not_shadow_a_renderable_faculty_member(): void
+    {
+        // Both tables can hold the same slug — getPublicProfiles() calls
+        // unique() across the merged set, so this is an expected state.
+        $this->publishedPerson('shared-slug');
+        $this->publishedFacultyMember('shared-slug');
+
+        $service = app(ProfilePageServiceInterface::class);
+
+        // Person is still preferred, but only when it renders. Resolving to the
+        // FacultyMember here is what keeps availability and the real page in
+        // agreement; returning null would make the nav link dead.
+        $this->assertNotNull(
+            $service->getProfile('ar', 'unified', 'shared-slug'),
+            'A renderable FacultyMember must not be shadowed by a Person that cannot render.',
+        );
+
+        $this->assertTrue($service->hasPublicProfile('shared-slug'));
+    }
+
+    private function publishedFacultyMember(string $slug): FacultyMember
+    {
+        $faculty = Faculty::query()->firstOr(static fn (): Faculty => Faculty::query()->create([
+            'slug' => 'medicine',
+            'sort_order' => 1,
+            'is_enabled' => true,
+        ]));
+
+        $member = FacultyMember::query()->create([
+            'slug' => $slug,
+            'faculty_id' => (int) $faculty->getKey(),
+            'is_enabled' => true,
+            'publication_status' => PublicationStatus::Published->value,
+            'published_at' => now()->subDay(),
+        ]);
+
+        $member->translations()->create([
+            'locale' => 'ar',
+            'full_name' => 'عضو هيئة تدريسية',
+            'position' => 'أستاذ',
+        ]);
+
+        return $member;
     }
 
     private function publishedPerson(string $slug): Person

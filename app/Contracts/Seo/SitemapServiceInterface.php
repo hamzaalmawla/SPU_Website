@@ -75,9 +75,16 @@ interface SitemapServiceInterface
     public function writeStaticFiles(): SitemapWriteReportDTO;
 
     /**
-     * Whether content has changed since the static files were last written.
+     * Whether content has changed since the static files were last written, or
+     * they were written for a different canonical origin.
      */
     public function staticFilesAreStale(): bool;
+
+    /**
+     * Whether the sitemap on disk advertises a host other than the configured
+     * canonical origin — the state a domain cutover leaves behind.
+     */
+    public function staticFilesAdvertiseAForeignOrigin(): bool;
 
     /**
      * Mark the static files as needing regeneration on the next scheduled run.

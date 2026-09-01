@@ -15,6 +15,7 @@ use App\Contracts\Shared\CacheServiceInterface;
 use App\Contracts\Shared\ContinuityServiceInterface;
 use Illuminate\Console\Command;
 use Illuminate\Http\Request as HttpRequest;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Repeatable launch validation command that checks all launch-critical behaviors.
@@ -69,6 +70,7 @@ final class LaunchValidateCommand extends Command
         $this->checkAuditBehavior();
         $this->checkSearchIndex();
         $this->checkStaticSitemapFiles();
+        $this->checkQueueDrains();
 
         $this->newLine();
         $this->reportResults();
@@ -102,7 +104,13 @@ final class LaunchValidateCommand extends Command
             ['APP_DEBUG', 'false', config('app.debug') === false],
             ['CACHE_STORE', 'a persistent store', in_array(config('cache.default'), $persistentCacheStores, true)],
             ['SESSION_DRIVER', 'a persistent driver', in_array(config('session.driver'), $persistentSessionDrivers, true)],
-            ['QUEUE_CONNECTION', 'a real queue, not sync', config('queue.default') !== 'sync' && config('queue.default') !== null],
+            // Deliberately not asserted here. Seven mailables implement
+            // ShouldQueue, so a queued connection without a running worker
+            // silently swallows every contact form and registration while the
+            // visitor sees a success page - whereas `sync` works correctly on a
+            // host with no worker, at the cost of latency on a POST that already
+            // bypasses the page cache. Which driver is right depends on whether
+            // a worker exists, so checkQueueDrains() asks that instead.
             ['SESSION_SECURE_COOKIE', 'true', config('session.secure') === true],
             ['SESSION_ENCRYPT', 'true', config('session.encrypt') === true],
             ['SESSION_HTTP_ONLY', 'true', config('session.http_only') === true],
@@ -437,14 +445,28 @@ final class LaunchValidateCommand extends Command
     private function checkCacheBehavior(): void
     {
         try {
+            // One remember() call proves nothing: on a read failure the service
+            // logs and returns the callback's value, so a completely dead store
+            // still hands back 'test_value'. Two calls with different callbacks
+            // are what distinguish a working cache from a convincing fallback -
+            // only a real store makes the second call return the first value.
             $testKey = 'launch_validate_cache_test_'.time();
-            $stored = $this->cacheService->remember($testKey, fn () => 'test_value', 10);
+
+            $first = $this->cacheService->remember($testKey, fn (): string => 'stored', 10);
+            $second = $this->cacheService->remember($testKey, fn (): string => 'recomputed', 10);
+
             $this->cacheService->forget($testKey);
+
+            $forgotten = $this->cacheService->remember($testKey, fn (): string => 'gone', 10);
+
+            $works = $first === 'stored' && $second === 'stored' && $forgotten === 'gone';
 
             $this->record(
                 'Cache behavior',
-                $stored === 'test_value' ? 'PASS' : 'FAIL',
-                $stored === 'test_value' ? 'Cache store/retrieve/forget works' : 'Cache operation failed',
+                $works ? 'PASS' : 'FAIL',
+                $works
+                    ? 'Cache genuinely stores, returns and forgets'
+                    : 'The cache is not retaining values. Every read is falling through to a recompute, so nothing is actually cached',
             );
         } catch (\Throwable $e) {
             $this->record('Cache behavior', 'FAIL', $e->getMessage());
@@ -500,6 +522,74 @@ final class LaunchValidateCommand extends Command
         }
     }
 
+    /**
+     * Whether queued work is actually being delivered.
+     *
+     * Contact messages, event registrations and form receipts are all queued
+     * mailables. On a `database` queue with no running worker they accumulate
+     * silently — the visitor is shown a success page, the row sits in `jobs`
+     * forever, and nobody is told. That is the worst failure on the site,
+     * because it destroys correspondence the university believes it received.
+     *
+     * `sync` is not a misconfiguration on a host with no worker: it delivers
+     * inline on a POST that already bypasses the page cache. So the question is
+     * not which driver is set, it is whether the chosen one moves work.
+     */
+    private function checkQueueDrains(): void
+    {
+        try {
+            $connection = (string) config('queue.default');
+
+            if ($connection === 'sync') {
+                $this->record(
+                    'Queue delivery',
+                    'PASS',
+                    'Queue runs inline (sync), so queued mail is delivered without a worker',
+                );
+
+                return;
+            }
+
+            if ($connection !== 'database') {
+                $this->record(
+                    'Queue delivery',
+                    'WARN',
+                    "Queue connection '{$connection}' cannot be inspected here; confirm a worker is consuming it",
+                );
+
+                return;
+            }
+
+            $table = (string) config('queue.connections.database.table', 'jobs');
+            $oldest = DB::table($table)->min('available_at');
+            $failed = DB::table((string) config('queue.failed.table', 'failed_jobs'))->count();
+
+            if ($oldest === null) {
+                $this->record(
+                    'Queue delivery',
+                    $failed > 0 ? 'WARN' : 'PASS',
+                    $failed > 0
+                        ? "Queue is empty but {$failed} job(s) have failed; review `queue:failed`"
+                        : 'Queue is empty, so nothing is stranded',
+                );
+
+                return;
+            }
+
+            $stalledFor = now()->getTimestamp() - (int) $oldest;
+
+            $this->record(
+                'Queue delivery',
+                $stalledFor > 600 ? 'FAIL' : 'PASS',
+                $stalledFor > 600
+                    ? 'Oldest queued job has waited '.round($stalledFor / 60).' minutes. No worker is consuming the queue, so contact messages and registrations are being silently discarded'
+                    : 'Queued work is being consumed',
+            );
+        } catch (\Throwable $e) {
+            $this->record('Queue delivery', 'FAIL', $e->getMessage());
+        }
+    }
+
     private function checkStaticSitemapFiles(): void
     {
         try {
@@ -514,6 +604,19 @@ final class LaunchValidateCommand extends Command
                     'Static sitemap files',
                     $this->productionValidation ? 'FAIL' : 'WARN',
                     'No pre-generated sitemap on disk; every crawler hit will enter PHP. Run `php artisan sitemap:generate`',
+                );
+
+                return;
+            }
+
+            // A sitemap written for the old host is worse than a missing one:
+            // it is served by Apache, looks healthy, and points crawlers at the
+            // domain being retired.
+            if ($this->sitemapService->staticFilesAdvertiseAForeignOrigin()) {
+                $this->record(
+                    'Static sitemap files',
+                    'FAIL',
+                    'The sitemap on disk advertises a different host than the configured canonical origin. Re-run `php artisan sitemap:generate` after changing APP_CANONICAL_URL',
                 );
 
                 return;

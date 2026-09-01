@@ -24,7 +24,7 @@ final class MinifyPublicHtmlTest extends TestCase
         // The run before </p> follows the text node "Hello", not a '>', so the
         // anchored rule deliberately leaves it. That is the safety property:
         // a match can never begin anywhere but immediately after a tag.
-        $this->assertSame("<div>\n<p>\nHello\n    </p>\n</div>", $this->minify($html));
+        $this->assertSame("<div>\n<p>\n        Hello\n    </p>\n</div>", $this->minify($html));
     }
 
     public function test_it_leaves_one_newline_so_inline_spacing_survives(): void
@@ -47,6 +47,24 @@ final class MinifyPublicHtmlTest extends TestCase
 
         $this->assertStringContainsString("[{\n    \"a\": 1\n}]", $out);
         $this->assertStringContainsString('<b>y</b>', $out);
+    }
+
+    public function test_a_gt_inside_an_attribute_value_cannot_trigger_a_collapse(): void
+    {
+        // Blade escapes '>' to '&gt;', so this needs raw output to occur - but
+        // anchoring only on '>' would collapse the whitespace inside the
+        // attribute itself, which is unrecoverable and undiagnosable.
+        $html = "<div title=\"a>\n      b\">x</div>";
+
+        $this->assertSame($html, $this->minify($html));
+    }
+
+    public function test_it_only_collapses_between_tags(): void
+    {
+        // Whitespace before a text node is left alone: the run must end at a
+        // '<' to be provably inter-tag.
+        $this->assertSame("<p>\n    text</p>", $this->minify("<p>\n    text</p>"));
+        $this->assertSame("<p>\n<b>x</b></p>", $this->minify("<p>\n    <b>x</b></p>"));
     }
 
     #[DataProvider('preservedTags')]

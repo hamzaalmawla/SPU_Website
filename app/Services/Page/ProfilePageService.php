@@ -64,8 +64,11 @@ final class ProfilePageService implements ProfilePageServiceInterface
      * sitemap would publish its URL — the precise defect the availability check
      * exists to prevent.
      *
-     * Locale plays no part beyond that: it selects which translation is shown,
-     * never whether one resolves, because the fallback covers both locales.
+     * Locale is not part of the question only because the public locales are ar
+     * and en and fallbackLocales() always tries both. A third public locale
+     * would widen getProfile() past what this checks — under-permissive, so it
+     * would hide a link rather than break one, but it would no longer be the
+     * same question.
      */
     public function hasPublicProfile(string $slug): bool
     {
@@ -131,12 +134,26 @@ final class ProfilePageService implements ProfilePageServiceInterface
         return $this->resolveUnifiedProfile($locale, $identifier);
     }
 
+    /**
+     * Person wins when both tables hold the slug, but only if it actually
+     * renders. The earlier form returned as soon as a Person row existed, so a
+     * translationless Person shadowed a perfectly renderable FacultyMember and
+     * the page 404'd — while hasPublicProfile(), which ORs the two tables, went
+     * on reporting the profile as available and the navigation went on linking
+     * to it.
+     *
+     * getPublicProfiles() calls unique() across the merged slugs of both tables,
+     * so a collision is an expected state rather than a corrupt one.
+     */
     private function resolveUnifiedProfile(string $locale, string $slug): ?ProfilePageDTO
     {
         $person = $this->findPerson($locale, $slug);
+        $profile = $person instanceof Person
+            ? $this->buildPersonProfileDto($person, $locale)
+            : null;
 
-        if ($person instanceof Person) {
-            return $this->buildPersonProfileDto($person, $locale);
+        if ($profile instanceof ProfilePageDTO) {
+            return $profile;
         }
 
         $facultyMember = $this->findFacultyMember($locale, $slug);
