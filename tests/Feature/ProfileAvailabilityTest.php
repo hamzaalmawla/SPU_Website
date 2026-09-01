@@ -123,6 +123,44 @@ final class ProfileAvailabilityTest extends TestCase
         $this->get('/ar')->assertOk()->assertDontSee('/ar/about/profile/mouhib-alnoukari', false);
     }
 
+    public function test_a_member_whose_canonical_person_is_unpublished_is_not_available(): void
+    {
+        // hamza's person_id indirection: a member carrying one does not render
+        // itself, resolveUnifiedProfile() resolves it through the Person. So the
+        // member's own state says nothing about whether the page exists.
+        $person = $this->publishedPerson('linked-person');
+        $person->translations()->create(['locale' => 'ar', 'name' => 'اسم', 'role' => 'دور']);
+
+        $member = $this->publishedFacultyMember('linked-member');
+        $member->forceFill(['person_id' => $person->getKey()])->save();
+
+        $service = app(ProfilePageServiceInterface::class);
+        $this->assertTrue($service->hasPublicProfile('linked-member'));
+
+        $person->forceFill(['is_enabled' => false])->save();
+
+        $this->assertFalse(
+            $service->hasPublicProfile('linked-member'),
+            'A member whose canonical Person is unpublished renders a 404, so it is not available.',
+        );
+        $this->assertNull($service->getProfile('ar', 'unified', 'linked-member'));
+    }
+
+    public function test_a_member_whose_canonical_person_has_no_translation_is_not_available(): void
+    {
+        $person = $this->publishedPerson('bare-person');   // no translations
+        $member = $this->publishedFacultyMember('bare-member');
+        $member->forceFill(['person_id' => $person->getKey()])->save();
+
+        $service = app(ProfilePageServiceInterface::class);
+
+        $this->assertNull($service->getProfile('ar', 'unified', 'bare-member'));
+        $this->assertFalse(
+            $service->hasPublicProfile('bare-member'),
+            'The check and the render must agree even through the person_id indirection.',
+        );
+    }
+
     private function publishedFacultyMember(string $slug): FacultyMember
     {
         $faculty = Faculty::query()->firstOr(static fn (): Faculty => Faculty::query()->create([

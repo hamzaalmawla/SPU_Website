@@ -83,14 +83,30 @@ final class ProfilePageService implements ProfilePageServiceInterface
             return false;
         }
 
-        return Person::query()->public()->where('slug', $slug)->whereHas(
+        if (Person::query()->public()->where('slug', $slug)->whereHas(
             'translations',
             fn ($query) => $query->whereIn('locale', ['ar', 'en']),
-        )->exists()
-            || FacultyMember::query()->public()->where('slug', $slug)->whereHas(
-                'translations',
-                fn ($query) => $query->whereIn('locale', ['ar', 'en']),
-            )->exists();
+        )->exists()) {
+            return true;
+        }
+
+        // A FacultyMember carrying a person_id does not render itself:
+        // resolveUnifiedProfile() resolves it through findPersonById(), which
+        // applies public(). So the member's own state says nothing — what has
+        // to be renderable is the Person behind it. Checking the member alone
+        // reported "safe to link" for pages that 404, which is the whole thing
+        // this method exists to prevent.
+        return FacultyMember::query()
+            ->public()
+            ->where('slug', $slug)
+            ->where(fn ($query) => $query
+                ->where(fn ($own) => $own
+                    ->whereNull('person_id')
+                    ->whereHas('translations', fn ($t) => $t->whereIn('locale', ['ar', 'en'])))
+                ->orWhereHas('canonicalPerson', fn ($person) => $person
+                    ->public()
+                    ->whereHas('translations', fn ($t) => $t->whereIn('locale', ['ar', 'en']))))
+            ->exists();
     }
 
     /**

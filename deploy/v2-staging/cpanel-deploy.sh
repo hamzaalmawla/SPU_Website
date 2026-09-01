@@ -7,10 +7,13 @@
 # asks for: the executor is cPanel, the input is a commit, and the output is this
 # script's log.
 #
-# There is no Node on this host, so the Vite build cannot run here. public/build
-# is therefore committed and ships with the clone - see .gitignore for why - and
-# this script publishes it to the web root. Rebuild it before a release with
-# `php artisan view:clear && npm run build` and commit the result.
+# public/build is committed and ships with the clone, so the deploy does not
+# depend on Node being installed here - see .gitignore for why. Rebuild it before
+# a release with `php artisan view:clear && npm run build` and commit the result.
+#
+# The deployment this replaces ran `npm ci && npm run build` on the host. That
+# works if Node is present; committing the build removes the dependency either
+# way, and makes what shipped identical to what was tested.
 #
 # vendor/ is not committed; composer runs here.
 #
@@ -47,6 +50,15 @@ log "Deploying ${SOURCE} → ${APP}"
 # are never touched. bootstrap/cache is excluded deliberately: shipping a
 # manifest built on another machine loads service providers that are not
 # installed here, and every page returns 500 (README 8.1).
+# Between the source sync and the migration the code and schema disagree, and
+# PHP keeps serving. Fine on staging; on the live domain it is a window of 500s.
+MAINTENANCE=0
+if [[ -f "${APP}/vendor/autoload.php" ]]; then
+    (cd "${APP}" && "${PHP}" artisan down --render="errors::503" --retry=60 >/dev/null 2>&1) && MAINTENANCE=1
+fi
+restore_service() { [[ "${MAINTENANCE}" == "1" ]] && (cd "${APP}" && "${PHP}" artisan up >/dev/null 2>&1) || true; }
+trap restore_service EXIT
+
 log "Syncing application source"
 for tree in app bootstrap config database lang resources routes; do
     [[ -d "${SOURCE}/${tree}" ]] || fail "Expected source tree ${tree} is missing"
@@ -144,13 +156,32 @@ log "Regenerating the static sitemap"
 log "Publishing SVG assets"
 /bin/bash "${SOURCE}/deploy/v2-staging/publish-svg-assets.sh" "${WEB}/images"
 
+# Restored from the deployment hamza wrote. A worker started before this release
+# keeps executing the previous release's code until it is told to stop.
+log "Signalling queue workers to restart"
+(cd "${APP}" && "${PHP}" artisan queue:restart) || true
+
+# Also his. Without it every deploy hands the first visitors a cold cache, which
+# on this host is the most expensive request the site ever serves.
+log "Warming caches"
+(cd "${APP}" && "${PHP}" artisan cache:warm --include-sitemap) || true
+
 # ── Verify ───────────────────────────────────────────────────────────────────
 # A deploy that reports success while the site is down is worse than one that
 # fails, so end by proving the application still boots.
 log "Verifying"
 (cd "${APP}" && "${PHP}" artisan route:list >/dev/null) || fail "Routes do not boot after deploy"
-(cd "${APP}" && "${PHP}" artisan launch:validate) || {
-    printf '\n⚠ launch:validate reported problems. The code is deployed; read the output above.\n' >&2
-}
+# On the live domain a failing gate is a failed deploy - the check that catches
+# the noindex/robots.txt trap lives in there, and shipping past it de-indexes the
+# university. On staging it is advisory so a content warning does not block a
+# rehearsal.
+if [[ "${SPU_DEPLOY_ENV:-staging}" == "production" ]]; then
+    (cd "${APP}" && "${PHP}" artisan launch:validate --environment=production) \
+        || fail "launch:validate failed. Not completing a production deploy on a red gate."
+else
+    (cd "${APP}" && "${PHP}" artisan launch:validate) || {
+        printf '\n⚠ launch:validate reported problems. The code is deployed; read the output above.\n' >&2
+    }
+fi
 
 log "Deployed $(cd "${SOURCE}" && git rev-parse --short HEAD 2>/dev/null || echo 'unknown')"

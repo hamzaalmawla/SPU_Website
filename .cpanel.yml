@@ -3,15 +3,15 @@
 # shell-free mechanism REM-07 requires: cPanel is the executor, a commit is the
 # input, the task log is the evidence.
 #
-# The previous version only copied SVG assets, which is not a deployment - it
-# left code, dependencies, migrations and the search/sitemap artefacts untouched.
+# This replaces the eight-task list hamza wrote, which already did the real work
+# — npm build, SVG publish, migrate, optimize, cache:warm, launch:validate,
+# queue:restart. Everything it did is still done; cpanel-deploy.sh adds the
+# preconditions, the maintenance window, the search index and the static sitemap,
+# and keeps it all in one script so a failure can stop the rest.
 #
-# cpanel-deploy.sh refuses to run rather than guess when something is missing,
-# and the one thing it cannot do is build front-end assets: there is no Node on
-# this host, and public/build is gitignored. Upload it once per release:
-#
-#   php artisan view:clear && npm run build
-#   scp -r public/build spuedu@host:/home/spuedu/public_html/spu_v2/public/
+# npm is not run here: public/build is committed (see .gitignore) so the release
+# ships its own assets and the deploy does not depend on Node being present.
+# Rebuild it with `php artisan view:clear && npm run build` and commit the result.
 deployment:
   tasks:
     - /bin/bash deploy/v2-staging/cpanel-deploy.sh

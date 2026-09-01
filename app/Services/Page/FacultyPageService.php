@@ -973,7 +973,9 @@ final class FacultyPageService implements FacultyPageServiceInterface
             // one condition on the existing query rather than a check per row.
             ->where(fn ($query) => $query
                 ->whereNull('person_id')
-                ->orWhereHas('canonicalPerson', fn ($person) => $person->public()))
+                ->orWhereHas('canonicalPerson', fn ($person) => $person
+                    ->public()
+                    ->whereHas('translations', fn ($t) => $t->whereIn('locale', ['ar', 'en']))))
             ->with(['translations', 'department.translations', 'photoMedia'])
             ->orderBy('sort_order')
             ->orderBy('id')

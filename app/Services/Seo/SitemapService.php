@@ -540,10 +540,31 @@ final class SitemapService implements SitemapServiceInterface
         foreach (Directorate::query()->public()->pluck('slug') as $slug) {
             $paths[] = '/about/directorates/'.$slug;
         }
-        foreach (Person::query()->public()->pluck('slug')->unique() as $slug) {
+        // Publishing a URL that 404s is worse than omitting it: it spends crawl
+        // budget and teaches search engines the site is unreliable. A profile
+        // renders only with a usable translation, and a FacultyMember carrying a
+        // person_id renders through that Person rather than itself - so the same
+        // two conditions the navigation checks apply here.
+        $translated = fn ($query) => $query->whereIn('locale', ['ar', 'en']);
+
+        foreach (
+            Person::query()->public()->whereHas('translations', $translated)
+                ->pluck('slug')->unique() as $slug
+        ) {
             $paths[] = '/about/profile/'.$slug;
         }
-        foreach (FacultyMember::query()->public()->pluck('slug')->unique() as $slug) {
+
+        foreach (
+            FacultyMember::query()->public()
+                ->where(fn ($query) => $query
+                    ->where(fn ($own) => $own
+                        ->whereNull('person_id')
+                        ->whereHas('translations', $translated))
+                    ->orWhereHas('canonicalPerson', fn ($person) => $person
+                        ->public()
+                        ->whereHas('translations', $translated)))
+                ->pluck('slug')->unique() as $slug
+        ) {
             $paths[] = '/about/profile/'.$slug;
         }
 
