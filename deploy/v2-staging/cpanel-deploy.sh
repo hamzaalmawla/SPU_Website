@@ -173,6 +173,29 @@ log "Publishing SVG assets"
 log "Signalling queue workers to restart"
 (cd "${APP}" && "${PHP}" artisan queue:restart) || true
 
+# ── End of the maintenance window ────────────────────────────────────────────
+# Everything that can leave code and schema disagreeing is done. The window has
+# to close HERE, not at the end, because both remaining stages make requests
+# through the HTTP kernel - and a maintenance-mode kernel answers every one of
+# them with a 503.
+#
+# It used to close on the EXIT trap, which meant:
+#
+#   - cache:warm warmed nothing. 4,558 of its targets came back 503, so every
+#     deploy handed the first visitor to every page a cold cache. On a host
+#     whose entire problem is the cost of serving a page, that is the most
+#     expensive request the site can serve, and we were guaranteeing it.
+#   - launch:validate was half blind. Every check that goes through the kernel
+#     got a 503: robots.txt correctness and admin preview safety failed on every
+#     deploy for that reason and no other, and the checks that call services
+#     directly passed - which is exactly what a green-and-red-in-the-same-run
+#     gate looks like when the failures are an artefact of the harness.
+#
+# The trap stays as the safety net for a failure before this point.
+log "Ending the maintenance window"
+restore_service
+MAINTENANCE=0
+
 # Also his. Without it every deploy hands the first visitors a cold cache, which
 # on this host is the most expensive request the site ever serves.
 # Warming does not overwrite. CacheWarmCommand goes through remember(), which
