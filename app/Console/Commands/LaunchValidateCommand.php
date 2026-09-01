@@ -283,8 +283,23 @@ final class LaunchValidateCommand extends Command
     {
         try {
             $canonicalUrl = rtrim((string) config('edge.canonical_url'), '/');
-            $response = app()->handle(HttpRequest::create($canonicalUrl.'/sitemap.xml', 'GET'));
-            $xml = $response->getContent();
+
+            // Same reason the children are read from disk: once sitemap:generate
+            // has run this is a static file the web server owns, and routing an
+            // internal request at it goes through the origin middleware, which
+            // answers with a redirect rather than XML. Checking the file the
+            // server actually serves is both more accurate and what we mean.
+            $indexFile = public_path('sitemap.xml');
+            $servedStatically = is_file($indexFile);
+
+            if ($servedStatically) {
+                $xml = (string) file_get_contents($indexFile);
+                $statusCode = 200;
+            } else {
+                $response = app()->handle(HttpRequest::create($canonicalUrl.'/sitemap.xml', 'GET'));
+                $xml = $response->getContent();
+                $statusCode = $response->getStatusCode();
+            }
             $entries = $this->sitemapService->generateEntries();
             $originValid = $entries->every(fn ($entry): bool => str_starts_with($entry->loc, $canonicalUrl.'/'));
             $lastmodsValid = $entries->every(
@@ -351,7 +366,7 @@ final class LaunchValidateCommand extends Command
             // entries to find out which.
             $problems = [];
 
-            if ($response->getStatusCode() !== 200 || ! is_string($xml) || ! str_contains($xml, '<?xml')) {
+            if ($statusCode !== 200 || ! is_string($xml) || ! str_contains($xml, '<?xml')) {
                 $problems[] = 'the endpoint did not return valid XML';
             } elseif ($isIndex && ! $childrenValid) {
                 $problems[] = 'a child document is missing, unreadable, or not a urlset';
