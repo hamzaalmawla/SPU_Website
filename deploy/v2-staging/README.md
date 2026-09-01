@@ -288,7 +288,25 @@ rm -rf bootstrap/cache/filament
 php artisan optimize
 ```
 
-### 8.2 Always `view:clear` before `npm run build`
+### 8.2 The front-end build is committed, and must be rebuilt per release
+
+There is no Node on this host, so the Vite build cannot run there. `public/build`
+is therefore tracked in git and ships with the cPanel clone; `cpanel-deploy.sh`
+publishes it to the web root before anything else, without `--delete`, because
+Vite content-hashes filenames and the page cache holds rendered HTML for an hour
+— removing the previous build would strip the stylesheet out from under every
+page already cached.
+
+Rebuild and commit it as part of any release that touches CSS, JS or Blade:
+
+```bash
+php artisan view:clear && npm run build
+git add public/build && git commit
+```
+
+`view:clear` first is not optional — see below.
+
+### 8.3 Always `view:clear` before `npm run build`
 
 `resources/css/app.css` declares `@source 'storage/framework/views/*.php'`, so
 Tailwind scans whatever compiled Blade views happen to exist on the build
@@ -307,7 +325,7 @@ This is build hygiene, not a Tailwind configuration problem. Do not "fix" it by
 changing the `@source` glob: it exists so that classes generated inside Blade
 expressions survive the purge.
 
-### 8.3 Anchor every tar exclude
+### 8.4 Anchor every tar exclude
 
 `--exclude=public` matches **every** path segment named `public`, including
 `resources/views/public/`. See §E3 in `Docs/V2_PRE_CUTOVER_ACTIONS.md` — an

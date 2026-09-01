@@ -1,0 +1,43 @@
+{
+  "public/fonts/Hacen Tunisia Bold Regular.ttf": {
+    "file": "assets/Hacen Tunisia Bold Regular.B-fzyL4b.ttf",
+    "src": "public/fonts/Hacen Tunisia Bold Regular.ttf"
+  },
+  "public/fonts/Hacen Tunisia Regular.ttf": {
+    "file": "assets/Hacen Tunisia Regular.B37CssRb.ttf",
+    "src": "public/fonts/Hacen Tunisia Regular.ttf"
+  },
+  "public/images/icon-chevron-down-outline.svg": {
+    "file": "assets/icon-chevron-down-outline.DpdqcSdb.svg",
+    "src": "public/images/icon-chevron-down-outline.svg"
+  },
+  "resources/css/app.css": {
+    "file": "assets/app.gVB01Uz0.css",
+    "name": "app",
+    "names": [
+      "app.css"
+    ],
+    "src": "resources/css/app.css",
+    "isEntry": true,
+    "assets": [
+      "assets/icon-chevron-down-outline.DpdqcSdb.svg",
+      "assets/Hacen Tunisia Regular.B37CssRb.ttf",
+      "assets/Hacen Tunisia Bold Regular.B-fzyL4b.ttf"
+    ]
+  },
+  "resources/css/filament/admin.css": {
+    "file": "assets/admin.C4rGrkXa.css",
+    "name": "admin",
+    "names": [
+      "admin.css"
+    ],
+    "src": "resources/css/filament/admin.css",
+    "isEntry": true
+  },
+  "resources/js/app.js": {
+    "file": "js/app.DvigwBcU.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true
+  }
+}

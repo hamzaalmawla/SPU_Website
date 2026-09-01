@@ -7,19 +7,14 @@
 # asks for: the executor is cPanel, the input is a commit, and the output is this
 # script's log.
 #
-# WHAT THIS CANNOT DO, AND WHY IT FAILS INSTEAD OF GUESSING
+# There is no Node on this host, so the Vite build cannot run here. public/build
+# is therefore committed and ships with the clone - see .gitignore for why - and
+# this script publishes it to the web root. Rebuild it before a release with
+# `php artisan view:clear && npm run build` and commit the result.
 #
-# `vendor/` and `public/build/` are both gitignored, so the clone contains source
-# only. Composer can be run here. The Vite build cannot: there is no Node on this
-# host, and a half-built asset directory renders the whole site unstyled without
-# erroring. So this script REQUIRES the built assets to already be on the server
-# and refuses to continue without them, rather than deploying a site with no CSS.
+# vendor/ is not committed; composer runs here.
 #
-#   Build locally, upload once per release:
-#     php artisan view:clear && npm run build     # view:clear first, see README 8.2
-#     scp -r public/build spuedu@host:/home/spuedu/public_html/spu_v2/public/
-#
-# Everything else is idempotent and safe to re-run.
+# Everything is idempotent and safe to re-run.
 
 set -euo pipefail
 
@@ -42,8 +37,10 @@ log "Deploying ${SOURCE} → ${APP}"
 [[ -f "${APP}/.env" ]]   || fail "${APP}/.env is missing. It is not in git and must never be."
 [[ -d "${WEB}" ]]        || fail "Web root ${WEB} does not exist"
 
-[[ -f "${WEB}/build/manifest.json" ]] || fail \
-    "No Vite manifest at ${WEB}/build/manifest.json. The build is not in git; upload public/build before deploying, or the site renders with no stylesheet."
+# A missing asset directory does not error, it renders the whole site unstyled,
+# so check the source before touching anything on the server.
+[[ -f "${SOURCE}/public/build/manifest.json" ]] || fail \
+    "No Vite manifest in the release at ${SOURCE}/public/build. Run 'php artisan view:clear && npm run build' and commit public/build."
 
 # ── Sync source ──────────────────────────────────────────────────────────────
 # Only the trees that are code. .env, storage/ and public/build/ are state and
@@ -72,6 +69,22 @@ fi
 install -m 0644 "${SOURCE}/artisan" "${APP}/artisan"
 install -m 0644 "${SOURCE}/composer.json" "${APP}/composer.json"
 install -m 0644 "${SOURCE}/composer.lock" "${APP}/composer.lock"
+
+# ── Front-end assets ─────────────────────────────────────────────────────────
+# Published before anything else, and without --delete. Vite content-hashes
+# every filename, so new and old assets coexist happily - and they have to,
+# because the public page cache holds rendered HTML for an hour. Deleting the
+# previous build would strip the stylesheet out from under every page already
+# in that cache. Stale hashes accumulate slowly; seven files per release is a
+# price worth paying to never serve an unstyled page.
+log "Publishing front-end build"
+mkdir -p "${WEB}/build"
+if command -v rsync >/dev/null 2>&1; then
+    rsync -a "${SOURCE}/public/build/" "${WEB}/build/"
+else
+    cp -R "${SOURCE}/public/build/." "${WEB}/build/"
+fi
+[[ -f "${WEB}/build/manifest.json" ]] || fail "The build did not land at ${WEB}/build"
 
 # ── Runtime directories ──────────────────────────────────────────────────────
 # Missing cache stores fail at runtime, not at deploy time.
