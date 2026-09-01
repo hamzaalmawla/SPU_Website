@@ -711,12 +711,14 @@ final class ResearchPageService implements ResearchPageServiceInterface
 
         $section = $segments[1] ?? null;
 
-        $availabilityKey = 'research.public-path-availability.'.hash('sha256', $locale.'|/'.implode('/', $segments));
-        if (request()->attributes->has($availabilityKey)) {
-            return (bool) request()->attributes->get($availabilityKey);
-        }
-
-        $available = match ($section) {
+        // This was memoised in request()->attributes. That made repeat calls
+        // free, but the memo outlives a content change inside the same request:
+        // unpublish a target and the navigation rendered afterwards still shows
+        // it, because nothing can reach into the request bag to invalidate it.
+        // The reads underneath are now cached under the 'cms' tag, which every
+        // publish path already flushes, so the memo bought little and cost
+        // correctness.
+        return match ($section) {
             // The landing page is editorial chrome with no database equivalent, so
             // it is only reachable once reviewed content is published. Falling back
             // to the fixture here kept /research permanently in the navigation and
@@ -754,10 +756,6 @@ final class ResearchPageService implements ResearchPageServiceInterface
                 && $this->publishedLocalizedPayload('research.policies', $locale) !== null,
             default => false,
         };
-
-        request()->attributes->set($availabilityKey, $available);
-
-        return $available;
     }
 
     /** @param array<int, mixed> $columns @return array<int, mixed> */
