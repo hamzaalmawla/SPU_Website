@@ -13,9 +13,11 @@
         <div class="container">
             @php($activeFilters = $data['activeFilters'] ?? ['q' => '', 'faculty' => '', 'type' => '', 'year' => '', 'page' => 1])
             <form method="GET" action="{{ $basePath }}" class="research-filter-grid-publications mx-auto max-w-[1210px]">
-                @foreach ([['faculties', 'facultyLabel', 'faculty'], ['publicationTypes', 'typeLabel', 'type'], ['years', 'yearLabel', 'year']] as [$key, $labelKey, $inputName])
+                @foreach ([['faculties', 'facultyLabel', 'faculty', 'filter_faculty'], ['publicationTypes', 'typeLabel', 'type', 'filter_type'], ['years', 'yearLabel', 'year', 'filter_year']] as [$key, $labelKey, $inputName, $fallbackKey])
                     <label class="relative block">
-                        <span class="sr-only">{{ $data['filters'][$labelKey] ?? '' }}</span>
+                        {{-- The payload never supplied these, so every select shipped
+                             with an empty sr-only span and no accessible name. --}}
+                        <span class="sr-only">{{ $data['filters'][$labelKey] ?? __('public.'.$fallbackKey) }}</span>
                         <select name="{{ $inputName }}" onchange="this.form.submit()" class="h-[49px] w-full appearance-none rounded-[8px] border border-[#dde2ea] bg-white px-5 text-[15px] font-bold text-[#344054] shadow-[0_8px_18px_rgba(16,24,40,0.08)] outline-none transition focus:border-spu-blue">
                             @foreach (($data['filters'][$key] ?? []) as $option)
                                 <option value="{{ $option['value'] ?? '' }}" @selected(($activeFilters[$inputName] ?? '') === (string) ($option['value'] ?? ''))>{{ $option['label'] ?? '' }}</option>
@@ -25,7 +27,7 @@
                     </label>
                 @endforeach
                 <label class="relative block">
-                    <span class="sr-only">Search</span>
+                    <span class="sr-only">{{ __('public.search_submit') }}</span>
                     <img src="/images/icon-search-outline.svg" alt="" class="pointer-events-none absolute left-5 top-1/2 h-4 w-4 -translate-y-1/2 opacity-70 rtl:left-auto rtl:right-5" aria-hidden="true">
                     <input name="q" value="{{ $activeFilters['q'] ?? '' }}" type="search" class="h-[49px] w-full rounded-[8px] border border-[#dde2ea] bg-white ps-12 pe-5 text-[13px] font-medium text-[#344054] shadow-[0_8px_18px_rgba(16,24,40,0.08)] outline-none transition placeholder:text-[#5b6473] focus:border-spu-blue" placeholder="{{ $data['filters']['searchPlaceholder'] ?? '' }}">
                 </label>

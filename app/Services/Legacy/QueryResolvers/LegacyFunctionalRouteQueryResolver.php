@@ -63,6 +63,15 @@ final class LegacyFunctionalRouteQueryResolver implements LegacyQueryModuleResol
         'dir=items&ex=2&lang=2&page=list&service=7' => ['source_id' => 7, 'path' => '/news'],
         'dir=items&ex=2&lang=1&page=list&service=10' => ['source_id' => 10, 'path' => '/news/events-list'],
         'dir=items&ex=2&lang=2&page=list&service=10' => ['source_id' => 10, 'path' => '/news/events-list'],
+
+        // The old FAQ page. A continuity audit on 2026-09-01 found this is the
+        // most-linked URL still returning 404 - 87 inbound links, because it sits
+        // in the old site's footer on every page - while its destination was
+        // already serving. Verified on the live old site the same day: lang=1
+        // returns 4,946 visible characters and lang=2 returns 5,290, so both are
+        // real content rather than the empty shared template.
+        'dir=faqs&ex=2&lang=1&page=faqs' => ['source_id' => 0, 'path' => '/admissions/faq'],
+        'dir=faqs&ex=2&lang=2&page=faqs' => ['source_id' => 0, 'path' => '/admissions/faq'],
     ];
 
     public function canResolve(NormalizedLegacyUrlDTO $url): bool

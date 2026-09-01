@@ -136,6 +136,18 @@ rm -rf "${APP}/bootstrap/cache/filament"
 log "Running migrations"
 (cd "${APP}" && "${PHP}" artisan migrate --force --no-interaction)
 
+# ── Deterministic redirect data ──────────────────────────────────────────────
+# Redirect rules are config that happens to live in a table, not editorial
+# content, so they must ship with the code that reads them. 68e928f added eight
+# subsite-root rules; the code deployed and the rows did not, and every one of
+# those eight became a 301 landing on a 404 - the exact failure the continuity
+# guide forbids, live for a day before an audit caught it.
+#
+# LegacyEntryPointRedirectSeeder is updateOrInsert throughout, so this is safe on
+# every deploy and cannot overwrite a rule an editor has changed by hand.
+log "Seeding deterministic redirect rules"
+(cd "${APP}" && "${PHP}" artisan db:seed --class=LegacyEntryPointRedirectSeeder --force --no-interaction)
+
 # ── Caches ───────────────────────────────────────────────────────────────────
 # There is no OPcache on this host, so config and route caches are the only
 # compiled state that survives a request. Build them every deploy.

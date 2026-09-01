@@ -120,6 +120,14 @@ Route::prefix('{locale}')
                     ->name('section');
             });
 
+        // The section is /campus-life, but seeded homepage payloads, the footer
+        // quick-links and older external links all point at /student-life. It
+        // was published that way, so it exists in the wild and in CMS content
+        // rows that a code change cannot reach. A redirect fixes every source at
+        // once - the alternative is hunting the string through data forever.
+        Route::redirect('/student-life', '/{locale}/campus-life', 301)
+            ->name('public.student-life.redirect');
+
         Route::controller(CampusLifeController::class)
             ->prefix('campus-life')
             ->name('public.campus-life.')
