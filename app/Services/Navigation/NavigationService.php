@@ -45,10 +45,8 @@ final class NavigationService implements NavigationServiceInterface
 
     public function getFullNavigationPayload(string $locale, ?string $currentPath = null): NavigationPayloadDTO
     {
-        $applyCta = $this->settingsService->getApplyCtaTarget($locale);
-        $emergencyNotice = $this->settingsService->getEmergencyNotice($locale);
-        $footerSettings = $this->settingsService->getFooterSettings($locale);
-        $socialContact = $this->settingsService->getSocialContactSettings($locale);
+        $settings = $this->settingsService->getPublicSettings($locale);
+        $applyCta = $settings->applyCta;
 
         return new NavigationPayloadDTO(
             locale: $locale,
@@ -58,11 +56,11 @@ final class NavigationService implements NavigationServiceInterface
             utility: $this->getUtilityNavigation($locale),
             languageSwitchLinks: $this->buildLanguageSwitchLinks($locale, $currentPath),
             applyCta: $applyCta->isEnabled ? new NavigationActionDTO($applyCta->label, $applyCta->url, $applyCta->target) : null,
-            studentPortalUrl: $this->settingsService->getStudentPortalUrl(),
-            staffAccessUrl: $this->settingsService->getStaffAccessUrl(),
-            emergencyNotice: $emergencyNotice,
-            footerSettings: $footerSettings,
-            socialContact: $socialContact,
+            studentPortalUrl: $settings->studentPortalUrl,
+            staffAccessUrl: $settings->staffAccessUrl,
+            emergencyNotice: $settings->emergencyNotice,
+            footerSettings: $settings->footer,
+            socialContact: $settings->socialContact,
         );
     }
 

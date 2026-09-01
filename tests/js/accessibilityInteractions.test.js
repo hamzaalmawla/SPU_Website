@@ -3,7 +3,7 @@ import { afterEach, test } from 'node:test';
 
 import { registerDynamicFormStore } from '../../resources/js/alpine/dynamicFormStore.js';
 import { createDynamicFormView } from '../../resources/js/alpine/dynamicFormView.js';
-import { createMobileNav } from '../../resources/js/alpine/mobileNav.js';
+import { createMobileNav, NAV_DESKTOP_BREAKPOINT } from '../../resources/js/alpine/mobileNav.js';
 
 const originalDocument = globalThis.document;
 const originalWindow = globalThis.window;
@@ -40,6 +40,39 @@ test('navigation focus-out only closes a dropdown when focus leaves its item', (
     assert.equal(nav.openMenu, '1');
     nav.closeDropdownForFocus({ currentTarget: { contains: () => false }, relatedTarget: 'outside' });
     assert.equal(nav.openMenu, null);
+});
+
+test('navigation initializes from scroll position and resets mobile state at desktop width', () => {
+    const listeners = {};
+    const classes = new Set();
+    globalThis.document = {
+        documentElement: {
+            classList: {
+                toggle: (name, enabled) => enabled ? classes.add(name) : classes.delete(name),
+            },
+        },
+    };
+    globalThis.window = {
+        scrollY: 80,
+        innerWidth: NAV_DESKTOP_BREAKPOINT - 1,
+        addEventListener: (name, callback) => { listeners[name] = callback; },
+        removeEventListener: () => {},
+    };
+
+    const nav = createMobileNav();
+    nav.$el = { dataset: { searchItems: '[]' } };
+    nav.init();
+    assert.equal(nav.stickyNav, true);
+
+    nav.$nextTick = () => {};
+    nav.toggleMobile();
+    assert.equal(nav.mobileNav, true);
+    assert.equal(classes.has('site-navigation-open'), true);
+
+    window.innerWidth = NAV_DESKTOP_BREAKPOINT;
+    listeners.resize();
+    assert.equal(nav.mobileNav, false);
+    assert.equal(classes.has('site-navigation-open'), false);
 });
 
 test('dynamic forms generate deterministic field and error associations', () => {

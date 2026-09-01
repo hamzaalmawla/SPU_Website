@@ -1567,17 +1567,17 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
                         }
                     }
 
-                    if ($targetKey === 'research.conferences' && $path === 'past' && (bool) ($item['hasProceedings'] ?? false) && ! $this->isSafeResearchResourceUrl($item['proceedingsUrl'] ?? null)) {
+                    if ($targetKey === 'research.conferences' && $path === 'past' && (bool) ($item['hasProceedings'] ?? false) && ! (bool) ($item['proceedingsUnavailable'] ?? false) && ! $this->isSafeResearchResourceUrl($item['proceedingsUrl'] ?? null)) {
                         $errors['research'][] = 'Upload a valid proceedings file before marking proceedings as available.';
                     }
 
                     if ($targetKey === 'research.policies') {
                         $documents = is_array($item['documents'] ?? null) ? $item['documents'] : [];
-                        if ($documents === []) {
+                        if ($documents === [] && ! (bool) ($item['documentsUnavailable'] ?? false)) {
                             $errors['research'][] = 'Every policy section requires at least one document.';
                         }
                         foreach ($documents as $document) {
-                            if (! is_array($document) || ! $this->isSafeResearchResourceUrl($document['url'] ?? null)) {
+                            if (! (bool) ($item['documentsUnavailable'] ?? false) && (! is_array($document) || ! $this->isSafeResearchResourceUrl($document['url'] ?? null))) {
                                 $errors['research'][] = 'Every policy document requires a valid file.';
                             }
                         }

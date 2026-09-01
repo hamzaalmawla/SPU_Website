@@ -102,7 +102,7 @@ final class AboutController extends Controller
     public function directorateDetail(Request $request, string $locale, string $directorate): RedirectResponse|View
     {
         if ($directorate === 'it-services') {
-            return redirect('/' . $locale . '/e-services/it-support', 301);
+            return redirect('/'.$locale.'/e-services/it-support', 301);
         }
 
         $item = $this->aboutPageService->getDirectorate($directorate, $locale);
@@ -167,19 +167,24 @@ final class AboutController extends Controller
         ]));
     }
 
-    public function profile(Request $request, string $locale, string $slug): View
+    public function profile(Request $request, string $locale, string $slug): View|RedirectResponse
     {
         $requestedSource = $request->query('source');
-        $source = is_string($requestedSource) && in_array($requestedSource, ['person', 'faculty-member'], true)
-            ? $requestedSource
-            : 'unified';
-        $profile = $this->profilePageService->getProfile($locale, $source, $slug);
+        if (is_string($requestedSource) && in_array($requestedSource, ['person', 'faculty-member'], true)) {
+            $legacyProfile = $this->profilePageService->getProfile($locale, $requestedSource, $slug);
+            abort_if($legacyProfile === null, 404);
+
+            return redirect($legacyProfile->profileUrl, 301);
+        }
+
+        $profile = $this->profilePageService->getProfile($locale, 'unified', $slug);
         abort_if($profile === null, 404);
 
-        $path = '/about/profile/'.$slug;
-        if ($source !== 'unified') {
-            $path .= '?source='.rawurlencode($source);
+        if ($profile->slug !== $slug) {
+            return redirect($profile->profileUrl, 301);
         }
+
+        $path = '/about/profile/'.$slug;
 
         return view('public.about.profile', $this->sharedPayload($request, $locale, $path, [
             'profile' => $profile,
@@ -192,14 +197,7 @@ final class AboutController extends Controller
         $profile = $this->profilePageService->getProfile($locale, $source, $slug);
         abort_if($profile === null, 404);
 
-        $oppositeSource = $source === 'person' ? 'faculty-member' : 'person';
-        $hasCollision = $this->profilePageService->getProfile($locale, $oppositeSource, $slug) !== null;
-        $path = '/'.$locale.'/about/profile/'.$slug;
-        if ($hasCollision) {
-            $path .= '?source='.rawurlencode($source);
-        }
-
-        return redirect($path, 301);
+        return redirect($profile->profileUrl, 301);
     }
 
     public function redirectLegacyProfile(Request $request, string $locale): RedirectResponse

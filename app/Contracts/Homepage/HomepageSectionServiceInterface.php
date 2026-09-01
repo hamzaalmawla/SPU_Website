@@ -47,6 +47,11 @@ interface HomepageSectionServiceInterface
     public function getPublicHomepage(string $locale): HomepageDTO;
 
     /**
+     * Retrieve one published section without hydrating unrelated homepage data.
+     */
+    public function getPublicSectionByKey(string $key, string $locale): ?HomepageSectionDTO;
+
+    /**
      * Update one homepage section using an approved key from self::SECTION_KEYS.
      */
     public function updateSection(string $key, HomepageSectionDataDTO $payload, string $locale): bool;

@@ -117,6 +117,7 @@ use App\Contracts\Shared\ContinuityServiceInterface;
 use App\Contracts\Shared\PreviewServiceInterface;
 use App\Contracts\Shared\SlugServiceInterface;
 use App\DTOs\ErrorPage\ErrorPageContentDTO;
+use App\DTOs\Homepage\HomepageSectionDTO;
 use App\Http\Responses\LogoutResponse;
 use App\Models\Career\Alumni;
 use App\Models\Career\HonorStudent;
@@ -393,8 +394,10 @@ class AppServiceProvider extends ServiceProvider
             $locale = is_string($data['locale'] ?? null) && in_array($data['locale'], ['ar', 'en'], true)
                 ? $data['locale']
                 : 'ar';
-            $homepage = app(HomepageSectionServiceInterface::class)->getPublicHomepage($locale);
-            $footer = $homepage->findSection('footer');
+            $footer = $data['homepageFooterSection'] ?? null;
+            if (! $footer instanceof HomepageSectionDTO) {
+                $footer = app(HomepageSectionServiceInterface::class)->getPublicSectionByKey('footer', $locale);
+            }
             $footerColumns = $footer?->payload !== null
                 ? app(ResearchPageServiceInterface::class)->filterFooterColumns($locale, $footer->payload->footerColumns)
                 : [];

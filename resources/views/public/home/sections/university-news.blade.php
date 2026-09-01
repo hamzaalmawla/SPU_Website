@@ -17,7 +17,7 @@
                         @if ($article->imageUrl)
                             <div class="relative h-[210px] overflow-hidden">
                                 @php($newsSrcset = \App\Support\MediaUrlResolver::legacySrcset($article->imageUrl))
-                                <img src="{{ $article->imageUrl }}" @if ($newsSrcset) srcset="{{ $newsSrcset }}" sizes="(max-width: 768px) 100vw, 400px" @endif alt="{{ $article->title }}" loading="lazy" decoding="async" width="400" height="210" class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110">
+                                <img src="{{ $article->imageUrl }}" @if ($newsSrcset) srcset="{{ $newsSrcset }}" sizes="(max-width: 768px) 100vw, 400px" @endif alt="{{ $article->title }}" loading="lazy" decoding="async" width="400" height="210" class="content-media-image h-full w-full">
                                 @if ($article->categoryLabel)
                                     <div class="absolute top-4 start-4 px-4 py-1 rounded-md text-white text-[11px] font-bold z-10 bg-spu-blue">{{ $article->categoryLabel }}</div>
                                 @endif

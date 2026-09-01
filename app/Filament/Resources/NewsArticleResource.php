@@ -212,10 +212,13 @@ class NewsArticleResource extends Resource
                                     Repeater::make('seoMeta')
                                         ->hiddenLabel()
                                         ->schema([
-                                            Select::make('locale')->required()->options([
-                                                'ar' => __('admin.locales.ar'),
-                                                'en' => __('admin.locales.en'),
-                                            ]),
+                                            Select::make('locale')
+                                                ->required()
+                                                ->native(false)
+                                                ->options([
+                                                    'ar' => __('admin.locales.ar'),
+                                                    'en' => __('admin.locales.en'),
+                                                ]),
                                             TextInput::make('meta_title')->label(__('admin.news_article.fields.meta_title'))->maxLength(255),
                                             Textarea::make('meta_description')->label(__('admin.news_article.fields.meta_description'))->rows(2),
                                             TextInput::make('og_title')->label(__('admin.news_article.fields.og_title'))->maxLength(255),
@@ -225,6 +228,7 @@ class NewsArticleResource extends Resource
                                             TextInput::make('robots')->label(__('admin.news_article.fields.robots'))->default('index,follow')->maxLength(255),
                                         ])
                                         ->columns(2)
+                                        ->defaultItems(0)
                                         ->maxItems(2)
                                         ->reorderable(false)
                                         ->collapsible()

@@ -84,7 +84,7 @@
                 @forelse ($events as $event)
                     <article class="events-month-card">
                         <div class="events-month-card-media">
-                            <img src="{{ $event->imageUrl }}" alt="{{ $event->title }}" loading="lazy">
+                            <img src="{{ $event->imageUrl }}" alt="{{ $event->title }}" loading="lazy" class="content-media-image">
                             <p>{{ $event->dateLabel }}</p>
                         </div>
                         <div class="events-month-card-body">

@@ -70,6 +70,8 @@ class ManageHomepage extends Page implements HasForms
 
     public ?int $draftVersion = null;
 
+    public string $activeSection = 'hero';
+
     public function boot(
         HomepageSectionServiceInterface $sectionService,
         HomepagePublishingServiceInterface $publishingService,
@@ -99,19 +101,48 @@ class ManageHomepage extends Page implements HasForms
 
     public function mount(): void
     {
+        $requestedSection = request()->query('section', 'hero');
+        $this->activeSection = is_string($requestedSection) && in_array($requestedSection, HomepageSectionServiceInterface::SECTION_KEYS, true)
+            ? $requestedSection
+            : 'hero';
         $this->loadSectionData();
     }
 
     public function form(Form $form): Form
     {
+        $key = $this->activeSection;
+
         return $form
             ->schema([
-                Tabs::make('homepage_sections')
-                    ->tabs($this->buildSectionTabs())
-                    ->persistTabInQueryString('section')
+                ...HomepageFormSchema::selectionFieldsForSection($key, "{$key}.selection"),
+                Tabs::make("{$key}_locales")
+                    ->tabs([
+                        Tab::make('العربية (AR)')
+                            ->schema(HomepageFormSchema::fieldsForSection($key, "{$key}.ar"))
+                            ->extraAttributes(['dir' => 'rtl'])
+                            ->icon('heroicon-o-language'),
+                        Tab::make('English (EN)')
+                            ->schema(HomepageFormSchema::fieldsForSection($key, "{$key}.en"))
+                            ->extraAttributes(['dir' => 'ltr'])
+                            ->icon('heroicon-o-language'),
+                    ])
+                    ->persistTabInQueryString('locale')
                     ->columnSpanFull(),
             ])
             ->statePath('data');
+    }
+
+    /** @return list<array{key: string, label: string, url: string, active: bool}> */
+    public function getWorkspaceSections(): array
+    {
+        $labels = $this->sectionLabels();
+
+        return array_map(fn (string $key): array => [
+            'key' => $key,
+            'label' => $labels[$key] ?? $key,
+            'url' => static::getUrl(['section' => $key]),
+            'active' => $key === $this->activeSection,
+        ], HomepageSectionServiceInterface::SECTION_KEYS);
     }
 
     protected function getHeaderActions(): array
@@ -379,15 +410,12 @@ class ManageHomepage extends Page implements HasForms
         $this->sections = $this->sectionService->getSections();
         $this->draftVersion = $this->publishingService->latestEditableDraftVersion();
 
-        $formData = [];
-
-        foreach (HomepageSectionServiceInterface::SECTION_KEYS as $key) {
-            $section = $this->sections->first(fn (HomepageSectionDTO $s) => $s->key === $key);
-
-            $formData[$key] = $section !== null
+        $section = $this->sections->first(fn (HomepageSectionDTO $item): bool => $item->key === $this->activeSection);
+        $formData = [
+            $this->activeSection => $section instanceof HomepageSectionDTO
                 ? $this->sectionToFormData($section)
-                : $this->emptySectionData($key);
-        }
+                : $this->emptySectionData($this->activeSection),
+        ];
 
         $this->form->fill($formData);
     }
@@ -530,15 +558,22 @@ class ManageHomepage extends Page implements HasForms
     {
         $dtos = [];
         $sortOrder = 0;
+        $existingSections = $this->sections ?? $this->sectionService->getSections();
 
         foreach (HomepageSectionServiceInterface::SECTION_KEYS as $key) {
+            $existingSection = $existingSections->first(fn (HomepageSectionDTO $section): bool => $section->key === $key);
+            if ($key !== $this->activeSection && $existingSection instanceof HomepageSectionDTO) {
+                $dtos[] = $existingSection;
+                $sortOrder++;
+
+                continue;
+            }
+
             $sectionData = $formData[$key] ?? ['ar' => [], 'en' => []];
             $selection = is_array($sectionData['selection'] ?? null) ? $sectionData['selection'] : [];
             $arabicData = $this->withHomepageSelection($sectionData['ar'] ?? [], $key, $selection);
             $englishData = $this->withHomepageSelection($sectionData['en'] ?? [], $key, $selection);
             $sortOrder++;
-
-            $existingSection = $this->sections?->first(fn (HomepageSectionDTO $s) => $s->key === $key);
 
             $dtos[] = new HomepageSectionDTO(
                 id: $existingSection?->id ?? 0,
@@ -1118,10 +1153,10 @@ class ManageHomepage extends Page implements HasForms
         return array_values(array_filter($images, static fn (mixed $image): bool => is_string($image) && $image !== ''))[0] ?? null;
     }
 
-    /** @return array<int, Tab> */
-    private function buildSectionTabs(): array
+    /** @return array<string, string> */
+    private function sectionLabels(): array
     {
-        $sectionLabels = [
+        return [
             'hero' => 'Hero',
             'hero_stats' => 'Hero Stats',
             'achievements_highlights' => 'Achievement & Honors',
@@ -1134,28 +1169,6 @@ class ManageHomepage extends Page implements HasForms
             'bottom_stats' => 'Bottom Stats',
             'footer' => 'Footer',
         ];
-
-        $tabs = [];
-
-        foreach (HomepageSectionServiceInterface::SECTION_KEYS as $key) {
-            $tabs[] = Tab::make($sectionLabels[$key] ?? $key)
-                ->schema([
-                    ...HomepageFormSchema::selectionFieldsForSection($key, "{$key}.selection"),
-                    Tabs::make("{$key}_locales")
-                        ->tabs([
-                            Tab::make('العربية (AR)')
-                                ->schema(HomepageFormSchema::fieldsForSection($key, "{$key}.ar"))
-                                ->extraAttributes(['dir' => 'rtl'])
-                                ->icon('heroicon-o-language'),
-                            Tab::make('English (EN)')
-                                ->schema(HomepageFormSchema::fieldsForSection($key, "{$key}.en"))
-                                ->extraAttributes(['dir' => 'ltr'])
-                                ->icon('heroicon-o-language'),
-                        ]),
-                ]);
-        }
-
-        return $tabs;
     }
 
     private function saveCurrentDraft(array $formData): HomepageDraftDTO

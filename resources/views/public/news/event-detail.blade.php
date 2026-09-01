@@ -4,7 +4,7 @@
     <section class="bg-section pb-16 pt-32 font-hacen md:pb-24">
         <div class="container max-w-[1100px]">
             <article class="overflow-hidden rounded-2xl bg-white shadow-sm">
-                <img src="{{ $event->imageUrl }}" alt="{{ $event->title }}" class="h-[300px] w-full object-cover md:h-[420px]">
+                <img src="{{ $event->imageUrl }}" alt="{{ $event->title }}" class="content-media-image h-[300px] w-full md:h-[420px]">
                 <div class="p-7 md:p-10">
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <p class="text-xs font-bold text-spu-red">{{ $event->categoryLabel }}</p>
@@ -44,7 +44,7 @@
                     @endif
                     @if ($event->gallery !== [])
                         <h2 class="mt-10 text-xl font-bold text-spu-blue">{{ $page['galleryLabel'] }}</h2>
-                        <div class="mt-4 grid gap-4 sm:grid-cols-2">@foreach($event->gallery as $image)<a href="{{ $image }}" target="_blank" rel="noopener noreferrer"><img src="{{ $image }}" alt="{{ $event->title }}" loading="lazy" class="h-52 w-full rounded-lg object-cover"></a>@endforeach</div>
+                        <div class="mt-4 grid gap-4 sm:grid-cols-2">@foreach($event->gallery as $image)<a href="{{ $image }}" target="_blank" rel="noopener noreferrer"><img src="{{ $image }}" alt="{{ $event->title }}" loading="lazy" class="content-media-image h-52 w-full rounded-lg"></a>@endforeach</div>
                     @endif
 
                     <a href="/{{ $locale }}/news/events-list" class="mt-10 inline-flex text-sm font-bold text-spu-red hover:text-spu-blue">{{ $page['backLabel'] }}</a>

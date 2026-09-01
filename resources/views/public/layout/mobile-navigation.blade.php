@@ -7,7 +7,8 @@
      x-transition:leave-start="opacity-100 translate-y-0"
      x-transition:leave-end="opacity-0 -translate-y-2"
      style="display: none;"
-       class="site-nav-mobile-panel nav:hidden">
+     x-cloak
+     class="site-nav-mobile-panel nav:hidden">
     <div class="site-nav-mobile-list">
         {{-- The header's search panel is desktop-only, so the mobile menu carries
              its own real search form rather than leaving phone visitors without

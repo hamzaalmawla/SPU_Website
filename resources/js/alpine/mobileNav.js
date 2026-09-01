@@ -1,3 +1,5 @@
+export const NAV_DESKTOP_BREAKPOINT = 1440;
+
 export function createMobileNav() {
     return {
         openMenu: null,
@@ -7,6 +9,8 @@ export function createMobileNav() {
         searchQuery: '',
         searchItems: [],
         searchAllLabel: '',
+        scrollHandler: null,
+        resizeHandler: null,
 
         init() {
             try {
@@ -17,13 +21,28 @@ export function createMobileNav() {
 
             this.searchAllLabel = this.$el.dataset.searchAllLabel || '';
 
-            window.addEventListener('scroll', () => {
-                this.stickyNav = window.scrollY > 40;
-            }, { passive: true });
+            this.stickyNav = window.scrollY > 16;
+            this.scrollHandler = () => {
+                this.stickyNav = window.scrollY > 16;
+            };
+            this.resizeHandler = () => {
+                if (window.innerWidth >= NAV_DESKTOP_BREAKPOINT) {
+                    this.closeAll();
+                }
+            };
+
+            window.addEventListener('scroll', this.scrollHandler, { passive: true });
+            window.addEventListener('resize', this.resizeHandler, { passive: true });
+        },
+
+        destroy() {
+            window.removeEventListener('scroll', this.scrollHandler);
+            window.removeEventListener('resize', this.resizeHandler);
+            this.setPageScrollLocked(false);
         },
 
         closeAll() {
-            this.mobileNav = false;
+            this.closeMobile();
             this.openMenu = null;
             this.searchOpen = false;
         },
@@ -32,17 +51,22 @@ export function createMobileNav() {
             this.openMenu = null;
             this.searchOpen = false;
 
-            if (window.innerWidth < 1280) {
-                this.mobileNav = false;
+            if (window.innerWidth < NAV_DESKTOP_BREAKPOINT) {
+                this.closeMobile();
             }
-        },
-
-        headerClass() {
-            return this.stickyNav ? 'fixed inset-x-0 top-0 z-[200] w-full pt-3' : '';
         },
 
         shellClass() {
             return this.stickyNav ? 'site-nav-shell--sticky' : '';
+        },
+
+        setPageScrollLocked(locked) {
+            globalThis.document?.documentElement?.classList.toggle('site-navigation-open', locked);
+        },
+
+        closeMobile() {
+            this.mobileNav = false;
+            this.setPageScrollLocked(false);
         },
 
         openDropdown(id) {
@@ -100,6 +124,7 @@ export function createMobileNav() {
             this.mobileNav = !this.mobileNav;
             this.searchOpen = false;
             this.openMenu = null;
+            this.setPageScrollLocked(this.mobileNav);
 
             if (this.mobileNav) {
                 this.$nextTick(() => this.$el.querySelector('#site-mobile-navigation a[href], #site-mobile-navigation button')?.focus());
@@ -127,7 +152,7 @@ export function createMobileNav() {
             }
 
             if (this.mobileNav) {
-                this.mobileNav = false;
+                this.closeMobile();
                 this.$nextTick(() => this.$refs.mobileToggle?.focus());
             }
         },

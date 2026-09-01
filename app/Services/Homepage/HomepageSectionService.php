@@ -98,6 +98,27 @@ final class HomepageSectionService implements HomepageSectionServiceInterface
         );
     }
 
+    public function getPublicSectionByKey(string $key, string $locale): ?HomepageSectionDTO
+    {
+        $this->validator->assertApprovedKey($key);
+
+        $section = HomepageSection::query()
+            ->with('translations')
+            ->where('key', $key)
+            ->enabled()
+            ->first();
+
+        if (! $section instanceof HomepageSection) {
+            return null;
+        }
+
+        $sectionDto = $this->draftReader->mapSection($section, $locale);
+
+        return $this->draftReader->hasRenderablePayloadForLocale($sectionDto, $locale)
+            ? $this->contentSelectionService->hydrateSection($sectionDto, $locale)
+            : null;
+    }
+
     public function updateSection(string $key, HomepageSectionDataDTO $payload, string $locale): bool
     {
         $actor = $this->authorizedHomepageActor();

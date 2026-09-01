@@ -30,6 +30,16 @@
     scrollbar-width: none;
 }
 
+.content-media-image {
+    object-fit: cover;
+    object-position: center;
+    background-color: #f1f5f9;
+}
+
+.content-media-image--dark {
+    background-color: #202759;
+}
+
 main nav[aria-label="Breadcrumb"],
 main nav[aria-label="مسار التنقل"],
 main nav:has(> ol),
@@ -40,6 +50,51 @@ main nav:has(> span > a + img) {
     overflow-x: auto;
     scrollbar-width: none;
     white-space: nowrap;
+}
+
+:is(
+    main nav[aria-label="Breadcrumb"],
+    main nav[aria-label="مسار التنقل"],
+    main nav:has(> ol),
+    main nav:has(> a + img),
+    main nav:has(> span > a + img)
+) a {
+    display: inline-flex;
+    align-items: center;
+}
+
+:is(
+    main nav[aria-label="Breadcrumb"],
+    main nav[aria-label="مسار التنقل"],
+    main nav:has(> ol),
+    main nav:has(> a + img),
+    main nav:has(> span > a + img)
+) > *,
+:is(
+    main nav[aria-label="Breadcrumb"],
+    main nav[aria-label="مسار التنقل"],
+    main nav:has(> ol),
+    main nav:has(> a + img),
+    main nav:has(> span > a + img)
+) > ol > * {
+    flex: 0 0 auto;
+}
+
+:is(
+    main nav[aria-label="Breadcrumb"],
+    main nav[aria-label="مسار التنقل"],
+    main nav:has(> ol),
+    main nav:has(> a + img),
+    main nav:has(> span > a + img)
+).justify-center,
+:is(
+    main nav[aria-label="Breadcrumb"],
+    main nav[aria-label="مسار التنقل"],
+    main nav:has(> ol),
+    main nav:has(> a + img),
+    main nav:has(> span > a + img)
+) > ol.justify-center {
+    justify-content: safe center;
 }
 
 main nav[aria-label="Breadcrumb"]::-webkit-scrollbar,

@@ -123,6 +123,28 @@ for f in med dent pharm info petrol admin research hospital dent_clinic alumni c
 done
 ```
 
+The cPanel Git deployment is defined in the repository's `.cpanel.yml`. It
+installs locked frontend dependencies, builds the current Vite assets, publishes
+tracked SVGs, applies migrations, builds Laravel and Filament production caches,
+and restarts queue workers. Deployment must fail rather than serve stale CSS,
+JavaScript, icons, schema, or component manifests. The explicit SVG copy remains
+necessary because `$APP/public` is a symlink to the separate cPanel document
+root.
+
+`DatabaseSeeder` is intentionally blocked when `APP_ENV=production`. Never run
+`migrate:fresh`, `db:wipe`, or `db:seed` against a production content database.
+The deployment runs `launch:validate --environment=production` after migrations,
+optimization, and cache warming; a missing homepage, public content path,
+sitemap, SEO configuration, cache behavior, or audit capability must fail the
+deployment rather than reach the live site.
+
+After each deployment, verify both root-level and nested icon paths:
+
+```bash
+curl --fail --head https://v2.spu.edu.sy/images/icon-search-outline.svg
+curl --fail --head https://v2.spu.edu.sy/images/icons/check-circle.svg
+```
+
 `cv_bank` is deliberately **not** linked — it holds applicant CVs and was
 removed from scope. Do not re-add it without an explicit decision.
 

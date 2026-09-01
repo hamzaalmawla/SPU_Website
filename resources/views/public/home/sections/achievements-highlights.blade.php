@@ -49,7 +49,7 @@
         <div id="honor-panels" class="relative h-[480px] md:h-[500px] w-full">
             <template x-for="(item, index) in items" :key="itemKey(item, index)">
                 <div class="absolute transition-all duration-[1800ms] [transition-timing-function:cubic-bezier(0.25,1,0.5,1)] rounded-[28px] md:rounded-[40px] overflow-hidden group" :class="panelClass(index)" role="group" aria-roledescription="{{ __('public.slide') }}" :aria-label="itemLabel(index)" :aria-hidden="isHidden(index)">
-                    <img :src="item.image" :alt="itemAlt(item)" class="absolute inset-0 w-full h-full object-cover transition-transform duration-[3000ms] group-hover:scale-110" width="560" height="500" loading="lazy" decoding="async">
+                    <img :src="item.image" :alt="itemAlt(item)" class="content-media-image content-media-image--dark absolute inset-0 h-full w-full" width="560" height="500" loading="lazy" decoding="async">
                     <div x-show="isPrimary(index)" x-transition:enter="transition ease-out duration-[1200ms] delay-[600ms]" x-transition:enter-start="opacity-0 translate-y-12" x-transition:enter-end="opacity-100 translate-y-0" class="absolute inset-0 flex flex-col justify-between p-6 md:p-10 text-white">
                         <div class="absolute inset-0 bg-gradient-to-t from-spu-blue/95 via-spu-blue/45 to-transparent pointer-events-none"></div>
 

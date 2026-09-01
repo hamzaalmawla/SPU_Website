@@ -15,17 +15,24 @@
     $appendSearchItems($navigation->header->items);
 @endphp
 
-<header id="site-header" class="absolute top-0 z-[200] w-full pt-3 font-hacen"
+<header id="site-header" class="fixed inset-x-0 top-0 z-[200] w-full pt-3 font-hacen"
         x-data="mobileNav()"
         data-search-items="{{ json_encode($searchItems, JSON_THROW_ON_ERROR) }}"
         data-search-all-label="{{ __('public.search_all_results_for', ['query' => '__QUERY__']) }}"
         @keydown.escape.window="handleEscape()"
         @keydown.window.ctrl.k.prevent="openSearch()"
         @keydown.window.meta.k.prevent="openSearch()"
-        @click.outside="closeForOutsideClick()"
-        :class="headerClass()">
+        @click.outside="closeForOutsideClick()">
     <div class="container site-nav-container">
         @include('public.layout.emergency-notice')
+
+        <button type="button"
+                x-show="mobileNav"
+                x-cloak
+                style="display: none;"
+                class="site-nav-backdrop nav:hidden"
+                @click="closeMobile()"
+                aria-label="{{ $locale === 'ar' ? 'إغلاق القائمة' : 'Close navigation' }}"></button>
 
         <div class="site-nav-shell" :class="shellClass()">
             <div class="site-nav-shell__main">
@@ -141,6 +148,7 @@
                                 x-ref="searchToggle"
                                 @click="toggleSearch()"
                                 class="site-nav-lang"
+                                aria-expanded="false"
                                 :aria-expanded="searchOpen.toString()"
                                 aria-controls="site-search-panel">
                             <img src="/images/icon-search-outline.svg" alt="" class="h-[1rem] w-[1rem]" aria-hidden="true" width="24" height="24" decoding="async">
@@ -224,10 +232,11 @@
                             x-ref="mobileToggle"
                             @click="toggleMobile()"
                             aria-label="{{ __('public.toggle_navigation') }}"
+                            aria-expanded="false"
                             :aria-expanded="mobileNav.toString()"
                             aria-controls="site-mobile-navigation"
                             class="site-nav-menu-btn nav:hidden">
-                        <img :src="mobileToggleIcon()" class="h-5 w-5" alt="" width="24" height="24" decoding="async">
+                        <img src="/images/icon-bars-outline.svg" :src="mobileToggleIcon()" class="h-5 w-5" alt="" width="24" height="24" decoding="async">
                     </button>
                 </div>
             </div>

@@ -68,7 +68,7 @@ class FacultyMemberResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery()
-            ->with(['translations', 'faculty.translations', 'department.translations']);
+            ->with(['translations', 'faculty.translations', 'department.translations', 'canonicalPerson']);
 
         $user = auth()->user();
         if ($user instanceof User && $user->role_slug === 'faculty_editor') {
@@ -85,6 +85,13 @@ class FacultyMemberResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
+            Section::make('Canonical person profile')->schema([
+                Placeholder::make('canonical_person_status')
+                    ->hiddenLabel()
+                    ->content(fn (?FacultyMember $record): string => $record?->canonicalPerson
+                        ? 'Linked to the canonical People profile: '.$record->canonicalPerson->slug
+                        : 'Legacy placement record. Run the unified-person sync before publishing profile changes.'),
+            ])->visibleOn('edit'),
             Section::make('Where this staff member appears')->schema([
                 Select::make('faculty_id')
                     ->label('Faculty')
@@ -192,6 +199,12 @@ class FacultyMemberResource extends Resource
                 ->limit(40),
             TextColumn::make('translations.title')->label('Title')->limit(20),
             TextColumn::make('translations.position')->label('Position')->limit(20),
+            TextColumn::make('canonicalPerson.slug')
+                ->label('Canonical profile')
+                ->placeholder('Not linked')
+                ->url(fn (FacultyMember $record): ?string => $record->person_id !== null && Gate::allows('manage-pages')
+                    ? PersonResource::getUrl('edit', ['record' => $record->person_id])
+                    : null),
             TextColumn::make('faculty.translations.name')->label('Faculty')->limit(30),
             IconColumn::make('is_enabled')->boolean(),
             TextColumn::make('publication_status')->badge()->sortable(),

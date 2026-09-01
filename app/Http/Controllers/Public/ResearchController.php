@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Public;
 
 use App\Contracts\Navigation\NavigationServiceInterface;
+use App\Contracts\Page\ProfilePageServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Contracts\Seo\SeoMetadataServiceInterface;
 use App\Contracts\Settings\SettingsServiceInterface;
@@ -20,6 +21,7 @@ final class ResearchController extends Controller
 {
     public function __construct(
         private readonly ResearchPageServiceInterface $researchPageService,
+        private readonly ProfilePageServiceInterface $profilePageService,
         private readonly NavigationServiceInterface $navigationService,
         private readonly SettingsServiceInterface $settingsService,
         private readonly SeoMetadataServiceInterface $seoMetadataService,
@@ -118,12 +120,12 @@ final class ResearchController extends Controller
         return $this->renderPage($request, $locale, $this->researchPageService->researchers($locale, $request->only(['q', 'faculty', 'expertise', 'page'])), 'public.research.researchers.index', '/research/researchers');
     }
 
-    public function researcher(Request $request, string $locale, string $slug): View
+    public function researcher(Request $request, string $locale, string $slug): RedirectResponse
     {
-        $page = $this->researchPageService->researcher($locale, $slug);
-        abort_if($page === null, 404);
+        $profile = $this->profilePageService->getProfile($locale, 'unified', $slug);
+        abort_if($profile === null, 404);
 
-        return $this->renderDetail($request, $locale, $page, 'public.research.researchers.show', '/research/researchers/'.$slug);
+        return redirect($profile->profileUrl, 301);
     }
 
     public function expertFinder(Request $request, string $locale): View

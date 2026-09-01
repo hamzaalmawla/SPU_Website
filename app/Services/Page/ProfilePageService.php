@@ -25,6 +25,7 @@ use App\Models\Research\ResearchPublication;
 use App\Models\Shared\MigrationLog;
 use App\Support\MediaUrlResolver;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
 
@@ -40,6 +41,12 @@ final class ProfilePageService implements ProfilePageServiceInterface
 
         if ($source === 'faculty-member') {
             $facultyMember = $this->findFacultyMember($locale, $slug);
+
+            if ($facultyMember instanceof FacultyMember && $facultyMember->person_id !== null) {
+                $person = $this->findPersonById($locale, (int) $facultyMember->person_id);
+
+                return $person instanceof Person ? $this->buildPersonProfileDto($person, $locale) : null;
+            }
 
             return $facultyMember instanceof FacultyMember
                 ? $this->buildFacultyMemberProfileDto($facultyMember, $locale)
@@ -86,13 +93,21 @@ final class ProfilePageService implements ProfilePageServiceInterface
             )->exists();
     }
 
+    /**
+     * Mirrors what getPublicProfiles() would actually return.
+     *
+     * A FacultyMember carrying a person_id is represented by that Person rather
+     * than listed separately, so counting it here would report a directory that
+     * the listing then renders as empty. And either row still has to carry a
+     * usable translation, or the entry it produces is a link to a 404.
+     */
     public function hasAnyPublicProfile(): bool
     {
         return Person::query()->public()->whereHas(
             'translations',
             fn ($query) => $query->whereIn('locale', ['ar', 'en']),
         )->exists()
-            || FacultyMember::query()->public()->whereHas(
+            || FacultyMember::query()->public()->whereNull('person_id')->whereHas(
                 'translations',
                 fn ($query) => $query->whereIn('locale', ['ar', 'en']),
             )->exists();
@@ -101,30 +116,47 @@ final class ProfilePageService implements ProfilePageServiceInterface
     /** @return array<int, ProfilePageDTO> */
     public function getPublicProfiles(string $locale): array
     {
-        $slugs = Person::query()
-            ->public()
+        $cacheKey = 'profile-page.public-profiles.'.$locale;
+        $cached = request()->attributes->get($cacheKey);
+        if (is_array($cached)) {
+            return $cached;
+        }
+
+        $persons = $this->personProfileQuery($locale)
             ->orderBy('sort_order')
             ->orderBy('id')
-            ->pluck('slug')
-            ->merge(
-                FacultyMember::query()
-                    ->public()
-                    ->orderBy('sort_order')
-                    ->orderBy('id')
-                    ->pluck('slug'),
-            )
-            ->unique()
-            ->values();
+            ->get();
+        $facultyMembers = $this->facultyMemberProfileQuery($locale)
+            ->whereNull('person_id')
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
 
         $profiles = [];
+        $seenSlugs = [];
 
-        foreach ($slugs as $slug) {
-            $profile = $this->resolveUnifiedProfile($locale, (string) $slug);
+        foreach ($persons as $person) {
+            $profile = $this->buildPersonProfileDto($person, $locale);
 
             if ($profile instanceof ProfilePageDTO) {
                 $profiles[] = $profile;
+                $seenSlugs[$profile->slug] = true;
             }
         }
+
+        foreach ($facultyMembers as $facultyMember) {
+            if (isset($seenSlugs[(string) $facultyMember->slug])) {
+                continue;
+            }
+
+            $profile = $this->buildFacultyMemberProfileDto($facultyMember, $locale);
+            if ($profile instanceof ProfilePageDTO) {
+                $profiles[] = $profile;
+                $seenSlugs[$profile->slug] = true;
+            }
+        }
+
+        request()->attributes->set($cacheKey, $profiles);
 
         return $profiles;
     }
@@ -138,12 +170,9 @@ final class ProfilePageService implements ProfilePageServiceInterface
      * Person wins when both tables hold the slug, but only if it actually
      * renders. The earlier form returned as soon as a Person row existed, so a
      * translationless Person shadowed a perfectly renderable FacultyMember and
-     * the page 404'd — while hasPublicProfile(), which ORs the two tables, went
-     * on reporting the profile as available and the navigation went on linking
-     * to it.
-     *
-     * getPublicProfiles() calls unique() across the merged slugs of both tables,
-     * so a collision is an expected state rather than a corrupt one.
+     * the page 404'd — while the availability check, which ORs the two tables,
+     * went on reporting the profile as available and the navigation went on
+     * linking to it.
      */
     private function resolveUnifiedProfile(string $locale, string $slug): ?ProfilePageDTO
     {
@@ -158,6 +187,12 @@ final class ProfilePageService implements ProfilePageServiceInterface
 
         $facultyMember = $this->findFacultyMember($locale, $slug);
 
+        if ($facultyMember instanceof FacultyMember && $facultyMember->person_id !== null) {
+            $canonicalPerson = $this->findPersonById($locale, (int) $facultyMember->person_id);
+
+            return $canonicalPerson instanceof Person ? $this->buildPersonProfileDto($canonicalPerson, $locale) : null;
+        }
+
         return $facultyMember instanceof FacultyMember
             ? $this->buildFacultyMemberProfileDto($facultyMember, $locale)
             : null;
@@ -165,11 +200,28 @@ final class ProfilePageService implements ProfilePageServiceInterface
 
     private function findPerson(string $locale, string $slug): ?Person
     {
+        return $this->personProfileQuery($locale)
+            ->where('slug', $slug)
+            ->first();
+    }
+
+    private function findPersonById(string $locale, int $id): ?Person
+    {
+        return $this->personProfileQuery($locale)
+            ->whereKey($id)
+            ->first();
+    }
+
+    private function personProfileQuery(string $locale): Builder
+    {
         return Person::query()
             ->public()
-            ->where('slug', $slug)
             ->with([
                 'translations' => fn ($query) => $query->whereIn('locale', $this->fallbackLocales($locale)),
+                'appointments' => fn ($query) => $query->enabled(),
+                'appointments.translations',
+                'appointments.faculty.translations',
+                'appointments.department.translations',
                 'educations' => fn ($query) => $query->enabled(),
                 'educations.translations',
                 'researchPublications' => fn ($query) => $query->public()->limit(20),
@@ -179,15 +231,20 @@ final class ProfilePageService implements ProfilePageServiceInterface
                 'councilMemberships.council.translations',
                 'photoMedia',
                 'cvMedia',
-            ])
-            ->first();
+            ]);
     }
 
     private function findFacultyMember(string $locale, string $slug): ?FacultyMember
     {
+        return $this->facultyMemberProfileQuery($locale)
+            ->where('slug', $slug)
+            ->first();
+    }
+
+    private function facultyMemberProfileQuery(string $locale): Builder
+    {
         return FacultyMember::query()
             ->public()
-            ->where('slug', $slug)
             ->with([
                 'translations' => fn ($query) => $query->whereIn('locale', $this->fallbackLocales($locale)),
                 'faculty.translations',
@@ -201,8 +258,7 @@ final class ProfilePageService implements ProfilePageServiceInterface
                 'councilMemberships.council.translations',
                 'photoMedia',
                 'cvMedia',
-            ])
-            ->first();
+            ]);
     }
 
     private function buildPersonProfileDto(Person $person, string $locale): ?ProfilePageDTO
