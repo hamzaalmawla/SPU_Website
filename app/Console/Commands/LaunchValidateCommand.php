@@ -346,20 +346,39 @@ final class LaunchValidateCommand extends Command
                 }
             }
 
-            $valid = $response->getStatusCode() === 200
-                && is_string($xml)
-                && str_contains($xml, '<?xml')
-                && ($isIndex ? $childrenValid : str_contains($xml, '<urlset'))
-                && $originValid
-                && $lastmodsValid;
+            // Name the condition that failed. "One of four things is wrong"
+            // sends whoever reads the deploy log hunting through thousands of
+            // entries to find out which.
+            $problems = [];
+
+            if ($response->getStatusCode() !== 200 || ! is_string($xml) || ! str_contains($xml, '<?xml')) {
+                $problems[] = 'the endpoint did not return valid XML';
+            } elseif ($isIndex && ! $childrenValid) {
+                $problems[] = 'a child document is missing, unreadable, or not a urlset';
+            } elseif (! $isIndex && ! str_contains($xml, '<urlset')) {
+                $problems[] = 'the document is neither a sitemap index nor a urlset';
+            }
+
+            if (! $originValid) {
+                $offending = $entries->first(fn ($entry): bool => ! str_starts_with($entry->loc, $canonicalUrl.'/'));
+                $problems[] = 'a URL does not use '.$canonicalUrl.' ('.($offending->loc ?? 'unknown').')';
+            }
+
+            if (! $lastmodsValid) {
+                $offending = $entries->first(
+                    fn ($entry): bool => preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/', $entry->lastmod) !== 1,
+                );
+                $problems[] = 'a lastmod is not W3C format ('.($offending->loc ?? 'unknown').' → "'.($offending->lastmod ?? '').'")';
+            }
+
             $this->record(
                 'Sitemap presence',
-                $valid ? 'PASS' : 'FAIL',
-                $valid
+                $problems === [] ? 'PASS' : 'FAIL',
+                $problems === []
                     ? ($isIndex
                         ? "Sitemap index and its {$childCount} child document(s) are valid and all URLs use {$canonicalUrl}"
                         : "Sitemap endpoint is valid and all URLs use {$canonicalUrl}")
-                    : 'Sitemap endpoint, child documents, canonical hosts, or W3C lastmod values are invalid',
+                    : 'Sitemap invalid: '.implode('; ', $problems),
             );
         } catch (\Throwable $e) {
             $this->record('Sitemap presence', 'FAIL', $e->getMessage());
