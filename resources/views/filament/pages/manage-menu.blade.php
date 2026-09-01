@@ -88,6 +88,7 @@
                         <select wire:model.live="editForm.target_type" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
                             <option value="url">{{ __('admin.menu.custom_url') }}</option>
                             <option value="page">{{ __('admin.menu.page') }}</option>
+                            <option value="route">Named Route</option>
                         </select>
                     </label>
 
@@ -111,10 +112,15 @@
                                 @endforeach
                             </select>
                         </label>
+                    @elseif (($editForm['target_type'] ?? 'url') === 'route')
+                        <label class="block md:col-span-2">
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-200">Route Name</span>
+                            <input type="text" wire:model="editForm.route_name" required maxlength="255" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+                        </label>
                     @else
                         <label class="block md:col-span-2">
                             <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ __('admin.menu.url') }}</span>
-                            <input type="url" wire:model="editForm.url" required maxlength="2048" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+                            <input type="text" wire:model="editForm.url" required maxlength="2048" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
                         </label>
                     @endif
 

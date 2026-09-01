@@ -773,10 +773,10 @@ final class MenuService implements MenuServiceInterface
 
     private function isDescendantOf(MenuItem $candidateParent, MenuItem $item): bool
     {
-        $candidateParent->loadMissing('children.children');
+        $item->loadMissing('children.children');
 
-        foreach ($candidateParent->children as $child) {
-            if ((int) $child->getKey() === (int) $item->getKey() || $this->isDescendantOf($child, $item)) {
+        foreach ($item->children as $child) {
+            if ((int) $child->getKey() === (int) $candidateParent->getKey() || $this->isDescendantOf($candidateParent, $child)) {
                 return true;
             }
         }

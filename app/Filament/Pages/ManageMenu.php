@@ -147,6 +147,7 @@ class ManageMenu extends Page implements HasForms
             'target_type' => $item->targetType,
             'target_id' => $item->targetId,
             'url' => $item->url ?? '',
+            'route_name' => $item->routeName ?? '',
             'parent_id' => $item->parentId,
             'is_enabled' => $item->isEnabled,
             'open_in_new_tab' => $item->openInNewTab,
@@ -199,6 +200,9 @@ class ManageMenu extends Page implements HasForms
                     : null,
                 url: ($formData['target_type'] ?? $item->targetType) === 'url'
                     ? (string) ($formData['url'] ?? '')
+                    : null,
+                routeName: ($formData['target_type'] ?? $item->targetType) === 'route'
+                    ? (string) ($formData['route_name'] ?? $item->routeName ?? '')
                     : null,
                 isEnabled: (bool) ($formData['is_enabled'] ?? $item->isEnabled),
                 openInNewTab: (bool) ($formData['open_in_new_tab'] ?? $item->openInNewTab),

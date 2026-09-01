@@ -69,7 +69,7 @@ class ManageMenuTest extends TestCase
             ->assertSet('editingItemId', $item->id)
             ->set('editForm.label', 'Updated label')
             ->set('editForm.target_type', 'url')
-            ->set('editForm.url', 'https://new.example.com')
+            ->set('editForm.url', '/en/new-menu-path')
             ->set('editForm.is_enabled', false)
             ->set('editForm.open_in_new_tab', true)
             ->call('updateEditingItem')
@@ -78,7 +78,7 @@ class ManageMenuTest extends TestCase
         $this->assertDatabaseHas('menu_items', [
             'id' => $item->id,
             'label' => 'Updated label',
-            'url' => 'https://new.example.com',
+            'url' => '/en/new-menu-path',
             'is_enabled' => false,
             'open_in_new_tab' => true,
         ]);
@@ -86,6 +86,77 @@ class ManageMenuTest extends TestCase
         $this->assertDatabaseHas('audit_logs', [
             'action' => 'menu.updated',
             'entity_id' => $item->id,
+        ]);
+    }
+
+    public function test_route_menu_item_keeps_route_when_edited(): void
+    {
+        $this->actingAs($this->createUser('super_admin'));
+
+        $item = MenuItem::query()->create([
+            'type' => 'header',
+            'label' => 'Route item',
+            'locale' => 'en',
+            'target_kind' => 'route',
+            'route_name' => 'filament.admin.pages.manage-menu',
+            'group_key' => 'header',
+            'is_enabled' => true,
+            'open_in_new_tab' => false,
+            'sort_order' => 1,
+            'depth' => 0,
+        ]);
+
+        Livewire::test(ManageMenu::class)
+            ->call('editItem', $item->id)
+            ->set('editForm.label', 'Updated route item')
+            ->set('editForm.route_name', 'filament.admin.pages.manage-menu')
+            ->call('updateEditingItem');
+
+        $this->assertDatabaseHas('menu_items', [
+            'id' => $item->id,
+            'label' => 'Updated route item',
+            'target_kind' => 'route',
+            'route_name' => 'filament.admin.pages.manage-menu',
+        ]);
+    }
+
+    public function test_nested_menu_item_can_be_edited_without_changing_parent(): void
+    {
+        $this->actingAs($this->createUser('super_admin'));
+
+        $parent = MenuItem::query()->create([
+            'type' => 'header',
+            'label' => 'Facilities',
+            'locale' => 'en',
+            'target_kind' => 'url',
+            'url' => '/en/facilities',
+            'group_key' => 'header',
+            'is_enabled' => true,
+            'sort_order' => 1,
+            'depth' => 0,
+        ]);
+        $item = MenuItem::query()->create([
+            'parent_id' => $parent->id,
+            'type' => 'header',
+            'label' => 'Old child label',
+            'locale' => 'en',
+            'target_kind' => 'url',
+            'url' => '/en/facilities/child',
+            'group_key' => 'header',
+            'is_enabled' => true,
+            'sort_order' => 1,
+            'depth' => 1,
+        ]);
+
+        Livewire::test(ManageMenu::class)
+            ->call('editItem', $item->id)
+            ->set('editForm.label', 'Updated child label')
+            ->call('updateEditingItem');
+
+        $this->assertDatabaseHas('menu_items', [
+            'id' => $item->id,
+            'label' => 'Updated child label',
+            'parent_id' => $parent->id,
         ]);
     }
 
