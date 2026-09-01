@@ -3,9 +3,10 @@
 use App\Contracts\ErrorPage\ErrorPageRendererInterface;
 use App\Http\Middleware\AdminAuthMiddleware;
 use App\Http\Middleware\CachePublicPages;
-use App\Http\Middleware\MinifyPublicHtml;
+use App\Http\Middleware\CompressPublicResponses;
 use App\Http\Middleware\EnforcePublicOrigin;
 use App\Http\Middleware\LocaleSetterMiddleware;
+use App\Http\Middleware\MinifyPublicHtml;
 use App\Http\Middleware\RedirectContinuityMiddleware;
 use App\Http\Middleware\SecurityHeadersMiddleware;
 use App\Http\Middleware\TwoFactorChallengeMiddleware;
@@ -46,6 +47,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'two.factor' => TwoFactorChallengeMiddleware::class,
             'cache.public' => CachePublicPages::class,
             'minify.html' => MinifyPublicHtml::class,
+            'compress' => CompressPublicResponses::class,
             'verify.webhook' => VerifyWebhookSignature::class,
         ]);
 

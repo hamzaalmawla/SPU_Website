@@ -367,12 +367,26 @@ final class CachePublicPages
         // length would describe the body before that substitution and truncate
         // it. Symfony does not currently set the header, which is exactly why
         // this is worth closing now rather than discovering later.
+        //
+        // content-encoding, transfer-encoding and content-range describe how a
+        // body was framed on one specific wire, and the body stored here is
+        // plain text that still has a CSRF placeholder substituted into it on
+        // every read. Storing any of them would describe the wrong thing.
+        //
+        // CompressPublicResponses runs outermost, so today nothing encoded ever
+        // reaches this method. Unsetting them anyway turns that ordering from a
+        // convention into a guarantee: move compression inside this group by
+        // accident and the result is a wasteful cache entry, not a site-wide
+        // break where every cached page ships a corrupted CSRF token.
         unset(
             $headers['cache-control'],
             $headers['date'],
             $headers['set-cookie'],
             $headers['x-cache'],
             $headers['content-length'],
+            $headers['content-encoding'],
+            $headers['transfer-encoding'],
+            $headers['content-range'],
         );
 
         return $headers;

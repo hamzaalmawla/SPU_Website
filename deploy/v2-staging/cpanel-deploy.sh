@@ -191,38 +191,6 @@ log "Clearing derived caches so warming actually rebuilds"
 log "Warming caches"
 (cd "${APP}" && "${PHP}" artisan cache:warm --include-sitemap) || true
 
-# ── Compression diagnostic ───────────────────────────────────────────────────
-# Purely informational; never fails the deploy.
-#
-# Nothing this site serves is compressed, and from outside it is impossible to
-# tell whether nginx strips Accept-Encoding before Apache or whether mod_deflate
-# is simply not loaded. The two need different fixes and the host has not
-# answered a general request in six weeks, so ask from inside where the answer
-# is unambiguous, and put it in the deploy log.
-#
-# Asking Apache directly bypasses nginx: if Apache compresses when asked at the
-# origin but the public URL does not, nginx is the layer dropping it.
-log "Compression diagnostic (informational)"
-{
-    printf '  mod_deflate loaded: '
-    if "${PHP}" -r 'echo function_exists("apache_get_modules") ? "n/a (not the apache SAPI from CLI)" : "n/a (CLI)";' 2>/dev/null; then printf '\n'; fi
-
-    for origin in "http://127.0.0.1" "http://127.0.0.1:8080"; do
-        enc=$(curl -s -o /dev/null -D - --max-time 10 \
-              -H "Accept-Encoding: gzip" -H "Host: v2.spu.edu.sy" \
-              "${origin}/robots.txt" 2>/dev/null | grep -i '^content-encoding' | tr -d '\r')
-        len=$(curl -s -o /dev/null -w '%{size_download}' --max-time 10 \
-              -H "Accept-Encoding: gzip" -H "Host: v2.spu.edu.sy" \
-              "${origin}/build/assets/$(ls "${WEB}/build/assets" 2>/dev/null | grep -m1 '^app\..*\.css')" 2>/dev/null)
-        printf '  origin %-22s content-encoding=%s  css_bytes=%s\n' \
-               "${origin}" "${enc:-none}" "${len:-?}"
-    done
-
-    printf '  Accept-Encoding reaching PHP: '
-    "${PHP}" -r 'echo getenv("HTTP_ACCEPT_ENCODING") ?: "not visible from CLI (expected)";' 2>/dev/null
-    printf '\n'
-} || true
-
 # ── Verify ───────────────────────────────────────────────────────────────────
 # A deploy that reports success while the site is down is worse than one that
 # fails, so end by proving the application still boots.
