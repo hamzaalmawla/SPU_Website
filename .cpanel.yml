@@ -1,11 +1,17 @@
 ---
+# cPanel Git Version Control runs these on deploy. This is the auditable,
+# shell-free mechanism REM-07 requires: cPanel is the executor, a commit is the
+# input, the task log is the evidence.
+#
+# The previous version only copied SVG assets, which is not a deployment - it
+# left code, dependencies, migrations and the search/sitemap artefacts untouched.
+#
+# cpanel-deploy.sh refuses to run rather than guess when something is missing,
+# and the one thing it cannot do is build front-end assets: there is no Node on
+# this host, and public/build is gitignored. Upload it once per release:
+#
+#   php artisan view:clear && npm run build
+#   scp -r public/build spuedu@host:/home/spuedu/public_html/spu_v2/public/
 deployment:
   tasks:
-    - /usr/bin/env npm ci --no-audit --no-fund
-    - /usr/bin/env npm run build
-    - /bin/bash deploy/v2-staging/publish-svg-assets.sh
-    - /opt/cpanel/ea-php84/root/usr/bin/php artisan migrate --force
-    - /opt/cpanel/ea-php84/root/usr/bin/php artisan optimize
-    - /opt/cpanel/ea-php84/root/usr/bin/php artisan cache:warm --include-sitemap
-    - /opt/cpanel/ea-php84/root/usr/bin/php artisan launch:validate --environment=production
-    - /opt/cpanel/ea-php84/root/usr/bin/php artisan queue:restart
+    - /bin/bash deploy/v2-staging/cpanel-deploy.sh
