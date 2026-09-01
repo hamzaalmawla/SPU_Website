@@ -312,6 +312,27 @@ final class LaunchValidateCommand extends Command
                         break;
                     }
 
+                    // Once sitemap:generate has run, the children are static
+                    // files served by the web server and are deliberately not
+                    // routable through Laravel - so asking the router for them
+                    // returns 404 and the check failed on a correctly deployed
+                    // site. Read the file when it exists; fall back to the
+                    // route only when it does not.
+                    $childPath = parse_url($child, PHP_URL_PATH);
+                    $childFile = is_string($childPath) ? public_path(ltrim($childPath, '/')) : null;
+
+                    if (is_string($childFile) && is_file($childFile)) {
+                        $childXml = (string) file_get_contents($childFile);
+
+                        if (! str_contains($childXml, '<urlset')) {
+                            $childrenValid = false;
+
+                            break;
+                        }
+
+                        continue;
+                    }
+
                     $childResponse = app()->handle(HttpRequest::create($child, 'GET'));
                     $childXml = $childResponse->getContent();
 
