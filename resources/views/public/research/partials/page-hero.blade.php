@@ -1,6 +1,16 @@
 @php
     $hero = $hero ?? [];
     $crumbs = $hero['breadcrumbs'] ?? [];
+
+    // The publications hero ships without a title, which rendered an empty <h1>:
+    // a heading landmark with no label, worse for a screen reader than no
+    // heading at all. The page always has a name at the SEO layer, so fall back
+    // through it rather than emitting an empty element.
+    $heroTitle = collect([
+        $hero['title'] ?? null,
+        $pageTitle ?? null,
+        isset($seo) && is_object($seo) ? ($seo->title ?? null) : null,
+    ])->first(fn ($candidate): bool => is_string($candidate) && trim($candidate) !== '');
 @endphp
 
 <section class="bg-white font-hacen" dir="{{ $direction }}">
@@ -12,7 +22,9 @@
                 @if (! empty($hero['eyebrow']))
                     <p class="text-[12px] font-bold uppercase tracking-[0.16em] text-white/80">{{ $hero['eyebrow'] }}</p>
                 @endif
-                <h1 class="mt-3 text-[32px] font-bold text-white md:text-[42px]">{{ $hero['title'] ?? '' }}</h1>
+                @if ($heroTitle)
+                    <h1 class="mt-3 text-[32px] font-bold text-white md:text-[42px]">{{ $heroTitle }}</h1>
+                @endif
                 @if (! empty($hero['summary']))
                     <p class="mx-auto mt-4 max-w-[600px] text-[14px] leading-[1.6] text-white/90">{{ $hero['summary'] }}</p>
                 @endif

@@ -168,11 +168,27 @@ final class LegacyUrlNormalizer implements LegacyUrlNormalizerInterface
 
     private function subsite(string $path): LegacySubsiteDTO
     {
-        $firstSegment = explode('/', trim($path, '/'))[0] ?? '';
+        $segments = array_values(array_filter(explode('/', trim($path, '/')), static fn (string $s): bool => $s !== ''));
+        $firstSegment = $segments[0] ?? '';
         $definition = self::SUBSITES[$firstSegment] ?? null;
 
         if ($definition === null) {
-            return new LegacySubsiteDTO('root', null, 0);
+            // An unrecognised first segment in front of a legacy entrypoint is
+            // not the root site - it is a directory that never existed.
+            // Returning 'root' here made /bogussubsite/index.php?lang=1 redirect
+            // to /ar with a 200: a soft 404, which section 1.2 forbids because
+            // search engines treat it as a real page and because it never lands
+            // in unresolved_legacy_requests, so the gap stays invisible.
+            //
+            // Deliberately narrow. Only a path with a directory segment AND a
+            // legacy entrypoint filename is reclassified, so /index.php itself
+            // and static paths such as /downloads/files/x.pdf are untouched.
+            $hasDirectorySegment = count($segments) > 1;
+            $endsWithEntrypoint = $this->entrypoint($path) !== null;
+
+            return $hasDirectorySegment && $endsWithEntrypoint
+                ? new LegacySubsiteDTO('unknown', null, 0)
+                : new LegacySubsiteDTO('root', null, 0);
         }
 
         return new LegacySubsiteDTO(

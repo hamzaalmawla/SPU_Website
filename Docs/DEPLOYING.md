@@ -3,52 +3,55 @@
 How a change on `dev` reaches the server, what runs when it does, and the things
 that have gone wrong before.
 
-Read [One-time setup](#one-time-setup) first — **push-to-deploy does not work
-yet.** Until someone completes it, pushing to `dev` changes nothing on the
-server.
+Push-to-deploy works. `git push origin dev`, then pull and deploy in cPanel.
 
 ---
 
 ## Current state
 
-The release deployed on 1 September 2026 was pushed by hand: a repository was
-built locally, uploaded through the cPanel file API, and deployed. It worked,
-but it is a snapshot. The cPanel repository has **no connection to GitHub**, so
-it will never see anything you push.
+**Push-to-deploy works.** The cPanel repository is a real clone of the GitHub
+repo, tracking `dev`.
 
 | | |
 |---|---|
-| cPanel repository | `/home/spuedu/repositories/spu-release2` |
-| Connected to GitHub | **No** |
-| Deployed commit | `27044de` (built from `54bba23`) |
-| What `git push` does today | Nothing on the server |
+| cPanel repository | `/home/spuedu/repositories/spu-v2` |
+| Remote | `github.com/hamzaalmawla/SPU_Website` |
+| Branch | `dev` |
 
-Fix that once, with the setup below, and every later release is two steps.
+Skip to [Deploying a change](#deploying-a-change). The setup section below is
+kept for whoever has to rebuild this.
 
 ---
 
-## One-time setup
+## One-time setup (already done — kept for reference)
 
-Needs a GitHub personal access token with `repo` scope. Do this in a browser so
-the token never leaves it.
+**The repository is private, so it can only be cloned over SSH with a registered
+deploy key.** cPanel's clone dialog does *not* prompt for HTTPS credentials — it
+runs `git clone` non-interactively, so an `https://` URL fails with
+`could not read Username for 'https://github.com'`. An earlier version of this
+document said otherwise and cost two failed attempts.
 
-1. **GitHub** → Settings → Developer settings → Personal access tokens → generate
-   one with `repo` scope. Copy it.
-2. **cPanel → Git Version Control.** Delete the two existing entries, `SPU
-   Release` and `SPU Deploy` — they are hand-built and will only confuse things.
-3. **File Manager** → delete these leftover directories under
-   `/home/spuedu/repositories/`: `spu-deploy`, `spu-release2`, `spu-v2`,
-   `spu-website`, `spu_website`, `SPU_Website`, and the stray `probe.txt`.
-4. **Git Version Control → Create.** Turn on **Clone a Repository**.
-   - Clone URL: `https://github.com/hamzaalmawla/SPU_Website.git`
+The account has a key at `~/.ssh/SPU_REPO`, and `~/.ssh/config` points git at it
+for `github.com` (with `IdentitiesOnly yes`, or ssh offers the default `id_rsa`
+first and is refused before it tries the right key). The matching public key is
+registered on the repository under **Settings → Deploy keys**, read-only.
+
+To rebuild it from scratch:
+
+1. **cPanel → SSH Access → Manage SSH Keys** — confirm `SPU_REPO` exists, or
+   generate a key with an **empty passphrase** (a passphrase cannot be entered
+   during an unattended clone).
+2. Copy the **public** key and add it on **GitHub → the repository → Settings →
+   Deploy keys**, read-only. A deploy key is scoped to one repository, which a
+   personal access token is not.
+3. Ensure `~/.ssh/config` contains the `Host github.com` block above.
+4. **Git Version Control → Create** → **Clone a Repository**
+   - Clone URL: `git@github.com:hamzaalmawla/SPU_Website.git` — the SSH form,
+     not `https://`
    - Repository Path: `repositories/spu-v2`
-   - Name: anything
-5. When GitHub asks for credentials, use your username and the **token** as the
-   password. Not your account password — GitHub stopped accepting those.
-6. Open **Manage** and set the checked-out branch to `dev`.
+5. **Manage** → set the checked-out branch to `dev`.
 
-You should now see `.cpanel.yml` recognised and **Deploy HEAD Commit**
-available.
+`.cpanel.yml` is then recognised and **Deploy HEAD Commit** becomes available.
 
 ---
 

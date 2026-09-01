@@ -136,6 +136,18 @@ rm -rf "${APP}/bootstrap/cache/filament"
 log "Running migrations"
 (cd "${APP}" && "${PHP}" artisan migrate --force --no-interaction)
 
+# ── Deterministic redirect data ──────────────────────────────────────────────
+# Redirect rules are config that happens to live in a table, not editorial
+# content, so they must ship with the code that reads them. 68e928f added eight
+# subsite-root rules; the code deployed and the rows did not, and every one of
+# those eight became a 301 landing on a 404 - the exact failure the continuity
+# guide forbids, live for a day before an audit caught it.
+#
+# LegacyEntryPointRedirectSeeder is updateOrInsert throughout, so this is safe on
+# every deploy and cannot overwrite a rule an editor has changed by hand.
+log "Seeding deterministic redirect rules"
+(cd "${APP}" && "${PHP}" artisan db:seed --class=LegacyEntryPointRedirectSeeder --force --no-interaction)
+
 # ── Caches ───────────────────────────────────────────────────────────────────
 # There is no OPcache on this host, so config and route caches are the only
 # compiled state that survives a request. Build them every deploy.
@@ -163,8 +175,53 @@ log "Signalling queue workers to restart"
 
 # Also his. Without it every deploy hands the first visitors a cold cache, which
 # on this host is the most expensive request the site ever serves.
+# Warming does not overwrite. CacheWarmCommand goes through remember(), which
+# returns whatever is already stored - so warming a cache full of pre-deploy
+# HTML is a no-op, and visitors kept seeing the previous release for up to the
+# full hour of public_page_ttl after every deploy. Discovered when a fix was
+# verifiably deployed, verifiably present in the deployed files, and still
+# absent from the served page.
+#
+# Only the default store is cleared. The webhook replay store and the rate
+# limiter are separate stores (config/cache.php) and are deliberately untouched:
+# clearing those would drop replay protection and reset limits on deploy.
+log "Clearing derived caches so warming actually rebuilds"
+(cd "${APP}" && "${PHP}" artisan cache:clear) || true
+
 log "Warming caches"
 (cd "${APP}" && "${PHP}" artisan cache:warm --include-sitemap) || true
+
+# ── Compression diagnostic ───────────────────────────────────────────────────
+# Purely informational; never fails the deploy.
+#
+# Nothing this site serves is compressed, and from outside it is impossible to
+# tell whether nginx strips Accept-Encoding before Apache or whether mod_deflate
+# is simply not loaded. The two need different fixes and the host has not
+# answered a general request in six weeks, so ask from inside where the answer
+# is unambiguous, and put it in the deploy log.
+#
+# Asking Apache directly bypasses nginx: if Apache compresses when asked at the
+# origin but the public URL does not, nginx is the layer dropping it.
+log "Compression diagnostic (informational)"
+{
+    printf '  mod_deflate loaded: '
+    if "${PHP}" -r 'echo function_exists("apache_get_modules") ? "n/a (not the apache SAPI from CLI)" : "n/a (CLI)";' 2>/dev/null; then printf '\n'; fi
+
+    for origin in "http://127.0.0.1" "http://127.0.0.1:8080"; do
+        enc=$(curl -s -o /dev/null -D - --max-time 10 \
+              -H "Accept-Encoding: gzip" -H "Host: v2.spu.edu.sy" \
+              "${origin}/robots.txt" 2>/dev/null | grep -i '^content-encoding' | tr -d '\r')
+        len=$(curl -s -o /dev/null -w '%{size_download}' --max-time 10 \
+              -H "Accept-Encoding: gzip" -H "Host: v2.spu.edu.sy" \
+              "${origin}/build/assets/$(ls "${WEB}/build/assets" 2>/dev/null | grep -m1 '^app\..*\.css')" 2>/dev/null)
+        printf '  origin %-22s content-encoding=%s  css_bytes=%s\n' \
+               "${origin}" "${enc:-none}" "${len:-?}"
+    done
+
+    printf '  Accept-Encoding reaching PHP: '
+    "${PHP}" -r 'echo getenv("HTTP_ACCEPT_ENCODING") ?: "not visible from CLI (expected)";' 2>/dev/null
+    printf '\n'
+} || true
 
 # ── Verify ───────────────────────────────────────────────────────────────────
 # A deploy that reports success while the site is down is worse than one that
