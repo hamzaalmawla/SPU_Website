@@ -27,23 +27,23 @@ final class PublicPageQueryBudgetTest extends TestCase
      * Measured on a cold cache, which is the worst case and the only case that
      * matters — a cache hit runs no queries at all. Budgets sit a little above
      * the measured figures so ordinary work does not trip them: /ar and /en
-     * measure 71, /ar/about 62, /ar/news 63.
+     * measure 59, /ar/about 50, /ar/news 51.
      *
      * These are worst-case numbers. Each page is measured with the cache
      * flushed, so the published-payload cache cannot carry between them; in
      * production it survives until a publish, and the saving is larger.
      *
-     * One known repeat remains and is worth a later pass: mapItem lazy-loads
-     * children on menu items one level below the eager-loaded depth, about
-     * thirteen queries that each return nothing.
+     * NavigationEagerLoadingTest is the sharper instrument for the navigation
+     * specifically: it runs the tree build under Laravel's lazy-loading guard,
+     * which catches a per-item fetch that a total like this one would absorb.
      *
      * @var array<string, int>
      */
     private const BUDGETS = [
-        '/ar' => 79,
-        '/en' => 79,
-        '/ar/about' => 70,
-        '/ar/news' => 71,
+        '/ar' => 67,
+        '/en' => 67,
+        '/ar/about' => 58,
+        '/ar/news' => 59,
     ];
 
     protected function setUp(): void

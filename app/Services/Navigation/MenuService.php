@@ -351,21 +351,7 @@ final class MenuService implements MenuServiceInterface
             ->where('group_key', $groupKey)
             ->forLocale($locale)
             ->enabled()
-            ->with([
-                'pageTarget.translations',
-                'children' => fn ($query) => $query
-                    ->enabled()
-                    ->forLocale($locale)
-                    ->orderBy('sort_order')
-                    ->with([
-                        'pageTarget.translations',
-                        'children' => fn ($childQuery) => $childQuery
-                            ->enabled()
-                            ->forLocale($locale)
-                            ->orderBy('sort_order')
-                            ->with('pageTarget.translations'),
-                    ]),
-            ])
+            ->with($this->treeEagerLoad($locale))
             ->orderBy('sort_order')
             ->get();
 
@@ -380,6 +366,39 @@ final class MenuService implements MenuServiceInterface
             direction: $locale === 'ar' ? 'rtl' : 'ltr',
             items: $mappedItems,
         );
+    }
+
+    /**
+     * Eager-load spec covering every level a tree can hold, plus one.
+     *
+     * MAX_DEPTH is enforced on write, so depth 2 is the deepest item that can
+     * exist — but mapItem() recurses into ->children on those items too, and a
+     * relation that was never loaded is fetched one parent at a time. Loading
+     * one level past the deepest item costs a single query that matches nothing
+     * and removes that lazy load entirely.
+     *
+     * Built from the constant rather than hand-nested so raising MAX_DEPTH
+     * cannot silently leave the deepest level lazy-loading again.
+     *
+     * @return array<int|string, mixed>
+     */
+    private function treeEagerLoad(string $locale): array
+    {
+        $constrain = fn ($query) => $query
+            ->enabled()
+            ->forLocale($locale)
+            ->orderBy('sort_order');
+
+        $spec = ['pageTarget.translations'];
+        $path = '';
+
+        for ($level = 0; $level <= self::MAX_DEPTH; $level++) {
+            $path .= ($path === '' ? '' : '.').'children';
+            $spec[$path] = $constrain;
+            $spec[] = $path.'.pageTarget.translations';
+        }
+
+        return $spec;
     }
 
     private function mapItem(MenuItem $item, string $locale, ?string $currentPath): ?MenuItemDTO
