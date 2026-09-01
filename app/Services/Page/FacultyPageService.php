@@ -966,6 +966,14 @@ final class FacultyPageService implements FacultyPageServiceInterface
         $facultyMembers = FacultyMember::query()
             ->public()
             ->where('faculty_id', $faculty->getKey())
+            // A member carrying a person_id is represented by that Person, and
+            // resolveUnifiedProfile() resolves it through them. So when the
+            // Person is unpublished the member is unpublished by proxy: listing
+            // it would render a profile link to a page that 404s. Expressed as
+            // one condition on the existing query rather than a check per row.
+            ->where(fn ($query) => $query
+                ->whereNull('person_id')
+                ->orWhereHas('canonicalPerson', fn ($person) => $person->public()))
             ->with(['translations', 'department.translations', 'photoMedia'])
             ->orderBy('sort_order')
             ->orderBy('id')

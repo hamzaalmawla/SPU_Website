@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Navigation;
 
 use App\Contracts\Navigation\MenuServiceInterface;
+use App\Contracts\Page\ProfilePageServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Contracts\Shared\AuditServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
@@ -79,6 +80,7 @@ final class MenuService implements MenuServiceInterface
         private readonly HtmlSanitizer $htmlSanitizer,
         private readonly ?ResearchPageServiceInterface $researchPageService = null,
         private readonly ?AuthFactory $authFactory = null,
+        private readonly ?ProfilePageServiceInterface $profilePageService = null,
     ) {}
 
     public function createItem(MenuItemDataDTO $payload): MenuItemDTO
@@ -517,6 +519,17 @@ final class MenuService implements MenuServiceInterface
         if (preg_match('~(?:^|/)research(?:/|$)~', $urlPath) === 1
             && $this->researchPageService instanceof ResearchPageServiceInterface
             && ! $this->researchPageService->isPubliclyAvailablePath($locale, $item->url)) {
+            return null;
+        }
+
+        // Profile links need the same treatment. The seeded "featured
+        // researcher" entries used to point at /research/researchers/{slug},
+        // which the check above covered; repointing them at the canonical
+        // /about/profile/{slug} moved them outside it, and an unpublished
+        // person's link stayed in the menu pointing at a 404.
+        if (preg_match('~(?:^|/)about/profile/([A-Za-z0-9-]+)/?$~', $urlPath, $profileMatch) === 1
+            && $this->profilePageService instanceof ProfilePageServiceInterface
+            && ! $this->profilePageService->hasPublicProfile($profileMatch[1])) {
             return null;
         }
 

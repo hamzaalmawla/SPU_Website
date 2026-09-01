@@ -9,7 +9,9 @@ use App\Enums\PublicationStatus;
 use App\Models\Faculty\Faculty;
 use App\Models\Person\FacultyMember;
 use App\Models\Person\Person;
+use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 /**
@@ -103,6 +105,22 @@ final class ProfileAvailabilityTest extends TestCase
         );
 
         $this->assertTrue($service->hasPublicProfile('shared-slug'));
+    }
+
+    public function test_navigation_drops_a_seeded_profile_link_when_the_person_is_unpublished(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        // The seeded "featured researcher" menu entries point at the canonical
+        // /about/profile/{slug} path. That path sits outside the research
+        // availability check that used to cover them, so without an explicit
+        // guard an unpublished person keeps a menu link to a 404.
+        $this->get('/ar')->assertOk()->assertSee('/ar/about/profile/mouhib-alnoukari', false);
+
+        Person::query()->where('slug', 'mouhib-alnoukari')->update(['is_enabled' => false]);
+        Cache::flush();
+
+        $this->get('/ar')->assertOk()->assertDontSee('/ar/about/profile/mouhib-alnoukari', false);
     }
 
     private function publishedFacultyMember(string $slug): FacultyMember
