@@ -416,7 +416,18 @@ final class LaunchValidateCommand extends Command
                 ? file_get_contents($staticPath)
                 : $runtimeContent;
             $hasSitemap = is_string($content) && str_contains($content, 'Sitemap: '.$canonicalUrl.'/sitemap.xml');
-            $indexingCorrect = is_string($content) && ($env === 'production'
+
+            // SitemapController::robots() branches on app()->environment(), so
+            // that - not $env - is what the served content must agree with.
+            // $env is the environment being validated FOR, and before cutover
+            // the two deliberately differ: we validate a production release
+            // while it runs as staging. Judging the content against $env made
+            // this check fail on every staging deploy, which is how a gate
+            // teaches people to ignore it.
+            $runtimeEnv = (string) app()->environment();
+            $runtimeIsProduction = $runtimeEnv === 'production';
+
+            $indexingCorrect = is_string($content) && ($runtimeIsProduction
                 ? str_contains($content, 'Allow: /') && ! str_contains($content, 'Disallow: /')
                 : str_contains($content, 'Disallow: /'));
             $valid = $response->getStatusCode() === 200 && $hasSitemap && $indexingCorrect;
@@ -425,9 +436,24 @@ final class LaunchValidateCommand extends Command
                 'robots.txt correctness',
                 $valid ? 'PASS' : 'FAIL',
                 $valid
-                    ? "Deploy-effective robots.txt has correct sitemap and indexing directives for {$env}"
-                    : 'robots.txt does not match the deploy-effective canonical sitemap or indexing policy',
+                    ? "Deploy-effective robots.txt matches the running environment ({$runtimeEnv})"
+                    : "robots.txt does not match the canonical sitemap or the indexing policy for {$runtimeEnv}",
             );
+
+            // The check above can be green while the site is still invisible to
+            // search engines. Say so, and say it loudest at cutover: the
+            // environment flip is what changes robots.txt from Disallow to
+            // Allow, and forgetting it means launching a university homepage
+            // that no search engine will list.
+            if ($env === 'production' && ! $runtimeIsProduction) {
+                $this->record(
+                    'robots.txt indexing policy',
+                    'WARN',
+                    "Validating for production while running as {$runtimeEnv}, so robots.txt correctly "
+                    ."serves Disallow: / and this domain is not indexable. At cutover set APP_ENV=production, "
+                    .'rebuild the config cache and re-run this gate.',
+                );
+            }
         } catch (\Throwable $e) {
             $this->record('robots.txt correctness', 'FAIL', $e->getMessage());
         }
@@ -484,13 +510,29 @@ final class LaunchValidateCommand extends Command
     private function checkAdminPreviewSafety(): void
     {
         try {
-            $response = app()->handle(HttpRequest::create('/ar/preview', 'GET'));
+            // Must be built from the canonical URL, like every other check
+            // here. A bare path produces a request for host "localhost", and
+            // EnforcePublicOrigin answers that with a 301 to the canonical host
+            // before the preview controller is ever reached - which this check
+            // used to report as "responded successfully without a token": a
+            // security failure that was really a redirect, on every deploy.
+            $canonicalUrl = rtrim((string) config('edge.canonical_url'), '/');
+            $response = app()->handle(HttpRequest::create($canonicalUrl.'/ar/preview', 'GET'));
+            $status = $response->getStatusCode();
+
+            if (in_array($status, [400, 403, 404], true)) {
+                $this->record('Admin preview safety', 'PASS', 'Preview route rejects missing token access');
+
+                return;
+            }
+
             $this->record(
                 'Admin preview safety',
-                in_array($response->getStatusCode(), [400, 403, 404], true) ? 'PASS' : 'FAIL',
-                in_array($response->getStatusCode(), [400, 403, 404], true)
-                    ? 'Preview route rejects missing token access'
-                    : 'Preview route responded successfully without a token',
+                'FAIL',
+                $status >= 300 && $status < 400
+                    ? "Preview route returned a {$status} redirect instead of rejecting the request; "
+                    .'the token check was never reached, so this proves nothing either way.'
+                    : "Preview route returned {$status} without a token; it must return 404.",
             );
         } catch (\Throwable $e) {
             $this->record('Admin preview safety', 'FAIL', $e->getMessage());

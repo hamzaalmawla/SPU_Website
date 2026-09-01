@@ -133,13 +133,27 @@ you where it stopped.
 | `Routes do not boot` | The release is broken. Roll back — see below. |
 | `advertises a different host` | `APP_CANONICAL_URL` changed but the sitemap was not regenerated. Re-run the deploy. |
 
-Three checks fail on staging and are **expected**:
+Two of these used to fail on every staging deploy and no longer do. Both were
+the gate being wrong, not the site:
 
-- **robots.txt correctness** — staging serves a disallow-all overlay by design.
-- **Admin preview safety** — a false positive from the validator's internal
-  request. Over real HTTP `/ar/preview` returns 404. Confirm with curl if you
-  want to be sure.
-- Anything mentioning content that only exists in production.
+- **robots.txt correctness** now judges the served file against the environment
+  the app is actually *running* as, not the one being validated for. Before
+  cutover those deliberately differ, and the old comparison went red every time.
+  In its place you will see a **WARN — robots.txt indexing policy**, saying the
+  domain is not indexable yet. That is correct and expected until cutover; it
+  turns green when `APP_ENV=production`. A warning does not fail the gate.
+- **Admin preview safety** was building its request for host `localhost`, so
+  `EnforcePublicOrigin` answered with a 301 before the token check ran, and the
+  gate reported that redirect as "responded successfully without a token". It
+  now uses the canonical URL like every other check, and a redirect is reported
+  as a redirect.
+
+Still expected to fail on staging: anything mentioning content that only exists
+in production.
+
+A gate that cries wolf on every deploy is worse than no gate, because people
+stop reading it. If a check fails for a reason that is not a defect, fix the
+check.
 
 ---
 
@@ -190,10 +204,53 @@ are queued and no worker is running, so every contact-form message and event
 registration is silently discarded while the sender sees a success page. This is
 the most damaging open defect on the site.
 
-**Compression.** nginx neither compresses nor forwards `Accept-Encoding`
-upstream, so the `mod_deflate` rules in `public/.htaccess` never fire and pages
-ship uncompressed. This needs the host. See `Docs/V2_PRE_CUTOVER_ACTIONS.md` §B2
-and §B4 for the request to send them.
+**Compression** is no longer one of them. nginx still neither compresses nor
+forwards `Accept-Encoding` upstream, so the `mod_deflate` rules in
+`public/.htaccess` never fire — but the application now compresses its own
+responses in `CompressPublicResponses`, which is what mattered: this origin
+degrades sharply above a ~24KB response and gzip puts every page back under
+that line. The host request in `Docs/V2_PRE_CUTOVER_ACTIONS.md` §B2 and §B4 is
+still worth sending, because compressing in PHP costs CPU that nginx would not,
+and static assets are still shipped uncompressed. It is no longer a blocker.
+
+**Checking whether it is working.** Not with `curl -I`. HEAD is skipped by
+design — a HEAD response must carry the same headers as GET with no body — so
+`curl -I` reports `X-Compressed: off` whether compression works or not. Use a
+GET that throws the body away:
+
+```bash
+curl -s --http1.1 -o /dev/null -D - -H 'Accept-Encoding: gzip' https://v2.spu.edu.sy/ar
+```
+
+`X-Compressed` says what the middleware decided: `negotiated` (the client asked
+and got it), `forced` (no `Accept-Encoding` arrived and forcing is on), `off`
+(declined — wrong method, wrong status, wrong content type, or the client did
+not ask), `skipped` (ran, but the body was too small or did not shrink). An
+absent header means the middleware did not run at all.
+
+If it reports `off` on every page, the likely cause is that nginx strips
+`Accept-Encoding` before PHP sees it. Confirm rather than assume: set
+`COMPRESSION_DIAGNOSTICS=true` in `/home/spuedu/spu_v2_app/.env`, rebuild the
+config cache (the next deploy does this, or run `config:clear` then
+`config:cache`), and read `X-Compress-Debug` from the same GET. Its `accept_encoding=` field is the
+answer. If it says `(absent)`, set `COMPRESS_WITHOUT_ACCEPT_ENCODING=true`;
+if it shows a real value, leave that flag off — the header is arriving and
+something else is declining. Turn diagnostics back off once read.
+
+One thing must be true before forcing is enabled: `X-Compress-Debug`'s `zlib=`
+field must read `(off)`. PHP's own `zlib.output_compression` compresses at the
+output layer *after* this middleware has set its headers, so the middleware
+cannot detect it, and the two together produce `gzip(gzip(body))` under a single
+`Content-Encoding` header — unreadable pages site-wide. `public/.user.ini`
+documents why it was removed.
+
+If the host does enable compression at the edge, set `COMPRESS_RESPONSES=false`
+and delete the middleware in the same change. Two compressors stacked produce
+`gzip(gzip(body))` under one `Content-Encoding` header — unreadable pages
+site-wide, triggered by someone else's config change rather than a deploy of
+ours. The middleware refuses to encode a body that already carries
+`Content-Encoding`, so the realistic failure is wasted CPU rather than
+breakage — but do not rely on that as the plan.
 
 ---
 

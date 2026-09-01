@@ -108,6 +108,54 @@ final class LaunchGateArtefactTest extends TestCase
         $this->assertStringContainsString('silently discarded', $output);
     }
 
+    /**
+     * The gate used to judge robots.txt against the environment it was asked to
+     * validate FOR rather than the one the app is running AS. Before cutover
+     * those differ on purpose, so this went red on every staging deploy — and a
+     * gate that is red every time is a gate nobody reads.
+     */
+    public function test_robots_is_judged_against_the_running_environment_not_the_target(): void
+    {
+        $output = $this->runValidate('production');
+
+        $this->assertStringContainsString('robots.txt correctness', $output);
+        $this->assertStringNotContainsString(
+            'robots.txt does not match',
+            $output,
+            'Serving Disallow: / while running as testing is correct, not a failure.',
+        );
+    }
+
+    /**
+     * Green above is not the whole truth: the site is invisible to search
+     * engines until APP_ENV flips. The gate has to say that out loud, because
+     * forgetting the flip launches a university homepage nothing will index.
+     */
+    public function test_it_warns_that_the_domain_is_not_indexable_before_cutover(): void
+    {
+        $output = $this->runValidate('production');
+
+        $this->assertStringContainsString('robots.txt indexing policy', $output);
+        $this->assertStringContainsString('APP_ENV=production', $output);
+    }
+
+    /**
+     * The check built a request for host "localhost", so EnforcePublicOrigin
+     * returned a 301 before the preview controller ran, and the gate called
+     * that redirect "responded successfully without a token" — a security
+     * failure reported on every deploy that was really a misaddressed request.
+     */
+    public function test_preview_safety_is_checked_against_the_canonical_host(): void
+    {
+        config()->set('edge.enforce_canonical_host', true);
+        config()->set('edge.canonical_url', 'https://v2.spu.edu.sy');
+
+        $output = $this->runValidate();
+
+        $this->assertStringContainsString('Preview route rejects missing token access', $output);
+        $this->assertStringNotContainsString('responded successfully without a token', $output);
+    }
+
     private function runValidate(string $environment = 'staging'): string
     {
         Artisan::call('launch:validate', ['--environment' => $environment]);
