@@ -175,6 +175,19 @@ log "Signalling queue workers to restart"
 
 # Also his. Without it every deploy hands the first visitors a cold cache, which
 # on this host is the most expensive request the site ever serves.
+# Warming does not overwrite. CacheWarmCommand goes through remember(), which
+# returns whatever is already stored - so warming a cache full of pre-deploy
+# HTML is a no-op, and visitors kept seeing the previous release for up to the
+# full hour of public_page_ttl after every deploy. Discovered when a fix was
+# verifiably deployed, verifiably present in the deployed files, and still
+# absent from the served page.
+#
+# Only the default store is cleared. The webhook replay store and the rate
+# limiter are separate stores (config/cache.php) and are deliberately untouched:
+# clearing those would drop replay protection and reset limits on deploy.
+log "Clearing derived caches so warming actually rebuilds"
+(cd "${APP}" && "${PHP}" artisan cache:clear) || true
+
 log "Warming caches"
 (cd "${APP}" && "${PHP}" artisan cache:warm --include-sitemap) || true
 
