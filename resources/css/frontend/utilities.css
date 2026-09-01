@@ -31,7 +31,7 @@
 }
 
 .content-media-image {
-    object-fit: contain;
+    object-fit: cover;
     object-position: center;
     background-color: #f1f5f9;
 }

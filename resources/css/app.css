@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 @theme {
-    --breakpoint-nav: 1440px;
+    --breakpoint-nav: 1480px;
     --shadow-card-sm: 0 4px 20px rgba(0, 0, 0, 0.04);
     --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.06);
     --shadow-card-elevated: 0 15px 35px rgba(20, 30, 70, 0.08);
