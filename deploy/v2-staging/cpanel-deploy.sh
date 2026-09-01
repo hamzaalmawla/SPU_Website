@@ -184,4 +184,13 @@ else
     }
 fi
 
+# The tarball-based deployment extracts into .release/ inside the repository,
+# which leaves the working tree dirty - and cPanel refuses to deploy a repository
+# with uncommitted changes, so the NEXT deploy is blocked by the last one. Clean
+# up after ourselves. Harmless when deploying from a normal clone, where this
+# directory never exists.
+if [[ -d "${SOURCE}/../.release" && -f "${SOURCE}/../deploy.sh" ]]; then
+    rm -rf "${SOURCE}/../.release"
+fi
+
 log "Deployed $(cd "${SOURCE}" && git rev-parse --short HEAD 2>/dev/null || echo 'unknown')"

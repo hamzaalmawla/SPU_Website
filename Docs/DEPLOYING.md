@@ -1,0 +1,205 @@
+# Deploying to v2.spu.edu.sy
+
+How a change on `dev` reaches the server, what runs when it does, and the things
+that have gone wrong before.
+
+Read [One-time setup](#one-time-setup) first — **push-to-deploy does not work
+yet.** Until someone completes it, pushing to `dev` changes nothing on the
+server.
+
+---
+
+## Current state
+
+The release deployed on 1 September 2026 was pushed by hand: a repository was
+built locally, uploaded through the cPanel file API, and deployed. It worked,
+but it is a snapshot. The cPanel repository has **no connection to GitHub**, so
+it will never see anything you push.
+
+| | |
+|---|---|
+| cPanel repository | `/home/spuedu/repositories/spu-release2` |
+| Connected to GitHub | **No** |
+| Deployed commit | `27044de` (built from `54bba23`) |
+| What `git push` does today | Nothing on the server |
+
+Fix that once, with the setup below, and every later release is two steps.
+
+---
+
+## One-time setup
+
+Needs a GitHub personal access token with `repo` scope. Do this in a browser so
+the token never leaves it.
+
+1. **GitHub** → Settings → Developer settings → Personal access tokens → generate
+   one with `repo` scope. Copy it.
+2. **cPanel → Git Version Control.** Delete the two existing entries, `SPU
+   Release` and `SPU Deploy` — they are hand-built and will only confuse things.
+3. **File Manager** → delete these leftover directories under
+   `/home/spuedu/repositories/`: `spu-deploy`, `spu-release2`, `spu-v2`,
+   `spu-website`, `spu_website`, `SPU_Website`, and the stray `probe.txt`.
+4. **Git Version Control → Create.** Turn on **Clone a Repository**.
+   - Clone URL: `https://github.com/hamzaalmawla/SPU_Website.git`
+   - Repository Path: `repositories/spu-v2`
+   - Name: anything
+5. When GitHub asks for credentials, use your username and the **token** as the
+   password. Not your account password — GitHub stopped accepting those.
+6. Open **Manage** and set the checked-out branch to `dev`.
+
+You should now see `.cpanel.yml` recognised and **Deploy HEAD Commit**
+available.
+
+---
+
+## Deploying a change
+
+### 1. Rebuild the front-end if you touched CSS, JS or Blade
+
+```bash
+php artisan view:clear && npm run build
+git add public/build
+```
+
+`public/build` is committed on purpose — there is no Node on the server, so the
+repository has to carry its own assets.
+
+**`view:clear` first is not optional.** Tailwind scans
+`storage/framework/views/*.php`, so whatever compiled Blade happens to be lying
+around on your machine ends up in the stylesheet. Skipping it produced a 326 KB
+CSS file where a clean build produces 300 KB, and it makes the output hash
+differ between developers for no reason.
+
+### 2. Push
+
+```bash
+git push origin dev
+```
+
+### 3. Deploy
+
+**cPanel → Git Version Control → Manage → Pull or Deploy → Update from Remote**,
+then **Deploy HEAD Commit**.
+
+Watch the log. It ends with `▸ Deployed <commit>`.
+
+---
+
+## What the deploy actually does
+
+`.cpanel.yml` runs `deploy/v2-staging/cpanel-deploy.sh`, which:
+
+1. **Checks preconditions** and refuses to start if any fail — missing `.env`,
+   missing web root, missing asset manifest. Each of these has taken the site
+   down at least once.
+2. **Takes the site down** (`artisan down`) around the destructive part. Between
+   the source sync and the migration, the code and the database schema disagree
+   while PHP is still serving.
+3. **Publishes the front-end build** first, and without `--delete`. Vite
+   content-hashes filenames, and the page cache holds rendered HTML for an hour —
+   removing the old build would strip the stylesheet out from under every page
+   already cached.
+4. **Syncs the source**: `app bootstrap config database lang resources routes`.
+   Never `.env`, never `storage/`, never `bootstrap/cache`.
+5. **Runs composer**, then deletes the compiled package manifest so it is
+   regenerated here rather than inherited.
+6. **Runs migrations** (`--force`).
+7. **Rebuilds framework caches** (`artisan optimize`).
+8. **Rebuilds the search index** and **regenerates the static sitemap**. Neither
+   is in git; neither appears by deploying code. Miss them and the site comes up
+   with a search box that finds nothing.
+9. **Publishes SVG assets**, **restarts queue workers**, **warms caches**.
+10. **Verifies**: proves the routes still boot, then runs `launch:validate`.
+
+On staging a failing gate is a warning. Set `SPU_DEPLOY_ENV=production` and it
+becomes fatal — the check that catches the noindex trap lives in there.
+
+---
+
+## Reading a failed deploy
+
+The log is at `/home/spuedu/.cpanel/logs/vc_*_git_deploy.log`, readable in File
+Manager. The script prints a `▸` line before each stage, so the last one tells
+you where it stopped.
+
+| Message | What it means |
+|---|---|
+| `No Vite manifest in the release` | You did not commit `public/build`. Rebuild and commit. |
+| `No vendor/autoload.php` | Composer never ran or failed. Read the lines above it. |
+| `.env is missing` | Someone deleted it. It is not in git and never should be. Restore from the backup in `/home/spuedu/.spu_backups/`. |
+| `Routes do not boot` | The release is broken. Roll back — see below. |
+| `advertises a different host` | `APP_CANONICAL_URL` changed but the sitemap was not regenerated. Re-run the deploy. |
+
+Three checks fail on staging and are **expected**:
+
+- **robots.txt correctness** — staging serves a disallow-all overlay by design.
+- **Admin preview safety** — a false positive from the validator's internal
+  request. Over real HTTP `/ar/preview` returns 404. Confirm with curl if you
+  want to be sure.
+- Anything mentioning content that only exists in production.
+
+---
+
+## Rolling back
+
+Both sites live on the same account, so this is not a DNS change:
+
+- **Bad code:** deploy the previous commit. In **Manage**, check out the earlier
+  commit and deploy again.
+- **Worse:** the last known-good tree is in `/home/spuedu/.spu_backups/`.
+  `Docs/V2_PRE_CUTOVER_ACTIONS.md` §E3 explains why restoring from a tar archive
+  went wrong once and why `git archive` is the reliable source.
+
+---
+
+## Things that have actually bitten us
+
+**Never ship `bootstrap/cache/`.** It carries your machine's package manifest,
+which lists dev packages the server does not have, and every page returns 500.
+The deploy script excludes it and regenerates it on the server.
+
+**Anchor every `tar --exclude`.** `--exclude=public` matches *every* path segment
+named `public`, including `resources/views/public/`. That silently produced a
+backup missing 118 view files.
+
+**`/images/*.svg` and the legacy trees share a namespace.** `public/.htaccess`
+blocks markup and SVG under the prefixes where old uploads are mounted — but
+`/images/` is also where this application keeps its own icons. The rule needs its
+`RewriteCond %{REQUEST_FILENAME} !-f` guard, or all 37 icons 404 while the files
+sit there perfectly intact. This cost a lot of time to find.
+
+**A menu item that 404s is the worst kind of bug** — visitors read it as "this
+site is broken". Anything that decides whether to render a link must agree with
+what the page actually does. `ProfileAvailabilityTest` states that invariant;
+keep it green.
+
+**Do not add a cron or web endpoint to run deploy commands.** `REM-07` prohibits
+it and cPanel's Git deployment is the approved mechanism.
+
+---
+
+## Still outstanding on the server
+
+Two things this deploy did not fix, both one line, neither in code:
+
+**`QUEUE_CONNECTION=sync`** in `/home/spuedu/spu_v2_app/.env`. Seven mailables
+are queued and no worker is running, so every contact-form message and event
+registration is silently discarded while the sender sees a success page. This is
+the most damaging open defect on the site.
+
+**Compression.** nginx neither compresses nor forwards `Accept-Encoding`
+upstream, so the `mod_deflate` rules in `public/.htaccess` never fire and pages
+ship uncompressed. This needs the host. See `Docs/V2_PRE_CUTOVER_ACTIONS.md` §B2
+and §B4 for the request to send them.
+
+---
+
+## If push-to-deploy cannot be set up
+
+If the GitHub token is genuinely unavailable, the release can still be pushed by
+hand the way the 1 September one was: build a small git repository whose working
+tree is `.cpanel.yml`, `deploy.sh` and a `release.tar.gz`, upload it through the
+cPanel file API, register it, and deploy. It works, but every release is a manual
+repackage and the repository drifts from `dev` immediately.
+
+Prefer the clone. It is five minutes once.
