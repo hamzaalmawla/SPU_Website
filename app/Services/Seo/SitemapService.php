@@ -641,6 +641,19 @@ final class SitemapService implements SitemapServiceInterface
         return $xml;
     }
 
+    /**
+     * Every section is listed, including ones that currently hold no URLs.
+     *
+     * sitemap-news.xml is empty today: every legacy article is imported
+     * noindex pending editorial review, and isNoindex() keeps those out. An
+     * empty <urlset> is valid, and Search Console reporting "0 discovered URLs"
+     * against it is the honest state of the content.
+     *
+     * Skipping empty sections here would mean this method could no longer
+     * answer without querying each one, and the index is deliberately the cheap
+     * document - the same reason <lastmod> is omitted above. Crawlers fetch it,
+     * and this host has five PHP workers.
+     */
     public function sectionDocumentNames(): array
     {
         $documents = [];

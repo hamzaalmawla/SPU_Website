@@ -179,6 +179,51 @@ Both sites live on the same account, so this is not a DNS change:
 
 ---
 
+## Verifying a deploy from outside: nginx serves stale static files
+
+nginx caches static responses on this host, and it will hand you a copy from
+before the deploy. This is not theoretical — checking the sitemap immediately
+after the 2 September deploy returned the pre-deploy file, 3,416 entries and a
+`Last-Modified` 44 minutes old, and it looked exactly like a change that had not
+taken effect. The same URL with a query string appended returned the real
+current file.
+
+```bash
+curl -s "https://v2.spu.edu.sy/sitemaps/sitemap-news.xml?b=$RANDOM" | grep -c '<loc>'
+```
+
+Add a unique query parameter to **any** static file you are checking after a
+deploy — sitemaps, `build/manifest.json`, CSS, JS. It costs nothing and it is
+the difference between verifying a deploy and verifying a cache. PHP responses
+are not affected; they are not cached by nginx.
+
+Note this is the opposite of the rule for measuring *pages*: there, a query
+string does nothing (`CachePublicPages` drops unknown parameters) and you need
+`-H 'Cache-Control: no-cache'`. Static files are served by the web server and
+never reach that middleware. See `Docs/PERFORMANCE_MEASUREMENT.md`.
+
+---
+
+## Why `sitemap-news.xml` advertises zero URLs
+
+It is correct, and it should not be "fixed" by loosening the sitemap.
+
+Every legacy news article is imported with `robots: noindex,nofollow` because
+the import is editorially gated, and since 2 September the sitemap does not
+advertise URLs that render `noindex` — it used to advertise 3,416 of them, three
+quarters of the whole document. Google Search Console will report this child
+sitemap as having 0 discovered URLs. That is the honest state of the content,
+not a defect in the sitemap.
+
+Articles enter it automatically as editors review them and set `index,follow`.
+There is no second switch to flip.
+
+The empty child is still listed in the index on purpose. Omitting it would mean
+the index could no longer be rendered without querying every section, and that
+document is deliberately cheap because crawlers fetch it.
+
+---
+
 ## Files the deploy does not touch
 
 The deploy syncs `app bootstrap config database lang resources routes` into the
