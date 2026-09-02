@@ -1,7 +1,9 @@
 @import 'tailwindcss';
 
 @theme {
-    --breakpoint-nav: 1480px;
+    /* Where the full menu gives way to the hamburger. 1480 put a 13" laptop
+       and most Windows laptops on the mobile menu; see navigation.css. */
+    --breakpoint-nav: 1280px;
     --shadow-card-sm: 0 4px 20px rgba(0, 0, 0, 0.04);
     --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.06);
     --shadow-card-elevated: 0 15px 35px rgba(20, 30, 70, 0.08);
