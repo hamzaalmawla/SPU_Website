@@ -498,43 +498,174 @@ async function measureOnPixels(S, sleep) {
   await sleep(250);
 
   // 1. The control.
-  const controlRect = await rectOf('window.__spuControl');
+  //
+  // An organic one is always preferred: a real element, placed by the real
+  // layout, whose contrast a completely separate method already resolved. That
+  // is independent evidence, and it is what caught all three flaws this method
+  // has had — every one of them about WHERE an element sits rather than about
+  // arithmetic.
+  //
+  // Where a page has none, a synthetic control is built instead: an opaque
+  // swatch of known colours placed ON THE HERO IMAGE, at the same spot as the
+  // text about to be measured. That placement is the whole point. A swatch
+  // floated over the white body would confirm only that decoding and luminance
+  // maths work, which was never in doubt; over the hero it exercises the clip
+  // coordinates, the two-capture diff and the glyph threshold under exactly the
+  // conditions the real measurements run in.
+  //
+  // It is weaker evidence, and the output labels it as such — a reader has to be
+  // able to tell a page checked against independent evidence from one checked
+  // against our own arithmetic.
+  let controlRect = await rectOf('window.__spuControl');
+  let controlKind = 'organic';
+
   if (!controlRect || controlRect.expected === null) {
-    return { trusted: false, reason: 'no control element was available on this page' };
+    const { result: built } = await S('Runtime.evaluate', {
+      returnByValue: true,
+      expression: `(() => {
+        const target = (window.__spuOverImage || [])[0];
+        if (!target) return false;
+        const r = target.el.getBoundingClientRect();
+
+        const FG = [255, 255, 255];
+        const BG = [18, 58, 94];
+        const lum = (rgb) => {
+          const [r2, g2, b2] = rgb.map((v) => {
+            const c = v / 255;
+            return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+          });
+          return 0.2126 * r2 + 0.7152 * g2 + 0.0722 * b2;
+        };
+        const L1 = lum(FG), L2 = lum(BG);
+        const expected = (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05);
+
+        const el = document.createElement('span');
+        el.id = 'spu-synthetic-control';
+        el.textContent = 'Control ABCDEFGH 12345678';
+        el.style.cssText = [
+          'position:fixed',
+          'left:' + Math.max(4, Math.round(r.left)) + 'px',
+          'top:' + Math.max(4, Math.round(r.top)) + 'px',
+          'z-index:2147483647',
+          'background:rgb(18, 58, 94)',
+          'color:rgb(255, 255, 255)',
+          'font:700 20px/1.3 system-ui, sans-serif',
+          'padding:8px 12px',
+          'margin:0',
+          'border:0',
+          'text-shadow:none',
+        ].join(';');
+        document.body.appendChild(el);
+
+        window.__spuControl = { el, color: 'rgb(255, 255, 255)', expected, synthetic: true };
+        return true;
+      })()`,
+    });
+
+    if (!built.value) {
+      return { trusted: false, reason: 'no control element was available on this page' };
+    }
+
+    await sleep(150);
+    controlKind = 'synthetic';
+    controlRect = await rectOf('window.__spuControl');
+
+    if (!controlRect || controlRect.expected === null) {
+      await S('Runtime.evaluate', { expression: "document.getElementById('spu-synthetic-control')?.remove()" });
+      return { trusted: false, reason: 'the synthetic control could not be placed' };
+    }
   }
+
+  const dropSynthetic = async () => {
+    if (controlKind === 'synthetic') {
+      await S('Runtime.evaluate', { expression: "document.getElementById('spu-synthetic-control')?.remove()" });
+    }
+  };
+
   const controlMeasured = await worstRatioBehind('window.__spuControl', controlRect);
+
   if (process.env.AUDIT_VERBOSE && controlMeasured) {
-    console.log(`      [control] ${controlRect.tag} "${controlRect.label}" `
+    console.log(`      [control:${controlKind}] ${controlRect.tag} "${controlRect.label}" `
       + `computed=${controlRect.expected.toFixed(2)} pixels-p5=${controlMeasured.p5} worst=${controlMeasured.worst}`);
   }
+
   if (!controlMeasured) {
+    await dropSynthetic();
     return { trusted: false, reason: 'the control could not be photographed' };
   }
-  const drift = Math.abs(controlMeasured.worst - controlRect.expected);
+
+  // Compared on the percentile, not the single darkest pixel: the control sits
+  // on a solid colour, so every glyph shares one background and the two are the
+  // same number — except at an antialiased edge, which must not fail an
+  // otherwise sound method.
+  const drift = Math.abs(controlMeasured.p5 - controlRect.expected);
   if (drift > 0.35) {
+    await dropSynthetic();
     return {
       trusted: false,
-      reason: `control disagreed: computed style says ${controlRect.expected.toFixed(2)}:1, `
-        + `pixels say ${controlMeasured.worst}:1 on ${controlRect.tag} "${controlRect.label}"`,
+      reason: `${controlKind} control disagreed: computed says ${controlRect.expected.toFixed(2)}:1, `
+        + `pixels say ${controlMeasured.p5}:1 on ${controlRect.tag} "${controlRect.label}"`,
     };
   }
 
+  // The swatch must not sit over anything it is about to measure.
+  await dropSynthetic();
+
   // 2. Only now, the elements computed style could not answer for.
+  //
+  // Sampled across several rounds, because hero backgrounds move. The homepage
+  // rotates its photograph every five seconds, so a single reading is a sample
+  // of a moving target — the same heading measured 1.92, 2.17, 2.39 and 2.44 on
+  // four consecutive runs, and reporting any one of those as "the" contrast
+  // would be reporting which slide happened to be up.
+  //
+  // The requirement has to hold on every slide, so the judgement is the worst
+  // round. The best is reported alongside it whenever they differ, because a
+  // wide spread is itself the finding: it says the problem is one photograph
+  // rather than the design.
   const { result: count } = await S('Runtime.evaluate', {
     returnByValue: true, expression: 'window.__spuOverImage.length',
   });
 
-  const measured = [];
-  for (let i = 0; i < count.value; i++) {
-    const path = `window.__spuOverImage[${i}]`;
-    const rect = await rectOf(path);
-    if (!rect) continue;
-    const r = await worstRatioBehind(path, rect);
-    if (!r) continue;
-    measured.push({ ...rect, worst: r.worst, p5: r.p5, samples: r.samples });
+  const ROUNDS = 3;
+  const ROUND_GAP_MS = 2500;
+  const accumulated = new Map();
+
+  for (let round = 0; round < ROUNDS; round++) {
+    if (round > 0) await sleep(ROUND_GAP_MS);
+
+    for (let i = 0; i < count.value; i++) {
+      const path = `window.__spuOverImage[${i}]`;
+      const rect = await rectOf(path);
+      if (!rect) continue;
+      const r = await worstRatioBehind(path, rect);
+      if (!r) continue;
+
+      const seen = accumulated.get(i);
+      if (!seen) {
+        accumulated.set(i, { ...rect, low: r.p5, high: r.p5, worstPixel: r.worst, samples: r.samples, rounds: 1 });
+      } else {
+        seen.low = Math.min(seen.low, r.p5);
+        seen.high = Math.max(seen.high, r.p5);
+        seen.worstPixel = Math.min(seen.worstPixel, r.worst);
+        seen.samples = Math.max(seen.samples, r.samples);
+        seen.rounds++;
+      }
+    }
   }
 
-  return { trusted: true, control: { expected: controlRect.expected, measured: controlMeasured.worst }, measured };
+  const measured = [...accumulated.values()].map((m) => ({
+    ...m,
+    p5: m.low,
+    varies: Math.round((m.high - m.low) * 100) / 100,
+    worst: m.worstPixel,
+  }));
+
+  return {
+    trusted: true,
+    control: { expected: controlRect.expected, measured: controlMeasured.p5, kind: controlKind },
+    measured,
+  };
 }
 
 // ------------------------------------------------------------------- the run
@@ -674,10 +805,13 @@ async function main() {
                   + `required=${m.required} px=${m.samples} color=${m.color}`);
               }
               if (m.p5 + 0.02 < m.required) {
+                const spread = m.varies >= 0.15
+                  ? `, varying to ${m.high}:1 as the hero image rotates`
+                  : '';
                 report(route, vp.name, 'contrast over image',
-                  `${m.p5}:1 across the worst twentieth of its letters (needs ${m.required}:1; `
-                  + `single worst pixel ${m.worst}:1) — ${m.color} behind ${m.tag} "${m.label}", `
-                  + `${m.samples} glyph pixels measured`);
+                  `${m.p5}:1 across the worst twentieth of its letters (needs ${m.required}:1`
+                  + `${spread}) — ${m.color} behind ${m.tag} "${m.label}", `
+                  + `${m.samples} glyph pixels over ${m.rounds} rounds`);
               }
             }
           }
@@ -798,8 +932,17 @@ async function main() {
       console.log('  differenced to find where the letters actually are, and the text colour');
       console.log('  compared against the worst background pixel under a letter — not the worst');
       console.log('  pixel in its box, which is empty space past the end of the last line.');
-      console.log(`  Method verified against ${pixelControls.length} control element(s) whose contrast both`);
-      console.log(`  methods can resolve; they agreed to within ${worstDrift.toFixed(2)} of a ratio point.`);
+      const organic = pixelControls.filter((c) => c.kind === 'organic').length;
+      const synthetic = pixelControls.length - organic;
+      console.log(`  Method verified on each page against a control it must reproduce; they agreed`);
+      console.log(`  to within ${worstDrift.toFixed(2)} of a ratio point.`);
+      console.log(`    ${organic} page(s) gated by a real element whose contrast a separate method had`);
+      console.log('      already resolved — independent evidence.');
+      if (synthetic) {
+        console.log(`    ${synthetic} page(s) had no such element, so a known swatch was placed on the hero`);
+        console.log('      image and measured there. Weaker: it proves the pixel path works under');
+        console.log('      the same conditions, not that a second method agrees.');
+      }
     }
     if (unmeasuredOverImages) {
       console.log(`  ${unmeasuredOverImages} could NOT be measured, and remain a gap needing a human eye:`);

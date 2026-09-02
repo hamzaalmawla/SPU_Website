@@ -223,34 +223,53 @@ missing an `alt` attribute, no control without an accessible name, and one `h1`
 and a `<main>` landmark per page.
 
 Contrast over background images, measured 2026-09-02. 33 elements sit on a
-photograph, where computed style cannot answer. 10 were measured from pixels:
-the element is photographed as rendered and again with its glyphs transparent,
-the two differenced to find the letters, and the text colour compared against
-the background under them. Judged on the fifth percentile of those pixels, since
-one window reflection under one letter is not what "hard to read" means. The
-method is gated on a control element whose contrast both methods can resolve and
-reports nothing unless they agree; `tests/browser/fixtures/` proves it can still
-fail. 22 remain unmeasured because no control was available on those pages.
+photograph, where computed style cannot answer. **30 are now measured** from
+pixels: the element is photographed as rendered and again with its glyphs
+transparent, the two differenced to find the letters, and the text colour
+compared against the background under them. Judged on the fifth percentile,
+since one window reflection under one letter is not what "hard to read" means.
 
-Fixed by this: the homepage hero buttons, 2.98:1 to 9.53:1, by adding a
+Sampled over three rounds, because hero backgrounds move — the homepage rotates
+its photograph every five seconds. The judgement is the worst round, since the
+requirement has to hold on every slide.
+
+Every page is gated on a control the method must reproduce before any of its
+numbers are reported. Where a real element with resolvable contrast exists on
+the page it is used, which is independent evidence; where none does, a swatch of
+known colours is placed on the hero image itself and measured there, which
+proves the pixel path works under the same conditions but is not a second
+opinion. The output labels which was used. `tests/browser/fixtures/` proves the
+check can still fail — it could not, silently, until that fixture found it.
+
+Fixed by this work: the homepage hero buttons, 2.98:1 to 9.53:1, via a
 directional scrim under the text column.
 
-**Open, and a design decision rather than a defect to fix quietly.** Four
-headings and two links still measure below WCAG AA over their hero photographs:
+**Open, and a design decision rather than a defect to fix quietly:**
 
-| Element | Measured (5th pct) | Needs |
+| Element | Measured (5th pct, worst round) | Needs |
 | --- | --- | --- |
-| Homepage h1, AR and EN | 2.44:1 | 3:1 |
-| Faculties hub h1, AR and EN | 2.72–2.86:1 | 3:1 |
-| "Explore Campus Map" link, AR and EN | 1.85–1.93:1 | 4.5:1 |
+| Homepage h1, AR and EN | 1.88–2.03:1, varying to 2.18:1 by slide | 3:1 |
+| Homepage lead paragraph, EN | **1.28:1, varying to 12.01:1 by slide** | 4.5:1 |
+| News page h1 and lead, AR and EN | 2.37:1, stable | 3:1 |
+| Faculties hub h1, AR and EN | 2.72–2.86:1, stable | 3:1 |
+| "Explore Campus Map" link, AR and EN | 1.85–1.92:1, stable | 4.5:1 |
 
-The homepage heading moved from 2.07:1 to 2.44:1 by deepening the scrim, and
-reaching 3:1 that way needs it close to opaque — which removes the photograph
-the hero exists to show. The faculties hub is worse placed: its left half is a
-panoramic gallery that the design deliberately keeps visible, and the text sits
-on it. So the options are a darker hero image, a narrower text column that stays
-over the dark region, or a local scrim behind the text block only. All three
-change how the pages look, which makes it a call for whoever owns the design.
+The homepage row is the informative one. A spread from 1.28:1 to 12.01:1 on the
+same element means **specific hero photographs are the problem, not the hero
+design** — on some slides the same text is comfortably legible. That points at
+replacing or darkening the offending images rather than reworking the component.
+
+The stable rows are different: `/news` uses the shared `.page-hero` scrim, which
+fades to nothing over 16rem and is simply too light for its photograph. The
+faculties hub places its text over the panoramic gallery the design deliberately
+keeps visible.
+
+Deepening the homepage scrim further was tried and abandoned: it moved the
+heading from 2.07:1 to only 2.44:1 and reaching 3:1 that way needs the wash near
+opaque, which removes the photograph the hero exists to show. So the options are
+darker or replaced images, a narrower text column that stays over the dark
+region, or a scrim behind the text block alone. All change how the pages look,
+which makes them a call for whoever owns the design.
 
 Re-measure after any of them with `node tests/browser/accessibility-audit.mjs`.
 
