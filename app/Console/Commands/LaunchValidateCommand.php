@@ -416,45 +416,44 @@ final class LaunchValidateCommand extends Command
             $content = is_file($staticPath)
                 ? file_get_contents($staticPath)
                 : $runtimeContent;
-            $hasSitemap = is_string($content) && str_contains($content, 'Sitemap: '.$canonicalUrl.'/sitemap.xml');
+            // $env is what this deployment is FOR, and that - not
+            // app()->environment() - is the right basis for "should this host
+            // invite crawling". They differ on purpose right now: v2 runs with
+            // APP_ENV=production so it behaves like the real thing, while the
+            // docroot carries a Disallow overlay because it must not be indexed
+            // before cutover. An earlier version of this check compared against
+            // the runtime environment and so demanded Allow: / on a host whose
+            // whole job is to stay out of the index.
+            $wantsIndexing = $env === 'production';
 
-            // SitemapController::robots() branches on app()->environment(), so
-            // that - not $env - is what the served content must agree with.
-            // $env is the environment being validated FOR, and before cutover
-            // the two deliberately differ: we validate a production release
-            // while it runs as staging. Judging the content against $env made
-            // this check fail on every staging deploy, which is how a gate
-            // teaches people to ignore it.
-            $runtimeEnv = (string) app()->environment();
-            $runtimeIsProduction = $runtimeEnv === 'production';
-
-            $indexingCorrect = is_string($content) && ($runtimeIsProduction
+            $indexingCorrect = is_string($content) && ($wantsIndexing
                 ? str_contains($content, 'Allow: /') && ! str_contains($content, 'Disallow: /')
                 : str_contains($content, 'Disallow: /'));
-            $valid = $response->getStatusCode() === 200 && $hasSitemap && $indexingCorrect;
+
+            // A Sitemap line is only meaningful on a host that invites
+            // crawling. Requiring one on a disallow-all staging overlay failed
+            // this check for the absence of a line that would do nothing.
+            $hasSitemap = ! $wantsIndexing
+                || (is_string($content) && str_contains($content, 'Sitemap: '.$canonicalUrl.'/sitemap.xml'));
+
+            $servedOk = $response->getStatusCode() === 200;
+            $valid = $servedOk && $hasSitemap && $indexingCorrect;
 
             $this->record(
                 'robots.txt correctness',
                 $valid ? 'PASS' : 'FAIL',
-                $valid
-                    ? "Deploy-effective robots.txt matches the running environment ({$runtimeEnv})"
-                    : "robots.txt does not match the canonical sitemap or the indexing policy for {$runtimeEnv}",
+                match (true) {
+                    $valid && $wantsIndexing => 'robots.txt invites crawling and advertises '.$canonicalUrl.'/sitemap.xml',
+                    $valid => 'robots.txt disallows crawling, which is correct for a '.$env.' host',
+                    ! $servedOk => 'robots.txt returned '.$response->getStatusCode().' instead of 200',
+                    ! $indexingCorrect && $wantsIndexing => 'robots.txt does not invite crawling, and this is a production '
+                        .'deploy. A live site behind Disallow: / disappears from search results. The staging overlay at '
+                        .$staticPath.' has to be deleted at cutover - see Docs/V2_PRE_CUTOVER_ACTIONS.md section C.',
+                    ! $indexingCorrect => 'robots.txt does not carry Disallow: /, so this non-production host is indexable',
+                    default => 'robots.txt does not advertise '.$canonicalUrl.'/sitemap.xml',
+                },
             );
 
-            // The check above can be green while the site is still invisible to
-            // search engines. Say so, and say it loudest at cutover: the
-            // environment flip is what changes robots.txt from Disallow to
-            // Allow, and forgetting it means launching a university homepage
-            // that no search engine will list.
-            if ($env === 'production' && ! $runtimeIsProduction) {
-                $this->record(
-                    'robots.txt indexing policy',
-                    'WARN',
-                    "Validating for production while running as {$runtimeEnv}, so robots.txt correctly "
-                    .'serves Disallow: / and this domain is not indexable. At cutover set APP_ENV=production, '
-                    .'rebuild the config cache and re-run this gate.',
-                );
-            }
         } catch (\Throwable $e) {
             $this->record('robots.txt correctness', 'FAIL', $e->getMessage());
         }

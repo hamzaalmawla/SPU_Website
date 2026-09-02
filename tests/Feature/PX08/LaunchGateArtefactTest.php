@@ -109,34 +109,64 @@ final class LaunchGateArtefactTest extends TestCase
     }
 
     /**
-     * The gate used to judge robots.txt against the environment it was asked to
-     * validate FOR rather than the one the app is running AS. Before cutover
-     * those differ on purpose, so this went red on every staging deploy — and a
-     * gate that is red every time is a gate nobody reads.
+     * v2 runs with APP_ENV=production so it behaves like the real thing, while
+     * its docroot carries a Disallow overlay because it must not be indexed
+     * before cutover. Judging the file against the runtime environment demanded
+     * Allow: / from a host whose entire job is to stay out of the index, and so
+     * failed on every staging deploy. What the file must agree with is the
+     * environment the deploy is FOR.
      */
-    public function test_robots_is_judged_against_the_running_environment_not_the_target(): void
+    public function test_a_staging_deploy_is_not_asked_to_invite_crawling(): void
     {
-        $output = $this->runValidate('production');
+        $output = $this->runValidate('staging');
 
         $this->assertStringContainsString('robots.txt correctness', $output);
-        $this->assertStringNotContainsString(
-            'robots.txt does not match',
-            $output,
-            'Serving Disallow: / while running as testing is correct, not a failure.',
-        );
+        $this->assertStringNotContainsString('[FAIL] robots.txt correctness', $output);
     }
 
     /**
-     * Green above is not the whole truth: the site is invisible to search
-     * engines until APP_ENV flips. The gate has to say that out loud, because
-     * forgetting the flip launches a university homepage nothing will index.
+     * The trap this check exists to catch. The overlay is deleted by hand at
+     * cutover (Docs/V2_PRE_CUTOVER_ACTIONS.md section C); if it is forgotten,
+     * the live university site serves Disallow: / and leaves the search index.
+     * Nothing else in the pipeline would notice.
      */
-    public function test_it_warns_that_the_domain_is_not_indexable_before_cutover(): void
+    public function test_a_production_deploy_still_behind_the_staging_overlay_fails_loudly(): void
     {
-        $output = $this->runValidate('production');
+        $overlay = public_path('robots.txt');
+        $existing = is_file($overlay) ? file_get_contents($overlay) : null;
 
-        $this->assertStringContainsString('robots.txt indexing policy', $output);
-        $this->assertStringContainsString('APP_ENV=production', $output);
+        file_put_contents($overlay, "User-agent: *\nDisallow: /\n");
+
+        try {
+            $output = $this->runValidate('production');
+
+            $this->assertStringContainsString('[FAIL] robots.txt correctness', $output);
+            $this->assertStringContainsString('disappears from search results', $output);
+        } finally {
+            $existing === null ? @unlink($overlay) : file_put_contents($overlay, $existing);
+        }
+    }
+
+    /**
+     * A Sitemap line does nothing on a host that forbids crawling, and
+     * requiring one failed this check for the absence of a line that would have
+     * had no effect. It is still required where it matters.
+     */
+    public function test_the_sitemap_line_is_required_only_where_crawling_is_invited(): void
+    {
+        $overlay = public_path('robots.txt');
+        $existing = is_file($overlay) ? file_get_contents($overlay) : null;
+
+        file_put_contents($overlay, "User-agent: *\nAllow: /\n");
+
+        try {
+            $output = $this->runValidate('production');
+
+            $this->assertStringContainsString('[FAIL] robots.txt correctness', $output);
+            $this->assertStringContainsString('does not advertise', $output);
+        } finally {
+            $existing === null ? @unlink($overlay) : file_put_contents($overlay, $existing);
+        }
     }
 
     /**

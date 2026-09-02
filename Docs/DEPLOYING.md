@@ -133,23 +133,33 @@ you where it stopped.
 | `Routes do not boot` | The release is broken. Roll back — see below. |
 | `advertises a different host` | `APP_CANONICAL_URL` changed but the sitemap was not regenerated. Re-run the deploy. |
 
-Two of these used to fail on every staging deploy and no longer do. Both were
-the gate being wrong, not the site:
+Three things used to fail on every staging deploy and no longer do. None of
+them was the site:
 
-- **robots.txt correctness** now judges the served file against the environment
-  the app is actually *running* as, not the one being validated for. Before
-  cutover those deliberately differ, and the old comparison went red every time.
-  In its place you will see a **WARN — robots.txt indexing policy**, saying the
-  domain is not indexable yet. That is correct and expected until cutover; it
-  turns green when `APP_ENV=production`. A warning does not fail the gate.
-- **Admin preview safety** was building its request for host `localhost`, so
+- **The gate ran against a site in maintenance mode.** `artisan down` was lifted
+  by the deploy script's exit trap, so warm and verify both talked to a kernel
+  that answered 503. That single bug produced most of the noise below, and it
+  meant `cache:warm` had never once warmed a public page — 4,558 of its targets
+  came back 503. It now warms 33 targets and the 503s are gone.
+- **robots.txt correctness** judged the file against `APP_ENV`. v2 runs as
+  production so it behaves like the real thing, while its docroot carries a
+  `Disallow` overlay so it stays out of Google — so the check demanded `Allow: /`
+  from a host whose whole purpose is to be unindexed. It now judges against the
+  environment the deploy is *for*. It also stopped requiring a `Sitemap:` line
+  on a disallow-all file, where such a line does nothing.
+- **Admin preview safety** built its request for host `localhost`, so
   `EnforcePublicOrigin` answered with a 301 before the token check ran, and the
-  gate reported that redirect as "responded successfully without a token". It
-  now uses the canonical URL like every other check, and a redirect is reported
-  as a redirect.
+  gate reported that redirect as "responded successfully without a token".
 
-Still expected to fail on staging: anything mentioning content that only exists
-in production.
+What the robots check will now catch, which is the reason it exists: a
+**production** deploy while the staging overlay is still in place. That means
+the live university site telling every search engine to go away. Deleting the
+overlay is a manual cutover step (`Docs/V2_PRE_CUTOVER_ACTIONS.md` §C), so it is
+exactly the kind of thing that gets forgotten.
+
+Still expected on staging: two warnings (the `file` cache store has no tag
+support; the pre-generated sitemap drifts as content changes), and anything
+mentioning content that only exists in production.
 
 A gate that cries wolf on every deploy is worse than no gate, because people
 stop reading it. If a check fails for a reason that is not a defect, fix the
