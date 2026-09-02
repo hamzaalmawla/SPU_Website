@@ -54,20 +54,20 @@
     .home-hero__overlay {
         background:
             linear-gradient(to right,
-                rgba(9, 14, 40, 0.74) 0%,
-                rgba(9, 14, 40, 0.62) 34%,
-                rgba(9, 14, 40, 0.22) 68%,
-                rgba(9, 14, 40, 0.06) 100%),
+                rgba(9, 14, 40, 0.82) 0%,
+                rgba(9, 14, 40, 0.74) 38%,
+                rgba(9, 14, 40, 0.30) 70%,
+                rgba(9, 14, 40, 0.08) 100%),
             rgba(32, 39, 89, 0.463);
     }
 
     [dir="rtl"] .home-hero__overlay {
         background:
             linear-gradient(to left,
-                rgba(9, 14, 40, 0.74) 0%,
-                rgba(9, 14, 40, 0.62) 34%,
-                rgba(9, 14, 40, 0.22) 68%,
-                rgba(9, 14, 40, 0.06) 100%),
+                rgba(9, 14, 40, 0.82) 0%,
+                rgba(9, 14, 40, 0.74) 38%,
+                rgba(9, 14, 40, 0.30) 70%,
+                rgba(9, 14, 40, 0.08) 100%),
             rgba(32, 39, 89, 0.463);
     }
 

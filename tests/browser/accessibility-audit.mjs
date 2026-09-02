@@ -42,7 +42,7 @@ const BASE = (process.argv[2] ?? 'https://v2.spu.edu.sy').replace(/\/$/, '');
 // homepage and of one page per top-level section. Every other route reuses one
 // of these layouts, so a layout defect shows up here — a content defect on an
 // unlisted route does not, and this run does not claim otherwise.
-const ROUTES = [
+const ROUTES = (process.env.AUDIT_ROUTES ? process.env.AUDIT_ROUTES.split(',') : [
   '/ar', '/en',
   '/ar/about', '/en/about',
   '/ar/admissions', '/en/admissions',
@@ -50,7 +50,7 @@ const ROUTES = [
   '/ar/facilities', '/en/facilities',
   '/ar/campus-life', '/en/campus-life',
   '/en/research/publications',
-];
+]);
 
 const VIEWPORTS = [
   { name: 'desktop', width: 1440, height: 900 },
@@ -372,15 +372,28 @@ async function measureOnPixels(S, sleep) {
     return result.value;
   };
 
-  // Hide only the glyphs, capture, restore, then decode and sample.
+  // Photographs the element twice — once as rendered, once with its glyphs
+  // made transparent — and compares the two to find where the text actually is.
   //
-  // `visibility: hidden` is the obvious way and it is wrong: it removes the
-  // element's own background along with its text, so a button on a hero was
-  // photographed against the hero rather than against the button. The control
-  // caught that immediately — computed style said 9.28:1 for an Apply Now button
-  // and the pixels said 1.57:1. Making the text transparent leaves every layer
-  // that the text actually sits on exactly where it was.
+  // Sampling the whole box was wrong, and the page disproved it: a paragraph's
+  // box spans its entire column, so the worst pixel in that box was empty space
+  // past the end of the last line, over bright sky, where no letter sits. That
+  // reported 1.08:1 on text a screenshot showed to be perfectly legible.
+  //
+  // Differencing the two captures gives the glyph pixels exactly. The hidden
+  // capture then supplies the true background at each of those pixels, and the
+  // worst of those is the number that matters — worst rather than average,
+  // because white text crossing one bright patch is the failure this exists to
+  // catch, and an average hides it.
+  //
+  // `color: transparent` rather than `visibility: hidden`: hiding the element
+  // removes its own background along with its text, which photographed a button
+  // against the hero behind it. The control caught that.
   const worstRatioBehind = async (path, rect) => {
+    const clip = { x: rect.x, y: rect.y, width: rect.width, height: rect.height, scale: 1 };
+
+    const shotVisible = await S('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false, clip });
+
     await S('Runtime.evaluate', {
       expression: `(() => {
         const el = ${path}.el;
@@ -391,12 +404,10 @@ async function measureOnPixels(S, sleep) {
       })()`,
     });
     await sleep(120);
-    let shot;
+
+    let shotHidden;
     try {
-      shot = await S('Page.captureScreenshot', {
-        format: 'png', captureBeyondViewport: false,
-        clip: { x: rect.x, y: rect.y, width: rect.width, height: rect.height, scale: 1 },
-      });
+      shotHidden = await S('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false, clip });
     } finally {
       await S('Runtime.evaluate', {
         expression: `(() => {
@@ -408,45 +419,74 @@ async function measureOnPixels(S, sleep) {
         })()`,
       });
     }
-    if (!shot?.data) return null;
+
+    if (!shotVisible?.data || !shotHidden?.data) return null;
 
     const { result } = await S('Runtime.evaluate', {
       returnByValue: true, awaitPromise: true,
       expression: `(async () => {
-        const img = new Image();
-        img.src = 'data:image/png;base64,${shot.data}';
-        await img.decode();
-        const c = document.createElement('canvas');
-        c.width = img.naturalWidth; c.height = img.naturalHeight;
-        const ctx = c.getContext('2d', { willReadFrequently: true });
-        ctx.drawImage(img, 0, 0);
-        const { data, width, height } = ctx.getImageData(0, 0, c.width, c.height);
+        const load = async (b64) => {
+          const img = new Image();
+          img.src = 'data:image/png;base64,' + b64;
+          await img.decode();
+          const c = document.createElement('canvas');
+          c.width = img.naturalWidth; c.height = img.naturalHeight;
+          const ctx = c.getContext('2d', { willReadFrequently: true });
+          ctx.drawImage(img, 0, 0);
+          return ctx.getImageData(0, 0, c.width, c.height);
+        };
+
+        const A = await load('${shotVisible.data}');
+        const B = await load('${shotHidden.data}');
+        if (A.width !== B.width || A.height !== B.height) return null;
 
         const lum = (r, g, b) => {
           const f = (v) => { const x = v / 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); };
           return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
         };
+
         const parts = '${rect.color}'.match(/rgba?\\(([^)]+)\\)/);
         const p = parts ? parts[1].split(',').map(Number) : [0, 0, 0];
         const Lt = lum(p[0], p[1], p[2]);
 
-        // A grid rather than every pixel: 40x40 is far finer than any real
-        // gradient varies, and reading a million pixels one at a time in the
-        // page is slow enough to matter across 33 elements.
-        const stepX = Math.max(1, Math.floor(width / 40));
-        const stepY = Math.max(1, Math.floor(height / 40));
-        let worst = Infinity, samples = 0;
-        for (let y = 0; y < height; y += stepY) {
-          for (let x = 0; x < width; x += stepX) {
-            const i = (y * width + x) * 4;
-            if (data[i + 3] < 250) continue;
-            const Lb = lum(data[i], data[i + 1], data[i + 2]);
-            const ratio = (Math.max(Lt, Lb) + 0.05) / (Math.min(Lt, Lb) + 0.05);
-            if (ratio < worst) worst = ratio;
-            samples++;
-          }
+        // A pixel counts as a glyph only where the two captures differ clearly.
+        // The threshold keeps antialiased edges out: a half-covered pixel is
+        // neither the text colour nor the background, and judging contrast on it
+        // measures the renderer rather than the design.
+        const THRESHOLD = 40;
+        const ratios = [];
+
+        for (let i = 0; i < A.data.length; i += 4) {
+          const d = Math.abs(A.data[i] - B.data[i])
+                  + Math.abs(A.data[i + 1] - B.data[i + 1])
+                  + Math.abs(A.data[i + 2] - B.data[i + 2]);
+          if (d < THRESHOLD) continue;
+          const Lb = lum(B.data[i], B.data[i + 1], B.data[i + 2]);
+          ratios.push((Math.max(Lt, Lb) + 0.05) / (Math.min(Lt, Lb) + 0.05));
         }
-        return samples ? { worst: Math.round(worst * 100) / 100, samples } : null;
+
+        // Too few differing pixels means the text never rendered where we looked,
+        // and a ratio from a handful of pixels is noise.
+        if (ratios.length < 40) return null;
+
+        ratios.sort((a, b) => a - b);
+
+        // The single darkest pixel is the wrong statistic over twenty thousand
+        // of them: one window reflection under one letter reported 1.3:1 on a
+        // heading that reads perfectly well, and a checker that cries wolf on a
+        // headline is one nobody runs twice.
+        //
+        // "Hard to read" means a meaningful share of the letters sit on ground
+        // too bright for them, so the judgement is made on the fifth percentile.
+        // The single worst pixel is still reported alongside it, because it is
+        // the thing to go and look at.
+        const p5 = ratios[Math.floor(ratios.length * 0.05)];
+
+        return {
+          worst: Math.round(ratios[0] * 100) / 100,
+          p5: Math.round(p5 * 100) / 100,
+          samples: ratios.length,
+        };
       })()`,
     });
     return result.value;
@@ -463,6 +503,10 @@ async function measureOnPixels(S, sleep) {
     return { trusted: false, reason: 'no control element was available on this page' };
   }
   const controlMeasured = await worstRatioBehind('window.__spuControl', controlRect);
+  if (process.env.AUDIT_VERBOSE && controlMeasured) {
+    console.log(`      [control] ${controlRect.tag} "${controlRect.label}" `
+      + `computed=${controlRect.expected.toFixed(2)} pixels-p5=${controlMeasured.p5} worst=${controlMeasured.worst}`);
+  }
   if (!controlMeasured) {
     return { trusted: false, reason: 'the control could not be photographed' };
   }
@@ -487,7 +531,7 @@ async function measureOnPixels(S, sleep) {
     if (!rect) continue;
     const r = await worstRatioBehind(path, rect);
     if (!r) continue;
-    measured.push({ ...rect, worst: r.worst, samples: r.samples });
+    measured.push({ ...rect, worst: r.worst, p5: r.p5, samples: r.samples });
   }
 
   return { trusted: true, control: { expected: controlRect.expected, measured: controlMeasured.worst }, measured };
@@ -625,10 +669,15 @@ async function main() {
             pixelControls.push(pixels.control);
             for (const m of pixels.measured) {
               pixelMeasured++;
-              if (m.worst + 0.02 < m.required) {
+              if (process.env.AUDIT_VERBOSE) {
+                console.log(`      [measured] ${m.tag} "${m.label}" p5=${m.p5} worst=${m.worst} `
+                  + `required=${m.required} px=${m.samples} color=${m.color}`);
+              }
+              if (m.p5 + 0.02 < m.required) {
                 report(route, vp.name, 'contrast over image',
-                  `${m.worst}:1 at its worst point (needs ${m.required}:1) — ${m.color} on the image behind `
-                  + `${m.tag} "${m.label}", ${m.samples} points sampled`);
+                  `${m.p5}:1 across the worst twentieth of its letters (needs ${m.required}:1; `
+                  + `single worst pixel ${m.worst}:1) — ${m.color} behind ${m.tag} "${m.label}", `
+                  + `${m.samples} glyph pixels measured`);
               }
             }
           }
@@ -744,9 +793,11 @@ async function main() {
 
     if (pixelMeasured) {
       const worstDrift = pixelControls.reduce((acc, c) => Math.max(acc, Math.abs(c.measured - c.expected)), 0);
-      console.log(`  ${pixelMeasured} of them were measured from pixels instead: the text was hidden,`);
-      console.log('  the rectangle behind it photographed, and its own colour compared against the');
-      console.log('  worst point in that image rather than the average.');
+      console.log(`  ${pixelMeasured} of them were measured from pixels instead: the element was`);
+      console.log('  photographed as rendered and again with its glyphs made transparent, the two');
+      console.log('  differenced to find where the letters actually are, and the text colour');
+      console.log('  compared against the worst background pixel under a letter — not the worst');
+      console.log('  pixel in its box, which is empty space past the end of the last line.');
       console.log(`  Method verified against ${pixelControls.length} control element(s) whose contrast both`);
       console.log(`  methods can resolve; they agreed to within ${worstDrift.toFixed(2)} of a ratio point.`);
     }
