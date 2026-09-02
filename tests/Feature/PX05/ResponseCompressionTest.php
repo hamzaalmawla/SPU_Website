@@ -251,6 +251,20 @@ final class ResponseCompressionTest extends TestCase
         $this->assertSame('off', $identity->headers->get('X-Compressed'));
     }
 
+    /**
+     * The forcing default is deliberately environment-scoped: it exists to work
+     * around one proxy in front of one host. If it ever became the global
+     * default, every test in this suite asserting on response text would be
+     * reading gzip, and the failures would point everywhere except here.
+     */
+    public function test_forcing_is_not_the_default_outside_production(): void
+    {
+        $this->assertFalse(
+            (bool) config('edge.compress_without_accept_encoding'),
+            'Compression must stay negotiated everywhere Accept-Encoding behaves normally.',
+        );
+    }
+
     public function test_the_diagnostic_header_is_off_unless_explicitly_enabled(): void
     {
         Route::middleware(['compress'])->get('/__compression-debug-probe', fn () => response('ok'));

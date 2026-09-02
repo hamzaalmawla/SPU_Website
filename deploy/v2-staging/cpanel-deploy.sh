@@ -174,6 +174,26 @@ log "Seeding deterministic redirect rules"
 log "Rebuilding framework caches"
 (cd "${APP}" && "${PHP}" artisan optimize)
 
+# ── Clearing derived caches ──────────────────────────────────────────────────
+# Warming does not overwrite. CacheWarmCommand goes through remember(), which
+# returns whatever is already stored - so warming a cache full of pre-deploy
+# HTML is a no-op, and visitors kept seeing the previous release for up to the
+# full hour of public_page_ttl after every deploy. Discovered when a fix was
+# verifiably deployed, verifiably present in the deployed files, and still
+# absent from the served page.
+#
+# This has to run BEFORE the build artefacts below, not just before the warm.
+# The sitemap's freshness marker is an entry in this same store, so clearing
+# after sitemap:generate erased the record that the sitemap had just been
+# written - and launch:validate then reported a sitemap generated ninety seconds
+# earlier as stale, on every deploy.
+#
+# Only the default store is cleared. The webhook replay store and the rate
+# limiter are separate stores (config/cache.php) and are deliberately untouched:
+# clearing those would drop replay protection and reset limits on deploy.
+log "Clearing derived caches so the artefacts below are what gets warmed"
+(cd "${APP}" && "${PHP}" artisan cache:clear) || true
+
 # ── Build artefacts ──────────────────────────────────────────────────────────
 # Neither of these is in git and neither is produced by deploying code. Miss them
 # and the site comes up with a search box that finds nothing and a sitemap served
@@ -217,20 +237,9 @@ restore_service
 MAINTENANCE=0
 
 # Also his. Without it every deploy hands the first visitors a cold cache, which
-# on this host is the most expensive request the site ever serves.
-# Warming does not overwrite. CacheWarmCommand goes through remember(), which
-# returns whatever is already stored - so warming a cache full of pre-deploy
-# HTML is a no-op, and visitors kept seeing the previous release for up to the
-# full hour of public_page_ttl after every deploy. Discovered when a fix was
-# verifiably deployed, verifiably present in the deployed files, and still
-# absent from the served page.
+# on this host is the most expensive request the site ever serves. The clear it
+# depends on happens further up, before the build artefacts are written.
 #
-# Only the default store is cleared. The webhook replay store and the rate
-# limiter are separate stores (config/cache.php) and are deliberately untouched:
-# clearing those would drop replay protection and reset limits on deploy.
-log "Clearing derived caches so warming actually rebuilds"
-(cd "${APP}" && "${PHP}" artisan cache:clear) || true
-
 log "Warming caches"
 (cd "${APP}" && "${PHP}" artisan cache:warm --include-sitemap) || true
 
