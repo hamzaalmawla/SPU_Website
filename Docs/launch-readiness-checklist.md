@@ -200,11 +200,34 @@ Evidence boundaries:
 
 | Boundary | Status |
 | --- | --- |
-| Manual browser QA | Not completed by this evidence. Keep manual browser checks unchecked until performed. |
+| Manual browser QA | Partially closed 2026-09-02. An automated rendered-page audit ran against the live site (`tests/browser/accessibility-audit.mjs`) and its findings were fixed; see the note below for exactly what that did and did not cover. Screen-reader QA and human sign-off remain unperformed — keep those unchecked. |
 | Staging validation | Not completed by this evidence. Keep staging-only checks unchecked until run against staging data. |
 | Rollback review | Not completed by this evidence. Keep rollback checks unchecked until reviewed/tested. |
 | Product sign-off | Not completed by this evidence. Keep product sign-off unchecked until product/design approval. |
 | Security and performance review | Automated tests support confidence but do not replace focused review. Keep review gates unchecked until reviewed. |
+
+Rendered-page audit (2026-09-02). `tests/browser/accessibility-audit.mjs` drives
+headless Chrome over the DevTools Protocol against 13 routes in both locales at
+desktop and mobile widths, checking keyboard traversal, focus visibility, layout
+overflow, computed contrast, reduced motion, console errors and failed requests.
+
+What it found: the faculties hub declared `x-data` as an inline object literal,
+which the Alpine CSP build cannot evaluate, so its gallery was inert and every
+`/facilities` page threw two errors into the console; and three CMS faculty
+accent colours failed WCAG AA as 11px text on white. Both fixed.
+
+What it confirmed: 14 keyboard tab stops on every route with a visible focus
+indicator on each, no horizontal overflow in RTL or LTR at either width, no
+animation surviving `prefers-reduced-motion`, no failed requests, no image
+missing an `alt` attribute, no control without an accessible name, and one `h1`
+and a `<main>` landmark per page.
+
+**What it is not.** It drives a browser, not a screen reader. It cannot tell you
+how NVDA or VoiceOver announces this site, which is what
+`FRONTEND_ROUTE_PARITY_MATRIX.md` asks for, and it is not sign-off. It also
+could not compute contrast for 33 text elements that sit on background images —
+that needs a human eye, and is a gap rather than a pass. Routes outside the
+audited 13, the admin panel, and forms under submission were not exercised.
 
 Current remediation boundary (2026-08-21): `php artisan test` passed 4,240 tests
 with 24,442 assertions, `npm test` passed 24 tests, `npm run build` passed, and
