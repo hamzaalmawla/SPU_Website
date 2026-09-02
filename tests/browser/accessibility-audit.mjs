@@ -62,6 +62,10 @@ const CHROME = process.env.CHROME_BIN
 
 const findings = [];
 let overImages = 0;
+let pixelMeasured = 0;
+let unmeasuredOverImages = 0;
+const pixelControls = [];
+const pixelUntrusted = new Set();
 const report = (route, viewport, check, detail) =>
   findings.push({ route, viewport, check, detail });
 
@@ -229,6 +233,8 @@ const PAGE_PROBES = `(() => {
   const seen = new Set();
   out.contrast = [];
   out.contrastOverImages = 0;
+  window.__spuOverImage = [];
+  window.__spuControl = null;
   const textEls = [...document.querySelectorAll('p, a, li, h1, h2, h3, h4, span, button, td, th, label')]
     .filter((el) => {
       const t = (el.textContent || '').trim();
@@ -247,15 +253,42 @@ const PAGE_PROBES = `(() => {
     const cs = getComputedStyle(el);
     const fg = parse(cs.color);
     if (!fg || fg.a < 0.95) continue;
-    const bgResult = bgOf(el);
-    if (bgResult.image) { out.contrastOverImages++; continue; }
-    const bg = bgResult.rgb;
+    // Size class first: the over-image branch below needs it, and a const
+    // declared after that branch would be in its temporal dead zone there.
     const size = parseFloat(cs.fontSize);
     const bold = parseInt(cs.fontWeight, 10) >= 700;
     const large = size >= 24 || (size >= 18.66 && bold);
+
+    const bgResult = bgOf(el);
+    if (bgResult.image) {
+      out.contrastOverImages++;
+      // Kept addressable so the pixel pass below can measure what computed
+      // style cannot — but only leaf elements, for the same reason the control
+      // must be one: photographing a box that contains other painted children
+      // does not tell you what is behind the text. Non-leaf elements stay
+      // counted and stay unmeasured rather than being measured wrongly.
+      if (el.children.length === 0) {
+        window.__spuOverImage.push({ el, color: cs.color, required: large ? 3 : 4.5 });
+      }
+      continue;
+    }
+    const bg = bgResult.rgb;
     const L1 = lum(fg.rgb), L2 = lum(bg);
     const ratio = (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05);
     const required = large ? 3 : 4.5;
+
+    // The first LEAF element resolved against a solid background becomes the
+    // control for the pixel pass. Two independent methods must agree on it
+    // before any number that path produces is reportable.
+    //
+    // Leaf matters. The pixel method photographs an element's box and treats it
+    // as the background its text sits on, which only holds when the box contains
+    // nothing but that text. A <label> wrapping a <select> broke exactly this:
+    // computed style said 21:1 for its black-on-white text while the photograph
+    // was mostly the select's own control surface.
+    if (!window.__spuControl && el.children.length === 0 && el.getBoundingClientRect().height > 8) {
+      window.__spuControl = { el, color: cs.color, expected: ratio };
+    }
     if (ratio + 0.02 < required) {
       const key = cs.color + '|' + bg.join(',') + '|' + Math.round(size);
       if (seen.has(key)) continue;
@@ -297,6 +330,168 @@ const FOCUS_PROBE = `(() => {
     boxShadow: cs.boxShadow === 'none' ? '' : cs.boxShadow.slice(0, 46),
   };
 })()`;
+
+// ------------------------------------------------- contrast over a background
+
+// Measures the contrast of text that sits on an image, which computed style
+// cannot answer.
+//
+// The method: hide the text, photograph exactly the rectangle it occupied, and
+// compare its known colour against the pixels that were behind it. Worst case,
+// not average — a hero where white text crosses one bright patch of sky is
+// precisely the failure this exists to catch, and an average hides it.
+//
+// GATED ON A CONTROL. Two earlier versions of the contrast check in this file
+// produced confident, wrong numbers, so this one is not trusted on its own
+// authority: it first measures an element whose contrast the computed-style path
+// already resolved, and reports nothing at all unless the two agree. A method
+// that cannot reproduce a known answer has not earned the right to report an
+// unknown one.
+async function measureOnPixels(S, sleep) {
+  const rectOf = async (path) => {
+    const { result } = await S('Runtime.evaluate', {
+      returnByValue: true,
+      expression: `(() => {
+        const t = ${path};
+        if (!t) return null;
+        const r = t.el.getBoundingClientRect();
+        if (r.width < 4 || r.height < 4) return null;
+        // Viewport-relative, deliberately. captureScreenshot's clip is taken in
+        // viewport coordinates when captureBeyondViewport is false, so adding
+        // the scroll offset double-counts it — and the keyboard traversal that
+        // runs before this pass leaves the page scrolled. That is why the
+        // control agreed exactly on pages the traversal happened not to scroll
+        // and disagreed wildly on the ones it did.
+        return { x: r.left, y: r.top,
+                 width: Math.min(r.width, 900), height: Math.min(r.height, 200),
+                 color: t.color, required: t.required ?? null, expected: t.expected ?? null,
+                 label: (t.el.textContent || '').trim().slice(0, 40),
+                 tag: t.el.tagName.toLowerCase() };
+      })()`,
+    });
+    return result.value;
+  };
+
+  // Hide only the glyphs, capture, restore, then decode and sample.
+  //
+  // `visibility: hidden` is the obvious way and it is wrong: it removes the
+  // element's own background along with its text, so a button on a hero was
+  // photographed against the hero rather than against the button. The control
+  // caught that immediately — computed style said 9.28:1 for an Apply Now button
+  // and the pixels said 1.57:1. Making the text transparent leaves every layer
+  // that the text actually sits on exactly where it was.
+  const worstRatioBehind = async (path, rect) => {
+    await S('Runtime.evaluate', {
+      expression: `(() => {
+        const el = ${path}.el;
+        el.dataset.spuPrevColor = el.style.color;
+        el.dataset.spuPrevShadow = el.style.textShadow;
+        el.style.setProperty('color', 'transparent', 'important');
+        el.style.setProperty('text-shadow', 'none', 'important');
+      })()`,
+    });
+    await sleep(120);
+    let shot;
+    try {
+      shot = await S('Page.captureScreenshot', {
+        format: 'png', captureBeyondViewport: false,
+        clip: { x: rect.x, y: rect.y, width: rect.width, height: rect.height, scale: 1 },
+      });
+    } finally {
+      await S('Runtime.evaluate', {
+        expression: `(() => {
+          const el = ${path}.el;
+          el.style.color = el.dataset.spuPrevColor || '';
+          el.style.textShadow = el.dataset.spuPrevShadow || '';
+          delete el.dataset.spuPrevColor;
+          delete el.dataset.spuPrevShadow;
+        })()`,
+      });
+    }
+    if (!shot?.data) return null;
+
+    const { result } = await S('Runtime.evaluate', {
+      returnByValue: true, awaitPromise: true,
+      expression: `(async () => {
+        const img = new Image();
+        img.src = 'data:image/png;base64,${shot.data}';
+        await img.decode();
+        const c = document.createElement('canvas');
+        c.width = img.naturalWidth; c.height = img.naturalHeight;
+        const ctx = c.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(img, 0, 0);
+        const { data, width, height } = ctx.getImageData(0, 0, c.width, c.height);
+
+        const lum = (r, g, b) => {
+          const f = (v) => { const x = v / 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); };
+          return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+        };
+        const parts = '${rect.color}'.match(/rgba?\\(([^)]+)\\)/);
+        const p = parts ? parts[1].split(',').map(Number) : [0, 0, 0];
+        const Lt = lum(p[0], p[1], p[2]);
+
+        // A grid rather than every pixel: 40x40 is far finer than any real
+        // gradient varies, and reading a million pixels one at a time in the
+        // page is slow enough to matter across 33 elements.
+        const stepX = Math.max(1, Math.floor(width / 40));
+        const stepY = Math.max(1, Math.floor(height / 40));
+        let worst = Infinity, samples = 0;
+        for (let y = 0; y < height; y += stepY) {
+          for (let x = 0; x < width; x += stepX) {
+            const i = (y * width + x) * 4;
+            if (data[i + 3] < 250) continue;
+            const Lb = lum(data[i], data[i + 1], data[i + 2]);
+            const ratio = (Math.max(Lt, Lb) + 0.05) / (Math.min(Lt, Lb) + 0.05);
+            if (ratio < worst) worst = ratio;
+            samples++;
+          }
+        }
+        return samples ? { worst: Math.round(worst * 100) / 100, samples } : null;
+      })()`,
+    });
+    return result.value;
+  };
+
+  // Back to where the probe measured everything, since the keyboard traversal
+  // scrolled away from it and every rect below is viewport-relative.
+  await S('Runtime.evaluate', { expression: 'window.scrollTo(0, 0)' });
+  await sleep(250);
+
+  // 1. The control.
+  const controlRect = await rectOf('window.__spuControl');
+  if (!controlRect || controlRect.expected === null) {
+    return { trusted: false, reason: 'no control element was available on this page' };
+  }
+  const controlMeasured = await worstRatioBehind('window.__spuControl', controlRect);
+  if (!controlMeasured) {
+    return { trusted: false, reason: 'the control could not be photographed' };
+  }
+  const drift = Math.abs(controlMeasured.worst - controlRect.expected);
+  if (drift > 0.35) {
+    return {
+      trusted: false,
+      reason: `control disagreed: computed style says ${controlRect.expected.toFixed(2)}:1, `
+        + `pixels say ${controlMeasured.worst}:1 on ${controlRect.tag} "${controlRect.label}"`,
+    };
+  }
+
+  // 2. Only now, the elements computed style could not answer for.
+  const { result: count } = await S('Runtime.evaluate', {
+    returnByValue: true, expression: 'window.__spuOverImage.length',
+  });
+
+  const measured = [];
+  for (let i = 0; i < count.value; i++) {
+    const path = `window.__spuOverImage[${i}]`;
+    const rect = await rectOf(path);
+    if (!rect) continue;
+    const r = await worstRatioBehind(path, rect);
+    if (!r) continue;
+    measured.push({ ...rect, worst: r.worst, samples: r.samples });
+  }
+
+  return { trusted: true, control: { expected: controlRect.expected, measured: controlMeasured.worst }, measured };
+}
 
 // ------------------------------------------------------------------- the run
 
@@ -384,10 +579,17 @@ async function main() {
         await S('Page.navigate', { url: BASE + route });
         await sleep(2600);
 
-        const { result } = await S('Runtime.evaluate', {
+        const probe = await S('Runtime.evaluate', {
           expression: PAGE_PROBES, returnByValue: true, awaitPromise: false,
         });
-        const r = result.value;
+        if (probe.exceptionDetails || !probe.result?.value) {
+          const why = probe.exceptionDetails?.exception?.description
+            ?? probe.exceptionDetails?.text ?? 'returned nothing';
+          report(route, vp.name, 'audit failure', `the in-page probe did not run: ${why.split('\n')[0]}`);
+          process.stdout.write(`  ${vp.name.padEnd(8)} ${route.padEnd(28)} PROBE FAILED\n`);
+          continue;
+        }
+        const r = probe.result.value;
 
         if (r.overflow.overflows) {
           report(route, vp.name, 'horizontal overflow',
@@ -409,8 +611,27 @@ async function main() {
           report(route, vp.name, 'contrast',
             `${c.ratio}:1 (needs ${c.required}:1) — ${c.color} on ${c.background} at ${c.fontSize}px — ${c.selector} "${c.sample}"`);
         }
+        // Text on an image: computed style cannot answer, so photograph it.
+        // Desktop only — the same elements reflow rather than change colour, and
+        // each measurement costs a screenshot.
         if (r.contrastOverImages > 0 && vp.name === 'desktop') {
           overImages += r.contrastOverImages;
+          const pixels = await measureOnPixels(S, sleep);
+
+          if (!pixels.trusted) {
+            pixelUntrusted.add(pixels.reason);
+            unmeasuredOverImages += r.contrastOverImages;
+          } else {
+            pixelControls.push(pixels.control);
+            for (const m of pixels.measured) {
+              pixelMeasured++;
+              if (m.worst + 0.02 < m.required) {
+                report(route, vp.name, 'contrast over image',
+                  `${m.worst}:1 at its worst point (needs ${m.required}:1) — ${m.color} on the image behind `
+                  + `${m.tag} "${m.label}", ${m.samples} points sampled`);
+              }
+            }
+          }
         }
         if (consoleErrors.length) {
           report(route, vp.name, 'console error', [...new Set(consoleErrors)].slice(0, 3).join(' | '));
@@ -518,11 +739,26 @@ async function main() {
 
   console.log('─'.repeat(78));
   if (overImages) {
-    console.log(`${overImages} text element(s) sit on a background image and their contrast`);
-    console.log('could not be computed. That is a gap, not a pass — it needs a human eye.\n');
+    console.log(`${overImages} text element(s) sit on a background image, where computed style`);
+    console.log('cannot resolve contrast.');
+
+    if (pixelMeasured) {
+      const worstDrift = pixelControls.reduce((acc, c) => Math.max(acc, Math.abs(c.measured - c.expected)), 0);
+      console.log(`  ${pixelMeasured} of them were measured from pixels instead: the text was hidden,`);
+      console.log('  the rectangle behind it photographed, and its own colour compared against the');
+      console.log('  worst point in that image rather than the average.');
+      console.log(`  Method verified against ${pixelControls.length} control element(s) whose contrast both`);
+      console.log(`  methods can resolve; they agreed to within ${worstDrift.toFixed(2)} of a ratio point.`);
+    }
+    if (unmeasuredOverImages) {
+      console.log(`  ${unmeasuredOverImages} could NOT be measured, and remain a gap needing a human eye:`);
+      for (const reason of pixelUntrusted) console.log(`    - ${reason}`);
+    }
+    console.log('');
   }
   console.log('Scope: rendered layout, keyboard traversal, focus visibility, computed');
-  console.log('contrast of text within the first viewport, reduced motion, console and');
+  console.log('contrast of text within the first viewport — including text on images,');
+  console.log('measured from pixels — reduced motion, console and');
   console.log('network. Headless Chrome, no assistive technology — this is NOT');
   console.log('screen-reader QA and NOT accessibility sign-off.');
   console.log(`Not exercised: every route outside the ${ROUTES.length} listed, admin, forms under`);

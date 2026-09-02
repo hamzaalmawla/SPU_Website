@@ -33,8 +33,42 @@
         pointer-events: none;
     }
 
+    /**
+     * Two layers: the flat navy wash the design asks for, and a directional
+     * scrim under the text column.
+     *
+     * The flat wash alone measured 1.05:1 for the hero paragraph and 2.98:1 for
+     * the Visit Campus button on the English homepage, against 4.5:1 — measured
+     * from the rendered pixels, not from computed style, because a photograph is
+     * the only thing that knows how bright the sky is behind a given word. The
+     * building and sky on the right of the image are pale enough that white text
+     * crossing them effectively disappears.
+     *
+     * The scrim deepens toward the side the text sits on and fades out well
+     * before the far edge, so the photograph is still a photograph. Mirrored for
+     * RTL, where the text column moves to the other side.
+     *
+     * Re-measure with `node tests/browser/accessibility-audit.mjs` after
+     * changing the hero image — a lighter photograph moves these numbers.
+     */
     .home-hero__overlay {
-        background: rgba(32, 39, 89, 0.463);
+        background:
+            linear-gradient(to right,
+                rgba(9, 14, 40, 0.74) 0%,
+                rgba(9, 14, 40, 0.62) 34%,
+                rgba(9, 14, 40, 0.22) 68%,
+                rgba(9, 14, 40, 0.06) 100%),
+            rgba(32, 39, 89, 0.463);
+    }
+
+    [dir="rtl"] .home-hero__overlay {
+        background:
+            linear-gradient(to left,
+                rgba(9, 14, 40, 0.74) 0%,
+                rgba(9, 14, 40, 0.62) 34%,
+                rgba(9, 14, 40, 0.22) 68%,
+                rgba(9, 14, 40, 0.06) 100%),
+            rgba(32, 39, 89, 0.463);
     }
 
     .home-hero__ambient {
