@@ -222,6 +222,38 @@ animation surviving `prefers-reduced-motion`, no failed requests, no image
 missing an `alt` attribute, no control without an accessible name, and one `h1`
 and a `<main>` landmark per page.
 
+Contrast over background images, measured 2026-09-02. 33 elements sit on a
+photograph, where computed style cannot answer. 10 were measured from pixels:
+the element is photographed as rendered and again with its glyphs transparent,
+the two differenced to find the letters, and the text colour compared against
+the background under them. Judged on the fifth percentile of those pixels, since
+one window reflection under one letter is not what "hard to read" means. The
+method is gated on a control element whose contrast both methods can resolve and
+reports nothing unless they agree; `tests/browser/fixtures/` proves it can still
+fail. 22 remain unmeasured because no control was available on those pages.
+
+Fixed by this: the homepage hero buttons, 2.98:1 to 9.53:1, by adding a
+directional scrim under the text column.
+
+**Open, and a design decision rather than a defect to fix quietly.** Four
+headings and two links still measure below WCAG AA over their hero photographs:
+
+| Element | Measured (5th pct) | Needs |
+| --- | --- | --- |
+| Homepage h1, AR and EN | 2.44:1 | 3:1 |
+| Faculties hub h1, AR and EN | 2.72–2.86:1 | 3:1 |
+| "Explore Campus Map" link, AR and EN | 1.85–1.93:1 | 4.5:1 |
+
+The homepage heading moved from 2.07:1 to 2.44:1 by deepening the scrim, and
+reaching 3:1 that way needs it close to opaque — which removes the photograph
+the hero exists to show. The faculties hub is worse placed: its left half is a
+panoramic gallery that the design deliberately keeps visible, and the text sits
+on it. So the options are a darker hero image, a narrower text column that stays
+over the dark region, or a local scrim behind the text block only. All three
+change how the pages look, which makes it a call for whoever owns the design.
+
+Re-measure after any of them with `node tests/browser/accessibility-audit.mjs`.
+
 **What it is not.** It drives a browser, not a screen reader. It cannot tell you
 how NVDA or VoiceOver announces this site, which is what
 `FRONTEND_ROUTE_PARITY_MATRIX.md` asks for, and it is not sign-off. It also
