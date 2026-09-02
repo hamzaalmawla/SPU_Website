@@ -29,7 +29,7 @@ return [
     // single deploy to settle whether Accept-Encoding survives the proxy, read
     // it with one `curl -I`, then turn it off. It exposes no secrets, but it is
     // diagnostics and does not belong on a public site permanently.
-    'compression_diagnostics' => (bool) env('COMPRESSION_DIAGNOSTICS', false),
+    'compression_diagnostics' => (bool) env('COMPRESSION_DIAGNOSTICS', true),
 
     // Runs inside the page cache, so it shrinks the stored body rather than the
     // wire - cache files on disk, and the string CSRF substitution runs over on
