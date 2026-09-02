@@ -40,6 +40,45 @@ log "Deploying ${SOURCE} → ${APP}"
 [[ -f "${APP}/.env" ]]   || fail "${APP}/.env is missing. It is not in git and must never be."
 [[ -d "${WEB}" ]]        || fail "Web root ${WEB} does not exist"
 
+# The docroot is NOT synced by this script - only public/build/ and the SVG
+# assets are copied into it. public/.htaccess and public/.user.ini there are
+# hand-maintained and deliberately diverge from the repository: the .htaccess
+# carries the STAGING ONLY noindex and host-guard blocks that must not ship to
+# the live domain (Docs/V2_PRE_CUTOVER_ACTIONS.md §C). That is a reasonable
+# arrangement, but it means editing those files in git changes nothing on the
+# server, silently, and one of them can break every page on the site.
+#
+# zlib.output_compression compresses at the SAPI output layer, after
+# CompressPublicResponses has already set Content-Encoding: gzip on a body it
+# compressed itself. The middleware cannot see zlib and zlib cannot see the
+# middleware, so the two together emit gzip(gzip(body)) under a single header:
+# every page unreadable, in every browser, triggered by whichever of the two is
+# enabled second rather than by any deploy. It was left On here as a
+# one-host-change-away optimisation back when nothing compressed; it is now the
+# one setting that must never be on.
+if [[ -f "${WEB}/.user.ini" ]] && grep -Eq '^[[:space:]]*zlib\.output_compression[[:space:]]*=[[:space:]]*(On|1|true)' "${WEB}/.user.ini"; then
+    fail "zlib.output_compression is enabled in ${WEB}/.user.ini. The application compresses in CompressPublicResponses; two compressors produce gzip(gzip(body)) and break every page. Comment it out - this file is not deployed from git, so it must be edited on the server."
+fi
+
+# The other half of the staging overlay, and the one with no other safety net.
+#
+# The docroot .htaccess adds `X-Robots-Tag: noindex, nofollow, noarchive` to
+# every response so v2 stays out of Google while it is a rehearsal. Apache adds
+# it, which means no check inside PHP can ever see it: launch:validate makes its
+# requests through the HTTP kernel and never touches the web server. So the
+# robots.txt half of the overlay is caught by the gate and this half is caught
+# by nothing.
+#
+# Left in place at cutover it tells every search engine to drop the university's
+# main website. That is the single most expensive mistake available here, it is
+# a manual step in a checklist (Docs/V2_PRE_CUTOVER_ACTIONS.md section C), and
+# manual steps in checklists are the ones that get missed.
+if [[ "${SPU_DEPLOY_ENV:-staging}" == "production" ]] \
+   && [[ -f "${WEB}/.htaccess" ]] \
+   && grep -Eqi '^[[:space:]]*Header[[:space:]]+(always[[:space:]]+)?set[[:space:]]+X-Robots-Tag.*noindex' "${WEB}/.htaccess"; then
+    fail "${WEB}/.htaccess still sets X-Robots-Tag: noindex, and this is a production deploy. Every page would tell search engines not to index the site. Remove the STAGING ONLY blocks - see Docs/V2_PRE_CUTOVER_ACTIONS.md section C. This file is not deployed from git; edit it on the server."
+fi
+
 # A missing asset directory does not error, it renders the whole site unstyled,
 # so check the source before touching anything on the server.
 [[ -f "${SOURCE}/public/build/manifest.json" ]] || fail \
@@ -154,6 +193,26 @@ log "Seeding deterministic redirect rules"
 log "Rebuilding framework caches"
 (cd "${APP}" && "${PHP}" artisan optimize)
 
+# ── Clearing derived caches ──────────────────────────────────────────────────
+# Warming does not overwrite. CacheWarmCommand goes through remember(), which
+# returns whatever is already stored - so warming a cache full of pre-deploy
+# HTML is a no-op, and visitors kept seeing the previous release for up to the
+# full hour of public_page_ttl after every deploy. Discovered when a fix was
+# verifiably deployed, verifiably present in the deployed files, and still
+# absent from the served page.
+#
+# This has to run BEFORE the build artefacts below, not just before the warm.
+# The sitemap's freshness marker is an entry in this same store, so clearing
+# after sitemap:generate erased the record that the sitemap had just been
+# written - and launch:validate then reported a sitemap generated ninety seconds
+# earlier as stale, on every deploy.
+#
+# Only the default store is cleared. The webhook replay store and the rate
+# limiter are separate stores (config/cache.php) and are deliberately untouched:
+# clearing those would drop replay protection and reset limits on deploy.
+log "Clearing derived caches so the artefacts below are what gets warmed"
+(cd "${APP}" && "${PHP}" artisan cache:clear) || true
+
 # ── Build artefacts ──────────────────────────────────────────────────────────
 # Neither of these is in git and neither is produced by deploying code. Miss them
 # and the site comes up with a search box that finds nothing and a sitemap served
@@ -173,55 +232,35 @@ log "Publishing SVG assets"
 log "Signalling queue workers to restart"
 (cd "${APP}" && "${PHP}" artisan queue:restart) || true
 
-# Also his. Without it every deploy hands the first visitors a cold cache, which
-# on this host is the most expensive request the site ever serves.
-# Warming does not overwrite. CacheWarmCommand goes through remember(), which
-# returns whatever is already stored - so warming a cache full of pre-deploy
-# HTML is a no-op, and visitors kept seeing the previous release for up to the
-# full hour of public_page_ttl after every deploy. Discovered when a fix was
-# verifiably deployed, verifiably present in the deployed files, and still
-# absent from the served page.
+# ── End of the maintenance window ────────────────────────────────────────────
+# Everything that can leave code and schema disagreeing is done. The window has
+# to close HERE, not at the end, because both remaining stages make requests
+# through the HTTP kernel - and a maintenance-mode kernel answers every one of
+# them with a 503.
 #
-# Only the default store is cleared. The webhook replay store and the rate
-# limiter are separate stores (config/cache.php) and are deliberately untouched:
-# clearing those would drop replay protection and reset limits on deploy.
-log "Clearing derived caches so warming actually rebuilds"
-(cd "${APP}" && "${PHP}" artisan cache:clear) || true
+# It used to close on the EXIT trap, which meant:
+#
+#   - cache:warm warmed nothing. 4,558 of its targets came back 503, so every
+#     deploy handed the first visitor to every page a cold cache. On a host
+#     whose entire problem is the cost of serving a page, that is the most
+#     expensive request the site can serve, and we were guaranteeing it.
+#   - launch:validate was half blind. Every check that goes through the kernel
+#     got a 503: robots.txt correctness and admin preview safety failed on every
+#     deploy for that reason and no other, and the checks that call services
+#     directly passed - which is exactly what a green-and-red-in-the-same-run
+#     gate looks like when the failures are an artefact of the harness.
+#
+# The trap stays as the safety net for a failure before this point.
+log "Ending the maintenance window"
+restore_service
+MAINTENANCE=0
 
+# Also his. Without it every deploy hands the first visitors a cold cache, which
+# on this host is the most expensive request the site ever serves. The clear it
+# depends on happens further up, before the build artefacts are written.
+#
 log "Warming caches"
 (cd "${APP}" && "${PHP}" artisan cache:warm --include-sitemap) || true
-
-# ── Compression diagnostic ───────────────────────────────────────────────────
-# Purely informational; never fails the deploy.
-#
-# Nothing this site serves is compressed, and from outside it is impossible to
-# tell whether nginx strips Accept-Encoding before Apache or whether mod_deflate
-# is simply not loaded. The two need different fixes and the host has not
-# answered a general request in six weeks, so ask from inside where the answer
-# is unambiguous, and put it in the deploy log.
-#
-# Asking Apache directly bypasses nginx: if Apache compresses when asked at the
-# origin but the public URL does not, nginx is the layer dropping it.
-log "Compression diagnostic (informational)"
-{
-    printf '  mod_deflate loaded: '
-    if "${PHP}" -r 'echo function_exists("apache_get_modules") ? "n/a (not the apache SAPI from CLI)" : "n/a (CLI)";' 2>/dev/null; then printf '\n'; fi
-
-    for origin in "http://127.0.0.1" "http://127.0.0.1:8080"; do
-        enc=$(curl -s -o /dev/null -D - --max-time 10 \
-              -H "Accept-Encoding: gzip" -H "Host: v2.spu.edu.sy" \
-              "${origin}/robots.txt" 2>/dev/null | grep -i '^content-encoding' | tr -d '\r')
-        len=$(curl -s -o /dev/null -w '%{size_download}' --max-time 10 \
-              -H "Accept-Encoding: gzip" -H "Host: v2.spu.edu.sy" \
-              "${origin}/build/assets/$(ls "${WEB}/build/assets" 2>/dev/null | grep -m1 '^app\..*\.css')" 2>/dev/null)
-        printf '  origin %-22s content-encoding=%s  css_bytes=%s\n' \
-               "${origin}" "${enc:-none}" "${len:-?}"
-    done
-
-    printf '  Accept-Encoding reaching PHP: '
-    "${PHP}" -r 'echo getenv("HTTP_ACCEPT_ENCODING") ?: "not visible from CLI (expected)";' 2>/dev/null
-    printf '\n'
-} || true
 
 # ── Verify ───────────────────────────────────────────────────────────────────
 # A deploy that reports success while the site is down is worse than one that

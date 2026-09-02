@@ -13,17 +13,19 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 /**
  * Strips the indentation Blade leaves in rendered HTML.
  *
- * On a compressed origin this would be pointless — gzip reduces repeated indent
- * runs to almost nothing. This origin is not compressed: nginx terminates TLS
- * and neither compresses nor forwards Accept-Encoding upstream, so the
- * mod_deflate rules in public/.htaccess never fire and every byte of markup is
- * sent verbatim. Measured on the live Arabic homepage, 42% of a 240,855-byte
- * response was leading whitespace.
+ * This was written when nothing on this origin compressed, and 42% of the live
+ * Arabic homepage — 240,855 bytes — was leading whitespace sent verbatim to
+ * every visitor. CompressPublicResponses now runs outside this middleware, and
+ * gzip reduces repeated indent runs to almost nothing, so most of that original
+ * justification is gone.
  *
- * This runs inside the public page cache, so what is stored is already reduced
- * and the cache files shrink with the responses.
+ * What remains is worth keeping. This runs *inside* the public page cache, so
+ * what shrinks is the stored body: cache files on disk, and the string the
+ * cache reads back and runs CSRF substitution over on every hit. The compressor
+ * runs outside the cache and cannot do either.
  *
- * Delete this the day compression is enabled at the proxy.
+ * So: no longer the load-bearing fix it was, still a real one. If it ever gets
+ * in the way of debugging rendered markup, MINIFY_HTML=false costs little now.
  */
 final class MinifyPublicHtml
 {

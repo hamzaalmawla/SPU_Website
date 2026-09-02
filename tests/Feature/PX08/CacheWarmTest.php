@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace Tests\Feature\PX08;
 
+use App\Contracts\Seo\SitemapServiceInterface;
+use App\DTOs\Seo\SitemapEntryDTO;
 use App\Models\Homepage\HomepageSection;
 use App\Models\Homepage\HomepageSectionTranslation;
 use App\Models\Page\Page;
 use App\Models\Page\PageTranslation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
 use Tests\TestCase;
 
 /**
@@ -19,6 +22,45 @@ use Tests\TestCase;
 class CacheWarmTest extends TestCase
 {
     use RefreshDatabase;
+
+    /**
+     * The sitemap covers every public URL; the landing-page warm resolves only
+     * CMS pages. Every news article and publication in the sitemap therefore
+     * came back null and was reported as "unavailable" — 4,544 warnings on the
+     * deploy of 1 September, against a site with nothing wrong with it. A log
+     * that noisy is a log nobody reads, which is how a separate bug that turned
+     * every public page into a 503 sat in the same output unnoticed.
+     */
+    public function test_a_url_served_by_another_controller_is_not_reported_as_a_problem(): void
+    {
+        $this->seedData();
+        // A real news URL: served by public.news.show, with no CMS page behind it.
+        $this->fakeSitemapEntries(['https://example.test/ar/news/some-article-1234']);
+
+        $output = $this->warmAndCapture();
+
+        $this->assertStringNotContainsString(
+            'some-article-1234',
+            $output,
+            'A news article has no CMS page behind it by design; that is not a warning.',
+        );
+    }
+
+    /**
+     * The distinction worth keeping. A sitemap entry routed to the CMS page
+     * controller with nothing published behind it advertises a 404 to search
+     * engines, and it used to be indistinguishable from the thousands of benign
+     * lines around it.
+     */
+    public function test_a_sitemap_entry_with_no_published_page_is_still_reported(): void
+    {
+        $this->seedData();
+        $this->fakeSitemapEntries(['https://example.test/ar/no-such-section/nothing-here']);
+
+        $output = $this->warmAndCapture();
+
+        $this->assertStringContainsString('but nothing publishes it', $output);
+    }
 
     public function test_cache_warm_completes_successfully(): void
     {
@@ -65,6 +107,36 @@ class CacheWarmTest extends TestCase
     /**
      * Seed minimum data for cache warm targets.
      */
+    /**
+     * @param  list<string>  $urls
+     */
+    private function fakeSitemapEntries(array $urls): void
+    {
+        $entries = collect($urls)->map(fn (string $url): SitemapEntryDTO => new SitemapEntryDTO(
+            loc: $url,
+            lastmod: '2026-09-01',
+            changefreq: null,
+            priority: null,
+            alternates: [],
+        ));
+
+        $sitemap = \Mockery::mock(SitemapServiceInterface::class);
+        $sitemap->shouldReceive('generateEntries')->andReturn($entries);
+        $sitemap->shouldReceive('generateSitemapXml')->andReturn('<urlset/>');
+        $sitemap->shouldIgnoreMissing();
+
+        $this->app->instance(SitemapServiceInterface::class, $sitemap);
+    }
+
+    private function warmAndCapture(): string
+    {
+        $exitCode = Artisan::call('cache:warm');
+
+        $this->assertSame(0, $exitCode);
+
+        return Artisan::output();
+    }
+
     private function seedData(): void
     {
         $sectionKeys = [

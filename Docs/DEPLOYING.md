@@ -133,13 +133,37 @@ you where it stopped.
 | `Routes do not boot` | The release is broken. Roll back — see below. |
 | `advertises a different host` | `APP_CANONICAL_URL` changed but the sitemap was not regenerated. Re-run the deploy. |
 
-Three checks fail on staging and are **expected**:
+Three things used to fail on every staging deploy and no longer do. None of
+them was the site:
 
-- **robots.txt correctness** — staging serves a disallow-all overlay by design.
-- **Admin preview safety** — a false positive from the validator's internal
-  request. Over real HTTP `/ar/preview` returns 404. Confirm with curl if you
-  want to be sure.
-- Anything mentioning content that only exists in production.
+- **The gate ran against a site in maintenance mode.** `artisan down` was lifted
+  by the deploy script's exit trap, so warm and verify both talked to a kernel
+  that answered 503. That single bug produced most of the noise below, and it
+  meant `cache:warm` had never once warmed a public page — 4,558 of its targets
+  came back 503. It now warms 33 targets and the 503s are gone.
+- **robots.txt correctness** judged the file against `APP_ENV`. v2 runs as
+  production so it behaves like the real thing, while its docroot carries a
+  `Disallow` overlay so it stays out of Google — so the check demanded `Allow: /`
+  from a host whose whole purpose is to be unindexed. It now judges against the
+  environment the deploy is *for*. It also stopped requiring a `Sitemap:` line
+  on a disallow-all file, where such a line does nothing.
+- **Admin preview safety** built its request for host `localhost`, so
+  `EnforcePublicOrigin` answered with a 301 before the token check ran, and the
+  gate reported that redirect as "responded successfully without a token".
+
+What the robots check will now catch, which is the reason it exists: a
+**production** deploy while the staging overlay is still in place. That means
+the live university site telling every search engine to go away. Deleting the
+overlay is a manual cutover step (`Docs/V2_PRE_CUTOVER_ACTIONS.md` §C), so it is
+exactly the kind of thing that gets forgotten.
+
+Still expected on staging: two warnings (the `file` cache store has no tag
+support; the pre-generated sitemap drifts as content changes), and anything
+mentioning content that only exists in production.
+
+A gate that cries wolf on every deploy is worse than no gate, because people
+stop reading it. If a check fails for a reason that is not a defect, fix the
+check.
 
 ---
 
@@ -152,6 +176,129 @@ Both sites live on the same account, so this is not a DNS change:
 - **Worse:** the last known-good tree is in `/home/spuedu/.spu_backups/`.
   `Docs/V2_PRE_CUTOVER_ACTIONS.md` §E3 explains why restoring from a tar archive
   went wrong once and why `git archive` is the reliable source.
+
+---
+
+## Deploying without the cPanel UI
+
+The two buttons in **Git Version Control → Manage** are a cPanel API call each,
+and the API is usable directly when the UI is slow or unavailable. Both need a
+cPanel API token (**Security → Manage API Tokens**). Never commit one.
+
+```bash
+TOKEN=...   # cPanel API token for the spuedu account
+AUTH="Authorization: cpanel spuedu:$TOKEN"
+REPO=/home/spuedu/repositories/spu-v2
+
+# "Update from Remote" — fetches origin and fast-forwards the checked-out branch
+curl -sS -H "$AUTH" \
+  --data-urlencode "repository_root=$REPO" --data-urlencode 'branch=dev' \
+  'https://spu.edu.sy:2083/execute/VersionControl/update'
+
+# "Deploy HEAD Commit" — queues .cpanel.yml, which runs cpanel-deploy.sh
+curl -sS -H "$AUTH" --data-urlencode "repository_root=$REPO" \
+  'https://spu.edu.sy:2083/execute/VersionControlDeployment/create'
+```
+
+The deploy is asynchronous. Poll `VersionControl/retrieve` until
+`last_deployment.deploy_id` increments and its `timestamps` gain a `succeeded`
+key, then read the log named in `last_deployment.log_path` — that log is the
+output of `cpanel-deploy.sh`, including the launch gate:
+
+```bash
+curl -sS -H "$AUTH" \
+  --data-urlencode 'dir=/home/spuedu/.cpanel/logs' \
+  --data-urlencode 'file=<basename from log_path>' \
+  'https://spu.edu.sy:2083/execute/Fileman/get_file_content'
+```
+
+**Read that log every time.** A deploy reports success as long as the script
+exits zero, and the script deliberately does not fail a staging deploy on a red
+gate. The warm counts and the validation summary at the end are the deploy's
+real result.
+
+Rotate the token when you are done with it, and whenever one has been pasted
+into a chat, a ticket, or a shared terminal.
+
+---
+
+## Verifying a deploy from outside: nginx serves stale static files
+
+nginx caches static responses on this host, and it will hand you a copy from
+before the deploy. This is not theoretical — checking the sitemap immediately
+after the 2 September deploy returned the pre-deploy file, 3,416 entries and a
+`Last-Modified` 44 minutes old, and it looked exactly like a change that had not
+taken effect. The same URL with a query string appended returned the real
+current file.
+
+```bash
+curl -s "https://v2.spu.edu.sy/sitemaps/sitemap-news.xml?b=$RANDOM" | grep -c '<loc>'
+```
+
+Add a unique query parameter to **any** static file you are checking after a
+deploy — sitemaps, `build/manifest.json`, CSS, JS. It costs nothing and it is
+the difference between verifying a deploy and verifying a cache. PHP responses
+are not affected; they are not cached by nginx.
+
+This is an operational fact as well as a verification hazard: for that same
+window, crawlers and visitors are served the pre-deploy file too. A regenerated
+sitemap is not live the instant the deploy finishes. The TTL is nginx's and is
+not ours to set, so plan around it rather than expecting an immediate change.
+
+Note this is the opposite of the rule for measuring *pages*: there, a query
+string does nothing (`CachePublicPages` drops unknown parameters) and you need
+`-H 'Cache-Control: no-cache'`. Static files are served by the web server and
+never reach that middleware. See `Docs/PERFORMANCE_MEASUREMENT.md`.
+
+---
+
+## Why `sitemap-news.xml` advertises zero URLs
+
+It is correct, and it should not be "fixed" by loosening the sitemap.
+
+Every legacy news article is imported with `robots: noindex,nofollow` because
+the import is editorially gated, and since 2 September the sitemap does not
+advertise URLs that render `noindex` — it used to advertise 3,416 of them, three
+quarters of the whole document. Google Search Console will report this child
+sitemap as having 0 discovered URLs. That is the honest state of the content,
+not a defect in the sitemap.
+
+Articles enter it automatically as editors review them and set `index,follow`.
+There is no second switch to flip.
+
+The empty child is still listed in the index on purpose. Omitting it would mean
+the index could no longer be rendered without querying every section, and that
+document is deliberately cheap because crawlers fetch it.
+
+---
+
+## Files the deploy does not touch
+
+The deploy syncs `app bootstrap config database lang resources routes` into the
+application directory, and copies `public/build/` and the SVG assets into the
+docroot. **That is all it copies into the docroot.** Three files live there that
+git does not deploy:
+
+| File | Why it diverges |
+|---|---|
+| `public/.htaccess` | Carries the `STAGING ONLY` blocks — the `X-Robots-Tag: noindex` header and the host guard — which must **not** reach the live domain. Removing them is a cutover step (`Docs/V2_PRE_CUTOVER_ACTIONS.md` §C). |
+| `public/robots.txt` | The staging `Disallow: /` overlay. Deleted at cutover so the application serves its own. Gitignored on purpose: shipping it would send `Disallow: /` to the live site. |
+| `public/.user.ini` | PHP-FPM settings. |
+
+The divergence is deliberate and correct. The trap is that **editing any of them
+in git changes nothing on the server, and nothing tells you.** A commit can say
+a setting was removed, be entirely true about the repository, and leave the
+server exactly as it was.
+
+That is how `zlib.output_compression = On` stayed live for a day after being
+removed in git — a setting that, combined with the application's own
+compression, would have made every page on the site unreadable. Edit these on
+the server (cPanel File Manager, or the file API), and change the repo copy in
+the same sitting so the two do not drift further.
+
+The deploy now refuses to run if it finds `zlib.output_compression` active in
+the deployed `.user.ini`. That check exists because no amount of care in git can
+catch a file git does not own.
 
 ---
 
@@ -190,10 +337,53 @@ are queued and no worker is running, so every contact-form message and event
 registration is silently discarded while the sender sees a success page. This is
 the most damaging open defect on the site.
 
-**Compression.** nginx neither compresses nor forwards `Accept-Encoding`
-upstream, so the `mod_deflate` rules in `public/.htaccess` never fire and pages
-ship uncompressed. This needs the host. See `Docs/V2_PRE_CUTOVER_ACTIONS.md` §B2
-and §B4 for the request to send them.
+**Compression** is no longer one of them. nginx still neither compresses nor
+forwards `Accept-Encoding` upstream, so the `mod_deflate` rules in
+`public/.htaccess` never fire — but the application now compresses its own
+responses in `CompressPublicResponses`, which is what mattered: this origin
+degrades sharply above a ~24KB response and gzip puts every page back under
+that line. The host request in `Docs/V2_PRE_CUTOVER_ACTIONS.md` §B2 and §B4 is
+still worth sending, because compressing in PHP costs CPU that nginx would not,
+and static assets are still shipped uncompressed. It is no longer a blocker.
+
+**Checking whether it is working.** Not with `curl -I`. HEAD is skipped by
+design — a HEAD response must carry the same headers as GET with no body — so
+`curl -I` reports `X-Compressed: off` whether compression works or not. Use a
+GET that throws the body away:
+
+```bash
+curl -s --http1.1 -o /dev/null -D - -H 'Accept-Encoding: gzip' https://v2.spu.edu.sy/ar
+```
+
+`X-Compressed` says what the middleware decided: `negotiated` (the client asked
+and got it), `forced` (no `Accept-Encoding` arrived and forcing is on), `off`
+(declined — wrong method, wrong status, wrong content type, or the client did
+not ask), `skipped` (ran, but the body was too small or did not shrink). An
+absent header means the middleware did not run at all.
+
+If it reports `off` on every page, the likely cause is that nginx strips
+`Accept-Encoding` before PHP sees it. Confirm rather than assume: set
+`COMPRESSION_DIAGNOSTICS=true` in `/home/spuedu/spu_v2_app/.env`, rebuild the
+config cache (the next deploy does this, or run `config:clear` then
+`config:cache`), and read `X-Compress-Debug` from the same GET. Its `accept_encoding=` field is the
+answer. If it says `(absent)`, set `COMPRESS_WITHOUT_ACCEPT_ENCODING=true`;
+if it shows a real value, leave that flag off — the header is arriving and
+something else is declining. Turn diagnostics back off once read.
+
+One thing must be true before forcing is enabled: `X-Compress-Debug`'s `zlib=`
+field must read `(off)`. PHP's own `zlib.output_compression` compresses at the
+output layer *after* this middleware has set its headers, so the middleware
+cannot detect it, and the two together produce `gzip(gzip(body))` under a single
+`Content-Encoding` header — unreadable pages site-wide. `public/.user.ini`
+documents why it was removed.
+
+If the host does enable compression at the edge, set `COMPRESS_RESPONSES=false`
+and delete the middleware in the same change. Two compressors stacked produce
+`gzip(gzip(body))` under one `Content-Encoding` header — unreadable pages
+site-wide, triggered by someone else's config change rather than a deploy of
+ours. The middleware refuses to encode a body that already carries
+`Content-Encoding`, so the realistic failure is wasted CPU rather than
+breakage — but do not rely on that as the plan.
 
 ---
 

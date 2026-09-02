@@ -101,6 +101,11 @@ probe() {
     wc -c "$EVIDENCE/$PHASE/$name.body"
 }
 
+# The probe above stores the body exactly as it arrived, so `wc -c` reports
+# bytes on the wire — which is the number that matters here. To read a
+# compressed body, re-run the same URL with `--compressed` and curl will decode
+# it; comparing the two byte counts gives the compression ratio directly.
+
 PHASE=before
 probe homepage-ar /ar
 probe homepage-en /en
@@ -267,9 +272,15 @@ Expected results:
   middleware is not nginx evidence and is not by itself a failure.
 - Dynamic responses do not replay a prior session cookie, CSRF token, preview,
   draft, admin response, or private content.
-- `/build/manifest.json`, CSS, JS, and SVG return the expected content type;
-  gzip responses include `Content-Encoding: gzip` where the response is large
-  enough, and approved static paths may include public cache headers.
+- `/build/manifest.json`, CSS, JS, and SVG return the expected content type,
+  and approved static paths may include public cache headers.
+- Compression is measured on **static** paths only. Since 1 September the
+  application compresses its own HTML in `CompressPublicResponses`, so
+  `Content-Encoding: gzip` on `/ar` proves nothing about nginx — PHP put it
+  there. A static file like `/build/manifest.json` never touches PHP, so it is
+  the only honest test of whether the edge compresses. If a large static asset
+  comes back without `Content-Encoding: gzip`, the edge still does not
+  compress, whatever `/ar` says.
 - PHP-FPM reports Zend OPcache loaded/enabled with the five reviewed values.
   The provider's FPM/web-runtime evidence must be attached; CLI evidence alone
   cannot close this item.

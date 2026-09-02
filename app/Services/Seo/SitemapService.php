@@ -118,7 +118,7 @@ final class SitemapService implements SitemapServiceInterface
     private function appendPageEntries(Collection $entries, string $baseUrl): void
     {
         $pages = Page::query()
-            ->with(['translations'])
+            ->with(['translations', 'seoMeta'])
             ->where('status', PublicationStatus::Published->value)
             ->where('is_enabled', true)
             ->whereNotNull('published_at')
@@ -138,6 +138,10 @@ final class SitemapService implements SitemapServiceInterface
 
             $localesWithTranslation = [];
             foreach (['ar', 'en'] as $locale) {
+                if ($this->isNoindex($page->seoMeta->firstWhere('locale', $locale)?->robots)) {
+                    continue;
+                }
+
                 if ($this->isSitemapRenderable($page, $locale, $ancestors)) {
                     if ($page->slug === 'research' && ! $this->researchPageService->isPubliclyAvailablePath($locale, '/research')) {
                         continue;
@@ -259,13 +263,16 @@ final class SitemapService implements SitemapServiceInterface
     {
         $articles = NewsArticle::query()
             ->public()
-            ->with('translations')
+            ->with(['translations', 'seoMeta'])
             ->orderBy('id')
             ->get();
 
         foreach ($articles as $article) {
             $locales = collect(['ar', 'en'])
                 ->filter(fn (string $locale): bool => $article->translations->contains('locale', $locale))
+                ->reject(fn (string $locale): bool => $this->isNoindex(
+                    $article->seoMeta->firstWhere('locale', $locale)?->robots,
+                ))
                 ->values();
             if ($locales->isEmpty()) {
                 continue;
@@ -634,6 +641,19 @@ final class SitemapService implements SitemapServiceInterface
         return $xml;
     }
 
+    /**
+     * Every section is listed, including ones that currently hold no URLs.
+     *
+     * sitemap-news.xml is empty today: every legacy article is imported
+     * noindex pending editorial review, and isNoindex() keeps those out. An
+     * empty <urlset> is valid, and Search Console reporting "0 discovered URLs"
+     * against it is the honest state of the content.
+     *
+     * Skipping empty sections here would mean this method could no longer
+     * answer without querying each one, and the index is deliberately the cheap
+     * document - the same reason <lastmod> is omitted above. Crawlers fetch it,
+     * and this host has five PHP workers.
+     */
     public function sectionDocumentNames(): array
     {
         $documents = [];
@@ -659,17 +679,41 @@ final class SitemapService implements SitemapServiceInterface
 
         [$name, $part] = $parsed;
 
-        return $this->cacheService->tags('sitemap')->remember(
+        $xml = $this->cacheService->tags('sitemap')->remember(
             self::CACHE_KEY.':section:'.$name.':'.$part,
             function () use ($name, $part): string {
                 $entries = $this->generateSectionEntries($name)
                     ->slice(($part - 1) * self::MAX_URLS_PER_SITEMAP, self::MAX_URLS_PER_SITEMAP)
                     ->values();
 
+                // A continuation part that holds nothing does not exist, and
+                // saying so with a 404 is the whole point. Any part number was
+                // previously answered with an empty urlset and a 200:
+                // sitemap-pages-99.xml was as valid as sitemap-pages-2.xml.
+                //
+                // That is a soft 404, and it costs more than tidiness here. A
+                // section that shrinks - news went from several parts to one
+                // when noindex articles stopped being advertised - leaves
+                // crawlers holding URLs they already know. A 200 tells them the
+                // document is still real and to keep checking it; a 404 tells
+                // them to drop it. Every one of those checks is a PHP render on
+                // a five-worker pool, forever.
+                //
+                // Part 1 is exempt: it is listed in the index and is allowed to
+                // be legitimately empty, which sitemap-news.xml currently is.
+                if ($part > 1 && $entries->isEmpty()) {
+                    return '';
+                }
+
                 return $this->buildUrlsetXml($entries);
             },
             self::CACHE_TTL,
         );
+
+        // buildUrlsetXml() always returns a document, so the empty string is
+        // unambiguous as the "no such part" marker - and it survives the cache,
+        // which a null would not.
+        return $xml === '' ? null : $xml;
     }
 
     /**
@@ -992,6 +1036,31 @@ final class SitemapService implements SitemapServiceInterface
     }
 
     /** @param array<int, Page> $ancestors */
+    /**
+     * Whether a robots directive forbids indexing.
+     *
+     * A sitemap is an invitation to crawl and index. Listing a URL that then
+     * renders `noindex` asks a crawler to spend a request discovering that it
+     * was not wanted - and on this host every one of those requests is a full
+     * page render on a five-worker pool.
+     *
+     * This is not an editorial judgement and does not change what is indexed:
+     * the meta tag on the page stays authoritative either way. It stops the
+     * sitemap contradicting it. 3,416 of the 4,560 URLs advertised on
+     * 2 September were legacy news articles that LegacyNewsImportService marks
+     * noindex,nofollow on import, pending editorial review - so three quarters
+     * of the sitemap was asking crawlers to fetch pages it then told them to
+     * discard.
+     *
+     * Self-maintaining in the right direction: an article an editor reviews and
+     * sets to index,follow enters the sitemap on the next generation, with no
+     * second switch to remember.
+     */
+    private function isNoindex(?string $robots): bool
+    {
+        return $robots !== null && str_contains(strtolower($robots), 'noindex');
+    }
+
     private function isSitemapRenderable(Page $page, string $locale, array $ancestors): bool
     {
         if ($page->translations->firstWhere('locale', $locale) === null) {

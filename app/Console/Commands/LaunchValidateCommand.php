@@ -16,6 +16,7 @@ use App\Contracts\Shared\ContinuityServiceInterface;
 use Illuminate\Console\Command;
 use Illuminate\Http\Request as HttpRequest;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Repeatable launch validation command that checks all launch-critical behaviors.
@@ -296,7 +297,7 @@ final class LaunchValidateCommand extends Command
                 $xml = (string) file_get_contents($indexFile);
                 $statusCode = 200;
             } else {
-                $response = app()->handle(HttpRequest::create($canonicalUrl.'/sitemap.xml', 'GET'));
+                $response = $this->probe($canonicalUrl.'/sitemap.xml');
                 $xml = $response->getContent();
                 $statusCode = $response->getStatusCode();
             }
@@ -348,7 +349,7 @@ final class LaunchValidateCommand extends Command
                         continue;
                     }
 
-                    $childResponse = app()->handle(HttpRequest::create($child, 'GET'));
+                    $childResponse = $this->probe($child);
                     $childXml = $childResponse->getContent();
 
                     if ($childResponse->getStatusCode() !== 200
@@ -404,7 +405,7 @@ final class LaunchValidateCommand extends Command
     {
         try {
             $canonicalUrl = rtrim((string) config('edge.canonical_url'), '/');
-            $response = app()->handle(HttpRequest::create($canonicalUrl.'/robots.txt', 'GET'));
+            $response = $this->probe($canonicalUrl.'/robots.txt');
             $runtimeContent = $response->getContent();
             // Apache reaches the front controller only when no physical file
             // matches, so a robots.txt on disk wins in every environment - not
@@ -415,19 +416,44 @@ final class LaunchValidateCommand extends Command
             $content = is_file($staticPath)
                 ? file_get_contents($staticPath)
                 : $runtimeContent;
-            $hasSitemap = is_string($content) && str_contains($content, 'Sitemap: '.$canonicalUrl.'/sitemap.xml');
-            $indexingCorrect = is_string($content) && ($env === 'production'
+            // $env is what this deployment is FOR, and that - not
+            // app()->environment() - is the right basis for "should this host
+            // invite crawling". They differ on purpose right now: v2 runs with
+            // APP_ENV=production so it behaves like the real thing, while the
+            // docroot carries a Disallow overlay because it must not be indexed
+            // before cutover. An earlier version of this check compared against
+            // the runtime environment and so demanded Allow: / on a host whose
+            // whole job is to stay out of the index.
+            $wantsIndexing = $env === 'production';
+
+            $indexingCorrect = is_string($content) && ($wantsIndexing
                 ? str_contains($content, 'Allow: /') && ! str_contains($content, 'Disallow: /')
                 : str_contains($content, 'Disallow: /'));
-            $valid = $response->getStatusCode() === 200 && $hasSitemap && $indexingCorrect;
+
+            // A Sitemap line is only meaningful on a host that invites
+            // crawling. Requiring one on a disallow-all staging overlay failed
+            // this check for the absence of a line that would do nothing.
+            $hasSitemap = ! $wantsIndexing
+                || (is_string($content) && str_contains($content, 'Sitemap: '.$canonicalUrl.'/sitemap.xml'));
+
+            $servedOk = $response->getStatusCode() === 200;
+            $valid = $servedOk && $hasSitemap && $indexingCorrect;
 
             $this->record(
                 'robots.txt correctness',
                 $valid ? 'PASS' : 'FAIL',
-                $valid
-                    ? "Deploy-effective robots.txt has correct sitemap and indexing directives for {$env}"
-                    : 'robots.txt does not match the deploy-effective canonical sitemap or indexing policy',
+                match (true) {
+                    $valid && $wantsIndexing => 'robots.txt invites crawling and advertises '.$canonicalUrl.'/sitemap.xml',
+                    $valid => 'robots.txt disallows crawling, which is correct for a '.$env.' host',
+                    ! $servedOk => 'robots.txt returned '.$response->getStatusCode().' instead of 200',
+                    ! $indexingCorrect && $wantsIndexing => 'robots.txt does not invite crawling, and this is a production '
+                        .'deploy. A live site behind Disallow: / disappears from search results. The staging overlay at '
+                        .$staticPath.' has to be deleted at cutover - see Docs/V2_PRE_CUTOVER_ACTIONS.md section C.',
+                    ! $indexingCorrect => 'robots.txt does not carry Disallow: /, so this non-production host is indexable',
+                    default => 'robots.txt does not advertise '.$canonicalUrl.'/sitemap.xml',
+                },
             );
+
         } catch (\Throwable $e) {
             $this->record('robots.txt correctness', 'FAIL', $e->getMessage());
         }
@@ -484,13 +510,29 @@ final class LaunchValidateCommand extends Command
     private function checkAdminPreviewSafety(): void
     {
         try {
-            $response = app()->handle(HttpRequest::create('/ar/preview', 'GET'));
+            // Must be built from the canonical URL, like every other check
+            // here. A bare path produces a request for host "localhost", and
+            // EnforcePublicOrigin answers that with a 301 to the canonical host
+            // before the preview controller is ever reached - which this check
+            // used to report as "responded successfully without a token": a
+            // security failure that was really a redirect, on every deploy.
+            $canonicalUrl = rtrim((string) config('edge.canonical_url'), '/');
+            $response = $this->probe($canonicalUrl.'/ar/preview');
+            $status = $response->getStatusCode();
+
+            if (in_array($status, [400, 403, 404], true)) {
+                $this->record('Admin preview safety', 'PASS', 'Preview route rejects missing token access');
+
+                return;
+            }
+
             $this->record(
                 'Admin preview safety',
-                in_array($response->getStatusCode(), [400, 403, 404], true) ? 'PASS' : 'FAIL',
-                in_array($response->getStatusCode(), [400, 403, 404], true)
-                    ? 'Preview route rejects missing token access'
-                    : 'Preview route responded successfully without a token',
+                'FAIL',
+                $status >= 300 && $status < 400
+                    ? "Preview route returned a {$status} redirect instead of rejecting the request; "
+                    .'the token check was never reached, so this proves nothing either way.'
+                    : "Preview route returned {$status} without a token; it must return 404.",
             );
         } catch (\Throwable $e) {
             $this->record('Admin preview safety', 'FAIL', $e->getMessage());
@@ -687,6 +729,34 @@ final class LaunchValidateCommand extends Command
         } catch (\Throwable $e) {
             $this->record('Static sitemap files', 'FAIL', $e->getMessage());
         }
+    }
+
+    /**
+     * Issues an internal request the way every check here needs one.
+     *
+     * Accept-Encoding: identity is precautionary, and it is worth being precise
+     * about why rather than overstating it. HttpRequest::create() sets Host,
+     * User-Agent, Accept, Accept-Language and Accept-Charset but not
+     * Accept-Encoding, and CompressPublicResponses reads an absent header as
+     * "a proxy stripped it" once COMPRESS_WITHOUT_ACCEPT_ENCODING is on - so an
+     * unqualified probe can come back gzipped.
+     *
+     * No check here breaks on that today: robots.txt and sitemap.xml carry no
+     * compress middleware at all, and the preview check reads a status code
+     * rather than a body. The one route probed that is compressed is
+     * {locale}/preview. So this prevents nothing currently broken; it keeps the
+     * next check that reads a body from a compressed route from failing on
+     * binary for a reason that has nothing to do with the site.
+     *
+     * "identity" rather than an empty header because empty is exactly what
+     * triggers the forcing branch. Correct whether the flag is on or off, which
+     * is the point - a probe must not depend on it.
+     */
+    private function probe(string $url): Response
+    {
+        return app()->handle(HttpRequest::create($url, 'GET', server: [
+            'HTTP_ACCEPT_ENCODING' => 'identity',
+        ]));
     }
 
     private function record(string $check, string $status, string $message): void

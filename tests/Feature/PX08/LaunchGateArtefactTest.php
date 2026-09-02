@@ -108,6 +108,84 @@ final class LaunchGateArtefactTest extends TestCase
         $this->assertStringContainsString('silently discarded', $output);
     }
 
+    /**
+     * v2 runs with APP_ENV=production so it behaves like the real thing, while
+     * its docroot carries a Disallow overlay because it must not be indexed
+     * before cutover. Judging the file against the runtime environment demanded
+     * Allow: / from a host whose entire job is to stay out of the index, and so
+     * failed on every staging deploy. What the file must agree with is the
+     * environment the deploy is FOR.
+     */
+    public function test_a_staging_deploy_is_not_asked_to_invite_crawling(): void
+    {
+        $output = $this->runValidate('staging');
+
+        $this->assertStringContainsString('robots.txt correctness', $output);
+        $this->assertStringNotContainsString('[FAIL] robots.txt correctness', $output);
+    }
+
+    /**
+     * The trap this check exists to catch. The overlay is deleted by hand at
+     * cutover (Docs/V2_PRE_CUTOVER_ACTIONS.md section C); if it is forgotten,
+     * the live university site serves Disallow: / and leaves the search index.
+     * Nothing else in the pipeline would notice.
+     */
+    public function test_a_production_deploy_still_behind_the_staging_overlay_fails_loudly(): void
+    {
+        $overlay = public_path('robots.txt');
+        $existing = is_file($overlay) ? file_get_contents($overlay) : null;
+
+        file_put_contents($overlay, "User-agent: *\nDisallow: /\n");
+
+        try {
+            $output = $this->runValidate('production');
+
+            $this->assertStringContainsString('[FAIL] robots.txt correctness', $output);
+            $this->assertStringContainsString('disappears from search results', $output);
+        } finally {
+            $existing === null ? @unlink($overlay) : file_put_contents($overlay, $existing);
+        }
+    }
+
+    /**
+     * A Sitemap line does nothing on a host that forbids crawling, and
+     * requiring one failed this check for the absence of a line that would have
+     * had no effect. It is still required where it matters.
+     */
+    public function test_the_sitemap_line_is_required_only_where_crawling_is_invited(): void
+    {
+        $overlay = public_path('robots.txt');
+        $existing = is_file($overlay) ? file_get_contents($overlay) : null;
+
+        file_put_contents($overlay, "User-agent: *\nAllow: /\n");
+
+        try {
+            $output = $this->runValidate('production');
+
+            $this->assertStringContainsString('[FAIL] robots.txt correctness', $output);
+            $this->assertStringContainsString('does not advertise', $output);
+        } finally {
+            $existing === null ? @unlink($overlay) : file_put_contents($overlay, $existing);
+        }
+    }
+
+    /**
+     * The check built a request for host "localhost", so EnforcePublicOrigin
+     * returned a 301 before the preview controller ran, and the gate called
+     * that redirect "responded successfully without a token" — a security
+     * failure reported on every deploy that was really a misaddressed request.
+     */
+    public function test_preview_safety_is_checked_against_the_canonical_host(): void
+    {
+        config()->set('edge.enforce_canonical_host', true);
+        config()->set('edge.canonical_url', 'https://v2.spu.edu.sy');
+
+        $output = $this->runValidate();
+
+        $this->assertStringContainsString('Preview route rejects missing token access', $output);
+        $this->assertStringNotContainsString('responded successfully without a token', $output);
+    }
+
     private function runValidate(string $environment = 'staging'): string
     {
         Artisan::call('launch:validate', ['--environment' => $environment]);
