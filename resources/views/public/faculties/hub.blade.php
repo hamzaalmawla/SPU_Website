@@ -37,7 +37,7 @@
      Left: panoramic interactive gallery (cross-fades per faculty on hover).
      Right: floating vertical list of faculty cards (01–07, bespoke icon, "Learn More").
      ═══════════════════════════════════════════════════════ --}}
-<section x-data="{ active: null, images: @js($galleryImages) }"
+<section x-data="facultyGallery()" data-images="{{ json_encode($galleryImages, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) }}"
          class="fac-hub-hero relative overflow-hidden pt-10 font-hacen bg-[#08102b]"
          style="min-height: 88vh;" dir="{{ $direction }}">
 
@@ -46,9 +46,9 @@
         {{-- Default: wide architecture view of the main SPU campus --}}
         <img src="{{ $defaultPanorama }}" alt="{{ $hero['title'] ?? '' }}"
              class="fac-gallery__layer fac-gallery__layer--default faculty-hero__image h-full w-full object-cover">
-        <img :src="active === null ? null : images[active]" alt=""
+        <img x-bind:src="layerSrc()" alt=""
              class="fac-gallery__layer h-full w-full object-cover"
-             :class="active === null ? 'opacity-0' : 'opacity-100'"
+             x-bind:class="layerClass()"
              aria-hidden="true">
 
         {{-- Diagonal dark gradient: keeps the right list legible above the gallery --}}
@@ -112,13 +112,19 @@
                         $url = $faculty->url;
                         $slug = $faculty->slug;
                         $accent = (string) ($faculty->accentColor ?: $navBlue);
+                        // The accent is a brand colour, chosen to work as a tint
+                        // and a rule. Used as 11px uppercase text on a white
+                        // card it fails WCAG AA for three of the seven faculties
+                        // today, and would fail for whatever is picked next.
+                        $accentText = \App\Support\AccessibleColor::onLight($accent);
                         $icon = $iconMap[$slug] ?? $faculty->logoImage ?? $defaultIcon;
                         $idx = $loop->index;
                     @endphp
 
                     <a href="{{ $url }}"
-                       @mouseenter="active = {{ $idx }}" @mouseleave="active = null"
-                       @focusin="active = {{ $idx }}" @focusout="active = null"
+                       data-gallery-index="{{ $idx }}"
+                       x-on:mouseenter="show($event)" x-on:mouseleave="clear()"
+                       x-on:focusin="show($event)" x-on:focusout="clear()"
                        class="fac-hub-card fac-hub-card--stair group flex items-center gap-3.5 rounded-xl bg-white px-3.5 py-3 text-[#1e2652] ring-1 ring-[#e5e7eb] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(0,0,0,0.12)] lg:py-3.5 lg:px-4"
                        style="--accent: {{ $accent }};"
                        aria-label="{{ $title }}">
@@ -146,7 +152,7 @@
 
                         {{-- "Learn More" arrow --}}
                         <span class="fac-hub-card__cta shrink-0 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.12em] opacity-100 transition-all group-hover:gap-2.5"
-                              style="color: {{ $accent }};">
+                              style="color: {{ $accentText }};">
                             <span class="hidden sm:inline">{{ __('public.learn_more') }}</span>
                             <svg class="h-4 w-4 {{ $isAr ? 'rotate-180' : '' }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                         </span>

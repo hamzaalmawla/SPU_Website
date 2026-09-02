@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Contrast sensitivity fixture</title>
+<!--
+  Answers the question "how do I know this checker can still fail?"
+
+  The audit measures contrast over background images by photographing text,
+  photographing it again with the glyphs transparent, and differencing the two.
+  That is enough machinery to go wrong quietly, and it did: the percentile it
+  judges on was computed but never carried through the result, so every
+  comparison was NaN < required — always false. The audit could not have
+  reported a single contrast finding, and said "No findings" while broken.
+
+  Serve this directory and point the audit at it. The ramp runs from near-white
+  on the left to near-black on the right, so:
+
+    python3 -m http.server 8899 --directory tests/browser/fixtures
+    AUDIT_ROUTES=/ node tests/browser/accessibility-audit.mjs http://127.0.0.1:8899
+
+  Expected, and the run is not trustworthy without all three:
+    - the h1 over the light end FAILS   (~1.2:1 against 3:1 required)
+    - the paragraph near the threshold FAILS marginally (~4.3:1 against 4.5:1)
+    - the solid-background control agrees exactly between both methods
+
+  Also expected: a keyboard-traversal finding, because the page has nothing
+  focusable. That guard exists so a traversal that finds nothing cannot pass
+  silently.
+-->
+<style>
+  body { margin: 0; font-family: system-ui, sans-serif; background: #fff; }
+  .hero { position: relative; height: 400px; overflow: hidden; }
+  .hero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .hero h1 { position: absolute; left: 24px; top: 40px; margin: 0; color: #fff; font-size: 48px; z-index: 2; }
+  .hero p.threshold { position: absolute; left: 820px; top: 200px; margin: 0; color: #fff; font-size: 16px; z-index: 2; }
+  .control { background: #1b3a5c; color: #fff; font-size: 16px; padding: 12px; display: inline-block; margin: 20px 24px; }
+</style>
+</head>
+<body>
+<main>
+  <span class="control">Solid control text</span>
+  <div class="hero">
+    <img src="ramp.png" alt="">
+    <h1>Unreadable over the light end</h1>
+    <p class="threshold">Just under the line over the dark end</p>
+  </div>
+</main>
+</body>
+</html>

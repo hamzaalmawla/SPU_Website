@@ -1,14 +1,77 @@
 /**
- * Site header and navigation system — premium university style.
+ * Site header and navigation system.
  *
- * Two-tier layout:
- *   1. Utility bar (search, language, portals) — hidden on scroll
- *   2. Main nav (logo, links, CTA) — becomes sticky glassmorphism bar
+ * Layout contract
+ * ---------------
+ * One row: brand | primary nav | actions. The brand and the actions are
+ * fixed-size anchors; the nav takes what is left and centres inside it.
+ *
+ * The Arabic labels run ~20% wider than their English counterparts, so every
+ * horizontal measurement below is fluid (`clamp()` keyed to the viewport)
+ * rather than stepped. That is what lets all eight items survive down to the
+ * 1280px laptop width in both languages instead of collapsing into a
+ * hamburger on a 13" MacBook.
+ *
+ * Direction
+ * ---------
+ * Everything uses logical properties (`inset-inline`, `padding-inline`,
+ * `margin-inline`) so the bar mirrors itself from `dir="rtl"` alone. There are
+ * no `flex-direction: row-reverse` overrides any more: in Arabic the brand
+ * sits on the right and the actions on the left, which is what the mirrored
+ * document direction already asks for. The old overrides un-mirrored the row
+ * while leaving the menu itself right-to-left, which is why the Arabic header
+ * read as broken.
  */
 
 @layer components {
 
-    /* ── Shell: the outer card ── */
+    /* ══ Tokens ══════════════════════════════════════════════════════════ */
+
+    :where(#site-header) {
+        --nav-ink: #202759;
+        --nav-ink-muted: rgba(32, 39, 89, 0.66);
+        --nav-accent: #6f1616;
+        --nav-hover-tint: rgba(32, 39, 89, 0.055);
+        --nav-hairline: rgba(32, 39, 89, 0.09);
+
+        /*
+         * One continuous ramp, anchored at the two ends of the desktop range:
+         * 1280px (the narrowest laptop that still shows the full menu) and
+         * 1800px (the widest the shell ever gets). Every horizontal dimension
+         * that competes for row space rides it, so the bar tightens evenly
+         * instead of one element hogging the slack.
+         *
+         *                        @1280px     @1800px
+         *   --nav-link-size        14px        17px
+         *   --nav-link-pad          4px        14px
+         *   --nav-toggle-w         22px        26px
+         *   --nav-brand-w         104px       184px
+         */
+        --nav-link-size: clamp(0.875rem, 0.4134rem + 0.5769vw, 1.0625rem);
+        --nav-link-pad: clamp(0.25rem, -1.2888rem + 1.9231vw, 0.875rem);
+        --nav-toggle-w: clamp(1.375rem, 0.7597rem + 0.7692vw, 1.625rem);
+        --nav-brand-w: clamp(6.5rem, -5.806rem + 15.385vw, 11.5rem);
+        --nav-row-gap: clamp(0.3rem, -1.177rem + 1.846vw, 0.9rem);
+        --nav-radius: 10px;
+    }
+
+    /* ══ Shell ═══════════════════════════════════════════════════════════ */
+
+    /*
+     * Deliberately NOT paired with the site-wide `.container` class any more:
+     * in Tailwind v4 the built-in `container` *utility* outranks a custom
+     * `.container` defined in the components layer, so the header was being
+     * capped at the current breakpoint — 1280px on a 1512px screen — instead
+     * of the width this file asks for. That single line of cascade is most of
+     * why the bar ran out of room and the labels collided with the logo.
+     */
+    .site-nav-container {
+        width: 100%;
+        max-width: 1800px;
+        margin-inline: auto;
+        padding-inline: clamp(0.75rem, 2.5vw, 3rem);
+    }
+
     .site-nav-shell {
         position: relative;
         z-index: 1;
@@ -24,8 +87,7 @@
             transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
             box-shadow 0.4s ease,
             background 0.4s ease,
-            backdrop-filter 0.4s ease,
-            border-radius 0.4s ease;
+            backdrop-filter 0.4s ease;
     }
 
     .site-nav-shell--sticky {
@@ -37,115 +99,103 @@
         -webkit-backdrop-filter: blur(18px) saturate(145%);
     }
 
-    .site-nav-container {
-        width: 100%;
-        max-width: 1800px;
-        padding-inline: clamp(0.75rem, 2.5vw, 3rem);
-    }
-
-    /* ── Main row: logo + nav + actions ── */
+    /*
+     * `min-width: 0` on the flex children is what keeps a long menu from
+     * punching through the brand and the actions: without it the nowrap
+     * labels refuse to shrink and simply overflow on top of their siblings.
+     */
     .site-nav-shell__main {
         position: relative;
         z-index: 1;
         display: flex;
         flex-wrap: nowrap;
         align-items: center;
-        justify-content: space-between;
-        gap: 0.5rem;
+        gap: var(--nav-row-gap);
         min-height: 4.5rem;
-        padding: 0.65rem 1rem;
+        padding-block: 0.7rem;
+        padding-inline: clamp(0.75rem, 0.2rem + 0.7vw, 1.5rem);
     }
 
     .site-nav-brand {
         display: inline-flex;
+        flex: 0 0 auto;
         align-items: center;
         min-width: 0;
-        flex-shrink: 0;
+        border-radius: var(--nav-radius);
     }
 
     .site-nav-brand img {
-        width: clamp(7.25rem, 12vw, 10rem) !important;
+        width: var(--nav-brand-w);
+        height: auto;
     }
 
-    /* ── Desktop nav list ── */
+    .site-nav-brand:focus-visible {
+        outline: 2px solid var(--nav-accent);
+        outline-offset: 4px;
+    }
+
+    /* ══ Primary nav ═════════════════════════════════════════════════════ */
+
+    .site-nav-primary {
+        flex: 1 1 auto;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
     .site-nav-list {
         display: flex;
         flex-wrap: nowrap;
         align-items: center;
-        justify-content: space-between;
+        justify-content: center;
+        min-width: 0;
         gap: 0;
     }
 
     .site-nav-item {
         position: relative;
+        min-width: 0;
     }
 
+    /* Invisible bridge so the pointer can cross the gap into the dropdown. */
     .site-nav-item::after {
         content: '';
         position: absolute;
         top: 100%;
-        left: 0;
-        right: 0;
-        height: 0.75rem;
+        inset-inline: 0;
+        height: 0.65rem;
     }
 
     .site-nav-link {
         position: relative;
-        display: inline-flex;
+        display: flex;
         align-items: center;
-        white-space: nowrap;
-        border-radius: 10px;
-        color: rgba(32, 39, 89, 0.68);
-        font-size: 0.95rem;
+        min-width: 0;
+        border-radius: var(--nav-radius);
+        padding-block: 0.55rem;
+        padding-inline: var(--nav-link-pad);
+        color: var(--nav-ink-muted);
+        font-size: var(--nav-link-size);
         font-weight: 700;
-        line-height: 1;
-        transition: color 0.25s ease, background-color 0.25s ease;
+        line-height: 1.2;
+        white-space: nowrap;
+        word-break: keep-all;
         font-feature-settings: inherit;
         text-rendering: inherit;
-        word-break: keep-all;
+        transition: color 0.22s ease;
     }
 
-    .site-nav-link-composite {
-        display: inline-flex;
-        
-        align-items: center;
-        border-radius: 10px;
-        transition: background-color 0.25s ease;
-    }
-
-    .site-nav-link-composite:hover {
-        background: rgba(32, 39, 89, 0.04);
-    }
-
-    .site-nav-link-composite .site-nav-link {
-        padding-inline-end: 0.35rem;
-    }
-
-    .site-nav-link-composite .site-nav-link:hover {
-        background: transparent;
-    }
-
-    .site-nav-dropdown-toggle {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 1.5rem;
-        height: 1.5rem;
-        border: 0;
-        border-radius: 7px;
-        background: transparent;
-        cursor: pointer;
-    }
-
-    .site-nav-dropdown-toggle:hover,
-    .site-nav-dropdown-toggle:focus-visible {
-        background: transparent;
-        outline: none;
-    }
-
-    .site-nav-dropdown-toggle[aria-expanded='true'] .site-nav-link__chevron {
-        color: #6f1616;
-        transform: rotate(180deg);
+    /*
+     * Last-resort guard. The menu is CMS-editable, so an editor can add a
+     * ninth item or a label longer than anything measured here. When that
+     * happens the labels ellipsize inside their own box instead of colliding
+     * with the logo, which is what the old bar did.
+     */
+    .site-nav-link > span {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     button.site-nav-link {
@@ -155,176 +205,240 @@
         font-family: inherit;
     }
 
-    .site-nav-link:focus-visible {
-        outline: 2px solid #6f1616;
-        outline-offset: 2px;
+    /*
+     * A parent item that is itself a page carries two controls: the label
+     * links through, the chevron opens the submenu. They read as one pill.
+     * The old 2.75rem chevron button pushed the arrow so far from its own
+     * label that it visually belonged to the *next* item — that is how
+     * "Research ⌄ Campus Life" ended up looking like one run-on label — and
+     * it cost ~240px of row width across eight items, which is the rest of
+     * why the bar overflowed.
+     */
+    .site-nav-link-composite {
+        display: flex;
+        align-items: center;
+        min-width: 0;
+        border-radius: var(--nav-radius);
+        transition: background-color 0.22s ease;
     }
 
-    .site-nav-link:hover {
-        color: #202759;
-        background: rgba(32, 39, 89, 0.04);
+    .site-nav-link-composite .site-nav-link {
+        padding-inline-end: 0.15rem;
     }
 
-    /* Active state: colored text + animated underline */
+    .site-nav-dropdown-toggle {
+        display: inline-flex;
+        flex: 0 0 auto;
+        align-items: center;
+        /* Start-aligned, not centred, so the arrow stays with its own label. */
+        justify-content: flex-start;
+        align-self: stretch;
+        width: var(--nav-toggle-w);
+        border: 0;
+        border-radius: var(--nav-radius);
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+        padding-inline-start: 0.15rem;
+    }
+
+    .site-nav-link__chevron {
+        width: 0.7rem;
+        height: 0.7rem;
+        flex: 0 0 auto;
+        opacity: 0.5;
+        transition: transform 0.25s ease, opacity 0.25s ease;
+    }
+
+    /* ── Hover / focus / open ── */
+
+    .site-nav-link:hover,
+    .site-nav-item:hover > .site-nav-link-composite .site-nav-link {
+        color: var(--nav-ink);
+    }
+
+    .site-nav-link:not(.site-nav-link-composite .site-nav-link):hover,
+    .site-nav-link-composite:hover,
+    .site-nav-link-composite:focus-within {
+        background: var(--nav-hover-tint);
+    }
+
+    .site-nav-item:hover .site-nav-link__chevron,
+    .site-nav-dropdown-toggle[aria-expanded='true'] .site-nav-link__chevron,
+    .site-nav-link[aria-expanded='true'] .site-nav-link__chevron {
+        opacity: 1;
+        transform: rotate(180deg);
+    }
+
+    .site-nav-link:focus-visible,
+    .site-nav-dropdown-toggle:focus-visible {
+        outline: 2px solid var(--nav-accent);
+        outline-offset: -2px;
+    }
+
+    /* ── Active item ── */
+
     .site-nav-link--active {
-        color: #6f1616;
+        color: var(--nav-accent);
     }
 
     .site-nav-link--active::after {
         content: '';
         position: absolute;
-        bottom: 2px;
-        left: 0.85rem;
-        right: 0.85rem;
-        height: 2.5px;
+        bottom: 0.15rem;
+        inset-inline: var(--nav-link-pad);
+        height: 2px;
         border-radius: 9999px;
-        background: linear-gradient(90deg, #6f1616 0%, rgba(111, 22, 22, 0.3) 100%);
-        animation: nav-underline-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        background: var(--nav-accent);
+        transform-origin: center;
+        animation: nav-underline-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .site-nav-link-composite .site-nav-link--active::after {
+        inset-inline-end: 0.15rem;
     }
 
     @keyframes nav-underline-in {
-        from {
-            transform: scaleX(0);
-            opacity: 0;
-        }
-
-        to {
-            transform: scaleX(1);
-            opacity: 1;
-        }
+        from { transform: scaleX(0); opacity: 0; }
+        to   { transform: scaleX(1); opacity: 1; }
     }
 
-    .site-nav-link__chevron {
-        width: 0.65rem;
-        height: 0.65rem;
-        color: rgba(32, 39, 89, 0.35);
-        transition: transform 0.25s ease, color 0.25s ease;
-    }
+    /* ══ Dropdown panel ══════════════════════════════════════════════════ */
 
-    .site-nav-item:hover .site-nav-link__chevron {
-        color: #6f1616;
-        transform: rotate(180deg);
-    }
-
-    .site-nav-link[aria-expanded='true'] .site-nav-link__chevron {
-        color: #6f1616;
-        transform: rotate(180deg);
-    }
-
-    /* ── Dropdown panel ── */
     .site-nav-dropdown {
         position: absolute;
-        top: calc(100% + 0.5rem);
-        left: 50%;
+        top: calc(100% + 0.6rem);
+        inset-inline-start: 50%;
         transform: translateX(-50%);
         z-index: 80;
         display: grid;
-        gap: 0.2rem;
-        min-width: 16rem;
-        max-height: calc(100svh - 6rem);
+        gap: 0.1rem;
+        min-width: 15rem;
+        max-width: min(90vw, 40rem);
+        max-height: calc(100svh - 7rem);
         padding: 0.5rem;
-        border: 1px solid rgba(225, 231, 245, 0.8);
-        border-radius: 20px;
+        border: 1px solid var(--nav-hairline);
+        border-radius: 16px;
         background: #ffffff;
         box-shadow:
-            0 24px 52px rgba(11, 19, 50, 0.12),
-            0 8px 20px rgba(11, 19, 50, 0.04),
-            0 1px 0 rgba(255, 255, 255, 0.88) inset;
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
+            0 24px 52px rgba(11, 19, 50, 0.14),
+            0 8px 20px rgba(11, 19, 50, 0.05);
         overflow-y: auto;
         overscroll-behavior: contain;
     }
 
-    .site-nav-dropdown::before {
-        content: '';
-        position: absolute;
-        top: -5px;
-        left: 50%;
-        transform: translateX(-50%) rotate(45deg);
-        width: 10px;
-        height: 10px;
-        border-top: 1px solid rgba(225, 231, 245, 0.8);
-        border-left: 1px solid rgba(225, 231, 245, 0.8);
-        background: rgba(255, 255, 255, 0.99);
-    }
-
+    /*
+     * Menus of nine entries or more run two columns. Campus Life has
+     * thirteen; as one column it ran off the bottom of a laptop screen.
+     *
+     * CSS columns rather than a two-column grid: a grid fills across the row,
+     * so a thirteen-item menu would read 1,2 / 3,4 / 5,6 … Columns fill down
+     * the first track and then the second, which is the order someone
+     * scanning a menu expects.
+     */
+    .site-nav-dropdown:has(> *:nth-child(9)),
     .site-nav-dropdown--research {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        width: 25rem;
-        min-width: 25rem;
-        gap: 0.1rem 0.35rem;
-        padding: 0.5rem;
+        display: block;
+        columns: 2;
+        column-gap: 0.4rem;
+        width: min(90vw, 32rem);
     }
 
-    .site-nav-dropdown--research .site-nav-dropdown-link {
-        min-height: 2.5rem;
-        padding: 0.6rem 0.7rem;
-        font-size: 0.84rem;
+    .site-nav-dropdown:has(> *:nth-child(9)) > *,
+    .site-nav-dropdown--research > * {
+        break-inside: avoid;
     }
 
-    .site-nav-dropdown-link {
+    /*
+     * Edge items: a centred panel under the first or last item would hang off
+     * the shell, so those pin to the matching edge of their own trigger.
+     */
+    .site-nav-item:first-child .site-nav-dropdown {
+        inset-inline-start: 0;
+        transform: none;
+    }
+
+    .site-nav-item:last-child .site-nav-dropdown {
+        inset-inline-start: auto;
+        inset-inline-end: 0;
+        transform: none;
+    }
+
+    /*
+     * `translateX` is a physical transform, so centring under the trigger
+     * needs the opposite sign once the document is mirrored — otherwise the
+     * Arabic panel lands a full panel-width away from the item that opened it.
+     */
+    [dir='rtl'] .site-nav-dropdown {
+        transform: translateX(50%);
+    }
+
+    [dir='rtl'] .site-nav-item:first-child .site-nav-dropdown,
+    [dir='rtl'] .site-nav-item:last-child .site-nav-dropdown {
+        transform: none;
+    }
+
+    .site-nav-dropdown-link,
+    .site-nav-dropdown-featured {
         display: flex;
         align-items: center;
-        gap: 0.6rem;
-        border-radius: 12px;
-        padding: 0.75rem 0.9rem;
-        color: #202759;
-        font-size: 0.9rem;
+        gap: 0.55rem;
+        border-radius: 10px;
+        padding-block: 0.55rem;
+        padding-inline: 0.8rem;
+        color: var(--nav-ink);
+        font-size: 0.875rem;
         font-weight: 600;
-        transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+        line-height: 1.35;
+        text-decoration: none;
+        transition: background-color 0.18s ease, color 0.18s ease;
     }
 
-    .site-nav-dropdown-link:hover {
-        background: rgba(32, 39, 89, 0.04);
-        color: #6f1616;
-        transform: translateX(3px);
+    .site-nav-dropdown-link:hover,
+    .site-nav-dropdown-featured:hover,
+    .site-nav-dropdown-link:focus-visible,
+    .site-nav-dropdown-featured:focus-visible {
+        background: var(--nav-hover-tint);
+        color: var(--nav-accent);
+    }
+
+    .site-nav-dropdown-link:focus-visible,
+    .site-nav-dropdown-featured:focus-visible,
+    .site-nav-dropdown-group-header:focus-visible {
+        outline: 2px solid var(--nav-accent);
+        outline-offset: -2px;
     }
 
     .site-nav-dropdown-group {
         display: flex;
         flex-direction: column;
-        gap: 0.5rem;
-        padding: 0.25rem 0;
+        gap: 0.1rem;
+        padding-block: 0.25rem;
     }
 
     .site-nav-dropdown-group-header {
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        border-radius: 10px;
-        padding: 0.6rem 0.9rem 0.3rem;
-        color: #6f1616;
-        font-size: 0.78rem;
+        border-radius: 8px;
+        padding: 0.5rem 0.8rem 0.25rem;
+        color: var(--nav-accent);
+        font-size: 0.72rem;
         font-weight: 800;
         text-transform: uppercase;
         letter-spacing: 0.06em;
         text-decoration: none;
-        transition: color 0.2s ease;
+        transition: color 0.18s ease;
     }
 
     .site-nav-dropdown-group-header:hover {
-        color: #202759;
+        color: var(--nav-ink);
     }
 
     .site-nav-dropdown-featured {
-        display: flex;
-        align-items: center;
-        gap: 0.6rem;
-        border-radius: 10px;
-        padding-block: 0.5rem;
-        padding-inline: 1.4rem 0.9rem;
-        color: #202759;
+        padding-inline-start: 1.3rem;
         font-size: 0.85rem;
         font-weight: 500;
-        text-decoration: none;
-        transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
-    }
-
-    .site-nav-dropdown-featured:hover {
-        background: rgba(32, 39, 89, 0.04);
-        color: #6f1616;
-        transform: translateX(3px);
     }
 
     .site-nav-dropdown-featured::before {
@@ -332,29 +446,136 @@
         display: block;
         width: 4px;
         height: 4px;
+        flex: 0 0 auto;
         border-radius: 50%;
         background: currentColor;
         opacity: 0.4;
-        flex-shrink: 0;
     }
 
-    /* ── Actions area (language, CTA, hamburger) ── */
+    /* ══ Actions ═════════════════════════════════════════════════════════ */
+
+    /*
+     * `margin-inline-start: auto` rather than `justify-content: space-between`
+     * on the row: below the nav breakpoint the primary nav is display:none,
+     * and space-between with only two children left the actions stranded
+     * beside the logo with the rest of the bar empty. The auto margin pins
+     * them to the far edge in both states, and collapses to nothing once the
+     * nav is back and taking the slack itself.
+     */
     .site-nav-actions {
-        display: flex;
-        align-items: center;
-        gap: 0.35rem;
-        flex-shrink: 0;
         position: relative;
         z-index: 1;
+        display: flex;
+        flex: 0 0 auto;
+        align-items: center;
+        gap: 0.25rem;
+        margin-inline-start: auto;
     }
 
-    /* ── Search panel (anchored to the search button) ── */
+    .site-nav-lang {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        min-width: 2.25rem;
+        min-height: 2.25rem;
+        border-radius: var(--nav-radius);
+        padding-inline: 0.5rem;
+        color: var(--nav-ink-muted);
+        font-size: 0.8rem;
+        font-weight: 700;
+        line-height: 1;
+        white-space: nowrap;
+        transition: color 0.2s ease, background-color 0.2s ease;
+    }
+
+    .site-nav-lang:hover {
+        color: var(--nav-ink);
+        background: var(--nav-hover-tint);
+    }
+
+    .site-nav-lang:focus-visible {
+        outline: 2px solid var(--nav-accent);
+        outline-offset: 2px;
+    }
+
+    /*
+     * Styled here rather than with utilities in the template: utility classes
+     * win the cascade over this file, so the responsive sizing below could
+     * never take effect while `px-5 py-2.5 text-xs` sat on the element — the
+     * previous compact-width rules for this button were dead code.
+     */
+    .site-nav-apply {
+        align-items: center;
+        gap: 0.5rem;
+        margin-inline-start: 0.35rem;
+        border-radius: 9999px;
+        padding-block: 0.7rem;
+        padding-inline: clamp(0.85rem, -0.2rem + 1.3vw, 1.4rem);
+        background: var(--nav-accent);
+        color: #fff;
+        font-size: clamp(0.66rem, 0.5rem + 0.2vw, 0.75rem);
+        font-weight: 700;
+        line-height: 1;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        white-space: nowrap;
+        box-shadow: 0 8px 22px rgba(111, 22, 22, 0.24);
+        transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+    }
+
+    .site-nav-apply:hover {
+        transform: translateY(-1px);
+        background: #8a1d1d;
+        box-shadow: 0 12px 30px rgba(111, 22, 22, 0.3);
+    }
+
+    .site-nav-apply:focus-visible {
+        outline: 2px solid var(--nav-ink);
+        outline-offset: 2px;
+    }
+
+    .site-nav-apply img {
+        width: 1.05rem;
+        height: 1.05rem;
+    }
+
+    .site-nav-menu-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.6rem;
+        height: 2.6rem;
+        flex: 0 0 auto;
+        border-radius: 12px;
+        border: 1px solid var(--nav-hairline);
+        background: rgba(255, 255, 255, 0.9);
+        color: var(--nav-ink);
+        transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .site-nav-menu-btn:hover {
+        transform: translateY(-1px);
+        background: #fff;
+        box-shadow: 0 8px 20px rgba(11, 19, 50, 0.08);
+    }
+
+    .site-nav-menu-btn:focus-visible {
+        outline: 2px solid var(--nav-accent);
+        outline-offset: 2px;
+    }
+
+    /* ══ Search panel ════════════════════════════════════════════════════ */
+
     .site-search-panel {
         transform-origin: top right;
     }
 
+    /* Mirrored: anchor to the other edge of the trigger, not off-screen. */
     [dir='rtl'] .site-search-panel {
         transform-origin: top left;
+        right: auto;
+        left: 0;
     }
 
     @media (max-width: 767px) {
@@ -367,43 +588,7 @@
         }
     }
 
-    .site-nav-lang {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.45rem;
-        white-space: nowrap;
-        border-radius: 10px;
-        padding: 0.5rem 0.75rem;
-        color: rgba(32, 39, 89, 0.6);
-        font-size: 0.82rem;
-        font-weight: 700;
-        line-height: 1;
-        transition: color 0.22s ease, background-color 0.22s ease;
-    }
-
-    .site-nav-lang:hover {
-        color: #202759;
-        background: rgba(32, 39, 89, 0.04);
-    }
-
-    .site-nav-menu-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 2.75rem;
-        height: 2.75rem;
-        border-radius: 12px;
-        border: 1px solid rgba(32, 39, 89, 0.06);
-        background: rgba(255, 255, 255, 0.9);
-        color: #202759;
-        transition: transform 0.22s ease, background-color 0.22s ease, box-shadow 0.22s ease;
-    }
-
-    .site-nav-menu-btn:hover {
-        transform: translateY(-1px);
-        background: #fff;
-        box-shadow: 0 8px 20px rgba(11, 19, 50, 0.08);
-    }
+    /* ══ Mobile panel ════════════════════════════════════════════════════ */
 
     .site-nav-backdrop {
         position: fixed;
@@ -415,14 +600,13 @@
         -webkit-backdrop-filter: blur(3px);
     }
 
-    /* ── Mobile panel ── */
     .site-nav-mobile-panel {
         position: absolute;
         inset-inline: 0;
         top: calc(100% + 0.5rem);
         z-index: 3;
-        border: 1px solid rgba(32, 39, 89, 0.08);
-        border-radius: 20px;
+        border: 1px solid var(--nav-hairline);
+        border-radius: 16px;
         background: rgba(255, 255, 255, 0.98);
         box-shadow: 0 24px 60px rgba(8, 14, 40, 0.2);
         padding: 0.65rem;
@@ -458,19 +642,19 @@
         display: block;
         border-radius: 12px;
         padding: 0.8rem 0.9rem;
-        color: #202759;
+        color: var(--nav-ink);
         font-size: 0.95rem;
         font-weight: 700;
         transition: background-color 0.2s ease, color 0.2s ease;
     }
 
     .site-nav-mobile-link:hover {
-        background: rgba(255, 255, 255, 0.8);
-        color: #6f1616;
+        background: var(--nav-hover-tint);
+        color: var(--nav-accent);
     }
 
     .site-nav-mobile-link--active {
-        color: #6f1616;
+        color: var(--nav-accent);
         background: rgba(111, 22, 22, 0.06);
     }
 
@@ -482,20 +666,28 @@
         height: 2.5rem;
         flex-shrink: 0;
         border-radius: 10px;
-        border: 1px solid rgba(32, 39, 89, 0.06);
+        border: 1px solid var(--nav-hairline);
         background: rgba(255, 255, 255, 0.9);
-        color: #202759;
-        transition: transform 0.22s ease, background-color 0.22s ease;
+        color: var(--nav-ink);
+        transition: background-color 0.2s ease, color 0.2s ease;
     }
 
     .site-nav-mobile-toggle:hover {
         background: #fff;
-        color: #6f1616;
+        color: var(--nav-accent);
+    }
+
+    .site-nav-mobile-link:focus-visible,
+    .site-nav-mobile-toggle:focus-visible,
+    .site-nav-mobile-child:focus-visible,
+    .site-nav-mobile-group-header:focus-visible {
+        outline: 2px solid var(--nav-accent);
+        outline-offset: -2px;
     }
 
     .site-nav-mobile-children {
         display: grid;
-        gap: 0.5rem;
+        gap: 0.35rem;
         padding: 0.1rem 0.35rem 0.65rem;
     }
 
@@ -503,23 +695,22 @@
         display: block;
         border-radius: 10px;
         background: rgba(32, 39, 89, 0.035);
-        padding: 0.75rem 0.9rem;
-        color: rgba(32, 39, 89, 0.78);
+        padding: 0.7rem 0.9rem;
+        color: rgba(32, 39, 89, 0.8);
         font-size: 0.88rem;
         font-weight: 600;
-        transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+        transition: background-color 0.2s ease, color 0.2s ease;
     }
 
     .site-nav-mobile-child:hover {
-        transform: translateX(3px);
         background: #fff;
-        color: #6f1616;
+        color: var(--nav-accent);
     }
 
     .site-nav-mobile-group {
         display: flex;
         flex-direction: column;
-        gap: 0.5rem;
+        gap: 0.35rem;
     }
 
     .site-nav-mobile-group-header {
@@ -527,7 +718,7 @@
         border-radius: 10px;
         background: rgba(32, 39, 89, 0.06);
         padding: 0.6rem 0.9rem;
-        color: #6f1616;
+        color: var(--nav-accent);
         font-size: 0.78rem;
         font-weight: 800;
         text-transform: uppercase;
@@ -541,126 +732,44 @@
         font-weight: 500;
     }
 
-    /* ── RTL adjustments ── */
-    [dir='rtl'] .site-nav-shell__main,
-    [dir='rtl'] .site-nav-actions,
-    [dir='rtl'] .site-nav-mobile-row {
-        flex-direction: row-reverse;
-    }
-
-    [dir='rtl'] .site-nav-link--active::after {
-        transform-origin: right center;
-    }
-
-    [dir='rtl'] .site-nav-dropdown {
-        left: 50%;
-        right: auto;
-    }
-
-    [dir='rtl'] .site-nav-dropdown::before {
-        left: 50%;
-        right: auto;
-    }
-
-    [dir='rtl'] .site-nav-dropdown-link:hover,
-    [dir='rtl'] .site-nav-dropdown-featured:hover,
-    [dir='rtl'] .site-nav-mobile-child:hover {
-        transform: translateX(-3px);
-    }
+    /* ══ Breakpoint refinements ══════════════════════════════════════════ */
 
     /*
-     * ── Responsive padding system ──
-     *
-     * The shell uses the hamburger layout through tablet widths and switches
-     * to the full navigation only when the nav breakpoint (1440px) has enough room.
+     * 1280–1479 is the tightest desktop tier. The language switch drops to its
+     * globe icon and the CTA tightens so the eight Arabic labels keep their
+     * room; both controls stay labelled for screen readers.
      */
-
-    /* 700px – 767px */
-    @media (min-width: 700px) {
-        .site-nav-shell__main {
-            padding: 0.8rem 1.25rem;
-        }
-    }
-
-    /* 768px – 1023px */
-    @media (min-width: 768px) {
-        .site-nav-shell__main {
-            padding: 0.75rem 1.5rem;
-        }
-    }
-
-     /* ── 1024px–1479px: compact mobile-navigation shell ── */
-     @media (min-width: 1024px) and (max-width: 1479px) {
-         .site-nav-shell__main {
-             flex-wrap: nowrap;
-             gap: 0.5rem;
-             padding: 0.65rem 1rem;
-         }
-     }
-
-    /* ── ≥1440px (nav): single row, comfortable spacing ── */
-    @media (min-width: 1480px) {
-        .site-nav-shell__main {
-            flex-wrap: nowrap;
-            gap: 0.5rem;
-            padding: 0.7rem 1rem;
-        }
-
-        .site-nav-shell__main > nav {
-            min-width: 0;
-            padding-inline: 0.4rem;
-        }
-
-        .site-nav-brand img {
-            width: 10.5rem !important;
-        }
-
-        .site-nav-link {
-            font-size: 0.95rem;
-            padding: 0.6rem 0.4rem;
-        }
-
-        .site-nav-list {
-            gap: 0;
-        }
-
-        .site-nav-actions {
-            gap: 0.15rem;
-        }
-
-        .site-nav-lang {
-            padding-inline: 0.45rem;
+    @media (min-width: 1280px) and (max-width: 1479px) {
+        .site-nav-lang span:not(.sr-only) {
+            display: none;
         }
 
         .site-nav-apply {
-            padding: 0.65rem 0.85rem;
-            font-size: 0.66rem;
+            margin-inline-start: 0.2rem;
+            padding-inline: 0.7rem;
+            letter-spacing: 0.05em;
         }
     }
 
-    /* ≤420px: tiny phones — untouched */
+    /* Below the nav breakpoint the hamburger takes over. */
+    @media (max-width: 1279px) {
+        .site-nav-shell__main {
+            padding-inline: clamp(0.75rem, 0.4rem + 1vw, 1.75rem);
+        }
+    }
+
     @media (max-width: 420px) {
         .site-nav-shell__main {
             gap: 0.4rem;
-            padding: 0.5rem 0.65rem;
+            padding-block: 0.55rem;
+            padding-inline: 0.75rem;
         }
 
         .site-nav-brand img {
-            width: 6.75rem !important;
+            width: 6.75rem;
         }
 
-        .site-nav-actions {
-            gap: 0.3rem;
-        }
-
-        .site-nav-lang {
-            padding: 0.4rem;
-            min-width: 2.25rem;
-            min-height: 2.25rem;
-            justify-content: center;
-        }
-
-        .site-nav-lang span {
+        .site-nav-lang span:not(.sr-only) {
             display: none;
         }
 
@@ -673,6 +782,7 @@
     @media (prefers-reduced-motion: reduce) {
         .site-nav-shell,
         .site-nav-menu-btn,
+        .site-nav-apply,
         .site-nav-mobile-panel {
             transition-duration: 0.01ms !important;
         }
