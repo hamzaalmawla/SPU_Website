@@ -60,6 +60,25 @@ if [[ -f "${WEB}/.user.ini" ]] && grep -Eq '^[[:space:]]*zlib\.output_compressio
     fail "zlib.output_compression is enabled in ${WEB}/.user.ini. The application compresses in CompressPublicResponses; two compressors produce gzip(gzip(body)) and break every page. Comment it out - this file is not deployed from git, so it must be edited on the server."
 fi
 
+# The other half of the staging overlay, and the one with no other safety net.
+#
+# The docroot .htaccess adds `X-Robots-Tag: noindex, nofollow, noarchive` to
+# every response so v2 stays out of Google while it is a rehearsal. Apache adds
+# it, which means no check inside PHP can ever see it: launch:validate makes its
+# requests through the HTTP kernel and never touches the web server. So the
+# robots.txt half of the overlay is caught by the gate and this half is caught
+# by nothing.
+#
+# Left in place at cutover it tells every search engine to drop the university's
+# main website. That is the single most expensive mistake available here, it is
+# a manual step in a checklist (Docs/V2_PRE_CUTOVER_ACTIONS.md section C), and
+# manual steps in checklists are the ones that get missed.
+if [[ "${SPU_DEPLOY_ENV:-staging}" == "production" ]] \
+   && [[ -f "${WEB}/.htaccess" ]] \
+   && grep -Eqi '^[[:space:]]*Header[[:space:]]+(always[[:space:]]+)?set[[:space:]]+X-Robots-Tag.*noindex' "${WEB}/.htaccess"; then
+    fail "${WEB}/.htaccess still sets X-Robots-Tag: noindex, and this is a production deploy. Every page would tell search engines not to index the site. Remove the STAGING ONLY blocks - see Docs/V2_PRE_CUTOVER_ACTIONS.md section C. This file is not deployed from git; edit it on the server."
+fi
+
 # A missing asset directory does not error, it renders the whole site unstyled,
 # so check the source before touching anything on the server.
 [[ -f "${SOURCE}/public/build/manifest.json" ]] || fail \
