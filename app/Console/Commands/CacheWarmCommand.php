@@ -12,6 +12,7 @@ use App\Contracts\Settings\SettingsServiceInterface;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Router;
 
 /**
  * Cache warm command for pre-populating public page caches.
@@ -31,6 +32,12 @@ final class CacheWarmCommand extends Command
 
     private int $warnings = 0;
 
+    /**
+     * The generic route that renders CMS pages. Everything else in the sitemap
+     * has a dedicated controller and its own content type behind it.
+     */
+    private const CMS_PAGE_ROUTE = 'public.page';
+
     public function __construct(
         private readonly HomepageSectionServiceInterface $homepageService,
         private readonly NavigationServiceInterface $navigationService,
@@ -38,6 +45,7 @@ final class CacheWarmCommand extends Command
         private readonly SettingsServiceInterface $settingsService,
         private readonly SitemapServiceInterface $sitemapService,
         private readonly HttpKernel $httpKernel,
+        private readonly Router $router,
     ) {
         parent::__construct();
     }
@@ -109,7 +117,24 @@ final class CacheWarmCommand extends Command
                 $page = $this->pageService->getPublicPageBySlug($slugPath, $locale);
 
                 if ($page === null) {
-                    $this->warn("  ⚠ Landing page ({$locale}/{$slugPath}) unavailable");
+                    // The sitemap covers every public URL; this method resolves
+                    // only CMS pages. A news article, a publication or a project
+                    // is served by its own controller and has no CMS page behind
+                    // it, so null there means "not our kind of page" rather than
+                    // "broken" - which is why this emitted 4,544 warnings on the
+                    // deploy of 1 September and buried the ones that mattered.
+                    //
+                    // The router draws the line for us. CMS pages are served by
+                    // the generic {locale}/{slugPath} route; anything that
+                    // resolves elsewhere is somebody else's page and is fine.
+                    if ($this->routeNameFor($entry->loc) !== self::CMS_PAGE_ROUTE) {
+                        continue;
+                    }
+
+                    // Routed to the CMS page controller with no published page
+                    // behind it: the sitemap is advertising a URL that will 404
+                    // to anyone - a crawler included - who follows it.
+                    $this->warn("  ⚠ Sitemap advertises {$locale}/{$slugPath} as a page, but nothing publishes it");
                     $this->warnings++;
 
                     continue;
@@ -121,6 +146,21 @@ final class CacheWarmCommand extends Command
                 $this->warn("  ⚠ Landing page ({$locale}/{$slugPath}) unavailable: {$e->getMessage()}");
                 $this->warnings++;
             }
+        }
+    }
+
+    /**
+     * The name of the route that serves this URL, or null if nothing does.
+     *
+     * Router::match() throws when no route matches and when the method is not
+     * allowed; both mean nothing serves a GET here.
+     */
+    private function routeNameFor(string $url): ?string
+    {
+        try {
+            return $this->router->getRoutes()->match(Request::create($url, 'GET'))->getName();
+        } catch (\Throwable) {
+            return null;
         }
     }
 

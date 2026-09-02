@@ -27,39 +27,46 @@ final class ResponseCompressionTest extends TestCase
      * per-request CSRF token into it on every read, so anything that encodes
      * the body has to run after that substitution has already happened.
      *
-     * This asserts the resolved order for a real public route rather than the
-     * literal in routes/web.php, so it still holds if the group is refactored.
+     * Asserted across every route the page cache applies to, not just the
+     * homepage. {locale}/{slugPath} alone covers most of the site's URLs, and a
+     * single-route test would not notice a group it had fallen out of.
      */
-    public function test_compression_wraps_the_page_cache_and_the_minifier(): void
+    public function test_compression_wraps_the_page_cache_everywhere_the_cache_runs(): void
     {
-        $route = collect(app(Router::class)->getRoutes()->getRoutes())
-            ->first(fn ($candidate) => $candidate->getName() === 'public.home');
+        $router = app(Router::class);
+        $checked = 0;
 
-        $this->assertNotNull($route, 'public.home must exist for this guarantee to mean anything.');
+        foreach ($router->getRoutes()->getRoutes() as $route) {
+            $middleware = $router->gatherRouteMiddleware($route);
 
-        $middleware = app(Router::class)->gatherRouteMiddleware($route);
+            if (! in_array(CachePublicPages::class, $middleware, true)) {
+                continue;
+            }
 
-        $positionOf = function (string $class) use ($middleware): int {
-            $index = array_search($class, $middleware, true);
-            $this->assertIsInt($index, $class.' must be applied to public.home.');
+            $name = $route->getName() ?? $route->uri();
+            $compress = array_search(CompressPublicResponses::class, $middleware, true);
 
-            return $index;
-        };
+            $this->assertIsInt(
+                $compress,
+                "{$name} is page-cached but not compressed: its responses ship uncompressed on an "
+                .'origin that degrades sharply above ~24KB.',
+            );
 
-        $compress = $positionOf(CompressPublicResponses::class);
+            $this->assertLessThan(
+                array_search(CachePublicPages::class, $middleware, true),
+                $compress,
+                "{$name} compresses inside the page cache, so a gzipped body would be stored and "
+                .'CSRF substitution would corrupt every cached hit.',
+            );
 
-        $this->assertLessThan(
-            $positionOf(CachePublicPages::class),
-            $compress,
-            'Compression must run outside the page cache, or cached bodies get stored gzipped '
-            .'and CSRF substitution corrupts every cached page.',
-        );
+            if (($minify = array_search(MinifyPublicHtml::class, $middleware, true)) !== false) {
+                $this->assertLessThan($minify, $compress, "{$name} compresses before minifying.");
+            }
 
-        $this->assertLessThan(
-            $positionOf(MinifyPublicHtml::class),
-            $compress,
-            'Compression must run outside the minifier so it compresses the minified body.',
-        );
+            $checked++;
+        }
+
+        $this->assertGreaterThan(50, $checked, 'Expected the page cache to apply to the public route group.');
     }
 
     /**
