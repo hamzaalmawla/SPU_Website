@@ -179,6 +179,34 @@ Both sites live on the same account, so this is not a DNS change:
 
 ---
 
+## When `public/build` conflicts on a merge
+
+It will, whenever two people touch the front end. Vite names its output by
+content hash, so two builds from two different sources produce two differently
+named files, and git sees a rename/rename conflict it cannot resolve. This is
+the price of committing the build, which we pay on purpose because the server
+has no Node.
+
+**Do not take either side.** Both are wrong after a merge: theirs was built
+before your source changes, yours before theirs. Rebuild from the merged tree.
+
+```bash
+git merge origin/dev          # source merges cleanly; public/build conflicts
+rm -rf public/build
+php artisan view:clear && npm run build
+git add -A public/build
+git commit
+```
+
+`view:clear` is not optional — Tailwind scans `storage/framework/views`, so stale
+compiled Blade ends up in the stylesheet.
+
+Then run **both** suites before pushing. A merge that leaves the bundle and the
+markup disagreeing produces a page that renders and silently does nothing, which
+is the hardest kind of breakage to notice.
+
+---
+
 ## Deploying without the cPanel UI
 
 The two buttons in **Git Version Control → Manage** are a cPanel API call each,
