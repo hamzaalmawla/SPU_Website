@@ -210,6 +210,40 @@ final class ResponseCompressionTest extends TestCase
         );
     }
 
+    /**
+     * The contract every internal probe relies on: with forcing enabled, an
+     * absent Accept-Encoding compresses, and an explicit `identity` still opts
+     * out. Request::create() sets no Accept-Encoding, so console commands that
+     * drive the kernel — launch:validate, cache:warm — sit in the first case
+     * unless they say otherwise, and `identity` is what they say.
+     *
+     * If the second half of this ever stops holding, `identity` is no longer an
+     * opt-out and every one of those probes is silently receiving gzip.
+     */
+    public function test_forcing_compresses_an_absent_header_but_never_identity(): void
+    {
+        config()->set('edge.compress_without_accept_encoding', true);
+
+        Route::middleware(['compress'])->get('/__compression-forcing-probe', fn () => response(
+            str_repeat('<p>hello</p>', 400),
+        )->header('Content-Type', 'text/html; charset=UTF-8'));
+
+        $absent = $this->call('GET', '/__compression-forcing-probe');
+
+        $this->assertSame('gzip', $absent->headers->get('Content-Encoding'));
+        $this->assertSame('forced', $absent->headers->get('X-Compressed'));
+
+        $identity = $this->call('GET', '/__compression-forcing-probe', server: [
+            'HTTP_ACCEPT_ENCODING' => 'identity',
+        ]);
+
+        $this->assertNull(
+            $identity->headers->get('Content-Encoding'),
+            'identity must remain a reliable opt-out, or every internal probe receives gzip.',
+        );
+        $this->assertSame('off', $identity->headers->get('X-Compressed'));
+    }
+
     public function test_the_diagnostic_header_is_off_unless_explicitly_enabled(): void
     {
         Route::middleware(['compress'])->get('/__compression-debug-probe', fn () => response('ok'));

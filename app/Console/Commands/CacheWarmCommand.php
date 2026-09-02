@@ -199,6 +199,16 @@ final class CacheWarmCommand extends Command
                 $request = Request::create($origin.$uri, 'GET', server: [
                     'HTTP_HOST' => (string) parse_url($origin, PHP_URL_HOST),
                     'HTTPS' => str_starts_with($origin, 'https://') ? 'on' : 'off',
+                    // identity, deliberately. Request::create() sets no
+                    // Accept-Encoding, and an absent header is what makes
+                    // CompressPublicResponses compress once
+                    // COMPRESS_WITHOUT_ACCEPT_ENCODING is on. Nothing here
+                    // reads these bodies, so this is not a correctness fix -
+                    // it stops the warm gzipping several thousand responses
+                    // that are discarded, on a five-worker pool where that CPU
+                    // is the scarce resource. What lands in the page cache is
+                    // unaffected either way: compression runs outside it.
+                    'HTTP_ACCEPT_ENCODING' => 'identity',
                 ]);
 
                 try {

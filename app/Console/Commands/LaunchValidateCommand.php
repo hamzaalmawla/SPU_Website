@@ -16,6 +16,7 @@ use App\Contracts\Shared\ContinuityServiceInterface;
 use Illuminate\Console\Command;
 use Illuminate\Http\Request as HttpRequest;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Repeatable launch validation command that checks all launch-critical behaviors.
@@ -296,7 +297,7 @@ final class LaunchValidateCommand extends Command
                 $xml = (string) file_get_contents($indexFile);
                 $statusCode = 200;
             } else {
-                $response = app()->handle(HttpRequest::create($canonicalUrl.'/sitemap.xml', 'GET'));
+                $response = $this->probe($canonicalUrl.'/sitemap.xml');
                 $xml = $response->getContent();
                 $statusCode = $response->getStatusCode();
             }
@@ -348,7 +349,7 @@ final class LaunchValidateCommand extends Command
                         continue;
                     }
 
-                    $childResponse = app()->handle(HttpRequest::create($child, 'GET'));
+                    $childResponse = $this->probe($child);
                     $childXml = $childResponse->getContent();
 
                     if ($childResponse->getStatusCode() !== 200
@@ -404,7 +405,7 @@ final class LaunchValidateCommand extends Command
     {
         try {
             $canonicalUrl = rtrim((string) config('edge.canonical_url'), '/');
-            $response = app()->handle(HttpRequest::create($canonicalUrl.'/robots.txt', 'GET'));
+            $response = $this->probe($canonicalUrl.'/robots.txt');
             $runtimeContent = $response->getContent();
             // Apache reaches the front controller only when no physical file
             // matches, so a robots.txt on disk wins in every environment - not
@@ -450,7 +451,7 @@ final class LaunchValidateCommand extends Command
                     'robots.txt indexing policy',
                     'WARN',
                     "Validating for production while running as {$runtimeEnv}, so robots.txt correctly "
-                    ."serves Disallow: / and this domain is not indexable. At cutover set APP_ENV=production, "
+                    .'serves Disallow: / and this domain is not indexable. At cutover set APP_ENV=production, '
                     .'rebuild the config cache and re-run this gate.',
                 );
             }
@@ -517,7 +518,7 @@ final class LaunchValidateCommand extends Command
             // used to report as "responded successfully without a token": a
             // security failure that was really a redirect, on every deploy.
             $canonicalUrl = rtrim((string) config('edge.canonical_url'), '/');
-            $response = app()->handle(HttpRequest::create($canonicalUrl.'/ar/preview', 'GET'));
+            $response = $this->probe($canonicalUrl.'/ar/preview');
             $status = $response->getStatusCode();
 
             if (in_array($status, [400, 403, 404], true)) {
@@ -729,6 +730,34 @@ final class LaunchValidateCommand extends Command
         } catch (\Throwable $e) {
             $this->record('Static sitemap files', 'FAIL', $e->getMessage());
         }
+    }
+
+    /**
+     * Issues an internal request the way every check here needs one.
+     *
+     * Accept-Encoding: identity is precautionary, and it is worth being precise
+     * about why rather than overstating it. HttpRequest::create() sets Host,
+     * User-Agent, Accept, Accept-Language and Accept-Charset but not
+     * Accept-Encoding, and CompressPublicResponses reads an absent header as
+     * "a proxy stripped it" once COMPRESS_WITHOUT_ACCEPT_ENCODING is on - so an
+     * unqualified probe can come back gzipped.
+     *
+     * No check here breaks on that today: robots.txt and sitemap.xml carry no
+     * compress middleware at all, and the preview check reads a status code
+     * rather than a body. The one route probed that is compressed is
+     * {locale}/preview. So this prevents nothing currently broken; it keeps the
+     * next check that reads a body from a compressed route from failing on
+     * binary for a reason that has nothing to do with the site.
+     *
+     * "identity" rather than an empty header because empty is exactly what
+     * triggers the forcing branch. Correct whether the flag is on or off, which
+     * is the point - a probe must not depend on it.
+     */
+    private function probe(string $url): Response
+    {
+        return app()->handle(HttpRequest::create($url, 'GET', server: [
+            'HTTP_ACCEPT_ENCODING' => 'identity',
+        ]));
     }
 
     private function record(string $check, string $status, string $message): void

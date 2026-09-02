@@ -169,6 +169,36 @@ Both sites live on the same account, so this is not a DNS change:
 
 ---
 
+## Files the deploy does not touch
+
+The deploy syncs `app bootstrap config database lang resources routes` into the
+application directory, and copies `public/build/` and the SVG assets into the
+docroot. **That is all it copies into the docroot.** Three files live there that
+git does not deploy:
+
+| File | Why it diverges |
+|---|---|
+| `public/.htaccess` | Carries the `STAGING ONLY` blocks — the `X-Robots-Tag: noindex` header and the host guard — which must **not** reach the live domain. Removing them is a cutover step (`Docs/V2_PRE_CUTOVER_ACTIONS.md` §C). |
+| `public/robots.txt` | The staging `Disallow: /` overlay. Deleted at cutover so the application serves its own. Gitignored on purpose: shipping it would send `Disallow: /` to the live site. |
+| `public/.user.ini` | PHP-FPM settings. |
+
+The divergence is deliberate and correct. The trap is that **editing any of them
+in git changes nothing on the server, and nothing tells you.** A commit can say
+a setting was removed, be entirely true about the repository, and leave the
+server exactly as it was.
+
+That is how `zlib.output_compression = On` stayed live for a day after being
+removed in git — a setting that, combined with the application's own
+compression, would have made every page on the site unreadable. Edit these on
+the server (cPanel File Manager, or the file API), and change the repo copy in
+the same sitting so the two do not drift further.
+
+The deploy now refuses to run if it finds `zlib.output_compression` active in
+the deployed `.user.ini`. That check exists because no amount of care in git can
+catch a file git does not own.
+
+---
+
 ## Things that have actually bitten us
 
 **Never ship `bootstrap/cache/`.** It carries your machine's package manifest,

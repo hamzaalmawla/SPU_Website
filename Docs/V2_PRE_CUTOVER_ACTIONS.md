@@ -160,9 +160,23 @@ opcache.revalidate_freq=60
 **Evidence:** nginx terminates TLS on :80/:443. Requesting Apache directly from
 the server with an explicit `Accept-Encoding: gzip` still returns
 `Content-Length: 328750` uncompressed — so nginx neither gzips nor forwards
-`Accept-Encoding` upstream. Consequently **nothing on the site is compressed**,
-and neither the `mod_deflate` rules in `public/.htaccess` nor
-`zlib.output_compression` in `public/.user.ini` can fire.
+`Accept-Encoding` upstream. Consequently neither the `mod_deflate` rules in
+`public/.htaccess` nor `zlib.output_compression` in `public/.user.ini` could
+fire — both were inert for the same reason.
+
+**Superseded on 1 September, but still worth doing.** The application now
+compresses its own HTML in `CompressPublicResponses`, so this is no longer a
+launch blocker. Two things changed with it:
+
+- `zlib.output_compression` has been **removed** from the deployed
+  `public/.user.ini` and must not come back. It compresses at the SAPI output
+  layer, after the middleware has already set `Content-Encoding: gzip` on a body
+  it compressed itself, and neither can see the other: the pair emits
+  `gzip(gzip(body))` under one header and every page becomes unreadable. The
+  deploy now refuses to run if it finds that directive active.
+- If nginx is fixed, set `COMPRESS_RESPONSES=false` and delete the middleware in
+  the same change. Compressing in PHP costs worker CPU that nginx would not, so
+  the edge is still the better place — it is just no longer the only place.
 
 **Impact:** a public page is ~250 KB of HTML that would compress to roughly
 30 KB — an ~8× reduction on the largest single transfer, and this audience is
@@ -170,8 +184,11 @@ largely on slow connections.
 
 Either enable `gzip on` with `gzip_types text/html text/css application/javascript
 application/json image/svg+xml`, or let Apache compress by passing
-`Accept-Encoding` through. The application-side configuration is already correct
-and starts working the moment either is done — **do not delete it as dead code.**
+`Accept-Encoding` through.
+
+Static assets are still shipped uncompressed either way — the middleware only
+handles responses the application renders — so there is real work left here even
+though HTML is now covered.
 
 ### B3 — Raise the PHP-FPM pool limits
 

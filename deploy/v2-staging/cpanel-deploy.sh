@@ -40,6 +40,26 @@ log "Deploying ${SOURCE} → ${APP}"
 [[ -f "${APP}/.env" ]]   || fail "${APP}/.env is missing. It is not in git and must never be."
 [[ -d "${WEB}" ]]        || fail "Web root ${WEB} does not exist"
 
+# The docroot is NOT synced by this script - only public/build/ and the SVG
+# assets are copied into it. public/.htaccess and public/.user.ini there are
+# hand-maintained and deliberately diverge from the repository: the .htaccess
+# carries the STAGING ONLY noindex and host-guard blocks that must not ship to
+# the live domain (Docs/V2_PRE_CUTOVER_ACTIONS.md §C). That is a reasonable
+# arrangement, but it means editing those files in git changes nothing on the
+# server, silently, and one of them can break every page on the site.
+#
+# zlib.output_compression compresses at the SAPI output layer, after
+# CompressPublicResponses has already set Content-Encoding: gzip on a body it
+# compressed itself. The middleware cannot see zlib and zlib cannot see the
+# middleware, so the two together emit gzip(gzip(body)) under a single header:
+# every page unreadable, in every browser, triggered by whichever of the two is
+# enabled second rather than by any deploy. It was left On here as a
+# one-host-change-away optimisation back when nothing compressed; it is now the
+# one setting that must never be on.
+if [[ -f "${WEB}/.user.ini" ]] && grep -Eq '^[[:space:]]*zlib\.output_compression[[:space:]]*=[[:space:]]*(On|1|true)' "${WEB}/.user.ini"; then
+    fail "zlib.output_compression is enabled in ${WEB}/.user.ini. The application compresses in CompressPublicResponses; two compressors produce gzip(gzip(body)) and break every page. Comment it out - this file is not deployed from git, so it must be edited on the server."
+fi
+
 # A missing asset directory does not error, it renders the whole site unstyled,
 # so check the source before touching anything on the server.
 [[ -f "${SOURCE}/public/build/manifest.json" ]] || fail \
