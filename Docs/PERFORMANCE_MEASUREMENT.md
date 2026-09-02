@@ -114,6 +114,38 @@ merely making them smaller.
 
 ---
 
+## Result, measured 2026-09-02
+
+Compression shipped on 1 September and did nothing, because nginx removes
+`Accept-Encoding` before PHP sees it — a request sending
+`gzip, deflate, br` arrives at PHP with the header absent. The application was
+declining to compress for a client it had been told could not decompress. With
+`COMPRESS_WITHOUT_ACCEPT_ENCODING` enabled it compresses regardless.
+
+Same protocol as above: local macOS vantage, `curl --http1.1`, one process per
+request, unique `?cb=N`, 15 concurrent, n=30, three runs.
+
+| Target | Bytes | Median (3 runs) | Max | OK |
+|---|---:|---|---:|---|
+| legacy `spu.edu.sy` homepage | 27,842 | 1.01 / 0.96 / 0.89s | 1.35s | 30/30 |
+| v2 `/ar` | 23,538 | 1.01 / 1.01 / 1.04s | 1.36s | 30/30 |
+| v2 `/ar/admissions` | 13,602 | 0.98 / 0.97 / 0.99s | 1.51s | 30/30 |
+
+`/ar/admissions` was **23.08s median, 50.00s max** on 1 September. It is now
+0.98s, and v2 is indistinguishable from the legacy site under identical load.
+
+Two things worth keeping straight about this number. It is a **23× improvement
+on the same page from the same vantage**, and it is not a 23× improvement in the
+application: nothing about the rendering changed. The site was spending that
+time pushing bytes through a link that could not take them. And it confirms the
+size threshold was the real constraint — the prediction made from the sweep
+above held, which is the only reason to trust the sweep.
+
+What has still not been measured: real peak concurrency, and any vantage point
+inside Syria.
+
+---
+
 ## What to measure before cutover
 
 1. Rerun the size sweep and the legacy baseline. Three runs.
