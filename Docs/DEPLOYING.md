@@ -179,6 +179,49 @@ Both sites live on the same account, so this is not a DNS change:
 
 ---
 
+## Deploying without the cPanel UI
+
+The two buttons in **Git Version Control → Manage** are a cPanel API call each,
+and the API is usable directly when the UI is slow or unavailable. Both need a
+cPanel API token (**Security → Manage API Tokens**). Never commit one.
+
+```bash
+TOKEN=...   # cPanel API token for the spuedu account
+AUTH="Authorization: cpanel spuedu:$TOKEN"
+REPO=/home/spuedu/repositories/spu-v2
+
+# "Update from Remote" — fetches origin and fast-forwards the checked-out branch
+curl -sS -H "$AUTH" \
+  --data-urlencode "repository_root=$REPO" --data-urlencode 'branch=dev' \
+  'https://spu.edu.sy:2083/execute/VersionControl/update'
+
+# "Deploy HEAD Commit" — queues .cpanel.yml, which runs cpanel-deploy.sh
+curl -sS -H "$AUTH" --data-urlencode "repository_root=$REPO" \
+  'https://spu.edu.sy:2083/execute/VersionControlDeployment/create'
+```
+
+The deploy is asynchronous. Poll `VersionControl/retrieve` until
+`last_deployment.deploy_id` increments and its `timestamps` gain a `succeeded`
+key, then read the log named in `last_deployment.log_path` — that log is the
+output of `cpanel-deploy.sh`, including the launch gate:
+
+```bash
+curl -sS -H "$AUTH" \
+  --data-urlencode 'dir=/home/spuedu/.cpanel/logs' \
+  --data-urlencode 'file=<basename from log_path>' \
+  'https://spu.edu.sy:2083/execute/Fileman/get_file_content'
+```
+
+**Read that log every time.** A deploy reports success as long as the script
+exits zero, and the script deliberately does not fail a staging deploy on a red
+gate. The warm counts and the validation summary at the end are the deploy's
+real result.
+
+Rotate the token when you are done with it, and whenever one has been pasted
+into a chat, a ticket, or a shared terminal.
+
+---
+
 ## Verifying a deploy from outside: nginx serves stale static files
 
 nginx caches static responses on this host, and it will hand you a copy from
