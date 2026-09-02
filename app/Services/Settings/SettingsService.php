@@ -20,6 +20,7 @@ use App\DTOs\Settings\SocialContactSettingsDTO;
 use App\DTOs\Settings\SocialLinkDTO;
 use App\Models\Settings\Setting;
 use App\Models\User\User;
+use App\Support\TrustedPortalUrl;
 use App\Support\UrlSanitizer;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -660,30 +661,13 @@ final class SettingsService implements SettingsServiceInterface
         );
     }
 
+    // Moved to App\Support\TrustedPortalUrl so the admin form that writes this
+    // setting can validate against the same policy the public resolver applies.
+    // Previously the form accepted anything URL-shaped and the mismatch surfaced
+    // only as a 503 on the live transport-registration route.
     private function trustedPortalUrl(string $value): ?string
     {
-        if (str_starts_with($value, '/') && ! str_starts_with($value, '//')) {
-            return UrlSanitizer::sanitize($value);
-        }
-
-        $url = UrlSanitizer::sanitize($value, ['https'], true);
-        if ($url === null) {
-            return null;
-        }
-
-        $parts = parse_url($url);
-        $host = is_array($parts) && is_string($parts['host'] ?? null)
-            ? strtolower($parts['host'])
-            : null;
-
-        if ($host === null
-            || isset($parts['user'], $parts['pass'])
-            || ! in_array($host, (array) config('security.trusted_portal_hosts', []), true)
-        ) {
-            return null;
-        }
-
-        return $url;
+        return TrustedPortalUrl::sanitize($value);
     }
 
     /**
