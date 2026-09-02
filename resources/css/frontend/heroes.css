@@ -247,32 +247,6 @@
         text-transform: uppercase;
     }
 
-    .home-hero__slider-nav {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        margin-top: 1.15rem;
-    }
-
-    .home-hero__slider-dot {
-        width: 2.2rem;
-        height: 0.32rem;
-        border-radius: 9999px;
-        background: rgba(32, 39, 89, 0.16);
-        transition: transform 0.22s ease, background-color 0.22s ease, width 0.22s ease;
-    }
-
-    .home-hero__slider-dot:hover {
-        transform: translateY(-1px);
-        background: rgba(32, 39, 89, 0.3);
-    }
-
-    .home-hero__slider-dot--active,
-    .home-hero__slider-dot--active:hover {
-        width: 3rem;
-        background: linear-gradient(90deg, #202759 0%, #6f1616 100%);
-    }
-
     .home-hero__scroll-link {
         border: 1px solid rgba(255, 255, 255, 0.16);
         background: rgba(10, 15, 40, 0.28);

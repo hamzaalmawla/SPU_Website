@@ -8,7 +8,7 @@
         </div>
 
         <div class="container relative z-10 text-center">
-            <h1 class="text-4xl font-bold tracking-wider text-white md:text-5xl lg:text-6xl">{{ $contact->hero['title'] }}</h1>
+            <h1 class="text-[32px] font-bold tracking-wider text-white sm:text-4xl md:text-5xl lg:text-6xl">{{ $contact->hero['title'] }}</h1>
         </div>
     </section>
 
@@ -33,7 +33,7 @@
                     <form method="POST" action="{{ route('public.contact.submit', ['locale' => $locale]) }}" class="grid gap-6" @if(!empty($isPreview)) onsubmit="return false" @endif>
                         @csrf
                         <fieldset @disabled(!empty($isPreview))>
-                        <input type="text" name="website" value="" tabindex="-1" autocomplete="off" class="absolute -left-[9999px] h-px w-px overflow-hidden" aria-label="Website">
+                        <input type="text" name="website" value="" tabindex="-1" autocomplete="off" class="sr-only" aria-label="Website">
 
                         <div class="grid gap-6 md:grid-cols-2">
                             <div class="space-y-2">
@@ -119,7 +119,7 @@
                             </div>
                         </div>
 
-                        <div class="h-px w-full bg-slate-100"></div>
+                        <div class="sm:col-span-2 h-px w-full bg-slate-100"></div>
 
                         <div class="space-y-4">
                             <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">{{ $contact->socialsTitle }}</p>
@@ -141,9 +141,9 @@
     <section id="campus-map" class="relative scroll-mt-32 font-hacen">
         <span id="accessibility" class="sr-only"></span>
         <span id="visit-campus" class="sr-only"></span>
-        <h1 class="container relative z-10 mt-20 mb-8 flex items-center justify-center text-center text-[44px] font-bold text-spu-blue">
+        <h2 class="container relative z-10 mt-20 mb-8 flex items-center justify-center text-center text-[44px] font-bold text-spu-blue">
             <span>{{ $contact->location['title'] }}</span>
-        </h1>
+        </h2>
         <div class="relative h-[400px]">
             <div class="inset-0 relative h-full w-full">
                 <div class="absolute top-0 left-0 z-10 h-full w-full bg-spu-blue/20"></div>
@@ -152,10 +152,10 @@
                     allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
             </div>
 
-            <div class="container absolute bottom-[45%] left-[50%] z-20 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center">
-                <div>
+            <div class="absolute inset-x-0 bottom-[45%] z-20 flex -translate-y-1/2 justify-center px-5">
+                <div class="w-full max-w-[min(100%,28rem)]">
                     <a href="{{ $contact->location['mapUrl'] }}" target="_blank" rel="noreferrer"
-                        class="inline-flex items-center gap-3 bg-spu-red px-10 py-4 text-sm font-bold text-white transition-all hover:bg-spu-red/90 hover:shadow-xl active:scale-95">
+                        class="inline-flex w-full items-center justify-center gap-3 bg-spu-red px-6 py-4 text-sm font-bold text-white transition-all hover:bg-spu-red/90 hover:shadow-xl active:scale-95 sm:w-auto sm:px-10">
                         <img src="/images/icon-map-outline.svg" alt="" class="h-4 w-4" aria-hidden="true">
                         <span>{{ $contact->location['button'] }}</span>
                     </a>

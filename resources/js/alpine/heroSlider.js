@@ -60,21 +60,6 @@ export function createHeroSlider() {
             if (this.images.length > 0) this.currentIndex = (this.currentIndex - 1 + this.images.length) % this.images.length;
         },
 
-        goTo(index) {
-            this.stopAuto();
-            this.currentIndex = index;
-        },
-
-        manualNext() {
-            this.stopAuto();
-            this.next();
-        },
-
-        manualPrevious() {
-            this.stopAuto();
-            this.previous();
-        },
-
         handleKey(event) {
             const action = horizontalKeyAction(event, this.$el);
             if (!action) return;
@@ -94,10 +79,6 @@ export function createHeroSlider() {
 
         isHidden(index) {
             return !this.isCurrent(index);
-        },
-
-        dotClass(index) {
-            return this.isCurrent(index) ? 'w-8 opacity-100' : 'w-2 opacity-60';
         },
 
         slideLabel(index) {

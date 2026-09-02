@@ -12,6 +12,7 @@ export default defineConfig({
         tailwindcss(),
     ],
     build: {
+        cssTarget: ['chrome99', 'firefox102', 'ios15.4', 'safari15.4'],
         rollupOptions: {
             output: {
                 assetFileNames: 'assets/[name].[hash][extname]',
