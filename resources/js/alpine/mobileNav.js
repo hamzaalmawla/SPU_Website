@@ -1,4 +1,7 @@
-export const NAV_DESKTOP_BREAKPOINT = 1440;
+// Must match `--breakpoint-nav` in resources/css/app.css. These two had
+// drifted apart (1440 here, 1480 there), so between those widths the script
+// treated the bar as desktop while the stylesheet was still showing mobile.
+export const NAV_DESKTOP_BREAKPOINT = 1280;
 
 export function createMobileNav() {
     return {

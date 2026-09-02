@@ -23,7 +23,7 @@
         @keydown.window.ctrl.k.prevent="openSearch()"
         @keydown.window.meta.k.prevent="openSearch()"
         @click.outside="closeForOutsideClick()">
-    <div class="container site-nav-container">
+    <div class="site-nav-container">
         @include('public.layout.emergency-notice')
 
         <button type="button"
@@ -37,11 +37,11 @@
         <div class="site-nav-shell" :class="shellClass()">
             <div class="site-nav-shell__main">
                 <a href="/{{ $locale }}" aria-label="{{ __('public.home') }}" class="site-nav-brand">
-                    <img src="/images/logo-spu.png" alt="{{ __('public.spu_logo_alt') }}" width="562" height="118" class="h-auto w-[9.25rem] sm:w-[10rem] lg:w-[11rem] xl:w-[13.5rem]" decoding="async">
+                    <img src="/images/logo-spu.png" alt="{{ __('public.spu_logo_alt') }}" width="562" height="118" class="h-auto" decoding="async">
                 </a>
 
-                <nav class="hidden w-full justify-center nav:flex nav:flex-1 nav:basis-auto nav:w-auto nav:items-center" aria-label="{{ __('public.primary_navigation') }}">
-                    <ul class="site-nav-list lg:w-full">
+                <nav class="site-nav-primary hidden nav:flex" aria-label="{{ __('public.primary_navigation') }}">
+                    <ul class="site-nav-list">
                         @foreach ($navigation->header->items as $item)
                             <li class="site-nav-item"
                                 @if (!empty($item->children))
@@ -213,16 +213,21 @@
 
                     @foreach ($languageSwitch as $switchLink)
                         @if (!$switchLink->isCurrent)
-                            <a href="{{ $switchLink->url }}" class="site-nav-lang" data-language-switch>
-                                <img src="/images/ic_outline-language.svg" alt="{{ __('public.language') }}" class="h-[1rem] w-[1rem]" width="29" height="29" decoding="async">
-                                <span>{{ $switchLink->label }}</span>
+                            <a href="{{ $switchLink->url }}"
+                               class="site-nav-lang"
+                               data-language-switch
+                               lang="{{ $switchLink->locale }}"
+                               title="{{ $switchLink->label }}"
+                               aria-label="{{ __('public.language') }}: {{ $switchLink->label }}">
+                                <img src="/images/ic_outline-language.svg" alt="" aria-hidden="true" class="h-[1rem] w-[1rem]" width="29" height="29" decoding="async">
+                                <span aria-hidden="true">{{ $switchLink->label }}</span>
                             </a>
                         @endif
                     @endforeach
 
                     @if ($navigation->applyCta)
                         <a href="{{ $navigation->applyCta->url }}"
-                            class="site-nav-apply hidden items-center gap-2 rounded-full bg-spu-red px-5 py-2.5 text-xs font-bold uppercase tracking-[0.08em] text-white shadow-[0_8px_24px_rgba(111,22,22,0.25)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(111,22,22,0.3)] nav:inline-flex"
+                            class="site-nav-apply hidden md:inline-flex"
                            @if ($navigation->applyCta->target) target="{{ $navigation->applyCta->target }}" rel="noreferrer" @endif>
                             <span>{{ $navigation->applyCta->label }}</span>
                         </a>
