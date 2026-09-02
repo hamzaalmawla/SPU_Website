@@ -10,6 +10,8 @@ use App\DTOs\Settings\SettingValueDTO;
 use App\Filament\Components\PageUrlSelect;
 use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
+use App\Rules\TrustedPortalUrlRule;
+use App\Support\TrustedPortalUrl;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Component;
 use Filament\Forms\Components\Repeater;
@@ -388,8 +390,47 @@ class ManageSettings extends Page implements HasForms
             $formData["{$prefix}_apply_cta_enabled"] = $cta->isEnabled;
         }
 
-        $formData['utility_student_portal_url'] = $this->settingsService->getStudentPortalUrl() ?? '';
-        $formData['utility_staff_access_url'] = $this->settingsService->getStaffAccessUrl() ?? '';
+        // Show a stored value even when the trusted-host policy rejects it.
+        // Blanking it hid the exact string that was breaking the public route,
+        // and re-saving the blanked form wiped the setting outright - so the one
+        // screen able to fix the problem was the one screen that never showed it.
+        $formData['utility_student_portal_url'] = $this->portalFieldValue(
+            'student_portal_url',
+            $this->settingsService->getStudentPortalUrl(),
+        );
+        $formData['utility_staff_access_url'] = $this->portalFieldValue(
+            'staff_access_url',
+            $this->settingsService->getStaffAccessUrl(),
+        );
+    }
+
+    /**
+     * The resolved URL when the policy accepts it, otherwise the raw stored
+     * value so an editor can see and correct exactly what was rejected.
+     */
+    private function portalFieldValue(string $key, ?string $resolved): string
+    {
+        if (is_string($resolved) && $resolved !== '') {
+            return $resolved;
+        }
+
+        foreach ($this->settingsService->getGroup('navigation')->values as $value) {
+            if ($value instanceof SettingValueDTO && $value->key === $key) {
+                return (string) ($value->textValue ?? '');
+            }
+        }
+
+        return '';
+    }
+
+    private static function portalHelperText(): string
+    {
+        $hosts = TrustedPortalUrl::trustedHosts();
+
+        return sprintf(
+            'An https:// URL on an approved host (%s), or a site-relative path beginning with "/". Leave empty for "no portal configured".',
+            $hosts === [] ? 'none currently configured' : implode(', ', $hosts),
+        );
     }
 
     private function loadFooter(array &$formData): void
@@ -481,16 +522,24 @@ class ManageSettings extends Page implements HasForms
                             ->schema($this->utilityNavigationFields('en')),
                     ]),
 
+                // TrustedPortalUrlRule replaces ->url(), which was wrong in both
+                // directions: it accepted any host (so an untrusted URL saved
+                // cleanly and 503'd the public transport-registration route), and
+                // it rejected the site-relative paths the policy explicitly allows
+                // - including the seeded default '/e-services/staff-email', which
+                // made the whole Portal URLs section impossible to save.
                 Section::make('Portal URLs')->schema([
                     TextInput::make('utility_student_portal_url')
                         ->label('Student Portal URL')
-                        ->url()
-                        ->maxLength(2048),
+                        ->maxLength(2048)
+                        ->helperText(self::portalHelperText())
+                        ->rule(new TrustedPortalUrlRule),
 
                     TextInput::make('utility_staff_access_url')
                         ->label('Staff Access URL')
-                        ->url()
-                        ->maxLength(2048),
+                        ->maxLength(2048)
+                        ->helperText(self::portalHelperText())
+                        ->rule(new TrustedPortalUrlRule),
                 ]),
             ]);
     }
