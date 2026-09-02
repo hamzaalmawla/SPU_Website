@@ -197,6 +197,11 @@ deploy — sitemaps, `build/manifest.json`, CSS, JS. It costs nothing and it is
 the difference between verifying a deploy and verifying a cache. PHP responses
 are not affected; they are not cached by nginx.
 
+This is an operational fact as well as a verification hazard: for that same
+window, crawlers and visitors are served the pre-deploy file too. A regenerated
+sitemap is not live the instant the deploy finishes. The TTL is nginx's and is
+not ours to set, so plan around it rather than expecting an immediate change.
+
 Note this is the opposite of the rule for measuring *pages*: there, a query
 string does nothing (`CachePublicPages` drops unknown parameters) and you need
 `-H 'Cache-Control: no-cache'`. Static files are served by the web server and

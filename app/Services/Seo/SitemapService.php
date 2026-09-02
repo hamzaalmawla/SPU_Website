@@ -679,17 +679,41 @@ final class SitemapService implements SitemapServiceInterface
 
         [$name, $part] = $parsed;
 
-        return $this->cacheService->tags('sitemap')->remember(
+        $xml = $this->cacheService->tags('sitemap')->remember(
             self::CACHE_KEY.':section:'.$name.':'.$part,
             function () use ($name, $part): string {
                 $entries = $this->generateSectionEntries($name)
                     ->slice(($part - 1) * self::MAX_URLS_PER_SITEMAP, self::MAX_URLS_PER_SITEMAP)
                     ->values();
 
+                // A continuation part that holds nothing does not exist, and
+                // saying so with a 404 is the whole point. Any part number was
+                // previously answered with an empty urlset and a 200:
+                // sitemap-pages-99.xml was as valid as sitemap-pages-2.xml.
+                //
+                // That is a soft 404, and it costs more than tidiness here. A
+                // section that shrinks - news went from several parts to one
+                // when noindex articles stopped being advertised - leaves
+                // crawlers holding URLs they already know. A 200 tells them the
+                // document is still real and to keep checking it; a 404 tells
+                // them to drop it. Every one of those checks is a PHP render on
+                // a five-worker pool, forever.
+                //
+                // Part 1 is exempt: it is listed in the index and is allowed to
+                // be legitimately empty, which sitemap-news.xml currently is.
+                if ($part > 1 && $entries->isEmpty()) {
+                    return '';
+                }
+
                 return $this->buildUrlsetXml($entries);
             },
             self::CACHE_TTL,
         );
+
+        // buildUrlsetXml() always returns a document, so the empty string is
+        // unambiguous as the "no such part" marker - and it survives the cache,
+        // which a null would not.
+        return $xml === '' ? null : $xml;
     }
 
     /**

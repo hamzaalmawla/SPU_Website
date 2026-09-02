@@ -70,6 +70,41 @@ final class SitemapNoindexExclusionTest extends TestCase
     }
 
     /**
+     * Any part number used to be answered with an empty urlset and a 200 —
+     * sitemap-pages-99.xml was as valid as sitemap-pages-2.xml. That is a soft
+     * 404, and it matters most exactly when a section shrinks: news dropped
+     * from several parts to one when noindex articles stopped being advertised,
+     * and every crawler holding sitemap-news-2.xml would have been told
+     * indefinitely that it still exists — one PHP render per check, forever, on
+     * a five-worker pool.
+     */
+    public function test_a_part_that_holds_nothing_is_a_404_not_an_empty_document(): void
+    {
+        $this->assertNull(
+            app(SitemapServiceInterface::class)->renderSectionXml('news-2'),
+            'A continuation part with no entries does not exist and must say so.',
+        );
+
+        $this->assertNull(app(SitemapServiceInterface::class)->renderSectionXml('pages-99'));
+    }
+
+    /**
+     * Part 1 is exempt: it is listed in the index and is allowed to be
+     * legitimately empty, which sitemap-news.xml is today. Returning 404 for it
+     * would make the index advertise a document that does not resolve.
+     */
+    public function test_the_first_part_of_a_section_stays_valid_when_empty(): void
+    {
+        $this->article(['ar' => 'noindex,nofollow', 'en' => 'noindex,nofollow']);
+
+        $xml = app(SitemapServiceInterface::class)->renderSectionXml('news');
+
+        $this->assertIsString($xml);
+        $this->assertStringContainsString('<urlset', $xml);
+        $this->assertStringNotContainsString('<loc>', $xml);
+    }
+
+    /**
      * @param  array<string, string>  $robotsByLocale
      */
     private function article(array $robotsByLocale): NewsArticle
