@@ -118,7 +118,7 @@ final class SitemapService implements SitemapServiceInterface
     private function appendPageEntries(Collection $entries, string $baseUrl): void
     {
         $pages = Page::query()
-            ->with(['translations'])
+            ->with(['translations', 'seoMeta'])
             ->where('status', PublicationStatus::Published->value)
             ->where('is_enabled', true)
             ->whereNotNull('published_at')
@@ -138,6 +138,10 @@ final class SitemapService implements SitemapServiceInterface
 
             $localesWithTranslation = [];
             foreach (['ar', 'en'] as $locale) {
+                if ($this->isNoindex($page->seoMeta->firstWhere('locale', $locale)?->robots)) {
+                    continue;
+                }
+
                 if ($this->isSitemapRenderable($page, $locale, $ancestors)) {
                     if ($page->slug === 'research' && ! $this->researchPageService->isPubliclyAvailablePath($locale, '/research')) {
                         continue;
@@ -259,13 +263,16 @@ final class SitemapService implements SitemapServiceInterface
     {
         $articles = NewsArticle::query()
             ->public()
-            ->with('translations')
+            ->with(['translations', 'seoMeta'])
             ->orderBy('id')
             ->get();
 
         foreach ($articles as $article) {
             $locales = collect(['ar', 'en'])
                 ->filter(fn (string $locale): bool => $article->translations->contains('locale', $locale))
+                ->reject(fn (string $locale): bool => $this->isNoindex(
+                    $article->seoMeta->firstWhere('locale', $locale)?->robots,
+                ))
                 ->values();
             if ($locales->isEmpty()) {
                 continue;
@@ -992,6 +999,31 @@ final class SitemapService implements SitemapServiceInterface
     }
 
     /** @param array<int, Page> $ancestors */
+    /**
+     * Whether a robots directive forbids indexing.
+     *
+     * A sitemap is an invitation to crawl and index. Listing a URL that then
+     * renders `noindex` asks a crawler to spend a request discovering that it
+     * was not wanted - and on this host every one of those requests is a full
+     * page render on a five-worker pool.
+     *
+     * This is not an editorial judgement and does not change what is indexed:
+     * the meta tag on the page stays authoritative either way. It stops the
+     * sitemap contradicting it. 3,416 of the 4,560 URLs advertised on
+     * 2 September were legacy news articles that LegacyNewsImportService marks
+     * noindex,nofollow on import, pending editorial review - so three quarters
+     * of the sitemap was asking crawlers to fetch pages it then told them to
+     * discard.
+     *
+     * Self-maintaining in the right direction: an article an editor reviews and
+     * sets to index,follow enters the sitemap on the next generation, with no
+     * second switch to remember.
+     */
+    private function isNoindex(?string $robots): bool
+    {
+        return $robots !== null && str_contains(strtolower($robots), 'noindex');
+    }
+
     private function isSitemapRenderable(Page $page, string $locale, array $ancestors): bool
     {
         if ($page->translations->firstWhere('locale', $locale) === null) {

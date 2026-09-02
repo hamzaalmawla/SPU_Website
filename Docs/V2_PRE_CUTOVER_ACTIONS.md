@@ -113,6 +113,34 @@ Both are correct defaults; releasing them is an editorial call.
   Their old URLs 404. Recoverable by re-running the approval packet allowing
   duplicates — but that publishes two articles with identical titles.
 
+### A5 — Two legacy URLs with no destination, investigated 2026-09-02
+
+Both were carried as "continuity gaps, 51 inbound links each". They are not the
+same kind of problem, and neither is fixed by adding a redirect rule.
+
+**`/index.php?dir=items&ex=2&lang={1|2}&page=list&service=11` — real content,
+no destination.** It is the student card offers listing: discounts for SPU card
+holders at restaurants, gyms and an ISP, paginated across 20 pages. Verified
+against the live old site the same way the FAQ rule was: 1,892 visible
+characters in Arabic against 1,205 for a nonsense `service` id on the identical
+template, so this is content and not the empty shared shell.
+
+Nothing on the new site covers it. `عروض`, `خصم`, `حسم` and `بطاقة` each appear
+zero times across `/campus-life`, `/campus-life/services` and
+`/campus-life/clubs-activities`. A 301 to campus services would satisfy a
+coverage number and land 51 links' worth of visitors on a page that does not
+have what they came for — which the continuity guide treats as a failure, not a
+save. **The decision is editorial: recreate the offers content, or accept that
+this section is retired.** Only once that is answered does a redirect rule have
+a correct target. No rule has been added.
+
+**`/index.php?dir=sites&...` — nothing to preserve.** Every spelling tried
+returns the near-empty template: 1,418 visible characters against a 1,316
+baseline, and exactly two internal links on the page, both to the homepage and
+the contact form. There are no item links because there are no items — it was
+already empty on the old site. Nothing is lost by leaving these unmapped, and a
+redirect would be inventing a destination for a page that never had content.
+
 ### A4 — The super admin cannot publish content
 
 `publish-content` grants only to the `editor` role, so a `super_admin` sees no
