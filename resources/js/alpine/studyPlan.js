@@ -650,7 +650,6 @@ function createStudyPlanPage(root) {
         });
 
         root.querySelector('[data-study-plan-download]')?.addEventListener('click', downloadHoursSummary);
-        root.querySelector('[data-study-plan-print]')?.addEventListener('click', () => window.print());
         root.querySelector('[data-study-plan-zoom-in]')?.addEventListener('click', () => {
             const rect = viewport.getBoundingClientRect();
             zoomToPoint(-0.2, rect.width / 2, rect.height / 2);

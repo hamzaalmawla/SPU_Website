@@ -913,6 +913,7 @@ trait ManagesFacultyHomepage
                 TextInput::make($prefix.'.payload.labels.promotionRequirements')->label(__('admin.faculty_workspace.study_plan.labels.promotion_requirements'))->maxLength(160),
                 TextInput::make($prefix.'.payload.labels.viewDetails')->label(__('admin.faculty_workspace.study_plan.labels.course_details'))->maxLength(120),
                 TextInput::make($prefix.'.payload.labels.close')->label(__('admin.faculty_workspace.study_plan.labels.close'))->maxLength(120),
+                TextInput::make($prefix.'.payload.labels.downloadPlan')->label(__('admin.faculty_workspace.study_plan.labels.download_plan'))->maxLength(120),
             ])->columns(2)->collapsed(),
 
             Section::make(__('admin.faculty_workspace.study_plan.course_page_labels'))->schema([
@@ -934,6 +935,7 @@ trait ManagesFacultyHomepage
             Section::make(__('admin.faculty_workspace.study_plan.plan_settings'))->schema([
                 TextInput::make($prefix.'.payload.plan.faculty')->label(__('admin.faculty_workspace.study_plan.plan_faculty'))->maxLength(180),
                 MediaPicker::image($prefix.'.payload.plan.heroImage', __('admin.faculty_workspace.study_plan.plan_image')),
+                MediaPicker::pdf($prefix.'.payload.plan.pdfUrl', __('admin.faculty_workspace.study_plan.plan_pdf')),
                 TextInput::make($prefix.'.payload.plan.accent')->label(__('admin.faculty_workspace.study_plan.plan_color'))->maxLength(20),
             ])->columns(2)->collapsed(),
 

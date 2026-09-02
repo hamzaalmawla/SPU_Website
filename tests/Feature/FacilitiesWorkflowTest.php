@@ -1863,6 +1863,31 @@ final class FacilitiesWorkflowTest extends TestCase
             ->assertDontSee('href="#"', false);
     }
 
+    public function test_study_plan_pdf_is_downloadable_from_the_public_plan_page(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('study-plans/artificial-intelligence.pdf', 'study plan');
+        $facilities = app(FacultyPageServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $payload = $facilities->getEditablePayload('facilities.artificial-intelligence.study_plan');
+
+        foreach (['ar', 'en'] as $locale) {
+            $payload['translations'][$locale]['payload']['plan']['pdfUrl'] = '/storage/study-plans/artificial-intelligence.pdf';
+            $payload['translations'][$locale]['payload']['labels']['downloadPlan'] = $locale === 'ar' ? 'تحميل الخطة' : 'Download Plan';
+        }
+
+        $workflow->saveDraft('facilities.artificial-intelligence.study_plan', $payload, (int) $author->getKey());
+        $this->assertTrue($workflow->publish('facilities.artificial-intelligence.study_plan', (int) $author->getKey()));
+
+        $this->get('/en/facilities/artificial-intelligence/study-plan')
+            ->assertOk()
+            ->assertSee('href="/storage/study-plans/artificial-intelligence.pdf" download', false)
+            ->assertSee('Download Plan')
+            ->assertDontSee('data-study-plan-print', false)
+            ->assertDontSee('Print Plan');
+    }
+
     public function test_study_plan_publish_readiness_rejects_unsafe_or_missing_material_paths(): void
     {
         $facilities = app(FacultyPageServiceInterface::class);
@@ -1871,6 +1896,7 @@ final class FacilitiesWorkflowTest extends TestCase
 
         foreach (['ar', 'en'] as $locale) {
             $payload['translations'][$locale]['payload']['plan']['departments'][0]['terms'][0]['courses'][0]['lessons'][0]['pdfUrl'] = '/storage/course-materials/missing.pdf';
+            $payload['translations'][$locale]['payload']['plan']['pdfUrl'] = '/storage/study-plans/missing.pdf';
         }
 
         $readiness = $workflow->readiness('facilities.artificial-intelligence.study_plan', $payload);
@@ -1878,6 +1904,8 @@ final class FacilitiesWorkflowTest extends TestCase
         $this->assertFalse($readiness->isReady);
         $this->assertContains('Course materials must reference an existing internal PDF file.', $readiness->errors['ar']);
         $this->assertContains('Course materials must reference an existing internal PDF file.', $readiness->errors['en']);
+        $this->assertContains('The study plan download must reference an existing internal PDF file.', $readiness->errors['ar']);
+        $this->assertContains('The study plan download must reference an existing internal PDF file.', $readiness->errors['en']);
     }
 
     public function test_artificial_intelligence_study_plan_public_payload_is_trimmed_to_active_department(): void
@@ -1906,6 +1934,7 @@ final class FacilitiesWorkflowTest extends TestCase
             ->assertSee('القسم')
             ->assertSee('مساحة عمل الفصل باللغتين')
             ->assertSee('مقررات هذا الفصل')
+            ->assertSee('ملف PDF للخطة الدراسية')
             ->assertSee('المتطلبات السابقة')
             ->assertDontSee('Opens Course IDs');
 

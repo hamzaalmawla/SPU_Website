@@ -25,7 +25,7 @@
     <section class="bg-slate-50 py-10 font-hacen md:py-14" dir="{{ $direction }}">
         <div class="container mx-auto max-w-[1120px] px-4 sm:px-6">
             <div class="research-detail-grid">
-                <section class="space-y-6">
+                <section class="space-y-6 order-2 lg:order-1">
                     @if (! empty($item['lead']) || ! empty($item['summary']))
                         <div class="rounded-[8px] border border-slate-200 bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)] md:p-8">
                             <h2 class="text-[13px] font-bold uppercase tracking-[0.12em] text-spu-red">{{ __('public.summary') }}</h2>
@@ -101,7 +101,7 @@
                         @endif
                     </nav>
                 </section>
-                <aside class="rounded-[8px] border border-slate-200 bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)] lg:sticky lg:top-28">
+                <aside class="rounded-[8px] order-1 lg:order-2 border border-slate-200 bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)] lg:sticky lg:top-28">
                     <h2 class="text-[13px] font-bold uppercase tracking-[0.12em] text-spu-red">{{ __('public.publication_info') }}</h2>
                     <dl class="mt-5 divide-y divide-slate-100">
                         @foreach ([__('public.category') => $item['category'] ?? $item['type'] ?? '', __('public.author') => $item['author'] ?? '', __('public.publication_date') => $item['publicationDate'] ?? $item['year'] ?? '', __('public.journal') => $item['journalTitle'] ?? $item['publisher'] ?? '', __('public.volume') => $item['volume'] ?? '', __('public.issue') => $item['issue'] ?? '', __('public.pages') => $item['pages'] ?? '', __('public.issn') => $item['issn'] ?? '', __('public.license') => $item['license'] ?? '', __('public.faculty') => $item['faculty'] ?? '', __('public.quartile') => $item['rate'] ?? '', __('public.type') => $item['type'] ?? ''] as $label => $value)

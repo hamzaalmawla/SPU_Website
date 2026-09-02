@@ -35,6 +35,11 @@ final class MediaPicker
         return self::make($statePath, $label ?? __('admin.media_picker.document'), 'document', $required);
     }
 
+    public static function pdf(string $statePath, ?string $label = null, bool $required = false): Grid
+    {
+        return self::make($statePath, $label ?? __('admin.media_picker.document'), 'pdf', $required);
+    }
+
     public static function any(string $statePath, ?string $label = null, bool $required = false): Grid
     {
         return self::make($statePath, $label ?? __('admin.media_picker.media_file'), 'any', $required);
@@ -346,8 +351,8 @@ final class MediaPicker
 
         if (self::isImageType($type)) {
             $filters['mime_type'] = 'image/';
-        } elseif ($type === 'document') {
-            $filters['mime_type'] = 'application/';
+        } elseif (in_array($type, ['document', 'pdf'], true)) {
+            $filters['mime_type'] = $type === 'pdf' ? 'application/pdf' : 'application/';
         }
 
         try {
@@ -537,6 +542,7 @@ final class MediaPicker
 
         return match ($type) {
             'image', 'icon' => $images,
+            'pdf' => ['application/pdf'],
             'document' => $documents,
             default => [...$images, ...$documents, 'video/mp4', 'video/webm'],
         };

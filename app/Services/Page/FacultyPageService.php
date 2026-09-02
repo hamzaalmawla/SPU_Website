@@ -314,6 +314,9 @@ final class FacultyPageService implements FacultyPageServiceInterface
         $detail = [];
 
         if (in_array($subpageSlug, ['study-plan', 'study-plan-course'], true)) {
+            $pageData['payload']['plan']['pdfUrl'] = $this->studyPlanLinkService->sanitizeCourseMaterialPath(
+                $pageData['payload']['plan']['pdfUrl'] ?? null,
+            );
             $selection = $this->studyPlanSelection($pageData, $filters, $locale, $subpageSlug === 'study-plan-course');
 
             if ($selection === null) {

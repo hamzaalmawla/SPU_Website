@@ -1165,32 +1165,37 @@
     }
 
     .history-timeline::before {
-        left: 8px;
+        right: 8px;
+        left: auto;
         transform: none;
     }
 
     [dir="rtl"] .history-timeline::before {
-        right: 8px;
-        left: auto;
+        right: auto;
+        left: 8px;
     }
 
     .history-timeline-item {
         display: block;
         min-height: 0;
-        padding-inline-start: 2.5rem;
+        padding-right: 2.5rem;
     }
 
     [dir="rtl"] .history-timeline-item {
-        padding-inline-start: 0;
-        padding-inline-end: 2.5rem;
+        padding-right: 0;
+        padding-left: 2.5rem;
     }
 
-    .history-timeline-dot { left: 8px; }
-
-    [dir="rtl"] .history-timeline-dot {
+    .history-timeline-dot {
         right: 8px;
         left: auto;
         transform: translate(50%, -50%);
+    }
+
+    [dir="rtl"] .history-timeline-dot {
+        right: auto;
+        left: 8px;
+        transform: translate(-50%, -50%);
     }
 
     .history-timeline-content,

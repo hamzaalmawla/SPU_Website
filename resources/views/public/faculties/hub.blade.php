@@ -69,9 +69,17 @@
     <div class="container relative z-10 flex flex-col lg:flex-row lg:items-stretch" style="min-height: 88vh;">
 
         {{-- LEFT: panoramic gallery caption space (image shows through) --}}
-        <div class="flex w-full lg:w-[46%] flex-col justify-center py-12 lg:py-12 {{ $isAr ? 'lg:items-end text-right' : 'lg:items-start text-left' }}">
+        <div class="flex w-full lg:w-[46%] flex-col justify-center py-8 lg:py-12 {{ $isAr ? 'lg:items-end text-right' : 'lg:items-start text-left' }}">
             <div class="fac-hub-hero__reveal fac-hub-hero__reveal--d1 max-w-[420px] text-white mx-auto">
-                <div class="fac-hub-hero__reveal fac-hub-hero__reveal--d3 mt-8 mb-4 flex flex-wrap gap-3 {{ $isAr ? 'self-start mr-1' : 'self-end' }}">
+                
+                <span class="inline-flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-[12px] font-bold uppercase tracking-[0.25em] text-white/85 backdrop-blur-sm mt-6">
+                    <span class="h-1.5 w-1.5 rounded-full bg-[#e2b864]"></span>
+                    {{ __('public.facilities_eyebrow') }}
+                </span>
+                <p class="mt-4 text-[14px] leading-relaxed text-white/75 lg:text-white/70">
+                    {{ $hero['summary'] ?: __('public.facilities_subheading') }}
+                </p>
+                <div class="fac-hub-hero__reveal fac-hub-hero__reveal--d3 mt-8 mb-1 flex flex-wrap gap-3 {{ $isAr ? 'self-start mr-1' : 'self-end' }}">
                     <a href="{{ $hero['applyUrl'] ?? ('/'.$locale.'/admissions/how-to-apply') }}"
                     class="fac-hub-btn-primary inline-flex h-[42px] items-center justify-center rounded-[6px] bg-[#8a1c1c] px-8 text-[14px] font-bold uppercase tracking-[0.14em] text-white transition-colors hover:bg-[#6b1515]">
                         {{ $hero['applyLabel'] ?? __('public.admissions') }}
@@ -81,13 +89,6 @@
                         {{ $hero['campusMapLabel'] ?? __('public.campus_map') }}
                     </a>
                 </div>
-                <span class="inline-flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-[12px] font-bold uppercase tracking-[0.25em] text-white/85 backdrop-blur-sm">
-                    <span class="h-1.5 w-1.5 rounded-full bg-[#e2b864]"></span>
-                    {{ __('public.facilities_eyebrow') }}
-                </span>
-                <p class="mt-4 text-[14px] leading-relaxed text-white/75 lg:text-white/70">
-                    {{ $hero['summary'] ?: __('public.facilities_subheading') }}
-                </p>
             </div>
         </div>
 
@@ -173,7 +174,7 @@
                         <img src="{{ $icon }}" alt="" class="h-6 w-6 opacity-85 transition-transform group-hover:scale-110">
                     @endif
                     <span class="text-[1.9rem] lg:text-[2.3rem] font-black leading-none text-white" dir="ltr">
-                        {{ str_ends_with($value, '+') ? substr($value, 0, -1) : $value }}@if(str_ends_with($value, '+'))<span class="text-[#e2b864]">+</span>@endif
+                        {{ str_ends_with($value, '+') ? substr($value, 0, -1) : $value }}@if(str_ends_with($value, '+'))<span class="text-spu-red">+</span>@endif
                     </span>
                     <span class="text-[10px] lg:text-[11px] font-bold uppercase tracking-[0.16em] text-white/60">
                         {{ $fact['label'] ?? '' }}

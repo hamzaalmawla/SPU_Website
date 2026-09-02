@@ -116,6 +116,10 @@ final class FacultyStudyPlanLinkService implements FacultyStudyPlanLinkServiceIn
 
         foreach (['ar', 'en'] as $locale) {
             $translation = is_array($payload['translations'][$locale] ?? null) ? $payload['translations'][$locale] : [];
+            $planPdf = trim((string) ($translation['payload']['plan']['pdfUrl'] ?? ''));
+            if ($planPdf !== '' && $this->sanitizeCourseMaterialPath($planPdf) === null) {
+                $errors[$locale][] = 'The study plan download must reference an existing internal PDF file.';
+            }
             $departments = is_array($translation['payload']['plan']['departments'] ?? null)
                 ? $translation['payload']['plan']['departments']
                 : [];

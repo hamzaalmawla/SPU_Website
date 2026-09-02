@@ -44,9 +44,9 @@
     </div>
 
     <div class="container">
-        <div style="margin-top: -7rem;" class="relative flex flex-col gap-6 border-b border-spu-blue/10 md:flex-row md:items-center md:gap-8">
+        <div style="margin-top: -7rem;" class="relative grid grid-cols-[130px_minmax(0,1fr)] items-center gap-4 border-b border-spu-blue/10 sm:grid-cols-[160px_minmax(0,1fr)] md:flex md:gap-8">
             <div class="shrink-0">
-                <div class="h-[160px] w-[160px] overflow-hidden rounded-full border-[6px] border-white bg-[#f6f8fc] shadow-[0_8px_32px_rgba(32,39,89,0.2)] md:h-[260px] md:w-[260px]">
+                <div class="h-[130px] w-[130px] overflow-hidden rounded-full border-[6px] border-white bg-[#f6f8fc] shadow-[0_8px_32px_rgba(32,39,89,0.2)] sm:h-[160px] sm:w-[160px] md:h-[260px] md:w-[260px]">
                     @if ($image)
                         <img src="{{ $image }}" alt="{{ $name }}" class="h-full w-full object-cover">
                     @else
@@ -57,10 +57,10 @@
                 </div>
             </div>
 
-            <div class="flex-1">
+            <div class="contents min-w-0 flex-1 md:block">
                 <h1 class="text-[1.875rem] mb-3 font-bold leading-tight text-white/90">{{ $name }}</h1>
 
-                <div class="my-1 flex flex-wrap items-center gap-1">
+                <div class="col-span-2 my-1 flex flex-wrap items-center gap-1 md:col-auto">
                     @if ($position !== null && $position !== '')
                         <span class="inline-flex items-center rounded-full bg-spu-red px-3 py-1 text-xs font-bold uppercase tracking-[0.05em] text-white">{{ $position }}</span>
                     @endif
@@ -79,11 +79,11 @@
                 </div>
 
                 @if ($headerBio !== '')
-                    <p class="mb-3 text-base text-spu-blue/70">{{ Str::limit($headerBio, 200) }}</p>
+                    <p class="col-span-2 mb-3 text-base text-spu-blue/70 md:col-auto">{{ Str::limit($headerBio, 200) }}</p>
                 @endif
 
                 @if ($officeLocation !== null && $officeLocation !== '')
-                    <div class="mb-4">
+                    <div class="col-span-2 mb-4 md:col-auto">
                         <div class="flex items-center gap-2 text-sm text-spu-blue/60">
                             <img src="/images/icon-map-outline.svg" alt="" class="h-4 w-4 opacity-60" aria-hidden="true">
                             <span>{{ $officeLocation }}</span>
@@ -91,7 +91,7 @@
                     </div>
                 @endif
 
-                <div class="flex flex-wrap items-center gap-3">
+                <div class="col-span-2 flex flex-wrap items-center gap-3 md:col-auto">
                     @if ($email !== null && $email !== '')
                         <a href="mailto:{{ $email }}" class="flex h-10 w-10 items-center justify-center rounded-[10px] bg-spu-blue/[0.06] text-spu-blue transition-all hover:-translate-y-0.5 hover:bg-spu-blue hover:text-white" aria-label="{{ $isAr ? 'البريد الإلكتروني' : 'Email' }}">
                             <img src="/images/icon-envelope-outline.svg" alt="" class="h-4 w-4" aria-hidden="true">

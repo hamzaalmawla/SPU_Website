@@ -55,7 +55,7 @@
         };
     @endphp
 
-    <section class="bg-white py-16 font-hacen md:py-20">
+    <section class="bg-white py-20 font-hacen md:py-20">
         <div class="container">
             <nav class="mb-8 flex items-center gap-2 text-[12px] font-bold text-slate-500" aria-label="Breadcrumb">
                 <a href="/{{ $locale }}" class="transition hover:text-spu-blue">{{ $homeLabel }}</a>
