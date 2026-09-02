@@ -19,13 +19,23 @@ State all six of these, every time:
 | **Process model** | one process per request, not one client multiplexing |
 | **Vantage point** | where you ran it from — this is not neutral |
 | **n and concurrency** | both, separately |
-| **Cache state** | unique `?cb=N` per request to bypass the page cache, or say you did not |
+| **Cache state** | `-H 'Cache-Control: no-cache'` to bypass the page cache, and confirm it with `X-Cache: BYPASS`. State which path you measured. |
 | **Repetitions** | three runs; report the spread, not one median |
 
 `--http1.1` is not optional. Forcing it changed a median from 23.08s to 15.58s
 on an identical test — HTTP/2 multiplexes many requests over one connection with
 a 64KB flow-control window, so a concurrency test over h2 measures the window as
 much as the server.
+
+**`?cb=N` does not bypass this application's page cache, and an earlier version
+of this table said it did.** `CachePublicPages::normalizeQuery()` builds the
+cache key from a per-route allow-list of query parameters and drops everything
+else before hashing, so `cb` never reaches the key and every request in a sweep
+lands on one cached entry. Anyone following that instruction would have measured
+the cache and labelled it a fresh render. `Cache-Control: no-cache` is matched by
+`hasPrivateRequestHeaders()` and genuinely bypasses — and unlike a cache-buster,
+it says so in the response, which is why the header is the thing to check rather
+than the request.
 
 ---
 
@@ -125,14 +135,26 @@ declining to compress for a client it had been told could not decompress. With
 Same protocol as above: local macOS vantage, `curl --http1.1`, one process per
 request, unique `?cb=N`, 15 concurrent, n=30, three runs.
 
+Served from the page cache (`X-Cache: HIT`):
+
 | Target | Bytes | Median (3 runs) | Max | OK |
 |---|---:|---|---:|---|
 | legacy `spu.edu.sy` homepage | 27,842 | 1.01 / 0.96 / 0.89s | 1.35s | 30/30 |
 | v2 `/ar` | 23,538 | 1.01 / 1.01 / 1.04s | 1.36s | 30/30 |
 | v2 `/ar/admissions` | 13,602 | 0.98 / 0.97 / 0.99s | 1.51s | 30/30 |
 
+Full render, page cache bypassed (`X-Cache: BYPASS`) — what the first visitor to
+a page gets after a deploy:
+
+| Target | Bytes | Median (3 runs) | Max | OK |
+|---|---:|---|---:|---|
+| v2 `/ar` | 23,538 | 1.14 / 1.23 / 1.19s | 1.72s | 30/30 |
+| v2 `/ar/admissions` | 13,602 | 1.01 / 0.98 / 1.04s | 1.79s | 30/30 |
+
 `/ar/admissions` was **23.08s median, 50.00s max** on 1 September. It is now
-0.98s, and v2 is indistinguishable from the legacy site under identical load.
+around 1s on both paths, and v2 is indistinguishable from the legacy site under
+identical load. That the uncached path is barely slower than the cached one is
+the useful detail: rendering was never what made this site slow.
 
 Two things worth keeping straight about this number. It is a **23× improvement
 on the same page from the same vantage**, and it is not a 23× improvement in the
