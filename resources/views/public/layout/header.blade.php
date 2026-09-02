@@ -37,7 +37,7 @@
         <div class="site-nav-shell" :class="shellClass()">
             <div class="site-nav-shell__main">
                 <a href="/{{ $locale }}" aria-label="{{ __('public.home') }}" class="site-nav-brand">
-                    <img src="/images/logo-spu.png" alt="{{ __('public.spu_logo_alt') }}" width="562" height="118" class="h-auto w-[9.25rem] sm:w-[10rem] lg:w-[11rem] xl:w-[13.5rem]" decoding="async">
+                    <img src="/images/logo-spu.png" alt="{{ __('public.spu_logo_alt') }}" width="562" height="118" class="h-auto w-[8rem] sm:w-[9rem] lg:w-[10rem] xl:w-[10.5rem]" decoding="async">
                 </a>
 
                 <nav class="hidden w-full justify-center nav:flex nav:flex-1 nav:basis-auto nav:w-auto nav:items-center" aria-label="{{ __('public.primary_navigation') }}">
@@ -51,7 +51,7 @@
                                     @focusout="closeDropdownForFocus($event)"
                                 @endif>
                                 @if (!empty($item->children) && $item->resolvedUrl)
-                                <div class="site-nav-link-composite">
+                                <div class="site-nav-link-composite ">
                                     <a href="{{ $item->resolvedUrl }}"
                                        class="site-nav-link {{ $item->isActive ? 'site-nav-link--active' : '' }}"
                                        @if ($item->isActive) aria-current="page" @endif
@@ -222,7 +222,7 @@
 
                     @if ($navigation->applyCta)
                         <a href="{{ $navigation->applyCta->url }}"
-                            class="site-nav-apply hidden items-center gap-2 rounded-full bg-spu-red px-5 py-2.5 text-xs font-bold uppercase tracking-[0.08em] text-white shadow-[0_8px_24px_rgba(111,22,22,0.25)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(111,22,22,0.3)] nav:inline-flex"
+                            class="site-nav-apply hidden items-center gap-2 rounded-[10px] bg-spu-red px-5 py-2.5 text-xs font-bold text-white shadow-[0_8px_24px_rgba(111,22,22,0.25)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(111,22,22,0.3)] nav:inline-flex"
                            @if ($navigation->applyCta->target) target="{{ $navigation->applyCta->target }}" rel="noreferrer" @endif>
                             <span>{{ $navigation->applyCta->label }}</span>
                         </a>

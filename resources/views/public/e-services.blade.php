@@ -1,11 +1,11 @@
 @extends('layouts.public')
 
 @section('content')
-    <div class="relative h-72 w-full overflow-hidden md:h-[450px]" id="digital-services-hero">
+    <div class="relative h-72  w-full overflow-hidden md:h-[450px]" id="digital-services-hero">
         <img src="{{ $page->hero['imageHero'] }}" alt="Digital Services" class="absolute inset-0 h-full w-full object-cover">
         <div class="absolute inset-0 bg-[#1e2756]/50"></div>
         <div class="absolute inset-0 flex flex-col items-center justify-center px-4 text-center text-white">
-            <div class="mb-4 rounded bg-[#1e2756]/80 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em]">
+            <div class="mb-4 mt-7 rounded bg-[#1e2756]/80 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em]">
                 {{ $page->hero['eyebrow'] }}
             </div>
             <h1 class="text-4xl font-bold leading-tight md:text-5xl lg:text-[44px]">
