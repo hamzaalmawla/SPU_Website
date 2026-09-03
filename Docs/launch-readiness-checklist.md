@@ -273,6 +273,32 @@ which makes them a call for whoever owns the design.
 
 Re-measure after any of them with `node tests/browser/accessibility-audit.mjs`.
 
+### Regression introduced on 3 September, not yet fixed
+
+`5c6b539` changed the faculties-hub stat `+` from `text-[#e2b864]` to
+`text-spu-red`. `--color-spu-red` is `#6f1616`, a dark red meant for white
+cards — it is used that way for the publication and research headings. Over the
+hub's dark hero it disappears.
+
+| Element | Measured (5th pct) | Needs |
+| --- | --- | --- |
+| Faculties hub stat `+`, 36.8px | **1.09:1** (median 1.20:1) | 3:1 |
+| The white digits beside it, same backdrop, as a control | 14.04:1 | 3:1 |
+
+Measured on the live page with the two-capture method the audit uses, 3,155
+glyph pixels. The control on the same backdrop rules out a measurement fault:
+the digits are fine, only the `+` is not. "5k+" now reads as "5k" followed by
+an invisible mark, and the `+` carries meaning.
+
+The audit did not catch this. The stat strip is below the first viewport, and
+on the runs since the change the hub's organic control disagreed by 3.4%
+(computed 11.65:1, pixels 11.26:1), so the page's pixel measurements were
+discarded rather than reported — correctly, but it means the hub rows in the
+table above are unrefreshed since 2 September.
+
+Reverting the one class restores roughly 10:1. It is a teammate's colour
+choice, so it is recorded here rather than changed unilaterally.
+
 **What it is not.** It drives a browser, not a screen reader. It cannot tell you
 how NVDA or VoiceOver announces this site, which is what
 `FRONTEND_ROUTE_PARITY_MATRIX.md` asks for, and it is not sign-off. It also
