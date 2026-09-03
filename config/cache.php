@@ -112,7 +112,15 @@ return [
         ],
 
         'rate-limiter' => [
-            'driver' => env('RATE_LIMIT_CACHE_DRIVER', env('APP_ENV') === 'testing' ? 'array' : 'file'),
+            // Testing is authoritative, not a fallback. This used to read
+            // env('RATE_LIMIT_CACHE_DRIVER', APP_ENV === 'testing' ? 'array' : 'file'),
+            // but env() returns its default only when the key is ABSENT - and
+            // .env.example shipped an explicit RATE_LIMIT_CACHE_DRIVER=file. CI copies
+            // that file, so the suite ran on a file-backed limiter, counters persisted
+            // across the whole run, and the 31st search request answered 429.
+            'driver' => env('APP_ENV') === 'testing'
+                ? 'array'
+                : env('RATE_LIMIT_CACHE_DRIVER', 'file'),
             'connection' => env('REDIS_RATE_LIMIT_CONNECTION', 'default'),
             'path' => storage_path('framework/cache/rate-limiter'),
             'lock_path' => storage_path('framework/cache/rate-limiter'),
