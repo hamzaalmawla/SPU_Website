@@ -118,6 +118,29 @@ final class ResearchNavigationLandingGateTest extends TestCase
         $this->assertStringContainsString('/en/about/profile/', $dropdown);
     }
 
+    public function test_the_mobile_menu_keeps_the_same_featured_profiles(): void
+    {
+        // mobile-navigation.blade.php carries its own copy of the block above,
+        // and 4de9da7 fixed only the header: the phone menu lost the group and
+        // all three profiles with it. Both surfaces render from the same menu
+        // tree, so they are asserted against the same expectation.
+        foreach (['en', 'ar'] as $locale) {
+            $html = (string) $this->get('/'.$locale)->assertOk()->getContent();
+
+            $this->assertSame(
+                3,
+                substr_count($html, 'site-nav-mobile-featured'),
+                'The mobile menu dropped its featured researcher profiles.',
+            );
+
+            $this->assertSame(
+                1,
+                substr_count($html, 'class="site-nav-mobile-group"'),
+                'The mobile menu flattened a group that still has children.',
+            );
+        }
+    }
+
     private function primaryNavMarkup(string $html): string
     {
         $matched = preg_match('~<ul class="site-nav-list">(.*?)</ul>~s', $html, $matches);
