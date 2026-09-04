@@ -66,7 +66,10 @@
                         <div class="flex flex-col items-center justify-center text-center px-4">
                             <div class="flex items-baseline mb-3">
                                 <span class="text-5xl lg:text-6xl font-bold text-white tracking-tighter stats-card-value" data-value="{{ $stat->value }}" translate="no">{{ $stat->value }}</span>
-                                @if ($stat->suffix)<span class="text-3xl font-bold text-spu-red ms-1" translate="no">{{ $stat->suffix }}</span>@endif
+                                {{-- Gold, not the brand red: this sits on the dark navy panel, where
+                                     #6f1616 measured 1.2:1 against the 3:1 large text needs. Same
+                                     defect, same fix as the faculties hub. --}}
+                                @if ($stat->suffix)<span class="text-3xl font-bold text-spu-gold ms-1" translate="no">{{ $stat->suffix }}</span>@endif
                             </div>
                             <p class="text-[#799DD6] text-xs font-bold tracking-widest uppercase">{{ $stat->label }}</p>
                         </div>

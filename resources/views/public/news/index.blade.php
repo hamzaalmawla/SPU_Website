@@ -13,7 +13,12 @@
         </div>
 
         <div class="container relative z-10 pt-16 text-center text-white md:pt-20">
-            <h1 class="mb-6 text-[clamp(2.15rem,10vw,3rem)] font-bold uppercase tracking-[0.12em] text-spu-gold sm:tracking-[0.22em] md:tracking-[0.4em]">{{ $page['heroTitle'] ?? $pageTitle }}</h1>
+            {{-- Not gold. This heading carried text-spu-gold for months while no such
+                 token existed, so it inherited white and measured 2.37:1 on the hero
+                 photograph. The moment --color-spu-gold was defined the class woke up
+                 and the heading dropped to 1.27:1 — worse than what it replaced. The
+                 scrim behind it is the open item; the colour is not. --}}
+            <h1 class="mb-6 text-[clamp(2.15rem,10vw,3rem)] font-bold uppercase tracking-[0.12em] sm:tracking-[0.22em] md:tracking-[0.4em]">{{ $page['heroTitle'] ?? $pageTitle }}</h1>
             <p class="mb-8 text-[clamp(1.15rem,5vw,1.875rem)] font-bold leading-tight">{{ $page['pageDescription'] ?? $pageDescription }}</p>
 
             <div class="mt-12 space-y-4">
