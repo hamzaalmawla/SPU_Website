@@ -322,7 +322,7 @@ which makes them a call for whoever owns the design.
 
 Re-measure after any of them with `node tests/browser/accessibility-audit.mjs`.
 
-### Regression introduced 3 September, fixed in the repo, not yet deployed
+### Regression introduced and fixed, 3–4 September
 
 `5c6b539` changed the faculties-hub stat `+` from the hard-coded
 `text-[#e2b864]` to the theme token `text-spu-red`. Reaching for a token instead
@@ -334,6 +334,7 @@ exception: it sits on a dark photograph, not a card.
 | Element | Measured (5th pct) | Needs |
 | --- | --- | --- |
 | Faculties hub stat `+`, 36.8px, as shipped | **1.09:1** (median 1.20:1) | 3:1 |
+| The same `+` after the fix, deployed | **3.32:1** (median 7.54:1) | 3:1 |
 | The white digits beside it, same backdrop, as a control | 14.04:1 | 3:1 |
 
 Measured on the live page with the two-capture method the audit uses, over
@@ -355,10 +356,11 @@ that already carried the same hex inline. Reverting to the arbitrary value would
 have restored the pixels and left the next person with nothing to reach for; the
 token is the accent for dark surfaces, and the comment beside it says so.
 
-**Deployment state.** Deploy 27 carries `c322c07`, which is the commit before
-this fix, so the live hub is still serving the invisible `+`. The measured
-1.09:1 above is what v2.spu.edu.sy renders today. Re-measure after the deploy
-that carries this commit and replace the "as shipped" row with the result.
+**Deployed and re-measured.** Deploy 29 carries the fix. The same glyph, same
+method, same 36.8px, on the live page: 3.32:1 across the worst twentieth of its
+pixels and 7.54:1 at the median, against the 3:1 it needs. The median matches
+the value predicted from the backdrop luminance before the deploy, which is the
+check that the two measurements are of the same thing.
 
 **What it is not.** It drives a browser, not a screen reader. It cannot tell you
 how NVDA or VoiceOver announces this site, which is what
