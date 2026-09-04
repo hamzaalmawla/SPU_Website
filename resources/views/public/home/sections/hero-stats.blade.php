@@ -6,7 +6,7 @@
         <div class="stats-shell reveal-item">
             <div class="stats-shell__grid {{ $statsGridCols }}">
                     @foreach ($section->payload->stats as $stat)
-                        <article class="stats-card" style="--card-accent: #caa949;">
+                        <article class="stats-card" style="--card-accent: #caa949; --card-accent-text: #887231;">
                             <div class="stats-card__top">
                                 @if ($stat->icon)
                                     <div class="stats-icon-badge">

@@ -290,6 +290,62 @@ at 12px on white — 2.3:1, 2.26:1 and 3.48:1 against 4.5:1. `AccessibleColor` h
 been applied to the card's other text use and not to this one. Both now take
 `$accentText`; the tints and rules keep the raw accent, where it is fine.
 
+### A second round, 4 September, after the first was deployed
+
+Deploying the first round and re-running the audit found more, including one
+defect the first round caused.
+
+**Caused by the fix.** Defining `--color-spu-gold` woke a dormant class.
+`public/news/index.blade.php` had carried `text-spu-gold` on its `h1` since
+`cf1cef0`, and because the token did not exist Tailwind emitted no rule, so the
+heading inherited white and measured 2.37:1. Adding the token made it gold and
+**1.27:1** — worse than what it replaced. The class is removed; the heading is
+white again, and the `.page-hero` scrim behind it remains the open design item
+it already was.
+
+That is worth stating plainly: adding a design token is not a safe no-op. Any
+class name that was previously inert starts rendering the moment the token
+backing it exists, in every template that already spelled it.
+
+**The same defect, two more places.** A brand colour used as text where it does
+not have the contrast for it:
+
+| Element | Measured | Needs | Fix |
+| --- | --- | --- | --- |
+| Homepage faculty card CTA, 13px on white | 2.3:1 | 4.5:1 | darkened accent, as the hub |
+| Medical-facilities stat `+`, 30px on navy | 1.2:1 | 3:1 | `text-spu-gold`, as the hub |
+| Homepage stats card `+`, 20.8px on white | 2.26:1 | 3:1 | `--card-accent-text` |
+
+**Two false positives the sweep introduced, and both are fixed in the checker
+rather than worked around.** The homepage "choose your path" cards hold their
+back face at `translateY(100%)` inside an overflow-hidden card: `visibility:
+visible`, `opacity: 1`, a real rect, sitting entirely below the card over the
+white page. Sampling its centre found white behind white text and reported 1:1
+on a panel no reader has seen. The collector now skips text clipped out of its
+own container, as it already skipped text at `opacity: 0` and `.sr-only` text
+clipped to 1×1.
+
+**Judged and left.** The events calendar renders adjacent-month day numbers in
+`#d0d0d0` at 1.54:1. They are inactive padding cells in a month grid, not
+content, and WCAG does not require contrast for inactive components. Recorded
+here so the next reader knows it was decided rather than missed.
+
+**And one hazard worth knowing about, found the hard way.** Adding a raw PHP
+block to `academic-faculties.blade.php` took the whole homepage down with
+`syntax error, unexpected token "endforeach"`. Blade extracts raw PHP blocks
+before it compiles anything else, and its pattern runs from the first opener in
+a file to the first closer — that file already opened a single-expression form
+on line 7, so the new block closed *that* one and forty lines of markup between
+them were emitted as raw PHP. Naming either directive inside a `{{-- --}}`
+comment does the same thing, because the extraction runs before comments are
+stripped.
+
+The suite caught it — 54 failures — but not one of them said why, and the cause
+came out of `storage/logs/laravel.log`. `BladeTemplatesCompileTest` now compiles
+every template and names the file and the parse error in a single line. It was
+checked against the real bug: reintroduce the block form and it fails, restore
+the fix and it passes.
+
 Fixed by this work: the homepage hero buttons, 2.98:1 to 9.53:1, via a
 directional scrim under the text column.
 

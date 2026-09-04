@@ -64,6 +64,11 @@
 
     .stats-card {
         --card-accent: #caa949;
+        /* The same gold, darkened until it reaches 4.5:1 on white — the value
+           App\Support\AccessibleColor::onLight('#caa949') returns, which is
+           what the faculty accents go through. The accent itself stays for the
+           rule beneath the card, where contrast does not apply. */
+        --card-accent-text: #887231;
         position: relative;
         container-type: inline-size;
         display: flex;
@@ -140,7 +145,7 @@
     }
 
     .stats-card-plus {
-        color: var(--card-accent);
+        color: var(--card-accent-text, var(--card-accent));
         font-size: clamp(1.3rem, 0.85vw + 0.95rem, 1.65rem);
         font-weight: 800;
         line-height: 1;

@@ -265,10 +265,23 @@ const PAGE_PROBES = `(() => {
   // Opacity is walked up the tree because it is inherited in effect, not in
   // cascade: a child at opacity:1 inside a parent at 0 paints nothing.
   const effectivelyInvisible = (el) => {
+    const box = el.getBoundingClientRect();
     for (let n = el; n && n !== document.documentElement; n = n.parentElement) {
       const cs = getComputedStyle(n);
       if (cs.visibility === 'hidden' || cs.visibility === 'collapse') return true;
       if (parseFloat(cs.opacity) === 0) return true;
+
+      // Clipped out of its own container. The homepage's "choose your path"
+      // cards hold their back face at translateY(100%) inside an overflow-
+      // hidden card, so it is visible:visible, opacity:1, and has a real rect
+      // — sitting entirely below the card, over the white page. Sampling its
+      // centre found white behind white text and reported 1:1 on a panel no
+      // reader has ever seen.
+      if (n !== el && cs.overflow !== 'visible') {
+        const clip = n.getBoundingClientRect();
+        if (box.right <= clip.left + 1 || box.left >= clip.right - 1
+          || box.bottom <= clip.top + 1 || box.top >= clip.bottom - 1) return true;
+      }
     }
     return false;
   };
