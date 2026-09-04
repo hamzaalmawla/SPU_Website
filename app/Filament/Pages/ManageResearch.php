@@ -397,9 +397,9 @@ class ManageResearch extends Page implements HasForms
                 MediaPicker::image($prefix.'.hero.backgroundImage', $this->fieldLabel('background_image'), true),
                 Textarea::make($prefix.'.hero.summary')->label($this->fieldLabel('summary'))->required()->rows(2)->columnSpanFull(),
                 TextInput::make($prefix.'.hero.cta1')->label($this->fieldLabel('primary_cta'))->required()->maxLength(120),
-                PageUrlSelect::make($prefix.'.hero.cta1Url', $this->fieldLabel('primary_cta_url'), null, true),
+                PageUrlSelect::make($prefix.'.hero.cta1Url', $this->fieldLabel('primary_cta_url'), $locale, true),
                 TextInput::make($prefix.'.hero.cta2')->label($this->fieldLabel('secondary_cta'))->required()->maxLength(120),
-                PageUrlSelect::make($prefix.'.hero.cta2Url', $this->fieldLabel('secondary_cta_url'), null, true),
+                PageUrlSelect::make($prefix.'.hero.cta2Url', $this->fieldLabel('secondary_cta_url'), $locale, true),
             ])->columns(2),
             Section::make($this->sectionLabel('landing_stats'))->schema([
                 Repeater::make($prefix.'.stats')
@@ -443,7 +443,7 @@ class ManageResearch extends Page implements HasForms
                         TextInput::make('title')->label($this->fieldLabel('title'))->required()->maxLength(160),
                         Textarea::make('summary')->label($this->fieldLabel('summary'))->required()->rows(2)->columnSpanFull(),
                         TextInput::make('cta')->label($this->fieldLabel('cta_label'))->required()->maxLength(120),
-                        PageUrlSelect::make('url', $this->fieldLabel('url'), null, true),
+                        PageUrlSelect::make('url', $this->fieldLabel('url'), $locale, true),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -506,12 +506,12 @@ class ManageResearch extends Page implements HasForms
                 Textarea::make($prefix.'.hero.summary')->label($this->fieldLabel('summary'))->required()->rows(2)->columnSpanFull(),
                 TextInput::make($prefix.'.hero.primaryCta')->label($this->fieldLabel('primary_cta'))->required()->maxLength(120),
                 TextInput::make($prefix.'.hero.secondaryCta')->label($this->fieldLabel('secondary_cta'))->required()->maxLength(120),
-                PageUrlSelect::make($prefix.'.hero.secondaryCtaUrl', $this->fieldLabel('secondary_cta_url'), null, true)->columnSpanFull(),
+                PageUrlSelect::make($prefix.'.hero.secondaryCtaUrl', $this->fieldLabel('secondary_cta_url'), $locale, true)->columnSpanFull(),
                 Repeater::make($prefix.'.hero.breadcrumbs')
                     ->label($this->fieldLabel('breadcrumbs'))
                     ->schema([
                         TextInput::make('label')->label($this->fieldLabel('label'))->required()->maxLength(120),
-                        PageUrlSelect::make('url', $this->fieldLabel('url'), null, true),
+                        PageUrlSelect::make('url', $this->fieldLabel('url'), $locale, true),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -577,7 +577,7 @@ class ManageResearch extends Page implements HasForms
                 Textarea::make($prefix.'.hero.summary')->label($this->fieldLabel('summary'))->required()->rows(2)->columnSpanFull(),
                 Repeater::make($prefix.'.hero.breadcrumbs')->label($this->fieldLabel('breadcrumbs'))->schema([
                     TextInput::make('label')->label($this->fieldLabel('label'))->required()->maxLength(120),
-                    PageUrlSelect::make('url', $this->fieldLabel('url'), null, true),
+                    PageUrlSelect::make('url', $this->fieldLabel('url'), $locale, true),
                 ])->columns(2)->defaultItems(0)->reorderable()->collapsible()->columnSpanFull(),
             ])->columns(2),
             Section::make($this->sectionLabel('project_filters'))->schema([
@@ -621,7 +621,7 @@ class ManageResearch extends Page implements HasForms
                 Textarea::make($prefix.'.hero.summary')->label($this->fieldLabel('summary'))->required()->rows(2)->columnSpanFull(),
                 Repeater::make($prefix.'.hero.breadcrumbs')->label($this->fieldLabel('breadcrumbs'))->schema([
                     TextInput::make('label')->label($this->fieldLabel('label'))->required()->maxLength(120),
-                    PageUrlSelect::make('url', $this->fieldLabel('url'), null, true),
+                    PageUrlSelect::make('url', $this->fieldLabel('url'), $locale, true),
                 ])->columns(2)->defaultItems(0)->reorderable()->collapsible()->columnSpanFull(),
             ])->columns(2),
             Section::make($this->sectionLabel('research_themes'))->schema([
@@ -879,15 +879,20 @@ class ManageResearch extends Page implements HasForms
                         Hidden::make('id')->dehydrated(),
                         TextInput::make('title')->label($this->fieldLabel('title'))->required()->maxLength(180),
                         Textarea::make('description')->label($this->fieldLabel('description'))->required()->rows(2)->columnSpanFull(),
+                        Toggle::make('documentsUnavailable')
+                            ->label($this->fieldLabel('documents_unavailable'))
+                            ->helperText($this->fieldLabel('documents_unavailable_help'))
+                            ->live(),
                         Repeater::make('documents')
                             ->label($this->fieldLabel('documents'))
                             ->schema([
                                 TextInput::make('title')->label($this->fieldLabel('title'))->required()->maxLength(180),
                                 TextInput::make('fileType')->label($this->fieldLabel('file_type'))->required()->maxLength(40),
-                                MediaPicker::document('url', $this->fieldLabel('document_file'), true)->columnSpanFull(),
+                                MediaPicker::document('url', $this->fieldLabel('document_file'))->columnSpanFull(),
                             ])
                             ->columns(2)
                             ->defaultItems(0)
+                            ->visible(fn (Get $get): bool => ! (bool) $get('documentsUnavailable'))
                             ->reorderable()
                             ->cloneable()
                             ->collapsible()
@@ -1147,7 +1152,13 @@ class ManageResearch extends Page implements HasForms
 
         $fields[] = TextInput::make('participants')->label($this->fieldLabel('participants'))->maxLength(120);
         $fields[] = Toggle::make('hasProceedings')->label($this->fieldLabel('proceedings_available'));
-        $fields[] = MediaPicker::document('proceedingsUrl', $this->fieldLabel('proceedings_file'))->visible(fn (Get $get): bool => (bool) $get('hasProceedings'))->columnSpanFull();
+        $fields[] = Toggle::make('proceedingsUnavailable')
+            ->label($this->fieldLabel('proceedings_unavailable'))
+            ->helperText($this->fieldLabel('proceedings_unavailable_help'))
+            ->visible(fn (Get $get): bool => (bool) $get('hasProceedings'));
+        $fields[] = MediaPicker::document('proceedingsUrl', $this->fieldLabel('proceedings_file'))
+            ->visible(fn (Get $get): bool => (bool) $get('hasProceedings') && ! (bool) $get('proceedingsUnavailable'))
+            ->columnSpanFull();
 
         return $fields;
     }

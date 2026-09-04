@@ -2040,7 +2040,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
     {
         return is_string($url)
             && ! str_starts_with($url, '//')
-            && preg_match('~^/(?:$|(?:(?:ar|en)/)?research(?:[/?#].*)?$)~', $url) === 1;
+            && preg_match('~^/(?:$|(?:ar|en)/?$|(?:(?:ar|en)/)?research(?:[/?#].*)?$)~', $url) === 1;
     }
 
     /** @return array<int, string> */
