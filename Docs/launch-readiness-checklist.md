@@ -235,11 +235,60 @@ requirement has to hold on every slide.
 
 Every page is gated on a control the method must reproduce before any of its
 numbers are reported. Where a real element with resolvable contrast exists on
-the page it is used, which is independent evidence; where none does, a swatch of
-known colours is placed on the hero image itself and measured there, which
-proves the pixel path works under the same conditions but is not a second
-opinion. The output labels which was used. `tests/browser/fixtures/` proves the
-check can still fail — it could not, silently, until that fixture found it.
+the page it is used, which is independent evidence; where none does, or where
+the one that does disagrees, a swatch of known colours is placed on the hero
+image itself and measured there. That proves the pixel path works under the same
+conditions but is not a second opinion, and the output labels which was used.
+`tests/browser/fixtures/` proves the check can still fail — it could not,
+silently, until that fixture found it.
+
+### What the audit was missing, found 3 September
+
+The audit reported "No findings" on a page rendering an invisible glyph. Four
+separate limits had to line up for that, and each one read as a pass:
+
+1. **It looked at one screenful.** `elementsFromPoint` only sees the viewport,
+   so the collector required elements to be inside it — and nothing scrolled.
+   Every route was checked above the fold and nowhere else. It now sweeps down
+   each page a screenful at a time, and the report states how far it reached.
+2. **It skipped text shorter than three characters.** That reads as "skip the
+   noise" and skipped the `+` in "5k+" — 36.8px, and carrying meaning.
+3. **A disagreeing control discarded the whole page.** The synthetic swatch was
+   built only where a page offered no organic candidate, so a candidate that
+   disagreed by 3.4% threw away every pixel measurement on that route. It is now
+   the fallback for disagreement too, which is where it is most useful: its
+   expected value is known by construction, so it can say whether the method is
+   unsound or merely that one candidate was poor.
+4. **Classification depended on load timing.** A hero photograph that had not
+   painted yet is not a background image to `elementsFromPoint`, so the same
+   route reported two elements over an image on one run and none on the next.
+   The sweep now waits for stylesheets, fonts and images before it starts.
+
+A fifth was introduced by the fix and caught before it shipped: `scroll-behavior:
+smooth` meant a scrolled element was photographed mid-flight, and the page moving
+between the two captures turned the whole frame into apparent glyph pixels — the
+synthetic control reported 6.26:1 for a swatch that is 11.72:1 by construction.
+All scrolling is now instant and confirmed at rest before anything is
+photographed.
+
+`tests/browser/fixtures/` carries the below-the-fold single-glyph case, so this
+one cannot come back silently either.
+
+**What that changed, measured 3 September against v2.spu.edu.sy:** coverage went
+from one screen to 3–19 screens per route; text on images from 33 elements found
+and 30 measured to **79 found and 27 measured, with none discarded** — every page
+gated where before nine were thrown away. Runtime 6 minutes.
+
+It also stopped reporting text nobody can see. A card caption held at
+`opacity: 0` until hover read as white-on-white at 1:1, and `.sr-only` text
+clipped to 1×1 read as black on brand red. Both are correct markup; both are now
+skipped, because a report that cries wolf is a report that gets ignored.
+
+**New, from the deeper sweep, all below the fold and all fixed here:** the
+faculties-hub card numbers `03`, `04` and `07` were rendering the raw CMS accent
+at 12px on white — 2.3:1, 2.26:1 and 3.48:1 against 4.5:1. `AccessibleColor` had
+been applied to the card's other text use and not to this one. Both now take
+`$accentText`; the tints and rules keep the raw accent, where it is fine.
 
 Fixed by this work: the homepage hero buttons, 2.98:1 to 9.53:1, via a
 directional scrim under the text column.
@@ -273,7 +322,7 @@ which makes them a call for whoever owns the design.
 
 Re-measure after any of them with `node tests/browser/accessibility-audit.mjs`.
 
-### Regression introduced 3 September, fixed in the repo, not yet deployed
+### Regression introduced and fixed, 3–4 September
 
 `5c6b539` changed the faculties-hub stat `+` from the hard-coded
 `text-[#e2b864]` to the theme token `text-spu-red`. Reaching for a token instead
@@ -285,6 +334,7 @@ exception: it sits on a dark photograph, not a card.
 | Element | Measured (5th pct) | Needs |
 | --- | --- | --- |
 | Faculties hub stat `+`, 36.8px, as shipped | **1.09:1** (median 1.20:1) | 3:1 |
+| The same `+` after the fix, deployed | **3.32:1** (median 7.54:1) | 3:1 |
 | The white digits beside it, same backdrop, as a control | 14.04:1 | 3:1 |
 
 Measured on the live page with the two-capture method the audit uses, over
@@ -306,10 +356,11 @@ that already carried the same hex inline. Reverting to the arbitrary value would
 have restored the pixels and left the next person with nothing to reach for; the
 token is the accent for dark surfaces, and the comment beside it says so.
 
-**Deployment state.** Deploy 27 carries `c322c07`, which is the commit before
-this fix, so the live hub is still serving the invisible `+`. The measured
-1.09:1 above is what v2.spu.edu.sy renders today. Re-measure after the deploy
-that carries this commit and replace the "as shipped" row with the result.
+**Deployed and re-measured.** Deploy 29 carries the fix. The same glyph, same
+method, same 36.8px, on the live page: 3.32:1 across the worst twentieth of its
+pixels and 7.54:1 at the median, against the 3:1 it needs. The median matches
+the value predicted from the backdrop luminance before the deploy, which is the
+check that the two measurements are of the same thing.
 
 **What it is not.** It drives a browser, not a screen reader. It cannot tell you
 how NVDA or VoiceOver announces this site, which is what
