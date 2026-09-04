@@ -57,6 +57,11 @@ const VIEWPORTS = [
   { name: 'mobile', width: 390, height: 844 },
 ];
 
+// How far down each route the contrast sweep goes, in screenfuls. Ten covers
+// every template here; the cap exists so one unusually long route cannot
+// dominate the run, and how far it actually reached is stated in the report.
+const SCROLL_STEPS = Number(process.env.AUDIT_SCROLL_STEPS ?? 20);
+
 const CHROME = process.env.CHROME_BIN
   ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 
@@ -64,6 +69,7 @@ const findings = [];
 let overImages = 0;
 let pixelMeasured = 0;
 let unmeasuredOverImages = 0;
+const screensCovered = [];
 const pixelControls = [];
 const pixelUntrusted = new Set();
 const report = (route, viewport, check, detail) =>
@@ -230,26 +236,70 @@ const PAGE_PROBES = `(() => {
     return { rgb: c && c.a > 0.95 ? c.rgb : [255, 255, 255] };
   };
 
-  const seen = new Set();
-  out.contrast = [];
-  out.contrastOverImages = 0;
-  window.__spuOverImage = [];
-  window.__spuControl = null;
+  // elementsFromPoint only sees the viewport, so one call can only judge what is
+  // currently on screen. The driver therefore calls this probe once per
+  // screenful and these accumulators carry the results across the sweep.
+  //
+  // Before the sweep existed the audit measured the first screen and nothing
+  // else. That is how it passed a page whose stat strip, 2,152px down, was
+  // rendering an invisible "+" at 1.09:1 — the glyph was never collected, so
+  // there was nothing to report. "No findings" meant "no findings above the
+  // fold", which is not what a reader takes from it.
+  if (!window.__spuAccum) {
+    window.__spuAccum = {
+      contrast: [], overImages: 0, truncated: false,
+      seenKeys: new Set(), seenEls: new WeakSet(),
+    };
+    window.__spuOverImage = [];
+    window.__spuControl = null;
+  }
+  const accum = window.__spuAccum;
+  const seen = accum.seenKeys;
+
+  // Text nobody can see has no contrast requirement, and reporting it is how a
+  // report gets ignored. Two kinds turned up once the sweep started reaching
+  // the whole page: a card caption held at opacity:0 until its parent is
+  // hovered, reported as white-on-white at 1:1, and .sr-only text clipped to a
+  // 1x1 box, reported as black on brand red. Both are correct markup.
+  //
+  // Opacity is walked up the tree because it is inherited in effect, not in
+  // cascade: a child at opacity:1 inside a parent at 0 paints nothing.
+  const effectivelyInvisible = (el) => {
+    for (let n = el; n && n !== document.documentElement; n = n.parentElement) {
+      const cs = getComputedStyle(n);
+      if (cs.visibility === 'hidden' || cs.visibility === 'collapse') return true;
+      if (parseFloat(cs.opacity) === 0) return true;
+    }
+    return false;
+  };
+
   const textEls = [...document.querySelectorAll('p, a, li, h1, h2, h3, h4, span, button, td, th, label')]
     .filter((el) => {
+      if (accum.seenEls.has(el)) return false;
       const t = (el.textContent || '').trim();
-      if (!t || t.length < 3) return false;
+      // Any visible character counts. The threshold used to be three, which
+      // reads as "skip the noise" and actually skipped the "+" in "5k+" — a
+      // glyph that carries meaning, rendered at 36.8px, and invisible at
+      // 1.09:1. A single character is text; whether it is worth reporting is
+      // the contrast check's decision, not the collector's.
+      if (!t) return false;
       if ([...el.children].some((c) => (c.textContent || '').trim() === t)) return false;
       const r = el.getBoundingClientRect();
-      // elementsFromPoint can only see the viewport, so the sample is limited
-      // to what is on screen. The report says so rather than implying the whole
-      // page was checked.
-      return r.width > 0 && r.height > 0
-        && r.top >= 0 && r.bottom <= window.innerHeight
-        && r.left >= 0 && r.right <= window.innerWidth;
+      // Intersecting the viewport, not contained by it. Requiring containment
+      // skipped any element taller than the screen at every scroll position, so
+      // scrolling alone would never have reached a long paragraph at mobile
+      // width. bgOf clamps its sample point to the visible area, so an element
+      // that runs off the top or bottom is still sampled somewhere real.
+      // 2px, not 0: .sr-only clips itself to a 1x1 box, which is a rendered
+      // size no reader ever sees.
+      return r.width >= 2 && r.height >= 2
+        && r.bottom > 0 && r.top < window.innerHeight
+        && r.right > 0 && r.left < window.innerWidth
+        && !effectivelyInvisible(el);
     });
 
   for (const el of textEls) {
+    accum.seenEls.add(el);
     const cs = getComputedStyle(el);
     const fg = parse(cs.color);
     if (!fg || fg.a < 0.95) continue;
@@ -261,7 +311,7 @@ const PAGE_PROBES = `(() => {
 
     const bgResult = bgOf(el);
     if (bgResult.image) {
-      out.contrastOverImages++;
+      accum.overImages++;
       // Kept addressable so the pixel pass below can measure what computed
       // style cannot — but only leaf elements, for the same reason the control
       // must be one: photographing a box that contains other painted children
@@ -286,14 +336,27 @@ const PAGE_PROBES = `(() => {
     // nothing but that text. A <label> wrapping a <select> broke exactly this:
     // computed style said 21:1 for its black-on-white text while the photograph
     // was mostly the select's own control surface.
-    if (!window.__spuControl && el.children.length === 0 && el.getBoundingClientRect().height > 8) {
-      window.__spuControl = { el, color: cs.color, expected: ratio };
+    //
+    // Wholly within the viewport, unlike the text elements above. Those only
+    // have to intersect it, because a clamped sample point is enough to read a
+    // background — but the control is PHOTOGRAPHED, with a clip taken in
+    // viewport coordinates, so any part of it off screen is a part the camera
+    // does not get. Relaxing this to "intersects" let a skip link parked above
+    // the fold become the control on some runs and not others, which is how a
+    // page's entire pixel pass came to depend on load timing.
+    if (!window.__spuControl && el.children.length === 0) {
+      const cr = el.getBoundingClientRect();
+      if (cr.height > 8
+        && cr.top >= 0 && cr.bottom <= window.innerHeight
+        && cr.left >= 0 && cr.right <= window.innerWidth) {
+        window.__spuControl = { el, color: cs.color, expected: ratio };
+      }
     }
     if (ratio + 0.02 < required) {
       const key = cs.color + '|' + bg.join(',') + '|' + Math.round(size);
       if (seen.has(key)) continue;
       seen.add(key);
-      out.contrast.push({
+      accum.contrast.push({
         ratio: Math.round(ratio * 100) / 100,
         required,
         color: cs.color,
@@ -304,10 +367,20 @@ const PAGE_PROBES = `(() => {
           + (typeof el.className === 'string' && el.className
             ? '.' + el.className.trim().split(/\\s+/)[0] : ''),
       });
-      if (out.contrast.length >= 6) break;
+      // The cap was six when this probe saw a single screenful. It now runs
+      // across the whole page, and six distinct colour/background/size
+      // combinations is easily reached on a content-heavy route — at which
+      // point the loop used to stop, abandoning the rest of that screen's
+      // over-image collection with it, and say nothing. A report that quietly
+      // stops looking is the defect this whole change exists to remove, so the
+      // limit is higher and, when it is reached, said out loud.
+      if (accum.contrast.length >= 25) { accum.truncated = true; break; }
     }
   }
 
+  out.contrast = accum.contrast;
+  out.contrastOverImages = accum.overImages;
+  out.contrastTruncated = accum.truncated;
   return out;
 })()`;
 
@@ -348,7 +421,47 @@ const FOCUS_PROBE = `(() => {
 // that cannot reproduce a known answer has not earned the right to report an
 // unknown one.
 async function measureOnPixels(S, sleep) {
+  // Brings the element on screen before its rect is taken. The sweep collects
+  // text from the whole document, so most of what reaches here is nowhere near
+  // the viewport, and a clip at a negative or off-screen y photographs the
+  // wrong pixels — or nothing. A fixed-position element is already where it
+  // will be photographed and is left alone.
+  const bringIntoView = async (path) => {
+    const { result } = await S('Runtime.evaluate', {
+      returnByValue: true,
+      expression: `(() => {
+        const t = ${path};
+        if (!t) return false;
+        if (getComputedStyle(t.el).position === 'fixed') return false;
+        const r = t.el.getBoundingClientRect();
+        if (r.top >= 0 && r.bottom <= window.innerHeight) return false;
+        // 'instant' matters. The site sets scroll-behavior: smooth, so a
+        // default scrollIntoView animates — the rect is then read mid-flight,
+        // and worse, the page keeps moving between the two captures the pixel
+        // method differences, which turns the whole frame into apparent glyph
+        // pixels. That is what made the synthetic control report 6.26:1 for a
+        // swatch whose value is 11.72:1 by construction.
+        t.el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' });
+        return true;
+      })()`,
+    });
+    // Only pay the settle delay when something actually moved, and confirm the
+    // page has come to rest before anything is photographed.
+    if (result.value) {
+      await sleep(250);
+      let last = -1;
+      for (let i = 0; i < 8; i++) {
+        const { result: y } = await S('Runtime.evaluate',
+          { returnByValue: true, expression: 'window.scrollY' });
+        if (y.value === last) break;
+        last = y.value;
+        await sleep(100);
+      }
+    }
+  };
+
   const rectOf = async (path) => {
+    await bringIntoView(path);
     const { result } = await S('Runtime.evaluate', {
       returnByValue: true,
       expression: `(() => {
@@ -356,6 +469,10 @@ async function measureOnPixels(S, sleep) {
         if (!t) return null;
         const r = t.el.getBoundingClientRect();
         if (r.width < 4 || r.height < 4) return null;
+        // Still off screen after the scroll — a sticky header covering it, or a
+        // scroll container the page will not move. Refusing is right: the clip
+        // would photograph something else and report a number for it.
+        if (r.bottom <= 0 || r.top >= window.innerHeight) return null;
         // Viewport-relative, deliberately. captureScreenshot's clip is taken in
         // viewport coordinates when captureBeyondViewport is false, so adding
         // the scroll offset double-counts it — and the keyboard traversal that
@@ -516,15 +633,15 @@ async function measureOnPixels(S, sleep) {
   // It is weaker evidence, and the output labels it as such — a reader has to be
   // able to tell a page checked against independent evidence from one checked
   // against our own arithmetic.
-  let controlRect = await rectOf('window.__spuControl');
-  let controlKind = 'organic';
-
-  if (!controlRect || controlRect.expected === null) {
+  // The synthetic control, built on demand. Kept as a function because it is
+  // now needed in two situations, not one.
+  const buildSynthetic = async () => {
     const { result: built } = await S('Runtime.evaluate', {
       returnByValue: true,
       expression: `(() => {
         const target = (window.__spuOverImage || [])[0];
         if (!target) return false;
+        target.el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' });
         const r = target.el.getBoundingClientRect();
 
         const FG = [255, 255, 255];
@@ -545,7 +662,7 @@ async function measureOnPixels(S, sleep) {
         el.style.cssText = [
           'position:fixed',
           'left:' + Math.max(4, Math.round(r.left)) + 'px',
-          'top:' + Math.max(4, Math.round(r.top)) + 'px',
+          'top:' + Math.max(4, Math.min(Math.round(r.top), window.innerHeight - 60)) + 'px',
           'z-index:2147483647',
           'background:rgb(18, 58, 94)',
           'color:rgb(255, 255, 255)',
@@ -561,52 +678,80 @@ async function measureOnPixels(S, sleep) {
         return true;
       })()`,
     });
-
-    if (!built.value) {
-      return { trusted: false, reason: 'no control element was available on this page' };
-    }
-
-    await sleep(150);
-    controlKind = 'synthetic';
-    controlRect = await rectOf('window.__spuControl');
-
-    if (!controlRect || controlRect.expected === null) {
-      await S('Runtime.evaluate', { expression: "document.getElementById('spu-synthetic-control')?.remove()" });
-      return { trusted: false, reason: 'the synthetic control could not be placed' };
-    }
-  }
-
-  const dropSynthetic = async () => {
-    if (controlKind === 'synthetic') {
-      await S('Runtime.evaluate', { expression: "document.getElementById('spu-synthetic-control')?.remove()" });
-    }
+    if (!built.value) return null;
+    await sleep(350);
+    return rectOf('window.__spuControl');
   };
 
-  const controlMeasured = await worstRatioBehind('window.__spuControl', controlRect);
-
-  if (process.env.AUDIT_VERBOSE && controlMeasured) {
-    console.log(`      [control:${controlKind}] ${controlRect.tag} "${controlRect.label}" `
-      + `computed=${controlRect.expected.toFixed(2)} pixels-p5=${controlMeasured.p5} worst=${controlMeasured.worst}`);
-  }
-
-  if (!controlMeasured) {
-    await dropSynthetic();
-    return { trusted: false, reason: 'the control could not be photographed' };
-  }
+  const dropSynthetic = async () => {
+    await S('Runtime.evaluate', {
+      expression: "document.getElementById('spu-synthetic-control')?.remove()",
+    });
+  };
 
   // Compared on the percentile, not the single darkest pixel: the control sits
   // on a solid colour, so every glyph shares one background and the two are the
   // same number — except at an antialiased edge, which must not fail an
   // otherwise sound method.
-  const drift = Math.abs(controlMeasured.p5 - controlRect.expected);
-  if (drift > 0.35) {
+  const DRIFT_TOLERANCE = 0.35;
+
+  const tryControl = async (rect, kind) => {
+    if (!rect || rect.expected === null) {
+      return { ok: false, why: `no ${kind} control could be photographed` };
+    }
+    const measured = await worstRatioBehind('window.__spuControl', rect);
+    if (!measured) return { ok: false, why: `the ${kind} control could not be photographed` };
+
+    if (process.env.AUDIT_VERBOSE) {
+      console.log(`      [control:${kind}] ${rect.tag} "${rect.label}" `
+        + `computed=${rect.expected.toFixed(2)} pixels-p5=${measured.p5} worst=${measured.worst}`);
+    }
+    if (Math.abs(measured.p5 - rect.expected) > DRIFT_TOLERANCE) {
+      return {
+        ok: false,
+        why: `${kind} control disagreed: computed says ${rect.expected.toFixed(2)}:1, `
+          + `pixels say ${measured.p5}:1 on ${rect.tag} "${rect.label}"`,
+      };
+    }
+    return { ok: true, measured, rect, kind };
+  };
+
+  // Organic first, and a disagreement is no longer the end of it.
+  //
+  // It used to be: the synthetic control was built only when the page offered
+  // no organic candidate at all, so a page with a candidate that disagreed by
+  // 3.4% had every one of its pixel measurements discarded. That is what
+  // happened on the faculties hub, and it is why the audit reported "no
+  // findings" on a page rendering an invisible glyph.
+  //
+  // A disagreeing organic control is exactly when the synthetic one earns its
+  // keep. Its expected value is known by construction rather than derived from
+  // a computed-style walk that may itself be what is wrong, so it can say
+  // whether the METHOD is unsound or merely that one candidate was a poor
+  // choice. Only if it also disagrees is the page genuinely unmeasurable — and
+  // the report then carries both numbers, because which one failed matters.
+  let attempt = await tryControl(await rectOf('window.__spuControl'), 'organic');
+  let organicFailure = null;
+
+  if (!attempt.ok) {
+    organicFailure = attempt.why;
     await dropSynthetic();
-    return {
-      trusted: false,
-      reason: `${controlKind} control disagreed: computed says ${controlRect.expected.toFixed(2)}:1, `
-        + `pixels say ${controlMeasured.p5}:1 on ${controlRect.tag} "${controlRect.label}"`,
-    };
+    attempt = await tryControl(await buildSynthetic(), 'synthetic');
+
+    if (!attempt.ok) {
+      await dropSynthetic();
+      return {
+        trusted: false,
+        reason: organicFailure.startsWith('no organic')
+          ? attempt.why
+          : `${organicFailure}; and the ${attempt.why}`,
+      };
+    }
   }
+
+  const controlRect = attempt.rect;
+  const controlMeasured = attempt.measured;
+  const controlKind = organicFailure ? `${attempt.kind} (organic disagreed)` : attempt.kind;
 
   // The swatch must not sit over anything it is about to measure.
   await dropSynthetic();
@@ -754,9 +899,74 @@ async function main() {
         await S('Page.navigate', { url: BASE + route });
         await sleep(2600);
 
-        const probe = await S('Runtime.evaluate', {
-          expression: PAGE_PROBES, returnByValue: true, awaitPromise: false,
+        // Swept down the page a screenful at a time. Everything the probe
+        // reports except contrast is scroll-invariant, so the last run's values
+        // are the page's values; contrast accumulates inside the page across
+        // the sweep, because elementsFromPoint cannot see past the viewport.
+        //
+        // Bounded at SCROLL_STEPS screens so one very long route cannot dominate
+        // the run, and the report says how far it reached rather than implying
+        // the whole document was covered.
+        // A hero photograph that has not painted yet is not a background image
+        // as far as elementsFromPoint is concerned, so the text over it gets
+        // classified as sitting on a solid colour and never reaches the pixel
+        // pass. That made the whole classification depend on load timing: the
+        // same route reported two elements over an image on one run and none on
+        // the next. Waiting for the images to decode removes the race.
+        await S('Runtime.evaluate', {
+          awaitPromise: true, returnByValue: true,
+          expression: `(async () => {
+            const deadline = Date.now() + 8000;
+            const wait = () => new Promise((r) => setTimeout(r, 100));
+            // Stylesheets first. An unstyled document has no hero photograph to
+            // sit on and its skip link is an ordinary visible link at the top of
+            // the page — which is exactly the wrong control. readyState only
+            // reaches 'complete' once CSS and images have loaded.
+            while (document.readyState !== 'complete' && Date.now() < deadline) await wait();
+            try {
+              await Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 2000))]);
+            } catch {}
+            const pending = () => [...document.images].filter((i) => !i.complete && i.loading !== 'lazy');
+            while (pending().length && Date.now() < deadline) await wait();
+            return { readyState: document.readyState, images: document.images.length, pending: pending().length };
+          })()`,
         });
+        await S('Runtime.evaluate', { expression: 'delete window.__spuAccum; window.scrollTo(0, 0)' });
+        await sleep(250);
+
+        let probe;
+        let screensSwept = 0;
+        for (let step = 0; step < SCROLL_STEPS; step++) {
+          probe = await S('Runtime.evaluate', {
+            expression: PAGE_PROBES, returnByValue: true, awaitPromise: false,
+          });
+          if (probe.exceptionDetails || !probe.result?.value) break;
+          screensSwept++;
+
+          // `behavior: 'instant'` on purpose. The site sets scroll-behavior:
+          // smooth, so a plain scrollBy animates and window.scrollY still holds
+          // its old value on the next line — the first version of this sweep
+          // read that, concluded the page would not scroll, and checked exactly
+          // one screen of every route while reporting that it had swept.
+          //
+          // Whether to continue is decided on movement alone, not on reaching
+          // the bottom: the last screenful must be probed by the next iteration
+          // before the loop ends, or the foot of every page goes unchecked.
+          const scrollY = async () => (await S('Runtime.evaluate',
+            { returnByValue: true, expression: 'window.scrollY' })).result.value;
+
+          const before = await scrollY();
+          await S('Runtime.evaluate', {
+            expression: `window.scrollTo({ top: Math.round(window.innerHeight * 0.9) * ${step + 1}, left: 0, behavior: 'instant' })`,
+          });
+          // Lazy images and reveal animations need a beat before the next
+          // screenful is what a reader would see.
+          await sleep(500);
+          if (await scrollY() <= before + 4) break;
+        }
+        await S('Runtime.evaluate', { expression: 'window.scrollTo(0, 0)' });
+        await sleep(250);
+
         if (probe.exceptionDetails || !probe.result?.value) {
           const why = probe.exceptionDetails?.exception?.description
             ?? probe.exceptionDetails?.text ?? 'returned nothing';
@@ -765,6 +975,12 @@ async function main() {
           continue;
         }
         const r = probe.result.value;
+        screensCovered.push(screensSwept);
+        if (r.contrastTruncated) {
+          report(route, vp.name, 'audit coverage',
+            `contrast collection stopped after ${r.contrast.length} distinct findings on this route — `
+            + 'there may be more, and this run does not claim otherwise');
+        }
 
         if (r.overflow.overflows) {
           report(route, vp.name, 'horizontal overflow',
@@ -898,7 +1114,18 @@ async function main() {
 
   console.log('\n' + '─'.repeat(78));
   if (!findings.length) {
-    console.log('No findings.');
+    // "No findings" is a claim about what was checked, and it is false when a
+    // page's pixel measurements were all discarded. The faculties hub printed
+    // exactly that line while rendering a glyph at 1.09:1.
+    if (overImages && !pixelMeasured) {
+      console.log('No findings — but nothing that sits on an image could be measured,');
+      console.log('so this is not a pass. See below.');
+    } else if (unmeasuredOverImages) {
+      console.log(`No findings in what could be measured. ${unmeasuredOverImages} element(s) could not be,`);
+      console.log('and are listed below rather than counted as passing.');
+    } else {
+      console.log('No findings.');
+    }
   } else {
     const byCheck = new Map();
     for (const f of findings) {
@@ -933,7 +1160,8 @@ async function main() {
       console.log('  compared against the worst background pixel under a letter — not the worst');
       console.log('  pixel in its box, which is empty space past the end of the last line.');
       const organic = pixelControls.filter((c) => c.kind === 'organic').length;
-      const synthetic = pixelControls.length - organic;
+      const fallback = pixelControls.filter((c) => c.kind.includes('organic disagreed')).length;
+      const synthetic = pixelControls.length - organic - fallback;
       console.log(`  Method verified on each page against a control it must reproduce; they agreed`);
       console.log(`  to within ${worstDrift.toFixed(2)} of a ratio point.`);
       console.log(`    ${organic} page(s) gated by a real element whose contrast a separate method had`);
@@ -943,6 +1171,12 @@ async function main() {
         console.log('      image and measured there. Weaker: it proves the pixel path works under');
         console.log('      the same conditions, not that a second method agrees.');
       }
+      if (fallback) {
+        console.log(`    ${fallback} page(s) had a real element that disagreed, so the swatch gated them`);
+        console.log('      instead. The swatch reproducing its known value says the method is sound');
+        console.log('      and that candidate was not — weaker than agreement, stronger than a');
+        console.log('      discarded page, which is what these used to be.');
+      }
     }
     if (unmeasuredOverImages) {
       console.log(`  ${unmeasuredOverImages} could NOT be measured, and remain a gap needing a human eye:`);
@@ -950,11 +1184,15 @@ async function main() {
     }
     console.log('');
   }
+  const sweptLow = screensCovered.length ? Math.min(...screensCovered) : 0;
+  const sweptHigh = screensCovered.length ? Math.max(...screensCovered) : 0;
+  const sweptCapped = screensCovered.filter((n) => n >= SCROLL_STEPS).length;
   console.log('Scope: rendered layout, keyboard traversal, focus visibility, computed');
-  console.log('contrast of text within the first viewport — including text on images,');
-  console.log('measured from pixels — reduced motion, console and');
-  console.log('network. Headless Chrome, no assistive technology — this is NOT');
-  console.log('screen-reader QA and NOT accessibility sign-off.');
+  console.log('contrast of text — including text on images, measured from pixels —');
+  console.log('reduced motion, console and network. Headless Chrome, no assistive');
+  console.log('technology — this is NOT screen-reader QA and NOT accessibility sign-off.');
+  console.log(`Contrast was swept down each route a screenful at a time, ${sweptLow === sweptHigh ? `${sweptLow} screen(s)` : `${sweptLow}–${sweptHigh} screens`} per pass`);
+  console.log(`(cap ${SCROLL_STEPS}${sweptCapped ? `, reached on ${sweptCapped} pass(es) — those routes continue past what was checked` : ''}).`);
   console.log(`Not exercised: every route outside the ${ROUTES.length} listed, admin, forms under`);
   console.log('submission, and any announcement behaviour.');
 

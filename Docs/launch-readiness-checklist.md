@@ -235,11 +235,60 @@ requirement has to hold on every slide.
 
 Every page is gated on a control the method must reproduce before any of its
 numbers are reported. Where a real element with resolvable contrast exists on
-the page it is used, which is independent evidence; where none does, a swatch of
-known colours is placed on the hero image itself and measured there, which
-proves the pixel path works under the same conditions but is not a second
-opinion. The output labels which was used. `tests/browser/fixtures/` proves the
-check can still fail — it could not, silently, until that fixture found it.
+the page it is used, which is independent evidence; where none does, or where
+the one that does disagrees, a swatch of known colours is placed on the hero
+image itself and measured there. That proves the pixel path works under the same
+conditions but is not a second opinion, and the output labels which was used.
+`tests/browser/fixtures/` proves the check can still fail — it could not,
+silently, until that fixture found it.
+
+### What the audit was missing, found 3 September
+
+The audit reported "No findings" on a page rendering an invisible glyph. Four
+separate limits had to line up for that, and each one read as a pass:
+
+1. **It looked at one screenful.** `elementsFromPoint` only sees the viewport,
+   so the collector required elements to be inside it — and nothing scrolled.
+   Every route was checked above the fold and nowhere else. It now sweeps down
+   each page a screenful at a time, and the report states how far it reached.
+2. **It skipped text shorter than three characters.** That reads as "skip the
+   noise" and skipped the `+` in "5k+" — 36.8px, and carrying meaning.
+3. **A disagreeing control discarded the whole page.** The synthetic swatch was
+   built only where a page offered no organic candidate, so a candidate that
+   disagreed by 3.4% threw away every pixel measurement on that route. It is now
+   the fallback for disagreement too, which is where it is most useful: its
+   expected value is known by construction, so it can say whether the method is
+   unsound or merely that one candidate was poor.
+4. **Classification depended on load timing.** A hero photograph that had not
+   painted yet is not a background image to `elementsFromPoint`, so the same
+   route reported two elements over an image on one run and none on the next.
+   The sweep now waits for stylesheets, fonts and images before it starts.
+
+A fifth was introduced by the fix and caught before it shipped: `scroll-behavior:
+smooth` meant a scrolled element was photographed mid-flight, and the page moving
+between the two captures turned the whole frame into apparent glyph pixels — the
+synthetic control reported 6.26:1 for a swatch that is 11.72:1 by construction.
+All scrolling is now instant and confirmed at rest before anything is
+photographed.
+
+`tests/browser/fixtures/` carries the below-the-fold single-glyph case, so this
+one cannot come back silently either.
+
+**What that changed, measured 3 September against v2.spu.edu.sy:** coverage went
+from one screen to 3–19 screens per route; text on images from 33 elements found
+and 30 measured to **79 found and 27 measured, with none discarded** — every page
+gated where before nine were thrown away. Runtime 6 minutes.
+
+It also stopped reporting text nobody can see. A card caption held at
+`opacity: 0` until hover read as white-on-white at 1:1, and `.sr-only` text
+clipped to 1×1 read as black on brand red. Both are correct markup; both are now
+skipped, because a report that cries wolf is a report that gets ignored.
+
+**New, from the deeper sweep, all below the fold and all fixed here:** the
+faculties-hub card numbers `03`, `04` and `07` were rendering the raw CMS accent
+at 12px on white — 2.3:1, 2.26:1 and 3.48:1 against 4.5:1. `AccessibleColor` had
+been applied to the card's other text use and not to this one. Both now take
+`$accentText`; the tints and rules keep the raw accent, where it is fine.
 
 Fixed by this work: the homepage hero buttons, 2.98:1 to 9.53:1, via a
 directional scrim under the text column.

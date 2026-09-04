@@ -113,9 +113,11 @@
                         $slug = $faculty->slug;
                         $accent = (string) ($faculty->accentColor ?: $navBlue);
                         // The accent is a brand colour, chosen to work as a tint
-                        // and a rule. Used as 11px uppercase text on a white
-                        // card it fails WCAG AA for three of the seven faculties
-                        // today, and would fail for whatever is picked next.
+                        // and a rule. Used as small text on a white card it
+                        // fails WCAG AA for three of the seven faculties today,
+                        // and would fail for whatever is picked next. Every
+                        // TEXT use takes $accentText; $accent stays for the
+                        // tints and rules, where it is fine.
                         $accentText = \App\Support\AccessibleColor::onLight($accent);
                         $icon = $iconMap[$slug] ?? $faculty->logoImage ?? $defaultIcon;
                         $idx = $loop->index;
@@ -130,7 +132,7 @@
                        aria-label="{{ $title }}">
 
                         {{-- Sequence number 01–07 --}}
-                        <span class="fac-hub-card__num shrink-0 text-[12px] font-black tracking-tight" style="color: {{ $accent }};">
+                        <span class="fac-hub-card__num shrink-0 text-[12px] font-black tracking-tight" style="color: {{ $accentText }};">
                             {{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}
                         </span>
 
