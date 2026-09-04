@@ -46,8 +46,26 @@ jobs:
       - name: Composer audit
         run: composer audit
 
+      # A blocking check that fails on a registry hiccup teaches people to
+      # ignore red, which is how the PHPStan finding above went unnoticed.
+      # Retry transport errors; fail immediately on a real advisory.
       - name: NPM audit
-        run: npm audit --audit-level=high
+        run: |
+          for attempt in 1 2 3; do
+            if out=$(npm audit --audit-level=high 2>&1); then
+              echo "$out"; exit 0
+            fi
+            echo "$out"
+            if echo "$out" | grep -qE "audit endpoint returned an error|ENOTFOUND|ETIMEDOUT|ECONNRESET|EAI_AGAIN|socket hang up"; then
+              echo "::warning::npm registry error on attempt $attempt/3; retrying"
+              sleep $((attempt * 15))
+              continue
+            fi
+            echo "::error::npm audit found advisories at or above 'high'"
+            exit 1
+          done
+          echo "::error::npm registry unreachable after 3 attempts"
+          exit 1
 
       - name: Frontend tests
         run: npm run test
