@@ -273,6 +273,44 @@ which makes them a call for whoever owns the design.
 
 Re-measure after any of them with `node tests/browser/accessibility-audit.mjs`.
 
+### Regression introduced 3 September, fixed in the repo, not yet deployed
+
+`5c6b539` changed the faculties-hub stat `+` from the hard-coded
+`text-[#e2b864]` to the theme token `text-spu-red`. Reaching for a token instead
+of a magic hex is the right instinct, and `--color-spu-red` (`#6f1616`) is
+correct everywhere else it is used — it is a dark red for white cards, which is
+where the publication and research headings use it. This one `+` is the
+exception: it sits on a dark photograph, not a card.
+
+| Element | Measured (5th pct) | Needs |
+| --- | --- | --- |
+| Faculties hub stat `+`, 36.8px, as shipped | **1.09:1** (median 1.20:1) | 3:1 |
+| The white digits beside it, same backdrop, as a control | 14.04:1 | 3:1 |
+
+Measured on the live page with the two-capture method the audit uses, over
+3,155 glyph pixels. The control on the same backdrop rules out a measurement
+fault: the digits were fine, only the `+` was not. "5k+" rendered as "5k"
+followed by an invisible mark, and the `+` carries meaning.
+
+**The audit did not catch it,** for two reasons worth recording. The stat strip
+sits below the first viewport, which is the only region contrast is measured in.
+And on every run since the change the hub's organic control disagreed by 3.4%
+(computed 11.65:1, pixels 11.26:1), so the page's pixel measurements were
+discarded rather than reported — correct behaviour, but it means the two hub
+rows in the table above are unrefreshed since 2 September.
+
+**The fix keeps the token and corrects the value.** `--color-spu-gold`
+(`#e2b864`) now exists alongside `--color-spu-red` in `foundation.css`, and the
+hub uses `text-spu-gold` for the `+` and `bg-spu-gold` for the hero dot and rule
+that already carried the same hex inline. Reverting to the arbitrary value would
+have restored the pixels and left the next person with nothing to reach for; the
+token is the accent for dark surfaces, and the comment beside it says so.
+
+**Deployment state.** Deploy 27 carries `c322c07`, which is the commit before
+this fix, so the live hub is still serving the invisible `+`. The measured
+1.09:1 above is what v2.spu.edu.sy renders today. Re-measure after the deploy
+that carries this commit and replace the "as shipped" row with the result.
+
 **What it is not.** It drives a browser, not a screen reader. It cannot tell you
 how NVDA or VoiceOver announces this site, which is what
 `FRONTEND_ROUTE_PARITY_MATRIX.md` asks for, and it is not sign-off. It also

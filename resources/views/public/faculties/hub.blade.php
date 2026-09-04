@@ -73,7 +73,7 @@
             <div class="fac-hub-hero__reveal fac-hub-hero__reveal--d1 max-w-[420px] text-white mx-auto">
                 
                 <span class="inline-flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-[12px] font-bold uppercase tracking-[0.25em] text-white/85 backdrop-blur-sm mt-6">
-                    <span class="h-1.5 w-1.5 rounded-full bg-[#e2b864]"></span>
+                    <span class="h-1.5 w-1.5 rounded-full bg-spu-gold"></span>
                     {{ __('public.facilities_eyebrow') }}
                 </span>
                 <p class="mt-4 text-[14px] leading-relaxed text-white/75 lg:text-white/70">
@@ -100,7 +100,7 @@
                 <h1 class="text-[clamp(2.1rem,3.4vw,3rem)] font-black uppercase tracking-[0.04em] leading-[1.05] text-white drop-shadow-[0_2px_18px_rgba(0,0,0,0.45)]">
                     {{ $hero['title'] ?? '' }}
                 </h1>
-                <span class="fac-hub-hero__accent-line mt-4 block h-[3px] w-0 rounded-full bg-[#e2b864]" aria-hidden="true"></span>
+                <span class="fac-hub-hero__accent-line mt-4 block h-[3px] w-0 rounded-full bg-spu-gold" aria-hidden="true"></span>
             </div>
 
             {{-- Floating staircase list — same-width cards starting from the beginning edge, stepping inward --}}
@@ -180,7 +180,7 @@
                         <img src="{{ $icon }}" alt="" class="h-6 w-6 opacity-85 transition-transform group-hover:scale-110">
                     @endif
                     <span class="text-[1.9rem] lg:text-[2.3rem] font-black leading-none text-white" dir="ltr">
-                        {{ str_ends_with($value, '+') ? substr($value, 0, -1) : $value }}@if(str_ends_with($value, '+'))<span class="text-spu-red">+</span>@endif
+                        {{ str_ends_with($value, '+') ? substr($value, 0, -1) : $value }}@if(str_ends_with($value, '+'))<span class="text-spu-gold">+</span>@endif
                     </span>
                     <span class="text-[10px] lg:text-[11px] font-bold uppercase tracking-[0.16em] text-white/60">
                         {{ $fact['label'] ?? '' }}

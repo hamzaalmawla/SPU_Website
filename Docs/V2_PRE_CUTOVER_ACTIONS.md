@@ -113,6 +113,24 @@ Both are correct defaults; releasing them is an editorial call.
   Their old URLs 404. Recoverable by re-running the approval packet allowing
   duplicates — but that publishes two articles with identical titles.
 
+### A6 — Every study plan needs a PDF uploading, from 2026-09-03
+
+`5c6b539` replaced the study plan's "Print Plan" button — which called
+`window.print()` on a zoomable prerequisite canvas — with a "Download Plan" link
+to a real PDF. The direction is right: printing that canvas never produced a
+usable page, and Ctrl+P still works for anyone who wants it.
+
+But the link renders only where `plan.pdfUrl` is set, and the field is new, so
+no faculty has one. Until an editor uploads a file the toolbar has one control
+where it had two, and the download does not exist. This is a gap in timing, not
+in the code.
+
+For each faculty: **Faculty workspace → Study plan → Plan settings → Study plan
+PDF**. The picker accepts `application/pdf` only, and publishing is refused if
+the path does not resolve to a real internal file, so a broken link cannot reach
+the public site. `resources/views/public/faculties/study-plan.blade.php` hides
+the button rather than rendering a dead one.
+
 ### A5 — Two legacy URLs with no destination, investigated 2026-09-02
 
 Both were carried as "continuity gaps, 51 inbound links each". They are not the
