@@ -69,11 +69,21 @@
                         @php
                             $flatDividerRendered = false;
                             $hasRenderedGroup = false;
-                            $isResearchMenu = $item->resolvedUrl !== null
-                                && preg_match('~/research/?$~', (string) parse_url($item->resolvedUrl, PHP_URL_PATH)) === 1;
                         @endphp
                         @foreach ($item->children as $child)
-                            @if (!empty($child->children) && ! $isResearchMenu)
+                            {{--
+                                Asked of the child's own contents, not of whether the
+                                parent's URL resolved. The old $isResearchMenu tested
+                                $item->resolvedUrl, so restoring the research href in
+                                4de9da7 flipped this menu to flat links and took the
+                                three featured researcher profiles with it. The header
+                                was corrected in that commit; this file carries the
+                                same block and was missed.
+
+                                No styling hook here, unlike the header, so nothing
+                                gates the group markup any more.
+                            --}}
+                            @if (!empty($child->children))
                                 @php $hasRenderedGroup = true; @endphp
                                 <div class="site-nav-mobile-group">
                                      <a @if($child->resolvedUrl) href="{{ $child->resolvedUrl }}" @else aria-disabled="true" @endif
