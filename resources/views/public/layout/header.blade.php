@@ -89,8 +89,38 @@
 
                                 @if (!empty($item->children))
                                      @php
-                                         $isResearchMenu = $item->resolvedUrl !== null
-                                             && preg_match('~/research/?$~', (string) parse_url($item->resolvedUrl, PHP_URL_PATH)) === 1;
+                                         /*
+                                          * Two separate questions that used to share one flag.
+                                          *
+                                          * The flag was derived from $item->resolvedUrl, so the
+                                          * dropdown's whole structure hung on whether the parent's
+                                          * URL happened to resolve. Restoring the research href --
+                                          * it had been dropped while the landing page sat
+                                          * unpublished, which is what made "Research" a button that
+                                          * went nowhere -- would silently have collapsed the menu
+                                          * to flat links and taken the featured researcher profiles
+                                          * with it. Layout should not ride on a URL.
+                                          *
+                                          * $isResearchMenu now only picks the styling hook, and
+                                          * reads the item rather than its link. Whether a child
+                                          * renders as a group or a flat link is asked per child, of
+                                          * that child's own contents.
+                                          *
+                                          * The hook is also held back while any child still has
+                                          * children. --research pours the panel into two 32rem
+                                          * columns, which suits the long flat list it was written
+                                          * for and not a tall group box: the group cannot break
+                                          * across columns, so it takes the first one alone and
+                                          * leaves the second holding one stray link over a large
+                                          * empty area.
+                                          */
+                                         $hasGroupedChildren = collect($item->children)
+                                             ->contains(fn ($child): bool => ! empty($child->children));
+
+                                         $isResearchMenu = ! $hasGroupedChildren && preg_match(
+                                             '~/research/?$~',
+                                             (string) parse_url((string) ($item->resolvedUrl ?? $item->url ?? ''), PHP_URL_PATH)
+                                         ) === 1;
                                      @endphp
                                      <div id="site-nav-dropdown-{{ $loop->index }}"
                                           x-show="isDropdownOpen('{{ $loop->index }}')"
@@ -107,7 +137,7 @@
                                             $hasRenderedGroup = false;
                                         @endphp
                                         @foreach ($item->children as $child)
-                                            @if (!empty($child->children) && ! $isResearchMenu)
+                                            @if (!empty($child->children))
                                                 @php $hasRenderedGroup = true; @endphp
                                                 <div class="site-nav-dropdown-group">
                                                      <a @if($child->resolvedUrl) href="{{ $child->resolvedUrl }}" @else aria-disabled="true" @endif

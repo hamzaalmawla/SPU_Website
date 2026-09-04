@@ -92,6 +92,18 @@ interface ResearchPageServiceInterface
 
     public function isPubliclyAvailablePath(string $locale, string $path): bool;
 
+    /**
+     * Whether a click on this path lands on a 200, redirect included.
+     *
+     * Distinct from isPubliclyAvailablePath(), which answers whether the path
+     * is canonical content worth indexing. The two diverge on the research
+     * landing: it is not indexable while unpublished, but it is always
+     * navigable, because ResearchController::index redirects it to the
+     * publications archive. Navigation asks this one; the sitemap asks the
+     * other, and must keep asking the other or it advertises a redirect.
+     */
+    public function isNavigablePath(string $locale, string $path): bool;
+
     /** @param array<int, mixed> $columns @return array<int, mixed> */
     public function filterFooterColumns(string $locale, array $columns): array;
 

@@ -690,6 +690,35 @@ final class ResearchPageService implements ResearchPageServiceInterface
         return null;
     }
 
+    public function isNavigablePath(string $locale, string $path): bool
+    {
+        if ($this->isResearchLandingPath($locale, $path)) {
+            // The landing is gated for indexing but never for clicking:
+            // ResearchController::index redirects it to the publications
+            // archive whenever the CMS payload is unpublished, and that
+            // archive is data-backed and always renders. Answering false
+            // here is what dropped the href from the "Research" menu item
+            // and left it a button that only toggled its own dropdown.
+            return true;
+        }
+
+        return $this->isPubliclyAvailablePath($locale, $path);
+    }
+
+    private function isResearchLandingPath(string $locale, string $path): bool
+    {
+        $segments = array_values(array_filter(explode('/', trim(
+            (string) (parse_url($path, PHP_URL_PATH) ?: ''),
+            '/'
+        ))));
+
+        if (($segments[0] ?? null) === $locale) {
+            array_shift($segments);
+        }
+
+        return $segments === ['research'];
+    }
+
     public function isPubliclyAvailablePath(string $locale, string $path): bool
     {
         if (! in_array($locale, ['ar', 'en'], true)) {
@@ -774,7 +803,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
                     }
 
                     return ! $this->isResearchPath($link->url)
-                        || $this->isPubliclyAvailablePath($locale, $link->url);
+                        || $this->isNavigablePath($locale, $link->url);
                 },
             ));
 

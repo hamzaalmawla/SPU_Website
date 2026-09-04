@@ -495,7 +495,7 @@ final class MenuService implements MenuServiceInterface
         if ($item->target_kind === 'page' && $item->pageTarget instanceof Page) {
             if ($item->pageTarget->slug === 'research'
                 && $this->researchPageService instanceof ResearchPageServiceInterface
-                && ! $this->researchPageService->isPubliclyAvailablePath($locale, '/research')) {
+                && ! $this->researchPageService->isNavigablePath($locale, '/research')) {
                 return null;
             }
 
@@ -518,7 +518,7 @@ final class MenuService implements MenuServiceInterface
         $urlPath = (string) (parse_url($item->url, PHP_URL_PATH) ?: '');
         if (preg_match('~(?:^|/)research(?:/|$)~', $urlPath) === 1
             && $this->researchPageService instanceof ResearchPageServiceInterface
-            && ! $this->researchPageService->isPubliclyAvailablePath($locale, $item->url)) {
+            && ! $this->researchPageService->isNavigablePath($locale, $item->url)) {
             return null;
         }
 

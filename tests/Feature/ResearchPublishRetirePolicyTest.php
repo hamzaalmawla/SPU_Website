@@ -31,7 +31,18 @@ final class ResearchPublishRetirePolicyTest extends TestCase
 
             // CMS-only sections. Nothing is published for them, and they have no
             // database equivalent, so they must not appear in navigation at all.
-            self::assertNotContains('/'.$locale.'/research', $urls);
+            //
+            // The landing is the exception, and it stopped belonging in this
+            // list two days after the list was written: "fix(research): never
+            // show visitors an 'awaiting review' page" made
+            // ResearchController::index redirect /{locale}/research to the
+            // publications archive, so it is the one path here that answers a
+            // click instead of 404ing. The gate was never updated to match,
+            // which left the header's "Research" item with no href at all --
+            // a button that only toggled its own dropdown. It stays linked;
+            // the sitemap still excludes it, because a redirect is not
+            // canonical content.
+            self::assertContains('/'.$locale.'/research', $urls);
             self::assertNotContains('/'.$locale.'/research/projects', $urls);
             self::assertNotContains('/'.$locale.'/research/conferences', $urls);
             self::assertNotContains('/'.$locale.'/research/library', $urls);
