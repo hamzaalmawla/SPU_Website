@@ -1,0 +1,217 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Unsafe call to private method App\\Filament\\Resources\\FacultySubpageCardResource\:\:cardFields\(\) through static\:\:\.$#'
+			identifier: staticClassAccess.privateMethod
+			count: 2
+			path: app/Filament/Resources/FacultySubpageCardResource.php
+
+		-
+			message: '#^Unsafe call to private method App\\Filament\\Resources\\FacultySubpageCardResource\:\:facultyOptions\(\) through static\:\:\.$#'
+			identifier: staticClassAccess.privateMethod
+			count: 2
+			path: app/Filament/Resources/FacultySubpageCardResource.php
+
+		-
+			message: '#^Unsafe call to private method App\\Filament\\Resources\\FacultySubpageCardResource\:\:scopedFacultySlug\(\) through static\:\:\.$#'
+			identifier: staticClassAccess.privateMethod
+			count: 5
+			path: app/Filament/Resources/FacultySubpageCardResource.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\:\:enabled\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Models/Research/ResearchPublication.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:enabled\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Services/Career/AlumniDirectoryService.php
+
+		-
+			message: '#^Parameter &\$counts by\-ref type of method App\\Services\\Legacy\\LegacyCareerLinkImportService\:\:incrementReviewCounts\(\) expects array\<string, int\>, array\<int\> given\.$#'
+			identifier: parameterByRef.type
+			count: 1
+			path: app/Services/Legacy/LegacyCareerLinkImportService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-list\<string\|null\> and array\{\} will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Services/Legacy/LegacyCareerLinkImportService.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\ConnectionInterface\:\:getDriverName\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/Legacy/LegacyCareerLinkReviewPacketService.php
+
+		-
+			message: '#^Parameter &\$counts by\-ref type of method App\\Services\\Legacy\\LegacyCareerLinkReviewPacketService\:\:incrementReviewCounts\(\) expects array\<string, int\>, array\<int\> given\.$#'
+			identifier: parameterByRef.type
+			count: 1
+			path: app/Services/Legacy/LegacyCareerLinkReviewPacketService.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\ConnectionInterface\:\:getDriverName\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/Legacy/LegacyCategoryReviewPacketService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-list\<string\|null\> and array\{\} will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Services/Legacy/LegacyCentralCouncilImportService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-list\<string\|null\> and array\{\} will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Services/Legacy/LegacyFaqApprovalPacketService.php
+
+		-
+			message: '#^Parameter &\$counts by\-ref type of method App\\Services\\Legacy\\LegacyFaqImportService\:\:incrementReviewCounts\(\) expects array\<string, int\>, array\<int\> given\.$#'
+			identifier: parameterByRef.type
+			count: 1
+			path: app/Services/Legacy/LegacyFaqImportService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-list\<string\|null\> and array\{\} will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Services/Legacy/LegacyFaqImportService.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\ConnectionInterface\:\:getDriverName\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/Legacy/LegacyFaqReviewPacketService.php
+
+		-
+			message: '#^Parameter &\$counts by\-ref type of method App\\Services\\Legacy\\LegacyFaqReviewPacketService\:\:incrementReviewCounts\(\) expects array\<string, int\>, array\<int\> given\.$#'
+			identifier: parameterByRef.type
+			count: 1
+			path: app/Services/Legacy/LegacyFaqReviewPacketService.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\ConnectionInterface\:\:getDriverName\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/Legacy/LegacyMembersReviewPacketService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-list\<string\|null\> and array\{\} will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Services/Legacy/LegacyNewsApprovalPacketService.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\ConnectionInterface\:\:getDriverName\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/Legacy/LegacyNewsImportService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-list\<string\|null\> and array\{\} will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Services/Legacy/LegacyNewsImportService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-list\<string\|null\> and array\{\} will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Services/Legacy/LegacyPublicStaffApprovalPacketService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-list\<string\|null\> and array\{\} will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Services/Legacy/LegacyPublicStaffImportService.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\ConnectionInterface\:\:getDriverName\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/Legacy/LegacyPublicStaffReviewPacketService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-list\<string\|null\> and array\{\} will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Services/Legacy/LegacyRedirectDecisionService.php
+
+		-
+			message: '#^PHPDoc tag @var for constant App\\Services\\Legacy\\QueryResolvers\\LegacySubsiteContentQueryResolver\:\:FACULTIES with type array\<string, string\> is incompatible with value array\{med\: array\{index\: 2, slug\: ''medicine''\}, dent\: array\{index\: 3, slug\: ''dentistry''\}, pharm\: array\{index\: 4, slug\: ''pharmacy''\}, info\: array\{index\: 5, slug\: ''artificial…''\}, petrol\: array\{index\: 6, slug\: ''petroleum''\}, admin\: array\{index\: 7, slug\: ''business…''\}\}\.$#'
+			identifier: classConstant.phpDocType
+			count: 1
+			path: app/Services/Legacy/QueryResolvers/LegacySubsiteContentQueryResolver.php
+
+		-
+			message: '#^PHPDoc tag @var for constant App\\Services\\Legacy\\QueryResolvers\\LegacySubsiteContentQueryResolver\:\:SECTIONS with type array\<string, string\> is incompatible with value array\{research\: array\{index\: 8, path\: ''/research…''\}, hospital\: array\{index\: 9, path\: ''/campus\-life…''\}, dent_clinic\: array\{index\: 10, path\: ''/campus\-life/dental''\}, clubs\: array\{index\: 12, path\: ''/campus\-life/clubs…''\}\}\.$#'
+			identifier: classConstant.phpDocType
+			count: 1
+			path: app/Services/Legacy/QueryResolvers/LegacySubsiteContentQueryResolver.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:enabled\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Services/Page/AboutPageService.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:enabled\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/Page/FacultyPageService.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:public\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/Page/FacultyPageService.php
+
+		-
+			message: '#^Method App\\Services\\Page\\FacultyPageService\:\:memberTranslation\(\) has invalid return type App\\Services\\Page\\FacultyMemberTranslation\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Services/Page/FacultyPageService.php
+
+		-
+			message: '#^Return type of call to function collect contains unresolvable type\.$#'
+			identifier: function.unresolvableReturnType
+			count: 1
+			path: app/Services/Page/FacultyPageService.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:public\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/Page/ProfilePageService.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:enabled\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/Search/SearchIndexService.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:public\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/Seo/SitemapService.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\ConnectionInterface\:\:getSchemaBuilder\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Support/LegacyImport/OldDatabaseConnection.php
+
+		-
+			message: '#^Negated boolean expression is always false\.$#'
+			identifier: booleanNot.alwaysFalse
+			count: 1
+			path: app/Support/MediaUrlResolver.php
