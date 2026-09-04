@@ -50,6 +50,16 @@
 
     --color-spu-blue: #202759;
     --color-spu-red: #6f1616;
+
+    /* The brand red is dark by design and belongs on white cards, where it is
+       what the publication and research headings use. It is not legible on a
+       photograph: as `text-spu-red` on the faculties hero it measured 1.09:1
+       against the 3:1 large text needs, so "5k+" rendered as "5k" plus an
+       invisible mark. The gold is the accent for dark surfaces — the same value
+       the hub hero already used for its dot and its rule — and this token exists
+       so the next person reaching for an accent over a photograph finds one. */
+    --color-spu-gold: #e2b864;
+
     --color-section: #EAF3FF40;
 
     --color-med: #BC2428;
