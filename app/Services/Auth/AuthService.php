@@ -175,12 +175,12 @@ final class AuthService implements AuthServiceInterface
         }
     }
 
-    public function createUser(array $payload, int $actorUserId): bool
+    public function createUser(array $payload, int $actorUserId): ?int
     {
         $actor = User::query()->find($actorUserId);
 
         if (! $actor instanceof User) {
-            return false;
+            return null;
         }
 
         if (Gate::forUser($actor)->denies('create', User::class)) {
@@ -193,11 +193,11 @@ final class AuthService implements AuthServiceInterface
         $role = Role::query()->where('slug', $roleSlug)->first();
 
         if ($email === '' || ! is_string($password) || $password === '' || ! $role instanceof Role) {
-            return false;
+            return null;
         }
 
         if (User::query()->where('email', $email)->exists()) {
-            return false;
+            return null;
         }
 
         $user = new User;
@@ -216,7 +216,7 @@ final class AuthService implements AuthServiceInterface
         ]);
 
         if (! $user->save()) {
-            return false;
+            return null;
         }
 
         $this->auditService->log(
@@ -231,7 +231,7 @@ final class AuthService implements AuthServiceInterface
             ],
         );
 
-        return true;
+        return (int) $user->getKey();
     }
 
     public function updateUser(int $userId, array $payload, int $actorUserId): bool
