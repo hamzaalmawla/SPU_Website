@@ -70,7 +70,7 @@ class UserResourceTest extends TestCase
 
         $user = User::query()->where('email', 'new.editor@spu.edu.sy')->first();
 
-        $this->assertTrue($created);
+        $this->assertIsInt($created);
         $this->assertInstanceOf(User::class, $user);
         $this->assertSame('editor', $user->role_slug);
         $this->assertSame($role->getKey(), $user->role_id);
