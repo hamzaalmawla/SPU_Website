@@ -85,6 +85,12 @@ class UserResource extends Resource
                 Toggle::make('is_locked')
                     ->label('Account Locked')
                     ->helperText('Locked accounts cannot log in.'),
+
+                Toggle::make('two_factor_enabled')
+                    ->label('Two-Factor Authentication')
+                    ->helperText('Turn off two-factor authentication for this account. It must be enabled from the account security page.')
+                    ->disabled(fn (bool $state): bool => ! $state)
+                    ->dehydrated(),
             ]),
 
             Section::make('Password Reset')->schema([

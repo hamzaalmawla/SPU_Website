@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Auth;
 
 use App\Contracts\Auth\AuthServiceInterface;
+use App\Contracts\Auth\TotpAuthenticatorInterface;
 use App\Contracts\Shared\AuditServiceInterface;
 use App\DTOs\Auth\LoginCredentialsDTO;
 use App\Models\User\Role;
@@ -31,6 +32,7 @@ final class AuthService implements AuthServiceInterface
     public function __construct(
         private readonly AuthFactory $authFactory,
         private readonly AuditServiceInterface $auditService,
+        private readonly TotpAuthenticatorInterface $totpAuthenticator,
         private readonly Request $request,
         private readonly Session $session,
     ) {}
@@ -201,6 +203,14 @@ final class AuthService implements AuthServiceInterface
         }
 
         $wasLocked = $user->isAccountLocked();
+
+        if (array_key_exists('two_factor_enabled', $payload) && ! (bool) $payload['two_factor_enabled'] && (bool) $user->two_factor_enabled) {
+            if (! $this->totpAuthenticator->disableTwoFactor($user)) {
+                return false;
+            }
+
+            $user->refresh();
+        }
 
         $user->fill([
             'name' => $payload['name'] ?? $user->name,
