@@ -187,6 +187,29 @@ class ManageResearch extends Page implements HasForms
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('load_reviewed')
+                ->label(__('admin.research_workspace.actions.load_reviewed', [], 'ar') !== 'admin.research_workspace.actions.load_reviewed' ? __('admin.research_workspace.actions.load_reviewed') : 'تحميل المحتوى المعتمد')
+                ->icon('heroicon-o-arrow-path')
+                ->color('warning')
+                ->visible(fn (): bool => $this->formTargetKey() === 'research.index')
+                ->requiresConfirmation()
+                ->modalHeading('تحميل المحتوى المعتمد')
+                ->modalDescription('سيتم ملء النموذج بالمحتوى البحثي المعتمد في database/content/research-landing.json.')
+                ->action(function (): void {
+                    $path = database_path('content/research-landing.json');
+                    if (is_file($path)) {
+                        $payload = json_decode((string) file_get_contents($path), true);
+                        if (is_array($payload) && is_array($payload['translations'] ?? null)) {
+                            $this->data['ar_landing'] = $payload['translations']['ar'] ?? [];
+                            $this->data['en_landing'] = $payload['translations']['en'] ?? [];
+                            $this->form->fill($this->data);
+                            Notification::make()
+                                ->title('تم تحميل المحتوى المعتمد بنجاح')
+                                ->success()
+                                ->send();
+                        }
+                    }
+                }),
             Action::make('save')->label(__('admin.research_workspace.actions.save_draft'))->icon('heroicon-o-check')->color('gray')->action(function (): void {
                 $this->save();
             }),
