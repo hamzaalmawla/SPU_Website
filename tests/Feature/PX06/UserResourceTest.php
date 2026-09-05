@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Tests\Feature\PX06;
 
 use App\Filament\Resources\UserResource;
+use App\Models\User\Role;
 use App\Models\User\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 /**
@@ -44,13 +46,36 @@ class UserResourceTest extends TestCase
         $this->assertFalse(UserResource::canAccess());
     }
 
-    public function test_user_resource_has_list_and_edit_pages_only(): void
+    public function test_user_resource_has_list_create_and_edit_pages(): void
     {
         $pages = UserResource::getPages();
 
         $this->assertArrayHasKey('index', $pages);
+        $this->assertArrayHasKey('create', $pages);
         $this->assertArrayHasKey('edit', $pages);
-        $this->assertArrayNotHasKey('create', $pages);
+    }
+
+    public function test_super_admin_can_create_an_admin_user_through_the_auth_service(): void
+    {
+        $role = Role::query()->firstOrCreate(['slug' => 'editor'], ['name' => 'Editor']);
+        $actor = $this->createUser('super_admin');
+
+        $created = app(\App\Contracts\Auth\AuthServiceInterface::class)->createUser([
+            'name' => 'New Editor',
+            'email' => 'new.editor@spu.edu.sy',
+            'password' => 'strong-password-123',
+            'role_slug' => $role->slug,
+            'faculty_scope_slug' => null,
+        ], (int) $actor->getKey());
+
+        $user = User::query()->where('email', 'new.editor@spu.edu.sy')->first();
+
+        $this->assertTrue($created);
+        $this->assertInstanceOf(User::class, $user);
+        $this->assertSame('editor', $user->role_slug);
+        $this->assertSame($role->getKey(), $user->role_id);
+        $this->assertTrue(Hash::check('strong-password-123', (string) $user->password));
+        $this->assertFalse($user->two_factor_enabled);
     }
 
     private function createUser(string $role): User

@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Gate;
  *
  * All business logic is delegated to AuthServiceInterface.
  * This resource provides only the UI layer.
- * No create or delete actions — soft-delete is handled via lock.
+ * No delete action — soft-delete is handled via lock.
  */
 class UserResource extends Resource
 {
@@ -63,6 +63,7 @@ class UserResource extends Resource
                     ->label('Email')
                     ->email()
                     ->required()
+                    ->unique(ignoreRecord: true)
                     ->maxLength(255),
 
                 Select::make('role_slug')
@@ -97,6 +98,7 @@ class UserResource extends Resource
                 TextInput::make('password')
                     ->label('New Password')
                     ->password()
+                    ->required(fn (string $operation): bool => $operation === 'create')
                     ->minLength(8)
                     ->maxLength(255)
                     ->dehydrated(fn (?string $state): bool => filled($state))
@@ -159,6 +161,7 @@ class UserResource extends Resource
     {
         return [
             'index' => Pages\ListUsers::route('/'),
+            'create' => Pages\CreateUser::route('/create'),
             'edit' => Pages\EditUser::route('/{record}/edit'),
         ];
     }
