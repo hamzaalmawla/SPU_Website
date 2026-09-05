@@ -52,6 +52,32 @@
     <FilesMatch "\.(?:jpe?g|png|gif|webp|avif|svg|ico|pdf|mp4|webm|mp3)$">
         Header set Cache-Control "public, max-age=2592000"
     </FilesMatch>
+
+    # Pre-compressed build assets, produced by cpanel-deploy.sh and selected by
+    # the rewrite further down. That rewrite is internal, so what is matched
+    # here is the .gz name and none of the blocks above have applied.
+    #
+    # Content-Type has to be restated because mod_mime would otherwise call
+    # these application/gzip, and Content-Encoding because the client must be
+    # told to inflate them. Setting both explicitly also overrides any
+    # AddEncoding the host applies to .gz by default.
+    <FilesMatch "\.css\.gz$">
+        Header set Content-Type "text/css; charset=utf-8"
+        Header set Content-Encoding "gzip"
+        Header set Cache-Control "public, max-age=31536000, immutable"
+        Header append Vary Accept-Encoding
+        Header always set X-Content-Type-Options "nosniff"
+        Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    </FilesMatch>
+
+    <FilesMatch "\.js\.gz$">
+        Header set Content-Type "application/javascript; charset=utf-8"
+        Header set Content-Encoding "gzip"
+        Header set Cache-Control "public, max-age=31536000, immutable"
+        Header append Vary Accept-Encoding
+        Header always set X-Content-Type-Options "nosniff"
+        Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    </FilesMatch>
 </IfModule>
 
 <IfModule mod_expires.c>
@@ -86,6 +112,21 @@
     RewriteCond %{HTTPS} !=on
     RewriteCond %{HTTP:X-Forwarded-Proto} !=https
     RewriteRule ^ https://spu.edu.sy%{REQUEST_URI} [R=301,L,NE]
+
+    # Serve the pre-compressed sibling of a build asset when one exists.
+    #
+    # There is deliberately no Accept-Encoding condition. nginx strips that
+    # header before Apache sees it, so a negotiated rule would never match and
+    # every asset would keep going out at full size - the same measurement that
+    # made the application force gzip on HTML (config/edge.php). The clients
+    # this can hurt are ones that deliberately refuse gzip, which in practice
+    # means monitoring tools rather than browsers.
+    #
+    # Scoped to /build/ because only those filenames carry a Vite content hash,
+    # so a stale .gz cannot outlive the asset it was made from. The -f guard
+    # means a missing sibling simply serves the original file.
+    RewriteCond %{REQUEST_FILENAME}\.gz -f
+    RewriteRule ^(build/.+\.(?:css|js))$ /$1.gz [L]
 
     # app.php is an internal implementation detail. Also reject PATH_INFO forms
     # of both front-controller names before Apache can execute a physical PHP
