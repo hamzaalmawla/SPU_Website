@@ -122,7 +122,7 @@ final class ErrorPageService implements ErrorPageServiceInterface
         'public.home' => ['ar' => 'الصفحة الرئيسية', 'en' => 'Homepage'],
         'public.about.landing' => ['ar' => 'عن الجامعة', 'en' => 'About the university'],
         'public.admissions.landing' => ['ar' => 'القبول والتسجيل', 'en' => 'Admissions'],
-        'public.facilities.hub' => ['ar' => 'الكليات', 'en' => 'Faculties'],
+        'public.faculties.hub' => ['ar' => 'الكليات', 'en' => 'Faculties'],
         'public.news.index' => ['ar' => 'الأخبار', 'en' => 'News'],
         'public.contact' => ['ar' => 'اتصل بنا', 'en' => 'Contact us'],
     ];

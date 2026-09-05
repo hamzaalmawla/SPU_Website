@@ -334,13 +334,13 @@ final class FacultyModuleSeeder extends Seeder
             ],
             'partners' => [
                 'titleEn' => 'Partner Pharmacies & Hospitals', 'titleAr' => 'الصيدليات والمشافي الشريكة',
-                'ctaEn' => 'Full Directory', 'ctaAr' => 'الدليل الكامل', 'ctaUrl' => '/facilities/?id=pharmacy',
+                'ctaEn' => 'Full Directory', 'ctaAr' => 'الدليل الكامل', 'ctaUrl' => '/faculties/?id=pharmacy',
                 'items' => [
-                    ['id' => 'approved-location-1', 'titleEn' => 'Approved Training Location', 'titleAr' => 'موقع تدريب معتمد', 'categoryEn' => 'Pharmacy', 'categoryAr' => 'صيدلية', 'descriptionEn' => 'Clinical practice and pharmaceutical care.', 'descriptionAr' => 'تدريب سريري ورعاية صيدلانية.', 'image' => '/images/pharmacy-place.jpg', 'href' => '/facilities/pharmacy/labs/'],
-                    ['id' => 'approved-location-2', 'titleEn' => 'Approved Training Location', 'titleAr' => 'موقع تدريب معتمد', 'categoryEn' => 'Pharmacy', 'categoryAr' => 'صيدلية', 'descriptionEn' => 'Inventory management and patient counseling.', 'descriptionAr' => 'إدارة المخزون والإرشاد الدوائي للمرضى.', 'image' => '/images/news/pharmacy.jpg', 'href' => '/facilities/pharmacy/labs/'],
+                    ['id' => 'approved-location-1', 'titleEn' => 'Approved Training Location', 'titleAr' => 'موقع تدريب معتمد', 'categoryEn' => 'Pharmacy', 'categoryAr' => 'صيدلية', 'descriptionEn' => 'Clinical practice and pharmaceutical care.', 'descriptionAr' => 'تدريب سريري ورعاية صيدلانية.', 'image' => '/images/pharmacy-place.jpg', 'href' => '/faculties/pharmacy/labs/'],
+                    ['id' => 'approved-location-2', 'titleEn' => 'Approved Training Location', 'titleAr' => 'موقع تدريب معتمد', 'categoryEn' => 'Pharmacy', 'categoryAr' => 'صيدلية', 'descriptionEn' => 'Inventory management and patient counseling.', 'descriptionAr' => 'إدارة المخزون والإرشاد الدوائي للمرضى.', 'image' => '/images/news/pharmacy.jpg', 'href' => '/faculties/pharmacy/labs/'],
                     ['id' => 'spu-hospital-1', 'titleEn' => 'SPU University Hospital', 'titleAr' => 'مشفى الجامعة السورية الخاصة', 'categoryEn' => 'Hospital', 'categoryAr' => 'مشفى', 'descriptionEn' => 'Specialized clinical pharmacy training.', 'descriptionAr' => 'تدريب صيدلة سريرية تخصصية.', 'image' => '/images/campus-hospital.webp', 'href' => '/campus-life/hospital/'],
-                    ['id' => 'approved-location-3', 'titleEn' => 'Approved Training Location', 'titleAr' => 'موقع تدريب معتمد', 'categoryEn' => 'Pharmacy', 'categoryAr' => 'صيدلية', 'descriptionEn' => 'Clinical practice and pharmaceutical care.', 'descriptionAr' => 'تدريب سريري ورعاية صيدلانية.', 'image' => '/images/pharmacy-place.jpg', 'href' => '/facilities/pharmacy/labs/'],
-                    ['id' => 'approved-location-4', 'titleEn' => 'Approved Training Location', 'titleAr' => 'موقع تدريب معتمد', 'categoryEn' => 'Pharmacy', 'categoryAr' => 'صيدلية', 'descriptionEn' => 'Inventory management and patient counseling.', 'descriptionAr' => 'إدارة المخزون والإرشاد الدوائي للمرضى.', 'image' => '/images/news/pharmacy.jpg', 'href' => '/facilities/pharmacy/labs/'],
+                    ['id' => 'approved-location-3', 'titleEn' => 'Approved Training Location', 'titleAr' => 'موقع تدريب معتمد', 'categoryEn' => 'Pharmacy', 'categoryAr' => 'صيدلية', 'descriptionEn' => 'Clinical practice and pharmaceutical care.', 'descriptionAr' => 'تدريب سريري ورعاية صيدلانية.', 'image' => '/images/pharmacy-place.jpg', 'href' => '/faculties/pharmacy/labs/'],
+                    ['id' => 'approved-location-4', 'titleEn' => 'Approved Training Location', 'titleAr' => 'موقع تدريب معتمد', 'categoryEn' => 'Pharmacy', 'categoryAr' => 'صيدلية', 'descriptionEn' => 'Inventory management and patient counseling.', 'descriptionAr' => 'إدارة المخزون والإرشاد الدوائي للمرضى.', 'image' => '/images/news/pharmacy.jpg', 'href' => '/faculties/pharmacy/labs/'],
                     ['id' => 'spu-hospital-2', 'titleEn' => 'SPU University Hospital', 'titleAr' => 'مشفى الجامعة السورية الخاصة', 'categoryEn' => 'Hospital', 'categoryAr' => 'مشفى', 'descriptionEn' => 'Specialized clinical pharmacy training.', 'descriptionAr' => 'تدريب صيدلة سريرية تخصصية.', 'image' => '/images/campus-hospital.webp', 'href' => '/campus-life/hospital/'],
                 ],
             ],
@@ -394,7 +394,7 @@ final class FacultyModuleSeeder extends Seeder
     private function studyPlanRouteMeta(array $faculty, string $slug): array
     {
         $source = $this->studyPlanFrontendData();
-        $route = '/facilities/'.$faculty['public_slug'].'/study-plan/'.($slug === 'study-plan-course' ? 'course/' : '');
+        $route = '/faculties/'.$faculty['public_slug'].'/study-plan/'.($slug === 'study-plan-course' ? 'course/' : '');
         $meta = collect($source['routeMeta'] ?? [])->firstWhere('route', $route);
 
         return is_array($meta) ? $meta : [];

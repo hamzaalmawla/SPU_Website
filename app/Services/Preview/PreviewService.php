@@ -224,7 +224,7 @@ final class PreviewService implements PreviewServiceInterface
             'campus_life.landing' => $locale.'/campus-life',
             'campus_life.virtual_tour' => $locale.'/virtual-tour',
             'news.articles' => $locale.'/news/articles',
-            'facilities.pharmacy.training' => $locale.'/facilities/pharmacy/training',
+            'facilities.pharmacy.training' => $locale.'/faculties/pharmacy/training',
             'research.index' => $locale.'/research',
             'research.publications' => $locale.'/research/publications',
             'research.centers' => $locale.'/research/centers',

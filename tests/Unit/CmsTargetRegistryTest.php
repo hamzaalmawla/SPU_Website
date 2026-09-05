@@ -85,8 +85,8 @@ class CmsTargetRegistryTest extends TestCase
             $target = $registry->find('facilities.'.$facultySlug.'.research');
 
             $this->assertNotNull($target);
-            $this->assertSame('/facilities/'.$facultySlug.'/research', $target->publicPath);
-            $this->assertSame('public.facilities.subpage', $target->routeName);
+            $this->assertSame('/faculties/'.$facultySlug.'/research', $target->publicPath);
+            $this->assertSame('public.faculties.subpage', $target->routeName);
             $this->assertSame($facultySlug, $target->facultyScopeSlug);
         }
     }

@@ -133,7 +133,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
             seoTitle: $page->seoTitle,
             seoDescription: $page->seoDescription,
             seoImage: $page->seoImage,
-            path: '/facilities/'.$canonicalFacultySlug.'/research',
+            path: '/faculties/'.$canonicalFacultySlug.'/research',
             isAvailable: $data['items'] !== [],
         );
     }

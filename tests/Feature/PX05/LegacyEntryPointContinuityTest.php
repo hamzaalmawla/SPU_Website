@@ -35,11 +35,11 @@ final class LegacyEntryPointContinuityTest extends TestCase
      * @var array<string, string>
      */
     private const BARE_ROOTS = [
-        '/med' => '/ar/facilities/medicine',
-        '/dent' => '/ar/facilities/dentistry',
-        '/pharm' => '/ar/facilities/pharmacy',
-        '/info' => '/ar/facilities/artificial-intelligence',
-        '/petrol' => '/ar/facilities/petroleum',
+        '/med' => '/ar/faculties/medicine',
+        '/dent' => '/ar/faculties/dentistry',
+        '/pharm' => '/ar/faculties/pharmacy',
+        '/info' => '/ar/faculties/artificial-intelligence',
+        '/petrol' => '/ar/faculties/petroleum',
         '/hospital' => '/ar/campus-life/hospital',
         '/dent_clinic' => '/ar/campus-life/dental',
         '/clubs' => '/ar/campus-life/clubs-activities',
@@ -71,12 +71,12 @@ final class LegacyEntryPointContinuityTest extends TestCase
      * @var array<string, string>
      */
     private const HONOUR_ROLLS = [
-        '/med/index.php?page=list&ex=2&dir=good_students&lang=1' => '/ar/facilities/medicine/valedictorians',
-        '/dent/index.php?page=list&ex=2&dir=good_students&lang=1' => '/ar/facilities/dentistry/valedictorians',
-        '/pharm/index.php?page=list&ex=2&dir=good_students&lang=1' => '/ar/facilities/pharmacy/valedictorians',
-        '/info/index.php?page=list&ex=2&dir=good_students&lang=1' => '/ar/facilities/artificial-intelligence/valedictorians',
-        '/petrol/index.php?page=list&ex=2&dir=good_students&lang=1' => '/ar/facilities/petroleum/valedictorians',
-        '/admin/index.php?page=list&ex=2&dir=good_students&lang=1' => '/ar/facilities/business-administration/valedictorians',
+        '/med/index.php?page=list&ex=2&dir=good_students&lang=1' => '/ar/faculties/medicine/valedictorians',
+        '/dent/index.php?page=list&ex=2&dir=good_students&lang=1' => '/ar/faculties/dentistry/valedictorians',
+        '/pharm/index.php?page=list&ex=2&dir=good_students&lang=1' => '/ar/faculties/pharmacy/valedictorians',
+        '/info/index.php?page=list&ex=2&dir=good_students&lang=1' => '/ar/faculties/artificial-intelligence/valedictorians',
+        '/petrol/index.php?page=list&ex=2&dir=good_students&lang=1' => '/ar/faculties/petroleum/valedictorians',
+        '/admin/index.php?page=list&ex=2&dir=good_students&lang=1' => '/ar/faculties/business-administration/valedictorians',
     ];
 
     protected function setUp(): void
@@ -174,10 +174,10 @@ final class LegacyEntryPointContinuityTest extends TestCase
         $this->get('/index.php?lang=1&dir=html&ex=1&page=contactus')
             ->assertStatus(301)
             ->assertRedirect('/ar/contact');
-        $this->get('/med/index.php')->assertStatus(301)->assertRedirect('/ar/facilities/medicine');
+        $this->get('/med/index.php')->assertStatus(301)->assertRedirect('/ar/faculties/medicine');
         $this->get('/admin/index.php')
             ->assertStatus(301)
-            ->assertRedirect('/ar/facilities/business-administration');
+            ->assertRedirect('/ar/faculties/business-administration');
     }
 
     public function test_bare_admin_root_is_left_to_the_cms_and_never_redirected_to_the_faculty(): void
@@ -188,7 +188,7 @@ final class LegacyEntryPointContinuityTest extends TestCase
         $response = $this->get('/admin');
 
         $this->assertNotSame(
-            '/ar/facilities/business-administration',
+            '/ar/faculties/business-administration',
             $response->headers->get('Location'),
             'Bare /admin must stay with the CMS panel, not redirect to the public faculty page.',
         );
@@ -204,7 +204,7 @@ final class LegacyEntryPointContinuityTest extends TestCase
             'is_active' => true,
         ]);
 
-        $this->get('/med')->assertStatus(301)->assertRedirect('/ar/facilities/medicine');
+        $this->get('/med')->assertStatus(301)->assertRedirect('/ar/faculties/medicine');
     }
 
     public function test_new_entry_points_add_no_duplicate_or_conflicting_rules(): void
@@ -226,7 +226,7 @@ final class LegacyEntryPointContinuityTest extends TestCase
         $this->seed(LegacyEntryPointRedirectSeeder::class);
 
         $this->assertSame($before, LegacyExactRedirect::query()->count());
-        $this->get('/med')->assertStatus(301)->assertRedirect('/ar/facilities/medicine');
+        $this->get('/med')->assertStatus(301)->assertRedirect('/ar/faculties/medicine');
     }
 
     /**

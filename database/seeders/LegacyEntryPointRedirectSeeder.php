@@ -48,15 +48,15 @@ class LegacyEntryPointRedirectSeeder extends Seeder
     private const SUBSITE_HOMES = [
         // The old site's own homepage.
         '/index.php' => '/ar',
-        '/med/index.php' => '/ar/facilities/medicine',
-        '/dent/index.php' => '/ar/facilities/dentistry',
-        '/pharm/index.php' => '/ar/facilities/pharmacy',
-        '/info/index.php' => '/ar/facilities/artificial-intelligence',
-        '/petrol/index.php' => '/ar/facilities/petroleum',
+        '/med/index.php' => '/ar/faculties/medicine',
+        '/dent/index.php' => '/ar/faculties/dentistry',
+        '/pharm/index.php' => '/ar/faculties/pharmacy',
+        '/info/index.php' => '/ar/faculties/artificial-intelligence',
+        '/petrol/index.php' => '/ar/faculties/petroleum',
         // The old public Business-faculty URL. It is NOT the new Laravel admin
         // panel; RedirectContinuityMiddleware whitelists this exact path so the
         // two never collide.
-        '/admin/index.php' => '/ar/facilities/business-administration',
+        '/admin/index.php' => '/ar/faculties/business-administration',
         '/research/index.php' => '/ar/research',
         '/hospital/index.php' => '/ar/campus-life/hospital',
         '/dent_clinic/index.php' => '/ar/campus-life/dental',
@@ -96,11 +96,11 @@ class LegacyEntryPointRedirectSeeder extends Seeder
      * @var array<string, string>
      */
     private const SUBSITE_DIRECTORY_ROOTS = [
-        '/med' => '/ar/facilities/medicine',
-        '/dent' => '/ar/facilities/dentistry',
-        '/pharm' => '/ar/facilities/pharmacy',
-        '/info' => '/ar/facilities/artificial-intelligence',
-        '/petrol' => '/ar/facilities/petroleum',
+        '/med' => '/ar/faculties/medicine',
+        '/dent' => '/ar/faculties/dentistry',
+        '/pharm' => '/ar/faculties/pharmacy',
+        '/info' => '/ar/faculties/artificial-intelligence',
+        '/petrol' => '/ar/faculties/petroleum',
         '/hospital' => '/ar/campus-life/hospital',
         '/dent_clinic' => '/ar/campus-life/dental',
         '/clubs' => '/ar/campus-life/clubs-activities',

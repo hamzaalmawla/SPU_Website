@@ -48,14 +48,14 @@ final class FacultyMembersPageTest extends TestCase
         );
         $this->publishMember((int) $member->id);
 
-        $this->get('/en/facilities/medicine/members')
+        $this->get('/en/faculties/medicine/members')
             ->assertOk()
             ->assertSee('Faculty Members', false)
             ->assertSee('English Faculty Member')
             ->assertSee('Lecturer')
             ->assertSee('/en/about/profile/member-card', false);
 
-        $this->get('/ar/facilities/medicine/members')
+        $this->get('/ar/faculties/medicine/members')
             ->assertOk()
             ->assertSee('أعضاء الهيئة الأكاديمية')
             ->assertSee('عضو هيئة')
@@ -65,24 +65,24 @@ final class FacultyMembersPageTest extends TestCase
 
     public function test_members_subpage_renders_rtl_direction_for_arabic(): void
     {
-        $this->get('/ar/facilities/medicine/members')
+        $this->get('/ar/faculties/medicine/members')
             ->assertOk()
             ->assertSee('<html lang="ar" dir="rtl">', false);
 
-        $this->get('/en/facilities/medicine/members')
+        $this->get('/en/faculties/medicine/members')
             ->assertOk()
             ->assertSee('<html lang="en" dir="ltr">', false);
     }
 
     public function test_members_subpage_links_to_other_locale_preserving_path(): void
     {
-        $this->get('/en/facilities/medicine/members')
+        $this->get('/en/faculties/medicine/members')
             ->assertOk()
-            ->assertSee('/ar/facilities/medicine/members', false);
+            ->assertSee('/ar/faculties/medicine/members', false);
 
-        $this->get('/ar/facilities/medicine/members')
+        $this->get('/ar/faculties/medicine/members')
             ->assertOk()
-            ->assertSee('/en/facilities/medicine/members', false);
+            ->assertSee('/en/faculties/medicine/members', false);
     }
 
     public function test_only_published_members_appear_on_the_page(): void
@@ -98,7 +98,7 @@ final class FacultyMembersPageTest extends TestCase
         );
         $this->publishMember((int) $published->id);
 
-        $this->get('/en/facilities/dentistry/members')
+        $this->get('/en/faculties/dentistry/members')
             ->assertOk()
             ->assertSee('English Faculty Member')
             ->assertSee('/en/about/profile/published-member', false)
@@ -107,7 +107,7 @@ final class FacultyMembersPageTest extends TestCase
 
     public function test_members_subpage_404s_when_card_is_hidden(): void
     {
-        $this->get('/en/facilities/medicine/members')->assertOk();
+        $this->get('/en/faculties/medicine/members')->assertOk();
 
         FacultySubpageCard::query()
             ->where('faculty_slug', 'medicine')
@@ -116,8 +116,8 @@ final class FacultyMembersPageTest extends TestCase
 
         Cache::flush();
 
-        $this->get('/en/facilities/medicine/members')->assertNotFound();
-        $this->get('/en/facilities/medicine')->assertOk();
+        $this->get('/en/faculties/medicine/members')->assertNotFound();
+        $this->get('/en/faculties/medicine')->assertOk();
     }
 
     public function test_members_workspace_target_is_editable_and_can_be_published(): void
@@ -135,24 +135,24 @@ final class FacultyMembersPageTest extends TestCase
         $workflow = app(CmsWorkflowServiceInterface::class);
         $workflow->saveDraft($targetKey, $payload, (int) $this->admin->getKey());
 
-        $this->get('/en/facilities/medicine/members')->assertDontSee('Published Faculty Members');
+        $this->get('/en/faculties/medicine/members')->assertDontSee('Published Faculty Members');
 
         $this->assertTrue($workflow->publish($targetKey, (int) $this->admin->getKey()));
 
-        $this->get('/en/facilities/medicine/members')
+        $this->get('/en/faculties/medicine/members')
             ->assertOk()
             ->assertSee('Published Faculty Members');
     }
 
     public function test_members_subpage_appears_in_faculty_highlights_section(): void
     {
-        $this->get('/en/facilities/medicine')
+        $this->get('/en/faculties/medicine')
             ->assertOk()
-            ->assertSee('/en/facilities/medicine/members', false);
+            ->assertSee('/en/faculties/medicine/members', false);
 
-        $this->get('/ar/facilities/medicine')
+        $this->get('/ar/faculties/medicine')
             ->assertOk()
-            ->assertSee('/ar/facilities/medicine/members', false);
+            ->assertSee('/ar/faculties/medicine/members', false);
     }
 
     public function test_members_workspace_target_renders_its_editor_without_errors(): void
@@ -176,11 +176,11 @@ final class FacultyMembersPageTest extends TestCase
         );
         $this->publishMember((int) $member->id);
 
-        $this->get('/en/facilities/medicine/members')
+        $this->get('/en/faculties/medicine/members')
             ->assertOk()
             ->assertSee('/en/about/profile/medicine-only-member', false);
 
-        $this->get('/en/facilities/business-administration/members')
+        $this->get('/en/faculties/business-administration/members')
             ->assertOk()
             ->assertDontSee('/en/about/profile/medicine-only-member', false);
     }
