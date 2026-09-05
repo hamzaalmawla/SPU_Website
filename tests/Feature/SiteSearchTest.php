@@ -132,6 +132,18 @@ final class SiteSearchTest extends TestCase
         }
     }
 
+    public function test_the_capped_notice_names_what_is_shown_and_what_matched(): void
+    {
+        // These were the same number while the facets were counted from the
+        // capped list, so "the top :count" was true by accident. Once the counts
+        // covered the whole corpus it read "showing the top 958" above 300 rows.
+        $this->floodIndex('news', 'news', 420, 'brimming', weight: 10);
+
+        $this->get('/en/search?q=brimming&type=news')
+            ->assertOk()
+            ->assertSee('Showing the first 300 of 420 matches', false);
+    }
+
     public function test_a_query_under_the_cap_is_unchanged(): void
     {
         // The guard for the other direction: below MAX_MATCHES the old and new

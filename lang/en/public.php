@@ -70,7 +70,7 @@ return [
     'search_results_count' => 'Results: :count',
     'search_filter_label' => 'Filter by content type',
     'search_min_length' => 'Type at least 2 characters to search.',
-    'search_capped_notice' => 'Showing the top :count matches. Narrow your search for more precise results.',
+    'search_capped_notice' => 'Showing the first :shown of :total matches. Narrow your search for more precise results.',
     'search_empty_title' => 'Search the university site',
     'search_empty_text' => 'Type what you are looking for above: a news item, a publication, a member of staff, or any page on the site.',
     'search_no_results_title' => 'No results found',

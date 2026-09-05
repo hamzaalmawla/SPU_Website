@@ -98,7 +98,16 @@
 
             @if ($results->resultsCapped)
                 <p class="mt-2 text-[12px] font-semibold text-slate-500">
-                    {{ __('public.search_capped_notice', ['count' => $results->typeCounts['all'] ?? 0]) }}
+                    {{-- Two numbers, because they stopped being the same one. The
+                         facet counts now cover every matching row, so on a capped
+                         response the matched total is larger than the list below
+                         it, and naming only one made the notice claim the whole
+                         corpus was on screen. Counts against the active tab, not
+                         always 'all'. --}}
+                    {{ __('public.search_capped_notice', [
+                        'shown' => $results->total,
+                        'total' => $results->typeCounts[$results->type] ?? $results->typeCounts['all'] ?? 0,
+                    ]) }}
                 </p>
             @endif
 
