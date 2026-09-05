@@ -70,7 +70,7 @@ return [
     'search_results_count' => 'عدد النتائج: :count',
     'search_filter_label' => 'تصفية حسب نوع المحتوى',
     'search_min_length' => 'اكتب حرفين على الأقل لبدء البحث.',
-    'search_capped_notice' => 'نعرض أفضل :count نتيجة. حدّد كلمات بحثك للحصول على نتائج أدق.',
+    'search_capped_notice' => 'نعرض أول :shown نتيجة من أصل :total. حدّد كلمات بحثك للحصول على نتائج أدق.',
     'search_empty_title' => 'ابحث في موقع الجامعة',
     'search_empty_text' => 'اكتب ما تبحث عنه في الحقل أعلاه: خبراً، أو بحثاً منشوراً، أو اسم عضو هيئة تدريسية، أو صفحة من صفحات الموقع.',
     'search_no_results_title' => 'لم نعثر على أي نتيجة',
