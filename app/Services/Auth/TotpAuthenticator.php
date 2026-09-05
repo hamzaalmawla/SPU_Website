@@ -94,7 +94,7 @@ final class TotpAuthenticator implements TotpAuthenticatorInterface
 
         $valid = (bool) $this->google2fa->verifyKey($secret, $code);
 
-        if ($valid && ! $user->two_factor_enabled) {
+        if ($valid && (! $user->two_factor_enabled || $user->two_factor_confirmed_at === null)) {
             $user->forceFill([
                 'two_factor_enabled' => true,
                 'two_factor_confirmed_at' => now(),

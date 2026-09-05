@@ -161,6 +161,23 @@ class TotpAuthenticatorTest extends TestCase
         $this->assertNotNull($user->two_factor_confirmed_at);
     }
 
+    public function test_verify_sets_confirmation_when_enabled_flag_is_true_but_confirmation_is_null(): void
+    {
+        $user = User::factory()->create([
+            'two_factor_enabled' => true,
+            'two_factor_confirmed_at' => null,
+        ]);
+        $enrollment = $this->authenticator->generateSecret($user);
+
+        $validCode = $this->google2fa->getCurrentOtp($enrollment->secret);
+        $this->authenticator->verify($user, $validCode);
+
+        $user->refresh();
+
+        $this->assertTrue($user->two_factor_enabled);
+        $this->assertNotNull($user->two_factor_confirmed_at);
+    }
+
     public function test_verify_does_not_reset_confirmation_on_subsequent_codes(): void
     {
         $user = User::factory()->create();

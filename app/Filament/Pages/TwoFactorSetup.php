@@ -49,6 +49,8 @@ class TwoFactorSetup extends Page implements HasForms
 
     public bool $twoFactorEnabled = false;
 
+    public bool $twoFactorUnconfirmed = false;
+
     public bool $showRecoveryCodes = false;
 
     private TotpAuthenticatorInterface $authenticator;
@@ -89,7 +91,8 @@ class TwoFactorSetup extends Page implements HasForms
 
         abort_unless($user instanceof User && static::canAccess(), 403);
 
-        $this->twoFactorEnabled = (bool) $user->two_factor_enabled;
+        $this->twoFactorEnabled = (bool) $user->two_factor_enabled && $user->two_factor_confirmed_at !== null;
+        $this->twoFactorUnconfirmed = (bool) $user->two_factor_enabled && $user->two_factor_confirmed_at === null;
     }
 
     public function form(Form $form): Form
@@ -139,7 +142,7 @@ class TwoFactorSetup extends Page implements HasForms
     private function enableAction(): Action
     {
         return Action::make('enable')
-            ->label('Enable Two-Factor Authentication')
+            ->label($this->twoFactorUnconfirmed ? 'Complete Two-Factor Setup' : 'Enable Two-Factor Authentication')
             ->icon('heroicon-o-shield-check')
             ->color('success')
             ->form($this->currentPasswordForm())
@@ -244,8 +247,12 @@ class TwoFactorSetup extends Page implements HasForms
         }
 
         $this->twoFactorEnabled = true;
+        $this->twoFactorUnconfirmed = false;
         $this->showEnrollment = false;
         $this->showRecoveryCodes = true;
+
+        session()->put('2fa_verified', true);
+        session()->put('2fa_verified_user_id', (int) $user->getAuthIdentifier());
 
         Notification::make()
             ->title('Two-factor authentication enabled')

@@ -16,7 +16,11 @@
                 <div class="flex items-center gap-2">
                     <x-heroicon-o-shield-exclamation class="h-5 w-5 text-warning-600 dark:text-warning-400" />
                     <span class="font-medium text-warning-800 dark:text-warning-200">
-                        Two-factor authentication is not enabled.
+                        @if ($twoFactorUnconfirmed)
+                            Two-factor authentication setup is incomplete.
+                        @else
+                            Two-factor authentication is not enabled.
+                        @endif
                     </span>
                 </div>
             </div>

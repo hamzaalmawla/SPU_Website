@@ -107,6 +107,7 @@ final class TwoFactorChallengeController extends Controller
 
     private function hasTwoFactorEnabled(Authenticatable $user): bool
     {
-        return (bool) ($user->two_factor_enabled ?? false);
+        return (bool) ($user->two_factor_enabled ?? false)
+            && ($user->two_factor_confirmed_at ?? null) !== null;
     }
 }
