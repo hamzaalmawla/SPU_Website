@@ -100,6 +100,84 @@ final class SiteSearchTest extends TestCase
         $this->get('/en/search?q=Haddad')->assertOk()->assertSee('Dr. Rana Haddad', false);
     }
 
+    /**
+     * A term common enough to match more documents than one response carries.
+     *
+     * The ranked query is capped at MAX_MATCHES and ordered by weight, and news
+     * (10) outweighs research (8). Counting the facets from that capped list
+     * meant a common word that hit 300+ news rows reported "Research (0)" and
+     * returned nothing under the research filter, however many research rows
+     * actually contained it. Observed on the live site: `q=syrian` gave
+     * all=300, news=300, research=0, while `q=syrian war` — rarer, so under the
+     * cap — gave 20 research results.
+     */
+    public function test_a_common_term_still_finds_the_low_weight_types(): void
+    {
+        $this->floodIndex('news', 'news', 320, 'saturating', weight: 10);
+        $this->floodIndex('research', 'research', 3, 'saturating', weight: 8);
+
+        $service = app(SiteSearchServiceInterface::class);
+
+        $all = $service->search('en', 'saturating');
+        $this->assertGreaterThan(0, $all->typeCounts['research'], 'The research facet was crowded out by higher-weight news.');
+        $this->assertSame(3, $all->typeCounts['research']);
+        $this->assertSame(320, $all->typeCounts['news']);
+        $this->assertSame(323, $all->typeCounts['all'], 'Facet counts must cover the corpus, not one capped page of it.');
+
+        $research = $service->search('en', 'saturating', 'research');
+        $this->assertSame(3, $research->total, 'Filtering to a low-weight type returned nothing.');
+        $this->assertCount(3, $research->items);
+        foreach ($research->items as $item) {
+            $this->assertSame('research', $item->type);
+        }
+    }
+
+    public function test_a_query_under_the_cap_is_unchanged(): void
+    {
+        // The guard for the other direction: below MAX_MATCHES the old and new
+        // paths must agree exactly, counts and ordering alike.
+        $this->publishedArticle(slug: 'under-cap-news', titleEn: 'Distinctive campus bulletin', titleAr: 'نشرة الحرم المميزة');
+        $this->publishedPublication('Distinctive research method', 'طريقة بحث مميزة');
+
+        $results = app(SiteSearchServiceInterface::class)->search('en', 'Distinctive');
+
+        $this->assertSame(2, $results->typeCounts['all']);
+        $this->assertSame(1, $results->typeCounts['news']);
+        $this->assertSame(1, $results->typeCounts['research']);
+        $this->assertSame(2, $results->total);
+        $this->assertFalse($results->resultsCapped);
+    }
+
+    /** Writes index rows straight in: the volume matters, the source rows do not. */
+    private function floodIndex(string $source, string $type, int $count, string $term, int $weight): void
+    {
+        $rows = [];
+
+        for ($i = 0; $i < $count; $i++) {
+            $title = ucfirst($source).' item '.$i.' '.$term;
+            $rows[] = [
+                'searchable_type' => 'flood\\'.$source,
+                'searchable_id' => $i + 1,
+                'type' => $type,
+                'locale' => 'en',
+                'title' => $title,
+                'title_normalized' => mb_strtolower($title),
+                'summary' => $title,
+                'body_normalized' => mb_strtolower($title),
+                'url' => '/en/'.$source.'/'.$i,
+                'meta' => null,
+                'published_at' => now()->subDays($i),
+                'weight' => $weight,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }
+
+        foreach (array_chunk($rows, 100) as $chunk) {
+            SearchDocument::query()->insert($chunk);
+        }
+    }
+
     public function test_multi_word_queries_require_every_term_to_match(): void
     {
         $this->publishedArticle(slug: 'both-terms', titleEn: 'Dentistry research grant', titleAr: 'منحة أبحاث طب الأسنان');

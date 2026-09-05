@@ -12,6 +12,7 @@ use App\Models\Search\SearchDocument;
 use App\Support\SearchTextNormalizer;
 use BadMethodCallException;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
 
 /**
@@ -77,13 +78,17 @@ final class SiteSearchService implements SiteSearchServiceInterface
             return $this->emptyResults($locale, $rawQuery, $type, $page, $perPage, $hasQuery, $tooShort);
         }
 
-        $matches = $this->matchingDocuments($locale, $normalizedQuery, $terms);
-        $typeCounts = $this->countByType($matches['results']);
+        // Counted across every matching row, and fetched within the selected
+        // type. Deriving both from one globally capped list is what used to
+        // hide whole content types: the cap is ordered by weight, news outweighs
+        // research, and a common word matching more than MAX_MATCHES news rows
+        // filled the list before a single research row could reach it. The facet
+        // then read "Research (0)" over a corpus that did contain the word, and
+        // the filter agreed with it.
+        $typeCounts = $this->facetCounts($locale, $normalizedQuery, $terms);
+        $matches = $this->matchingDocuments($locale, $normalizedQuery, $terms, $type);
 
-        $filtered = $type === 'all'
-            ? $matches['results']
-            : array_values(array_filter($matches['results'], static fn (array $result): bool => $result['type'] === $type));
-
+        $filtered = $matches['results'];
         $total = count($filtered);
         $lastPage = max(1, (int) ceil($total / $perPage));
         $page = min($page, $lastPage);
@@ -118,20 +123,20 @@ final class SiteSearchService implements SiteSearchServiceInterface
      * @param  list<string>  $terms
      * @return array{results: list<array{id: int, type: string}>, capped: bool}
      */
-    private function matchingDocuments(string $locale, string $normalizedQuery, array $terms): array
+    private function matchingDocuments(string $locale, string $normalizedQuery, array $terms, string $type): array
     {
-        $cacheKey = 'search:results:'.sha1($locale.'|'.$normalizedQuery);
+        $cacheKey = 'search:results:'.sha1($locale.'|'.$normalizedQuery.'|'.$type);
 
         try {
             $cached = $this->cacheService
                 ->tags(['search', 'public-pages'])
                 ->remember(
                     $cacheKey,
-                    fn (): array => $this->rankedMatches($locale, $normalizedQuery, $terms),
+                    fn (): array => $this->rankedMatches($locale, $normalizedQuery, $terms, $type),
                     self::CACHE_TTL_SECONDS,
                 );
         } catch (BadMethodCallException) {
-            $cached = $this->rankedMatches($locale, $normalizedQuery, $terms);
+            $cached = $this->rankedMatches($locale, $normalizedQuery, $terms, $type);
         }
 
         if (! is_array($cached) || ! isset($cached['results']) || ! is_array($cached['results'])) {
@@ -148,20 +153,19 @@ final class SiteSearchService implements SiteSearchServiceInterface
      * @param  list<string>  $terms
      * @return array{results: list<array{id: int, type: string}>, capped: bool}
      */
-    private function rankedMatches(string $locale, string $normalizedQuery, array $terms): array
+    private function rankedMatches(string $locale, string $normalizedQuery, array $terms, string $type = 'all'): array
     {
-        $rows = SearchDocument::query()
-            ->where('locale', $locale)
-            ->where(function (Builder $query) use ($terms): void {
-                // Every term must appear somewhere in the document. body_normalized
-                // already contains the title, so one column covers both.
-                foreach ($terms as $term) {
-                    $query->whereRaw(
-                        "body_normalized LIKE ? ESCAPE '!'",
-                        ['%'.SearchTextNormalizer::escapeLike($term).'%'],
-                    );
-                }
-            })
+        $builder = $this->matching($locale, $terms);
+
+        // Applied in SQL, not to the rows that came back: the cap has to bite
+        // inside the selected type, or filtering to a low-weight type keeps
+        // returning whatever survived a cap that type never reached.
+        // (locale, type) is indexed, so this stays one indexed scan.
+        if ($type !== 'all') {
+            $builder->where('type', $type);
+        }
+
+        $rows = $builder
             ->orderByRaw(
                 "CASE WHEN title_normalized LIKE ? ESCAPE '!' THEN 0 ELSE 1 END",
                 ['%'.SearchTextNormalizer::escapeLike($normalizedQuery).'%'],
@@ -238,19 +242,66 @@ final class SiteSearchService implements SiteSearchServiceInterface
      * @param  list<array{id: int, type: string}>  $results
      * @return array<string, int>
      */
-    private function countByType(array $results): array
+    /**
+     * The term filter both queries share, so the counted set and the fetched
+     * set cannot drift apart.
+     *
+     * @param  list<string>  $terms
+     * @return Builder<SearchDocument>
+     */
+    private function matching(string $locale, array $terms): Builder
     {
-        $counts = ['all' => count($results)];
+        return SearchDocument::query()
+            ->where('locale', $locale)
+            ->where(function (Builder $query) use ($terms): void {
+                // Every term must appear somewhere in the document. body_normalized
+                // already contains the title, so one column covers both.
+                foreach ($terms as $term) {
+                    $query->whereRaw(
+                        "body_normalized LIKE ? ESCAPE '!'",
+                        ['%'.SearchTextNormalizer::escapeLike($term).'%'],
+                    );
+                }
+            });
+    }
+
+    /**
+     * How many documents of each type match, counted over the whole corpus
+     * rather than over a capped slice of it. These are the numbers on the filter
+     * tabs, so they have to stay true even when far more rows match than one
+     * response can carry; the view already pairs a larger count here with the
+     * "showing the first N" notice.
+     *
+     * @param  list<string>  $terms
+     * @return array<string, int>
+     */
+    private function facetCounts(string $locale, string $normalizedQuery, array $terms): array
+    {
+        $cacheKey = 'search:facets:'.sha1($locale.'|'.$normalizedQuery);
+
+        $tally = fn (): array => $this->matching($locale, $terms)
+            ->toBase()
+            ->select('type', DB::raw('count(*) as aggregate'))
+            ->groupBy('type')
+            ->pluck('aggregate', 'type')
+            ->map(static fn ($count): int => (int) $count)
+            ->all();
+
+        try {
+            $rows = $this->cacheService
+                ->tags(['search', 'public-pages'])
+                ->remember($cacheKey, $tally, self::CACHE_TTL_SECONDS);
+        } catch (BadMethodCallException) {
+            $rows = $tally();
+        }
+
+        $rows = is_array($rows) ? $rows : [];
+        $counts = ['all' => 0];
 
         foreach (self::TYPES as $type) {
             if ($type !== 'all') {
-                $counts[$type] = 0;
-            }
-        }
-
-        foreach ($results as $result) {
-            if (array_key_exists($result['type'], $counts)) {
-                $counts[$result['type']]++;
+                $counts[$type] = (int) ($rows[$type] ?? 0);
+                $counts['all'] += $counts[$type];
             }
         }
 
