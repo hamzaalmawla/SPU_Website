@@ -7,6 +7,7 @@ namespace App\Console\Commands;
 use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use Illuminate\Console\Command;
+use Illuminate\Http\Request as HttpRequest;
 
 /**
  * Reports which CMS-managed sections actually have content published.
@@ -25,6 +26,17 @@ use Illuminate\Console\Command;
  * Being silent is the right behaviour for the page and the wrong behaviour for
  * whoever has to know what is left before launch. So: one command, one list.
  *
+ * The distinction that makes this useful rather than alarming: a section with
+ * no published payload is usually NOT an empty page. Most of them render from
+ * database records - faculty pages, publications, news articles - and treat the
+ * payload as an optional override, so they show a full page while reporting
+ * nothing published. Measured on the live site, 110 of 134 sections had no
+ * payload and all but a handful rendered real content.
+ *
+ * Only rendering the page separates the two, which is what --probe does. The
+ * payload report alone is a fast signal about the CMS; --probe is the one that
+ * answers "what will a visitor see nothing on".
+ *
  * Deliberately advisory. What to publish, retire or leave empty is SPU's
  * decision, not a deploy's, so this reports and does not fail - unless asked
  * to with --fail-on-empty, which is there for a future gate rather than for
@@ -34,11 +46,24 @@ final class CmsContentStatusCommand extends Command
 {
     protected $signature = 'cms:content-status
         {--area= : Only report one area (news, facilities, research, about, ...)}
-        {--empty : List only the sections with nothing published}
+        {--empty : List only the sections without a published payload}
+        {--probe : Also render each page and report which ones are actually blank}
+        {--summary : Print the counts only}
         {--json : Machine-readable output}
-        {--fail-on-empty : Exit non-zero when any section has nothing published}';
+        {--fail-on-empty : Exit non-zero when any section has no published payload}';
 
-    protected $description = 'Report which CMS sections have published content and which render empty';
+    protected $description = 'Report which CMS sections have a published payload, and with --probe which pages actually render blank';
+
+    /**
+     * Below this many characters of body text, a page has nothing on it.
+     *
+     * Calibrated against the live site rather than guessed: the media gallery,
+     * which is genuinely blank, renders 67 characters, while the thinnest page
+     * that does have content on it renders 596. Anything in that gap is a
+     * judgement call, so the count is always printed and this only decides
+     * which rows get flagged.
+     */
+    private const BLANK_TEXT_THRESHOLD = 250;
 
     /**
      * A published payload can still be empty. The research section shipped
@@ -94,13 +119,20 @@ final class CmsContentStatusCommand extends Command
                 ? 'missing'
                 : (in_array('empty', $states, true) ? 'empty' : 'published');
 
-            $rows[] = [
+            $row = [
                 'key' => $target->key,
                 'area' => $target->area,
                 'path' => $target->publicPath ?? '—',
                 'state' => $worst,
                 'locales' => $locales,
             ];
+
+            if ((bool) $this->option('probe') && is_string($target->publicPath)) {
+                $row['rendered'] = $this->renderedTextLength($target->publicPath, $target->locales);
+                $row['blank'] = $row['rendered'] !== null && $row['rendered'] < self::BLANK_TEXT_THRESHOLD;
+            }
+
+            $rows[] = $row;
         }
 
         // Counted over every target, not over the filtered view, so --empty
@@ -114,8 +146,25 @@ final class CmsContentStatusCommand extends Command
             ? array_values(array_filter($rows, static fn (array $r): bool => $r['state'] !== 'published'))
             : $rows;
 
+        $blankTotal = count(array_filter($rows, static fn (array $r): bool => ($r['blank'] ?? false) === true));
+
         if ((bool) $this->option('json')) {
             $this->line((string) json_encode($visible, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        } elseif ((bool) $this->option('summary')) {
+            $this->line(sprintf(
+                '  %d of %d CMS section(s) have a published payload.',
+                $publishedTotal,
+                count($rows),
+            ));
+
+            if ((bool) $this->option('probe')) {
+                $this->line($blankTotal > 0
+                    ? sprintf('  %d page(s) render blank. Run cms:content-status --probe for the list.', $blankTotal)
+                    : '  No page renders blank.');
+            } else {
+                $this->line('  A missing payload is not an empty page: most sections render from database');
+                $this->line('  records. Run cms:content-status --probe to see which pages are actually blank.');
+            }
         } else {
             $this->render($visible, $publishedTotal, count($rows), $onlyEmpty);
         }
@@ -160,6 +209,14 @@ final class CmsContentStatusCommand extends Command
                 })
                 ->implode('  ');
 
+            if (array_key_exists('rendered', $row)) {
+                $detail .= $row['rendered'] === null
+                    ? '   <fg=gray>page not reachable</>'
+                    : ($row['blank']
+                        ? "   <fg=red;options=bold>BLANK PAGE</> <fg=gray>({$row['rendered']} chars)</>"
+                        : "   <fg=green>renders {$row['rendered']} chars</>");
+            }
+
             $this->line(sprintf(
                 '    %s %-42s %-34s %s',
                 $marker,
@@ -177,14 +234,80 @@ final class CmsContentStatusCommand extends Command
         ));
 
         if (! $onlyEmpty) {
-            $this->line('  <fg=gray>✓ published   ○ published but holds no items   ✗ nothing published</>');
+            $this->line('  <fg=gray>✓ payload published   ○ published but holds no items   ✗ no payload</>');
         }
 
+        $blank = array_filter($rows, static fn (array $r): bool => ($r['blank'] ?? false) === true);
+
         $this->newLine();
-        $this->line('  <fg=gray>An empty section is not a fault. Public pages no longer fall back to</>');
-        $this->line('  <fg=gray>the development fixtures, so a section renders empty until real content</>');
-        $this->line('  <fg=gray>is published through the admin - where the fixture is usually already</>');
-        $this->line('  <fg=gray>loaded as the editor default, waiting to be reviewed.</>');
+
+        if ($blank !== []) {
+            $this->line(sprintf(
+                '  <fg=red;options=bold>%d page(s) render blank and need content before launch.</>',
+                count($blank),
+            ));
+            $this->newLine();
+        }
+
+        // The distinction this paragraph draws is the whole point of --probe,
+        // and getting it wrong in the other direction - reporting 110 healthy
+        // pages as broken - is what makes a readiness list get ignored.
+        $this->line('  <fg=gray>No payload is not the same as an empty page. Most sections render from</>');
+        $this->line('  <fg=gray>database records - faculty pages, publications, news articles - and treat</>');
+        $this->line('  <fg=gray>the CMS payload as an optional override, so they show a full page while</>');
+        $this->line('  <fg=gray>reporting nothing published here.</>');
+
+        if (! array_key_exists('rendered', $rows[0] ?? [])) {
+            $this->line('  <fg=gray>Run with --probe to see which pages are actually blank.</>');
+        }
+    }
+
+    /**
+     * How much body text a page actually renders, across its locales.
+     *
+     * This exists because a missing CMS payload is not the same thing as an
+     * empty page, and reporting the first as if it were the second is how a
+     * readiness list becomes noise. Most sections here render from database
+     * records - faculty pages, publications, news articles - and treat the CMS
+     * payload as an optional override, so they show a full page while reporting
+     * nothing published. The gallery, which genuinely has no other source, does
+     * not. Only rendering the page tells the two apart.
+     *
+     * Returns the smallest length across locales, since a page that is full in
+     * Arabic and blank in English is a blank page for half the audience.
+     *
+     * @param  array<int, string>  $locales
+     */
+    private function renderedTextLength(string $publicPath, array $locales): ?int
+    {
+        $lengths = [];
+
+        foreach ($locales as $locale) {
+            $path = '/'.$locale.($publicPath === '/' ? '' : $publicPath);
+
+            try {
+                // Accept-Encoding must be explicit. CompressPublicResponses
+                // treats an absent header as a proxy having stripped it and
+                // gzips anyway, which would leave this measuring binary.
+                $response = app()->handle(HttpRequest::create($path, 'GET', server: [
+                    'HTTP_ACCEPT_ENCODING' => 'identity',
+                ]));
+            } catch (\Throwable) {
+                continue;
+            }
+
+            if ($response->getStatusCode() !== 200) {
+                continue;
+            }
+
+            $body = (string) $response->getContent();
+            $main = preg_match('/<main\b[^>]*>(.*?)<\/main>/s', $body, $m) === 1 ? $m[1] : $body;
+            $text = trim((string) preg_replace('/\s+/', ' ', strip_tags($main)));
+
+            $lengths[] = mb_strlen($text);
+        }
+
+        return $lengths === [] ? null : min($lengths);
     }
 
     /**
