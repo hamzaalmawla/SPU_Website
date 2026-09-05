@@ -147,6 +147,53 @@ final class CmsContentStatusCommandTest extends TestCase
     }
 
     #[Test]
+    public function probing_records_what_a_page_actually_renders(): void
+    {
+        // The distinction the whole command turns on: a section can report no
+        // published payload and still render a full page, because it draws from
+        // database records. Without this, the report calls 110 healthy pages
+        // broken.
+        $rows = $this->report(['--probe' => true]);
+
+        $probed = array_filter($rows, static fn (array $r): bool => array_key_exists('rendered', $r));
+
+        $this->assertNotEmpty($probed, 'probing should measure at least one page');
+
+        foreach ($probed as $row) {
+            $this->assertArrayHasKey('blank', $row);
+            $this->assertTrue($row['rendered'] === null || is_int($row['rendered']));
+        }
+    }
+
+    #[Test]
+    public function a_page_is_only_flagged_blank_when_it_renders_almost_nothing(): void
+    {
+        $rows = $this->report(['--probe' => true]);
+
+        foreach ($rows as $row) {
+            if (($row['blank'] ?? false) === true) {
+                $this->assertLessThan(250, $row['rendered']);
+            }
+
+            if (is_int($row['rendered'] ?? null) && $row['rendered'] >= 250) {
+                $this->assertFalse($row['blank']);
+            }
+        }
+
+        $this->addToAssertionCount(1);
+    }
+
+    #[Test]
+    public function the_report_does_not_probe_unless_asked(): void
+    {
+        // Probing renders every page through the kernel, which is far too slow
+        // to be the default - the deploy calls this on every release.
+        foreach ($this->report() as $row) {
+            $this->assertArrayNotHasKey('rendered', $row);
+        }
+    }
+
+    #[Test]
     public function an_unknown_area_is_an_error_rather_than_an_empty_success(): void
     {
         // Silently reporting "all clear" for a typo'd area is the one failure

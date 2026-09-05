@@ -318,10 +318,18 @@ fi
 # launch. Someone had to read the source to learn why the media gallery was
 # blank; this prints the same answer for every section, every deploy.
 #
-# --empty so a finished section says nothing, and never fatal: what to publish,
-# retire or leave empty is SPU's decision, not a deploy's.
-log "Content still unpublished"
-(cd "${APP}" && "${PHP}" artisan cms:content-status --empty) || \
+# --summary, not the full list. A missing payload is usually not an empty page:
+# most sections render from database records and treat the payload as an
+# optional override, so 110 of 134 report nothing published while showing real
+# content. Printing all 110 every deploy would train people to skip the section
+# that is supposed to warn them. The summary says how many, and points at
+# --probe, which renders each page and reports the ones that are genuinely
+# blank.
+#
+# Never fatal: what to publish, retire or leave empty is SPU's decision, not a
+# deploy's.
+log "CMS content status"
+(cd "${APP}" && "${PHP}" artisan cms:content-status --summary) || \
     printf '   (cms:content-status unavailable in this release)\n'
 
 # The tarball-based deployment extracts into .release/ inside the repository,
