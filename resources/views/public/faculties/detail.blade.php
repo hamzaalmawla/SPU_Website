@@ -68,19 +68,15 @@
     <section id="overview" class="bg-white py-16 font-hacen lg:py-24" x-data="{ activeTab: '{{ $tabs[0]['id'] ?? 'overview' }}' }">
         <div class="container">
             <div class="flex flex-col items-start gap-12 lg:flex-row lg:gap-20">
-                <div class="relative hidden w-full shrink-0 lg:block lg:w-[440px]"
-                     x-data="{
-                         activeImage: '{{ $gallery[0] ?? ($faculty['heroImage'] ?? '/images/uni-main-place.JPG') }}',
-                         activeIndex: '01'
-                     }">
+                <div class="relative hidden w-full shrink-0 lg:block lg:w-[440px]" data-faculty-gallery>
                     <div class="group relative aspect-square w-full overflow-hidden rounded-[20px]">
-                        <img :src="activeImage"
+                        <img data-gallery-main
                              src="{{ $gallery[0] ?? ($faculty['heroImage'] ?? '/images/uni-main-place.JPG') }}"
                              alt="{{ $faculty['title'] }}"
                              class="h-full w-full object-cover transition-transform duration-[5000ms] ease-out group-hover:scale-105">
                         <div class="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-32 bg-gradient-to-t from-black/50 to-transparent"></div>
                         <div class="absolute bottom-6 left-7 z-20 flex items-baseline gap-1.5">
-                            <span class="text-[28px] font-bold leading-none text-white" x-text="activeIndex">01</span>
+                            <span data-gallery-counter class="text-[28px] font-bold leading-none text-white">01</span>
                             <span class="text-xs font-bold text-white/40">/ {{ str_pad((string) max(count($gallery), 1), 2, '0', STR_PAD_LEFT) }}</span>
                         </div>
                     </div>
@@ -91,18 +87,84 @@
                                     $num = str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT);
                                 @endphp
                                 <button type="button"
-                                        @click="activeImage = '{{ $image }}'; activeIndex = '{{ $num }}'"
-                                        class="relative h-[64px] w-[88px] shrink-0 overflow-hidden rounded-xl cursor-pointer p-0 border-0 bg-transparent text-start transition-all duration-200"
-                                        :class="activeImage === '{{ $image }}' ? 'ring-[2.5px] ring-offset-2 opacity-100' : 'opacity-40 hover:opacity-80'"
-                                        :style="activeImage === '{{ $image }}' ? 'ring-color: {{ $accent }};' : ''"
+                                        data-gallery-thumb="{{ $num }}"
+                                        data-src="{{ $image }}"
+                                        class="gallery-thumb-btn relative h-[64px] w-[88px] shrink-0 overflow-hidden rounded-xl cursor-pointer p-0 border-0 bg-transparent text-start transition-all duration-200 {{ $loop->first ? 'ring-[2.5px] ring-offset-2 opacity-100' : 'opacity-40 hover:opacity-80' }}"
+                                        style="{{ $loop->first ? 'ring-color: '.$accent.';' : '' }}"
                                         aria-label="{{ ($isAr ? 'الصورة ' : 'Image ').$loop->iteration }}">
                                     <img src="{{ $image }}" alt="" class="h-full w-full object-cover" aria-hidden="true">
-                                    <div x-show="activeImage === '{{ $image }}'" class="absolute inset-x-0 bottom-0 h-[3px]" style="background-color: {{ $accent }}"></div>
+                                    <div class="gallery-thumb-bar absolute inset-x-0 bottom-0 h-[3px] {{ $loop->first ? '' : 'hidden' }}" style="background-color: {{ $accent }}"></div>
                                 </button>
                             @endforeach
                         </div>
                     @endif
                 </div>
+
+                <script>
+                    (function () {
+                        function initFacultyDetailGallery() {
+                            var gallery = document.querySelector('[data-faculty-gallery]');
+                            if (!gallery || gallery.dataset.galleryBound === 'true') return;
+                            gallery.dataset.galleryBound = 'true';
+
+                            var mainImg = gallery.querySelector('[data-gallery-main]');
+                            var counter = gallery.querySelector('[data-gallery-counter]');
+                            var thumbs = Array.from(gallery.querySelectorAll('[data-gallery-thumb]'));
+                            var accent = @js($accent);
+
+                            function selectThumb(selected) {
+                                var src = selected.getAttribute('data-src');
+                                var num = selected.getAttribute('data-gallery-thumb');
+
+                                if (mainImg && src) {
+                                    mainImg.src = src;
+                                }
+                                if (counter && num) {
+                                    counter.textContent = num;
+                                }
+
+                                thumbs.forEach(function (thumb) {
+                                    var bar = thumb.querySelector('.gallery-thumb-bar');
+                                    if (thumb === selected) {
+                                        thumb.classList.remove('opacity-40');
+                                        thumb.classList.add('ring-[2.5px]', 'ring-offset-2', 'opacity-100');
+                                        thumb.style.ringColor = accent;
+                                        if (bar) bar.classList.remove('hidden');
+                                    } else {
+                                        thumb.classList.remove('ring-[2.5px]', 'ring-offset-2', 'opacity-100');
+                                        thumb.classList.add('opacity-40');
+                                        thumb.style.ringColor = '';
+                                        if (bar) bar.classList.add('hidden');
+                                    }
+                                });
+                            }
+
+                            thumbs.forEach(function (thumb) {
+                                thumb.addEventListener('click', function (event) {
+                                    event.preventDefault();
+                                    selectThumb(thumb);
+                                });
+                            });
+
+                            if (mainImg && thumbs.length > 1) {
+                                mainImg.style.cursor = 'pointer';
+                                mainImg.addEventListener('click', function () {
+                                    var currentIndex = thumbs.findIndex(function (t) {
+                                        return t.classList.contains('opacity-100');
+                                    });
+                                    var nextIndex = (currentIndex + 1) % thumbs.length;
+                                    selectThumb(thumbs[nextIndex]);
+                                });
+                            }
+                        }
+
+                        if (document.readyState === 'loading') {
+                            document.addEventListener('DOMContentLoaded', initFacultyDetailGallery);
+                        } else {
+                            initFacultyDetailGallery();
+                        }
+                    })();
+                </script>
 
                 <div class="min-w-0 flex-1">
                     <div class="flex flex-wrap gap-3">
