@@ -308,6 +308,22 @@ else
     }
 fi
 
+# What is still unpublished.
+#
+# launch:validate answers "does the application work"; it cannot answer "is
+# there anything on the page", and those fail differently. Public pages no
+# longer fall back to the development fixtures, so a section with nothing
+# published renders its empty state correctly and silently - which is right for
+# the visitor and useless for anyone trying to find out what is left before
+# launch. Someone had to read the source to learn why the media gallery was
+# blank; this prints the same answer for every section, every deploy.
+#
+# --empty so a finished section says nothing, and never fatal: what to publish,
+# retire or leave empty is SPU's decision, not a deploy's.
+log "Content still unpublished"
+(cd "${APP}" && "${PHP}" artisan cms:content-status --empty) || \
+    printf '   (cms:content-status unavailable in this release)\n'
+
 # The tarball-based deployment extracts into .release/ inside the repository,
 # which leaves the working tree dirty - and cPanel refuses to deploy a repository
 # with uncommitted changes, so the NEXT deploy is blocked by the last one. Clean
