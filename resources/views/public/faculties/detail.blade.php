@@ -68,75 +68,36 @@
     <section id="overview" class="bg-white py-16 font-hacen lg:py-24" x-data="{ activeTab: '{{ $tabs[0]['id'] ?? 'overview' }}' }">
         <div class="container">
             <div class="flex flex-col items-start gap-12 lg:flex-row lg:gap-20">
-                @php
-                    $galleryList = ! empty($gallery) ? array_values($gallery) : [($faculty['heroImage'] ?? '/images/uni-main-place.JPG')];
-                    $galleryTotal = count($galleryList);
-                @endphp
-                <div class="relative w-full shrink-0 lg:w-[440px]"
+                <div class="relative hidden w-full shrink-0 lg:block lg:w-[440px]"
                      x-data="{
-                         activeIndex: 0,
-                         total: {{ $galleryTotal }},
-                         next() {
-                             this.activeIndex = (this.activeIndex + 1) % this.total;
-                         },
-                         prev() {
-                             this.activeIndex = (this.activeIndex - 1 + this.total) % this.total;
-                         },
-                         goTo(index) {
-                             this.activeIndex = index;
-                         }
-                     }"
-                     @keydown.arrow-right.prevent="{{ $isAr ? 'prev()' : 'next()' }}"
-                     @keydown.arrow-left.prevent="{{ $isAr ? 'next()' : 'prev()' }}">
-                    <div class="group relative aspect-square w-full overflow-hidden rounded-[20px] shadow-lg">
-                        @foreach ($galleryList as $index => $image)
-                            <img src="{{ $image }}"
-                                 alt="{{ $faculty['title'] }} {{ $index + 1 }}"
-                                 x-show="activeIndex === {{ $index }}"
-                                 x-transition:enter="transition ease-out duration-300"
-                                 x-transition:enter-start="opacity-0 scale-95"
-                                 x-transition:enter-end="opacity-100 scale-100"
-                                 class="absolute inset-0 h-full w-full object-cover transition-transform duration-[5000ms] ease-out group-hover:scale-105"
-                                 @if (! $loop->first) style="display: none;" @endif
-                                 loading="{{ $loop->first ? 'eager' : 'lazy' }}">
-                        @endforeach
-                        <div class="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-32 bg-gradient-to-t from-black/60 to-transparent"></div>
-                        <div class="absolute bottom-5 {{ $isAr ? 'right-6' : 'left-6' }} z-20 flex items-baseline gap-1.5" aria-live="polite">
-                            <span class="text-[28px] font-bold leading-none text-white" x-text="String(activeIndex + 1).padStart(2, '0')">01</span>
-                            <span class="text-xs font-bold text-white/50">/ {{ str_pad((string) $galleryTotal, 2, '0', STR_PAD_LEFT) }}</span>
+                         activeImage: '{{ $gallery[0] ?? ($faculty['heroImage'] ?? '/images/uni-main-place.JPG') }}',
+                         activeIndex: '01'
+                     }">
+                    <div class="group relative aspect-square w-full overflow-hidden rounded-[20px]">
+                        <img :src="activeImage"
+                             src="{{ $gallery[0] ?? ($faculty['heroImage'] ?? '/images/uni-main-place.JPG') }}"
+                             alt="{{ $faculty['title'] }}"
+                             class="h-full w-full object-cover transition-transform duration-[5000ms] ease-out group-hover:scale-105">
+                        <div class="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-32 bg-gradient-to-t from-black/50 to-transparent"></div>
+                        <div class="absolute bottom-6 left-7 z-20 flex items-baseline gap-1.5">
+                            <span class="text-[28px] font-bold leading-none text-white" x-text="activeIndex">01</span>
+                            <span class="text-xs font-bold text-white/40">/ {{ str_pad((string) max(count($gallery), 1), 2, '0', STR_PAD_LEFT) }}</span>
                         </div>
-
-                        @if ($galleryTotal > 1)
-                            <div class="absolute bottom-4 {{ $isAr ? 'left-4' : 'right-4' }} z-20 flex items-center gap-1.5">
-                                <button type="button"
-                                        @click="prev()"
-                                        class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md transition-all hover:scale-105 hover:bg-black/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
-                                        aria-label="{{ $isAr ? 'الصورة السابقة' : 'Previous image' }}">
-                                    <svg class="h-4 w-4 {{ $isAr ? 'rotate-180' : '' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
-                                </button>
-                                <button type="button"
-                                        @click="next()"
-                                        class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md transition-all hover:scale-105 hover:bg-black/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
-                                        aria-label="{{ $isAr ? 'الصورة التالية' : 'Next image' }}">
-                                    <svg class="h-4 w-4 {{ $isAr ? 'rotate-180' : '' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-                                </button>
-                            </div>
-                        @endif
                     </div>
-
-                    @if ($galleryTotal > 1)
-                        <div class="no-scrollbar mt-4 flex gap-2.5 overflow-x-auto pb-1" role="tablist" aria-label="{{ $isAr ? 'معرض صور الكلية' : 'Faculty photo gallery' }}">
-                            @foreach ($galleryList as $index => $image)
+                    @if (count($gallery) > 1)
+                        <div class="no-scrollbar mt-5 flex gap-3 overflow-x-auto pb-1">
+                            @foreach ($gallery as $image)
+                                @php
+                                    $num = str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT);
+                                @endphp
                                 <button type="button"
-                                        role="tab"
-                                        @click="goTo({{ $index }})"
-                                        :aria-selected="activeIndex === {{ $index }} ? 'true' : 'false'"
-                                        aria-label="{{ ($isAr ? 'عرض الصورة ' : 'View image ').($index + 1) }}"
-                                        class="relative h-[64px] w-[84px] shrink-0 cursor-pointer overflow-hidden rounded-xl transition-all duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-                                        :class="activeIndex === {{ $index }} ? 'ring-[2.5px] ring-offset-2 opacity-100 shadow-md' : 'opacity-40 hover:opacity-80'"
-                                        :style="activeIndex === {{ $index }} ? 'ring-color: {{ $accent }}; outline-color: {{ $accent }};' : ''">
-                                    <img src="{{ $image }}" alt="" class="h-full w-full object-cover" aria-hidden="true" loading="lazy">
-                                    <div x-show="activeIndex === {{ $index }}" class="absolute inset-x-0 bottom-0 h-[3px]" style="background-color: {{ $accent }}"></div>
+                                        @click="activeImage = '{{ $image }}'; activeIndex = '{{ $num }}'"
+                                        class="relative h-[64px] w-[88px] shrink-0 overflow-hidden rounded-xl cursor-pointer p-0 border-0 bg-transparent text-start transition-all duration-200"
+                                        :class="activeImage === '{{ $image }}' ? 'ring-[2.5px] ring-offset-2 opacity-100' : 'opacity-40 hover:opacity-80'"
+                                        :style="activeImage === '{{ $image }}' ? 'ring-color: {{ $accent }};' : ''"
+                                        aria-label="{{ ($isAr ? 'الصورة ' : 'Image ').$loop->iteration }}">
+                                    <img src="{{ $image }}" alt="" class="h-full w-full object-cover" aria-hidden="true">
+                                    <div x-show="activeImage === '{{ $image }}'" class="absolute inset-x-0 bottom-0 h-[3px]" style="background-color: {{ $accent }}"></div>
                                 </button>
                             @endforeach
                         </div>
