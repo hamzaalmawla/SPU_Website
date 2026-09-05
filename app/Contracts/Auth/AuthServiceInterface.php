@@ -42,6 +42,13 @@ interface AuthServiceInterface
     public function recordSuccessfulTwoFactor(Authenticatable $user): void;
 
     /**
+     * Create an admin-managed user account.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    public function createUser(array $payload, int $actorUserId): bool;
+
+    /**
      * Update an admin-managed user account.
      *
      * @param  array<string, mixed>  $payload

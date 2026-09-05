@@ -66,7 +66,8 @@ class ManageHomepageTest extends TestCase
 
         Livewire::test(ManageHomepage::class)
             ->assertSee('Hero')
-            ->assertSee('Footer');
+            ->assertSee('Footer')
+            ->assertDontSee('Bottom Stats');
     }
 
     public function test_homepage_form_payload_preserves_public_homepage_shape(): void

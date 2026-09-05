@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Auth;
 
 use App\Contracts\Auth\AuthServiceInterface;
+use App\Contracts\Auth\TotpAuthenticatorInterface;
 use App\Contracts\Shared\AuditServiceInterface;
 use App\DTOs\Auth\LoginCredentialsDTO;
 use App\Models\User\Role;
@@ -31,6 +32,7 @@ final class AuthService implements AuthServiceInterface
     public function __construct(
         private readonly AuthFactory $authFactory,
         private readonly AuditServiceInterface $auditService,
+        private readonly TotpAuthenticatorInterface $totpAuthenticator,
         private readonly Request $request,
         private readonly Session $session,
     ) {}
@@ -173,6 +175,65 @@ final class AuthService implements AuthServiceInterface
         }
     }
 
+    public function createUser(array $payload, int $actorUserId): bool
+    {
+        $actor = User::query()->find($actorUserId);
+
+        if (! $actor instanceof User) {
+            return false;
+        }
+
+        if (Gate::forUser($actor)->denies('create', User::class)) {
+            throw new AuthorizationException('This user is not authorized to create users.');
+        }
+
+        $email = strtolower(trim((string) ($payload['email'] ?? '')));
+        $roleSlug = (string) ($payload['role_slug'] ?? '');
+        $password = $payload['password'] ?? null;
+        $role = Role::query()->where('slug', $roleSlug)->first();
+
+        if ($email === '' || ! is_string($password) || $password === '' || ! $role instanceof Role) {
+            return false;
+        }
+
+        if (User::query()->where('email', $email)->exists()) {
+            return false;
+        }
+
+        $user = new User;
+        $user->fill([
+            'name' => (string) ($payload['name'] ?? ''),
+            'email' => $email,
+            'password' => Hash::make($password),
+            'faculty_scope_slug' => $payload['faculty_scope_slug'] ?? null,
+        ]);
+        $user->forceFill([
+            'role_slug' => $role->slug,
+            'role_id' => $role->getKey(),
+            'is_locked' => false,
+            'two_factor_enabled' => false,
+            'two_factor_confirmed_at' => null,
+        ]);
+
+        if (! $user->save()) {
+            return false;
+        }
+
+        $this->auditService->log(
+            action: 'user.created',
+            userId: $actorUserId,
+            entityType: User::class,
+            entityId: (int) $user->getKey(),
+            metadata: [
+                'actor_email' => $actor->email,
+                'target_email' => $user->email,
+                'role_slug' => $user->role_slug,
+            ],
+        );
+
+        return true;
+    }
+
     public function updateUser(int $userId, array $payload, int $actorUserId): bool
     {
         $user = User::query()->find($userId);
@@ -201,6 +262,14 @@ final class AuthService implements AuthServiceInterface
         }
 
         $wasLocked = $user->isAccountLocked();
+
+        if (array_key_exists('two_factor_enabled', $payload) && ! (bool) $payload['two_factor_enabled'] && (bool) $user->two_factor_enabled) {
+            if (! $this->totpAuthenticator->disableTwoFactor($user)) {
+                return false;
+            }
+
+            $user->refresh();
+        }
 
         $user->fill([
             'name' => $payload['name'] ?? $user->name,
