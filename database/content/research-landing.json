@@ -1,0 +1,150 @@
+{
+  "translations": {
+    "ar": {
+      "hero": {
+        "eyebrow": "البحث العلمي في الجامعة السورية الخاصة",
+        "title": "أبحاث من دمشق، منشورة عالمياً",
+        "summary": "253 منشوراً بحثياً لـ 270 باحثاً، من الطب السريري والجراحة إلى هندسة البترول، صدرت في مجلات دولية بين عامي 1996 و2019. الأرشيف الكامل متاح للاطلاع هنا.",
+        "backgroundImage": "/images/uni-main-place.JPG",
+        "cta1": "تصفح المنشورات",
+        "cta1Url": "/ar/research/publications",
+        "cta2": "ابحث عن باحث",
+        "cta2Url": "/ar/research/researchers"
+      },
+      "stats": [
+        {
+          "value": "253",
+          "label": "منشور بحثي في الأرشيف"
+        },
+        {
+          "value": "270",
+          "label": "باحثاً"
+        },
+        {
+          "value": "1996–2019",
+          "label": "سنوات النشر"
+        }
+      ],
+      "featuredPublication": {
+        "sectionTitle": "منشور مختار",
+        "eyebrow": "مجلة Injury · إلزيفير · 2017",
+        "title": "Penetrating abdominal injuries during the Syrian war: Patterns and factors affecting mortality rates",
+        "summary": "دراسة استعادية شملت 324 مريضاً وصلوا إلى مشفى دمشق بإصابات بطنية نافذة، تبحث في اختلاف أنماط الإصابة والعوامل المؤثرة في معدل الوفيات، وفي ما يتطلبه التشخيص واتخاذ القرار في ظروف الأزمات.",
+        "image": "/images/uni-main-place.JPG",
+        "authorLabel": "الباحثون",
+        "authorName": "Shawqi Arafat, Mhd Belal Alsabek, Mousa Ahmad, Iman Hamo, Eskander Munder",
+        "affiliationLabel": "الكلية",
+        "affiliation": "كلية الطب البشري، الجامعة السورية الخاصة",
+        "publishedLabel": "تاريخ النشر",
+        "date": "1 أيار 2017",
+        "viewCta": "اقرأ المنشور",
+        "downloadCta": "تحميل الملف",
+        "slug": "penetrating-abdominal-injuries-during-the-syrian-war-patterns-and-factors-affecting-mortality-rates-256",
+        "doiLabel": "المعرّف الرقمي DOI",
+        "doi": "10.1016/j.injury.2017.02.005",
+        "links": {
+          "local": "/research/publications/penetrating-abdominal-injuries-during-the-syrian-war-patterns-and-factors-affecting-mortality-rates-256/"
+        }
+      },
+      "gateway": {
+        "sectionTitle": "من أين تبدأ",
+        "cards": [
+          {
+            "number": "01",
+            "title": "المنشورات البحثية",
+            "summary": "الأرشيف الكامل، مع تصفية حسب الكلية والنوع والسنة.",
+            "cta": "تصفح الأرشيف",
+            "url": "/ar/research/publications"
+          },
+          {
+            "number": "02",
+            "title": "الباحثون",
+            "summary": "جميع الباحثين في الجامعة، مع إمكانية البحث بالاسم.",
+            "cta": "تعرّف على الباحثين",
+            "url": "/ar/research/researchers"
+          },
+          {
+            "number": "03",
+            "title": "الباحث عن الخبراء",
+            "summary": "اعثر على المختص المناسب حسب مجال الخبرة.",
+            "cta": "ابحث عن خبير",
+            "url": "/ar/research/expert-finder"
+          }
+        ]
+      }
+    },
+    "en": {
+      "hero": {
+        "eyebrow": "Research at the Syrian Private University",
+        "title": "Research from Damascus, published worldwide",
+        "summary": "253 publications by 270 researchers, from clinical medicine and surgery to petroleum engineering, appearing in international journals from 1996 to 2019. The full archive is open to read here.",
+        "backgroundImage": "/images/uni-main-place.JPG",
+        "cta1": "Browse publications",
+        "cta1Url": "/en/research/publications",
+        "cta2": "Find a researcher",
+        "cta2Url": "/en/research/researchers"
+      },
+      "stats": [
+        {
+          "value": "253",
+          "label": "Publications in the archive"
+        },
+        {
+          "value": "270",
+          "label": "Researchers"
+        },
+        {
+          "value": "1996–2019",
+          "label": "Years covered"
+        }
+      ],
+      "featuredPublication": {
+        "sectionTitle": "Featured publication",
+        "eyebrow": "Injury · Elsevier · 2017",
+        "title": "Penetrating abdominal injuries during the Syrian war: Patterns and factors affecting mortality rates",
+        "summary": "A retrospective study of 324 patients admitted to Damascus Hospital with penetrating abdominal trauma, examining how injury patterns differ, which factors affect mortality, and what diagnosis and decision-making demand in crisis conditions.",
+        "image": "/images/uni-main-place.JPG",
+        "authorLabel": "Authors",
+        "authorName": "Shawqi Arafat, Mhd Belal Alsabek, Mousa Ahmad, Iman Hamo, Eskander Munder",
+        "affiliationLabel": "Faculty",
+        "affiliation": "Faculty of Medicine, Syrian Private University",
+        "publishedLabel": "Published",
+        "date": "1 May 2017",
+        "viewCta": "Read the publication",
+        "downloadCta": "Download PDF",
+        "slug": "penetrating-abdominal-injuries-during-the-syrian-war-patterns-and-factors-affecting-mortality-rates-256",
+        "doiLabel": "DOI",
+        "doi": "10.1016/j.injury.2017.02.005",
+        "links": {
+          "local": "/research/publications/penetrating-abdominal-injuries-during-the-syrian-war-patterns-and-factors-affecting-mortality-rates-256/"
+        }
+      },
+      "gateway": {
+        "sectionTitle": "Where to start",
+        "cards": [
+          {
+            "number": "01",
+            "title": "Publications",
+            "summary": "The full archive, filterable by faculty, type and year.",
+            "cta": "Browse the archive",
+            "url": "/en/research/publications"
+          },
+          {
+            "number": "02",
+            "title": "Researchers",
+            "summary": "Every researcher at the university, searchable by name.",
+            "cta": "Meet the researchers",
+            "url": "/en/research/researchers"
+          },
+          {
+            "number": "03",
+            "title": "Expert Finder",
+            "summary": "Find the right specialist by field of expertise.",
+            "cta": "Find an expert",
+            "url": "/en/research/expert-finder"
+          }
+        ]
+      }
+    }
+  }
+}
