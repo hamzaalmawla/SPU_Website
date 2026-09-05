@@ -137,6 +137,34 @@ else
 fi
 [[ -f "${WEB}/build/manifest.json" ]] || fail "The build did not land at ${WEB}/build"
 
+# nginx strips Accept-Encoding before Apache or PHP ever sees it (measured
+# 2 September; the reasoning is in config/edge.php). That means mod_deflate
+# cannot fire for a static file and no negotiated rewrite can either, so the
+# build assets were going out uncompressed: app.css alone is 311 KB on the wire
+# where it gzips to 51 KB, on an audience the .htaccess notes is "largely on
+# slow connections".
+#
+# The application already forces gzip on HTML for exactly this reason. These
+# siblings extend the same, already accepted trade-off to the build assets.
+# public/.htaccess serves a .gz only when it exists, so deleting one here just
+# restores the uncompressed file - this step is safe to fail.
+log "Pre-compressing build assets"
+if command -v gzip >/dev/null 2>&1; then
+    compressed=0
+    while IFS= read -r asset; do
+        # -n keeps the timestamp out of the output so an unchanged asset
+        # produces an identical .gz and rsync has nothing to copy next time.
+        if gzip -9 -n -c "${asset}" > "${asset}.gz" 2>/dev/null; then
+            compressed=$((compressed + 1))
+        else
+            rm -f "${asset}.gz"
+        fi
+    done < <(find "${WEB}/build" -type f \( -name '*.css' -o -name '*.js' \) -size +1k)
+    printf '  Compressed %d build asset(s)\n' "${compressed}"
+else
+    printf '  gzip not available; assets will be served uncompressed\n' >&2
+fi
+
 # ── Runtime directories ──────────────────────────────────────────────────────
 # Missing cache stores fail at runtime, not at deploy time.
 log "Ensuring runtime directories"
