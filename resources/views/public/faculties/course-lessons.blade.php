@@ -24,7 +24,7 @@
 
         return is_array($legendItem) ? $text($legendItem, 'label') : $label('required');
     };
-    $courseHref = fn (array $item): string => '/'.$locale.'/facilities/'.$page->facultySlug.'/study-plan/course?department='.urlencode((string) ($activeDepartment['id'] ?? '')).'&course='.urlencode((string) ($item['id'] ?? ''));
+    $courseHref = fn (array $item): string => '/'.$locale.'/faculties/'.$page->facultySlug.'/study-plan/course?department='.urlencode((string) ($activeDepartment['id'] ?? '')).'&course='.urlencode((string) ($item['id'] ?? ''));
 @endphp
 
 <section class="relative flex min-h-[330px] items-end justify-center overflow-hidden pt-28 text-center font-hacen">
@@ -36,9 +36,9 @@
         <nav class="mb-4 flex flex-wrap items-center justify-center gap-2 text-[11px] font-semibold text-white/75" aria-label="Breadcrumb">
             <a href="/{{ $locale }}" class="transition-colors hover:text-white">{{ $label('home') ?: $homeLabel }}</a>
             <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-2 w-2 rtl:rotate-180" aria-hidden="true">
-            <a href="/{{ $locale }}/facilities" class="transition-colors hover:text-white">{{ $label('faculties') ?: ($isAr ? 'الكليات' : 'Facilities') }}</a>
+            <a href="/{{ $locale }}/faculties" class="transition-colors hover:text-white">{{ $label('faculties') ?: ($isAr ? 'الكليات' : 'Facilities') }}</a>
             <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-2 w-2 rtl:rotate-180" aria-hidden="true">
-            <a href="/{{ $locale }}/facilities/{{ $page->facultySlug }}/study-plan?department={{ urlencode((string) ($activeDepartment['id'] ?? '')) }}" class="transition-colors hover:text-white">{{ $label('studyPlan') }}</a>
+            <a href="/{{ $locale }}/faculties/{{ $page->facultySlug }}/study-plan?department={{ urlencode((string) ($activeDepartment['id'] ?? '')) }}" class="transition-colors hover:text-white">{{ $label('studyPlan') }}</a>
             <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-2 w-2 rtl:rotate-180" aria-hidden="true">
             <span>{{ is_array($course) ? ($course['code'] ?? '') : $label('coursePage') }}</span>
         </nav>
@@ -58,7 +58,7 @@
         @if (is_array($course))
             <div class="grid gap-8 lg:grid-cols-[0.78fr_1.22fr] lg:items-start">
                 <aside class="rounded-[8px] border border-slate-200 bg-white p-6 shadow-[0_18px_44px_rgba(9,17,68,0.07)] lg:sticky lg:top-28">
-                    <a href="/{{ $locale }}/facilities/{{ $page->facultySlug }}/study-plan?department={{ urlencode((string) ($activeDepartment['id'] ?? '')) }}" class="inline-flex items-center gap-2 text-[12px] font-bold text-spu-red transition hover:text-spu-blue"><img src="/images/icon-arrow-left-outline.svg" alt="" class="h-3 w-3 rtl:rotate-180" aria-hidden="true"><span>{{ $label('backToPlan') }}</span></a>
+                    <a href="/{{ $locale }}/faculties/{{ $page->facultySlug }}/study-plan?department={{ urlencode((string) ($activeDepartment['id'] ?? '')) }}" class="inline-flex items-center gap-2 text-[12px] font-bold text-spu-red transition hover:text-spu-blue"><img src="/images/icon-arrow-left-outline.svg" alt="" class="h-3 w-3 rtl:rotate-180" aria-hidden="true"><span>{{ $label('backToPlan') }}</span></a>
                     <div class="mt-6 rounded-[8px] bg-section p-5"><p class="text-[12px] font-bold uppercase tracking-[0.14em] text-slate-400">{{ $course['code'] ?? '' }}</p><h2 class="mt-2 text-[24px] font-bold leading-tight text-spu-blue">{{ $course['title'] ?? '' }}</h2></div>
                     <dl class="mt-5 grid grid-cols-2 gap-3 text-[11px] font-bold uppercase">
                         <div class="rounded-[6px] border border-slate-100 bg-white p-3"><dt class="text-slate-400">{{ $label('credits') }}</dt><dd class="mt-1 text-lg text-spu-blue">{{ $course['credits'] ?? 0 }}</dd></div>
@@ -90,7 +90,7 @@
                 </div>
             </div>
         @else
-            <div class="py-20 text-center"><img src="/images/icon-file-outline.svg" alt="" class="mx-auto h-16 w-16" aria-hidden="true"><p class="mt-4 text-lg font-semibold text-slate-500">{{ $label('notFound') }}</p><a href="/{{ $locale }}/facilities/{{ $page->facultySlug }}/study-plan" class="mt-6 inline-flex items-center gap-2 rounded-[6px] bg-spu-blue px-5 py-2.5 text-[13px] font-bold text-white transition hover:bg-spu-blue/90">{{ $label('backToPlan') }}</a></div>
+            <div class="py-20 text-center"><img src="/images/icon-file-outline.svg" alt="" class="mx-auto h-16 w-16" aria-hidden="true"><p class="mt-4 text-lg font-semibold text-slate-500">{{ $label('notFound') }}</p><a href="/{{ $locale }}/faculties/{{ $page->facultySlug }}/study-plan" class="mt-6 inline-flex items-center gap-2 rounded-[6px] bg-spu-blue px-5 py-2.5 text-[13px] font-bold text-white transition hover:bg-spu-blue/90">{{ $label('backToPlan') }}</a></div>
         @endif
     </div>
 </section>

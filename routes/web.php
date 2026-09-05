@@ -68,8 +68,8 @@ Route::prefix('{locale}')
             ->name('public.search');
 
         Route::controller(FacultyController::class)
-            ->prefix('faculties')
-            ->name('public.faculties.legacy.')
+            ->prefix('facilities')
+            ->name('public.facilities.legacy.')
             ->group(function (): void {
                 Route::get('/{legacyPath?}', 'redirectLegacy')
                     ->where('legacyPath', '.*')
@@ -77,8 +77,8 @@ Route::prefix('{locale}')
             });
 
         Route::controller(FacultyController::class)
-            ->prefix('facilities')
-            ->name('public.facilities.')
+            ->prefix('faculties')
+            ->name('public.faculties.')
             ->group(function (): void {
                 Route::get('/', 'hub')->name('hub');
                 Route::get('/{faculty}', 'faculty')

@@ -265,8 +265,8 @@ final class FinalPartialRoutesCompletionTest extends TestCase
         $preview = $workflow->preview('facilities.pharmacy.training', 'en', (int) $author->id);
         $this->get($preview->previewUrl)->assertOk()->assertSee('Published Pharmacy Training');
         $this->assertTrue($workflow->publish('facilities.pharmacy.training', (int) $author->id));
-        $this->get('/sitemaps/sitemap-static.xml')->assertOk()->assertSee('/en/facilities/pharmacy/training');
-        $this->get('/en/facilities/pharmacy/training')->assertOk()->assertSee('Published Pharmacy Training');
+        $this->get('/sitemaps/sitemap-static.xml')->assertOk()->assertSee('/en/faculties/pharmacy/training');
+        $this->get('/en/faculties/pharmacy/training')->assertOk()->assertSee('Published Pharmacy Training');
         $this->assertTrue($workflow->unpublish('facilities.pharmacy.training', (int) $author->id));
         $workflow->saveDraft('facilities.pharmacy.training', $payload, (int) $author->id);
         $this->assertTrue($workflow->schedule('facilities.pharmacy.training', now()->addHour(), (int) $author->id));

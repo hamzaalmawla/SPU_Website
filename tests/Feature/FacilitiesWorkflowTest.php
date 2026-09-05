@@ -117,13 +117,13 @@ final class FacilitiesWorkflowTest extends TestCase
 
         $workflow->saveDraft('facilities.landing', $payload, (int) $author->id);
 
-        $this->get('/en/facilities')
+        $this->get('/en/faculties')
             ->assertOk()
             ->assertDontSee('Published Facilities Workflow');
 
         $this->assertTrue($workflow->publish('facilities.landing', (int) $author->id));
 
-        $this->get('/en/facilities')
+        $this->get('/en/faculties')
             ->assertOk()
             ->assertSee('Published Facilities Workflow');
     }
@@ -147,7 +147,7 @@ final class FacilitiesWorkflowTest extends TestCase
             ->assertSee('Facilities Preview Workflow')
             ->assertSee('Preview mode');
 
-        $this->get('/en/facilities')
+        $this->get('/en/faculties')
             ->assertOk()
             ->assertDontSee('Facilities Preview Workflow');
     }
@@ -173,7 +173,7 @@ final class FacilitiesWorkflowTest extends TestCase
         $facultyLinks[] = [
             'title' => 'Curated Faculty Button',
             'summary' => 'Curated faculty button summary.',
-            'url' => '/en/facilities/medicine',
+            'url' => '/en/faculties/medicine',
             'accentColor' => '#202759',
         ];
 
@@ -222,7 +222,7 @@ final class FacilitiesWorkflowTest extends TestCase
         $workflow->saveDraft('facilities.landing', $payload, (int) $author->id);
         $this->assertTrue($workflow->publish('facilities.landing', (int) $author->id));
 
-        $this->get('/en/facilities')
+        $this->get('/en/faculties')
             ->assertOk()
             ->assertSeeInOrder(['CMS Dentistry First', 'CMS Medicine Second'])
             ->assertSee('CMS dentistry summary.')
@@ -254,13 +254,13 @@ final class FacilitiesWorkflowTest extends TestCase
 
         $workflow->saveDraft('facilities.medicine', $payload, (int) $author->id);
 
-        $this->get('/en/facilities/medicine')
+        $this->get('/en/faculties/medicine')
             ->assertOk()
             ->assertDontSee('Published Medicine CMS Homepage');
 
         $this->assertTrue($workflow->publish('facilities.medicine', (int) $author->id));
 
-        $this->get('/en/facilities/medicine')
+        $this->get('/en/faculties/medicine')
             ->assertOk()
             ->assertSee('Published Medicine CMS Homepage')
             ->assertSee('Published Medicine Faculty Name');
@@ -289,7 +289,7 @@ final class FacilitiesWorkflowTest extends TestCase
             ->assertSee('Preview Tab')
             ->assertSee('Preview mode');
 
-        $this->get('/en/facilities/medicine')
+        $this->get('/en/faculties/medicine')
             ->assertOk()
             ->assertDontSee('Medicine Preview CMS Homepage');
     }
@@ -346,13 +346,13 @@ final class FacilitiesWorkflowTest extends TestCase
 
         $workflow->saveDraft('facilities.medicine.overview', $payload, (int) $author->id);
 
-        $this->get('/en/facilities/medicine/overview')
+        $this->get('/en/faculties/medicine/overview')
             ->assertOk()
             ->assertDontSee('Published Medicine Overview CMS');
 
         $this->assertTrue($workflow->publish('facilities.medicine.overview', (int) $author->id));
 
-        $this->get('/en/facilities/medicine/overview')
+        $this->get('/en/faculties/medicine/overview')
             ->assertOk()
             ->assertSee('Published Medicine Overview CMS')
             ->assertSee('Published medicine overview CMS body.');
@@ -381,7 +381,7 @@ final class FacilitiesWorkflowTest extends TestCase
             ->assertSee('Medicine overview preview CMS body.')
             ->assertSee('Preview mode');
 
-        $this->get('/en/facilities/medicine/overview')
+        $this->get('/en/faculties/medicine/overview')
             ->assertOk()
             ->assertDontSee('Medicine Overview Preview CMS');
     }
@@ -439,7 +439,7 @@ final class FacilitiesWorkflowTest extends TestCase
         $workflow->saveDraft('facilities.medicine.departments', $payload, (int) $author->id);
         $this->assertTrue($workflow->publish('facilities.medicine.departments', (int) $author->id));
 
-        $this->get('/en/facilities/medicine/departments')
+        $this->get('/en/faculties/medicine/departments')
             ->assertOk()
             ->assertSee('Published Medicine Departments CMS')
             ->assertSee('Curated Medicine Department')
@@ -470,13 +470,13 @@ final class FacilitiesWorkflowTest extends TestCase
 
         $this->get($preview->previewUrl)
             ->assertOk()
-            ->assertSee('href="/en/facilities/medicine/study-plan?department=medicine-plan"', false);
+            ->assertSee('href="/en/faculties/medicine/study-plan?department=medicine-plan"', false);
 
         $this->assertTrue($workflow->publish('facilities.medicine.departments', (int) $author->id));
 
-        $this->get('/en/facilities/medicine/departments')
+        $this->get('/en/faculties/medicine/departments')
             ->assertOk()
-            ->assertSee('href="/en/facilities/medicine/study-plan?department=medicine-plan"', false);
+            ->assertSee('href="/en/faculties/medicine/study-plan?department=medicine-plan"', false);
     }
 
     public function test_departments_reject_draft_only_study_plan_ids(): void
@@ -549,20 +549,20 @@ final class FacilitiesWorkflowTest extends TestCase
 
     public function test_ambiguous_department_names_do_not_generate_guessed_study_plan_links(): void
     {
-        $this->get('/en/facilities/artificial-intelligence/departments')
+        $this->get('/en/faculties/artificial-intelligence/departments')
             ->assertOk()
-            ->assertSee('href="/en/facilities/artificial-intelligence/study-plan"', false)
+            ->assertSee('href="/en/faculties/artificial-intelligence/study-plan"', false)
             ->assertDontSee('/study-plan?department=', false);
     }
 
     public function test_study_plan_language_switch_preserves_only_valid_department_selection(): void
     {
-        $this->get('/en/facilities/artificial-intelligence/study-plan?department=ai')
+        $this->get('/en/faculties/artificial-intelligence/study-plan?department=ai')
             ->assertOk()
-            ->assertSee('/ar/facilities/artificial-intelligence/study-plan?department=ai', false)
+            ->assertSee('/ar/faculties/artificial-intelligence/study-plan?department=ai', false)
             ->assertSee('aria-pressed="true"', false);
 
-        $this->get('/en/facilities/artificial-intelligence/study-plan?department=unknown')
+        $this->get('/en/faculties/artificial-intelligence/study-plan?department=unknown')
             ->assertNotFound();
     }
 
@@ -697,7 +697,7 @@ final class FacilitiesWorkflowTest extends TestCase
         $this->assertTrue($workflow->publish('facilities.medicine.projects', (int) $author->id));
         Cache::flush();
 
-        $this->get('/en/facilities/medicine/projects/'.$projectSlug)
+        $this->get('/en/faculties/medicine/projects/'.$projectSlug)
             ->assertOk()
             ->assertSee('CMS Medicine Project')
             ->assertSee('CMS project paragraph.')
@@ -705,7 +705,7 @@ final class FacilitiesWorkflowTest extends TestCase
             ->assertSee('In progress')
             ->assertSee('2026 / 2027');
 
-        $this->get('/ar/facilities/medicine/projects/'.$projectSlug)
+        $this->get('/ar/faculties/medicine/projects/'.$projectSlug)
             ->assertOk()
             ->assertSee('مشروع طب CMS')
             ->assertSee('فقرة مشروع CMS.')
@@ -832,12 +832,12 @@ final class FacilitiesWorkflowTest extends TestCase
 
         $component->call('publish');
 
-        $this->get('/en/facilities/artificial-intelligence/valedictorians')
+        $this->get('/en/faculties/artificial-intelligence/valedictorians')
             ->assertOk()
             ->assertDontSee('Remove Student')
             ->assertSee('Keep Student');
 
-        $this->get('/en/facilities/artificial-intelligence/valedictorians?q=Remove%20Student')
+        $this->get('/en/faculties/artificial-intelligence/valedictorians?q=Remove%20Student')
             ->assertOk()
             ->assertSee('Showing 0-0 of 0');
     }
@@ -1028,7 +1028,7 @@ final class FacilitiesWorkflowTest extends TestCase
 
         foreach ($facultyAliases as $facultySlug => $legacySlug) {
             foreach (['ar', 'en'] as $locale) {
-                $path = '/'.$locale.'/facilities/'.$facultySlug.'/departments';
+                $path = '/'.$locale.'/faculties/'.$facultySlug.'/departments';
                 $page = $facilities->getSubpage($facultySlug, 'departments', $locale);
                 $this->assertNotNull($page);
                 $firstDepartment = $page->items[0] ?? null;
@@ -1042,11 +1042,16 @@ final class FacilitiesWorkflowTest extends TestCase
                     ->assertSee('hreflang="'.($locale === 'ar' ? 'en' : 'ar').'"', false)
                     ->assertDontSee('Mock department data');
 
-                $this->get('/'.$locale.'/facilities/'.$facultySlug.'/departments/index.html?source=reference')
+                $this->get('/'.$locale.'/faculties/'.$facultySlug.'/departments/index.html?source=reference')
                     ->assertStatus(301)
                     ->assertRedirect($path.'?source=reference');
 
-                $this->get('/'.$locale.'/faculties/'.$legacySlug.'/departments?source=legacy')
+                // Alias slugs resolve through the legacy prefix, which is now
+                // /facilities - the two route groups swapped when /faculties
+                // became canonical. The canonical prefix constrains {faculty}
+                // to the real slugs, so an alias is a redirect rather than a
+                // second address for the same page.
+                $this->get('/'.$locale.'/facilities/'.$legacySlug.'/departments?source=legacy')
                     ->assertStatus(301)
                     ->assertRedirect($path.'?source=legacy');
             }
@@ -1137,13 +1142,13 @@ final class FacilitiesWorkflowTest extends TestCase
                         $canonicalPage = $requestedPage === 999 ? 2 : $requestedPage;
                         $query = http_build_query([...$filters, 'page' => $requestedPage], '', '&', PHP_QUERY_RFC3986);
                         $canonicalQuery = http_build_query([...$filters, 'page' => $canonicalPage], '', '&', PHP_QUERY_RFC3986);
-                        $path = '/'.$locale.'/facilities/'.$facultySlug.'/'.$subpage;
+                        $path = '/'.$locale.'/faculties/'.$facultySlug.'/'.$subpage;
                         $otherLocale = $locale === 'ar' ? 'en' : 'ar';
 
                         $this->get($path.'?'.$query)
                             ->assertOk()
                             ->assertSee('<link rel="canonical" href="'.config('app.url').$path.'?'.e($canonicalQuery).'">', false)
-                            ->assertSee('/'.$otherLocale.'/facilities/'.$facultySlug.'/'.$subpage.'?'.e($canonicalQuery), false);
+                            ->assertSee('/'.$otherLocale.'/faculties/'.$facultySlug.'/'.$subpage.'?'.e($canonicalQuery), false);
                     }
                 }
             }
@@ -1219,12 +1224,12 @@ final class FacilitiesWorkflowTest extends TestCase
         $alumni->update(['photo_media_id' => $media->getKey()]);
         Cache::flush();
 
-        $this->get('/en/facilities/medicine/alumni')
+        $this->get('/en/faculties/medicine/alumni')
             ->assertOk()
             ->assertSee('/storage/faculty/student-photo.jpg', false)
             ->assertSee('content-media-image h-full w-full', false)
             ->assertDontSee('/images/unkown.jpeg', false);
-        $this->get('/en/facilities/medicine/valedictorians')
+        $this->get('/en/faculties/medicine/valedictorians')
             ->assertOk()
             ->assertSee('/storage/faculty/student-photo.jpg', false)
             ->assertSee('content-media-image h-full w-full', false)
@@ -1248,7 +1253,7 @@ final class FacilitiesWorkflowTest extends TestCase
         $workflow->saveDraft('facilities.medicine.valedictorians', $payload, (int) $author->id);
         $this->assertTrue($workflow->publish('facilities.medicine.valedictorians', (int) $author->id));
 
-        $this->get('/en/facilities/medicine/valedictorians')
+        $this->get('/en/faculties/medicine/valedictorians')
             ->assertOk()
             ->assertSee('Managed &lt;script&gt;alert(&quot;quote&quot;)&lt;/script&gt;', false)
             ->assertDontSee('src="javascript:', false)
@@ -1261,7 +1266,7 @@ final class FacilitiesWorkflowTest extends TestCase
             $this->createFacultyProjects($facultySlug, 7);
 
             foreach (['ar', 'en'] as $locale) {
-                $path = '/'.$locale.'/facilities/'.$facultySlug.'/projects';
+                $path = '/'.$locale.'/faculties/'.$facultySlug.'/projects';
 
                 $this->get($path.'?page=1')
                     ->assertOk()
@@ -1275,7 +1280,7 @@ final class FacilitiesWorkflowTest extends TestCase
                     ->assertOk()
                     ->assertSee('id="'.$facultySlug.'-project-7"', false)
                     ->assertDontSee('id="'.$facultySlug.'-project-1"', false)
-                    ->assertSee('/'.$otherLocale.'/facilities/'.$facultySlug.'/projects?page=2', false)
+                    ->assertSee('/'.$otherLocale.'/faculties/'.$facultySlug.'/projects?page=2', false)
                     ->assertSee('<link rel="canonical" href="'.config('app.url').$path.'?page=2">', false);
 
                 $this->get($path.'?page=999')
@@ -1315,7 +1320,7 @@ final class FacilitiesWorkflowTest extends TestCase
 
         foreach ($this->labFacultySlugs() as $facultySlug) {
             foreach (['ar', 'en'] as $locale) {
-                $path = '/'.$locale.'/facilities/'.$facultySlug.'/labs';
+                $path = '/'.$locale.'/faculties/'.$facultySlug.'/labs';
                 $detailSlug = 'parity-'.$facultySlug.'-lab-7';
 
                 $this->get($path.'?page=1')
@@ -1335,7 +1340,7 @@ final class FacilitiesWorkflowTest extends TestCase
                     ->assertSee($locale === 'ar' ? 'مخابر ذات صلة' : 'Related Labs')
                     ->assertSee('href="'.$path.'?lab=', false)
                     ->assertSee('page=2', false)
-                    ->assertSee('/'.$otherLocale.'/facilities/'.$facultySlug.'/labs?lab='.$detailSlug.'&amp;page=2', false)
+                    ->assertSee('/'.$otherLocale.'/faculties/'.$facultySlug.'/labs?lab='.$detailSlug.'&amp;page=2', false)
                     ->assertSee('<link rel="canonical" href="'.config('app.url').$path.'?lab='.$detailSlug.'&amp;page=2">', false);
 
                 $this->get($path.'?page=999')
@@ -1442,15 +1447,15 @@ final class FacilitiesWorkflowTest extends TestCase
     {
         $this->createFacultyResearchPublication($facultySlug, $englishTitle, $arabicTitle);
 
-        $this->get('/en/facilities/'.$facultySlug.'/research')
+        $this->get('/en/faculties/'.$facultySlug.'/research')
             ->assertOk()
             ->assertSee('Latest Research')
             ->assertSee($englishTitle)
             ->assertSee('/en/research/publications/', false)
-            ->assertSee('<link rel="canonical" href="'.config('app.url').'/en/facilities/'.$facultySlug.'/research">', false)
+            ->assertSee('<link rel="canonical" href="'.config('app.url').'/en/faculties/'.$facultySlug.'/research">', false)
             ->assertSee('hreflang="ar"', false);
 
-        $this->get('/ar/facilities/'.$facultySlug.'/research')
+        $this->get('/ar/faculties/'.$facultySlug.'/research')
             ->assertOk()
             ->assertSee('أحدث الأبحاث')
             ->assertSee($arabicTitle)
@@ -1519,7 +1524,7 @@ final class FacilitiesWorkflowTest extends TestCase
 
         $workflow->saveDraft('facilities.medicine.research', $payload, (int) $author->id);
 
-        $this->get('/en/facilities/medicine/research')
+        $this->get('/en/faculties/medicine/research')
             ->assertOk()
             ->assertDontSee('Medicine Research CMS Preview');
 
@@ -1534,7 +1539,7 @@ final class FacilitiesWorkflowTest extends TestCase
         $publishedPage = $facilities->getSubpage('medicine', 'research', 'en');
         $this->assertSame('CMS Empty Research Title', $publishedPage?->page['emptyTitle'] ?? null);
         $this->assertSame('CMS empty research summary.', $publishedPage?->page['emptySummary'] ?? null);
-        $this->get('/en/facilities/medicine/research')
+        $this->get('/en/faculties/medicine/research')
             ->assertOk()
             ->assertSee('Medicine Research CMS Preview')
             ->assertSee('Medicine Research CMS SEO')
@@ -1558,19 +1563,19 @@ final class FacilitiesWorkflowTest extends TestCase
         $workflow->saveDraft('research.publications', $payload, (int) $author->id);
         $this->assertTrue($workflow->publish('research.publications', (int) $author->id));
 
-        $this->get('/en/facilities/medicine/research')
+        $this->get('/en/faculties/medicine/research')
             ->assertOk()
             ->assertSee('Paginated Medicine Publication 1')
             ->assertDontSee('Paginated Medicine Publication 7')
-            ->assertSee('href="/en/facilities/medicine/research?page=2"', false);
+            ->assertSee('href="/en/faculties/medicine/research?page=2"', false);
 
-        $this->get('/en/facilities/medicine/research?page=2')
+        $this->get('/en/faculties/medicine/research?page=2')
             ->assertOk()
             ->assertSee('Paginated Medicine Publication 7')
             ->assertDontSee('Paginated Medicine Publication 1')
             ->assertSee('aria-current="page"', false)
-            ->assertSee('/ar/facilities/medicine/research?page=2', false)
-            ->assertSee('<link rel="canonical" href="'.config('app.url').'/en/facilities/medicine/research?page=2">', false);
+            ->assertSee('/ar/faculties/medicine/research?page=2', false)
+            ->assertSee('<link rel="canonical" href="'.config('app.url').'/en/faculties/medicine/research?page=2">', false);
     }
 
     public function test_disabled_faculty_research_page_returns_not_found(): void
@@ -1582,12 +1587,12 @@ final class FacilitiesWorkflowTest extends TestCase
             ->update(['is_enabled' => false]);
         Cache::flush();
 
-        $this->get('/en/facilities/medicine/research')->assertNotFound();
+        $this->get('/en/faculties/medicine/research')->assertNotFound();
     }
 
     public function test_faculty_research_page_has_one_main_landmark(): void
     {
-        $content = $this->get('/en/facilities/medicine/research')->assertOk()->getContent();
+        $content = $this->get('/en/faculties/medicine/research')->assertOk()->getContent();
 
         $this->assertSame(1, substr_count($content, 'id="main-content"'));
     }
@@ -1605,8 +1610,8 @@ final class FacilitiesWorkflowTest extends TestCase
         $sitemap = $this->get('/sitemaps/sitemap-faculties.xml')->assertOk()->getContent();
 
         foreach (['artificial-intelligence', 'business-administration', 'building-construction-engineering', 'dentistry', 'medicine', 'petroleum', 'pharmacy'] as $facultySlug) {
-            $this->assertStringContainsString('/en/facilities/'.$facultySlug.'/research', $sitemap);
-            $this->assertStringContainsString('/ar/facilities/'.$facultySlug.'/research', $sitemap);
+            $this->assertStringContainsString('/en/faculties/'.$facultySlug.'/research', $sitemap);
+            $this->assertStringContainsString('/ar/faculties/'.$facultySlug.'/research', $sitemap);
         }
     }
 
@@ -1625,13 +1630,13 @@ final class FacilitiesWorkflowTest extends TestCase
 
         $workflow->saveDraft('facilities.artificial-intelligence', $payload, (int) $author->id);
 
-        $this->get('/en/facilities/artificial-intelligence')
+        $this->get('/en/faculties/artificial-intelligence')
             ->assertOk()
             ->assertDontSee('Published AI CMS Homepage');
 
         $this->assertTrue($workflow->publish('facilities.artificial-intelligence', (int) $author->id));
 
-        $this->get('/en/facilities/artificial-intelligence')
+        $this->get('/en/faculties/artificial-intelligence')
             ->assertOk()
             ->assertSee('Published AI CMS Homepage')
             ->assertSee('Published AI Faculty Name');
@@ -1658,14 +1663,14 @@ final class FacilitiesWorkflowTest extends TestCase
         $workflow->saveDraft('facilities.artificial-intelligence.projects', $payload, (int) $author->id);
         $this->assertTrue($workflow->publish('facilities.artificial-intelligence.projects', (int) $author->id));
 
-        $this->get('/en/facilities/artificial-intelligence/projects')
+        $this->get('/en/faculties/artificial-intelligence/projects')
             ->assertOk()
             ->assertSee('Published AI Projects CMS')
             ->assertSee('Curated AI Project')
             ->assertSee('AI Student Team')
-            ->assertSee('/en/facilities/artificial-intelligence/projects/curated-ai-project', false);
+            ->assertSee('/en/faculties/artificial-intelligence/projects/curated-ai-project', false);
 
-        $this->get('/en/facilities/artificial-intelligence/projects/curated-ai-project')
+        $this->get('/en/faculties/artificial-intelligence/projects/curated-ai-project')
             ->assertOk()
             ->assertSee('Curated AI Project')
             ->assertSee('Project Gallery');
@@ -1675,9 +1680,9 @@ final class FacilitiesWorkflowTest extends TestCase
     {
         $this->createFacultyProjects('artificial-intelligence');
 
-        $this->get('/en/facilities/artificial-intelligence/projects')
+        $this->get('/en/faculties/artificial-intelligence/projects')
             ->assertOk()
-            ->assertSee('/en/facilities/artificial-intelligence/projects/artificial-intelligence-project-1', false);
+            ->assertSee('/en/faculties/artificial-intelligence/projects/artificial-intelligence-project-1', false);
     }
 
     public function test_migrated_project_with_generated_style_slug_remains_public(): void
@@ -1701,22 +1706,22 @@ final class FacilitiesWorkflowTest extends TestCase
 
         Cache::flush();
 
-        $this->get('/en/facilities/petroleum/projects')
+        $this->get('/en/faculties/petroleum/projects')
             ->assertOk()
             ->assertSee('Migrated Petroleum Project')
-            ->assertSee('/en/facilities/petroleum/projects/petroleum-project-42', false);
-        $this->get('/en/facilities/petroleum/projects/petroleum-project-42')
+            ->assertSee('/en/faculties/petroleum/projects/petroleum-project-42', false);
+        $this->get('/en/faculties/petroleum/projects/petroleum-project-42')
             ->assertOk()
             ->assertSee('Migrated Petroleum Project');
         $this->get('/en/projects/detail?id=petroleum-project-42')
-            ->assertRedirect('/en/facilities/petroleum/projects/petroleum-project-42');
+            ->assertRedirect('/en/faculties/petroleum/projects/petroleum-project-42');
     }
 
     public function test_faculty_project_detail_page_renders_database_project_layout(): void
     {
         $this->createFacultyProjects('artificial-intelligence', 2, 'AI Diagnosis Support for Rural Health Centers');
 
-        $this->get('/en/facilities/artificial-intelligence/projects/artificial-intelligence-project-1')
+        $this->get('/en/faculties/artificial-intelligence/projects/artificial-intelligence-project-1')
             ->assertOk()
             ->assertSee('AI Diagnosis Support for Rural Health Centers')
             ->assertSee('Test Supervisor')
@@ -1731,7 +1736,7 @@ final class FacilitiesWorkflowTest extends TestCase
     {
         $this->createFacultyProjects($facultySlug, 1, $expectedTitle);
 
-        $this->get('/en/facilities/'.$facultySlug.'/projects/'.$projectSlug)
+        $this->get('/en/faculties/'.$facultySlug.'/projects/'.$projectSlug)
             ->assertOk()
             ->assertSee($expectedTitle)
             ->assertSee('Test Supervisor')
@@ -1753,7 +1758,7 @@ final class FacilitiesWorkflowTest extends TestCase
         foreach ($this->facultySlugs() as $facultySlug) {
             foreach (['ar', 'en'] as $locale) {
                 [$departmentId, $courseId, $type] = $this->firstStudyPlanSelection($facultySlug, $locale);
-                $studyPath = '/'.$locale.'/facilities/'.$facultySlug.'/study-plan';
+                $studyPath = '/'.$locale.'/faculties/'.$facultySlug.'/study-plan';
                 $studyQuery = 'department='.rawurlencode($departmentId);
                 $coursePath = $studyPath.'/course';
                 $courseQuery = http_build_query([
@@ -1776,13 +1781,13 @@ final class FacilitiesWorkflowTest extends TestCase
                     ->assertSee($locale === 'ar' ? 'aria-label="تكبير المخطط"' : 'aria-label="Zoom in"', false)
                     ->assertSee($locale === 'ar' ? 'aria-label="تصغير المخطط"' : 'aria-label="Zoom out"', false)
                     ->assertSee('<link rel="canonical" href="'.config('app.url').$studyPath.'?'.$studyQuery.'">', false)
-                    ->assertSee('/'.$otherLocale.'/facilities/'.$facultySlug.'/study-plan?'.$studyQuery, false);
+                    ->assertSee('/'.$otherLocale.'/faculties/'.$facultySlug.'/study-plan?'.$studyQuery, false);
 
                 $escapedCourseQuery = e($courseQuery);
                 $this->get($coursePath.'?'.$courseQuery)
                     ->assertOk()
                     ->assertSee('<link rel="canonical" href="'.config('app.url').$coursePath.'?'.$escapedCourseQuery.'">', false)
-                    ->assertSee('/'.$otherLocale.'/facilities/'.$facultySlug.'/study-plan/course?'.$escapedCourseQuery, false)
+                    ->assertSee('/'.$otherLocale.'/faculties/'.$facultySlug.'/study-plan/course?'.$escapedCourseQuery, false)
                     ->assertSee('href="'.$coursePath.'?department='.rawurlencode($departmentId).'&amp;course='.rawurlencode($courseId).'"', false)
                     ->assertDontSee('href="#"', false);
             }
@@ -1813,10 +1818,10 @@ final class FacilitiesWorkflowTest extends TestCase
         }
 
         $this->assertIsArray($mismatch);
-        $coursePath = '/en/facilities/artificial-intelligence/study-plan/course';
+        $coursePath = '/en/faculties/artificial-intelligence/study-plan/course';
 
-        $this->get('/en/facilities/artificial-intelligence/study-plan?department=unknown')->assertNotFound();
-        $this->get('/en/facilities/artificial-intelligence/study-plan?department[]=ai')->assertNotFound();
+        $this->get('/en/faculties/artificial-intelligence/study-plan?department=unknown')->assertNotFound();
+        $this->get('/en/faculties/artificial-intelligence/study-plan?department[]=ai')->assertNotFound();
         $this->get($coursePath)->assertNotFound();
         $this->get($coursePath.'?department='.$departmentId.'&course=unknown')->assertNotFound();
         $this->get($coursePath.'?department='.$mismatch[0].'&course='.$mismatch[1])->assertNotFound();
@@ -1851,11 +1856,11 @@ final class FacilitiesWorkflowTest extends TestCase
         $published->update(['payload_json' => $publishedPayload]);
         Cache::flush();
 
-        $this->get('/en/facilities/artificial-intelligence/study-plan?department='.$departmentId)
+        $this->get('/en/faculties/artificial-intelligence/study-plan?department='.$departmentId)
             ->assertOk()
             ->assertDontSee('/storage/../private/unsafe.pdf', false);
 
-        $this->get('/en/facilities/artificial-intelligence/study-plan/course?department='.$departmentId.'&course='.$courseId)
+        $this->get('/en/faculties/artificial-intelligence/study-plan/course?department='.$departmentId.'&course='.$courseId)
             ->assertOk()
             ->assertSee('href="/storage/course-materials/verified.pdf"', false)
             ->assertDontSee('/storage/../private/unsafe.pdf', false)
@@ -1880,7 +1885,7 @@ final class FacilitiesWorkflowTest extends TestCase
         $workflow->saveDraft('facilities.artificial-intelligence.study_plan', $payload, (int) $author->getKey());
         $this->assertTrue($workflow->publish('facilities.artificial-intelligence.study_plan', (int) $author->getKey()));
 
-        $this->get('/en/facilities/artificial-intelligence/study-plan')
+        $this->get('/en/faculties/artificial-intelligence/study-plan')
             ->assertOk()
             ->assertSee('href="/storage/study-plans/artificial-intelligence.pdf" download', false)
             ->assertSee('Download Plan')
@@ -1910,7 +1915,7 @@ final class FacilitiesWorkflowTest extends TestCase
 
     public function test_artificial_intelligence_study_plan_public_payload_is_trimmed_to_active_department(): void
     {
-        $response = $this->get('/en/facilities/artificial-intelligence/study-plan');
+        $response = $this->get('/en/faculties/artificial-intelligence/study-plan');
 
         $response->assertOk()
             ->assertSee('data-study-plan-payload', false);
@@ -2080,14 +2085,14 @@ final class FacilitiesWorkflowTest extends TestCase
     {
         $this->createFacultyProjects('artificial-intelligence');
 
-        $this->get('/en/facilities?id=ai-engineering')
-            ->assertRedirect('/en/facilities/artificial-intelligence');
+        $this->get('/en/faculties?id=ai-engineering')
+            ->assertRedirect('/en/faculties/artificial-intelligence');
 
-        $this->get('/en/facilities?id=Construction')
-            ->assertRedirect('/en/facilities/building-construction-engineering');
+        $this->get('/en/faculties?id=Construction')
+            ->assertRedirect('/en/faculties/building-construction-engineering');
 
         $this->get('/en/projects/detail?id=artificial-intelligence-project-1')
-            ->assertRedirect('/en/facilities/artificial-intelligence/projects/artificial-intelligence-project-1');
+            ->assertRedirect('/en/faculties/artificial-intelligence/projects/artificial-intelligence-project-1');
 
         $this->get('/en/projects/detail?id=missing-project')->assertNotFound();
     }
@@ -2111,7 +2116,7 @@ final class FacilitiesWorkflowTest extends TestCase
             $this->assertSame($title, $page->latestResearch[0]['title'] ?? null);
             $this->assertStringStartsWith('/'.$locale.'/research/publications/', (string) ($page->latestResearch[0]['url'] ?? ''));
 
-            $this->get('/'.$locale.'/facilities/'.$facultySlug.'/overview')
+            $this->get('/'.$locale.'/faculties/'.$facultySlug.'/overview')
                 ->assertOk()
                 ->assertSee('id="overview-latest-research"', false)
                 ->assertSee('aria-labelledby="overview-latest-research-title"', false)
@@ -2142,8 +2147,8 @@ final class FacilitiesWorkflowTest extends TestCase
 
             $workflow->saveDraft($targetKey, $payload, (int) $author->getKey());
 
-            $this->get('/en/facilities/'.$facultySlug.'/overview')->assertOk()->assertDontSee($englishTitle);
-            $this->get('/ar/facilities/'.$facultySlug.'/overview')->assertOk()->assertDontSee($arabicTitle);
+            $this->get('/en/faculties/'.$facultySlug.'/overview')->assertOk()->assertDontSee($englishTitle);
+            $this->get('/ar/faculties/'.$facultySlug.'/overview')->assertOk()->assertDontSee($arabicTitle);
 
             foreach (['en' => $englishTitle, 'ar' => $arabicTitle] as $locale => $title) {
                 $preview = $workflow->preview($targetKey, $locale, (int) $author->getKey());
@@ -2154,8 +2159,8 @@ final class FacilitiesWorkflowTest extends TestCase
             }
 
             $this->assertTrue($workflow->publish($targetKey, (int) $author->getKey()));
-            $this->get('/en/facilities/'.$facultySlug.'/overview')->assertOk()->assertSee($englishTitle);
-            $this->get('/ar/facilities/'.$facultySlug.'/overview')->assertOk()->assertSee($arabicTitle);
+            $this->get('/en/faculties/'.$facultySlug.'/overview')->assertOk()->assertSee($englishTitle);
+            $this->get('/ar/faculties/'.$facultySlug.'/overview')->assertOk()->assertSee($arabicTitle);
         }
     }
 
@@ -2166,7 +2171,7 @@ final class FacilitiesWorkflowTest extends TestCase
 
         foreach (self::facultyOverviewProvider() as $case) {
             foreach (['ar', 'en'] as $locale) {
-                $this->get('/'.$locale.'/facilities/'.$case['facultySlug'].'/overview')
+                $this->get('/'.$locale.'/faculties/'.$case['facultySlug'].'/overview')
                     ->assertOk()
                     ->assertDontSee('/'.$locale.'/about/profile/'.$case['profileSlug'], false)
                     ->assertDontSee('/'.$locale.'/about/profile/'.$case['facultySlug'].'-dean', false);
@@ -2187,7 +2192,7 @@ final class FacilitiesWorkflowTest extends TestCase
                     seoTitle: '',
                     seoDescription: '',
                     seoImage: '',
-                    path: '/facilities/'.$facultySlug.'/research',
+                    path: '/faculties/'.$facultySlug.'/research',
                 ),
             );
         });
@@ -2195,7 +2200,7 @@ final class FacilitiesWorkflowTest extends TestCase
 
         foreach (self::facultyOverviewProvider() as $case) {
             foreach (['ar', 'en'] as $locale) {
-                $this->get('/'.$locale.'/facilities/'.$case['facultySlug'].'/overview')
+                $this->get('/'.$locale.'/faculties/'.$case['facultySlug'].'/overview')
                     ->assertOk()
                     ->assertDontSee('id="overview-latest-research"', false);
             }

@@ -98,7 +98,7 @@
             <nav class="mb-4 flex flex-wrap items-center justify-center gap-2 text-[11px] font-semibold text-white/75" aria-label="Breadcrumb">
                 <a href="/{{ $locale }}" class="transition-colors hover:text-white">{{ $label('home') ?: $homeLabel }}</a>
                 <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-2 w-2 rtl:rotate-180" aria-hidden="true">
-                <a href="/{{ $locale }}/facilities" class="transition-colors hover:text-white">{{ $label('faculties') ?: ($isAr ? 'الكليات' : 'Facilities') }}</a>
+                <a href="/{{ $locale }}/faculties" class="transition-colors hover:text-white">{{ $label('faculties') ?: ($isAr ? 'الكليات' : 'Facilities') }}</a>
                 <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-2 w-2 rtl:rotate-180" aria-hidden="true">
                 <span>{{ $facultyPlanName }}</span>
                 <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-2 w-2 rtl:rotate-180" aria-hidden="true">
@@ -238,7 +238,7 @@
                 <div data-modal-openers-wrap class="hidden"><p class="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">{{ $label('opensAfter') }}</p><div data-modal-openers class="flex flex-wrap gap-1.5"></div></div>
             </div>
             <div class="mt-6 flex gap-3">
-                <a data-modal-details href="{{ route('public.facilities.study-plan', ['locale' => $locale, 'faculty' => $page->facultySlug]) }}" class="inline-flex items-center gap-2 rounded-lg bg-spu-blue px-4 py-2.5 text-[12px] font-bold text-white transition-colors hover:bg-spu-blue/90"><span>{{ $label('viewDetails') }}</span><svg class="h-3.5 w-3.5 rtl:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg></a>
+                <a data-modal-details href="{{ route('public.faculties.study-plan', ['locale' => $locale, 'faculty' => $page->facultySlug]) }}" class="inline-flex items-center gap-2 rounded-lg bg-spu-blue px-4 py-2.5 text-[12px] font-bold text-white transition-colors hover:bg-spu-blue/90"><span>{{ $label('viewDetails') }}</span><svg class="h-3.5 w-3.5 rtl:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg></a>
                 <button type="button" data-modal-close class="inline-flex items-center rounded-lg border border-slate-200 px-4 py-2.5 text-[12px] font-bold text-slate-600 transition-colors hover:bg-slate-50">{{ $label('close') }}</button>
             </div>
         </div>

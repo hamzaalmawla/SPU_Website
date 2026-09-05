@@ -147,8 +147,8 @@ final class VirtualTourPageService implements VirtualTourPageServiceInterface
                 'detailsLabelEn' => 'View Details',
                 'detailsLabelAr' => 'عرض التفاصيل',
                 'items' => [
-                    ['id' => 'classrooms', 'titleEn' => 'Smart Classrooms', 'titleAr' => 'قاعات ذكية', 'summaryEn' => 'Technology-enabled learning spaces for interactive instruction.', 'summaryAr' => 'مساحات تعليمية مجهزة لدعم التدريس التفاعلي.', 'icon' => '/images/icons/book.svg', 'image' => '/images/slider-2.webp', 'href' => '/facilities'],
-                    ['id' => 'laboratories', 'titleEn' => 'Medical Labs', 'titleAr' => 'مختبرات طبية', 'summaryEn' => 'Applied teaching laboratories for health and science programs.', 'summaryAr' => 'مختبرات تعليمية تطبيقية للبرامج الصحية والعلمية.', 'icon' => '/images/icons/lab.svg', 'image' => '/images/dental-clin-lab.jpg', 'href' => '/facilities'],
+                    ['id' => 'classrooms', 'titleEn' => 'Smart Classrooms', 'titleAr' => 'قاعات ذكية', 'summaryEn' => 'Technology-enabled learning spaces for interactive instruction.', 'summaryAr' => 'مساحات تعليمية مجهزة لدعم التدريس التفاعلي.', 'icon' => '/images/icons/book.svg', 'image' => '/images/slider-2.webp', 'href' => '/faculties'],
+                    ['id' => 'laboratories', 'titleEn' => 'Medical Labs', 'titleAr' => 'مختبرات طبية', 'summaryEn' => 'Applied teaching laboratories for health and science programs.', 'summaryAr' => 'مختبرات تعليمية تطبيقية للبرامج الصحية والعلمية.', 'icon' => '/images/icons/lab.svg', 'image' => '/images/dental-clin-lab.jpg', 'href' => '/faculties'],
                     ['id' => 'library', 'titleEn' => 'University Library', 'titleAr' => 'مكتبة الجامعة', 'summaryEn' => 'Study collections, quiet reading areas, and research support.', 'summaryAr' => 'مصادر دراسية ومساحات قراءة هادئة ودعم بحثي.', 'icon' => '/images/icons/globe.svg', 'image' => '/images/slider-3.webp', 'href' => '/e-services'],
                 ],
             ],

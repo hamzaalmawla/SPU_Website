@@ -13,12 +13,12 @@ final class LegacySubsiteHomeQueryResolver implements LegacyQueryModuleResolverI
     /** @var array<string, string> */
     private const TARGETS = [
         'root' => '',
-        'med' => '/facilities/medicine',
-        'dent' => '/facilities/dentistry',
-        'pharm' => '/facilities/pharmacy',
-        'info' => '/facilities/artificial-intelligence',
-        'petrol' => '/facilities/petroleum',
-        'admin' => '/facilities/business-administration',
+        'med' => '/faculties/medicine',
+        'dent' => '/faculties/dentistry',
+        'pharm' => '/faculties/pharmacy',
+        'info' => '/faculties/artificial-intelligence',
+        'petrol' => '/faculties/petroleum',
+        'admin' => '/faculties/business-administration',
         'research' => '/research',
         'hospital' => '/campus-life/hospital',
         'dent_clinic' => '/campus-life/dental',

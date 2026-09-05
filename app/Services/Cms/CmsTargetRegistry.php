@@ -78,21 +78,21 @@ final class CmsTargetRegistry implements CmsTargetRegistryInterface
     private function facilitiesTargets(): array
     {
         $targets = [
-            $this->target('facilities.landing', 'facilities', 'admin.cms.targets.facilities.landing', '/facilities', 'public.facilities.hub'),
+            $this->target('facilities.landing', 'facilities', 'admin.cms.targets.facilities.landing', '/faculties', 'public.faculties.hub'),
         ];
 
         foreach ($this->facultySlugs() as $facultySlug) {
             $facultyKey = 'facilities.'.$facultySlug;
-            $targets[] = $this->target($facultyKey, 'facilities', 'admin.cms.targets.facilities.faculty_homepage', '/facilities/'.$facultySlug, 'public.facilities.show', 'facilities.landing', facultyScopeSlug: $facultySlug);
-            $targets[] = $this->target($facultyKey.'.study_plan', 'facilities', 'admin.cms.targets.facilities.study_plan', '/facilities/'.$facultySlug.'/study-plan', 'public.facilities.study-plan', $facultyKey, facultyScopeSlug: $facultySlug);
+            $targets[] = $this->target($facultyKey, 'facilities', 'admin.cms.targets.facilities.faculty_homepage', '/faculties/'.$facultySlug, 'public.faculties.show', 'facilities.landing', facultyScopeSlug: $facultySlug);
+            $targets[] = $this->target($facultyKey.'.study_plan', 'facilities', 'admin.cms.targets.facilities.study_plan', '/faculties/'.$facultySlug.'/study-plan', 'public.faculties.study-plan', $facultyKey, facultyScopeSlug: $facultySlug);
 
             foreach ($this->facultySubpageSlugs($facultySlug) as $subpageSlug) {
                 $targets[] = $this->target(
                     $facultyKey.'.'.$subpageSlug,
                     'facilities',
                     'admin.cms.targets.facilities.'.$subpageSlug,
-                    '/facilities/'.$facultySlug.'/'.$subpageSlug,
-                    'public.facilities.subpage',
+                    '/faculties/'.$facultySlug.'/'.$subpageSlug,
+                    'public.faculties.subpage',
                     $facultyKey,
                     facultyScopeSlug: $facultySlug,
                 );

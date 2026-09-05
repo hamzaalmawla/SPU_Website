@@ -8,7 +8,7 @@
         $isAr = $locale === 'ar';
         $heroImage = $subpage['heroImage'] ?? ($faculty['heroImage'] ?? '/images/uni-main-place.JPG');
         $homeLabel = $isAr ? 'الرئيسية' : 'Home';
-        $facultyUrl = '/'.$locale.'/facilities/'.$page->facultySlug;
+        $facultyUrl = '/'.$locale.'/faculties/'.$page->facultySlug;
         $breadcrumbTitle = $subpage['title'] ?? '';
         $selectedLab = $page->subpageSlug === 'labs' ? ($page->detail['item'] ?? null) : null;
         $relatedLabs = $page->subpageSlug === 'labs' && is_array($page->detail['related'] ?? null) ? $page->detail['related'] : [];
@@ -29,7 +29,7 @@
         $filters = $page->filters ?? [];
         $filterOptions = $page->filterOptions ?? [];
         $pagination = $page->pagination ?? ['current_page' => 1, 'total_pages' => 1, 'total_items' => count($page->items), 'from' => count($page->items) > 0 ? 1 : 0, 'to' => count($page->items)];
-        $studentListUrl = '/'.$locale.'/facilities/'.$page->facultySlug.'/'.$page->subpageSlug;
+        $studentListUrl = '/'.$locale.'/faculties/'.$page->facultySlug.'/'.$page->subpageSlug;
         $validatedQuery = collect($filters)
             ->except('page')
             ->filter(fn (mixed $value): bool => is_scalar($value) && (string) $value !== '')
@@ -229,7 +229,7 @@
                                     @endforelse
                                 </div>
                             </div>
-                            <a href="{{ $item['studyPlanUrl'] ?? ('/'.$locale.'/facilities/'.$page->facultySlug.'/study-plan') }}" class="inline-flex h-11 items-center justify-center rounded-[6px] px-5 text-sm font-bold text-white transition-all hover:-translate-y-0.5" style="background-color: {{ $accent }}">{{ $isAr ? 'الخطة الدراسية' : 'Study Plan' }}</a>
+                            <a href="{{ $item['studyPlanUrl'] ?? ('/'.$locale.'/faculties/'.$page->facultySlug.'/study-plan') }}" class="inline-flex h-11 items-center justify-center rounded-[6px] px-5 text-sm font-bold text-white transition-all hover:-translate-y-0.5" style="background-color: {{ $accent }}">{{ $isAr ? 'الخطة الدراسية' : 'Study Plan' }}</a>
                         </article>
                     @empty
                         <p class="p-8 text-center text-slate-500">{{ $isAr ? 'لا توجد أقسام منشورة حالياً.' : 'No published departments are available yet.' }}</p>
