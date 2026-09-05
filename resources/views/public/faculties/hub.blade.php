@@ -29,7 +29,7 @@
     $defaultIcon = '/images/icon-university-outline.svg';
 
     // Stats-bar inline icons keyed by display order (values come from CMS `$facts`).
-    $statsIcons = ['/images/icons/book.svg', '/images/icon-sitemap-outline.svg', '/images/icons/lab.svg', '/images/icon-users-outline.svg'];
+    $statsIcons = ['/images/icons/book.svg', '/images/icons/sitemap.svg', '/images/icons/lab.svg', '/images/icons/users.svg'];
 @endphp
 
 {{-- ═══════════════════════════════════════════════════════
@@ -179,7 +179,7 @@
                 @endphp
                 <div class="group flex flex-col items-center justify-center gap-2 px-4 py-7 text-center transition-colors hover:bg-white/[0.08]">
                     @if (! empty($icon))
-                        <img src="{{ $icon }}" alt="" class="h-6 w-6 opacity-85 transition-transform group-hover:scale-110">
+                        <img src="{{ $icon }}" alt="" class="h-6 w-6 opacity-85 transition-transform group-hover:scale-110 group-hover:opacity-100" style="filter: brightness(0) invert(1);" width="24" height="24" loading="lazy" decoding="async">
                     @endif
                     <span class="text-[1.9rem] lg:text-[2.3rem] font-black leading-none text-white" dir="ltr">
                         {{ str_ends_with($value, '+') ? substr($value, 0, -1) : $value }}@if(str_ends_with($value, '+'))<span class="text-spu-gold">+</span>@endif
