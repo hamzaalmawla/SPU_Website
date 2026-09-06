@@ -15,6 +15,7 @@ final class ReportUnresolvedCommand extends Command
     protected $signature = 'continuity:report-unresolved
         {--since= : Filter by date (ISO 8601 or Y-m-d)}
         {--type= : Filter by request type (page or file)}
+        {--top= : Show only the N most-requested URLs}
         {--format=json : Output format (json or table)}';
 
     /**
@@ -48,8 +49,21 @@ final class ReportUnresolvedCommand extends Command
 
         $unresolved = $this->continuityService->getUnresolvedRequests($filters);
 
+        // Totals are taken before --top narrows the list, so the summary still
+        // describes the whole backlog rather than the slice being shown.
+        $typeCounts = $unresolved->groupBy(fn ($r): string => $r->requestType)->map->count();
+        $totalHits = $unresolved->sum(fn ($r): int => $r->hitCount ?? 0);
+        $totalUnresolved = $unresolved->count();
+
+        $top = $this->option('top');
+
+        if (is_string($top) && $top !== '' && ctype_digit($top) && (int) $top > 0) {
+            $unresolved = $unresolved->take((int) $top);
+        }
+
         $items = $unresolved->map(fn ($request): array => [
             'url' => $request->url,
+            'hit_count' => $request->hitCount ?? 0,
             'query_string' => $request->queryString ?? '',
             'method' => $request->method,
             'referrer' => $request->referrer ?? '',
@@ -58,15 +72,15 @@ final class ReportUnresolvedCommand extends Command
             'timestamp' => $request->timestamp,
         ])->all();
 
-        $typeCounts = $unresolved->groupBy(fn ($r): string => $r->requestType)->map->count();
-
         $payload = [
             'generated_at' => now()->toIso8601String(),
             'filters' => $filters,
-            'total' => count($items),
+            'total' => $totalUnresolved,
+            'shown' => count($items),
             'summary' => [
                 'page_requests' => $typeCounts->get('page', 0),
                 'file_requests' => $typeCounts->get('file', 0),
+                'total_hits' => $totalHits,
             ],
             'items' => $items,
         ];
@@ -90,6 +104,12 @@ final class ReportUnresolvedCommand extends Command
     {
         $this->line("Page requests: {$payload['summary']['page_requests']}");
         $this->line("File requests: {$payload['summary']['file_requests']}");
+        $this->line("Total hits across all unresolved URLs: {$payload['summary']['total_hits']}");
+
+        if ($payload['shown'] !== $payload['total']) {
+            $this->line("Showing the {$payload['shown']} most-requested of {$payload['total']}.");
+        }
+
         $this->newLine();
 
         if ($payload['total'] === 0) {
@@ -99,7 +119,7 @@ final class ReportUnresolvedCommand extends Command
         }
 
         $this->table(
-            ['URL', 'Query String', 'Method', 'Referrer', 'Locale', 'Type', 'Timestamp'],
+            ['URL', 'Hits', 'Query String', 'Method', 'Referrer', 'Locale', 'Type', 'Last seen'],
             $payload['items'],
         );
     }
