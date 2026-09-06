@@ -29,7 +29,7 @@
             @if ($featured)
                 <article class="grid overflow-hidden rounded-xl border border-spu-red/20 bg-section shadow-[0_18px_45px_rgba(9,17,68,0.08)] lg:grid-cols-[0.9fr_1.1fr]">
                     <a href="{{ $featured->url }}" class="block min-h-[250px] overflow-hidden bg-slate-100">
-                        <img src="{{ $featured->imageUrl ?: '/images/news/researches.jpeg' }}" alt="{{ $featured->title }}" class="content-media-image h-full w-full">
+                        <img src="{{ $featured->imageUrl ?: '/images/news/researches.jpeg' }}" onerror="this.onerror=null;this.src='/images/news/researches.jpeg'" alt="{{ $featured->title }}" class="content-media-image h-full w-full">
                     </a>
                     <div class="flex flex-col justify-center p-7 lg:p-10">
                         <p class="text-[11px] font-bold uppercase tracking-[0.15em] text-spu-red">{{ $page['featuredLabel'] }}</p>
@@ -57,17 +57,18 @@
 
             <div class="mt-8 divide-y divide-slate-100 border-y border-slate-100">
                 @forelse ($announcements->items as $announcement)
-                    <article class="grid gap-5 py-7 md:grid-cols-[130px_1fr_auto] md:items-center">
+                    <article data-announcement-card class="grid gap-5 py-7 md:grid-cols-[180px_minmax(0,1fr)_auto] md:items-center">
+                        <a href="{{ $announcement->url }}" class="block overflow-hidden rounded-lg bg-slate-100">
+                            <img src="{{ $announcement->imageUrl ?: '/images/news/researches.jpeg' }}" onerror="this.onerror=null;this.src='/images/news/researches.jpeg'" alt="{{ $announcement->title }}" loading="lazy" class="content-media-image h-40 w-full md:h-[110px]">
+                        </a>
                         <div>
                             @if ($announcement->publishedAt)
                                 <time class="text-sm font-bold text-spu-red" datetime="{{ $announcement->publishedAt }}">{{ $announcement->publishedAt }}</time>
                             @endif
                             @if ($announcement->category)
-                                <p class="mt-2 text-[11px] font-semibold text-slate-500">{{ $announcement->category->name }}</p>
+                                <p class="{{ $announcement->publishedAt ? 'mt-2 ' : '' }}text-[11px] font-semibold text-slate-500">{{ $announcement->category->name }}</p>
                             @endif
-                        </div>
-                        <div>
-                            <h2 class="text-lg font-bold text-spu-blue"><a href="{{ $announcement->url }}" class="hover:text-spu-red">{{ $announcement->title }}</a></h2>
+                            <h2 class="mt-2 text-lg font-bold text-spu-blue"><a href="{{ $announcement->url }}" class="hover:text-spu-red">{{ $announcement->title }}</a></h2>
                             @if ($announcement->excerpt)
                                 <p class="mt-2 text-sm leading-7 text-slate-600">{{ $announcement->excerpt }}</p>
                             @endif

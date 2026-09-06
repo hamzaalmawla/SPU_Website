@@ -11,6 +11,7 @@ use App\Filament\Pages\ManageNews;
 use App\Models\Cms\CmsDraft;
 use App\Models\Media\MediaAsset;
 use App\Models\News\NewsArticle;
+use App\Models\News\NewsArticleAttachment;
 use App\Models\News\NewsCategory;
 use App\Models\User\User;
 use Database\Seeders\DatabaseSeeder;
@@ -126,6 +127,55 @@ final class NewsWorkflowTest extends TestCase
             ->assertSee('Priority Announcement')
             ->assertSee('Regular Announcement')
             ->assertDontSee('Colliding News Article');
+    }
+
+    public function test_announcements_list_renders_the_same_images_as_the_article_page(): void
+    {
+        $cover = $this->createPublishedArticle('announcement', 'cover-thumb-announcement', 'Cover Thumbnail Announcement');
+        $cover->forceFill([
+            'legacy_cover_path' => '/downloads/files/announcement-cover-thumb.jpg',
+            'published_at' => now(),
+        ])->save();
+
+        $attached = $this->createPublishedArticle('announcement', 'attachment-thumb-announcement', 'Attachment Thumbnail Announcement');
+        $attached->forceFill(['published_at' => now()])->save();
+        NewsArticleAttachment::query()->create([
+            'news_article_id' => (int) $attached->getKey(),
+            'kind' => 'image',
+            'legacy_source_table' => 'jx_items',
+            'legacy_source_id' => 900001,
+            'legacy_path' => '/downloads/files/announcement-attachment-thumb.jpg',
+            'sort_order' => 1,
+        ]);
+
+        $news = app(NewsServiceInterface::class);
+        $coverArticle = $news->getPublicArticle((string) $cover->getKey(), 'en');
+        $attachedArticle = $news->getPublicArticle((string) $attached->getKey(), 'en');
+
+        $this->assertSame('/downloads/files/announcement-cover-thumb.jpg', $coverArticle?->imageUrl);
+        $this->assertSame('/downloads/files/announcement-attachment-thumb.jpg', $attachedArticle?->imageUrl);
+
+        $listing = $news->listPublicArticles('en', [
+            'categoryType' => 'announcement',
+            'search' => 'Thumbnail Announcement',
+        ], 1, 12);
+        $listed = $listing->items->keyBy('title');
+
+        $this->assertSame($coverArticle->imageUrl, $listed['Cover Thumbnail Announcement']->imageUrl);
+        $this->assertSame($attachedArticle->imageUrl, $listed['Attachment Thumbnail Announcement']->imageUrl);
+
+        $this->get('/en/news/announcements?category=announcement-cover-thumb-announcement')
+            ->assertOk()
+            ->assertSee('data-announcement-card', false)
+            ->assertSee('content-media-image h-40 w-full md:h-[110px]', false)
+            ->assertSee('/downloads/files/announcement-cover-thumb.jpg', false)
+            ->assertSee('Cover Thumbnail Announcement');
+
+        $this->get('/en/news/announcements?category=announcement-attachment-thumb-announcement')
+            ->assertOk()
+            ->assertSee('data-announcement-card', false)
+            ->assertSee('/downloads/files/announcement-attachment-thumb.jpg', false)
+            ->assertSee('Attachment Thumbnail Announcement');
     }
 
     public function test_news_uses_newest_legacy_source_order_and_excludes_announcements_from_articles(): void

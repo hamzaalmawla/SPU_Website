@@ -215,7 +215,7 @@ final class NewsService implements NewsServiceInterface
         return $this->newsCache()->remember($cacheKey, function () use ($locale, $filters, $page, $perPage): PaginatedResultDTO {
             $query = NewsArticle::query()
                 ->public()
-                ->with(['translations', 'seoMeta', 'coverMedia', 'category.translations'])
+                ->with($this->publicArticleCardRelations())
                 ->when(is_string($filters['category'] ?? null) && $filters['category'] !== '', function (Builder $query) use ($filters): void {
                     $query->whereHas('category', fn (Builder $categoryQuery): Builder => $categoryQuery->where('slug', $filters['category']));
                 })
@@ -256,7 +256,7 @@ final class NewsService implements NewsServiceInterface
                     fn (Builder $query): Builder => $query->whereKey((int) $slug),
                     fn (Builder $query): Builder => $query->where('slug', $slug),
                 )
-                ->with(['translations', 'seoMeta.ogImageMedia', 'coverMedia', 'category.translations', 'attachments.mediaAsset'])
+                ->with($this->publicArticleCardRelations())
                 ->first();
 
             return $article instanceof NewsArticle ? $this->mapArticle($article, $locale, true) : null;
@@ -271,28 +271,13 @@ final class NewsService implements NewsServiceInterface
             ->when($categoryType !== null, function (Builder $query) use ($categoryType): void {
                 $query->whereHas('category', fn (Builder $categoryQuery): Builder => $categoryQuery->where('type', $categoryType));
             })
-            ->with(['translations', 'coverMedia', 'category.translations']);
+            ->with($this->publicArticleCardRelations());
         $this->applyNewestArticleOrder($query);
 
         return $query
             ->limit($limit)
             ->get()
-            ->map(function (NewsArticle $article) use ($locale): ArticleCardDTO {
-                $translation = $this->articleTranslation($article, $locale);
-                $category = $article->category instanceof NewsCategory ? $this->mapCategory($article->category, $locale) : null;
-
-                return new ArticleCardDTO(
-                    id: (int) $article->getKey(),
-                    locale: $locale,
-                    title: $this->plainText((string) $translation->title),
-                    slug: (string) $article->slug,
-                    excerpt: $this->articleExcerpt($translation),
-                    imageUrl: $this->mediaUrl($article->coverMedia, $article->legacy_cover_path),
-                    publishedAt: $this->articlePublishedAt($article),
-                    url: $this->articleUrl($locale, (int) $article->getKey()),
-                    categoryLabel: $category?->name,
-                );
-            })
+            ->map(fn (NewsArticle $article): ArticleCardDTO => $this->mapArticleCard($article, $locale))
             ->values();
     }
 
@@ -301,7 +286,7 @@ final class NewsService implements NewsServiceInterface
         return $this->newsCache()->remember('news:latest:'.$locale.':'.$limit.':'.($categoryType ?? 'all'), function () use ($locale, $limit, $categoryType): Collection {
             $query = NewsArticle::query()
                 ->public()
-                ->with(['translations', 'coverMedia', 'category.translations'])
+                ->with($this->publicArticleCardRelations())
                 ->when($categoryType !== null, function (Builder $query) use ($categoryType): void {
                     $query->whereHas('category', fn (Builder $categoryQuery): Builder => $categoryQuery->where('type', $categoryType));
                 });
@@ -325,7 +310,7 @@ final class NewsService implements NewsServiceInterface
         $query = NewsArticle::query()
             ->public()
             ->whereHas('category', fn (Builder $categoryQuery): Builder => $categoryQuery->where('type', 'news'))
-            ->with(['translations', 'coverMedia', 'category.translations'])
+            ->with($this->publicArticleCardRelations())
             ->when($ids !== [], fn (Builder $query): Builder => $query->whereKey($ids))
             ->when($normalizedSearch !== '', function (Builder $query) use ($normalizedSearch): void {
                 $query->whereHas('translations', fn (Builder $translationQuery): Builder => $translationQuery
@@ -361,7 +346,7 @@ final class NewsService implements NewsServiceInterface
             $query = NewsArticle::query()
                 ->public()
                 ->whereKeyNot($article->getKey())
-                ->with(['translations', 'coverMedia', 'category.translations'])
+                ->with($this->publicArticleCardRelations())
                 ->when($article->news_category_id !== null, function (Builder $query) use ($article): void {
                     $query->where('news_category_id', $article->news_category_id);
                 });
@@ -386,14 +371,14 @@ final class NewsService implements NewsServiceInterface
 
             $previous = NewsArticle::query()
                 ->public()
-                ->with(['translations', 'coverMedia', 'category.translations'])
+                ->with($this->publicArticleCardRelations())
                 ->whereKeyNot($article->getKey())
                 ->where('id', '<', $article->getKey())
                 ->orderByDesc('id')
                 ->first();
             $next = NewsArticle::query()
                 ->public()
-                ->with(['translations', 'coverMedia', 'category.translations'])
+                ->with($this->publicArticleCardRelations())
                 ->whereKeyNot($article->getKey())
                 ->where('id', '>', $article->getKey())
                 ->orderBy('id')
@@ -432,9 +417,7 @@ final class NewsService implements NewsServiceInterface
         $translation = $this->articleTranslation($article, $locale);
         $seo = $this->articleSeo($article, $locale);
         $excerpt = $this->articleExcerpt($translation);
-        $imageUrl = $seo?->og_image_url
-            ?? $this->mediaUrl($seo?->ogImageMedia)
-            ?? $this->mediaUrl($article->coverMedia, $article->legacy_cover_path);
+        $imageUrl = $this->articleImageUrl($article, $locale);
 
         return new NewsArticleDTO(
             id: (int) $article->getKey(),
@@ -468,11 +451,65 @@ final class NewsService implements NewsServiceInterface
             title: $this->plainText((string) $translation->title),
             slug: (string) $article->slug,
             excerpt: $this->articleExcerpt($translation),
-            imageUrl: $this->mediaUrl($article->coverMedia, $article->legacy_cover_path),
+            imageUrl: $this->articleImageUrl($article, $locale),
             publishedAt: $this->articlePublishedAt($article),
             url: $this->articleUrl($locale, (int) $article->getKey()),
             categoryLabel: $category?->name,
         );
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function publicArticleCardRelations(): array
+    {
+        return [
+            'translations',
+            'seoMeta.ogImageMedia',
+            'coverMedia',
+            'category.translations',
+            'attachments.mediaAsset',
+        ];
+    }
+
+    private function articleImageUrl(NewsArticle $article, string $locale): ?string
+    {
+        $seo = $this->articleSeo($article, $locale);
+        $candidates = [
+            is_string($seo?->og_image_url) ? trim($seo->og_image_url) : '',
+            (string) ($this->mediaUrl($seo?->ogImageMedia) ?? ''),
+            (string) ($this->mediaUrl($article->coverMedia, $article->legacy_cover_path) ?? ''),
+            (string) ($this->firstAttachmentImageUrl($article) ?? ''),
+        ];
+
+        foreach ($candidates as $candidate) {
+            if ($candidate !== '') {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    private function firstAttachmentImageUrl(NewsArticle $article): ?string
+    {
+        if (! $article->relationLoaded('attachments')) {
+            return null;
+        }
+
+        foreach ($article->attachments as $attachment) {
+            if (strtolower((string) $attachment->kind) !== 'image') {
+                continue;
+            }
+
+            $url = $this->mediaUrl($attachment->mediaAsset, $attachment->legacy_path);
+
+            if ($url !== null && $url !== '') {
+                return $url;
+            }
+        }
+
+        return null;
     }
 
     private function mapCategory(NewsCategory $category, string $locale): NewsCategoryDTO
