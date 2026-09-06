@@ -526,4 +526,67 @@ class ContinuityServiceTest extends TestCase
             $this->assertTrue($result->isValid, 'Validation must pass when no duplicates or conflicts exist');
         }
     }
+
+    public function test_unresolved_requests_are_returned_most_requested_first_with_hit_counts(): void
+    {
+        // Three URLs, each requested a different number of times. The one hit
+        // most is the one that matters after cutover, and it is deliberately
+        // logged FIRST so that ordering by recency would put it last.
+        $counts = ['/legacy-popular' => 5, '/legacy-middling' => 3, '/legacy-rare' => 1];
+
+        foreach ($counts as $path => $times) {
+            for ($i = 0; $i < $times; $i++) {
+                $this->service->logUnresolved(new UnresolvedRequestDTO(
+                    url: $path,
+                    queryString: null,
+                    method: 'GET',
+                    referrer: null,
+                    resolvedLocale: 'ar',
+                    requestType: 'page',
+                    timestamp: now()->toIso8601String(),
+                ));
+            }
+        }
+
+        $results = $this->service->getUnresolvedRequests();
+
+        $this->assertSame(
+            ['/legacy-popular', '/legacy-middling', '/legacy-rare'],
+            $results->map(fn ($r): string => $r->url)->all(),
+            'Unresolved requests must come back most-requested first, not most-recent first',
+        );
+
+        $this->assertSame(
+            [5, 3, 1],
+            $results->map(fn ($r): ?int => $r->hitCount)->all(),
+            'Each row must carry the number of times the URL was requested',
+        );
+    }
+
+    public function test_repeated_unresolved_requests_increment_rather_than_duplicate(): void
+    {
+        foreach (range(1, 4) as $ignored) {
+            $this->service->logUnresolved(new UnresolvedRequestDTO(
+                url: '/legacy-repeat',
+                queryString: null,
+                method: 'GET',
+                referrer: null,
+                resolvedLocale: 'ar',
+                requestType: 'page',
+                timestamp: now()->toIso8601String(),
+            ));
+        }
+
+        $this->assertSame(
+            1,
+            UnresolvedLegacyRequest::where('url', '/legacy-repeat')->count(),
+            'The same URL must occupy one row, not one row per request',
+        );
+
+        $this->assertSame(
+            4,
+            (int) UnresolvedLegacyRequest::where('url', '/legacy-repeat')->value('hit_count'),
+            'hit_count must record every request against that URL',
+        );
+    }
 }

@@ -24,5 +24,12 @@ final readonly class UnresolvedRequestDTO
         public ?int $oldSiteId = null,
         public ?int $oldLanguageId = null,
         public ?string $oldLanguageSymbol = null,
+        // How many times this URL has been requested and not resolved.
+        //
+        // The write path never sets it - logUnresolved() increments the stored
+        // counter itself - so it stays null there and carries a value only when
+        // a record is read back out. It is what separates a URL something still
+        // links to from one that was requested once by a crawler.
+        public ?int $hitCount = null,
     ) {}
 }

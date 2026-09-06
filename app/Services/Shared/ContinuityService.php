@@ -229,7 +229,15 @@ final class ContinuityService implements ContinuityServiceInterface
 
     public function getUnresolvedRequests(array $filters = []): Collection
     {
-        $query = UnresolvedLegacyRequest::query()->orderByDesc('last_seen_at');
+        // Ordered by hit_count, because the question this answers after cutover
+        // is "which broken URL is costing us most", and that is a matter of how
+        // many people arrive on it - not of which was seen most recently. A URL
+        // a crawler touched once and one an external site still links to are
+        // indistinguishable by last_seen_at. last_seen_at stays as the
+        // tie-breaker so equally-hit rows come back newest first.
+        $query = UnresolvedLegacyRequest::query()
+            ->orderByDesc('hit_count')
+            ->orderByDesc('last_seen_at');
 
         if (isset($filters['since']) && is_string($filters['since'])) {
             $query->where('last_seen_at', '>=', $filters['since']);
@@ -247,6 +255,7 @@ final class ContinuityService implements ContinuityServiceInterface
             resolvedLocale: $record->resolved_locale,
             requestType: (string) $record->request_type,
             timestamp: $record->last_seen_at?->toIso8601String() ?? '',
+            hitCount: (int) $record->hit_count,
         ));
     }
 
