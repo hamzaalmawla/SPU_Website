@@ -226,7 +226,7 @@ final class PageUrlSelect
             '/research/centers' => 'Research Centers',
             '/research/projects' => 'Research Projects',
             '/research/themes' => 'Research Themes',
-            '/facilities/pharmacy/training' => 'Pharmacy Training',
+            '/faculties/pharmacy/training' => 'Pharmacy Training',
         ];
 
         if (isset($knownLabels[$path])) {
@@ -258,7 +258,7 @@ final class PageUrlSelect
                 return 'News Article — ' . $humanized;
             }
 
-            // Faculty page: /facilities/{slug}/research
+            // Faculty page: /faculties/{slug}/research
             if ($segments[0] === 'facilities' && count($segments) === 3) {
                 return ucwords(str_replace('-', ' ', $segments[1])) . ' — ' . $humanized;
             }

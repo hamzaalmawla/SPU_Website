@@ -128,7 +128,7 @@
         "key": "honor-list",
         "value": "Top",
         "icon": "/images/icons/award.svg",
-        "url": "/facilities/medicine/valedictorians",
+        "url": "/faculties/medicine/valedictorians",
         "titleEn": "Honor List",
         "titleAr": "قائمة الشرف"
       }
@@ -464,7 +464,7 @@
         "key": "dental-chairs",
         "value": "120",
         "icon": "/images/icons/chair.svg",
-        "url": "/facilities/dentistry/labs",
+        "url": "/faculties/dentistry/labs",
         "titleEn": "Dental Chairs",
         "titleAr": "كراسي طبية"
       },
@@ -472,7 +472,7 @@
         "key": "honor-list",
         "value": "Top",
         "icon": "/images/icons/award.svg",
-        "url": "/facilities/dentistry/valedictorians",
+        "url": "/faculties/dentistry/valedictorians",
         "titleEn": "Honor List",
         "titleAr": "قائمة الشرف"
       }
@@ -659,7 +659,7 @@
         "key": "honor-list",
         "value": "Top",
         "icon": "/images/icons/award.svg",
-        "url": "/facilities/pharmacy/valedictorians",
+        "url": "/faculties/pharmacy/valedictorians",
         "titleEn": "Honor List",
         "titleAr": "قائمة الشرف"
       }
@@ -961,7 +961,7 @@
         "key": "honor-list",
         "value": "Top",
         "icon": "/images/icons/award.svg",
-        "url": "/facilities/artificial-intelligence/valedictorians",
+        "url": "/faculties/artificial-intelligence/valedictorians",
         "titleEn": "Honor List",
         "titleAr": "قائمة الشرف"
       }
@@ -1247,7 +1247,7 @@
         "key": "honor-list",
         "value": "Top",
         "icon": "/images/icons/award.svg",
-        "url": "/facilities/building-construction-engineering/valedictorians",
+        "url": "/faculties/building-construction-engineering/valedictorians",
         "titleEn": "Honor List",
         "titleAr": "قائمة الشرف"
       }
@@ -1532,7 +1532,7 @@
         "key": "honor-list",
         "value": "Top",
         "icon": "/images/icons/award.svg",
-        "url": "/facilities/petroleum/valedictorians",
+        "url": "/faculties/petroleum/valedictorians",
         "titleEn": "Honor List",
         "titleAr": "قائمة الشرف"
       }
@@ -1806,7 +1806,7 @@
         "key": "honor-list",
         "value": "Top",
         "icon": "/images/icons/award.svg",
-        "url": "/facilities/business-administration/valedictorians",
+        "url": "/faculties/business-administration/valedictorians",
         "titleEn": "Honor List",
         "titleAr": "قائمة الشرف"
       }

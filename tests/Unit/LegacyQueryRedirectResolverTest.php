@@ -68,7 +68,7 @@ final class LegacyQueryRedirectResolverTest extends TestCase
 
         $this->assertNotNull($result);
         $this->assertSame(301, $result->statusCode);
-        $this->assertSame('/en/facilities/business-administration', $result->destinationUrl);
+        $this->assertSame('/en/faculties/business-administration', $result->destinationUrl);
     }
 
     public function test_resolves_audited_dental_clinic_subsite_home(): void
@@ -83,7 +83,7 @@ final class LegacyQueryRedirectResolverTest extends TestCase
     {
         $cases = [
             [12, 1, 1, '/ar'],
-            [1263, 2, 2, '/en/facilities/dentistry'],
+            [1263, 2, 2, '/en/faculties/dentistry'],
             [28, 1, 2, '/en/about/accreditation'],
             [60, 2, 1, '/ar/e-services/suggestions-complaints'],
         ];

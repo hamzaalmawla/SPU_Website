@@ -18687,7 +18687,7 @@
   "routeMeta": [
     {
       "name": "faculty-artificial-intelligence-study-plan",
-      "route": "/facilities/artificial-intelligence/study-plan/",
+      "route": "/faculties/artificial-intelligence/study-plan/",
       "title": "AI Engineering Study Plan | SPU",
       "description": "Explore the AI engineering curriculum covering machine learning, robotics, data science, and neural networks with detailed course sequencing.",
       "ogImage": "/images/faculities/ai/computer-lab.jpg",
@@ -18699,7 +18699,7 @@
     },
     {
       "name": "faculty-business-administration-study-plan",
-      "route": "/facilities/business-administration/study-plan/",
+      "route": "/faculties/business-administration/study-plan/",
       "title": "Business Administration Study Plan | SPU",
       "description": "View the comprehensive business curriculum including finance, marketing, management, and entrepreneurship with clear prerequisite pathways.",
       "ogImage": "/images/about/campus-career.webp",
@@ -18711,7 +18711,7 @@
     },
     {
       "name": "faculty-building-construction-engineering-study-plan",
-      "route": "/facilities/building-construction-engineering/study-plan/",
+      "route": "/faculties/building-construction-engineering/study-plan/",
       "title": "Construction Engineering Study Plan | SPU",
       "description": "Access the civil and construction engineering program featuring structural analysis, project management, and sustainable design courses.",
       "ogImage": "/images/slider-3.webp",
@@ -18723,7 +18723,7 @@
     },
     {
       "name": "faculty-dentistry-study-plan",
-      "route": "/facilities/dentistry/study-plan/",
+      "route": "/faculties/dentistry/study-plan/",
       "title": "Dentistry Study Plan | SPU",
       "description": "Review the dental medicine program with clinical simulation, oral surgery, and restorative dentistry training sequences.",
       "ogImage": "/images/dental-place.JPG",
@@ -18735,7 +18735,7 @@
     },
     {
       "name": "faculty-medicine-study-plan",
-      "route": "/facilities/medicine/study-plan/",
+      "route": "/faculties/medicine/study-plan/",
       "title": "Medicine Study Plan | SPU",
       "description": "Explore the medical degree pathway from basic sciences through clinical rotations to residency preparation with detailed course flow.",
       "ogImage": "/images/slider-2.webp",
@@ -18747,7 +18747,7 @@
     },
     {
       "name": "faculty-petroleum-study-plan",
-      "route": "/facilities/petroleum/study-plan/",
+      "route": "/faculties/petroleum/study-plan/",
       "title": "Petroleum Engineering Study Plan | SPU",
       "description": "Discover the petroleum engineering program covering reservoir analysis, drilling technology, and production optimization coursework.",
       "ogImage": "/images/petroleom-dean.jpg",
@@ -18759,7 +18759,7 @@
     },
     {
       "name": "faculty-pharmacy-study-plan",
-      "route": "/facilities/pharmacy/study-plan/",
+      "route": "/faculties/pharmacy/study-plan/",
       "title": "Pharmacy Study Plan | SPU",
       "description": "View the pharmaceutical sciences curriculum including drug formulation, clinical pharmacy, and pharmacology with structured course progression.",
       "ogImage": "/images/pharmacy-place.jpg",
@@ -18771,7 +18771,7 @@
     },
     {
       "name": "faculty-artificial-intelligence-course-lessons",
-      "route": "/facilities/artificial-intelligence/study-plan/course/",
+      "route": "/faculties/artificial-intelligence/study-plan/course/",
       "title": "AI Course Lessons & Materials | SPU",
       "description": "Access deep learning, neural networks, and data science course materials with lecture notes and programming assignments.",
       "ogImage": "/images/faculities/ai/computer-lab.jpg",
@@ -18783,7 +18783,7 @@
     },
     {
       "name": "faculty-business-administration-course-lessons",
-      "route": "/facilities/business-administration/study-plan/course/",
+      "route": "/faculties/business-administration/study-plan/course/",
       "title": "Business Course Lessons & Materials | SPU",
       "description": "Download accounting, economics, and management lecture notes with case studies and business plan templates.",
       "ogImage": "/images/about/campus-career.webp",
@@ -18795,7 +18795,7 @@
     },
     {
       "name": "faculty-building-construction-engineering-course-lessons",
-      "route": "/facilities/building-construction-engineering/study-plan/course/",
+      "route": "/faculties/building-construction-engineering/study-plan/course/",
       "title": "Construction Engineering Lessons & Materials | SPU",
       "description": "Access structural analysis, concrete design, and surveying course materials with engineering problem sets.",
       "ogImage": "/images/slider-3.webp",
@@ -18807,7 +18807,7 @@
     },
     {
       "name": "faculty-dentistry-course-lessons",
-      "route": "/facilities/dentistry/study-plan/course/",
+      "route": "/faculties/dentistry/study-plan/course/",
       "title": "Dentistry Course Lessons & Materials | SPU",
       "description": "Explore dental anatomy, periodontology, and clinical dentistry course materials with practical guides.",
       "ogImage": "/images/dental-place.JPG",
@@ -18819,7 +18819,7 @@
     },
     {
       "name": "faculty-medicine-course-lessons",
-      "route": "/facilities/medicine/study-plan/course/",
+      "route": "/faculties/medicine/study-plan/course/",
       "title": "Medical Course Lessons & Materials | SPU",
       "description": "Access pathology, pharmacology, and clinical medicine lectures with medical case studies and diagnostic guides.",
       "ogImage": "/images/slider-2.webp",
@@ -18831,7 +18831,7 @@
     },
     {
       "name": "faculty-petroleum-course-lessons",
-      "route": "/facilities/petroleum/study-plan/course/",
+      "route": "/faculties/petroleum/study-plan/course/",
       "title": "Petroleum Engineering Lessons & Materials | SPU",
       "description": "Download reservoir engineering, drilling technology, and petroleum geology course materials and lab manuals.",
       "ogImage": "/images/petroleom-dean.jpg",
@@ -18843,7 +18843,7 @@
     },
     {
       "name": "faculty-pharmacy-course-lessons",
-      "route": "/facilities/pharmacy/study-plan/course/",
+      "route": "/faculties/pharmacy/study-plan/course/",
       "title": "Pharmacy Course Lessons & Materials | SPU",
       "description": "Access pharmaceutical chemistry, pharmacokinetics, and clinical pharmacy lectures with drug formulas and protocols.",
       "ogImage": "/images/pharmacy-place.jpg",

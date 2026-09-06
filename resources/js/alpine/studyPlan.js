@@ -229,7 +229,7 @@ function createStudyPlanPage(root) {
         params.set('department', state.activeDepartmentId);
         params.set('course', courseId);
 
-        return `/${locale}/facilities/${facultySlug}/study-plan/course?${params.toString()}`;
+        return `/${locale}/faculties/${facultySlug}/study-plan/course?${params.toString()}`;
     }
 
     function typeLabel(course) {

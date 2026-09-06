@@ -637,16 +637,16 @@ final class PreviewController extends Controller
     {
         $page = $this->facultyPageService->buildPreviewHub($locale, $content);
 
-        return view('public.facilities.index', [
+        return view('public.faculties.index', [
             'locale' => $locale,
             'direction' => $page->direction,
-            'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $locale.'/facilities'),
+            'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $locale.'/faculties'),
             'settings' => $this->settingsService->getPublicSettings($locale),
             'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale),
             'isPreview' => true,
             'seo' => $this->seoMetadataService->buildFallback($locale, [
-                'path' => '/'.$locale.'/facilities',
-                'locale_paths' => ['ar' => '/ar/facilities', 'en' => '/en/facilities'],
+                'path' => '/'.$locale.'/faculties',
+                'locale_paths' => ['ar' => '/ar/faculties', 'en' => '/en/faculties'],
                 'title' => $page->seoTitle,
                 'meta_description' => $page->seoDescription,
                 'og_title' => $page->seoTitle,
@@ -670,15 +670,15 @@ final class PreviewController extends Controller
         return view('public.faculties.subpage', [
             'locale' => $locale,
             'direction' => $page->direction,
-            'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $locale.'/facilities/'.$page->facultySlug.'/'.$page->subpageSlug),
+            'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $locale.'/faculties/'.$page->facultySlug.'/'.$page->subpageSlug),
             'settings' => $this->settingsService->getPublicSettings($locale),
             'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale),
             'isPreview' => true,
             'seo' => $this->seoMetadataService->buildFallback($locale, [
-                'path' => '/'.$locale.'/facilities/'.$page->facultySlug.'/'.$page->subpageSlug,
+                'path' => '/'.$locale.'/faculties/'.$page->facultySlug.'/'.$page->subpageSlug,
                 'locale_paths' => [
-                    'ar' => '/ar/facilities/'.$page->facultySlug.'/'.$page->subpageSlug,
-                    'en' => '/en/facilities/'.$page->facultySlug.'/'.$page->subpageSlug,
+                    'ar' => '/ar/faculties/'.$page->facultySlug.'/'.$page->subpageSlug,
+                    'en' => '/en/faculties/'.$page->facultySlug.'/'.$page->subpageSlug,
                 ],
                 'title' => $page->seoTitle,
                 'meta_description' => $page->seoDescription,
@@ -698,16 +698,16 @@ final class PreviewController extends Controller
         $page = $this->facultyPageService->buildPreviewFaculty($facultySlug, $locale, $content);
         abort_if($page === null, 404);
 
-        return view('public.facilities.index', [
+        return view('public.faculties.index', [
             'locale' => $locale,
             'direction' => $page->direction,
-            'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $locale.'/facilities/'.$page->slug),
+            'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $locale.'/faculties/'.$page->slug),
             'settings' => $this->settingsService->getPublicSettings($locale),
             'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale),
             'isPreview' => true,
             'seo' => $this->seoMetadataService->buildFallback($locale, [
-                'path' => '/'.$locale.'/facilities/'.$page->slug,
-                'locale_paths' => ['ar' => '/ar/facilities/'.$page->slug, 'en' => '/en/facilities/'.$page->slug],
+                'path' => '/'.$locale.'/faculties/'.$page->slug,
+                'locale_paths' => ['ar' => '/ar/faculties/'.$page->slug, 'en' => '/en/faculties/'.$page->slug],
                 'title' => $page->seoTitle,
                 'meta_description' => $page->seoDescription,
                 'og_title' => $page->seoTitle,

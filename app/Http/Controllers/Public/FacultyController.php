@@ -35,12 +35,12 @@ final class FacultyController extends Controller
             $faculty = $this->facultyPageService->getFaculty($legacyFaculty, $locale);
             abort_if($faculty === null, 404);
 
-            return redirect('/'.$locale.'/facilities/'.$faculty->slug, 301);
+            return redirect('/'.$locale.'/faculties/'.$faculty->slug, 301);
         }
 
         $page = $this->facultyPageService->getHub($locale);
 
-        return view('public.facilities.index', $this->viewPayload($request, $locale, $page, $this->hubSeo($locale, $page), $this->languageSwitch($locale, '')));
+        return view('public.faculties.index', $this->viewPayload($request, $locale, $page, $this->hubSeo($locale, $page), $this->languageSwitch($locale, '')));
     }
 
     public function faculty(Request $request, string $locale, string $faculty): View
@@ -48,7 +48,7 @@ final class FacultyController extends Controller
         $page = $this->facultyPageService->getFaculty($faculty, $locale);
         abort_if($page === null, 404);
 
-        return view('public.facilities.index', $this->viewPayload($request, $locale, $page, $this->facultySeo($locale, $page), $this->languageSwitch($locale, '/'.$page->slug)));
+        return view('public.faculties.index', $this->viewPayload($request, $locale, $page, $this->facultySeo($locale, $page), $this->languageSwitch($locale, '/'.$page->slug)));
     }
 
     public function subpage(Request $request, string $locale, string $faculty, string $subpage): View
@@ -116,7 +116,7 @@ final class FacultyController extends Controller
                 ? $this->facultyPageService->canonicalFacultySlug($segment)
                 : $segment);
 
-        $target = '/'.$locale.'/facilities'.($segments->isNotEmpty() ? '/'.$segments->implode('/') : '');
+        $target = '/'.$locale.'/faculties'.($segments->isNotEmpty() ? '/'.$segments->implode('/') : '');
         $query = $request->getQueryString();
 
         return redirect()->to($query ? $target.'?'.$query : $target, 301);
@@ -151,8 +151,8 @@ final class FacultyController extends Controller
     private function hubSeo(string $locale, FacultyHubPageDTO $page): mixed
     {
         return $this->seoMetadataService->buildFallback($locale, [
-            'path' => '/'.$locale.'/facilities',
-            'locale_paths' => ['ar' => '/ar/facilities', 'en' => '/en/facilities'],
+            'path' => '/'.$locale.'/faculties',
+            'locale_paths' => ['ar' => '/ar/faculties', 'en' => '/en/faculties'],
             'title' => $page->seoTitle,
             'meta_description' => $page->seoDescription,
             'og_title' => $page->seoTitle,
@@ -164,8 +164,8 @@ final class FacultyController extends Controller
     private function facultySeo(string $locale, FacultyDetailPageDTO $page): mixed
     {
         return $this->seoMetadataService->buildFallback($locale, [
-            'path' => '/'.$locale.'/facilities/'.$page->slug,
-            'locale_paths' => ['ar' => '/ar/facilities/'.$page->slug, 'en' => '/en/facilities/'.$page->slug],
+            'path' => '/'.$locale.'/faculties/'.$page->slug,
+            'locale_paths' => ['ar' => '/ar/faculties/'.$page->slug, 'en' => '/en/faculties/'.$page->slug],
             'title' => $page->seoTitle,
             'meta_description' => $page->seoDescription,
             'og_title' => $page->seoTitle,
@@ -180,10 +180,10 @@ final class FacultyController extends Controller
         $queryString = $query !== [] ? '?'.http_build_query($query, '', '&', PHP_QUERY_RFC3986) : '';
 
         return $this->seoMetadataService->buildFallback($locale, [
-            'path' => '/'.$locale.'/facilities/'.$page->facultySlug.'/'.$subpagePath.$queryString,
+            'path' => '/'.$locale.'/faculties/'.$page->facultySlug.'/'.$subpagePath.$queryString,
             'locale_paths' => [
-                'ar' => '/ar/facilities/'.$page->facultySlug.'/'.$subpagePath.$queryString,
-                'en' => '/en/facilities/'.$page->facultySlug.'/'.$subpagePath.$queryString,
+                'ar' => '/ar/faculties/'.$page->facultySlug.'/'.$subpagePath.$queryString,
+                'en' => '/en/faculties/'.$page->facultySlug.'/'.$subpagePath.$queryString,
             ],
             'title' => $page->seoTitle,
             'meta_description' => $page->seoDescription,
@@ -198,10 +198,10 @@ final class FacultyController extends Controller
         $projectSlug = (string) ($page->project['slug'] ?? '');
 
         return $this->seoMetadataService->buildFallback($locale, [
-            'path' => '/'.$locale.'/facilities/'.$page->facultySlug.'/projects/'.$projectSlug,
+            'path' => '/'.$locale.'/faculties/'.$page->facultySlug.'/projects/'.$projectSlug,
             'locale_paths' => [
-                'ar' => '/ar/facilities/'.$page->facultySlug.'/projects/'.$projectSlug,
-                'en' => '/en/facilities/'.$page->facultySlug.'/projects/'.$projectSlug,
+                'ar' => '/ar/faculties/'.$page->facultySlug.'/projects/'.$projectSlug,
+                'en' => '/en/faculties/'.$page->facultySlug.'/projects/'.$projectSlug,
             ],
             'title' => $page->seoTitle,
             'meta_description' => $page->seoDescription,
@@ -217,8 +217,8 @@ final class FacultyController extends Controller
         $queryString = $query !== [] ? '?'.http_build_query($query, '', '&', PHP_QUERY_RFC3986) : '';
 
         return [
-            new LanguageSwitchLinkDTO('ar', 'AR', '/ar/facilities'.$suffix.$queryString, $locale === 'ar'),
-            new LanguageSwitchLinkDTO('en', 'EN', '/en/facilities'.$suffix.$queryString, $locale === 'en'),
+            new LanguageSwitchLinkDTO('ar', 'AR', '/ar/faculties'.$suffix.$queryString, $locale === 'ar'),
+            new LanguageSwitchLinkDTO('en', 'EN', '/en/faculties'.$suffix.$queryString, $locale === 'en'),
         ];
     }
 

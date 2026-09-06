@@ -13,9 +13,9 @@
         <nav class="mb-4 flex items-center justify-center gap-2 text-[11px] font-semibold text-white/75" aria-label="{{ $locale === 'ar' ? 'مسار التنقل' : 'Breadcrumb' }}">
             <a href="/{{ $locale }}" class="transition-colors hover:text-white">{{ $localized($trainingBreadcrumb, 'home') }}</a>
             <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-2 w-2 rtl:rotate-180" aria-hidden="true">
-            <a href="/{{ $locale }}/facilities" class="transition-colors hover:text-white">{{ $localized($trainingBreadcrumb, 'facilities') }}</a>
+            <a href="/{{ $locale }}/faculties" class="transition-colors hover:text-white">{{ $localized($trainingBreadcrumb, 'facilities') }}</a>
             <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-2 w-2 rtl:rotate-180" aria-hidden="true">
-            <a href="/{{ $locale }}/facilities/pharmacy" class="transition-colors hover:text-white">{{ $localized($trainingBreadcrumb, 'pharmacy') }}</a>
+            <a href="/{{ $locale }}/faculties/pharmacy" class="transition-colors hover:text-white">{{ $localized($trainingBreadcrumb, 'pharmacy') }}</a>
         </nav>
 
         <div class="absolute bottom-[-50px] left-1/2 z-50 mx-auto max-w-[620px] -translate-x-1/2 transform bg-spu-blue px-6 py-8 shadow-[0_18px_46px_rgba(0,0,0,0.18)] sm:px-10">
@@ -66,7 +66,7 @@
     <div class="container">
         <div class="mb-7 flex items-center justify-between gap-4">
             <h2 class="text-[24px] font-bold text-spu-blue">{{ $localized($partners, 'title') }}</h2>
-            <a href="/{{ $locale }}/facilities/pharmacy" class="inline-flex items-center gap-2 text-[12px] font-bold text-spu-blue transition-colors hover:text-spu-red">
+            <a href="/{{ $locale }}/faculties/pharmacy" class="inline-flex items-center gap-2 text-[12px] font-bold text-spu-blue transition-colors hover:text-spu-red">
                 <span>{{ $localized($partners, 'cta') }}</span>
                 <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-3 w-3 rtl:rotate-180" aria-hidden="true">
             </a>

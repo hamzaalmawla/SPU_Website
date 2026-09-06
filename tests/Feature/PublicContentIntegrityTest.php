@@ -52,7 +52,7 @@ final class PublicContentIntegrityTest extends TestCase
         $this->get('/en/research/publications/ai-dental-diagnostics')->assertNotFound();
         $this->get('/en/news/events-list/evt-001')->assertNotFound();
         $this->get('/en/news/gallery')->assertOk()->assertDontSee('Syrian Private University Campus');
-        $this->get('/en/facilities/artificial-intelligence/projects/artificial-intelligence-project-1')->assertNotFound();
+        $this->get('/en/faculties/artificial-intelligence/projects/artificial-intelligence-project-1')->assertNotFound();
         $this->get('/en/admissions/requirements')->assertNotFound();
         $this->get('/en/campus-life/career-development/jobs/lecturer-computer-science')->assertNotFound();
         $this->get('/en/e-services')->assertOk()->assertDontSee('Under Construction');
@@ -181,9 +181,9 @@ final class PublicContentIntegrityTest extends TestCase
         ];
         $workflow->saveDraft('facilities.artificial-intelligence.projects', $faculty, $userId);
         $this->assertTrue($workflow->publish('facilities.artificial-intelligence.projects', $userId));
-        $this->get('/en/facilities/artificial-intelligence/projects/integrity-faculty-project')->assertOk()->assertSee('Integrity Faculty Project');
+        $this->get('/en/faculties/artificial-intelligence/projects/integrity-faculty-project')->assertOk()->assertSee('Integrity Faculty Project');
         $this->assertTrue($workflow->unpublish('facilities.artificial-intelligence.projects', $userId));
-        $this->get('/en/facilities/artificial-intelligence/projects/integrity-faculty-project')->assertNotFound();
+        $this->get('/en/faculties/artificial-intelligence/projects/integrity-faculty-project')->assertNotFound();
 
         $suggestions = app(EServicesPageServiceInterface::class)->getSuggestionsComplaintsEditablePayload();
         $suggestions['translations']['en']['hero']['title'] = 'Integrity E-Services Target';

@@ -195,7 +195,7 @@ final class LegacySubsiteContentQueryResolver implements LegacyQueryModuleResolv
             return null;
         }
 
-        $faculty = '/facilities/'.self::FACULTIES[$subsite]['slug'];
+        $faculty = '/faculties/'.self::FACULTIES[$subsite]['slug'];
 
         // Faculty staff, council and gallery listings are addressed by dir, not
         // by service.

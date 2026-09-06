@@ -80,7 +80,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
 
     public function getHub(string $locale): FacultyHubPageDTO
     {
-        return $this->facilitiesCache()->remember("public.facilities.hub.{$locale}", function () use ($locale): FacultyHubPageDTO {
+        return $this->facilitiesCache()->remember("public.faculties.hub.{$locale}", function () use ($locale): FacultyHubPageDTO {
             $faculties = $this->baseFacultyQuery()->get();
             $content = $this->publishedLocalizedPayload('facilities.landing', $locale) ?? $this->hubContent($locale);
 
@@ -157,7 +157,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
     {
         $facultySlug = $this->canonicalFacultySlug($facultySlug);
 
-        return $this->facilitiesCache()->remember("public.facilities.{$facultySlug}.{$locale}", function () use ($facultySlug, $locale): ?FacultyDetailPageDTO {
+        return $this->facilitiesCache()->remember("public.faculties.{$facultySlug}.{$locale}", function () use ($facultySlug, $locale): ?FacultyDetailPageDTO {
             $faculty = $this->facultyByPublicSlug($facultySlug);
 
             if (! $faculty instanceof Faculty) {
@@ -225,7 +225,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
         $filters = $this->normalizeSubpageFilters($subpageSlug, $filters);
         $filterKey = md5((string) json_encode($filters));
 
-        return $this->facilitiesCache()->remember("public.facilities.{$facultySlug}.{$subpageSlug}.{$locale}.{$filterKey}", function () use ($facultySlug, $subpageSlug, $locale, $filters): ?FacultySubpageDTO {
+        return $this->facilitiesCache()->remember("public.faculties.{$facultySlug}.{$subpageSlug}.{$locale}.{$filterKey}", function () use ($facultySlug, $subpageSlug, $locale, $filters): ?FacultySubpageDTO {
             $faculty = $this->facultyByPublicSlug($facultySlug);
 
             if (! $faculty instanceof Faculty) {
@@ -250,7 +250,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
     {
         $facultySlug = $this->canonicalFacultySlug($facultySlug);
 
-        return $this->facilitiesCache()->remember("public.facilities.{$facultySlug}.projects.{$projectSlug}.{$locale}", function () use ($facultySlug, $projectSlug, $locale): ?FacultyProjectDetailPageDTO {
+        return $this->facilitiesCache()->remember("public.faculties.{$facultySlug}.projects.{$projectSlug}.{$locale}", function () use ($facultySlug, $projectSlug, $locale): ?FacultyProjectDetailPageDTO {
             $faculty = $this->facultyByPublicSlug($facultySlug);
 
             if (! $faculty instanceof Faculty) {
@@ -405,7 +405,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
         if ($project instanceof FacultyStudentProject
             && $project->faculty instanceof Faculty
             && $project->faculty->is_enabled) {
-            return '/'.$locale.'/facilities/'.$this->publicSlug($project->faculty).'/projects/'.rawurlencode($projectId);
+            return '/'.$locale.'/faculties/'.$this->publicSlug($project->faculty).'/projects/'.rawurlencode($projectId);
         }
 
         return null;
@@ -560,7 +560,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
         return [
             'title' => (string) ($translation->catalog_title ?? $translation->name),
             'summary' => (string) ($translation->short_description ?? ''),
-            'url' => $this->url($locale, "/facilities/{$slug}"),
+            'url' => $this->url($locale, "/faculties/{$slug}"),
             'accentColor' => $faculty->accent_color,
         ];
     }
@@ -853,7 +853,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
             name: (string) $translation->name,
             title: (string) ($translation->catalog_title ?? $translation->name),
             summary: (string) ($translation->short_description ?? ''),
-            url: $this->url($locale, "/facilities/{$slug}"),
+            url: $this->url($locale, "/faculties/{$slug}"),
             heroImage: $faculty->hero_image,
             logoImage: $faculty->logo_image,
             accentColor: $faculty->accent_color,
@@ -882,7 +882,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'accentColor' => $faculty->accent_color,
             'heroImage' => $faculty->hero_image,
             'logoImage' => $faculty->logo_image,
-            'url' => $this->url($locale, "/facilities/{$slug}"),
+            'url' => $this->url($locale, "/faculties/{$slug}"),
         ];
     }
 
@@ -911,7 +911,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
             ->map(fn (FacultyPage $page): FacultyNavigationItemDTO => new FacultyNavigationItemDTO(
                 slug: (string) $page->slug,
                 label: $labels[$page->slug] ?? (string) $page->slug,
-                url: $page->slug === 'overview' ? $this->url($locale, "/facilities/{$slug}/overview") : $this->url($locale, "/facilities/{$slug}/{$page->slug}"),
+                url: $page->slug === 'overview' ? $this->url($locale, "/faculties/{$slug}/overview") : $this->url($locale, "/faculties/{$slug}/{$page->slug}"),
                 isActive: $active === $page->slug,
             ))
             ->values();
@@ -1245,7 +1245,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
 
     private function projectDetailRoute(Faculty $faculty, string $locale, string $projectSlug): string
     {
-        return $this->url($locale, '/facilities/'.$this->publicSlug($faculty).'/projects/'.$projectSlug);
+        return $this->url($locale, '/faculties/'.$this->publicSlug($faculty).'/projects/'.$projectSlug);
     }
 
     /** @return array<int, array<string, mixed>> */

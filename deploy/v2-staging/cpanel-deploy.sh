@@ -137,6 +137,34 @@ else
 fi
 [[ -f "${WEB}/build/manifest.json" ]] || fail "The build did not land at ${WEB}/build"
 
+# nginx strips Accept-Encoding before Apache or PHP ever sees it (measured
+# 2 September; the reasoning is in config/edge.php). That means mod_deflate
+# cannot fire for a static file and no negotiated rewrite can either, so the
+# build assets were going out uncompressed: app.css alone is 311 KB on the wire
+# where it gzips to 51 KB, on an audience the .htaccess notes is "largely on
+# slow connections".
+#
+# The application already forces gzip on HTML for exactly this reason. These
+# siblings extend the same, already accepted trade-off to the build assets.
+# public/.htaccess serves a .gz only when it exists, so deleting one here just
+# restores the uncompressed file - this step is safe to fail.
+log "Pre-compressing build assets"
+if command -v gzip >/dev/null 2>&1; then
+    compressed=0
+    while IFS= read -r asset; do
+        # -n keeps the timestamp out of the output so an unchanged asset
+        # produces an identical .gz and rsync has nothing to copy next time.
+        if gzip -9 -n -c "${asset}" > "${asset}.gz" 2>/dev/null; then
+            compressed=$((compressed + 1))
+        else
+            rm -f "${asset}.gz"
+        fi
+    done < <(find "${WEB}/build" -type f \( -name '*.css' -o -name '*.js' \) -size +1k)
+    printf '  Compressed %d build asset(s)\n' "${compressed}"
+else
+    printf '  gzip not available; assets will be served uncompressed\n' >&2
+fi
+
 # ── Runtime directories ──────────────────────────────────────────────────────
 # Missing cache stores fail at runtime, not at deploy time.
 log "Ensuring runtime directories"
@@ -279,6 +307,30 @@ else
         printf '\n⚠ launch:validate reported problems. The code is deployed; read the output above.\n' >&2
     }
 fi
+
+# What is still unpublished.
+#
+# launch:validate answers "does the application work"; it cannot answer "is
+# there anything on the page", and those fail differently. Public pages no
+# longer fall back to the development fixtures, so a section with nothing
+# published renders its empty state correctly and silently - which is right for
+# the visitor and useless for anyone trying to find out what is left before
+# launch. Someone had to read the source to learn why the media gallery was
+# blank; this prints the same answer for every section, every deploy.
+#
+# --summary, not the full list. A missing payload is usually not an empty page:
+# most sections render from database records and treat the payload as an
+# optional override, so 110 of 134 report nothing published while showing real
+# content. Printing all 110 every deploy would train people to skip the section
+# that is supposed to warn them. The summary says how many, and points at
+# --probe, which renders each page and reports the ones that are genuinely
+# blank.
+#
+# Never fatal: what to publish, retire or leave empty is SPU's decision, not a
+# deploy's.
+log "CMS content status"
+(cd "${APP}" && "${PHP}" artisan cms:content-status --summary) || \
+    printf '   (cms:content-status unavailable in this release)\n'
 
 # The tarball-based deployment extracts into .release/ inside the repository,
 # which leaves the working tree dirty - and cPanel refuses to deploy a repository

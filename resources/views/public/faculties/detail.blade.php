@@ -186,7 +186,7 @@
                             @endforeach
                         </div>
                         <div class="mt-8 border-t border-slate-100 pt-6">
-                            <a href="/{{ $locale }}/facilities/{{ $page->slug }}/overview" class="group inline-flex items-center gap-3 transition-all" style="color: {{ $accent }}">
+                            <a href="/{{ $locale }}/faculties/{{ $page->slug }}/overview" class="group inline-flex items-center gap-3 transition-all" style="color: {{ $accent }}">
                                 <span class="text-base font-bold">{{ __('public.read_more') }}</span>
                                 <img src="/images/icon-arrow-right-outline.svg" alt="" class="h-4 w-4 transition-transform duration-300 group-hover:translate-x-2 rtl:rotate-180 rtl:group-hover:-translate-x-2" aria-hidden="true">
                             </a>

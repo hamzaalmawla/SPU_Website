@@ -4,7 +4,7 @@
  *
  * The hub used to declare this inline: `x-data="{ active: null, images: @js(...) }"`.
  * Alpine here is the CSP build, which evaluates no expressions at all — so that
- * object literal never parsed, and every page on /facilities threw "Undefined
+ * object literal never parsed, and every page on /faculties threw "Undefined
  * variable: JSON" and "Undefined variable: active" into the console while the
  * gallery sat inert in both locales. It went unnoticed because the page looks
  * finished without it: the default panorama still renders, and only the

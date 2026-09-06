@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Contracts\Auth\AuthServiceInterface;
 use App\Models\User\User;
 use App\Services\Auth\TotpAuthenticator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -168,6 +169,24 @@ class TwoFactorChallengeTest extends TestCase
 
         $this->get('/admin')
             ->assertRedirect(route('admin.two-factor.challenge'));
+    }
+
+    public function test_super_admin_can_disable_another_users_two_factor_authentication(): void
+    {
+        $actor = User::factory()->create(['role_slug' => 'super_admin']);
+        $target = $this->createUserWith2FA();
+
+        $this->app->make(AuthServiceInterface::class)->updateUser(
+            (int) $target->getKey(),
+            ['two_factor_enabled' => false],
+            (int) $actor->getKey(),
+        );
+
+        $target->refresh();
+
+        $this->assertFalse($target->two_factor_enabled);
+        $this->assertNull($target->totp_secret_encrypted);
+        $this->assertNull($target->recovery_codes_encrypted);
     }
 
     public function test_two_factor_user_can_use_filament_logout_before_verification(): void

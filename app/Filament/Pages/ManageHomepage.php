@@ -102,7 +102,7 @@ class ManageHomepage extends Page implements HasForms
     public function mount(): void
     {
         $requestedSection = request()->query('section', 'hero');
-        $this->activeSection = is_string($requestedSection) && in_array($requestedSection, HomepageSectionServiceInterface::SECTION_KEYS, true)
+        $this->activeSection = is_string($requestedSection) && in_array($requestedSection, self::editableSectionKeys(), true)
             ? $requestedSection
             : 'hero';
         $this->loadSectionData();
@@ -142,7 +142,7 @@ class ManageHomepage extends Page implements HasForms
             'label' => $labels[$key] ?? $key,
             'url' => static::getUrl(['section' => $key]),
             'active' => $key === $this->activeSection,
-        ], HomepageSectionServiceInterface::SECTION_KEYS);
+        ], self::editableSectionKeys());
     }
 
     protected function getHeaderActions(): array
@@ -1166,9 +1166,17 @@ class ManageHomepage extends Page implements HasForms
             'university_news' => 'University News',
             'events_activities' => 'Events & Activities',
             'medical_facilities_services' => 'Medical Facilities & Services',
-            'bottom_stats' => 'Bottom Stats',
             'footer' => 'Footer',
         ];
+    }
+
+    /** @return list<string> */
+    private static function editableSectionKeys(): array
+    {
+        return array_values(array_filter(
+            HomepageSectionServiceInterface::SECTION_KEYS,
+            static fn (string $key): bool => $key !== 'bottom_stats',
+        ));
     }
 
     private function saveCurrentDraft(array $formData): HomepageDraftDTO

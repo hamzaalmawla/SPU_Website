@@ -43,7 +43,7 @@
         $nextLabel = $isAr ? 'التالي' : 'Next';
         $viewAllLabel = $isAr ? 'عرض جميع المشاريع' : 'View All Projects';
         $detailsLabel = $isAr ? 'عرض التفاصيل' : 'View Details';
-        $facultyProjectsUrl = '/'.$locale.'/facilities/'.$page->facultySlug.'/projects';
+        $facultyProjectsUrl = '/'.$locale.'/faculties/'.$page->facultySlug.'/projects';
         $initials = function (string $value): string {
             $words = preg_split('/\s+/u', trim($value)) ?: [];
 
@@ -106,7 +106,7 @@
                         </div>
                     </div>
 
-                    <div class="rounded-[6px] border border-slate-200 bg-white p-6 shadow-sm" x-data="pageShare" data-share-url="{{ url('/'.$locale.'/facilities/'.$page->facultySlug.'/projects/'.($project['slug'] ?? '')) }}" data-share-title="{{ $project['title'] ?? '' }}">
+                    <div class="rounded-[6px] border border-slate-200 bg-white p-6 shadow-sm" x-data="pageShare" data-share-url="{{ url('/'.$locale.'/faculties/'.$page->facultySlug.'/projects/'.($project['slug'] ?? '')) }}" data-share-title="{{ $project['title'] ?? '' }}">
                         <h3 class="text-[13px] font-bold uppercase tracking-[0.04em] text-slate-400">{{ $isAr ? 'مشاركة المشروع' : 'Share Project' }}</h3>
                         <div class="mt-4 grid grid-cols-2 gap-2">
                             <button type="button" x-on:click="share" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-spu-blue transition hover:border-spu-blue">{{ $isAr ? 'مشاركة' : 'Share' }}</button>
@@ -136,7 +136,7 @@
                             <ul class="mt-4 space-y-3">
                                 @foreach ($project['teamMembers'] as $member)
                                     <li>
-                                        <a href="/{{ $locale }}/facilities/{{ $page->facultySlug }}/alumni" class="flex items-center gap-3 transition hover:opacity-80">
+                                        <a href="/{{ $locale }}/faculties/{{ $page->facultySlug }}/alumni" class="flex items-center gap-3 transition hover:opacity-80">
                                             <div class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-[11px] font-bold text-slate-500">{{ $initials((string) ($member['name'] ?? '')) }}</div>
                                             <div>
                                                 <p class="text-[12px] font-bold text-spu-blue">{{ $member['name'] ?? '' }}</p>

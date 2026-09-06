@@ -279,14 +279,14 @@ final class CachePublicPages
             'public.admissions.section' => $request->route('section') === 'documents' ? ['tab'] : [],
             'public.campus-life.career-development.jobs' => ['q', 'category', 'type', 'page'],
             'public.campus-life.career-development.jobs.apply' => ['job'],
-            'public.facilities.subpage' => match ($request->route('subpage')) {
+            'public.faculties.subpage' => match ($request->route('subpage')) {
                 'alumni', 'valedictorians' => ['q', 'year', 'department', 'faculty', 'semester', 'academic_phase', 'page'],
                 'projects', 'research' => ['page'],
                 'labs' => ['lab', 'page'],
                 default => [],
             },
-            'public.facilities.study-plan' => ['department'],
-            'public.facilities.study-plan.course' => ['department', 'course', 'type'],
+            'public.faculties.study-plan' => ['department'],
+            'public.faculties.study-plan.course' => ['department', 'course', 'type'],
             'public.news.articles' => ['category', 'search', 'page'],
             'public.news.announcements' => ['category', 'page'],
             'public.news.events' => ['month'],

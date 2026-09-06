@@ -81,7 +81,7 @@
                     <div class="grid gap-10 sm:grid-cols-2">
                         <div class="flex gap-4">
                             <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-spu-blue text-white">
-                                <img src="{{ $contact->info['callUs']['icon'] }}" alt="" class="h-4 w-4" aria-hidden="true">
+                                <img src="{{ !empty($contact->info['callUs']['icon']) ? $contact->info['callUs']['icon'] : '/images/icon-phone-outline.svg' }}" alt="" class="h-4 w-4 brightness-0 invert" aria-hidden="true">
                             </div>
                             <div class="space-y-1">
                                 <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">{{ $contact->info['callUs']['label'] }}</p>
@@ -91,7 +91,7 @@
 
                         <div class="flex gap-4">
                             <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-spu-blue text-white">
-                                <img src="/images/icon-map-outline.svg" alt="" class="h-4 w-4" aria-hidden="true">
+                                <img src="{{ !empty($contact->info['address']['icon']) ? $contact->info['address']['icon'] : '/images/icon-map-outline.svg' }}" alt="" class="h-4 w-4 brightness-0 invert" aria-hidden="true">
                             </div>
                             <div class="space-y-1">
                                 <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">{{ $contact->info['address']['label'] }}</p>
@@ -101,7 +101,7 @@
 
                         <div class="flex gap-4">
                             <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-spu-blue text-white">
-                                <img src="/images/icon-envelope-outline.svg" alt="" class="h-4 w-4" aria-hidden="true">
+                                <img src="{{ !empty($contact->info['emailUs']['icon']) ? $contact->info['emailUs']['icon'] : '/images/icon-envelope-outline.svg' }}" alt="" class="h-4 w-4 brightness-0 invert" aria-hidden="true">
                             </div>
                             <div class="space-y-1">
                                 <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">{{ $contact->info['emailUs']['label'] }}</p>
@@ -111,7 +111,7 @@
 
                         <div class="flex gap-4">
                             <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-spu-blue text-white">
-                                <img src="/images/time.svg" alt="" class="h-4 w-4" aria-hidden="true">
+                                <img src="{{ !empty($contact->info['officeHours']['icon']) ? $contact->info['officeHours']['icon'] : '/images/time.svg' }}" alt="" class="h-4 w-4 brightness-0 invert" aria-hidden="true">
                             </div>
                             <div class="space-y-1">
                                 <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">{{ $contact->info['officeHours']['label'] }}</p>
@@ -156,7 +156,7 @@
                 <div class="w-full max-w-[min(100%,28rem)]">
                     <a href="{{ $contact->location['mapUrl'] }}" target="_blank" rel="noreferrer"
                         class="inline-flex w-full items-center justify-center gap-3 bg-spu-red px-6 py-4 text-sm font-bold text-white transition-all hover:bg-spu-red/90 hover:shadow-xl active:scale-95 sm:w-auto sm:px-10">
-                        <img src="/images/icon-map-outline.svg" alt="" class="h-4 w-4" aria-hidden="true">
+                        <img src="/images/icon-map-outline.svg" alt="" class="h-4 w-4 brightness-0 invert" aria-hidden="true">
                         <span>{{ $contact->location['button'] }}</span>
                     </a>
                 </div>

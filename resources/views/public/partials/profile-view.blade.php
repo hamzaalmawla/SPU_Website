@@ -224,7 +224,7 @@
                                 @php
                                     $facultySlug = $profile['faculty']['slug'] ?? $profile['facultySlug'] ?? '';
                                     $courseHref = in_array($facultySlug, ['medicine', 'dentistry', 'pharmacy', 'artificial-intelligence', 'business-administration', 'petroleum', 'building-construction-engineering'], true)
-                                        ? '/'.$locale.'/facilities/'.$facultySlug.'/study-plan/course?department='.($course['departmentId'] ?? '').'&course='.($course['id'] ?? '')
+                                        ? '/'.$locale.'/faculties/'.$facultySlug.'/study-plan/course?department='.($course['departmentId'] ?? '').'&course='.($course['id'] ?? '')
                                         : null;
                                 @endphp
                                 @if ($courseHref)

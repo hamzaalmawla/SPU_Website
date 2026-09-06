@@ -1324,8 +1324,10 @@ class ManageResearch extends Page implements HasForms
 
         $content['past'] = array_map(function (array $event): array {
             $event['hasProceedings'] = (bool) ($event['hasProceedings'] ?? false);
-            if (($event['proceedingsUrl'] ?? null) === '#') {
+            $proceedingsUrl = $event['proceedingsUrl'] ?? null;
+            if (! $this->isSafeResourceUrl($proceedingsUrl)) {
                 $event['proceedingsUrl'] = null;
+                $event['proceedingsUnavailable'] = $event['hasProceedings'];
             }
 
             return $event;
@@ -1359,6 +1361,8 @@ class ManageResearch extends Page implements HasForms
     {
         $content['sections'] = array_map(function (array $section): array {
             $section['documents'] = $this->listOfArrays($section['documents'] ?? []);
+            $section['documentsUnavailable'] = $section['documents'] === [] || collect($section['documents'])
+                ->every(fn (array $document): bool => ! $this->isSafeResourceUrl($document['url'] ?? null));
 
             return $section;
         }, $this->listOfArrays($content['sections'] ?? []));
@@ -1650,6 +1654,17 @@ class ManageResearch extends Page implements HasForms
     private function listOfStrings(mixed $items): array
     {
         return array_values(array_filter(is_array($items) ? $items : [], static fn (mixed $item): bool => is_string($item) && trim($item) !== ''));
+    }
+
+    private function isSafeResourceUrl(mixed $url): bool
+    {
+        return is_string($url)
+            && trim($url) !== ''
+            && $url !== '#'
+            && (
+                (str_starts_with($url, '/') && ! str_starts_with($url, '//'))
+                || (filter_var($url, FILTER_VALIDATE_URL) !== false && parse_url($url, PHP_URL_SCHEME) === 'https')
+            );
     }
 
     private function canonicalFacultySlug(string $slug): string

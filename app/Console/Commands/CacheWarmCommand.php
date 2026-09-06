@@ -230,7 +230,7 @@ final class CacheWarmCommand extends Command
     /** @param list<string> $locales */
     private function warmPublicHtml(array $locales): void
     {
-        $paths = ['', '/about', '/admissions', '/facilities', '/campus-life', '/news', '/news/articles'];
+        $paths = ['', '/about', '/admissions', '/faculties', '/campus-life', '/news', '/news/articles'];
         $origin = rtrim((string) config('app.url'), '/');
 
         foreach ($locales as $locale) {

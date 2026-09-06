@@ -37,7 +37,7 @@ final class FacultyStudyPlanLinkService implements FacultyStudyPlanLinkServiceIn
     {
         $departments = $this->effectiveDepartments($facultySlug);
         $validIds = array_fill_keys(array_keys($departments), true);
-        $studyPlanUrl = '/'.$locale.'/facilities/'.$this->canonicalFacultySlug($facultySlug).'/study-plan';
+        $studyPlanUrl = '/'.$locale.'/faculties/'.$this->canonicalFacultySlug($facultySlug).'/study-plan';
 
         return array_map(function (array $item) use ($departments, $validIds, $locale, $studyPlanUrl): array {
             $explicitId = trim((string) ($item['studyPlanDepartmentId'] ?? ''));

@@ -26,4 +26,27 @@ return [
         static fn (string $host): string => strtolower(trim($host)),
         explode(',', $configuredTrustedPortalHosts),
     )))),
+
+    // HSTS. Both values matter most on the day the apex domain starts serving
+    // this application, which is why neither is hard-coded any more.
+    //
+    // `includeSubDomains` from spu.edu.sy binds webmail, rooms and every other
+    // subdomain to HTTPS for the whole max-age, in every browser that has
+    // loaded the homepage once. Every certificate on the account currently
+    // expires on the same day, so a failed renewal after cutover is not a
+    // warning page the user can click through - it is total inaccessibility
+    // across every subdomain, for as long as max-age says.
+    //
+    // The default is therefore a week rather than a year: long enough to be a
+    // real policy, short enough that a mistake ages out. Raise it once the
+    // domain has run clean and renewal has been observed to work.
+    'hsts_max_age' => (int) env('HSTS_MAX_AGE', 604800),
+
+    // Preload is close to irreversible: removal requires a request to the
+    // browser vendors' list and ships on their release schedule, not yours.
+    // Off by default; turn it on deliberately, months after cutover, never as
+    // part of one.
+    'hsts_preload' => (bool) env('HSTS_PRELOAD', false),
+
+    'hsts_include_subdomains' => (bool) env('HSTS_INCLUDE_SUBDOMAINS', true),
 ];

@@ -42,6 +42,17 @@ interface AuthServiceInterface
     public function recordSuccessfulTwoFactor(Authenticatable $user): void;
 
     /**
+     * Create an admin-managed user account.
+     *
+     * Returns the new user's id, or null when creation was refused. An id
+     * rather than the model itself: contracts here do not expose Eloquent, and
+     * the id is all a caller needs to rehydrate one if it must.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    public function createUser(array $payload, int $actorUserId): ?int;
+
+    /**
      * Update an admin-managed user account.
      *
      * @param  array<string, mixed>  $payload

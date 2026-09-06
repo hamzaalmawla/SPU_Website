@@ -153,7 +153,7 @@ class RedirectContinuityTest extends TestCase
         // faculty news (units digit 3), so it resolves to that faculty's page.
         // It must never be treated as the new Laravel /admin panel.
         $this->get('/admin/index.php?page=list&dir=items&service=73&lang=1')
-            ->assertRedirect('/ar/facilities/business-administration')
+            ->assertRedirect('/ar/faculties/business-administration')
             ->assertStatus(301);
 
         // A service that does not belong to the admin subsite's decade is a
@@ -181,14 +181,14 @@ class RedirectContinuityTest extends TestCase
     public function test_legacy_public_business_subsite_home_redirects_before_admin_routes(): void
     {
         $this->get('/admin/index.php?lang=1')
-            ->assertRedirect('/ar/facilities/business-administration')
+            ->assertRedirect('/ar/faculties/business-administration')
             ->assertStatus(301);
     }
 
     public function test_reviewed_root_category_queries_redirect_through_runtime_continuity(): void
     {
         $this->get('/index.php?page=show&ex=2&dir=items&lang=2&ser=2&cat_id=1263')
-            ->assertRedirect('/en/facilities/dentistry')
+            ->assertRedirect('/en/faculties/dentistry')
             ->assertStatus(301);
 
         $this->get('/index.php?page=show&ex=2&dir=items&lang=1&ser=1&cat_id=28')

@@ -45,7 +45,7 @@ final class SearchIndexService implements SearchIndexServiceInterface
     private const LOCALES = ['ar', 'en'];
 
     /**
-     * Faculties reachable through the public /facilities routes. Mirrors the
+     * Faculties reachable through the public /faculties routes. Mirrors the
      * route constraint in routes/web.php and FacultyPageService::FACULTY_SLUGS;
      * indexing anything else would produce links that 404.
      *
@@ -62,7 +62,7 @@ final class SearchIndexService implements SearchIndexServiceInterface
     ];
 
     /**
-     * Faculty subpages that the /facilities/{faculty}/{subpage} route accepts.
+     * Faculty subpages that the /faculties/{faculty}/{subpage} route accepts.
      * 'study-plan' is deliberately absent: it has its own dedicated route.
      *
      * @var list<string>
@@ -634,7 +634,7 @@ final class SearchIndexService implements SearchIndexServiceInterface
                     $shortDescription,
                     $description,
                 ],
-                url: '/'.$locale.'/facilities/'.$slug,
+                url: '/'.$locale.'/faculties/'.$slug,
                 meta: null,
                 publishedAt: null,
             );
@@ -680,7 +680,7 @@ final class SearchIndexService implements SearchIndexServiceInterface
                 title: $title,
                 summary: $summary !== '' ? $summary : ($body !== '' ? $body : $sections),
                 bodyParts: [$title, $facultyName, $summary, $body, $sections],
-                url: '/'.$locale.'/facilities/'.$facultySlug.'/'.$record->slug,
+                url: '/'.$locale.'/faculties/'.$facultySlug.'/'.$record->slug,
                 meta: $facultyName !== '' ? $facultyName : null,
                 publishedAt: null,
             );

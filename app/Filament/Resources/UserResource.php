@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Gate;
  *
  * All business logic is delegated to AuthServiceInterface.
  * This resource provides only the UI layer.
- * No create or delete actions — soft-delete is handled via lock.
+ * No delete action — soft-delete is handled via lock.
  */
 class UserResource extends Resource
 {
@@ -63,6 +63,7 @@ class UserResource extends Resource
                     ->label('Email')
                     ->email()
                     ->required()
+                    ->unique(ignoreRecord: true)
                     ->maxLength(255),
 
                 Select::make('role_slug')
@@ -85,12 +86,19 @@ class UserResource extends Resource
                 Toggle::make('is_locked')
                     ->label('Account Locked')
                     ->helperText('Locked accounts cannot log in.'),
+
+                Toggle::make('two_factor_enabled')
+                    ->label('Two-Factor Authentication')
+                    ->helperText('Turn off two-factor authentication for this account. It must be enabled from the account security page.')
+                    ->disabled(fn (bool $state): bool => ! $state)
+                    ->dehydrated(),
             ]),
 
             Section::make('Password Reset')->schema([
                 TextInput::make('password')
                     ->label('New Password')
                     ->password()
+                    ->required(fn (string $operation): bool => $operation === 'create')
                     ->minLength(8)
                     ->maxLength(255)
                     ->dehydrated(fn (?string $state): bool => filled($state))
@@ -153,6 +161,7 @@ class UserResource extends Resource
     {
         return [
             'index' => Pages\ListUsers::route('/'),
+            'create' => Pages\CreateUser::route('/create'),
             'edit' => Pages\EditUser::route('/{record}/edit'),
         ];
     }

@@ -192,23 +192,23 @@ class NavigationSeeder extends Seeder
         ]];
 
         // ── Faculties (sort 2) ──
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'المرافق', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/ar/facilities', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 2, 'children' => [
-            ['label' => 'كلية الطب البشري', 'target_kind' => 'url', 'url' => '/ar/facilities/medicine'],
-            ['label' => 'كلية طب الأسنان', 'target_kind' => 'url', 'url' => '/ar/facilities/dentistry'],
-            ['label' => 'كلية الصيدلة', 'target_kind' => 'url', 'url' => '/ar/facilities/pharmacy'],
-            ['label' => 'كلية هندسة الذكاء الاصطناعي', 'target_kind' => 'url', 'url' => '/ar/facilities/artificial-intelligence'],
-            ['label' => 'كلية هندسة البناء', 'target_kind' => 'url', 'url' => '/ar/facilities/building-construction-engineering'],
-            ['label' => 'كلية هندسة البترول', 'target_kind' => 'url', 'url' => '/ar/facilities/petroleum'],
-            ['label' => 'كلية إدارة الأعمال', 'target_kind' => 'url', 'url' => '/ar/facilities/business-administration'],
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'الكليات', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/ar/faculties', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 2, 'children' => [
+            ['label' => 'كلية الطب البشري', 'target_kind' => 'url', 'url' => '/ar/faculties/medicine'],
+            ['label' => 'كلية طب الأسنان', 'target_kind' => 'url', 'url' => '/ar/faculties/dentistry'],
+            ['label' => 'كلية الصيدلة', 'target_kind' => 'url', 'url' => '/ar/faculties/pharmacy'],
+            ['label' => 'كلية هندسة الذكاء الاصطناعي', 'target_kind' => 'url', 'url' => '/ar/faculties/artificial-intelligence'],
+            ['label' => 'كلية هندسة البناء', 'target_kind' => 'url', 'url' => '/ar/faculties/building-construction-engineering'],
+            ['label' => 'كلية هندسة البترول', 'target_kind' => 'url', 'url' => '/ar/faculties/petroleum'],
+            ['label' => 'كلية إدارة الأعمال', 'target_kind' => 'url', 'url' => '/ar/faculties/business-administration'],
         ]];
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'Facilities', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/en/facilities', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 2, 'children' => [
-            ['label' => 'Medicine', 'target_kind' => 'url', 'url' => '/en/facilities/medicine'],
-            ['label' => 'Dentistry', 'target_kind' => 'url', 'url' => '/en/facilities/dentistry'],
-            ['label' => 'Pharmacy', 'target_kind' => 'url', 'url' => '/en/facilities/pharmacy'],
-            ['label' => 'AI Engineering', 'target_kind' => 'url', 'url' => '/en/facilities/artificial-intelligence'],
-            ['label' => 'Construction Engineering', 'target_kind' => 'url', 'url' => '/en/facilities/building-construction-engineering'],
-            ['label' => 'Petroleum Engineering', 'target_kind' => 'url', 'url' => '/en/facilities/petroleum'],
-            ['label' => 'Business Administration', 'target_kind' => 'url', 'url' => '/en/facilities/business-administration'],
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'Faculties', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/en/faculties', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 2, 'children' => [
+            ['label' => 'Medicine', 'target_kind' => 'url', 'url' => '/en/faculties/medicine'],
+            ['label' => 'Dentistry', 'target_kind' => 'url', 'url' => '/en/faculties/dentistry'],
+            ['label' => 'Pharmacy', 'target_kind' => 'url', 'url' => '/en/faculties/pharmacy'],
+            ['label' => 'AI Engineering', 'target_kind' => 'url', 'url' => '/en/faculties/artificial-intelligence'],
+            ['label' => 'Construction Engineering', 'target_kind' => 'url', 'url' => '/en/faculties/building-construction-engineering'],
+            ['label' => 'Petroleum Engineering', 'target_kind' => 'url', 'url' => '/en/faculties/petroleum'],
+            ['label' => 'Business Administration', 'target_kind' => 'url', 'url' => '/en/faculties/business-administration'],
         ]];
 
         // ── Admissions (sort 3) ──

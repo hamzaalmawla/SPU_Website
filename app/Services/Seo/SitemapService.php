@@ -233,7 +233,7 @@ final class SitemapService implements SitemapServiceInterface
             'campus_life.virtual_tour' => '/virtual-tour',
             'e_services.suggestions-complaints' => '/e-services/suggestions-complaints',
             'news.articles' => '/news/articles',
-            'facilities.pharmacy.training' => '/facilities/pharmacy/training',
+            'facilities.pharmacy.training' => '/faculties/pharmacy/training',
         ] as $targetKey => $path) {
             $content = CmsTargetContent::query()
                 ->where('target_key', $targetKey)
@@ -303,7 +303,7 @@ final class SitemapService implements SitemapServiceInterface
 
         foreach ($faculties as $faculty) {
             $slug = (string) ($faculty->public_slug ?: $faculty->slug);
-            $path = '/facilities/'.$slug.'/research';
+            $path = '/faculties/'.$slug.'/research';
             $alternates = collect(['ar', 'en'])->map(fn (string $locale): array => [
                 'locale' => $locale,
                 'url' => $baseUrl.'/'.$locale.$path,

@@ -48,10 +48,35 @@ final class SecurityHeadersMiddleware
         }
 
         if (app()->environment('production') && $request->isSecure()) {
-            $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+            $response->headers->set('Strict-Transport-Security', $this->strictTransportSecurity());
         }
 
         return $response;
+    }
+
+    /**
+     * Built from config rather than hard-coded because the safe value differs
+     * either side of the cutover: a year with `preload` is a reasonable steady
+     * state and a poor thing to switch on the day a domain changes hands. See
+     * config/security.php for what each part costs to undo.
+     */
+    private function strictTransportSecurity(): string
+    {
+        $maxAge = max(0, (int) config('security.hsts_max_age', 604800));
+        $directives = ['max-age='.$maxAge];
+
+        if ((bool) config('security.hsts_include_subdomains', true)) {
+            $directives[] = 'includeSubDomains';
+        }
+
+        // Browsers only accept a preload submission at a year or more, so
+        // emitting the token below that advertises a policy that cannot be
+        // honoured. Treat the shorter max-age as the intent and drop it.
+        if ((bool) config('security.hsts_preload', false) && $maxAge >= 31536000) {
+            $directives[] = 'preload';
+        }
+
+        return implode('; ', $directives);
     }
 
     private function contentSecurityPolicy(Request $request): string
