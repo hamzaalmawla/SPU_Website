@@ -8,9 +8,14 @@
         ->map(function ($item) use ($facultySlug) {
             $slug = (string) $item->slug;
 
+            // No locale segment: navigation-section strips one and the shared
+            // card component prepends "/{locale}" itself. "faculties" is the
+            // canonical prefix - "/facilities" still resolves, but only by way
+            // of the legacy 301, so linking to it would cost every card a
+            // redirect and point the site at its own old URLs.
             return [
                 'title' => $item->label,
-                'link' => "/facilities/{$facultySlug}/{$slug}",
+                'link' => "/faculties/{$facultySlug}/{$slug}",
             ];
         })
         ->values();
