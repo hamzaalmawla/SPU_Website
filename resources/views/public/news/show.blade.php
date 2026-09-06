@@ -66,19 +66,54 @@
             </div>
 
             @if ($article->attachments !== [])
-                <section class="mx-auto mt-9 rounded-[6px] border border-slate-200 bg-slate-50 p-6">
-                    <h2 class="text-[20px] font-bold text-spu-blue">{{ __('public.attachments') }}</h2>
-                    <div class="mt-5 grid gap-3">
-                        @foreach ($article->attachments as $attachment)
-                            @if ($attachment->url)
+                @php
+                    $imageAttachments = collect($article->attachments)->filter(fn($a) => $a->url && strtolower($a->kind) === 'image');
+                    $fileAttachments  = collect($article->attachments)->filter(fn($a) => $a->url && strtolower($a->kind) !== 'image');
+                @endphp
+
+                {{-- ── Image gallery ── --}}
+                @if ($imageAttachments->isNotEmpty())
+                    <section class="mx-auto mt-9">
+                        <h2 class="mb-5 text-[20px] font-bold text-spu-blue">{{ __('public.attachments') }}</h2>
+
+                        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                            @foreach ($imageAttachments as $attachment)
+                                <a href="{{ $attachment->url }}"
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   class="group relative block aspect-[4/3] overflow-hidden rounded-[6px] bg-slate-100 shadow-sm ring-1 ring-slate-200 transition duration-300 hover:-translate-y-0.5 hover:shadow-md hover:ring-spu-blue/40"
+                                   aria-label="{{ $attachment->label ?: __('public.attachment') }}">
+                                    <img src="{{ $attachment->url }}"
+                                         alt="{{ $attachment->label ?: __('public.attachment') }}"
+                                         loading="lazy"
+                                         class="h-full w-full object-cover transition duration-500 group-hover:scale-105">
+                                    <div class="absolute inset-0 flex items-end bg-gradient-to-t from-spu-blue/60 via-transparent to-transparent opacity-0 transition duration-300 group-hover:opacity-100">
+                                        <span class="w-full truncate px-3 pb-2.5 text-[11px] font-bold text-white">
+                                            {{ $attachment->label ?: __('public.attachment') }}
+                                        </span>
+                                    </div>
+                                </a>
+                            @endforeach
+                        </div>
+                    </section>
+                @endif
+
+                {{-- ── Non-image file attachments ── --}}
+                @if ($fileAttachments->isNotEmpty())
+                    <section class="mx-auto mt-9 rounded-[6px] border border-slate-200 bg-slate-50 p-6">
+                        @if ($imageAttachments->isEmpty())
+                            <h2 class="text-[20px] font-bold text-spu-blue">{{ __('public.attachments') }}</h2>
+                        @endif
+                        <div class="{{ $imageAttachments->isNotEmpty() ? '' : 'mt-5' }} grid gap-3">
+                            @foreach ($fileAttachments as $attachment)
                                 <a href="{{ $attachment->url }}" class="flex items-center justify-between rounded-[4px] bg-white px-4 py-3 text-[12px] font-bold text-spu-blue shadow-sm transition hover:text-spu-red">
                                     <span>{{ $attachment->label ?: __('public.attachment') }}</span>
                                     <span>{{ strtoupper($attachment->kind) }}</span>
                                 </a>
-                            @endif
-                        @endforeach
-                    </div>
-                </section>
+                            @endforeach
+                        </div>
+                    </section>
+                @endif
             @endif
 
             <footer class="mx-auto mt-9 flex flex-col gap-4 border-t border-slate-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
