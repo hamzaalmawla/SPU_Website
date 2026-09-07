@@ -47,8 +47,8 @@
                 </div>
             </header>
 
-            <figure class="mt-7 overflow-hidden rounded-[4px] bg-spu-blue">
-                <img src="{{ $article->imageUrl ?: '/images/news/researches.jpeg' }}" onerror="this.onerror=null;this.src='/images/news/researches.jpeg'" alt="{{ $article->title }}" class="content-media-image h-[250px] w-full md:h-[390px]">
+            <figure class="mt-7 w-full h-125 overflow-hidden rounded-[4px]">
+                <img src="{{ $article->imageUrl ?: '/images/news/researches.jpeg' }}" onerror="this.onerror=null;this.src='/images/news/researches.jpeg'" alt="{{ $article->title }}" class="content-media-image h-[500px] w-full object-cover object-center">
             </figure>
 
             <div class="mx-auto mt-8 text-[14px] font-medium leading-7 text-slate-700">

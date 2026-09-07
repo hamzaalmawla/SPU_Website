@@ -15,8 +15,8 @@
                 <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-2.5 w-2.5 rtl:rotate-180" aria-hidden="true">
                 <a href="/{{ $locale }}/research/publications" class="transition hover:text-spu-blue">{{ __('public.publications') }}</a>
             </nav>
-            <figure class="mx-auto container overflow-hidden rounded-[8px]">
-                <img src="{{ $item['image'] ?? '/images/uni-main-place.JPG' }}" alt="{{ $item['title'] ?? '' }}" class="mx-auto h-[220px] w-[80%] object-cover object-top md:h-[400px]">
+            <figure class="mx-auto aspect-auto container overflow-hidden rounded-[8px]">
+                <img src="{{ $item['image'] ?? '/images/uni-main-place.JPG' }}" alt="{{ $item['title'] ?? '' }}" class="mx-auto h-full w-full object-cover object-top ">
             </figure>
             <h1 class="mx-auto mt-8 max-w-[820px] text-center text-2xl font-bold leading-snug text-spu-blue md:text-[32px] md:leading-tight">{{ $item['title'] ?? '' }}</h1>
         </div>

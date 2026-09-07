@@ -47,24 +47,6 @@
         <p class="mt-1 text-center text-[11px] font-bold uppercase tracking-[2px] text-slate-400">{{ 'FACULTY OF '.mb_strtoupper($faculty['nameEn'] ?? $faculty['name'], 'UTF-8') }}</p>
     </div>
 
-    <div class="bg-white pb-10 pt-6 font-hacen">
-        <div class="container">
-            <div class="mx-auto max-w-[1100px] overflow-hidden rounded-lg bg-spu-blue shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_8px_10px_-6px_rgba(0,0,0,0.1)]">
-                <div class="cms-grid-stats cms-grid-stats-cols-4">
-                    @foreach (array_slice($page->stats, 0, 4) as $stat)
-                        <div class="relative flex flex-col items-center gap-2 px-6 py-8 text-center">
-                            @if (! $loop->first)
-                                <div class="absolute left-0 top-1/2 hidden h-2/3 w-px -translate-y-1/2 bg-white/10 md:block" aria-hidden="true"></div>
-                            @endif
-                            <span class="text-3xl font-bold leading-none text-white" dir="ltr">{{ $stat['value'] ?? '' }}</span>
-                            <span class="text-xs font-bold uppercase tracking-[1px] text-white/50">{{ $stat['label'] ?? '' }}</span>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-        </div>
-    </div>
-
     <section id="overview" class="bg-white py-16 font-hacen lg:py-24" x-data="{ activeTab: '{{ $tabs[0]['id'] ?? 'overview' }}' }">
         <div class="container">
             <div class="flex flex-col items-start gap-12 lg:flex-row lg:gap-20">

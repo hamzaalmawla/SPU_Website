@@ -12,7 +12,7 @@
     "src": "public/images/icon-chevron-down-outline.svg"
   },
   "resources/css/app.css": {
-    "file": "assets/app.DE6bFkKk.css",
+    "file": "assets/app.DGflS4F3.css",
     "name": "app",
     "names": [
       "app.css"
@@ -41,6 +41,3 @@
     "isEntry": true
   }
 }
-
-
-
