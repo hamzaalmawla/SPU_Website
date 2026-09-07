@@ -53,7 +53,9 @@ return [
     ],
 
     'two_factor' => [
-        'require_for_privileged_roles' => (bool) env('REQUIRE_PRIVILEGED_ADMIN_2FA', env('APP_ENV', 'production') === 'production'),
+        // 2FA is opt-in for staff. Set REQUIRE_PRIVILEGED_ADMIN_2FA=true
+        // when every privileged account must enroll before accessing admin.
+        'require_for_privileged_roles' => (bool) env('REQUIRE_PRIVILEGED_ADMIN_2FA', false),
         'privileged_roles' => array_values(array_filter(array_map(
             'trim',
             explode(',', (string) env('PRIVILEGED_ADMIN_2FA_ROLES', 'super_admin,editor,faculty_editor,hr')),

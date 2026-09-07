@@ -27,7 +27,7 @@ This project must not launch with copied local `.env` values. Use `.env.producti
 | `MAIL_FROM_ADDRESS` | Verified sender address on the production mail domain |
 | `FORM_ADMIN_RECIPIENTS` | Optional comma-separated operational recipients; eligible admin/editor users are also notified |
 | `HR_EMAIL` / `HR_PASSWORD` | Required only when explicitly running `HrUserSeeder`; store credentials outside git and rotate the bootstrap password |
-| `REQUIRE_PRIVILEGED_ADMIN_2FA` | `true`; privileged roles cannot enter production admin until TOTP enrollment is confirmed |
+| `REQUIRE_PRIVILEGED_ADMIN_2FA` | `false` by default; staff can opt in from the admin account security page. Set to `true` only when mandatory enrollment is approved |
 | `PRIVILEGED_ADMIN_2FA_ROLES` | `super_admin,editor,faculty_editor,hr`, unless a reviewed role decision changes it |
 | `TRUSTED_PORTAL_HOSTS` | Exact comma-separated HTTPS hosts approved for student/staff portal links; no wildcard or parent-domain matching |
 

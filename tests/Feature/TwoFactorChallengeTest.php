@@ -161,6 +161,20 @@ class TwoFactorChallengeTest extends TestCase
             ->assertRedirect('/admin/login');
     }
 
+    public function test_privileged_user_without_2fa_can_access_admin_when_enrollment_is_optional(): void
+    {
+        config()->set('auth.two_factor.require_for_privileged_roles', false);
+        $user = User::factory()->create([
+            'role_slug' => 'editor',
+            'two_factor_enabled' => false,
+            'two_factor_confirmed_at' => null,
+        ]);
+
+        $this->actingAs($user, 'web');
+
+        $this->get('/admin')->assertOk();
+    }
+
     public function test_two_factor_user_is_redirected_from_admin_until_verified(): void
     {
         $user = $this->createUserWith2FA();
