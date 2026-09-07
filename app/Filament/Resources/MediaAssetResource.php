@@ -232,7 +232,7 @@ class MediaAssetResource extends Resource
                     FileUpload::make('file')
                         ->label('File')
                         ->required()
-                        ->maxSize(20480)
+                        ->maxSize(10240)
                         ->disk((string) config('filesystems.media_disk', 'public'))
                         ->directory('media-tmp')
                         ->visibility('public')

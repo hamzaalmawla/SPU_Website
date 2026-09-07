@@ -29,7 +29,7 @@ final class MediaFileValidator
         'video/webm',
     ];
 
-    private const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;
+    private const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 
     private const MIN_FILE_SIZE_BYTES = 1;
 

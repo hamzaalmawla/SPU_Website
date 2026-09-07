@@ -167,7 +167,8 @@ final class NewsWorkflowTest extends TestCase
         $this->get('/en/news/announcements?category=announcement-cover-thumb-announcement')
             ->assertOk()
             ->assertSee('data-announcement-card', false)
-            ->assertSee('content-media-image h-40 w-full md:h-[110px]', false)
+            ->assertSee('block aspect-[5/9] overflow-hidden rounded-lg bg-slate-100', false)
+            ->assertSee('content-media-image h-full w-full object-cover object-center', false)
             ->assertSee('/downloads/files/announcement-cover-thumb.jpg', false)
             ->assertSee('Cover Thumbnail Announcement');
 

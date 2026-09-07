@@ -196,7 +196,7 @@ final class MediaPicker
                     ->directory('media-tmp')
                     ->visibility('public')
                     ->acceptedFileTypes(self::acceptedFileTypes($type))
-                    ->maxSize(20480),
+                    ->maxSize(10240),
                 TextInput::make('title_ar')
                     ->label(__('admin.media_picker.title_ar'))
                     ->maxLength(255)
@@ -281,7 +281,7 @@ final class MediaPicker
                     ->directory('media-tmp')
                     ->visibility('public')
                     ->acceptedFileTypes(self::acceptedFileTypes($type))
-                    ->maxSize(20480),
+                    ->maxSize(10240),
                 TextInput::make('title_ar')
                     ->label(__('admin.media_picker.title_ar'))
                     ->maxLength(255)

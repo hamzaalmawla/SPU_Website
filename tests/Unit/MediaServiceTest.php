@@ -298,7 +298,7 @@ class MediaServiceTest extends TestCase
 
     public function test_upload_rejects_oversized_file(): void
     {
-        $file = UploadedFile::fake()->create('large.pdf', 21 * 1024, 'application/pdf');
+        $file = UploadedFile::fake()->create('large.pdf', 11 * 1024, 'application/pdf');
 
         $this->expectException(ValidationException::class);
 
