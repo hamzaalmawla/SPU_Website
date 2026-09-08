@@ -92,7 +92,7 @@ final class FinalPartialRoutesCompletionTest extends TestCase
             $this->assertTrue($workflow->publish($targetKey, (int) $author->id));
         }
 
-        foreach (['campus-life', 'virtual-tour', 'e-services/suggestions-complaints', 'news/articles', 'facilities/pharmacy/training'] as $path) {
+        foreach (['campus-life', 'virtual-tour', 'e-services/suggestions-complaints', 'news/articles', 'faculties/pharmacy/training'] as $path) {
             $this->get('/ar/'.$path)
                 ->assertOk()
                 ->assertSee('<html lang="ar" dir="rtl">', false)

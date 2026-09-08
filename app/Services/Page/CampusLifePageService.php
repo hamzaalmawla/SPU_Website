@@ -376,7 +376,7 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
         return is_string($url)
             && $url !== '#'
             && ! str_starts_with($url, '//')
-            && preg_match('~^/'.preg_quote($locale, '~').'/(?:campus-life|e-services|admissions|contact|facilities|virtual-tour)(?:[/?#]|$)~', $url) === 1;
+            && preg_match('~^/'.preg_quote($locale, '~').'/(?:campus-life|e-services|admissions|contact|facilities|faculties|virtual-tour)(?:[/?#]|$)~', $url) === 1;
     }
 
     /** @return array<string, array<string, mixed>> */

@@ -1833,7 +1833,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
             && $url !== ''
             && $url !== '#'
             && ! str_starts_with($url, '//')
-            && preg_match('~^/'.preg_quote($locale, '~').'/(?:campus-life|e-services|admissions|contact|facilities|virtual-tour)(?:[/?#]|$)~', $url) === 1;
+            && preg_match('~^/'.preg_quote($locale, '~').'/(?:campus-life|e-services|admissions|contact|facilities|faculties|virtual-tour)(?:[/?#]|$)~', $url) === 1;
     }
 
     /** @param array<int, string> $locales @param array<string, array<int, string>> $errors */
@@ -1991,7 +1991,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
             }
             foreach (is_array($partners['items'] ?? null) ? $partners['items'] : [] as $item) {
                 $href = is_array($item) ? ($item['href'] ?? null) : null;
-                if (! is_string($href) || preg_match('~^/(?:'.preg_quote($locale, '~').'/)?(?:facilities/pharmacy|campus-life)(?:[/?#]|$)~', $href) !== 1) {
+                if (! is_string($href) || preg_match('~^/(?:'.preg_quote($locale, '~').'/)?(?:(?:faculties|facilities)/pharmacy|campus-life)(?:[/?#]|$)~', $href) !== 1) {
                     $errors[$locale][] = 'Training destinations must use an existing Pharmacy or Campus Life route.';
                 }
             }

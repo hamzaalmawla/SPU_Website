@@ -73,7 +73,7 @@
         </div>
         <div class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             @foreach (($partners['items'] ?? []) as $item)
-                @php($href = str_starts_with((string) ($item['href'] ?? ''), '/campus-life') ? '/'.$locale.($item['href'] ?? '') : '/'.$locale.'/'.ltrim((string) ($item['href'] ?? 'facilities/pharmacy/labs'), '/'))
+                @php($href = str_starts_with((string) ($item['href'] ?? ''), '/campus-life') ? '/'.$locale.($item['href'] ?? '') : '/'.$locale.'/'.ltrim((string) ($item['href'] ?? 'faculties/pharmacy/labs'), '/'))
                 <a href="{{ rtrim($href, '/') }}" class="group overflow-hidden border border-slate-200 bg-white shadow-[0_8px_26px_rgba(15,23,42,0.05)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_44px_rgba(15,23,42,0.12)]">
                     <div class="h-[155px] overflow-hidden">
                         <img src="{{ $item['image'] ?? '/images/pharmacy-place.jpg' }}" alt="{{ $localized($item, 'title') }}" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105">
