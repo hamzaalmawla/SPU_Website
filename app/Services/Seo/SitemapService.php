@@ -233,6 +233,7 @@ final class SitemapService implements SitemapServiceInterface
             'campus_life.virtual_tour' => '/virtual-tour',
             'e_services.suggestions-complaints' => '/e-services/suggestions-complaints',
             'news.articles' => '/news/articles',
+            'news.agreements' => '/news/agreements',
             'facilities.pharmacy.training' => '/faculties/pharmacy/training',
         ] as $targetKey => $path) {
             $content = CmsTargetContent::query()

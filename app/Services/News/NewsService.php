@@ -57,6 +57,16 @@ final class NewsService implements NewsServiceInterface
         return $this->normalizeArticlesPageContent($content, $locale);
     }
 
+    public function getAgreementsPageContent(string $locale): array
+    {
+        return $this->publishedLocalizedPayload('news.agreements', $locale) ?? $this->agreementsPageFallback($locale);
+    }
+
+    public function buildPreviewAgreementsPage(string $locale, array $content): array
+    {
+        return $this->normalizeArticlesPageContent($content, $locale);
+    }
+
     public function getAnnouncementsPageContent(string $locale): array
     {
         return $this->publishedLocalizedPayload('news.announcements', $locale) ?? $this->announcementsPageFallback($locale);
@@ -173,7 +183,7 @@ final class NewsService implements NewsServiceInterface
 
     public function getEditablePayload(string $targetKey): array
     {
-        if (! in_array($targetKey, ['news.index', 'news.articles', 'news.announcements', 'news.events', 'news.gallery'], true)) {
+        if (! in_array($targetKey, ['news.index', 'news.articles', 'news.agreements', 'news.announcements', 'news.events', 'news.gallery'], true)) {
             throw new \InvalidArgumentException('Unsupported news target.');
         }
 
@@ -191,6 +201,7 @@ final class NewsService implements NewsServiceInterface
         $fallback = match ($targetKey) {
             'news.index' => fn (string $locale): array => $this->indexPageFallback($locale),
             'news.articles' => fn (string $locale): array => $this->articlesPageFallback($locale),
+            'news.agreements' => fn (string $locale): array => $this->agreementsPageFallback($locale),
             'news.announcements' => fn (string $locale): array => $this->announcementsPageFallback($locale),
             'news.events' => fn (string $locale): array => $this->eventsPageFallback($locale),
             'news.gallery' => fn (string $locale): array => $this->galleryPageFallback($locale),
@@ -650,6 +661,7 @@ final class NewsService implements NewsServiceInterface
 
         return match ($targetKey) {
             'news.articles' => $this->normalizeArticlesPageContent($localized, $locale),
+            'news.agreements' => $this->normalizeArticlesPageContent($localized, $locale),
             'news.announcements' => $this->normalizeAnnouncementsPageContent($localized, $locale),
             'news.events' => $this->normalizeEventsPageContent($localized, $locale),
             'news.gallery' => $this->normalizeGalleryPageContent($localized, $locale),
@@ -687,6 +699,8 @@ final class NewsService implements NewsServiceInterface
             'archiveCta' => $isAr ? 'انقر للزيارة' : 'Visit Room',
             'announcementsCardTitle' => $isAr ? 'الإعلانات' : 'Announcements',
             'announcementsCardCta' => $isAr ? 'انقر للزيارة' : 'Visit Room',
+            'agreementsCardTitle' => $isAr ? 'الاتفاقيات ومذكرات التفاهم' : 'Agreements and Memoranda of Understanding',
+            'agreementsCardCta' => $isAr ? 'انقر للزيارة' : 'Visit Room',
             'readMoreLabel' => $isAr ? 'اقرأ المزيد' : 'Read More',
             'viewDetailsLabel' => $isAr ? 'عرض التفاصيل' : 'View Details',
             'newLabel' => $isAr ? 'جديد' : 'New',
@@ -736,6 +750,34 @@ final class NewsService implements NewsServiceInterface
         ], $locale);
     }
 
+    /** @return array<string, mixed> */
+    private function agreementsPageFallback(string $locale): array
+    {
+        $isAr = $locale === 'ar';
+
+        return $this->normalizeArticlesPageContent([
+            'title' => $isAr ? 'الاتفاقيات ومذكرات التفاهم' : 'Agreements and Memoranda of Understanding',
+            'summary' => $isAr
+                ? 'الاتفاقيات ومذكرات التفاهم التي وقعتها الجامعة السورية الخاصة.'
+                : 'Agreements and memoranda of understanding signed by the Syrian Private University.',
+            'intro' => $isAr
+                ? "تهدف الجامعة السورية الخاصة من الاتفاقيات التي أبرمتها إلى تحقيق ما يلي:\n\n1. تبادل الخبرات التعليمية والبحثية مع الجامعات الأجنبية المرموقة من أجل رفع السوية التعليمية في الجامعة وضبط وضمان جودتها وصولاً إلى امتلاك الاعتمادية الدولية.\n2. استضافة أساتذة ومحاضرين ذوي كفاءة وخبرة عالية للمساهمة في أعمال التدريس والبحث العلمي في الجامعة.\n3. تحسين كفاءة أساتذة الجامعة من خلال الاستفادة من خبرات وتجارب الأساتذة في الجامعات المتفق معها.\n4. تأمين وتسهيل عمليات قبول خريجي الجامعة السورية الخاصة في مراحل الدراسة ما بعد الجامعية.\n5. تفعيل عمليات التبادل الطلابي مع الجامعات المتفق معها.\n6. تنظيم مؤتمرات وندوات وورشات عمل وحلقات بحث علمية مشتركة.\n7. ربط مخرجات الجامعة بالمجتمع ومتطلباته واحتياجاته.\n8. تطوير المبادرات البحثية والعلمية والدراسات الإحصائية بما يسهم في تحقيق غايات التنمية الاقتصادية والاجتماعية.\n\nفيما يلي الاتفاقيات التي وقعتها الجامعة السورية الخاصة في الفترة الماضية:"
+                : "The Syrian Private University pursues the following objectives through its agreements:\n\n1. Exchange educational and research expertise with distinguished foreign universities to raise educational standards, ensure quality, and achieve international accreditation.\n2. Host highly qualified and experienced professors and lecturers to contribute to teaching and scientific research.\n3. Improve faculty members' competence by benefiting from the experience of partner-university professors.\n4. Facilitate postgraduate admission for Syrian Private University graduates.\n5. Activate student exchange opportunities, including study of courses and participation in workshops at partner universities.\n6. Organize joint conferences, seminars, workshops, and research sessions.\n7. Connect the University's educational and research outputs with society's needs.\n8. Develop research, scientific initiatives, and statistical studies that contribute to economic and social development.\n\nThe following are agreements signed by the Syrian Private University in recent years:",
+            'heroImage' => '/images/slider-1.webp',
+            'allLabel' => $isAr ? 'كل الاتفاقيات' : 'All agreements',
+            'searchLabel' => $isAr ? 'البحث في الاتفاقيات' : 'Search agreements',
+            'searchPlaceholder' => $isAr ? 'ابحث في الاتفاقيات' : 'Search agreements',
+            'searchAction' => $isAr ? 'بحث' : 'Search',
+            'readMoreLabel' => $isAr ? 'إقرأ المزيد' : 'Read More',
+            'emptyLabel' => $isAr ? 'لا توجد اتفاقيات منشورة حالياً.' : 'No agreements are currently published.',
+            'previousLabel' => $isAr ? 'الصفحة السابقة' : 'Previous page',
+            'nextLabel' => $isAr ? 'الصفحة التالية' : 'Next page',
+            'seoTitle' => ($isAr ? 'الاتفاقيات ومذكرات التفاهم' : 'Agreements and Memoranda of Understanding').' | SPU',
+            'seoDescription' => $isAr ? 'الاتفاقيات ومذكرات التفاهم التي وقعتها الجامعة السورية الخاصة.' : 'Agreements and memoranda of understanding signed by the Syrian Private University.',
+            'seoImage' => '/images/slider-1.webp',
+        ], $locale);
+    }
+
     /** @param array<string, mixed> $content @return array<string, mixed> */
     private function normalizeArticlesPageContent(array $content, string $locale): array
     {
@@ -755,6 +797,8 @@ final class NewsService implements NewsServiceInterface
             $candidate = $content[$key] ?? $value;
             $fallback[$key] = is_string($candidate) || is_numeric($candidate) ? (string) $candidate : $value;
         }
+
+        $fallback['intro'] = is_string($content['intro'] ?? null) ? (string) $content['intro'] : '';
 
         $fallback['heroImage'] = $this->resolvedContentImage($fallback['heroImage'], '/images/slider-1.webp');
         $fallback['seoImage'] = $this->resolvedContentImage($fallback['seoImage'], '/images/slider-1.webp');
@@ -1121,6 +1165,8 @@ final class NewsService implements NewsServiceInterface
             'archiveCta' => $locale === 'ar' ? 'انقر للزيارة' : 'Visit Room',
             'announcementsCardTitle' => $locale === 'ar' ? 'الإعلانات' : 'Announcements',
             'announcementsCardCta' => $locale === 'ar' ? 'انقر للزيارة' : 'Visit Room',
+            'agreementsCardTitle' => $locale === 'ar' ? 'الاتفاقيات ومذكرات التفاهم' : 'Agreements and Memoranda of Understanding',
+            'agreementsCardCta' => $locale === 'ar' ? 'انقر للزيارة' : 'Visit Room',
             'readMoreLabel' => $locale === 'ar' ? 'اقرأ المزيد' : 'Read More',
             'viewDetailsLabel' => $locale === 'ar' ? 'عرض التفاصيل' : 'View Details',
             'newLabel' => $locale === 'ar' ? 'جديد' : 'New',

@@ -4,7 +4,8 @@
     @php
         $isAr = $locale === 'ar';
         $articleQuery = array_filter(['category' => $activeCategory, 'search' => $search], fn (mixed $value): bool => is_string($value) && $value !== '');
-        $articlePageUrl = fn (int $pageNumber): string => '/'.$locale.'/news/articles'.(($query = [...$articleQuery, ...($pageNumber > 1 ? ['page' => $pageNumber] : [])]) !== [] ? '?'.http_build_query($query, '', '&', PHP_QUERY_RFC3986) : '');
+        $listingPath = $listingPath ?? '/news/articles';
+        $articlePageUrl = fn (int $pageNumber): string => '/'.$locale.$listingPath.(($query = [...$articleQuery, ...($pageNumber > 1 ? ['page' => $pageNumber] : [])]) !== [] ? '?'.http_build_query($query, '', '&', PHP_QUERY_RFC3986) : '');
     @endphp
 
     <section class="relative flex min-h-[280px] items-end overflow-hidden pt-24 font-hacen">
@@ -28,12 +29,15 @@
 
     <section class="bg-white py-14 font-hacen md:py-16">
         <div class="container max-w-[1180px]">
-            <form method="GET" action="/{{ $locale }}/news/articles" role="search" class="flex flex-wrap items-end justify-start gap-2">
+            @if (filled($page['intro'] ?? null))
+                <div class="mb-10 whitespace-pre-line rounded-2xl bg-slate-50 p-6 text-base leading-8 text-slate-700 md:p-8">{{ $page['intro'] }}</div>
+            @endif
+            <form method="GET" action="/{{ $locale }}{{ $listingPath }}" role="search" class="flex flex-wrap items-end justify-start gap-2">
                 <label class="min-w-[240px] flex-1"><span class="sr-only">{{ $page['searchLabel'] }}</span><input type="search" name="search" value="{{ $search }}" placeholder="{{ $page['searchPlaceholder'] }}" class="h-10 w-full rounded-[5px] border border-slate-200 px-4 text-sm focus:border-spu-blue focus:outline-none focus:ring-2 focus:ring-spu-blue/15"></label>
                 @if ($activeCategory)<input type="hidden" name="category" value="{{ $activeCategory }}">@endif
                 <button class="h-10 rounded-[5px] bg-spu-blue px-5 text-xs font-bold text-white" type="submit">{{ $page['searchAction'] }}</button>
             </form>
-            <form method="GET" action="/{{ $locale }}/news/articles" class="mt-4 flex flex-wrap items-center justify-start gap-2">
+            <form method="GET" action="/{{ $locale }}{{ $listingPath }}" class="mt-4 flex flex-wrap items-center justify-start gap-2">
                 @if ($search !== '')<input type="hidden" name="search" value="{{ $search }}">@endif
                 <button name="category" value="" class="rounded-[5px] border px-4 py-2 text-[11px] font-bold transition {{ $activeCategory === null ? 'border-spu-red bg-spu-red text-white' : 'border-slate-200 bg-white text-spu-blue hover:border-spu-blue' }}" type="submit">{{ $page['allLabel'] }}</button>
                 @foreach ($categories as $category)

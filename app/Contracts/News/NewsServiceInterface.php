@@ -27,6 +27,12 @@ interface NewsServiceInterface
     public function buildPreviewArticlesPage(string $locale, array $content): array;
 
     /** @return array<string, mixed> */
+    public function getAgreementsPageContent(string $locale): array;
+
+    /** @param array<string, mixed> $content @return array<string, mixed> */
+    public function buildPreviewAgreementsPage(string $locale, array $content): array;
+
+    /** @return array<string, mixed> */
     public function getAnnouncementsPageContent(string $locale): array;
 
     /** @param array<string, mixed> $content @return array<string, mixed> */

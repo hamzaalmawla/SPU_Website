@@ -421,7 +421,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
         $data = $this->publishedLocalizedPayload('research.themes', $locale);
 
         $isAvailable = is_array($data);
-        $data = $isAvailable ? $this->normalizedThemesContent($data) : [];
+        $data = $isAvailable ? $this->normalizedThemesContent($data, $locale) : [];
 
         return $this->pageDto($locale, 'themes', $data, '/research/themes', is_array($data['hero'] ?? null) ? $data['hero'] : [], $isAvailable);
     }
@@ -433,7 +433,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
 
     public function buildPreviewTheme(string $locale, array $content, string $slug): ?ResearchDetailPageDTO
     {
-        return $this->themeFromContent($locale, $this->normalizedThemesContent($content), $slug);
+        return $this->themeFromContent($locale, $this->normalizedThemesContent($content, $locale), $slug);
     }
 
     /** @param array<string, mixed> $content */
@@ -980,7 +980,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
     {
         $content = $this->localized($this->content()['themes'] ?? [], $locale);
 
-        return is_array($content) ? $this->normalizedThemesContent($content) : [];
+        return is_array($content) ? $this->normalizedThemesContent($content, $locale) : [];
     }
 
     /** @return array<string, mixed> */
@@ -1676,15 +1676,24 @@ final class ResearchPageService implements ResearchPageServiceInterface
     }
 
     /** @param array<string, mixed> $content @return array<string, mixed> */
-    private function normalizedThemesContent(array $content): array
+    private function normalizedThemesContent(array $content, string $locale): array
     {
         $content['hero'] = is_array($content['hero'] ?? null) ? $content['hero'] : [];
         $content['hero']['breadcrumbs'] = $this->arrayList($content['hero']['breadcrumbs'] ?? []);
-        $content['items'] = array_map(static function (array $item): array {
+        $publications = $this->publicPublicationItems($locale);
+        $projects = $this->publicProjectItems($locale);
+
+        $content['items'] = array_map(function (array $item) use ($publications, $projects): array {
             $item['id'] = strtolower(trim((string) ($item['id'] ?? '')));
             $item['slug'] = strtolower(trim((string) ($item['slug'] ?? '')));
-            $item['publicationCount'] = is_numeric($item['publicationCount'] ?? null) ? max(0, (int) $item['publicationCount']) : 0;
-            $item['projectCount'] = is_numeric($item['projectCount'] ?? null) ? max(0, (int) $item['projectCount']) : 0;
+            $item['publicationCount'] = count(array_filter(
+                $publications,
+                fn (array $publication): bool => in_array($item['slug'], $this->scalarList($publication['themes'] ?? []), true),
+            ));
+            $item['projectCount'] = count(array_filter(
+                $projects,
+                fn (array $project): bool => ($project['themeSlug'] ?? '') === $item['slug'],
+            ));
 
             return $item;
         }, $this->arrayList($content['items'] ?? []));

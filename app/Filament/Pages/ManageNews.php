@@ -178,7 +178,7 @@ class ManageNews extends Page implements HasForms
         $this->assertNewsTarget($targetKey);
         $this->activeTargetKey = $targetKey;
 
-        if (! in_array($targetKey, ['news.index', 'news.articles', 'news.announcements', 'news.events', 'news.gallery'], true)) {
+        if (! in_array($targetKey, ['news.index', 'news.articles', 'news.agreements', 'news.announcements', 'news.events', 'news.gallery'], true)) {
             $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey, (int) auth()->id());
             $this->form->fill([
                 'target_key' => $targetKey,
@@ -193,7 +193,7 @@ class ManageNews extends Page implements HasForms
         $payload = is_array($draftPayload) ? $draftPayload : $this->newsService->getEditablePayload($targetKey);
         $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey, (int) auth()->id());
 
-        if ($targetKey === 'news.articles') {
+        if (in_array($targetKey, ['news.articles', 'news.agreements'], true)) {
             $this->form->fill([
                 'target_key' => $targetKey,
                 'ar_articles' => is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
@@ -405,7 +405,7 @@ class ManageNews extends Page implements HasForms
             ];
         }
 
-        if (($state['target_key'] ?? null) === 'news.articles') {
+        if (in_array($state['target_key'] ?? null, ['news.articles', 'news.agreements'], true)) {
             return [
                 'translations' => [
                     'ar' => is_array($state['ar_articles'] ?? null) ? $state['ar_articles'] : [],
@@ -453,10 +453,11 @@ class ManageNews extends Page implements HasForms
         $articlesPrefix = $locale.'_articles';
 
         return [
-            Section::make(__('admin.editorial_workspace.news_shell.articles'))
+             Section::make(__('admin.editorial_workspace.news_shell.articles'))
                 ->schema([
                     TextInput::make($articlesPrefix.'.title')->label(__('admin.editorial_workspace.news_shell.page_title'))->required()->maxLength(160),
-                    Textarea::make($articlesPrefix.'.summary')->label(__('admin.editorial_workspace.news_shell.page_summary'))->required()->rows(2)->columnSpanFull(),
+                     Textarea::make($articlesPrefix.'.summary')->label(__('admin.editorial_workspace.news_shell.page_summary'))->required()->rows(2)->columnSpanFull(),
+                     Textarea::make($articlesPrefix.'.intro')->label(__('admin.editorial_workspace.news_shell.page_intro_text'))->rows(8)->columnSpanFull(),
                     MediaPicker::image($articlesPrefix.'.heroImage', __('admin.editorial_workspace.news_shell.hero_image'), true),
                     TextInput::make($articlesPrefix.'.allLabel')->label(__('admin.editorial_workspace.news_shell.all_articles'))->required()->maxLength(120),
                     TextInput::make($articlesPrefix.'.searchLabel')->label(__('admin.editorial_workspace.news_shell.search_label'))->required()->maxLength(120),
@@ -471,7 +472,7 @@ class ManageNews extends Page implements HasForms
                     MediaPicker::image($articlesPrefix.'.seoImage', __('admin.editorial_workspace.news_shell.seo_image'), true),
                 ])
                 ->columns(2)
-                ->visible(fn (): bool => $this->targetKeyForSchema() === 'news.articles'),
+                 ->visible(fn (): bool => in_array($this->targetKeyForSchema(), ['news.articles', 'news.agreements'], true)),
             Section::make(__('admin.editorial_workspace.announcements.page_intro'))
                 ->schema([
                     TextInput::make($announcementPrefix.'.pageTitle')->label(__('admin.editorial_workspace.fields.page_title'))->required()->maxLength(160),
@@ -584,8 +585,10 @@ class ManageNews extends Page implements HasForms
             Section::make(__('admin.editorial_workspace.news_shell.cards_labels'))->schema([
                 TextInput::make($indexPrefix.'.archiveTitle')->label(__('admin.editorial_workspace.news_shell.archive_title'))->required()->maxLength(160),
                 TextInput::make($indexPrefix.'.archiveCta')->label(__('admin.editorial_workspace.news_shell.archive_cta'))->required()->maxLength(120),
-                TextInput::make($indexPrefix.'.announcementsCardTitle')->label(__('admin.editorial_workspace.news_shell.announcements_card_title'))->required()->maxLength(160),
-                TextInput::make($indexPrefix.'.announcementsCardCta')->label(__('admin.editorial_workspace.news_shell.announcements_card_cta'))->required()->maxLength(120),
+                 TextInput::make($indexPrefix.'.announcementsCardTitle')->label(__('admin.editorial_workspace.news_shell.announcements_card_title'))->required()->maxLength(160),
+                 TextInput::make($indexPrefix.'.announcementsCardCta')->label(__('admin.editorial_workspace.news_shell.announcements_card_cta'))->required()->maxLength(120),
+                 TextInput::make($indexPrefix.'.agreementsCardTitle')->label(__('admin.editorial_workspace.news_shell.agreements_card_title'))->required()->maxLength(200),
+                 TextInput::make($indexPrefix.'.agreementsCardCta')->label(__('admin.editorial_workspace.news_shell.agreements_card_cta'))->required()->maxLength(120),
                 TextInput::make($indexPrefix.'.readMoreLabel')->label(__('admin.editorial_workspace.news_shell.read_more'))->required()->maxLength(80),
                 TextInput::make($indexPrefix.'.viewDetailsLabel')->label(__('admin.editorial_workspace.news_shell.view_details'))->required()->maxLength(80),
                 TextInput::make($indexPrefix.'.newLabel')->label(__('admin.editorial_workspace.news_shell.new_badge'))->required()->maxLength(80),

@@ -161,6 +161,10 @@ final class PreviewController extends Controller
             return $this->renderNewsArticlesPreview($locale, $preview, $localizedContent);
         }
 
+        if ($targetKey === 'news.agreements') {
+            return $this->renderNewsAgreementsPreview($locale, $preview, $localizedContent);
+        }
+
         if ($targetKey === 'news.announcements') {
             return $this->renderNewsAnnouncementsPreview($locale, $preview, $localizedContent);
         }
@@ -975,6 +979,38 @@ final class PreviewController extends Controller
                 'og_image' => (string) $page['seoImage'],
                 'robots' => 'noindex,nofollow',
             ]),
+            'preview' => $preview,
+        ]);
+    }
+
+    /** @param array<string, mixed> $content */
+    private function renderNewsAgreementsPreview(string $locale, PreviewDTO $preview, array $content): View
+    {
+        $page = $this->newsService->buildPreviewAgreementsPage($locale, $content);
+
+        return view('public.news.articles', [
+            'locale' => $locale,
+            'direction' => $locale === 'ar' ? 'rtl' : 'ltr',
+            'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, '/'.$locale.'/news/agreements'),
+            'settings' => $preview->payload->settings ?? $this->settingsService->getPublicSettings($locale),
+            'page' => $page,
+            'articles' => $this->newsService->listPublicArticles($locale, ['category' => 'agreements', 'categoryType' => 'news'], 1, 9),
+            'categories' => collect(),
+            'activeCategory' => null,
+            'search' => '',
+            'listingPath' => '/news/agreements',
+            'pageTitle' => (string) $page['title'],
+            'pageDescription' => (string) $page['summary'],
+            'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale),
+            'seo' => $this->seoMetadataService->buildFallback($locale, [
+                'path' => '/'.$locale.'/news/agreements',
+                'locale_paths' => ['ar' => '/ar/news/agreements', 'en' => '/en/news/agreements'],
+                'title' => (string) $page['seoTitle'],
+                'meta_description' => (string) $page['seoDescription'],
+                'og_image' => (string) $page['seoImage'],
+                'robots' => 'noindex,nofollow',
+            ]),
+            'isPreview' => true,
             'preview' => $preview,
         ]);
     }

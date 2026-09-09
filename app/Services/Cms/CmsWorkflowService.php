@@ -260,7 +260,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
             $this->appendGalleryReadinessErrors($payload, $target->locales, $errors);
         }
 
-        if ($target->key === 'news.articles') {
+        if (in_array($target->key, ['news.articles', 'news.agreements'], true)) {
             $this->appendNewsArticlesReadinessErrors($payload, $target->locales, $errors);
         }
 

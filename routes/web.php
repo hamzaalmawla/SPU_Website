@@ -192,6 +192,7 @@ Route::prefix('{locale}')
             ->group(function (): void {
                 Route::get('/', 'index')->name('index');
                 Route::get('/articles', 'articles')->name('articles');
+                Route::get('/agreements', 'agreements')->name('agreements');
                 Route::get('/announcements', 'announcements')->name('announcements');
                 Route::get('/events', 'events')->name('events');
                 Route::get('/events-list', 'eventsList')->name('events-list');

@@ -147,6 +147,7 @@ return [
             ],
             'contact' => 'التواصل',
             'news' => [
+                'agreements' => 'الاتفاقيات ومذكرات التفاهم',
                 'index' => 'مركز الأخبار',
                 'articles' => 'أرشيف الأخبار',
                 'announcements' => 'الإعلانات',
@@ -376,6 +377,7 @@ return [
         'types' => [
             'news' => 'خبر',
             'announcement' => 'إعلان',
+            'agreements' => 'الاتفاقيات ومذكرات التفاهم',
         ],
         'table' => [
             'title' => 'العنوان',
@@ -1072,7 +1074,8 @@ return [
         'fields' => [
             'page_title' => 'عنوان الصفحة',
             'hero_image' => 'صورة مقدمة الصفحة',
-            'page_summary' => 'ملخص الصفحة',
+                'page_summary' => 'ملخص الصفحة',
+                'page_intro_text' => 'النص التمهيدي',
             'seo_description' => 'وصف محركات البحث',
             'category' => 'الفئة الوظيفية',
             'employment_type' => 'نوع الدوام',
@@ -1308,6 +1311,8 @@ return [
             'archive_cta' => 'زر بطاقة الأرشيف',
             'announcements_card_title' => 'عنوان بطاقة الإعلانات',
             'announcements_card_cta' => 'زر بطاقة الإعلانات',
+            'agreements_card_title' => 'عنوان بطاقة الاتفاقيات',
+            'agreements_card_cta' => 'زر بطاقة الاتفاقيات',
             'view_details' => 'تسمية عرض التفاصيل',
             'new_badge' => 'شارة جديد',
             'news_fallback_category' => 'تصنيف الأخبار الاحتياطي',

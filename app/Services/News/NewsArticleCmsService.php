@@ -40,7 +40,7 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
     {
         $categories = NewsCategory::query()
             ->enabled()
-            ->whereIn('slug', ['news', 'announcements'])
+            ->whereIn('slug', ['news', 'announcements', 'agreements'])
             ->orderBy('sort_order')
             ->orderBy('id')
             ->get()
@@ -48,7 +48,7 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
             ->keyBy('type');
         $options = [];
 
-        foreach (['news', 'announcement'] as $type) {
+        foreach (['news', 'announcement', 'agreements'] as $type) {
             $category = $categories->get($type);
             if ($category instanceof NewsCategory) {
                 $options[(int) $category->getKey()] = $type;

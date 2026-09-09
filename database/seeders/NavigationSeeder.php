@@ -294,12 +294,14 @@ class NavigationSeeder extends Seeder
         // ── News (sort 7) ──
         $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'الأخبار', 'target_kind' => 'page', 'page_slug' => 'news', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 7, 'children' => [
             ['label' => 'الأخبار', 'target_kind' => 'url', 'url' => '/ar/news/articles'],
+            ['label' => 'الاتفاقيات ومذكرات التفاهم', 'target_kind' => 'url', 'url' => '/ar/news/agreements'],
             ['label' => 'الإعلانات', 'target_kind' => 'url', 'url' => '/ar/news/announcements'],
             ['label' => 'تقويم الفعاليات', 'target_kind' => 'url', 'url' => '/ar/news/events'],
             ['label' => 'معرض الوسائط', 'target_kind' => 'url', 'url' => '/ar/news/gallery'],
         ]];
         $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'News', 'target_kind' => 'page', 'page_slug' => 'news', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 7, 'children' => [
             ['label' => 'News', 'target_kind' => 'url', 'url' => '/en/news/articles'],
+            ['label' => 'Agreements and Memoranda of Understanding', 'target_kind' => 'url', 'url' => '/en/news/agreements'],
             ['label' => 'Announcements', 'target_kind' => 'url', 'url' => '/en/news/announcements'],
             ['label' => 'Events Calendar', 'target_kind' => 'url', 'url' => '/en/news/events'],
             ['label' => 'Media Gallery', 'target_kind' => 'url', 'url' => '/en/news/gallery'],

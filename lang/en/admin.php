@@ -147,6 +147,7 @@ return [
             ],
             'contact' => 'Contact',
             'news' => [
+                'agreements' => 'Agreements and Memoranda of Understanding',
                 'index' => 'News Center',
                 'articles' => 'News Archive',
                 'announcements' => 'Announcements',
@@ -376,6 +377,7 @@ return [
         'types' => [
             'news' => 'News',
             'announcement' => 'Announcement',
+            'agreements' => 'Agreements and Memoranda',
         ],
         'table' => [
             'title' => 'Title',
@@ -1072,7 +1074,8 @@ return [
         'fields' => [
             'page_title' => 'Page title',
             'hero_image' => 'Page introduction image',
-            'page_summary' => 'Page summary',
+                'page_summary' => 'Page summary',
+                'page_intro_text' => 'Introduction text',
             'seo_description' => 'Search description',
             'category' => 'Job category',
             'employment_type' => 'Employment type',
@@ -1308,6 +1311,8 @@ return [
             'archive_cta' => 'Archive-card button',
             'announcements_card_title' => 'Announcements-card title',
             'announcements_card_cta' => 'Announcements-card button',
+            'agreements_card_title' => 'Agreements-card title',
+            'agreements_card_cta' => 'Agreements-card button',
             'view_details' => 'View-details label',
             'new_badge' => 'New badge',
             'news_fallback_category' => 'News fallback category',

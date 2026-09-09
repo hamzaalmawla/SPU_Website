@@ -170,14 +170,24 @@
     <section class="bg-section bg-slate-50 py-24 font-hacen">
         <div class="container">
             <h2 class="mb-16 text-center text-3xl font-bold text-spu-blue">{{ $page['exploreMoreTitle'] ?? ($isAr ? 'استكشف المزيد' : 'Explore More') }}</h2>
-            <div class="cms-grid-wide mx-auto max-w-5xl gap-8">
-                <a id="media-gallery" href="/{{ $locale }}/news/gallery" class="group relative flex flex-col items-center gap-6 overflow-hidden rounded-[32px] border border-slate-100 bg-white p-12 text-center text-spu-blue shadow-sm transition-all duration-500 hover:translate-y-[-8px] hover:bg-[#1e2a5e] hover:text-white hover:shadow-2xl">
+            <div class="cms-grid-wide mx-auto max-w-6xl gap-8 md:grid-cols-3">
+                <a id="media-gallery" href="/{{ $locale }}/news/articles" class="group relative flex flex-col items-center gap-6 overflow-hidden rounded-[32px] border border-slate-100 bg-white p-12 text-center text-spu-blue shadow-sm transition-all duration-500 hover:translate-y-[-8px] hover:bg-[#1e2a5e] hover:text-white hover:shadow-2xl">
                     <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 transition-colors group-hover:bg-white/20">
                         <img src="/images/icon-file-outline.svg" alt="" class="h-8 w-8" aria-hidden="true">
                     </div>
                     <div>
                         <h3 class="mb-3 text-3xl font-bold">{{ $page['archiveTitle'] ?? ($isAr ? 'أرشيف الأخبار' : 'News Archive') }}</h3>
                         <p class="flex items-center justify-center gap-2 text-sm font-bold uppercase tracking-widest opacity-60"><span>{{ $page['archiveCta'] ?? ($isAr ? 'انقر للزيارة' : 'Visit Room') }}</span><span class="text-lg">→</span></p>
+                    </div>
+                </a>
+
+                <a id="agreements" href="/{{ $locale }}/news/agreements" class="group relative flex flex-col items-center gap-6 overflow-hidden rounded-[32px] border border-slate-100 bg-white p-12 text-center text-spu-blue shadow-sm transition-all duration-500 hover:translate-y-[-8px] hover:bg-[#1e2a5e] hover:text-white hover:shadow-2xl">
+                    <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 transition-colors group-hover:bg-white/20">
+                        <img src="/images/icon-book-outline.svg" alt="" class="h-8 w-8" aria-hidden="true">
+                    </div>
+                    <div>
+                        <h3 class="mb-3 text-3xl font-bold">{{ $page['agreementsCardTitle'] ?? ($isAr ? 'الاتفاقيات ومذكرات التفاهم' : 'Agreements and Memoranda of Understanding') }}</h3>
+                        <p class="flex items-center justify-center gap-2 text-sm font-bold uppercase tracking-widest opacity-60"><span>{{ $page['agreementsCardCta'] ?? ($isAr ? 'انقر للزيارة' : 'Visit Room') }}</span><span class="text-lg">→</span></p>
                     </div>
                 </a>
 

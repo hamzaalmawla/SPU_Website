@@ -288,6 +288,7 @@ final class CachePublicPages
             'public.faculties.study-plan' => ['department'],
             'public.faculties.study-plan.course' => ['department', 'course', 'type'],
             'public.news.articles' => ['category', 'search', 'page'],
+            'public.news.agreements' => ['search', 'page'],
             'public.news.announcements' => ['category', 'page'],
             'public.news.events' => ['month'],
             'public.news.events-list' => ['category'],
