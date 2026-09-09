@@ -44,14 +44,13 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
             ->orderBy('sort_order')
             ->orderBy('id')
             ->get()
-            ->unique('type')
-            ->keyBy('type');
+            ->keyBy('slug');
         $options = [];
 
-        foreach (['news', 'announcement', 'agreements'] as $type) {
-            $category = $categories->get($type);
+        foreach (['news', 'announcements', 'agreements'] as $slug) {
+            $category = $categories->get($slug);
             if ($category instanceof NewsCategory) {
-                $options[(int) $category->getKey()] = $type;
+                $options[(int) $category->getKey()] = $slug === 'announcements' ? 'announcement' : $slug;
             }
         }
 

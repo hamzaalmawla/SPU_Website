@@ -293,13 +293,7 @@ final class NewsService implements NewsServiceInterface
             $articles = NewsArticle::query()
                 ->public()
                 ->with($this->publicArticleCardRelations())
-                ->where(function (Builder $query) use ($agreementTitles): void {
-                    $query->whereHas('category', fn (Builder $categoryQuery): Builder => $categoryQuery->where('slug', 'agreements'));
-
-                    if ($agreementTitles !== []) {
-                        $query->orWhereHas('translations', fn (Builder $translationQuery): Builder => $translationQuery->whereIn('title', $agreementTitles));
-                    }
-                })
+                ->whereHas('category', fn (Builder $categoryQuery): Builder => $categoryQuery->where('type', 'news'))
                 ->when(is_string($filters['search'] ?? null) && trim((string) $filters['search']) !== '', function (Builder $query) use ($filters): void {
                     $search = trim((string) $filters['search']);
                     $query->whereHas('translations', fn (Builder $translationQuery): Builder => $translationQuery
@@ -308,8 +302,18 @@ final class NewsService implements NewsServiceInterface
                         ->orWhere('body', 'like', '%'.$search.'%'));
                 })
                 ->get()
+                ->filter(function (NewsArticle $article) use ($agreementTitles): bool {
+                    $isAgreementCategory = $article->category?->slug === 'agreements';
+                    $titles = $article->translations
+                        ->pluck('title')
+                        ->map(fn (mixed $title): string => $this->normalizeAgreementTitle((string) $title));
+
+                    return $isAgreementCategory || $titles->intersect(
+                        collect($agreementTitles)->map(fn (string $title): string => $this->normalizeAgreementTitle($title)),
+                    )->isNotEmpty();
+                })
                 ->sortByDesc(fn (NewsArticle $article): string => (string) ($article->published_at?->format('Y-m-d H:i:s') ?? ''))
-                ->groupBy(fn (NewsArticle $article): string => strtolower(trim((string) ($article->translations->firstWhere('locale', $locale)?->title ?? $article->translations->first()?->title ?? $article->slug))))
+                ->groupBy(fn (NewsArticle $article): string => $this->normalizeAgreementTitle((string) ($article->translations->firstWhere('locale', $locale)?->title ?? $article->translations->first()?->title ?? $article->slug)))
                 ->map(function (Collection $duplicates): NewsArticle {
                     return $duplicates
                         ->sortBy(fn (NewsArticle $article): array => [
@@ -586,6 +590,11 @@ final class NewsService implements NewsServiceInterface
             'asas-human-resources-agreement',
             'damascus-university-agreement',
         ];
+    }
+
+    private function normalizeAgreementTitle(string $title): string
+    {
+        return trim((string) preg_replace('/\s+/u', ' ', mb_strtolower($title)));
     }
 
     private function articleImageUrl(NewsArticle $article, string $locale): ?string
