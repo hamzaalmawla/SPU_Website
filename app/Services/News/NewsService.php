@@ -217,6 +217,10 @@ final class NewsService implements NewsServiceInterface
 
     public function listPublicArticles(string $locale, array $filters = [], int $page = 1, int $perPage = 12): PaginatedResultDTO
     {
+        if (($filters['category'] ?? null) === 'agreements') {
+            return $this->listPublicAgreementArticles($locale, $filters, $page, $perPage);
+        }
+
         $cacheKey = 'news:list:'.$locale.':'.md5(json_encode([
             'filters' => $filters,
             'page' => $page,
@@ -233,6 +237,7 @@ final class NewsService implements NewsServiceInterface
                 ->when(is_string($filters['categoryType'] ?? null) && $filters['categoryType'] !== '', function (Builder $query) use ($filters): void {
                     $query->whereHas('category', fn (Builder $categoryQuery): Builder => $categoryQuery->where('type', $filters['categoryType']));
                 })
+                ->when(($filters['categoryType'] ?? null) === 'news', fn (Builder $query): Builder => $query->whereNotIn('slug', $this->agreementSeedSlugs()))
                 ->when(is_int($filters['excludeId'] ?? null), fn (Builder $query): Builder => $query->whereKeyNot($filters['excludeId']))
                 ->when(is_string($filters['search'] ?? null) && trim((string) $filters['search']) !== '', function (Builder $query) use ($filters): void {
                     $search = trim((string) $filters['search']);
@@ -254,6 +259,79 @@ final class NewsService implements NewsServiceInterface
                 currentPage: $paginator->currentPage(),
                 perPage: $paginator->perPage(),
                 lastPage: $paginator->lastPage(),
+            );
+        }, 300);
+    }
+
+    /**
+     * Agreements were imported as existing news articles. Include those records
+     * alongside the category records and collapse duplicate title records so the
+     * imported media and attachments remain the canonical public version.
+     *
+     * @param array<string, mixed> $filters
+     */
+    private function listPublicAgreementArticles(string $locale, array $filters, int $page, int $perPage): PaginatedResultDTO
+    {
+        $cacheKey = 'news:agreements:'.$locale.':'.md5(json_encode([
+            'filters' => $filters,
+            'page' => $page,
+            'per_page' => $perPage,
+        ], JSON_THROW_ON_ERROR));
+
+        return $this->newsCache()->remember($cacheKey, function () use ($locale, $filters, $page, $perPage): PaginatedResultDTO {
+            $agreementTitles = NewsArticle::query()
+                ->whereHas('category', fn (Builder $query): Builder => $query->where('slug', 'agreements'))
+                ->with('translations')
+                ->get()
+                ->flatMap(fn (NewsArticle $article): Collection => $article->translations->pluck('title'))
+                ->filter(fn (mixed $title): bool => is_string($title) && trim($title) !== '')
+                ->map(fn (string $title): string => trim($title))
+                ->unique()
+                ->values()
+                ->all();
+
+            $articles = NewsArticle::query()
+                ->public()
+                ->with($this->publicArticleCardRelations())
+                ->where(function (Builder $query) use ($agreementTitles): void {
+                    $query->whereHas('category', fn (Builder $categoryQuery): Builder => $categoryQuery->where('slug', 'agreements'));
+
+                    if ($agreementTitles !== []) {
+                        $query->orWhereHas('translations', fn (Builder $translationQuery): Builder => $translationQuery->whereIn('title', $agreementTitles));
+                    }
+                })
+                ->when(is_string($filters['search'] ?? null) && trim((string) $filters['search']) !== '', function (Builder $query) use ($filters): void {
+                    $search = trim((string) $filters['search']);
+                    $query->whereHas('translations', fn (Builder $translationQuery): Builder => $translationQuery
+                        ->where('title', 'like', '%'.$search.'%')
+                        ->orWhere('excerpt', 'like', '%'.$search.'%')
+                        ->orWhere('body', 'like', '%'.$search.'%'));
+                })
+                ->get()
+                ->sortByDesc(fn (NewsArticle $article): string => (string) ($article->published_at?->format('Y-m-d H:i:s') ?? ''))
+                ->groupBy(fn (NewsArticle $article): string => strtolower(trim((string) ($article->translations->firstWhere('locale', $locale)?->title ?? $article->translations->first()?->title ?? $article->slug))))
+                ->map(function (Collection $duplicates): NewsArticle {
+                    return $duplicates
+                        ->sortBy(fn (NewsArticle $article): array => [
+                            ($article->cover_media_id !== null || $article->attachments->isNotEmpty()) ? 0 : 1,
+                            (string) $article->created_at,
+                        ])
+                        ->first();
+                })
+                ->values();
+
+            $total = $articles->count();
+            $perPage = max(1, $perPage);
+            $page = max(1, $page);
+            $lastPage = max(1, (int) ceil($total / $perPage));
+            $currentPage = min($page, $lastPage);
+
+            return new PaginatedResultDTO(
+                items: $articles->slice(($currentPage - 1) * $perPage, $perPage)->values()->map(fn (NewsArticle $article): NewsArticleDTO => $this->mapArticle($article, $locale)),
+                total: $total,
+                currentPage: $currentPage,
+                perPage: $perPage,
+                lastPage: $lastPage,
             );
         }, 300);
     }
@@ -282,6 +360,7 @@ final class NewsService implements NewsServiceInterface
             ->when($categoryType !== null, function (Builder $query) use ($categoryType): void {
                 $query->whereHas('category', fn (Builder $categoryQuery): Builder => $categoryQuery->where('type', $categoryType));
             })
+            ->when($categoryType === 'news', fn (Builder $query): Builder => $query->whereNotIn('slug', $this->agreementSeedSlugs()))
             ->with($this->publicArticleCardRelations());
         $this->applyNewestArticleOrder($query);
 
@@ -301,6 +380,9 @@ final class NewsService implements NewsServiceInterface
                 ->when($categoryType !== null, function (Builder $query) use ($categoryType): void {
                     $query->whereHas('category', fn (Builder $categoryQuery): Builder => $categoryQuery->where('type', $categoryType));
                 });
+            if ($categoryType === 'news') {
+                $query->whereNotIn('slug', $this->agreementSeedSlugs());
+            }
             $this->applyNewestArticleOrder($query);
 
             return $query
@@ -321,6 +403,7 @@ final class NewsService implements NewsServiceInterface
         $query = NewsArticle::query()
             ->public()
             ->whereHas('category', fn (Builder $categoryQuery): Builder => $categoryQuery->where('type', 'news'))
+            ->whereNotIn('slug', $this->agreementSeedSlugs())
             ->with($this->publicArticleCardRelations())
             ->when($ids !== [], fn (Builder $query): Builder => $query->whereKey($ids))
             ->when($normalizedSearch !== '', function (Builder $query) use ($normalizedSearch): void {
@@ -480,6 +563,28 @@ final class NewsService implements NewsServiceInterface
             'coverMedia',
             'category.translations',
             'attachments.mediaAsset',
+        ];
+    }
+
+    /** @return list<string> */
+    private function agreementSeedSlugs(): array
+    {
+        return [
+            'memorandum-latakia-university',
+            'scientific-cultural-manara-university',
+            'scientific-cultural-al-sham-university',
+            'memorandum-planning-statistics-authority',
+            'virtual-university-delegation',
+            'memorandum-amman-ahliya',
+            'cipher-cooperation-agreement',
+            'human-resources-management-association',
+            'india-universities-agreements',
+            'damascus-hospital-cooperation',
+            'al-hawash-university-agreement',
+            'almujtahid-hospital-agreement',
+            'zahrawi-hospital-agreement',
+            'asas-human-resources-agreement',
+            'damascus-university-agreement',
         ];
     }
 
