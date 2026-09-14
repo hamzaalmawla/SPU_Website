@@ -50,7 +50,7 @@
                     <article id="article-{{ $article->id }}" data-news-card class="group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_34px_rgba(32,39,89,0.07)] transition duration-300 hover:-translate-y-1 hover:border-spu-blue/20 hover:shadow-[0_22px_52px_rgba(32,39,89,0.13)]">
                         <a href="{{ $article->url }}" class="block">
                             <div class="relative  overflow-hidden border-b border-slate-100 bg-slate-100">
-                                <img src="{{ $article->imageUrl ?: '/images/news/researches.jpeg' }}" onerror="this.onerror=null;this.src='/images/news/researches.jpeg'" alt="{{ $article->title }}" loading="lazy" class="content-media-image h-full w-full">
+                                <img src="{{ $article->imageUrl ?: '/images/news/researches.jpeg' }}" onerror="this.onerror=null;this.src='/images/news/researches.jpeg'" alt="{{ $article->title }}" loading="lazy" class="content-media-image w-full h-[215px]">
                                 @if ($article->category)
                                     <span class="absolute start-4 top-4 max-w-[calc(100%_-_2rem)] truncate rounded-full bg-white/95 px-3.5 py-1.5 text-[11px] font-bold text-spu-blue shadow-md backdrop-blur-sm">{{ $article->category->name }}</span>
                                 @endif
