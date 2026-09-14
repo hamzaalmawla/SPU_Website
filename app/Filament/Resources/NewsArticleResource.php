@@ -121,6 +121,7 @@ class NewsArticleResource extends Resource
                                                 ->extraInputAttributes(fn (Get $get): array => ['dir' => $get('locale') === 'en' ? 'ltr' : 'rtl']),
                                             RichEditor::make('body')
                                                 ->label(__('admin.news_article.fields.body'))
+                                                ->toolbarButtons(['attachFiles', 'blockquote', 'bold', 'bulletList', 'codeBlock', 'h2', 'h3', 'highlight', 'italic', 'link', 'orderedList', 'redo', 'strike', 'underline', 'undo'])
                                                 ->columnSpanFull()
                                                 ->extraAttributes(fn (Get $get): array => ['dir' => $get('locale') === 'en' ? 'ltr' : 'rtl']),
                                         ])

@@ -40,6 +40,13 @@ body {
     position: relative;
 }
 
+.prose mark {
+    background-color: #fef08a;
+    color: inherit;
+    border-radius: 0.15rem;
+    padding-inline: 0.15em;
+}
+
 .services-card-icon {
     filter: brightness(0) saturate(100%) invert(16%) sepia(21%) saturate(2361%) hue-rotate(193deg) brightness(97%) contrast(97%);
 }

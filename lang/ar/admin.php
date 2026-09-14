@@ -554,6 +554,7 @@ return [
             'department' => 'القسم',
             'description' => 'الوصف',
             'detail_lead' => 'مقدمة صفحة التفاصيل',
+            'detail_body' => 'محتوى صفحة التفاصيل',
             'detail_paragraphs' => 'فقرات صفحة التفاصيل',
             'director' => 'المدير',
             'director_name' => 'اسم المدير',

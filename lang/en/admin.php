@@ -554,6 +554,7 @@ return [
             'department' => 'Department',
             'description' => 'Description',
             'detail_lead' => 'Detail-page introduction',
+            'detail_body' => 'Detail-page content',
             'detail_paragraphs' => 'Detail-page paragraphs',
             'director' => 'Director',
             'director_name' => 'Director name',

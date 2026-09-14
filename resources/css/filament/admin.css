@@ -160,6 +160,17 @@
     box-shadow: 0 0 0 3px rgb(32 39 89 / 10%);
 }
 
+.fi-fo-rich-editor mark {
+    background-color: #fef08a;
+    color: inherit;
+    border-radius: 0.15rem;
+    padding-inline: 0.15em;
+}
+
+.fi-fo-rich-editor [data-trix-attribute="highlight"] {
+    font-weight: 700;
+}
+
 .fi-tabs {
     gap: 0.25rem;
     padding: 0.3rem;

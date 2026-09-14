@@ -10,11 +10,13 @@ use App\Exceptions\ConflictException;
 use App\Filament\Components\PageUrlSelect;
 use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
+use App\Support\HtmlSanitizer;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Component;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -58,12 +60,16 @@ class ManageResearch extends Page implements HasForms
 
     private CmsWorkflowServiceInterface $cmsWorkflowService;
 
+    private HtmlSanitizer $htmlSanitizer;
+
     public function boot(
         ResearchPageServiceInterface $researchPageService,
         CmsWorkflowServiceInterface $cmsWorkflowService,
+        HtmlSanitizer $htmlSanitizer,
     ): void {
         $this->researchPageService = $researchPageService;
         $this->cmsWorkflowService = $cmsWorkflowService;
+        $this->htmlSanitizer = $htmlSanitizer;
     }
 
     public static function canAccess(): bool
@@ -156,6 +162,7 @@ class ManageResearch extends Page implements HasForms
 
         $draftPayload = $this->cmsWorkflowService->latestEditableDraftPayload($targetKey, (int) auth()->id());
         $payload = is_array($draftPayload) ? $draftPayload : $this->researchPageService->getEditablePayload($targetKey);
+        $payload = $this->publicationBodyForEditor($targetKey, $payload);
         $this->sourcePayload = $payload;
         $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey, (int) auth()->id());
 
@@ -1057,7 +1064,11 @@ class ManageResearch extends Page implements HasForms
             TextInput::make('year')->label($this->fieldLabel('year'))->required()->maxLength(20),
             MediaPicker::image('image', $this->fieldLabel('publication_image'), true)->columnSpanFull(),
             Textarea::make('lead')->label($this->fieldLabel('detail_lead'))->rows(2)->columnSpanFull(),
-            TagsInput::make('paragraphs')->label($this->fieldLabel('detail_paragraphs'))->columnSpanFull(),
+            RichEditor::make('body')
+                ->label($this->fieldLabel('detail_body'))
+                ->toolbarButtons(['bold', 'bulletList', 'h2', 'h3', 'highlight', 'italic', 'link', 'orderedList', 'redo', 'strike', 'underline', 'undo'])
+                ->columnSpanFull(),
+            Hidden::make('paragraphs')->dehydrated(),
             Textarea::make('keyStatement')->label($this->fieldLabel('key_statement'))->rows(2)->columnSpanFull(),
             TagsInput::make('keywords')->label($this->fieldLabel('keywords'))->columnSpanFull(),
             Repeater::make('downloads')
@@ -1225,6 +1236,7 @@ class ManageResearch extends Page implements HasForms
             if ($slug !== '') {
                 $item['links']['local'] = '/research/publications/'.$slug.'/';
             }
+            $item['body'] = $this->htmlSanitizer->sanitize(trim((string) ($item['body'] ?? '')));
             $item['paragraphs'] = $this->listOfStrings($item['paragraphs'] ?? []);
             $item['keywords'] = $this->listOfStrings($item['keywords'] ?? []);
             $item['themes'] = $this->listOfStrings($item['themes'] ?? []);
@@ -1239,6 +1251,30 @@ class ManageResearch extends Page implements HasForms
         }, $this->listOfArrays($content['items'] ?? []));
 
         return $content;
+    }
+
+    /** @param array<string, mixed> $payload @return array<string, mixed> */
+    private function publicationBodyForEditor(string $targetKey, array $payload): array
+    {
+        if ($targetKey !== 'research.publications') {
+            return $payload;
+        }
+
+        foreach (['ar', 'en'] as $locale) {
+            foreach (($payload['translations'][$locale]['items'] ?? []) as $index => $item) {
+                if (! is_array($item) || trim((string) ($item['body'] ?? '')) !== '') {
+                    continue;
+                }
+
+                $paragraphs = $this->listOfStrings($item['paragraphs'] ?? []);
+                $payload['translations'][$locale]['items'][$index]['body'] = implode('', array_map(
+                    static fn (string $paragraph): string => '<p>'.e($paragraph).'</p>',
+                    $paragraphs,
+                ));
+            }
+        }
+
+        return $payload;
     }
 
     /** @param array<string, mixed> $content @return array<string, mixed> */

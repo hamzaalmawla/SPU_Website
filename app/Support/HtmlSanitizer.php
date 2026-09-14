@@ -22,7 +22,7 @@ final class HtmlSanitizer
     private const ALLOWED_TAGS = [
         'p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'a', 'h1', 'h2', 'h3',
         'h4', 'h5', 'h6', 'blockquote', 'img', 'table', 'thead', 'tbody',
-        'tr', 'th', 'td', 'span', 'div', 'figure', 'figcaption',
+        'tr', 'th', 'td', 'span', 'div', 'mark', 'figure', 'figcaption',
     ];
 
     /**
@@ -139,7 +139,7 @@ final class HtmlSanitizer
 
         // Register custom HTML5 elements (figure, figcaption) not in HTMLPurifier's default set
         $config->set('HTML.DefinitionID', 'spu-sanitizer-v1');
-        $config->set('HTML.DefinitionRev', 2);
+        $config->set('HTML.DefinitionRev', 3);
 
         $def = $config->maybeGetRawHTMLDefinition();
         if ($def !== null) {
@@ -147,6 +147,8 @@ final class HtmlSanitizer
             $def->addElement('figure', 'Block', 'Flow', 'Common');
             // figcaption: block-level element inside figure, contains inline content
             $def->addElement('figcaption', 'Block', 'Flow', 'Common');
+            // mark: inline semantic highlight used by the editorial rich text tool
+            $def->addElement('mark', 'Inline', 'Inline', 'Common');
             // loading attribute for img (lazy loading — HTML5)
             $def->addAttribute('img', 'loading', 'Enum#lazy,eager');
         }

@@ -38,6 +38,14 @@ final class HtmlSanitizerTest extends TestCase
         $this->assertSame('', $this->sanitizer->sanitize(''));
     }
 
+    #[Test]
+    public function it_preserves_highlighted_text(): void
+    {
+        $result = $this->sanitizer->sanitize('<p>Important <mark>announcement</mark></p>');
+
+        $this->assertStringContainsString('<mark>announcement</mark>', $result);
+    }
+
     // --- Requirement 1.1: Script tag stripping ---
 
     #[Test]
