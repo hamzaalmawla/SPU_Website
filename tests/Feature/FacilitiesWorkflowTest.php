@@ -1731,6 +1731,72 @@ final class FacilitiesWorkflowTest extends TestCase
             ->assertSee('View All Projects');
     }
 
+    public function test_database_project_detail_renders_imported_body_gallery_and_pdf(): void
+    {
+        $faculty = Faculty::query()->where('public_slug', 'pharmacy')->firstOrFail();
+        $project = FacultyStudentProject::query()->create([
+            'faculty_id' => (int) $faculty->getKey(),
+            'legacy_source_id' => 7001,
+            'legacy_service_type' => 44,
+            'slug' => 'pharmacy-project-7001',
+            'image' => '/images/pharmacy-place.jpg',
+            'gallery_json' => ['/images/pharmacy-place.jpg'],
+            'documents_json' => [['file' => '/storage/legacy/faculty-projects/pharmacy/7001/project.pdf']],
+            'sort_order' => 1,
+            'is_enabled' => true,
+        ]);
+        FacultyStudentProjectTranslation::query()->create([
+            'faculty_student_project_id' => (int) $project->getKey(),
+            'locale' => 'ar',
+            'title' => 'مشروع صيدلاني موثق',
+            'summary' => 'ملخص المشروع',
+            'body_json' => ['نفذ المشروع فريق من الطلبة.'],
+            'tag' => 'مشروع طلابي',
+        ]);
+        FacultyStudentProjectTranslation::query()->create([
+            'faculty_student_project_id' => (int) $project->getKey(),
+            'locale' => 'en',
+            'title' => 'مشروع صيدلاني موثق',
+            'summary' => null,
+            'body_json' => [],
+            'tag' => 'Student Project',
+        ]);
+
+        Cache::flush();
+
+        $this->get('/ar/faculties/pharmacy/projects/pharmacy-project-7001')
+            ->assertOk()
+            ->assertSee('مشروع صيدلاني موثق')
+            ->assertSee('نفذ المشروع فريق من الطلبة.')
+            ->assertSee('/storage/legacy/faculty-projects/pharmacy/7001/project.pdf', false)
+            ->assertSee('تحميل ملف المشروع');
+    }
+
+    public function test_database_project_list_resolves_imported_legacy_images(): void
+    {
+        $faculty = Faculty::query()->where('public_slug', 'pharmacy')->firstOrFail();
+        $project = FacultyStudentProject::query()->create([
+            'faculty_id' => (int) $faculty->getKey(),
+            'slug' => 'pharmacy-project-7001',
+            'image' => 'downloads/files/cover.jpg',
+            'sort_order' => 1,
+            'is_enabled' => true,
+        ]);
+        foreach (['ar', 'en'] as $locale) {
+            FacultyStudentProjectTranslation::query()->create([
+                'faculty_student_project_id' => (int) $project->getKey(),
+                'locale' => $locale,
+                'title' => 'Project',
+            ]);
+        }
+
+        Cache::flush();
+
+        $this->get('/en/faculties/pharmacy/projects')
+            ->assertOk()
+            ->assertSee('/downloads/files/cover.jpg', false);
+    }
+
     #[DataProvider('frontendProjectDetailProvider')]
     public function test_database_project_detail_is_available_for_facility(string $facultySlug, string $projectSlug, string $expectedTitle): void
     {

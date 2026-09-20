@@ -160,10 +160,11 @@
                         </div>
                     @endif
 
+                    @if (! empty($project['documents']))
                     <div class="rounded-[6px] border border-slate-200 bg-white p-6 shadow-sm">
                         <h3 class="text-[13px] font-bold uppercase tracking-[0.04em] text-slate-400">{{ $isAr ? 'الوثائق' : 'Documents' }}</h3>
                         <ul class="mt-4 space-y-3">
-                            @forelse (($project['documents'] ?? []) as $document)
+                            @foreach ($project['documents'] as $document)
                                 <li>
                                     @if (! empty($document['file']))
                                         <a href="{{ $document['file'] }}" download class="inline-flex w-full items-center gap-2 rounded-[4px] border border-spu-red/20 bg-spu-red/5 px-3 py-2 text-[12px] font-bold text-spu-red transition hover:bg-spu-red hover:text-white">
@@ -185,20 +186,10 @@
                                         </span>
                                     @endif
                                 </li>
-                            @empty
-                                <li>
-                                    <span class="inline-flex w-full cursor-not-allowed items-center gap-2 rounded-[4px] border border-slate-200 bg-slate-50 px-3 py-2 text-[12px] font-bold text-slate-400">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="h-4 w-4 shrink-0" aria-hidden="true">
-                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                            <path d="m7 10 5 5 5-5"></path>
-                                            <path d="M12 15V3"></path>
-                                        </svg>
-                                        <span>{{ $isAr ? 'تحميل' : 'Download' }}</span>
-                                    </span>
-                                </li>
-                            @endforelse
+                            @endforeach
                         </ul>
                     </div>
+                    @endif
                 </aside>
 
                 <div class="project-gallery mt-12">

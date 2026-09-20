@@ -12,7 +12,14 @@ class FacultyStudentProjectTranslation extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['faculty_student_project_id', 'locale', 'title', 'summary', 'tag', 'team', 'supervisor'];
+    protected $fillable = ['faculty_student_project_id', 'locale', 'title', 'summary', 'body_json', 'tag', 'team', 'supervisor'];
+
+    protected function casts(): array
+    {
+        return [
+            'body_json' => 'array',
+        ];
+    }
 
     public function project(): BelongsTo
     {

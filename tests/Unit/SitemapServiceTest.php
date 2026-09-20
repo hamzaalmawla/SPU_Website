@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Tests\Unit;
 
 use App\Contracts\Seo\SitemapServiceInterface;
+use App\Models\Faculty\Faculty;
+use App\Models\Faculty\FacultyStudentProject;
+use App\Models\Faculty\FacultyStudentProjectTranslation;
 use App\Models\Page\Page;
 use App\Models\Page\PageTranslation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -23,6 +26,34 @@ class SitemapServiceTest extends TestCase
 {
     use PropertyTestHelpers;
     use RefreshDatabase;
+
+    public function test_enabled_faculty_project_details_are_included_with_locale_alternates(): void
+    {
+        $faculty = Faculty::query()->create([
+            'slug' => 'pharmacy',
+            'public_slug' => 'pharmacy',
+            'sort_order' => 1,
+            'is_enabled' => true,
+        ]);
+        $project = FacultyStudentProject::query()->create([
+            'faculty_id' => (int) $faculty->getKey(),
+            'slug' => 'pharmacy-project-6147',
+            'sort_order' => 1,
+            'is_enabled' => true,
+        ]);
+        foreach (['ar', 'en'] as $locale) {
+            FacultyStudentProjectTranslation::query()->create([
+                'faculty_student_project_id' => (int) $project->getKey(),
+                'locale' => $locale,
+                'title' => 'Project',
+            ]);
+        }
+
+        $entries = app(SitemapServiceInterface::class)->generateSectionEntries('faculties');
+
+        self::assertTrue($entries->contains(fn ($entry): bool => str_ends_with($entry->loc, '/ar/faculties/pharmacy/projects/pharmacy-project-6147')));
+        self::assertTrue($entries->contains(fn ($entry): bool => str_ends_with($entry->loc, '/en/faculties/pharmacy/projects/pharmacy-project-6147')));
+    }
 
     // ──────────────────────────────────────────────────────────────────────
     // Property 4: Sitemap contains only published, enabled pages

@@ -1139,7 +1139,18 @@ final class FacultyPageService implements FacultyPageServiceInterface
                     'tag' => $translation->tag,
                     'team' => $translation->team,
                     'supervisor' => $translation->supervisor,
-                    'image' => $project->image,
+                    'image' => $this->resolveProjectMedia($project->image),
+                    'longDescription' => is_array($translation->body_json) ? $translation->body_json : [],
+                    'gallery' => is_array($project->gallery_json) ? $project->gallery_json : [],
+                    'teamMembers' => $this->projectTeamMembers($translation->team),
+                    'documents' => collect(is_array($project->documents_json) ? $project->documents_json : [])
+                        ->map(fn (array $document): array => [
+                            'label' => $locale === 'ar' ? 'تحميل ملف المشروع' : 'Download project file',
+                            'file' => (string) ($document['file'] ?? ''),
+                        ])
+                        ->filter(fn (array $document): bool => $document['file'] !== '')
+                        ->values()
+                        ->all(),
                     'detailRoute' => $this->projectDetailRoute($faculty, $locale, (string) $project->slug),
                 ];
             })->values()->all();
@@ -1220,21 +1231,21 @@ final class FacultyPageService implements FacultyPageServiceInterface
     {
         foreach (['image'] as $key) {
             if (is_string($project[$key] ?? null)) {
-                $project[$key] = MediaUrlResolver::resolve($project[$key]);
+                $project[$key] = $this->resolveProjectMedia($project[$key]);
             }
         }
 
         if (is_array($project['gallery'] ?? null)) {
             $project['gallery'] = array_values(array_filter(array_map(
-                static fn (mixed $image): ?string => is_string($image) ? MediaUrlResolver::resolve($image) : null,
+                fn (mixed $image): ?string => is_string($image) ? $this->resolveProjectMedia($image) : null,
                 $project['gallery'],
             )));
         }
 
         if (is_array($project['documents'] ?? null)) {
             $project['documents'] = array_values(array_filter(array_map(
-                static fn (mixed $doc): ?array => is_array($doc) && is_string($doc['file'] ?? null)
-                    ? ['label' => (string) ($doc['label'] ?? ''), 'file' => MediaUrlResolver::resolve($doc['file'])]
+                fn (mixed $doc): ?array => is_array($doc) && is_string($doc['file'] ?? null)
+                    ? ['label' => (string) ($doc['label'] ?? ''), 'file' => $this->resolveProjectMedia($doc['file'])]
                     : null,
                 $project['documents'],
             )));
@@ -1243,9 +1254,33 @@ final class FacultyPageService implements FacultyPageServiceInterface
         return $project;
     }
 
+    private function resolveProjectMedia(?string $path): ?string
+    {
+        $normalized = is_string($path) ? ltrim(str_replace('\\', '/', trim($path)), '/') : '';
+
+        return str_starts_with($normalized, 'downloads/files/')
+            ? MediaUrlResolver::resolveLegacy($normalized)
+            : MediaUrlResolver::resolve($path);
+    }
+
     private function projectDetailRoute(Faculty $faculty, string $locale, string $projectSlug): string
     {
         return $this->url($locale, '/faculties/'.$this->publicSlug($faculty).'/projects/'.$projectSlug);
+    }
+
+    /** @return array<int, array{name: string, role: string}> */
+    private function projectTeamMembers(?string $team): array
+    {
+        if (! is_string($team) || trim($team) === '') {
+            return [];
+        }
+
+        return collect(preg_split('/[,،؛;]+/u', $team) ?: [])
+            ->map(static fn (string $name): string => trim($name))
+            ->filter()
+            ->map(static fn (string $name): array => ['name' => $name, 'role' => ''])
+            ->values()
+            ->all();
     }
 
     /** @return array<int, array<string, mixed>> */

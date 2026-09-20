@@ -83,16 +83,15 @@ return new class extends Migration
         }
 
         foreach ($map as $from => $to) {
-            // Anchored to the start so a URL that merely contains the old path
-            // further along is not rewritten, and matched with a LIKE first so
-            // this stays a small, indexable update rather than a table scan.
-            DB::table('menu_items')
+            $items = DB::table('menu_items')
                 ->where('url', 'like', $from.'%')
-                ->update([
-                    'url' => DB::raw(
-                        'CONCAT('.DB::getPdo()->quote($to).', SUBSTRING(url, '.(strlen($from) + 1).'))'
-                    ),
-                ]);
+                ->get(['id', 'url']);
+
+            foreach ($items as $item) {
+                DB::table('menu_items')
+                    ->where('id', $item->id)
+                    ->update(['url' => $to.substr((string) $item->url, strlen($from))]);
+            }
         }
     }
 };

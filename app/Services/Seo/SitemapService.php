@@ -16,6 +16,7 @@ use App\Enums\PublicationStatus;
 use App\Models\Cms\CmsTargetContent;
 use App\Models\Content\Directorate;
 use App\Models\Faculty\Faculty;
+use App\Models\Faculty\FacultyStudentProject;
 use App\Models\News\NewsArticle;
 use App\Models\Page\AboutPage;
 use App\Models\Page\Page;
@@ -65,6 +66,7 @@ final class SitemapService implements SitemapServiceInterface
         $this->appendAboutProfileEntries($entries, $baseUrl);
         $this->appendEServicesEntries($entries, $baseUrl);
         $this->appendFacultyResearchEntries($entries, $baseUrl);
+        $this->appendFacultyProjectEntries($entries, $baseUrl);
         $this->appendAlumniEntries($entries, $baseUrl);
         $this->appendResearchCatalogEntries($entries, $baseUrl);
         $this->appendResearchPublicationEntries($entries, $baseUrl);
@@ -92,6 +94,7 @@ final class SitemapService implements SitemapServiceInterface
                 break;
             case 'faculties':
                 $this->appendFacultyResearchEntries($entries, $baseUrl);
+                $this->appendFacultyProjectEntries($entries, $baseUrl);
                 break;
             case 'people':
                 $this->appendAboutProfileEntries($entries, $baseUrl);
@@ -314,6 +317,44 @@ final class SitemapService implements SitemapServiceInterface
                 $entries->push(new SitemapEntryDTO(
                     loc: $baseUrl.'/'.$locale.$path,
                     lastmod: $this->w3c($faculty->updated_at),
+                    changefreq: null,
+                    priority: null,
+                    alternates: $alternates,
+                ));
+            }
+        }
+    }
+
+    /** @param Collection<int, SitemapEntryDTO> $entries */
+    private function appendFacultyProjectEntries(Collection $entries, string $baseUrl): void
+    {
+        $projects = FacultyStudentProject::query()
+            ->enabled()
+            ->whereHas('faculty', fn ($query) => $query->enabled())
+            ->with(['faculty:id,slug,public_slug', 'translations:id,faculty_student_project_id,locale'])
+            ->orderBy('faculty_id')
+            ->orderBy('sort_order')
+            ->get();
+
+        foreach ($projects as $project) {
+            if (! $project->faculty instanceof Faculty) {
+                continue;
+            }
+
+            $facultySlug = (string) ($project->faculty->public_slug ?: $project->faculty->slug);
+            $path = '/faculties/'.$facultySlug.'/projects/'.$project->slug;
+            $locales = collect(['ar', 'en'])
+                ->filter(fn (string $locale): bool => $project->translations->contains('locale', $locale))
+                ->values();
+            $alternates = $locales->map(fn (string $locale): array => [
+                'locale' => $locale,
+                'url' => $baseUrl.'/'.$locale.$path,
+            ])->all();
+
+            foreach ($locales as $locale) {
+                $entries->push(new SitemapEntryDTO(
+                    loc: $baseUrl.'/'.$locale.$path,
+                    lastmod: $this->w3c($project->updated_at),
                     changefreq: null,
                     priority: null,
                     alternates: $alternates,

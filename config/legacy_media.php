@@ -2,7 +2,7 @@
 
 return [
     'enabled' => (bool) env('LEGACY_MEDIA_ENABLED', true),
-    'base_url' => env('LEGACY_MEDIA_BASE_URL'),
+    'base_url' => env('LEGACY_MEDIA_BASE_URL', env('APP_ENV') === 'local' ? 'https://www.spu.edu.sy' : null),
 
     /*
     |--------------------------------------------------------------------------
