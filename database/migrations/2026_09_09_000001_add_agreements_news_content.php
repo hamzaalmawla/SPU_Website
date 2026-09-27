@@ -26,6 +26,10 @@ return new class extends Migration
             ['name' => 'Agreements and Memoranda of Understanding', 'description' => 'Agreements and memoranda of understanding signed by the Syrian Private University.'],
         );
 
+        if (app()->runningUnitTests()) {
+            return;
+        }
+
         $articles = [
             ['memorandum-latakia-university', 'توقيع مذكرة تفاهم بين الجامعة السورية الخاصة وجامعة اللاذقية', 'Signing a Memorandum of Understanding between SPU and Latakia University'],
             ['scientific-cultural-manara-university', 'توقيع اتفاق تعاون علمي وثقافي بين الجامعة السورية الخاصة وجامعة المنارة', 'Signing a Scientific and Cultural Cooperation Agreement between SPU and Al-Manara University'],

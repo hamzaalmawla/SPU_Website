@@ -197,7 +197,7 @@ final class NewsWorkflowTest extends TestCase
             ->assertSee('data-news-grid="articles"', false)
             ->assertSee('data-news-card', false)
             ->assertSee('grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3', false)
-            ->assertSee('content-media-image h-full w-full', false)
+            ->assertSee('content-media-image w-full h-[215px]', false)
             ->assertDontSee('md:h-[500px]', false)
             ->assertDontSee('top-[-3.25rem]', false)
             ->assertDontSee('Separate Announcement');

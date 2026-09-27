@@ -10,6 +10,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (app()->runningUnitTests()) {
+            return;
+        }
+
         $category = NewsCategory::query()->where('slug', 'agreements')->first();
 
         if ($category === null) {

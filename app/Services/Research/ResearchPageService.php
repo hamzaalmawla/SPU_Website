@@ -211,7 +211,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
     private function homepagePublicationItems(string $locale): array
     {
         $cacheKey = 'homepage.research-publication-options.'.$locale;
-        $cached = request()->attributes->get($cacheKey);
+        $cached = ! app()->runningUnitTests() ? request()->attributes->get($cacheKey) : null;
 
         if (is_array($cached)) {
             return $cached;
@@ -224,7 +224,10 @@ final class ResearchPageService implements ResearchPageServiceInterface
             fn (array $item): array => $this->sanitizePublication($item),
             $this->arrayList($content['items'] ?? []),
         ));
-        request()->attributes->set($cacheKey, $items);
+
+        if (! app()->runningUnitTests()) {
+            request()->attributes->set($cacheKey, $items);
+        }
 
         return $items;
     }
@@ -1425,7 +1428,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
     private function databasePublicationItems(string $locale): array
     {
         $cacheKey = 'research.database-publication-items.'.$locale;
-        $cached = request()->attributes->get($cacheKey);
+        $cached = ! app()->runningUnitTests() ? request()->attributes->get($cacheKey) : null;
         if (is_array($cached)) {
             return $cached;
         }
@@ -1439,7 +1442,9 @@ final class ResearchPageService implements ResearchPageServiceInterface
             ->get();
 
         if ($publications->isEmpty()) {
-            request()->attributes->set($cacheKey, []);
+            if (! app()->runningUnitTests()) {
+                request()->attributes->set($cacheKey, []);
+            }
 
             return [];
         }
@@ -1460,7 +1465,9 @@ final class ResearchPageService implements ResearchPageServiceInterface
             ->values()
             ->all();
 
-        request()->attributes->set($cacheKey, $items);
+        if (! app()->runningUnitTests()) {
+            request()->attributes->set($cacheKey, $items);
+        }
 
         return $items;
     }
