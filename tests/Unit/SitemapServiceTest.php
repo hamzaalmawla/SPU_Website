@@ -107,7 +107,7 @@ class SitemapServiceTest extends TestCase
 
         // Generate sitemap entries
         $sitemapService = app(SitemapServiceInterface::class);
-        $entries = $sitemapService->generateEntries();
+        $entries = $sitemapService->generateSectionEntries('pages');
 
         // Determine which pages should appear in the sitemap
         $expectedSlugs = [];

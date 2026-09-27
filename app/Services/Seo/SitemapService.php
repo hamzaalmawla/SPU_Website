@@ -330,7 +330,7 @@ final class SitemapService implements SitemapServiceInterface
     {
         $projects = FacultyStudentProject::query()
             ->enabled()
-            ->whereHas('faculty', fn ($query) => $query->enabled())
+            ->whereHas('faculty', fn ($query) => $query->where('is_enabled', true))
             ->with(['faculty:id,slug,public_slug', 'translations:id,faculty_student_project_id,locale'])
             ->orderBy('faculty_id')
             ->orderBy('sort_order')
