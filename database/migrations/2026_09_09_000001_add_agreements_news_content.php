@@ -12,6 +12,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (app()->runningUnitTests()) {
+            return;
+        }
+
         $category = NewsCategory::query()->updateOrCreate(
             ['slug' => 'agreements'],
             ['type' => 'news', 'sort_order' => 3, 'is_enabled' => true],
@@ -25,10 +29,6 @@ return new class extends Migration
             ['news_category_id' => $category->getKey(), 'locale' => 'en'],
             ['name' => 'Agreements and Memoranda of Understanding', 'description' => 'Agreements and memoranda of understanding signed by the Syrian Private University.'],
         );
-
-        if (app()->runningUnitTests()) {
-            return;
-        }
 
         $articles = [
             ['memorandum-latakia-university', 'توقيع مذكرة تفاهم بين الجامعة السورية الخاصة وجامعة اللاذقية', 'Signing a Memorandum of Understanding between SPU and Latakia University'],
