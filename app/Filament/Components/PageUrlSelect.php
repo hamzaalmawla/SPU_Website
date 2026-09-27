@@ -47,8 +47,7 @@ final class PageUrlSelect
         $flat = self::flattenGroups(self::buildOptions(null, $locale));
 
         return collect($flat)
-            ->filter(fn (string $label, string $url): bool =>
-                str_contains(mb_strtolower($label), $search) || str_contains(mb_strtolower($url), $search)
+            ->filter(fn (string $label, string $url): bool => str_contains(mb_strtolower($label), $search) || str_contains(mb_strtolower($url), $search)
             )
             ->take(30)
             ->all();
@@ -162,7 +161,7 @@ final class PageUrlSelect
             return $value;
         }
 
-        $path = '/' . ltrim($path, '/');
+        $path = '/'.ltrim($path, '/');
         if (str_starts_with($path, '/'.$locale.'/') || $path === '/'.$locale) {
             return $path;
         }
@@ -199,7 +198,7 @@ final class PageUrlSelect
     private static function buildLabel(array $segments, string $locale): string
     {
         // Special-case known pages for clean labels
-        $path = '/' . implode('/', $segments);
+        $path = '/'.implode('/', $segments);
         $knownLabels = [
             '/about' => 'About SPU',
             '/about/vision-mission' => 'Vision & Mission',
@@ -244,28 +243,29 @@ final class PageUrlSelect
 
             // Directorates sub-page
             if ($segments[0] === 'about' && $segments[1] === 'directorates' && count($segments) === 3) {
-                return 'Directorate — ' . $humanized;
+                return 'Directorate — '.$humanized;
             }
 
             // Person / Faculty-member profile
             if ($segments[0] === 'about' && ($segments[1] ?? '') === 'profile') {
                 $type = $segments[2] === 'faculty-member' ? 'Faculty' : 'Staff';
-                return $type . ' Profile — ' . $humanized;
+
+                return $type.' Profile — '.$humanized;
             }
 
             // News article: /news/{id}
             if ($segments[0] === 'news' && count($segments) === 2) {
-                return 'News Article — ' . $humanized;
+                return 'News Article — '.$humanized;
             }
 
             // Faculty page: /faculties/{slug}/research
             if ($segments[0] === 'facilities' && count($segments) === 3) {
-                return ucwords(str_replace('-', ' ', $segments[1])) . ' — ' . $humanized;
+                return ucwords(str_replace('-', ' ', $segments[1])).' — '.$humanized;
             }
 
             // Research item: /research/{type}/{slug}
             if ($segments[0] === 'research' && count($segments) === 3) {
-                return ucwords(str_replace('-', ' ', $parent)) . ' — ' . $humanized;
+                return ucwords(str_replace('-', ' ', $parent)).' — '.$humanized;
             }
         }
 

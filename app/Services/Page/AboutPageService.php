@@ -30,6 +30,7 @@ use App\Models\Page\AboutPageTranslation;
 use App\Models\Person\FacultyMember;
 use App\Models\Person\FacultyMemberTranslation;
 use App\Models\Person\Person;
+use App\Models\Person\PersonAppointment;
 use App\Models\Person\PersonTranslation;
 use App\Models\Shared\MigrationLog;
 use App\Support\MediaUrlResolver;
@@ -525,13 +526,13 @@ final class AboutPageService implements AboutPageServiceInterface
         return $persons->map(fn (Person $person): PersonDTO => $this->mapPerson($person, $locale))->values();
     }
 
-    /** @param Collection<int, \App\Models\Person\PersonAppointment> $appointments */
-    private function primaryDisplayAppointment(Collection $appointments): ?\App\Models\Person\PersonAppointment
+    /** @param Collection<int, PersonAppointment> $appointments */
+    private function primaryDisplayAppointment(Collection $appointments): ?PersonAppointment
     {
         $priority = ['rector', 'vice_president', 'dean', 'council', 'director', 'faculty_member', 'researcher'];
         foreach ($priority as $type) {
             $apt = $appointments->firstWhere('type', $type);
-            if ($apt instanceof \App\Models\Person\PersonAppointment) {
+            if ($apt instanceof PersonAppointment) {
                 return $apt;
             }
         }

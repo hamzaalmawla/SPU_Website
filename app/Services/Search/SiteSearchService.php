@@ -12,8 +12,8 @@ use App\Models\Search\SearchDocument;
 use App\Support\SearchTextNormalizer;
 use BadMethodCallException;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Public site-wide content search.

@@ -218,7 +218,7 @@ final class AdminDynamicFormSubmissionInboxTest extends TestCase
         $this->get(route('admin.form-submissions.attachments.download', [
             'submission' => $submission->id,
             'field' => 'cvFile',
-            ]))->assertForbidden();
+        ]))->assertForbidden();
     }
 
     public function test_hr_only_sees_and_reviews_job_applications(): void

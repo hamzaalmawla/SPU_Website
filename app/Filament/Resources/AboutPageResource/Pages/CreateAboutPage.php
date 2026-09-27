@@ -30,7 +30,7 @@ class CreateAboutPage extends CreateRecord
             return;
         }
 
-        $targetKey = 'about.' . $slug;
+        $targetKey = 'about.'.$slug;
         $service = app(AboutNavigationCardServiceInterface::class);
         $service->autoCreateForTarget($targetKey);
     }

@@ -130,10 +130,10 @@ return new class extends Migration
     private function supportsFunctionalIndexes(): bool
     {
         try {
-            $version = DB::selectOne("SELECT VERSION() as v")?->v ?? '';
+            $version = DB::selectOne('SELECT VERSION() as v')?->v ?? '';
 
             return str_starts_with($version, '8.');
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return false;
         }
     }

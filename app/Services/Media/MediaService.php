@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\Media;
 
-use App\Contracts\Media\MediaServiceInterface;
 use App\Contracts\Media\ImageConversionServiceInterface;
+use App\Contracts\Media\MediaServiceInterface;
 use App\Contracts\Shared\AuditServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
 use App\DTOs\Media\MediaUploadResultDTO;

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use App\Contracts\Media\MediaServiceInterface;
 use App\Contracts\Media\ImageConversionServiceInterface;
+use App\Contracts\Media\MediaServiceInterface;
 use App\DTOs\Media\WebpConversionResultDTO;
 use App\DTOs\Shared\PaginatedResultDTO;
 use App\Filament\Support\MediaPicker;

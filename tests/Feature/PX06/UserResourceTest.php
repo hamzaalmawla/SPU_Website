@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\PX06;
 
+use App\Contracts\Auth\AuthServiceInterface;
 use App\Filament\Resources\UserResource;
 use App\Models\User\Role;
 use App\Models\User\User;
@@ -60,7 +61,7 @@ class UserResourceTest extends TestCase
         $role = Role::query()->firstOrCreate(['slug' => 'editor'], ['name' => 'Editor']);
         $actor = $this->createUser('super_admin');
 
-        $created = app(\App\Contracts\Auth\AuthServiceInterface::class)->createUser([
+        $created = app(AuthServiceInterface::class)->createUser([
             'name' => 'New Editor',
             'email' => 'new.editor@spu.edu.sy',
             'password' => 'strong-password-123',

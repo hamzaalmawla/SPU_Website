@@ -268,7 +268,7 @@ final class NewsService implements NewsServiceInterface
      * alongside the category records and collapse duplicate title records so the
      * imported media and attachments remain the canonical public version.
      *
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      */
     private function listPublicAgreementArticles(string $locale, array $filters, int $page, int $perPage): PaginatedResultDTO
     {

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\Page;
 
-use App\Contracts\Form\FormSubmissionNotificationServiceInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Form\FormSubmissionNotificationServiceInterface;
 use App\Contracts\Page\ContactPageServiceInterface;
 use App\Contracts\Settings\SettingsServiceInterface;
 use App\DTOs\Contact\ContactPageContentDTO;
@@ -15,6 +15,7 @@ use App\DTOs\Settings\SettingsDTO;
 use App\DTOs\Settings\SettingValueDTO;
 use App\Models\Contact\ContactMessage;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 final class ContactPageService implements ContactPageServiceInterface
 {
@@ -71,7 +72,7 @@ final class ContactPageService implements ContactPageServiceInterface
     public function submit(ContactSubmissionDataDTO $submission): bool
     {
         $message = ContactMessage::query()->create([
-            'reference_number' => 'SPU-CONTACT-'.strtoupper((string) \Illuminate\Support\Str::ulid()),
+            'reference_number' => 'SPU-CONTACT-'.strtoupper((string) Str::ulid()),
             'locale' => $submission->locale,
             'name' => $submission->name,
             'email' => $submission->email,

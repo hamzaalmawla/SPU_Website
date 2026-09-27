@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Contracts\Media\ImageConversionServiceInterface;
+use App\DTOs\Media\WebpConversionResultDTO;
 use App\Models\Media\MediaAsset;
 use App\Models\User\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Artisan;
 use Tests\TestCase;
 
 final class MediaWebpCommandTest extends TestCase
@@ -57,7 +57,7 @@ final class MediaWebpCommandTest extends TestCase
             ->andReturnTrue()
             ->shouldReceive('convert')
             ->once()
-            ->andReturn(new \App\DTOs\Media\WebpConversionResultDTO('media/image/2026/08/photo.webp', 80, 100, 100));
+            ->andReturn(new WebpConversionResultDTO('media/image/2026/08/photo.webp', 80, 100, 100));
 
         $this->artisan('media:convert-webp', ['--user-id' => $user->getKey()])
             ->assertExitCode(0);

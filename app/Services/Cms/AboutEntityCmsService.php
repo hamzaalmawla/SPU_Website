@@ -26,7 +26,6 @@ use App\Models\Person\FacultyMemberEducationTranslation;
 use App\Models\Person\FacultyMemberTranslation;
 use App\Models\Person\Person;
 use App\Models\Person\PersonAppointment;
-use App\Models\Person\PersonAppointmentTranslation;
 use App\Models\Person\PersonEducation;
 use App\Models\Person\PersonTranslation;
 use App\Models\User\User;
@@ -1056,7 +1055,7 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             $appointmentId = $this->nullableInt($appointmentPayload['id'] ?? null);
             $appointment = $appointmentId !== null
                 ? PersonAppointment::query()->where('person_id', $person->getKey())->findOrFail($appointmentId)
-                : new PersonAppointment();
+                : new PersonAppointment;
 
             $appointment->fill([
                 'type' => $this->stringValue($appointmentPayload['type']),

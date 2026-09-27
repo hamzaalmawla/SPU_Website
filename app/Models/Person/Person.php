@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models\Person;
 
 use App\Enums\PublicationStatus;
-use App\Models\Faculty\Faculty;
 use App\Models\Media\MediaAsset;
 use App\Models\Research\ResearchPublication;
 use Illuminate\Database\Eloquent\Builder;

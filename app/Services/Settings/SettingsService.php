@@ -566,8 +566,7 @@ final class SettingsService implements SettingsServiceInterface
 
         $tags = match (true) {
             $group === 'seo' => ['public-pages', 'public-shell', 'seo', 'sitemap', 'settings'],
-            in_array($group, ['navigation', 'footer', 'public_shell', 'contact_page', 'e_services_page'], true)
-                => ['public-pages', 'public-shell', 'settings', 'navigation'],
+            in_array($group, ['navigation', 'footer', 'public_shell', 'contact_page', 'e_services_page'], true) => ['public-pages', 'public-shell', 'settings', 'navigation'],
             default => ['settings'],
         };
 

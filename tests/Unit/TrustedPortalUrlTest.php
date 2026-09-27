@@ -7,6 +7,7 @@ namespace Tests\Unit;
 use App\Rules\TrustedPortalUrlRule;
 use App\Support\TrustedPortalUrl;
 use Illuminate\Support\Facades\Validator;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -68,7 +69,7 @@ final class TrustedPortalUrlTest extends TestCase
      *
      * @param  string|null  $envValue
      */
-    #[\PHPUnit\Framework\Attributes\DataProvider('blankEnvValues')]
+    #[DataProvider('blankEnvValues')]
     public function test_a_blank_env_value_falls_back_to_the_default_host(mixed $envValue): void
     {
         $hosts = $this->trustedHostsForEnv($envValue);

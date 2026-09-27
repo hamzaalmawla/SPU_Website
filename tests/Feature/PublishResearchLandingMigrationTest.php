@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
-use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Models\Shared\AuditLog;
-use App\Models\User\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;

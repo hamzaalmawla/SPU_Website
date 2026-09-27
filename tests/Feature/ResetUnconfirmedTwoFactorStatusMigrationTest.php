@@ -6,7 +6,6 @@ namespace Tests\Feature;
 
 use App\Models\User\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 final class ResetUnconfirmedTwoFactorStatusMigrationTest extends TestCase

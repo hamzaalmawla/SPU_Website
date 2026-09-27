@@ -8,11 +8,11 @@ use App\Contracts\Form\ContactMessageReviewServiceInterface;
 use App\Enums\ContactMessageStatus;
 use App\Exceptions\ConflictException;
 use App\Filament\Resources\ContactMessageResource;
+use DomainException;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
-use DomainException;
 use Throwable;
 
 class ViewContactMessage extends ViewRecord
@@ -102,6 +102,7 @@ class ViewContactMessage extends ViewRecord
             $this->reviewService->transitionStatus((int) $this->getRecord()->getKey(), $expected, $next, (int) auth()->id(), $reason);
             $this->record = $this->resolveRecord((string) $this->getRecord()->getKey());
             Notification::make()->title(__('contact_messages.notifications.transitioned'))->success()->send();
+
             return null;
         } catch (ConflictException|DomainException) {
             Notification::make()->title(__('contact_messages.notifications.failed'))->danger()->send();

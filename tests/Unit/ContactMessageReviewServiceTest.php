@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Unit;
 
 use App\Contracts\Form\ContactMessageReviewServiceInterface;
+use App\Contracts\Form\FormSubmissionNotificationServiceInterface;
+use App\Enums\ContactMessageStatus;
 use App\Mail\ContactMessageAdminNotification;
 use App\Mail\ContactMessageReceived;
 use App\Mail\ContactMessageStatusUpdated;
@@ -33,8 +35,8 @@ final class ContactMessageReviewServiceTest extends TestCase
         $this->assertTrue($service->updateInternalNotes((int) $message->getKey(), 'Follow up with admissions.', (int) $editor->getKey()));
         $this->assertTrue($service->transitionStatus(
             (int) $message->getKey(),
-            \App\Enums\ContactMessageStatus::NEW,
-            \App\Enums\ContactMessageStatus::IN_REVIEW,
+            ContactMessageStatus::NEW,
+            ContactMessageStatus::IN_REVIEW,
             (int) $editor->getKey(),
             'Assigned to admissions.',
         ));
@@ -56,7 +58,7 @@ final class ContactMessageReviewServiceTest extends TestCase
         $editor = User::factory()->create(['role_slug' => 'editor', 'email' => 'editor@example.com']);
         $message = $this->message();
 
-        $this->assertTrue(app(\App\Contracts\Form\FormSubmissionNotificationServiceInterface::class)
+        $this->assertTrue(app(FormSubmissionNotificationServiceInterface::class)
             ->queueContactReceived((int) $message->getKey()));
 
         Mail::assertQueued(ContactMessageReceived::class, fn (ContactMessageReceived $mail): bool => $mail->hasTo('visitor@example.com'));
@@ -106,13 +108,12 @@ final class ContactMessageReviewServiceTest extends TestCase
             'files_json' => [],
         ]);
 
-        $this->assertTrue(app(\App\Contracts\Form\FormSubmissionNotificationServiceInterface::class)
+        $this->assertTrue(app(FormSubmissionNotificationServiceInterface::class)
             ->queueDynamicReceived((int) $submission->getKey()));
 
         Mail::assertQueued(FormSubmissionAdminNotification::class, fn (FormSubmissionAdminNotification $mail): bool => $mail->hasTo($hr->email));
     }
 
-    /** @return ContactMessage */
     private function message(): ContactMessage
     {
         return ContactMessage::query()->create([

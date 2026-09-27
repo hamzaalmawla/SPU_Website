@@ -38,7 +38,7 @@ final class ContactMessageAdminNotification extends Mailable implements ShouldQu
             'referenceNumber' => $this->referenceNumber,
             'applicantName' => $this->applicantName,
             'applicantEmail' => $this->applicantEmail,
-                'subject' => $this->messageSubject,
+            'subject' => $this->messageSubject,
         ]);
     }
 }
