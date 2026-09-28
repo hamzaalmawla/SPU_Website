@@ -106,6 +106,25 @@ final class AboutWorkflowTest extends TestCase
         $this->assertFileExists(public_path('images/icon-handshake-outline.svg'));
     }
 
+    public function test_vision_mission_formats_admin_managed_numbered_objectives_without_stretching_cards(): void
+    {
+        $about = app(AboutPageServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $payload = $about->getEditablePayload('about.vision-mission');
+        $payload['translations']['en']['sections']['cards'][2]['title'] = 'Objectives';
+        $payload['translations']['en']['sections']['cards'][2]['body'] = '1. Advance educational quality. 2. Strengthen scientific research. 3. Serve the community.';
+
+        $workflow->saveDraft('about.vision-mission', $payload, (int) $author->id);
+        $this->assertTrue($workflow->publish('about.vision-mission', (int) $author->id));
+
+        $this->get('/en/about/vision-mission')
+            ->assertOk()
+            ->assertSee('grid grid-cols-1 items-start gap-6 md:grid-cols-3', false)
+            ->assertSee('whitespace-pre-line', false)
+            ->assertSee("1. Advance educational quality.\n2. Strengthen scientific research.\n3. Serve the community.");
+    }
+
     public function test_vision_mission_draft_preview_and_publish_workflow(): void
     {
         $about = app(AboutPageServiceInterface::class);

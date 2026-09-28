@@ -35,14 +35,14 @@
                 <p class="mx-auto max-w-4xl text-center text-base font-bold leading-8 text-slate-700">{{ $page->summary }}</p>
                 <h2 class="sr-only">{{ $page->cardsTitle }}</h2>
 
-                <div class="mt-12 grid grid-cols-1 gap-6 md:grid-cols-3">
+                <div class="mt-12 grid grid-cols-1 items-start gap-6 md:grid-cols-3">
                     @foreach ($page->cards as $card)
                         <article class="reveal reveal-up rounded-2xl border border-slate-100 bg-white p-8 text-center shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg focus-within:-translate-y-1 focus-within:shadow-lg">
                             <div class="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-spu-blue/5">
                                 <img src="{{ $card['icon'] }}" alt="" class="h-7 w-7" aria-hidden="true">
                             </div>
                             <h3 class="text-xl font-black text-spu-blue">{{ $card['title'] }}</h3>
-                            <p class="mt-4 text-sm font-bold leading-7 text-slate-700">{{ $card['body'] }}</p>
+                            <p class="mt-4 whitespace-pre-line text-sm font-bold leading-7 text-slate-700">{{ $card['body'] }}</p>
                         </article>
                     @endforeach
                 </div>

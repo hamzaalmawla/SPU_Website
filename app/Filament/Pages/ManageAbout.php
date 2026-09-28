@@ -534,7 +534,11 @@ class ManageAbout extends Page implements HasForms
                     ->schema([
                         MediaPicker::icon('icon', 'Icon', true),
                         TextInput::make('title')->required()->maxLength(180),
-                        Textarea::make('body')->required()->rows(3)->columnSpanFull(),
+                        Textarea::make('body')
+                            ->required()
+                            ->rows(8)
+                            ->helperText('For numbered objectives, put each objective on a separate line. Public pages preserve these line breaks.')
+                            ->columnSpanFull(),
                     ])
                     ->columns(2)
                     ->minItems(1)

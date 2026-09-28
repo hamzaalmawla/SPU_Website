@@ -675,10 +675,10 @@ final class AboutPageService implements AboutPageServiceInterface
         $summary = (string) ($content['summary'] ?? '');
         $heroImage = (string) ($content['heroImage'] ?? '/images/about/hero-img.jpg');
         $cards = collect($this->listValue($sections, 'cards'))
-            ->map(static fn (array $card): array => [
+            ->map(fn (array $card): array => [
                 'icon' => (string) ($card['icon'] ?? ''),
                 'title' => (string) ($card['title'] ?? ''),
-                'body' => (string) ($card['body'] ?? ''),
+                'body' => $this->formatVisionMissionCardBody((string) ($card['body'] ?? '')),
             ])
             ->values()
             ->all();
@@ -704,6 +704,18 @@ final class AboutPageService implements AboutPageServiceInterface
             seoDescription: (string) ($content['seoDescription'] ?? $summary),
             seoImage: (string) ($content['seoImage'] ?? $heroImage),
         );
+    }
+
+    private function formatVisionMissionCardBody(string $body): string
+    {
+        $body = trim(str_replace(["\r\n", "\r"], "\n", $body));
+
+        if (! str_contains($body, "\n")
+            && preg_match_all('/(?:^|\s)[0-9٠-٩]+\.\s+/u', $body) > 1) {
+            return preg_replace('/\s+(?=[0-9٠-٩]+\.\s+)/u', "\n", $body) ?? $body;
+        }
+
+        return $body;
     }
 
     /** @return array<string, mixed> */
