@@ -1,8 +1,8 @@
 <section x-data="researchSlider()" id="research-priorities" class="py-7.5 mt-[70px] bg-section font-hacen relative overflow-hidden reveal" style="content-visibility: auto; contain-intrinsic-size: auto 500px;">
     <div class="container">
-        <div class="section-header relative">
-            <h2 class="section-header__title text-[clamp(1.85rem,7vw,2.625rem)] font-bold text-spu-blue flex items-center gap-4 rtl:flex-row-reverse rtl:text-right ltr:text-left">{{ $section->payload->title }}</h2>
-            <div class="section-header__controls flex gap-3 absolute top-0 z-50 rtl:left-0 ltr:right-0">
+        <div class="section-header research-section-header relative">
+            <h2 class="section-header__title research-section-header__title text-[clamp(1.85rem,7vw,2.625rem)] font-bold text-spu-blue flex items-center gap-4 rtl:flex-row-reverse rtl:text-right ltr:text-left">{{ $section->payload->title }}</h2>
+            <div class="section-header__controls research-section-header__controls flex gap-3">
                 @if ($section->payload->sectionAction)
                     <a href="{{ $section->payload->sectionAction->url }}" class="flex h-10 w-auto min-w-0 flex-1 items-center justify-center gap-3 rounded-[12px] bg-[#1e2652] text-center text-sm font-bold text-white transition-all hover:bg-opacity-90 md:w-full md:max-w-[195px] md:flex-none" @if ($section->payload->sectionAction->target) target="{{ $section->payload->sectionAction->target }}" rel="noreferrer" @endif>{{ $section->payload->sectionAction->label }}</a>
                 @endif

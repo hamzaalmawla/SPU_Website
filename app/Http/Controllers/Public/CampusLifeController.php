@@ -59,6 +59,23 @@ final class CampusLifeController extends Controller
         ]);
     }
 
+    public function clubDetail(Request $request, string $locale, string $club): View
+    {
+        $page = $this->campusLifePageService->getClubDetail($club, $locale);
+        abort_if($page === null, 404);
+
+        return view('public.campus-life.club-detail', [
+            'locale' => $locale,
+            'direction' => $page->direction,
+            'navigation' => $this->navigationService->getFullNavigationPayload($locale, $request->path()),
+            'settings' => $this->settingsService->getPublicSettings($locale),
+            'languageSwitch' => $this->languageSwitchLinks($locale, '/clubs-activities/'.$club),
+            'isPreview' => false,
+            'seo' => $this->sectionSeo($locale, $page),
+            'page' => $page,
+        ]);
+    }
+
     public function transportRegistration(string $locale): RedirectResponse
     {
         $portalUrl = $this->settingsService->getStudentPortalUrl();

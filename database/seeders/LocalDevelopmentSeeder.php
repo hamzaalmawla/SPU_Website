@@ -16,6 +16,7 @@ class LocalDevelopmentSeeder extends Seeder
         $this->call([
             AdminUserSeeder::class,
             HomepageSectionTranslationSeeder::class,
+            AchievementSeeder::class,
             SettingsSeeder::class,
             LandingPageSeeder::class,
             NavigationSeeder::class,

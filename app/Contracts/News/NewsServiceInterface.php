@@ -33,6 +33,12 @@ interface NewsServiceInterface
     public function buildPreviewAgreementsPage(string $locale, array $content): array;
 
     /** @return array<string, mixed> */
+    public function getSocietyEventsPageContent(string $locale): array;
+
+    /** @param array<string, mixed> $content @return array<string, mixed> */
+    public function buildPreviewSocietyEventsPage(string $locale, array $content): array;
+
+    /** @return array<string, mixed> */
     public function getAnnouncementsPageContent(string $locale): array;
 
     /** @param array<string, mixed> $content @return array<string, mixed> */
@@ -82,6 +88,9 @@ interface NewsServiceInterface
 
     /** @return Collection<int, ArticleCardDTO> */
     public function getLatestArticleCards(string $locale, int $limit = 5, ?string $categoryType = null): Collection;
+
+    /** @return Collection<int, ArticleCardDTO> */
+    public function getLatestSocietyEventCards(string $locale, int $limit = 4): Collection;
 
     /** @param array<int, int> $articleIds @return Collection<int, ArticleCardDTO> */
     public function getHomepageArticleCards(string $locale, array $articleIds = [], ?string $search = null, int $limit = 50): Collection;

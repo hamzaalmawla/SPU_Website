@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\DynamicFormSubmissionAttachmentController;
 use App\Http\Controllers\Admin\TwoFactorChallengeController;
 use App\Http\Controllers\Public\AboutController;
+use App\Http\Controllers\Public\AchievementController;
 use App\Http\Controllers\Public\AdmissionsController;
 use App\Http\Controllers\Public\AlumniController;
 use App\Http\Controllers\Public\BrowserLocaleRedirectController;
@@ -41,7 +42,7 @@ Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
 // on a 404. They must fall through to a real 404 so RedirectContinuityMiddleware
 // logs them into unresolved_legacy_requests for triage instead.
 Route::get('/{referencePath}', BrowserLocaleRedirectController::class)
-    ->where('referencePath', '(?!.*\.php$)(?:about|admissions|alumni|research|campus-life|e-services|news|contact|facilities|projects|virtual-tour)(?:/.*)?')
+    ->where('referencePath', '(?!.*\.php$)(?:about|achievements|admissions|alumni|research|campus-life|e-services|news|contact|facilities|projects|virtual-tour)(?:/.*)?')
     ->name('reference.locale');
 
 Route::prefix('{locale}')
@@ -59,6 +60,7 @@ Route::prefix('{locale}')
             ->middleware('throttle:public-form')
             ->name('public.e-services.suggestions-complaints.submit');
         Route::get('/virtual-tour', VirtualTourController::class)->name('public.virtual-tour');
+        Route::get('/achievements', AchievementController::class)->name('public.achievements.index');
         Route::get('/alumni', [AlumniController::class, 'index'])->name('public.alumni.index');
 
         // Must stay ahead of the /{slugPath} catch-all at the end of this group,
@@ -139,6 +141,9 @@ Route::prefix('{locale}')
                 Route::get('/career-development/jobs/{job}', 'careerJobDetail')
                     ->where(['job' => '[A-Za-z0-9\-]+'])
                     ->name('career-development.jobs.show');
+                Route::get('/clubs-activities/{club}', 'clubDetail')
+                    ->where(['club' => '[A-Za-z0-9\-]+'])
+                    ->name('clubs-activities.show');
                 Route::get('/{section}', 'section')
                     ->where(['section' => 'services|transport|clubs-activities|career-development|dental|hospital|health-insurance|damascus-research-pub|rules-regulations|general-rules|exam-instructions|exam-penalties'])
                     ->name('section');
@@ -193,6 +198,7 @@ Route::prefix('{locale}')
                 Route::get('/', 'index')->name('index');
                 Route::get('/articles', 'articles')->name('articles');
                 Route::get('/agreements', 'agreements')->name('agreements');
+                Route::get('/society-events', 'societyEvents')->name('society-events');
                 Route::get('/announcements', 'announcements')->name('announcements');
                 Route::get('/events', 'events')->name('events');
                 Route::get('/events-list', 'eventsList')->name('events-list');

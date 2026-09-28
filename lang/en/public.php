@@ -215,6 +215,18 @@ return [
     'type' => 'Type',
     'research_themes' => 'Research Themes',
 
+    'achievements' => [
+        'eyebrow' => 'Honor & Excellence',
+        'title' => 'Achievements and Honors',
+        'description' => 'Discover the academic, research, and community achievements of Syrian Private University.',
+        'filter' => 'Filter by category',
+        'apply' => 'Apply filters',
+        'loading' => 'Loading achievements...',
+        'results' => '{0} No achievements|{1} :count achievement|[2,*] :count achievements',
+        'empty_title' => 'No matching achievements',
+        'empty_body' => 'Choose another category or clear the selected filters.',
+        'pagination' => 'Achievement archive pages',
+    ],
     'section_labels' => [
         'academic_faculties' => 'Academic faculties',
         'achievements_highlights' => 'Achievements highlights',

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Contracts\Achievement\AchievementServiceInterface;
 use App\Contracts\Analytics\AnalyticsServiceInterface;
 use App\Contracts\Auth\AuthServiceInterface;
 use App\Contracts\Auth\TotpAuthenticatorInterface;
@@ -120,6 +121,10 @@ use App\Contracts\Shared\SlugServiceInterface;
 use App\DTOs\ErrorPage\ErrorPageContentDTO;
 use App\DTOs\Homepage\HomepageSectionDTO;
 use App\Http\Responses\LogoutResponse;
+use App\Models\Achievement\Achievement;
+use App\Models\Achievement\AchievementCategory;
+use App\Models\Achievement\AchievementCategoryTranslation;
+use App\Models\Achievement\AchievementTranslation;
 use App\Models\Career\Alumni;
 use App\Models\Career\HonorStudent;
 use App\Models\Contact\ContactMessage;
@@ -143,7 +148,10 @@ use App\Models\Person\Person;
 use App\Models\Shared\AuditLog;
 use App\Models\User\User;
 use App\Observers\AboutDomainAuditObserver;
+use App\Observers\AchievementDomainObserver;
 use App\Observers\SearchIndexObserver;
+use App\Policies\AchievementCategoryPolicy;
+use App\Policies\AchievementPolicy;
 use App\Policies\AuditLogPolicy;
 use App\Policies\ContactMessagePolicy;
 use App\Policies\DynamicFormSubmissionPolicy;
@@ -155,6 +163,7 @@ use App\Policies\NewsArticlePolicy;
 use App\Policies\NewsCategoryPolicy;
 use App\Policies\PagePolicy;
 use App\Policies\UserPolicy;
+use App\Services\Achievement\AchievementService;
 use App\Services\Analytics\AnalyticsService;
 use App\Services\Auth\AuthService;
 use App\Services\Auth\TotpAuthenticator;
@@ -411,6 +420,10 @@ class AppServiceProvider extends ServiceProvider
 
     private function registerModelObservers(): void
     {
+        Achievement::observe(AchievementDomainObserver::class);
+        AchievementTranslation::observe(AchievementDomainObserver::class);
+        AchievementCategory::observe(AchievementDomainObserver::class);
+        AchievementCategoryTranslation::observe(AchievementDomainObserver::class);
         AboutPage::observe(AboutDomainAuditObserver::class);
         Directorate::observe(AboutDomainAuditObserver::class);
         Partnership::observe(AboutDomainAuditObserver::class);
@@ -476,6 +489,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(DynamicFormSubmission::class, DynamicFormSubmissionPolicy::class);
         Gate::policy(NewsArticle::class, NewsArticlePolicy::class);
         Gate::policy(NewsCategory::class, NewsCategoryPolicy::class);
+        Gate::policy(Achievement::class, AchievementPolicy::class);
+        Gate::policy(AchievementCategory::class, AchievementCategoryPolicy::class);
         Gate::policy(Faculty::class, FacultyDomainPolicy::class);
         Gate::policy(FacultyMember::class, FacultyDomainPolicy::class);
         Gate::policy(FacultyPage::class, FacultyDomainPolicy::class);
@@ -543,6 +558,7 @@ class AppServiceProvider extends ServiceProvider
         return [
             CacheServiceInterface::class => CacheService::class,
             AnalyticsServiceInterface::class => AnalyticsService::class,
+            AchievementServiceInterface::class => AchievementService::class,
             ErrorPageServiceInterface::class => ErrorPageService::class,
             ErrorPageRendererInterface::class => ErrorPageRenderer::class,
             AlumniDirectoryServiceInterface::class => AlumniDirectoryService::class,

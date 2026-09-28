@@ -46,6 +46,9 @@ The 175-page reference inventory remains the route baseline. Counts are provisio
 | Done | P0 | Announcements | Added dedicated route precedence, announcement-only data queries, category filtering, pagination, CMS editor, protected preview, publication workflow, and landing-page links. |
 | Done | P0 | Events | Added dedicated calendar, listing, registration, and past-detail routes backed by one bilingual CMS catalog, with filtering, capacity and duplicate enforcement, confirmation mail, preview/publish workflows, and scheduled CMS publication. |
 | Done | P0 | News navigation | Announcements, Events, and Gallery now use dedicated routes before the article wildcard. |
+| Done | P1 | Honor & Excellence | Added bilingual achievement/category management, active multi-category assignment, homepage pinning with newest-content fallback, legacy homepage-card migration, a configurable homepage archive action, responsive archive pagination, and asynchronous OR-category filtering. |
+| Done | P1 | Society Events | Added the localized category-backed News archive, article classification, CMS shell workflow, navigation/cache/sitemap registration, and a newest-four fixed-grid homepage section integrated through the managed University News homepage module without changing the fixed homepage key contract. |
+| Done | P1 | Research Carousel | Constrained both existing homepage Research navigation arrows to responsive in-container flow without changing carousel behavior or content selection. |
 | Done | P1 | About | Completed all approved About routes with bilingual curated editors, entity draft/preview/publish/schedule workflows, publication-aware profiles/directories, Partnerships controls/proposal flow, verified content cleanup, assets, SEO/sitemap, accessibility, and focused tests. |
 | Done | P1 | E-Services | Added dedicated bilingual Library, Staff Email, and IT Support pages with independent CMS workflows, safe verified destinations, contact integration, navigation, SEO/sitemap, continuity, and tests. |
 | Done | P1 | News Gallery | Added bilingual Media Library curation, filters, featured selection, pagination, keyboard-accessible image viewing, preview/publish workflows, media readiness checks, and cache invalidation. |
@@ -63,6 +66,7 @@ The 175-page reference inventory remains the route baseline. Counts are provisio
 | Done | P1 | Research Projects & Themes | Added aggregate bilingual catalogs covering 19 listing/detail routes with protected preview, validated publication workflows, relationships, SEO/sitemap, and tests. |
 | Done | P1 | Research Completion | Completed repository behavior, eight scholarly publication details, researcher preview/taxonomy, conferences/registration context, and verified policy documents across 13 routes. |
 | Done | P1 | Campus Life | Completed job-board filtering, selected-job application context, sharing, pagination, related jobs, and safe landing portal guidance. |
+| Done | P1 | Student Clubs | Replaced inert club fragments with localized CMS-backed detail routes, full-card links, bilingual detail content, optional validated HTTPS signup forms, protected draft detail previews, publish-readiness checks, sitemap entries, and backward-compatible handling of existing club IDs and summaries. |
 | Done | P1 | Virtual Tour | Added CMS-managed scenes with accessible switching, pan/zoom, hotspots, autoplay, thumbnails, fullscreen fallback, RTL, and reduced motion. |
 | Done | P2 | Shared UX | Normalized RTL sliders, dynamic reveals, counters, keyboard behavior, focus/autoplay handling, and reduced motion. |
 | Done | P2 | Admin UX | Unified Filament and admin authentication styling with the SPU navy/red/gold system, responsive editor surfaces, restrained scrollbars, dark mode, real Arabic font weights, panel branding, and a collapsible desktop sidebar. |
@@ -264,3 +268,9 @@ gate. Current status is tracked only in
 - Added `Docs/LEGACY_RESEARCH_PUBLICATION_MAPPING.md` as the authoritative field and confidence policy.
 - The historical `approved-public-research-20260731` batch published all `289` imported research records, but duplicate-review records are now fail-closed by default. Re-publication requires `--include-duplicate-review` plus the existing publication approval; source-ID slugs, unknown dates, unresolved owners, duplicate provenance, and deferred file references remain source-authentic.
 - Enabled public service-1 `/members/` query continuity for imported records; service-2 teaching/archive URLs remain private and are not redirected.
+
+## Honor And Excellence Domain - 2026-09-28
+
+- Added bilingual achievement and active-category storage, authorized Filament editors, publication visibility, homepage pinning/order, media-backed cards, audit logging, and homepage cache invalidation.
+- Added `/ar/achievements` and `/en/achievements` archives with active multi-category OR filtering, pagination, AJAX partial updates, loading and empty states, locale SEO, and a tested non-JavaScript fallback.
+- Replaced homepage achievement card JSON maintenance with live published achievement hydration capped at three cards; homepage settings now retain only localized section copy and the configurable archive action.

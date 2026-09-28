@@ -80,6 +80,24 @@ class ResearchCardPropertyTest extends TestCase
         $this->assertStringContainsString('View Details', $html);
     }
 
+    public function test_research_carousel_controls_use_the_responsive_container_layout(): void
+    {
+        $section = self::makeSection('research_studies', [
+            'title' => 'Research with a long responsive heading',
+            'researchItems' => [self::makeResearchItem()],
+        ]);
+
+        $html = view('public.partials.homepage-section', [
+            'section' => $section,
+            'locale' => 'en',
+        ])->render();
+
+        $this->assertStringContainsString('section-header research-section-header relative', $html);
+        $this->assertStringContainsString('section-header__controls research-section-header__controls flex gap-3', $html);
+        $this->assertStringNotContainsString('absolute top-0 z-50', $html);
+        $this->assertSame(2, substr_count($html, 'aria-controls="research-priorities-track"'));
+    }
+
     public static function researchCountProvider(): array
     {
         return array_map(fn ($n) => [$n], range(0, 5));

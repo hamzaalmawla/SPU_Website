@@ -136,6 +136,10 @@ final class CachePublicPages
             // input would fill the page cache with single-use entries; the
             // search service caches its own ranked id list instead.
             'public.search',
+            // The achievement archive has multi-value category filters and
+            // returns HTML fragments for AJAX requests. Its service query is
+            // already bounded and must not collide with the full-page cache.
+            'public.achievements.index',
         ], true)) {
             return true;
         }
@@ -289,6 +293,7 @@ final class CachePublicPages
             'public.faculties.study-plan.course' => ['department', 'course', 'type'],
             'public.news.articles' => ['category', 'search', 'page'],
             'public.news.agreements' => ['search', 'page'],
+            'public.news.society-events' => ['search', 'page'],
             'public.news.announcements' => ['category', 'page'],
             'public.news.events' => ['month'],
             'public.news.events-list' => ['category'],

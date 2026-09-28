@@ -245,6 +245,17 @@ final class HomepageDraftReader
             }
         }
 
+        $payloadContent = is_array($payload['content'] ?? null) ? $payload['content'] : [];
+        $fallbackContent = is_array($fallback['content'] ?? null) ? $fallback['content'] : [];
+        foreach (['society_title', 'society_cta_label', 'society_cta_url'] as $key) {
+            if (! isset($payloadContent[$key]) && isset($fallbackContent[$key])) {
+                $payloadContent[$key] = $fallbackContent[$key];
+            }
+        }
+        if ($payloadContent !== []) {
+            $payload['content'] = $payloadContent;
+        }
+
         return $payload;
     }
 

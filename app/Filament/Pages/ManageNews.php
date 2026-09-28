@@ -178,7 +178,7 @@ class ManageNews extends Page implements HasForms
         $this->assertNewsTarget($targetKey);
         $this->activeTargetKey = $targetKey;
 
-        if (! in_array($targetKey, ['news.index', 'news.articles', 'news.agreements', 'news.announcements', 'news.events', 'news.gallery'], true)) {
+        if (! in_array($targetKey, ['news.index', 'news.articles', 'news.agreements', 'news.society-events', 'news.announcements', 'news.events', 'news.gallery'], true)) {
             $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey, (int) auth()->id());
             $this->form->fill([
                 'target_key' => $targetKey,
@@ -193,7 +193,7 @@ class ManageNews extends Page implements HasForms
         $payload = is_array($draftPayload) ? $draftPayload : $this->newsService->getEditablePayload($targetKey);
         $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey, (int) auth()->id());
 
-        if (in_array($targetKey, ['news.articles', 'news.agreements'], true)) {
+        if (in_array($targetKey, ['news.articles', 'news.agreements', 'news.society-events'], true)) {
             $this->form->fill([
                 'target_key' => $targetKey,
                 'ar_articles' => is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
@@ -405,7 +405,7 @@ class ManageNews extends Page implements HasForms
             ];
         }
 
-        if (in_array($state['target_key'] ?? null, ['news.articles', 'news.agreements'], true)) {
+        if (in_array($state['target_key'] ?? null, ['news.articles', 'news.agreements', 'news.society-events'], true)) {
             return [
                 'translations' => [
                     'ar' => is_array($state['ar_articles'] ?? null) ? $state['ar_articles'] : [],
@@ -472,7 +472,7 @@ class ManageNews extends Page implements HasForms
                     MediaPicker::image($articlesPrefix.'.seoImage', __('admin.editorial_workspace.news_shell.seo_image'), true),
                 ])
                 ->columns(2)
-                ->visible(fn (): bool => in_array($this->targetKeyForSchema(), ['news.articles', 'news.agreements'], true)),
+                ->visible(fn (): bool => in_array($this->targetKeyForSchema(), ['news.articles', 'news.agreements', 'news.society-events'], true)),
             Section::make(__('admin.editorial_workspace.announcements.page_intro'))
                 ->schema([
                     TextInput::make($announcementPrefix.'.pageTitle')->label(__('admin.editorial_workspace.fields.page_title'))->required()->maxLength(160),

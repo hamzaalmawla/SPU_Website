@@ -237,33 +237,8 @@ final class HomepageFormSchema
                 TextInput::make("{$prefix}.subtitle")
                     ->label('Subtitle')
                     ->maxLength(500),
+                ...self::sectionActionFields($prefix),
             ]),
-            Repeater::make("{$prefix}.featured_items")
-                ->label('Highlight Cards')
-                ->schema([
-                    TextInput::make('title')
-                        ->label('Title')
-                        ->required()
-                        ->maxLength(255),
-                    Textarea::make('text')
-                        ->label('Text')
-                        ->rows(2)
-                        ->maxLength(500),
-                    self::mediaField('image', 'Image'),
-                    self::mediaField('icon', 'Icon'),
-                    TextInput::make('metric')
-                        ->label('Metric')
-                        ->maxLength(100),
-                    TextInput::make('cta_label')
-                        ->label('CTA Label')
-                        ->required()
-                        ->maxLength(100),
-                    PageUrlSelect::make('cta_url', 'CTA URL', self::localeFromPrefix($prefix), true),
-                ])
-                ->columns(2)
-                ->collapsible()
-                ->collapsed()
-                ->defaultItems(0),
         ];
     }
 
@@ -318,6 +293,18 @@ final class HomepageFormSchema
                     ->maxLength(255),
                 ...self::sectionActionFields($prefix),
             ]),
+            Section::make("Society's Events")->schema([
+                TextInput::make("{$prefix}.content.society_title")
+                    ->label('Section Title')
+                    ->required()
+                    ->maxLength(255),
+                TextInput::make("{$prefix}.content.society_cta_label")
+                    ->label('Button Label')
+                    ->required()
+                    ->maxLength(100),
+                PageUrlSelect::make("{$prefix}.content.society_cta_url", 'Button URL', self::localeFromPrefix($prefix))
+                    ->required(),
+            ])->columns(3),
         ];
     }
 

@@ -13,6 +13,7 @@ use App\Contracts\Shared\CacheServiceInterface;
 use App\DTOs\Seo\SitemapEntryDTO;
 use App\DTOs\Seo\SitemapWriteReportDTO;
 use App\Enums\PublicationStatus;
+use App\Models\Achievement\Achievement;
 use App\Models\Cms\CmsTargetContent;
 use App\Models\Content\Directorate;
 use App\Models\Faculty\Faculty;
@@ -68,9 +69,11 @@ final class SitemapService implements SitemapServiceInterface
         $this->appendFacultyResearchEntries($entries, $baseUrl);
         $this->appendFacultyProjectEntries($entries, $baseUrl);
         $this->appendAlumniEntries($entries, $baseUrl);
+        $this->appendAchievementArchiveEntries($entries, $baseUrl);
         $this->appendResearchCatalogEntries($entries, $baseUrl);
         $this->appendResearchPublicationEntries($entries, $baseUrl);
         $this->appendCmsRouteEntries($entries, $baseUrl);
+        $this->appendClubDetailEntries($entries, $baseUrl);
         $this->appendNewsArticleEntries($entries, $baseUrl);
 
         return $entries->unique(fn (SitemapEntryDTO $entry): string => $entry->loc)->values();
@@ -103,7 +106,9 @@ final class SitemapService implements SitemapServiceInterface
                 $this->appendAboutStaticEntries($entries, $baseUrl);
                 $this->appendEServicesEntries($entries, $baseUrl);
                 $this->appendAlumniEntries($entries, $baseUrl);
+                $this->appendAchievementArchiveEntries($entries, $baseUrl);
                 $this->appendCmsRouteEntries($entries, $baseUrl);
+                $this->appendClubDetailEntries($entries, $baseUrl);
                 break;
             default:
                 return $entries;
@@ -217,6 +222,30 @@ final class SitemapService implements SitemapServiceInterface
     }
 
     /** @param Collection<int, SitemapEntryDTO> $entries */
+    private function appendAchievementArchiveEntries(Collection $entries, string $baseUrl): void
+    {
+        $lastModified = Achievement::query()->public()->max('updated_at');
+        if ($lastModified === null) {
+            return;
+        }
+
+        $alternates = collect(['ar', 'en'])->map(fn (string $locale): array => [
+            'locale' => $locale,
+            'url' => $baseUrl.'/'.$locale.'/achievements',
+        ])->all();
+
+        foreach (['ar', 'en'] as $locale) {
+            $entries->push(new SitemapEntryDTO(
+                loc: $baseUrl.'/'.$locale.'/achievements',
+                lastmod: $this->w3c($lastModified),
+                changefreq: null,
+                priority: null,
+                alternates: $alternates,
+            ));
+        }
+    }
+
+    /** @param Collection<int, SitemapEntryDTO> $entries */
     private function appendCmsRouteEntries(Collection $entries, string $baseUrl): void
     {
         foreach ([
@@ -237,6 +266,7 @@ final class SitemapService implements SitemapServiceInterface
             'e_services.suggestions-complaints' => '/e-services/suggestions-complaints',
             'news.articles' => '/news/articles',
             'news.agreements' => '/news/agreements',
+            'news.society-events' => '/news/society-events',
             'facilities.pharmacy.training' => '/faculties/pharmacy/training',
         ] as $targetKey => $path) {
             $content = CmsTargetContent::query()
@@ -253,6 +283,47 @@ final class SitemapService implements SitemapServiceInterface
             foreach ($locales as $locale) {
                 $entries->push(new SitemapEntryDTO(
                     loc: $baseUrl.'/'.$locale.$path,
+                    lastmod: $this->w3c($content->updated_at),
+                    changefreq: null,
+                    priority: null,
+                    alternates: $alternates,
+                ));
+            }
+        }
+    }
+
+    /** @param Collection<int, SitemapEntryDTO> $entries */
+    private function appendClubDetailEntries(Collection $entries, string $baseUrl): void
+    {
+        $content = CmsTargetContent::query()
+            ->where('target_key', 'campus_life.clubs-activities')
+            ->where('status', PublicationStatus::Published->value)
+            ->first();
+        if (! $content instanceof CmsTargetContent) {
+            return;
+        }
+
+        $translations = is_array($content->payload_json['translations'] ?? null) ? $content->payload_json['translations'] : [];
+        $slugsByLocale = [];
+        foreach (['ar', 'en'] as $locale) {
+            $items = is_array($translations[$locale]['clubs']['items'] ?? null) ? $translations[$locale]['clubs']['items'] : [];
+            $slugsByLocale[$locale] = collect($items)
+                ->filter(static fn (mixed $item): bool => is_array($item) && is_string($item['title'] ?? null) && trim($item['title']) !== '')
+                ->map(static fn (array $item): string => trim((string) ($item['slug'] ?? $item['id'] ?? '')))
+                ->filter(static fn (string $slug): bool => preg_match('~^[a-z0-9]+(?:-[a-z0-9]+)*$~', $slug) === 1)
+                ->values()
+                ->all();
+        }
+
+        foreach (array_values(array_intersect($slugsByLocale['ar'], $slugsByLocale['en'])) as $slug) {
+            $alternates = collect(['ar', 'en'])->map(fn (string $locale): array => [
+                'locale' => $locale,
+                'url' => $baseUrl.'/'.$locale.'/campus-life/clubs-activities/'.$slug,
+            ])->all();
+
+            foreach (['ar', 'en'] as $locale) {
+                $entries->push(new SitemapEntryDTO(
+                    loc: $baseUrl.'/'.$locale.'/campus-life/clubs-activities/'.$slug,
                     lastmod: $this->w3c($content->updated_at),
                     changefreq: null,
                     priority: null,

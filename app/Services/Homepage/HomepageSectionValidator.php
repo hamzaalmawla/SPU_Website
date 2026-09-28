@@ -122,15 +122,9 @@ final class HomepageSectionValidator
             'achievements_highlights' => [
                 'title' => ['required', 'string', 'max:255'],
                 'subtitle' => ['nullable', 'string', 'max:500'],
-                'items' => ['required', 'array', 'min:1'],
-                'items.*.title' => ['required', 'string', 'max:255'],
-                'items.*.summary' => ['required', 'string', 'max:500'],
-                'items.*.icon' => ['nullable', 'string', 'max:120'],
-                'items.*.metric' => ['nullable', 'string', 'max:120'],
-                'items.*.dateLabel' => ['nullable', 'string', 'max:120'],
-                'items.*.action' => ['required', 'array'],
-                'items.*.action.label' => ['required', 'string', 'max:255'],
-                'items.*.action.url' => ['required', 'string', $this->linkRule()],
+                'sectionAction' => ['nullable', 'array'],
+                'sectionAction.label' => ['nullable', 'string', 'max:255'],
+                'sectionAction.url' => ['nullable', 'string', $this->linkRule()],
             ],
             'choose_your_path' => [
                 'title' => ['required', 'string', 'max:255'],
@@ -155,6 +149,10 @@ final class HomepageSectionValidator
                 'content.selectionMode' => ['nullable', Rule::in(['manual', 'fallback'])],
                 'content.selectedArticleIds' => ['nullable', 'array', 'min:1'],
                 'content.selectedArticleIds.*' => ['required', 'integer', 'distinct', 'min:1'],
+                'content.society_title' => ['required', 'string', 'max:255'],
+                'content.society_cta_label' => ['required', 'string', 'max:100'],
+                'content.society_cta_url' => ['required', 'string', $this->linkRule()],
+                'content.societyEventArticles' => ['nullable', 'array', 'max:4'],
             ],
             'research_studies' => [
                 'title' => ['required', 'string', 'max:255'],
@@ -227,7 +225,7 @@ final class HomepageSectionValidator
 
         $this->addActionRules($rules, 'primaryAction', $key === 'hero');
         $this->addActionRules($rules, 'secondaryAction', $key === 'hero');
-        $this->addActionRules($rules, 'sectionAction', in_array($key, ['university_news', 'research_studies'], true));
+        $this->addActionRules($rules, 'sectionAction', in_array($key, ['achievements_highlights', 'university_news', 'research_studies'], true));
 
         return $rules;
     }

@@ -24,6 +24,7 @@ use App\Models\Cms\CmsTargetContent;
 use App\Models\Shared\PreviewToken;
 use App\Models\User\User;
 use App\Services\Preview\PreviewTokenStore;
+use App\Support\ExternalSignupUrl;
 use DateTimeInterface;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -260,7 +261,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
             $this->appendGalleryReadinessErrors($payload, $target->locales, $errors);
         }
 
-        if (in_array($target->key, ['news.articles', 'news.agreements'], true)) {
+        if (in_array($target->key, ['news.articles', 'news.agreements', 'news.society-events'], true)) {
             $this->appendNewsArticlesReadinessErrors($payload, $target->locales, $errors);
         }
 
@@ -286,6 +287,10 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
 
         if ($target->key === 'campus_life.jobs') {
             $this->appendCampusLifeJobsReadinessErrors($payload, $target->locales, $errors);
+        }
+
+        if ($target->key === 'campus_life.clubs-activities') {
+            $this->appendCampusLifeClubsReadinessErrors($payload, $target->locales, $errors);
         }
 
         if ($target->key === 'campus_life.landing') {
@@ -1753,6 +1758,67 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
 
         if (count($localeSignatures) === count($locales) && count(array_unique(array_map('serialize', $localeSignatures))) !== 1) {
             $errors['jobs'][] = 'Job IDs, slugs, categories, types, statuses, dates, images, and application eligibility must match across locales.';
+        }
+    }
+
+    /** @param array<int, string> $locales @param array<string, array<int, string>> $errors */
+    private function appendCampusLifeClubsReadinessErrors(array $payload, array $locales, array &$errors): void
+    {
+        $localeSlugs = [];
+
+        foreach ($locales as $locale) {
+            $translation = $this->localePayload($payload, $locale);
+            $items = is_array($translation['clubs']['items'] ?? null) ? $translation['clubs']['items'] : [];
+            if ($items === []) {
+                $errors[$locale][] = 'At least one student club is required.';
+            }
+
+            $slugs = [];
+            foreach ($items as $item) {
+                if (! is_array($item)) {
+                    $errors[$locale][] = 'Every club must be structured content.';
+
+                    continue;
+                }
+
+                $slug = trim((string) ($item['slug'] ?? $item['id'] ?? ''));
+                $body = trim((string) ($item['body'] ?? $item['summary'] ?? ''));
+                foreach (['title', 'summary', 'image'] as $field) {
+                    if (! $this->filledString($item[$field] ?? null)) {
+                        $errors[$locale][] = "Every club requires {$field}.";
+                    }
+                }
+                if ($body === '') {
+                    $errors[$locale][] = 'Every club requires a detailed description.';
+                }
+                if ($slug === '' || preg_match('~^[a-z0-9]+(?:-[a-z0-9]+)*$~', $slug) !== 1) {
+                    $errors[$locale][] = 'Club slugs must use lowercase letters, numbers, and hyphens only.';
+                }
+                if ($this->filledString($item['image'] ?? null) && ! $this->isSafePublicAsset($item['image'])) {
+                    $errors[$locale][] = 'Club images must use safe internal or HTTPS URLs.';
+                }
+
+                $signupUrl = $item['signupUrl'] ?? null;
+                $hasSignupUrl = $this->filledString($signupUrl);
+                $hasSignupLabel = $this->filledString($item['signupLabel'] ?? null);
+                if ($hasSignupUrl !== $hasSignupLabel) {
+                    $errors[$locale][] = 'Club signup button labels and URLs must be supplied together.';
+                }
+                if ($hasSignupUrl && ExternalSignupUrl::sanitize($signupUrl) === null) {
+                    $errors[$locale][] = 'Club signup links must be valid HTTPS URLs.';
+                }
+
+                $slugs[] = $slug;
+            }
+
+            if (count(array_unique($slugs)) !== count($slugs)) {
+                $errors[$locale][] = 'Club slugs must be unique.';
+            }
+            $localeSlugs[$locale] = $slugs;
+        }
+
+        if (count($localeSlugs) === count($locales) && count(array_unique(array_map('serialize', $localeSlugs))) !== 1) {
+            $errors['clubs'][] = 'Arabic and English clubs must have matching slugs and order.';
         }
     }
 

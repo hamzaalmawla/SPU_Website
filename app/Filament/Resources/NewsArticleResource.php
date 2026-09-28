@@ -354,7 +354,13 @@ class NewsArticleResource extends Resource
             return __('admin.news_article.table.no_category');
         }
 
-        return __('admin.news_article.types.'.$category->type);
+        $type = match ($category->slug) {
+            'agreements' => 'agreements',
+            'society-events' => 'society_events',
+            default => $category->type,
+        };
+
+        return __('admin.news_article.types.'.$type);
     }
 
     /** @return array<int, string> */

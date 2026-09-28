@@ -57,6 +57,21 @@ To rebuild it from scratch:
 
 ## Deploying a change
 
+### 0. Back up the production database
+
+Before a release containing migrations, create and verify a restorable database
+backup. Record its unique identifier in the server's private `.env` file:
+
+```dotenv
+SPU_DATABASE_BACKUP_REFERENCE=cpanel-backup-YYYYMMDD-HHMM-before-release
+```
+
+The deployment script reads this value without exposing database credentials and
+stops before syncing code when `APP_ENV=production` and the reference is absent.
+Use a new backup and reference for every production migration release. Never use
+`migrate:fresh`, `db:wipe`, `db:seed`, or `migrate:rollback` on the production
+content database; restore the verified backup for a database rollback.
+
 ### 1. Rebuild the front-end if you touched CSS, JS or Blade
 
 ```bash

@@ -133,6 +133,11 @@ root.
 
 `DatabaseSeeder` is intentionally blocked when `APP_ENV=production`. Never run
 `migrate:fresh`, `db:wipe`, or `db:seed` against a production content database.
+Production deployment also requires `SPU_DATABASE_BACKUP_REFERENCE` to identify
+a verified, restorable backup taken immediately before deployment. The deploy
+script stops before syncing files when that reference is missing. Database
+rollback must restore that backup; do not run `migrate:rollback` for releases
+that introduce managed-content tables.
 The deployment runs `launch:validate --environment=production` after migrations,
 optimization, and cache warming; a missing homepage, public content path,
 sitemap, SEO configuration, cache behavior, or audit capability must fail the

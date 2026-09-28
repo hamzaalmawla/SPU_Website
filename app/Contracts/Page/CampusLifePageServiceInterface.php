@@ -17,6 +17,8 @@ interface CampusLifePageServiceInterface
 
     public function getSection(string $slug, string $locale): ?CampusLifeSectionDTO;
 
+    public function getClubDetail(string $slug, string $locale): ?CampusLifeSectionDTO;
+
     /** @param array<string, mixed> $filters */
     public function getCareerJobBoard(string $locale, array $filters = []): ?CampusLifeSectionDTO;
 
@@ -31,6 +33,9 @@ interface CampusLifePageServiceInterface
 
     /** @param array<string, mixed> $content */
     public function buildPreviewCareerJob(string $locale, array $content, string $slug): ?CampusLifeSectionDTO;
+
+    /** @param array<string, mixed> $content */
+    public function buildPreviewClub(string $locale, array $content, string $slug): ?CampusLifeSectionDTO;
 
     /** @param array<string, mixed> $section */
     public function buildPreviewSection(string $targetKey, string $locale, array $section): ?CampusLifeSectionDTO;

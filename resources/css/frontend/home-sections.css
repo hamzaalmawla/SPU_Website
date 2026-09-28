@@ -344,8 +344,36 @@
         color: #202759;
     }
 
-    /* Mobile: slide the slider controls onto their own row under the title
-       so long titles never collide with the absolute-positioned buttons. */
+    .research-section-header__title {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .research-section-header__controls {
+        align-items: center;
+        flex: 0 0 auto;
+        max-width: 100%;
+    }
+
+    /* Keep the research controls in the container when the title and action
+       cannot comfortably share one row at tablet widths. */
+    @media (max-width: 1023px) {
+        .research-section-header {
+            flex-wrap: wrap;
+        }
+
+        .research-section-header__title {
+            flex-basis: 100%;
+        }
+
+        .research-section-header__controls {
+            justify-content: flex-end;
+            width: 100%;
+        }
+    }
+
+    /* Mobile: move the slider controls onto their own row under the title so
+       long titles never collide with the controls. */
     @media (max-width: 767px) {
         .section-header {
             flex-wrap: wrap;
@@ -367,6 +395,10 @@
 
         .section-header__controls>.slider-nav-btn {
             flex: 0 0 3rem;
+        }
+
+        .research-section-header__controls {
+            justify-content: flex-start;
         }
     }
 

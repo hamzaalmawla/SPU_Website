@@ -225,6 +225,7 @@ final class PreviewService implements PreviewServiceInterface
             'campus_life.virtual_tour' => $locale.'/virtual-tour',
             'news.articles' => $locale.'/news/articles',
             'news.agreements' => $locale.'/news/agreements',
+            'news.society-events' => $locale.'/news/society-events',
             'facilities.pharmacy.training' => $locale.'/faculties/pharmacy/training',
             'research.index' => $locale.'/research',
             'research.publications' => $locale.'/research/publications',

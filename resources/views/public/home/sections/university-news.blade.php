@@ -40,3 +40,5 @@
         @endif
     </div>
 </section>
+
+@include('public.home.sections.society-events', ['section' => $section, 'locale' => $locale])

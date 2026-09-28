@@ -452,9 +452,7 @@ class ManageHomepage extends Page implements HasForms
         $items = is_array($payload->items) ? array_map($toArray, $payload->items) : [];
         $featuredItems = $sectionKey === 'academic_faculties'
             ? self::itemsToFacultyFormArray($items, $payload->featuredItems)
-            : ($sectionKey === 'achievements_highlights'
-                ? self::itemsToHighlightFormArray($items, $payload->featuredItems)
-                : self::featureItemsToFormArray($payload->featuredItems));
+            : ($sectionKey === 'achievements_highlights' ? [] : self::featureItemsToFormArray($payload->featuredItems));
 
         return [
             'headline' => $translation->headline ?? $payload->title,
@@ -711,7 +709,7 @@ class ManageHomepage extends Page implements HasForms
                 ),
                 array_filter($data['stats'] ?? [], static fn (mixed $i): bool => is_array($i)),
             )),
-            featuredItems: array_values(array_map(
+            featuredItems: $sectionKey === 'achievements_highlights' ? [] : array_values(array_map(
                 static fn (array $item): HomepageFeatureItemDTO => new HomepageFeatureItemDTO(
                     title: (string) ($item['title'] ?? ''),
                     summary: self::firstString($item, ['description', 'text', 'summary']),
@@ -793,7 +791,7 @@ class ManageHomepage extends Page implements HasForms
                 ),
                 array_filter($data['social_links'] ?? [], static fn (mixed $i): bool => is_array($i)),
             )),
-            items: self::formItems($data, $sectionKey),
+            items: $sectionKey === 'achievements_highlights' ? [] : self::formItems($data, $sectionKey),
             content: $content,
         );
     }
@@ -805,7 +803,7 @@ class ManageHomepage extends Page implements HasForms
     {
         $items = match ($sectionKey) {
             'choose_your_path' => $data['path_items'] ?? [],
-            'academic_faculties', 'achievements_highlights' => $data['featured_items'] ?? [],
+            'academic_faculties' => $data['featured_items'] ?? [],
             default => self::firstFilledItemSource($data),
         };
 

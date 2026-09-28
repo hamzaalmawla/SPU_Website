@@ -222,6 +222,7 @@ final class PageUrlSelect
             '/e-services/suggestions-complaints' => 'Suggestions & Complaints',
             '/contact' => 'Contact Us',
             '/news/articles' => 'News Articles',
+            '/news/society-events' => "Society's Events",
             '/research/centers' => 'Research Centers',
             '/research/projects' => 'Research Projects',
             '/research/themes' => 'Research Themes',

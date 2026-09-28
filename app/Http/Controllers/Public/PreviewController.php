@@ -165,6 +165,10 @@ final class PreviewController extends Controller
             return $this->renderNewsAgreementsPreview($locale, $preview, $localizedContent);
         }
 
+        if ($targetKey === 'news.society-events') {
+            return $this->renderNewsSocietyEventsPreview($locale, $preview, $localizedContent);
+        }
+
         if ($targetKey === 'news.announcements') {
             return $this->renderNewsAnnouncementsPreview($locale, $preview, $localizedContent);
         }
@@ -227,6 +231,10 @@ final class PreviewController extends Controller
 
         if ($targetKey === 'campus_life.jobs') {
             return $this->renderCampusLifeJobsPreview($request, $locale, $preview, $localizedContent);
+        }
+
+        if ($targetKey === 'campus_life.clubs-activities') {
+            return $this->renderCampusLifeClubsPreview($request, $locale, $preview, $localizedContent);
         }
 
         if ($targetKey === 'facilities.landing') {
@@ -754,6 +762,41 @@ final class PreviewController extends Controller
     }
 
     /** @param array<string, mixed> $content */
+    private function renderCampusLifeClubsPreview(Request $request, string $locale, PreviewDTO $preview, array $content): View
+    {
+        $slug = is_string($request->query('club')) ? trim((string) $request->query('club')) : '';
+
+        if ($slug === '') {
+            return $this->renderCampusLifeSectionPreview($locale, $preview, 'campus_life.clubs-activities', $content);
+        }
+
+        $page = $this->campusLifePageService->buildPreviewClub($locale, $content, $slug);
+        abort_if($page === null, 404);
+        $path = '/'.$locale.'/campus-life/clubs-activities/'.$slug;
+
+        return view('public.campus-life.club-detail', [
+            'locale' => $locale,
+            'direction' => $page->direction,
+            'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $path),
+            'settings' => $this->settingsService->getPublicSettings($locale),
+            'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale, ['club' => $slug]),
+            'isPreview' => true,
+            'seo' => $this->seoMetadataService->buildFallback($locale, [
+                'path' => $path,
+                'locale_paths' => ['ar' => '/ar/campus-life/clubs-activities/'.$slug, 'en' => '/en/campus-life/clubs-activities/'.$slug],
+                'title' => $page->seoTitle,
+                'meta_description' => $page->seoDescription,
+                'og_title' => $page->seoTitle,
+                'og_description' => $page->seoDescription,
+                'og_image' => $page->seoImage,
+                'robots' => 'noindex,nofollow',
+            ]),
+            'page' => $page,
+            'preview' => $preview,
+        ]);
+    }
+
+    /** @param array<string, mixed> $content */
     private function renderCampusLifeJobsPreview(Request $request, string $locale, PreviewDTO $preview, array $content): View
     {
         $slug = is_string($request->query('job')) ? trim((string) $request->query('job')) : '';
@@ -1005,6 +1048,38 @@ final class PreviewController extends Controller
             'seo' => $this->seoMetadataService->buildFallback($locale, [
                 'path' => '/'.$locale.'/news/agreements',
                 'locale_paths' => ['ar' => '/ar/news/agreements', 'en' => '/en/news/agreements'],
+                'title' => (string) $page['seoTitle'],
+                'meta_description' => (string) $page['seoDescription'],
+                'og_image' => (string) $page['seoImage'],
+                'robots' => 'noindex,nofollow',
+            ]),
+            'isPreview' => true,
+            'preview' => $preview,
+        ]);
+    }
+
+    /** @param array<string, mixed> $content */
+    private function renderNewsSocietyEventsPreview(string $locale, PreviewDTO $preview, array $content): View
+    {
+        $page = $this->newsService->buildPreviewSocietyEventsPage($locale, $content);
+
+        return view('public.news.articles', [
+            'locale' => $locale,
+            'direction' => $locale === 'ar' ? 'rtl' : 'ltr',
+            'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, '/'.$locale.'/news/society-events'),
+            'settings' => $preview->payload->settings ?? $this->settingsService->getPublicSettings($locale),
+            'page' => $page,
+            'articles' => $this->newsService->listPublicArticles($locale, ['category' => 'society-events', 'categoryType' => 'news'], 1, 9),
+            'categories' => collect(),
+            'activeCategory' => null,
+            'search' => '',
+            'listingPath' => '/news/society-events',
+            'pageTitle' => (string) $page['title'],
+            'pageDescription' => (string) $page['summary'],
+            'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale),
+            'seo' => $this->seoMetadataService->buildFallback($locale, [
+                'path' => '/'.$locale.'/news/society-events',
+                'locale_paths' => ['ar' => '/ar/news/society-events', 'en' => '/en/news/society-events'],
                 'title' => (string) $page['seoTitle'],
                 'meta_description' => (string) $page['seoDescription'],
                 'og_image' => (string) $page['seoImage'],

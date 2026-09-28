@@ -84,6 +84,16 @@ fi
 [[ -f "${SOURCE}/public/build/manifest.json" ]] || fail \
     "No Vite manifest in the release at ${SOURCE}/public/build. Run 'php artisan view:clear && npm run build' and commit public/build."
 
+# Production migrations are forward-only. Require an operator-supplied reference
+# to a verified, restorable database backup before any release files are synced.
+APP_ENV_VALUE="$(grep -E '^[[:space:]]*APP_ENV=' "${APP}/.env" | tail -n 1 | cut -d= -f2- | tr -d '\r"' || true)"
+BACKUP_REFERENCE="${SPU_DATABASE_BACKUP_REFERENCE:-$(grep -E '^[[:space:]]*SPU_DATABASE_BACKUP_REFERENCE=' "${APP}/.env" | tail -n 1 | cut -d= -f2- | tr -d '\r"' || true)}"
+if [[ "${SPU_DEPLOY_ENV:-staging}" == "production" || "${APP_ENV_VALUE}" == "production" ]]; then
+    [[ -n "${BACKUP_REFERENCE}" ]] || fail \
+        "Production deployment requires SPU_DATABASE_BACKUP_REFERENCE naming a verified, restorable pre-deployment database backup."
+    log "Verified pre-deployment database backup: ${BACKUP_REFERENCE}"
+fi
+
 # ── Sync source ──────────────────────────────────────────────────────────────
 # Only the trees that are code. .env, storage/ and public/build/ are state and
 # are never touched. bootstrap/cache is excluded deliberately: shipping a

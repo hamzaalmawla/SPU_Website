@@ -127,7 +127,7 @@ final class AdminNewsWorkspaceTest extends TestCase
         /** @var array<string, string> $options */
         $options = $method->invoke($component->instance());
 
-        $this->assertSame(['news.index', 'news.articles', 'news.agreements', 'news.gallery'], array_keys($options));
+        $this->assertSame(['news.index', 'news.articles', 'news.agreements', 'news.society-events', 'news.gallery'], array_keys($options));
         $this->assertArrayNotHasKey('news.article', $options);
         $this->assertArrayNotHasKey('news.announcements', $options);
         $this->assertArrayNotHasKey('news.events', $options);
@@ -153,6 +153,7 @@ final class AdminNewsWorkspaceTest extends TestCase
         foreach ([
             'news.index' => 'مقدمة الصفحة',
             'news.articles' => 'صفحة المقالات الإخبارية',
+            'news.society-events' => 'فعاليات المجتمع',
             'news.gallery' => 'معرض الوسائط',
         ] as $target => $label) {
             $this->actingAs($user, 'web')

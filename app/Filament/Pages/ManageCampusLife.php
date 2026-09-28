@@ -1146,12 +1146,14 @@ class ManageCampusLife extends Page implements HasForms
                 Repeater::make($prefix.'.clubs.items')
                     ->label('Clubs')
                     ->schema([
-                        TextInput::make('id')->required()->maxLength(80),
+                        TextInput::make('slug')->label('URL Slug')->required()->alphaDash()->maxLength(80)->distinct(),
                         TextInput::make('tag')->required()->maxLength(80),
                         TextInput::make('title')->required()->maxLength(160),
-                        PageUrlSelect::make('href', 'Link Page', $locale, true),
                         MediaPicker::image('image', 'Image', true),
                         Textarea::make('summary')->required()->rows(2)->columnSpanFull(),
+                        Textarea::make('body')->label('Detailed Description')->required()->rows(5)->columnSpanFull(),
+                        TextInput::make('signupLabel')->label('Signup Button Label')->maxLength(120),
+                        TextInput::make('signupUrl')->label('External Signup URL')->url()->rules(['nullable', 'starts_with:https://'])->maxLength(2048)->helperText('Optional HTTPS link, for example a Google Form.'),
                     ])
                     ->columns(3)
                     ->defaultItems(0)
@@ -1831,7 +1833,15 @@ class ManageCampusLife extends Page implements HasForms
     {
         $payload['type'] = 'clubs-activities';
         $payload['hero']['breadcrumbs'] = $this->listOfArrays($payload['hero']['breadcrumbs'] ?? []);
-        $payload['clubs']['items'] = $this->listOfArrays($payload['clubs']['items'] ?? []);
+        $payload['clubs']['items'] = array_map(static function (array $club): array {
+            $slug = Str::slug((string) ($club['slug'] ?? $club['id'] ?? ''));
+            $club['slug'] = $slug;
+            $club['id'] = $slug;
+            $club['body'] = is_string($club['body'] ?? null) && trim($club['body']) !== '' ? trim($club['body']) : trim((string) ($club['summary'] ?? ''));
+            unset($club['href']);
+
+            return $club;
+        }, $this->listOfArrays($payload['clubs']['items'] ?? []));
         $payload['activities']['items'] = $this->listOfArrays($payload['activities']['items'] ?? []);
 
         return $payload;

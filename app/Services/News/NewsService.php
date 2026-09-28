@@ -67,6 +67,16 @@ final class NewsService implements NewsServiceInterface
         return $this->normalizeArticlesPageContent($content, $locale);
     }
 
+    public function getSocietyEventsPageContent(string $locale): array
+    {
+        return $this->publishedLocalizedPayload('news.society-events', $locale) ?? $this->societyEventsPageFallback($locale);
+    }
+
+    public function buildPreviewSocietyEventsPage(string $locale, array $content): array
+    {
+        return $this->normalizeArticlesPageContent($content, $locale);
+    }
+
     public function getAnnouncementsPageContent(string $locale): array
     {
         return $this->publishedLocalizedPayload('news.announcements', $locale) ?? $this->announcementsPageFallback($locale);
@@ -183,7 +193,7 @@ final class NewsService implements NewsServiceInterface
 
     public function getEditablePayload(string $targetKey): array
     {
-        if (! in_array($targetKey, ['news.index', 'news.articles', 'news.agreements', 'news.announcements', 'news.events', 'news.gallery'], true)) {
+        if (! in_array($targetKey, ['news.index', 'news.articles', 'news.agreements', 'news.society-events', 'news.announcements', 'news.events', 'news.gallery'], true)) {
             throw new \InvalidArgumentException('Unsupported news target.');
         }
 
@@ -202,6 +212,7 @@ final class NewsService implements NewsServiceInterface
             'news.index' => fn (string $locale): array => $this->indexPageFallback($locale),
             'news.articles' => fn (string $locale): array => $this->articlesPageFallback($locale),
             'news.agreements' => fn (string $locale): array => $this->agreementsPageFallback($locale),
+            'news.society-events' => fn (string $locale): array => $this->societyEventsPageFallback($locale),
             'news.announcements' => fn (string $locale): array => $this->announcementsPageFallback($locale),
             'news.events' => fn (string $locale): array => $this->eventsPageFallback($locale),
             'news.gallery' => fn (string $locale): array => $this->galleryPageFallback($locale),
@@ -397,6 +408,28 @@ final class NewsService implements NewsServiceInterface
         }, 300);
     }
 
+    public function getLatestSocietyEventCards(string $locale, int $limit = 4): Collection
+    {
+        $limit = max(1, min($limit, 4));
+
+        return $this->newsCache()->remember('news:society-events:latest:'.$locale.':'.$limit, function () use ($locale, $limit): Collection {
+            $query = NewsArticle::query()
+                ->public()
+                ->whereHas('category', fn (Builder $categoryQuery): Builder => $categoryQuery
+                    ->where('slug', 'society-events')
+                    ->where('type', 'news')
+                    ->where('is_enabled', true))
+                ->with($this->publicArticleCardRelations());
+            $this->applyNewestArticleOrder($query);
+
+            return $query
+                ->limit($limit)
+                ->get()
+                ->map(fn (NewsArticle $article): ArticleCardDTO => $this->mapArticleCard($article, $locale))
+                ->values();
+        }, 300);
+    }
+
     public function getHomepageArticleCards(string $locale, array $articleIds = [], ?string $search = null, int $limit = 50): Collection
     {
         $ids = array_values(array_unique(array_map(
@@ -406,7 +439,9 @@ final class NewsService implements NewsServiceInterface
         $normalizedSearch = is_string($search) ? trim($search) : '';
         $query = NewsArticle::query()
             ->public()
-            ->whereHas('category', fn (Builder $categoryQuery): Builder => $categoryQuery->where('type', 'news'))
+            ->whereHas('category', fn (Builder $categoryQuery): Builder => $categoryQuery
+                ->where('type', 'news')
+                ->where('slug', '!=', 'society-events'))
             ->whereNotIn('slug', $this->agreementSeedSlugs())
             ->with($this->publicArticleCardRelations())
             ->when($ids !== [], fn (Builder $query): Builder => $query->whereKey($ids))
@@ -776,6 +811,7 @@ final class NewsService implements NewsServiceInterface
         return match ($targetKey) {
             'news.articles' => $this->normalizeArticlesPageContent($localized, $locale),
             'news.agreements' => $this->normalizeArticlesPageContent($localized, $locale),
+            'news.society-events' => $this->normalizeArticlesPageContent($localized, $locale),
             'news.announcements' => $this->normalizeAnnouncementsPageContent($localized, $locale),
             'news.events' => $this->normalizeEventsPageContent($localized, $locale),
             'news.gallery' => $this->normalizeGalleryPageContent($localized, $locale),
@@ -888,6 +924,33 @@ final class NewsService implements NewsServiceInterface
             'nextLabel' => $isAr ? 'الصفحة التالية' : 'Next page',
             'seoTitle' => ($isAr ? 'الاتفاقيات ومذكرات التفاهم' : 'Agreements and Memoranda of Understanding').' | SPU',
             'seoDescription' => $isAr ? 'الاتفاقيات ومذكرات التفاهم التي وقعتها الجامعة السورية الخاصة.' : 'Agreements and memoranda of understanding signed by the Syrian Private University.',
+            'seoImage' => '/images/slider-1.webp',
+        ], $locale);
+    }
+
+    /** @return array<string, mixed> */
+    private function societyEventsPageFallback(string $locale): array
+    {
+        $isAr = $locale === 'ar';
+        $title = $isAr ? 'فعاليات المجتمع' : "Society's Events";
+        $description = $isAr
+            ? 'تابع فعاليات الجامعة السورية الخاصة ومبادراتها المجتمعية.'
+            : 'Follow Syrian Private University events and community initiatives.';
+
+        return $this->normalizeArticlesPageContent([
+            'title' => $title,
+            'summary' => $description,
+            'heroImage' => '/images/slider-1.webp',
+            'allLabel' => $isAr ? 'كل فعاليات المجتمع' : 'All Society Events',
+            'searchLabel' => $isAr ? 'البحث في فعاليات المجتمع' : 'Search society events',
+            'searchPlaceholder' => $isAr ? 'ابحث في فعاليات المجتمع' : 'Search society events',
+            'searchAction' => $isAr ? 'بحث' : 'Search',
+            'readMoreLabel' => $isAr ? 'اقرأ المزيد' : 'Read More',
+            'emptyLabel' => $isAr ? 'لا توجد فعاليات مجتمع منشورة حالياً.' : 'No society events are currently published.',
+            'previousLabel' => $isAr ? 'الصفحة السابقة' : 'Previous page',
+            'nextLabel' => $isAr ? 'الصفحة التالية' : 'Next page',
+            'seoTitle' => $title.' | SPU',
+            'seoDescription' => $description,
             'seoImage' => '/images/slider-1.webp',
         ], $locale);
     }

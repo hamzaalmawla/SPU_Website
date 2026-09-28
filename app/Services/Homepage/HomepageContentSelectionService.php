@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Services\Homepage;
 
+use App\Contracts\Achievement\AchievementServiceInterface;
 use App\Contracts\Homepage\HomepageContentSelectionServiceInterface;
 use App\Contracts\News\NewsServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
+use App\DTOs\Achievement\AchievementCardDTO;
 use App\DTOs\Content\ArticleCardDTO;
 use App\DTOs\Content\ResearchCardDTO;
 use App\DTOs\Homepage\HomepageSectionDataDTO;
@@ -18,11 +20,12 @@ final class HomepageContentSelectionService implements HomepageContentSelectionS
     public function __construct(
         private readonly NewsServiceInterface $newsService,
         private readonly ResearchPageServiceInterface $researchService,
+        private readonly AchievementServiceInterface $achievementService,
     ) {}
 
     public function hydrateSection(HomepageSectionDTO $section, string $locale): HomepageSectionDTO
     {
-        if (! in_array($section->key, ['university_news', 'research_studies'], true)) {
+        if (! in_array($section->key, ['achievements_highlights', 'university_news', 'research_studies'], true)) {
             return $section;
         }
 
@@ -46,7 +49,7 @@ final class HomepageContentSelectionService implements HomepageContentSelectionS
 
     public function hydratePayload(HomepageSectionDataDTO $payload, string $sectionKey, string $locale): HomepageSectionDataDTO
     {
-        if (! in_array($sectionKey, ['university_news', 'research_studies'], true)) {
+        if (! in_array($sectionKey, ['achievements_highlights', 'university_news', 'research_studies'], true)) {
             return $payload;
         }
 
@@ -54,10 +57,27 @@ final class HomepageContentSelectionService implements HomepageContentSelectionS
         $manual = ($content['selectionMode'] ?? $content['selection_mode'] ?? null) === 'manual';
         $data = HomepagePayloadMapper::sectionDataToArray($payload);
 
-        if ($sectionKey === 'university_news') {
+        if ($sectionKey === 'achievements_highlights') {
+            $data['items'] = $this->achievementService->homepage($locale, 3)
+                ->map(static fn (AchievementCardDTO $card): array => [
+                    'id' => $card->id,
+                    'title' => $card->title,
+                    'typeTag' => $card->typeTag,
+                    'summary' => $card->summary,
+                    'image' => $card->image,
+                    'meta' => $card->meta,
+                    'action' => $card->action,
+                ])
+                ->all();
+            $data['featuredItems'] = [];
+        } elseif ($sectionKey === 'university_news') {
             $ids = $manual ? $this->selectedArticleIds($content) : [];
             $cards = $this->newsService->getHomepageArticleCards($locale, $ids, null, $manual ? max(1, count($ids)) : 4);
             $data['articles'] = $cards->map(fn (ArticleCardDTO $card): array => $this->articleToArray($card))->all();
+            $data['content']['societyEventArticles'] = $this->newsService
+                ->getLatestSocietyEventCards($locale, 4)
+                ->map(fn (ArticleCardDTO $card): array => $this->articleToArray($card))
+                ->all();
         } else {
             $slugs = $manual ? $this->selectedResearchSlugs($content) : [];
             $cards = $this->researchService->getHomepagePublicationCards($locale, $slugs, null, $manual ? max(1, count($slugs)) : 5);

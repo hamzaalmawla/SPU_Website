@@ -86,6 +86,27 @@ final class NewsController extends Controller
         ], $this->newsTrail($locale, $locale === 'ar' ? 'الاتفاقيات ومذكرات التفاهم' : 'Agreements and Memoranda of Understanding', '/news/agreements')));
     }
 
+    public function societyEvents(Request $request, string $locale): View
+    {
+        $page = $this->newsService->getSocietyEventsPageContent($locale);
+
+        return view('public.news.articles', $this->sharedPayload($request, $locale, '/news/society-events', [
+            'articles' => $this->newsService->listPublicArticles($locale, [
+                'category' => 'society-events',
+                'categoryType' => 'news',
+                'search' => $request->query('search'),
+            ], max(1, (int) $request->query('page', 1)), 9),
+            'categories' => collect(),
+            'activeCategory' => null,
+            'search' => is_string($request->query('search')) ? (string) $request->query('search') : '',
+            'listingPath' => '/news/society-events',
+            'page' => $page,
+            'pageTitle' => (string) $page['title'],
+            'pageDescription' => (string) $page['summary'],
+            'seo' => $this->seo($locale, '/news/society-events', (string) $page['seoTitle'], (string) $page['seoDescription'], (string) $page['seoImage']),
+        ], $this->newsTrail($locale, $locale === 'ar' ? 'فعاليات المجتمع' : "Society's Events", '/news/society-events')));
+    }
+
     public function announcements(Request $request, string $locale): View
     {
         $page = $this->newsService->getAnnouncementsPageContent($locale);

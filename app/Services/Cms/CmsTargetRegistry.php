@@ -160,6 +160,7 @@ final class CmsTargetRegistry implements CmsTargetRegistryInterface
             $this->target('news.index', 'news', 'admin.cms.targets.news.index', '/news', 'public.news.index'),
             $this->target('news.articles', 'news', 'admin.cms.targets.news.articles', '/news/articles', 'public.news.articles', 'news.index'),
             $this->target('news.agreements', 'news', 'admin.cms.targets.news.agreements', '/news/agreements', 'public.news.agreements', 'news.index'),
+            $this->target('news.society-events', 'news', 'admin.cms.targets.news.society_events', '/news/society-events', 'public.news.society-events', 'news.index'),
             $this->target('news.announcements', 'news', 'admin.cms.targets.news.announcements', '/news/announcements', 'public.news.announcements', 'news.index'),
             $this->target('news.events', 'news', 'admin.cms.targets.news.events', '/news/events-list', 'public.news.events-list', 'news.index'),
             $this->target('news.gallery', 'news', 'admin.cms.targets.news.gallery', '/news/gallery', 'public.news.gallery', 'news.index'),

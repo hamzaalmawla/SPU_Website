@@ -40,17 +40,21 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
     {
         $categories = NewsCategory::query()
             ->enabled()
-            ->whereIn('slug', ['news', 'announcements', 'agreements'])
+            ->whereIn('slug', ['news', 'announcements', 'agreements', 'society-events'])
             ->orderBy('sort_order')
             ->orderBy('id')
             ->get()
             ->keyBy('slug');
         $options = [];
 
-        foreach (['news', 'announcements', 'agreements'] as $slug) {
+        foreach (['news', 'announcements', 'agreements', 'society-events'] as $slug) {
             $category = $categories->get($slug);
             if ($category instanceof NewsCategory) {
-                $options[(int) $category->getKey()] = $slug === 'announcements' ? 'announcement' : $slug;
+                $options[(int) $category->getKey()] = match ($slug) {
+                    'announcements' => 'announcement',
+                    'society-events' => 'society_events',
+                    default => $slug,
+                };
             }
         }
 

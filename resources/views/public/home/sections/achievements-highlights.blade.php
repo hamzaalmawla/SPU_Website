@@ -40,12 +40,20 @@
                 @endif
                 <h2 class="text-3xl lg:text-4xl font-bold text-spu-blue">{{ $sectionTitle }}</h2>
             </div>
-            <div class="flex gap-3">
+            <div class="flex items-center gap-3">
+                @if ($section->payload->sectionAction)
+                    <a href="{{ $section->payload->sectionAction->url }}" class="me-2 hidden h-10 items-center justify-center rounded-xl bg-spu-blue px-6 text-sm font-bold text-white transition hover:bg-opacity-90 sm:inline-flex" @if ($section->payload->sectionAction->target) target="{{ $section->payload->sectionAction->target }}" rel="noreferrer" @endif>{{ $section->payload->sectionAction->label }}</a>
+                @endif
                 <button @click="handleManual('prev')" type="button" class="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-controls="honor-panels" aria-label="{{ __('public.previous') }}"><img src="/images/icon-chevron-left-outline.svg" class="w-4 h-4 rtl:rotate-180" alt="" width="24" height="24" loading="lazy" decoding="async"></button>
                 <button @click="handleManual('next')" type="button" class="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-controls="honor-panels" aria-label="{{ __('public.next') }}"><img src="/images/icon-chevron-right-outline.svg" class="w-4 h-4 rtl:rotate-180" alt="" width="24" height="24" loading="lazy" decoding="async"></button>
             </div>
         </div>
 
+        @if ($section->payload->sectionAction)
+            <a href="{{ $section->payload->sectionAction->url }}" class="mb-6 inline-flex h-10 items-center justify-center rounded-xl bg-spu-blue px-6 text-sm font-bold text-white sm:hidden" @if ($section->payload->sectionAction->target) target="{{ $section->payload->sectionAction->target }}" rel="noreferrer" @endif>{{ $section->payload->sectionAction->label }}</a>
+        @endif
+
+        @if ($honorItems !== [])
         <div id="honor-panels" class="relative h-[480px] md:h-[500px] w-full">
             <template x-for="(item, index) in items" :key="itemKey(item, index)">
                 <div class="absolute transition-all duration-[1800ms] [transition-timing-function:cubic-bezier(0.25,1,0.5,1)] rounded-[28px] md:rounded-[40px] overflow-hidden group" :class="panelClass(index)" role="group" aria-roledescription="{{ __('public.slide') }}" :aria-label="itemLabel(index)" :aria-hidden="isHidden(index)">
@@ -79,5 +87,6 @@
                 <button type="button" @click="handleManual('goto', index)" class="h-2 rounded-full transition-all duration-1000" :class="dotClass(index)" :aria-label="itemLabel(index)" :aria-current="isPrimary(index)"></button>
             </template>
         </div>
+        @endif
     </div>
 </section>

@@ -9,7 +9,9 @@ use App\Contracts\Page\CampusLifePageServiceInterface;
 use App\DTOs\CampusLife\CampusLifeJobDTO;
 use App\DTOs\CampusLife\CampusLifePageDTO;
 use App\DTOs\CampusLife\CampusLifeSectionDTO;
+use App\Support\ExternalSignupUrl;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Str;
 
 final class CampusLifePageService implements CampusLifePageServiceInterface
 {
@@ -75,6 +77,13 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
                 ];
             }
 
+            if ($targetKey === 'campus_life.clubs-activities') {
+                $translations = [
+                    'ar' => $this->completeClubsPayload($translations['ar'], 'ar'),
+                    'en' => $this->completeClubsPayload($translations['en'], 'en'),
+                ];
+            }
+
             return [
                 'translations' => $translations,
             ];
@@ -107,8 +116,8 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
 
         return [
             'translations' => [
-                'ar' => $this->normalizeUrls($targetKey === 'campus_life.transport' ? $this->completeTransportPayload($this->localized($payload, 'ar'), 'ar') : $this->localized($payload, 'ar'), 'ar'),
-                'en' => $this->normalizeUrls($targetKey === 'campus_life.transport' ? $this->completeTransportPayload($this->localized($payload, 'en'), 'en') : $this->localized($payload, 'en'), 'en'),
+                'ar' => $this->normalizeUrls($targetKey === 'campus_life.transport' ? $this->completeTransportPayload($this->localized($payload, 'ar'), 'ar') : ($targetKey === 'campus_life.clubs-activities' ? $this->completeClubsPayload($this->localized($payload, 'ar'), 'ar') : $this->localized($payload, 'ar')), 'ar'),
+                'en' => $this->normalizeUrls($targetKey === 'campus_life.transport' ? $this->completeTransportPayload($this->localized($payload, 'en'), 'en') : ($targetKey === 'campus_life.clubs-activities' ? $this->completeClubsPayload($this->localized($payload, 'en'), 'en') : $this->localized($payload, 'en')), 'en'),
             ],
         ];
     }
@@ -125,7 +134,18 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
             $payload = $this->completeTransportPayload($payload, $locale);
         }
 
+        if ($slug === 'clubs-activities') {
+            $payload = $this->completeClubsPayload($payload, $locale, true);
+        }
+
         return $this->sectionDto($slug, $locale, $this->normalizeUrls($payload, $locale));
+    }
+
+    public function getClubDetail(string $slug, string $locale): ?CampusLifeSectionDTO
+    {
+        $payload = $this->publishedLocalizedPayload('campus_life.clubs-activities', $locale);
+
+        return $payload === null ? null : $this->clubDetailDto($locale, $payload, $slug);
     }
 
     public function getCareerJobBoard(string $locale, array $filters = []): ?CampusLifeSectionDTO
@@ -229,6 +249,11 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
         return $this->sectionDto('career-development/jobs/'.$slug, $locale, $this->normalizeUrls($content, $locale));
     }
 
+    public function buildPreviewClub(string $locale, array $content, string $slug): ?CampusLifeSectionDTO
+    {
+        return $this->clubDetailDto($locale, $content, $slug);
+    }
+
     public function buildPreviewSection(string $targetKey, string $locale, array $section): ?CampusLifeSectionDTO
     {
         $slug = $this->slugFromTargetKey($targetKey);
@@ -239,6 +264,10 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
 
         if ($slug === 'transport') {
             $section = $this->completeTransportPayload($section, $locale);
+        }
+
+        if ($slug === 'clubs-activities') {
+            $section = $this->completeClubsPayload($section, $locale, true);
         }
 
         return $this->sectionDto($slug, $locale, $this->normalizeUrls($section, $locale));
@@ -265,6 +294,58 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
             seoDescription: $description,
             seoImage: (string) ($section['hero']['image'] ?? '/images/logo-spu.png'),
         );
+    }
+
+    /** @param array<string, mixed> $payload */
+    private function clubDetailDto(string $locale, array $payload, string $slug): ?CampusLifeSectionDTO
+    {
+        $payload = $this->completeClubsPayload($payload, $locale, true);
+        $club = collect($payload['clubs']['items'] ?? [])->first(
+            static fn (mixed $item): bool => is_array($item) && ($item['slug'] ?? null) === $slug,
+        );
+
+        if (! is_array($club)) {
+            return null;
+        }
+
+        $payload['type'] = 'club-detail';
+        $payload['club'] = $club;
+        $payload['seoDescription'] = $club['summary'] ?? ($payload['seoDescription'] ?? '');
+        $payload['hero'] = [
+            'image' => $club['image'] ?? ($payload['hero']['image'] ?? '/images/campus-clubs.webp'),
+            'title' => $club['title'] ?? '',
+        ];
+        unset($payload['activities']);
+
+        return $this->sectionDto('clubs-activities/'.$slug, $locale, $this->normalizeUrls($payload, $locale));
+    }
+
+    /** @param array<string, mixed> $payload @return array<string, mixed> */
+    private function completeClubsPayload(array $payload, string $locale, bool $sanitizeSignup = false): array
+    {
+        $clubs = is_array($payload['clubs'] ?? null) ? $payload['clubs'] : [];
+        $clubs['backLabel'] = is_string($clubs['backLabel'] ?? null) && $clubs['backLabel'] !== ''
+            ? $clubs['backLabel']
+            : ($locale === 'ar' ? 'العودة إلى الأندية' : 'Back to Clubs');
+        $clubs['items'] = array_values(array_map(function (array $club) use ($locale, $sanitizeSignup): array {
+            $slug = Str::slug((string) ($club['slug'] ?? $club['id'] ?? ''));
+            $club['slug'] = $slug;
+            $club['id'] = is_string($club['id'] ?? null) && $club['id'] !== '' ? $club['id'] : $slug;
+            $club['body'] = is_string($club['body'] ?? null) && trim($club['body']) !== '' ? $club['body'] : ($club['summary'] ?? '');
+            $club['href'] = $slug !== '' ? '/campus-life/clubs-activities/'.$slug : '#';
+            $signupUrl = is_string($club['signupUrl'] ?? null) && trim($club['signupUrl']) !== '' ? trim($club['signupUrl']) : null;
+            $club['signupUrl'] = $sanitizeSignup ? ExternalSignupUrl::sanitize($signupUrl) : $signupUrl;
+            $club['signupLabel'] = $club['signupUrl'] !== null
+                ? (is_string($club['signupLabel'] ?? null) && trim($club['signupLabel']) !== ''
+                    ? trim($club['signupLabel'])
+                    : ($locale === 'ar' ? 'التسجيل في النادي' : 'Join This Club'))
+                : null;
+
+            return $club;
+        }, array_values(array_filter($clubs['items'] ?? [], 'is_array'))));
+        $payload['clubs'] = $clubs;
+
+        return $payload;
     }
 
     private function slugFromTargetKey(string $targetKey): ?string
@@ -804,9 +885,9 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
             'type' => 'clubs-activities',
             'hero' => ['image' => '/images/admissions-hero-campus.webp', 'titleEn' => 'Student Clubs & Activities', 'titleAr' => 'الأندية والأنشطة الطلابية', 'breadcrumbs' => $this->breadcrumbs('Clubs & Activities', 'الأندية والأنشطة', '/campus-life/clubs-activities')],
             'clubs' => ['titleEn' => 'Student Clubs', 'titleAr' => 'الأندية الطلابية', 'directoryLabelEn' => 'View Directory', 'directoryLabelAr' => 'عرض الدليل', 'directoryUrl' => '/campus-life/clubs-activities#clubs', 'detailsLabelEn' => 'View Details', 'detailsLabelAr' => 'عرض التفاصيل', 'items' => [
-                ['id' => 'ai-technology', 'tagEn' => 'Technology', 'tagAr' => 'تقنية', 'titleEn' => 'AI & Technology Club', 'titleAr' => 'نادي الذكاء الاصطناعي والتكنولوجيا', 'summaryEn' => 'Exploring artificial intelligence and public speaking skills through weekly regional and national competitions.', 'summaryAr' => 'استكشاف الذكاء الاصطناعي ومهارات العرض من خلال لقاءات أسبوعية ومشاركات محلية ووطنية.', 'image' => '/images/campus-feature-01.webp', 'href' => '/campus-life/clubs-activities#ai-technology'],
-                ['id' => 'medical-students', 'tagEn' => 'Health', 'tagAr' => 'صحة', 'titleEn' => 'Medical Students Club', 'titleAr' => 'نادي طلاب الطب', 'summaryEn' => 'Connecting students with local health initiatives through sustained volunteer partnerships and community action.', 'summaryAr' => 'ربط الطلاب بالمبادرات الصحية المحلية عبر شراكات تطوعية مستمرة وعمل مجتمعي.', 'image' => '/images/campus-clubs.webp', 'href' => '/campus-life/clubs-activities#medical-students'],
-                ['id' => 'business-entrepreneurship', 'tagEn' => 'Business', 'tagAr' => 'أعمال', 'titleEn' => 'Business & Entrepreneurship', 'titleAr' => 'نادي الأعمال وريادة الأعمال', 'summaryEn' => 'An open space for students of all levels to join, perform at campus events, and appreciate creative culture.', 'summaryAr' => 'مساحة مفتوحة للطلاب للمشاركة في الفعاليات الجامعية وتطوير ثقافة المبادرة والإبداع.', 'image' => '/images/admissions-hero-campus.webp', 'href' => '/campus-life/clubs-activities#business-entrepreneurship'],
+                ['id' => 'ai-technology', 'slug' => 'ai-technology', 'tagEn' => 'Technology', 'tagAr' => 'تقنية', 'titleEn' => 'AI & Technology Club', 'titleAr' => 'نادي الذكاء الاصطناعي والتكنولوجيا', 'summaryEn' => 'Exploring artificial intelligence and public speaking skills through weekly regional and national competitions.', 'summaryAr' => 'استكشاف الذكاء الاصطناعي ومهارات العرض من خلال لقاءات أسبوعية ومشاركات محلية ووطنية.', 'bodyEn' => 'The club gives students a collaborative space to explore artificial intelligence, technology projects, presentations, and peer-led learning.', 'bodyAr' => 'يوفر النادي مساحة تعاونية للطلاب لاستكشاف الذكاء الاصطناعي والمشاريع التقنية والعروض والتعلم بين الزملاء.', 'image' => '/images/campus-feature-01.webp'],
+                ['id' => 'medical-students', 'slug' => 'medical-students', 'tagEn' => 'Health', 'tagAr' => 'صحة', 'titleEn' => 'Medical Students Club', 'titleAr' => 'نادي طلاب الطب', 'summaryEn' => 'Connecting students with local health initiatives through sustained volunteer partnerships and community action.', 'summaryAr' => 'ربط الطلاب بالمبادرات الصحية المحلية عبر شراكات تطوعية مستمرة وعمل مجتمعي.', 'bodyEn' => 'The club connects medical students through academic exchange, volunteer initiatives, and community health activities.', 'bodyAr' => 'يجمع النادي طلاب الطب من خلال التبادل الأكاديمي والمبادرات التطوعية والأنشطة الصحية المجتمعية.', 'image' => '/images/campus-clubs.webp'],
+                ['id' => 'business-entrepreneurship', 'slug' => 'business-entrepreneurship', 'tagEn' => 'Business', 'tagAr' => 'أعمال', 'titleEn' => 'Business & Entrepreneurship', 'titleAr' => 'نادي الأعمال وريادة الأعمال', 'summaryEn' => 'An open space for students of all levels to join, perform at campus events, and appreciate creative culture.', 'summaryAr' => 'مساحة مفتوحة للطلاب للمشاركة في الفعاليات الجامعية وتطوير ثقافة المبادرة والإبداع.', 'bodyEn' => 'The club supports students interested in entrepreneurship, teamwork, practical business skills, and campus-led initiatives.', 'bodyAr' => 'يدعم النادي الطلاب المهتمين بريادة الأعمال والعمل الجماعي والمهارات العملية والمبادرات الجامعية.', 'image' => '/images/admissions-hero-campus.webp'],
             ]],
             'activities' => ['titleEn' => 'Upcoming Activities', 'titleAr' => 'الأنشطة القادمة', 'feature' => ['badgeEn' => 'Featured Achievement', 'badgeAr' => 'إنجاز مميز', 'titleEn' => 'Autumn Club Fair & Involvement Week', 'titleAr' => 'معرض أندية الخريف وأسبوع المشاركة', 'summaryEn' => 'Kick off the new quarter by meeting representatives from over 50 student organizations. Free food, live music, and opportunities to connect on the main quad all week long.', 'summaryAr' => 'ابدأ الفصل الجديد بالتعرف إلى ممثلي الأندية والمنظمات الطلابية، مع أنشطة تواصل وفرص مشاركة طوال الأسبوع.', 'image' => '/images/dsc-1075.webp', 'href' => '/campus-life/clubs-activities#autumn-club-fair'], 'announcementLabelEn' => 'View All Announcements', 'announcementLabelAr' => 'عرض جميع الإعلانات', 'announcementUrl' => '/news', 'items' => [
                 ['id' => 'tech-showcase', 'dateEn' => 'Oct 24-26 2024', 'dateAr' => '24-26 تشرين الأول 2024', 'titleEn' => 'Tech Innovation Showcase', 'titleAr' => 'معرض الابتكار التقني', 'summaryEn' => 'Computer Science club presents end-of-year projects in the library atrium.', 'summaryAr' => 'يعرض نادي علوم الحاسوب مشاريع نهاية العام في بهو المكتبة.', 'image' => '/images/healthcare-main.webp', 'href' => '/news#tech-showcase'],

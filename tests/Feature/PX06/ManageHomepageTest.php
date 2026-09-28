@@ -341,6 +341,32 @@ class ManageHomepageTest extends TestCase
         $this->assertSame('View Event Details', $form['content']['event_cta_label'] ?? null);
     }
 
+    public function test_honor_and_society_archive_links_round_trip_through_homepage_editor(): void
+    {
+        $honor = HomepagePayloadMapper::sectionDataFromArray([
+            'title' => 'Honor & Excellence',
+            'sectionAction' => ['label' => 'See All', 'url' => '/en/achievements'],
+        ]);
+        $honorForm = $this->invokePayloadToFormArray($honor, 'achievements_highlights');
+        $honorRoundTrip = $this->invokeFormArrayToPayload($honorForm, 'achievements_highlights');
+
+        $this->assertSame('/en/achievements', $honorRoundTrip->sectionAction?->url);
+
+        $news = HomepagePayloadMapper::sectionDataFromArray([
+            'title' => 'News',
+            'content' => [
+                'society_title' => "Society's Events",
+                'society_cta_label' => 'See All',
+                'society_cta_url' => '/en/news/society-events',
+            ],
+        ]);
+        $newsForm = $this->invokePayloadToFormArray($news, 'university_news');
+        $newsRoundTrip = $this->invokeFormArrayToPayload($newsForm, 'university_news');
+
+        $this->assertSame("Society's Events", $newsRoundTrip->content['society_title']);
+        $this->assertSame('/en/news/society-events', $newsRoundTrip->content['society_cta_url']);
+    }
+
     public function test_homepage_news_and_research_selections_are_shared_between_locales(): void
     {
         $news = $this->invokeWithHomepageSelection([], 'university_news', [
