@@ -323,16 +323,28 @@
                                 <h2 class="min-h-[42px] text-[16px] font-bold leading-[21px] text-spu-blue">{{ $item['title'] ?? '' }}</h2>
                                 <p class="mt-3 min-h-[44px] text-[13px] font-medium leading-[22px] text-slate-600">{{ $item['summary'] ?? '' }}</p>
                                 <div class="mt-6 border-t border-slate-100 pt-4">
-                                    <dl class="space-y-3 text-[10px] font-bold uppercase tracking-[0.04em]">
-                                        <div>
-                                            <dt class="text-slate-400">{{ $isAr ? 'الفريق' : 'Team' }}</dt>
-                                            <dd class="mt-1 text-spu-blue">{{ $item['team'] ?? '' }}</dd>
-                                        </div>
-                                        <div>
-                                            <dt class="text-slate-400">{{ $isAr ? 'المشرف' : 'Supervisor' }}</dt>
-                                            <dd class="mt-1 text-spu-blue">{{ $item['supervisor'] ?? '' }}</dd>
-                                        </div>
-                                    </dl>
+                                    {{-- A label with nothing under it reads as missing data rather than
+                                         as data that does not exist. The legacy bodies carry a team for
+                                         almost every project and a supervisor for one of 473, so the
+                                         supervisor row was empty on practically every card. Each row is
+                                         rendered only when it has a value, and the list only when one of
+                                         them does - which is what the detail page already does. --}}
+                                    @if (! empty($item['team']) || ! empty($item['supervisor']))
+                                        <dl class="space-y-3 text-[10px] font-bold uppercase tracking-[0.04em]">
+                                            @if (! empty($item['team']))
+                                                <div>
+                                                    <dt class="text-slate-400">{{ $isAr ? 'الفريق' : 'Team' }}</dt>
+                                                    <dd class="mt-1 text-spu-blue">{{ $item['team'] }}</dd>
+                                                </div>
+                                            @endif
+                                            @if (! empty($item['supervisor']))
+                                                <div>
+                                                    <dt class="text-slate-400">{{ $isAr ? 'المشرف' : 'Supervisor' }}</dt>
+                                                    <dd class="mt-1 text-spu-blue">{{ $item['supervisor'] }}</dd>
+                                                </div>
+                                            @endif
+                                        </dl>
+                                    @endif
                                     <a href="{{ $item['detailRoute'] ?? ('#'.($item['slug'] ?? '')) }}" class="mt-5 inline-flex items-center gap-2 text-[12px] font-bold text-spu-red transition hover:text-spu-blue">
                                         <span>{{ $isAr ? 'عرض التفاصيل' : 'View Details' }}</span>
                                         <img src="/images/icon-arrow-right-outline.svg" alt="" class="h-3 w-3 rtl:rotate-180" aria-hidden="true">
