@@ -520,6 +520,12 @@ if [[ -f "${IMPORT_APPROVAL}" ]]; then
         if (! is_array($json)) { fwrite(STDERR, "dry-run output was not JSON\n"); exit(1); }
         $flat = [];
         array_walk_recursive($json, function ($v, $k) use (&$flat) { $flat[strtolower((string) $k)] = $v; });
+        // The importer calls the headline figure importable_projects. "total" is
+        // what a person writing an approval reaches for, so accept both rather
+        // than making the approval file mirror an internal field name.
+        $flat["total"] = $flat["importable_projects"] ?? $flat["total"] ?? null;
+        $flat["hidden"] = $flat["hidden_projects"] ?? $flat["hidden"] ?? null;
+        $flat["visible"] = $flat["visible_projects"] ?? $flat["visible"] ?? null;
         foreach ($expected as $key => $want) {
             $got = $flat[$key] ?? null;
             if ((int) $got !== $want) {
