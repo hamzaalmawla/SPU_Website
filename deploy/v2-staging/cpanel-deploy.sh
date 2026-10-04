@@ -542,13 +542,33 @@ if [[ -f "${IMPORT_APPROVAL}" ]]; then
         fwrite(STDOUT, "  dry run matches the approved manifest exactly\n");
     ' || fail "The dry run does not match the approved 2026-08-27 manifest. The dump, the data, or the approval is not what it should be. Nothing was written."
 
+    # --verify-media fetches every media reference from the legacy host and keeps
+    # only the ones that answer. Deploy #68 ran with it and reported 533 verified,
+    # yet every imported project came out with no image: the verified map is keyed
+    # per project and per source path, and on this data the lookup misses, so
+    # mediaReference() returns '' and the reference is dropped. Without the flag
+    # the path is stored directly, which the import test covers and which is what
+    # actually renders - those files answer 200 on this host through the _legacy
+    # rewrite in public/.htaccess.
+    #
+    # The trade is that genuinely missing files become broken links instead of
+    # being omitted. That is visible and fixable; 500 projects with no media at
+    # all is neither. Default stays on, so this is a deliberate choice recorded in
+    # the approval file rather than a silent change of behaviour.
+    IMPORT_VERIFY_MEDIA="$(grep -E '^verify_media=' "${IMPORT_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r' | tr '[:upper:]' '[:lower:]')"
+    IMPORT_MEDIA_FLAG="--verify-media"
+    if [[ "${IMPORT_VERIFY_MEDIA}" == "false" || "${IMPORT_VERIFY_MEDIA}" == "0" || "${IMPORT_VERIFY_MEDIA}" == "no" ]]; then
+        IMPORT_MEDIA_FLAG=""
+        printf '  media verification disabled by the approval file; paths are stored as-is\n'
+    fi
+
     log "Faculty-project import: write"
     # Output is captured so it can be recorded, but a failure must still SHOW
     # why: deploy #66 failed here and printed nothing at all, because the
     # message explaining it went into this variable and was then discarded.
     IMPORT_WRITE_LOG="${IMPORT_DIR}/.write-output.$$"
     if ! (cd "${APP}" && "${PHP}" -d memory_limit=1024M artisan legacy-import:faculty-projects "${IMPORT_DUMP}" \
-            --write --approve="${IMPORT_TOKEN}" --enable-visible --verify-media --json) \
+            --write --approve="${IMPORT_TOKEN}" --enable-visible ${IMPORT_MEDIA_FLAG} --json) \
             > "${IMPORT_WRITE_LOG}" 2>&1; then
         printf '\n--- write output ---\n' >&2
         cat "${IMPORT_WRITE_LOG}" >&2
