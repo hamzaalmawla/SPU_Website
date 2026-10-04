@@ -419,7 +419,7 @@ if [[ -f "${IMPORT_SURVEY}" ]]; then
     printf '  dumped jx_categories + jx_items (%s)\n' "$(du -h "${SURVEY_DUMP}" | cut -f1)"
 
     log "Faculty-project survey: dry run against the CURRENT legacy data"
-    (cd "${APP}" && "${PHP}" artisan legacy-import:faculty-projects "${SURVEY_DUMP}" --json) \
+    (cd "${APP}" && "${PHP}" -d memory_limit=1024M artisan legacy-import:faculty-projects "${SURVEY_DUMP}" --json) \
         || printf '\n  survey dry run reported a problem; see the output above\n' >&2
 
     rm -f "${SURVEY_CNF}" "${SURVEY_DUMP}"
@@ -491,7 +491,13 @@ if [[ -f "${IMPORT_APPROVAL}" ]]; then
     fi
 
     log "Faculty-project import: dry run"
-    IMPORT_DRY="$(cd "${APP}" && "${PHP}" artisan legacy-import:faculty-projects "${IMPORT_DUMP}" --json)" \
+    # -d memory_limit: the host sets 128M, and deploy #67 died on exactly that
+    # ("Allowed memory size of 134217728 bytes exhausted") during the write. The
+    # legacy dump is ~191 MB of SQL and parsing it into PHP arrays costs several
+    # times that before media verification adds its own structures. Raised only
+    # for this command; every other artisan call in this script keeps the host
+    # default.
+    IMPORT_DRY="$(cd "${APP}" && "${PHP}" -d memory_limit=1024M artisan legacy-import:faculty-projects "${IMPORT_DUMP}" --json)" \
         || fail "The faculty-project dry run failed. Nothing was written."
     printf '%s\n' "${IMPORT_DRY}"
 
@@ -541,7 +547,7 @@ if [[ -f "${IMPORT_APPROVAL}" ]]; then
     # why: deploy #66 failed here and printed nothing at all, because the
     # message explaining it went into this variable and was then discarded.
     IMPORT_WRITE_LOG="${IMPORT_DIR}/.write-output.$$"
-    if ! (cd "${APP}" && "${PHP}" artisan legacy-import:faculty-projects "${IMPORT_DUMP}" \
+    if ! (cd "${APP}" && "${PHP}" -d memory_limit=1024M artisan legacy-import:faculty-projects "${IMPORT_DUMP}" \
             --write --approve="${IMPORT_TOKEN}" --enable-visible --verify-media --json) \
             > "${IMPORT_WRITE_LOG}" 2>&1; then
         printf '\n--- write output ---\n' >&2
