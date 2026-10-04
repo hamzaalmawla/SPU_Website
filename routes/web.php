@@ -41,8 +41,14 @@ Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
 // matched here they would 302 to /ar/research/index.php — a redirect that lands
 // on a 404. They must fall through to a real 404 so RedirectContinuityMiddleware
 // logs them into unresolved_legacy_requests for triage instead.
+// faculties was missing here after the colleges moved from /facilities to
+// /faculties: the rename updated the routes and the sitemap and left this
+// pattern naming only the old word, so https://spu.edu.sy/faculties - the
+// obvious address, and the one printed on things - answered 404 while
+// /facilities still redirected. facilities stays for the links already out
+// there. search, events and student-life were never listed at all.
 Route::get('/{referencePath}', BrowserLocaleRedirectController::class)
-    ->where('referencePath', '(?!.*\.php$)(?:about|achievements|admissions|alumni|research|campus-life|e-services|news|contact|facilities|projects|virtual-tour)(?:/.*)?')
+    ->where('referencePath', '(?!.*\.php$)(?:about|achievements|admissions|alumni|research|campus-life|e-services|events|faculties|facilities|news|contact|projects|search|student-life|virtual-tour)(?:/.*)?')
     ->name('reference.locale');
 
 Route::prefix('{locale}')
