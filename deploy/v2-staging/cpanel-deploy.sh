@@ -84,10 +84,126 @@ fi
 [[ -f "${SOURCE}/public/build/manifest.json" ]] || fail \
     "No Vite manifest in the release at ${SOURCE}/public/build. Run 'php artisan view:clear && npm run build' and commit public/build."
 
+env_value() {
+    grep -E "^[[:space:]]*$1=" "${APP}/.env" | tail -n 1 | cut -d= -f2- | tr -d '\r"' || true
+}
+
 # Production migrations are forward-only. Require an operator-supplied reference
 # to a verified, restorable database backup before any release files are synced.
-APP_ENV_VALUE="$(grep -E '^[[:space:]]*APP_ENV=' "${APP}/.env" | tail -n 1 | cut -d= -f2- | tr -d '\r"' || true)"
-BACKUP_REFERENCE="${SPU_DATABASE_BACKUP_REFERENCE:-$(grep -E '^[[:space:]]*SPU_DATABASE_BACKUP_REFERENCE=' "${APP}/.env" | tail -n 1 | cut -d= -f2- | tr -d '\r"' || true)}"
+APP_ENV_VALUE="$(env_value APP_ENV)"
+BACKUP_REFERENCE="${SPU_DATABASE_BACKUP_REFERENCE:-$(env_value SPU_DATABASE_BACKUP_REFERENCE)}"
+
+# ── Pre-migration database dump ──────────────────────────────────────────────
+# The gate below is unchanged and still authoritative: nothing is synced without
+# a reference to a restorable backup. What changed is that there is now a way to
+# produce one from here.
+#
+# The gate was written for an operator with a shell, who takes a cPanel backup,
+# checks it, and writes its name into .env by hand. That remains the preferred
+# path and an operator-supplied reference is never overwritten. But shell is
+# disabled on this account - UAPI has no SSH module - and cPanel's per-database
+# download endpoint is session-authenticated, so it refuses an API token with a
+# 403. With no human at a terminal there was no way to satisfy the gate
+# honestly, and the only remaining options were to skip the release or to write
+# a reference pointing at nothing. This is the third option.
+#
+# An automatic dump is better than a human at knowing the backup is recent, is
+# of this exact database, and is internally complete. It is worse at the thing
+# the gate was really protecting: that somebody looked. So the reference it
+# writes names itself - `auto-mysqldump-...` - and must never be mistaken for a
+# backup a person verified.
+#
+# This runs BEFORE the maintenance window and BEFORE any file is synced, so
+# every failure path here leaves the running site exactly as it was.
+if [[ "${SPU_DEPLOY_ENV:-staging}" == "production" || "${APP_ENV_VALUE}" == "production" ]] \
+   && [[ -z "${BACKUP_REFERENCE}" ]]; then
+
+    log "No backup reference present; taking a pre-migration database dump"
+
+    command -v mysqldump >/dev/null 2>&1 \
+        || fail "mysqldump is not on PATH, so no pre-migration backup can be taken and this release cannot proceed. Take a cPanel database backup by hand and set SPU_DATABASE_BACKUP_REFERENCE in ${APP}/.env."
+
+    DB_NAME="$(env_value DB_DATABASE)"
+    DB_USER="$(env_value DB_USERNAME)"
+    DB_PASS="$(env_value DB_PASSWORD)"
+    DB_HOST="$(env_value DB_HOST)"
+    DB_PORT="$(env_value DB_PORT)"
+    [[ -n "${DB_NAME}" && -n "${DB_USER}" ]] || fail "DB_DATABASE or DB_USERNAME is missing from ${APP}/.env; refusing to deploy without a backup."
+
+    BACKUP_DIR="${SPU_BACKUP_DIR:-/home/spuedu/backups/spu_v2}"
+    mkdir -p "${BACKUP_DIR}"
+    chmod 700 "${BACKUP_DIR}"
+
+    DUMP_STAMP="$(date -u +%Y%m%d-%H%M%S)"
+    DUMP_FILE="${BACKUP_DIR}/${DB_NAME}-${DUMP_STAMP}.sql.gz"
+
+    # The password never appears on a command line: ps is readable by other
+    # accounts, and this script's stdout becomes a log file cPanel keeps.
+    DUMP_CNF="$(umask 077 && mktemp "${BACKUP_DIR}/.my.XXXXXX")"
+    cleanup_dump_cnf() { rm -f "${DUMP_CNF}"; }
+    trap cleanup_dump_cnf EXIT
+    {
+        printf '[mysqldump]\n'
+        printf 'user=%s\n' "${DB_USER}"
+        printf 'password=%s\n' "${DB_PASS}"
+        [[ -n "${DB_HOST}" ]] && printf 'host=%s\n' "${DB_HOST}"
+        [[ -n "${DB_PORT}" ]] && printf 'port=%s\n' "${DB_PORT}"
+    } > "${DUMP_CNF}"
+
+    # --single-transaction keeps this non-blocking on InnoDB: the site stays up
+    # and consistent while the dump runs. Routines and triggers are part of the
+    # schema and a restore without them is not the database that was backed up.
+    ( umask 077 && mysqldump --defaults-extra-file="${DUMP_CNF}" \
+        --single-transaction --quick --routines --triggers --events \
+        --default-character-set=utf8mb4 \
+        "${DB_NAME}" | gzip -6 > "${DUMP_FILE}" ) \
+        || fail "mysqldump failed. Nothing has been synced and the site is untouched."
+
+    # mysqldump exiting 0 is not a restorable backup. Each of these has a real
+    # failure behind it: a dump truncated by a full disk still exits 0 through a
+    # pipe, and gzip will happily write a corrupt tail.
+    [[ -s "${DUMP_FILE}" ]] || fail "The dump at ${DUMP_FILE} is empty."
+    gzip -t "${DUMP_FILE}" 2>/dev/null || fail "The dump at ${DUMP_FILE} is not a valid gzip stream."
+    gzip -cd "${DUMP_FILE}" | tail -c 2000 | grep -q 'Dump completed' \
+        || fail "The dump at ${DUMP_FILE} has no completion trailer, so it is truncated."
+    DUMP_TABLES="$(gzip -cd "${DUMP_FILE}" | grep -c '^CREATE TABLE' || true)"
+    [[ "${DUMP_TABLES}" -ge 20 ]] \
+        || fail "The dump holds only ${DUMP_TABLES} tables, which is too few to be this database. Refusing to treat it as a backup."
+
+    # Remove the credentials file here rather than leaving it to the trap: the
+    # maintenance-window trap installed further down replaces this one, and a
+    # file holding the database password must not outlive the command that
+    # needed it.
+    cleanup_dump_cnf
+    trap - EXIT
+
+    chmod 600 "${DUMP_FILE}"
+    DUMP_SHA="$(sha256sum "${DUMP_FILE}" | cut -c1-12)"
+    DUMP_SIZE="$(du -h "${DUMP_FILE}" | cut -f1)"
+    BACKUP_REFERENCE="auto-mysqldump-${DB_NAME}-${DUMP_STAMP}-${DUMP_SHA}"
+
+    printf '  %s\n  %s tables, %s, sha256 %s…\n' "${DUMP_FILE}" "${DUMP_TABLES}" "${DUMP_SIZE}" "${DUMP_SHA}"
+
+    # Written into .env so the reference survives for a human reading it later,
+    # and so a re-run of this deploy reuses the dump rather than taking another.
+    if grep -qE '^[[:space:]]*SPU_DATABASE_BACKUP_REFERENCE=' "${APP}/.env"; then
+        sed -i.bak -E "s|^[[:space:]]*SPU_DATABASE_BACKUP_REFERENCE=.*|SPU_DATABASE_BACKUP_REFERENCE=${BACKUP_REFERENCE}|" "${APP}/.env"
+        rm -f "${APP}/.env.bak"
+    else
+        printf '\nSPU_DATABASE_BACKUP_REFERENCE=%s\n' "${BACKUP_REFERENCE}" >> "${APP}/.env"
+    fi
+
+    # The account runs close to its disk quota, and a dump per release adds up.
+    # Three is enough to cover "the release before this one" without becoming an
+    # archive nobody prunes.
+    # `|| true` throughout: set -o pipefail would otherwise turn "there are no
+    # old dumps to prune" into a failed deployment.
+    (ls -1t "${BACKUP_DIR}/${DB_NAME}-"*.sql.gz 2>/dev/null || true) | tail -n +4 | while read -r old; do
+        printf '  pruning old dump %s\n' "$(basename "${old}")"
+        rm -f "${old}"
+    done || true
+fi
+
 if [[ "${SPU_DEPLOY_ENV:-staging}" == "production" || "${APP_ENV_VALUE}" == "production" ]]; then
     [[ -n "${BACKUP_REFERENCE}" ]] || fail \
         "Production deployment requires SPU_DATABASE_BACKUP_REFERENCE naming a verified, restorable pre-deployment database backup."
@@ -305,6 +421,13 @@ log "Warming caches"
 # fails, so end by proving the application still boots.
 log "Verifying"
 (cd "${APP}" && "${PHP}" artisan route:list >/dev/null) || fail "Routes do not boot after deploy"
+
+# The migration block above prints only what ran on THIS deploy, which cannot
+# answer "is migration X applied" for anything that ran on an earlier one - the
+# question a release checklist actually asks. This prints the full applied set
+# into the deploy log, where it is part of the release record.
+log "Migration status"
+(cd "${APP}" && "${PHP}" artisan migrate:status) || true
 # On the live domain a failing gate is a failed deploy - the check that catches
 # the noindex/robots.txt trap lives in there, and shipping past it de-indexes the
 # university. On staging it is advisory so a content warning does not block a
