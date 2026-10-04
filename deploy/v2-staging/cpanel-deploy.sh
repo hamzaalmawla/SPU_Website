@@ -402,6 +402,22 @@ if [[ -f "${NEWS_PUBLISH}" ]]; then
     [[ -n "${NEWS_ACTOR}" ]] || fail "The news publication file has no actor= line."
     [[ -n "${NEWS_TOKEN}" ]] || fail "The news publication file has no token= line."
 
+    # actor=auto resolves the publishing user here rather than asking an operator
+    # to look up a primary key. The service validates whoever is named - it
+    # refuses a locked account or one without publication permission - so this
+    # chooses a candidate, it does not grant anything.
+    if [[ "${NEWS_ACTOR}" == "auto" ]]; then
+        NEWS_ACTOR="$(cd "${APP}" && "${PHP}" artisan tinker --execute='
+            echo (string) (\DB::table("users")
+                ->where("role_slug", "super_admin")
+                ->where(function ($q) { $q->whereNull("locked_at")->orWhere("locked_at", ""); })
+                ->orderBy("id")
+                ->value("id") ?? "");
+        ' 2>/dev/null | grep -Eo '^[0-9]+$' | head -n 1 || true)"
+        [[ -n "${NEWS_ACTOR}" ]] || fail "actor=auto found no unlocked super_admin to publish as."
+        printf '  publishing as user #%s\n' "${NEWS_ACTOR}"
+    fi
+
     # Source IDs come either as explicit id= lines, or - with ids=eligible - from
     # the news import log, letting the publication service decide what may go
     # live rather than deciding here.
