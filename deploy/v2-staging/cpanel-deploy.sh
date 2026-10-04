@@ -396,7 +396,10 @@ if [[ -f "${IMPORT_SURVEY}" ]]; then
 
     SURVEY_CNF="$(umask 077 && mktemp "${IMPORT_DIR}/.mysurvey.XXXXXX")"
     SURVEY_DUMP="${IMPORT_DIR}/legacy-survey-$(date -u +%Y%m%d-%H%M%S).sql"
-    cleanup_survey() { rm -f "${SURVEY_CNF}" "${SURVEY_DUMP}"; }
+    # restore_service is called here too: this trap REPLACES the maintenance
+    # trap installed further up, so without it a failed survey would leave the
+    # site in maintenance mode serving 503s until someone noticed.
+    cleanup_survey() { rm -f "${SURVEY_CNF}" "${SURVEY_DUMP}"; restore_service; }
     trap cleanup_survey EXIT
     {
         printf '[mysqldump]\n'
@@ -419,8 +422,8 @@ if [[ -f "${IMPORT_SURVEY}" ]]; then
     (cd "${APP}" && "${PHP}" artisan legacy-import:faculty-projects "${SURVEY_DUMP}" --json) \
         || printf '\n  survey dry run reported a problem; see the output above\n' >&2
 
-    cleanup_survey
-    trap - EXIT
+    rm -f "${SURVEY_CNF}" "${SURVEY_DUMP}"
+    trap restore_service EXIT
     mv "${IMPORT_SURVEY}" "${IMPORT_SURVEY}.done-$(date -u +%Y%m%d-%H%M%S)"
     printf '  survey complete; nothing was written\n'
 fi
@@ -429,16 +432,63 @@ if [[ -f "${IMPORT_APPROVAL}" ]]; then
     log "Approved faculty-project import found"
 
     IMPORT_TOKEN="$(grep -E '^token=' "${IMPORT_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r')"
-    IMPORT_DUMP="${IMPORT_DIR}/$(grep -E '^dump=' "${IMPORT_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r')"
-    IMPORT_SHA="$(grep -E '^sha256=' "${IMPORT_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r')"
-
+    IMPORT_SOURCE="$(grep -E '^source=' "${IMPORT_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r')"
     [[ -n "${IMPORT_TOKEN}" ]] || fail "The approval file has no token= line."
-    [[ -f "${IMPORT_DUMP}" ]]  || fail "The approval file names a dump that is not present: ${IMPORT_DUMP}"
-    [[ -n "${IMPORT_SHA}" ]]   || fail "The approval file has no sha256= line, so the dump cannot be proven to be the approved one."
 
-    ACTUAL_SHA="$(sha256sum "${IMPORT_DUMP}" | cut -d' ' -f1)"
-    [[ "${ACTUAL_SHA}" == "${IMPORT_SHA}" ]] || fail \
-        "The dump at ${IMPORT_DUMP} does not match the approved sha256. Approved ${IMPORT_SHA}, found ${ACTUAL_SHA}. Refusing to import content nobody approved."
+    IMPORT_GENERATED=0
+    if [[ "${IMPORT_SOURCE}" == "legacy-db" ]]; then
+        # Sourced from the live legacy database rather than a file, because the
+        # 2026-08-27 dump the original approval names cannot be produced by
+        # anyone and the only copies that exist are a month older and nineteen
+        # projects short.
+        #
+        # There is no sha256 to check here - the dump is made seconds before it
+        # is read, so a hash would only prove the file did not change in those
+        # seconds, which nothing threatens. The real guarantee is the manifest
+        # check below: the dry run must report the approved counts EXACTLY, so
+        # if the legacy data has moved since the approval was given, by even one
+        # project in one faculty, this deploy fails without writing.
+        log "Faculty-project import: dumping the live legacy database"
+        command -v mysqldump >/dev/null 2>&1 || fail "mysqldump is not on PATH; cannot source the import."
+
+        OLD_DB_NAME="$(env_value OLD_DB_DATABASE)"
+        OLD_DB_USER="$(env_value OLD_DB_USERNAME)"
+        OLD_DB_PASS="$(env_value OLD_DB_PASSWORD)"
+        OLD_DB_HOST_V="$(env_value OLD_DB_HOST)"
+        [[ -n "${OLD_DB_NAME}" && -n "${OLD_DB_USER}" ]] \
+            || fail "OLD_DB_DATABASE or OLD_DB_USERNAME is missing; cannot source the import."
+
+        IMPORT_CNF="$(umask 077 && mktemp "${IMPORT_DIR}/.myimp.XXXXXX")"
+        IMPORT_DUMP="${IMPORT_DIR}/legacy-import-$(date -u +%Y%m%d-%H%M%S).sql"
+        IMPORT_GENERATED=1
+        # Same reason as the survey: this replaces the maintenance trap, so it
+        # has to lift maintenance itself on the way out.
+        cleanup_import() { rm -f "${IMPORT_CNF}" "${IMPORT_DUMP}"; restore_service; }
+        trap cleanup_import EXIT
+        {
+            printf '[mysqldump]\n'
+            printf 'user=%s\n' "${OLD_DB_USER}"
+            printf 'password=%s\n' "${OLD_DB_PASS}"
+            [[ -n "${OLD_DB_HOST_V}" ]] && printf 'host=%s\n' "${OLD_DB_HOST_V}"
+        } > "${IMPORT_CNF}"
+
+        ( umask 077 && mysqldump --defaults-extra-file="${IMPORT_CNF}" \
+            --single-transaction --quick --default-character-set=utf8mb4 \
+            "${OLD_DB_NAME}" jx_categories jx_items > "${IMPORT_DUMP}" ) \
+            || fail "Could not read the legacy database. Nothing was written."
+        rm -f "${IMPORT_CNF}"
+        printf '  sourced %s from %s\n' "$(du -h "${IMPORT_DUMP}" | cut -f1)" "${OLD_DB_NAME}"
+    else
+        IMPORT_DUMP="${IMPORT_DIR}/$(grep -E '^dump=' "${IMPORT_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r')"
+        IMPORT_SHA="$(grep -E '^sha256=' "${IMPORT_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r')"
+
+        [[ -f "${IMPORT_DUMP}" ]] || fail "The approval file names a dump that is not present: ${IMPORT_DUMP}"
+        [[ -n "${IMPORT_SHA}" ]]  || fail "The approval file has no sha256= line, so the dump cannot be proven to be the approved one."
+
+        ACTUAL_SHA="$(sha256sum "${IMPORT_DUMP}" | cut -d' ' -f1)"
+        [[ "${ACTUAL_SHA}" == "${IMPORT_SHA}" ]] || fail \
+            "The dump at ${IMPORT_DUMP} does not match the approved sha256. Approved ${IMPORT_SHA}, found ${ACTUAL_SHA}. Refusing to import content nobody approved."
+    fi
 
     log "Faculty-project import: dry run"
     IMPORT_DRY="$(cd "${APP}" && "${PHP}" artisan legacy-import:faculty-projects "${IMPORT_DUMP}" --json)" \
@@ -490,6 +540,7 @@ if [[ -f "${IMPORT_APPROVAL}" ]]; then
     # leave an armed import behind for the next one to run again.
     mv "${IMPORT_APPROVAL}" "${IMPORT_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
     rm -f "${IMPORT_DUMP}"
+    [[ "${IMPORT_GENERATED}" == "1" ]] && trap restore_service EXIT
     printf '  approval consumed and dump removed\n'
 fi
 
