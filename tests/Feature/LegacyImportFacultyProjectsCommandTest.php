@@ -85,4 +85,70 @@ INSERT INTO `jx_items` (`id`) VALUES
 (9002, 7001, 44, NULL, 'ملف مفقود', NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, 'missing.pdf', NULL, NULL, 0, 0, 0, 0, 0, '2026-01-01 00:00:00', NULL, NULL, 1, NULL, 0, 3);
 SQL;
     }
+
+    /**
+     * A second editorial approval gets its own token. Both must work, and
+     * anything else must not - the token is the only thing standing between a
+     * deploy and 500 rows of published content.
+     */
+    public function test_each_editorial_approval_token_authorises_a_write_and_nothing_else_does(): void
+    {
+        $dump = tempnam(sys_get_temp_dir(), 'faculty-projects-');
+        self::assertIsString($dump);
+        file_put_contents($dump, $this->fixtureDump());
+
+        Faculty::query()->create([
+            'slug' => 'pharmacy',
+            'public_slug' => 'pharmacy',
+            'faculty_scope_slug' => 'pharmacy',
+            'sort_order' => 1,
+            'is_enabled' => true,
+        ]);
+
+        try {
+            foreach (['faculty-projects-20260827', 'faculty-projects-20261004-live500'] as $token) {
+                FacultyStudentProject::query()->forceDelete();
+
+                $this->artisan('legacy-import:faculty-projects', [
+                    'dump' => $dump,
+                    '--write' => true,
+                    '--approve' => $token,
+                ])->assertSuccessful();
+
+                self::assertGreaterThan(
+                    0,
+                    FacultyStudentProject::query()->count(),
+                    "Approval token {$token} must authorise a write",
+                );
+            }
+
+            // An unrecognised token throws rather than exiting non-zero, so the
+            // exception is the assertion. What matters either way is that no
+            // row is written.
+            foreach (['', 'faculty-projects-20260828', 'yes', 'faculty-projects-20261004-live499'] as $rejected) {
+                FacultyStudentProject::query()->forceDelete();
+
+                $threw = false;
+
+                try {
+                    $this->artisan('legacy-import:faculty-projects', [
+                        'dump' => $dump,
+                        '--write' => true,
+                        '--approve' => $rejected,
+                    ])->run();
+                } catch (\InvalidArgumentException) {
+                    $threw = true;
+                }
+
+                self::assertTrue($threw, "An unrecognised approval token must be refused: {$rejected}");
+                self::assertSame(
+                    0,
+                    FacultyStudentProject::query()->count(),
+                    "A write must not happen for an unrecognised approval token: {$rejected}",
+                );
+            }
+        } finally {
+            @unlink($dump);
+        }
+    }
 }
