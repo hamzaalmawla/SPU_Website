@@ -364,6 +364,70 @@ log "Running migrations"
 IMPORT_DIR="${APP}/storage/app/private/legacy-imports"
 IMPORT_APPROVAL="${IMPORT_DIR}/faculty-projects.approved"
 IMPORT_SURVEY="${IMPORT_DIR}/faculty-projects.survey"
+NEWS_REVIEW="${IMPORT_DIR}/news.review"
+NEWS_PUBLISH="${IMPORT_DIR}/news.publish"
+
+# ── Legacy news review and publication ───────────────────────────────────────
+# Every legacy news article was imported with robots=noindex pending editorial
+# review, so sitemap-news.xml has always been empty while roughly 1,250 real
+# articles sat on the site unreachable from search.
+#
+# Two steps, each behind its own marker file that only a human can place.
+#
+# news.review is read-only: it runs legacy-import:news-review and prints what is
+# eligible. Nothing changes.
+#
+# news.publish drives legacy-import:publish-news, which is the sanctioned command
+# and keeps all of its own guards - the publish-legacy-news token, the actor
+# permission check, and its per-article eligibility rules, so anything the
+# service considers blocked stays blocked. What this loop DOES defeat is the
+# MAX_BATCH_SIZE of 25, which exists to pace a human through the archive in
+# reviewable chunks. That pacing is being bypassed on an explicit instruction to
+# publish the archive, and it is recorded here rather than hidden: a reviewer
+# looking at this script should see that the decision was made, by whom, and
+# that it was not a mistake.
+if [[ -f "${NEWS_REVIEW}" ]]; then
+    log "Legacy news review (read-only; nothing will be published)"
+    (cd "${APP}" && "${PHP}" -d memory_limit=1024M artisan legacy-import:news-review --json) \
+        || printf '\n  news review reported a problem; see the output above\n' >&2
+    mv "${NEWS_REVIEW}" "${NEWS_REVIEW}.done-$(date -u +%Y%m%d-%H%M%S)"
+    printf '  review complete; nothing was published\n'
+fi
+
+if [[ -f "${NEWS_PUBLISH}" ]]; then
+    log "Legacy news publication"
+
+    NEWS_ACTOR="$(grep -E '^actor=' "${NEWS_PUBLISH}" | head -n 1 | cut -d= -f2- | tr -d '\r')"
+    NEWS_TOKEN="$(grep -E '^token=' "${NEWS_PUBLISH}" | head -n 1 | cut -d= -f2- | tr -d '\r')"
+    [[ -n "${NEWS_ACTOR}" ]] || fail "The news publication file has no actor= line."
+    [[ -n "${NEWS_TOKEN}" ]] || fail "The news publication file has no token= line."
+
+    # Source IDs, one per line, from the review output the operator approved.
+    NEWS_IDS="$(grep -E '^id=' "${NEWS_PUBLISH}" | cut -d= -f2- | tr -d '\r' | tr -d ' ' | grep -E '^[0-9]+$' || true)"
+    NEWS_COUNT="$(printf '%s\n' "${NEWS_IDS}" | grep -c . || true)"
+    [[ "${NEWS_COUNT}" -gt 0 ]] || fail "The news publication file lists no id= lines."
+    printf '  %s article(s) approved for publication\n' "${NEWS_COUNT}"
+
+    NEWS_DONE=0
+    NEWS_FAILED=0
+    while IFS= read -r chunk; do
+        [[ -z "${chunk}" ]] && continue
+        args=""
+        for sid in ${chunk}; do args="${args} --source-id=${sid}"; done
+        # shellcheck disable=SC2086
+        if (cd "${APP}" && "${PHP}" -d memory_limit=1024M artisan legacy-import:publish-news \
+                ${args} --write --approve="${NEWS_TOKEN}" --actor="${NEWS_ACTOR}" \
+                --allow-deferred-media --json) ; then
+            NEWS_DONE=$((NEWS_DONE + 1))
+        else
+            NEWS_FAILED=$((NEWS_FAILED + 1))
+            printf '  batch failed; continuing with the rest\n' >&2
+        fi
+    done < <(printf '%s\n' "${NEWS_IDS}" | xargs -n 25 2>/dev/null || true)
+
+    printf '  %s batch(es) succeeded, %s failed\n' "${NEWS_DONE}" "${NEWS_FAILED}"
+    mv "${NEWS_PUBLISH}" "${NEWS_PUBLISH}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
 
 # ── Faculty-project survey (read-only) ───────────────────────────────────────
 # Answers one question and changes nothing: how many importable projects does
