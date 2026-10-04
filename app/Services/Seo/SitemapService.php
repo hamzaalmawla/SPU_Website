@@ -303,10 +303,12 @@ final class SitemapService implements SitemapServiceInterface
             return;
         }
 
+        /** @var array<string, mixed> $translations */
         $translations = is_array($content->payload_json['translations'] ?? null) ? $content->payload_json['translations'] : [];
         $slugsByLocale = [];
         foreach (['ar', 'en'] as $locale) {
-            $items = is_array($translations[$locale]['clubs']['items'] ?? null) ? $translations[$locale]['clubs']['items'] : [];
+            $localeData = is_array($translations[$locale] ?? null) ? $translations[$locale] : [];
+            $items = is_array($localeData['clubs']['items'] ?? null) ? $localeData['clubs']['items'] : [];
             $slugsByLocale[$locale] = collect($items)
                 ->filter(static fn (mixed $item): bool => is_array($item) && is_string($item['title'] ?? null) && trim($item['title']) !== '')
                 ->map(static fn (array $item): string => trim((string) ($item['slug'] ?? $item['id'] ?? '')))
