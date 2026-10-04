@@ -60,6 +60,9 @@ final class LegacyFacultyProjectImportService implements LegacyFacultyProjectImp
         74 => 'business-administration',
     ];
 
+    /** Field labels the legacy bodies use for their own metadata. */
+    private const FIELD_LABELS = '(?:[إا]عداد|[إا]شراف|تاريخ|الفريق|المشرف|date|team|supervisor|prepared\s+by)';
+
     /** @var list<string> */
     private const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 
@@ -157,7 +160,7 @@ final class LegacyFacultyProjectImportService implements LegacyFacultyProjectImp
                         ['faculty_student_project_id' => (int) $target->getKey(), 'locale' => $locale],
                         [
                             'title' => $titles[$locale],
-                            'summary' => $body !== [] ? Str::limit($body[0], 240, '') : null,
+                            'summary' => $this->summaryFrom($body),
                             'body_json' => $body,
                             'tag' => $locale === 'ar' ? 'مشروع طلابي' : 'Student Project',
                             'team' => $contributors['team'],
@@ -509,7 +512,7 @@ final class LegacyFacultyProjectImportService implements LegacyFacultyProjectImp
         }
 
         foreach ($paragraphs as $index => $paragraph) {
-            if ($team === null && preg_match('/^إعداد(?:\s+الطالب(?:ة|ات|ين)?|\s+الطلاب)?\s*[:：]?\s*(.*)$/u', $paragraph, $matches) === 1) {
+            if ($team === null && preg_match('/^[إا]عداد(?:\s+الطالب(?:ة|ات|ين)?|\s+الطلاب)?\s*[:：]?\s*(.*)$/u', $paragraph, $matches) === 1) {
                 $candidate = $this->cleanContributor($matches[1]);
                 $team = $candidate !== null ? $candidate : $this->nextContributor($paragraphs, $index);
             }
@@ -518,12 +521,12 @@ final class LegacyFacultyProjectImportService implements LegacyFacultyProjectImp
                 $team = $this->cleanContributor($matches[1]);
             }
 
-            if ($supervisor === null && preg_match('/^إشراف\s*[:：]?\s*(.*)$/u', $paragraph, $matches) === 1) {
+            if ($supervisor === null && preg_match('/^[إا]شراف\s*[:：]?\s*(.*)$/u', $paragraph, $matches) === 1) {
                 $candidate = $this->cleanContributor($matches[1]);
                 $supervisor = $candidate !== null ? $candidate : $this->nextContributor($paragraphs, $index);
             }
 
-            if ($supervisor === null && preg_match('/بإشراف\s+(.+?)(?:[،.]|$)/u', $paragraph, $matches) === 1) {
+            if ($supervisor === null && preg_match('/ب[إا]شراف\s+(.+?)(?:[،.]|$)/u', $paragraph, $matches) === 1) {
                 $supervisor = $this->cleanContributor($matches[1]);
             }
         }
@@ -698,5 +701,73 @@ final class LegacyFacultyProjectImportService implements LegacyFacultyProjectImp
         }
 
         return in_array($extension, self::IMAGE_EXTENSIONS, true) && @getimagesizefromstring($contents) !== false;
+    }
+
+    /**
+     * The first paragraph that actually describes the project.
+     *
+     * Legacy bodies open with their own field labels. They come in two shapes:
+     * a bare line reading "اعداد" with the name on the NEXT line, or an inline
+     * "إعداد: Sara Ahmad". Taking $body[0] made the label the description, so
+     * every listing card read "اعداد" above two empty fields, and the detail
+     * page showed it twice - once as the summary, once as the body's first line.
+     *
+     * A bare label also consumes the line after it, which is its value. An
+     * inline one does not, because its value is on the same line.
+     *
+     * @param  list<string>  $paragraphs
+     */
+    private function summaryFrom(array $paragraphs): ?string
+    {
+        $previousWasBareLabel = false;
+
+        foreach ($paragraphs as $paragraph) {
+            if ($this->isBareFieldLabel($paragraph)) {
+                $previousWasBareLabel = true;
+
+                continue;
+            }
+
+            if ($this->isInlineFieldLine($paragraph)) {
+                $previousWasBareLabel = false;
+
+                continue;
+            }
+
+            if ($previousWasBareLabel) {
+                $previousWasBareLabel = false;
+
+                continue;
+            }
+
+            return Str::limit($paragraph, 240, '');
+        }
+
+        return null;
+    }
+
+    /**
+     * A line holding nothing but one of the legacy body's field labels.
+     *
+     * Both alef spellings are accepted for the same reason the contributor
+     * patterns accept both: the legacy content writes اعداد and اشراف without
+     * the hamza, which is why none of this matched before.
+     */
+    private function isBareFieldLabel(string $paragraph): bool
+    {
+        $paragraph = trim($paragraph);
+
+        return $paragraph === ''
+            || preg_match('/^'.self::FIELD_LABELS.'\s*[:：]?\s*$/iu', $paragraph) === 1;
+    }
+
+    /**
+     * A label and its value on one line. A colon is required: without it,
+     * "الفريق قام بتطوير النظام" is a sentence about the team rather than a
+     * field, and is exactly the kind of line that should become the summary.
+     */
+    private function isInlineFieldLine(string $paragraph): bool
+    {
+        return preg_match('/^'.self::FIELD_LABELS.'\s*[:：]\s*\S/iu', trim($paragraph)) === 1;
     }
 }
