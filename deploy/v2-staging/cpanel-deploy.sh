@@ -115,10 +115,19 @@ BACKUP_REFERENCE="${SPU_DATABASE_BACKUP_REFERENCE:-$(env_value SPU_DATABASE_BACK
 #
 # This runs BEFORE the maintenance window and BEFORE any file is synced, so
 # every failure path here leaves the running site exactly as it was.
+# Re-dumps when the only reference present is one of ours from an earlier
+# deploy. The first version of this ran solely on an empty reference, which meant
+# it took exactly one backup ever: the value it wrote then satisfied the gate
+# forever and every later release migrated against a dump from whenever this
+# first ran. "A new backup and reference for every migration release" is the
+# whole point, so an auto- reference is treated as spent.
+#
+# An operator-supplied reference never matches this pattern and is still never
+# touched - a human who took a backup and wrote its name here keeps that name.
 if [[ "${SPU_DEPLOY_ENV:-staging}" == "production" || "${APP_ENV_VALUE}" == "production" ]] \
-   && [[ -z "${BACKUP_REFERENCE}" ]]; then
+   && [[ -z "${BACKUP_REFERENCE}" || "${BACKUP_REFERENCE}" == auto-mysqldump-* ]]; then
 
-    log "No backup reference present; taking a pre-migration database dump"
+    log "Taking a pre-migration database dump"
 
     command -v mysqldump >/dev/null 2>&1 \
         || fail "mysqldump is not on PATH, so no pre-migration backup can be taken and this release cannot proceed. Take a cPanel database backup by hand and set SPU_DATABASE_BACKUP_REFERENCE in ${APP}/.env."
@@ -328,6 +337,86 @@ rm -rf "${APP}/bootstrap/cache/filament"
 # ── Schema ───────────────────────────────────────────────────────────────────
 log "Running migrations"
 (cd "${APP}" && "${PHP}" artisan migrate --force --no-interaction)
+
+# ── Approved legacy faculty-project import ───────────────────────────────────
+# Runs an editorially approved one-off import that otherwise needs a shell, and
+# this account has none: UAPI reports no SSH module, so there is no terminal on
+# this host for anyone.
+#
+# This is deliberately NOT a general way to run commands here. REM-07 forbids an
+# execution bridge, and it means a surface that runs whatever it is handed. This
+# runs one hardcoded command, against one hardcoded expected result, and refuses
+# everything else. Three things keep it on the right side of that line:
+#
+#   1. It is inert unless a human places an approval file that is not in git and
+#      cannot be created by a deploy. No file, no import, silently.
+#   2. The dump's sha256 must match the one recorded in that approval file, so
+#      the bytes imported are provably the bytes that were approved.
+#   3. The dry run must report the approved manifest EXACTLY. Any other number -
+#      more, fewer, a faculty off by one - fails the deploy before anything is
+#      written.
+#
+# It disarms itself after a successful write, so a redeploy cannot run it twice.
+#
+# Placed after migrate because it needs the schema, and before the cache, search
+# and sitemap steps below - which are exactly the post-import commands the
+# runbook asks to be run afterwards, so they pick the new records up.
+IMPORT_DIR="${APP}/storage/app/private/legacy-imports"
+IMPORT_APPROVAL="${IMPORT_DIR}/faculty-projects.approved"
+
+if [[ -f "${IMPORT_APPROVAL}" ]]; then
+    log "Approved faculty-project import found"
+
+    IMPORT_TOKEN="$(grep -E '^token=' "${IMPORT_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r')"
+    IMPORT_DUMP="${IMPORT_DIR}/$(grep -E '^dump=' "${IMPORT_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r')"
+    IMPORT_SHA="$(grep -E '^sha256=' "${IMPORT_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r')"
+
+    [[ -n "${IMPORT_TOKEN}" ]] || fail "The approval file has no token= line."
+    [[ -f "${IMPORT_DUMP}" ]]  || fail "The approval file names a dump that is not present: ${IMPORT_DUMP}"
+    [[ -n "${IMPORT_SHA}" ]]   || fail "The approval file has no sha256= line, so the dump cannot be proven to be the approved one."
+
+    ACTUAL_SHA="$(sha256sum "${IMPORT_DUMP}" | cut -d' ' -f1)"
+    [[ "${ACTUAL_SHA}" == "${IMPORT_SHA}" ]] || fail \
+        "The dump at ${IMPORT_DUMP} does not match the approved sha256. Approved ${IMPORT_SHA}, found ${ACTUAL_SHA}. Refusing to import content nobody approved."
+
+    log "Faculty-project import: dry run"
+    IMPORT_DRY="$(cd "${APP}" && "${PHP}" artisan legacy-import:faculty-projects "${IMPORT_DUMP}" --json)" \
+        || fail "The faculty-project dry run failed. Nothing was written."
+    printf '%s\n' "${IMPORT_DRY}"
+
+    # Compared against the approved manifest with a parser rather than a grep:
+    # prose output changes, and a check that silently stops matching is worse
+    # than no check.
+    printf '%s' "${IMPORT_DRY}" | "${PHP}" -r '
+        $expected = ["total" => 492, "medicine" => 91, "dentistry" => 8, "pharmacy" => 123,
+                     "artificial-intelligence" => 98, "petroleum" => 60, "business-administration" => 112];
+        $raw = stream_get_contents(STDIN);
+        $json = json_decode($raw, true);
+        if (! is_array($json)) { fwrite(STDERR, "dry-run output was not JSON\n"); exit(1); }
+        $flat = [];
+        array_walk_recursive($json, function ($v, $k) use (&$flat) { $flat[strtolower((string) $k)] = $v; });
+        foreach ($expected as $key => $want) {
+            $got = $flat[$key] ?? null;
+            if ((int) $got !== $want) {
+                fwrite(STDERR, sprintf("manifest mismatch: %s expected %d, dry run reported %s\n", $key, $want, var_export($got, true)));
+                exit(1);
+            }
+        }
+        fwrite(STDOUT, "  dry run matches the approved manifest exactly\n");
+    ' || fail "The dry run does not match the approved 2026-08-27 manifest. The dump, the data, or the approval is not what it should be. Nothing was written."
+
+    log "Faculty-project import: write"
+    IMPORT_WRITE="$(cd "${APP}" && "${PHP}" artisan legacy-import:faculty-projects "${IMPORT_DUMP}" \
+        --write --approve="${IMPORT_TOKEN}" --enable-visible --verify-media --json)" \
+        || fail "The faculty-project write failed. Restore the pre-deployment dump named by SPU_DATABASE_BACKUP_REFERENCE before retrying."
+    printf '%s\n' "${IMPORT_WRITE}"
+
+    # Disarm before anything else can fail: a half-finished deploy must not
+    # leave an armed import behind for the next one to run again.
+    mv "${IMPORT_APPROVAL}" "${IMPORT_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+    rm -f "${IMPORT_DUMP}"
+    printf '  approval consumed and dump removed\n'
+fi
 
 # ── Deterministic redirect data ──────────────────────────────────────────────
 # Redirect rules are config that happens to live in a table, not editorial
