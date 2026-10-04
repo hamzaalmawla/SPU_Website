@@ -402,11 +402,38 @@ if [[ -f "${NEWS_PUBLISH}" ]]; then
     [[ -n "${NEWS_ACTOR}" ]] || fail "The news publication file has no actor= line."
     [[ -n "${NEWS_TOKEN}" ]] || fail "The news publication file has no token= line."
 
-    # Source IDs, one per line, from the review output the operator approved.
-    NEWS_IDS="$(grep -E '^id=' "${NEWS_PUBLISH}" | cut -d= -f2- | tr -d '\r' | tr -d ' ' | grep -E '^[0-9]+$' || true)"
+    # Source IDs come either as explicit id= lines, or - with ids=eligible - from
+    # the news import log, letting the publication service decide what may go
+    # live rather than deciding here.
+    #
+    # That is not a way around the gate, it is the gate. blockReason() refuses an
+    # article with incomplete Arabic, with no Arabic SEO, with an English
+    # translation but no English SEO, in the wrong publication state, or without
+    # import provenance. Handing it every id and keeping what it accepts is
+    # exactly the check it was written to perform - and it reports the reasons it
+    # refused, which an operator picking ids by hand would never see.
+    #
+    # Missing English is deliberately NOT one of those reasons: the service
+    # permits Arabic-only articles, and only requires English SEO when an English
+    # translation exists.
+    NEWS_IDS_MODE="$(grep -E '^ids=' "${NEWS_PUBLISH}" | head -n 1 | cut -d= -f2- | tr -d '\r' | tr -d ' ')"
+
+    if [[ "${NEWS_IDS_MODE}" == "eligible" ]]; then
+        NEWS_IDS="$(cd "${APP}" && "${PHP}" artisan tinker --execute='
+            echo \DB::table("migration_logs")
+                ->where("module", "news")
+                ->where("status", "success")
+                ->orderBy("source_id")
+                ->pluck("source_id")
+                ->implode("\n");
+        ' 2>/dev/null | grep -E '^[0-9]+$' || true)"
+    else
+        NEWS_IDS="$(grep -E '^id=' "${NEWS_PUBLISH}" | cut -d= -f2- | tr -d '\r' | tr -d ' ' | grep -E '^[0-9]+$' || true)"
+    fi
+
     NEWS_COUNT="$(printf '%s\n' "${NEWS_IDS}" | grep -c . || true)"
-    [[ "${NEWS_COUNT}" -gt 0 ]] || fail "The news publication file lists no id= lines."
-    printf '  %s article(s) approved for publication\n' "${NEWS_COUNT}"
+    [[ "${NEWS_COUNT}" -gt 0 ]] || fail "The news publication file yielded no source ids."
+    printf '  %s article(s) offered to the publication service\n' "${NEWS_COUNT}"
 
     NEWS_DONE=0
     NEWS_FAILED=0
