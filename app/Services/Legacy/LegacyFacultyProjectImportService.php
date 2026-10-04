@@ -24,7 +24,29 @@ use RuntimeException;
 
 final class LegacyFacultyProjectImportService implements LegacyFacultyProjectImportServiceInterface
 {
-    private const APPROVAL_TOKEN = 'faculty-projects-20260827';
+    /**
+     * Tokens that authorise a write, one per editorial approval.
+     *
+     * A token names a specific review of a specific set of records, which is
+     * why a second approval gets a second token rather than reusing the first.
+     * Sharing one would make the audit trail claim a review that never covered
+     * the records actually imported.
+     *
+     * - faculty-projects-20260827: the original review. 492 projects, measured
+     *   against the production dump taken that day.
+     * - faculty-projects-20261004-live500: 500 projects read from the live
+     *   legacy database on 2026-10-04, after the 2026-08-27 dump could not be
+     *   produced by anyone and the surviving copies turned out to be from
+     *   2026-07-28 and 19 projects short. Five of the six faculties and the
+     *   count of source-hidden projects matched the original approval exactly;
+     *   the difference was 8 medicine projects added since.
+     *
+     * @var list<string>
+     */
+    private const APPROVAL_TOKENS = [
+        'faculty-projects-20260827',
+        'faculty-projects-20261004-live500',
+    ];
 
     private const LEGACY_BASE_URL = 'https://www.spu.edu.sy';
 
@@ -55,8 +77,10 @@ final class LegacyFacultyProjectImportService implements LegacyFacultyProjectImp
         bool $enableVisible = false,
         bool $verifyMedia = false,
     ): LegacyFacultyProjectImportResultDTO {
-        if ($write && $approval !== self::APPROVAL_TOKEN) {
-            throw new InvalidArgumentException('Importing faculty projects requires --approve='.self::APPROVAL_TOKEN.'.');
+        if ($write && ! in_array($approval, self::APPROVAL_TOKENS, true)) {
+            throw new InvalidArgumentException(
+                'Importing faculty projects requires --approve= with one of: '.implode(', ', self::APPROVAL_TOKENS).'.'
+            );
         }
 
         $resolvedPath = $this->resolvedDumpPath($dumpPath);

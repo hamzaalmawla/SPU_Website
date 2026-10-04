@@ -537,9 +537,20 @@ if [[ -f "${IMPORT_APPROVAL}" ]]; then
     ' || fail "The dry run does not match the approved 2026-08-27 manifest. The dump, the data, or the approval is not what it should be. Nothing was written."
 
     log "Faculty-project import: write"
-    IMPORT_WRITE="$(cd "${APP}" && "${PHP}" artisan legacy-import:faculty-projects "${IMPORT_DUMP}" \
-        --write --approve="${IMPORT_TOKEN}" --enable-visible --verify-media --json)" \
-        || fail "The faculty-project write failed. Restore the pre-deployment dump named by SPU_DATABASE_BACKUP_REFERENCE before retrying."
+    # Output is captured so it can be recorded, but a failure must still SHOW
+    # why: deploy #66 failed here and printed nothing at all, because the
+    # message explaining it went into this variable and was then discarded.
+    IMPORT_WRITE_LOG="${IMPORT_DIR}/.write-output.$$"
+    if ! (cd "${APP}" && "${PHP}" artisan legacy-import:faculty-projects "${IMPORT_DUMP}" \
+            --write --approve="${IMPORT_TOKEN}" --enable-visible --verify-media --json) \
+            > "${IMPORT_WRITE_LOG}" 2>&1; then
+        printf '\n--- write output ---\n' >&2
+        cat "${IMPORT_WRITE_LOG}" >&2
+        rm -f "${IMPORT_WRITE_LOG}"
+        fail "The faculty-project write failed; its output is above. Nothing was committed by this step. If rows were partially written, restore the pre-deployment dump named by SPU_DATABASE_BACKUP_REFERENCE."
+    fi
+    IMPORT_WRITE="$(cat "${IMPORT_WRITE_LOG}")"
+    rm -f "${IMPORT_WRITE_LOG}"
     printf '%s\n' "${IMPORT_WRITE}"
 
     # Disarm before anything else can fail: a half-finished deploy must not
