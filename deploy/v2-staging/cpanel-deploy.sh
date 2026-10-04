@@ -363,6 +363,67 @@ log "Running migrations"
 # runbook asks to be run afterwards, so they pick the new records up.
 IMPORT_DIR="${APP}/storage/app/private/legacy-imports"
 IMPORT_APPROVAL="${IMPORT_DIR}/faculty-projects.approved"
+IMPORT_SURVEY="${IMPORT_DIR}/faculty-projects.survey"
+
+# ── Faculty-project survey (read-only) ───────────────────────────────────────
+# Answers one question and changes nothing: how many importable projects does
+# the legacy database hold RIGHT NOW, broken down by faculty.
+#
+# It exists because the approved manifest was measured against a dump taken on
+# 2026-08-27 which nobody can now find. The copies that turned up are from
+# 2026-07-28 and hold 473 projects, not 492 - so importing them would silently
+# drop 19 and would stamp the 20260827 approval on content it was never granted
+# for. Rather than guess, this reads the live legacy database and reports what
+# is actually there, so the editorial decision is made against real numbers.
+#
+# Strictly read-only on both sides: it connects with OLD_DB_USERNAME, the
+# SELECT-only legacy user, and runs the importer WITHOUT --write. No row in
+# either database is created, changed or deleted.
+#
+# Like the import, it is inert unless a human places the marker file, and it
+# removes that marker afterwards so it runs once rather than on every deploy.
+if [[ -f "${IMPORT_SURVEY}" ]]; then
+    log "Faculty-project survey (read-only; nothing will be written)"
+
+    command -v mysqldump >/dev/null 2>&1 || fail "mysqldump is not on PATH; cannot survey the legacy database."
+
+    OLD_DB_NAME="$(env_value OLD_DB_DATABASE)"
+    OLD_DB_USER="$(env_value OLD_DB_USERNAME)"
+    OLD_DB_PASS="$(env_value OLD_DB_PASSWORD)"
+    OLD_DB_HOST_V="$(env_value OLD_DB_HOST)"
+    [[ -n "${OLD_DB_NAME}" && -n "${OLD_DB_USER}" ]] \
+        || fail "OLD_DB_DATABASE or OLD_DB_USERNAME is missing from ${APP}/.env; cannot survey the legacy database."
+
+    SURVEY_CNF="$(umask 077 && mktemp "${IMPORT_DIR}/.mysurvey.XXXXXX")"
+    SURVEY_DUMP="${IMPORT_DIR}/legacy-survey-$(date -u +%Y%m%d-%H%M%S).sql"
+    cleanup_survey() { rm -f "${SURVEY_CNF}" "${SURVEY_DUMP}"; }
+    trap cleanup_survey EXIT
+    {
+        printf '[mysqldump]\n'
+        printf 'user=%s\n' "${OLD_DB_USER}"
+        printf 'password=%s\n' "${OLD_DB_PASS}"
+        [[ -n "${OLD_DB_HOST_V}" ]] && printf 'host=%s\n' "${OLD_DB_HOST_V}"
+    } > "${SURVEY_CNF}"
+
+    # Only the two tables the importer reads. The rest of the legacy database is
+    # 225 MB of content this does not need and should not copy.
+    ( umask 077 && mysqldump --defaults-extra-file="${SURVEY_CNF}" \
+        --single-transaction --quick --no-create-info=false \
+        --default-character-set=utf8mb4 \
+        "${OLD_DB_NAME}" jx_categories jx_items > "${SURVEY_DUMP}" ) \
+        || fail "Could not read the legacy database for the survey. Nothing was changed."
+
+    printf '  dumped jx_categories + jx_items (%s)\n' "$(du -h "${SURVEY_DUMP}" | cut -f1)"
+
+    log "Faculty-project survey: dry run against the CURRENT legacy data"
+    (cd "${APP}" && "${PHP}" artisan legacy-import:faculty-projects "${SURVEY_DUMP}" --json) \
+        || printf '\n  survey dry run reported a problem; see the output above\n' >&2
+
+    cleanup_survey
+    trap - EXIT
+    mv "${IMPORT_SURVEY}" "${IMPORT_SURVEY}.done-$(date -u +%Y%m%d-%H%M%S)"
+    printf '  survey complete; nothing was written\n'
+fi
 
 if [[ -f "${IMPORT_APPROVAL}" ]]; then
     log "Approved faculty-project import found"
@@ -387,9 +448,23 @@ if [[ -f "${IMPORT_APPROVAL}" ]]; then
     # Compared against the approved manifest with a parser rather than a grep:
     # prose output changes, and a check that silently stops matching is worse
     # than no check.
-    printf '%s' "${IMPORT_DRY}" | "${PHP}" -r '
+    # The expected counts come from the approval file when it carries them, and
+    # fall back to the 2026-08-27 manifest otherwise. Either way a human chose
+    # them: the file is placed by hand and cannot be written by a deploy. This
+    # matters because the 2026-08-27 dump may never be found, and a later
+    # editorial decision against a different, known set must be enforceable with
+    # the same rigour rather than by loosening the check.
+    IMPORT_EXPECT="$(grep -E '^expect_' "${IMPORT_APPROVAL}" | tr -d '\r' | tr '\n' ';')"
+
+    printf '%s' "${IMPORT_DRY}" | IMPORT_EXPECT="${IMPORT_EXPECT}" "${PHP}" -r '
         $expected = ["total" => 492, "medicine" => 91, "dentistry" => 8, "pharmacy" => 123,
                      "artificial-intelligence" => 98, "petroleum" => 60, "business-administration" => 112];
+        foreach (array_filter(explode(";", (string) getenv("IMPORT_EXPECT"))) as $pair) {
+            if (! str_contains($pair, "=")) { continue; }
+            [$k, $v] = explode("=", $pair, 2);
+            $k = strtolower(trim(substr(trim($k), strlen("expect_"))));
+            if ($k !== "" && is_numeric(trim($v))) { $expected[$k] = (int) trim($v); }
+        }
         $raw = stream_get_contents(STDIN);
         $json = json_decode($raw, true);
         if (! is_array($json)) { fwrite(STDERR, "dry-run output was not JSON\n"); exit(1); }
