@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Contracts\Legacy\LegacyFacultyProjectImportServiceInterface;
 use App\Models\Faculty\Faculty;
 use App\Models\Faculty\FacultyStudentProject;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -150,5 +151,44 @@ SQL;
         } finally {
             @unlink($dump);
         }
+    }
+
+    /**
+     * Legacy bodies write the labels without the hamza - اعداد, not إعداد - and
+     * put the value on the following line. Matching only the hamza spelling left
+     * every team and supervisor empty and promoted the bare label to the
+     * description, which is what shipped: cards reading "اعداد" above two blank
+     * fields.
+     */
+    public function test_contributor_labels_are_read_with_or_without_the_hamza(): void
+    {
+        $service = app(LegacyFacultyProjectImportServiceInterface::class);
+
+        $contributors = new \ReflectionMethod($service, 'contributors');
+        $contributors->setAccessible(true);
+        $summaryFrom = new \ReflectionMethod($service, 'summaryFrom');
+        $summaryFrom->setAccessible(true);
+
+        // Exactly the shape reported from the live site.
+        $body = ['اعداد', 'Owais hilal', 'تاريخ', '2025-2026', 'نظام امتحانات ذكي يعتمد على الذكاء الاصطناعي.'];
+
+        $result = $contributors->invoke($service, $body, 'SPU admission chatbot');
+        self::assertSame('Owais hilal', $result['team'], 'A label written with a plain alef must still be read');
+
+        self::assertSame(
+            'نظام امتحانات ذكي يعتمد على الذكاء الاصطناعي.',
+            $summaryFrom->invoke($service, $body),
+            'The description must be the first real sentence, not a field label',
+        );
+
+        // The hamza spelling must keep working.
+        $hamza = ['إعداد: Sara Ahmad', 'إشراف: Dr. Noor', 'وصف المشروع.'];
+        $result = $contributors->invoke($service, $hamza, 'x');
+        self::assertSame('Sara Ahmad', $result['team']);
+        self::assertSame('Dr. Noor', $result['supervisor']);
+        self::assertSame('وصف المشروع.', $summaryFrom->invoke($service, $hamza));
+
+        // A project with nothing but labels has no description rather than a bogus one.
+        self::assertNull($summaryFrom->invoke($service, ['اعداد', 'تاريخ']));
     }
 }
