@@ -337,6 +337,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
         }
 
         if ($subpageSlug === 'projects') {
+            $items = $this->filteredProjectItems($items, $filters);
             [$items, $pagination] = $this->paginatedItems($items, $filters, self::FACULTY_LIST_PER_PAGE);
         }
 
@@ -1379,7 +1380,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
 
         return match ($subpageSlug) {
             'alumni', 'valedictorians' => $this->studentListFilters($filters),
-            'projects' => $this->paginationFilters($filters),
+            'projects' => $this->projectFilters($filters),
             'labs' => $this->labFilters($filters),
             'research' => $this->researchFilters($filters),
             'study-plan', 'study-plan-course' => $this->studyPlanFilters($filters, $subpageSlug === 'study-plan-course'),
@@ -1418,6 +1419,15 @@ final class FacultyPageService implements FacultyPageServiceInterface
     private function paginationFilters(array $filters): array
     {
         return ['page' => max(1, min(500, (int) $this->filterString($filters['page'] ?? 1)))];
+    }
+
+    /** @param array<string, mixed> $filters @return array{q: string, page: int} */
+    private function projectFilters(array $filters): array
+    {
+        return [
+            'q' => mb_substr($this->filterString($filters['q'] ?? $filters['search'] ?? ''), 0, 120),
+            ...$this->paginationFilters($filters),
+        ];
     }
 
     /** @param array<string, mixed> $filters @return array{lab: string, page: int} */
@@ -1482,6 +1492,33 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 }
 
                 return $filters['academic_phase'] === '' || (string) ($item['academicPhase'] ?? '') === (string) $filters['academic_phase'];
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $items
+     * @param array<string, mixed> $filters
+     * @return array<int, array<string, mixed>>
+     */
+    private function filteredProjectItems(array $items, array $filters): array
+    {
+        $query = mb_strtolower(trim((string) ($filters['q'] ?? '')));
+
+        if ($query === '') {
+            return $items;
+        }
+
+        return collect($items)
+            ->filter(function (array $item) use ($query): bool {
+                $searchable = mb_strtolower(implode(' ', [
+                    (string) ($item['title'] ?? ''),
+                    (string) ($item['team'] ?? ''),
+                    (string) ($item['supervisor'] ?? ''),
+                ]));
+
+                return str_contains($searchable, $query);
             })
             ->values()
             ->all();

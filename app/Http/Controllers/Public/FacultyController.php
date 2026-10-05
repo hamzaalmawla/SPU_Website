@@ -57,7 +57,8 @@ final class FacultyController extends Controller
         abort_if($page === null, 404);
         $query = match ($page->subpageSlug) {
             'alumni', 'valedictorians' => $this->studentDirectoryQuery($request, $page),
-            'projects', 'research' => $this->paginationQuery($request, $page),
+            'projects' => $this->projectSearchQuery($request, $page),
+            'research' => $this->paginationQuery($request, $page),
             'labs' => $this->labQuery($request, $page),
             default => [],
         };
@@ -270,6 +271,19 @@ final class FacultyController extends Controller
         $query = is_array($selectedLab) && is_string($selectedLab['slug'] ?? null)
             ? ['lab' => $selectedLab['slug']]
             : [];
+
+        return [...$query, ...$this->paginationQuery($request, $page)];
+    }
+
+    /** @return array<string, int|string> */
+    private function projectSearchQuery(Request $request, FacultySubpageDTO $page): array
+    {
+        $query = [];
+        $search = (string) ($page->filters['q'] ?? '');
+
+        if ($search !== '') {
+            $query['q'] = $search;
+        }
 
         return [...$query, ...$this->paginationQuery($request, $page)];
     }

@@ -312,6 +312,18 @@
     @elseif ($page->subpageSlug === 'projects')
         <section class="bg-white py-16 font-hacen md:py-20">
             <div class="container">
+                <form method="GET" action="{{ $studentListUrl }}" class="mb-8 flex flex-wrap items-center gap-4">
+                    <input type="search" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="{{ $isAr ? 'ابحث باسم المشروع أو عضو الفريق...' : 'Search by project or team member name...' }}" class="h-9 w-full min-w-0 rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue sm:w-auto sm:min-w-[280px]">
+                    <button type="submit" class="inline-flex h-9 items-center justify-center rounded-[6px] bg-spu-red px-4 text-[11px] font-bold uppercase tracking-[0.08em] text-white transition-colors hover:bg-spu-blue">{{ $isAr ? 'بحث' : 'Search' }}</button>
+                    @if (($filters['q'] ?? '') !== '')
+                        <a href="{{ $studentListUrl }}" class="inline-flex h-9 items-center justify-center rounded-[6px] border border-slate-200 px-4 text-[11px] font-bold uppercase tracking-[0.08em] text-spu-blue transition-colors hover:border-spu-blue">{{ $isAr ? 'الكل' : 'All' }}</a>
+                    @endif
+                </form>
+
+                <p class="mb-5 text-[12px] font-semibold text-slate-500">
+                    {{ $isAr ? 'عرض' : 'Showing' }} {{ $pagination['from'] ?? 0 }}-{{ $pagination['to'] ?? 0 }} {{ $isAr ? 'من' : 'of' }} {{ $pagination['total_items'] ?? count($page->items) }}
+                </p>
+
                 <div class="cms-grid-wide gap-7">
                     @forelse ($page->items as $item)
                         <article id="{{ $item['slug'] ?? 'project-'.$loop->iteration }}" class="overflow-hidden rounded-[6px] border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-md">
