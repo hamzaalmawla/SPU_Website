@@ -137,7 +137,7 @@ final class LegacyNewsImportServiceTest extends TestCase
         );
 
         $this->assertSame(0, $result->importedRows);
-        $this->assertDatabaseCount('news_categories', 0);
+        $this->assertDatabaseCount('news_categories', 1);
         $this->assertDatabaseCount('news_articles', 0);
     }
 

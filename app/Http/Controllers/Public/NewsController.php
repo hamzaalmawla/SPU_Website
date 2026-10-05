@@ -246,7 +246,12 @@ final class NewsController extends Controller
     public function redirectLegacyArticle(Request $request, string $locale): RedirectResponse
     {
         $identifier = $request->query('id');
-        abort_unless(is_string($identifier) && trim($identifier) !== '', 404);
+
+        // Same as the project alias: /news/article/index.html lands here with no
+        // id, and the news index answers the question the visitor was asking.
+        if (! is_string($identifier) || trim($identifier) === '') {
+            return redirect()->route('public.news.index', ['locale' => $locale], 301);
+        }
 
         $article = $this->newsService->getPublicArticle(trim($identifier), $locale);
         abort_if($article === null, 404);

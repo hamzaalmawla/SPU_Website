@@ -53,7 +53,7 @@ final class AchievementService implements AchievementServiceInterface
         $query = $this->publicQuery()
             ->when($selected !== [], function (Builder $query) use ($selected): void {
                 $query->whereHas('categories', fn (Builder $categoryQuery): Builder => $categoryQuery
-                    ->active()
+                    ->where('is_active', true)
                     ->whereIn('slug', $selected));
             })
             ->orderByDesc('published_at')
@@ -99,7 +99,7 @@ final class AchievementService implements AchievementServiceInterface
         return new AchievementCardDTO(
             id: (int) $achievement->getKey(),
             title: (string) ($translation?->title ?? ''),
-            typeTag: $categories[0]->name ?? null,
+            typeTag: ($categories[0] ?? null)?->name,
             summary: $translation?->summary,
             image: $image,
             meta: $translation?->meta,

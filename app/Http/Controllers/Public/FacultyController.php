@@ -126,7 +126,13 @@ final class FacultyController extends Controller
     public function redirectLegacyProject(Request $request, string $locale): RedirectResponse
     {
         $projectId = $request->query('id');
-        abort_unless(is_string($projectId) && trim($projectId) !== '', 404);
+
+        // Reached without an id from /projects/detail/index.html, which is a
+        // reference alias people and crawlers still follow. The listing is a
+        // better answer than a 404 for a URL that is only ever a stepping stone.
+        if (! is_string($projectId) || trim($projectId) === '') {
+            return redirect()->route('public.research.projects.index', ['locale' => $locale], 301);
+        }
 
         $target = $this->facultyPageService->resolveLegacyProjectUrl(trim($projectId), $locale);
         abort_if($target === null, 404);

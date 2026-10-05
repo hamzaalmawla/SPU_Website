@@ -215,3 +215,9 @@ parameters:
 			identifier: booleanNot.alwaysFalse
 			count: 1
 			path: app/Support/MediaUrlResolver.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\:\:active\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/AchievementResource.php

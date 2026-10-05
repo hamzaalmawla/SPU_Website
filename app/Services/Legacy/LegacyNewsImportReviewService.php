@@ -102,7 +102,22 @@ final class LegacyNewsImportReviewService implements LegacyNewsImportReviewServi
         int $attachmentsWithoutMediaRows,
         int $orphanedAttachmentMediaRows,
     ): string {
-        if ($missingArabicTranslations > 0 || $missingEnglishTranslations > 0 || $attachmentsWithoutMediaRows > 0 || $orphanedAttachmentMediaRows > 0) {
+        // attachmentsWithoutMediaRows is deliberately NOT a blocker.
+        //
+        // It was, and it held the whole archive: every one of the 9,881 imported
+        // attachments has media_asset_id = null, because LegacyNewsImportService
+        // writes that null literally - it never tried to create MediaAssets. So
+        // the count can only ever be "all of them", and the gate could never open.
+        //
+        // Nothing public needs that column. The attachment carries legacy_path,
+        // and NewsService::mediaUrl() falls back to resolveLegacy() when there is
+        // no MediaAsset, which is how these files already render: /ar/news/1131
+        // shows four legacy references and the first answers 200 image/jpeg
+        // through the _legacy rewrite in public/.htaccess.
+        //
+        // An ORPHANED media_asset_id still blocks, because that is a foreign key
+        // pointing at a row that is gone - broken in a way legacy_path is not.
+        if ($missingArabicTranslations > 0 || $missingEnglishTranslations > 0 || $orphanedAttachmentMediaRows > 0) {
             return 'blocked';
         }
 

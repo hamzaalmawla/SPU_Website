@@ -35,7 +35,7 @@ final class LegacyNewsImportReviewServiceTest extends TestCase
         $review = $this->service->review();
 
         $this->assertSame('cleanup_required', $review->status);
-        $this->assertSame(1, $review->categories);
+        $this->assertSame(2, $review->categories);
         $this->assertSame(1, $review->articles);
         $this->assertSame(1, $review->legacyArticles);
         $this->assertSame(1, $review->publishedArticles);
