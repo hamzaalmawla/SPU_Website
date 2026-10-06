@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Support;
 
-use App\Contracts\News\NewsServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
-use App\DTOs\Content\ArticleCardDTO;
 use App\DTOs\Content\ResearchCardDTO;
 use App\Filament\Components\PageUrlSelect;
 use Filament\Forms\Components\Component;
@@ -50,32 +48,6 @@ final class HomepageFormSchema
     public static function selectionFieldsForSection(string $sectionKey, string $prefix): array
     {
         return match ($sectionKey) {
-            'university_news' => [
-                Section::make(__('admin.homepage_selection.news_heading'))
-                    ->description(__('admin.homepage_selection.news_help'))
-                    ->schema([
-                        Repeater::make("{$prefix}.article_ids")
-                            ->label(__('admin.homepage_selection.selected_news'))
-                            ->schema([
-                                Select::make('article_id')
-                                    ->label(__('admin.homepage_selection.news_article'))
-                                    ->options(fn (): array => [])
-                                    ->searchable()
-                                    ->preload(false)
-                                    ->required()
-                                    ->distinct()
-                                    ->disableOptionsWhenSelectedInSiblingRepeaterItems()
-                                    ->getSearchResultsUsing(fn (string $search): array => self::newsOptions($search))
-                                    ->getOptionLabelUsing(fn (mixed $value): ?string => self::newsOptionLabel($value)),
-                            ])
-                            ->minItems(1)
-                            ->maxItems(8)
-                            ->defaultItems(0)
-                            ->reorderable()
-                            ->collapsible()
-                            ->itemLabel(fn (array $state): ?string => self::newsOptionLabel($state['article_id'] ?? null)),
-                    ]),
-            ],
             'research_studies' => [
                 Section::make(__('admin.homepage_selection.research_heading'))
                     ->description(__('admin.homepage_selection.research_help'))
@@ -293,18 +265,6 @@ final class HomepageFormSchema
                     ->maxLength(255),
                 ...self::sectionActionFields($prefix),
             ]),
-            Section::make("Society's Events")->schema([
-                TextInput::make("{$prefix}.content.society_title")
-                    ->label('Section Title')
-                    ->required()
-                    ->maxLength(255),
-                TextInput::make("{$prefix}.content.society_cta_label")
-                    ->label('Button Label')
-                    ->required()
-                    ->maxLength(100),
-                PageUrlSelect::make("{$prefix}.content.society_cta_url", 'Button URL', self::localeFromPrefix($prefix))
-                    ->required(),
-            ])->columns(3),
         ];
     }
 
@@ -319,26 +279,6 @@ final class HomepageFormSchema
                 ...self::sectionActionFields($prefix),
             ]),
         ];
-    }
-
-    /** @return array<int|string, string> */
-    private static function newsOptions(string $search): array
-    {
-        return app(NewsServiceInterface::class)
-            ->getHomepageArticleCards(app()->getLocale(), [], $search, 50)
-            ->mapWithKeys(fn (ArticleCardDTO $card): array => [$card->id => $card->title])
-            ->all();
-    }
-
-    private static function newsOptionLabel(mixed $value): ?string
-    {
-        if (! is_numeric($value)) {
-            return null;
-        }
-
-        return app(NewsServiceInterface::class)
-            ->getHomepageArticleCards(app()->getLocale(), [(int) $value], null, 1)
-            ->first()?->title;
     }
 
     /** @return array<string, string> */

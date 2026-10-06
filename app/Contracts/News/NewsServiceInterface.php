@@ -92,6 +92,9 @@ interface NewsServiceInterface
     /** @return Collection<int, ArticleCardDTO> */
     public function getLatestSocietyEventCards(string $locale, int $limit = 4): Collection;
 
+    /** @return Collection<int, ArticleCardDTO> */
+    public function getHomepageCategoryCards(string $locale): Collection;
+
     /** @param array<int, int> $articleIds @return Collection<int, ArticleCardDTO> */
     public function getHomepageArticleCards(string $locale, array $articleIds = [], ?string $search = null, int $limit = 50): Collection;
 

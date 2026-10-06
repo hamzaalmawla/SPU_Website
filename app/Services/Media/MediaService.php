@@ -63,7 +63,7 @@ final class MediaService implements MediaServiceInterface
         $this->fileValidator->validate($file);
 
         $checksum = hash_file('sha256', $file->getRealPath());
-        $originalName = $file->getClientOriginalName();
+        $originalName = $this->stringOrNull($payload['original_name'] ?? null) ?? $file->getClientOriginalName();
         $mimeType = $file->getMimeType() ?? 'application/octet-stream';
         $extension = $this->fileValidator->primaryExtensionForMime($mimeType);
         $mediaType = $this->mediaTypeForMime($mimeType);
@@ -121,6 +121,9 @@ final class MediaService implements MediaServiceInterface
             'metadata_status' => $this->metadataStatusForPayload($mediaType, $payload),
             'width' => $width,
             'height' => $height,
+            'focal_x' => $this->displayPercentage($payload['focal_x'] ?? 50, 'focal_x'),
+            'focal_y' => $this->displayPercentage($payload['focal_y'] ?? 50, 'focal_y'),
+            'display_fit' => $this->displayFit($payload['display_fit'] ?? 'cover'),
             'alt_text_ar' => $payload['alt_text_ar'] ?? null,
             'alt_text_en' => $payload['alt_text_en'] ?? null,
             'caption_ar' => $payload['caption_ar'] ?? null,
@@ -196,9 +199,19 @@ final class MediaService implements MediaServiceInterface
 
         $this->authorizeMediaWrite($userId, 'update', $asset);
 
-        $allowed = ['title_ar', 'title_en', 'alt_text_ar', 'alt_text_en', 'caption_ar', 'caption_en', 'metadata_status', 'faculty_scope_slug'];
+        $allowed = ['title_ar', 'title_en', 'alt_text_ar', 'alt_text_en', 'caption_ar', 'caption_en', 'metadata_status', 'faculty_scope_slug', 'focal_x', 'focal_y', 'display_fit'];
         $filtered = array_intersect_key($metadata, array_flip($allowed));
         $filtered = $this->filterAllowedMetadataScope($filtered, $asset, $userId);
+
+        if (array_key_exists('focal_x', $filtered)) {
+            $filtered['focal_x'] = $this->displayPercentage($filtered['focal_x'], 'focal_x');
+        }
+        if (array_key_exists('focal_y', $filtered)) {
+            $filtered['focal_y'] = $this->displayPercentage($filtered['focal_y'], 'focal_y');
+        }
+        if (array_key_exists('display_fit', $filtered)) {
+            $filtered['display_fit'] = $this->displayFit($filtered['display_fit']);
+        }
 
         if ($filtered === []) {
             return true;
@@ -234,6 +247,78 @@ final class MediaService implements MediaServiceInterface
         }
 
         return $updated;
+    }
+
+    public function replaceImage(int|string $mediaId, array $payload, int $userId): MediaUploadResultDTO
+    {
+        $asset = MediaAsset::query()->find($mediaId);
+        if (! $asset instanceof MediaAsset) {
+            throw ValidationException::withMessages(['replacement_file' => ['The media asset was not found.']]);
+        }
+
+        $this->authorizeMediaWrite($userId, 'update', $asset);
+        $file = $payload['file'] ?? null;
+        if (! $file instanceof UploadedFile) {
+            throw ValidationException::withMessages(['replacement_file' => ['A valid replacement image is required.']]);
+        }
+
+        $this->fileValidator->validate($file);
+        $mimeType = $file->getMimeType() ?? 'application/octet-stream';
+        if (! str_starts_with($mimeType, 'image/')) {
+            throw ValidationException::withMessages(['replacement_file' => ['Only images can replace an image asset.']]);
+        }
+
+        $checksum = hash_file('sha256', $file->getRealPath());
+        $extension = $this->fileValidator->primaryExtensionForMime($mimeType);
+        $directory = trim((string) ($asset->directory ?: $this->defaultDirectory('image')), '/');
+        $storedPath = $this->disk->putFileAs($directory, $file, substr($checksum, 0, 40).'.'.$extension);
+        if ($storedPath === false) {
+            throw ValidationException::withMessages(['replacement_file' => ['Failed to store the cropped image.']]);
+        }
+
+        $dimensions = $mimeType === 'image/svg+xml' ? false : @getimagesize($file->getRealPath());
+        $webp = $this->imageConversionService->convert($this->diskName, $storedPath, $mimeType);
+        $oldPath = $asset->path;
+        $oldWebpPath = $asset->webp_path;
+
+        $asset->forceFill([
+            'directory' => $directory,
+            'filename' => basename($storedPath),
+            'original_name' => $this->stringOrNull($payload['original_name'] ?? null) ?? $file->getClientOriginalName(),
+            'mime_type' => $mimeType,
+            'extension' => $extension,
+            'size_bytes' => $file->getSize() ?: 0,
+            'checksum' => $checksum,
+            'media_type' => 'image',
+            'width' => is_array($dimensions) ? $dimensions[0] : null,
+            'height' => is_array($dimensions) ? $dimensions[1] : null,
+            'path' => $storedPath,
+            'webp_path' => $webp?->path,
+            'srcset_json' => $webp !== null
+                ? [$webp->width.'w' => MediaUrlResolver::resolve($webp->path, $this->diskName)]
+                : null,
+        ])->save();
+
+        foreach (array_filter([$oldPath, $oldWebpPath]) as $oldFile) {
+            if ($oldFile === $asset->path || $oldFile === $asset->webp_path) {
+                continue;
+            }
+            $stillReferenced = MediaAsset::query()
+                ->whereKeyNot($asset->getKey())
+                ->where(fn (Builder $query): Builder => $query->where('path', $oldFile)->orWhere('webp_path', $oldFile))
+                ->exists();
+            if (! $stillReferenced) {
+                $this->disk->delete($oldFile);
+            }
+        }
+
+        $this->auditService->log('media.image_replaced', $userId, MediaAsset::class, (int) $asset->getKey(), [
+            'old_path' => $oldPath,
+            'new_path' => $storedPath,
+        ]);
+        $this->invalidatePublicMediaCache();
+
+        return $this->toDto($asset->refresh());
     }
 
     public function resolvePublicImages(array $mediaIds, string $locale): Collection
@@ -281,6 +366,9 @@ final class MediaService implements MediaServiceInterface
                     width: is_int($asset->width) ? $asset->width : null,
                     height: is_int($asset->height) ? $asset->height : null,
                     srcset: is_array($asset->srcset_json) ? $asset->srcset_json : [],
+                    focalX: (float) ($asset->focal_x ?? 50),
+                    focalY: (float) ($asset->focal_y ?? 50),
+                    displayFit: is_string($asset->display_fit) ? $asset->display_fit : 'cover',
                 ) : null;
             })
             ->filter(fn (mixed $asset): bool => $asset instanceof PublicMediaAssetDTO)
@@ -652,7 +740,7 @@ final class MediaService implements MediaServiceInterface
             $query->where('faculty_scope_slug', $filters['faculty_scope_slug']);
         }
 
-        $query->orderByDesc('created_at');
+        $query->orderByDesc('created_at')->orderByDesc('id');
 
         return $query;
     }
@@ -676,7 +764,28 @@ final class MediaService implements MediaServiceInterface
             metadataStatus: is_string($asset->metadata_status) ? $asset->metadata_status : 'missing',
             promotedFromMediaId: is_numeric($asset->promoted_from_media_id) ? (int) $asset->promoted_from_media_id : null,
             sourcePath: is_string($asset->source_path) ? $asset->source_path : null,
+            focalX: (float) ($asset->focal_x ?? 50),
+            focalY: (float) ($asset->focal_y ?? 50),
+            displayFit: is_string($asset->display_fit) ? $asset->display_fit : 'cover',
         );
+    }
+
+    private function displayPercentage(mixed $value, string $field): float
+    {
+        if (! is_numeric($value) || (float) $value < 0 || (float) $value > 100) {
+            throw ValidationException::withMessages([$field => ['The value must be between 0 and 100.']]);
+        }
+
+        return round((float) $value, 2);
+    }
+
+    private function displayFit(mixed $value): string
+    {
+        if (! is_string($value) || ! in_array($value, ['cover', 'contain'], true)) {
+            throw ValidationException::withMessages(['display_fit' => ['The display fit must be cover or contain.']]);
+        }
+
+        return $value;
     }
 
     private function findReusableAsset(string $checksum, int $userId, ?string $facultyScope): ?MediaAsset
@@ -784,6 +893,9 @@ final class MediaService implements MediaServiceInterface
             'alt_text_en' => $altTextEn,
             'caption_ar' => $this->stringOrNull($metadata['caption_ar'] ?? null) ?? $legacyAsset->caption_ar,
             'caption_en' => $this->stringOrNull($metadata['caption_en'] ?? null) ?? $legacyAsset->caption_en,
+            'focal_x' => $this->displayPercentage($metadata['focal_x'] ?? $legacyAsset->focal_x ?? 50, 'focal_x'),
+            'focal_y' => $this->displayPercentage($metadata['focal_y'] ?? $legacyAsset->focal_y ?? 50, 'focal_y'),
+            'display_fit' => $this->displayFit($metadata['display_fit'] ?? $legacyAsset->display_fit ?? 'cover'),
         ];
     }
 

@@ -14,7 +14,7 @@ final class DisablePlaceholderFacultyProjectsTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_it_disables_only_projects_without_a_legacy_source_id(): void
+    public function test_it_disables_only_explicit_demo_projects(): void
     {
         $faculty = Faculty::query()->create([
             'slug' => 'medicine',
@@ -39,6 +39,13 @@ final class DisablePlaceholderFacultyProjectsTest extends TestCase
             'is_enabled' => true,
             'sort_order' => 2,
         ]);
+        $editorial = FacultyStudentProject::query()->create([
+            'faculty_id' => $faculty->getKey(),
+            'slug' => 'it-team-capstone-project',
+            'legacy_source_id' => null,
+            'is_enabled' => true,
+            'sort_order' => 4,
+        ]);
 
         // An imported project the editors deliberately left disabled - one of the
         // 54 source-hidden ones - must not be switched on by down().
@@ -55,11 +62,13 @@ final class DisablePlaceholderFacultyProjectsTest extends TestCase
 
         self::assertFalse($demo->fresh()->is_enabled, 'A project with no legacy_source_id is placeholder data and must be hidden');
         self::assertTrue($imported->fresh()->is_enabled, 'An imported project must be left alone');
+        self::assertTrue($editorial->fresh()->is_enabled, 'An IT-authored project without a legacy ID must stay enabled');
         self::assertFalse($hiddenImport->fresh()->is_enabled, 'A deliberately hidden import must stay hidden');
 
         $migration->down();
 
         self::assertTrue($demo->fresh()->is_enabled, 'down() must restore exactly what up() disabled');
+        self::assertTrue($editorial->fresh()->is_enabled, 'down() must not alter editorial records');
         self::assertFalse($hiddenImport->fresh()->is_enabled, 'down() must not enable an import that was never ours to touch');
     }
 

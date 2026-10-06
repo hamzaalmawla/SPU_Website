@@ -12,7 +12,7 @@
     "src": "public/images/icon-chevron-down-outline.svg"
   },
   "resources/css/app.css": {
-    "file": "assets/app.C_YCsWyd.css",
+    "file": "assets/app.BxN9QzDB.css",
     "name": "app",
     "names": [
       "app.css"
@@ -26,7 +26,7 @@
     ]
   },
   "resources/css/filament/admin.css": {
-    "file": "assets/admin.zdwFUptj.css",
+    "file": "assets/admin.ByriPZ19.css",
     "name": "admin",
     "names": [
       "admin.css"
@@ -41,7 +41,7 @@
     "isEntry": true
   },
   "resources/js/filament/admin.js": {
-    "file": "js/admin.ByXivEUZ.js",
+    "file": "js/admin.4b5dcaVp.js",
     "name": "admin",
     "src": "resources/js/filament/admin.js",
     "isEntry": true

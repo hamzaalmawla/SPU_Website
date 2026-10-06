@@ -430,6 +430,32 @@ final class NewsService implements NewsServiceInterface
         }, 300);
     }
 
+    public function getHomepageCategoryCards(string $locale): Collection
+    {
+        $categorySlugs = ['news', 'announcements', 'agreements', 'society-events'];
+
+        return $this->newsCache()->remember('news:homepage-categories:'.$locale, function () use ($locale, $categorySlugs): Collection {
+            return collect($categorySlugs)
+                ->map(function (string $categorySlug) use ($locale): ?ArticleCardDTO {
+                    $query = NewsArticle::query()
+                        ->public()
+                        ->whereHas('category', fn (Builder $categoryQuery): Builder => $categoryQuery
+                            ->where('slug', $categorySlug)
+                            ->where('is_enabled', true))
+                        ->with($this->publicArticleCardRelations());
+                    $this->applyNewestArticleOrder($query);
+
+                    $article = $query->first();
+
+                    return $article instanceof NewsArticle
+                        ? $this->mapArticleCard($article, $locale)
+                        : null;
+                })
+                ->filter()
+                ->values();
+        }, 300);
+    }
+
     public function getHomepageArticleCards(string $locale, array $articleIds = [], ?string $search = null, int $limit = 50): Collection
     {
         $ids = array_values(array_unique(array_map(

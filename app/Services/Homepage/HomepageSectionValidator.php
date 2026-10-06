@@ -146,13 +146,6 @@ final class HomepageSectionValidator
                 'articles.*.categoryLabel' => ['required', 'string', 'max:120'],
                 'articles.*.badgeTag' => ['nullable', 'string', 'max:120'],
                 'articles.*.url' => ['required', 'string', $this->linkRule()],
-                'content.selectionMode' => ['nullable', Rule::in(['manual', 'fallback'])],
-                'content.selectedArticleIds' => ['nullable', 'array', 'min:1'],
-                'content.selectedArticleIds.*' => ['required', 'integer', 'distinct', 'min:1'],
-                'content.society_title' => ['required', 'string', 'max:255'],
-                'content.society_cta_label' => ['required', 'string', 'max:100'],
-                'content.society_cta_url' => ['required', 'string', $this->linkRule()],
-                'content.societyEventArticles' => ['nullable', 'array', 'max:4'],
             ],
             'research_studies' => [
                 'title' => ['required', 'string', 'max:255'],
@@ -280,9 +273,9 @@ final class HomepageSectionValidator
                 }
             }
 
-            if (in_array($key, ['university_news', 'research_studies'], true)) {
+            if ($key === 'research_studies') {
                 $selectionMode = $payload['content']['selectionMode'] ?? null;
-                $cardsKey = $key === 'university_news' ? 'articles' : 'researchItems';
+                $cardsKey = 'researchItems';
 
                 if ($selectionMode === 'manual') {
                     $sectionPayload = HomepagePayloadMapper::sectionDataFromArray($payload);

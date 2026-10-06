@@ -1,3 +1,5 @@
+import { createFocalPointPicker } from './focalPoint.js';
+
 function registerHighlightAttribute() {
     if (!window.Trix || window.Trix.config.textAttributes.highlight) {
         return;
@@ -33,3 +35,12 @@ function addHighlightButton(event) {
 registerHighlightAttribute();
 document.addEventListener('trix-before-initialize', registerHighlightAttribute);
 document.addEventListener('trix-initialize', addHighlightButton);
+
+function registerFocalPointPicker() {
+    if (window.Alpine) {
+        window.Alpine.data('spuFocalPointPicker', createFocalPointPicker);
+    }
+}
+
+document.addEventListener('alpine:init', registerFocalPointPicker, { once: true });
+registerFocalPointPicker();

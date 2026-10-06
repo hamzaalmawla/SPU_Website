@@ -6,6 +6,7 @@ namespace App\Filament\Support;
 
 use App\Contracts\Media\MediaServiceInterface;
 use App\DTOs\Media\MediaUploadResultDTO;
+use App\Filament\Components\FocalPointPicker;
 use App\Support\MediaUrlResolver;
 use Filament\Forms\Components\Actions\Action as FormAction;
 use Filament\Forms\Components\FileUpload;
@@ -14,6 +15,7 @@ use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\View;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Notifications\Notification;
@@ -150,6 +152,9 @@ final class MediaPicker
             ->icon('heroicon-o-photo')
             ->modalHeading(__('admin.media_picker.modal_heading'))
             ->form([
+                View::make('filament.forms.components.recent-media-cards')
+                    ->viewData(fn (): array => ['assets' => self::recentImages(), 'targetField' => 'media_id'])
+                    ->visible(self::isImageType($type)),
                 Select::make('media_id')
                     ->label(__('admin.media_picker.choose_existing'))
                     ->helperText(__('admin.media_picker.choose_existing_help'))
@@ -158,6 +163,10 @@ final class MediaPicker
                         if (is_numeric($state)) {
                             $set('legacy_media_id', null);
                             $set('file', null);
+                            $media = self::mediaResult((int) $state);
+                            $set('focal_x', $media?->focalX ?? 50);
+                            $set('focal_y', $media?->focalY ?? 50);
+                            $set('display_fit', $media?->displayFit ?? 'cover');
                         }
                     })
                     ->searchable()
@@ -196,6 +205,7 @@ final class MediaPicker
                     ->directory('media-tmp')
                     ->visibility('public')
                     ->acceptedFileTypes(self::acceptedFileTypes($type))
+                    ->orientImagesFromExif(self::isImageType($type))
                     ->maxSize(10240),
                 TextInput::make('title_ar')
                     ->label(__('admin.media_picker.title_ar'))
@@ -215,6 +225,19 @@ final class MediaPicker
                     ->maxLength(500)
                     ->visible(self::isImageType($type))
                     ->required(fn (Get $get): bool => self::isImageType($type) && self::requiresUploadOrPromotionMetadata($get) && ! self::filledString($get('alt_text_ar'))),
+                Hidden::make('display_fit')
+                    ->default('cover')
+                    ->visible(self::isImageType($type)),
+                FocalPointPicker::make('focal_x')
+                    ->label(__('admin.media_picker.focal_label'))
+                    ->imageUrl(fn (Get $get): ?string => self::pickerImageUrl($get))
+                    ->rules(['numeric', 'min:0', 'max:100'])
+                    ->default(50)
+                    ->visible(self::isImageType($type)),
+                Hidden::make('focal_y')
+                    ->rules(['numeric', 'min:0', 'max:100'])
+                    ->default(50)
+                    ->visible(self::isImageType($type)),
             ])
             ->action(function (array $data, Set $set) use ($statePath, $mediaIdPath, $type): void {
                 try {
@@ -232,6 +255,14 @@ final class MediaPicker
                         Notification::make()->title(__('admin.media_picker.selection_required'))->warning()->send();
 
                         return;
+                    }
+
+                    if (is_numeric($data['media_id'] ?? null) && self::isImageType($type)) {
+                        app(MediaServiceInterface::class)->updateMetadata($mediaId, [
+                            'focal_x' => $data['focal_x'] ?? 50,
+                            'focal_y' => $data['focal_y'] ?? 50,
+                            'display_fit' => $data['display_fit'] ?? 'cover',
+                        ], (int) auth()->id());
                     }
 
                     $url = self::selectedUrl($mediaId);
@@ -253,6 +284,9 @@ final class MediaPicker
     {
         return Grid::make(1)
             ->schema([
+                View::make('filament.forms.components.recent-media-cards')
+                    ->viewData(fn (): array => ['assets' => self::recentImages(), 'targetField' => $statePath])
+                    ->visible(self::isImageType($type)),
                 self::select($statePath, $label, $type)
                     ->required($required),
                 Placeholder::make($statePath.'_preview')
@@ -277,10 +311,12 @@ final class MediaPicker
                 FileUpload::make('file')
                     ->label(__('admin.media_picker.upload_device'))
                     ->required()
+                    ->live()
                     ->disk((string) config('filesystems.media_disk', 'public'))
                     ->directory('media-tmp')
                     ->visibility('public')
                     ->acceptedFileTypes(self::acceptedFileTypes($type))
+                    ->orientImagesFromExif(self::isImageType($type))
                     ->maxSize(10240),
                 TextInput::make('title_ar')
                     ->label(__('admin.media_picker.title_ar'))
@@ -300,6 +336,19 @@ final class MediaPicker
                     ->maxLength(500)
                     ->visible(self::isImageType($type))
                     ->required(fn (Get $get): bool => self::isImageType($type) && ! self::filledString($get('alt_text_ar'))),
+                Hidden::make('display_fit')
+                    ->default('cover')
+                    ->visible(self::isImageType($type)),
+                FocalPointPicker::make('focal_x')
+                    ->label(__('admin.media_picker.focal_label'))
+                    ->imageUrl(fn (Get $get): ?string => self::temporaryImageUrl($get('file')))
+                    ->rules(['numeric', 'min:0', 'max:100'])
+                    ->default(50)
+                    ->visible(self::isImageType($type)),
+                Hidden::make('focal_y')
+                    ->rules(['numeric', 'min:0', 'max:100'])
+                    ->default(50)
+                    ->visible(self::isImageType($type)),
             ])
             ->createOptionUsing(function (array $data) use ($type): int {
                 try {
@@ -313,6 +362,61 @@ final class MediaPicker
                 }
             })
             ->dehydrated(true);
+    }
+
+    /** @return list<array{id: int, url: string, label: string}> */
+    private static function recentImages(int $limit = 8): array
+    {
+        $userId = auth()->id();
+        if (! is_numeric($userId)) {
+            return [];
+        }
+
+        try {
+            return app(MediaServiceInterface::class)
+                ->listPaginated((int) $userId, ['library_scope' => 'main', 'mime_type' => 'image/'], 1, $limit)
+                ->items
+                ->filter(fn (mixed $media): bool => $media instanceof MediaUploadResultDTO)
+                ->map(fn (MediaUploadResultDTO $media): array => [
+                    'id' => $media->mediaId,
+                    'url' => $media->url,
+                    'label' => self::labelFor($media),
+                ])
+                ->values()
+                ->all();
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
+    private static function mediaResult(int|string $mediaId): ?MediaUploadResultDTO
+    {
+        $userId = auth()->id();
+        if (! is_numeric($userId)) {
+            return null;
+        }
+
+        try {
+            return app(MediaServiceInterface::class)->find($mediaId, (int) $userId);
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    private static function pickerImageUrl(Get $get): ?string
+    {
+        return self::temporaryImageUrl($get('file'))
+            ?? self::selectedUrl(is_numeric($get('media_id')) ? (int) $get('media_id') : null)
+            ?? self::selectedUrl(is_numeric($get('legacy_media_id')) ? (int) $get('legacy_media_id') : null);
+    }
+
+    private static function temporaryImageUrl(mixed $state): ?string
+    {
+        $path = self::uploadedPath($state);
+
+        return $path !== null
+            ? MediaUrlResolver::resolve($path, (string) config('filesystems.media_disk', 'public'))
+            : null;
     }
 
     private static function clearAction(string $statePath, string $mediaIdPath): FormAction
@@ -414,6 +518,9 @@ final class MediaPicker
             'title_en' => $data['title_en'] ?? null,
             'alt_text_ar' => $data['alt_text_ar'] ?? null,
             'alt_text_en' => $data['alt_text_en'] ?? null,
+            'focal_x' => $data['focal_x'] ?? 50,
+            'focal_y' => $data['focal_y'] ?? 50,
+            'display_fit' => $data['display_fit'] ?? 'cover',
             'require_alt_text' => self::isImageType($type),
             'uploaded_by' => (int) $userId,
         ]);
@@ -437,6 +544,9 @@ final class MediaPicker
             'title_en' => $data['title_en'] ?? null,
             'alt_text_ar' => $data['alt_text_ar'] ?? null,
             'alt_text_en' => $data['alt_text_en'] ?? null,
+            'focal_x' => $data['focal_x'] ?? 50,
+            'focal_y' => $data['focal_y'] ?? 50,
+            'display_fit' => $data['display_fit'] ?? 'cover',
             'metadata_status' => 'reviewed',
         ], (int) $userId);
 

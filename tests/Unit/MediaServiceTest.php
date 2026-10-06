@@ -228,6 +228,27 @@ class MediaServiceTest extends TestCase
         ]);
     }
 
+    public function test_media_picker_offers_the_eight_most_recent_image_thumbnails(): void
+    {
+        $this->actingAs($this->actor);
+        for ($index = 1; $index <= 10; $index++) {
+            $this->service->upload([
+                'file' => $this->fakeFileWithContent('recent-'.$index.'.jpg', 100, 'image/jpeg', 'recent-image-'.$index),
+                'uploaded_by' => $this->actor->id,
+                'title_en' => 'Recent Image '.$index,
+            ]);
+        }
+
+        $method = new \ReflectionMethod(MediaPicker::class, 'recentImages');
+        $method->setAccessible(true);
+        $recent = $method->invoke(null);
+
+        $this->assertCount(8, $recent);
+        $this->assertStringStartsWith('Recent Image 10 - ', $recent[0]['label']);
+        $this->assertStringStartsWith('Recent Image 3 - ', $recent[7]['label']);
+        $this->assertArrayHasKey('url', $recent[0]);
+    }
+
     public function test_existing_public_image_url_fallback_is_preserved(): void
     {
         $this->assertSame('/images/existing-campus.jpg', MediaUrlResolver::resolve('/images/existing-campus.jpg'));
@@ -612,6 +633,59 @@ class MediaServiceTest extends TestCase
         $this->assertSame('New Title', $asset->title_en);
         $this->assertSame('نص بديل', $asset->alt_text_ar);
         $this->assertSame('Alt text', $asset->alt_text_en);
+    }
+
+    public function test_update_metadata_persists_valid_image_display_settings(): void
+    {
+        $result = $this->service->upload([
+            'file' => UploadedFile::fake()->create('focus.jpg', 100, 'image/jpeg'),
+            'uploaded_by' => $this->actor->id,
+            'title_en' => 'Focus image',
+        ]);
+
+        $this->assertTrue($this->service->updateMetadata($result->mediaId, [
+            'focal_x' => 23.5,
+            'focal_y' => 71.25,
+            'display_fit' => 'contain',
+        ], $this->actor->id));
+
+        $this->assertDatabaseHas('media_assets', [
+            'id' => $result->mediaId,
+            'focal_x' => 23.5,
+            'focal_y' => 71.25,
+            'display_fit' => 'contain',
+        ]);
+    }
+
+    public function test_update_metadata_rejects_invalid_image_display_settings(): void
+    {
+        $result = $this->service->upload([
+            'file' => UploadedFile::fake()->create('invalid-focus.jpg', 100, 'image/jpeg'),
+            'uploaded_by' => $this->actor->id,
+            'title_en' => 'Invalid focus image',
+        ]);
+
+        $this->expectException(ValidationException::class);
+        $this->service->updateMetadata($result->mediaId, ['focal_x' => 120], $this->actor->id);
+    }
+
+    public function test_replace_image_preserves_asset_id_and_updates_stored_source(): void
+    {
+        $original = $this->service->upload([
+            'file' => $this->fakeFileWithContent('original.jpg', 100, 'image/jpeg', 'original-image'),
+            'uploaded_by' => $this->actor->id,
+            'title_en' => 'Original image',
+        ]);
+
+        $replacement = $this->service->replaceImage($original->mediaId, [
+            'file' => $this->fakeFileWithContent('cropped.jpg', 120, 'image/jpeg', 'cropped-image'),
+            'original_name' => 'cropped.jpg',
+        ], $this->actor->id);
+
+        $this->assertSame($original->mediaId, $replacement->mediaId);
+        $this->assertNotSame($original->path, $replacement->path);
+        $this->assertSame('cropped.jpg', $replacement->originalName);
+        $this->assertDatabaseCount('media_assets', 1);
     }
 
     public function test_update_metadata_ignores_disallowed_fields(): void

@@ -11,6 +11,7 @@ use App\Contracts\Page\FacultyPageServiceInterface;
 use App\Contracts\Page\FacultySubpageCardServiceInterface;
 use App\Exceptions\ConflictException;
 use App\Filament\Components\PageUrlSelect;
+use App\Filament\Resources\FacultyMemberResource;
 use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
 use Filament\Actions\Action;
@@ -294,6 +295,21 @@ trait ManagesFacultyHomepage
             })
             ->values()
             ->all();
+    }
+
+    public function isFacultyMembersTarget(): bool
+    {
+        return $this->subpageSlugFromTarget($this->currentTargetKeyForSchema()) === 'members';
+    }
+
+    public function facultyMembersIndexUrl(): string
+    {
+        return FacultyMemberResource::getUrl('index', ['faculty_scope' => $this->facultyScope]);
+    }
+
+    public function facultyMembersCreateUrl(): string
+    {
+        return FacultyMemberResource::getUrl('create', ['faculty_scope' => $this->facultyScope]);
     }
 
     /** @return list<array{id: string, label: string, url: string, active: bool}> */

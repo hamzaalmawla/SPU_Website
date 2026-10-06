@@ -26,6 +26,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -62,7 +63,7 @@ class FacultyMemberResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('admin.navigation.groups.about');
+        return __('admin.navigation.groups.facilities');
     }
 
     public static function getEloquentQuery(): Builder
@@ -77,6 +78,14 @@ class FacultyMemberResource extends Resource
                 ->where('faculty_scope_slug', $scope)
                 ->orWhere('public_slug', $scope)
                 ->orWhere('slug', $scope));
+        }
+
+        $contextScope = request()->query('faculty_scope');
+        if (is_string($contextScope) && $contextScope !== '') {
+            $query->whereHas('faculty', fn (Builder $facultyQuery): Builder => $facultyQuery
+                ->where('faculty_scope_slug', $contextScope)
+                ->orWhere('public_slug', $contextScope)
+                ->orWhere('slug', $contextScope));
         }
 
         return $query;
@@ -100,6 +109,10 @@ class FacultyMemberResource extends Resource
                     ->searchable()
                     ->preload()
                     ->native(false)
+                    ->default(fn (): ?int => self::contextFacultyId())
+                    ->required()
+                    ->disabled(fn (): bool => auth()->user()?->role_slug === 'faculty_editor')
+                    ->dehydrated()
                     ->live(),
                 Select::make('department_id')
                     ->label('Department')
@@ -121,7 +134,7 @@ class FacultyMemberResource extends Resource
                     ->minValue(0)
                     ->step(10)
                     ->helperText('Lower numbers appear first. You can also reorder staff from the list.'),
-                Toggle::make('is_enabled')->label('Visible to editors')->default(true),
+                Toggle::make('is_enabled')->label('Eligible for public display after publication')->default(true),
                 MediaPicker::assetImage('photo_media_id', 'Profile Photo'),
                 MediaPicker::assetDocument('cv_media_id', 'CV File'),
             ])->columns(2),
@@ -209,6 +222,10 @@ class FacultyMemberResource extends Resource
             IconColumn::make('is_enabled')->boolean(),
             TextColumn::make('publication_status')->badge()->sortable(),
             TextColumn::make('updated_at')->dateTime()->sortable(),
+        ])->filters([
+            SelectFilter::make('faculty_id')
+                ->label('Faculty')
+                ->options(fn (): array => app(ProfileAdminServiceInterface::class)->facultyOptions((int) auth()->id())),
         ])->actions([
             Tables\Actions\EditAction::make(),
             Tables\Actions\ViewAction::make(),
@@ -241,6 +258,21 @@ class FacultyMemberResource extends Resource
                 ->orWhere('public_slug', $scope)
                 ->orWhere('slug', $scope);
         });
+    }
+
+    private static function contextFacultyId(): ?int
+    {
+        $scope = request()->query('faculty_scope');
+        if (! is_string($scope) || $scope === '' || ! is_numeric(auth()->id())) {
+            $user = auth()->user();
+            $scope = $user instanceof User && $user->role_slug === 'faculty_editor'
+                ? (string) $user->faculty_scope_slug
+                : '';
+        }
+
+        return $scope !== ''
+            ? app(ProfileAdminServiceInterface::class)->facultyIdForScope($scope, (int) auth()->id())
+            : null;
     }
 
     /** @param array<string, mixed> $data @return array<string, mixed> */

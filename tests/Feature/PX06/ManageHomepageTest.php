@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Feature\PX06;
 
 use App\Contracts\Homepage\HomepageContentSelectionServiceInterface;
-use App\DTOs\Content\ArticleCardDTO;
 use App\DTOs\Content\ResearchCardDTO;
 use App\DTOs\Homepage\HomepageSectionDataDTO;
 use App\DTOs\Homepage\HomepageSectionTranslationDTO;
@@ -341,7 +340,7 @@ class ManageHomepageTest extends TestCase
         $this->assertSame('View Event Details', $form['content']['event_cta_label'] ?? null);
     }
 
-    public function test_honor_and_society_archive_links_round_trip_through_homepage_editor(): void
+    public function test_honor_archive_link_round_trips_through_homepage_editor(): void
     {
         $honor = HomepagePayloadMapper::sectionDataFromArray([
             'title' => 'Honor & Excellence',
@@ -352,22 +351,9 @@ class ManageHomepageTest extends TestCase
 
         $this->assertSame('/en/achievements', $honorRoundTrip->sectionAction?->url);
 
-        $news = HomepagePayloadMapper::sectionDataFromArray([
-            'title' => 'News',
-            'content' => [
-                'society_title' => "Society's Events",
-                'society_cta_label' => 'See All',
-                'society_cta_url' => '/en/news/society-events',
-            ],
-        ]);
-        $newsForm = $this->invokePayloadToFormArray($news, 'university_news');
-        $newsRoundTrip = $this->invokeFormArrayToPayload($newsForm, 'university_news');
-
-        $this->assertSame("Society's Events", $newsRoundTrip->content['society_title']);
-        $this->assertSame('/en/news/society-events', $newsRoundTrip->content['society_cta_url']);
     }
 
-    public function test_homepage_news_and_research_selections_are_shared_between_locales(): void
+    public function test_homepage_news_is_automatic_and_research_selection_is_shared_between_locales(): void
     {
         $news = $this->invokeWithHomepageSelection([], 'university_news', [
             'article_ids' => [
@@ -382,22 +368,15 @@ class ManageHomepageTest extends TestCase
             ],
         ]);
 
-        $this->assertSame('manual', $news['content']['selectionMode']);
-        $this->assertSame([42, 7], $news['content']['selectedArticleIds']);
+        $this->assertArrayNotHasKey('content', $news);
         $this->assertSame('manual', $research['content']['selectionMode']);
         $this->assertSame(['second-publication', 'first-publication'], $research['content']['selectedResearchSlugs']);
     }
 
-    public function test_empty_selections_are_initialized_from_live_homepage_cards(): void
+    public function test_only_empty_research_selection_is_initialized_from_live_cards(): void
     {
         app()->setLocale('ar');
         $selectionService = Mockery::mock(HomepageContentSelectionServiceInterface::class);
-        $selectionService->shouldReceive('hydratePayload')
-            ->once()
-            ->with(Mockery::type(HomepageSectionDataDTO::class), 'university_news', 'ar')
-            ->andReturn(new HomepageSectionDataDTO(articles: [
-                new ArticleCardDTO(19, 'ar', 'Live News', 'live-news', null, null, '2026-08-08', '/ar/news/19', 'News'),
-            ]));
         $selectionService->shouldReceive('hydratePayload')
             ->once()
             ->with(Mockery::type(HomepageSectionDataDTO::class), 'research_studies', 'ar')
@@ -414,7 +393,7 @@ class ManageHomepageTest extends TestCase
         $news = $method->invoke($page, new HomepageSectionDataDTO, 'university_news');
         $research = $method->invoke($page, new HomepageSectionDataDTO, 'research_studies');
 
-        $this->assertSame([['article_id' => 19]], $news['article_ids']);
+        $this->assertSame([], $news['article_ids']);
         $this->assertSame([['publication_slug' => 'live-research']], $research['publication_slugs']);
     }
 

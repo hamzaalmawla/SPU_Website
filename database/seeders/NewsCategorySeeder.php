@@ -25,6 +25,12 @@ final class NewsCategorySeeder extends Seeder
                 'ar' => 'الإعلانات',
                 'en' => 'Announcements',
             ],
+            'agreements' => [
+                'type' => 'news',
+                'sort_order' => 3,
+                'ar' => 'الاتفاقيات ومذكرات التفاهم',
+                'en' => 'Agreements and Memoranda of Understanding',
+            ],
             'society-events' => [
                 'type' => 'news',
                 'sort_order' => 4,

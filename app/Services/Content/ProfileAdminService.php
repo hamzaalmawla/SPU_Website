@@ -59,6 +59,25 @@ final class ProfileAdminService implements ProfileAdminServiceInterface
         ])->all();
     }
 
+    public function facultyIdForScope(string $scope, int $userId): ?int
+    {
+        $allowedIds = array_keys($this->facultyOptions($userId));
+        if ($allowedIds === []) {
+            return null;
+        }
+
+        $faculty = Faculty::query()
+            ->whereIn('id', $allowedIds)
+            ->where(function ($query) use ($scope): void {
+                $query->where('faculty_scope_slug', $scope)
+                    ->orWhere('public_slug', $scope)
+                    ->orWhere('slug', $scope);
+            })
+            ->first();
+
+        return $faculty instanceof Faculty ? (int) $faculty->getKey() : null;
+    }
+
     /** @return array<int, string> */
     public function departmentOptions(?int $facultyId, int $userId): array
     {
@@ -348,6 +367,12 @@ final class ProfileAdminService implements ProfileAdminServiceInterface
     {
         $this->validateLocales($data->translations, 'translations');
         $this->validateEducations($data->educations);
+
+        if ($data->facultyId === null || ! Faculty::query()->whereKey($data->facultyId)->exists()) {
+            throw ValidationException::withMessages([
+                'faculty_id' => 'A valid faculty is required.',
+            ]);
+        }
 
         if ($data->departmentId !== null) {
             $validDepartment = $data->facultyId !== null

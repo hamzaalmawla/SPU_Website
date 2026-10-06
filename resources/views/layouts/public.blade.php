@@ -43,6 +43,7 @@
         @endif
         <link rel="icon" href="{{ asset('images/single-logo.png') }}" type="image/png">
         <link rel="manifest" href="{{ asset('site.webmanifest') }}">
+        <link rel="stylesheet" href="{{ route('media.display-styles') }}">
         @php
             $publicViteJsEntries = ['resources/js/app.js'];
             $requestedPublicViteJsEntries = trim($__env->yieldContent('publicViteJsEntries'));

@@ -157,13 +157,19 @@ final class FacultyMembersPageTest extends TestCase
 
     public function test_members_workspace_target_renders_its_editor_without_errors(): void
     {
+        app()->setLocale('en');
         $this->actingAs($this->admin, 'web');
 
         Livewire::test(ManageMedicineFaculty::class)
             ->set('data.target_key', 'facilities.medicine.members')
             ->call('loadTarget', 'facilities.medicine.members')
             ->assertOk()
-            ->assertSee('مقدمة الصفحة');
+            ->assertSee('Page introduction')
+            ->assertSee('Manage faculty members')
+            ->assertSee('View and edit members')
+            ->assertSee('Add faculty member')
+            ->assertSee('/admin/faculty-members?faculty_scope=medicine', false)
+            ->assertSee('/admin/faculty-members/create?faculty_scope=medicine', false);
     }
 
     public function test_members_page_renders_each_faculty_independently(): void

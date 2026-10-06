@@ -14,6 +14,11 @@ class ListFacultyMembers extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [Actions\CreateAction::make()];
+        $scope = request()->query('faculty_scope');
+
+        return [
+            Actions\CreateAction::make()
+                ->url(FacultyMemberResource::getUrl('create', is_string($scope) && $scope !== '' ? ['faculty_scope' => $scope] : [])),
+        ];
     }
 }

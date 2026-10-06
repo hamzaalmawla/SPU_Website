@@ -335,6 +335,21 @@ rm -f "${APP}"/bootstrap/cache/{packages,services,config,routes-v7,events}.php
 rm -rf "${APP}/bootstrap/cache/filament"
 
 # ── Schema ───────────────────────────────────────────────────────────────────
+log "Recording migration status and SQL preview"
+(cd "${APP}" && "${PHP}" artisan migrate:status --no-interaction)
+MIGRATION_PREVIEW="$(cd "${APP}" && "${PHP}" artisan migrate --pretend --no-interaction 2>&1)"
+printf '%s\n' "${MIGRATION_PREVIEW}"
+
+# A normal production release may add or alter schema, but must not silently
+# rewrite editorial rows. Data migrations require a separate reviewed release
+# and an explicit server-side approval flag that is never stored in git.
+if [[ "${SPU_DEPLOY_ENV:-staging}" == "production" || "${APP_ENV_VALUE}" == "production" ]]; then
+    if printf '%s\n' "${MIGRATION_PREVIEW}" | grep -Eiq '(^|[[:space:]])(update|delete[[:space:]]+from|insert[[:space:]]+into)[[:space:]]'; then
+        [[ "${SPU_ALLOW_DATA_MIGRATIONS:-0}" == "1" ]] || fail \
+            "Pending migrations contain row INSERT/UPDATE/DELETE statements. Production content was not changed. Review the SQL and set SPU_ALLOW_DATA_MIGRATIONS=1 only for an approved data migration release."
+    fi
+fi
+
 log "Running migrations"
 (cd "${APP}" && "${PHP}" artisan migrate --force --no-interaction)
 

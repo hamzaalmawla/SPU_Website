@@ -15,6 +15,11 @@ class ListMediaAssets extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('batchUpload')
+                ->label('Batch Upload Images')
+                ->icon('heroicon-o-photo')
+                ->color('primary')
+                ->url(MediaAssetResource::getUrl('batch-upload')),
             Actions\CreateAction::make(),
         ];
     }

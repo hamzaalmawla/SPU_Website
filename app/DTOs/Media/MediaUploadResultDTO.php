@@ -26,5 +26,8 @@ final readonly class MediaUploadResultDTO
         public string $metadataStatus = 'missing',
         public ?int $promotedFromMediaId = null,
         public ?string $sourcePath = null,
+        public float $focalX = 50.0,
+        public float $focalY = 50.0,
+        public string $displayFit = 'cover',
     ) {}
 }

@@ -80,17 +80,41 @@ final class SocietyEventsNewsTest extends TestCase
         $this->assertSame(['General News'], $generalHomepageCards->pluck('title')->all());
     }
 
-    public function test_homepage_renders_society_events_as_a_four_column_non_carousel_section(): void
+    public function test_homepage_category_cards_return_the_newest_item_from_each_category_in_display_order(): void
+    {
+        $categories = [
+            'news' => 'Latest News',
+            'announcements' => 'Latest Announcement',
+            'agreements' => 'Latest Agreement',
+            'society-events' => 'Latest Society Event',
+        ];
+
+        foreach ($categories as $slug => $latestTitle) {
+            $older = $this->createPublishedArticle($slug, $slug.'-older', 'Older '.$slug);
+            $older->forceFill(['published_at' => now()->subDays(2)])->save();
+            $latest = $this->createPublishedArticle($slug, $slug.'-latest', $latestTitle);
+            $latest->forceFill(['published_at' => now()->subDay()])->save();
+        }
+
+        $cards = app(NewsServiceInterface::class)->getHomepageCategoryCards('en');
+
+        $this->assertSame(array_values($categories), $cards->pluck('title')->all());
+        $this->assertSame(array_keys($categories), $cards->pluck('slug')->map(
+            static fn (string $slug): string => str_replace('-latest', '', $slug),
+        )->all());
+    }
+
+    public function test_homepage_includes_society_events_in_news_grid_without_a_separate_section(): void
     {
         $this->seed(DatabaseSeeder::class);
         $this->createPublishedArticle('society-events', 'homepage-society-event', 'Homepage Society Event');
 
         $this->get('/en')
             ->assertOk()
-            ->assertSee('id="home-society-events"', false)
+            ->assertSee('id="home-news"', false)
             ->assertSee('Homepage Society Event')
             ->assertSee('xl:grid-cols-4', false)
-            ->assertDontSee('id="home-society-events" class="carousel', false);
+            ->assertDontSee('id="home-society-events"', false);
     }
 
     private function createPublishedArticle(string $categorySlug, string $slug, string $title): NewsArticle

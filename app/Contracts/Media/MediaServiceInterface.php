@@ -28,6 +28,9 @@ interface MediaServiceInterface
      */
     public function updateMetadata(int|string $mediaId, array $metadata, int $userId): bool;
 
+    /** @param array<string, mixed> $payload */
+    public function replaceImage(int|string $mediaId, array $payload, int $userId): MediaUploadResultDTO;
+
     public function find(int|string $mediaId, int $userId): ?MediaUploadResultDTO;
 
     public function importPublicAsset(string $publicRelativePath, ?int $userId = null): ?MediaUploadResultDTO;

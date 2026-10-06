@@ -930,8 +930,8 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             $facultyId = $this->nullableInt($payload['faculty_id'] ?? null);
             $departmentId = $this->nullableInt($payload['department_id'] ?? null);
 
-            if ($facultyId !== null && ! Faculty::query()->whereKey($facultyId)->exists()) {
-                $errors['faculty_id'][] = 'The selected faculty does not exist.';
+            if ($facultyId === null || ! Faculty::query()->whereKey($facultyId)->exists()) {
+                $errors['faculty_id'][] = 'A valid faculty is required.';
             }
             if ($departmentId !== null && ($facultyId === null || ! Department::query()->whereKey($departmentId)->where('faculty_id', $facultyId)->exists())) {
                 $errors['department_id'][] = 'The selected department must belong to the selected faculty.';

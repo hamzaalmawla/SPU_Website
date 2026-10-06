@@ -101,6 +101,26 @@ then **Deploy HEAD Commit**.
 
 Watch the log. It ends with `▸ Deployed <commit>`.
 
+For releases containing migrations, the log must show all three schema steps:
+
+1. The production `migrate:status` output.
+2. The `migrate --pretend` SQL preview.
+3. The successful `migrate --force` result.
+
+Review the first two before accepting the release. The media-framing migration
+`2026_10_06_000001` is additive only: it adds `focal_x`, `focal_y`, and
+`display_fit` to `media_assets` with neutral defaults. It does not update or
+delete faculty members, translations, publication states, CMS payloads, or
+existing media metadata. Normal production deployment never runs
+`DatabaseSeeder`, `HomepageSectionTranslationSeeder`, or `NewsCategorySeeder`.
+
+Production deployment also inspects the SQL preview and stops before migration
+when any pending migration contains row `INSERT`, `UPDATE`, or `DELETE`
+statements. The failure leaves production content unchanged. A separately
+reviewed data-migration release requires the server-only
+`SPU_ALLOW_DATA_MIGRATIONS=1` approval flag; do not set it for ordinary code or
+schema releases.
+
 ---
 
 ## What the deploy actually does

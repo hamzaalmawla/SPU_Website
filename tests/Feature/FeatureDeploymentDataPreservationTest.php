@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -13,6 +14,74 @@ use Tests\TestCase;
 final class FeatureDeploymentDataPreservationTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_media_display_schema_upgrade_preserves_all_existing_content(): void
+    {
+        Schema::table('media_assets', function (Blueprint $table): void {
+            $table->dropColumn(['focal_x', 'focal_y', 'display_fit']);
+        });
+
+        $facultyMemberId = DB::table('faculty_members')->insertGetId([
+            'slug' => 'production-ai-member',
+            'email' => 'member@example.test',
+            'sort_order' => 17,
+            'is_enabled' => true,
+            'publication_status' => 'published',
+            'published_at' => now()->subDay(),
+            'created_at' => now()->subMonth(),
+            'updated_at' => now()->subDay(),
+        ]);
+        DB::table('faculty_member_translations')->insert([
+            'faculty_member_id' => $facultyMemberId,
+            'locale' => 'en',
+            'full_name' => 'Production AI Member',
+            'position' => 'Professor',
+            'created_at' => now()->subMonth(),
+            'updated_at' => now()->subDay(),
+        ]);
+        $mediaId = DB::table('media_assets')->insertGetId([
+            'disk' => 'public',
+            'directory' => 'media/image',
+            'filename' => 'existing.jpg',
+            'original_name' => 'existing.jpg',
+            'mime_type' => 'image/jpeg',
+            'extension' => 'jpg',
+            'size_bytes' => 1234,
+            'checksum' => hash('sha256', 'existing-media'),
+            'media_type' => 'image',
+            'library_scope' => 'main',
+            'metadata_status' => 'reviewed',
+            'title_ar' => 'صورة قائمة',
+            'title_en' => 'Existing image',
+            'alt_text_ar' => 'وصف قائم',
+            'alt_text_en' => 'Existing description',
+            'path' => 'media/image/existing.jpg',
+            'created_at' => now()->subMonth(),
+            'updated_at' => now()->subDay(),
+        ]);
+
+        $before = [
+            'member' => DB::table('faculty_members')->where('id', $facultyMemberId)->first(),
+            'translation' => DB::table('faculty_member_translations')->where('faculty_member_id', $facultyMemberId)->first(),
+            'media' => DB::table('media_assets')->where('id', $mediaId)->first(),
+        ];
+
+        $migration = require database_path('migrations/2026_10_06_000001_add_display_settings_to_media_assets.php');
+        $migration->up();
+
+        $afterMember = DB::table('faculty_members')->where('id', $facultyMemberId)->first();
+        $afterTranslation = DB::table('faculty_member_translations')->where('faculty_member_id', $facultyMemberId)->first();
+        $afterMedia = DB::table('media_assets')->where('id', $mediaId)->first();
+
+        $this->assertEquals($before['member'], $afterMember);
+        $this->assertEquals($before['translation'], $afterTranslation);
+        foreach ((array) $before['media'] as $column => $value) {
+            $this->assertEquals($value, $afterMedia->{$column});
+        }
+        $this->assertSame(50.0, (float) $afterMedia->focal_x);
+        $this->assertSame(50.0, (float) $afterMedia->focal_y);
+        $this->assertSame('cover', $afterMedia->display_fit);
+    }
 
     public function test_legacy_achievement_upgrade_preserves_homepage_json_and_is_idempotent(): void
     {

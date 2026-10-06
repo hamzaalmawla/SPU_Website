@@ -11,6 +11,8 @@ use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 class EditMediaAsset extends EditRecord
 {
@@ -34,10 +36,31 @@ class EditMediaAsset extends EditRecord
             'caption_ar' => $data['caption_ar'] ?? null,
             'caption_en' => $data['caption_en'] ?? null,
             'metadata_status' => $data['metadata_status'] ?? null,
+            'focal_x' => $data['focal_x'] ?? 50,
+            'focal_y' => $data['focal_y'] ?? 50,
+            'display_fit' => $data['display_fit'] ?? 'cover',
         ];
 
         if (array_key_exists('faculty_scope_slug', $data)) {
             $metadata['faculty_scope_slug'] = $data['faculty_scope_slug'];
+        }
+
+        $replacementPath = $data['replacement_file'] ?? null;
+        if (is_string($replacementPath) && $replacementPath !== '') {
+            $disk = Storage::disk((string) config('filesystems.media_disk', 'public'));
+            $fullPath = $disk->path($replacementPath);
+            if (is_file($fullPath)) {
+                $this->mediaService->replaceImage($record->id, [
+                    'file' => new UploadedFile(
+                        $fullPath,
+                        basename($replacementPath),
+                        $disk->mimeType($replacementPath) ?: null,
+                        null,
+                        true,
+                    ),
+                ], (int) auth()->id());
+                $disk->delete($replacementPath);
+            }
         }
 
         $this->mediaService->updateMetadata($record->id, $metadata, (int) auth()->id());

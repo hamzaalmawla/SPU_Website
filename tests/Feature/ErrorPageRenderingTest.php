@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Contracts\ErrorPage\ErrorPageRendererInterface;
 use App\Contracts\ErrorPage\ErrorPageServiceInterface;
 use App\Contracts\Navigation\NavigationServiceInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\View;
 use Mockery;
 use PHPUnit\Framework\Attributes\DataProvider;
 use RuntimeException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 /**
@@ -109,6 +112,16 @@ final class ErrorPageRenderingTest extends TestCase
         $response->assertNotFound();
         $this->assertStringContainsString('application/json', (string) $response->headers->get('Content-Type'));
         $this->assertStringNotContainsString('<html', $response->getContent() ?: '');
+    }
+
+    public function test_livewire_errors_never_render_the_public_site_inside_admin_components(): void
+    {
+        $request = Request::create('/livewire/update', 'POST');
+        $request->headers->set('X-Livewire', 'true');
+
+        $response = app(ErrorPageRendererInterface::class)->render(new HttpException(419), $request);
+
+        $this->assertNull($response);
     }
 
     public function test_html_requests_receive_the_branded_error_page(): void

@@ -50,6 +50,20 @@
             </section>
         @endif
 
+        @if ($this->isFacultyMembersTarget())
+            <section class="spu-choice-panel spu-member-management" aria-labelledby="faculty-member-management-heading">
+                <div>
+                    <p class="spu-workspace__eyebrow">{{ __('admin.faculty_workspace.member_management.eyebrow') }}</p>
+                    <h2 id="faculty-member-management-heading">{{ __('admin.faculty_workspace.member_management.title') }}</h2>
+                    <p>{{ __('admin.faculty_workspace.member_management.description') }}</p>
+                </div>
+                <div class="spu-member-management__actions">
+                    <a href="{{ $this->facultyMembersIndexUrl() }}" class="fi-btn fi-btn-size-md fi-color-gray">{{ __('admin.faculty_workspace.member_management.manage') }}</a>
+                    <a href="{{ $this->facultyMembersCreateUrl() }}" class="fi-btn fi-btn-size-md fi-color-primary">{{ __('admin.faculty_workspace.member_management.add') }}</a>
+                </div>
+            </section>
+        @endif
+
         <x-filament-panels::form wire:submit="save">
             {{ $this->form }}
         </x-filament-panels::form>

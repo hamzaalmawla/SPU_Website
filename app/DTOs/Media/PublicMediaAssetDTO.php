@@ -16,5 +16,8 @@ final readonly class PublicMediaAssetDTO
         public ?int $width,
         public ?int $height,
         public array $srcset = [],
+        public float $focalX = 50.0,
+        public float $focalY = 50.0,
+        public string $displayFit = 'cover',
     ) {}
 }

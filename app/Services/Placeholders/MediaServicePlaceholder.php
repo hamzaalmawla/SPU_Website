@@ -6,6 +6,7 @@ namespace App\Services\Placeholders;
 
 use App\Contracts\Media\MediaServiceInterface;
 use App\DTOs\Media\MediaUploadResultDTO;
+use App\DTOs\Media\PublicMediaAssetDTO;
 use App\DTOs\Shared\PaginatedResultDTO;
 use BadMethodCallException;
 use Illuminate\Support\Collection;
@@ -30,12 +31,22 @@ final class MediaServicePlaceholder implements MediaServiceInterface
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
+    public function replaceImage(int|string $mediaId, array $payload, int $userId): MediaUploadResultDTO
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
     public function find(int|string $mediaId, int $userId): ?MediaUploadResultDTO
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
     public function importPublicAsset(string $publicRelativePath, ?int $userId = null): ?MediaUploadResultDTO
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function promoteLegacyAsset(int|string $mediaId, array $metadata, int $userId): MediaUploadResultDTO
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
@@ -49,6 +60,27 @@ final class MediaServicePlaceholder implements MediaServiceInterface
     }
 
     public function listPaginated(int $userId, array $filters = [], int $page = 1, int $perPage = 20): PaginatedResultDTO
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    /** @return Collection<int, PublicMediaAssetDTO> */
+    public function resolvePublicImages(array $mediaIds, string $locale): Collection
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function publicImagesArePublishable(array $mediaIds): bool
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function publicDocumentsArePublishable(array $mediaIds): bool
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function convertImages(int $userId, ?int $limit = null): int
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }

@@ -479,6 +479,8 @@ final class ProfileWorkflowTest extends TestCase
         ?int $photoMediaId = null,
         ?int $cvMediaId = null,
     ): FacultyMemberDataDTO {
+        $facultyId ??= (int) Faculty::query()->value('id');
+
         return new FacultyMemberDataDTO(
             id: null,
             slug: $slug,

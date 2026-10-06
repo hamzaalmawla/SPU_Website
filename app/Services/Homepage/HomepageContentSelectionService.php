@@ -71,13 +71,8 @@ final class HomepageContentSelectionService implements HomepageContentSelectionS
                 ->all();
             $data['featuredItems'] = [];
         } elseif ($sectionKey === 'university_news') {
-            $ids = $manual ? $this->selectedArticleIds($content) : [];
-            $cards = $this->newsService->getHomepageArticleCards($locale, $ids, null, $manual ? max(1, count($ids)) : 4);
+            $cards = $this->newsService->getHomepageCategoryCards($locale);
             $data['articles'] = $cards->map(fn (ArticleCardDTO $card): array => $this->articleToArray($card))->all();
-            $data['content']['societyEventArticles'] = $this->newsService
-                ->getLatestSocietyEventCards($locale, 4)
-                ->map(fn (ArticleCardDTO $card): array => $this->articleToArray($card))
-                ->all();
         } else {
             $slugs = $manual ? $this->selectedResearchSlugs($content) : [];
             $cards = $this->researchService->getHomepagePublicationCards($locale, $slugs, null, $manual ? max(1, count($slugs)) : 5);
@@ -96,10 +91,7 @@ final class HomepageContentSelectionService implements HomepageContentSelectionS
         }
 
         if ($sectionKey === 'university_news') {
-            $ids = $this->selectedArticleIds($content);
-
-            return $ids !== []
-                && $this->newsService->getHomepageArticleCards($locale, $ids, null, count($ids))->count() === count($ids);
+            return true;
         }
 
         if ($sectionKey === 'research_studies') {
@@ -110,17 +102,6 @@ final class HomepageContentSelectionService implements HomepageContentSelectionS
         }
 
         return true;
-    }
-
-    /** @param array<string, mixed> $content @return array<int, int> */
-    private function selectedArticleIds(array $content): array
-    {
-        $values = $content['selectedArticleIds'] ?? $content['selected_article_ids'] ?? [];
-
-        return array_values(array_unique(array_map(
-            static fn (mixed $id): int => (int) $id,
-            array_filter(is_array($values) ? $values : [], static fn (mixed $id): bool => is_numeric($id) && (int) $id > 0),
-        )));
     }
 
     /** @param array<string, mixed> $content @return array<int, string> */

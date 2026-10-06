@@ -21,9 +21,9 @@ use Illuminate\Support\Facades\DB;
  * that has since been deleted, so disabling them is permanent without being
  * fragile: no deploy will put them back.
  *
- * legacy_source_id is the discriminator. The importer sets it on every record it
- * writes, so a project without one came from somewhere else. That is narrower
- * than matching slugs, which would also catch a real project numbered 1.
+ * The fixed demo slug set is the discriminator. Editors also create legitimate
+ * projects without a legacy_source_id, so null legacy metadata alone is never
+ * sufficient evidence that a record is disposable.
  *
  * Disabled rather than deleted. The rows stay for anyone who wants to look at
  * what was there, the public queries filter on is_enabled, and down() puts them
@@ -35,6 +35,7 @@ return new class extends Migration
     {
         $affected = DB::table('faculty_student_projects')
             ->whereNull('legacy_source_id')
+            ->whereIn('slug', $this->placeholderSlugs())
             ->where('is_enabled', true)
             ->update(['is_enabled' => false, 'updated_at' => now()]);
 
@@ -42,7 +43,7 @@ return new class extends Migration
         // something far from the expected ~84, the discriminator has stopped
         // meaning what it meant and somebody should look before trusting it.
         if (app()->runningInConsole()) {
-            echo "  Disabled {$affected} placeholder faculty project(s) with no legacy_source_id.".PHP_EOL;
+            echo "  Disabled {$affected} explicitly identified placeholder faculty project(s).".PHP_EOL;
         }
     }
 
@@ -50,7 +51,34 @@ return new class extends Migration
     {
         DB::table('faculty_student_projects')
             ->whereNull('legacy_source_id')
+            ->whereIn('slug', $this->placeholderSlugs())
             ->where('is_enabled', false)
             ->update(['is_enabled' => true, 'updated_at' => now()]);
+    }
+
+    /** @return list<string> */
+    private function placeholderSlugs(): array
+    {
+        $facultySlugs = [
+            'medicine',
+            'dentistry',
+            'pharmacy',
+            'artificial-intelligence',
+            'ai-engineering',
+            'building-construction-engineering',
+            'construction',
+            'petroleum',
+            'business-administration',
+            'business',
+        ];
+        $slugs = [];
+
+        foreach ($facultySlugs as $facultySlug) {
+            for ($number = 1; $number <= 12; $number++) {
+                $slugs[] = $facultySlug.'-project-'.$number;
+            }
+        }
+
+        return $slugs;
     }
 };

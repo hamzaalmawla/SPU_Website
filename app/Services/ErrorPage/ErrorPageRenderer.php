@@ -41,7 +41,7 @@ final class ErrorPageRenderer implements ErrorPageRendererInterface
     {
         // A JSON/API caller must receive JSON. Laravel's default handler
         // already negotiates that, so defer to it entirely.
-        if ($request->expectsJson()) {
+        if ($request->expectsJson() || $request->is('livewire', 'livewire/*') || $request->headers->has('X-Livewire')) {
             return null;
         }
 

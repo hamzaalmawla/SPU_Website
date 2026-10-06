@@ -81,6 +81,21 @@ class ViewMediaAsset extends ViewRecord
                         ->label('Height (px)')
                         ->placeholder('N/A'),
 
+                    TextEntry::make('display_fit')
+                        ->label('Display Mode')
+                        ->badge()
+                        ->visible(fn ($record): bool => str_starts_with($record->mime_type ?? '', 'image/')),
+
+                    TextEntry::make('focal_x')
+                        ->label('Horizontal Focus')
+                        ->suffix('%')
+                        ->visible(fn ($record): bool => str_starts_with($record->mime_type ?? '', 'image/')),
+
+                    TextEntry::make('focal_y')
+                        ->label('Vertical Focus')
+                        ->suffix('%')
+                        ->visible(fn ($record): bool => str_starts_with($record->mime_type ?? '', 'image/')),
+
                     TextEntry::make('created_at')
                         ->label('Uploaded At')
                         ->dateTime(),

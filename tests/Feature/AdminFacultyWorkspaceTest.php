@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Filament\Pages\ManageDentistryFaculty;
+use App\Filament\Resources\FacultyMemberResource\Pages\CreateFacultyMember;
 use App\Models\Cms\CmsDraft;
+use App\Models\Faculty\Faculty;
 use App\Models\User\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -58,6 +60,27 @@ final class AdminFacultyWorkspaceTest extends TestCase
         Livewire::withQueryParams(['target' => 'facilities.dentistry.study_plan'])
             ->test(ManageDentistryFaculty::class)
             ->assertSet('data.target_key', 'facilities.dentistry.study_plan');
+    }
+
+    public function test_members_task_links_to_contextual_member_management(): void
+    {
+        $this->actingAs($this->editor(), 'web')
+            ->withSession(['admin_locale' => 'en'])
+            ->get('/admin/manage-dentistry-faculty?target=facilities.dentistry.members')
+            ->assertOk()
+            ->assertSee('Manage faculty members')
+            ->assertSee('/admin/faculty-members?faculty_scope=dentistry', false)
+            ->assertSee('/admin/faculty-members/create?faculty_scope=dentistry', false);
+    }
+
+    public function test_contextual_member_create_preselects_the_faculty(): void
+    {
+        $this->actingAs($this->editor(), 'web');
+        $dentistry = Faculty::query()->where('public_slug', 'dentistry')->firstOrFail();
+
+        Livewire::withQueryParams(['faculty_scope' => 'dentistry'])
+            ->test(CreateFacultyMember::class)
+            ->assertSet('data.faculty_id', (int) $dentistry->getKey());
     }
 
     public function test_study_plan_department_and_term_are_direct_navigation_links(): void

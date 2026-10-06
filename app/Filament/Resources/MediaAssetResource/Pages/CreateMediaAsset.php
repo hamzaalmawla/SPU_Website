@@ -56,6 +56,9 @@ class CreateMediaAsset extends CreateRecord
                     'caption_en' => $data['caption_en'] ?? null,
                     'uploaded_by' => $user->id,
                     'faculty_scope_slug' => $data['faculty_scope_slug'] ?? null,
+                    'focal_x' => $data['focal_x'] ?? 50,
+                    'focal_y' => $data['focal_y'] ?? 50,
+                    'display_fit' => $data['display_fit'] ?? 'cover',
                 ]);
 
                 // Clean up the temporary Filament upload

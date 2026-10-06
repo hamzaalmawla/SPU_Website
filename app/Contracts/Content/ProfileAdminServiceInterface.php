@@ -12,6 +12,8 @@ interface ProfileAdminServiceInterface
     /** @return array<int, string> */
     public function facultyOptions(int $userId): array;
 
+    public function facultyIdForScope(string $scope, int $userId): ?int;
+
     /** @return array<int, string> */
     public function departmentOptions(?int $facultyId, int $userId): array;
 

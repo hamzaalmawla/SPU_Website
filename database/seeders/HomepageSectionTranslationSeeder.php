@@ -318,11 +318,6 @@ class HomepageSectionTranslationSeeder extends Seeder
                 $l === 'ar' ? 'عرض الكل' : 'View All',
                 '/'.$l.'/news',
             ),
-            'content' => [
-                'society_title' => $l === 'ar' ? 'فعاليات المجتمع' : "Society's Events",
-                'society_cta_label' => $l === 'ar' ? 'عرض الكل' : 'View All',
-                'society_cta_url' => '/'.$l.'/news/society-events',
-            ],
             'articles' => [
                 [
                     'id' => 1,

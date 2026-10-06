@@ -15,6 +15,7 @@ use App\Http\Controllers\Public\DynamicFormSubmissionController;
 use App\Http\Controllers\Public\EServicesController;
 use App\Http\Controllers\Public\FacultyController;
 use App\Http\Controllers\Public\HomeController;
+use App\Http\Controllers\Public\MediaDisplayStylesheetController;
 use App\Http\Controllers\Public\NewsController;
 use App\Http\Controllers\Public\PageController;
 use App\Http\Controllers\Public\PreviewController;
@@ -34,6 +35,7 @@ Route::get('/sitemaps/sitemap-{section}.xml', [SitemapController::class, 'sectio
     ->where('section', '[a-z]+(?:-[0-9]+)?')
     ->name('sitemap.section');
 Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
+Route::get('/media-display.css', MediaDisplayStylesheetController::class)->name('media.display-styles');
 
 // Unprefixed reference paths negotiate a locale and redirect to /{locale}/...
 // The leading lookahead keeps legacy URLs out of this route: paths such as

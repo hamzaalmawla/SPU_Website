@@ -489,13 +489,7 @@ class ManageHomepage extends Page implements HasForms
     /** @return array<string, array<int, array<string, int|string>>> */
     private function selectionToFormArray(HomepageSectionDataDTO $payload, string $sectionKey): array
     {
-        $articleIds = $payload->content['selectedArticleIds'] ?? $payload->content['selected_article_ids'] ?? [];
         $publicationSlugs = $payload->content['selectedResearchSlugs'] ?? $payload->content['selected_research_slugs'] ?? [];
-
-        if ($sectionKey === 'university_news' && (! is_array($articleIds) || $articleIds === [])) {
-            $livePayload = $this->contentSelectionService->hydratePayload($payload, $sectionKey, app()->getLocale());
-            $articleIds = array_map(static fn (ArticleCardDTO $article): int => $article->id, $livePayload->articles);
-        }
 
         if ($sectionKey === 'research_studies' && (! is_array($publicationSlugs) || $publicationSlugs === [])) {
             $livePayload = $this->contentSelectionService->hydratePayload($payload, $sectionKey, app()->getLocale());
@@ -503,10 +497,7 @@ class ManageHomepage extends Page implements HasForms
         }
 
         return [
-            'article_ids' => array_values(array_map(
-                static fn (mixed $id): array => ['article_id' => (int) $id],
-                array_filter(is_array($articleIds) ? $articleIds : [], static fn (mixed $id): bool => is_numeric($id) && (int) $id > 0),
-            )),
+            'article_ids' => [],
             'publication_slugs' => array_values(array_map(
                 static fn (mixed $slug): array => ['publication_slug' => (string) $slug],
                 array_filter(is_array($publicationSlugs) ? $publicationSlugs : [], static fn (mixed $slug): bool => is_string($slug) && $slug !== ''),
@@ -521,14 +512,6 @@ class ManageHomepage extends Page implements HasForms
      */
     private function withHomepageSelection(array $data, string $sectionKey, array $selection): array
     {
-        if ($sectionKey === 'university_news') {
-            $data['content']['selectionMode'] = 'manual';
-            $data['content']['selectedArticleIds'] = array_values(array_map(
-                static fn (array $item): int => (int) ($item['article_id'] ?? 0),
-                array_filter($selection['article_ids'] ?? [], static fn (mixed $item): bool => is_array($item) && is_numeric($item['article_id'] ?? null) && (int) $item['article_id'] > 0),
-            ));
-        }
-
         if ($sectionKey === 'research_studies') {
             $data['content']['selectionMode'] = 'manual';
             $data['content']['selectedResearchSlugs'] = array_values(array_map(

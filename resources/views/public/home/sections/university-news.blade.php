@@ -10,7 +10,7 @@
         </div>
 
         @if ($section->payload->articles !== [])
-          <div class="cms-grid-news gap-8 pb-10">
+          <div class="grid grid-cols-1 gap-8 pb-10 sm:grid-cols-2 xl:grid-cols-4">
             @foreach ($section->payload->articles as $article)
                 <article class="reveal-item news-slide">
                     <a href="{{ $article->url }}" class="h-full bg-white rounded-[25px] shadow-card-elevated overflow-hidden flex flex-col group transition-all duration-500 ease-out hover:-translate-y-2 hover:shadow-card-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-red">
@@ -40,5 +40,3 @@
         @endif
     </div>
 </section>
-
-@include('public.home.sections.society-events', ['section' => $section, 'locale' => $locale])

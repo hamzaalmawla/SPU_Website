@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources;
 
+use App\Filament\Components\FocalPointPicker;
 use App\Filament\Resources\MediaAssetResource\Pages;
 use App\Models\Media\MediaAsset;
 use App\Models\User\User;
 use App\Support\MediaUrlResolver;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Tabs;
@@ -87,6 +89,7 @@ class MediaAssetResource extends Resource
                     self::uploadTab(),
                     self::arabicMetadataTab(),
                     self::englishMetadataTab(),
+                    self::displayTab(),
                 ])
                 ->persistTabInQueryString('tab')
                 ->columnSpanFull(),
@@ -213,6 +216,7 @@ class MediaAssetResource extends Resource
     {
         return [
             'index' => Pages\ListMediaAssets::route('/'),
+            'batch-upload' => Pages\BatchUploadMediaAssets::route('/batch-upload'),
             'create' => Pages\CreateMediaAsset::route('/create'),
             'view' => Pages\ViewMediaAsset::route('/{record}'),
             'edit' => Pages\EditMediaAsset::route('/{record}/edit'),
@@ -236,6 +240,7 @@ class MediaAssetResource extends Resource
                         ->disk((string) config('filesystems.media_disk', 'public'))
                         ->directory('media-tmp')
                         ->visibility('public')
+                        ->orientImagesFromExif()
                         ->acceptedFileTypes([
                             'image/jpeg', 'image/png', 'image/gif', 'image/webp',
                             'application/pdf',
@@ -324,6 +329,51 @@ class MediaAssetResource extends Resource
             ]);
     }
 
+    private static function displayTab(): Tab
+    {
+        return Tab::make('Crop & Display')
+            ->icon('heroicon-o-viewfinder-circle')
+            ->visible(fn (?MediaAsset $record): bool => $record === null || str_starts_with((string) $record->mime_type, 'image/'))
+            ->schema([
+                Section::make('Image framing')
+                    ->description('Use the visual framing control to choose the visible crop without destroying the original image.')
+                    ->schema([
+                        FileUpload::make('replacement_file')
+                            ->label('Replace existing image')
+                            ->helperText('Optional. Upload a replacement, then use the visual framing control below. Existing page references remain connected to this media asset.')
+                            ->image()
+                            ->orientImagesFromExif()
+                            ->maxSize(10240)
+                            ->disk((string) config('filesystems.media_disk', 'public'))
+                            ->directory('media-tmp')
+                            ->visibility('public')
+                            ->live()
+                            ->visibleOn('edit'),
+                        Hidden::make('display_fit')
+                            ->default('cover')
+                            ->required(),
+                        FocalPointPicker::make('focal_x')
+                            ->label(__('admin.media_picker.focal_label'))
+                            ->imageUrl(function (Get $get, ?MediaAsset $record): ?string {
+                                $temporaryPath = self::uploadedPath($get('replacement_file')) ?? self::uploadedPath($get('file'));
+
+                                return $temporaryPath !== null
+                                    ? MediaUrlResolver::resolve($temporaryPath, (string) config('filesystems.media_disk', 'public'))
+                                    : ($record instanceof MediaAsset
+                                        ? MediaUrlResolver::resolveImage($record->webp_path, $record->path, $record->disk)
+                                        : null);
+                            })
+                            ->rules(['numeric', 'min:0', 'max:100'])
+                            ->default(50)
+                            ->required(),
+                        Hidden::make('focal_y')
+                            ->rules(['numeric', 'min:0', 'max:100'])
+                            ->default(50)
+                            ->required(),
+                    ]),
+            ]);
+    }
+
     // ──────────────────────────────────────────────
     // Helpers
     // ──────────────────────────────────────────────
@@ -350,6 +400,19 @@ class MediaAssetResource extends Resource
         }
 
         return $url;
+    }
+
+    private static function uploadedPath(mixed $state): ?string
+    {
+        if (is_string($state) && $state !== '') {
+            return $state;
+        }
+
+        if (is_array($state)) {
+            return collect($state)->first(fn (mixed $path): bool => is_string($path) && $path !== '');
+        }
+
+        return null;
     }
 
     /** @return array<string, string> */

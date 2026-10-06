@@ -25,36 +25,37 @@ final class HomepageContentSelectionServiceTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_manual_news_selection_replaces_snapshots_with_live_cards_in_selected_order(): void
+    public function test_news_section_uses_the_newest_card_from_each_fixed_category(): void
     {
         $news = Mockery::mock(NewsServiceInterface::class);
         $research = Mockery::mock(ResearchPageServiceInterface::class);
         $achievements = Mockery::mock(AchievementServiceInterface::class);
-        $news->shouldReceive('getHomepageArticleCards')
+        $news->shouldReceive('getHomepageCategoryCards')
             ->once()
-            ->with('en', [9, 3], null, 2)
+            ->with('en')
             ->andReturn(new Collection([
-                new ArticleCardDTO(9, 'en', 'Selected first', 'first', null, '/first.jpg', '2026-08-01', '/en/news/9', 'News'),
-                new ArticleCardDTO(3, 'en', 'Selected second', 'second', null, '/second.jpg', '2026-07-01', '/en/news/3', 'News'),
-            ]));
-        $news->shouldReceive('getLatestSocietyEventCards')
-            ->once()
-            ->with('en', 4)
-            ->andReturn(new Collection([
+                new ArticleCardDTO(9, 'en', 'Latest news', 'latest-news', null, '/news.jpg', '2026-09-04', '/en/news/9', 'News'),
+                new ArticleCardDTO(10, 'en', 'Latest announcement', 'latest-announcement', null, '/announcement.jpg', '2026-09-03', '/en/news/10', 'Announcements'),
+                new ArticleCardDTO(11, 'en', 'Latest agreement', 'latest-agreement', null, '/agreement.jpg', '2026-09-02', '/en/news/11', 'Agreements and Memoranda of Understanding'),
                 new ArticleCardDTO(12, 'en', 'Society event', 'society-event', 'Event excerpt', '/event.jpg', '2026-09-01', '/en/news/12', "Society's Events"),
             ]));
         $service = new HomepageContentSelectionService($news, $research, $achievements);
         $payload = new HomepageSectionDataDTO(
             title: 'News',
             articles: [new ArticleCardDTO(1, 'en', 'Old mock', 'mock', null, null, null, '/en/news', 'Mock')],
-            content: ['selectionMode' => 'manual', 'selectedArticleIds' => [9, 3]],
+            content: ['selectionMode' => 'manual', 'selectedArticleIds' => [99]],
         );
 
         $hydrated = $service->hydratePayload($payload, 'university_news', 'en');
 
-        self::assertSame(['Selected first', 'Selected second'], array_map(fn (ArticleCardDTO $card): string => $card->title, $hydrated->articles));
-        self::assertSame(['/en/news/9', '/en/news/3'], array_map(fn (ArticleCardDTO $card): ?string => $card->url, $hydrated->articles));
-        self::assertSame('Society event', $hydrated->content['societyEventArticles'][0]['title']);
+        self::assertSame(
+            ['Latest news', 'Latest announcement', 'Latest agreement', 'Society event'],
+            array_map(fn (ArticleCardDTO $card): string => $card->title, $hydrated->articles),
+        );
+        self::assertSame(['News', 'Announcements', 'Agreements and Memoranda of Understanding', "Society's Events"], array_map(
+            fn (ArticleCardDTO $card): ?string => $card->categoryLabel,
+            $hydrated->articles,
+        ));
     }
 
     public function test_manual_research_selection_uses_canonical_publication_cards(): void
