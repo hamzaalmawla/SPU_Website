@@ -38,6 +38,9 @@
         $teamLabel = $isAr ? 'الفريق' : 'Team';
         $supervisorLabel = $isAr ? 'المشرف' : 'Supervisor';
         $galleryLabel = $isAr ? 'معرض المشروع' : 'Project Gallery';
+        $aboutLabel = $isAr ? 'نبذة عن المشروع' : 'About this project';
+        $reportNote = $isAr ? 'التقرير الكامل للمشروع متاح في الملف المرفق.' : 'The full project report is available in the attached file.';
+        $reportLabel = $isAr ? 'تحميل تقرير المشروع' : 'Download the project report';
         $relatedLabel = $isAr ? 'مشاريع ذات صلة' : 'Related Projects';
         $previousLabel = $isAr ? 'السابق' : 'Previous';
         $nextLabel = $isAr ? 'التالي' : 'Next';
@@ -86,6 +89,30 @@
                                 <p class="text-[14px] leading-[26px] text-slate-600">{{ $paragraph }}</p>
                             @endforeach
                         </div>
+                    @elseif (! empty($project['overview']))
+                        {{-- Most imported projects have no written description, on the legacy
+                             site either: their content is the attached report. State what is
+                             known and point at the report instead of leaving the column empty. --}}
+                        <section class="project-overview mt-8 rounded-[6px] border border-slate-200 bg-slate-50 p-6 md:p-8" aria-labelledby="project-overview-heading">
+                            <h2 id="project-overview-heading" class="text-[18px] font-bold text-spu-blue">{{ $aboutLabel }}</h2>
+                            <p class="mt-3 text-[14px] leading-[26px] text-slate-600">{{ $project['overview'] }}</p>
+                            @php($overviewDocuments = array_values(array_filter($project['documents'] ?? [], static fn ($document): bool => is_array($document) && ! empty($document['file']))))
+                            @if ($overviewDocuments !== [])
+                                <p class="mt-5 text-[13px] font-semibold text-slate-500">{{ $reportNote }}</p>
+                                <div class="mt-3 flex flex-wrap gap-3">
+                                    @foreach ($overviewDocuments as $document)
+                                        <a href="{{ $document['file'] }}" download class="inline-flex items-center gap-2 rounded-[4px] bg-spu-red px-4 py-2.5 text-[13px] font-bold text-white transition hover:bg-spu-blue focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-spu-blue">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="h-4 w-4 shrink-0" aria-hidden="true">
+                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                                <path d="m7 10 5 5 5-5"></path>
+                                                <path d="M12 15V3"></path>
+                                            </svg>
+                                            <span>{{ $reportLabel }}</span>
+                                        </a>
+                                    @endforeach
+                                </div>
+                            @endif
+                        </section>
                     @endif
 
                 </div>
