@@ -337,7 +337,14 @@ rm -rf "${APP}/bootstrap/cache/filament"
 # ── Schema ───────────────────────────────────────────────────────────────────
 log "Recording migration status and SQL preview"
 (cd "${APP}" && "${PHP}" artisan migrate:status --no-interaction)
-MIGRATION_PREVIEW="$(cd "${APP}" && "${PHP}" artisan migrate --pretend --no-interaction 2>&1)"
+# --force is required here even though nothing runs: in production, migrate's
+# confirmation guard comes before --pretend is honoured and, with no terminal,
+# cancels with exit 1. Under set -e that ended the deploy silently with the
+# preview swallowed by the command substitution. --pretend executes no SQL.
+if ! MIGRATION_PREVIEW="$(cd "${APP}" && "${PHP}" artisan migrate --pretend --force --no-interaction 2>&1)"; then
+    printf '%s\n' "${MIGRATION_PREVIEW}" >&2
+    fail "Could not produce the migration SQL preview. Nothing was migrated."
+fi
 printf '%s\n' "${MIGRATION_PREVIEW}"
 
 # A normal production release may add or alter schema, but must not silently
