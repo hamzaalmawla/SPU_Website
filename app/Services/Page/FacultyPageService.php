@@ -1137,7 +1137,8 @@ final class FacultyPageService implements FacultyPageServiceInterface
             ->map(function (FacultyStudentProject $project) use ($faculty, $locale): array {
                 $translation = $this->projectTranslation($project, $locale);
                 $fields = $this->projectFieldBlockParser->parse(is_array($translation->body_json) ? $translation->body_json : []);
-                $team = $this->projectTeam($translation->team, $fields->team);
+                $people = $this->projectPeopleFields($project, $locale, $fields);
+                $team = $this->projectTeam($translation->team, $people->team);
                 $summary = $this->projectSummary((string) ($translation->summary ?? ''), $fields);
 
                 return [
@@ -1146,8 +1147,8 @@ final class FacultyPageService implements FacultyPageServiceInterface
                     'summary' => $summary,
                     'tag' => $translation->tag,
                     'team' => $team === [] ? null : implode('، ', $team),
-                    'supervisor' => $this->stringOrDefault($translation->supervisor, (string) $fields->supervisor) ?: null,
-                    'academicYear' => (string) $fields->year,
+                    'supervisor' => $this->stringOrDefault($translation->supervisor, (string) $people->supervisor) ?: null,
+                    'academicYear' => (string) $people->year,
                     'image' => $this->resolveProjectMedia($project->image),
                     'longDescription' => $this->projectDescription($summary, $fields->description),
                     'gallery' => is_array($project->gallery_json) ? $project->gallery_json : [],
@@ -1275,6 +1276,22 @@ final class FacultyPageService implements FacultyPageServiceInterface
     private function projectDetailRoute(Faculty $faculty, string $locale, string $projectSlug): string
     {
         return $this->url($locale, '/faculties/'.$this->publicSlug($faculty).'/projects/'.$projectSlug);
+    }
+
+    /**
+     * Team, supervisor and year are locale-neutral, but the importer kept the
+     * legacy field block only in the Arabic body. An English page whose own
+     * body has no block reads them from the Arabic one.
+     */
+    private function projectPeopleFields(FacultyStudentProject $project, string $locale, ProjectFieldBlockDTO $fields): ProjectFieldBlockDTO
+    {
+        if ($locale === 'ar' || $fields->fieldLines !== []) {
+            return $fields;
+        }
+
+        $arabic = $project->translations->firstWhere('locale', 'ar');
+
+        return $this->projectFieldBlockParser->parse(is_array($arabic?->body_json) ? $arabic->body_json : []);
     }
 
     /**
