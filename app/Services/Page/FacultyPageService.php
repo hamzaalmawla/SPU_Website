@@ -1133,13 +1133,17 @@ final class FacultyPageService implements FacultyPageServiceInterface
     /** @return array<int, array<string, mixed>> */
     private function projectItems(Faculty $faculty, string $locale): array
     {
+        $facultyName = (string) $this->facultyTranslation($faculty, $locale)->name;
+
         return $faculty->studentProjects
-            ->map(function (FacultyStudentProject $project) use ($faculty, $locale): array {
+            ->map(function (FacultyStudentProject $project) use ($faculty, $locale, $facultyName): array {
                 $translation = $this->projectTranslation($project, $locale);
                 $fields = $this->projectFieldBlockParser->parse(is_array($translation->body_json) ? $translation->body_json : []);
                 $people = $this->projectPeopleFields($project, $locale, $fields);
                 $team = $this->projectTeam($translation->team, $people->team);
                 $summary = $this->projectSummary((string) ($translation->summary ?? ''), $fields);
+                $description = $this->projectDescription($summary, $fields->description);
+                $supervisor = $this->stringOrDefault($translation->supervisor, (string) $people->supervisor);
 
                 return [
                     'slug' => (string) $project->slug,
@@ -1147,10 +1151,13 @@ final class FacultyPageService implements FacultyPageServiceInterface
                     'summary' => $summary,
                     'tag' => $translation->tag,
                     'team' => $team === [] ? null : implode('، ', $team),
-                    'supervisor' => $this->stringOrDefault($translation->supervisor, (string) $people->supervisor) ?: null,
+                    'supervisor' => $supervisor ?: null,
                     'academicYear' => (string) $people->year,
                     'image' => $this->resolveProjectMedia($project->image),
-                    'longDescription' => $this->projectDescription($summary, $fields->description),
+                    'longDescription' => $description,
+                    'overview' => $summary === '' && $description === []
+                        ? $this->projectOverview($locale, $facultyName, (string) $people->year, $team, $supervisor)
+                        : '',
                     'gallery' => is_array($project->gallery_json) ? $project->gallery_json : [],
                     'teamMembers' => array_map(static fn (string $name): array => ['name' => $name, 'role' => ''], $team),
                     'documents' => collect(is_array($project->documents_json) ? $project->documents_json : [])
@@ -1194,7 +1201,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
             navigation: $this->navigation($faculty, $locale, 'projects'),
             highlights: $this->highlights($faculty, $locale),
             seoTitle: (string) ($project['title'] ?? '').' | '.(string) $this->facultyTranslation($faculty, $locale)->name,
-            seoDescription: $this->stringOrDefault($project['summary'] ?? null, (string) ($project['title'] ?? '')),
+            seoDescription: $this->stringOrDefault($project['summary'] ?? null, $this->stringOrDefault($project['overview'] ?? null, (string) ($project['title'] ?? ''))),
             seoImage: $this->stringOrDefault($project['image'] ?? null, '/images/Gemini_Generated_Image_c89yjwc89yjwc89y.webp'),
         );
     }
@@ -1330,6 +1337,42 @@ final class FacultyPageService implements FacultyPageServiceInterface
         }
 
         return $description;
+    }
+
+    /**
+     * Most imported projects have no description: on the legacy site, as here,
+     * the page held only the team, the year and the attached report. Rather
+     * than an empty column, the page states what is known, composed only from
+     * the project's own fields.
+     *
+     * @param  list<string>  $team
+     */
+    private function projectOverview(string $locale, string $facultyName, string $year, array $team, string $supervisor): string
+    {
+        $isAr = $locale === 'ar';
+        $sentence = $isAr ? 'مشروع طلابي' : 'A student project';
+
+        if ($facultyName !== '') {
+            // Arabic names all open with كلية; three English ones are bare
+            // ("Petroleum Engineering"), which reads wrong after "at the".
+            $sentence .= $isAr
+                ? ' في '.$facultyName
+                : ' at the '.(str_starts_with(mb_strtolower($facultyName), 'faculty') ? $facultyName : 'Faculty of '.$facultyName);
+        }
+        if ($year !== '') {
+            $sentence .= $isAr ? ' للعام الدراسي '.$year : ' in the '.$year.' academic year';
+        }
+        if ($team !== []) {
+            $names = count($team) > 1
+                ? implode($isAr ? '، ' : ', ', array_slice($team, 0, -1)).($isAr ? ' و' : ' and ').end($team)
+                : $team[0];
+            $sentence .= $isAr ? '، من إعداد '.$names : ', prepared by '.$names;
+        }
+        if ($supervisor !== '') {
+            $sentence .= $isAr ? ' بإشراف '.$supervisor : ', supervised by '.$supervisor;
+        }
+
+        return $sentence.'.';
     }
 
     /**

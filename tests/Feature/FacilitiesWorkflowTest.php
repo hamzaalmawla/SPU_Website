@@ -1784,6 +1784,7 @@ final class FacilitiesWorkflowTest extends TestCase
             'faculty_id' => (int) $faculty->getKey(),
             'legacy_source_id' => 6103,
             'slug' => 'artificial-intelligence-project-6103',
+            'documents_json' => [['file' => '/storage/legacy/faculty-projects/artificial-intelligence/6103/report.pdf']],
             'sort_order' => 1,
             'is_enabled' => true,
         ]);
@@ -1811,12 +1812,20 @@ final class FacilitiesWorkflowTest extends TestCase
         self::assertSame(1, substr_count($html, '>Farah fares<'), 'Farah is listed once, in the team');
         self::assertSame(1, substr_count($html, '>Ahmad shekha<'), 'Ahmad is listed once, in the team');
         self::assertStringNotContainsString('font-medium leading-[26px] text-slate-600">Ahmad shekha', $html, 'A team member is not the summary');
+        // No description on the legacy page either: the overview states the known
+        // fields and leads to the report instead of leaving the column empty.
+        self::assertStringContainsString('نبذة عن المشروع', $html);
+        self::assertStringContainsString('مشروع طلابي في كلية هندسة الذكاء الاصطناعي للعام الدراسي 2025-2026، من إعداد Farah fares وAhmad shekha.', $html);
+        self::assertStringContainsString('تحميل تقرير المشروع', $html);
 
         $english = (string) $this->get('/en/faculties/artificial-intelligence/projects/artificial-intelligence-project-6103')
             ->assertOk()
             ->assertSee('2025-2026')
             ->getContent();
         self::assertSame(1, substr_count($english, '>Ahmad shekha<'), 'The English page reads the team from the Arabic field block');
+        self::assertStringContainsString('About this project', $english);
+        self::assertStringContainsString('in the 2025-2026 academic year, prepared by Farah fares and Ahmad shekha.', $english);
+        self::assertStringContainsString('Download the project report', $english);
     }
 
     public function test_database_project_list_resolves_imported_legacy_images(): void
