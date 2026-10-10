@@ -18,20 +18,4 @@ final readonly class ProjectFieldBlockDTO
         public ?string $year,
         public array $fieldLines,
     ) {}
-
-    public function isFieldLine(string $line): bool
-    {
-        $line = trim($line);
-        if ($line === '') {
-            return false;
-        }
-
-        foreach ($this->fieldLines as $fieldLine) {
-            if ($fieldLine === $line || str_starts_with($fieldLine, $line)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
 }

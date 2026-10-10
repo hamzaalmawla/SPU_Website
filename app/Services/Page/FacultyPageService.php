@@ -1322,7 +1322,11 @@ final class FacultyPageService implements FacultyPageServiceInterface
      */
     private function projectSummary(string $storedSummary, ProjectFieldBlockDTO $fields): string
     {
-        if (trim($storedSummary) !== '' && ! $fields->isFieldLine($storedSummary)) {
+        $summary = trim($storedSummary);
+        $isFieldValue = $summary !== '' && collect($fields->fieldLines)
+            ->contains(static fn (string $line): bool => str_starts_with($line, $summary));
+
+        if ($summary !== '' && ! $isFieldValue) {
             return $storedSummary;
         }
 
