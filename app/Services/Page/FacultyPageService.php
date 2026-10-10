@@ -6,6 +6,7 @@ namespace App\Services\Page;
 
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
+use App\Contracts\Faculty\ProjectFieldBlockParserInterface;
 use App\Contracts\Page\AboutPageServiceInterface;
 use App\Contracts\Page\FacultyPageServiceInterface;
 use App\Contracts\Page\FacultySubpageCardServiceInterface;
@@ -22,6 +23,7 @@ use App\DTOs\Faculty\FacultyHubPageDTO;
 use App\DTOs\Faculty\FacultyNavigationItemDTO;
 use App\DTOs\Faculty\FacultyProjectDetailPageDTO;
 use App\DTOs\Faculty\FacultySubpageDTO;
+use App\DTOs\Faculty\ProjectFieldBlockDTO;
 use App\Models\Career\Alumni;
 use App\Models\Career\AlumniTranslation;
 use App\Models\Career\HonorStudent;
@@ -45,6 +47,7 @@ use App\Models\Shared\MigrationLog;
 use App\Support\MediaUrlResolver;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 final class FacultyPageService implements FacultyPageServiceInterface
 {
@@ -76,6 +79,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
         private readonly ResearchPageServiceInterface $researchPageService,
         private readonly AboutPageServiceInterface $aboutPageService,
         private readonly ProfilePageServiceInterface $profilePageService,
+        private readonly ProjectFieldBlockParserInterface $projectFieldBlockParser,
     ) {}
 
     public function getHub(string $locale): FacultyHubPageDTO
@@ -1132,18 +1136,22 @@ final class FacultyPageService implements FacultyPageServiceInterface
         return $faculty->studentProjects
             ->map(function (FacultyStudentProject $project) use ($faculty, $locale): array {
                 $translation = $this->projectTranslation($project, $locale);
+                $fields = $this->projectFieldBlockParser->parse(is_array($translation->body_json) ? $translation->body_json : []);
+                $team = $this->projectTeam($translation->team, $fields->team);
+                $summary = $this->projectSummary((string) ($translation->summary ?? ''), $fields);
 
                 return [
                     'slug' => (string) $project->slug,
                     'title' => (string) $translation->title,
-                    'summary' => (string) ($translation->summary ?? ''),
+                    'summary' => $summary,
                     'tag' => $translation->tag,
-                    'team' => $translation->team,
-                    'supervisor' => $translation->supervisor,
+                    'team' => $team === [] ? null : implode('، ', $team),
+                    'supervisor' => $this->stringOrDefault($translation->supervisor, (string) $fields->supervisor) ?: null,
+                    'academicYear' => (string) $fields->year,
                     'image' => $this->resolveProjectMedia($project->image),
-                    'longDescription' => is_array($translation->body_json) ? $translation->body_json : [],
+                    'longDescription' => $this->projectDescription($summary, $fields->description),
                     'gallery' => is_array($project->gallery_json) ? $project->gallery_json : [],
-                    'teamMembers' => $this->projectTeamMembers($translation->team),
+                    'teamMembers' => array_map(static fn (string $name): array => ['name' => $name, 'role' => ''], $team),
                     'documents' => collect(is_array($project->documents_json) ? $project->documents_json : [])
                         ->map(fn (array $document): array => [
                             'label' => $locale === 'ar' ? 'تحميل ملف المشروع' : 'Download project file',
@@ -1185,7 +1193,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
             navigation: $this->navigation($faculty, $locale, 'projects'),
             highlights: $this->highlights($faculty, $locale),
             seoTitle: (string) ($project['title'] ?? '').' | '.(string) $this->facultyTranslation($faculty, $locale)->name,
-            seoDescription: (string) ($project['summary'] ?? ''),
+            seoDescription: $this->stringOrDefault($project['summary'] ?? null, (string) ($project['title'] ?? '')),
             seoImage: $this->stringOrDefault($project['image'] ?? null, '/images/Gemini_Generated_Image_c89yjwc89yjwc89y.webp'),
         );
     }
@@ -1269,19 +1277,60 @@ final class FacultyPageService implements FacultyPageServiceInterface
         return $this->url($locale, '/faculties/'.$this->publicSlug($faculty).'/projects/'.$projectSlug);
     }
 
-    /** @return array<int, array{name: string, role: string}> */
-    private function projectTeamMembers(?string $team): array
+    /**
+     * The stored team, plus any name the body lists that it is missing. Imports
+     * kept only the first name under a multi-line team label, so the body is
+     * the more complete record; the stored value stays first because editors
+     * maintain it.
+     *
+     * @param  list<string>  $bodyTeam
+     * @return list<string>
+     */
+    private function projectTeam(?string $storedTeam, array $bodyTeam): array
     {
-        if (! is_string($team) || trim($team) === '') {
-            return [];
+        $team = [];
+        foreach ([...$this->projectFieldBlockParser->splitNames($storedTeam), ...$bodyTeam] as $name) {
+            $key = mb_strtolower(preg_replace('/\s+/u', ' ', $name) ?? $name);
+            $team[$key] ??= $name;
         }
 
-        return collect(preg_split('/[,،؛;]+/u', $team) ?: [])
-            ->map(static fn (string $name): string => trim($name))
-            ->filter()
-            ->map(static fn (string $name): array => ['name' => $name, 'role' => ''])
-            ->values()
-            ->all();
+        return array_values($team);
+    }
+
+    /**
+     * The description without its opening paragraph when the summary already
+     * shows it. Summaries are that paragraph cut to 240 characters, so the page
+     * otherwise printed it twice.
+     *
+     * @param  list<string>  $description
+     * @return list<string>
+     */
+    private function projectDescription(string $summary, array $description): array
+    {
+        $summary = trim($summary);
+        if ($summary !== '' && isset($description[0]) && str_starts_with(trim($description[0]), $summary)) {
+            array_shift($description);
+        }
+
+        return $description;
+    }
+
+    /**
+     * A stored summary that is really a field value - a name, a year, or a
+     * label such as "العام الدراسي:" - is replaced by the first description
+     * paragraph, or dropped when the body has none.
+     */
+    private function projectSummary(string $storedSummary, ProjectFieldBlockDTO $fields): string
+    {
+        $summary = trim($storedSummary);
+        $isFieldValue = $summary !== '' && collect($fields->fieldLines)
+            ->contains(static fn (string $line): bool => str_starts_with($line, $summary));
+
+        if ($summary !== '' && ! $isFieldValue) {
+            return $storedSummary;
+        }
+
+        return Str::limit($fields->description[0] ?? '', 240, '');
     }
 
     /** @return array<int, array<string, mixed>> */

@@ -18,6 +18,7 @@ use App\Contracts\ErrorPage\ErrorPageRendererInterface;
 use App\Contracts\ErrorPage\ErrorPageServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanEditorServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
+use App\Contracts\Faculty\ProjectFieldBlockParserInterface;
 use App\Contracts\Form\ContactMessageReviewServiceInterface;
 use App\Contracts\Form\DynamicFormSubmissionReviewServiceInterface;
 use App\Contracts\Form\DynamicFormSubmissionServiceInterface;
@@ -178,6 +179,7 @@ use App\Services\ErrorPage\ErrorPageRenderer;
 use App\Services\ErrorPage\ErrorPageService;
 use App\Services\Faculty\FacultyStudyPlanEditorService;
 use App\Services\Faculty\FacultyStudyPlanLinkService;
+use App\Services\Faculty\ProjectFieldBlockParser;
 use App\Services\Form\ContactMessageReviewService;
 use App\Services\Form\DynamicFormSubmissionReviewService;
 use App\Services\Form\DynamicFormSubmissionService;
@@ -583,6 +585,7 @@ class AppServiceProvider extends ServiceProvider
             EServicesPageServiceInterface::class => EServicesPageService::class,
             FacultyStudyPlanEditorServiceInterface::class => FacultyStudyPlanEditorService::class,
             FacultyStudyPlanLinkServiceInterface::class => FacultyStudyPlanLinkService::class,
+            ProjectFieldBlockParserInterface::class => ProjectFieldBlockParser::class,
             FacultyPageServiceInterface::class => FacultyPageService::class,
             SitemapServiceInterface::class => SitemapService::class,
             MediaServiceInterface::class => MediaService::class,
