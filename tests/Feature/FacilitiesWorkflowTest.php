@@ -1772,6 +1772,46 @@ final class FacilitiesWorkflowTest extends TestCase
             ->assertSee('تحميل ملف المشروع');
     }
 
+    /**
+     * artificial-intelligence-project-6103 as imported: the body is only the
+     * legacy field block, the stored team kept the first name, and the summary
+     * is the second team member.
+     */
+    public function test_imported_project_field_block_renders_as_team_and_year_not_description(): void
+    {
+        $faculty = Faculty::query()->where('public_slug', 'artificial-intelligence')->firstOrFail();
+        $project = FacultyStudentProject::query()->create([
+            'faculty_id' => (int) $faculty->getKey(),
+            'legacy_source_id' => 6103,
+            'slug' => 'artificial-intelligence-project-6103',
+            'sort_order' => 1,
+            'is_enabled' => true,
+        ]);
+        foreach (['ar', 'en'] as $locale) {
+            FacultyStudentProjectTranslation::query()->create([
+                'faculty_student_project_id' => (int) $project->getKey(),
+                'locale' => $locale,
+                'title' => 'AI - enhanced blockchain network for cryptocurrency exchange',
+                'summary' => 'Ahmad shekha',
+                'body_json' => ['اعداد', 'Farah fares', 'Ahmad shekha', 'تاريخ', '2025-2026'],
+                'team' => 'Farah fares',
+            ]);
+        }
+
+        Cache::flush();
+
+        $html = (string) $this->get('/ar/faculties/artificial-intelligence/projects/artificial-intelligence-project-6103')
+            ->assertOk()
+            ->assertSee('2025-2026')
+            ->assertDontSee('<p class="text-[14px] leading-[26px] text-slate-600">اعداد</p>', false)
+            ->assertDontSee('<meta name="description" content="Ahmad shekha">', false)
+            ->getContent();
+
+        self::assertSame(1, substr_count($html, '>Farah fares<'), 'Farah is listed once, in the team');
+        self::assertSame(1, substr_count($html, '>Ahmad shekha<'), 'Ahmad is listed once, in the team');
+        self::assertStringNotContainsString('font-medium leading-[26px] text-slate-600">Ahmad shekha', $html, 'A team member is not the summary');
+    }
+
     public function test_database_project_list_resolves_imported_legacy_images(): void
     {
         $faculty = Faculty::query()->where('public_slug', 'pharmacy')->firstOrFail();

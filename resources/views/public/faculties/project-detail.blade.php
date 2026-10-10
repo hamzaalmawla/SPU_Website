@@ -74,16 +74,19 @@
 
                     <div class="mt-8">
                         <h1 class="text-[26px] font-bold leading-[34px] text-spu-blue md:text-[32px] md:leading-[42px]">{{ $project['title'] ?? '' }}</h1>
-                        <p class="mt-4 text-[14px] font-medium leading-[26px] text-slate-600">{{ $project['summary'] ?? '' }}</p>
+                        @if (! empty($project['summary']))
+                            <p class="mt-4 text-[14px] font-medium leading-[26px] text-slate-600">{{ $project['summary'] }}</p>
+                        @endif
                     </div>
 
-                    <div class="mt-8 space-y-4">
-                        @foreach (($project['longDescription'] ?? []) as $paragraph)
-                            @if ($paragraph)
+                    @php($descriptionParagraphs = array_values(array_filter($project['longDescription'] ?? [], static fn ($paragraph): bool => is_string($paragraph) && trim($paragraph) !== '')))
+                    @if ($descriptionParagraphs !== [])
+                        <div class="mt-8 space-y-4">
+                            @foreach ($descriptionParagraphs as $paragraph)
                                 <p class="text-[14px] leading-[26px] text-slate-600">{{ $paragraph }}</p>
-                            @endif
-                        @endforeach
-                    </div>
+                            @endforeach
+                        </div>
+                    @endif
 
                 </div>
 
@@ -95,11 +98,13 @@
                             <span class="text-[14px] font-bold text-spu-blue">{{ $project['facultyTitle'] ?? ($faculty['title'] ?? '') }}</span>
                         </div>
                         <div class="mt-4 border-t border-slate-100 pt-4">
+                            @if (! empty($project['year']))
+                                <div class="mb-3 flex items-center justify-between text-[12px]">
+                                    <span class="text-slate-400">{{ $yearLabel }}</span>
+                                    <span class="font-bold text-spu-blue" dir="ltr">{{ $project['year'] }}</span>
+                                </div>
+                            @endif
                             <div class="flex items-center justify-between text-[12px]">
-                                <span class="text-slate-400">{{ $yearLabel }}</span>
-                                <span class="font-bold text-spu-blue">{{ $project['year'] ?? '' }}</span>
-                            </div>
-                            <div class="mt-3 flex items-center justify-between text-[12px]">
                                 <span class="text-slate-400">{{ $statusLabel }}</span>
                                 <span class="rounded-[3px] bg-green-50 px-2 py-0.5 font-bold text-green-600">{{ $statusValue }}</span>
                             </div>
