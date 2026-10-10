@@ -1815,7 +1815,7 @@ final class FacilitiesWorkflowTest extends TestCase
         // No description on the legacy page either: the overview states the known
         // fields and leads to the report instead of leaving the column empty.
         self::assertStringContainsString('نبذة عن المشروع', $html);
-        self::assertStringContainsString('مشروع طلابي في كلية هندسة الذكاء الاصطناعي للعام الدراسي 2025-2026، من إعداد Farah fares وAhmad shekha.', $html);
+        self::assertStringContainsString('مشروع طلابي في كلية هندسة الذكاء الاصطناعي للعام الدراسي 2025-2026، من إعداد Farah fares و Ahmad shekha.', $html);
         self::assertStringContainsString('تحميل تقرير المشروع', $html);
 
         $english = (string) $this->get('/en/faculties/artificial-intelligence/projects/artificial-intelligence-project-6103')
