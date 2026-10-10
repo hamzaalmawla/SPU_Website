@@ -1363,8 +1363,12 @@ final class FacultyPageService implements FacultyPageServiceInterface
             $sentence .= $isAr ? ' للعام الدراسي '.$year : ' in the '.$year.' academic year';
         }
         if ($team !== []) {
+            $last = (string) end($team);
+            // و attaches to an Arabic name ("وروان") but must stand apart before a
+            // Latin one, or the bidi algorithm renders "Ahmad shekhaو".
+            $conjunction = $isAr ? (preg_match('/^\p{Arabic}/u', $last) === 1 ? ' و' : ' و ') : ' and ';
             $names = count($team) > 1
-                ? implode($isAr ? '، ' : ', ', array_slice($team, 0, -1)).($isAr ? ' و' : ' and ').end($team)
+                ? implode($isAr ? '، ' : ', ', array_slice($team, 0, -1)).$conjunction.$last
                 : $team[0];
             $sentence .= $isAr ? '، من إعداد '.$names : ', prepared by '.$names;
         }
