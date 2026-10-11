@@ -1261,14 +1261,40 @@ final class FacultyPageService implements FacultyPageServiceInterface
 
         if (is_array($project['documents'] ?? null)) {
             $project['documents'] = array_values(array_filter(array_map(
-                fn (mixed $doc): ?array => is_array($doc) && is_string($doc['file'] ?? null)
+                fn (mixed $doc): ?array => is_array($doc) && is_string($doc['file'] ?? null) && $this->legacyFileIsServed($doc['file'])
                     ? ['label' => (string) ($doc['label'] ?? ''), 'file' => $this->resolveProjectMedia($doc['file'])]
                     : null,
                 $project['documents'],
-            )));
+            ), static fn (?array $doc): bool => $doc !== null && $doc['file'] !== null));
         }
 
         return $project;
+    }
+
+    /**
+     * Twenty imported project reports point at downloads/files entries that
+     * never existed - the old site 404'd them too - so the page offered a
+     * download that broke. Where the legacy tree is mounted, a report is
+     * offered only if its file is really there. Without the mount (local
+     * development, tests) nothing can be verified, so nothing is hidden.
+     */
+    private function legacyFileIsServed(string $path): bool
+    {
+        $normalized = ltrim(str_replace('\\', '/', trim($path)), '/');
+
+        if (! str_starts_with($normalized, 'downloads/files/') || str_contains($normalized, '..')) {
+            return true;
+        }
+
+        $mount = public_path('_legacy/downloads/files');
+
+        if (! is_dir($mount)) {
+            return true;
+        }
+
+        $file = public_path('_legacy/'.$normalized);
+
+        return is_file($file) && filesize($file) > 0;
     }
 
     private function resolveProjectMedia(?string $path): ?string
