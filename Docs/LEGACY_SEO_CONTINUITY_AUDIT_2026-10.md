@@ -150,11 +150,26 @@ guessed redirect would hide the URL from `unresolved_legacy_requests`.
 - **The primary domain's document root.** cPanel fixes it at `public_html`, and the
   cutover script does not move it. Whatever mechanism is chosen (WHM docroot
   change or a rewrite in `public_html`), anything in the old root that is not
-  mounted under `_legacy/` disappears. That now includes everything with search or
-  link value, but also two live PHP applications, **`/forms`** (a survey system)
-  and **`/Medicine`**, which will stop working unless they are kept reachable or
-  retired on purpose. `/CMS_SPU_SyrianMonster_17` (the old CMS login) should be
-  retired.
+  mounted into the new docroot disappears. Everything with search or link value
+  is mounted under `_legacy/`. The two live PHP applications, **`/forms`**
+  (surveys, complaints) and **`/Medicine`** (Faculty of Medicine recruitment),
+  are mounted at their own paths by `cpanel-deploy.sh` (`ensure_app_mount`), so
+  they keep answering at the same URLs. Each carries an `.htaccess` with
+  `DirectoryIndex index.php`; the Laravel docroot's `app.php` would otherwise be
+  inherited. The deploy refuses to mount an app without that file.
+  `/CMS_SPU_SyrianMonster_17` (the old CMS) is deliberately not mounted, so it
+  retires at cutover.
+- **Exposure fixed on the live old site (2026-10-11).** `/Medicine` published every
+  applicant's CV with a directory listing, plus its PHP session files, error log
+  and schema. Source archives (`/forms_spu.zip`, `/forms-29-8-26.zip`, the old
+  CMS `engine.zip`), `/error_log2`, `composer.lock`, `phpunit.xml` and directory
+  listings (including all of `/downloads/files/`) were public. CVs are now served
+  only to a logged-in admin (`Medicine/admin/cv.php`). The internals and archives
+  return 403, and listings are off site-wide. Originals are in
+  `/home/spuedu/backups/old-site-hardening-20261011/`. Because the session
+  directory was listable, **change the `/Medicine` admin password** (its
+  default is hard-coded in `config/config.php`) to invalidate any captured
+  session, and treat the CVs as having been publicly exposed.
 - **The docroot `.htaccess` is hand-maintained** and is not deployed from git. The
   new rules in `public/.htaccess` (FCKBIH, `/downloads/` loose files, touch-icon
   variants, `Options +FollowSymLinks`) must be applied to the server copy, keeping
