@@ -177,6 +177,43 @@ final class LegacySeoContinuityAuditTest extends TestCase
     }
 
     /**
+     * The old homepage linked the news and announcements lists with act=0, and
+     * crawlers hold thousands of paging variants of them - after the homepage,
+     * the most requested legacy URLs in the Sep–Oct 2026 logs.
+     */
+    public function test_legacy_list_pages_resolve_with_their_paging_state(): void
+    {
+        $cases = [
+            '/index.php?page=list&ex=2&dir=items&lang=1&service=4&act=0' => '/ar/news/announcements',
+            '/index.php?CurrentPage=7&Last=1342&act=0&dir=items&ex=2&lang=2&page=list&service=4' => '/en/news/announcements',
+            '/index.php?page=list&ex=2&dir=items&lang=1&service=3&act=0' => '/ar/news',
+            '/index.php?First=6&Last=1113&act=12&dir=items&ex=2&lang=2&page=list&service=3' => '/en/news',
+        ];
+
+        foreach ($cases as $legacy => $destination) {
+            $this->get($legacy)->assertStatus(301)->assertRedirect($destination);
+        }
+    }
+
+    /** A parameter that changes what the list is still keeps it unresolved. */
+    public function test_a_legacy_list_with_an_unreviewed_parameter_stays_unresolved(): void
+    {
+        $this->get('/index.php?page=list&ex=2&dir=items&lang=1&service=4&cat_id=99')->assertNotFound();
+    }
+
+    /** The old site search carries its keywords to the new search. */
+    public function test_the_legacy_site_search_resolves_to_search_with_its_keywords(): void
+    {
+        $this->get('/index.php?Keywords=%D9%83%D9%84%D9%8A%D8%A9&StartSearch=1&dir=search&ex=2&lang=1&page=search')
+            ->assertStatus(301)
+            ->assertRedirect('/ar/search?q=%D9%83%D9%84%D9%8A%D8%A9');
+
+        $this->get('/index.php?Keywords=&StartSearch=1&dir=search&ex=2&lang=2&page=search')
+            ->assertStatus(301)
+            ->assertRedirect('/en/search');
+    }
+
+    /**
      * @param  array<int, string>  $locales
      */
     private function publishedLegacyArticle(int $sourceId, int $service, array $locales): int
