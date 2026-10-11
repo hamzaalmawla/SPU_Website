@@ -315,6 +315,30 @@ log "Ensuring legacy static mounts"
 ensure_legacy_mount "${LEGACY_ROOT}/FCKBIH"    "${WEB}/_legacy/FCKBIH"
 ensure_legacy_mount "${LEGACY_ROOT}/downloads" "${WEB}/_legacy/downloads/root"
 
+# ── Live applications kept at their addresses ────────────────────────────────
+# Two separate PHP applications live in the old document root and are in use:
+# /forms (surveys, complaints and their dashboards) and /Medicine (the Faculty
+# of Medicine recruitment portal). Unlike the media above they must execute, so
+# they are mounted at their own paths rather than under _legacy/, where PHP is
+# refused. Once the domain points at this docroot they keep answering exactly
+# where they always did; until then they are also reachable on the v2 host.
+#
+# Each carries its own .htaccess with DirectoryIndex index.php - this docroot
+# sets app.php, which subdirectories would otherwise inherit and answer 403 -
+# and denies its internals (uploads, sessions, logs, source) over HTTP. A mount
+# without that file is refused rather than published half-protected.
+ensure_app_mount() {
+    local source="$1" target="$2"
+    if [[ -d "${source}" ]] && ! grep -qs '^[[:space:]]*DirectoryIndex[[:space:]]\+index\.php' "${source}/.htaccess"; then
+        printf '  ⚠ %s/.htaccess lacks DirectoryIndex index.php; %s not mounted\n' "${source}" "${target}" >&2
+        return 0
+    fi
+    ensure_legacy_mount "${source}" "${target}"
+}
+log "Ensuring live application mounts"
+ensure_app_mount "${LEGACY_ROOT}/forms"    "${WEB}/forms"
+ensure_app_mount "${LEGACY_ROOT}/Medicine" "${WEB}/Medicine"
+
 # nginx strips Accept-Encoding before Apache or PHP ever sees it (measured
 # 2 September; the reasoning is in config/edge.php). That means mod_deflate
 # cannot fire for a static file and no negotiated rewrite can either, so the

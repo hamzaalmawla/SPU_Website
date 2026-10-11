@@ -44,6 +44,20 @@ final class LegacyRootFilesTest extends TestCase
         }
     }
 
+    /**
+     * /forms and /Medicine are live PHP applications in the old docroot. They
+     * must keep answering at the same address after cutover, so the deploy
+     * mounts them - outside _legacy/, where PHP is refused.
+     */
+    public function test_the_deploy_keeps_the_live_legacy_applications_mounted(): void
+    {
+        $script = (string) file_get_contents(base_path('deploy/v2-staging/cpanel-deploy.sh'));
+
+        $this->assertStringContainsString('ensure_app_mount "${LEGACY_ROOT}/forms"    "${WEB}/forms"', $script);
+        $this->assertStringContainsString('ensure_app_mount "${LEGACY_ROOT}/Medicine" "${WEB}/Medicine"', $script);
+        $this->assertStringNotContainsString('"${WEB}/_legacy/forms"', $script);
+    }
+
     /** It was a zero-byte file, which browsers and search engines show as no icon. */
     public function test_favicon_is_a_real_icon(): void
     {
