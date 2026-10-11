@@ -136,7 +136,9 @@ final class CampusLifeController extends Controller
             'settings' => $this->settingsService->getPublicSettings($locale),
             'languageSwitch' => $this->languageSwitchLinks($locale, '/career-development/jobs/apply', $query),
             'isPreview' => false,
-            'seo' => $this->sectionSeo($locale, $page),
+            // The form only exists for a named job, so the canonical and the
+            // hreflang alternates have to carry it - without it they named a 404.
+            'seo' => $this->sectionSeo($locale, $page, $query),
             'page' => $page,
         ]);
     }

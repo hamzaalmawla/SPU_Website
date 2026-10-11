@@ -123,6 +123,17 @@ final class LegacyUrlNormalizer implements LegacyUrlNormalizerInterface
             $params[$key] = trim((string) $value);
         }
 
+        // Old pages that printed hrefs without decoding left "&amp;" in them,
+        // and crawlers followed those literally: ?page=show&amp;dir=items
+        // arrives as a parameter named "amp;dir". The intended name is
+        // unambiguous, and a correctly spelled parameter always wins.
+        foreach ($params as $key => $value) {
+            if (preg_match('/^(?:amp;)+(.+)$/', $key, $match) === 1) {
+                unset($params[$key]);
+                $params[$match[1]] ??= $value;
+            }
+        }
+
         if (! isset($params['service']) || $params['service'] === '') {
             if (isset($params['ser']) && $params['ser'] !== '') {
                 $params['service'] = $params['ser'];

@@ -146,7 +146,11 @@ final class NewsController extends Controller
             'nextMonth' => $calendar['nextMonth'],
             'events' => $calendar['events'],
             'days' => $calendar['days'],
-            'seo' => $this->seo($locale, '/news/events', (string) $page['calendarTitle'], (string) $page['summary'], (string) $page['heroImage']),
+            // Previous/next walk the calendar without end - a crawler following
+            // them reached the 1760s and the 2200s. Each month view already
+            // canonicalises to the calendar itself; noindex keeps the empty
+            // months out of the index while their event links stay followed.
+            'seo' => $this->seo($locale, '/news/events', (string) $page['calendarTitle'], (string) $page['summary'], (string) $page['heroImage'], $request->has('month') ? 'noindex,follow' : 'index,follow'),
         ]));
     }
 

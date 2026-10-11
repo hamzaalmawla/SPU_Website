@@ -130,7 +130,7 @@ final class LegacySubsiteContentQueryResolver implements LegacyQueryModuleResolv
     public function canResolve(NormalizedLegacyUrlDTO $url): bool
     {
         return $url->requestType === 'legacy_router'
-            && in_array($url->dir, ['items', 'councils', 'member_items', 'photos', 'good_students'], true)
+            && in_array($url->dir, ['items', 'councils', 'councils7', 'member_items', 'photos', 'good_students'], true)
             // "show" is a detail URL and "list" is the section index; both land on
             // the same current section, which is the index page either way.
             && in_array($url->page, ['show', 'list'], true)
@@ -182,7 +182,13 @@ final class LegacySubsiteContentQueryResolver implements LegacyQueryModuleResolv
         }
 
         if (isset(self::SECTIONS[$subsite])) {
-            if ($url->dir === 'photos') {
+            // Staff and gallery listings are addressed by dir, not by service,
+            // exactly as on the faculty subsites below: the dental clinic and
+            // the hospital listed their doctors under dir=councils (councils7
+            // is the clinic's alternate staff template) with a service number
+            // outside their own decade. The section page is where that staff
+            // is presented now; no individual record is named.
+            if (in_array($url->dir, ['photos', 'councils', 'councils7'], true)) {
                 return self::SECTIONS[$subsite]['path'];
             }
 
