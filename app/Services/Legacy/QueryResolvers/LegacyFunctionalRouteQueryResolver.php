@@ -74,18 +74,50 @@ final class LegacyFunctionalRouteQueryResolver implements LegacyQueryModuleResol
         'dir=faqs&ex=2&lang=2&page=faqs' => ['source_id' => 0, 'path' => '/admissions/faq'],
     ];
 
+    /**
+     * Paging and display state the old list printed into every link. The old
+     * homepage itself linked the news and announcements lists with act=0, and
+     * crawlers hold thousands of First/Last/CurrentPage variants - the most
+     * requested legacy URLs in the Sep–Oct 2026 logs after the homepage. They
+     * are the same list, so they are not part of the reviewed signature.
+     */
+    private const LIST_STATE_PARAMETERS = ['act', 'First', 'Last', 'CurrentPage', 'nt', 'src'];
+
     public function canResolve(NormalizedLegacyUrlDTO $url): bool
     {
         return $url->requestType === 'legacy_router'
             && $url->subsite->key === 'root'
             && mb_strtolower($url->path) === '/index.php'
-            && isset(self::ROUTES[$this->signature($url)]);
+            && ($this->isSearch($url) || isset(self::ROUTES[$this->signature($url)]));
+    }
+
+    /**
+     * The old site search (dir=search&page=search&Keywords=…) has a direct
+     * equivalent, and its keywords carry over as the new search's query.
+     */
+    private function isSearch(NormalizedLegacyUrlDTO $url): bool
+    {
+        return $url->dir === 'search' && $url->page === 'search';
     }
 
     public function resolve(NormalizedLegacyUrlDTO $url): ?LegacyQueryResolutionDTO
     {
         if (! $this->canResolve($url)) {
             return null;
+        }
+
+        if ($this->isSearch($url)) {
+            $keywords = trim((string) ($url->params['Keywords'] ?? ''));
+
+            return new LegacyQueryResolutionDTO(
+                module: 'legacy_functional_route',
+                sourceTable: 'legacy_router',
+                sourceId: 0,
+                targetUrl: '/'.$url->language->locale.'/search'.($keywords !== '' ? '?q='.rawurlencode(mb_substr($keywords, 0, 200)) : ''),
+                statusCode: 301,
+                confidence: 'high',
+                notes: 'Resolved the legacy site search to the current search, carrying its keywords.',
+            );
         }
 
         $mapping = self::ROUTES[$this->signature($url)];
@@ -103,7 +135,11 @@ final class LegacyFunctionalRouteQueryResolver implements LegacyQueryModuleResol
 
     private function signature(NormalizedLegacyUrlDTO $url): string
     {
-        $params = $url->params;
+        // Only a list has paging state; on any other page an extra parameter
+        // is a near miss and must not borrow a reviewed signature.
+        $params = $url->page === 'list'
+            ? array_diff_key($url->params, array_flip(self::LIST_STATE_PARAMETERS))
+            : $url->params;
         ksort($params);
 
         return http_build_query($params, '', '&', PHP_QUERY_RFC3986);
