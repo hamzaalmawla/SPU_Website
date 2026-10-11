@@ -39,10 +39,31 @@ final class ContinuityService implements ContinuityServiceInterface
         ?string $queryString = null,
         ?string $preferredLocale = null,
     ): ?RedirectResultDTO {
-        $normalizedPath = '/'.ltrim($path, '/');
+        $requestedPath = '/'.ltrim($path, '/');
+        $indexPath = $this->legacyDirectoryIndex($requestedPath, $queryString);
 
+        // A directory spelling is tried as its index.php first, because that is
+        // what Apache served. When that names nothing precise, the directory's
+        // own handling still applies, so no URL loses the destination it had.
+        if ($indexPath !== $requestedPath) {
+            $precise = $this->resolvePath($indexPath, $queryString, $preferredLocale, retiredFallback: false);
+
+            if ($precise !== null) {
+                return $precise;
+            }
+        }
+
+        return $this->resolvePath($requestedPath, $queryString, $preferredLocale, retiredFallback: true);
+    }
+
+    private function resolvePath(
+        string $normalizedPath,
+        ?string $queryString,
+        ?string $preferredLocale,
+        bool $retiredFallback,
+    ): ?RedirectResultDTO {
         if ($this->isUnsupportedLanguageFallback($normalizedPath, $queryString)) {
-            return $this->legacyQueryRedirectResolver->resolve($normalizedPath, $queryString);
+            return $this->resolveRetiredLanguage($normalizedPath, $queryString, $retiredFallback);
         }
 
         if ($this->isUnknownLegacyLanguage($normalizedPath, $queryString)) {
@@ -83,6 +104,82 @@ final class ContinuityService implements ContinuityServiceInterface
             ->first();
 
         return $entry?->current_path;
+    }
+
+    /**
+     * Apache answered a directory with its index.php, so the old site served
+     * /?cat_id=…&dir=items… and /alumni/?dir=items… exactly as it served the
+     * same query on /index.php and /alumni/index.php. Crawlers and backlinks
+     * hold tens of thousands of these spellings. Laravel sees only the
+     * directory, so they reached the homepage or a 404 instead of the record.
+     *
+     * Only a legacy router query is rewritten - a bare directory, or one
+     * carrying tracking parameters alone, keeps its normal handling. /admin is
+     * absent because the Filament panel owns it (maintenance guide §13.5).
+     */
+    private function legacyDirectoryIndex(string $path, ?string $queryString): string
+    {
+        if ($queryString === null || trim($queryString) === '') {
+            return $path;
+        }
+
+        if (preg_match('#^/(?:(?:med|dent|pharm|info|petrol|research|hospital|dent_clinic|alumni|clubs|members)/?)?$#', $path) !== 1) {
+            return $path;
+        }
+
+        $params = $this->legacyUrlNormalizer->normalize('/index.php', $queryString)->params;
+
+        if (array_intersect_key($params, array_flip(['page', 'dir', 'service', 'cat_id', 'lang', 'ex'])) === []) {
+            return $path;
+        }
+
+        return rtrim($path, '/').'/index.php';
+    }
+
+    /**
+     * The old CMS rendered every record in FR (3), ES (6) and DE (7) as well,
+     * but those pages carried the record's English or Arabic fallback under a
+     * translated menu, or an "under construction" notice. Search engines and
+     * backlink crawlers indexed them all — they are three fifths of the old
+     * sitemap. Sending each one to the English homepage reads as a soft 404
+     * and throws away the equity of the record the URL named.
+     *
+     * The closest equivalent is the same record in English, so the URL is
+     * resolved exactly as its lang=2 twin would be — exact rules, typed
+     * resolvers, patterns, and the private members boundary all apply
+     * unchanged. Only when that twin has no destination does the approved
+     * temporary fallback to /en remain.
+     */
+    private function resolveRetiredLanguage(string $path, ?string $queryString, bool $fallback = true): ?RedirectResultDTO
+    {
+        $englishQuery = $this->withLegacyLanguage($queryString, 2);
+
+        if ($englishQuery !== null) {
+            $equivalent = $this->isPrivateMembersArchive($path, $englishQuery)
+                ? $this->legacyQueryRedirectResolver->resolve($path, $englishQuery)
+                : $this->followRedirectChain($path, $englishQuery);
+
+            if ($equivalent !== null) {
+                return new RedirectResultDTO(
+                    statusCode: $equivalent->statusCode,
+                    destinationUrl: $equivalent->destinationUrl,
+                    matchType: 'retired_language_equivalent',
+                );
+            }
+        }
+
+        return $fallback ? $this->legacyQueryRedirectResolver->resolve($path, $queryString) : null;
+    }
+
+    private function withLegacyLanguage(?string $queryString, int $languageId): ?string
+    {
+        if ($queryString === null || trim($queryString) === '') {
+            return null;
+        }
+
+        $rewritten = preg_replace('/(^|&)lang=[^&]*/', '${1}lang='.$languageId, $queryString, -1, $count);
+
+        return is_string($rewritten) && $count > 0 ? $rewritten : null;
     }
 
     private function isPrivateMembersArchive(string $path, ?string $queryString): bool

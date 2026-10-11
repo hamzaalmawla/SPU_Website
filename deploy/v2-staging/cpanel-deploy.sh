@@ -272,6 +272,49 @@ else
 fi
 [[ -f "${WEB}/build/manifest.json" ]] || fail "The build did not land at ${WEB}/build"
 
+# ── Root static files ────────────────────────────────────────────────────────
+# Only build/ and the SVGs are otherwise copied into the docroot, so a file
+# committed at the top of public/ never reached it. Two kinds live there and
+# both fail silently when missing:
+#
+#   - search-engine and backlink-index ownership tokens (Google Search Console,
+#     Ahrefs, Majestic). Ahrefs and Majestic are the two link indexes Webometrics
+#     reads for its Visibility score; losing their tokens at cutover loses
+#     verified ownership of the domain's link data.
+#   - favicon.ico and apple-touch-icon.png, which browsers and search engines
+#     request by name whatever the page declares.
+log "Publishing root static files"
+shopt -s nullglob
+for root_file in "${SOURCE}"/public/{favicon.ico,apple-touch-icon.png,site.webmanifest,google*.html,MJ12_*.txt,ahrefs_*}; do
+    install -m 0644 "${root_file}" "${WEB}/$(basename "${root_file}")"
+    printf '  %s\n' "$(basename "${root_file}")"
+done
+shopt -u nullglob
+
+# ── Legacy static mounts ─────────────────────────────────────────────────────
+# Old files stay in the old document root and are exposed read-only under
+# _legacy/, answered at their original URLs by public/.htaccess (README §4).
+# The original mounts already exist; these are the ones added since, created
+# here because there is no shell to create them with. An existing path is
+# never replaced, and a missing source is reported rather than linked.
+LEGACY_ROOT="${SPU_LEGACY_ROOT:-/home/spuedu/public_html}"
+ensure_legacy_mount() {
+    local source="$1" target="$2"
+    if [[ -L "${target}" || -e "${target}" ]]; then
+        return 0
+    fi
+    if [[ ! -d "${source}" ]]; then
+        printf '  ⚠ %s does not exist; %s not mounted\n' "${source}" "${target}" >&2
+        return 0
+    fi
+    mkdir -p "$(dirname "${target}")"
+    ln -s "${source}" "${target}"
+    printf '  mounted %s → %s\n' "${target}" "${source}"
+}
+log "Ensuring legacy static mounts"
+ensure_legacy_mount "${LEGACY_ROOT}/FCKBIH"    "${WEB}/_legacy/FCKBIH"
+ensure_legacy_mount "${LEGACY_ROOT}/downloads" "${WEB}/_legacy/downloads/root"
+
 # nginx strips Accept-Encoding before Apache or PHP ever sees it (measured
 # 2 September; the reasoning is in config/edge.php). That means mod_deflate
 # cannot fire for a static file and no negotiated rewrite can either, so the

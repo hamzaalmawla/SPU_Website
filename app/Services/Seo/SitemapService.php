@@ -659,7 +659,10 @@ final class SitemapService implements SitemapServiceInterface
         $lastmod = $this->w3c(AboutPage::query()->max('updated_at'));
         $paths = [];
 
-        foreach (Directorate::query()->public()->pluck('slug') as $slug) {
+        // it-services has no page of its own: AboutController::directorateDetail
+        // sends it to /e-services/it-support. A sitemap URL that redirects
+        // tells crawlers the sitemap is stale; list the destination instead.
+        foreach (Directorate::query()->public()->where('slug', '!=', 'it-services')->pluck('slug') as $slug) {
             $paths[] = '/about/directorates/'.$slug;
         }
         // Publishing a URL that 404s is worse than omitting it: it spends crawl

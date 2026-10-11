@@ -45,6 +45,20 @@ final class DynamicFormPageRenderingTest extends TestCase
         $workflow->publish('research.conferences', (int) $author->getKey());
     }
 
+    /**
+     * The form exists only for a named job, so the bare /apply URL is a 404.
+     * The canonical and hreflang alternates used to name exactly that URL.
+     */
+    public function test_job_application_canonical_and_alternates_keep_the_job(): void
+    {
+        $html = $this->get('/en/campus-life/career-development/jobs/apply?job=lecturer-computer-science')
+            ->assertOk()
+            ->getContent();
+
+        $this->assertMatchesRegularExpression('#<link rel="canonical" href="[^"]*/en/campus-life/career-development/jobs/apply\?job=lecturer-computer-science"#', (string) $html);
+        $this->assertMatchesRegularExpression('#hreflang="ar" href="[^"]*/ar/campus-life/career-development/jobs/apply\?job=lecturer-computer-science"#', (string) $html);
+    }
+
     public function test_job_application_page_renders_frontend_dynamic_form_shell(): void
     {
         $this->get('/en/campus-life/career-development/jobs/apply?job=lecturer-computer-science')

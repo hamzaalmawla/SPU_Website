@@ -45,12 +45,12 @@
 
             <div class="events-calendar-card mt-8 sm:mt-10">
                 <div class="events-calendar-toolbar">
-                    <a href="/{{ $locale }}/news/events?month={{ $previousMonth }}" class="events-calendar-nav" aria-label="{{ __('public.previous') }}">
+                    <a href="/{{ $locale }}/news/events?month={{ $previousMonth }}" rel="nofollow" class="events-calendar-nav" aria-label="{{ __('public.previous') }}">
                         <span aria-hidden="true">{{ $locale === 'ar' ? '→' : '←' }}</span>
                         <span>{{ __('public.previous') }}</span>
                     </a>
                     <h2>{{ $monthLabel }}</h2>
-                    <a href="/{{ $locale }}/news/events?month={{ $nextMonth }}" class="events-calendar-nav" aria-label="{{ __('public.next') }}">
+                    <a href="/{{ $locale }}/news/events?month={{ $nextMonth }}" rel="nofollow" class="events-calendar-nav" aria-label="{{ __('public.next') }}">
                         <span>{{ __('public.next') }}</span>
                         <span aria-hidden="true">{{ $locale === 'ar' ? '←' : '→' }}</span>
                     </a>

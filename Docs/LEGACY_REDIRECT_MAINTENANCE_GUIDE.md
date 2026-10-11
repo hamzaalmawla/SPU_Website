@@ -121,7 +121,10 @@ Apache (public/.htaccess)
 
 Laravel — RedirectContinuityMiddleware (prepended, runs before routes)
  └─ ContinuityService::resolveRedirect()
-     ├─ retired language (old ids 3/6/7)  → 302 /en          ← approved policy, NOT 301
+     ├─ directory + legacy query (/?…, /med/?…) → tried as {dir}/index.php first,
+     │                                     then the directory's own handling (§14.3)
+     ├─ retired language (old ids 3/6/7)  → resolved as its lang=2 twin (301);
+     │                                     302 /en only when the twin has no target (§14.2)
      ├─ unknown legacy language            → null (404)
      ├─ private members archive            → section-level resolver only
      ├─ reference .html alias              → config/reference_html_aliases.php
@@ -635,3 +638,63 @@ Note that three campus-life destinations (`hospital`, `dental`,
 `clubs-activities`) are **editorial CMS content**, not seeded structure. They are
 live on the deployed site, but a database without that content published will
 report them as broken — that is the check working, not a false alarm.
+
+---
+
+## 14. Log-driven continuity audit (added 2026-10-11)
+
+Full record: `Docs/LEGACY_SEO_CONTINUITY_AUDIT_2026-10.md`. This section keeps
+only what someone changing the code must know.
+
+### 14.1 The evidence is the server's own access log
+
+The old sitemap is what search engines were *fed*; the access log is what they
+and people actually *request*. Sep–Oct 2026 held 11.2 M unique URLs. 2.47 M are
+`/index.php/<junk>/index.php?…` crawler traps (the old server answered them 200;
+`public/.htaccess` 404s them at the edge, which is correct). The remaining
+~419 k distinct legacy URLs that the old site answered and a search engine,
+SEO indexer or person requested are the corpus every continuity change should
+be replayed against — not a sample, and not the sitemap alone.
+
+How to obtain the logs, a database replica and run the replay is recorded in
+the audit document. Do not replay against the live host.
+
+### 14.2 Retired languages resolve as their English twin
+
+FR/ES/DE (`lang=3/6/7`) copies are three fifths of the old sitemap and of the
+crawled corpus. They used to 302 to `/en` — the homepage — which search engines
+treat as a soft 404 and which throws away the record the URL named.
+`ContinuityService::resolveRetiredLanguage()` now rewrites `lang` to `2` and runs
+the full chain (exact rules, typed resolvers, patterns, members boundary). If the
+twin resolves, that destination is returned with the twin's own status (301).
+Only when it does not does the approved 302 `/en` fallback apply. A lang=3 exact
+rule is still never consulted.
+
+### 14.3 Directory spellings of router URLs
+
+Apache served `index.php` for a directory, so `/?cat_id=…&dir=items…`,
+`/alumni/?dir=…` and `/members/?…` were the same pages as their `index.php`
+spelling. When the query carries a legacy router key (`page`, `dir`, `service`,
+`cat_id`, `lang`, `ex`) the directory is tried as `{dir}/index.php` first; if that
+names nothing, the directory's previous handling (subsite-home exact rules,
+locale negotiation) still applies, so no URL lost a destination. `/admin` is
+excluded — the CMS owns it (§13.5).
+
+### 14.4 Other rules added
+
+- `&amp;`-escaped keys (`amp;dir`) are decoded in `LegacyUrlNormalizer`; a
+  correctly spelled key always wins.
+- Faculty graduate lists (`/{faculty}/index.php?dir=graduated_students&page=list…`,
+  with paging and `dyear`) resolve to `/{locale}/alumni?faculty=…&year=…`. A `d`
+  that disagrees with the subsite stays a 404.
+- Section subsites (dental clinic, hospital, clubs, research) send staff listings
+  (`dir=councils`, `councils7`) to their section page, exactly as faculty
+  subsites already did. No record is named.
+- `/FCKBIH/` (the old editor's upload tree) and loose files in `/downloads/` are
+  mounted read-only under `_legacy/`; the deploy creates the symlinks
+  (`ensure_legacy_mount`) because there is no shell.
+- Ownership tokens for Google Search Console, Ahrefs and Majestic, a real
+  `favicon.ico` and `apple-touch-icon.png` ship in `public/` and are installed into
+  the docroot by `cpanel-deploy.sh` — the docroot never received top-level
+  `public/` files before.
+
