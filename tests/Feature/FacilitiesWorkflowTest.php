@@ -1773,6 +1773,60 @@ final class FacilitiesWorkflowTest extends TestCase
     }
 
     /**
+     * Twenty imported reports point at downloads/files entries that never
+     * existed. Where the legacy tree is mounted, the page must not offer a
+     * download that 404s - and must keep offering one that is really there.
+     */
+    public function test_project_report_link_is_offered_only_when_the_mounted_file_exists(): void
+    {
+        $mount = public_path('_legacy/downloads/files');
+        $createdLegacyRoot = ! is_dir(public_path('_legacy'));
+        @mkdir($mount, 0777, true);
+        file_put_contents($mount.'/present-report.pdf', '%PDF-1.4 test');
+
+        try {
+            $faculty = Faculty::query()->where('public_slug', 'pharmacy')->firstOrFail();
+
+            foreach (['present' => 'downloads/files/present-report.pdf', 'missing' => 'downloads/files/missing-report.pdf'] as $kind => $file) {
+                $project = FacultyStudentProject::query()->create([
+                    'faculty_id' => (int) $faculty->getKey(),
+                    'slug' => 'pharmacy-report-'.$kind,
+                    'documents_json' => [['file' => $file]],
+                    'sort_order' => 1,
+                    'is_enabled' => true,
+                ]);
+                foreach (['ar', 'en'] as $locale) {
+                    FacultyStudentProjectTranslation::query()->create([
+                        'faculty_student_project_id' => (int) $project->getKey(),
+                        'locale' => $locale,
+                        'title' => 'Report '.$kind,
+                        'body_json' => [],
+                    ]);
+                }
+            }
+
+            Cache::flush();
+
+            $this->get('/en/faculties/pharmacy/projects/pharmacy-report-present')
+                ->assertOk()
+                ->assertSee('downloads/files/present-report.pdf', false)
+                ->assertSee('Download project file');
+
+            $this->get('/en/faculties/pharmacy/projects/pharmacy-report-missing')
+                ->assertOk()
+                ->assertDontSee('downloads/files/missing-report.pdf', false)
+                ->assertDontSee('Download project file');
+        } finally {
+            @unlink($mount.'/present-report.pdf');
+            @rmdir($mount);
+            @rmdir(public_path('_legacy/downloads'));
+            if ($createdLegacyRoot) {
+                @rmdir(public_path('_legacy'));
+            }
+        }
+    }
+
+    /**
      * artificial-intelligence-project-6103 as imported: the body is only the
      * legacy field block, the stored team kept the first name, and the summary
      * is the second team member.
