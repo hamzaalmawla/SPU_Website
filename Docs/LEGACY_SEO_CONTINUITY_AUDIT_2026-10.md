@@ -45,18 +45,42 @@ redirect to its final status.
 
 | Outcome | Before | After |
 |---|---:|---:|
-| One permanent 301 to the real page | 10,443 (36.7%) | _see §2.3_ |
-| 302 to the `/en` homepage (retired FR/ES/DE) | 17,055 (60.0%) | _see §2.3_ |
-| 404 | 926 (3.3%) | _see §2.3_ |
-| Redirect chains (2 hops) | 2 | 0 |
+| One permanent 301 to the real page | 10,443 (36.7%) | **26,111 (91.8%)** |
+| 302 to the `/en` homepage (retired FR/ES/DE with no English equivalent) | 17,055 (60.0%) | 1,389 (4.9%) |
+| 404 | 926 (3.3%) | 926 (3.3%) |
+| Redirect chains | 2 | 0 |
 
-### Crawled corpus (418,914 URLs)
+The 926 sitemap 404s are unchanged on purpose. They are news and announcement
+items that are unpublished or were never imported, plus unreviewed list pages —
+§4. Two more sitemap entries were not URLs at all (free text in the old
+sitemap).
 
-See §2.3.
+### Crawled corpus (418,914 distinct URLs, Sep–Oct 2026)
 
-### 2.3 Final numbers
+Weighted by what was actually requested (search-engine, SEO-indexer and human
+requests, 7.37 M in total), after the fixes in #54–#56:
 
-_Filled in from the completed replays in the pull request description._
+| Outcome | Share of requests | Distinct URLs |
+|---|---:|---:|
+| One permanent 301 to the real page | **71.8%** | 212,935 (50.8%) |
+| 302 locale negotiation / section root | 1.4% | 6,683 (1.6%) |
+| 302 `/en` fallback (retired language, no English equivalent) | 13.1% | 88,973 (21.2%) |
+| 404 | 13.7% | 110,310 (26.3%) |
+| Redirect chains | 0.0% | 1 |
+
+On the 70,044 URLs that were also replayed before the fixes, the one-hop 301
+share went from 30.9% to 74.9%, and the homepage fallback from 52.4% to 13.0%.
+
+#57 then resolved the largest remaining fixable 404 family: the paged old News
+and Announcements lists (174 URLs, about 248,000 requests) and the old site
+search (217 URLs, about 5,200 requests). That moves roughly another 3.4% of all
+requests from 404 to a one-hop 301.
+
+What remains 404 by traffic is, in order: the old `/images/` directory listing (a
+single URL hit 109k times by a hotlinking site), news and announcement records
+that are not published, root about-items outside the reviewed allow-list
+(`service=1`), and service numbers that belong to a different subsite. All are
+covered in §4.
 
 ## 3. What was fixed
 
@@ -99,6 +123,12 @@ _Filled in from the completed replays in the pull request description._
     404 without a job. They now carry the job.
 12. **Sitemap listed a redirecting URL** (`/about/directorates/it-services`). Removed;
     its destination was already listed.
+13. **Subsite roots in one hop** (#55): `/med/?lang=2` used to be slash-stripped by
+    Apache before the continuity redirect. It now resolves in one hop.
+14. **Project reports that never existed** (#56): 20 project pages offered a
+    download for a file missing on the old site as well. A report is now offered
+    only when its file is present in the mounted legacy tree.
+15. **Paged legacy lists and the old search** (#57), as above.
 
 ## 4. Deliberately still 404 or fallback — decisions for SPU
 
