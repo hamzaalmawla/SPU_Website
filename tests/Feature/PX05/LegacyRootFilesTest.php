@@ -83,6 +83,23 @@ final class LegacyRootFilesTest extends TestCase
         $this->assertSame(0, preg_match($pattern, 'apple-touch-icon.png'));
     }
 
+    /**
+     * /med/?lang=2 is how the old site linked its subsite roots. The rule that
+     * hands them to the application must run before the trailing-slash
+     * redirect, or each one costs an extra hop. /admin/ stays out: the CMS.
+     */
+    public function test_legacy_subsite_roots_skip_the_trailing_slash_redirect(): void
+    {
+        $rules = (string) file_get_contents(public_path('.htaccess'));
+
+        $root = strpos($rules, 'RewriteRule ^(?:med|dent|pharm|info|petrol|research|hospital|dent_clinic|alumni|clubs|members)/$ app.php [L]');
+        $slash = strpos($rules, '# Redirect Trailing Slashes If Not A Folder');
+
+        $this->assertIsInt($root);
+        $this->assertIsInt($slash);
+        $this->assertLessThan($slash, $root);
+    }
+
     /** The _legacy media is symlinked from the old docroot; Apache must follow it. */
     public function test_legacy_symlinks_are_followed(): void
     {
