@@ -654,11 +654,10 @@ final class FacilitiesWorkflowTest extends TestCase
             ->call('loadTarget', 'facilities.medicine.study_plan')
             ->assertSee('نصوص واجهة الخطة الدراسية')
             ->assertSee('نصوص صفحة المقرر')
-            ->assertSee('مجموعات المقررات الاختيارية')
-            ->assertSee('مساحة عمل الفصل باللغتين')
-            ->assertSee('مقررات هذا الفصل')
-            ->assertDontSee('Opens Course IDs')
-            ->assertSee('المحاضرات والملفات');
+            ->assertSee('لوحة الخطة')
+            ->assertSee('إضافة مقرر')
+            ->assertSee('إضافة فصل')
+            ->assertDontSee('Opens Course IDs');
     }
 
     public function test_published_faculty_project_cms_content_controls_database_project_detail_in_both_locales(): void
@@ -1989,113 +1988,76 @@ final class FacilitiesWorkflowTest extends TestCase
         $this->assertLessThan(500_000, strlen((string) $response->getContent()));
     }
 
-    public function test_artificial_intelligence_study_plan_admin_hydrates_one_paired_term_workspace(): void
+    public function test_artificial_intelligence_study_plan_admin_shows_every_department_on_the_board_but_not_in_the_form(): void
     {
         $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
 
-        $facilities = app(FacultyPageServiceInterface::class);
-        $payload = $facilities->getEditablePayload('facilities.artificial-intelligence.study_plan');
-        $departments = $payload['translations']['en']['payload']['plan']['departments'] ?? [];
-        $totalCourses = collect($departments)->flatMap(fn (array $department): array => $department['terms'] ?? [])
-            ->sum(fn (array $term): int => count($term['courses'] ?? []));
+        $payload = app(FacultyPageServiceInterface::class)->getEditablePayload('facilities.artificial-intelligence.study_plan');
+        $departmentCount = count($payload['translations']['en']['payload']['plan']['departments'] ?? []);
+        $this->assertGreaterThan(1, $departmentCount);
 
-        $component = Livewire::test(ManageArtificialIntelligenceFaculty::class)
-            ->set('data.target_key', 'facilities.artificial-intelligence.study_plan')
-            ->call('loadTarget', 'facilities.artificial-intelligence.study_plan')
-            ->assertSee('القسم')
-            ->assertSee('مساحة عمل الفصل باللغتين')
-            ->assertSee('مقررات هذا الفصل')
-            ->assertSee('ملف PDF للخطة الدراسية')
-            ->assertSee('المتطلبات السابقة')
-            ->assertDontSee('Opens Course IDs');
+        $component = Livewire::withQueryParams(['target' => 'facilities.artificial-intelligence.study_plan'])
+            ->test(ManageArtificialIntelligenceFaculty::class)
+            ->assertSee('data-board-card', false);
 
         /** @var array<string, mixed> $data */
         $data = $component->get('data');
-        $selectedDepartmentId = (string) ($data['study_plan_department_id'] ?? '');
-        $options = is_array($data['study_plan_department_options'] ?? null) ? $data['study_plan_department_options'] : [];
-        $courses = is_array($data['study_plan_workspace']['courses'] ?? null) ? $data['study_plan_workspace']['courses'] : [];
+        $board = $component->instance()->studyPlanBoardData();
 
-        $this->assertGreaterThan(1, count($options));
-        $this->assertNotSame('', $selectedDepartmentId);
-        $this->assertLessThan($totalCourses, count($courses));
+        $this->assertCount($departmentCount, $board['departments']);
+        $this->assertNotEmpty($board['terms']);
         $this->assertArrayNotHasKey('departments', $data['en_content']['payload']['plan'] ?? []);
-        $this->assertArrayHasKey('titleAr', $courses[array_key_first($courses)] ?? []);
-        $this->assertArrayHasKey('titleEn', $courses[array_key_first($courses)] ?? []);
-        $this->assertArrayNotHasKey('opensCourseIds', $courses[array_key_first($courses)] ?? []);
+        $this->assertArrayNotHasKey('departments', $data['ar_content']['payload']['plan'] ?? []);
     }
 
-    public function test_artificial_intelligence_study_plan_admin_save_preserves_unselected_departments(): void
+    public function test_artificial_intelligence_study_plan_admin_board_edit_preserves_other_departments(): void
     {
         $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
 
-        $facilities = app(FacultyPageServiceInterface::class);
-        $payload = $facilities->getEditablePayload('facilities.artificial-intelligence.study_plan');
+        $payload = app(FacultyPageServiceInterface::class)->getEditablePayload('facilities.artificial-intelligence.study_plan');
         $baseDepartments = collect($payload['translations']['en']['payload']['plan']['departments'] ?? []);
-        $this->assertGreaterThan(1, $baseDepartments->count());
+        $selected = $baseDepartments->first();
+        $untouched = $baseDepartments->get(1);
+        $courseId = (string) $selected['terms'][0]['courses'][0]['id'];
 
-        $component = Livewire::test(ManageArtificialIntelligenceFaculty::class)
-            ->set('data.target_key', 'facilities.artificial-intelligence.study_plan')
-            ->call('loadTarget', 'facilities.artificial-intelligence.study_plan');
-
-        /** @var array<string, mixed> $data */
-        $data = $component->get('data');
-        $selectedDepartmentId = (string) ($data['study_plan_department_id'] ?? '');
-        $untouchedDepartment = $baseDepartments->first(fn (array $department): bool => (string) ($department['id'] ?? '') !== $selectedDepartmentId);
-        $this->assertIsArray($untouchedDepartment);
-        $untouchedDepartmentId = (string) ($untouchedDepartment['id'] ?? '');
-        $courseKey = array_key_first($data['study_plan_workspace']['courses'] ?? []);
-        $this->assertNotNull($courseKey);
-
-        $component
-            ->set('data.study_plan_workspace.courses.'.$courseKey.'.titleEn', 'AI Edited Selected Course')
-            ->call('save');
+        Livewire::withQueryParams(['target' => 'facilities.artificial-intelligence.study_plan'])
+            ->test(ManageArtificialIntelligenceFaculty::class)
+            ->call('openBoardCourse', $courseId)
+            ->set('boardCourse.titleEn', 'AI Edited Selected Course')
+            ->call('saveBoardCourse');
 
         $draft = CmsDraft::query()->where('target_key', 'facilities.artificial-intelligence.study_plan')->latest('id')->firstOrFail();
         $savedDepartments = collect($draft->payload_json['translations']['en']['payload']['plan']['departments'] ?? []);
-        $savedSelectedDepartment = $savedDepartments->firstWhere('id', $selectedDepartmentId);
-        $savedUntouchedDepartment = $savedDepartments->firstWhere('id', $untouchedDepartmentId);
-        $savedSelectedCourse = collect($savedSelectedDepartment['terms'] ?? [])
+        $savedCourse = collect($savedDepartments->firstWhere('id', $selected['id'])['terms'] ?? [])
             ->flatMap(fn (array $term): array => $term['courses'] ?? [])
-            ->firstWhere('id', $data['study_plan_workspace']['courses'][$courseKey]['id']);
+            ->firstWhere('id', $courseId);
 
-        $this->assertSame('AI Edited Selected Course', $savedSelectedCourse['title'] ?? null);
-        $this->assertSame($untouchedDepartment['terms'] ?? [], $savedUntouchedDepartment['terms'] ?? []);
+        $this->assertSame('AI Edited Selected Course', $savedCourse['title'] ?? null);
+        $this->assertSame($untouched['terms'] ?? [], $savedDepartments->firstWhere('id', $untouched['id'])['terms'] ?? []);
     }
 
-    public function test_artificial_intelligence_study_plan_admin_persists_prerequisite_removal(): void
+    public function test_artificial_intelligence_study_plan_admin_board_persists_prerequisite_removal(): void
     {
         $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
 
         $payload = app(FacultyPageServiceInterface::class)->getEditablePayload('facilities.artificial-intelligence.study_plan');
         $department = $payload['translations']['en']['payload']['plan']['departments'][0] ?? [];
-        $term = collect($department['terms'] ?? [])->first(
-            fn (array $candidate): bool => collect($candidate['courses'] ?? [])->contains(
-                fn (array $course): bool => ($course['prerequisites'] ?? []) !== [],
-            ),
-        );
-        $this->assertIsArray($term);
+        $target = collect($department['terms'] ?? [])
+            ->flatMap(fn (array $term): array => $term['courses'] ?? [])
+            ->first(fn (array $course): bool => ($course['prerequisites'] ?? []) !== []);
+        $this->assertIsArray($target);
+        $targetId = (string) $target['id'];
 
-        $component = Livewire::withQueryParams([
-            'target' => 'facilities.artificial-intelligence.study_plan',
-            'department' => (string) ($department['id'] ?? ''),
-            'term' => (string) ($term['id'] ?? ''),
-        ])->test(ManageArtificialIntelligenceFaculty::class);
-
-        /** @var array<string, mixed> $data */
-        $data = $component->get('data');
-        $courses = $data['study_plan_workspace']['courses'] ?? [];
-        $targetKey = collect($courses)->search(fn (array $course): bool => ($course['prerequisites'] ?? []) !== []);
-        $this->assertNotFalse($targetKey);
-        $targetId = (string) ($courses[$targetKey]['id'] ?? '');
-
-        $component
-            ->set('data.study_plan_workspace.courses.'.$targetKey.'.prerequisites', [])
-            ->call('save');
+        Livewire::withQueryParams(['target' => 'facilities.artificial-intelligence.study_plan'])
+            ->test(ManageArtificialIntelligenceFaculty::class)
+            ->call('openBoardCourse', $targetId)
+            ->set('boardCourse.prerequisites', [])
+            ->call('saveBoardCourse');
 
         $draft = CmsDraft::query()->where('target_key', 'facilities.artificial-intelligence.study_plan')->latest('id')->firstOrFail();
-        $savedCourses = collect($draft->payload_json['translations']['en']['payload']['plan']['departments'] ?? [])
-            ->firstWhere('id', $data['study_plan_department_id'])['terms'] ?? [];
-        $targetCourse = collect($savedCourses)
+        $saved = collect($draft->payload_json['translations']['en']['payload']['plan']['departments'] ?? [])
+            ->firstWhere('id', $department['id'])['terms'] ?? [];
+        $targetCourse = collect($saved)
             ->flatMap(fn (array $term): array => $term['courses'] ?? [])
             ->firstWhere('id', $targetId);
 

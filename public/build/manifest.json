@@ -1,4 +1,8 @@
 {
+  "_studyPlan.BGMObGCp.js": {
+    "file": "js/studyPlan.BGMObGCp.js",
+    "name": "studyPlan"
+  },
   "public/fonts/Hacen Tunisia Bold Regular.ttf": {
     "file": "assets/Hacen Tunisia Bold Regular.B-fzyL4b.ttf",
     "src": "public/fonts/Hacen Tunisia Bold Regular.ttf"
@@ -12,7 +16,7 @@
     "src": "public/images/icon-chevron-down-outline.svg"
   },
   "resources/css/app.css": {
-    "file": "assets/app.BxN9QzDB.css",
+    "file": "assets/app.DxqBzlCY.css",
     "name": "app",
     "names": [
       "app.css"
@@ -26,7 +30,7 @@
     ]
   },
   "resources/css/filament/admin.css": {
-    "file": "assets/admin.ByriPZ19.css",
+    "file": "assets/admin.CF0YcDjM.css",
     "name": "admin",
     "names": [
       "admin.css"
@@ -35,15 +39,21 @@
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "js/app.B5EbFYw_.js",
+    "file": "js/app.DO7FX3Jh.js",
     "name": "app",
     "src": "resources/js/app.js",
-    "isEntry": true
+    "isEntry": true,
+    "imports": [
+      "_studyPlan.BGMObGCp.js"
+    ]
   },
   "resources/js/filament/admin.js": {
-    "file": "js/admin.4b5dcaVp.js",
+    "file": "js/admin.DdxLqUlS.js",
     "name": "admin",
     "src": "resources/js/filament/admin.js",
-    "isEntry": true
+    "isEntry": true,
+    "imports": [
+      "_studyPlan.BGMObGCp.js"
+    ]
   }
 }

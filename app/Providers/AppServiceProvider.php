@@ -16,7 +16,9 @@ use App\Contracts\Content\PersonServiceInterface;
 use App\Contracts\Content\ProfileAdminServiceInterface;
 use App\Contracts\ErrorPage\ErrorPageRendererInterface;
 use App\Contracts\ErrorPage\ErrorPageServiceInterface;
+use App\Contracts\Faculty\FacultyStudyPlanBoardServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanEditorServiceInterface;
+use App\Contracts\Faculty\FacultyStudyPlanImportServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
 use App\Contracts\Form\ContactMessageReviewServiceInterface;
 use App\Contracts\Form\DynamicFormSubmissionReviewServiceInterface;
@@ -176,7 +178,9 @@ use App\Services\Content\PersonService;
 use App\Services\Content\ProfileAdminService;
 use App\Services\ErrorPage\ErrorPageRenderer;
 use App\Services\ErrorPage\ErrorPageService;
+use App\Services\Faculty\FacultyStudyPlanBoardService;
 use App\Services\Faculty\FacultyStudyPlanEditorService;
+use App\Services\Faculty\FacultyStudyPlanImportService;
 use App\Services\Faculty\FacultyStudyPlanLinkService;
 use App\Services\Form\ContactMessageReviewService;
 use App\Services\Form\DynamicFormSubmissionReviewService;
@@ -582,6 +586,8 @@ class AppServiceProvider extends ServiceProvider
             FormSubmissionNotificationServiceInterface::class => FormSubmissionNotificationService::class,
             EServicesPageServiceInterface::class => EServicesPageService::class,
             FacultyStudyPlanEditorServiceInterface::class => FacultyStudyPlanEditorService::class,
+            FacultyStudyPlanImportServiceInterface::class => FacultyStudyPlanImportService::class,
+            FacultyStudyPlanBoardServiceInterface::class => FacultyStudyPlanBoardService::class,
             FacultyStudyPlanLinkServiceInterface::class => FacultyStudyPlanLinkService::class,
             FacultyPageServiceInterface::class => FacultyPageService::class,
             SitemapServiceInterface::class => SitemapService::class,

@@ -1,4 +1,5 @@
 import { createFocalPointPicker } from './focalPoint.js';
+import { createStudyPlanBoard } from './studyPlanBoard.js';
 
 function registerHighlightAttribute() {
     if (!window.Trix || window.Trix.config.textAttributes.highlight) {
@@ -39,6 +40,7 @@ document.addEventListener('trix-initialize', addHighlightButton);
 function registerFocalPointPicker() {
     if (window.Alpine) {
         window.Alpine.data('spuFocalPointPicker', createFocalPointPicker);
+        window.Alpine.data('spuStudyPlanBoard', createStudyPlanBoard);
     }
 }
 

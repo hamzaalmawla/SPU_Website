@@ -459,3 +459,36 @@ cPanel file API, register it, and deploy. It works, but every release is a manua
 repackage and the repository drifts from `dev` immediately.
 
 Prefer the clone. It is five minutes once.
+
+
+## Loading the faculty study plans
+
+The converted curricula (AI, construction, petroleum, pharmacy, medicine) ship with the release in
+`database/seeders/Data/study_plans/<faculty>.json`, next to the `.report.md` that lists every doubtful
+point in each source. Deploying the code does **not** load them: the visual editor, the new graph and
+the mobile layout go live, and every plan keeps exactly the content it has now.
+
+To load them, a human creates this file on the server (it is not in git, and a deploy cannot create it):
+
+```
+storage/app/private/legacy-imports/study-plans.approved
+actor=auto
+faculty=artificial-intelligence
+faculty=pharmacy
+```
+
+`cpanel-deploy.sh` then runs `faculty:import-study-plan` once for each listed faculty and renames the
+file to `study-plans.approved.consumed-<time>`, so a redeploy cannot repeat it. Rules that protect what
+editors wrote:
+
+- A plan that has ever been saved or published through the admin (any CMS draft or published row) is
+  **skipped and left untouched**. The deploy log says `SKIPPED` for it. Only plans still in their seeded
+  state are loaded.
+- It only writes an **unpublished draft**. Nothing changes publicly until an editor opens the faculty's
+  Study Plan page in the admin, checks the draft and publishes it.
+- Each plan is validated before it is written; a validation error stops the deploy for that plan.
+- The release's verified pre-migration database backup has already been taken.
+
+For a plan that editors have already changed, nothing is merged automatically. Either they update it in
+the visual editor, or someone runs the command by hand with `--replace-edited` after agreeing that
+their changes may be replaced (the previous draft versions stay in `cms_drafts`).

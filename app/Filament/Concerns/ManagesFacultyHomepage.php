@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Filament\Concerns;
 
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Faculty\FacultyStudyPlanBoardServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanEditorServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
+use App\Contracts\Media\MediaServiceInterface;
 use App\Contracts\Page\FacultyPageServiceInterface;
 use App\Contracts\Page\FacultySubpageCardServiceInterface;
 use App\Exceptions\ConflictException;
@@ -27,7 +29,6 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
-use Filament\Forms\Get;
 use Filament\Notifications\Notification;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
@@ -36,6 +37,8 @@ use Illuminate\Validation\ValidationException;
 
 trait ManagesFacultyHomepage
 {
+    use ManagesStudyPlanBoard;
+
     /** @var array<string, mixed> */
     public ?array $data = [];
 
@@ -71,12 +74,16 @@ trait ManagesFacultyHomepage
         FacultyStudyPlanLinkServiceInterface $studyPlanLinkService,
         FacultyStudyPlanEditorServiceInterface $studyPlanEditorService,
         FacultySubpageCardServiceInterface $subpageCardService,
+        FacultyStudyPlanBoardServiceInterface $studyPlanBoardService,
+        MediaServiceInterface $mediaService,
     ): void {
         $this->facultyPageService = $facultyPageService;
         $this->cmsWorkflowService = $cmsWorkflowService;
         $this->studyPlanLinkService = $studyPlanLinkService;
         $this->studyPlanEditorService = $studyPlanEditorService;
         $this->subpageCardService = $subpageCardService;
+        $this->studyPlanBoardService = $studyPlanBoardService;
+        $this->boardMediaService = $mediaService;
     }
 
     public static function canAccess(): bool
@@ -118,9 +125,7 @@ trait ManagesFacultyHomepage
             : $this->defaultTargetKey();
 
         $requestedDepartment = request()->query('department');
-        $requestedTerm = request()->query('term');
-        $this->data['study_plan_department_id'] = is_string($requestedDepartment) ? $requestedDepartment : '';
-        $this->data['study_plan_term_id'] = is_string($requestedTerm) ? $requestedTerm : '';
+        $this->boardDepartmentId = is_string($requestedDepartment) ? $requestedDepartment : '';
         $this->facultyScope = static::managedFacultyScope();
         $this->loadNavCards();
 
@@ -150,28 +155,12 @@ trait ManagesFacultyHomepage
         $draftPayload = $this->cmsWorkflowService->latestEditableDraftPayload($targetKey, $userId);
         $payload = is_array($draftPayload) ? $draftPayload : $this->facultyPageService->getEditablePayload($targetKey);
         $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey, $userId);
-        $studyPlanDepartmentOptions = $this->studyPlanDepartmentOptionsFromPayload($targetKey, $payload);
-        $studyPlanDepartmentId = $this->studyPlanDepartmentIdFromPayload($targetKey, $payload, (string) ($this->data['study_plan_department_id'] ?? ''));
-        $studyPlanTermOptions = $this->studyPlanTermOptionsFromPayload($targetKey, $payload, $studyPlanDepartmentId);
-        $studyPlanTermId = $this->studyPlanTermIdFromPayload($targetKey, $payload, $studyPlanDepartmentId, (string) ($this->data['study_plan_term_id'] ?? ''));
-        $isStudyPlan = $this->subpageSlugFromTarget($targetKey) === 'study-plan';
-        $studyPlanCourseOptions = $isStudyPlan && is_string($studyPlanDepartmentId)
-            ? $this->studyPlanEditorService->prerequisiteOptions($payload, $studyPlanDepartmentId)
-            : [];
-        $studyPlanLessonTypeOptions = $isStudyPlan && is_string($studyPlanDepartmentId)
-            ? $this->studyPlanEditorService->lessonTypeOptions($payload, $studyPlanDepartmentId)
-            : [];
-        $studyPlanWorkspace = $isStudyPlan && is_string($studyPlanDepartmentId) && is_string($studyPlanTermId)
-            ? $this->studyPlanEditorService->buildWorkspace($payload, $studyPlanDepartmentId, $studyPlanTermId)
-            : [];
         $studentRecords = $this->hasFilterableRecords($targetKey)
             ? $this->studentRecordsForForm($targetKey, $payload)
             : [];
 
         $this->form->fill([
             'target_key' => $targetKey,
-            'study_plan_department_id' => $studyPlanDepartmentId,
-            'study_plan_term_id' => $studyPlanTermId,
             'record_search' => (string) ($this->data['record_search'] ?? ''),
             'record_department_filter' => (string) ($this->data['record_department_filter'] ?? ''),
             'record_year_filter' => (string) ($this->data['record_year_filter'] ?? ''),
@@ -180,16 +169,11 @@ trait ManagesFacultyHomepage
                 $studentRecords,
             ), static fn (string $key): bool => $key !== '')),
             'student_records' => $studentRecords,
-            'study_plan_workspace' => $studyPlanWorkspace,
-            'ar_content' => $this->contentForForm($targetKey, is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [], $studyPlanDepartmentId, $studyPlanTermId),
-            'en_content' => $this->contentForForm($targetKey, is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [], $studyPlanDepartmentId, $studyPlanTermId),
+            'ar_content' => $this->contentForForm($targetKey, is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : []),
+            'en_content' => $this->contentForForm($targetKey, is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : []),
         ]);
 
         if (is_array($this->data)) {
-            $this->data['study_plan_department_options'] = $studyPlanDepartmentOptions;
-            $this->data['study_plan_term_options'] = $studyPlanTermOptions;
-            $this->data['study_plan_course_options'] = $studyPlanCourseOptions;
-            $this->data['study_plan_lesson_type_options'] = $studyPlanLessonTypeOptions;
             $this->data['department_study_plan_options'] = $this->departmentStudyPlanOptionsFromTarget($targetKey);
         }
     }
@@ -199,8 +183,6 @@ trait ManagesFacultyHomepage
         return $form
             ->schema([
                 Hidden::make('target_key')->required(),
-                Hidden::make('study_plan_department_id'),
-                Hidden::make('study_plan_term_id'),
                 Hidden::make('student_record_keys')->dehydrated(),
                 Section::make(__('admin.faculty_workspace.editing_tools'))->schema([
                     TextInput::make('record_search')
@@ -234,8 +216,6 @@ trait ManagesFacultyHomepage
                     ->columnSpanFull(),
                 $this->bilingualStudentFields()
                     ->visible(fn (): bool => $this->hasFilterableRecords($this->currentTargetKeyForSchema())),
-                $this->studyPlanWorkspaceFields()
-                    ->visible(fn (): bool => $this->subpageSlugFromTarget($this->currentTargetKeyForSchema()) === 'study-plan'),
             ])
             ->statePath('data');
     }
@@ -310,54 +290,6 @@ trait ManagesFacultyHomepage
     public function facultyMembersCreateUrl(): string
     {
         return FacultyMemberResource::getUrl('create', ['faculty_scope' => $this->facultyScope]);
-    }
-
-    /** @return list<array{id: string, label: string, url: string, active: bool}> */
-    public function getStudyPlanDepartmentNavigation(): array
-    {
-        if ($this->subpageSlugFromTarget($this->currentTargetKeyForSchema()) !== 'study-plan') {
-            return [];
-        }
-
-        $currentDepartment = (string) ($this->data['study_plan_department_id'] ?? '');
-
-        return collect($this->studyPlanDepartmentOptions())
-            ->map(fn (string $label, string $id): array => [
-                'id' => $id,
-                'label' => $label,
-                'url' => static::getUrl([
-                    'target' => $this->currentTargetKeyForSchema(),
-                    'department' => $id,
-                ]),
-                'active' => $id === $currentDepartment,
-            ])
-            ->values()
-            ->all();
-    }
-
-    /** @return list<array{id: string, label: string, url: string, active: bool}> */
-    public function getStudyPlanTermNavigation(): array
-    {
-        if ($this->subpageSlugFromTarget($this->currentTargetKeyForSchema()) !== 'study-plan') {
-            return [];
-        }
-
-        $currentDepartment = (string) ($this->data['study_plan_department_id'] ?? '');
-        $currentTerm = (string) ($this->data['study_plan_term_id'] ?? '');
-
-        return collect($this->studyPlanTermOptions())
-            ->map(fn (string $label, string $id): array => [
-                'id' => $id,
-                'label' => $label,
-                'url' => static::getUrl([
-                    'target' => $this->currentTargetKeyForSchema(),
-                    'department' => $currentDepartment,
-                    'term' => $id,
-                ]),
-                'active' => $id === $currentTerm,
-            ])
-            ->values()
-            ->all();
     }
 
     public function save(): void
@@ -694,17 +626,9 @@ trait ManagesFacultyHomepage
             return $payload;
         }
 
-        $workspace = $this->studyPlanEditorService->prepareWorkspace(
-            is_array($state['study_plan_workspace'] ?? null) ? $state['study_plan_workspace'] : [],
-        );
-        $this->data['study_plan_workspace'] = $workspace;
-
-        return $this->studyPlanEditorService->mergeWorkspace(
-            $payload,
-            $workspace,
-            (string) ($state['study_plan_department_id'] ?? ''),
-            (string) ($state['study_plan_term_id'] ?? ''),
-        );
+        // Departments, terms and courses are edited on the visual board and saved as their own
+        // draft versions; the form only carries labels, legend and plan settings.
+        return $payload;
     }
 
     private function bilingualStudentFields(): Section
@@ -980,106 +904,6 @@ trait ManagesFacultyHomepage
                     ->columnSpanFull(),
             ])->collapsed(),
         ];
-    }
-
-    private function studyPlanWorkspaceFields(): Section
-    {
-        return Section::make(__('admin.faculty_workspace.study_plan.paired_workspace'))
-            ->description(__('admin.faculty_workspace.study_plan.paired_workspace_help'))
-            ->schema([
-                Repeater::make('study_plan_workspace.courses')
-                    ->label(__('admin.faculty_workspace.study_plan.courses_in_term'))
-                    ->schema([
-                        Hidden::make('id')->dehydrated(),
-                        Hidden::make('_originalId')->dehydrated(),
-                        Hidden::make('_originalIndexes')->dehydrated(),
-                        TextInput::make('code')->label(__('admin.faculty_workspace.study_plan.course_code'))->required()->maxLength(80),
-                        TextInput::make('credits')->label(__('admin.faculty_workspace.study_plan.credits'))->numeric(),
-                        Select::make('type')->label(__('admin.faculty_workspace.study_plan.requirement_type'))->options([
-                            'university' => __('admin.faculty_workspace.study_plan.types.university'),
-                            'faculty' => __('admin.faculty_workspace.study_plan.types.faculty'),
-                            'specialization' => __('admin.faculty_workspace.study_plan.types.specialization'),
-                        ]),
-                        Toggle::make('required')->label(__('admin.faculty_workspace.study_plan.required')),
-                        Select::make('prerequisites')
-                            ->label(__('admin.faculty_workspace.study_plan.prerequisites'))
-                            ->helperText(__('admin.faculty_workspace.study_plan.prerequisites_help'))
-                            ->options(fn (): array => $this->studyPlanCourseOptions())
-                            ->multiple()
-                            ->searchable()
-                            ->preload()
-                            ->disableOptionWhen(fn (string $value, Get $get): bool => $value === (string) $get('id'))
-                            ->columnSpanFull(),
-                        Section::make(__('admin.faculty_workspace.study_plan.arabic_content'))->schema([
-                            TextInput::make('titleAr')->label(__('admin.faculty_workspace.study_plan.course_title_ar'))->required()->maxLength(180),
-                            TextInput::make('instructor.nameAr')->label(__('admin.faculty_workspace.study_plan.instructor_ar'))->maxLength(160),
-                            Textarea::make('descriptionAr')->label(__('admin.faculty_workspace.study_plan.description_ar'))->rows(2)->columnSpanFull(),
-                        ])->columns(2),
-                        Section::make(__('admin.faculty_workspace.study_plan.english_content'))->schema([
-                            TextInput::make('titleEn')->label(__('admin.faculty_workspace.study_plan.course_title_en'))->required()->maxLength(180),
-                            TextInput::make('instructor.nameEn')->label(__('admin.faculty_workspace.study_plan.instructor_en'))->maxLength(160),
-                            Textarea::make('descriptionEn')->label(__('admin.faculty_workspace.study_plan.description_en'))->rows(2)->columnSpanFull(),
-                        ])->columns(2),
-                        Hidden::make('instructor.staffSlug')->dehydrated(),
-                        Repeater::make('lessons')
-                            ->label(__('admin.faculty_workspace.study_plan.lessons'))
-                            ->schema([
-                                Hidden::make('id')->dehydrated(),
-                                Hidden::make('_originalId')->dehydrated(),
-                                Hidden::make('_originalIndexes')->dehydrated(),
-                                TextInput::make('order')->label(__('admin.faculty_workspace.study_plan.lesson_order'))->numeric(),
-                                Select::make('type')->label(__('admin.faculty_workspace.study_plan.lesson_type'))->options(fn (): array => $this->studyPlanLessonTypeOptions()),
-                                MediaPicker::document('pdfUrl', __('admin.faculty_workspace.study_plan.lesson_file')),
-                                TextInput::make('titleAr')->label(__('admin.faculty_workspace.study_plan.lesson_title_ar'))->required()->maxLength(180),
-                                TextInput::make('titleEn')->label(__('admin.faculty_workspace.study_plan.lesson_title_en'))->required()->maxLength(180),
-                                Textarea::make('descriptionAr')->label(__('admin.faculty_workspace.study_plan.description_ar'))->rows(2),
-                                Textarea::make('descriptionEn')->label(__('admin.faculty_workspace.study_plan.description_en'))->rows(2),
-                            ])
-                            ->columns(3)
-                            ->defaultItems(0)
-                            ->reorderable()
-                            ->collapsible()
-                            ->collapsed()
-                            ->columnSpanFull(),
-                    ])
-                    ->columns(2)
-                    ->defaultItems(0)
-                    ->reorderable()
-                    ->collapsible()
-                    ->columnSpanFull(),
-                Repeater::make('study_plan_workspace.electivePools')
-                    ->label(__('admin.faculty_workspace.study_plan.elective_pools'))
-                    ->schema([
-                        Hidden::make('id')->dehydrated(),
-                        Hidden::make('_originalId')->dehydrated(),
-                        Hidden::make('_originalIndexes')->dehydrated(),
-                        TextInput::make('requiredHours')->label(__('admin.faculty_workspace.study_plan.required_hours'))->numeric(),
-                        Textarea::make('descriptionAr')->label(__('admin.faculty_workspace.study_plan.description_ar'))->rows(2),
-                        Textarea::make('descriptionEn')->label(__('admin.faculty_workspace.study_plan.description_en'))->rows(2),
-                    ])
-                    ->columns(3)
-                    ->defaultItems(0)
-                    ->reorderable()
-                    ->collapsible()
-                    ->columnSpanFull(),
-                Repeater::make('study_plan_workspace.promotionRequirements')
-                    ->label(__('admin.faculty_workspace.study_plan.promotion_requirements'))
-                    ->schema([
-                        Hidden::make('id')->dehydrated(),
-                        Hidden::make('_originalId')->dehydrated(),
-                        Hidden::make('_originalIndexes')->dehydrated(),
-                        TextInput::make('fromYear')->label(__('admin.faculty_workspace.study_plan.from_year'))->required()->maxLength(20),
-                        TextInput::make('toYear')->label(__('admin.faculty_workspace.study_plan.to_year'))->required()->maxLength(20),
-                        TextInput::make('requiredCredits')->label(__('admin.faculty_workspace.study_plan.required_credits'))->numeric(),
-                        Textarea::make('descriptionAr')->label(__('admin.faculty_workspace.study_plan.description_ar'))->rows(2),
-                        Textarea::make('descriptionEn')->label(__('admin.faculty_workspace.study_plan.description_en'))->rows(2),
-                    ])
-                    ->columns(3)
-                    ->defaultItems(0)
-                    ->reorderable()
-                    ->collapsible()
-                    ->columnSpanFull(),
-            ]);
     }
 
     /** @return array<int, Section> */
@@ -1901,111 +1725,6 @@ trait ManagesFacultyHomepage
 
             return $item;
         }, $items);
-    }
-
-    /** @param array<string, mixed> $payload @return array<string, string> */
-    private function studyPlanDepartmentOptionsFromPayload(string $targetKey, array $payload): array
-    {
-        if ($this->subpageSlugFromTarget($targetKey) !== 'study-plan') {
-            return [];
-        }
-
-        $content = is_array($payload['translations']['en'] ?? null)
-            ? $payload['translations']['en']
-            : (is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : []);
-        $departments = is_array($content['payload']['plan']['departments'] ?? null) ? $content['payload']['plan']['departments'] : [];
-        $options = [];
-
-        foreach ($this->listOfArrays($departments) as $department) {
-            $id = (string) ($department['id'] ?? '');
-
-            if ($id === '') {
-                continue;
-            }
-
-            $options[$id] = (string) ($department['name'] ?? $department['nameEn'] ?? $department['nameAr'] ?? $id);
-        }
-
-        return $options;
-    }
-
-    /** @param array<string, mixed> $payload */
-    private function studyPlanDepartmentIdFromPayload(string $targetKey, array $payload, string $preferred): ?string
-    {
-        $options = $this->studyPlanDepartmentOptionsFromPayload($targetKey, $payload);
-
-        if ($preferred !== '' && array_key_exists($preferred, $options)) {
-            return $preferred;
-        }
-
-        $ids = array_keys($options);
-
-        return $ids === [] ? null : (string) $ids[0];
-    }
-
-    /** @param array<string, mixed> $payload @return array<string, string> */
-    private function studyPlanTermOptionsFromPayload(string $targetKey, array $payload, ?string $departmentId): array
-    {
-        if ($this->subpageSlugFromTarget($targetKey) !== 'study-plan' || $departmentId === null || $departmentId === '') {
-            return [];
-        }
-
-        $content = is_array($payload['translations']['en'] ?? null)
-            ? $payload['translations']['en']
-            : (is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : []);
-        $departments = is_array($content['payload']['plan']['departments'] ?? null) ? $content['payload']['plan']['departments'] : [];
-        $department = collect($this->listOfArrays($departments))->firstWhere('id', $departmentId);
-        $options = [];
-
-        foreach ($this->listOfArrays(is_array($department) ? ($department['terms'] ?? []) : []) as $term) {
-            $id = (string) ($term['id'] ?? '');
-
-            if ($id === '') {
-                continue;
-            }
-
-            $options[$id] = (string) ($term['label'] ?? $id);
-        }
-
-        return $options;
-    }
-
-    /** @param array<string, mixed> $payload */
-    private function studyPlanTermIdFromPayload(string $targetKey, array $payload, ?string $departmentId, string $preferred): ?string
-    {
-        $options = $this->studyPlanTermOptionsFromPayload($targetKey, $payload, $departmentId);
-
-        if ($preferred !== '' && array_key_exists($preferred, $options)) {
-            return $preferred;
-        }
-
-        $ids = array_keys($options);
-
-        return $ids === [] ? null : (string) $ids[0];
-    }
-
-    /** @return array<string, string> */
-    private function studyPlanDepartmentOptions(): array
-    {
-        return is_array($this->data['study_plan_department_options'] ?? null) ? $this->data['study_plan_department_options'] : [];
-    }
-
-    /** @return array<string, string> */
-    private function studyPlanTermOptions(): array
-    {
-        return is_array($this->data['study_plan_term_options'] ?? null) ? $this->data['study_plan_term_options'] : [];
-    }
-
-    /** @return array<string, string> */
-    private function studyPlanCourseOptions(): array
-    {
-        return is_array($this->data['study_plan_course_options'] ?? null) ? $this->data['study_plan_course_options'] : [];
-    }
-
-    /** @return array<string, string> */
-    private function studyPlanLessonTypeOptions(): array
-    {
-        return is_array($this->data['study_plan_lesson_type_options'] ?? null) ? $this->data['study_plan_lesson_type_options'] : [];
     }
 
     /**

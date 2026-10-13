@@ -487,6 +487,84 @@ if [[ -f "${NEWS_PUBLISH}" ]]; then
     mv "${NEWS_PUBLISH}" "${NEWS_PUBLISH}.consumed-$(date -u +%Y%m%d-%H%M%S)"
 fi
 
+# ── Approved study plan import ───────────────────────────────────────────────
+# Loads the converted faculty curricula (database/seeders/Data/study_plans/*.json,
+# shipped with this release) into the faculty study plans. Like the imports above
+# it is not a way to run commands: it runs one hardcoded command over a hardcoded
+# list of plans, and it is inert unless a human places an approval file that is
+# not in git and cannot be created by a deploy:
+#
+#     storage/app/private/legacy-imports/study-plans.approved
+#         actor=auto                       (or a user id)
+#         faculty=artificial-intelligence  (one line per plan to import)
+#         faculty=pharmacy
+#
+# What keeps editors' work safe, in order:
+#
+#   1. The importer refuses any plan that has EVER been saved or published through
+#      the admin (any CMS draft or published row). It does not touch it, does not
+#      add a draft, and reports it as SKIPPED. Only plans still in their seeded
+#      state are loaded. The override (--replace-edited) is never used here.
+#   2. It only ever writes an UNPUBLISHED draft. The public site does not change
+#      until an editor reviews the draft in the admin and publishes it.
+#   3. Every plan is validated first; any validation error stops the deploy
+#      before that plan is written.
+#   4. The release has already taken the verified pre-migration database backup.
+#
+# It disarms itself after one run, so a redeploy cannot repeat it.
+STUDY_PLAN_APPROVAL="${IMPORT_DIR}/study-plans.approved"
+STUDY_PLAN_DATA="${APP}/database/seeders/Data/study_plans"
+STUDY_PLAN_ALLOWED=" artificial-intelligence building-construction-engineering petroleum pharmacy medicine "
+
+if [[ -f "${STUDY_PLAN_APPROVAL}" ]]; then
+    log "Study plan import"
+
+    SP_ACTOR="$(grep -E '^actor=' "${STUDY_PLAN_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r' | tr -d ' ')"
+    [[ -n "${SP_ACTOR}" ]] || fail "The study plan approval file has no actor= line."
+
+    if [[ "${SP_ACTOR}" == "auto" ]]; then
+        SP_ACTOR="$(cd "${APP}" && "${PHP}" artisan tinker --execute='
+            echo (string) (\DB::table("users")
+                ->where("role_slug", "super_admin")
+                ->where(function ($q) { $q->whereNull("locked_at")->orWhere("locked_at", ""); })
+                ->orderBy("id")
+                ->value("id") ?? "");
+        ' 2>/dev/null | grep -Eo '^[0-9]+$' | head -n 1 || true)"
+        [[ -n "${SP_ACTOR}" ]] || fail "actor=auto found no unlocked super_admin to save the drafts as."
+    fi
+    [[ "${SP_ACTOR}" =~ ^[0-9]+$ ]] || fail "The study plan actor must be a numeric user id or 'auto'."
+    printf '  saving drafts as user #%s\n' "${SP_ACTOR}"
+
+    SP_FACULTIES="$(grep -E '^faculty=' "${STUDY_PLAN_APPROVAL}" | cut -d= -f2- | tr -d '\r' | tr -d ' ' | grep -E '^[a-z-]+$' || true)"
+    [[ -n "${SP_FACULTIES}" ]] || fail "The study plan approval file lists no faculty= lines."
+
+    SP_LOADED=0
+    SP_SKIPPED=0
+    while IFS= read -r sp_faculty; do
+        [[ -z "${sp_faculty}" ]] && continue
+        [[ "${STUDY_PLAN_ALLOWED}" == *" ${sp_faculty} "* ]] || fail "'${sp_faculty}' is not an approved study plan."
+        sp_file="${STUDY_PLAN_DATA}/${sp_faculty}.json"
+        [[ -f "${sp_file}" ]] || fail "No study plan data file for ${sp_faculty} in this release."
+
+        # Dry run first: it validates and reports the skip, and writes nothing.
+        sp_out="$(cd "${APP}" && "${PHP}" artisan faculty:import-study-plan "${sp_faculty}" "${sp_file}" --user="${SP_ACTOR}" --no-ansi)" \
+            || fail "Study plan ${sp_faculty} failed validation. Nothing was written for it."
+        if printf '%s\n' "${sp_out}" | grep -q '^SKIPPED'; then
+            printf '  %s: SKIPPED - editors have already worked on it; left exactly as it is\n' "${sp_faculty}"
+            SP_SKIPPED=$((SP_SKIPPED + 1))
+            continue
+        fi
+
+        (cd "${APP}" && "${PHP}" artisan faculty:import-study-plan "${sp_faculty}" "${sp_file}" --user="${SP_ACTOR}" --write --no-ansi) \
+            || fail "Study plan ${sp_faculty} could not be saved as a draft."
+        printf '  %s: saved as an unpublished draft\n' "${sp_faculty}"
+        SP_LOADED=$((SP_LOADED + 1))
+    done < <(printf '%s\n' "${SP_FACULTIES}")
+
+    printf '  %s draft(s) saved for review, %s plan(s) skipped because editors had already worked on them\n' "${SP_LOADED}" "${SP_SKIPPED}"
+    mv "${STUDY_PLAN_APPROVAL}" "${STUDY_PLAN_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
 # ── Faculty-project survey (read-only) ───────────────────────────────────────
 # Answers one question and changes nothing: how many importable projects does
 # the legacy database hold RIGHT NOW, broken down by faculty.

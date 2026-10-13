@@ -6,7 +6,6 @@ namespace Tests\Feature;
 
 use App\Filament\Pages\ManageDentistryFaculty;
 use App\Filament\Resources\FacultyMemberResource\Pages\CreateFacultyMember;
-use App\Models\Cms\CmsDraft;
 use App\Models\Faculty\Faculty;
 use App\Models\User\User;
 use Database\Seeders\DatabaseSeeder;
@@ -37,22 +36,6 @@ final class AdminFacultyWorkspaceTest extends TestCase
             ->assertDontSee('Medicine Target');
     }
 
-    public function test_study_plan_uses_human_prerequisite_selector_and_hides_reverse_graph_input(): void
-    {
-        $this->actingAs($this->editor(), 'web')
-            ->withSession(['admin_locale' => 'en'])
-            ->get('/admin/manage-dentistry-faculty?target=facilities.dentistry.study_plan')
-            ->assertOk()
-            ->assertSee('Bilingual term workspace')
-            ->assertSee('Prerequisite courses')
-            ->assertSee('Choose courses students must complete')
-            ->assertSee('Course title in Arabic')
-            ->assertSee('Course title in English')
-            ->assertDontSee('Internal course identifier')
-            ->assertDontSee('Internal department identifier')
-            ->assertDontSee('Opens Course IDs');
-    }
-
     public function test_faculty_workspace_loads_requested_task_from_url(): void
     {
         $this->actingAs($this->editor(), 'web');
@@ -81,53 +64,6 @@ final class AdminFacultyWorkspaceTest extends TestCase
         Livewire::withQueryParams(['faculty_scope' => 'dentistry'])
             ->test(CreateFacultyMember::class)
             ->assertSet('data.faculty_id', (int) $dentistry->getKey());
-    }
-
-    public function test_study_plan_department_and_term_are_direct_navigation_links(): void
-    {
-        $this->actingAs($this->editor(), 'web');
-
-        $component = Livewire::withQueryParams(['target' => 'facilities.dentistry.study_plan'])
-            ->test(ManageDentistryFaculty::class);
-        $departments = $component->instance()->getStudyPlanDepartmentNavigation();
-        $terms = $component->instance()->getStudyPlanTermNavigation();
-
-        $this->assertNotEmpty($departments);
-        $this->assertNotEmpty($terms);
-        $this->assertStringContainsString('department=', $departments[0]['url']);
-        $this->assertStringContainsString('term=', $terms[0]['url']);
-    }
-
-    public function test_study_plan_editor_only_hydrates_the_selected_term(): void
-    {
-        $this->actingAs($this->editor(), 'web');
-
-        $component = Livewire::withQueryParams(['target' => 'facilities.dentistry.study_plan'])
-            ->test(ManageDentistryFaculty::class);
-        /** @var array<string, mixed> $data */
-        $data = $component->get('data');
-        $selectedTermId = $data['study_plan_term_id'] ?? null;
-        $workspace = $data['study_plan_workspace'] ?? [];
-        $allTermCount = count($component->instance()->getStudyPlanTermNavigation());
-
-        $this->assertNotEmpty($selectedTermId);
-        $this->assertGreaterThan(1, $allTermCount);
-        $this->assertNotEmpty($workspace['courses'] ?? []);
-        $this->assertArrayNotHasKey('departments', $data['ar_content']['payload']['plan'] ?? []);
-        $this->assertArrayNotHasKey('departments', $data['en_content']['payload']['plan'] ?? []);
-        $firstCourse = array_values($workspace['courses'])[0];
-        $this->assertArrayHasKey('titleAr', $firstCourse);
-        $this->assertArrayHasKey('titleEn', $firstCourse);
-
-        $component->call('save');
-
-        $draft = CmsDraft::query()->where('target_key', 'facilities.dentistry.study_plan')->latest('id')->firstOrFail();
-        $departmentId = (string) ($data['study_plan_department_id'] ?? '');
-        $savedDepartment = collect($draft->payload_json['translations']['ar']['payload']['plan']['departments'] ?? [])
-            ->firstWhere('id', $departmentId);
-
-        $this->assertIsArray($savedDepartment);
-        $this->assertCount($allTermCount, $savedDepartment['terms'] ?? []);
     }
 
     public function test_arabic_laboratory_editor_has_localized_primary_controls(): void

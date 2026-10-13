@@ -13,7 +13,7 @@ final class FacultyStudyPlanEditorService implements FacultyStudyPlanEditorServi
     private const LOCALES = ['ar', 'en'];
 
     /** @var list<string> */
-    private const SHARED_COURSE_FIELDS = ['code', 'credits', 'type', 'required', 'prerequisites'];
+    private const SHARED_COURSE_FIELDS = ['code', 'credits', 'type', 'required', 'prerequisites', 'prerequisiteCredits'];
 
     /** @var list<string> */
     private const SHARED_LESSON_FIELDS = ['order', 'type', 'pdfUrl'];

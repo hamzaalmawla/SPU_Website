@@ -25,6 +25,9 @@
     ];
     $facultyPlanName = (string) ($plan['faculty'] ?? $faculty['title']);
     $accent = (string) ($plan['accent'] ?? ($faculty['accentColor'] ?? '#202759'));
+    if (! preg_match('/^#[0-9a-fA-F]{6}$/', $accent)) {
+        $accent = '#202759';
+    }
     $label = fn (string $key): string => (string) ($labels[$key] ?? $labels[$key.'En'] ?? '');
     $text = fn (?array $item, string $key): string => is_array($item) ? (string) ($item[$key] ?? $item[$key.'En'] ?? $item[$key.'Ar'] ?? '') : '';
     $typeKey = static function (array $course): string {
@@ -52,37 +55,25 @@
         default => $label('departmentElective'),
     };
 
-    $layout = [
-        'totalTerms' => 10,
-        'columnWidth' => 150,
-        'columnGap' => 64,
-        'cardHeight' => 100,
-        'cardGap' => 18,
-        'headerHeight' => 36,
-        'headerGap' => 24,
-        'bottomPadding' => 28,
-        'sidePadding' => 28,
-    ];
-    $boardWidth = ($layout['totalTerms'] * $layout['columnWidth']) + (($layout['totalTerms'] - 1) * $layout['columnGap']) + (2 * $layout['sidePadding']);
-    $layoutCoursesByTerm = [];
-    $boardHeight = $layout['headerHeight'] + $layout['bottomPadding'];
-
-    foreach ($terms as $termIndex => $term) {
-        $top = $layout['headerHeight'] + $layout['headerGap'];
-        $termLayouts = [];
-        foreach (($term['courses'] ?? []) as $course) {
-            if (! is_array($course)) {
-                continue;
+    // The board is sized from the data: one column per term, cards flow vertically and grow
+    // with their text. The script measures the rendered cards, so no layout constants are shared.
+    $columnWidth = 150;
+    $columnGap = 64;
+    $sidePadding = 28;
+    $totalTerms = max(1, $terms->count());
+    $boardWidth = ($totalTerms * $columnWidth) + (($totalTerms - 1) * $columnGap) + (2 * $sidePadding);
+    $courseIndex = [];
+    foreach ($terms as $indexTerm) {
+        foreach (($indexTerm['courses'] ?? []) as $indexCourse) {
+            if (is_array($indexCourse) && isset($indexCourse['id'])) {
+                $courseIndex[(string) $indexCourse['id']] = $indexCourse;
             }
-
-            $termLayouts[] = ['course' => $course, 'top' => $top];
-            $top += $layout['cardHeight'] + $layout['cardGap'];
         }
-
-        $termHeight = max($layout['headerHeight'] + $layout['bottomPadding'], $top - $layout['cardGap'] + $layout['bottomPadding']);
-        $boardHeight = max($boardHeight, $termHeight);
-        $layoutCoursesByTerm[$termIndex] = ['term' => $term, 'courses' => $termLayouts, 'height' => $termHeight];
     }
+    $prereqCodesFor = fn (array $course): string => collect($course['prerequisites'] ?? [])
+        ->map(fn ($prereqId) => $courseIndex[(string) $prereqId]['code'] ?? null)
+        ->filter()
+        ->implode(', ');
 @endphp
 
 <div class="font-hacen {{ $isAr ? 'rtl' : '' }}" dir="{{ $direction }}" data-study-plan data-locale="{{ $locale }}" data-faculty-slug="{{ $page->facultySlug }}" style="--accent-color: {{ $accent }}; --accent-color-15: {{ $accent }}26;">
@@ -130,14 +121,18 @@
                             <p class="text-[14px] font-semibold text-slate-500">{{ $label('courseTypes') ?: ($isAr ? 'أنواع المقررات' : 'Course Types') }}</p>
                             @foreach ($legend as $item)
                                 @php($legendType = $item['id'] ?? 'faculty')
-                                <div class="flex cursor-pointer items-center gap-2.5 rounded-full border border-slate-100 bg-white px-5 py-2.5 shadow-sm transition-all hover:border-slate-200 hover:shadow-md">
+                                <button type="button" data-legend-type="{{ $legendType }}" aria-pressed="false" class="flex items-center gap-2.5 rounded-full border border-slate-100 bg-white px-5 py-2.5 shadow-sm transition-all hover:border-slate-200 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-spu-blue aria-pressed:border-spu-blue aria-pressed:shadow-md">
                                     <span class="h-2.5 w-2.5 rounded-full {{ $dotClasses[$legendType] ?? 'bg-slate-400' }}"></span>
                                     <span class="text-[12px] font-extrabold uppercase tracking-widest text-slate-700">{{ $text($item, 'label') }}</span>
-                                </div>
+                                </button>
                             @endforeach
                         </div>
 
-                        <div class="flex items-center gap-2">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <div class="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm" role="group" aria-label="{{ $isAr ? 'طريقة العرض' : 'View mode' }}">
+                                <button type="button" data-study-plan-view-toggle="graph" aria-pressed="true" class="rounded-md px-3.5 py-2 text-[12px] font-bold text-spu-blue/70 transition-colors aria-pressed:bg-spu-blue aria-pressed:text-white">{{ $isAr ? 'مخطط' : 'Graph' }}</button>
+                                <button type="button" data-study-plan-view-toggle="list" aria-pressed="false" class="rounded-md px-3.5 py-2 text-[12px] font-bold text-spu-blue/70 transition-colors aria-pressed:bg-spu-blue aria-pressed:text-white">{{ $isAr ? 'قائمة' : 'List' }}</button>
+                            </div>
                             <button type="button" data-study-plan-download class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-[12px] font-bold text-spu-blue shadow-sm transition-all hover:border-spu-blue/30 hover:shadow-md">
                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                                 <span>{{ $isAr ? 'تحميل الساعات' : 'Download Hours' }}</span>
@@ -151,7 +146,7 @@
                         </div>
                     </div>
 
-                    <div data-study-plan-viewport dir="ltr" tabindex="0" role="region" aria-label="{{ $isAr ? 'مخطط المتطلبات السابقة للمقررات. استخدم مفاتيح الأسهم للتحريك ومفتاحي الجمع والطرح للتكبير.' : 'Course prerequisite graph. Use the arrow keys to pan and plus or minus to zoom.' }}" class="relative w-full overflow-hidden border border-slate-200/50 bg-white shadow-[0_8px_40px_rgba(32,39,89,0.04)] sp-custom-scrollbar" style="height: 80vh;">
+                    <div data-study-plan-viewport dir="ltr" tabindex="0" role="region" aria-label="{{ $isAr ? 'مخطط المتطلبات السابقة للمقررات. استخدم مفاتيح الأسهم للتحريك ومفتاحي الجمع والطرح للتكبير.' : 'Course prerequisite graph. Use the arrow keys to pan and plus or minus to zoom.' }}" class="relative w-full touch-none overflow-hidden border border-slate-200/50 bg-white shadow-[0_8px_40px_rgba(32,39,89,0.04)] sp-custom-scrollbar" style="height: 80vh;">
                         <div data-study-plan-controls class="absolute right-4 top-4 z-50 flex flex-col gap-2">
                             <button type="button" data-study-plan-zoom-in class="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-lg font-black text-spu-blue shadow-md transition-colors hover:bg-slate-50" aria-label="{{ $isAr ? 'تكبير المخطط' : 'Zoom in' }}">+</button>
                             <button type="button" data-study-plan-zoom-out class="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-lg font-black text-spu-blue shadow-md transition-colors hover:bg-slate-50" aria-label="{{ $isAr ? 'تصغير المخطط' : 'Zoom out' }}">−</button>
@@ -159,7 +154,7 @@
                         </div>
 
                         <div data-study-plan-world class="absolute left-0 top-0 origin-top-left cursor-grab select-none">
-                            <div data-study-plan-board class="relative" style="width: {{ $boardWidth }}px; height: {{ $boardHeight }}px;">
+                            <div data-study-plan-board class="relative pb-8" style="width: {{ $boardWidth }}px;">
                                 <svg data-study-plan-svg class="pointer-events-none absolute inset-0 z-0 h-full w-full overflow-visible" aria-hidden="true">
                                     <defs>
                                         <marker id="sp-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M 0 0 L 6 3 L 0 6 z" fill="#cbd5e1"></path></marker>
@@ -167,28 +162,57 @@
                                     </defs>
                                 </svg>
 
-                                <div class="relative z-10 grid" style="margin-left: {{ $layout['sidePadding'] }}px; grid-template-columns: repeat({{ $layout['totalTerms'] }}, {{ $layout['columnWidth'] }}px); gap: {{ $layout['columnGap'] }}px;">
-                                    @foreach ($layoutCoursesByTerm as $termLayout)
-                                        @php($term = $termLayout['term'])
-                                        <div data-term-column class="relative" style="height: {{ $termLayout['height'] }}px;">
-                                            <div class="z-30 mb-8 flex h-12 items-center justify-center rounded-2xl border border-slate-100 bg-white text-[13px] font-black uppercase tracking-[0.2em] text-spu-blue shadow-lg">{{ $text($term, 'label') }}</div>
+                                <div class="relative z-10 grid items-start pt-4" style="margin-left: {{ $sidePadding }}px; grid-template-columns: repeat({{ $totalTerms }}, {{ $columnWidth }}px); gap: {{ $columnGap }}px;">
+                                    @foreach ($terms as $term)
+                                        <div data-term-column class="flex flex-col gap-[18px]">
+                                            <div class="mb-3 flex h-12 items-center justify-center rounded-2xl border border-slate-100 bg-white text-[13px] font-black uppercase tracking-[0.2em] text-spu-blue shadow-lg">{{ $text($term, 'label') }}</div>
 
-                                            @foreach ($termLayout['courses'] as $layoutCourse)
-                                                @php($course = $layoutCourse['course'])
+                                            @foreach (collect($term['courses'] ?? [])->filter(fn ($item) => is_array($item)) as $course)
                                                 @php($courseType = $typeKey($course))
-                                                <button type="button" data-course-card data-course-id="{{ $course['id'] ?? '' }}" aria-haspopup="dialog" aria-expanded="false" class="sp-course-card group absolute w-full rounded-2xl bg-white p-3.5 text-start border shadow-sm transition-all duration-300 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 {{ $typeClasses[$courseType] ?? $typeClasses['faculty'] }}" style="top: {{ $layoutCourse['top'] }}px; height: {{ $layout['cardHeight'] }}px;" dir="{{ $direction }}">
+                                                <button type="button" data-course-card data-course-id="{{ $course['id'] ?? '' }}" data-course-type="{{ $courseType }}" aria-haspopup="dialog" aria-expanded="false" class="sp-course-card group relative min-h-[100px] w-full rounded-2xl bg-white p-3.5 text-start border shadow-sm transition-all duration-300 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 {{ $typeClasses[$courseType] ?? $typeClasses['faculty'] }}" dir="{{ $direction }}">
                                                     <div class="flex items-center justify-between gap-2">
                                                         <span class="text-[11px] font-black uppercase tracking-[0.15em] text-slate-400 group-hover:text-spu-red">{{ $course['code'] ?? '' }}</span>
                                                         <span class="rounded bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-400">{{ $course['credits'] ?? 0 }}cr</span>
                                                     </div>
-                                                    <span class="mt-2.5 block text-[12px] font-extrabold leading-[1.5] text-slate-900 group-hover:text-spu-blue">{{ $text($course, 'title') }}</span>
+                                                    <span class="mt-2.5 block break-words text-[12px] font-extrabold leading-[1.5] text-slate-900 group-hover:text-spu-blue">{{ $text($course, 'title') }}</span>
                                                 </button>
                                             @endforeach
                                         </div>
                                     @endforeach
                                 </div>
+
+                                <svg data-study-plan-svg-top class="pointer-events-none absolute inset-0 z-20 h-full w-full overflow-visible" aria-hidden="true"></svg>
                             </div>
                         </div>
+                    </div>
+
+                    <div data-study-plan-list class="space-y-6">
+                        @foreach ($terms as $term)
+                            <section aria-labelledby="sp-list-term-{{ $loop->index }}">
+                                <h3 id="sp-list-term-{{ $loop->index }}" class="mb-3 flex items-center gap-3 text-[15px] font-black text-spu-blue"><span class="h-6 w-1 rounded-full bg-spu-red"></span>{{ $text($term, 'label') }}</h3>
+                                <ul class="space-y-2.5">
+                                    @foreach (collect($term['courses'] ?? [])->filter(fn ($item) => is_array($item)) as $course)
+                                        @php($courseType = $typeKey($course))
+                                        @php($prereqCodes = $prereqCodesFor($course))
+                                        <li>
+                                            <button type="button" data-list-card data-course-id="{{ $course['id'] ?? '' }}" data-course-type="{{ $courseType }}" aria-haspopup="dialog" class="sp-course-card group flex min-h-[64px] w-full flex-col gap-1.5 rounded-xl border bg-white p-3.5 text-start shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 {{ $typeClasses[$courseType] ?? $typeClasses['faculty'] }}" dir="{{ $direction }}">
+                                                <span class="flex items-center justify-between gap-2">
+                                                    <span class="text-[11px] font-black uppercase tracking-[0.15em] text-slate-400">{{ $course['code'] ?? '' }}</span>
+                                                    <span class="rounded bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-400">{{ $course['credits'] ?? 0 }}cr</span>
+                                                </span>
+                                                <span class="block break-words text-[13px] font-extrabold leading-[1.5] text-slate-900">{{ $text($course, 'title') }}</span>
+                                                @if ($prereqCodes !== '')
+                                                    <span class="block text-[11px] font-semibold text-slate-500">{{ $label('prerequisites') ?: ($isAr ? 'المتطلبات السابقة' : 'Prerequisites') }}: {{ $prereqCodes }}</span>
+                                                @endif
+                                                @if ((int) ($course['prerequisiteCredits'] ?? 0) > 0)
+                                                    <span class="block text-[11px] font-semibold text-slate-500">{{ $isAr ? 'يتطلب إنجاز '.(int) $course['prerequisiteCredits'].' ساعة معتمدة' : 'Requires '.(int) $course['prerequisiteCredits'].' completed credits' }}</span>
+                                                @endif
+                                            </button>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </section>
+                        @endforeach
                     </div>
 
                     <div class="grid gap-6">
@@ -234,6 +258,7 @@
             <h3 id="study-plan-modal-title" data-modal-title class="text-[18px] font-black leading-tight text-spu-blue"></h3>
             <p id="study-plan-modal-description" data-modal-description class="mt-2 text-[13px] font-medium leading-6 text-slate-500"></p>
             <div class="mt-5 space-y-4">
+                <p data-modal-credit-rule class="hidden text-[12px] font-semibold text-slate-600"></p>
                 <div data-modal-prerequisites-wrap class="hidden"><p class="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">{{ $label('prerequisites') }}</p><div data-modal-prerequisites class="flex flex-wrap gap-1.5"></div></div>
                 <div data-modal-openers-wrap class="hidden"><p class="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">{{ $label('opensAfter') }}</p><div data-modal-openers class="flex flex-wrap gap-1.5"></div></div>
             </div>

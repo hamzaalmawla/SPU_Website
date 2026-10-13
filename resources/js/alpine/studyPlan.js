@@ -1,25 +1,14 @@
-const TOTAL_TERMS = 10;
-
-const planLayout = {
-    columnWidth: 150,
-    columnGap: 64,
-    rowHeight: 80,
-    cardHeight: 100,
-    cardGap: 18,
-    headerHeight: 36,
-    headerGap: 24,
-    bottomPadding: 28,
-    sidePadding: 28,
-};
-
-planLayout.boardWidth = (TOTAL_TERMS * planLayout.columnWidth) + ((TOTAL_TERMS - 1) * planLayout.columnGap) + (2 * planLayout.sidePadding);
-
 const TYPE_STYLES = {
     university: { shortLabelEn: 'UNIV', shortLabelAr: 'جامعي' },
     faculty: { shortLabelEn: 'FAC', shortLabelAr: 'كلية' },
     specialization: { shortLabelEn: 'SPEC', shortLabelAr: 'تخصص' },
     elective: { shortLabelEn: 'ELEC', shortLabelAr: 'اختياري' },
 };
+
+const FAN_STEP = 10;
+const MOBILE_QUERY = '(max-width: 767px)';
+const DRAG_THRESHOLD = 6;
+const VIEW_STATE_VERSION = 'v2';
 
 export function modalFocusTarget(focusable, activeElement, shiftKey) {
     if (focusable.length === 0) return null;
@@ -32,12 +21,12 @@ export function modalFocusTarget(focusable, activeElement, shiftKey) {
     return null;
 }
 
-export function studyPlanKeyboardAction(key, isAr) {
-    const horizontalStep = isAr ? -40 : 40;
-
+// The graph is always laid out left to right (term 1 on the left), also in Arabic, so the
+// arrow keys follow the screen direction and are not mirrored.
+export function studyPlanKeyboardAction(key) {
     return {
-        ArrowLeft: { panX: horizontalStep, panY: 0, zoom: 0 },
-        ArrowRight: { panX: -horizontalStep, panY: 0, zoom: 0 },
+        ArrowLeft: { panX: 40, panY: 0, zoom: 0 },
+        ArrowRight: { panX: -40, panY: 0, zoom: 0 },
         ArrowUp: { panX: 0, panY: 40, zoom: 0 },
         ArrowDown: { panX: 0, panY: -40, zoom: 0 },
         '+': { panX: 0, panY: 0, zoom: -0.2 },
@@ -66,7 +55,7 @@ function flattenCourses(department) {
     return (department?.terms || []).flatMap((term) => term.courses || []);
 }
 
-function transitiveReduction(courses) {
+export function transitiveReduction(courses) {
     const adj = new Map();
     const edges = [];
 
@@ -110,6 +99,90 @@ function transitiveReduction(courses) {
     return reduced;
 }
 
+function fanOffset(index, count, height) {
+    const raw = (index * FAN_STEP) - (((count - 1) * FAN_STEP) / 2);
+    const limit = Math.max(0, (height / 2) - 8);
+
+    return Math.max(-limit, Math.min(limit, raw));
+}
+
+/**
+ * SVG path for one prerequisite edge, from the right edge of the source card to the left
+ * edge of the target card. Edges that leave or enter the same card are fanned out so they
+ * do not share one anchor point. Returns null when the target is not to the right of the
+ * source (same term or earlier term), because there is no forward link to draw.
+ */
+export function buildEdgePath(source, target, fan = {}) {
+    const { outIndex = 0, outCount = 1, inIndex = 0, inCount = 1 } = fan;
+    const startX = source.right;
+    const endX = target.left;
+    const gap = endX - startX;
+
+    if (gap < 8) return null;
+
+    const startY = source.centerY + fanOffset(outIndex, outCount, source.height || 0);
+    const endY = target.centerY + fanOffset(inIndex, inCount, target.height || 0);
+    const curve = Math.min(Math.max(gap * 0.22, 14), gap * 0.32);
+
+    return `M ${startX} ${startY} C ${startX + curve} ${startY} ${endX - curve} ${endY} ${endX} ${endY}`;
+}
+
+/**
+ * Routes every non-redundant prerequisite edge of a plan. `geometry` maps course id to
+ * {left, right, centerY, height}; edges are ordered by the vertical position of the card at the
+ * other end so fanned-out lines do not cross next to the card. Edges that do not point forward
+ * are left out (see buildEdgePath).
+ */
+export function planEdgePaths(geometry, courses) {
+    const edges = transitiveReduction(courses).filter((edge) => geometry.has(edge.source) && geometry.has(edge.target));
+    const outgoing = new Map();
+    const incoming = new Map();
+
+    edges.forEach((edge) => {
+        if (!outgoing.has(edge.source)) outgoing.set(edge.source, []);
+        if (!incoming.has(edge.target)) incoming.set(edge.target, []);
+        outgoing.get(edge.source).push(edge);
+        incoming.get(edge.target).push(edge);
+    });
+    outgoing.forEach((list) => list.sort((a, b) => geometry.get(a.target).centerY - geometry.get(b.target).centerY));
+    incoming.forEach((list) => list.sort((a, b) => geometry.get(a.source).centerY - geometry.get(b.source).centerY));
+
+    return edges.map((edge) => {
+        const outList = outgoing.get(edge.source);
+        const inList = incoming.get(edge.target);
+        const path = buildEdgePath(geometry.get(edge.source), geometry.get(edge.target), {
+            outIndex: outList.indexOf(edge),
+            outCount: outList.length,
+            inIndex: inList.indexOf(edge),
+            inCount: inList.length,
+        });
+
+        return path ? { sourceId: edge.source, targetId: edge.target, path } : null;
+    }).filter(Boolean);
+}
+
+/**
+ * Keeps at least `margin` px of the board inside the viewport on every side so a drag or
+ * zoom can never lose the graph completely.
+ */
+export function clampPan({ panX, panY, scale }, viewportWidth, viewportHeight, boardWidth, boardHeight, margin = 80) {
+    const scaledWidth = boardWidth * scale;
+    const scaledHeight = boardHeight * scale;
+    const marginX = Math.min(margin, scaledWidth);
+    const marginY = Math.min(margin, scaledHeight);
+
+    return {
+        panX: Math.max(marginX - scaledWidth, Math.min(viewportWidth - marginX, panX)),
+        panY: Math.max(marginY - scaledHeight, Math.min(viewportHeight - marginY, panY)),
+    };
+}
+
+export function pinchScale(startScale, startDistance, distance, minScale, maxScale) {
+    if (!(startDistance > 0) || !(distance > 0)) return startScale;
+
+    return Math.max(minScale, Math.min(maxScale, startScale * (distance / startDistance)));
+}
+
 function typeKey(course) {
     if (!course) return 'faculty';
     if (!course.required) return 'elective';
@@ -131,25 +204,24 @@ function createStudyPlanPage(root) {
     const locale = root.dataset.locale || 'en';
     const isAr = locale === 'ar';
     const facultySlug = root.dataset.facultySlug || '';
-    const labels = payload.labels || {};
-    const legend = payload.legend || [];
     const plan = payload.plan || {};
     const departments = plan.departments || [];
     const urlParams = new URLSearchParams(window.location.search);
     const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+    const mobileQuery = window.matchMedia?.(MOBILE_QUERY);
 
     const state = {
         activeDepartmentId: urlParams.get('department') || departments[0]?.id || '',
         hoveredCourseId: '',
         hoveredPathIds: [],
         modalCourseId: '',
+        typeFilter: '',
         scale: 1,
         panX: 0,
         panY: 0,
-        isDragging: false,
         lastMouseX: 0,
         lastMouseY: 0,
-        minScale: 0.2,
+        minScale: 0.1,
         maxScale: 3,
     };
 
@@ -157,17 +229,22 @@ function createStudyPlanPage(root) {
     const world = root.querySelector('[data-study-plan-world]');
     const board = root.querySelector('[data-study-plan-board]');
     const svg = root.querySelector('[data-study-plan-svg]');
+    const svgTop = root.querySelector('[data-study-plan-svg-top]');
     const courseCards = Array.from(root.querySelectorAll('[data-course-card]'));
+    const listCards = Array.from(root.querySelectorAll('[data-list-card]'));
+    const legendButtons = Array.from(root.querySelectorAll('[data-legend-type]'));
+    const viewToggles = Array.from(root.querySelectorAll('[data-study-plan-view-toggle]'));
+    const modal = root.querySelector('[data-course-modal]');
     let basePaths = [];
     let activePaths = [];
     let glowPaths = [];
-    const modal = root.querySelector('[data-course-modal]');
     let modalTrigger = null;
+    let graphReady = false;
 
-    function label(key) {
-        const suffix = isAr ? 'Ar' : 'En';
-        return labels?.[`${key}${suffix}`] || labels?.[`${key}En`] || '';
-    }
+    const pointers = new Map();
+    let pinch = null;
+    let dragMoved = false;
+    let suppressClick = false;
 
     function text(item, key) {
         return localizedStudyPlanText(item, key, isAr);
@@ -232,14 +309,6 @@ function createStudyPlanPage(root) {
         return `/${locale}/faculties/${facultySlug}/study-plan/course?${params.toString()}`;
     }
 
-    function typeLabel(course) {
-        if (!course) return '';
-        if (!course.required) return label('elective');
-        const item = legend.find((legendItem) => legendItem.id === course.type);
-
-        return text(item, 'label') || label('required');
-    }
-
     function typeShortLabel(course) {
         const style = TYPE_STYLES[typeKey(course)] || TYPE_STYLES.faculty;
 
@@ -254,15 +323,18 @@ function createStudyPlanPage(root) {
 
     function updateCourseAndPathState() {
         const hasHover = state.hoveredCourseId !== '';
+        const hasFilter = state.typeFilter !== '';
 
         courseCards.forEach((card) => {
             const courseId = card.dataset.courseId || '';
             const inPath = state.hoveredPathIds.includes(courseId);
             const isHovered = state.hoveredCourseId === courseId;
+            const dimByHover = hasHover && !inPath;
+            const dimByFilter = !hasHover && hasFilter && card.dataset.courseType !== state.typeFilter;
 
-            card.classList.toggle('opacity-25', hasHover && !inPath);
-            card.classList.toggle('scale-[0.97]', hasHover && !inPath);
-            card.classList.toggle('blur-[0.4px]', hasHover && !inPath);
+            card.classList.toggle('opacity-25', dimByHover || dimByFilter);
+            card.classList.toggle('scale-[0.97]', dimByHover);
+            card.classList.toggle('blur-[0.4px]', dimByHover);
             card.classList.toggle('ring-2', isHovered);
             card.classList.toggle('ring-indigo-400', isHovered);
             card.classList.toggle('z-50', isHovered);
@@ -288,23 +360,17 @@ function createStudyPlanPage(root) {
         });
     }
 
-    function cardGeometryMap() {
-        const map = new Map();
+    function applyTypeFilter(type) {
+        state.typeFilter = state.typeFilter === type ? '' : type;
 
-        courseCards.forEach((card) => {
-            if (!board) return;
-
-            const offset = elementOffsetWithin(card, board);
-            const left = offset.left;
-            const top = offset.top;
-            map.set(card.dataset.courseId || '', {
-                left,
-                right: left + card.offsetWidth,
-                centerY: top + (card.offsetHeight / 2),
-            });
+        legendButtons.forEach((button) => {
+            button.setAttribute('aria-pressed', button.dataset.legendType === state.typeFilter ? 'true' : 'false');
         });
-
-        return map;
+        listCards.forEach((card) => {
+            const dim = state.typeFilter !== '' && card.dataset.courseType !== state.typeFilter;
+            card.classList.toggle('opacity-30', dim);
+        });
+        updateCourseAndPathState();
     }
 
     function elementOffsetWithin(element, ancestor) {
@@ -321,40 +387,26 @@ function createStudyPlanPage(root) {
         return { left, top };
     }
 
-    function dependencyPaths() {
-        const map = cardGeometryMap();
-        const reducedEdges = transitiveReduction(courses());
-        const incomingCount = new Map();
+    function cardGeometryMap() {
+        const map = new Map();
 
-        reducedEdges.forEach((edge) => {
-            incomingCount.set(edge.target, (incomingCount.get(edge.target) || 0) + 1);
+        courseCards.forEach((card) => {
+            if (!board) return;
+
+            const offset = elementOffsetWithin(card, board);
+            map.set(card.dataset.courseId || '', {
+                left: offset.left,
+                right: offset.left + card.offsetWidth,
+                centerY: offset.top + (card.offsetHeight / 2),
+                height: card.offsetHeight,
+            });
         });
 
-        const incomingIndex = new Map();
+        return map;
+    }
 
-        return reducedEdges.map((edge) => {
-            const source = map.get(edge.source);
-            const target = map.get(edge.target);
-            if (!source || !target) return null;
-
-            const index = incomingIndex.get(edge.target) || 0;
-            incomingIndex.set(edge.target, index + 1);
-
-            const count = incomingCount.get(edge.target) || 1;
-            const yOffset = (index * 14) - (((count - 1) * 14) / 2);
-            const startX = source.right;
-            const startY = source.centerY;
-            const endX = target.left;
-            const endY = target.centerY + yOffset;
-            const horizontalGap = endX - startX;
-            const curve = Math.min(Math.max(horizontalGap * 0.22, 14), horizontalGap * 0.32);
-
-            return {
-                sourceId: edge.source,
-                targetId: edge.target,
-                path: `M ${startX} ${startY} C ${startX + curve} ${startY} ${endX - curve} ${endY} ${endX} ${endY}`,
-            };
-        }).filter(Boolean);
+    function dependencyPaths() {
+        return planEdgePaths(cardGeometryMap(), courses());
     }
 
     function createSvgPath(attributes) {
@@ -369,7 +421,10 @@ function createStudyPlanPage(root) {
     function renderDependencyPaths() {
         if (!svg) return;
 
-        svg.querySelectorAll('[data-generated-path]').forEach((path) => path.remove());
+        [svg, svgTop].forEach((layer) => layer?.querySelectorAll('[data-generated-path]').forEach((path) => path.remove()));
+
+        const accent = /^#[0-9a-fA-F]{6}$/.test(plan.accent || '') ? plan.accent : '#202759';
+        const highlightLayer = svgTop || svg;
 
         dependencyPaths().forEach((connector) => {
             const common = {
@@ -391,19 +446,21 @@ function createStudyPlanPage(root) {
                 style: reducedMotion ? '' : 'transition: all 0.3s;',
             }));
 
-            svg.appendChild(createSvgPath({
+            // Highlighted lines live in a layer above the cards so a selected path stays
+            // visible where it crosses other cards.
+            highlightLayer.appendChild(createSvgPath({
                 ...common,
                 'data-path-glow': '1',
-                stroke: plan.accent || '#202759',
+                stroke: accent,
                 'stroke-width': '6',
                 'stroke-opacity': '0.25',
                 class: 'sp-path-glow hidden',
             }));
 
-            svg.appendChild(createSvgPath({
+            highlightLayer.appendChild(createSvgPath({
                 ...common,
                 'data-path-active': '1',
-                stroke: plan.accent || '#202759',
+                stroke: accent,
                 'stroke-width': '2.5',
                 'marker-end': 'url(#sp-arrow-path)',
                 class: `${reducedMotion ? '' : 'sp-path-animated'} hidden`,
@@ -438,6 +495,15 @@ function createStudyPlanPage(root) {
         modal.querySelector('[data-modal-title]').textContent = text(course, 'title');
         modal.querySelector('[data-modal-description]').textContent = text(course, 'description');
         modal.querySelector('[data-modal-details]').setAttribute('href', courseHref(course.id));
+
+        const creditRule = modal.querySelector('[data-modal-credit-rule]');
+        const requiredCredits = Number(course.prerequisiteCredits) || 0;
+        if (creditRule) {
+            creditRule.textContent = requiredCredits > 0
+                ? (isAr ? `يتطلب إنجاز ${requiredCredits} ساعة معتمدة` : `Requires ${requiredCredits} completed credits`)
+                : '';
+            creditRule.classList.toggle('hidden', requiredCredits === 0);
+        }
 
         const prereqItems = prerequisites(course);
         const openerItems = openerCourses(course);
@@ -488,7 +554,7 @@ function createStudyPlanPage(root) {
     }
 
     function viewStateKey() {
-        return `sp-zoom-${facultySlug}-${state.activeDepartmentId}`;
+        return `sp-zoom-${VIEW_STATE_VERSION}-${facultySlug}-${state.activeDepartmentId}`;
     }
 
     function saveViewState() {
@@ -502,94 +568,177 @@ function createStudyPlanPage(root) {
     function restoreViewState() {
         try {
             const saved = localStorage.getItem(viewStateKey());
-            if (!saved) return;
+            if (!saved) return false;
             const data = JSON.parse(saved);
-            state.scale = Math.max(state.minScale, Math.min(state.maxScale, data.scale ?? 1));
-            state.panX = data.panX ?? 0;
-            state.panY = data.panY ?? 0;
+            if (![data.scale, data.panX, data.panY].every(Number.isFinite)) return false;
+            state.scale = Math.max(state.minScale, Math.min(state.maxScale, data.scale));
+            state.panX = data.panX;
+            state.panY = data.panY;
+
+            return true;
         } catch (error) {
-            // Ignore invalid storage.
+            return false;
         }
     }
 
-    function boardHeightValue() {
-        const values = (activeDepartment()?.terms || []).map((term) => {
-            const count = (term.courses || []).length;
-            return planLayout.headerHeight + planLayout.headerGap + (count * planLayout.cardHeight) + (Math.max(0, count - 1) * planLayout.cardGap) + planLayout.bottomPadding;
-        });
-
-        return Math.max(...values, planLayout.headerHeight + planLayout.bottomPadding);
-    }
-
-    function transformStyle() {
-        return `translate3d(${state.panX}px, ${state.panY}px, 0) scale(${state.scale})`;
+    function boardSize() {
+        return { width: board?.offsetWidth || 1, height: board?.offsetHeight || 1 };
     }
 
     function applyTransform() {
         if (!world) return;
-        world.style.transform = transformStyle();
+        world.style.transform = `translate3d(${state.panX}px, ${state.panY}px, 0) scale(${state.scale})`;
+    }
+
+    function clampView() {
+        if (!viewport || !board) return;
+
+        const size = boardSize();
+        const clamped = clampPan(state, viewport.clientWidth, viewport.clientHeight, size.width, size.height);
+        state.panX = clamped.panX;
+        state.panY = clamped.panY;
+    }
+
+    function commitView() {
+        clampView();
+        applyTransform();
+        saveViewState();
     }
 
     function fitToScreen() {
         if (!viewport) return;
+        const size = boardSize();
         const vw = viewport.clientWidth;
         const vh = viewport.clientHeight;
-        const fitScale = Math.min(vw / planLayout.boardWidth, vh / boardHeightValue(), 1);
-        state.scale = Math.max(state.minScale, fitScale);
-        state.panX = (vw - planLayout.boardWidth * state.scale) / 2;
-        state.panY = (vh - boardHeightValue() * state.scale) / 2;
-        applyTransform();
-        saveViewState();
+        state.scale = Math.max(state.minScale, Math.min(vw / size.width, vh / size.height, 1));
+        state.panX = (vw - size.width * state.scale) / 2;
+        state.panY = (vh - size.height * state.scale) / 2;
+        commitView();
+    }
+
+    // On a phone a full fit would shrink the cards to an unreadable size, so the first view
+    // starts at a readable scale at the first term. The fit button still shows everything.
+    function initialView() {
+        if (mobileQuery?.matches) {
+            state.scale = 0.75;
+            state.panX = 8;
+            state.panY = 8;
+            commitView();
+
+            return;
+        }
+
+        fitToScreen();
+    }
+
+    function setScaleAt(newScale, centerX, centerY) {
+        const scale = Math.max(state.minScale, Math.min(state.maxScale, newScale));
+        if (scale === state.scale) return;
+
+        const ratio = scale / state.scale;
+        state.panX = centerX - (centerX - state.panX) * ratio;
+        state.panY = centerY - (centerY - state.panY) * ratio;
+        state.scale = scale;
+        commitView();
     }
 
     function zoomToPoint(delta, centerX, centerY) {
-        const newScale = Math.max(state.minScale, Math.min(state.maxScale, state.scale * (1 - delta)));
-        if (newScale === state.scale) return;
-        const ratio = newScale / state.scale;
-        state.panX = centerX - (centerX - state.panX) * ratio;
-        state.panY = centerY - (centerY - state.panY) * ratio;
-        state.scale = newScale;
+        setScaleAt(state.scale * (1 - delta), centerX, centerY);
+    }
+
+    function pointerDistance() {
+        const [a, b] = Array.from(pointers.values());
+
+        return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0;
+    }
+
+    function pointerMidpoint() {
+        const [a, b] = Array.from(pointers.values());
+
+        return a && b ? { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 } : { x: 0, y: 0 };
+    }
+
+    function onPointerDown(event) {
+        if (event.pointerType === 'mouse' && event.button !== 0) return;
+        if (event.target.closest('[data-study-plan-controls]')) return;
+
+        pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+        if (pointers.size === 1) {
+            state.lastMouseX = event.clientX;
+            state.lastMouseY = event.clientY;
+            dragMoved = false;
+        } else if (pointers.size === 2) {
+            pinch = { startDistance: pointerDistance(), startScale: state.scale };
+            dragMoved = true;
+        }
+    }
+
+    function onPointerMove(event) {
+        const pointer = pointers.get(event.pointerId);
+        if (!pointer) return;
+
+        pointer.x = event.clientX;
+        pointer.y = event.clientY;
+
+        if (pointers.size >= 2 && pinch) {
+            const rect = viewport.getBoundingClientRect();
+            const midpoint = pointerMidpoint();
+            setScaleAt(
+                pinchScale(pinch.startScale, pinch.startDistance, pointerDistance(), state.minScale, state.maxScale),
+                midpoint.x - rect.left,
+                midpoint.y - rect.top,
+            );
+
+            return;
+        }
+
+        const dx = event.clientX - state.lastMouseX;
+        const dy = event.clientY - state.lastMouseY;
+
+        if (!dragMoved) {
+            if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+
+            // Capture only once the gesture is a real drag, so a plain tap still reaches the card.
+            dragMoved = true;
+            try {
+                viewport.setPointerCapture(event.pointerId);
+            } catch (error) {
+                // Pointer capture is optional.
+            }
+            world?.classList.add('cursor-grabbing');
+            world?.classList.remove('cursor-grab');
+        }
+
+        state.panX += dx;
+        state.panY += dy;
+        state.lastMouseX = event.clientX;
+        state.lastMouseY = event.clientY;
+        clampView();
         applyTransform();
-        saveViewState();
     }
 
-    function startPan(event) {
-        const touch = event.touches?.[0];
-        const clientX = touch?.clientX ?? event.clientX;
-        const clientY = touch?.clientY ?? event.clientY;
+    function onPointerEnd(event) {
+        if (!pointers.delete(event.pointerId)) return;
 
-        if (event.button !== undefined && event.button !== 0) return;
-        if (event.target.closest('button, a')) return;
+        if (pointers.size < 2) pinch = null;
 
-        event.preventDefault();
-        state.isDragging = true;
-        state.lastMouseX = clientX;
-        state.lastMouseY = clientY;
-        world?.classList.add('cursor-grabbing');
-        world?.classList.remove('cursor-grab');
-    }
+        const remaining = Array.from(pointers.values())[0];
+        if (remaining) {
+            state.lastMouseX = remaining.x;
+            state.lastMouseY = remaining.y;
+        }
 
-    function panBy(event) {
-        if (!state.isDragging) return;
-        if (event.touches) event.preventDefault();
+        if (pointers.size === 0) {
+            world?.classList.add('cursor-grab');
+            world?.classList.remove('cursor-grabbing');
 
-        const touch = event.touches?.[0];
-        const clientX = touch?.clientX ?? event.clientX;
-        const clientY = touch?.clientY ?? event.clientY;
-
-        state.panX += clientX - state.lastMouseX;
-        state.panY += clientY - state.lastMouseY;
-        state.lastMouseX = clientX;
-        state.lastMouseY = clientY;
-        applyTransform();
-    }
-
-    function endPan() {
-        if (!state.isDragging) return;
-        state.isDragging = false;
-        world?.classList.add('cursor-grab');
-        world?.classList.remove('cursor-grabbing');
-        saveViewState();
+            if (dragMoved) {
+                suppressClick = true;
+                setTimeout(() => { suppressClick = false; }, 0);
+                saveViewState();
+            }
+        }
     }
 
     function downloadHoursSummary() {
@@ -629,6 +778,44 @@ function createStudyPlanPage(root) {
         URL.revokeObjectURL(url);
     }
 
+    function effectiveView() {
+        return root.dataset.view || (mobileQuery?.matches ? 'list' : 'graph');
+    }
+
+    function syncViewToggles() {
+        const view = effectiveView();
+        viewToggles.forEach((button) => {
+            button.setAttribute('aria-pressed', button.dataset.studyPlanViewToggle === view ? 'true' : 'false');
+        });
+    }
+
+    // The graph can only be measured while it is displayed, so layout work is deferred until
+    // it is visible (it is hidden on phones until the visitor switches to it).
+    function ensureGraph() {
+        if (!viewport || viewport.clientWidth === 0) return;
+
+        renderDependencyPaths();
+
+        if (!graphReady) {
+            graphReady = true;
+            if (restoreViewState()) {
+                commitView();
+            } else {
+                initialView();
+            }
+
+            return;
+        }
+
+        commitView();
+    }
+
+    function setView(view) {
+        root.dataset.view = view;
+        syncViewToggles();
+        if (view === 'graph') requestAnimationFrame(ensureGraph);
+    }
+
     function bindEvents() {
         root.querySelectorAll('[data-department-tab]').forEach((button) => {
             button.addEventListener('click', () => {
@@ -649,28 +836,53 @@ function createStudyPlanPage(root) {
             });
         });
 
+        listCards.forEach((card) => {
+            card.addEventListener('click', () => openModal(card.dataset.courseId || '', card));
+        });
+
+        legendButtons.forEach((button) => {
+            button.addEventListener('click', () => applyTypeFilter(button.dataset.legendType || ''));
+        });
+
+        viewToggles.forEach((button) => {
+            button.addEventListener('click', () => setView(button.dataset.studyPlanViewToggle || 'graph'));
+        });
+        mobileQuery?.addEventListener?.('change', () => {
+            syncViewToggles();
+            requestAnimationFrame(ensureGraph);
+        });
+
         root.querySelector('[data-study-plan-download]')?.addEventListener('click', downloadHoursSummary);
         root.querySelector('[data-study-plan-zoom-in]')?.addEventListener('click', () => {
-            const rect = viewport.getBoundingClientRect();
-            zoomToPoint(-0.2, rect.width / 2, rect.height / 2);
+            zoomToPoint(-0.2, viewport.clientWidth / 2, viewport.clientHeight / 2);
         });
         root.querySelector('[data-study-plan-zoom-out]')?.addEventListener('click', () => {
-            const rect = viewport.getBoundingClientRect();
-            zoomToPoint(0.2, rect.width / 2, rect.height / 2);
+            zoomToPoint(0.2, viewport.clientWidth / 2, viewport.clientHeight / 2);
         });
         root.querySelector('[data-study-plan-fit]')?.addEventListener('click', fitToScreen);
 
-        viewport?.addEventListener('mousedown', startPan);
-        viewport?.addEventListener('mousemove', panBy);
-        viewport?.addEventListener('mouseup', endPan);
-        viewport?.addEventListener('mouseleave', endPan);
-        viewport?.addEventListener('touchstart', startPan, { passive: false });
-        viewport?.addEventListener('touchmove', panBy, { passive: false });
-        viewport?.addEventListener('touchend', endPan);
+        viewport?.addEventListener('pointerdown', onPointerDown);
+        viewport?.addEventListener('pointermove', onPointerMove);
+        viewport?.addEventListener('pointerup', onPointerEnd);
+        viewport?.addEventListener('pointercancel', onPointerEnd);
+        // A drag that ends on a card must not also open it.
+        viewport?.addEventListener('click', (event) => {
+            if (!suppressClick) return;
+            event.preventDefault();
+            event.stopPropagation();
+        }, true);
+        // Ctrl/Cmd + wheel (and trackpad pinch) zooms; a plain wheel keeps scrolling the page.
+        viewport?.addEventListener('wheel', (event) => {
+            if (!event.ctrlKey && !event.metaKey) return;
+
+            event.preventDefault();
+            const rect = viewport.getBoundingClientRect();
+            zoomToPoint(Math.max(-0.5, Math.min(0.5, event.deltaY * 0.002)), event.clientX - rect.left, event.clientY - rect.top);
+        }, { passive: false });
         viewport?.addEventListener('keydown', (event) => {
             if (event.target.closest('button, a')) return;
 
-            const action = studyPlanKeyboardAction(event.key, isAr);
+            const action = studyPlanKeyboardAction(event.key);
             if (!action) return;
 
             event.preventDefault();
@@ -678,9 +890,9 @@ function createStudyPlanPage(root) {
             state.panY += action.panY;
             if (action.zoom !== 0) {
                 zoomToPoint(action.zoom, viewport.clientWidth / 2, viewport.clientHeight / 2);
+                return;
             }
-            applyTransform();
-            saveViewState();
+            commitView();
         });
 
         modal?.addEventListener('click', (event) => {
@@ -696,28 +908,19 @@ function createStudyPlanPage(root) {
 
             containModalFocus(event);
         });
-    }
 
-    function initZoom() {
-        restoreViewState();
-        if (state.scale === 1 && state.panX === 0 && state.panY === 0) {
-            fitToScreen();
-            return;
-        }
-        applyTransform();
+        let resizeTimer = 0;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(ensureGraph, 120);
+        });
     }
 
     return {
         init() {
+            syncViewToggles();
             bindEvents();
-            requestAnimationFrame(() => {
-                renderDependencyPaths();
-                initZoom();
-            });
-            window.addEventListener('resize', () => {
-                renderDependencyPaths();
-                applyTransform();
-            });
+            requestAnimationFrame(ensureGraph);
         },
     };
 }
