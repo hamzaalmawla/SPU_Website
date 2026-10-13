@@ -272,6 +272,73 @@ else
 fi
 [[ -f "${WEB}/build/manifest.json" ]] || fail "The build did not land at ${WEB}/build"
 
+# ── Root static files ────────────────────────────────────────────────────────
+# Only build/ and the SVGs are otherwise copied into the docroot, so a file
+# committed at the top of public/ never reached it. Two kinds live there and
+# both fail silently when missing:
+#
+#   - search-engine and backlink-index ownership tokens (Google Search Console,
+#     Ahrefs, Majestic). Ahrefs and Majestic are the two link indexes Webometrics
+#     reads for its Visibility score; losing their tokens at cutover loses
+#     verified ownership of the domain's link data.
+#   - favicon.ico and apple-touch-icon.png, which browsers and search engines
+#     request by name whatever the page declares.
+log "Publishing root static files"
+shopt -s nullglob
+for root_file in "${SOURCE}"/public/{favicon.ico,apple-touch-icon.png,site.webmanifest,google*.html,MJ12_*.txt,ahrefs_*}; do
+    install -m 0644 "${root_file}" "${WEB}/$(basename "${root_file}")"
+    printf '  %s\n' "$(basename "${root_file}")"
+done
+shopt -u nullglob
+
+# ── Legacy static mounts ─────────────────────────────────────────────────────
+# Old files stay in the old document root and are exposed read-only under
+# _legacy/, answered at their original URLs by public/.htaccess (README §4).
+# The original mounts already exist; these are the ones added since, created
+# here because there is no shell to create them with. An existing path is
+# never replaced, and a missing source is reported rather than linked.
+LEGACY_ROOT="${SPU_LEGACY_ROOT:-/home/spuedu/public_html}"
+ensure_legacy_mount() {
+    local source="$1" target="$2"
+    if [[ -L "${target}" || -e "${target}" ]]; then
+        return 0
+    fi
+    if [[ ! -d "${source}" ]]; then
+        printf '  ⚠ %s does not exist; %s not mounted\n' "${source}" "${target}" >&2
+        return 0
+    fi
+    mkdir -p "$(dirname "${target}")"
+    ln -s "${source}" "${target}"
+    printf '  mounted %s → %s\n' "${target}" "${source}"
+}
+log "Ensuring legacy static mounts"
+ensure_legacy_mount "${LEGACY_ROOT}/FCKBIH"    "${WEB}/_legacy/FCKBIH"
+ensure_legacy_mount "${LEGACY_ROOT}/downloads" "${WEB}/_legacy/downloads/root"
+
+# ── Live applications kept at their addresses ────────────────────────────────
+# Two separate PHP applications live in the old document root and are in use:
+# /forms (surveys, complaints and their dashboards) and /Medicine (the Faculty
+# of Medicine recruitment portal). Unlike the media above they must execute, so
+# they are mounted at their own paths rather than under _legacy/, where PHP is
+# refused. Once the domain points at this docroot they keep answering exactly
+# where they always did; until then they are also reachable on the v2 host.
+#
+# Each carries its own .htaccess with DirectoryIndex index.php - this docroot
+# sets app.php, which subdirectories would otherwise inherit and answer 403 -
+# and denies its internals (uploads, sessions, logs, source) over HTTP. A mount
+# without that file is refused rather than published half-protected.
+ensure_app_mount() {
+    local source="$1" target="$2"
+    if [[ -d "${source}" ]] && ! grep -qs '^[[:space:]]*DirectoryIndex[[:space:]]\+index\.php' "${source}/.htaccess"; then
+        printf '  ⚠ %s/.htaccess lacks DirectoryIndex index.php; %s not mounted\n' "${source}" "${target}" >&2
+        return 0
+    fi
+    ensure_legacy_mount "${source}" "${target}"
+}
+log "Ensuring live application mounts"
+ensure_app_mount "${LEGACY_ROOT}/forms"    "${WEB}/forms"
+ensure_app_mount "${LEGACY_ROOT}/Medicine" "${WEB}/Medicine"
+
 # nginx strips Accept-Encoding before Apache or PHP ever sees it (measured
 # 2 September; the reasoning is in config/edge.php). That means mod_deflate
 # cannot fire for a static file and no negotiated rewrite can either, so the
@@ -337,7 +404,14 @@ rm -rf "${APP}/bootstrap/cache/filament"
 # ── Schema ───────────────────────────────────────────────────────────────────
 log "Recording migration status and SQL preview"
 (cd "${APP}" && "${PHP}" artisan migrate:status --no-interaction)
-MIGRATION_PREVIEW="$(cd "${APP}" && "${PHP}" artisan migrate --pretend --no-interaction 2>&1)"
+# --force is required here even though nothing runs: in production, migrate's
+# confirmation guard comes before --pretend is honoured and, with no terminal,
+# cancels with exit 1. Under set -e that ended the deploy silently with the
+# preview swallowed by the command substitution. --pretend executes no SQL.
+if ! MIGRATION_PREVIEW="$(cd "${APP}" && "${PHP}" artisan migrate --pretend --force --no-interaction 2>&1)"; then
+    printf '%s\n' "${MIGRATION_PREVIEW}" >&2
+    fail "Could not produce the migration SQL preview. Nothing was migrated."
+fi
 printf '%s\n' "${MIGRATION_PREVIEW}"
 
 # A normal production release may add or alter schema, but must not silently

@@ -16,7 +16,7 @@ final class LegacyCategoryRouteQueryResolver implements LegacyQueryModuleResolve
         2029 => ['service' => 2, 'path' => ''],
         16 => ['service' => 1, 'path' => '/about'],
         28 => ['service' => 1, 'path' => '/about/accreditation'],
-        1237 => ['service' => 1, 'path' => '/admissions/academic-warnings'],
+        1237 => ['service' => 1, 'path' => '/admissions/documents?tab=academic-warnings'],
         60 => ['service' => 2, 'path' => '/e-services/suggestions-complaints'],
         299 => ['service' => 1, 'path' => '/faculties/medicine'],
         1525 => ['service' => 1, 'path' => '/faculties/medicine'],

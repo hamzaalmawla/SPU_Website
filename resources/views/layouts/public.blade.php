@@ -42,6 +42,7 @@
             @endforeach
         @endif
         <link rel="icon" href="{{ asset('images/single-logo.png') }}" type="image/png">
+        <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
         <link rel="manifest" href="{{ asset('site.webmanifest') }}">
         <link rel="stylesheet" href="{{ route('media.display-styles') }}">
         @php

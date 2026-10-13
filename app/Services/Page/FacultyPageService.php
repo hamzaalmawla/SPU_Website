@@ -6,6 +6,7 @@ namespace App\Services\Page;
 
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
+use App\Contracts\Faculty\ProjectFieldBlockParserInterface;
 use App\Contracts\Page\AboutPageServiceInterface;
 use App\Contracts\Page\FacultyPageServiceInterface;
 use App\Contracts\Page\FacultySubpageCardServiceInterface;
@@ -22,6 +23,7 @@ use App\DTOs\Faculty\FacultyHubPageDTO;
 use App\DTOs\Faculty\FacultyNavigationItemDTO;
 use App\DTOs\Faculty\FacultyProjectDetailPageDTO;
 use App\DTOs\Faculty\FacultySubpageDTO;
+use App\DTOs\Faculty\ProjectFieldBlockDTO;
 use App\Models\Career\Alumni;
 use App\Models\Career\AlumniTranslation;
 use App\Models\Career\HonorStudent;
@@ -45,6 +47,7 @@ use App\Models\Shared\MigrationLog;
 use App\Support\MediaUrlResolver;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 final class FacultyPageService implements FacultyPageServiceInterface
 {
@@ -76,6 +79,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
         private readonly ResearchPageServiceInterface $researchPageService,
         private readonly AboutPageServiceInterface $aboutPageService,
         private readonly ProfilePageServiceInterface $profilePageService,
+        private readonly ProjectFieldBlockParserInterface $projectFieldBlockParser,
     ) {}
 
     public function getHub(string $locale): FacultyHubPageDTO
@@ -1129,21 +1133,33 @@ final class FacultyPageService implements FacultyPageServiceInterface
     /** @return array<int, array<string, mixed>> */
     private function projectItems(Faculty $faculty, string $locale): array
     {
+        $facultyName = (string) $this->facultyTranslation($faculty, $locale)->name;
+
         return $faculty->studentProjects
-            ->map(function (FacultyStudentProject $project) use ($faculty, $locale): array {
+            ->map(function (FacultyStudentProject $project) use ($faculty, $locale, $facultyName): array {
                 $translation = $this->projectTranslation($project, $locale);
+                $fields = $this->projectFieldBlockParser->parse(is_array($translation->body_json) ? $translation->body_json : []);
+                $people = $this->projectPeopleFields($project, $locale, $fields);
+                $team = $this->projectTeam($translation->team, $people->team);
+                $summary = $this->projectSummary((string) ($translation->summary ?? ''), $fields);
+                $description = $this->projectDescription($summary, $fields->description);
+                $supervisor = $this->stringOrDefault($translation->supervisor, (string) $people->supervisor);
 
                 return [
                     'slug' => (string) $project->slug,
                     'title' => (string) $translation->title,
-                    'summary' => (string) ($translation->summary ?? ''),
+                    'summary' => $summary,
                     'tag' => $translation->tag,
-                    'team' => $translation->team,
-                    'supervisor' => $translation->supervisor,
+                    'team' => $team === [] ? null : implode('، ', $team),
+                    'supervisor' => $supervisor ?: null,
+                    'academicYear' => (string) $people->year,
                     'image' => $this->resolveProjectMedia($project->image),
-                    'longDescription' => is_array($translation->body_json) ? $translation->body_json : [],
+                    'longDescription' => $description,
+                    'overview' => $summary === '' && $description === []
+                        ? $this->projectOverview($locale, $facultyName, (string) $people->year, $team, $supervisor)
+                        : '',
                     'gallery' => is_array($project->gallery_json) ? $project->gallery_json : [],
-                    'teamMembers' => $this->projectTeamMembers($translation->team),
+                    'teamMembers' => array_map(static fn (string $name): array => ['name' => $name, 'role' => ''], $team),
                     'documents' => collect(is_array($project->documents_json) ? $project->documents_json : [])
                         ->map(fn (array $document): array => [
                             'label' => $locale === 'ar' ? 'تحميل ملف المشروع' : 'Download project file',
@@ -1185,7 +1201,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
             navigation: $this->navigation($faculty, $locale, 'projects'),
             highlights: $this->highlights($faculty, $locale),
             seoTitle: (string) ($project['title'] ?? '').' | '.(string) $this->facultyTranslation($faculty, $locale)->name,
-            seoDescription: (string) ($project['summary'] ?? ''),
+            seoDescription: $this->stringOrDefault($project['summary'] ?? null, $this->stringOrDefault($project['overview'] ?? null, (string) ($project['title'] ?? ''))),
             seoImage: $this->stringOrDefault($project['image'] ?? null, '/images/Gemini_Generated_Image_c89yjwc89yjwc89y.webp'),
         );
     }
@@ -1245,14 +1261,40 @@ final class FacultyPageService implements FacultyPageServiceInterface
 
         if (is_array($project['documents'] ?? null)) {
             $project['documents'] = array_values(array_filter(array_map(
-                fn (mixed $doc): ?array => is_array($doc) && is_string($doc['file'] ?? null)
+                fn (mixed $doc): ?array => is_array($doc) && is_string($doc['file'] ?? null) && $this->legacyFileIsServed($doc['file'])
                     ? ['label' => (string) ($doc['label'] ?? ''), 'file' => $this->resolveProjectMedia($doc['file'])]
                     : null,
                 $project['documents'],
-            )));
+            ), static fn (?array $doc): bool => $doc !== null && $doc['file'] !== null));
         }
 
         return $project;
+    }
+
+    /**
+     * Twenty imported project reports point at downloads/files entries that
+     * never existed - the old site 404'd them too - so the page offered a
+     * download that broke. Where the legacy tree is mounted, a report is
+     * offered only if its file is really there. Without the mount (local
+     * development, tests) nothing can be verified, so nothing is hidden.
+     */
+    private function legacyFileIsServed(string $path): bool
+    {
+        $normalized = ltrim(str_replace('\\', '/', trim($path)), '/');
+
+        if (! str_starts_with($normalized, 'downloads/files/') || str_contains($normalized, '..')) {
+            return true;
+        }
+
+        $mount = public_path('_legacy/downloads/files');
+
+        if (! is_dir($mount)) {
+            return true;
+        }
+
+        $file = public_path('_legacy/'.$normalized);
+
+        return is_file($file) && filesize($file) > 0;
     }
 
     private function resolveProjectMedia(?string $path): ?string
@@ -1269,19 +1311,116 @@ final class FacultyPageService implements FacultyPageServiceInterface
         return $this->url($locale, '/faculties/'.$this->publicSlug($faculty).'/projects/'.$projectSlug);
     }
 
-    /** @return array<int, array{name: string, role: string}> */
-    private function projectTeamMembers(?string $team): array
+    /**
+     * Team, supervisor and year are locale-neutral, but the importer kept the
+     * legacy field block only in the Arabic body. An English page whose own
+     * body has no block reads them from the Arabic one.
+     */
+    private function projectPeopleFields(FacultyStudentProject $project, string $locale, ProjectFieldBlockDTO $fields): ProjectFieldBlockDTO
     {
-        if (! is_string($team) || trim($team) === '') {
-            return [];
+        if ($locale === 'ar' || $fields->fieldLines !== []) {
+            return $fields;
         }
 
-        return collect(preg_split('/[,،؛;]+/u', $team) ?: [])
-            ->map(static fn (string $name): string => trim($name))
-            ->filter()
-            ->map(static fn (string $name): array => ['name' => $name, 'role' => ''])
-            ->values()
-            ->all();
+        $arabic = $project->translations->firstWhere('locale', 'ar');
+
+        return $this->projectFieldBlockParser->parse(is_array($arabic?->body_json) ? $arabic->body_json : []);
+    }
+
+    /**
+     * The stored team, plus any name the body lists that it is missing. Imports
+     * kept only the first name under a multi-line team label, so the body is
+     * the more complete record; the stored value stays first because editors
+     * maintain it.
+     *
+     * @param  list<string>  $bodyTeam
+     * @return list<string>
+     */
+    private function projectTeam(?string $storedTeam, array $bodyTeam): array
+    {
+        $team = [];
+        foreach ([...$this->projectFieldBlockParser->splitNames($storedTeam), ...$bodyTeam] as $name) {
+            $key = mb_strtolower(preg_replace('/\s+/u', ' ', $name) ?? $name);
+            $team[$key] ??= $name;
+        }
+
+        return array_values($team);
+    }
+
+    /**
+     * The description without its opening paragraph when the summary already
+     * shows it. Summaries are that paragraph cut to 240 characters, so the page
+     * otherwise printed it twice.
+     *
+     * @param  list<string>  $description
+     * @return list<string>
+     */
+    private function projectDescription(string $summary, array $description): array
+    {
+        $summary = trim($summary);
+        if ($summary !== '' && isset($description[0]) && str_starts_with(trim($description[0]), $summary)) {
+            array_shift($description);
+        }
+
+        return $description;
+    }
+
+    /**
+     * Most imported projects have no description: on the legacy site, as here,
+     * the page held only the team, the year and the attached report. Rather
+     * than an empty column, the page states what is known, composed only from
+     * the project's own fields.
+     *
+     * @param  list<string>  $team
+     */
+    private function projectOverview(string $locale, string $facultyName, string $year, array $team, string $supervisor): string
+    {
+        $isAr = $locale === 'ar';
+        $sentence = $isAr ? 'مشروع طلابي' : 'A student project';
+
+        if ($facultyName !== '') {
+            // Arabic names all open with كلية; three English ones are bare
+            // ("Petroleum Engineering"), which reads wrong after "at the".
+            $sentence .= $isAr
+                ? ' في '.$facultyName
+                : ' at the '.(str_starts_with(mb_strtolower($facultyName), 'faculty') ? $facultyName : 'Faculty of '.$facultyName);
+        }
+        if ($year !== '') {
+            $sentence .= $isAr ? ' للعام الدراسي '.$year : ' in the '.$year.' academic year';
+        }
+        if ($team !== []) {
+            $last = (string) end($team);
+            // و attaches to an Arabic name ("وروان") but must stand apart before a
+            // Latin one, or the bidi algorithm renders "Ahmad shekhaو".
+            $conjunction = $isAr ? (preg_match('/^\p{Arabic}/u', $last) === 1 ? ' و' : ' و ') : ' and ';
+            $names = count($team) > 1
+                ? implode($isAr ? '، ' : ', ', array_slice($team, 0, -1)).$conjunction.$last
+                : $team[0];
+            $sentence .= $isAr ? '، من إعداد '.$names : ', prepared by '.$names;
+        }
+        if ($supervisor !== '') {
+            $sentence .= $isAr ? ' بإشراف '.$supervisor : ', supervised by '.$supervisor;
+        }
+
+        return $sentence.'.';
+    }
+
+    /**
+     * A stored summary that is really a field value - a name, a year, or a
+     * label such as "العام الدراسي:" - is replaced by the first description
+     * paragraph, or dropped when the body has none.
+     */
+    private function projectSummary(string $storedSummary, ProjectFieldBlockDTO $fields): string
+    {
+        $summary = trim($storedSummary);
+        $isFieldValue = $summary !== '' && collect($fields->fieldLines)
+            ->contains(static fn (string $line): bool => str_starts_with($line, $summary));
+
+        if ($summary !== '' && ! $isFieldValue) {
+            return $storedSummary;
+        }
+
+        return Str::limit($fields->description[0] ?? '', 240, '');
     }
 
     /** @return array<int, array<string, mixed>> */

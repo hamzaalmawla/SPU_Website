@@ -101,6 +101,11 @@
         Options -MultiViews -Indexes
     </IfModule>
 
+    # The legacy media under _legacy/ is symlinked from the old document root,
+    # never copied. Without this Apache refuses to follow those links and every
+    # old image, PDF and upload answers 403.
+    Options +FollowSymLinks
+
     # The front controller is app.php, not index.php — see the comment in app.php.
     DirectoryIndex app.php
 
@@ -175,6 +180,26 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^(med|dent|pharm|info|petrol|admin|research|hospital|dent_clinic|alumni|clubs)/images/(.*)$ /_legacy/$1/images/$2 [L]
 
+    # FCKeditor uploads. The old CMS editor saved every image, file, flash and
+    # media item pasted into an article under /FCKBIH/, so old article bodies -
+    # and the migrated ones that kept their markup - point there. Same contract
+    # as the trees above: served in place, never executed, never markup.
+    RewriteRule ^FCKBIH/.*\.(?:php[0-9]?|phtml|phar|cgi|pl|py|sh|asp|aspx|jsp|exe|dll|com|bat|cmd|ps1|sql|bak|conf|config|ini|log)(?:\.|$) - [R=404,L,NC]
+    RewriteRule ^FCKBIH/.*\.(?:html?|xhtml|xml|svgz?)(?:\.|$) - [R=404,L,NC]
+    RewriteRule ^FCKBIH/(?:.*/)?\.[^/]+$ - [R=404,L,NC]
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^FCKBIH/(.*)$ /_legacy/FCKBIH/$1 [L]
+
+    # Loose files the old site kept directly in /downloads/ rather than in
+    # downloads/files - documents only, so the tree's index.php is unreachable.
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^downloads/([^/]+\.(?:pdf|docx?|xlsx?|pptx?|zip|rar|jpe?g|png|gif))$ /_legacy/downloads/root/$1 [L,NC]
+
+    # iOS and many crawlers ask for sized and "precomposed" variants of the
+    # touch icon by name, whether or not the page declares one. One icon
+    # answers them all instead of a 404 per variant.
+    RewriteRule ^apple-touch-icon(?:-\d+x\d+(?:-precomposed)?|-precomposed)\.png$ /apple-touch-icon.png [L,NC]
+
     # A literal /index.php request is a legacy router URL, not a request for the
     # front controller. Route it through app.php so REQUEST_URI stays /index.php
     # and the continuity middleware sees the real path.
@@ -187,6 +212,12 @@
     # Handle X-XSRF-Token Header
     RewriteCond %{HTTP:x-xsrf-token} .
     RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
+
+    # The old subsite roots were real directories, linked and indexed as /med/
+    # and /med/?lang=2&page=… . Stripping the slash first cost every one of
+    # those a second hop before the continuity redirect; the application
+    # treats /med/ and /med alike, so let it answer them in one.
+    RewriteRule ^(?:med|dent|pharm|info|petrol|research|hospital|dent_clinic|alumni|clubs|members)/$ app.php [L]
 
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d

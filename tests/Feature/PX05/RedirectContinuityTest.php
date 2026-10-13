@@ -301,7 +301,7 @@ class RedirectContinuityTest extends TestCase
         $this->assertContains($response->getStatusCode(), [301, 302]);
     }
 
-    public function test_retired_legacy_languages_redirect_to_english_homepage_before_exact_rules(): void
+    public function test_retired_legacy_languages_ignore_their_own_exact_rules_and_resolve_as_english(): void
     {
         LegacyExactRedirect::create([
             'legacy_path' => '/index.php',
@@ -312,9 +312,11 @@ class RedirectContinuityTest extends TestCase
             'is_active' => true,
         ]);
 
+        // A lang=3 rule must never apply: the URL resolves as its lang=2 twin,
+        // and the English homepage is that twin's permanent destination.
         foreach ([3, 6, 7] as $languageId) {
             $this->get('/index.php?lang='.$languageId)
-                ->assertStatus(302)
+                ->assertStatus(301)
                 ->assertRedirect('/en');
         }
     }

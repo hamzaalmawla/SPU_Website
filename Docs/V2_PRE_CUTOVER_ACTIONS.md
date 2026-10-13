@@ -339,6 +339,17 @@ and accessibility browser QA is pending.
 
 ---
 
+### C1 — Live applications in the old docroot (added 2026-10-11)
+
+`/forms` and `/Medicine` are separate PHP applications that are in use. The deploy
+mounts both into this docroot at their own paths, so they keep their URLs when the
+domain moves. After cutover, check `/forms/`, `/forms/survey/`, `/Medicine/` and
+`/Medicine/admin/login.php` answer as before. Everything else in the old root
+that is not mounted (the old CMS, its template assets, `tests/`, `vendor/`) stops
+being served, on purpose. See `Docs/LEGACY_SEO_CONTINUITY_AUDIT_2026-10.md` §5.
+
+---
+
 ## D. Watch after cutover
 
 `unresolved_legacy_requests` is the triage queue. Every URL the redirect engine

@@ -1771,6 +1771,116 @@ final class FacilitiesWorkflowTest extends TestCase
             ->assertSee('تحميل ملف المشروع');
     }
 
+    /**
+     * Twenty imported reports point at downloads/files entries that never
+     * existed. Where the legacy tree is mounted, the page must not offer a
+     * download that 404s - and must keep offering one that is really there.
+     */
+    public function test_project_report_link_is_offered_only_when_the_mounted_file_exists(): void
+    {
+        $mount = public_path('_legacy/downloads/files');
+        $createdLegacyRoot = ! is_dir(public_path('_legacy'));
+        @mkdir($mount, 0777, true);
+        file_put_contents($mount.'/present-report.pdf', '%PDF-1.4 test');
+
+        try {
+            $faculty = Faculty::query()->where('public_slug', 'pharmacy')->firstOrFail();
+
+            foreach (['present' => 'downloads/files/present-report.pdf', 'missing' => 'downloads/files/missing-report.pdf'] as $kind => $file) {
+                $project = FacultyStudentProject::query()->create([
+                    'faculty_id' => (int) $faculty->getKey(),
+                    'slug' => 'pharmacy-report-'.$kind,
+                    'documents_json' => [['file' => $file]],
+                    'sort_order' => 1,
+                    'is_enabled' => true,
+                ]);
+                foreach (['ar', 'en'] as $locale) {
+                    FacultyStudentProjectTranslation::query()->create([
+                        'faculty_student_project_id' => (int) $project->getKey(),
+                        'locale' => $locale,
+                        'title' => 'Report '.$kind,
+                        'body_json' => [],
+                    ]);
+                }
+            }
+
+            Cache::flush();
+
+            $this->get('/en/faculties/pharmacy/projects/pharmacy-report-present')
+                ->assertOk()
+                ->assertSee('downloads/files/present-report.pdf', false)
+                ->assertSee('Download project file');
+
+            $this->get('/en/faculties/pharmacy/projects/pharmacy-report-missing')
+                ->assertOk()
+                ->assertDontSee('downloads/files/missing-report.pdf', false)
+                ->assertDontSee('Download project file');
+        } finally {
+            @unlink($mount.'/present-report.pdf');
+            @rmdir($mount);
+            @rmdir(public_path('_legacy/downloads'));
+            if ($createdLegacyRoot) {
+                @rmdir(public_path('_legacy'));
+            }
+        }
+    }
+
+    /**
+     * artificial-intelligence-project-6103 as imported: the body is only the
+     * legacy field block, the stored team kept the first name, and the summary
+     * is the second team member.
+     */
+    public function test_imported_project_field_block_renders_as_team_and_year_not_description(): void
+    {
+        $faculty = Faculty::query()->where('public_slug', 'artificial-intelligence')->firstOrFail();
+        $project = FacultyStudentProject::query()->create([
+            'faculty_id' => (int) $faculty->getKey(),
+            'legacy_source_id' => 6103,
+            'slug' => 'artificial-intelligence-project-6103',
+            'documents_json' => [['file' => '/storage/legacy/faculty-projects/artificial-intelligence/6103/report.pdf']],
+            'sort_order' => 1,
+            'is_enabled' => true,
+        ]);
+        // The importer keeps the field block in the Arabic body only.
+        foreach (['ar' => ['اعداد', 'Farah fares', 'Ahmad shekha', 'تاريخ', '2025-2026'], 'en' => []] as $locale => $body) {
+            FacultyStudentProjectTranslation::query()->create([
+                'faculty_student_project_id' => (int) $project->getKey(),
+                'locale' => $locale,
+                'title' => 'AI - enhanced blockchain network for cryptocurrency exchange',
+                'summary' => $locale === 'ar' ? 'Ahmad shekha' : null,
+                'body_json' => $body,
+                'team' => 'Farah fares',
+            ]);
+        }
+
+        Cache::flush();
+
+        $html = (string) $this->get('/ar/faculties/artificial-intelligence/projects/artificial-intelligence-project-6103')
+            ->assertOk()
+            ->assertSee('2025-2026')
+            ->assertDontSee('<p class="text-[14px] leading-[26px] text-slate-600">اعداد</p>', false)
+            ->assertDontSee('<meta name="description" content="Ahmad shekha">', false)
+            ->getContent();
+
+        self::assertSame(1, substr_count($html, '>Farah fares<'), 'Farah is listed once, in the team');
+        self::assertSame(1, substr_count($html, '>Ahmad shekha<'), 'Ahmad is listed once, in the team');
+        self::assertStringNotContainsString('font-medium leading-[26px] text-slate-600">Ahmad shekha', $html, 'A team member is not the summary');
+        // No description on the legacy page either: the overview states the known
+        // fields and leads to the report instead of leaving the column empty.
+        self::assertStringContainsString('نبذة عن المشروع', $html);
+        self::assertStringContainsString('مشروع طلابي في كلية هندسة الذكاء الاصطناعي للعام الدراسي 2025-2026، من إعداد Farah fares و Ahmad shekha.', $html);
+        self::assertStringContainsString('تحميل تقرير المشروع', $html);
+
+        $english = (string) $this->get('/en/faculties/artificial-intelligence/projects/artificial-intelligence-project-6103')
+            ->assertOk()
+            ->assertSee('2025-2026')
+            ->getContent();
+        self::assertSame(1, substr_count($english, '>Ahmad shekha<'), 'The English page reads the team from the Arabic field block');
+        self::assertStringContainsString('About this project', $english);
+        self::assertStringContainsString('in the 2025-2026 academic year, prepared by Farah fares and Ahmad shekha.', $english);
+        self::assertStringContainsString('Download the project report', $english);
+    }
+
     public function test_database_project_list_resolves_imported_legacy_images(): void
     {
         $faculty = Faculty::query()->where('public_slug', 'pharmacy')->firstOrFail();

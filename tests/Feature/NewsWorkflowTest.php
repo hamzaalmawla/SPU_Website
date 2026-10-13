@@ -323,6 +323,25 @@ final class NewsWorkflowTest extends TestCase
         $this->get('/en/news/events-list/missing-event')->assertNotFound();
     }
 
+    /**
+     * Previous/next walk the calendar without end. A crawler following them
+     * reached the 1760s and the 2200s, every month indexable. Month views stay
+     * followable for their events but are kept out of the index, and the
+     * navigation itself is not offered to crawlers.
+     */
+    public function test_events_calendar_month_views_are_not_an_indexable_crawl_trap(): void
+    {
+        $this->get('/en/news/events')
+            ->assertOk()
+            ->assertSee('<meta name="robots" content="index,follow">', false);
+
+        $this->get('/en/news/events?month=1766-08')
+            ->assertOk()
+            ->assertSee('<meta name="robots" content="noindex,follow">', false)
+            ->assertSee('/en/news/events?month=1766-07" rel="nofollow"', false)
+            ->assertSee('/en/news/events?month=1766-09" rel="nofollow"', false);
+    }
+
     public function test_events_calendar_has_responsive_bilingual_layout_and_month_navigation(): void
     {
         $eventMonth = now()->addMonths(3)->startOfMonth();
