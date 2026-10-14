@@ -147,8 +147,12 @@ final class AuthService implements AuthServiceInterface
     public function extendSession(): void
     {
         if ($this->session->isStarted()) {
-            $this->session->migrate(true);
-
+            // The session id is NOT rotated here. This runs on every admin request, and admin pages
+            // fire overlapping requests (Livewire updates, a click while a page is still loading).
+            // Rotating the id on each one deleted the old session, so any request still carrying the
+            // previous cookie found no session and was redirected to the login page, logging the
+            // admin out at random. The id is rotated where it matters: at login (SessionGuard) and
+            // after the two-factor challenge.
             $now = now()->getTimestamp();
 
             if (! $this->session->has(self::ADMIN_SESSION_STARTED_AT)) {
