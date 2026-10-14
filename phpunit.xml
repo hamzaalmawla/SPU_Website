@@ -35,5 +35,7 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <env name="ADMIN_PATH" value="admin"/>
+        <env name="ADMIN_ALLOWED_IPS" value=""/>
     </php>
 </phpunit>

@@ -391,6 +391,36 @@ it and cPanel's Git deployment is the approved mechanism.
 
 ---
 
+## The admin panel address (`ADMIN_PATH`)
+
+The panel is not served at `/admin`. It lives under the secret prefix in
+`ADMIN_PATH` (`config/admin.php`), and `/admin`, `/admin/login` and every other
+`/admin/...` URL answer the same public 404 as any mistyped address: same page,
+same headers, no redirect, no cookie. Nothing public (pages, robots.txt,
+sitemap, error pages) names the real prefix.
+
+Before the first deploy that carries this change, on the server:
+
+```bash
+cd /home/spuedu/spu_v2_app
+echo "ADMIN_PATH=$(openssl rand -hex 12)" >> .env
+grep ADMIN_PATH .env
+```
+
+`cpanel-deploy.sh` refuses to deploy while `ADMIN_PATH` is missing, shorter than
+12 characters or `admin`, and `launch:validate` fails on the same condition.
+The panel is then at `https://v2.spu.edu.sy/<value>`; editors log in at
+`https://v2.spu.edu.sy/<value>/login`. Send that address to staff privately,
+never in a ticket, chat channel or commit. Rotating it is the same edit followed
+by `php artisan config:cache`; existing sessions keep working.
+
+Optional: `ADMIN_ALLOWED_IPS=203.0.113.4,10.0.0.0/8` makes the hidden path
+404 for every other address too. Leave it empty while staff log in from home or
+mobile data; a wrong value locks everyone out until `.env` is fixed on the server.
+
+The legacy `/admin/...` URLs of the old Business Administration subsite are no
+longer shadowed by the panel and go through the normal redirect lookup again.
+
 ## Still outstanding on the server
 
 Two things this deploy did not fix, both one line, neither in code:

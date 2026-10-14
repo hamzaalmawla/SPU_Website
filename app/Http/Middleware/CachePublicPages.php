@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Contracts\Shared\CacheServiceInterface;
+use App\Support\AdminPath;
 use BadMethodCallException;
 use Closure;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
@@ -118,7 +119,7 @@ final class CachePublicPages
             return true;
         }
 
-        if ($request->is('admin') || $request->is('admin/*')) {
+        if (AdminPath::matches($request)) {
             return true;
         }
 

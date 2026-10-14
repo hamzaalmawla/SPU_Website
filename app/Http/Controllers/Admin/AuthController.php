@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Admin;
 use App\Contracts\Auth\AuthServiceInterface;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Support\AdminPath;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -49,6 +50,6 @@ final class AuthController extends Controller
                 ->onlyInput('email');
         }
 
-        return redirect()->intended('/admin');
+        return redirect()->intended(AdminPath::url());
     }
 }

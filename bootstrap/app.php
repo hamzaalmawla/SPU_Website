@@ -8,6 +8,7 @@ use App\Http\Middleware\EnforcePublicOrigin;
 use App\Http\Middleware\LocaleSetterMiddleware;
 use App\Http\Middleware\MinifyPublicHtml;
 use App\Http\Middleware\RedirectContinuityMiddleware;
+use App\Http\Middleware\RestrictAdminAccess;
 use App\Http\Middleware\SecurityHeadersMiddleware;
 use App\Http\Middleware\TwoFactorChallengeMiddleware;
 use App\Http\Middleware\VerifyWebhookSignature;
@@ -36,6 +37,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->prepend(RedirectContinuityMiddleware::class);
         $middleware->prepend(EnforcePublicOrigin::class);
         $middleware->append(SecurityHeadersMiddleware::class);
+        // Global, so it rejects before the route's session starts (no cookie),
+        // and after SecurityHeaders, so its 404 gets the same headers as any other.
+        $middleware->append(RestrictAdminAccess::class);
 
         $middleware->validateCsrfTokens(except: [
             'webhook/*',
@@ -51,7 +55,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'verify.webhook' => VerifyWebhookSignature::class,
         ]);
 
-        $middleware->redirectGuestsTo('/admin/login');
+        // Resolved lazily: config is not loaded yet when this file runs.
+        $middleware->redirectGuestsTo(fn (): string => route('admin.login'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         Integration::handles($exceptions);

@@ -45,6 +45,20 @@ class LaunchValidationTest extends TestCase
             ->assertFailed();
     }
 
+    public function test_production_validation_rejects_the_default_admin_path(): void
+    {
+        $this->seedValidData();
+
+        $this->artisan('launch:validate', ['--environment' => 'production'])
+            ->expectsOutputToContain('ADMIN_PATH must be set to a random value')
+            ->assertFailed();
+
+        config(['admin.path' => 'a8f3c1d9e7b24f06']);
+
+        $this->artisan('launch:validate', ['--environment' => 'production'])
+            ->expectsOutputToContain('Admin panel is served from a non-guessable path');
+    }
+
     public function test_launch_validate_continues_all_checks_even_on_failure(): void
     {
         // Even with no data, the command should run all checks and report

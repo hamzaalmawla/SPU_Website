@@ -41,7 +41,7 @@ php artisan serve
 |-----|------|
 | `http://localhost:8000/ar` | Public homepage (Arabic) |
 | `http://localhost:8000/en` | Public homepage (English) |
-| `http://localhost:8000/admin` | Admin panel |
+| `http://localhost:8000/admin` | Admin panel (locally; production serves it under the secret `ADMIN_PATH`, see `Docs/DEPLOYING.md`) |
 
 Admin login uses `ADMIN_EMAIL` and `ADMIN_PASSWORD` from your environment. Local development falls back to `local-development-password` only when `ADMIN_PASSWORD` is unset.
 
@@ -218,7 +218,7 @@ php artisan test --filter=PX06
 | GET | `/sitemap.xml` | SitemapController |
 | GET | `/robots.txt` | SitemapController |
 
-**Admin:** Filament panel at `/admin` with custom auth routes for login, logout, and 2FA challenge.
+**Admin:** Filament panel under `ADMIN_PATH` (`/admin` locally; a secret prefix in production, where `/admin` is a plain 404) with custom auth routes for login, logout, and 2FA challenge. Optional `ADMIN_ALLOWED_IPS` limits it further.
 
 **Webhook:** `POST /webhook/incoming` with HMAC-SHA256 signature verification.
 

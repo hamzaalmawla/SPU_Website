@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\AuthController;
 use App\Http\Middleware\AdminAuthMiddleware;
 use App\Http\Middleware\AdminLocaleMiddleware;
 use App\Http\Middleware\TwoFactorChallengeMiddleware;
+use App\Support\AdminPath;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -33,7 +34,7 @@ class AdminPanelProvider extends PanelProvider
         return $panel
             ->default()
             ->id('admin')
-            ->path('admin')
+            ->path(AdminPath::prefix())
             ->brandName(fn (): string => __('admin.panel.brand'))
             ->brandLogo(fn (): string => asset('images/single-logo.png'))
             ->brandLogoHeight('2.35rem')

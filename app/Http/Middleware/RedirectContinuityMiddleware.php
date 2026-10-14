@@ -7,6 +7,7 @@ namespace App\Http\Middleware;
 use App\Contracts\Legacy\LegacyUrlNormalizerInterface;
 use App\Contracts\Shared\ContinuityServiceInterface;
 use App\DTOs\Legacy\UnresolvedRequestDTO;
+use App\Support\AdminPath;
 use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,8 +19,8 @@ use Symfony\Component\HttpFoundation\Response;
  */
 final class RedirectContinuityMiddleware
 {
-    /** Prefixes that should bypass redirect resolution entirely. */
-    private const SKIP_PREFIXES = ['/admin', '/livewire', '/filament'];
+    /** Prefixes that should bypass redirect resolution entirely, besides the admin prefix. */
+    private const SKIP_PREFIXES = ['/livewire', '/filament'];
 
     public function __construct(
         private readonly ContinuityServiceInterface $continuityService,
@@ -128,6 +129,15 @@ final class RedirectContinuityMiddleware
     {
         if ($path === '/admin/index.php') {
             return false;
+        }
+
+        // Only the configured prefix belongs to the panel. With the panel moved
+        // off /admin, /admin/* is ordinary legacy traffic again and gets the
+        // same redirect lookup and 404 logging as any other old URL.
+        $adminRoot = AdminPath::url();
+
+        if ($path === $adminRoot || str_starts_with($path, $adminRoot.'/')) {
+            return true;
         }
 
         foreach (self::SKIP_PREFIXES as $prefix) {
