@@ -9,6 +9,7 @@ use App\Contracts\Auth\TotpAuthenticatorInterface;
 use App\Contracts\Shared\AuditServiceInterface;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\TwoFactorChallengeRequest;
+use App\Support\AdminPath;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Http\RedirectResponse;
@@ -38,14 +39,14 @@ final class TwoFactorChallengeController extends Controller
         $user = $this->resolveUser();
 
         if ($user === null || ! $this->hasTwoFactorEnabled($user)) {
-            return redirect('/admin');
+            return redirect(AdminPath::url());
         }
 
         // Already verified for this exact user - skip challenge.
         if ($request->session()->get('2fa_verified') === true
             && (int) $request->session()->get('2fa_verified_user_id') === (int) $user->getAuthIdentifier()
         ) {
-            return redirect('/admin');
+            return redirect(AdminPath::url());
         }
 
         return view('admin.auth.two-factor-challenge');
@@ -59,7 +60,7 @@ final class TwoFactorChallengeController extends Controller
         $user = $this->resolveUser();
 
         if ($user === null || ! $this->hasTwoFactorEnabled($user)) {
-            return redirect('/admin/login');
+            return redirect()->route('admin.login');
         }
 
         $code = $request->code();
@@ -95,7 +96,7 @@ final class TwoFactorChallengeController extends Controller
             entityId: (int) $user->getKey(),
         );
 
-        return redirect()->intended('/admin');
+        return redirect()->intended(AdminPath::url());
     }
 
     private function resolveUser(): ?Authenticatable

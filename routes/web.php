@@ -25,6 +25,7 @@ use App\Http\Controllers\Public\SearchController;
 use App\Http\Controllers\Public\SitemapController;
 use App\Http\Controllers\Public\VirtualTourController;
 use App\Http\Middleware\AdminLocaleMiddleware;
+use App\Support\AdminPath;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -268,7 +269,7 @@ Route::prefix('{locale}')
             ->name('public.page');
     });
 
-Route::prefix('admin')
+Route::prefix(AdminPath::prefix())
     ->name('admin.')
     ->middleware(AdminLocaleMiddleware::class)
     ->group(function (): void {

@@ -11,6 +11,8 @@ use App\Contracts\Seo\SeoMetadataServiceInterface;
 use App\Contracts\Settings\SettingsServiceInterface;
 use App\DTOs\ErrorPage\ErrorPageContentDTO;
 use App\DTOs\Navigation\LanguageSwitchLinkDTO;
+use App\Support\AdminPath;
+use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
@@ -35,6 +37,7 @@ final class ErrorPageRenderer implements ErrorPageRendererInterface
         private readonly NavigationServiceInterface $navigationService,
         private readonly SettingsServiceInterface $settingsService,
         private readonly SeoMetadataServiceInterface $seoMetadataService,
+        private readonly AuthFactory $authFactory,
     ) {}
 
     public function render(Throwable $exception, Request $request): ?Response
@@ -57,13 +60,15 @@ final class ErrorPageRenderer implements ErrorPageRendererInterface
             $request->headers->get('Accept-Language'),
         );
 
-        // The Filament admin panel has its own chrome; an admin 404 must not be
-        // wrapped in the public site header and footer. It still gets the
-        // branded standalone page rather than the stock Laravel one. Admin
-        // auth failures never reach here — AuthenticationException is not an
-        // HttpExceptionInterface, so its login redirect is untouched.
+        // The Filament admin panel has its own chrome; a signed-in editor's 404
+        // must not be wrapped in the public site header and footer. It still
+        // gets the branded standalone page rather than the stock Laravel one.
+        // Everyone else gets the public page, exactly as for any unknown URL:
+        // a different page under the admin prefix would reveal where it is.
+        // Admin auth failures never reach here — AuthenticationException is
+        // not an HttpExceptionInterface, so its login redirect is untouched.
         $useFullLayout = $this->errorPageService->supportsFullLayout($status)
-            && ! $request->is('admin', 'admin/*');
+            && ! (AdminPath::matches($request) && $this->signedInToAdmin());
 
         $response = $useFullLayout ? $this->renderFullLayout($content) : null;
 
@@ -157,5 +162,14 @@ final class ErrorPageRenderer implements ErrorPageRendererInterface
         return in_array($status, [403, 404, 419, 429, 500, 503], true)
             ? (string) $status
             : '500';
+    }
+
+    private function signedInToAdmin(): bool
+    {
+        try {
+            return $this->authFactory->guard((string) config('auth.admin_guard', 'web'))->check();
+        } catch (Throwable) {
+            return false;
+        }
     }
 }

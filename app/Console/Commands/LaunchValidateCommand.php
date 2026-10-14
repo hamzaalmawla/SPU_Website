@@ -136,6 +136,18 @@ final class LaunchValidateCommand extends Command
             $hasKey ? 'APP_KEY is set' : 'CRITICAL: APP_KEY is missing or too short',
         );
 
+        // The panel must not sit at an address a scanner tries first.
+        $adminPath = strtolower((string) config('admin.path'));
+        $guessableAdminPaths = ['admin', 'administrator', 'admin-panel', 'adminpanel', 'backend', 'cms', 'dashboard', 'filament', 'login', 'manage', 'panel', 'wp-admin'];
+        $adminPathHidden = strlen($adminPath) >= 12 && ! in_array($adminPath, $guessableAdminPaths, true);
+        $this->record(
+            'Production env: ADMIN_PATH',
+            $adminPathHidden ? 'PASS' : 'FAIL',
+            $adminPathHidden
+                ? 'Admin panel is served from a non-guessable path'
+                : 'CRITICAL: ADMIN_PATH must be set to a random value of at least 12 characters in production',
+        );
+
         // Check APP_URL uses HTTPS
         $appUrl = config('app.url');
         $isHttps = is_string($appUrl) && str_starts_with($appUrl, 'https://');

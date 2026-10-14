@@ -88,6 +88,15 @@ env_value() {
     grep -E "^[[:space:]]*$1=" "${APP}/.env" | tail -n 1 | cut -d= -f2- | tr -d '\r"' || true
 }
 
+# The admin panel is served from ADMIN_PATH (config/admin.php). Unset, it falls
+# back to /admin, the first address every scanner probes - so a release never
+# goes out while the panel would be sitting there. The value itself is never
+# printed: it is the secret.
+ADMIN_PATH_VALUE="$(env_value ADMIN_PATH | tr -d '/[:space:]')"
+if [[ ${#ADMIN_PATH_VALUE} -lt 12 || "${ADMIN_PATH_VALUE,,}" == "admin" ]]; then
+    fail "ADMIN_PATH in ${APP}/.env is missing or guessable. Set it to a random value of at least 12 characters (e.g. ADMIN_PATH=\$(openssl rand -hex 12)), then rerun. Tell the editors the new address privately; /admin will stop working."
+fi
+
 # Production migrations are forward-only. Require an operator-supplied reference
 # to a verified, restorable database backup before any release files are synced.
 APP_ENV_VALUE="$(env_value APP_ENV)"

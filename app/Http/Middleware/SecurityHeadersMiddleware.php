@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Contracts\Analytics\AnalyticsServiceInterface;
+use App\Support\AdminPath;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -39,7 +40,7 @@ final class SecurityHeadersMiddleware
 
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()');
-        $response->headers->set('Content-Security-Policy', $this->contentSecurityPolicy($request));
+        $response->headers->set('Content-Security-Policy', $this->contentSecurityPolicy($request, $response));
 
         if ($request->is('*/preview')) {
             $response->headers->set('Cache-Control', 'private, no-store, max-age=0');
@@ -79,9 +80,12 @@ final class SecurityHeadersMiddleware
         return implode('; ', $directives);
     }
 
-    private function contentSecurityPolicy(Request $request): string
+    private function contentSecurityPolicy(Request $request, Response $response): string
     {
-        if ($request->is('admin') || $request->is('admin/*')) {
+        // A 404 under the admin prefix renders the public error page, so it
+        // carries the public policy too; a different header there would mark
+        // the prefix as special to anyone probing for the panel.
+        if (AdminPath::matches($request) && $response->getStatusCode() !== 404) {
             return implode('; ', [
                 "default-src 'self'",
                 "base-uri 'self'",
