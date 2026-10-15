@@ -51,7 +51,8 @@ final class CmsContentStatusCommand extends Command
         {--summary : Print the counts only}
         {--json : Machine-readable output}
         {--fail-on-empty : Exit non-zero when any section has no published payload}
-        {--drafts : Also list open drafts and how much they hold against the published payload}';
+        {--drafts : Also list open drafts and how much they hold against the published payload}
+        {--shape : Also print the field names (not values) of each published payload}';
 
     protected $description = 'Report which CMS sections have a published payload, and with --probe which pages actually render blank';
 
@@ -168,6 +169,10 @@ final class CmsContentStatusCommand extends Command
             }
         } else {
             $this->render($visible, $publishedTotal, count($rows), $onlyEmpty);
+        }
+
+        if ((bool) $this->option('shape') && ! (bool) $this->option('json')) {
+            $this->renderShapes($targets->all(), $workflow);
         }
 
         if ((bool) $this->option('drafts') && ! (bool) $this->option('json')) {
@@ -399,5 +404,39 @@ final class CmsContentStatusCommand extends Command
         }
 
         $this->line('  <fg=gray>! the draft is nearly empty or under half the published size: the editor will look empty</>');
+    }
+
+    /**
+     * Field names of each published payload, one level deep, values never
+     * printed. Editors fill fields by name, so a payload saved under older
+     * names renders publicly (the normalisers accept both) yet opens empty.
+     *
+     * @param  array<int, mixed>  $targets
+     */
+    private function renderShapes(array $targets, CmsWorkflowServiceInterface $workflow): void
+    {
+        $this->newLine();
+        $this->line('  <fg=white;options=bold>Published payload field names</>');
+
+        foreach ($targets as $target) {
+            $published = $workflow->getPublishedPayload($target->key);
+
+            if (! is_array($published)) {
+                $this->line(sprintf('    %-42s none', $target->key));
+
+                continue;
+            }
+
+            $this->line(sprintf('    %-42s top: %s', $target->key, implode(',', array_keys($published))));
+
+            foreach ($target->locales as $locale) {
+                $localePayload = $published['translations'][$locale] ?? null;
+                $this->line(sprintf(
+                    '      %s: %s',
+                    $locale,
+                    is_array($localePayload) ? implode(',', array_keys($localePayload)) : gettype($localePayload),
+                ));
+            }
+        }
     }
 }
