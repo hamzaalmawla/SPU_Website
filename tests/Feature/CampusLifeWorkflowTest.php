@@ -363,6 +363,26 @@ final class CampusLifeWorkflowTest extends TestCase
         $this->assertContains('Curated Campus Link', $linkLabels);
     }
 
+    public function test_switching_page_in_the_selector_loads_that_pages_content_the_first_time(): void
+    {
+        // Choosing another page used to show its fields empty until it was chosen
+        // again: the content was filled into the previous page's cached form.
+        $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
+        $expected = app(CampusLifePageServiceInterface::class)->getEditablePayload('campus_life.hospital')['translations'];
+
+        $component = Livewire::test(ManageCampusLife::class)
+            ->assertSet('data.target_key', 'campus_life.landing')
+            ->set('data.target_key', 'campus_life.hospital');
+
+        $this->assertNotSame('', (string) ($expected['en']['hero']['title'] ?? ''));
+        $this->assertSame($expected['en']['hero']['title'], $component->get('data.en_hospital.hero.title'));
+        $this->assertSame($expected['ar']['hero']['title'], $component->get('data.ar_hospital.hero.title'));
+
+        $component->set('data.target_key', 'campus_life.transport');
+        $transport = app(CampusLifePageServiceInterface::class)->getEditablePayload('campus_life.transport')['translations'];
+        $this->assertSame($transport['en']['hero']['title'], $component->get('data.en_transport.hero.title'));
+    }
+
     public function test_manage_campus_life_skips_virtual_tour_until_the_end(): void
     {
         $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');

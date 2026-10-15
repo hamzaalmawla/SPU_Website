@@ -158,6 +158,9 @@ trait ManagesFacultyHomepage
     {
         $this->assertManagedTarget($targetKey);
         $this->activeTargetKey = $targetKey;
+        // The fields depend on the target and the form was cached for the previous
+        // one; rebuild it so a switched target does not render empty old fields.
+        $this->cacheForms();
         $userId = $this->authenticatedUserId();
         $draftPayload = $this->cmsWorkflowService->latestEditableDraftPayload($targetKey, $userId);
         $payload = is_array($draftPayload) ? $draftPayload : $this->facultyPageService->getEditablePayload($targetKey);

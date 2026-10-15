@@ -191,6 +191,10 @@ class ManageCampusLife extends Page implements HasForms
     {
         $this->assertCampusLifeTarget($targetKey);
         $this->activeTargetKey = $targetKey;
+        // The fields depend on the target, and the form was built (and cached) for
+        // the previous one. Without a rebuild, switching page in the selector
+        // rendered the old page's fields, now empty, until it was chosen twice.
+        $this->cacheForms();
 
         if (! in_array($targetKey, $this->curatedTargetKeys(), true)) {
             $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey, (int) auth()->id());

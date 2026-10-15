@@ -176,6 +176,8 @@ class ManageNews extends Page implements HasForms
     {
         $this->assertNewsTarget($targetKey);
         $this->activeTargetKey = $targetKey;
+        // Rebuild the form for the new target before filling it (see ManageCampusLife::loadTarget).
+        $this->cacheForms();
 
         if (! in_array($targetKey, ['news.index', 'news.articles', 'news.agreements', 'news.society-events', 'news.events', 'news.gallery'], true)) {
             $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey, (int) auth()->id());
