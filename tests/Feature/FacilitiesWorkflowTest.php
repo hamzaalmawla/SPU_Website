@@ -603,6 +603,7 @@ final class FacilitiesWorkflowTest extends TestCase
 
         $projectEditor = Livewire::test(ManageMedicineFaculty::class)
             ->set('data.target_key', 'facilities.medicine.projects')
+            ->set('data.record_search', 'Project 1')
             ->call('loadTarget', 'facilities.medicine.projects')
             ->assertSee('مشاريع الطلاب')
             ->assertSee('المشرف')
@@ -626,6 +627,7 @@ final class FacilitiesWorkflowTest extends TestCase
         /** @var array<string, mixed> $reloadedProjectEditorData */
         $reloadedProjectEditorData = Livewire::test(ManageMedicineFaculty::class)
             ->set('data.target_key', 'facilities.medicine.projects')
+            ->set('data.record_search', 'Project 1')
             ->call('loadTarget', 'facilities.medicine.projects')
             ->get('data');
         $reloadedFirstProjectKey = array_key_first($reloadedProjectEditorData['en_content']['items'] ?? []);
@@ -658,6 +660,48 @@ final class FacilitiesWorkflowTest extends TestCase
             ->assertSee('إضافة مقرر')
             ->assertSee('إضافة فصل')
             ->assertDontSee('Opens Course IDs');
+    }
+
+    public function test_project_editor_loads_only_searched_projects_and_keeps_the_rest_on_save(): void
+    {
+        // Rendering every project at once exhausted PHP's memory on faculties
+        // with 60-120 projects (HTTP 500), so the editor works on a searched subset.
+        $this->createFacultyProjects('medicine', 12);
+        $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
+
+        $editor = Livewire::test(ManageMedicineFaculty::class)
+            ->set('data.target_key', 'facilities.medicine.projects')
+            ->call('loadTarget', 'facilities.medicine.projects')
+            ->assertSee('البحث في السجلات');
+        $this->assertSame([], $editor->get('data.en_content.items'));
+
+        $editor->set('data.record_search', 'Project 11')->call('loadTarget', 'facilities.medicine.projects');
+        $english = $editor->get('data.en_content.items');
+        $arabic = $editor->get('data.ar_content.items');
+        $this->assertCount(1, $english);
+        $this->assertCount(1, $arabic, 'A project found by its English title also opens in Arabic.');
+
+        $key = array_key_first($english);
+        $editor->set('data.en_content.items.'.$key.'.title', 'Renamed Project Eleven')->call('save');
+
+        $saved = CmsDraft::query()->where('target_key', 'facilities.medicine.projects')->latest('id')->firstOrFail()->payload_json;
+        $titles = array_column($saved['translations']['en']['items'], 'title');
+        $this->assertCount(12, $titles);
+        $this->assertContains('Renamed Project Eleven', $titles);
+        $this->assertContains('Test medicine Project 3', $titles);
+        $this->assertCount(12, $saved['translations']['ar']['items']);
+
+        // Deleting the one shown project removes only that project.
+        $editor = Livewire::test(ManageMedicineFaculty::class)
+            ->set('data.target_key', 'facilities.medicine.projects')
+            ->set('data.record_search', 'Renamed Project Eleven')
+            ->call('loadTarget', 'facilities.medicine.projects');
+        $editor->set('data.en_content.items', [])->call('save');
+
+        $saved = CmsDraft::query()->where('target_key', 'facilities.medicine.projects')->latest('id')->firstOrFail()->payload_json;
+        $titles = array_column($saved['translations']['en']['items'], 'title');
+        $this->assertCount(11, $titles);
+        $this->assertNotContains('Renamed Project Eleven', $titles);
     }
 
     public function test_published_faculty_project_cms_content_controls_database_project_detail_in_both_locales(): void
@@ -2193,6 +2237,7 @@ final class FacilitiesWorkflowTest extends TestCase
 
         Livewire::test(ManageArtificialIntelligenceFaculty::class)
             ->set('data.target_key', 'facilities.artificial-intelligence.projects')
+            ->set('data.record_search', 'Project 1')
             ->call('loadTarget', 'facilities.artificial-intelligence.projects')
             ->assertSee('مشاريع الطلاب')
             ->assertSee('المشرف')

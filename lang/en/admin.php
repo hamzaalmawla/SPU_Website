@@ -797,6 +797,7 @@ return [
             'term' => 'Academic term',
             'search' => 'Search Records',
             'department_filter' => 'Department / Faculty Filter',
+            'project_search_help' => 'Search by project name, category, team, supervisor or year to load matching projects for editing. Leave it empty to add new projects.',
             'year_filter' => 'Year Filter',
             'publish_at' => 'Publication time',
         ],

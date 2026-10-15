@@ -46,6 +46,13 @@ trait ManagesFacultyHomepage
 
     public ?string $activeTargetKey = null;
 
+    /**
+     * Project keys matching the search, computed in loadTarget for the form it fills.
+     *
+     * @var list<string>
+     */
+    private array $searchedItemKeys = [];
+
     public string $facultyScope = '';
 
     private FacultyPageServiceInterface $facultyPageService;
@@ -158,13 +165,16 @@ trait ManagesFacultyHomepage
         $studentRecords = $this->hasFilterableRecords($targetKey)
             ? $this->studentRecordsForForm($targetKey, $payload)
             : [];
+        $this->searchedItemKeys = $this->hasSearchableItems($targetKey)
+            ? $this->matchingItemKeys($targetKey, $payload)
+            : [];
 
         $this->form->fill([
             'target_key' => $targetKey,
             'record_search' => (string) ($this->data['record_search'] ?? ''),
             'record_department_filter' => (string) ($this->data['record_department_filter'] ?? ''),
             'record_year_filter' => (string) ($this->data['record_year_filter'] ?? ''),
-            'student_record_keys' => array_values(array_filter(array_map(
+            'student_record_keys' => $this->hasSearchableItems($targetKey) ? $this->searchedItemKeys : array_values(array_filter(array_map(
                 static fn (array $item): string => (string) ($item['_cmsKey'] ?? ''),
                 $studentRecords,
             ), static fn (string $key): bool => $key !== '')),
@@ -187,7 +197,8 @@ trait ManagesFacultyHomepage
                 Section::make(__('admin.faculty_workspace.editing_tools'))->schema([
                     TextInput::make('record_search')
                         ->label(__('admin.faculty_workspace.fields.search'))
-                        ->visible(fn (): bool => $this->hasFilterableRecords($this->currentTargetKeyForSchema()))
+                        ->helperText(fn (): ?string => $this->hasSearchableItems($this->currentTargetKeyForSchema()) ? __('admin.faculty_workspace.fields.project_search_help') : null)
+                        ->visible(fn (): bool => $this->usesRecordFilters($this->currentTargetKeyForSchema()))
                         ->live(onBlur: true)
                         ->afterStateUpdated(function (): void {
                             $this->loadTarget($this->currentTargetKeyForSchema());
@@ -201,12 +212,12 @@ trait ManagesFacultyHomepage
                         }),
                     TextInput::make('record_year_filter')
                         ->label(__('admin.faculty_workspace.fields.year_filter'))
-                        ->visible(fn (): bool => $this->hasFilterableRecords($this->currentTargetKeyForSchema()))
+                        ->visible(fn (): bool => $this->usesRecordFilters($this->currentTargetKeyForSchema()))
                         ->live(onBlur: true)
                         ->afterStateUpdated(function (): void {
                             $this->loadTarget($this->currentTargetKeyForSchema());
                         }),
-                ])->visible(fn (): bool => $this->hasFilterableRecords($this->currentTargetKeyForSchema())),
+                ])->visible(fn (): bool => $this->usesRecordFilters($this->currentTargetKeyForSchema())),
                 Tabs::make('faculty_homepage_locales')
                     ->tabs([
                         Tab::make(__('admin.locales.ar'))->extraAttributes(['dir' => 'rtl'])->schema($this->payloadFields('ar')),
@@ -611,6 +622,15 @@ trait ManagesFacultyHomepage
             }
         }
 
+        if ($this->hasSearchableItems($targetKey) && $this->hasActiveRecordFilters()) {
+            $visibleKeys = array_values(array_filter(
+                array_map(static fn (mixed $key): string => is_scalar($key) ? (string) $key : '', is_array($state['student_record_keys'] ?? null) ? $state['student_record_keys'] : []),
+                static fn (string $key): bool => $key !== '',
+            ));
+            $arContent['_filteredRecordKeys'] = $visibleKeys;
+            $enContent['_filteredRecordKeys'] = $visibleKeys;
+        }
+
         $payload = [
             'translations' => [
                 'ar' => $targetKey === $this->defaultTargetKey()
@@ -970,6 +990,7 @@ trait ManagesFacultyHomepage
                 Repeater::make($prefix.'.items')
                     ->label(__('admin.faculty_workspace.editor.sections.projects'))
                     ->schema([
+                        Hidden::make('_cmsKey')->dehydrated(),
                         Hidden::make('slug')->default(fn (): string => 'project-'.Str::lower(Str::random(8))),
                         Hidden::make('detailRoute'),
                         TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.project_name'))->required()->maxLength(180),
@@ -1115,6 +1136,19 @@ trait ManagesFacultyHomepage
 
                     return $item;
                 }, $this->listOfArrays($content['items'] ?? []));
+
+                // A faculty has up to ~120 projects, each a nested form. Rendering
+                // them all built a 14-35 MB page and exhausted the 128 MB PHP limit
+                // (HTTP 500), so only the projects matching the search are loaded.
+                // Saving merges them back by key; the others are kept untouched.
+                // Matching is done across both locales (see matchingItemKeys), so
+                // a project found by its English title also opens in Arabic.
+                $content['items'] = $this->hasActiveRecordFilters()
+                    ? array_values(array_filter(
+                        $this->recordItemsWithKeys($content['items']),
+                        fn (array $item): bool => in_array((string) ($item['_cmsKey'] ?? ''), $this->searchedItemKeys, true),
+                    ))
+                    : [];
             }
 
             return $content;
@@ -1413,7 +1447,7 @@ trait ManagesFacultyHomepage
             return $item;
         }, $content['items']);
 
-        if ($this->hasFilterableRecords($targetKey)) {
+        if ($this->usesRecordFilters($targetKey)) {
             $content = $this->mergeFilterableRecordContent($targetKey, $locale, $content, $filteredRecordKeys);
         }
 
@@ -1479,10 +1513,48 @@ trait ManagesFacultyHomepage
         return in_array($this->subpageSlugFromTarget($targetKey), ['alumni', 'valedictorians'], true);
     }
 
+    /** Targets whose per-locale item lists are edited as a searched subset (no paired student form). */
+    private function hasSearchableItems(string $targetKey): bool
+    {
+        return $this->subpageSlugFromTarget($targetKey) === 'projects';
+    }
+
+    private function usesRecordFilters(string $targetKey): bool
+    {
+        return $this->hasFilterableRecords($targetKey) || $this->hasSearchableItems($targetKey);
+    }
+
+    /**
+     * Keys of the items whose Arabic or English version matches the active filters.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return list<string>
+     */
+    private function matchingItemKeys(string $targetKey, array $payload): array
+    {
+        if (! $this->hasActiveRecordFilters()) {
+            return [];
+        }
+
+        $keys = [];
+
+        foreach (['ar', 'en'] as $locale) {
+            $items = $this->recordItemsWithKeys($this->listOfArrays($payload['translations'][$locale]['items'] ?? []));
+
+            foreach ($items as $item) {
+                if ($this->recordMatchesFilters($targetKey, $item)) {
+                    $keys[] = (string) $item['_cmsKey'];
+                }
+            }
+        }
+
+        return array_values(array_unique($keys));
+    }
+
     private function hasActiveRecordFilters(): bool
     {
         return trim((string) ($this->data['record_search'] ?? '')) !== ''
-            || trim((string) ($this->data['record_department_filter'] ?? '')) !== ''
+            || (trim((string) ($this->data['record_department_filter'] ?? '')) !== '' && ! $this->hasSearchableItems($this->currentTargetKeyForSchema()))
             || trim((string) ($this->data['record_year_filter'] ?? '')) !== '';
     }
 
@@ -1498,7 +1570,8 @@ trait ManagesFacultyHomepage
             return false;
         }
 
-        if ($department !== '' && ! Str::contains(Str::lower((string) ($item['department'] ?? '').' '.(string) ($item['faculty'] ?? '')), Str::lower($department))) {
+        // Projects have no department field and the department filter is hidden for them.
+        if ($department !== '' && ! $this->hasSearchableItems($targetKey) && ! Str::contains(Str::lower((string) ($item['department'] ?? '').' '.(string) ($item['faculty'] ?? '')), Str::lower($department))) {
             return false;
         }
 
@@ -1514,6 +1587,9 @@ trait ManagesFacultyHomepage
     {
         return implode(' ', array_map('strval', array_filter([
             $item['title'] ?? null,
+            $item['tag'] ?? null,
+            $item['team'] ?? null,
+            $item['supervisor'] ?? null,
             $item['graduationYear'] ?? null,
             $item['academicYear'] ?? null,
             $item['semester'] ?? null,
@@ -1534,7 +1610,9 @@ trait ManagesFacultyHomepage
                 ? (string) $existingKey
                 : (isset($item['id']) && is_scalar($item['id']) && (string) $item['id'] !== ''
                     ? 'record-id-'.(string) $item['id']
-                    : 'record-position-'.$index);
+                    : (isset($item['slug']) && is_scalar($item['slug']) && (string) $item['slug'] !== ''
+                        ? 'record-slug-'.(string) $item['slug']
+                        : 'record-position-'.$index));
 
             return $item;
         }, $items, array_keys($items));
