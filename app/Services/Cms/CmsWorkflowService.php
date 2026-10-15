@@ -605,6 +605,22 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
     }
 
     /** @return array<string, mixed>|null */
+    public function latestEditableDraftForReport(string $targetKey): ?array
+    {
+        $draft = $this->latestEditableDraft($targetKey);
+
+        if (! $draft instanceof CmsDraft) {
+            return null;
+        }
+
+        return [
+            'status' => (string) $draft->status,
+            'version' => (int) $draft->version,
+            'updated_at' => $draft->updated_at?->toIso8601String(),
+            'payload' => is_array($draft->payload_json) ? $draft->payload_json : [],
+        ];
+    }
+
     private function latestEditablePayload(string $targetKey): ?array
     {
         $draft = $this->latestEditableDraft($targetKey);

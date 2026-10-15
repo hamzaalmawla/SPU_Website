@@ -30,6 +30,14 @@ interface CmsWorkflowServiceInterface
     /** @return array<string, mixed>|null */
     public function latestEditableDraftPayload(string $targetKey, int $userId): ?array;
 
+    /**
+     * The draft the admin editor would open for this target, without the per-user
+     * authorization of latestEditableDraftPayload(). For console reporting only.
+     *
+     * @return array{status: string, version: int, updated_at: string|null, payload: array<string, mixed>}|null
+     */
+    public function latestEditableDraftForReport(string $targetKey): ?array;
+
     /** @return array<string, mixed>|null */
     public function getPublishedPayload(string $targetKey): ?array;
 

@@ -50,7 +50,8 @@ final class CmsContentStatusCommand extends Command
         {--probe : Also render each page and report which ones are actually blank}
         {--summary : Print the counts only}
         {--json : Machine-readable output}
-        {--fail-on-empty : Exit non-zero when any section has no published payload}';
+        {--fail-on-empty : Exit non-zero when any section has no published payload}
+        {--drafts : Also list open drafts and how much they hold against the published payload}';
 
     protected $description = 'Report which CMS sections have a published payload, and with --probe which pages actually render blank';
 
@@ -167,6 +168,10 @@ final class CmsContentStatusCommand extends Command
             }
         } else {
             $this->render($visible, $publishedTotal, count($rows), $onlyEmpty);
+        }
+
+        if ((bool) $this->option('drafts') && ! (bool) $this->option('json')) {
+            $this->renderDrafts($targets->all(), $workflow);
         }
 
         return $publishedTotal < count($rows) && (bool) $this->option('fail-on-empty')
@@ -340,5 +345,59 @@ final class CmsContentStatusCommand extends Command
         }
 
         return $count;
+    }
+
+    /**
+     * The admin editor opens the latest open draft instead of the published
+     * payload. A draft that holds less than what is published therefore makes
+     * the editor look empty while the public page is fine - so every open draft
+     * is listed with its size beside the published one. Sizes are characters of
+     * JSON per locale; no content is printed.
+     *
+     * @param  array<int, mixed>  $targets
+     */
+    private function renderDrafts(array $targets, CmsWorkflowServiceInterface $workflow): void
+    {
+        $this->newLine();
+        $this->line('  <fg=white;options=bold>Open drafts (what the admin editor opens)</>');
+        $listed = 0;
+
+        foreach ($targets as $target) {
+            $draft = $workflow->latestEditableDraftForReport($target->key);
+
+            if ($draft === null) {
+                continue;
+            }
+
+            $published = $workflow->getPublishedPayload($target->key) ?? [];
+            $sizes = [];
+            $emptier = false;
+
+            foreach ($target->locales as $locale) {
+                $draftLocale = $draft['payload']['translations'][$locale] ?? null;
+                $publishedLocale = $published['translations'][$locale] ?? null;
+                $draftSize = is_array($draftLocale) ? strlen((string) json_encode($draftLocale)) : 0;
+                $publishedSize = is_array($publishedLocale) ? strlen((string) json_encode($publishedLocale)) : 0;
+                $emptier = $emptier || $draftSize < 200 || ($publishedSize > 0 && $draftSize < $publishedSize / 2);
+                $sizes[] = sprintf('%s draft %d / published %d', $locale, $draftSize, $publishedSize);
+            }
+
+            $this->line(sprintf(
+                '    %s %-42s %-10s v%-3d %s  %s',
+                $emptier ? '<fg=red>!</>' : ' ',
+                $target->key,
+                $draft['status'],
+                $draft['version'],
+                $draft['updated_at'] ?? '?',
+                implode('   ', $sizes),
+            ));
+            $listed++;
+        }
+
+        if ($listed === 0) {
+            $this->line('    none');
+        }
+
+        $this->line('  <fg=gray>! the draft is nearly empty or under half the published size: the editor will look empty</>');
     }
 }

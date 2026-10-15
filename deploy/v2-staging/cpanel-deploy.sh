@@ -1003,7 +1003,7 @@ fi
 # Never fatal: what to publish, retire or leave empty is SPU's decision, not a
 # deploy's.
 log "CMS content status"
-(cd "${APP}" && "${PHP}" artisan cms:content-status --summary) || \
+(cd "${APP}" && "${PHP}" artisan cms:content-status --summary --drafts) || \
     printf '   (cms:content-status unavailable in this release)\n'
 
 # The tarball-based deployment extracts into .release/ inside the repository,
