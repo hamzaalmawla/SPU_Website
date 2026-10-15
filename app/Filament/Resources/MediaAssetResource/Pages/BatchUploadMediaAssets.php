@@ -7,6 +7,7 @@ namespace App\Filament\Resources\MediaAssetResource\Pages;
 use App\Contracts\Media\MediaServiceInterface;
 use App\Filament\Components\FocalPointPicker;
 use App\Filament\Resources\MediaAssetResource;
+use App\Support\MediaUploadFailure;
 use App\Support\MediaUrlResolver;
 use Filament\Forms\Components\Actions;
 use Filament\Forms\Components\Actions\Action;
@@ -241,10 +242,10 @@ final class BatchUploadMediaAssets extends Page implements HasForms
                 $uploaded++;
             }
         } catch (Throwable $exception) {
-            report($exception);
+            MediaUploadFailure::record($exception, 'batch upload');
             Notification::make()
                 ->title('Batch upload stopped')
-                ->body($uploaded.' image(s) were uploaded before an error occurred. Review the remaining files and try again.')
+                ->body($uploaded.' image(s) were uploaded before an error occurred. '.MediaUploadFailure::message($exception))
                 ->danger()
                 ->persistent()
                 ->send();

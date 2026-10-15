@@ -299,6 +299,13 @@ return [
         'selection_required' => 'Choose one media source',
         'action_failed' => 'Media could not be selected',
         'safe_error' => 'The media action could not be completed. Technical details were logged for review.',
+        'failure' => [
+            'not_allowed' => 'Your account is not allowed to add media. Ask a super admin to give it the Editor or Faculty Editor role.',
+            'no_faculty' => 'Your Faculty Editor account has no faculty assigned, so it cannot add media. Ask a super admin to assign your faculty.',
+            'title_required' => 'Add a title in Arabic or English before uploading.',
+            'alt_required' => 'Add alternative text in Arabic or English before uploading an image.',
+            'file_rejected' => 'The file could not be saved. Try again, or try a smaller JPG, PNG or WebP image.',
+        ],
         'preview_alt' => 'Preview of :file',
         'open_file' => 'Open selected file: :file',
         'recent_images' => 'Recently uploaded images',

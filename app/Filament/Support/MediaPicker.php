@@ -7,6 +7,7 @@ namespace App\Filament\Support;
 use App\Contracts\Media\MediaServiceInterface;
 use App\DTOs\Media\MediaUploadResultDTO;
 use App\Filament\Components\FocalPointPicker;
+use App\Support\MediaUploadFailure;
 use App\Support\MediaUrlResolver;
 use Filament\Forms\Components\Actions\Action as FormAction;
 use Filament\Forms\Components\FileUpload;
@@ -274,8 +275,8 @@ final class MediaPicker
                     $set($mediaIdPath, $mediaId);
                     $set($statePath, $url);
                 } catch (Throwable $exception) {
-                    report($exception);
-                    Notification::make()->title(__('admin.media_picker.action_failed'))->body(__('admin.media_picker.safe_error'))->danger()->send();
+                    MediaUploadFailure::record($exception, 'media picker');
+                    Notification::make()->title(__('admin.media_picker.action_failed'))->body(MediaUploadFailure::message($exception))->danger()->persistent()->send();
                 }
             });
     }
@@ -354,10 +355,10 @@ final class MediaPicker
                 try {
                     return self::uploadOption($data, $type);
                 } catch (Throwable $exception) {
-                    report($exception);
+                    MediaUploadFailure::record($exception, 'media picker upload');
 
                     throw ValidationException::withMessages([
-                        'file' => __('admin.media_picker.safe_error'),
+                        'file' => MediaUploadFailure::message($exception),
                     ]);
                 }
             })
