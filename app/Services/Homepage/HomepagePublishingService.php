@@ -149,7 +149,11 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
                     [
                         'type' => $this->sectionType($section->key),
                         'sort_order' => $section->sortOrder,
-                        'is_enabled' => true,
+                        // bottom_stats repeats the Medical Facilities statistics and has no
+                        // editor (ManageHomepage leaves it out). It is seeded disabled, and
+                        // enabling every section on publish switched it on: the first admin
+                        // publish showed the same four stats twice. It stays off.
+                        'is_enabled' => $section->key !== 'bottom_stats',
                         'schema_version' => 1,
                         'config_json' => [
                             'approved_key' => $section->key,

@@ -375,6 +375,8 @@ final class HomepageFormSchema
                 ->defaultItems(0),
             Repeater::make("{$prefix}.stats")
                 ->label('Facility Statistics')
+                ->helperText('Shown in one row on the homepage; up to 6 fit side by side.')
+                ->maxItems(6)
                 ->schema([
                     TextInput::make('value')
                         ->label('Value')

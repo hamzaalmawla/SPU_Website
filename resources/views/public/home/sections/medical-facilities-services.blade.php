@@ -60,12 +60,15 @@
 
         @if ($section->payload->stats !== [])
             @php($statsCount = count($section->payload->stats))
+            {{-- Every stat shares one row on desktop (up to six), so adding a fifth
+                 sits beside the others instead of wrapping onto a second line. --}}
+            @php($statsDense = $statsCount > 4)
             <div class="bg-spu-blue rounded-[24px] py-12 px-8 shadow-panel relative overflow-hidden">
-                <div class="cms-grid-stats gap-12 relative z-10 {{ $statsCount >= 4 ? 'cms-grid-stats-cols-4' : ($statsCount === 3 ? 'cms-grid-stats-cols-3' : ($statsCount === 2 ? 'cms-grid-stats-cols-2' : '')) }}">
+                <div class="cms-grid-stats cms-grid-stats-fit {{ $statsDense ? 'gap-8' : 'gap-12' }} relative z-10" style="--stats-cols: {{ max(1, min($statsCount, 6)) }}; --stats-cols-md: {{ $statsCount === 4 ? 2 : max(1, min($statsCount, 3)) }};" data-stats-count="{{ $statsCount }}">
                     @foreach ($section->payload->stats as $stat)
-                        <div class="flex flex-col items-center justify-center text-center px-4">
+                        <div class="flex flex-col items-center justify-center text-center {{ $statsDense ? 'px-2' : 'px-4' }}">
                             <div class="flex items-baseline mb-3">
-                                <span class="text-5xl lg:text-6xl font-bold text-white tracking-tighter stats-card-value" data-value="{{ $stat->value }}" translate="no">{{ $stat->value }}</span>
+                                <span class="text-5xl {{ $statsDense ? 'lg:text-5xl' : 'lg:text-6xl' }} font-bold text-white tracking-tighter stats-card-value" data-value="{{ $stat->value }}" translate="no">{{ $stat->value }}</span>
                                 {{-- Gold, not the brand red: this sits on the dark navy panel, where
                                      #6f1616 measured 1.2:1 against the 3:1 large text needs. Same
                                      defect, same fix as the faculties hub. --}}

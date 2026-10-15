@@ -145,9 +145,23 @@ main nav:has(> ol) ol {
     }
 }
 
+/* Count-driven grid: the template sets --stats-cols (desktop, all items in one
+   row) and --stats-cols-md (tablet). Used where any number of stats may be added. */
+@media (min-width: 800px) {
+    .cms-grid-stats.cms-grid-stats-fit {
+        grid-template-columns: repeat(var(--stats-cols-md, 2), minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1024px) {
+    .cms-grid-stats.cms-grid-stats-fit {
+        grid-template-columns: repeat(var(--stats-cols, 4), minmax(0, 1fr));
+    }
+}
+
 /* Grids without explicit col modifier: auto-fit as before */
 @media (min-width: 800px) {
-    .cms-grid-stats:not(.cms-grid-stats-cols-2):not(.cms-grid-stats-cols-3):not(.cms-grid-stats-cols-4) {
+    .cms-grid-stats:not(.cms-grid-stats-cols-2):not(.cms-grid-stats-cols-3):not(.cms-grid-stats-cols-4):not(.cms-grid-stats-fit) {
         grid-template-columns: repeat(auto-fit, minmax(min(100%, 13.5rem), 1fr));
     }
 }

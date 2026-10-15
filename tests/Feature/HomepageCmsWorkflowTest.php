@@ -362,6 +362,43 @@ class HomepageCmsWorkflowTest extends TestCase
         ]);
     }
 
+    public function test_publishing_never_switches_on_the_duplicate_bottom_stats_section(): void
+    {
+        $this->assertFalse((bool) HomepageSection::query()->where('key', 'bottom_stats')->value('is_enabled'));
+
+        $draft = $this->publishingService()->saveDraft(
+            new HomepageDraftDataDTO(sections: $this->homepageService()->getSections()->all()),
+            $this->author()->id,
+        );
+        $this->assertTrue($this->publishingService()->publish($draft->id, $this->author()->id));
+
+        $this->assertFalse((bool) HomepageSection::query()->where('key', 'bottom_stats')->value('is_enabled'));
+        $this->assertTrue((bool) HomepageSection::query()->where('key', 'medical_facilities_services')->value('is_enabled'));
+
+        // A site where an earlier publish already switched it on is repaired by the migration.
+        HomepageSection::query()->where('key', 'bottom_stats')->update(['is_enabled' => true]);
+        (require database_path('migrations/2026_10_15_000002_disable_duplicate_homepage_bottom_stats.php'))->up();
+        $this->assertFalse((bool) HomepageSection::query()->where('key', 'bottom_stats')->value('is_enabled'));
+    }
+
+    public function test_five_medical_stats_share_one_row(): void
+    {
+        $section = HomepageSection::query()->where('key', 'medical_facilities_services')->firstOrFail();
+
+        foreach (HomepageSectionTranslation::query()->where('section_id', $section->id)->get() as $translation) {
+            $payload = $translation->payload_json;
+            $payload['stats'] = array_map(static fn (int $n): array => ['value' => (string) ($n * 10), 'label' => 'Stat '.$n, 'suffix' => '+'], range(1, 5));
+            $translation->forceFill(['payload_json' => $payload])->save();
+        }
+
+        $this->get('/en')
+            ->assertOk()
+            ->assertSee('cms-grid-stats-fit', false)
+            ->assertSee('--stats-cols: 5;', false)
+            ->assertSee('data-stats-count="5"', false)
+            ->assertSee('Stat 5');
+    }
+
     public function test_save_after_publishing_latest_draft_does_not_conflict_with_superseded_drafts(): void
     {
         $firstDraft = $this->publishingService()->saveDraft(
@@ -547,7 +584,11 @@ class HomepageCmsWorkflowTest extends TestCase
         );
 
         $this->assertTrue($this->publishingService()->publish($draft->id, $this->author()->id));
-        $this->assertSame(HomepageSectionServiceInterface::SECTION_KEYS, $this->publicSectionKeys('en'));
+        // Everything comes back except bottom_stats, the duplicate of the medical stats.
+        $this->assertSame(
+            array_values(array_diff(HomepageSectionServiceInterface::SECTION_KEYS, ['bottom_stats'])),
+            $this->publicSectionKeys('en'),
+        );
         $this->get('/en')->assertOk()->assertSee('Syrian Private University');
     }
 
