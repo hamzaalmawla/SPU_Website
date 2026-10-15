@@ -294,6 +294,7 @@ use App\Services\Shared\CacheService;
 use App\Services\Shared\ContinuityService;
 use App\Services\Shared\SlugService;
 use App\Support\HtmlSanitizer;
+use App\Support\PageExpiredDiagnostics;
 use Filament\Http\Responses\Auth\Contracts\LogoutResponse as LogoutResponseContract;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -337,6 +338,9 @@ class AppServiceProvider extends ServiceProvider
         $this->registerModelObservers();
         $this->registerAuthorization();
         $this->configureRateLimiting();
+        \Livewire\on('exception', static function (object $component, \Throwable $exception): void {
+            PageExpiredDiagnostics::livewireTypeError($component, $exception);
+        });
         $this->registerPublicHomepageFooterComposer();
         $this->registerPublicAnalyticsComposer();
         $this->registerErrorPageComposer();

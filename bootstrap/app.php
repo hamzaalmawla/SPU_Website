@@ -12,10 +12,12 @@ use App\Http\Middleware\RestrictAdminAccess;
 use App\Http\Middleware\SecurityHeadersMiddleware;
 use App\Http\Middleware\TwoFactorChallengeMiddleware;
 use App\Http\Middleware\VerifyWebhookSignature;
+use App\Support\PageExpiredDiagnostics;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Session\TokenMismatchException;
 use Sentry\Laravel\Integration;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
@@ -60,6 +62,16 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         Integration::handles($exceptions);
+
+        // A CSRF mismatch is the "This page has expired" prompt editors keep
+        // hitting. Laravel never logs it, so record why it happened (lost
+        // session vs stale page) as one line, without the usual stack trace.
+        $exceptions->stopIgnoring(TokenMismatchException::class);
+        $exceptions->report(function (TokenMismatchException $e): false {
+            PageExpiredDiagnostics::csrfMismatch(request());
+
+            return false;
+        });
 
         // Branded, bilingual error pages.
         //
