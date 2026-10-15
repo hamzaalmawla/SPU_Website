@@ -59,7 +59,7 @@ final class NewsController extends Controller
                 'categoryTypes' => $type === null ? ['news', 'announcement'] : null,
                 'search' => $request->query('search'),
             ], static fn (mixed $value): bool => $value !== null), max(1, (int) $request->query('page', 1)), 9),
-            'categories' => $this->newsService->getPublicCategories($locale, $type),
+            'categories' => $this->newsService->getListingFilterCategories($locale, $type),
             'typeFilter' => true,
             'activeType' => $type,
             'activeCategory' => is_string($request->query('category')) ? (string) $request->query('category') : null,
@@ -123,7 +123,8 @@ final class NewsController extends Controller
     {
         $query = ['type' => 'announcement'];
 
-        if (is_string($request->query('category')) && $request->query('category') !== '') {
+        // The default "announcements" category is what the type filter already selects.
+        if (is_string($request->query('category')) && ! in_array($request->query('category'), ['', 'announcements'], true)) {
             $query['category'] = (string) $request->query('category');
         }
 

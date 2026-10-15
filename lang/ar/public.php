@@ -220,6 +220,7 @@ return [
         'all' => 'الكل',
         'news' => 'الأخبار',
         'announcement' => 'الإعلانات',
+        'all_categories' => 'كل التصنيفات',
     ],
 
     'achievements' => [

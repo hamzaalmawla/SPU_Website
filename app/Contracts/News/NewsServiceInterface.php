@@ -100,4 +100,12 @@ interface NewsServiceInterface
 
     /** @return Collection<int, NewsCategoryDTO> */
     public function getPublicCategories(string $locale, ?string $type = null): Collection;
+
+    /**
+     * Categories for the news listing's category filter: the public categories
+     * minus the default "news" and "announcements" ones, which the type filter covers.
+     *
+     * @return Collection<int, NewsCategoryDTO>
+     */
+    public function getListingFilterCategories(string $locale, ?string $type = null): Collection;
 }

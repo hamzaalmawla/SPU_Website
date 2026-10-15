@@ -545,6 +545,13 @@ final class NewsService implements NewsServiceInterface
         }, 300);
     }
 
+    public function getListingFilterCategories(string $locale, ?string $type = null): Collection
+    {
+        return $this->getPublicCategories($locale, $type)
+            ->reject(static fn (NewsCategoryDTO $category): bool => in_array($category->slug, ['news', 'announcements'], true))
+            ->values();
+    }
+
     public function getPublicCategories(string $locale, ?string $type = null): Collection
     {
         return $this->newsCache()->remember('news:categories:'.$locale.':'.($type ?? 'all'), function () use ($locale, $type): Collection {

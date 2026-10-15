@@ -55,7 +55,7 @@
             <form method="GET" action="/{{ $locale }}{{ $listingPath }}" class="mt-4 flex flex-wrap items-center justify-start gap-2">
                 @if ($activeType)<input type="hidden" name="type" value="{{ $activeType }}">@endif
                 @if ($search !== '')<input type="hidden" name="search" value="{{ $search }}">@endif
-                <button name="category" value="" class="rounded-[5px] border px-4 py-2 text-[11px] font-bold transition {{ $activeCategory === null ? 'border-spu-red bg-spu-red text-white' : 'border-slate-200 bg-white text-spu-blue hover:border-spu-blue' }}" type="submit">{{ $page['allLabel'] }}</button>
+                <button name="category" value="" class="rounded-[5px] border px-4 py-2 text-[11px] font-bold transition {{ $activeCategory === null ? 'border-spu-red bg-spu-red text-white' : 'border-slate-200 bg-white text-spu-blue hover:border-spu-blue' }}" type="submit">{{ $typeFilter ? __('public.news_types.all_categories') : $page['allLabel'] }}</button>
                 @foreach ($categories as $category)
                     <button name="category" value="{{ $category->slug }}" class="rounded-[5px] border px-4 py-2 text-[11px] font-bold transition {{ $activeCategory === $category->slug ? 'border-spu-red bg-spu-red text-white' : 'border-slate-200 bg-white text-spu-blue hover:border-spu-blue' }}" type="submit">{{ $category->name }}</button>
                 @endforeach

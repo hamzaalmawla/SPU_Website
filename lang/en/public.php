@@ -220,6 +220,7 @@ return [
         'all' => 'All',
         'news' => 'News',
         'announcement' => 'Announcements',
+        'all_categories' => 'All categories',
     ],
 
     'achievements' => [

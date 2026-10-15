@@ -126,6 +126,31 @@ final class NewsWorkflowTest extends TestCase
             ->assertRedirect('/ar/news/articles?type=announcement&category=exams');
     }
 
+    public function test_category_filter_leaves_out_the_default_categories_the_type_filter_covers(): void
+    {
+        foreach (['news', 'announcements'] as $slug) {
+            $category = NewsCategory::query()->where('slug', $slug)->firstOrFail();
+            $article = $this->createPublishedArticle($category->type, 'in-default-'.$slug, 'Default '.$slug.' item');
+            $article->forceFill(['news_category_id' => $category->id])->save();
+        }
+        $this->createPublishedArticle('announcement', 'exam-notice', 'Exam Notice');
+        $this->createPublishedArticle('news', 'campus-story', 'Campus Story');
+
+        $slugs = app(NewsServiceInterface::class)->getListingFilterCategories('en')->pluck('slug')->all();
+
+        $this->assertNotContains('news', $slugs);
+        $this->assertNotContains('announcements', $slugs);
+        $this->assertContains('announcement-exam-notice', $slugs);
+
+        $this->get('/en/news/articles')
+            ->assertOk()
+            ->assertSee('All categories')
+            ->assertDontSee('name="category" value="announcements"', false)
+            ->assertDontSee('name="category" value="news"', false);
+        $this->get('/en/news/announcements?category=announcements')
+            ->assertRedirect('/en/news/articles?type=announcement');
+    }
+
     public function test_news_listing_shows_news_and_announcements_with_a_type_filter(): void
     {
         $this->createPublishedArticle('news', 'campus-news', 'Campus News Story');
