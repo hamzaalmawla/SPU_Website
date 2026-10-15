@@ -67,6 +67,9 @@ return [
 
     'timezone' => 'UTC',
 
+    // Times editors type into admin date pickers are in this zone; storage stays UTC.
+    'admin_timezone' => env('ADMIN_TIMEZONE', 'Asia/Damascus'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration

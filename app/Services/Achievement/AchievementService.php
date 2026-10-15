@@ -73,6 +73,19 @@ final class AchievementService implements AchievementServiceInterface
         );
     }
 
+    public function preparePublishingData(array $data): array
+    {
+        // The public archive needs status=published, is_public and a past
+        // published_at. Editors chose "Published", saved, and saw nothing: the
+        // date was optional and empty, so the row could never match. Publishing
+        // without a date means "now", as it does for news.
+        if (($data['status'] ?? null) === 'published' && empty($data['published_at'])) {
+            $data['published_at'] = now();
+        }
+
+        return $data;
+    }
+
     private function publicQuery(): Builder
     {
         return Achievement::query()

@@ -1479,6 +1479,7 @@ return [
         'action_url' => 'Action URL',
         'status' => 'Status',
         'published_at' => 'Published at',
+        'published_at_help' => 'Damascus time. Leave blank to publish now. A future time keeps it hidden until then.',
         'public' => 'Public',
         'pin' => 'Pin to homepage',
         'sort_order' => 'Sort order',

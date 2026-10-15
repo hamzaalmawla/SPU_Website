@@ -6,11 +6,14 @@ namespace Tests\Feature;
 
 use App\Contracts\Achievement\AchievementServiceInterface;
 use App\Filament\Resources\AchievementResource;
+use App\Filament\Resources\AchievementResource\Pages\CreateAchievement;
 use App\Models\Achievement\Achievement;
 use App\Models\Achievement\AchievementCategory;
 use App\Models\Achievement\AchievementCategoryTranslation;
+use App\Models\User\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 final class AchievementDomainTest extends TestCase
@@ -84,6 +87,52 @@ final class AchievementDomainTest extends TestCase
         $this->assertIsString($resource);
         $this->assertStringContainsString('modifyQueryUsing: fn (Builder $query): Builder => $query->active()', $resource);
         $this->assertTrue(class_exists(AchievementCategoryTranslation::class));
+    }
+
+    public function test_publishing_from_the_admin_without_a_date_shows_it_publicly_at_once(): void
+    {
+        $category = $this->category('research', 'Research', 'بحثي');
+        $this->actingAs(User::factory()->create(['role_slug' => 'super_admin']), 'web');
+
+        Livewire::test(CreateAchievement::class)
+            ->fillForm([
+                'categories' => [$category->id],
+                'translations' => [
+                    ['locale' => 'ar', 'title' => 'إنجاز منشور للتو'],
+                    ['locale' => 'en', 'title' => 'Just published achievement'],
+                ],
+            ])
+            ->set('data.is_public', false)
+            ->set('data.status', 'published')
+            ->assertSet('data.is_public', true)
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $achievement = Achievement::query()->sole();
+        $this->assertTrue($achievement->is_public);
+        $this->assertNotNull($achievement->published_at);
+        $this->get('/en/achievements')->assertOk()->assertSee('Just published achievement');
+    }
+
+    public function test_admin_publish_time_is_entered_in_damascus_time(): void
+    {
+        $category = $this->category('research', 'Research', 'بحثي');
+        $this->actingAs(User::factory()->create(['role_slug' => 'super_admin']), 'web');
+
+        Livewire::test(CreateAchievement::class)
+            ->fillForm([
+                'categories' => [$category->id],
+                'translations' => [
+                    ['locale' => 'ar', 'title' => 'إنجاز'],
+                    ['locale' => 'en', 'title' => 'Timed achievement'],
+                ],
+                'status' => 'published',
+                'published_at' => '2026-10-15 10:00:00',
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame('2026-10-15 07:00:00', Achievement::query()->sole()->published_at?->utc()->format('Y-m-d H:i:s'));
     }
 
     private function category(string $slug, string $english, string $arabic, bool $active = true): AchievementCategory

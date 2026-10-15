@@ -17,6 +17,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
+use Filament\Forms\Set;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\IconColumn;
@@ -81,9 +82,18 @@ class AchievementResource extends Resource
                 ])->default([['locale' => 'ar'], ['locale' => 'en']])->minItems(2)->maxItems(2)->deletable(false)->reorderable(false)->columns(2)->columnSpanFull(),
             ])->columns(2),
             Section::make(__('admin.achievement.publishing'))->schema([
-                Select::make('status')->label(__('admin.achievement.status'))->options(['draft' => __('admin.achievement.statuses.draft'), 'published' => __('admin.achievement.statuses.published')])->default('draft')->required()->live(),
-                DateTimePicker::make('published_at')->label(__('admin.achievement.published_at'))->seconds(false)->required(fn (Get $get): bool => $get('status') === 'published' && (bool) $get('is_public')),
-                Toggle::make('is_public')->label(__('admin.achievement.public'))->default(false)->live(),
+                // Choosing "Published" switches "Public" on: with it off the
+                // achievement stayed hidden, which nobody expected from "Published".
+                Select::make('status')->label(__('admin.achievement.status'))->options(['draft' => __('admin.achievement.statuses.draft'), 'published' => __('admin.achievement.statuses.published')])->default('draft')->required()->live()
+                    ->afterStateUpdated(function (?string $state, Set $set): void {
+                        if ($state === 'published') {
+                            $set('is_public', true);
+                        }
+                    }),
+                // Editors enter Damascus time; the app stores UTC. Without this a
+                // time typed as "now" was three hours in the future and hidden.
+                DateTimePicker::make('published_at')->label(__('admin.achievement.published_at'))->seconds(false)->timezone((string) config('app.admin_timezone'))->helperText(__('admin.achievement.published_at_help')),
+                Toggle::make('is_public')->label(__('admin.achievement.public'))->default(true)->live(),
                 Toggle::make('pin_to_homepage')->label(__('admin.achievement.pin'))->default(false),
                 TextInput::make('sort_order')->label(__('admin.achievement.sort_order'))->numeric()->default(0),
             ])->columns(3),
@@ -97,7 +107,7 @@ class AchievementResource extends Resource
             TextColumn::make('status')->label(__('admin.achievement.status'))->badge(),
             IconColumn::make('is_public')->label(__('admin.achievement.public'))->boolean(),
             IconColumn::make('pin_to_homepage')->label(__('admin.achievement.pin'))->boolean(),
-            TextColumn::make('published_at')->label(__('admin.achievement.published_at'))->dateTime()->sortable(),
+            TextColumn::make('published_at')->label(__('admin.achievement.published_at'))->dateTime(timezone: (string) config('app.admin_timezone'))->sortable(),
         ])->filters([
             SelectFilter::make('status')->options(['draft' => __('admin.achievement.statuses.draft'), 'published' => __('admin.achievement.statuses.published')]),
             TernaryFilter::make('is_public')->label(__('admin.achievement.public')),

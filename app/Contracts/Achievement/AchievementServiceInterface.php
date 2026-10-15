@@ -15,4 +15,12 @@ interface AchievementServiceInterface
 
     /** @param array<int, string> $categorySlugs */
     public function archive(string $locale, array $categorySlugs = [], int $page = 1, int $perPage = 9): AchievementArchiveDTO;
+
+    /**
+     * Normalize admin form data so a published, public achievement is actually visible.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function preparePublishingData(array $data): array;
 }
