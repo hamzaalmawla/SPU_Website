@@ -40,7 +40,7 @@ class StatsCardCountPropertyTest extends TestCase
         }
     }
 
-    public function test_bottom_stats_uses_compact_blue_band_not_hero_cards(): void
+    public function test_bottom_stats_is_not_rendered_because_it_duplicates_the_medical_stats(): void
     {
         $section = self::makeSection('bottom_stats', [
             'title' => 'Additional Figures',
@@ -55,12 +55,7 @@ class StatsCardCountPropertyTest extends TestCase
             'locale' => 'en',
         ])->render();
 
-        $this->assertStringContainsString('bg-spu-blue', $html);
-        $this->assertStringContainsString('rounded-[28px]', $html);
-        $this->assertStringContainsString('dir="ltr"', $html);
-        $this->assertStringNotContainsString('class="stats-card"', $html);
-        $this->assertStringNotContainsString('stats-shell__grid', $html);
-        $this->assertSame(2, substr_count($html, 'data-value='));
+        $this->assertSame('', trim($html));
     }
 
     public static function statsCountProvider(): array

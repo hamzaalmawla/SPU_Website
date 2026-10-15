@@ -9,7 +9,8 @@
         'research_studies' => 'public.home.sections.research-studies',
         'events_activities' => 'public.home.sections.events-activities',
         'medical_facilities_services' => 'public.home.sections.medical-facilities-services',
-        'bottom_stats' => 'public.home.sections.bottom-stats',
+        // bottom_stats is not rendered: it repeated the Medical Facilities statistics
+        // and has no editor. The key stays in the fixed 11-section schema.
     ];
 
     $sectionView = $sectionViews[$section->key] ?? null;

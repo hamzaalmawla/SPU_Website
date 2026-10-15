@@ -375,10 +375,9 @@ class HomepageCmsWorkflowTest extends TestCase
         $this->assertFalse((bool) HomepageSection::query()->where('key', 'bottom_stats')->value('is_enabled'));
         $this->assertTrue((bool) HomepageSection::query()->where('key', 'medical_facilities_services')->value('is_enabled'));
 
-        // A site where an earlier publish already switched it on is repaired by the migration.
+        // Where an earlier publish already switched it on, the homepage still shows it once.
         HomepageSection::query()->where('key', 'bottom_stats')->update(['is_enabled' => true]);
-        (require database_path('migrations/2026_10_15_000002_disable_duplicate_homepage_bottom_stats.php'))->up();
-        $this->assertFalse((bool) HomepageSection::query()->where('key', 'bottom_stats')->value('is_enabled'));
+        $this->get('/en')->assertOk()->assertDontSee('rounded-[28px] bg-spu-blue', false);
     }
 
     public function test_five_medical_stats_share_one_row(): void

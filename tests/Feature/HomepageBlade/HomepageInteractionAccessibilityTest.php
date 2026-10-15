@@ -13,7 +13,7 @@ class HomepageInteractionAccessibilityTest extends TestCase
 
     public function test_counters_render_their_real_values_without_javascript(): void
     {
-        foreach (['hero_stats', 'bottom_stats', 'medical_facilities_services'] as $key) {
+        foreach (['hero_stats', 'medical_facilities_services'] as $key) {
             $section = self::makeSection($key, [
                 'title' => 'Statistics',
                 'stats' => [self::makeStat(['value' => '1250'])],
