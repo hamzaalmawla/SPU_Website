@@ -23,9 +23,11 @@ use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Page;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Livewire\Attributes\Locked;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Throwable;
 
@@ -39,6 +41,30 @@ final class BatchUploadMediaAssets extends Page implements HasForms
 
     /** @var array<string, mixed> */
     public ?array $data = [];
+
+    /**
+     * Images still to store, processed a few per request (see processNextChunk).
+     * Locked: the browser must not be able to point this at other files.
+     *
+     * @var list<array{path: string, item: array<string, mixed>}>
+     */
+    #[Locked]
+    public array $pendingUploads = [];
+
+    #[Locked]
+    public int $batchTotal = 0;
+
+    #[Locked]
+    public int $uploadedCount = 0;
+
+    /**
+     * Storing an image converts it to WebP, which takes a second or more each on
+     * this host. All 50 in one request outran the PHP and proxy time limits and
+     * the batch died part-way, so the work is split across requests.
+     */
+    private const IMAGES_PER_REQUEST = 4;
+
+    private const TEMP_DIRECTORY = 'media-tmp/';
 
     private MediaServiceInterface $mediaService;
 
@@ -72,6 +98,10 @@ final class BatchUploadMediaAssets extends Page implements HasForms
                             ->panelLayout('grid')
                             ->imagePreviewHeight('180')
                             ->image()
+                            // What the media library accepts. iPhone HEIC photos are
+                            // refused on save otherwise, after a full upload.
+                            ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+                            ->helperText('JPG, PNG, WebP or GIF, up to 10 MB each. Export iPhone HEIC photos as JPG first.')
                             ->orientImagesFromExif()
                             ->maxFiles(50)
                             ->maxSize(10240)
@@ -192,60 +222,62 @@ final class BatchUploadMediaAssets extends Page implements HasForms
 
     public function upload(): void
     {
+        if ($this->pendingUploads !== []) {
+            return;
+        }
+
         $data = $this->form->getState();
-        $items = is_array($data['items'] ?? null) ? $data['items'] : [];
+        $items = array_values(is_array($data['items'] ?? null) ? $data['items'] : []);
         $files = array_values(array_filter(
             is_array($data['files'] ?? null) ? $data['files'] : [],
             static fn (mixed $path): bool => is_string($path) && $path !== '',
         ));
+
+        if ($files === [] || count($files) !== count($items)) {
+            Notification::make()
+                ->title('Batch upload stopped')
+                ->body('Every uploaded image must have a matching details card. Continue to name and frame images, then upload again.')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        $this->pendingUploads = array_map(
+            static fn (string $path, mixed $item): array => ['path' => $path, 'item' => is_array($item) ? $item : []],
+            $files,
+            $items,
+        );
+        $this->batchTotal = count($this->pendingUploads);
+        $this->uploadedCount = 0;
+
+        $this->processNextChunk();
+    }
+
+    public function continueBatch(): void
+    {
+        if ($this->pendingUploads !== []) {
+            $this->processNextChunk();
+        }
+    }
+
+    private function processNextChunk(): void
+    {
+        @set_time_limit(120);
         $disk = Storage::disk((string) config('filesystems.media_disk', 'public'));
-        $uploaded = 0;
+        $chunk = array_splice($this->pendingUploads, 0, self::IMAGES_PER_REQUEST);
 
         try {
-            if (count($files) !== count($items)) {
-                throw new \RuntimeException('Every uploaded image must have a matching details card.');
-            }
-
-            foreach ($files as $index => $path) {
-                $item = $items[$index] ?? null;
-                if (! is_array($item)) {
-                    throw new \RuntimeException('Image details are missing.');
-                }
-
-                $fullPath = $disk->path($path);
-                if (! is_file($fullPath)) {
-                    throw new \RuntimeException('A temporary image could not be read. Please upload it again.');
-                }
-
-                $file = new UploadedFile(
-                    $fullPath,
-                    (string) ($item['original_name'] ?? basename($path)),
-                    $disk->mimeType($path) ?: null,
-                    null,
-                    true,
-                );
-                $this->mediaService->upload([
-                    'file' => $file,
-                    'original_name' => $item['original_name'] ?? null,
-                    'directory' => 'media/image/'.now()->format('Y/m'),
-                    'title_ar' => $item['title_ar'] ?? null,
-                    'title_en' => $item['title_en'] ?? null,
-                    'alt_text_ar' => $item['alt_text_ar'] ?? null,
-                    'alt_text_en' => $item['alt_text_en'] ?? null,
-                    'focal_x' => $item['focal_x'] ?? 50,
-                    'focal_y' => $item['focal_y'] ?? 50,
-                    'display_fit' => $item['display_fit'] ?? 'cover',
-                    'require_alt_text' => true,
-                    'uploaded_by' => (int) auth()->id(),
-                ]);
-                $disk->delete($path);
-                $uploaded++;
+            foreach ($chunk as $entry) {
+                $this->storeOne($disk, $entry['path'], $entry['item']);
+                $this->uploadedCount++;
             }
         } catch (Throwable $exception) {
             MediaUploadFailure::record($exception, 'batch upload');
+            $this->pendingUploads = [];
             Notification::make()
                 ->title('Batch upload stopped')
-                ->body($uploaded.' image(s) were uploaded before an error occurred. '.MediaUploadFailure::message($exception))
+                ->body($this->uploadedCount.' of '.$this->batchTotal.' image(s) were uploaded before an error occurred. '.MediaUploadFailure::message($exception))
                 ->danger()
                 ->persistent()
                 ->send();
@@ -253,8 +285,74 @@ final class BatchUploadMediaAssets extends Page implements HasForms
             return;
         }
 
-        Notification::make()->title($uploaded.' images uploaded successfully')->success()->send();
+        if ($this->pendingUploads !== []) {
+            // Next chunk in a fresh request, so no single request runs long.
+            $this->js('$wire.continueBatch()');
+
+            return;
+        }
+
+        Notification::make()->title($this->uploadedCount.' images uploaded successfully')->success()->send();
         $this->redirect(MediaAssetResource::getUrl('index'));
+    }
+
+    /** @param array<string, mixed> $item */
+    private function storeOne(Filesystem $disk, string $path, array $item): void
+    {
+        if (! str_starts_with($path, self::TEMP_DIRECTORY) || str_contains($path, '..')) {
+            throw new \RuntimeException('Only images uploaded on this page can be stored.');
+        }
+
+        $fullPath = $disk->path($path);
+
+        if (! is_file($fullPath)) {
+            throw new \RuntimeException('A temporary image could not be read. Please upload it again.');
+        }
+
+        $mimeType = $disk->mimeType($path) ?: null;
+        $originalName = (string) ($item['original_name'] ?? basename($path));
+
+        $file = new UploadedFile(
+            $fullPath,
+            // Named by its real type: a PNG saved as photo.jpg was refused as an
+            // "extension does not match its detected file type" upload.
+            $this->nameForType($originalName, $mimeType),
+            $mimeType,
+            null,
+            true,
+        );
+
+        $this->mediaService->upload([
+            'file' => $file,
+            'original_name' => $item['original_name'] ?? null,
+            'directory' => 'media/image/'.now()->format('Y/m'),
+            'title_ar' => $item['title_ar'] ?? null,
+            'title_en' => $item['title_en'] ?? null,
+            'alt_text_ar' => $item['alt_text_ar'] ?? null,
+            'alt_text_en' => $item['alt_text_en'] ?? null,
+            'focal_x' => $item['focal_x'] ?? 50,
+            'focal_y' => $item['focal_y'] ?? 50,
+            'display_fit' => $item['display_fit'] ?? 'cover',
+            'require_alt_text' => true,
+            'uploaded_by' => (int) auth()->id(),
+        ]);
+
+        $disk->delete($path);
+    }
+
+    private function nameForType(string $originalName, ?string $mimeType): string
+    {
+        $extension = match ($mimeType) {
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+            'image/gif' => 'gif',
+            default => null,
+        };
+
+        return $extension === null
+            ? $originalName
+            : pathinfo($originalName, PATHINFO_FILENAME).'.'.$extension;
     }
 
     /** @return array{key: string, original_name: string, preview_url: string|null}|null */

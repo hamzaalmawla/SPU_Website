@@ -21,6 +21,11 @@ final class MediaServicePlaceholder implements MediaServiceInterface
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
+    public function pruneTemporaryUploads(int $olderThanHours, bool $dryRun = false): int
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
     public function delete(int|string $mediaId, int $userId): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');

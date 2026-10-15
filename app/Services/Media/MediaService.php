@@ -161,6 +161,27 @@ final class MediaService implements MediaServiceInterface
         return $this->toDto($asset);
     }
 
+    public function pruneTemporaryUploads(int $olderThanHours, bool $dryRun = false): int
+    {
+        // Admin upload forms store files in media-tmp/ (publicly readable) until
+        // they are saved to the library, which deletes them. Abandoned forms
+        // left them there for good.
+        $cutoff = now()->subHours(max(1, $olderThanHours))->getTimestamp();
+        $removed = 0;
+
+        foreach ($this->disk->allFiles('media-tmp') as $path) {
+            if ($this->disk->lastModified($path) >= $cutoff) {
+                continue;
+            }
+
+            if ($dryRun || $this->disk->delete($path)) {
+                $removed++;
+            }
+        }
+
+        return $removed;
+    }
+
     public function delete(int|string $mediaId, int $userId): bool
     {
         $asset = MediaAsset::find($mediaId);

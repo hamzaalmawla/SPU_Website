@@ -6,6 +6,7 @@ namespace App\Services\Media;
 
 use App\Contracts\Media\ImageConversionServiceInterface;
 use App\DTOs\Media\WebpConversionResultDTO;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Encoders\WebpEncoder;
 use Intervention\Image\ImageManager;
@@ -52,6 +53,21 @@ final class ImageConversionService implements ImageConversionServiceInterface
 
             $manager = $driver === 'imagick' ? ImageManager::imagick() : ImageManager::gd();
             [$contents, $isPublicPath] = $source;
+            [$sourceWidth, $sourceHeight] = $this->dimensions($contents);
+
+            // Decoding is not catchable when it runs out of memory: PHP dies with
+            // a fatal error and the upload fails. The host's limit is 128 MB and
+            // a phone photo decodes to 50 MB or more, an 8000x8000 image to 256 MB.
+            if (! $this->hasMemoryToDecode($sourceWidth, $sourceHeight)) {
+                Log::info('WebP conversion skipped: image too large for the memory limit.', [
+                    'width' => $sourceWidth,
+                    'height' => $sourceHeight,
+                    'memory_limit' => ini_get('memory_limit'),
+                ]);
+
+                return null;
+            }
+
             $image = $manager->read($contents);
             $destinationPath = $this->webpPath($sourcePath);
             $encoded = $image->encode(new WebpEncoder(
@@ -193,6 +209,55 @@ final class ImageConversionService implements ImageConversionServiceInterface
     }
 
     /** @return array{0: int, 1: int} */
+    /**
+     * Whether decoding (and re-encoding) an image of this size fits in memory,
+     * raising the limit for this request up to 1 GB when the host allows it.
+     */
+    private function hasMemoryToDecode(int $width, int $height): bool
+    {
+        if ($width <= 0 || $height <= 0) {
+            return true;
+        }
+
+        // Truecolour pixels plus the encoder's working copy, and some headroom.
+        $needed = (int) ($width * $height * 4 * 2) + 16 * 1024 * 1024;
+        $limit = $this->bytes((string) ini_get('memory_limit'));
+
+        if ($limit < 0) {
+            return true;
+        }
+
+        if (memory_get_usage(true) + $needed <= $limit) {
+            return true;
+        }
+
+        $wanted = min(memory_get_usage(true) + $needed + 32 * 1024 * 1024, 1024 * 1024 * 1024);
+
+        if ($wanted > $limit && @ini_set('memory_limit', (string) $wanted) !== false) {
+            $limit = $this->bytes((string) ini_get('memory_limit'));
+        }
+
+        return memory_get_usage(true) + $needed <= $limit;
+    }
+
+    private function bytes(string $value): int
+    {
+        $value = trim($value);
+
+        if ($value === '' || $value === '-1') {
+            return -1;
+        }
+
+        $number = (int) $value;
+
+        return match (strtolower(substr($value, -1))) {
+            'g' => $number * 1024 * 1024 * 1024,
+            'm' => $number * 1024 * 1024,
+            'k' => $number * 1024,
+            default => $number,
+        };
+    }
+
     private function dimensions(string $contents): array
     {
         $dimensions = @getimagesizefromstring($contents);

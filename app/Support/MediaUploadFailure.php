@@ -38,7 +38,8 @@ final class MediaUploadFailure
                 ->map(fn (array $messages, string $field): string => match ($field) {
                     'title' => __('admin.media_picker.failure.title_required'),
                     'alt_text' => __('admin.media_picker.failure.alt_required'),
-                    'file' => __('admin.media_picker.failure.file_rejected'),
+                    // Size, dimension and type rejections carry the useful detail.
+                    'file' => (string) ($messages[0] ?? __('admin.media_picker.failure.file_rejected')),
                     default => (string) ($messages[0] ?? ''),
                 })
                 ->filter()

@@ -9,6 +9,9 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('audit:prune')->dailyAt('02:30')->withoutOverlapping();
+
+// Abandoned admin uploads stay in public media-tmp/ until removed.
+Schedule::command('media:prune-temp')->dailyAt('02:45')->withoutOverlapping();
 Schedule::command('content:publish-scheduled')->everyMinute()->withoutOverlapping();
 
 // The sitemap is served from pre-generated files in public/. Publishing marks

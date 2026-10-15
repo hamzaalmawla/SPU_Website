@@ -19,6 +19,12 @@ interface MediaServiceInterface
      */
     public function upload(array $payload): MediaUploadResultDTO;
 
+    /**
+     * Delete admin upload temp files (media-tmp/) older than the given age.
+     * Returns how many files were removed, or would be with $dryRun.
+     */
+    public function pruneTemporaryUploads(int $olderThanHours, bool $dryRun = false): int;
+
     public function delete(int|string $mediaId, int $userId): bool;
 
     /**
