@@ -587,11 +587,16 @@
         transform-origin: top right;
     }
 
-    /* Mirrored: anchor to the other edge of the trigger, not off-screen. */
+    /* The panel is anchored with the logical `end-0` utility in the blade,
+     * which mirrors the anchor edge for RTL on its own. Do NOT re-add
+     * physical `right`/`left` overrides here: this file lives in
+     * `@layer components`, which always loses to `@layer utilities`
+     * regardless of specificity — a previous `right: auto; left: 0`
+     * override sat dead in the cascade while `right-0` kept winning,
+     * which is what pushed the Arabic panel off the left viewport edge.
+     * All that remains direction-dependent is the scale animation origin. */
     [dir='rtl'] .site-search-panel {
         transform-origin: top left;
-        right: auto;
-        left: 0;
     }
 
     @media (max-width: 767px) {
