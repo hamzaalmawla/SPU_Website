@@ -215,6 +215,13 @@ return [
     'type' => 'Type',
     'research_themes' => 'Research Themes',
 
+    'news_types' => [
+        'label' => 'Show',
+        'all' => 'All',
+        'news' => 'News',
+        'announcement' => 'Announcements',
+    ],
+
     'achievements' => [
         'eyebrow' => 'Honor & Excellence',
         'title' => 'Achievements and Honors',

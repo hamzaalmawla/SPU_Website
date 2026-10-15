@@ -116,17 +116,42 @@ final class NewsWorkflowTest extends TestCase
             ->assertDontSee('Target Schema Pending');
     }
 
-    public function test_announcements_route_takes_precedence_and_only_renders_announcements(): void
+    public function test_old_announcements_page_redirects_to_the_news_listing_filtered_to_announcements(): void
     {
-        $this->createPublishedArticle('news', 'announcements', 'Colliding News Article');
-        $this->createPublishedArticle('announcement', 'priority-announcement', 'Priority Announcement', true);
-        $this->createPublishedArticle('announcement', 'regular-announcement', 'Regular Announcement');
-
         $this->get('/en/news/announcements')
+            ->assertStatus(301)
+            ->assertRedirect('/en/news/articles?type=announcement');
+        $this->get('/ar/news/announcements?category=exams&page=3')
+            ->assertStatus(301)
+            ->assertRedirect('/ar/news/articles?type=announcement&category=exams');
+    }
+
+    public function test_news_listing_shows_news_and_announcements_with_a_type_filter(): void
+    {
+        $this->createPublishedArticle('news', 'campus-news', 'Campus News Story');
+        $this->createPublishedArticle('announcement', 'exam-announcement', 'Exam Schedule Announcement');
+
+        $this->get('/en/news/articles')
             ->assertOk()
-            ->assertSee('Priority Announcement')
-            ->assertSee('Regular Announcement')
-            ->assertDontSee('Colliding News Article');
+            ->assertSee('data-news-type-filter', false)
+            ->assertSee('Campus News Story')
+            ->assertSee('Exam Schedule Announcement');
+
+        $this->get('/en/news/articles?type=announcement')
+            ->assertOk()
+            ->assertSee('Exam Schedule Announcement')
+            ->assertDontSee('Campus News Story');
+
+        $this->get('/ar/news/articles?type=news')
+            ->assertOk()
+            ->assertSee('dir="rtl"', false)
+            ->assertSee('الإعلانات')
+            ->assertSee('Campus News Story')
+            ->assertDontSee('Exam Schedule Announcement');
+
+        $this->get('/en/news/agreements')
+            ->assertOk()
+            ->assertDontSee('data-news-type-filter', false);
     }
 
     public function test_announcements_list_renders_the_same_images_as_the_article_page(): void
@@ -164,22 +189,20 @@ final class NewsWorkflowTest extends TestCase
         $this->assertSame($coverArticle->imageUrl, $listed['Cover Thumbnail Announcement']->imageUrl);
         $this->assertSame($attachedArticle->imageUrl, $listed['Attachment Thumbnail Announcement']->imageUrl);
 
-        $this->get('/en/news/announcements?category=announcement-cover-thumb-announcement')
+        $this->get('/en/news/articles?type=announcement&category=announcement-cover-thumb-announcement')
             ->assertOk()
-            ->assertSee('data-announcement-card', false)
-            ->assertSee('block aspect-[5/9] overflow-hidden rounded-lg bg-slate-100', false)
-            ->assertSee('content-media-image h-full w-full object-cover object-center', false)
+            ->assertSee('data-news-card', false)
             ->assertSee('/downloads/files/announcement-cover-thumb.jpg', false)
             ->assertSee('Cover Thumbnail Announcement');
 
-        $this->get('/en/news/announcements?category=announcement-attachment-thumb-announcement')
+        $this->get('/en/news/articles?type=announcement&category=announcement-attachment-thumb-announcement')
             ->assertOk()
-            ->assertSee('data-announcement-card', false)
+            ->assertSee('data-news-card', false)
             ->assertSee('/downloads/files/announcement-attachment-thumb.jpg', false)
             ->assertSee('Attachment Thumbnail Announcement');
     }
 
-    public function test_news_uses_newest_legacy_source_order_and_excludes_announcements_from_articles(): void
+    public function test_news_uses_newest_legacy_source_order_and_the_news_filter_excludes_announcements(): void
     {
         $older = $this->createPublishedArticle('news', 'older-legacy-news', 'Older Legacy News');
         $older->forceFill(['legacy_source_table' => 'jx_categories', 'legacy_source_id' => 100, 'legacy_service_type' => 3])->save();
@@ -191,7 +214,7 @@ final class NewsWorkflowTest extends TestCase
         $listing = app(NewsServiceInterface::class)->listPublicArticles('en', ['categoryType' => 'news'], 1, 9);
 
         $this->assertSame(['Newer Legacy News', 'Older Legacy News'], $listing->items->pluck('title')->all());
-        $this->get('/en/news/articles')
+        $this->get('/en/news/articles?type=news')
             ->assertOk()
             ->assertSeeInOrder(['Newer Legacy News', 'Older Legacy News'])
             ->assertSee('data-news-grid="articles"', false)
@@ -248,50 +271,6 @@ final class NewsWorkflowTest extends TestCase
             ->assertRedirect('/en/news/'.$article->id);
 
         $this->get('/en/news/article?id=missing')->assertNotFound();
-    }
-
-    public function test_announcements_workflow_draft_preview_and_publish_are_isolated(): void
-    {
-        $news = app(NewsServiceInterface::class);
-        $workflow = app(CmsWorkflowServiceInterface::class);
-        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
-        $payload = $news->getEditablePayload('news.announcements');
-        $payload['translations']['en']['pageTitle'] = 'Published Announcement Center';
-        $payload['translations']['ar']['pageTitle'] = 'مركز الإعلانات المنشور';
-
-        $workflow->saveDraft('news.announcements', $payload, (int) $author->id);
-
-        $this->get('/en/news/announcements')
-            ->assertOk()
-            ->assertDontSee('Published Announcement Center');
-
-        $preview = $workflow->preview('news.announcements', 'en', (int) $author->id);
-        $this->get($preview->previewUrl)
-            ->assertOk()
-            ->assertSee('Published Announcement Center')
-            ->assertSee('Preview mode');
-
-        $this->assertTrue($workflow->publish('news.announcements', (int) $author->id));
-
-        $this->get('/en/news/announcements')
-            ->assertOk()
-            ->assertSee('Published Announcement Center');
-    }
-
-    public function test_manage_news_uses_curated_announcements_editor(): void
-    {
-        $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
-
-        Livewire::test(ManageNews::class)
-            ->call('loadTarget', 'news.announcements')
-            ->assertSet('data.target_key', 'news.announcements')
-            ->assertSee('مقدمة صفحة الإعلانات')
-            ->set('data.en_target.pageTitle', 'Curated Announcement Center')
-            ->call('save');
-
-        $draft = CmsDraft::query()->where('target_key', 'news.announcements')->latest('id')->firstOrFail();
-
-        $this->assertSame('Curated Announcement Center', $draft->payload_json['translations']['en']['pageTitle'] ?? null);
     }
 
     public function test_all_dedicated_event_routes_render_without_catch_all_fallback(): void

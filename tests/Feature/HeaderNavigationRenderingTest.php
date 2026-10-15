@@ -43,7 +43,8 @@ final class HeaderNavigationRenderingTest extends TestCase
             ->assertSee('Machine Learning in Pharmaceutical Quality Control')
             ->assertSee('Job Board')
             ->assertSee('Damascus Research Center')
-            ->assertSee('Announcements')
+            ->assertSee('href="/en/news/events-list"', false)
+            ->assertDontSee('href="/en/news/announcements"', false)
             ->assertSee('Media Gallery')
             // The research menu was given a flat dropdown with its own treatment
             // in "fix: repair public navigation and research profiles", which
@@ -74,7 +75,8 @@ final class HeaderNavigationRenderingTest extends TestCase
             ->assertSee('مجالات البحث')
             ->assertSee('لوحة الوظائف')
             ->assertSee('منشورات مركز دمشق للأبحاث')
-            ->assertSee('الإعلانات')
+            ->assertSee('href="/ar/news/events-list"', false)
+            ->assertDontSee('href="/ar/news/announcements"', false)
             ->assertSee('معرض الوسائط');
     }
 

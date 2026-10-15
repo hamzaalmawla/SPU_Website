@@ -110,7 +110,7 @@
         <div class="container">
             <div class="mb-12 flex flex-wrap items-center justify-between gap-4">
                 <h2 class="text-3xl font-bold text-[#202759] md:text-5xl">{{ $page['announcementsTitle'] ?? ($isAr ? 'الإعلانات' : 'Announcements') }}</h2>
-                <a href="/{{ $locale }}/news/announcements" class="rounded border border-slate-300 px-6 py-2 text-sm font-bold text-[#202759] transition-colors hover:bg-slate-50">{{ $page['announcementsViewAllLabel'] ?? ($isAr ? 'عرض كافة الإعلانات' : 'View All Announcements') }}</a>
+                <a href="/{{ $locale }}/news/articles?type=announcement" class="rounded border border-slate-300 px-6 py-2 text-sm font-bold text-[#202759] transition-colors hover:bg-slate-50">{{ $page['announcementsViewAllLabel'] ?? ($isAr ? 'عرض كافة الإعلانات' : 'View All Announcements') }}</a>
             </div>
 
             <div class="grid items-stretch gap-8 lg:grid-cols-12">
@@ -191,7 +191,7 @@
                     </div>
                 </a>
 
-                <a id="press-room" href="/{{ $locale }}/news/announcements" class="group relative flex flex-col items-center gap-6 overflow-hidden rounded-[32px] border border-slate-100 bg-white p-12 text-center text-spu-blue shadow-sm transition-all duration-500 hover:translate-y-[-8px] hover:bg-[#1e2a5e] hover:text-white hover:shadow-2xl">
+                <a id="press-room" href="/{{ $locale }}/news/articles?type=announcement" class="group relative flex flex-col items-center gap-6 overflow-hidden rounded-[32px] border border-slate-100 bg-white p-12 text-center text-spu-blue shadow-sm transition-all duration-500 hover:translate-y-[-8px] hover:bg-[#1e2a5e] hover:text-white hover:shadow-2xl">
                     <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 transition-colors group-hover:bg-white/20">
                         <img src="/images/icon-book-outline.svg" alt="" class="h-8 w-8" aria-hidden="true">
                     </div>

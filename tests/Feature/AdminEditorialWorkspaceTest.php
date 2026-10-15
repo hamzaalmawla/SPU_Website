@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
-use App\Filament\Pages\ManageAnnouncements;
 use App\Filament\Pages\ManageEvents;
 use App\Models\Cms\CmsDraft;
 use App\Models\User\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -69,20 +69,15 @@ final class AdminEditorialWorkspaceTest extends TestCase
         $this->assertTrue($readiness->isReady, json_encode($readiness->errors));
     }
 
-    public function test_announcements_workspace_links_to_canonical_filtered_records(): void
+    public function test_the_retired_announcements_page_has_no_admin_editor(): void
     {
+        // Announcements are written as news articles with the Announcement type
+        // and listed on the news page; their old standalone page and its editor
+        // were removed together.
         $this->actingAs($this->editor(), 'web');
 
-        $component = Livewire::test(ManageAnnouncements::class)
-            ->assertSet('data.target_key', 'news.announcements')
-            ->assertSee('ماذا تريد أن تدير؟')
-            ->assertSee('إدارة الإعلانات')
-            ->assertDontSee('Page / Subpage');
-        $links = $component->instance()->getNewsOperationalLinks();
-
-        $this->assertCount(1, $links);
-        $this->assertStringContainsString('tableFilters', $links[0]['url']);
-        $this->assertStringContainsString('category_type', $links[0]['url']);
+        $this->assertFalse(Route::has('filament.admin.pages.manage-announcements'));
+        $this->get('/admin/manage-announcements')->assertNotFound();
     }
 
     public function test_event_end_cannot_precede_event_start(): void

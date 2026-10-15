@@ -39,12 +39,6 @@ interface NewsServiceInterface
     public function buildPreviewSocietyEventsPage(string $locale, array $content): array;
 
     /** @return array<string, mixed> */
-    public function getAnnouncementsPageContent(string $locale): array;
-
-    /** @param array<string, mixed> $content @return array<string, mixed> */
-    public function buildPreviewAnnouncementsPage(string $locale, array $content): array;
-
-    /** @return array<string, mixed> */
     public function getEventsPageContent(string $locale): array;
 
     /** @param array<string, mixed> $content @return array<string, mixed> */
@@ -77,7 +71,7 @@ interface NewsServiceInterface
     public function getEditablePayload(string $targetKey): array;
 
     /**
-     * @param  array{category?: string, search?: string, categoryType?: string, excludeId?: int}  $filters
+     * @param  array{category?: string, search?: string, categoryType?: string, categoryTypes?: list<string>, excludeId?: int}  $filters
      */
     public function listPublicArticles(string $locale, array $filters = [], int $page = 1, int $perPage = 12): PaginatedResultDTO;
 

@@ -53,8 +53,8 @@ final class LegacyEntryPointContinuityTest extends TestCase
     private const SERVICE_LISTS = [
         '/index.php?page=list&ex=2&dir=items&lang=1&service=3' => '/ar/news',
         '/index.php?page=list&ex=2&dir=items&lang=2&service=3' => '/en/news',
-        '/index.php?page=list&ex=2&dir=items&lang=1&service=4' => '/ar/news/announcements',
-        '/index.php?page=list&ex=2&dir=items&lang=2&service=4' => '/en/news/announcements',
+        '/index.php?page=list&ex=2&dir=items&lang=1&service=4' => '/ar/news/articles?type=announcement',
+        '/index.php?page=list&ex=2&dir=items&lang=2&service=4' => '/en/news/articles?type=announcement',
         '/index.php?page=list&ex=2&dir=items&lang=1&service=5' => '/ar/about/partnerships',
         '/index.php?page=list&ex=2&dir=items&lang=2&service=5' => '/en/about/partnerships',
         '/index.php?page=list&ex=2&dir=items&lang=1&service=6' => '/ar/news',

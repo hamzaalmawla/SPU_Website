@@ -215,6 +215,13 @@ return [
     'type' => 'النوع',
     'research_themes' => 'مجالات البحث',
 
+    'news_types' => [
+        'label' => 'عرض',
+        'all' => 'الكل',
+        'news' => 'الأخبار',
+        'announcement' => 'الإعلانات',
+    ],
+
     'achievements' => [
         'eyebrow' => 'الشرف والتميز',
         'title' => 'الإنجازات والتكريمات',

@@ -184,8 +184,8 @@ final class LegacySeoContinuityAuditTest extends TestCase
     public function test_legacy_list_pages_resolve_with_their_paging_state(): void
     {
         $cases = [
-            '/index.php?page=list&ex=2&dir=items&lang=1&service=4&act=0' => '/ar/news/announcements',
-            '/index.php?CurrentPage=7&Last=1342&act=0&dir=items&ex=2&lang=2&page=list&service=4' => '/en/news/announcements',
+            '/index.php?page=list&ex=2&dir=items&lang=1&service=4&act=0' => '/ar/news/articles?type=announcement',
+            '/index.php?CurrentPage=7&Last=1342&act=0&dir=items&ex=2&lang=2&page=list&service=4' => '/en/news/articles?type=announcement',
             '/index.php?page=list&ex=2&dir=items&lang=1&service=3&act=0' => '/ar/news',
             '/index.php?First=6&Last=1113&act=12&dir=items&ex=2&lang=2&page=list&service=3' => '/en/news',
         ];

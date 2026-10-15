@@ -48,14 +48,20 @@ final class NewsController extends Controller
     public function articles(Request $request, string $locale): View
     {
         $page = $this->newsService->getArticlesPageContent($locale);
+        // News and announcements share one listing; ?type= narrows it. Anything
+        // else (missing, empty, unknown) means both.
+        $type = in_array($request->query('type'), ['news', 'announcement'], true) ? (string) $request->query('type') : null;
 
         return view('public.news.articles', $this->sharedPayload($request, $locale, '/news/articles', [
-            'articles' => $this->newsService->listPublicArticles($locale, [
+            'articles' => $this->newsService->listPublicArticles($locale, array_filter([
                 'category' => $request->query('category'),
-                'categoryType' => 'news',
+                'categoryType' => $type,
+                'categoryTypes' => $type === null ? ['news', 'announcement'] : null,
                 'search' => $request->query('search'),
-            ], max(1, (int) $request->query('page', 1)), 9),
-            'categories' => $this->newsService->getPublicCategories($locale, 'news'),
+            ], static fn (mixed $value): bool => $value !== null), max(1, (int) $request->query('page', 1)), 9),
+            'categories' => $this->newsService->getPublicCategories($locale, $type),
+            'typeFilter' => true,
+            'activeType' => $type,
             'activeCategory' => is_string($request->query('category')) ? (string) $request->query('category') : null,
             'search' => is_string($request->query('search')) ? (string) $request->query('search') : '',
             'page' => $page,
@@ -107,30 +113,21 @@ final class NewsController extends Controller
         ], $this->newsTrail($locale, $locale === 'ar' ? 'فعاليات المجتمع' : "Society's Events", '/news/society-events')));
     }
 
-    public function announcements(Request $request, string $locale): View
+    /**
+     * Announcements no longer have their own page: they are listed with the news
+     * at /news/articles. The old address was published and is linked from the
+     * old site's resolver and from menus, so it redirects to that listing with
+     * the announcements filter applied, keeping a category filter if one was set.
+     */
+    public function announcements(Request $request, string $locale): RedirectResponse
     {
-        $page = $this->newsService->getAnnouncementsPageContent($locale);
-        $featured = $this->newsService->getFeaturedArticles($locale, 1, 'announcement')->first();
-        $featuredId = $featured?->id;
+        $query = ['type' => 'announcement'];
 
-        return view('public.news.announcements', $this->sharedPayload($request, $locale, '/news/announcements', [
-            'page' => $page,
-            'featured' => $featured,
-            'announcements' => $this->newsService->listPublicArticles($locale, [
-                'category' => $request->query('category'),
-                'categoryType' => 'announcement',
-                'excludeId' => $featuredId,
-            ], max(1, (int) $request->query('page', 1)), 4),
-            'categories' => $this->newsService->getPublicCategories($locale, 'announcement'),
-            'activeCategory' => is_string($request->query('category')) ? (string) $request->query('category') : null,
-            'seo' => $this->seo(
-                $locale,
-                '/news/announcements',
-                (string) $page['pageTitle'],
-                (string) $page['pageDescription'],
-                (string) $page['heroImage'],
-            ),
-        ], $this->newsTrail($locale, $locale === 'ar' ? 'الإعلانات' : 'Announcements', '/news/announcements')));
+        if (is_string($request->query('category')) && $request->query('category') !== '') {
+            $query['category'] = (string) $request->query('category');
+        }
+
+        return redirect('/'.$locale.'/news/articles?'.http_build_query($query, '', '&', PHP_QUERY_RFC3986), 301);
     }
 
     public function events(Request $request, string $locale): View

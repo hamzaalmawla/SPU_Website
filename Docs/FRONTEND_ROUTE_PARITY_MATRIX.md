@@ -176,9 +176,9 @@ See `Docs/CURRENT_REMEDIATION_EXECUTION_CHECKLIST.md`.
 | Reference path | Route | CMS | Behavior | Assets | Tests | Overall | Primary gap |
 |---|---|---|---|---|---|---|---|
 | `/news/` | D | Y | Y | Y | Y | Complete | Dedicated bilingual News gateway. |
-| `/news/articles/` | D | Y | Y | Y | Y | Complete | CMS-managed bilingual shell, working listing controls/pagination, protected preview, canonical article sharing, and tests are implemented. |
+| `/news/articles/` | D | Y | Y | Y | Y | Complete | CMS-managed bilingual shell listing news and announcements together, with an All / News / Announcements type filter (`?type=`), category and search controls, pagination, protected preview, canonical article sharing, and tests. |
 | `/news/article/` | R | P | Y | Y | Y | Redirect | Reference `?id=` links resolve to canonical published article URLs. |
-| `/news/announcements/` | D | Y | Y | Y | Y | Complete | Dedicated filtered/paginated CMS-backed page. |
+| `/news/announcements/` | R | NA | Y | Y | Y | Redirect | Retired by product decision (2026-10-15): announcements are listed on `/news/articles`. 301 to `/news/articles?type=announcement`, keeping `category`. Its page editor (Manage Announcements) was removed; announcements are still written as news articles with the Announcement type. The menu item became Events (`/news/events-list`). |
 | `/news/events/` | D | Y | Y | Y | Y | Complete | Dedicated functional monthly calendar. |
 | `/news/events-list/` | D | Y | Y | Y | Y | Complete | Dedicated event catalog and filters. |
 | `/news/events-list/register/` | D | Y | Y | Y | Y | Complete | Event-bound validated registration flow. |

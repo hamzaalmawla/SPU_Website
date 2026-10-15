@@ -9,7 +9,6 @@ use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\News\NewsServiceInterface;
 use App\DTOs\Cms\CmsTargetDTO;
 use App\Exceptions\ConflictException;
-use App\Filament\Resources\NewsArticleResource;
 use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
 use Filament\Actions\Action;
@@ -178,7 +177,7 @@ class ManageNews extends Page implements HasForms
         $this->assertNewsTarget($targetKey);
         $this->activeTargetKey = $targetKey;
 
-        if (! in_array($targetKey, ['news.index', 'news.articles', 'news.agreements', 'news.society-events', 'news.announcements', 'news.events', 'news.gallery'], true)) {
+        if (! in_array($targetKey, ['news.index', 'news.articles', 'news.agreements', 'news.society-events', 'news.events', 'news.gallery'], true)) {
             $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey, (int) auth()->id());
             $this->form->fill([
                 'target_key' => $targetKey,
@@ -198,16 +197,6 @@ class ManageNews extends Page implements HasForms
                 'target_key' => $targetKey,
                 'ar_articles' => is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
                 'en_articles' => is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
-            ]);
-
-            return;
-        }
-
-        if ($targetKey === 'news.announcements') {
-            $this->form->fill([
-                'target_key' => $targetKey,
-                'ar_target' => is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
-                'en_target' => is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
             ]);
 
             return;
@@ -361,7 +350,7 @@ class ManageNews extends Page implements HasForms
             return isset($options[$targetKey]) ? [$targetKey => $options[$targetKey]] : [];
         }
 
-        return array_diff_key($options, array_flip(['news.article', 'news.announcements', 'news.events']));
+        return array_diff_key($options, array_flip(['news.article', 'news.events']));
     }
 
     private function currentTargetKey(): string
@@ -392,15 +381,6 @@ class ManageNews extends Page implements HasForms
                 'translations' => [
                     'ar' => $arabic,
                     'en' => $english,
-                ],
-            ];
-        }
-
-        if (($state['target_key'] ?? null) === 'news.announcements') {
-            return [
-                'translations' => [
-                    'ar' => is_array($state['ar_target'] ?? null) ? $this->normalizeAnnouncementsPayload($state['ar_target']) : [],
-                    'en' => is_array($state['en_target'] ?? null) ? $this->normalizeAnnouncementsPayload($state['en_target']) : [],
                 ],
             ];
         }
@@ -446,7 +426,6 @@ class ManageNews extends Page implements HasForms
     /** @return array<int, Section> */
     private function payloadFields(string $locale): array
     {
-        $announcementPrefix = $locale.'_target';
         $eventsPrefix = $locale.'_events';
         $galleryPrefix = $locale.'_gallery';
         $indexPrefix = $locale.'_index';
@@ -473,25 +452,6 @@ class ManageNews extends Page implements HasForms
                 ])
                 ->columns(2)
                 ->visible(fn (): bool => in_array($this->targetKeyForSchema(), ['news.articles', 'news.agreements', 'news.society-events'], true)),
-            Section::make(__('admin.editorial_workspace.announcements.page_intro'))
-                ->schema([
-                    TextInput::make($announcementPrefix.'.pageTitle')->label(__('admin.editorial_workspace.fields.page_title'))->required()->maxLength(160),
-                    Textarea::make($announcementPrefix.'.pageDescription')->label(__('admin.editorial_workspace.fields.page_summary'))->required()->rows(2)->columnSpanFull(),
-                    MediaPicker::image($announcementPrefix.'.heroImage', __('admin.editorial_workspace.fields.hero_image'), true),
-                ])
-                ->columns(2)
-                ->visible(fn (): bool => $this->targetKeyForSchema() === 'news.announcements'),
-            Section::make(__('admin.editorial_workspace.announcements.interface_text'))
-                ->schema([
-                    TextInput::make($announcementPrefix.'.featuredLabel')->label(__('admin.editorial_workspace.fields.featured_label'))->required()->maxLength(120),
-                    TextInput::make($announcementPrefix.'.allCategoriesLabel')->label(__('admin.editorial_workspace.fields.all_categories_label'))->required()->maxLength(120),
-                    TextInput::make($announcementPrefix.'.readMoreLabel')->label(__('admin.editorial_workspace.fields.read_more_label'))->required()->maxLength(120),
-                    TextInput::make($announcementPrefix.'.downloadLabel')->label(__('admin.editorial_workspace.fields.download_label'))->required()->maxLength(120),
-                    Textarea::make($announcementPrefix.'.emptyState')->label(__('admin.editorial_workspace.fields.empty_state'))->required()->rows(2)->columnSpanFull(),
-                ])
-                ->columns(2)
-                ->collapsed()
-                ->visible(fn (): bool => $this->targetKeyForSchema() === 'news.announcements'),
             Section::make('Events Catalog')
                 ->schema([
                     TextInput::make($eventsPrefix.'.title')->label('Page Title')->required()->maxLength(160),
@@ -937,40 +897,12 @@ class ManageNews extends Page implements HasForms
         }
     }
 
-    /** @return list<array{label: string, description: string, url: string}> */
-    public function getNewsOperationalLinks(): array
-    {
-        if ($this->targetKeyForSchema() !== 'news.announcements') {
-            return [];
-        }
-
-        return [
-            [
-                'label' => __('admin.editorial_workspace.announcements.records'),
-                'description' => __('admin.editorial_workspace.announcements.records_help'),
-                'url' => NewsArticleResource::getUrl('index', [
-                    'tableFilters' => ['category_type' => ['value' => 'announcement']],
-                ]),
-            ],
-        ];
-    }
-
     /** @return array<string, mixed> */
     private function normalizeIndexPayload(array $payload): array
     {
         $payload['title'] = (string) ($payload['pageTitle'] ?? ($payload['title'] ?? ''));
         $payload['headline'] = (string) ($payload['heroTitle'] ?? ($payload['headline'] ?? ''));
         $payload['summary'] = (string) ($payload['pageDescription'] ?? ($payload['summary'] ?? ''));
-
-        return $payload;
-    }
-
-    /** @return array<string, mixed> */
-    private function normalizeAnnouncementsPayload(array $payload): array
-    {
-        $payload['title'] = (string) ($payload['pageTitle'] ?? '');
-        $payload['headline'] = (string) ($payload['pageTitle'] ?? '');
-        $payload['summary'] = (string) ($payload['pageDescription'] ?? '');
 
         return $payload;
     }

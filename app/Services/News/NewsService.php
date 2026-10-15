@@ -77,16 +77,6 @@ final class NewsService implements NewsServiceInterface
         return $this->normalizeArticlesPageContent($content, $locale);
     }
 
-    public function getAnnouncementsPageContent(string $locale): array
-    {
-        return $this->publishedLocalizedPayload('news.announcements', $locale) ?? $this->announcementsPageFallback($locale);
-    }
-
-    public function buildPreviewAnnouncementsPage(string $locale, array $content): array
-    {
-        return $this->normalizeAnnouncementsPageContent($content, $locale);
-    }
-
     public function getEventsPageContent(string $locale): array
     {
         return $this->normalizeEventsPageContent($this->publishedLocalizedPayload('news.events', $locale) ?? [], $locale);
@@ -193,7 +183,7 @@ final class NewsService implements NewsServiceInterface
 
     public function getEditablePayload(string $targetKey): array
     {
-        if (! in_array($targetKey, ['news.index', 'news.articles', 'news.agreements', 'news.society-events', 'news.announcements', 'news.events', 'news.gallery'], true)) {
+        if (! in_array($targetKey, ['news.index', 'news.articles', 'news.agreements', 'news.society-events', 'news.events', 'news.gallery'], true)) {
             throw new \InvalidArgumentException('Unsupported news target.');
         }
 
@@ -213,7 +203,6 @@ final class NewsService implements NewsServiceInterface
             'news.articles' => fn (string $locale): array => $this->articlesPageFallback($locale),
             'news.agreements' => fn (string $locale): array => $this->agreementsPageFallback($locale),
             'news.society-events' => fn (string $locale): array => $this->societyEventsPageFallback($locale),
-            'news.announcements' => fn (string $locale): array => $this->announcementsPageFallback($locale),
             'news.events' => fn (string $locale): array => $this->eventsPageFallback($locale),
             'news.gallery' => fn (string $locale): array => $this->galleryPageFallback($locale),
         };
@@ -248,7 +237,13 @@ final class NewsService implements NewsServiceInterface
                 ->when(is_string($filters['categoryType'] ?? null) && $filters['categoryType'] !== '', function (Builder $query) use ($filters): void {
                     $query->whereHas('category', fn (Builder $categoryQuery): Builder => $categoryQuery->where('type', $filters['categoryType']));
                 })
-                ->when(($filters['categoryType'] ?? null) === 'news', fn (Builder $query): Builder => $query->whereNotIn('slug', $this->agreementSeedSlugs()))
+                ->when(is_array($filters['categoryTypes'] ?? null) && $filters['categoryTypes'] !== [], function (Builder $query) use ($filters): void {
+                    $query->whereHas('category', fn (Builder $categoryQuery): Builder => $categoryQuery->whereIn('type', $filters['categoryTypes']));
+                })
+                ->when(
+                    ($filters['categoryType'] ?? null) === 'news' || in_array('news', (array) ($filters['categoryTypes'] ?? []), true),
+                    fn (Builder $query): Builder => $query->whereNotIn('slug', $this->agreementSeedSlugs()),
+                )
                 ->when(is_int($filters['excludeId'] ?? null), fn (Builder $query): Builder => $query->whereKeyNot($filters['excludeId']))
                 ->when(is_string($filters['search'] ?? null) && trim((string) $filters['search']) !== '', function (Builder $query) use ($filters): void {
                     $search = trim((string) $filters['search']);
@@ -838,7 +833,6 @@ final class NewsService implements NewsServiceInterface
             'news.articles' => $this->normalizeArticlesPageContent($localized, $locale),
             'news.agreements' => $this->normalizeArticlesPageContent($localized, $locale),
             'news.society-events' => $this->normalizeArticlesPageContent($localized, $locale),
-            'news.announcements' => $this->normalizeAnnouncementsPageContent($localized, $locale),
             'news.events' => $this->normalizeEventsPageContent($localized, $locale),
             'news.gallery' => $this->normalizeGalleryPageContent($localized, $locale),
             default => $this->normalizeIndexPageContent($localized, $locale),
@@ -883,23 +877,6 @@ final class NewsService implements NewsServiceInterface
             'emptyAnnouncements' => $isAr ? 'لا توجد إعلانات منشورة حالياً.' : 'No announcements are currently published.',
             'newsFallbackCategory' => $isAr ? 'أخبار' : 'News',
             'universityNewsFallbackCategory' => $isAr ? 'أخبار الجامعة' : 'University News',
-        ], $locale);
-    }
-
-    /** @return array<string, mixed> */
-    private function announcementsPageFallback(string $locale): array
-    {
-        $isAr = $locale === 'ar';
-
-        return $this->normalizeAnnouncementsPageContent([
-            'pageTitle' => $isAr ? 'الإعلانات' : 'Announcements',
-            'pageDescription' => $isAr ? 'تابع الإعلانات الأكاديمية والإدارية الرسمية للجامعة.' : 'Follow official academic and administrative university announcements.',
-            'heroImage' => '/images/slider-1.webp',
-            'featuredLabel' => $isAr ? 'إعلان مميز' : 'Priority Announcement',
-            'allCategoriesLabel' => $isAr ? 'كل التصنيفات' : 'All Categories',
-            'readMoreLabel' => $isAr ? 'قراءة الإعلان' : 'Read Full Announcement',
-            'downloadLabel' => $isAr ? 'تحميل المرفق' : 'Download Attachment',
-            'emptyState' => $isAr ? 'لا توجد إعلانات منشورة حالياً.' : 'No announcements are currently published.',
         ], $locale);
     }
 
@@ -1005,34 +982,6 @@ final class NewsService implements NewsServiceInterface
 
         $fallback['heroImage'] = $this->resolvedContentImage($fallback['heroImage'], '/images/slider-1.webp');
         $fallback['seoImage'] = $this->resolvedContentImage($fallback['seoImage'], '/images/slider-1.webp');
-
-        return $fallback;
-    }
-
-    /** @param array<string, mixed> $content @return array<string, mixed> */
-    private function normalizeAnnouncementsPageContent(array $content, string $locale): array
-    {
-        $fallback = [
-            'pageTitle' => $locale === 'ar' ? 'الإعلانات' : 'Announcements',
-            'pageDescription' => '',
-            'heroImage' => '/images/slider-1.webp',
-            'featuredLabel' => $locale === 'ar' ? 'إعلان مميز' : 'Priority Announcement',
-            'allCategoriesLabel' => $locale === 'ar' ? 'كل التصنيفات' : 'All Categories',
-            'readMoreLabel' => $locale === 'ar' ? 'قراءة الإعلان' : 'Read Full Announcement',
-            'downloadLabel' => $locale === 'ar' ? 'تحميل المرفق' : 'Download Attachment',
-            'emptyState' => $locale === 'ar' ? 'لا توجد إعلانات منشورة حالياً.' : 'No announcements are currently published.',
-        ];
-
-        foreach ($fallback as $key => $value) {
-            $candidate = $content[$key] ?? $value;
-            $fallback[$key] = is_string($candidate) || is_numeric($candidate) ? (string) $candidate : $value;
-        }
-
-        $fallback['heroImage'] = $this->resolvedContentImage($fallback['heroImage'], '/images/slider-1.webp');
-
-        $fallback['title'] = $fallback['pageTitle'];
-        $fallback['headline'] = $fallback['pageTitle'];
-        $fallback['summary'] = $fallback['pageDescription'];
 
         return $fallback;
     }

@@ -3,7 +3,9 @@
 @section('content')
     @php
         $isAr = $locale === 'ar';
-        $articleQuery = array_filter(['category' => $activeCategory, 'search' => $search], fn (mixed $value): bool => is_string($value) && $value !== '');
+        $typeFilter = (bool) ($typeFilter ?? false);
+        $activeType = $typeFilter ? ($activeType ?? null) : null;
+        $articleQuery = array_filter(['type' => $activeType, 'category' => $activeCategory, 'search' => $search], fn (mixed $value): bool => is_string($value) && $value !== '');
         $listingPath = $listingPath ?? '/news/articles';
         $articlePageUrl = fn (int $pageNumber): string => '/'.$locale.$listingPath.(($query = [...$articleQuery, ...($pageNumber > 1 ? ['page' => $pageNumber] : [])]) !== [] ? '?'.http_build_query($query, '', '&', PHP_QUERY_RFC3986) : '');
     @endphp
@@ -34,16 +36,31 @@
             @endif
             <form method="GET" action="/{{ $locale }}{{ $listingPath }}" role="search" class="flex flex-wrap items-end justify-start gap-2">
                 <label class="min-w-[240px] flex-1"><span class="sr-only">{{ $page['searchLabel'] }}</span><input type="search" name="search" value="{{ $search }}" placeholder="{{ $page['searchPlaceholder'] }}" class="h-10 w-full rounded-[5px] border border-slate-200 px-4 text-sm focus:border-spu-blue focus:outline-none focus:ring-2 focus:ring-spu-blue/15"></label>
+                @if ($activeType)<input type="hidden" name="type" value="{{ $activeType }}">@endif
                 @if ($activeCategory)<input type="hidden" name="category" value="{{ $activeCategory }}">@endif
                 <button class="h-10 rounded-[5px] bg-spu-blue px-5 text-xs font-bold text-white" type="submit">{{ $page['searchAction'] }}</button>
             </form>
+            @if ($typeFilter)
+                {{-- Switching type clears the category: categories belong to one type. --}}
+                <form method="GET" action="/{{ $locale }}{{ $listingPath }}" class="mt-4 flex flex-wrap items-center justify-start gap-2" data-news-type-filter aria-label="{{ __('public.news_types.label') }}">
+                    @if ($search !== '')<input type="hidden" name="search" value="{{ $search }}">@endif
+                    @foreach (['' => 'all', 'news' => 'news', 'announcement' => 'announcement'] as $typeValue => $typeKey)
+                        @php($isActiveType = ($activeType ?? '') === $typeValue)
+                        <button name="type" value="{{ $typeValue }}" type="submit" @if ($isActiveType) aria-pressed="true" @else aria-pressed="false" @endif class="rounded-full border px-5 py-2 text-xs font-bold transition {{ $isActiveType ? 'border-spu-blue bg-spu-blue text-white' : 'border-slate-200 bg-white text-spu-blue hover:border-spu-blue' }}">{{ __('public.news_types.'.$typeKey) }}</button>
+                    @endforeach
+                </form>
+            @endif
+            {{-- One category is no choice at all; keep the row only when it filters something (or one is already applied). --}}
+            @if (count($categories) > 1 || $activeCategory !== null)
             <form method="GET" action="/{{ $locale }}{{ $listingPath }}" class="mt-4 flex flex-wrap items-center justify-start gap-2">
+                @if ($activeType)<input type="hidden" name="type" value="{{ $activeType }}">@endif
                 @if ($search !== '')<input type="hidden" name="search" value="{{ $search }}">@endif
                 <button name="category" value="" class="rounded-[5px] border px-4 py-2 text-[11px] font-bold transition {{ $activeCategory === null ? 'border-spu-red bg-spu-red text-white' : 'border-slate-200 bg-white text-spu-blue hover:border-spu-blue' }}" type="submit">{{ $page['allLabel'] }}</button>
                 @foreach ($categories as $category)
                     <button name="category" value="{{ $category->slug }}" class="rounded-[5px] border px-4 py-2 text-[11px] font-bold transition {{ $activeCategory === $category->slug ? 'border-spu-red bg-spu-red text-white' : 'border-slate-200 bg-white text-spu-blue hover:border-spu-blue' }}" type="submit">{{ $category->name }}</button>
                 @endforeach
             </form>
+            @endif
 
             <div data-news-grid="articles" class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 xl:gap-7">
                 @forelse ($articles->items as $article)

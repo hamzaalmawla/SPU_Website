@@ -296,7 +296,7 @@ class NavigationSeeder extends Seeder
             ['label' => 'الأخبار', 'target_kind' => 'url', 'url' => '/ar/news/articles'],
             ['label' => 'الاتفاقيات ومذكرات التفاهم', 'target_kind' => 'url', 'url' => '/ar/news/agreements'],
             ['label' => 'فعاليات المجتمع', 'target_kind' => 'url', 'url' => '/ar/news/society-events'],
-            ['label' => 'الإعلانات', 'target_kind' => 'url', 'url' => '/ar/news/announcements'],
+            ['label' => 'الفعاليات', 'target_kind' => 'url', 'url' => '/ar/news/events-list'],
             ['label' => 'تقويم الفعاليات', 'target_kind' => 'url', 'url' => '/ar/news/events'],
             ['label' => 'معرض الوسائط', 'target_kind' => 'url', 'url' => '/ar/news/gallery'],
         ]];
@@ -304,7 +304,7 @@ class NavigationSeeder extends Seeder
             ['label' => 'News', 'target_kind' => 'url', 'url' => '/en/news/articles'],
             ['label' => 'Agreements and Memoranda of Understanding', 'target_kind' => 'url', 'url' => '/en/news/agreements'],
             ['label' => "Society's Events", 'target_kind' => 'url', 'url' => '/en/news/society-events'],
-            ['label' => 'Announcements', 'target_kind' => 'url', 'url' => '/en/news/announcements'],
+            ['label' => 'Events', 'target_kind' => 'url', 'url' => '/en/news/events-list'],
             ['label' => 'Events Calendar', 'target_kind' => 'url', 'url' => '/en/news/events'],
             ['label' => 'Media Gallery', 'target_kind' => 'url', 'url' => '/en/news/gallery'],
         ]];

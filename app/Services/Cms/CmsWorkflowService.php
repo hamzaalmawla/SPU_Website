@@ -445,7 +445,15 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
                 continue;
             }
 
-            $target = $this->requireTarget($draft->target_key);
+            // A target can be retired (news.announcements was) while a scheduled
+            // draft for it still exists. Skip it rather than throw, which would
+            // abort the run and leave every later draft unpublished.
+            $target = $this->targetRegistry->find($draft->target_key);
+
+            if (! $target instanceof CmsTargetDTO || ! $target->supportsDraftWorkflow) {
+                continue;
+            }
+
             $userId = $draft->approved_by !== null ? (int) $draft->approved_by : (int) $draft->created_by;
 
             try {

@@ -36,7 +36,8 @@ final class LegacyFunctionalRouteQueryResolver implements LegacyQueryModuleResol
      * Services 3 and 4 have no row in that file on purpose — their records are
      * per-article and belong to LegacyNewsQueryResolver — but their list pages
      * are still section indexes, and the new site has a dedicated route for
-     * each: /news for news, /news/announcements for announcements.
+     * each: /news for news, and the news listing filtered to announcements
+     * (announcements no longer have a page of their own).
      *
      * Both language spellings are listed because the old site served lang=1
      * (Arabic) and lang=2 (English) at 200 for every one of them; resolve()
@@ -53,8 +54,8 @@ final class LegacyFunctionalRouteQueryResolver implements LegacyQueryModuleResol
         // Old root content-list pages, linked from the old homepage.
         'dir=items&ex=2&lang=1&page=list&service=3' => ['source_id' => 3, 'path' => '/news'],
         'dir=items&ex=2&lang=2&page=list&service=3' => ['source_id' => 3, 'path' => '/news'],
-        'dir=items&ex=2&lang=1&page=list&service=4' => ['source_id' => 4, 'path' => '/news/announcements'],
-        'dir=items&ex=2&lang=2&page=list&service=4' => ['source_id' => 4, 'path' => '/news/announcements'],
+        'dir=items&ex=2&lang=1&page=list&service=4' => ['source_id' => 4, 'path' => '/news/articles?type=announcement'],
+        'dir=items&ex=2&lang=2&page=list&service=4' => ['source_id' => 4, 'path' => '/news/articles?type=announcement'],
         'dir=items&ex=2&lang=1&page=list&service=5' => ['source_id' => 5, 'path' => '/about/partnerships'],
         'dir=items&ex=2&lang=2&page=list&service=5' => ['source_id' => 5, 'path' => '/about/partnerships'],
         'dir=items&ex=2&lang=1&page=list&service=6' => ['source_id' => 6, 'path' => '/news'],

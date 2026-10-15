@@ -169,10 +169,6 @@ final class PreviewController extends Controller
             return $this->renderNewsSocietyEventsPreview($locale, $preview, $localizedContent);
         }
 
-        if ($targetKey === 'news.announcements') {
-            return $this->renderNewsAnnouncementsPreview($locale, $preview, $localizedContent);
-        }
-
         if ($targetKey === 'news.events') {
             return $this->renderNewsEventsPreview($locale, $preview, $localizedContent);
         }
@@ -956,40 +952,6 @@ final class PreviewController extends Controller
                 'og_title' => (string) ($page['pageTitle'] ?? ''),
                 'og_description' => (string) ($page['pageDescription'] ?? ''),
                 'og_image' => (string) ($page['heroImage'] ?? ''),
-            ]),
-            'preview' => $preview,
-        ]);
-    }
-
-    /** @param array<string, mixed> $content */
-    private function renderNewsAnnouncementsPreview(string $locale, PreviewDTO $preview, array $content): View
-    {
-        $page = $this->newsService->buildPreviewAnnouncementsPage($locale, $content);
-        $featured = $this->newsService->getFeaturedArticles($locale, 1, 'announcement')->first();
-
-        return view('public.news.announcements', [
-            'locale' => $locale,
-            'direction' => $locale === 'ar' ? 'rtl' : 'ltr',
-            'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $locale.'/news/announcements'),
-            'settings' => $this->settingsService->getPublicSettings($locale),
-            'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale),
-            'isPreview' => true,
-            'page' => $page,
-            'featured' => $featured,
-            'announcements' => $this->newsService->listPublicArticles($locale, [
-                'categoryType' => 'announcement',
-                'excludeId' => $featured?->id,
-            ], 1, 4),
-            'categories' => $this->newsService->getPublicCategories($locale, 'announcement'),
-            'activeCategory' => null,
-            'seo' => $this->seoMetadataService->buildFallback($locale, [
-                'path' => '/'.$locale.'/news/announcements',
-                'locale_paths' => ['ar' => '/ar/news/announcements', 'en' => '/en/news/announcements'],
-                'title' => (string) $page['pageTitle'],
-                'meta_description' => (string) $page['pageDescription'],
-                'og_title' => (string) $page['pageTitle'],
-                'og_description' => (string) $page['pageDescription'],
-                'og_image' => (string) $page['heroImage'],
             ]),
             'preview' => $preview,
         ]);
