@@ -159,6 +159,9 @@ Not acceptable:
 
 - 5 failed attempts → lock account
 - Locked accounts cannot log in even with correct password
+- A lock set by failed attempts lifts itself after `auth.lockout.decay_minutes` (`AUTH_LOCKOUT_DECAY_MINUTES`, default 30; `0` keeps it). A lock set by an administrator never expires. Lifting a lock resets the failure count. `php artisan auth:unlock {email}` lifts one from the console
+- Every rejected sign-in (unknown email, locked, no admin role, wrong password) runs one password hash inside the `auth.timebox_duration` timebox, so response time does not reveal which emails exist
+- `admin-login` throttles per account (5/min) and per client IP (20/min)
 - Role-based access enforced via Gates and Policies
 - 3 roles:
   - super_admin

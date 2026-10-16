@@ -35,15 +35,17 @@
                         <fieldset @disabled(!empty($isPreview))>
                         <input type="text" name="website" value="" tabindex="-1" autocomplete="off" class="sr-only" aria-label="Website">
 
+                        <p class="text-xs text-slate-500">{{ __('public.required_fields_note') }}</p>
+
                         <div class="grid gap-6 md:grid-cols-2">
                             <div class="space-y-2">
-                                <label for="contact-name" class="text-sm font-medium text-slate-600">{{ $contact->form['fields']['name']['label'] }}</label>
+                                <label for="contact-name" class="text-sm font-medium text-slate-600">{{ $contact->form['fields']['name']['label'] }}<x-public.required-mark /></label>
                                 <input id="contact-name" name="name" type="text" value="{{ old('name') }}" required aria-required="true" aria-invalid="{{ $errors->has('name') ? 'true' : 'false' }}" @if($errors->has('name')) aria-describedby="contact-name-error" @endif
                                     class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 outline-none transition-all focus:border-spu-red/50 focus:ring-4 focus:ring-spu-red/5">
                                 @error('name')<p id="contact-name-error" class="text-xs font-bold text-spu-red" role="alert">{{ $message }}</p>@enderror
                             </div>
                             <div class="space-y-2">
-                                <label for="contact-email" class="text-sm font-medium text-slate-600">{{ $contact->form['fields']['email']['label'] }}</label>
+                                <label for="contact-email" class="text-sm font-medium text-slate-600">{{ $contact->form['fields']['email']['label'] }}<x-public.required-mark /></label>
                                 <input id="contact-email" name="email" type="email" value="{{ old('email') }}" required aria-required="true" aria-invalid="{{ $errors->has('email') ? 'true' : 'false' }}" @if($errors->has('email')) aria-describedby="contact-email-error" @endif
                                     class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 outline-none transition-all focus:border-spu-red/50 focus:ring-4 focus:ring-spu-red/5">
                                 @error('email')<p id="contact-email-error" class="text-xs font-bold text-spu-red" role="alert">{{ $message }}</p>@enderror
@@ -51,14 +53,14 @@
                         </div>
 
                         <div class="space-y-2">
-                            <label for="contact-subject" class="text-sm font-medium text-slate-600">{{ $contact->form['fields']['subject']['label'] }}</label>
+                            <label for="contact-subject" class="text-sm font-medium text-slate-600">{{ $contact->form['fields']['subject']['label'] }}<x-public.required-mark /></label>
                             <input id="contact-subject" name="subject" type="text" value="{{ old('subject', $prefilledSubject ?? '') }}" required aria-required="true" aria-invalid="{{ $errors->has('subject') ? 'true' : 'false' }}" @if($errors->has('subject')) aria-describedby="contact-subject-error" @endif
                                 class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 outline-none transition-all focus:border-spu-red/50 focus:ring-4 focus:ring-spu-red/5">
                             @error('subject')<p id="contact-subject-error" class="text-xs font-bold text-spu-red" role="alert">{{ $message }}</p>@enderror
                         </div>
 
                         <div class="space-y-2">
-                            <label for="contact-message" class="text-sm font-medium text-slate-600">{{ $contact->form['fields']['message']['label'] }}</label>
+                            <label for="contact-message" class="text-sm font-medium text-slate-600">{{ $contact->form['fields']['message']['label'] }}<x-public.required-mark /></label>
                             <textarea id="contact-message" name="message" rows="6" required aria-required="true" aria-invalid="{{ $errors->has('message') ? 'true' : 'false' }}" @if($errors->has('message')) aria-describedby="contact-message-error" @endif
                                 class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 outline-none transition-all focus:border-spu-red/50 focus:ring-4 focus:ring-spu-red/5">{{ old('message') }}</textarea>
                             @error('message')<p id="contact-message-error" class="text-xs font-bold text-spu-red" role="alert">{{ $message }}</p>@enderror

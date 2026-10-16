@@ -16,7 +16,7 @@ class ListMediaAssets extends ListRecords
     {
         return [
             Actions\Action::make('batchUpload')
-                ->label('Batch Upload Images')
+                ->label(__('admin_resources.media_asset.batch_upload_images'))
                 ->icon('heroicon-o-photo')
                 ->color('primary')
                 ->url(MediaAssetResource::getUrl('batch-upload')),

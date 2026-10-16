@@ -190,14 +190,14 @@ final class DynamicFormSubmissionService implements DynamicFormSubmissionService
 
         if ($event instanceof NewsEventDTO) {
             if (! $event->isRegisterable || $event->formId !== $data->formId) {
-                throw ValidationException::withMessages(['event_id' => ['The selected event is not open for this registration form.']]);
+                throw ValidationException::withMessages(['event_id' => [__('forms.errors.event_not_open', [], $data->locale)]]);
             }
         } elseif ($event instanceof ResearchConferenceRegistrationDTO) {
             if ($event->formId !== $data->formId) {
-                throw ValidationException::withMessages(['event_id' => ['The selected event is not open for this registration form.']]);
+                throw ValidationException::withMessages(['event_id' => [__('forms.errors.event_not_open', [], $data->locale)]]);
             }
         } else {
-            throw ValidationException::withMessages(['event_id' => ['The selected event is not open for this registration form.']]);
+            throw ValidationException::withMessages(['event_id' => [__('forms.errors.event_not_open', [], $data->locale)]]);
         }
 
         $email = is_string($data->payload['email'] ?? null) ? mb_strtolower(trim($data->payload['email'])) : '';
@@ -208,7 +208,7 @@ final class DynamicFormSubmissionService implements DynamicFormSubmissionService
 
         if ($registrations->contains(fn (DynamicFormSubmission $submission): bool => ($submission->payload_json['_context']['source'] ?? null) === $data->eventSource
             && ($submission->payload_json['_context']['event_id'] ?? null) === $event->id)) {
-            throw ValidationException::withMessages(['email' => ['This email is already registered for the selected event.']]);
+            throw ValidationException::withMessages(['email' => [__('forms.errors.already_registered', [], $data->locale)]]);
         }
 
         if ($event instanceof NewsEventDTO) {
@@ -220,7 +220,7 @@ final class DynamicFormSubmissionService implements DynamicFormSubmissionService
                 ->count();
 
             if ($event->capacity !== null && $event->registered + $submittedCount >= $event->capacity) {
-                throw ValidationException::withMessages(['event_id' => ['The selected event has reached capacity.']]);
+                throw ValidationException::withMessages(['event_id' => [__('forms.errors.event_full', [], $data->locale)]]);
             }
         }
 
@@ -239,7 +239,7 @@ final class DynamicFormSubmissionService implements DynamicFormSubmissionService
             : null;
 
         if (! $job instanceof CampusLifeJobDTO || ! $job->applicationEligible || $data->jobId === null || $job->id !== $data->jobId) {
-            throw ValidationException::withMessages(['job_slug' => ['The selected job is not open for applications.']]);
+            throw ValidationException::withMessages(['job_slug' => [__('forms.errors.job_not_open', [], $data->locale)]]);
         }
 
         return [
@@ -362,7 +362,7 @@ final class DynamicFormSubmissionService implements DynamicFormSubmissionService
                 ['name' => 'requestType', 'type' => 'select', 'required' => true, 'options' => [['value' => 'suggestion'], ['value' => 'complaint'], ['value' => 'inquiry']]],
                 ['name' => 'subject', 'type' => 'text', 'required' => true, 'maxLength' => 180],
                 ['name' => 'message', 'type' => 'textarea', 'required' => true, 'maxLength' => 5000],
-                ['name' => 'attachment', 'type' => 'file', 'required' => false, 'mimes' => 'pdf,jpg,jpeg,png', 'maxKilobytes' => 5120],
+                ['name' => 'attachment', 'type' => 'file', 'required' => false, 'mimes' => 'pdf,jpg,jpeg,png,webp', 'maxKilobytes' => 5120],
                 ['name' => 'consent', 'type' => 'checkbox', 'required' => true],
             ],
         ];

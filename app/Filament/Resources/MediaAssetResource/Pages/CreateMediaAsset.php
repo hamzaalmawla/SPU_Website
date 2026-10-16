@@ -65,7 +65,7 @@ class CreateMediaAsset extends CreateRecord
                 $disk->delete($filePath);
 
                 Notification::make()
-                    ->title('Media asset uploaded successfully')
+                    ->title(__('admin_resources.media_asset.media_asset_uploaded_successfully'))
                     ->success()
                     ->send();
 
@@ -74,8 +74,8 @@ class CreateMediaAsset extends CreateRecord
         }
 
         Notification::make()
-            ->title('Media upload failed')
-            ->body('The uploaded file could not be processed by the media service.')
+            ->title(__('admin_resources.media_asset.media_upload_failed'))
+            ->body(__('admin_resources.media_asset.the_uploaded_file_could_not_be_processed_by_the_media_servic'))
             ->danger()
             ->send();
 

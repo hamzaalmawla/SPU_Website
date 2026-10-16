@@ -310,7 +310,7 @@ Route::prefix(AdminPath::prefix())
 */
 Route::prefix('webhook')
     ->name('webhook.')
-    ->middleware('verify.webhook')
+    ->middleware(['throttle:webhook', 'verify.webhook'])
     ->group(function (): void {
         Route::post('/incoming', function (Request $request) {
             return response()->json(['status' => 'received'], 200);

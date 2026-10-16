@@ -59,6 +59,16 @@ class PageResource extends Resource
         return Gate::allows('viewAny', Page::class);
     }
 
+    public static function getModelLabel(): string
+    {
+        return __('admin_resources.page.model');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('admin_resources.page.plural_model');
+    }
+
     public static function getNavigationGroup(): ?string
     {
         return __('admin.navigation.groups.content');
@@ -96,7 +106,7 @@ class PageResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('translations_title')
-                    ->label('Title')
+                    ->label(__('admin_resources.page.title'))
                     ->getStateUsing(function (Page $record): string {
                         $translation = $record->translations->first();
 
@@ -109,11 +119,11 @@ class PageResource extends Resource
                     }),
 
                 TextColumn::make('slug')
-                    ->label('Slug')
+                    ->label(__('admin_resources.page.slug'))
                     ->limit(40),
 
                 TextColumn::make('status')
-                    ->label('Status')
+                    ->label(__('admin_resources.page.status'))
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'published' => 'success',
@@ -123,31 +133,31 @@ class PageResource extends Resource
                     }),
 
                 TextColumn::make('parent.slug')
-                    ->label('Parent')
+                    ->label(__('admin_resources.page.parent'))
                     ->placeholder('—'),
 
                 IconColumn::make('is_enabled')
-                    ->label('Enabled')
+                    ->label(__('admin_resources.page.enabled'))
                     ->boolean(),
 
                 TextColumn::make('updated_at')
-                    ->label('Updated')
+                    ->label(__('admin_resources.page.updated'))
                     ->dateTime()
                     ->sortable(),
             ])
             ->filters([
                 SelectFilter::make('status')
                     ->options([
-                        'draft' => 'Draft',
-                        'published' => 'Published',
-                        'scheduled' => 'Scheduled',
+                        'draft' => __('admin_resources.page.draft'),
+                        'published' => __('admin_resources.page.published'),
+                        'scheduled' => __('admin_resources.page.scheduled'),
                     ]),
 
                 SelectFilter::make('locale')
-                    ->label('Locale')
+                    ->label(__('admin_resources.page.locale'))
                     ->options([
-                        'ar' => 'Arabic',
-                        'en' => 'English',
+                        'ar' => __('admin_resources.page.arabic'),
+                        'en' => __('admin_resources.page.english'),
                     ])
                     ->query(function ($query, array $data) {
                         if (filled($data['value'] ?? null)) {
@@ -158,7 +168,7 @@ class PageResource extends Resource
                     }),
 
                 SelectFilter::make('parent_id')
-                    ->label('Parent')
+                    ->label(__('admin_resources.page.parent'))
                     ->relationship(
                         'parent',
                         'slug',
@@ -197,69 +207,69 @@ class PageResource extends Resource
 
     private static function metadataTab(): Tab
     {
-        return Tab::make('Metadata')
+        return Tab::make('Metadata')->label(__('admin_resources.page.metadata'))
             ->icon('heroicon-o-cog-6-tooth')
             ->schema([
-                Section::make('Page Settings')->schema([
+                Section::make(__('admin_resources.page.page_settings'))->schema([
                     Select::make('parent_id')
-                        ->label('Parent Page')
+                        ->label(__('admin_resources.page.parent_page'))
                         ->relationship(
                             'parent',
                             'slug',
                             modifyQueryUsing: fn (Builder $query, ?Page $record = null): Builder => self::scopeParentQueryToCurrentUser($query, $record),
                         )
                         ->searchable()
-                        ->placeholder('None (top-level)'),
+                        ->placeholder(__('admin_resources.page.none_top_level')),
 
                     TextInput::make('slug')
-                        ->label('Slug')
+                        ->label(__('admin_resources.page.slug'))
                         ->required()
                         ->maxLength(255)
                         ->alphaDash(),
 
                     TextInput::make('faculty_scope_slug')
-                        ->label('Faculty Scope Slug')
-                        ->helperText('Optional. When set, faculty editors only access pages matching their scope.')
+                        ->label(__('admin_resources.page.faculty_scope_slug'))
+                        ->helperText(__('admin_resources.page.optional_when_set_faculty_editors_only_access_pages_matching'))
                         ->maxLength(255)
                         ->alphaDash()
                         ->visible(fn (): bool => in_array(auth()->user()?->role_slug, ['super_admin', 'editor'], true)),
 
                     Select::make('template')
-                        ->label('Template')
+                        ->label(__('admin_resources.page.template'))
                         ->options([
-                            'default' => 'Default',
-                            'landing' => 'Landing Page',
-                            'faculty' => 'Faculty',
-                            'department' => 'Department',
+                            'default' => __('admin_resources.page.default'),
+                            'landing' => __('admin_resources.page.landing_page'),
+                            'faculty' => __('admin_resources.page.faculty'),
+                            'department' => __('admin_resources.page.department'),
                         ])
                         ->required()
                         ->default('default'),
 
                     Select::make('status')
-                        ->label('Status')
+                        ->label(__('admin_resources.page.status'))
                         ->options([
-                            'draft' => 'Draft',
-                            'published' => 'Published',
-                            'scheduled' => 'Scheduled',
+                            'draft' => __('admin_resources.page.draft'),
+                            'published' => __('admin_resources.page.published'),
+                            'scheduled' => __('admin_resources.page.scheduled'),
                         ])
                         ->required()
                         ->default('draft')
                         ->disabled()
                         ->dehydrated(false)
-                        ->helperText('Use the publish and schedule actions to change public state.'),
+                        ->helperText(__('admin_resources.page.use_the_publish_and_schedule_actions_to_change_public_state')),
                 ]),
 
-                Section::make('Visibility')->schema([
+                Section::make(__('admin_resources.page.visibility'))->schema([
                     Toggle::make('is_enabled')
-                        ->label('Enabled')
+                        ->label(__('admin_resources.page.enabled'))
                         ->default(true),
 
                     Toggle::make('show_in_nav')
-                        ->label('Show in Navigation')
+                        ->label(__('admin_resources.page.show_in_navigation'))
                         ->default(true),
 
                     Toggle::make('show_in_breadcrumbs')
-                        ->label('Show in Breadcrumbs')
+                        ->label(__('admin_resources.page.show_in_breadcrumbs'))
                         ->default(true),
                 ])->columns(3),
             ]);
@@ -270,45 +280,45 @@ class PageResource extends Resource
         $prefix = $locale === 'ar' ? 'ar_' : 'en_';
 
         return [
-            Section::make('Content')->schema([
+            Section::make(__('admin_resources.page.content'))->schema([
                 TextInput::make("{$prefix}title")
-                    ->label('Title')
+                    ->label(__('admin_resources.page.title'))
                     ->required()
                     ->maxLength(255),
 
                 TextInput::make("{$prefix}headline")
-                    ->label('Headline')
+                    ->label(__('admin_resources.page.headline'))
                     ->maxLength(255),
 
                 TextInput::make("{$prefix}subheadline")
-                    ->label('Subheadline')
+                    ->label(__('admin_resources.page.subheadline'))
                     ->maxLength(500),
 
                 Textarea::make("{$prefix}hero_content")
-                    ->label('Hero Content')
+                    ->label(__('admin_resources.page.hero_content'))
                     ->rows(3)
                     ->maxLength(2000),
 
                 RichEditor::make("{$prefix}body")
-                    ->label('Body')
+                    ->label(__('admin_resources.page.body'))
                     ->columnSpanFull(),
             ]),
 
-            Section::make('Call to Action')->schema([
+            Section::make(__('admin_resources.page.call_to_action'))->schema([
                 TextInput::make("{$prefix}cta_label")
-                    ->label('CTA Label')
+                    ->label(__('admin_resources.page.cta_label'))
                     ->maxLength(100),
 
-                PageUrlSelect::make("{$prefix}cta_url", 'CTA URL', $locale),
+                PageUrlSelect::make("{$prefix}cta_url", __('admin_resources.page.cta_url'), $locale),
             ])->columns(2),
 
-            Section::make('Additional')->schema([
+            Section::make(__('admin_resources.page.additional'))->schema([
                 Textarea::make("{$prefix}sidebar_content")
-                    ->label('Sidebar Content')
+                    ->label(__('admin_resources.page.sidebar_content'))
                     ->rows(4),
 
                 Textarea::make("{$prefix}excerpt")
-                    ->label('Excerpt')
+                    ->label(__('admin_resources.page.excerpt'))
                     ->rows(3)
                     ->maxLength(500),
             ]),
@@ -325,7 +335,7 @@ class PageResource extends Resource
 
     private static function englishTranslationTab(): Tab
     {
-        return Tab::make('English (EN)')
+        return Tab::make('English (EN)')->label(__('admin_resources.page.english_en'))
             ->icon('heroicon-o-language')
             ->extraAttributes(['dir' => 'ltr'])
             ->schema(self::translationFields('en'));
@@ -336,38 +346,38 @@ class PageResource extends Resource
         $prefix = $locale === 'ar' ? 'ar_seo_' : 'en_seo_';
 
         return [
-            Section::make('Meta Tags')->schema([
+            Section::make(__('admin_resources.page.meta_tags'))->schema([
                 TextInput::make("{$prefix}meta_title")
-                    ->label('Meta Title')
+                    ->label(__('admin_resources.page.meta_title'))
                     ->maxLength(70),
 
                 Textarea::make("{$prefix}meta_description")
-                    ->label('Meta Description')
+                    ->label(__('admin_resources.page.meta_description'))
                     ->rows(3)
                     ->maxLength(160),
             ]),
 
-            Section::make('Open Graph')->schema([
+            Section::make(__('admin_resources.page.open_graph'))->schema([
                 TextInput::make("{$prefix}og_title")
-                    ->label('OG Title')
+                    ->label(__('admin_resources.page.og_title'))
                     ->maxLength(70),
 
                 Textarea::make("{$prefix}og_description")
-                    ->label('OG Description')
+                    ->label(__('admin_resources.page.og_description'))
                     ->rows(3)
                     ->maxLength(200),
 
-                MediaPicker::image("{$prefix}og_image", 'OG Image'),
+                MediaPicker::image("{$prefix}og_image", __('admin_resources.page.og_image')),
             ]),
 
-            Section::make('Advanced')->schema([
+            Section::make(__('admin_resources.page.advanced'))->schema([
                 TextInput::make("{$prefix}canonical_url")
-                    ->label('Canonical URL')
+                    ->label(__('admin_resources.page.canonical_url'))
                     ->url()
                     ->maxLength(2048),
 
                 TextInput::make("{$prefix}robots")
-                    ->label('Robots Directive')
+                    ->label(__('admin_resources.page.robots_directive'))
                     ->placeholder('index, follow')
                     ->maxLength(100),
             ]),
@@ -376,7 +386,7 @@ class PageResource extends Resource
 
     private static function arabicSeoTab(): Tab
     {
-        return Tab::make('Arabic SEO')
+        return Tab::make('Arabic SEO')->label(__('admin_resources.page.arabic_seo'))
             ->icon('heroicon-o-magnifying-glass')
             ->extraAttributes(['dir' => 'rtl'])
             ->schema(self::seoFields('ar'));
@@ -384,7 +394,7 @@ class PageResource extends Resource
 
     private static function englishSeoTab(): Tab
     {
-        return Tab::make('English SEO')
+        return Tab::make('English SEO')->label(__('admin_resources.page.english_seo'))
             ->icon('heroicon-o-magnifying-glass')
             ->extraAttributes(['dir' => 'ltr'])
             ->schema(self::seoFields('en'));

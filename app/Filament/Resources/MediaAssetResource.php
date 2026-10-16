@@ -49,6 +49,16 @@ class MediaAssetResource extends Resource
         return Gate::allows('manage-media');
     }
 
+    public static function getModelLabel(): string
+    {
+        return __('admin_resources.media_asset.model');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('admin_resources.media_asset.plural_model');
+    }
+
     public static function getNavigationGroup(): ?string
     {
         return __('admin.navigation.groups.content');
@@ -113,19 +123,19 @@ class MediaAssetResource extends Resource
                     ->html(),
 
                 TextColumn::make('filename')
-                    ->label('Filename')
+                    ->label(__('admin_resources.media_asset.filename'))
                     ->searchable()
                     ->sortable()
                     ->limit(40),
 
                 TextColumn::make('title_en')
-                    ->label('Title')
+                    ->label(__('admin_resources.media_asset.title'))
                     ->placeholder('—')
                     ->searchable()
                     ->limit(30),
 
                 TextColumn::make('mime_type')
-                    ->label('Type')
+                    ->label(__('admin_resources.media_asset.type'))
                     ->badge()
                     ->color(fn (string $state): string => match (true) {
                         str_starts_with($state, 'image/') => 'success',
@@ -135,7 +145,7 @@ class MediaAssetResource extends Resource
                     }),
 
                 TextColumn::make('media_type')
-                    ->label('Category')
+                    ->label(__('admin_resources.media_asset.category'))
                     ->badge()
                     ->color(fn (?string $state): string => match ($state) {
                         'image' => 'success',
@@ -146,7 +156,7 @@ class MediaAssetResource extends Resource
                     }),
 
                 TextColumn::make('metadata_status')
-                    ->label('Metadata')
+                    ->label(__('admin_resources.media_asset.metadata'))
                     ->badge()
                     ->color(fn (?string $state): string => match ($state) {
                         'reviewed' => 'success',
@@ -156,18 +166,18 @@ class MediaAssetResource extends Resource
                     }),
 
                 TextColumn::make('size_bytes')
-                    ->label('Size')
+                    ->label(__('admin_resources.media_asset.size'))
                     ->formatStateUsing(fn (int $state): string => self::formatFileSize($state))
                     ->sortable(),
 
                 TextColumn::make('created_at')
-                    ->label('Uploaded')
+                    ->label(__('admin_resources.media_asset.uploaded'))
                     ->dateTime()
                     ->sortable(),
             ])
             ->filters([
                 SelectFilter::make('mime_type')
-                    ->label('File Type')
+                    ->label(__('admin_resources.media_asset.file_type'))
                     ->options([
                         'image/' => 'Images',
                         'application/pdf' => 'PDF',
@@ -180,23 +190,23 @@ class MediaAssetResource extends Resource
                         }
                     }),
                 SelectFilter::make('media_type')
-                    ->label('Category')
+                    ->label(__('admin_resources.media_asset.category'))
                     ->options([
-                        'image' => 'Images',
-                        'pdf' => 'PDFs',
-                        'document' => 'Documents',
-                        'video' => 'Videos',
-                        'icon' => 'Icons',
-                        'other' => 'Other',
+                        'image' => __('admin_resources.media_asset.images'),
+                        'pdf' => __('admin_resources.media_asset.pdfs'),
+                        'document' => __('admin_resources.media_asset.documents'),
+                        'video' => __('admin_resources.media_asset.videos'),
+                        'icon' => __('admin_resources.media_asset.icons'),
+                        'other' => __('admin_resources.media_asset.other'),
                     ]),
                 SelectFilter::make('metadata_status')
-                    ->label('Metadata Status')
+                    ->label(__('admin_resources.media_asset.metadata_status'))
                     ->options(self::metadataStatusOptions()),
                 Filter::make('missing_title')
-                    ->label('Missing Title')
+                    ->label(__('admin_resources.media_asset.missing_title'))
                     ->query(fn (Builder $query): Builder => $query->whereNull('title_ar')->whereNull('title_en')),
                 Filter::make('missing_image_alt')
-                    ->label('Images Missing Alt Text')
+                    ->label(__('admin_resources.media_asset.images_missing_alt_text'))
                     ->query(fn (Builder $query): Builder => $query->where('media_type', 'image')->whereNull('alt_text_ar')->whereNull('alt_text_en')),
             ])
             ->actions([
@@ -229,12 +239,12 @@ class MediaAssetResource extends Resource
 
     private static function uploadTab(): Tab
     {
-        return Tab::make('Upload')
+        return Tab::make('Upload')->label(__('admin_resources.media_asset.upload'))
             ->icon('heroicon-o-arrow-up-tray')
             ->schema([
-                Section::make('File Upload')->schema([
+                Section::make(__('admin_resources.media_asset.file_upload'))->schema([
                     FileUpload::make('file')
-                        ->label('File')
+                        ->label(__('admin_resources.media_asset.file'))
                         ->required()
                         ->maxSize(10240)
                         ->disk((string) config('filesystems.media_disk', 'public'))
@@ -263,29 +273,29 @@ class MediaAssetResource extends Resource
             ->icon('heroicon-o-language')
             ->extraAttributes(['dir' => 'rtl'])
             ->schema([
-                Section::make('Arabic Metadata')->schema([
+                Section::make(__('admin_resources.media_asset.arabic_metadata'))->schema([
                     TextInput::make('title_ar')
-                        ->label('Title (AR)')
+                        ->label(__('admin_resources.media_asset.title_ar'))
                         ->maxLength(255)
                         ->required(fn (Get $get): bool => ! self::filledString($get('title_en'))),
 
                     TextInput::make('alt_text_ar')
-                        ->label('Alt Text (AR)')
+                        ->label(__('admin_resources.media_asset.alt_text_ar'))
                         ->maxLength(500),
 
                     TextInput::make('caption_ar')
-                        ->label('Caption (AR)')
+                        ->label(__('admin_resources.media_asset.caption_ar'))
                         ->maxLength(1000),
 
                     TextInput::make('checksum')
-                        ->label('Checksum')
+                        ->label(__('admin_resources.media_asset.checksum'))
                         ->disabled()
                         ->dehydrated(false)
                         ->visibleOn(['edit', 'view']),
 
                     TextInput::make('faculty_scope_slug')
-                        ->label('Faculty Scope Slug')
-                        ->helperText('Optional. Faculty editors only access media matching their scope.')
+                        ->label(__('admin_resources.media_asset.faculty_scope_slug'))
+                        ->helperText(__('admin_resources.media_asset.optional_faculty_editors_only_access_media_matching_their_sc'))
                         ->maxLength(255)
                         ->alphaDash()
                         ->visible(fn (): bool => in_array(auth()->user()?->role_slug, ['super_admin', 'editor'], true)),
@@ -295,32 +305,32 @@ class MediaAssetResource extends Resource
 
     private static function englishMetadataTab(): Tab
     {
-        return Tab::make('English (EN)')
+        return Tab::make('English (EN)')->label(__('admin_resources.media_asset.english_en'))
             ->icon('heroicon-o-language')
             ->extraAttributes(['dir' => 'ltr'])
             ->schema([
-                Section::make('English Metadata')->schema([
+                Section::make(__('admin_resources.media_asset.english_metadata'))->schema([
                     TextInput::make('title_en')
-                        ->label('Title (EN)')
+                        ->label(__('admin_resources.media_asset.title_en'))
                         ->maxLength(255)
                         ->required(fn (Get $get): bool => ! self::filledString($get('title_ar'))),
 
                     TextInput::make('alt_text_en')
-                        ->label('Alt Text (EN)')
+                        ->label(__('admin_resources.media_asset.alt_text_en'))
                         ->maxLength(500),
 
                     TextInput::make('caption_en')
-                        ->label('Caption (EN)')
+                        ->label(__('admin_resources.media_asset.caption_en'))
                         ->maxLength(1000),
 
                     TextInput::make('media_type')
-                        ->label('Category')
+                        ->label(__('admin_resources.media_asset.category'))
                         ->disabled()
                         ->dehydrated(false)
                         ->visibleOn(['edit', 'view']),
 
                     Select::make('metadata_status')
-                        ->label('Metadata Status')
+                        ->label(__('admin_resources.media_asset.metadata_status'))
                         ->options(self::metadataStatusOptions())
                         ->default('missing')
                         ->required()
@@ -331,16 +341,16 @@ class MediaAssetResource extends Resource
 
     private static function displayTab(): Tab
     {
-        return Tab::make('Crop & Display')
+        return Tab::make('Crop & Display')->label(__('admin_resources.media_asset.crop_display'))
             ->icon('heroicon-o-viewfinder-circle')
             ->visible(fn (?MediaAsset $record): bool => $record === null || str_starts_with((string) $record->mime_type, 'image/'))
             ->schema([
-                Section::make('Image framing')
-                    ->description('Use the visual framing control to choose the visible crop without destroying the original image.')
+                Section::make(__('admin_resources.media_asset.image_framing'))
+                    ->description(__('admin_resources.media_asset.use_the_visual_framing_control_to_choose_the_visible_crop_wi'))
                     ->schema([
                         FileUpload::make('replacement_file')
-                            ->label('Replace existing image')
-                            ->helperText('Optional. Upload a replacement, then use the visual framing control below. Existing page references remain connected to this media asset.')
+                            ->label(__('admin_resources.media_asset.replace_existing_image'))
+                            ->helperText(__('admin_resources.media_asset.optional_upload_a_replacement_then_use_the_visual_framing_co'))
                             ->image()
                             ->orientImagesFromExif()
                             ->maxSize(10240)
@@ -419,9 +429,9 @@ class MediaAssetResource extends Resource
     private static function metadataStatusOptions(): array
     {
         return [
-            'missing' => 'Missing',
-            'auto_generated' => 'Auto Generated',
-            'reviewed' => 'Reviewed',
+            'missing' => __('admin_resources.media_asset.missing'),
+            'auto_generated' => __('admin_resources.media_asset.auto_generated'),
+            'reviewed' => __('admin_resources.media_asset.reviewed'),
         ];
     }
 

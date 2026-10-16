@@ -531,10 +531,17 @@ class AppServiceProvider extends ServiceProvider
 
     private function configureRateLimiting(): void
     {
-        RateLimiter::for('admin-login', function (Request $request): Limit {
-            $email = strtolower((string) $request->string('email'));
+        // Two limits apply together. The per-account one caps guesses at any
+        // single email however many addresses they come from; the per-address
+        // one stops a single client spraying one password across many staff
+        // emails, which the per-account limit alone never sees.
+        RateLimiter::for('admin-login', function (Request $request): array {
+            $email = strtolower(trim((string) $request->string('email')));
 
-            return Limit::perMinute(5)->by($email !== '' ? 'admin-login|'.$email : 'admin-login|'.$request->ip());
+            return [
+                Limit::perMinute(5)->by('admin-login|account|'.($email !== '' ? $email : $request->ip())),
+                Limit::perMinute(20)->by('admin-login|ip|'.$request->ip()),
+            ];
         });
 
         RateLimiter::for('public-form', function (Request $request): Limit {
@@ -546,6 +553,12 @@ class AppServiceProvider extends ServiceProvider
         // a person refining a query and hostile to a scraper walking the index.
         RateLimiter::for('public-search', function (Request $request): Limit {
             return Limit::perMinute(30)->by('public-search|'.$request->ip());
+        });
+
+        // Signed webhooks are rejected cheaply, but a flood of them still ties
+        // up workers; no legitimate sender comes close to this.
+        RateLimiter::for('webhook', function (Request $request): Limit {
+            return Limit::perMinute(60)->by('webhook|'.$request->ip());
         });
 
         RateLimiter::for('two-factor', function (Request $request): Limit {

@@ -80,18 +80,18 @@ final class BatchUploadMediaAssets extends Page implements HasForms
 
     public function getTitle(): string
     {
-        return 'Batch Upload Images';
+        return __('admin_resources.media_asset.batch_upload_images');
     }
 
     public function form(Form $form): Form
     {
         return $form
             ->schema([
-                Section::make('1. Select images')
-                    ->description('Drop all images together. Wait until every preview says upload complete, then continue to name and frame them.')
+                Section::make(__('admin_resources.media_asset.1_select_images'))
+                    ->description(__('admin_resources.media_asset.drop_all_images_together_wait_until_every_preview_says_uploa'))
                     ->schema([
                         FileUpload::make('files')
-                            ->label('Images')
+                            ->label(__('admin_resources.media_asset.images'))
                             ->multiple()
                             ->reorderable()
                             ->appendFiles()
@@ -101,7 +101,7 @@ final class BatchUploadMediaAssets extends Page implements HasForms
                             // What the media library accepts. iPhone HEIC photos are
                             // refused on save otherwise, after a full upload.
                             ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
-                            ->helperText('JPG, PNG, WebP or GIF, up to 10 MB each. Export iPhone HEIC photos as JPG first.')
+                            ->helperText(__('admin_resources.media_asset.jpg_png_webp_or_gif_up_to_10_mb_each_export_iphone_heic_phot'))
                             ->orientImagesFromExif()
                             ->maxFiles(50)
                             ->maxSize(10240)
@@ -116,7 +116,7 @@ final class BatchUploadMediaAssets extends Page implements HasForms
                             ->required(),
                         Actions::make([
                             Action::make('prepare_image_details')
-                                ->label('Continue to name and frame images')
+                                ->label(__('admin_resources.media_asset.continue_to_name_and_frame_images'))
                                 ->icon('heroicon-o-arrow-down')
                                 ->color('primary')
                                 ->extraAttributes([
@@ -127,20 +127,20 @@ final class BatchUploadMediaAssets extends Page implements HasForms
                                 }),
                         ])->alignEnd(),
                     ]),
-                Section::make('2. Name and frame every image')
-                    ->description('Names and alternative text are required in Arabic and English so every image is ready for any public page.')
+                Section::make(__('admin_resources.media_asset.2_name_and_frame_every_image'))
+                    ->description(__('admin_resources.media_asset.names_and_alternative_text_are_required_in_arabic_and_englis'))
                     ->schema([
                         Repeater::make('items')
-                            ->label('Image details')
+                            ->label(__('admin_resources.media_asset.image_details'))
                             ->schema([
                                 Hidden::make('upload_key')->required(),
                                 Hidden::make('preview_url'),
                                 Hidden::make('original_name')->required(),
                                 Grid::make(2)->schema([
-                                    TextInput::make('title_ar')->label('Name (AR)')->required()->maxLength(255),
-                                    TextInput::make('title_en')->label('Name (EN)')->required()->maxLength(255),
-                                    TextInput::make('alt_text_ar')->label('Alternative text (AR)')->required()->maxLength(500),
-                                    TextInput::make('alt_text_en')->label('Alternative text (EN)')->required()->maxLength(500),
+                                    TextInput::make('title_ar')->label(__('admin_resources.media_asset.name_ar'))->required()->maxLength(255),
+                                    TextInput::make('title_en')->label(__('admin_resources.media_asset.name_en'))->required()->maxLength(255),
+                                    TextInput::make('alt_text_ar')->label(__('admin_resources.media_asset.alternative_text_ar'))->required()->maxLength(500),
+                                    TextInput::make('alt_text_en')->label(__('admin_resources.media_asset.alternative_text_en'))->required()->maxLength(500),
                                 ]),
                                 Hidden::make('display_fit')->default('cover')->required(),
                                 FocalPointPicker::make('focal_x')
@@ -167,7 +167,7 @@ final class BatchUploadMediaAssets extends Page implements HasForms
     {
         $uploads = array_values(is_array($this->data['files'] ?? null) ? $this->data['files'] : []);
         if ($uploads === []) {
-            Notification::make()->title('Upload at least one image first')->warning()->send();
+            Notification::make()->title(__('admin_resources.media_asset.upload_at_least_one_image_first'))->warning()->send();
 
             return;
         }
@@ -209,8 +209,8 @@ final class BatchUploadMediaAssets extends Page implements HasForms
 
         if (count($items) !== count($uploads)) {
             Notification::make()
-                ->title('Some images are still uploading')
-                ->body('Wait until every image says upload complete, then continue again.')
+                ->title(__('admin_resources.media_asset.some_images_are_still_uploading'))
+                ->body(__('admin_resources.media_asset.wait_until_every_image_says_upload_complete_then_continue_ag'))
                 ->warning()
                 ->send();
 
@@ -235,8 +235,8 @@ final class BatchUploadMediaAssets extends Page implements HasForms
 
         if ($files === [] || count($files) !== count($items)) {
             Notification::make()
-                ->title('Batch upload stopped')
-                ->body('Every uploaded image must have a matching details card. Continue to name and frame images, then upload again.')
+                ->title(__('admin_resources.media_asset.batch_upload_stopped'))
+                ->body(__('admin_resources.media_asset.every_uploaded_image_must_have_a_matching_details_card_conti'))
                 ->danger()
                 ->send();
 
@@ -276,7 +276,7 @@ final class BatchUploadMediaAssets extends Page implements HasForms
             MediaUploadFailure::record($exception, 'batch upload');
             $this->pendingUploads = [];
             Notification::make()
-                ->title('Batch upload stopped')
+                ->title(__('admin_resources.media_asset.batch_upload_stopped'))
                 ->body($this->uploadedCount.' of '.$this->batchTotal.' image(s) were uploaded before an error occurred. '.MediaUploadFailure::message($exception))
                 ->danger()
                 ->persistent()

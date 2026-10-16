@@ -35,7 +35,7 @@ class EditUser extends EditRecord
         $this->authService->updateUser((int) $record->getKey(), $data, (int) $actor->getKey());
 
         Notification::make()
-            ->title('User updated successfully')
+            ->title(__('admin_resources.user.user_updated_successfully'))
             ->success()
             ->send();
 

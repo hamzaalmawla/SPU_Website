@@ -24,21 +24,21 @@ class ViewPerson extends ViewRecord
             ?? $record->translations->first();
 
         return $infolist->schema([
-            Section::make('Basic Information')->schema([
+            Section::make(__('admin_resources.person.basic_information'))->schema([
                 TextEntry::make('slug'),
                 TextEntry::make('category'),
                 TextEntry::make('title'),
                 TextEntry::make('position'),
-                TextEntry::make('translations.name')->label('Name')->state($translation?->name ?? '-'),
-                TextEntry::make('translations.role')->label('Role')->state($translation?->role ?? '-'),
+                TextEntry::make('translations.name')->label(__('admin_resources.person.name'))->state($translation?->name ?? '-'),
+                TextEntry::make('translations.role')->label(__('admin_resources.person.role'))->state($translation?->role ?? '-'),
                 TextEntry::make('email'),
                 TextEntry::make('phone'),
-                TextEntry::make('office_location')->label('Office'),
-                TextEntry::make('faculty_scope_slug')->label('Faculty Scope'),
+                TextEntry::make('office_location')->label(__('admin_resources.person.office')),
+                TextEntry::make('faculty_scope_slug')->label(__('admin_resources.person.faculty_scope')),
             ])->columns(2),
-            Section::make('Biography')->schema([
-                TextEntry::make('bio')->label('Bio')->state($translation?->bio ?? '-')->prose(),
-                TextEntry::make('quote')->label('Quote')->state($translation?->quote ?? '-')->prose(),
+            Section::make(__('admin_resources.person.biography'))->schema([
+                TextEntry::make('bio')->label(__('admin_resources.person.bio'))->state($translation?->bio ?? '-')->prose(),
+                TextEntry::make('quote')->label(__('admin_resources.person.quote'))->state($translation?->quote ?? '-')->prose(),
             ]),
         ]);
     }

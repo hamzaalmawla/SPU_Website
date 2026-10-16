@@ -40,6 +40,16 @@ class UserResource extends Resource
         return Gate::allows('manage-users');
     }
 
+    public static function getModelLabel(): string
+    {
+        return __('admin_resources.user.model');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('admin_resources.user.plural_model');
+    }
+
     public static function getNavigationGroup(): ?string
     {
         return __('admin.navigation.groups.administration');
@@ -53,56 +63,73 @@ class UserResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Section::make('User Details')->schema([
+            Section::make(__('admin_resources.user.user_details'))->schema([
                 TextInput::make('name')
-                    ->label('Name')
+                    ->label(__('admin_resources.user.name'))
                     ->required()
                     ->maxLength(255),
 
                 TextInput::make('email')
-                    ->label('Email')
+                    ->label(__('admin_resources.user.email'))
                     ->email()
                     ->required()
                     ->unique(ignoreRecord: true)
                     ->maxLength(255),
 
                 Select::make('role_slug')
-                    ->label('Role')
+                    ->label(__('admin_resources.user.role'))
                     ->options([
-                        'super_admin' => 'Super Admin',
-                        'editor' => 'Editor',
-                        'faculty_editor' => 'Faculty Editor',
+                        'super_admin' => __('admin_resources.user.super_admin'),
+                        'editor' => __('admin_resources.user.editor'),
+                        'faculty_editor' => __('admin_resources.user.faculty_editor'),
                     ])
                     ->required(),
 
                 TextInput::make('faculty_scope_slug')
-                    ->label('Faculty Scope Slug')
+                    ->label(__('admin_resources.user.faculty_scope_slug'))
                     ->maxLength(255)
-                    ->placeholder('Only for faculty_editor role')
-                    ->helperText('Restricts content access to a specific faculty.'),
+                    ->placeholder(__('admin_resources.user.only_for_faculty_editor_role'))
+                    ->helperText(__('admin_resources.user.restricts_content_access_to_a_specific_faculty')),
             ])->columns(2),
 
-            Section::make('Account Status')->schema([
+            Section::make(__('admin_resources.user.account_status'))->schema([
                 Toggle::make('is_locked')
-                    ->label('Account Locked')
-                    ->helperText('Locked accounts cannot log in.'),
+                    ->label(__('admin_resources.user.account_locked'))
+                    // Show the live state: an automatic lock that has run out
+                    // still has is_locked set until the next sign-in clears it.
+                    ->afterStateHydrated(static function (Toggle $component, ?User $record): void {
+                        if ($record instanceof User) {
+                            $component->state($record->isAccountLocked());
+                        }
+                    })
+                    ->helperText(static function (?User $record): string {
+                        if (! $record instanceof User || ! $record->isAccountLocked()) {
+                            return __('admin_resources.user.locked_accounts_cannot_log_in');
+                        }
+
+                        return $record->locked_until !== null
+                            ? __('admin_resources.user.locked_until', [
+                                'time' => $record->locked_until->timezone((string) config('app.timezone'))->translatedFormat(__('admin.formats.date_time')),
+                            ])
+                            : __('admin_resources.user.locked_manually');
+                    }),
 
                 Toggle::make('two_factor_enabled')
-                    ->label('Two-Factor Authentication')
-                    ->helperText('Turn off two-factor authentication for this account. It must be enabled from the account security page.')
+                    ->label(__('admin_resources.user.two_factor_authentication'))
+                    ->helperText(__('admin_resources.user.turn_off_two_factor_authentication_for_this_account_it_must'))
                     ->disabled(fn (bool $state): bool => ! $state)
                     ->dehydrated(),
             ]),
 
-            Section::make('Password Reset')->schema([
+            Section::make(__('admin_resources.user.password_reset'))->schema([
                 TextInput::make('password')
-                    ->label('New Password')
+                    ->label(__('admin_resources.user.new_password'))
                     ->password()
                     ->required(fn (string $operation): bool => $operation === 'create')
                     ->minLength(8)
                     ->maxLength(255)
                     ->dehydrated(fn (?string $state): bool => filled($state))
-                    ->helperText('Leave blank to keep the current password.'),
+                    ->helperText(__('admin_resources.user.leave_blank_to_keep_the_current_password')),
             ]),
         ]);
     }
@@ -112,17 +139,17 @@ class UserResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('name')
-                    ->label('Name')
+                    ->label(__('admin_resources.user.name'))
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('email')
-                    ->label('Email')
+                    ->label(__('admin_resources.user.email'))
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('role_slug')
-                    ->label('Role')
+                    ->label(__('admin_resources.user.role'))
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'super_admin' => 'danger',
@@ -132,7 +159,8 @@ class UserResource extends Resource
                     }),
 
                 IconColumn::make('is_locked')
-                    ->label('Locked')
+                    ->label(__('admin_resources.user.locked'))
+                    ->getStateUsing(static fn (User $record): bool => $record->isAccountLocked())
                     ->boolean()
                     ->trueIcon('heroicon-o-lock-closed')
                     ->falseIcon('heroicon-o-lock-open')
@@ -140,10 +168,10 @@ class UserResource extends Resource
                     ->falseColor('success'),
 
                 TextColumn::make('last_login_at')
-                    ->label('Last Login')
+                    ->label(__('admin_resources.user.last_login'))
                     ->dateTime()
                     ->sortable()
-                    ->placeholder('Never'),
+                    ->placeholder(__('admin_resources.user.never')),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

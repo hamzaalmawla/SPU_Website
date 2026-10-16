@@ -22,7 +22,8 @@
 
 ## Containment
 
-- Lock compromised accounts.
+- Lock compromised accounts from the user editor. A lock set there never expires; locks from failed sign-ins lift after `AUTH_LOCKOUT_DECAY_MINUTES`.
+- If staff are locked out by a password-guessing run, lift a lock with `php artisan auth:unlock {email}` (audited as `user.unlocked`, source `console`).
 - Disable vulnerable integrations or webhook consumers.
 - Temporarily disable public forms or uploads if abuse continues.
 - Deploy hotfixes through the normal CI path unless active exploitation requires emergency deployment.

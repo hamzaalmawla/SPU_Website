@@ -64,6 +64,7 @@ class User extends Authenticatable
             'failed_attempts' => 'integer',
             'is_locked' => 'boolean',
             'locked_at' => 'datetime',
+            'locked_until' => 'datetime',
             'last_login_at' => 'datetime',
             'deleted_at' => 'datetime',
             'password' => 'hashed',
@@ -128,8 +129,17 @@ class User extends Authenticatable
         return $this->hasMany(PageDraft::class, 'created_by');
     }
 
+    /**
+     * Whether the account is locked right now. An automatic lock carries a
+     * locked_until and stops counting once that moment passes; a lock without
+     * one lasts until it is lifted.
+     */
     public function isAccountLocked(): bool
     {
-        return (bool) $this->is_locked || $this->locked_at !== null;
+        if (! (bool) $this->is_locked && $this->locked_at === null) {
+            return false;
+        }
+
+        return $this->locked_until === null || $this->locked_until->isFuture();
     }
 }

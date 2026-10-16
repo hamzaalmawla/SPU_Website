@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\AboutPageResource\Pages;
+use App\Filament\Support\JsonEditor;
 use App\Filament\Support\MediaPicker;
 use App\Models\Page\AboutPage;
-use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -48,6 +48,16 @@ class AboutPageResource extends Resource
         return Gate::allows('manage-pages');
     }
 
+    public static function getModelLabel(): string
+    {
+        return __('admin_resources.about_page.model');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('admin_resources.about_page.plural_model');
+    }
+
     public static function getNavigationGroup(): ?string
     {
         return __('admin.navigation.groups.about');
@@ -66,21 +76,21 @@ class AboutPageResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Section::make('Page')->schema([
+            Section::make(__('admin_resources.about_page.page'))->schema([
                 TextInput::make('slug')->required()->maxLength(255)->alphaDash(),
                 TextInput::make('template')->required()->maxLength(255),
-                MediaPicker::image('hero_image', 'Hero Image'),
-                KeyValue::make('payload_json')->label('Landing Payload JSON')->columnSpanFull(),
-                Select::make('status')->required()->options(['draft' => 'Draft', 'published' => 'Published', 'scheduled' => 'Scheduled'])->default('published'),
+                MediaPicker::image('hero_image', __('admin_resources.about_page.hero_image')),
+                JsonEditor::make('payload_json')->label(__('admin_resources.about_page.landing_payload_json'))->helperText(__('admin_resources.about_page.payload_help'))->columnSpanFull(),
+                Select::make('status')->required()->options(['draft' => __('admin_resources.about_page.draft'), 'published' => __('admin_resources.about_page.published'), 'scheduled' => __('admin_resources.about_page.scheduled')])->default('published'),
                 TextInput::make('sort_order')->numeric()->default(0),
                 Toggle::make('is_enabled')->default(true),
             ])->columns(2),
             Repeater::make('translations')->relationship()->schema([
-                Select::make('locale')->required()->options(['ar' => 'Arabic', 'en' => 'English']),
+                Select::make('locale')->required()->options(['ar' => __('admin_resources.about_page.arabic'), 'en' => __('admin_resources.about_page.english')]),
                 TextInput::make('title')->required()->maxLength(255),
                 TextInput::make('headline')->maxLength(255),
                 Textarea::make('summary')->rows(3),
-                KeyValue::make('sections_json')->label('Content Sections')->columnSpanFull(),
+                JsonEditor::make('sections_json')->label(__('admin_resources.about_page.content_sections'))->helperText(__('admin_resources.about_page.payload_help'))->columnSpanFull(),
             ])->columns(2)->minItems(2)->maxItems(2)->columnSpanFull(),
         ]);
     }
@@ -90,7 +100,7 @@ class AboutPageResource extends Resource
         return $table->columns([
             TextColumn::make('slug')->searchable()->sortable(),
             TextColumn::make('translations.title')
-                ->label('Title')
+                ->label(__('admin_resources.about_page.title'))
                 ->searchable(query: fn (Builder $query, string $search): Builder => $query->whereHas(
                     'translations',
                     fn (Builder $q): Builder => $q->where('title', 'like', "%{$search}%")

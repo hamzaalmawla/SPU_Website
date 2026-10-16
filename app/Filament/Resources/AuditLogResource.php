@@ -6,9 +6,9 @@ namespace App\Filament\Resources;
 
 use App\Contracts\Shared\AuditServiceInterface;
 use App\Filament\Resources\AuditLogResource\Pages;
+use App\Filament\Support\JsonEditor;
 use App\Models\Shared\AuditLog;
 use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
@@ -46,6 +46,16 @@ class AuditLogResource extends Resource
         return Gate::allows('view-audit-log');
     }
 
+    public static function getModelLabel(): string
+    {
+        return __('admin_resources.audit_log.model');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('admin_resources.audit_log.plural_model');
+    }
+
     public static function getNavigationGroup(): ?string
     {
         return __('admin.navigation.groups.administration');
@@ -79,39 +89,41 @@ class AuditLogResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Section::make('Audit Entry')->schema([
+            Section::make(__('admin_resources.audit_log.audit_entry'))->schema([
                 TextInput::make('action')
-                    ->label('Action')
+                    ->label(__('admin_resources.audit_log.action'))
                     ->disabled(),
 
                 TextInput::make('entity_type')
-                    ->label('Entity Type')
+                    ->label(__('admin_resources.audit_log.entity_type'))
                     ->disabled(),
 
                 TextInput::make('entity_id')
-                    ->label('Entity ID')
+                    ->label(__('admin_resources.audit_log.entity_id'))
                     ->disabled(),
 
                 TextInput::make('user.name')
-                    ->label('User')
+                    ->label(__('admin_resources.audit_log.user'))
                     ->disabled(),
 
                 TextInput::make('ip_address')
-                    ->label('IP Address')
+                    ->label(__('admin_resources.audit_log.ip_address'))
                     ->disabled(),
 
                 TextInput::make('user_agent')
-                    ->label('User Agent')
+                    ->label(__('admin_resources.audit_log.user_agent'))
                     ->disabled(),
 
                 TextInput::make('created_at')
-                    ->label('Timestamp')
+                    ->label(__('admin_resources.audit_log.timestamp'))
                     ->disabled(),
             ])->columns(2),
 
-            Section::make('Metadata')->schema([
-                KeyValue::make('metadata')
-                    ->label('Full Metadata')
+            Section::make(__('admin_resources.audit_log.metadata'))->schema([
+                // Metadata nests (changed_fields, payload snapshots); KeyValue
+                // only renders flat string pairs.
+                JsonEditor::make('metadata')
+                    ->label(__('admin_resources.audit_log.full_metadata'))
                     ->disabled()
                     ->columnSpanFull(),
             ]),
@@ -123,7 +135,7 @@ class AuditLogResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('action')
-                    ->label('Action')
+                    ->label(__('admin_resources.audit_log.action'))
                     ->searchable()
                     ->sortable()
                     ->badge()
@@ -138,44 +150,44 @@ class AuditLogResource extends Resource
                     }),
 
                 TextColumn::make('entity_type')
-                    ->label('Entity Type')
+                    ->label(__('admin_resources.audit_log.entity_type'))
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('user.name')
-                    ->label('User')
+                    ->label(__('admin_resources.audit_log.user'))
                     ->searchable(query: fn (Builder $query, string $search): Builder => $query->whereHas(
                         'user',
                         fn (Builder $q): Builder => $q->where('name', 'like', "%{$search}%")
                     ))
-                    ->placeholder('System')
+                    ->placeholder(__('admin_resources.audit_log.system'))
                     ->sortable(),
 
                 TextColumn::make('created_at')
-                    ->label('Timestamp')
+                    ->label(__('admin_resources.audit_log.timestamp'))
                     ->dateTime()
                     ->sortable(),
             ])
             ->filters([
                 SelectFilter::make('action')
-                    ->label('Action')
+                    ->label(__('admin_resources.audit_log.action'))
                     ->options(fn (): array => self::auditService()->distinctActions()),
 
                 SelectFilter::make('entity_type')
-                    ->label('Entity Type')
+                    ->label(__('admin_resources.audit_log.entity_type'))
                     ->options(fn (): array => self::auditService()->distinctEntityTypes()),
 
                 SelectFilter::make('user_id')
-                    ->label('User')
+                    ->label(__('admin_resources.audit_log.user'))
                     ->relationship('user', 'name')
                     ->searchable(),
 
                 Filter::make('date_range')
                     ->form([
                         DatePicker::make('from')
-                            ->label('From'),
+                            ->label(__('admin_resources.audit_log.from')),
                         DatePicker::make('until')
-                            ->label('Until'),
+                            ->label(__('admin_resources.audit_log.until')),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query

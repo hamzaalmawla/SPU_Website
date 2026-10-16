@@ -66,7 +66,7 @@ class EditMediaAsset extends EditRecord
         $this->mediaService->updateMetadata($record->id, $metadata, (int) auth()->id());
 
         Notification::make()
-            ->title('Media metadata updated')
+            ->title(__('admin_resources.media_asset.media_metadata_updated'))
             ->success()
             ->send();
 
@@ -84,7 +84,7 @@ class EditMediaAsset extends EditRecord
                     $this->mediaService->delete($record->id, (int) auth()->id());
 
                     Notification::make()
-                        ->title('Media asset deleted')
+                        ->title(__('admin_resources.media_asset.media_asset_deleted'))
                         ->success()
                         ->send();
 

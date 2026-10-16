@@ -41,8 +41,6 @@ class FacultyMemberResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
-    protected static ?string $navigationLabel = 'Faculty Members';
-
     public static function getRecordTitle(?Model $record): string
     {
         if (! $record instanceof FacultyMember) {
@@ -59,6 +57,21 @@ class FacultyMemberResource extends Resource
     public static function canAccess(): bool
     {
         return Gate::allows('manage-faculties');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('admin_resources.faculty_member.model');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('admin_resources.faculty_member.plural_model');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('admin_resources.faculty_member.plural_model');
     }
 
     public static function getNavigationGroup(): ?string
@@ -94,16 +107,16 @@ class FacultyMemberResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Section::make('Canonical person profile')->schema([
+            Section::make(__('admin_resources.faculty_member.canonical_person_profile'))->schema([
                 Placeholder::make('canonical_person_status')
                     ->hiddenLabel()
                     ->content(fn (?FacultyMember $record): string => $record?->canonicalPerson
                         ? 'Linked to the canonical People profile: '.$record->canonicalPerson->slug
                         : 'Legacy placement record. Run the unified-person sync before publishing profile changes.'),
             ])->visibleOn('edit'),
-            Section::make('Where this staff member appears')->schema([
+            Section::make(__('admin_resources.faculty_member.where_this_staff_member_appears'))->schema([
                 Select::make('faculty_id')
-                    ->label('Faculty')
+                    ->label(__('admin_resources.faculty_member.faculty'))
                     ->relationship('faculty', 'id', modifyQueryUsing: fn (Builder $query): Builder => self::scopeFacultyOptions($query))
                     ->getOptionLabelFromRecordUsing(fn ($record) => $record->translations->firstWhere('locale', 'ar')?->name ?? $record->translations->first()?->name ?? '#'.$record->id)
                     ->searchable()
@@ -115,7 +128,7 @@ class FacultyMemberResource extends Resource
                     ->dehydrated()
                     ->live(),
                 Select::make('department_id')
-                    ->label('Department')
+                    ->label(__('admin_resources.faculty_member.department'))
                     ->options(function (Get $get): array {
                         $facultyId = $get('faculty_id');
 
@@ -128,64 +141,64 @@ class FacultyMemberResource extends Resource
                     ->preload()
                     ->native(false),
                 TextInput::make('sort_order')
-                    ->label('Display order')
+                    ->label(__('admin_resources.faculty_member.display_order'))
                     ->numeric()
                     ->default(fn (): int => self::nextSortOrder())
                     ->minValue(0)
                     ->step(10)
-                    ->helperText('Lower numbers appear first. You can also reorder staff from the list.'),
-                Toggle::make('is_enabled')->label('Eligible for public display after publication')->default(true),
-                MediaPicker::assetImage('photo_media_id', 'Profile Photo'),
+                    ->helperText(__('admin_resources.faculty_member.lower_numbers_appear_first_you_can_also_reorder_staff_from_t')),
+                Toggle::make('is_enabled')->label(__('admin_resources.faculty_member.eligible_for_public_display_after_publication'))->default(true),
+                MediaPicker::assetImage('photo_media_id', __('admin_resources.faculty_member.profile_photo')),
                 MediaPicker::assetDocument('cv_media_id', 'CV File'),
             ])->columns(2),
             Tabs::make('Profile text')->tabs([
-                Tabs\Tab::make('Arabic')->schema([
+                Tabs\Tab::make('Arabic')->label(__('admin_resources.faculty_member.arabic'))->schema([
                     Hidden::make('translations.ar.locale')->default('ar'),
-                    TextInput::make('translations.ar.full_name')->label('Arabic full name')->required()->maxLength(255),
-                    TextInput::make('translations.ar.title')->label('Arabic title')->maxLength(255)->placeholder('أ.د، د، م.'),
-                    TextInput::make('translations.ar.position')->label('Arabic position')->maxLength(255)->placeholder('عميد، أستاذ مساعد، ...'),
-                    Textarea::make('translations.ar.bio')->label('Arabic biography')->rows(4)->columnSpanFull(),
-                    TagsInput::make('translations.ar.specializations')->label('Arabic specializations')->separator(',')->columnSpanFull(),
+                    TextInput::make('translations.ar.full_name')->label(__('admin_resources.faculty_member.arabic_full_name'))->required()->maxLength(255),
+                    TextInput::make('translations.ar.title')->label(__('admin_resources.faculty_member.arabic_title'))->maxLength(255)->placeholder('أ.د، د، م.'),
+                    TextInput::make('translations.ar.position')->label(__('admin_resources.faculty_member.arabic_position'))->maxLength(255)->placeholder('عميد، أستاذ مساعد، ...'),
+                    Textarea::make('translations.ar.bio')->label(__('admin_resources.faculty_member.arabic_biography'))->rows(4)->columnSpanFull(),
+                    TagsInput::make('translations.ar.specializations')->label(__('admin_resources.faculty_member.arabic_specializations'))->separator(',')->columnSpanFull(),
                 ])->columns(2),
-                Tabs\Tab::make('English')->schema([
+                Tabs\Tab::make('English')->label(__('admin_resources.faculty_member.english'))->schema([
                     Hidden::make('translations.en.locale')->default('en'),
-                    TextInput::make('translations.en.full_name')->label('English full name')->required()->maxLength(255)->live(onBlur: true),
-                    TextInput::make('translations.en.title')->label('English title')->maxLength(255)->placeholder('Prof., Dr., Eng.'),
-                    TextInput::make('translations.en.position')->label('English position')->maxLength(255)->placeholder('Dean, Assistant Professor, ...'),
-                    Textarea::make('translations.en.bio')->label('English biography')->rows(4)->columnSpanFull(),
-                    TagsInput::make('translations.en.specializations')->label('English specializations')->separator(',')->columnSpanFull(),
+                    TextInput::make('translations.en.full_name')->label(__('admin_resources.faculty_member.english_full_name'))->required()->maxLength(255)->live(onBlur: true),
+                    TextInput::make('translations.en.title')->label(__('admin_resources.faculty_member.english_title'))->maxLength(255)->placeholder(__('admin_resources.faculty_member.prof_dr_eng')),
+                    TextInput::make('translations.en.position')->label(__('admin_resources.faculty_member.english_position'))->maxLength(255)->placeholder(__('admin_resources.faculty_member.dean_assistant_professor')),
+                    Textarea::make('translations.en.bio')->label(__('admin_resources.faculty_member.english_biography'))->rows(4)->columnSpanFull(),
+                    TagsInput::make('translations.en.specializations')->label(__('admin_resources.faculty_member.english_specializations'))->separator(',')->columnSpanFull(),
                 ])->columns(2),
             ])->columnSpanFull(),
-            Section::make('Contact details')->schema([
+            Section::make(__('admin_resources.faculty_member.contact_details'))->schema([
                 TextInput::make('email')->email()->maxLength(255),
                 TextInput::make('phone')->maxLength(255),
                 TextInput::make('office_location')->maxLength(255),
             ])->columns(2)->collapsible()->collapsed(),
-            Section::make('Advanced URL')->schema([
+            Section::make(__('admin_resources.faculty_member.advanced_url'))->schema([
                 Placeholder::make('computed_profile_url')
-                    ->label('Profile URL')
+                    ->label(__('admin_resources.faculty_member.profile_url'))
                     ->content(fn (Get $get): string => self::profilePathFromForm($get)),
                 TextInput::make('slug')
-                    ->label('Profile URL slug')
+                    ->label(__('admin_resources.faculty_member.profile_url_slug'))
                     ->maxLength(255)
                     ->alphaDash()
                     ->unique(ignoreRecord: true)
-                    ->helperText('Leave blank and it will be generated from the English name.'),
+                    ->helperText(__('admin_resources.faculty_member.leave_blank_and_it_will_be_generated_from_the_english_name')),
             ])->columns(2)->collapsible()->collapsed(),
-            Section::make('Social Links')->schema([
-                TextInput::make('social_links.linkedin')->label('LinkedIn URL')->url()->maxLength(255),
-                TextInput::make('social_links.scholar')->label('Google Scholar URL')->url()->maxLength(255),
-                TextInput::make('social_links.orcid')->label('ORCID URL')->url()->maxLength(255),
-                TextInput::make('social_links.researchgate')->label('ResearchGate URL')->url()->maxLength(255),
-                TextInput::make('social_links.twitter')->label('Twitter/X URL')->url()->maxLength(255),
+            Section::make(__('admin_resources.faculty_member.social_links'))->schema([
+                TextInput::make('social_links.linkedin')->label(__('admin_resources.faculty_member.linkedin_url'))->url()->maxLength(255),
+                TextInput::make('social_links.scholar')->label(__('admin_resources.faculty_member.google_scholar_url'))->url()->maxLength(255),
+                TextInput::make('social_links.orcid')->label(__('admin_resources.faculty_member.orcid_url'))->url()->maxLength(255),
+                TextInput::make('social_links.researchgate')->label(__('admin_resources.faculty_member.researchgate_url'))->url()->maxLength(255),
+                TextInput::make('social_links.twitter')->label(__('admin_resources.faculty_member.twitter_x_url'))->url()->maxLength(255),
             ])->columns(2)->collapsible()->collapsed(),
-            Section::make('Education')->schema([
+            Section::make(__('admin_resources.faculty_member.education'))->schema([
                 Repeater::make('educations')->schema([
                     TextInput::make('id')->hidden(),
                     TextInput::make('sort_order')->numeric()->default(0),
                     Toggle::make('is_enabled')->default(true),
                     Repeater::make('translations')->schema([
-                        Select::make('locale')->required()->options(['ar' => 'Arabic', 'en' => 'English'])->disableOptionsWhenSelectedInSiblingRepeaterItems(),
+                        Select::make('locale')->required()->options(['ar' => __('admin_resources.faculty_member.arabic'), 'en' => __('admin_resources.faculty_member.english')])->disableOptionsWhenSelectedInSiblingRepeaterItems(),
                         TextInput::make('degree')->required()->maxLength(255),
                         TextInput::make('institution')->maxLength(255),
                         TextInput::make('field_of_study')->maxLength(255),
@@ -193,7 +206,7 @@ class FacultyMemberResource extends Resource
                         TextInput::make('year_end')->numeric()->minValue(1900)->maxValue(2100)->gte('year_start'),
                         Textarea::make('description')->rows(2),
                     ])->columns(2)->default([['locale' => 'ar'], ['locale' => 'en']])->minItems(2)->maxItems(2)->columnSpanFull(),
-                ])->columns(2)->defaultItems(0)->addActionLabel('Add Education')->columnSpanFull(),
+                ])->columns(2)->defaultItems(0)->addActionLabel(__('admin_resources.faculty_member.add_education'))->columnSpanFull(),
             ])->collapsible()->columnSpanFull(),
         ]);
     }
@@ -201,30 +214,30 @@ class FacultyMemberResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('sort_order')->label('Order')->sortable(),
+            TextColumn::make('sort_order')->label(__('admin_resources.faculty_member.order'))->sortable(),
             TextColumn::make('slug')->searchable()->sortable(),
             TextColumn::make('translations.full_name')
-                ->label('Name')
+                ->label(__('admin_resources.faculty_member.name'))
                 ->searchable(query: fn (Builder $query, string $search): Builder => $query->whereHas(
                     'translations',
                     fn (Builder $q): Builder => $q->where('full_name', 'like', "%{$search}%")
                 ))
                 ->limit(40),
-            TextColumn::make('translations.title')->label('Title')->limit(20),
-            TextColumn::make('translations.position')->label('Position')->limit(20),
+            TextColumn::make('translations.title')->label(__('admin_resources.faculty_member.title'))->limit(20),
+            TextColumn::make('translations.position')->label(__('admin_resources.faculty_member.position'))->limit(20),
             TextColumn::make('canonicalPerson.slug')
-                ->label('Canonical profile')
-                ->placeholder('Not linked')
+                ->label(__('admin_resources.faculty_member.canonical_profile'))
+                ->placeholder(__('admin_resources.faculty_member.not_linked'))
                 ->url(fn (FacultyMember $record): ?string => $record->person_id !== null && Gate::allows('manage-pages')
                     ? PersonResource::getUrl('edit', ['record' => $record->person_id])
                     : null),
-            TextColumn::make('faculty.translations.name')->label('Faculty')->limit(30),
+            TextColumn::make('faculty.translations.name')->label(__('admin_resources.faculty_member.faculty'))->limit(30),
             IconColumn::make('is_enabled')->boolean(),
             TextColumn::make('publication_status')->badge()->sortable(),
             TextColumn::make('updated_at')->dateTime()->sortable(),
         ])->filters([
             SelectFilter::make('faculty_id')
-                ->label('Faculty')
+                ->label(__('admin_resources.faculty_member.faculty'))
                 ->options(fn (): array => app(ProfileAdminServiceInterface::class)->facultyOptions((int) auth()->id())),
         ])->actions([
             Tables\Actions\EditAction::make(),
@@ -307,7 +320,7 @@ class FacultyMemberResource extends Resource
             $slug = Str::slug((string) $get('translations.en.full_name'));
         }
 
-        return $slug !== '' ? self::profilePath($slug) : 'Generated after entering the English name';
+        return $slug !== '' ? self::profilePath($slug) : __('admin_resources.faculty_member.generated_after_entering_the_english_name');
     }
 
     private static function profilePath(string $slug): string

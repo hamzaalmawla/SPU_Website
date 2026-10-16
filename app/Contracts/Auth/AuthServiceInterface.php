@@ -28,6 +28,14 @@ interface AuthServiceInterface
     public function isLocked(Authenticatable $user): bool;
 
     /**
+     * Lift any lock on the account with this email and reset its failed
+     * sign-in count. For operators at the console, which carries no actor and
+     * no gate; the panel unlocks through updateUser(). Returns false when no
+     * account has that email.
+     */
+    public function unlockAccount(string $email): bool;
+
+    /**
      * End the current authenticated session.
      */
     public function logout(): void;

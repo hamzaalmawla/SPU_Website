@@ -29,17 +29,41 @@ final class DynamicFormSubmissionRequest extends FormRequest
         ]);
     }
 
+    /**
+     * Human names for the schema's fields, so a message reads "حقل الاسم الكامل
+     * مطلوب" rather than quoting the input name. The labels are the ones the
+     * submissions review screen already shows for the same fields.
+     *
+     * @return array<string, string>
+     */
+    public function attributes(): array
+    {
+        $locale = $this->locale();
+        $attributes = [];
+
+        foreach (app(DynamicFormSubmissionServiceInterface::class)->formSchema($this->formId()) as $field) {
+            $name = (string) ($field['name'] ?? '');
+            $key = 'form_submissions.fields.'.$name;
+
+            if ($name !== '' && trans()->has($key, $locale)) {
+                $attributes[$name] = __($key, [], $locale);
+            }
+        }
+
+        return $attributes;
+    }
+
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
             $service = app(DynamicFormSubmissionServiceInterface::class);
 
             if (! in_array($this->formId(), $service->allowedFormIds(), true)) {
-                $validator->errors()->add('form', 'Unsupported dynamic form.');
+                $validator->errors()->add('form', __('forms.errors.unsupported_form', [], $this->locale()));
             }
 
             if (is_string($this->input('website')) && trim($this->input('website')) !== '') {
-                $validator->errors()->add('form', 'The form could not be submitted.');
+                $validator->errors()->add('form', __('forms.errors.not_submitted', [], $this->locale()));
             }
         });
     }
@@ -78,5 +102,10 @@ final class DynamicFormSubmissionRequest extends FormRequest
     private function formId(): string
     {
         return (string) $this->route('form');
+    }
+
+    private function locale(): string
+    {
+        return $this->route('locale') === 'en' ? 'en' : 'ar';
     }
 }

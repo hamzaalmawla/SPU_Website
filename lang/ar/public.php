@@ -160,6 +160,7 @@ return [
     'request_type' => 'نوع الطلب',
     'subject' => 'الموضوع',
     'message_label' => 'الرسالة',
+    'required_fields_note' => 'الحقول المشار إليها بعلامة * مطلوبة.',
     'error_review_fields' => 'يرجى مراجعة الحقول المطلوبة.',
     'submit_request' => 'إرسال الطلب',
     'e_services' => 'الخدمات الإلكترونية',

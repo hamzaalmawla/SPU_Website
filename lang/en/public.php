@@ -160,6 +160,7 @@ return [
     'request_type' => 'Request Type',
     'subject' => 'Subject',
     'message_label' => 'Message',
+    'required_fields_note' => 'Fields marked with * are required.',
     'error_review_fields' => 'Please review the required fields.',
     'submit_request' => 'Submit Request',
     'e_services' => 'E-Services',

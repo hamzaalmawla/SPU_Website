@@ -10,6 +10,7 @@ use App\Contracts\Shared\AuditServiceInterface;
 use App\DTOs\Auth\LoginCredentialsDTO;
 use App\Models\User\Role;
 use App\Models\User\User;
+use Carbon\CarbonInterface;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
@@ -17,6 +18,7 @@ use Illuminate\Contracts\Session\Session;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Timebox;
 
 /**
  * Framework-backed authentication service for admin access checks.
@@ -35,10 +37,16 @@ final class AuthService implements AuthServiceInterface
         private readonly TotpAuthenticatorInterface $totpAuthenticator,
         private readonly Request $request,
         private readonly Session $session,
+        private readonly Timebox $timebox,
     ) {}
 
     /**
      * Attempt user authentication.
+     *
+     * Every rejection costs the same: an unknown email, a locked account and
+     * an account without admin access each run one password hash, as a wrong
+     * password does, inside a timebox that evens out the rest. Response time
+     * therefore does not tell an attacker which staff emails exist.
      */
     public function attempt(LoginCredentialsDTO $credentials): bool
     {
@@ -50,49 +58,10 @@ final class AuthService implements AuthServiceInterface
             return false;
         }
 
-        $user = User::query()->where('email', $email)->first();
-
-        if ($user instanceof User && $this->isLocked($user)) {
-            $this->logLoginFailure($user, $email);
-
-            return false;
-        }
-
-        if ($user instanceof User && ! $this->canAccessAdmin($user)) {
-            $this->logLoginFailure($user, $email);
-
-            return false;
-        }
-
-        $authenticated = $this->authFactory->guard($this->guardName())->attempt([
-            'email' => $email,
-            'password' => $password,
-        ], $remember);
-
-        if (! $authenticated) {
-            $this->handleFailedAttempt($user, $email);
-
-            return false;
-        }
-
-        $authenticatedUser = $this->authFactory->guard($this->guardName())->user();
-
-        if (! $authenticatedUser instanceof User) {
-            return false;
-        }
-
-        $this->clearFailedAttempts($authenticatedUser);
-        $this->clearTwoFactorVerification();
-        $this->extendSession();
-        $this->auditService->log(
-            action: 'user.login',
-            userId: (int) $authenticatedUser->getKey(),
-            entityType: User::class,
-            entityId: (int) $authenticatedUser->getKey(),
-            metadata: $this->authMetadata($authenticatedUser, $email),
+        return (bool) $this->timebox->dontReturnEarly()->call(
+            fn (Timebox $timebox): bool => $this->attemptWithinTimebox($timebox, $email, $password, $remember),
+            $this->timeboxMicroseconds(),
         );
-
-        return true;
     }
 
     /**
@@ -109,10 +78,49 @@ final class AuthService implements AuthServiceInterface
 
     /**
      * Check whether the account is currently locked.
+     *
+     * An automatic lock stops counting once its locked_until passes; a lock
+     * set by an administrator has none and lasts until it is lifted.
      */
     public function isLocked(Authenticatable $user): bool
     {
-        return (bool) $this->readAttribute($user, 'is_locked') || $this->readLockedAt($user) !== null;
+        if ($user instanceof User) {
+            return $user->isAccountLocked();
+        }
+
+        if (! (bool) $this->readAttribute($user, 'is_locked') && $this->readLockedAt($user) === null) {
+            return false;
+        }
+
+        $lockedUntil = $this->readAttribute($user, 'locked_until');
+
+        return ! $lockedUntil instanceof CarbonInterface || $lockedUntil->isFuture();
+    }
+
+    public function unlockAccount(string $email): bool
+    {
+        $email = strtolower(trim($email));
+        $user = $email !== '' ? User::query()->where('email', $email)->first() : null;
+
+        if (! $user instanceof User) {
+            return false;
+        }
+
+        $wasLocked = $user->isAccountLocked();
+        $this->clearLockState($user);
+
+        $this->auditService->log(
+            action: 'user.unlocked',
+            entityType: User::class,
+            entityId: (int) $user->getKey(),
+            metadata: [
+                'target_email' => $user->email,
+                'source' => 'console',
+                'was_locked' => $wasLocked,
+            ],
+        );
+
+        return true;
     }
 
     /**
@@ -251,6 +259,10 @@ final class AuthService implements AuthServiceInterface
             throw new AuthorizationException('This user is not authorized to update users.');
         }
 
+        // An automatic lock that has run out is lifted first, so the form's
+        // "locked" toggle, which shows the live state, is read against it.
+        $this->releaseExpiredLock($user);
+
         $requestedRole = array_key_exists('role_slug', $payload) ? (string) $payload['role_slug'] : (string) $user->role_slug;
         $shouldLock = array_key_exists('is_locked', $payload) ? (bool) $payload['is_locked'] : (bool) $user->is_locked;
 
@@ -296,8 +308,20 @@ final class AuthService implements AuthServiceInterface
             $user->password = Hash::make($payload['password']);
         }
 
-        $user->is_locked = $shouldLock;
-        $user->locked_at = $shouldLock ? ($user->locked_at ?? now()) : null;
+        if ($shouldLock && ! $wasLocked) {
+            // A lock set by hand has no expiry: it stays until it is lifted.
+            $user->forceFill(['is_locked' => true, 'locked_at' => now(), 'locked_until' => null]);
+        } elseif (! $shouldLock) {
+            // Lifting a lock also clears the failure count, or the next single
+            // typo would lock the account again straight away.
+            $user->forceFill([
+                'is_locked' => false,
+                'locked_at' => null,
+                'locked_until' => null,
+                'failed_login_attempts' => 0,
+                'failed_attempts' => 0,
+            ]);
+        }
 
         $changedFields = array_keys($user->getDirty());
         $saved = $user->save();
@@ -367,7 +391,8 @@ final class AuthService implements AuthServiceInterface
     private function clearFailedAttempts(User $user): void
     {
         if ($this->currentFailedAttempts($user) === 0
-            && ! $user->isAccountLocked()
+            && ! (bool) $user->is_locked
+            && $user->locked_at === null
         ) {
             return;
         }
@@ -377,6 +402,7 @@ final class AuthService implements AuthServiceInterface
             'failed_attempts' => 0,
             'is_locked' => false,
             'locked_at' => null,
+            'locked_until' => null,
             'last_login_at' => now(),
         ])->save();
     }
@@ -393,20 +419,30 @@ final class AuthService implements AuthServiceInterface
             return;
         }
 
-        $wasUnlocked = $user->locked_at === null;
+        $wasUnlocked = ! $user->isAccountLocked();
         $failedAttempts = min($this->currentFailedAttempts($user) + 1, self::MAX_FAILED_ATTEMPTS);
-        $isLocked = $failedAttempts >= self::MAX_FAILED_ATTEMPTS;
+        $locksNow = $wasUnlocked && $failedAttempts >= self::MAX_FAILED_ATTEMPTS;
 
         $user->forceFill([
             'failed_login_attempts' => $failedAttempts,
             'failed_attempts' => $failedAttempts,
-            'is_locked' => $isLocked,
-            'locked_at' => $isLocked ? now() : $user->locked_at,
-        ])->save();
+        ]);
+
+        if ($locksNow) {
+            $decayMinutes = $this->lockoutDecayMinutes();
+
+            $user->forceFill([
+                'is_locked' => true,
+                'locked_at' => now(),
+                'locked_until' => $decayMinutes > 0 ? now()->addMinutes($decayMinutes) : null,
+            ]);
+        }
+
+        $user->save();
 
         $this->logLoginFailure($user, $email);
 
-        if ($wasUnlocked && $user->locked_at !== null) {
+        if ($locksNow) {
             $this->auditService->log(
                 action: 'user.locked',
                 userId: (int) $user->getKey(),
@@ -415,6 +451,106 @@ final class AuthService implements AuthServiceInterface
                 metadata: $this->authMetadata($user, $email),
             );
         }
+    }
+
+    private function attemptWithinTimebox(Timebox $timebox, string $email, string $password, bool $remember): bool
+    {
+        $user = User::query()->where('email', $email)->first();
+
+        if ($user instanceof User) {
+            $this->releaseExpiredLock($user);
+        }
+
+        if (! $user instanceof User || $this->isLocked($user) || ! $this->canAccessAdmin($user)) {
+            // Do the hashing work a wrong password costs, and discard it.
+            Hash::make($password);
+
+            if ($user instanceof User) {
+                $this->logLoginFailure($user, $email);
+            } else {
+                $this->handleFailedAttempt(null, $email);
+            }
+
+            return false;
+        }
+
+        $authenticated = $this->authFactory->guard($this->guardName())->attempt([
+            'email' => $email,
+            'password' => $password,
+        ], $remember);
+
+        if (! $authenticated) {
+            $this->handleFailedAttempt($user, $email);
+
+            return false;
+        }
+
+        $authenticatedUser = $this->authFactory->guard($this->guardName())->user();
+
+        if (! $authenticatedUser instanceof User) {
+            return false;
+        }
+
+        $timebox->returnEarly();
+
+        $this->clearFailedAttempts($authenticatedUser);
+        $this->clearTwoFactorVerification();
+        $this->extendSession();
+        $this->auditService->log(
+            action: 'user.login',
+            userId: (int) $authenticatedUser->getKey(),
+            entityType: User::class,
+            entityId: (int) $authenticatedUser->getKey(),
+            metadata: $this->authMetadata($authenticatedUser, $email),
+        );
+
+        return true;
+    }
+
+    /**
+     * Lift an automatic lock whose time is up, with a fresh failure count.
+     */
+    private function releaseExpiredLock(User $user): void
+    {
+        if ($user->locked_until === null
+            || $user->locked_until->isFuture()
+            || (! (bool) $user->is_locked && $user->locked_at === null)
+        ) {
+            return;
+        }
+
+        $this->clearLockState($user);
+
+        $this->auditService->log(
+            action: 'user.unlocked',
+            entityType: User::class,
+            entityId: (int) $user->getKey(),
+            metadata: [
+                'target_email' => $user->email,
+                'source' => 'lock_expired',
+            ],
+        );
+    }
+
+    private function clearLockState(User $user): void
+    {
+        $user->forceFill([
+            'is_locked' => false,
+            'locked_at' => null,
+            'locked_until' => null,
+            'failed_login_attempts' => 0,
+            'failed_attempts' => 0,
+        ])->save();
+    }
+
+    private function lockoutDecayMinutes(): int
+    {
+        return max(0, (int) config('auth.lockout.decay_minutes', 30));
+    }
+
+    private function timeboxMicroseconds(): int
+    {
+        return max(0, (int) config('auth.timebox_duration', 200000));
     }
 
     private function logLoginFailure(User $user, string $email): void

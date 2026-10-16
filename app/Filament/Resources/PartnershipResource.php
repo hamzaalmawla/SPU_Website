@@ -48,6 +48,16 @@ class PartnershipResource extends Resource
         return Gate::allows('manage-pages');
     }
 
+    public static function getModelLabel(): string
+    {
+        return __('admin_resources.partnership.model');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('admin_resources.partnership.plural_model');
+    }
+
     public static function getNavigationGroup(): ?string
     {
         return __('admin.navigation.groups.about');
@@ -66,25 +76,25 @@ class PartnershipResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Section::make('Partnership')->schema([
+            Section::make(__('admin_resources.partnership.partnership'))->schema([
                 TextInput::make('slug')->required()->maxLength(255)->alphaDash(),
                 Select::make('category_key')->required()->options([
-                    'academic' => 'Academic',
-                    'research' => 'Research',
-                    'clinical' => 'Clinical',
+                    'academic' => __('admin_resources.partnership.academic'),
+                    'research' => __('admin_resources.partnership.research'),
+                    'clinical' => __('admin_resources.partnership.clinical'),
                 ]),
                 Select::make('status_key')->required()->default('active')->options([
-                    'active' => 'Active',
-                    'historical' => 'Historical',
+                    'active' => __('admin_resources.partnership.active'),
+                    'historical' => __('admin_resources.partnership.historical'),
                 ]),
-                MediaPicker::image('logo', 'Logo'),
+                MediaPicker::image('logo', __('admin_resources.partnership.logo')),
                 TextInput::make('website_url')->url()->maxLength(255),
                 DatePicker::make('signed_at'),
                 TextInput::make('sort_order')->numeric()->default(0),
                 Toggle::make('is_enabled')->default(true),
             ])->columns(2),
             Repeater::make('translations')->schema([
-                Select::make('locale')->required()->options(['ar' => 'Arabic', 'en' => 'English'])->disableOptionsWhenSelectedInSiblingRepeaterItems(),
+                Select::make('locale')->required()->options(['ar' => __('admin_resources.partnership.arabic'), 'en' => __('admin_resources.partnership.english')])->disableOptionsWhenSelectedInSiblingRepeaterItems(),
                 TextInput::make('name')->required()->maxLength(255),
                 TextInput::make('category')->maxLength(255),
                 TextInput::make('status')->maxLength(255),
@@ -101,7 +111,7 @@ class PartnershipResource extends Resource
             TextColumn::make('slug')->searchable()->sortable(),
             TextColumn::make('category_key')->badge()->sortable(),
             TextColumn::make('translations.name')
-                ->label('Names')
+                ->label(__('admin_resources.partnership.names'))
                 ->searchable(query: fn (Builder $query, string $search): Builder => $query->whereHas(
                     'translations',
                     fn (Builder $q): Builder => $q->where('name', 'like', "%{$search}%")

@@ -35,6 +35,16 @@ class ContactMessageResource extends Resource
         return Gate::allows('viewAny', ContactMessage::class);
     }
 
+    public static function getModelLabel(): string
+    {
+        return __('admin_resources.contact_message.model');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('admin_resources.contact_message.plural_model');
+    }
+
     public static function getNavigationGroup(): ?string
     {
         return __('admin.navigation.groups.contact');
@@ -94,8 +104,8 @@ class ContactMessageResource extends Resource
                 TextInput::make('assignedTo.name')->label(__('contact_messages.fields.assigned_to'))->disabled(),
                 Textarea::make('internal_notes')->label(__('contact_messages.fields.internal_notes'))->disabled()->rows(4)->columnSpanFull(),
                 TextInput::make('email_delivery_status')->label(__('contact_messages.fields.email_delivery'))->disabled(),
-                TextInput::make('ip_address')->label('IP Address')->disabled(),
-                TextInput::make('user_agent')->label('User Agent')->disabled()->columnSpanFull(),
+                TextInput::make('ip_address')->label(__('admin_resources.contact_message.ip_address'))->disabled(),
+                TextInput::make('user_agent')->label(__('admin_resources.contact_message.user_agent'))->disabled()->columnSpanFull(),
                 TextInput::make('created_at')->label(__('contact_messages.fields.submitted'))->disabled(),
             ])->columns(2),
         ]);
@@ -134,13 +144,13 @@ class ContactMessageResource extends Resource
                     ->badge()
                     ->color(fn (ContactMessage $record): string => $record->read_at ? 'gray' : 'danger'),
                 TextColumn::make('created_at')
-                    ->label('Submitted')
+                    ->label(__('admin_resources.contact_message.submitted'))
                     ->dateTime()
                     ->sortable(),
             ])
             ->filters([
                 SelectFilter::make('locale')
-                    ->options(['ar' => 'Arabic', 'en' => 'English']),
+                    ->options(['ar' => __('admin_resources.contact_message.arabic'), 'en' => __('admin_resources.contact_message.english')]),
                 SelectFilter::make('status')
                     ->options(collect(ContactMessageStatus::cases())->mapWithKeys(fn (ContactMessageStatus $status): array => [$status->value => __('contact_messages.statuses.'.$status->value)])->all()),
             ])

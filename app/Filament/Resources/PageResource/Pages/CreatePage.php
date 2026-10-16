@@ -91,7 +91,7 @@ class CreatePage extends CreateRecord
         );
 
         Notification::make()
-            ->title('Page created successfully')
+            ->title(__('admin_resources.page.page_created_successfully'))
             ->success()
             ->send();
 

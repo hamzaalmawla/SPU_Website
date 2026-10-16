@@ -29,6 +29,11 @@ final class AuthServicePlaceholder implements AuthServiceInterface
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
+    public function unlockAccount(string $email): bool
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
     public function logout(): void
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');

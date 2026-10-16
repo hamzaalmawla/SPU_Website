@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers\Filament;
 
+use App\Filament\Support\DefaultFieldLabels;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Middleware\AdminAuthMiddleware;
 use App\Http\Middleware\AdminLocaleMiddleware;
@@ -29,6 +30,11 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
 {
+    public function boot(): void
+    {
+        DefaultFieldLabels::register();
+    }
+
     public function panel(Panel $panel): Panel
     {
         return $panel

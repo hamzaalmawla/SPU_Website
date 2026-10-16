@@ -48,6 +48,16 @@ class DirectorateResource extends Resource
         return Gate::allows('manage-pages');
     }
 
+    public static function getModelLabel(): string
+    {
+        return __('admin_resources.directorate.model');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('admin_resources.directorate.plural_model');
+    }
+
     public static function getNavigationGroup(): ?string
     {
         return __('admin.navigation.groups.about');
@@ -66,7 +76,7 @@ class DirectorateResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Section::make('Directorate')->schema([
+            Section::make(__('admin_resources.directorate.directorate'))->schema([
                 TextInput::make('slug')->required()->maxLength(255)->alphaDash(),
                 MediaPicker::icon('icon', 'Icon'),
                 TextInput::make('email')->email()->maxLength(255),
@@ -75,11 +85,11 @@ class DirectorateResource extends Resource
                 Toggle::make('is_enabled')->default(true),
             ])->columns(2),
             Repeater::make('translations')->schema([
-                Select::make('locale')->required()->options(['ar' => 'Arabic', 'en' => 'English'])->disableOptionsWhenSelectedInSiblingRepeaterItems(),
+                Select::make('locale')->required()->options(['ar' => __('admin_resources.directorate.arabic'), 'en' => __('admin_resources.directorate.english')])->disableOptionsWhenSelectedInSiblingRepeaterItems(),
                 TextInput::make('title')->required()->maxLength(255),
                 Textarea::make('summary')->rows(3),
                 Textarea::make('description')->rows(5),
-                TagsInput::make('services_json')->label('Services')->columnSpanFull(),
+                TagsInput::make('services_json')->label(__('admin_resources.directorate.services'))->columnSpanFull(),
             ])->columns(2)->default([['locale' => 'ar'], ['locale' => 'en']])->minItems(2)->maxItems(2)->columnSpanFull(),
         ]);
     }
@@ -89,7 +99,7 @@ class DirectorateResource extends Resource
         return $table->columns([
             TextColumn::make('slug')->searchable()->sortable(),
             TextColumn::make('translations.title')
-                ->label('Titles')
+                ->label(__('admin_resources.directorate.titles'))
                 ->searchable(query: fn (Builder $query, string $search): Builder => $query->whereHas(
                     'translations',
                     fn (Builder $q): Builder => $q->where('title', 'like', "%{$search}%")

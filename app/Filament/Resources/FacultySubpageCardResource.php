@@ -34,13 +34,25 @@ class FacultySubpageCardResource extends Resource
 
     protected static ?int $navigationSort = 5;
 
-    protected static ?string $navigationGroup = 'Facilities';
+    public static function getModelLabel(): string
+    {
+        return __('admin_resources.faculty_subpage_card.model');
+    }
 
-    protected static ?string $navigationLabel = 'Subpage Navigation';
+    public static function getPluralModelLabel(): string
+    {
+        return __('admin_resources.faculty_subpage_card.plural_model');
+    }
 
-    protected static ?string $modelLabel = 'Faculty Subpage Card';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('admin.navigation.groups.facilities');
+    }
 
-    protected static ?string $pluralModelLabel = 'Faculty Subpage Cards';
+    public static function getNavigationLabel(): string
+    {
+        return __('admin_resources.faculty_subpage_card.navigation_label');
+    }
 
     public static function canAccess(): bool
     {
@@ -79,20 +91,20 @@ class FacultySubpageCardResource extends Resource
     {
         return [
             TextInput::make('title_override_ar')
-                ->label('Title Override (AR)')
+                ->label(__('admin_resources.faculty_subpage_card.title_override_ar'))
                 ->maxLength(255)
-                ->placeholder('Leave blank for default'),
+                ->placeholder(__('admin_resources.faculty_subpage_card.leave_blank_for_default')),
             TextInput::make('title_override_en')
-                ->label('Title Override (EN)')
+                ->label(__('admin_resources.faculty_subpage_card.title_override_en'))
                 ->maxLength(255)
-                ->placeholder('Leave blank for default'),
+                ->placeholder(__('admin_resources.faculty_subpage_card.leave_blank_for_default')),
             TextInput::make('sort_order')
-                ->label('Sort Order')
+                ->label(__('admin_resources.faculty_subpage_card.sort_order'))
                 ->numeric()
                 ->default(0)
                 ->required(),
             Toggle::make('is_visible')
-                ->label('Visible')
+                ->label(__('admin_resources.faculty_subpage_card.visible'))
                 ->default(true),
         ];
     }
@@ -103,14 +115,14 @@ class FacultySubpageCardResource extends Resource
             ->defaultSort('sort_order')
             ->columns([
                 TextColumn::make('faculty_slug')
-                    ->label('Faculty')
+                    ->label(__('admin_resources.faculty_subpage_card.faculty'))
                     ->searchable(),
                 TextColumn::make('subpage_slug')
-                    ->label('Subpage')
+                    ->label(__('admin_resources.faculty_subpage_card.subpage'))
                     ->searchable()
                     ->description(fn (FacultySubpageCard $record): string => $record->subpage_slug),
                 TextColumn::make('status')
-                    ->label('Status')
+                    ->label(__('admin_resources.faculty_subpage_card.status'))
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'published' => 'success',
@@ -119,19 +131,19 @@ class FacultySubpageCardResource extends Resource
                         default => 'gray',
                     }),
                 IconColumn::make('is_visible')
-                    ->label('Visible')
+                    ->label(__('admin_resources.faculty_subpage_card.visible'))
                     ->boolean()
                     ->action(function (FacultySubpageCard $record): void {
                         $service = app(FacultySubpageCardServiceInterface::class);
                         $service->toggleVisibility((int) $record->getKey(), (int) auth()->id());
                     }),
                 TextColumn::make('sort_order')
-                    ->label('Sort Order')
+                    ->label(__('admin_resources.faculty_subpage_card.sort_order'))
                     ->sortable(),
             ])
             ->filters([
                 SelectFilter::make('faculty_slug')
-                    ->label('Faculty')
+                    ->label(__('admin_resources.faculty_subpage_card.faculty'))
                     ->options(fn (): array => static::facultyOptions()),
             ])
             ->actions([
@@ -139,7 +151,7 @@ class FacultySubpageCardResource extends Resource
                     ->label('')
                     ->icon('heroicon-o-chevron-up')
                     ->color('gray')
-                    ->tooltip('Move Up')
+                    ->tooltip(__('admin_resources.faculty_subpage_card.move_up'))
                     ->action(function (FacultySubpageCard $record): void {
                         $service = app(FacultySubpageCardServiceInterface::class);
                         $service->moveUp((int) $record->getKey(), (int) auth()->id());
@@ -148,14 +160,14 @@ class FacultySubpageCardResource extends Resource
                     ->label('')
                     ->icon('heroicon-o-chevron-down')
                     ->color('gray')
-                    ->tooltip('Move Down')
+                    ->tooltip(__('admin_resources.faculty_subpage_card.move_down'))
                     ->action(function (FacultySubpageCard $record): void {
                         $service = app(FacultySubpageCardServiceInterface::class);
                         $service->moveDown((int) $record->getKey(), (int) auth()->id());
                     }),
                 Action::make('edit')
                     ->icon('heroicon-o-pencil-square')
-                    ->modalHeading('Edit Faculty Subpage Card')
+                    ->modalHeading(__('admin_resources.faculty_subpage_card.edit_faculty_subpage_card'))
                     ->modalWidth('lg')
                     ->fillForm(fn (FacultySubpageCard $record): array => [
                         'title_override_ar' => $record->title_override_ar,
@@ -175,15 +187,15 @@ class FacultySubpageCardResource extends Resource
                     ->icon('heroicon-o-trash')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->modalHeading('Delete Faculty Subpage Card')
-                    ->label('Delete')
+                    ->modalHeading(__('admin_resources.faculty_subpage_card.delete_faculty_subpage_card'))
+                    ->label(__('admin_resources.faculty_subpage_card.delete'))
                     ->action(fn (FacultySubpageCard $record): bool => app(FacultySubpageCardServiceInterface::class)
                         ->deleteCard((int) $record->getKey(), (int) auth()->id())),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\BulkAction::make('publish')
-                        ->label('Publish')
+                        ->label(__('admin_resources.faculty_subpage_card.publish'))
                         ->icon('heroicon-o-paper-airplane')
                         ->color('success')
                         ->requiresConfirmation()
@@ -195,12 +207,12 @@ class FacultySubpageCardResource extends Resource
                             }
 
                             Notification::make()
-                                ->title('Faculty subpage cards published')
+                                ->title(__('admin_resources.faculty_subpage_card.faculty_subpage_cards_published'))
                                 ->success()
                                 ->send();
                         }),
                     Tables\Actions\BulkAction::make('unpublish')
-                        ->label('Unpublish')
+                        ->label(__('admin_resources.faculty_subpage_card.unpublish'))
                         ->icon('heroicon-o-x-circle')
                         ->color('danger')
                         ->requiresConfirmation()
@@ -212,7 +224,7 @@ class FacultySubpageCardResource extends Resource
                             }
 
                             Notification::make()
-                                ->title('Faculty subpage cards unpublished')
+                                ->title(__('admin_resources.faculty_subpage_card.faculty_subpage_cards_unpublished'))
                                 ->success()
                                 ->send();
                         }),
@@ -220,13 +232,13 @@ class FacultySubpageCardResource extends Resource
             ])
             ->headerActions([
                 Action::make('addCard')
-                    ->label('Add Subpage Card')
+                    ->label(__('admin_resources.faculty_subpage_card.add_subpage_card'))
                     ->icon('heroicon-o-plus')
-                    ->modalHeading('Add Faculty Subpage Card')
+                    ->modalHeading(__('admin_resources.faculty_subpage_card.add_faculty_subpage_card'))
                     ->modalWidth('lg')
                     ->form([
                         Select::make('faculty_slug')
-                            ->label('Faculty')
+                            ->label(__('admin_resources.faculty_subpage_card.faculty'))
                             ->options(fn (): array => static::facultyOptions())
                             ->default(static::scopedFacultySlug())
                             ->hidden(fn (): bool => static::scopedFacultySlug() !== null)
@@ -235,19 +247,19 @@ class FacultySubpageCardResource extends Resource
                             ->live()
                             ->afterStateUpdated(fn (Set $set): mixed => $set('subpage_slug', null)),
                         Select::make('subpage_slug')
-                            ->label('Subpage')
+                            ->label(__('admin_resources.faculty_subpage_card.subpage'))
                             ->options(fn (Get $get): array => app(FacultySubpageCardServiceInterface::class)
                                 ->availableSubpageOptions((string) ($get('faculty_slug') ?? '')))
                             ->searchable()
                             ->required(),
                         TextInput::make('title_override_ar')
-                            ->label('Title Override (AR)')
+                            ->label(__('admin_resources.faculty_subpage_card.title_override_ar'))
                             ->maxLength(255)
-                            ->placeholder('Leave blank for default'),
+                            ->placeholder(__('admin_resources.faculty_subpage_card.leave_blank_for_default')),
                         TextInput::make('title_override_en')
-                            ->label('Title Override (EN)')
+                            ->label(__('admin_resources.faculty_subpage_card.title_override_en'))
                             ->maxLength(255)
-                            ->placeholder('Leave blank for default'),
+                            ->placeholder(__('admin_resources.faculty_subpage_card.leave_blank_for_default')),
                     ])
                     ->action(function (array $data): void {
                         $service = app(FacultySubpageCardServiceInterface::class);
@@ -258,7 +270,7 @@ class FacultySubpageCardResource extends Resource
 
                         if ($facultySlug === '') {
                             Notification::make()
-                                ->title('A faculty must be selected')
+                                ->title(__('admin_resources.faculty_subpage_card.a_faculty_must_be_selected'))
                                 ->danger()
                                 ->send();
 
@@ -267,7 +279,7 @@ class FacultySubpageCardResource extends Resource
 
                         if ($service->cardExists($facultySlug, (string) $data['subpage_slug'])) {
                             Notification::make()
-                                ->title('This subpage card already exists for this faculty')
+                                ->title(__('admin_resources.faculty_subpage_card.this_subpage_card_already_exists_for_this_faculty'))
                                 ->danger()
                                 ->send();
 
@@ -283,7 +295,7 @@ class FacultySubpageCardResource extends Resource
                         );
 
                         Notification::make()
-                            ->title('Faculty subpage card added')
+                            ->title(__('admin_resources.faculty_subpage_card.faculty_subpage_card_added'))
                             ->success()
                             ->send();
                     })

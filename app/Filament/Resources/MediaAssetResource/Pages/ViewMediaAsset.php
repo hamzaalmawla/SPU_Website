@@ -20,120 +20,120 @@ class ViewMediaAsset extends ViewRecord
     public function infolist(Infolist $infolist): Infolist
     {
         return $infolist->schema([
-            Section::make('Preview')
+            Section::make(__('admin_resources.media_asset.preview'))
                 ->schema([
                     TextEntry::make('preview')
-                        ->label('Preview')
+                        ->label(__('admin_resources.media_asset.preview'))
                         ->getStateUsing(fn ($record): ?string => self::publicMediaUrl($record->path ?? null, $record->disk ?? null))
                         ->formatStateUsing(fn (?string $state): HtmlString => self::previewHtml($state))
                         ->html()
                         ->visible(fn ($record): bool => str_starts_with($record->mime_type ?? '', 'image/')),
 
                     TextEntry::make('mime_type')
-                        ->label('File Type')
+                        ->label(__('admin_resources.media_asset.file_type'))
                         ->visible(fn ($record): bool => ! str_starts_with($record->mime_type ?? '', 'image/'))
                         ->badge()
                         ->size(TextEntry\TextEntrySize::Large),
                 ]),
 
-            Section::make('File Information')
+            Section::make(__('admin_resources.media_asset.file_information'))
                 ->columns(2)
                 ->schema([
                     TextEntry::make('filename')
-                        ->label('Filename'),
+                        ->label(__('admin_resources.media_asset.filename')),
 
                     TextEntry::make('original_name')
-                        ->label('Original Name'),
+                        ->label(__('admin_resources.media_asset.original_name')),
 
                     TextEntry::make('mime_type')
-                        ->label('MIME Type'),
+                        ->label(__('admin_resources.media_asset.mime_type')),
 
                     TextEntry::make('media_type')
-                        ->label('Category')
+                        ->label(__('admin_resources.media_asset.category'))
                         ->badge(),
 
                     TextEntry::make('metadata_status')
-                        ->label('Metadata Status')
+                        ->label(__('admin_resources.media_asset.metadata_status'))
                         ->badge(),
 
                     TextEntry::make('extension')
-                        ->label('Extension'),
+                        ->label(__('admin_resources.media_asset.extension')),
 
                     TextEntry::make('size_bytes')
-                        ->label('Size')
+                        ->label(__('admin_resources.media_asset.size'))
                         ->formatStateUsing(fn (int $state): string => self::formatFileSize($state)),
 
                     TextEntry::make('checksum')
-                        ->label('Checksum')
+                        ->label(__('admin_resources.media_asset.checksum'))
                         ->copyable()
                         ->placeholder('—'),
 
                     TextEntry::make('public_url')
-                        ->label('URL')
+                        ->label(__('admin_resources.media_asset.url'))
                         ->getStateUsing(fn ($record): string => self::publicMediaUrl($record->path ?? null, $record->disk ?? null) ?? '')
                         ->copyable(),
 
                     TextEntry::make('width')
-                        ->label('Width (px)')
-                        ->placeholder('N/A'),
+                        ->label(__('admin_resources.media_asset.width_px'))
+                        ->placeholder(__('admin_resources.media_asset.n_a')),
 
                     TextEntry::make('height')
-                        ->label('Height (px)')
-                        ->placeholder('N/A'),
+                        ->label(__('admin_resources.media_asset.height_px'))
+                        ->placeholder(__('admin_resources.media_asset.n_a')),
 
                     TextEntry::make('display_fit')
-                        ->label('Display Mode')
+                        ->label(__('admin_resources.media_asset.display_mode'))
                         ->badge()
                         ->visible(fn ($record): bool => str_starts_with($record->mime_type ?? '', 'image/')),
 
                     TextEntry::make('focal_x')
-                        ->label('Horizontal Focus')
+                        ->label(__('admin_resources.media_asset.horizontal_focus'))
                         ->suffix('%')
                         ->visible(fn ($record): bool => str_starts_with($record->mime_type ?? '', 'image/')),
 
                     TextEntry::make('focal_y')
-                        ->label('Vertical Focus')
+                        ->label(__('admin_resources.media_asset.vertical_focus'))
                         ->suffix('%')
                         ->visible(fn ($record): bool => str_starts_with($record->mime_type ?? '', 'image/')),
 
                     TextEntry::make('created_at')
-                        ->label('Uploaded At')
+                        ->label(__('admin_resources.media_asset.uploaded_at'))
                         ->dateTime(),
 
                     TextEntry::make('uploadedBy.name')
-                        ->label('Uploaded By')
+                        ->label(__('admin_resources.media_asset.uploaded_by'))
                         ->placeholder('—'),
                 ]),
 
-            Section::make('Arabic Metadata')
+            Section::make(__('admin_resources.media_asset.arabic_metadata'))
                 ->columns(1)
                 ->schema([
                     TextEntry::make('title_ar')
-                        ->label('Title (AR)')
+                        ->label(__('admin_resources.media_asset.title_ar'))
                         ->placeholder('—'),
 
                     TextEntry::make('alt_text_ar')
-                        ->label('Alt Text (AR)')
+                        ->label(__('admin_resources.media_asset.alt_text_ar'))
                         ->placeholder('—'),
 
                     TextEntry::make('caption_ar')
-                        ->label('Caption (AR)')
+                        ->label(__('admin_resources.media_asset.caption_ar'))
                         ->placeholder('—'),
                 ]),
 
-            Section::make('English Metadata')
+            Section::make(__('admin_resources.media_asset.english_metadata'))
                 ->columns(1)
                 ->schema([
                     TextEntry::make('title_en')
-                        ->label('Title (EN)')
+                        ->label(__('admin_resources.media_asset.title_en'))
                         ->placeholder('—'),
 
                     TextEntry::make('alt_text_en')
-                        ->label('Alt Text (EN)')
+                        ->label(__('admin_resources.media_asset.alt_text_en'))
                         ->placeholder('—'),
 
                     TextEntry::make('caption_en')
-                        ->label('Caption (EN)')
+                        ->label(__('admin_resources.media_asset.caption_en'))
                         ->placeholder('—'),
                 ]),
         ]);

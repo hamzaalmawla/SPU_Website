@@ -16,6 +16,8 @@
         <div class="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700" role="alert" aria-live="assertive" x-text="$store.dynamicForm.submitError"></div>
     </template>
 
+    <p x-show="!$store.dynamicForm.submitted" class="mb-5 text-xs text-gray-500">{{ __('public.required_fields_note') }}</p>
+
     <fieldset x-bind:disabled="$store.dynamicForm.isPreview" x-show="!$store.dynamicForm.submitted && $store.dynamicForm.isMultiStep">
         <div class="mb-8">
              <div class="flex min-w-max items-center justify-between overflow-x-auto pb-2">

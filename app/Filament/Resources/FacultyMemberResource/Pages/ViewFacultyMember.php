@@ -32,19 +32,19 @@ class ViewFacultyMember extends ViewRecord
             ?? '-';
 
         return $infolist->schema([
-            Section::make('Basic Information')->schema([
+            Section::make(__('admin_resources.faculty_member.basic_information'))->schema([
                 TextEntry::make('slug'),
-                TextEntry::make('translations.full_name')->label('Name')->state($translation?->full_name ?? '-'),
-                TextEntry::make('translations.title')->label('Title')->state($translation?->title ?? '-'),
-                TextEntry::make('translations.position')->label('Position')->state($translation?->position ?? '-'),
-                TextEntry::make('faculty')->label('Faculty')->state($facultyName),
-                TextEntry::make('department')->label('Department')->state($departmentName),
+                TextEntry::make('translations.full_name')->label(__('admin_resources.faculty_member.name'))->state($translation?->full_name ?? '-'),
+                TextEntry::make('translations.title')->label(__('admin_resources.faculty_member.title'))->state($translation?->title ?? '-'),
+                TextEntry::make('translations.position')->label(__('admin_resources.faculty_member.position'))->state($translation?->position ?? '-'),
+                TextEntry::make('faculty')->label(__('admin_resources.faculty_member.faculty'))->state($facultyName),
+                TextEntry::make('department')->label(__('admin_resources.faculty_member.department'))->state($departmentName),
                 TextEntry::make('email'),
                 TextEntry::make('phone'),
-                TextEntry::make('office_location')->label('Office'),
+                TextEntry::make('office_location')->label(__('admin_resources.faculty_member.office')),
             ])->columns(2),
-            Section::make('Biography')->schema([
-                TextEntry::make('bio')->label('Bio')->state($translation?->bio ?? '-')->prose(),
+            Section::make(__('admin_resources.faculty_member.biography'))->schema([
+                TextEntry::make('bio')->label(__('admin_resources.faculty_member.bio'))->state($translation?->bio ?? '-')->prose(),
             ]),
         ]);
     }

@@ -42,6 +42,16 @@ final class LegacyMediaAssetResource extends Resource
         return false;
     }
 
+    public static function getModelLabel(): string
+    {
+        return __('admin_resources.legacy_media_asset.model');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('admin_resources.legacy_media_asset.plural_model');
+    }
+
     public static function getNavigationGroup(): ?string
     {
         return __('admin.navigation.groups.content');
@@ -49,7 +59,7 @@ final class LegacyMediaAssetResource extends Resource
 
     public static function getNavigationLabel(): string
     {
-        return 'Legacy Media Archive';
+        return __('admin_resources.legacy_media_asset.plural_model');
     }
 
     public static function getEloquentQuery(): Builder
@@ -90,31 +100,31 @@ final class LegacyMediaAssetResource extends Resource
                     ->html(),
 
                 TextColumn::make('filename')
-                    ->label('Filename')
+                    ->label(__('admin_resources.legacy_media_asset.filename'))
                     ->searchable()
                     ->sortable()
                     ->limit(40),
 
                 TextColumn::make('original_name')
-                    ->label('Original Name')
+                    ->label(__('admin_resources.legacy_media_asset.original_name'))
                     ->searchable()
                     ->toggleable()
                     ->limit(40),
 
                 TextColumn::make('title_en')
-                    ->label('Title')
+                    ->label(__('admin_resources.legacy_media_asset.title'))
                     ->searchable()
                     ->placeholder('-')
                     ->limit(30),
 
                 TextColumn::make('path')
-                    ->label('Path')
+                    ->label(__('admin_resources.legacy_media_asset.path'))
                     ->searchable()
                     ->copyable()
                     ->limit(55),
 
                 TextColumn::make('media_type')
-                    ->label('Type')
+                    ->label(__('admin_resources.legacy_media_asset.type'))
                     ->badge()
                     ->color(fn (?string $state): string => match ($state) {
                         'image' => 'success',
@@ -125,7 +135,7 @@ final class LegacyMediaAssetResource extends Resource
                     }),
 
                 TextColumn::make('metadata_status')
-                    ->label('Metadata')
+                    ->label(__('admin_resources.legacy_media_asset.metadata'))
                     ->badge()
                     ->color(fn (?string $state): string => match ($state) {
                         'reviewed' => 'success',
@@ -136,19 +146,19 @@ final class LegacyMediaAssetResource extends Resource
             ])
             ->filters([
                 SelectFilter::make('media_type')
-                    ->label('Type')
+                    ->label(__('admin_resources.legacy_media_asset.type'))
                     ->options([
-                        'image' => 'Images',
-                        'pdf' => 'PDFs',
-                        'document' => 'Documents',
-                        'video' => 'Videos',
-                        'icon' => 'Icons',
-                        'other' => 'Other',
+                        'image' => __('admin_resources.legacy_media_asset.images'),
+                        'pdf' => __('admin_resources.legacy_media_asset.pdfs'),
+                        'document' => __('admin_resources.legacy_media_asset.documents'),
+                        'video' => __('admin_resources.legacy_media_asset.videos'),
+                        'icon' => __('admin_resources.legacy_media_asset.icons'),
+                        'other' => __('admin_resources.legacy_media_asset.other'),
                     ]),
                 Filter::make('directory')
                     ->form([
                         TextInput::make('directory')
-                            ->label('Directory')
+                            ->label(__('admin_resources.legacy_media_asset.directory'))
                             ->placeholder('news/images'),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
@@ -159,28 +169,28 @@ final class LegacyMediaAssetResource extends Resource
                             : $query;
                     }),
                 Filter::make('missing_metadata')
-                    ->label('Missing Metadata')
+                    ->label(__('admin_resources.legacy_media_asset.missing_metadata'))
                     ->query(fn (Builder $query): Builder => $query->where('metadata_status', 'missing')),
                 Filter::make('missing_image_alt')
-                    ->label('Images Missing Alt Text')
+                    ->label(__('admin_resources.legacy_media_asset.images_missing_alt_text'))
                     ->query(fn (Builder $query): Builder => $query->where('media_type', 'image')->whereNull('alt_text_ar')->whereNull('alt_text_en')),
             ])
             ->actions([
                 Tables\Actions\Action::make('promote')
-                    ->label('Promote')
+                    ->label(__('admin_resources.legacy_media_asset.promote'))
                     ->icon('heroicon-o-arrow-up-tray')
                     ->visible(fn (): bool => Gate::allows('create', MediaAsset::class))
                     ->form([
-                        TextInput::make('title_ar')->label('Title (AR)')->maxLength(255),
-                        TextInput::make('title_en')->label('Title (EN)')->maxLength(255),
-                        TextInput::make('alt_text_ar')->label('Alt Text (AR)')->maxLength(500),
-                        TextInput::make('alt_text_en')->label('Alt Text (EN)')->maxLength(500),
+                        TextInput::make('title_ar')->label(__('admin_resources.legacy_media_asset.title_ar'))->maxLength(255),
+                        TextInput::make('title_en')->label(__('admin_resources.legacy_media_asset.title_en'))->maxLength(255),
+                        TextInput::make('alt_text_ar')->label(__('admin_resources.legacy_media_asset.alt_text_ar'))->maxLength(500),
+                        TextInput::make('alt_text_en')->label(__('admin_resources.legacy_media_asset.alt_text_en'))->maxLength(500),
                     ])
                     ->action(function (MediaAsset $record, array $data): void {
                         app(MediaServiceInterface::class)->promoteLegacyAsset($record->id, $data, (int) auth()->id());
 
                         Notification::make()
-                            ->title('Legacy asset promoted to Main Media Library')
+                            ->title(__('admin_resources.legacy_media_asset.legacy_asset_promoted_to_main_media_library'))
                             ->success()
                             ->send();
                     }),

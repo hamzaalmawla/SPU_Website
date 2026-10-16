@@ -56,6 +56,16 @@ class PersonResource extends Resource
         return Gate::allows('manage-pages');
     }
 
+    public static function getModelLabel(): string
+    {
+        return __('admin_resources.person.model');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('admin_resources.person.plural_model');
+    }
+
     public static function getNavigationGroup(): ?string
     {
         return __('admin.navigation.groups.about');
@@ -74,110 +84,110 @@ class PersonResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Section::make('Where this person appears')->schema([
+            Section::make(__('admin_resources.person.where_this_person_appears'))->schema([
                 Select::make('category')->nullable()->options([
-                    'dean' => 'Dean - shown on About Leadership',
-                    'rector' => 'Rector - main leadership profile',
-                    'vice_president' => 'Vice President - leadership profile',
-                    'council' => 'Council Member - leadership profile',
-                    'director' => 'Director - profile only',
-                ])->native(false)->helperText('Legacy: use Appointments below instead.'),
+                    'dean' => __('admin_resources.person.dean_shown_on_about_leadership'),
+                    'rector' => __('admin_resources.person.rector_main_leadership_profile'),
+                    'vice_president' => __('admin_resources.person.vice_president_leadership_profile'),
+                    'council' => __('admin_resources.person.council_member_leadership_profile'),
+                    'director' => __('admin_resources.person.director_profile_only'),
+                ])->native(false)->helperText(__('admin_resources.person.legacy_use_appointments_below_instead')),
                 Select::make('faculty_scope_slug')
-                    ->label('Faculty scope')
-                    ->helperText('Legacy field for faculty filtering.')
+                    ->label(__('admin_resources.person.faculty_scope'))
+                    ->helperText(__('admin_resources.person.legacy_field_for_faculty_filtering'))
                     ->options(self::facultyOptions())
                     ->searchable()
                     ->native(false),
                 TextInput::make('sort_order')
-                    ->label('Display order')
+                    ->label(__('admin_resources.person.display_order'))
                     ->numeric()
                     ->default(fn (): int => self::nextSortOrder())
                     ->minValue(0)
                     ->step(10)
-                    ->helperText('Lower numbers appear first. You can also reorder people from the list.'),
-                Toggle::make('is_enabled')->label('Visible to editors')->default(true),
+                    ->helperText(__('admin_resources.person.lower_numbers_appear_first_you_can_also_reorder_people_from')),
+                Toggle::make('is_enabled')->label(__('admin_resources.person.visible_to_editors'))->default(true),
             ])->columns(2),
-            Section::make('Placements (cards)')->schema([
+            Section::make(__('admin_resources.person.placements_cards'))->schema([
                 Repeater::make('appointments')->schema([
                     Select::make('type')->required()->options([
-                        'rector' => 'Rector',
-                        'vice_president' => 'Vice President',
-                        'dean' => 'Dean',
-                        'council' => 'Council Member',
-                        'director' => 'Director',
-                        'faculty_member' => 'Faculty Member',
-                        'researcher' => 'Researcher',
+                        'rector' => __('admin_resources.person.rector'),
+                        'vice_president' => __('admin_resources.person.vice_president'),
+                        'dean' => __('admin_resources.person.dean'),
+                        'council' => __('admin_resources.person.council_member'),
+                        'director' => __('admin_resources.person.director'),
+                        'faculty_member' => __('admin_resources.person.faculty_member'),
+                        'researcher' => __('admin_resources.person.researcher'),
                     ])->native(false),
                     Select::make('faculty_id')
-                        ->label('Faculty')
+                        ->label(__('admin_resources.person.faculty'))
                         ->options(fn (): array => self::facultyIdOptions())
                         ->searchable()
                         ->native(false)
                         ->nullable(),
                     TextInput::make('role_override')
-                        ->label('Role override')
-                        ->helperText('e.g., "Dean of Medicine" or "Professor of Surgery"')
+                        ->label(__('admin_resources.person.role_override'))
+                        ->helperText(__('admin_resources.person.e_g_dean_of_medicine_or_professor_of_surgery'))
                         ->nullable()
                         ->maxLength(255),
                     TextInput::make('sort_order')->numeric()->default(0)->minValue(0),
                     Toggle::make('is_enabled')->default(true),
-                ])->columns(2)->defaultItems(0)->addActionLabel('Add Placement'),
+                ])->columns(2)->defaultItems(0)->addActionLabel(__('admin_resources.person.add_placement')),
             ])->collapsible()->columnSpanFull(),
             Tabs::make('Profile text')->tabs([
-                Tabs\Tab::make('Arabic')->schema([
+                Tabs\Tab::make('Arabic')->label(__('admin_resources.person.arabic'))->schema([
                     Hidden::make('translations.ar.locale')->default('ar'),
-                    TextInput::make('translations.ar.name')->label('Arabic name')->required()->maxLength(255),
-                    TextInput::make('translations.ar.role')->label('Arabic role')->required()->maxLength(255),
-                    Textarea::make('translations.ar.bio')->label('Arabic biography')->rows(4)->columnSpanFull(),
-                    Textarea::make('translations.ar.quote')->label('Arabic quote')->rows(3)->columnSpanFull(),
+                    TextInput::make('translations.ar.name')->label(__('admin_resources.person.arabic_name'))->required()->maxLength(255),
+                    TextInput::make('translations.ar.role')->label(__('admin_resources.person.arabic_role'))->required()->maxLength(255),
+                    Textarea::make('translations.ar.bio')->label(__('admin_resources.person.arabic_biography'))->rows(4)->columnSpanFull(),
+                    Textarea::make('translations.ar.quote')->label(__('admin_resources.person.arabic_quote'))->rows(3)->columnSpanFull(),
                 ])->columns(2),
-                Tabs\Tab::make('English')->schema([
+                Tabs\Tab::make('English')->label(__('admin_resources.person.english'))->schema([
                     Hidden::make('translations.en.locale')->default('en'),
-                    TextInput::make('translations.en.name')->label('English name')->required()->maxLength(255)->live(onBlur: true),
-                    TextInput::make('translations.en.role')->label('English role')->required()->maxLength(255),
-                    Textarea::make('translations.en.bio')->label('English biography')->rows(4)->columnSpanFull(),
-                    Textarea::make('translations.en.quote')->label('English quote')->rows(3)->columnSpanFull(),
+                    TextInput::make('translations.en.name')->label(__('admin_resources.person.english_name'))->required()->maxLength(255)->live(onBlur: true),
+                    TextInput::make('translations.en.role')->label(__('admin_resources.person.english_role'))->required()->maxLength(255),
+                    Textarea::make('translations.en.bio')->label(__('admin_resources.person.english_biography'))->rows(4)->columnSpanFull(),
+                    Textarea::make('translations.en.quote')->label(__('admin_resources.person.english_quote'))->rows(3)->columnSpanFull(),
                 ])->columns(2),
             ])->columnSpanFull(),
-            Section::make('Media')->schema([
-                MediaPicker::assetImage('photo_media_id', 'Profile Photo'),
+            Section::make(__('admin_resources.person.media'))->schema([
+                MediaPicker::assetImage('photo_media_id', __('admin_resources.person.profile_photo')),
                 MediaPicker::assetDocument('cv_media_id', 'CV Document'),
             ])->columns(2)->collapsible()->collapsed(),
-            Section::make('Contact details')->schema([
+            Section::make(__('admin_resources.person.contact_details'))->schema([
                 TextInput::make('email')->email()->maxLength(255),
                 TextInput::make('phone')->maxLength(255),
                 TextInput::make('office_location')->maxLength(255),
-                TextInput::make('orcid_url')->label('ORCID URL')->url()->maxLength(255),
-                TextInput::make('scholar_url')->label('Google Scholar URL')->url()->maxLength(255),
+                TextInput::make('orcid_url')->label(__('admin_resources.person.orcid_url'))->url()->maxLength(255),
+                TextInput::make('scholar_url')->label(__('admin_resources.person.google_scholar_url'))->url()->maxLength(255),
                 Hidden::make('profile_url'),
             ])->columns(2)->collapsible()->collapsed(),
-            Section::make('Advanced URL and titles')->schema([
+            Section::make(__('admin_resources.person.advanced_url_and_titles'))->schema([
                 Placeholder::make('computed_profile_url')
-                    ->label('Profile URL')
+                    ->label(__('admin_resources.person.profile_url'))
                     ->content(fn (Get $get): string => self::profilePathFromForm($get)),
                 TextInput::make('slug')
-                    ->label('Profile URL slug')
+                    ->label(__('admin_resources.person.profile_url_slug'))
                     ->maxLength(255)
                     ->alphaDash()
                     ->unique(ignoreRecord: true)
-                    ->helperText('Leave blank and it will be generated from the English name.'),
-                TextInput::make('title')->maxLength(255)->placeholder('Prof., Dr., etc.'),
-                TextInput::make('position')->maxLength(255)->placeholder('Rector, Dean, etc.'),
+                    ->helperText(__('admin_resources.person.leave_blank_and_it_will_be_generated_from_the_english_name')),
+                TextInput::make('title')->maxLength(255)->placeholder(__('admin_resources.person.prof_dr_etc')),
+                TextInput::make('position')->maxLength(255)->placeholder(__('admin_resources.person.rector_dean_etc')),
             ])->columns(2)->collapsible()->collapsed(),
-            Section::make('Social Links')->schema([
-                TextInput::make('social_links.linkedin')->label('LinkedIn URL')->url()->maxLength(255),
-                TextInput::make('social_links.scholar')->label('Google Scholar URL')->url()->maxLength(255),
-                TextInput::make('social_links.orcid')->label('ORCID URL')->url()->maxLength(255),
-                TextInput::make('social_links.researchgate')->label('ResearchGate URL')->url()->maxLength(255),
-                TextInput::make('social_links.twitter')->label('Twitter/X URL')->url()->maxLength(255),
+            Section::make(__('admin_resources.person.social_links'))->schema([
+                TextInput::make('social_links.linkedin')->label(__('admin_resources.person.linkedin_url'))->url()->maxLength(255),
+                TextInput::make('social_links.scholar')->label(__('admin_resources.person.google_scholar_url'))->url()->maxLength(255),
+                TextInput::make('social_links.orcid')->label(__('admin_resources.person.orcid_url'))->url()->maxLength(255),
+                TextInput::make('social_links.researchgate')->label(__('admin_resources.person.researchgate_url'))->url()->maxLength(255),
+                TextInput::make('social_links.twitter')->label(__('admin_resources.person.twitter_x_url'))->url()->maxLength(255),
             ])->columns(2)->collapsible()->collapsed(),
-            Section::make('Education')->schema([
+            Section::make(__('admin_resources.person.education'))->schema([
                 Repeater::make('educations')->schema([
                     TextInput::make('id')->hidden(),
                     TextInput::make('sort_order')->numeric()->default(0),
                     Toggle::make('is_enabled')->default(true),
                     Repeater::make('translations')->schema([
-                        Select::make('locale')->required()->options(['ar' => 'Arabic', 'en' => 'English'])->disableOptionsWhenSelectedInSiblingRepeaterItems(),
+                        Select::make('locale')->required()->options(['ar' => __('admin_resources.person.arabic'), 'en' => __('admin_resources.person.english')])->disableOptionsWhenSelectedInSiblingRepeaterItems(),
                         TextInput::make('degree')->required()->maxLength(255),
                         TextInput::make('institution')->maxLength(255),
                         TextInput::make('field_of_study')->maxLength(255),
@@ -185,7 +195,7 @@ class PersonResource extends Resource
                         TextInput::make('year_end')->numeric()->minValue(1900)->maxValue(2100)->gte('year_start'),
                         Textarea::make('description')->rows(2),
                     ])->columns(2)->default([['locale' => 'ar'], ['locale' => 'en']])->minItems(2)->maxItems(2)->columnSpanFull(),
-                ])->columns(2)->defaultItems(0)->addActionLabel('Add Education')->columnSpanFull(),
+                ])->columns(2)->defaultItems(0)->addActionLabel(__('admin_resources.person.add_education'))->columnSpanFull(),
             ])->collapsible()->columnSpanFull(),
         ]);
     }
@@ -193,12 +203,12 @@ class PersonResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('sort_order')->label('Order')->sortable(),
+            TextColumn::make('sort_order')->label(__('admin_resources.person.order'))->sortable(),
             TextColumn::make('slug')->searchable()->sortable(),
             TextColumn::make('category')->badge()->sortable(),
-            TextColumn::make('faculty_scope_slug')->label('Faculty')->badge()->sortable(),
+            TextColumn::make('faculty_scope_slug')->label(__('admin_resources.person.faculty'))->badge()->sortable(),
             TextColumn::make('translations.name')
-                ->label('Names')
+                ->label(__('admin_resources.person.names'))
                 ->searchable(query: fn (Builder $query, string $search): Builder => $query->whereHas(
                     'translations',
                     fn (Builder $q): Builder => $q->where('name', 'like', "%{$search}%")
@@ -210,13 +220,13 @@ class PersonResource extends Resource
             TextColumn::make('updated_at')->dateTime()->sortable(),
         ])->filters([
             Tables\Filters\SelectFilter::make('category')->options([
-                'rector' => 'Rector',
-                'vice_president' => 'Vice President',
-                'dean' => 'Dean',
-                'director' => 'Director',
-                'council' => 'Council Member',
+                'rector' => __('admin_resources.person.rector'),
+                'vice_president' => __('admin_resources.person.vice_president'),
+                'dean' => __('admin_resources.person.dean'),
+                'director' => __('admin_resources.person.director'),
+                'council' => __('admin_resources.person.council_member'),
             ]),
-            Tables\Filters\SelectFilter::make('faculty_scope_slug')->label('Faculty')->options(self::facultyOptions()),
+            Tables\Filters\SelectFilter::make('faculty_scope_slug')->label(__('admin_resources.person.faculty'))->options(self::facultyOptions()),
         ])->actions([
             Tables\Actions\EditAction::make(),
             Tables\Actions\ViewAction::make(),
@@ -239,13 +249,13 @@ class PersonResource extends Resource
     private static function facultyOptions(): array
     {
         return [
-            'medicine' => 'Medicine',
-            'dentistry' => 'Dentistry',
-            'pharmacy' => 'Pharmacy',
-            'artificial-intelligence' => 'Artificial Intelligence Engineering',
-            'building-construction-engineering' => 'Building and Construction Engineering',
-            'petroleum' => 'Petroleum Engineering',
-            'business-administration' => 'Business Administration',
+            'medicine' => __('admin_resources.person.medicine'),
+            'dentistry' => __('admin_resources.person.dentistry'),
+            'pharmacy' => __('admin_resources.person.pharmacy'),
+            'artificial-intelligence' => __('admin_resources.person.artificial_intelligence_engineering'),
+            'building-construction-engineering' => __('admin_resources.person.building_and_construction_engineering'),
+            'petroleum' => __('admin_resources.person.petroleum_engineering'),
+            'business-administration' => __('admin_resources.person.business_administration'),
         ];
     }
 
@@ -289,7 +299,7 @@ class PersonResource extends Resource
             $slug = Str::slug((string) $get('translations.en.name'));
         }
 
-        return $slug !== '' ? self::profilePath($slug) : 'Generated after entering the English name';
+        return $slug !== '' ? self::profilePath($slug) : __('admin_resources.person.generated_after_entering_the_english_name');
     }
 
     private static function profilePath(string $slug): string

@@ -112,7 +112,7 @@ final class EServicesPageService implements EServicesPageServiceInterface
                 'infoTitle' => $isArabic ? 'نقدّر ملاحظاتك' : 'We Value Your Feedback',
                 'infoBody' => $isArabic ? 'تتم مراجعة كل رسالة بعناية من قبل القسم المعني.' : 'Every submission is reviewed carefully by the relevant department.',
                 'consentLabel' => $isArabic ? 'أوافق على معالجة بياناتي للرد على هذا الطلب.' : 'I consent to the processing of my data to respond to this request.',
-                'attachmentHelp' => $isArabic ? 'اختياري: PDF أو JPG أو PNG، بحد أقصى 5 ميغابايت.' : 'Optional: PDF, JPG, or PNG, up to 5 MB.',
+                'attachmentHelp' => $isArabic ? 'اختياري: PDF أو JPG أو PNG أو WebP، بحد أقصى 5 ميغابايت.' : 'Optional: PDF, JPG, PNG, or WebP, up to 5 MB.',
                 'cards' => [
                     ['title' => $isArabic ? 'السرية' : 'Confidentiality', 'body' => $isArabic ? 'تُحفظ المرفقات بشكل خاص ولا تتاح إلا للمراجعين المخولين.' : 'Attachments are stored privately and are available only to authorized reviewers.'],
                 ],
