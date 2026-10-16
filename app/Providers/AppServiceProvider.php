@@ -96,6 +96,7 @@ use App\Contracts\Media\MediaDisplaySettingsServiceInterface;
 use App\Contracts\Media\MediaServiceInterface;
 use App\Contracts\Navigation\MenuServiceInterface;
 use App\Contracts\Navigation\NavigationServiceInterface;
+use App\Contracts\Navigation\PageLinkOptionServiceInterface;
 use App\Contracts\News\NewsAdminWorkflowServiceInterface;
 use App\Contracts\News\NewsArticleCmsServiceInterface;
 use App\Contracts\News\NewsServiceInterface;
@@ -262,6 +263,7 @@ use App\Services\Media\MediaFileValidator;
 use App\Services\Media\MediaService;
 use App\Services\Navigation\MenuService;
 use App\Services\Navigation\NavigationService;
+use App\Services\Navigation\PageLinkOptionService;
 use App\Services\News\NewsAdminWorkflowService;
 use App\Services\News\NewsArticleCmsService;
 use App\Services\News\NewsService;
@@ -327,6 +329,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(PageUrlResolver::class);
         $this->app->singleton(PagePublishabilityValidator::class);
         $this->app->singleton(LogoutResponseContract::class, LogoutResponse::class);
+        // Scoped: one admin request builds the link picker list once, however
+        // many pickers its form renders.
+        $this->app->scoped(PageLinkOptionServiceInterface::class, PageLinkOptionService::class);
     }
 
     /**

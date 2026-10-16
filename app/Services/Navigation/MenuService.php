@@ -979,20 +979,52 @@ final class MenuService implements MenuServiceInterface
     {
         $locale = $this->normalizeLocale($locale);
 
-        return Page::query()
+        // Every page is read, not only translated ones, so a child's trail can
+        // name a parent that has no translation in this locale.
+        $pages = Page::query()
             ->with(['translations' => fn ($query) => $query->where('locale', $locale)])
-            ->whereHas('translations', fn ($query) => $query->where('locale', $locale))
-            ->orderBy('slug')
             ->get()
-            ->mapWithKeys(function (Page $page) use ($locale): array {
-                $translation = $this->findTranslation($page, $locale);
-                $title = $translation instanceof PageTranslation && $translation->title !== ''
-                    ? $translation->title
-                    : (string) $page->slug;
+            ->keyBy(fn (Page $page): int => (int) $page->getKey());
 
-                return [(int) $page->getKey() => $title.' ('.$page->slug.')'];
-            })
-            ->all();
+        $titleOf = function (Page $page) use ($locale): string {
+            $translation = $this->findTranslation($page, $locale);
+
+            return $translation instanceof PageTranslation && $translation->title !== ''
+                ? $translation->title
+                : (string) $page->slug;
+        };
+
+        $options = [];
+
+        foreach ($pages as $id => $page) {
+            if (! $this->findTranslation($page, $locale) instanceof PageTranslation) {
+                continue;
+            }
+
+            // Parent › Child › Grandchild, so pages at any depth read clearly.
+            // The homepage shell is left out, as it is from the page's URL.
+            $trail = [$titleOf($page)];
+            $cursor = $page;
+            $guard = 0;
+
+            while ($cursor->parent_id !== null && $guard++ < 16) {
+                $cursor = $pages->get((int) $cursor->parent_id);
+
+                if (! $cursor instanceof Page) {
+                    break;
+                }
+
+                if (! (bool) $cursor->is_homepage_shell) {
+                    array_unshift($trail, $titleOf($cursor));
+                }
+            }
+
+            $options[$id] = implode(' › ', $trail).' ('.$page->slug.')';
+        }
+
+        asort($options, SORT_NATURAL | SORT_FLAG_CASE);
+
+        return $options;
     }
 
     /**
