@@ -193,6 +193,43 @@ final class FacilitiesWorkflowTest extends TestCase
         $this->assertContains('Curated Faculty Button', $facultyButtonTitles);
     }
 
+    public function test_campus_map_button_link_is_editable_and_rendered_in_both_locales(): void
+    {
+        $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
+
+        Livewire::test(ManageFacilities::class)
+            ->set('data.en_content.hero.campusMapUrl', '/en/virtual-tour')
+            ->set('data.ar_content.hero.campusMapUrl', '/ar/contact')
+            ->call('save');
+
+        $draft = CmsDraft::query()->where('target_key', 'facilities.landing')->latest('id')->firstOrFail();
+        $this->assertSame('/en/virtual-tour', $draft->payload_json['translations']['en']['hero']['campusMapUrl'] ?? null);
+        $this->assertSame('/ar/contact', $draft->payload_json['translations']['ar']['hero']['campusMapUrl'] ?? null);
+
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $this->assertTrue($workflow->publish('facilities.landing', (int) auth()->id()));
+
+        $this->get('/en/faculties')->assertOk()->assertSee('href="/en/virtual-tour"', false);
+        $this->get('/ar/faculties')->assertOk()->assertSee('href="/ar/contact"', false);
+    }
+
+    public function test_campus_map_button_ignores_an_unsafe_link(): void
+    {
+        $facilities = app(FacultyPageServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $payload = $facilities->getEditablePayload('facilities.landing');
+        $payload['translations']['en']['hero']['campusMapUrl'] = 'javascript:alert(1)';
+
+        $workflow->saveDraft('facilities.landing', $payload, (int) $author->id);
+        $this->assertTrue($workflow->publish('facilities.landing', (int) $author->id));
+
+        $this->get('/en/faculties')
+            ->assertOk()
+            ->assertDontSee('javascript:alert(1)', false)
+            ->assertSee('href="#faculties-overview"', false);
+    }
+
     public function test_published_facilities_hub_renders_cms_buttons_and_featured_model_card(): void
     {
         $facilities = app(FacultyPageServiceInterface::class);

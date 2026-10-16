@@ -1309,6 +1309,8 @@ return [
             'apply_label' => 'Application button label',
             'apply_url' => 'Application URL',
             'map_label' => 'Campus-map link label',
+            'map_url' => 'Campus-map link page',
+            'map_url_help' => 'Choose the page this button opens. Leave empty to scroll down to the faculty list.',
             'value' => 'Value',
             'label' => 'Label',
             'faculty_name' => 'Faculty name',

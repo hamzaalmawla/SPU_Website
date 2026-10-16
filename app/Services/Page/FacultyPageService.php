@@ -427,6 +427,9 @@ final class FacultyPageService implements FacultyPageServiceInterface
      */
     private function hubDto(string $locale, array $content, Collection $faculties): FacultyHubPageDTO
     {
+        $content['hero'] = is_array($content['hero'] ?? null) ? $content['hero'] : [];
+        $content['hero']['campusMapUrl'] = $this->hubCampusMapUrl($content['hero']['campusMapUrl'] ?? null);
+
         return new FacultyHubPageDTO(
             locale: $locale,
             direction: $this->direction($locale),
@@ -508,6 +511,20 @@ final class FacultyPageService implements FacultyPageServiceInterface
         $slug = basename(rtrim($path, '/'));
 
         return $this->canonicalFacultySlug(rawurldecode($slug));
+    }
+
+    /**
+     * The hero's campus-map button link: an internal path or in-page anchor
+     * the editor picked, else the faculty list below, as in the reference.
+     */
+    private function hubCampusMapUrl(mixed $url): string
+    {
+        $url = is_string($url) ? trim($url) : '';
+
+        $isInternal = (str_starts_with($url, '/') && ! str_starts_with($url, '//') && ! str_contains($url, '\\'))
+            || preg_match('/^#[A-Za-z][\w-]*$/', $url) === 1;
+
+        return $isInternal ? $url : '#faculties-overview';
     }
 
     /** @return array<string, mixed> */
@@ -1637,8 +1654,8 @@ final class FacultyPageService implements FacultyPageServiceInterface
     }
 
     /**
-     * @param array<int, array<string, mixed>> $items
-     * @param array<string, mixed> $filters
+     * @param  array<int, array<string, mixed>>  $items
+     * @param  array<string, mixed>  $filters
      * @return array<int, array<string, mixed>>
      */
     private function filteredProjectItems(array $items, array $filters): array

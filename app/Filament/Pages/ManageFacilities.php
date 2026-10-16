@@ -250,6 +250,8 @@ class ManageFacilities extends Page implements HasForms
                 TextInput::make($prefix.'.hero.applyLabel')->label(__('admin.facilities_editor.fields.apply_label'))->required()->maxLength(120),
                 PageUrlSelect::make($prefix.'.hero.applyUrl', __('admin.facilities_editor.fields.apply_url'), $locale, true),
                 TextInput::make($prefix.'.hero.campusMapLabel')->label(__('admin.facilities_editor.fields.map_label'))->required()->maxLength(120),
+                PageUrlSelect::make($prefix.'.hero.campusMapUrl', __('admin.facilities_editor.fields.map_url'), $locale)
+                    ->helperText(__('admin.facilities_editor.fields.map_url_help')),
             ])->columns(2),
 
             Section::make(__('admin.facilities_editor.sections.facts'))->schema([

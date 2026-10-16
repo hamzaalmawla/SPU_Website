@@ -84,7 +84,7 @@
                     class="fac-hub-btn-primary inline-flex h-[42px] items-center justify-center rounded-[6px] bg-[#8a1c1c] px-8 text-[14px] font-bold uppercase tracking-[0.14em] text-white transition-colors hover:bg-[#6b1515]">
                         {{ $hero['applyLabel'] ?? __('public.admissions') }}
                     </a>
-                    <a href="#faculties-overview"
+                    <a href="{{ $hero['campusMapUrl'] ?? '#faculties-overview' }}"
                     class="inline-flex h-[42px] items-center justify-center rounded-[6px] border border-white/40 px-6 text-[14px] font-bold uppercase tracking-[0.14em] text-white transition hover:bg-white/10">
                         {{ $hero['campusMapLabel'] ?? __('public.campus_map') }}
                     </a>
