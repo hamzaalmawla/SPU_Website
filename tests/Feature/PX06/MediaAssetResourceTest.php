@@ -66,7 +66,7 @@ class MediaAssetResourceTest extends TestCase
 
         $this->get(MediaAssetResource::getUrl('batch-upload'))
             ->assertOk()
-            ->assertSee('Batch Upload Images')
+            ->assertSee(__('admin_resources.media_asset.batch_upload_images'))
             ->assertSee('Upload all images');
     }
 
@@ -88,8 +88,8 @@ class MediaAssetResourceTest extends TestCase
             ->assertSet('data.items.0.title_en', 'Butterfly')
             ->assertSet('data.items.0.display_fit', 'cover')
             ->assertSet('data.items.3.original_name', 'laboratory.jpg')
-            ->assertSee('Name (EN)')
-            ->assertSee('Alternative text (EN)');
+            ->assertSee(__('admin_resources.media_asset.name_en'))
+            ->assertSee(__('admin_resources.media_asset.alternative_text_en'));
     }
 
     public function test_media_display_stylesheet_applies_focal_point_and_fit_by_asset_url(): void

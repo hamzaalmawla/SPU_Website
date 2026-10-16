@@ -263,7 +263,11 @@ final class BatchUploadMediaAssets extends Page implements HasForms
 
     private function processNextChunk(): void
     {
-        @set_time_limit(120);
+        // In tests this would cap the whole PHPUnit process, not one request.
+        if (! app()->runningUnitTests()) {
+            @set_time_limit(120);
+        }
+
         $disk = Storage::disk((string) config('filesystems.media_disk', 'public'));
         $chunk = array_splice($this->pendingUploads, 0, self::IMAGES_PER_REQUEST);
 
