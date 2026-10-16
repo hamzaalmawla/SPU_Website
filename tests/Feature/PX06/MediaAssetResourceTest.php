@@ -67,7 +67,8 @@ class MediaAssetResourceTest extends TestCase
         $this->get(MediaAssetResource::getUrl('batch-upload'))
             ->assertOk()
             ->assertSee(__('admin_resources.media_asset.batch_upload_images'))
-            ->assertSee('Upload all images');
+            ->assertSee(__('admin_resources.media_asset.upload_all_images'))
+            ->assertDontSee('Upload all images');
     }
 
     public function test_batch_upload_prepares_all_details_after_a_multi_file_queue_finishes(): void
