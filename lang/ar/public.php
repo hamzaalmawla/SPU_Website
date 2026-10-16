@@ -235,6 +235,9 @@ return [
         'empty_title' => 'لا توجد إنجازات مطابقة',
         'empty_body' => 'اختر تصنيفاً آخر أو ألغِ عوامل التصفية المحددة.',
         'pagination' => 'صفحات أرشيف الإنجازات',
+        'view_details' => 'عرض التفاصيل',
+        'all_achievements' => 'كل الإنجازات',
+        'share' => 'شارك هذا الإنجاز',
     ],
     'section_labels' => [
         'academic_faculties' => 'الكليات الأكاديمية',

@@ -235,6 +235,9 @@ return [
         'empty_title' => 'No matching achievements',
         'empty_body' => 'Choose another category or clear the selected filters.',
         'pagination' => 'Achievement archive pages',
+        'view_details' => 'View details',
+        'all_achievements' => 'All achievements',
+        'share' => 'Share this achievement',
     ],
     'section_labels' => [
         'academic_faculties' => 'Academic faculties',

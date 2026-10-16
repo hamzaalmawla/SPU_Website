@@ -8,9 +8,12 @@ use App\Contracts\Achievement\AchievementServiceInterface;
 use App\DTOs\Achievement\AchievementArchiveDTO;
 use App\DTOs\Achievement\AchievementCardDTO;
 use App\DTOs\Achievement\AchievementCategoryDTO;
+use App\DTOs\Achievement\AchievementDetailDTO;
 use App\DTOs\Shared\PaginatedResultDTO;
 use App\Models\Achievement\Achievement;
 use App\Models\Achievement\AchievementCategory;
+use App\Models\Achievement\AchievementTranslation;
+use App\Support\HtmlSanitizer;
 use App\Support\MediaUrlResolver;
 use App\Support\UrlSanitizer;
 use Illuminate\Database\Eloquent\Builder;
@@ -18,6 +21,10 @@ use Illuminate\Support\Collection;
 
 final class AchievementService implements AchievementServiceInterface
 {
+    public function __construct(
+        private readonly HtmlSanitizer $htmlSanitizer,
+    ) {}
+
     public function homepage(string $locale, int $max = 3): Collection
     {
         if ($max <= 0) {
@@ -73,6 +80,33 @@ final class AchievementService implements AchievementServiceInterface
         );
     }
 
+    public function find(int $id, string $locale): ?AchievementDetailDTO
+    {
+        $achievement = $this->publicQuery()->whereKey($id)->first();
+
+        if (! $achievement instanceof Achievement) {
+            return null;
+        }
+
+        $card = $this->mapCard($achievement, $locale);
+        $translation = $this->translation($achievement, $locale);
+        $body = is_string($translation?->body) ? $this->htmlSanitizer->sanitize($translation->body) : '';
+
+        return new AchievementDetailDTO(
+            id: $card->id,
+            title: $card->title,
+            typeTag: $card->typeTag,
+            summary: $card->summary,
+            body: trim(strip_tags($body)) !== '' ? $body : null,
+            image: $card->image,
+            meta: $card->meta,
+            link: $this->editorLink($translation),
+            categories: $card->categories,
+            publishedAt: $achievement->published_at?->locale($locale)->translatedFormat('j F Y'),
+            url: $card->url,
+        );
+    }
+
     public function preparePublishingData(array $data): array
     {
         // The public archive needs status=published, is_public and a past
@@ -94,10 +128,26 @@ final class AchievementService implements AchievementServiceInterface
             ->with(['translations', 'categories' => fn ($query) => $query->active()->orderBy('sort_order'), 'categories.translations', 'imageMedia']);
     }
 
-    private function mapCard(Achievement $achievement, string $locale): AchievementCardDTO
+    private function translation(Achievement $achievement, string $locale): ?AchievementTranslation
     {
         $translation = $achievement->translations->firstWhere('locale', $locale)
             ?? $achievement->translations->firstWhere('locale', 'ar');
+
+        return $translation instanceof AchievementTranslation ? $translation : null;
+    }
+
+    /** @return array{label: string, url: string}|null */
+    private function editorLink(?AchievementTranslation $translation): ?array
+    {
+        $label = is_string($translation?->action_label) ? trim($translation->action_label) : '';
+        $url = UrlSanitizer::sanitize(is_string($translation?->action_url) ? trim($translation->action_url) : null) ?? '';
+
+        return $label !== '' && $url !== '' ? ['label' => $label, 'url' => $url] : null;
+    }
+
+    private function mapCard(Achievement $achievement, string $locale): AchievementCardDTO
+    {
+        $translation = $this->translation($achievement, $locale);
         $categories = $achievement->categories
             ->map(fn (AchievementCategory $category): AchievementCategoryDTO => $this->mapCategory($category, $locale))
             ->values()
@@ -106,8 +156,10 @@ final class AchievementService implements AchievementServiceInterface
         $image = $media === null
             ? (is_string($achievement->legacy_image_path) && $achievement->legacy_image_path !== '' ? $achievement->legacy_image_path : null)
             : MediaUrlResolver::resolveImage($media->webp_path, $media->path, $media->disk);
-        $actionLabel = is_string($translation?->action_label) ? trim($translation->action_label) : '';
-        $actionUrl = UrlSanitizer::sanitize(is_string($translation?->action_url) ? trim($translation->action_url) : null) ?? '';
+        // Every card opens the achievement's own page. The editor's label still
+        // names the button; their link moves onto that page.
+        $url = '/'.$locale.'/achievements/'.$achievement->getKey();
+        $actionLabel = $this->editorLink($translation)['label'] ?? __('public.achievements.view_details', [], $locale);
 
         return new AchievementCardDTO(
             id: (int) $achievement->getKey(),
@@ -116,9 +168,10 @@ final class AchievementService implements AchievementServiceInterface
             summary: $translation?->summary,
             image: $image,
             meta: $translation?->meta,
-            action: $actionLabel !== '' && $actionUrl !== '' ? ['label' => $actionLabel, 'url' => $actionUrl] : null,
+            action: ['label' => $actionLabel, 'url' => $url],
             categories: $categories,
             publishedAt: $achievement->published_at?->toAtomString(),
+            url: $url,
         );
     }
 

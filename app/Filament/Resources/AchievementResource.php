@@ -10,6 +10,7 @@ use App\Models\Achievement\Achievement;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -76,8 +77,12 @@ class AchievementResource extends Resource
                     Hidden::make('locale')->required(),
                     TextInput::make('title')->label(__('admin.achievement.title'))->required()->maxLength(255)->extraInputAttributes(fn (Get $get): array => ['dir' => $get('locale') === 'en' ? 'ltr' : 'rtl']),
                     Textarea::make('summary')->label(__('admin.achievement.summary'))->rows(3)->maxLength(1000)->columnSpanFull()->extraInputAttributes(fn (Get $get): array => ['dir' => $get('locale') === 'en' ? 'ltr' : 'rtl']),
+                    RichEditor::make('body')->label(__('admin.achievement.body'))->helperText(__('admin.achievement.body_help'))
+                        ->toolbarButtons(['blockquote', 'bold', 'bulletList', 'h2', 'h3', 'italic', 'link', 'orderedList', 'redo', 'strike', 'underline', 'undo'])
+                        ->columnSpanFull()
+                        ->extraAttributes(fn (Get $get): array => ['dir' => $get('locale') === 'en' ? 'ltr' : 'rtl']),
                     TextInput::make('meta')->label(__('admin.achievement.meta'))->maxLength(255),
-                    TextInput::make('action_label')->label(__('admin.achievement.action_label'))->maxLength(100),
+                    TextInput::make('action_label')->label(__('admin.achievement.action_label'))->helperText(__('admin.achievement.action_help'))->maxLength(100),
                     TextInput::make('action_url')->label(__('admin.achievement.action_url'))->maxLength(2048)->columnSpanFull(),
                 ])->default([['locale' => 'ar'], ['locale' => 'en']])->minItems(2)->maxItems(2)->deletable(false)->reorderable(false)->columns(2)->columnSpanFull(),
             ])->columns(2),

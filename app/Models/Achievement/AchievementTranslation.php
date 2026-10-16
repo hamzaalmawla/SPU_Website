@@ -12,7 +12,7 @@ class AchievementTranslation extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['achievement_id', 'locale', 'title', 'summary', 'meta', 'action_label', 'action_url'];
+    protected $fillable = ['achievement_id', 'locale', 'title', 'summary', 'body', 'meta', 'action_label', 'action_url'];
 
     public function achievement(): BelongsTo
     {

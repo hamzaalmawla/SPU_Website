@@ -17,5 +17,6 @@ final readonly class AchievementCardDTO
         public ?array $action,
         public array $categories,
         public ?string $publishedAt,
+        public string $url = '',
     ) {}
 }

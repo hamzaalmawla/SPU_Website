@@ -70,6 +70,9 @@ Route::prefix('{locale}')
             ->name('public.e-services.suggestions-complaints.submit');
         Route::get('/virtual-tour', VirtualTourController::class)->name('public.virtual-tour');
         Route::get('/achievements', AchievementController::class)->name('public.achievements.index');
+        Route::get('/achievements/{achievement}', [AchievementController::class, 'show'])
+            ->whereNumber('achievement')
+            ->name('public.achievements.show');
         Route::get('/alumni', [AlumniController::class, 'index'])->name('public.alumni.index');
 
         // Must stay ahead of the /{slugPath} catch-all at the end of this group,

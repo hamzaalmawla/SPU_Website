@@ -243,6 +243,24 @@ final class SitemapService implements SitemapServiceInterface
                 alternates: $alternates,
             ));
         }
+
+        Achievement::query()->public()->get(['id', 'updated_at'])->each(function (Achievement $achievement) use ($entries, $baseUrl): void {
+            $path = '/achievements/'.$achievement->getKey();
+            $detailAlternates = collect(['ar', 'en'])->map(fn (string $locale): array => [
+                'locale' => $locale,
+                'url' => $baseUrl.'/'.$locale.$path,
+            ])->all();
+
+            foreach (['ar', 'en'] as $locale) {
+                $entries->push(new SitemapEntryDTO(
+                    loc: $baseUrl.'/'.$locale.$path,
+                    lastmod: $this->w3c($achievement->updated_at),
+                    changefreq: null,
+                    priority: null,
+                    alternates: $detailAlternates,
+                ));
+            }
+        });
     }
 
     /** @param Collection<int, SitemapEntryDTO> $entries */

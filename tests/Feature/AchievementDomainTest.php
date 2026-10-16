@@ -65,6 +65,35 @@ final class AchievementDomainTest extends TestCase
             ->assertDontSee('<html', false);
     }
 
+    public function test_each_public_achievement_has_its_own_page_linked_from_its_card(): void
+    {
+        $category = $this->category('awards', 'Awards', 'جوائز');
+        $achievement = $this->achievement('Robotics gold medal', false, 0, '2026-01-01 10:00:00', [$category->id]);
+        $achievement->translations()->where('locale', 'en')->update([
+            'body' => '<p>The team won <strong>gold</strong>.</p><script>alert(1)</script>',
+            'action_label' => 'Read the news',
+            'action_url' => '/en/news/articles',
+        ]);
+        $hidden = $this->achievement('Draft-only record', false, 0, '2026-01-01 10:00:00', [$category->id], false);
+        $url = '/en/achievements/'.$achievement->id;
+
+        $card = app(AchievementServiceInterface::class)->archive('en')->results->items->first();
+        $this->assertSame($url, $card->url);
+        $this->assertSame(['label' => 'Read the news', 'url' => $url], $card->action);
+
+        $this->get('/en/achievements')->assertOk()->assertSee('href="'.$url.'"', false);
+        $this->get($url)
+            ->assertOk()
+            ->assertSee('Robotics gold medal')
+            ->assertSee('<strong>gold</strong>', false)
+            ->assertDontSee('<script>alert(1)</script>', false)
+            ->assertSee('href="/en/news/articles"', false)
+            ->assertSee('/ar/achievements/'.$achievement->id, false);
+        $this->get('/ar/achievements/'.$achievement->id)->assertOk()->assertSee('إنجاز Robotics gold medal');
+        $this->get('/en/achievements/'.$hidden->id)->assertNotFound();
+        $this->get('/en/achievements/999999')->assertNotFound();
+    }
+
     public function test_homepage_renders_three_domain_achievements_and_configurable_archive_action(): void
     {
         $this->seed(DatabaseSeeder::class);
