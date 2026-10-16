@@ -113,6 +113,21 @@ final class ProfileWorkflowTest extends TestCase
         $this->assertSame('Dean Override', $published->role);
     }
 
+    public function test_leadership_cards_use_the_uploaded_person_photo(): void
+    {
+        $person = $this->adminService->createPerson($this->personData('photo-leader'), (int) $this->admin->getKey());
+        $this->publishPerson((int) $person->id);
+        $photo = $this->mediaAsset('photo-leader.jpg', 'image/jpeg', 'image');
+        Person::query()->findOrFail($person->id)->forceFill(['category' => 'vice_president', 'photo_media_id' => $photo->getKey(), 'image' => null])->save();
+
+        $leader = app(AboutPageServiceInterface::class)->getLeadershipProfiles('en')->firstWhere('slug', 'photo-leader');
+
+        $this->assertNotNull($leader);
+        $this->assertNotNull($leader->image);
+        $this->assertStringContainsString('media/image/photo-leader.jpg', $leader->image);
+        $this->get('/en/about/leadership')->assertOk()->assertSee('media/image/photo-leader.jpg', false);
+    }
+
     public function test_unified_person_dry_run_does_not_create_person_records(): void
     {
         $faculty = Faculty::query()->where('public_slug', 'medicine')->firstOrFail();

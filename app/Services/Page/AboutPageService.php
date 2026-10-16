@@ -257,9 +257,7 @@ final class AboutPageService implements AboutPageServiceInterface
                     $facultySlug = $person->faculty_scope_slug;
                 }
 
-                $image = $person->photoMedia instanceof MediaAsset
-                    ? MediaUrlResolver::resolveImage($person->photoMedia->webp_path, $person->photoMedia->path, $person->photoMedia->disk)
-                    : (is_string($person->image) && $person->image !== '' ? $person->image : MediaUrlResolver::resolveLegacy($person->legacy_photo_path));
+                $image = $this->personImage($person);
 
                 return new StaffDirectoryItemDTO(
                     sourceType: 'person',
@@ -354,7 +352,7 @@ final class AboutPageService implements AboutPageServiceInterface
                         ->enabled()
                         ->whereIn('type', ['rector', 'vice_president', 'dean', 'council', 'director']));
             })
-            ->with(['translations', 'appointments' => fn ($q) => $q->enabled()->with('translations')])
+            ->with(['translations', 'photoMedia', 'appointments' => fn ($q) => $q->enabled()->with('translations')])
             ->orderBy('sort_order')
             ->get();
 
@@ -514,10 +512,28 @@ final class AboutPageService implements AboutPageServiceInterface
             facultySlug: is_string($facultySlug) && $facultySlug !== '' ? $facultySlug : null,
             bio: $translation->bio,
             quote: $translation->quote,
-            image: $person->image,
+            image: $this->personImage($person),
             email: $person->email,
             profileUrl: '/'.$locale.'/about/profile/'.$person->slug,
         );
+    }
+
+    /**
+     * The photo uploaded in the person editor wins over the old image column
+     * and the legacy import, as on the profile page. Leadership cards read only
+     * the image column and stayed empty for people with an uploaded photo.
+     */
+    private function personImage(Person $person): ?string
+    {
+        if ($person->photoMedia instanceof MediaAsset) {
+            return MediaUrlResolver::resolveImage($person->photoMedia->webp_path, $person->photoMedia->path, $person->photoMedia->disk);
+        }
+
+        if (is_string($person->image) && $person->image !== '') {
+            return $person->image;
+        }
+
+        return MediaUrlResolver::resolveLegacy($person->legacy_photo_path);
     }
 
     /** @param Collection<int, Person> $persons @return Collection<int, PersonDTO> */
