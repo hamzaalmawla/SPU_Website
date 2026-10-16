@@ -296,6 +296,7 @@ return [
         'clear' => 'Clear',
         'no_file_selected' => 'No file selected.',
         'upload_new_help' => 'Uploading a file uses this source instead of either library selection.',
+        'image_upload_help' => 'JPG, PNG, WebP or GIF, up to 10 MB. Export iPhone HEIC photos as JPG first.',
         'selection_required' => 'Choose one media source',
         'action_failed' => 'Media could not be selected',
         'safe_error' => 'The media action could not be completed. Technical details were logged for review.',

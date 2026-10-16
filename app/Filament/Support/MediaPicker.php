@@ -24,6 +24,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 use Illuminate\Validation\ValidationException;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Throwable;
 
 final class MediaPicker
@@ -192,22 +193,16 @@ final class MediaPicker
                     ->options(fn (): array => [])
                     ->getSearchResultsUsing(fn (string $search): array => self::options($type, $search, 'legacy'))
                     ->getOptionLabelUsing(fn (mixed $value): ?string => self::optionLabel($value)),
-                FileUpload::make('file')
-                    ->label(__('admin.media_picker.upload_new'))
-                    ->helperText(__('admin.media_picker.upload_new_help'))
-                    ->live()
-                    ->afterStateUpdated(function (mixed $state, Set $set): void {
-                        if (self::uploadedPath($state) !== null) {
+                self::uploadField($type, __('admin.media_picker.upload_new'), __('admin.media_picker.upload_new_help'))
+                    ->afterStateUpdated(function (mixed $state, Get $get, Set $set): void {
+                        if (self::hasUpload($state)) {
                             $set('media_id', null);
                             $set('legacy_media_id', null);
                         }
-                    })
-                    ->disk((string) config('filesystems.media_disk', 'public'))
-                    ->directory('media-tmp')
-                    ->visibility('public')
-                    ->acceptedFileTypes(self::acceptedFileTypes($type))
-                    ->orientImagesFromExif(self::isImageType($type))
-                    ->maxSize(10240),
+
+                        self::fillFromUpload($state, $get, $set);
+                    }),
+                Hidden::make('original_name'),
                 TextInput::make('title_ar')
                     ->label(__('admin.media_picker.title_ar'))
                     ->maxLength(255)
@@ -309,16 +304,10 @@ final class MediaPicker
             ->getSearchResultsUsing(fn (string $search): array => self::options($type, $search))
             ->getOptionLabelUsing(fn (mixed $value): ?string => self::optionLabel($value))
             ->createOptionForm([
-                FileUpload::make('file')
-                    ->label(__('admin.media_picker.upload_device'))
+                self::uploadField($type, __('admin.media_picker.upload_device'))
                     ->required()
-                    ->live()
-                    ->disk((string) config('filesystems.media_disk', 'public'))
-                    ->directory('media-tmp')
-                    ->visibility('public')
-                    ->acceptedFileTypes(self::acceptedFileTypes($type))
-                    ->orientImagesFromExif(self::isImageType($type))
-                    ->maxSize(10240),
+                    ->afterStateUpdated(fn (mixed $state, Get $get, Set $set) => self::fillFromUpload($state, $get, $set)),
+                Hidden::make('original_name'),
                 TextInput::make('title_ar')
                     ->label(__('admin.media_picker.title_ar'))
                     ->maxLength(255)
@@ -411,8 +400,92 @@ final class MediaPicker
             ?? self::selectedUrl(is_numeric($get('legacy_media_id')) ? (int) $get('legacy_media_id') : null);
     }
 
+    /**
+     * The upload field shared by both picker forms, set up as batch upload is.
+     */
+    private static function uploadField(string $type, string $label, ?string $helperText = null): FileUpload
+    {
+        $hint = self::isImageType($type) ? __('admin.media_picker.image_upload_help') : null;
+
+        return FileUpload::make('file')
+            ->label($label)
+            ->helperText(trim(($helperText ?? '').' '.($hint ?? '')) ?: null)
+            ->live()
+            ->disk((string) config('filesystems.media_disk', 'public'))
+            ->directory('media-tmp')
+            ->visibility('public')
+            ->acceptedFileTypes(self::acceptedFileTypes($type))
+            ->orientImagesFromExif(self::isImageType($type))
+            ->imagePreviewHeight('180')
+            ->maxSize(10240)
+            // Keeps the device file name readable in media-tmp and in the library.
+            ->getUploadedFileNameForStorageUsing(static function (TemporaryUploadedFile $file): string {
+                $original = preg_replace('/[^\pL\pN._ -]+/u', '-', $file->getClientOriginalName()) ?: 'file';
+
+                return hash('sha256', $file->getFilename()).'--'.$original;
+            });
+    }
+
+    /**
+     * Until the modal is submitted, a new upload is a Livewire temporary file,
+     * not a stored path. The picker only understood paths, so for a fresh
+     * upload the framing tool said "choose an image first" and the title and
+     * alt text fields were not required until the service refused the save
+     * after the modal had closed. Name the file and require its details now.
+     */
+    private static function fillFromUpload(mixed $state, Get $get, Set $set): void
+    {
+        $upload = self::temporaryUpload($state);
+
+        if ($upload === null) {
+            return;
+        }
+
+        $originalName = $upload->getClientOriginalName();
+        $name = trim((string) preg_replace('/[_-]+/', ' ', pathinfo($originalName, PATHINFO_FILENAME)));
+        $set('original_name', $originalName);
+
+        foreach (['title_ar', 'title_en'] as $field) {
+            if (! self::filledString($get($field)) && $name !== '') {
+                $set($field, $name);
+            }
+        }
+    }
+
+    private static function temporaryUpload(mixed $state): ?TemporaryUploadedFile
+    {
+        if ($state instanceof TemporaryUploadedFile) {
+            return $state;
+        }
+
+        if (is_array($state)) {
+            foreach ($state as $item) {
+                if ($item instanceof TemporaryUploadedFile) {
+                    return $item;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private static function hasUpload(mixed $state): bool
+    {
+        return self::temporaryUpload($state) !== null || self::uploadedPath($state) !== null;
+    }
+
     private static function temporaryImageUrl(mixed $state): ?string
     {
+        $upload = self::temporaryUpload($state);
+
+        if ($upload !== null) {
+            try {
+                return $upload->temporaryUrl();
+            } catch (Throwable) {
+                return null;
+            }
+        }
+
         $path = self::uploadedPath($state);
 
         return $path !== null
@@ -515,6 +588,9 @@ final class MediaPicker
 
         $result = app(MediaServiceInterface::class)->upload([
             'file' => $file,
+            'original_name' => self::filledString($data['original_name'] ?? null)
+                ? $data['original_name']
+                : (string) preg_replace('/^[a-f0-9]{64}--/', '', basename($filePath)),
             'title_ar' => $data['title_ar'] ?? null,
             'title_en' => $data['title_en'] ?? null,
             'alt_text_ar' => $data['alt_text_ar'] ?? null,
@@ -569,7 +645,7 @@ final class MediaPicker
 
     private static function requiresUploadOrPromotionMetadata(Get $get): bool
     {
-        return self::uploadedPath($get('file')) !== null || is_numeric($get('legacy_media_id'));
+        return self::hasUpload($get('file')) || is_numeric($get('legacy_media_id'));
     }
 
     private static function isImageType(string $type): bool
@@ -601,7 +677,7 @@ final class MediaPicker
         $filename = self::filenameFromUrl($url);
         $escapedFilename = e($filename);
 
-        if (self::isImageMedia($mediaId) || preg_match('/\.(jpe?g|png|gif|webp)(\?.*)?$/i', $url) === 1) {
+        if (self::isImageMedia($mediaId) || preg_match('/\.(jpe?g|png|gif|webp|svg)(\?.*)?$/i', $url) === 1) {
             $alt = e(__('admin.media_picker.preview_alt', ['file' => $filename]));
 
             return new HtmlString('<span class="spu-media-preview"><img src="'.$escapedUrl.'" alt="'.$alt.'" /><span>'.$escapedFilename.'</span></span>');

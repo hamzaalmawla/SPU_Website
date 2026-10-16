@@ -27,6 +27,8 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\HtmlString;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Throwable;
 
 /**
  * Filament resource for managing media assets (upload, search, edit metadata, view).
@@ -246,6 +248,8 @@ class MediaAssetResource extends Resource
                     FileUpload::make('file')
                         ->label(__('admin_resources.media_asset.file'))
                         ->required()
+                        // Re-renders the framing tab with the new image.
+                        ->live()
                         ->maxSize(10240)
                         ->disk((string) config('filesystems.media_disk', 'public'))
                         ->directory('media-tmp')
@@ -365,6 +369,14 @@ class MediaAssetResource extends Resource
                         FocalPointPicker::make('focal_x')
                             ->label(__('admin.media_picker.focal_label'))
                             ->imageUrl(function (Get $get, ?MediaAsset $record): ?string {
+                                // Before the form is saved a fresh upload is a Livewire
+                                // temporary file, not a path; frame that file, not the old one.
+                                $pending = self::pendingUploadUrl($get('replacement_file')) ?? self::pendingUploadUrl($get('file'));
+
+                                if ($pending !== null) {
+                                    return $pending;
+                                }
+
                                 $temporaryPath = self::uploadedPath($get('replacement_file')) ?? self::uploadedPath($get('file'));
 
                                 return $temporaryPath !== null
@@ -423,6 +435,23 @@ class MediaAssetResource extends Resource
         }
 
         return null;
+    }
+
+    private static function pendingUploadUrl(mixed $state): ?string
+    {
+        $upload = $state instanceof TemporaryUploadedFile
+            ? $state
+            : (is_array($state) ? collect($state)->first(fn (mixed $file): bool => $file instanceof TemporaryUploadedFile) : null);
+
+        if (! $upload instanceof TemporaryUploadedFile) {
+            return null;
+        }
+
+        try {
+            return $upload->temporaryUrl();
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     /** @return array<string, string> */
