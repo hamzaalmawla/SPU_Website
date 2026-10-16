@@ -26,7 +26,7 @@
                     <h1 class="mt-3 text-[32px] font-bold text-white md:text-[42px]">{{ $heroTitle }}</h1>
                 @endif
                 @if (! empty($hero['summary']))
-                    <p class="mx-auto mt-4 max-w-[600px] text-[14px] leading-[1.6] text-white/90">{{ $hero['summary'] }}</p>
+                    <x-public.rich-text class="mx-auto mt-4 max-w-[600px] text-[14px] leading-[1.6] text-white/90" :text="$hero['summary']" />
                 @endif
                 @if ($crumbs !== [])
                     <nav class="mt-6 flex flex-wrap items-center justify-center gap-2 text-[12px] text-white/70" aria-label="Breadcrumb">

@@ -333,3 +333,39 @@ html {
         transition: none;
     }
 }
+
+/*
+ * Editor plain text rendered by <x-public.rich-text>: paragraphs, line
+ * breaks and numbered or bulleted lists. Spacing scales with the text size
+ * the call site sets, so it fits cards and long pages alike.
+ */
+.rich-text > * + * {
+    margin-top: 0.9em;
+}
+
+.rich-text__list {
+    display: grid;
+    gap: 0.55em;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    text-align: start;
+}
+
+.rich-text__list > li {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5em;
+}
+
+.rich-text__marker {
+    flex: none;
+    min-width: 1.4em;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+.rich-text__item {
+    flex: 1 1 auto;
+    min-width: 0;
+}

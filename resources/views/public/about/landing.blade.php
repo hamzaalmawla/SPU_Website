@@ -40,7 +40,7 @@
                             @foreach ($about->storyItems as $index => $item)
                                 <div class="px-10 py-12 transition-all duration-500 {{ $index % 2 === 0 ? 'bg-section' : 'bg-white' }}">
                                     <h2 class="mb-4 flex items-center gap-3 text-2xl font-bold text-spu-blue">{{ $item['title'] ?? '' }}</h2>
-                                    <p class="max-w-2xl text-[17px] leading-relaxed text-slate-600">{{ $item['summary'] ?? '' }}</p>
+                                    <x-public.rich-text class="max-w-2xl text-[17px] leading-relaxed text-slate-600" :text="$item['summary'] ?? ''" />
                                 </div>
                             @endforeach
                         </div>
@@ -51,7 +51,7 @@
                                     <img src="/images/icon-check-circle-outline.svg" class="mt-1 h-5 w-5" alt="" aria-hidden="true">
                                     <div>
                                         <h3 class="font-bold text-spu-blue">{{ $highlight['title'] ?? '' }}</h3>
-                                        @if (! empty($highlight['summary']))<p class="text-sm text-slate-500">{{ $highlight['summary'] }}</p>@endif
+                                        @if (! empty($highlight['summary']))<x-public.rich-text class="text-sm text-slate-500" :text="$highlight['summary']" />@endif
                                     </div>
                                 </div>
                             @endforeach
@@ -101,7 +101,7 @@
                             <h2 class="mb-8 text-3xl font-bold leading-tight text-spu-blue md:text-4xl">{{ $about->headline }}</h2>
                             <div class="space-y-6">
                                 <p class="border-s-4 border-spu-blue/10 ps-6 text-xl leading-relaxed text-slate-600">{{ $about->quote }}</p>
-                                <p class="text-lg leading-relaxed text-slate-500">{{ $about->description }}</p>
+                                <x-public.rich-text class="text-lg leading-relaxed text-slate-500" :text="$about->description" />
                             </div>
                         </div>
                     </div>

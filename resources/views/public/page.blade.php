@@ -27,7 +27,7 @@
                 @if ($page['subheadline'])
                     <p class="mt-6 max-w-3xl text-lg leading-8 text-white/75">{{ $page['subheadline'] }}</p>
                 @elseif ($page['excerpt'])
-                    <p class="mt-6 max-w-3xl text-lg leading-8 text-white/75">{{ $page['excerpt'] }}</p>
+                    <x-public.rich-text class="mt-6 max-w-3xl text-lg leading-8 text-white/75" :text="$page['excerpt']" />
                 @endif
 
                 @if ($page['cta'] && ! empty($page['cta']['label']) && ! empty($page['cta']['url']))
@@ -47,7 +47,7 @@
                                 <h2 class="text-2xl font-bold text-spu-blue">{{ $page['hero']['title'] }}</h2>
                             @endif
                             @if (! empty($page['hero']['summary']))
-                                <p class="mt-3 text-base leading-7 text-[#55627c]">{{ $page['hero']['summary'] }}</p>
+                                <x-public.rich-text class="mt-3 text-base leading-7 text-[#55627c]" :text="$page['hero']['summary']" />
                             @endif
                         </div>
                     @endif
@@ -58,7 +58,7 @@
                                 <div class="rounded-[18px] border border-slate-100 bg-slate-50 p-5">
                                     <h3 class="text-lg font-bold text-spu-blue">{{ $card['title'] ?? '' }}</h3>
                                     @if (! empty($card['summary']))
-                                        <p class="mt-2 text-sm leading-6 text-[#55627c]">{{ $card['summary'] }}</p>
+                                        <x-public.rich-text class="mt-2 text-sm leading-6 text-[#55627c]" :text="$card['summary']" />
                                     @endif
                                 </div>
                             @endforeach
@@ -88,7 +88,7 @@
                         @endforeach
 
                         @if ($page['bodyBlocks'] === [] && $page['body'])
-                            <p>{{ $page['body'] }}</p>
+                            <x-public.rich-text :text="$page['body']" />
                         @endif
                     </div>
                 </article>
@@ -100,7 +100,7 @@
                                 <h2 class="text-lg font-bold text-spu-blue">{{ $page['sidebar']['title'] }}</h2>
                             @endif
                             @if (! empty($page['sidebar']['body']))
-                                <p class="mt-3 text-sm leading-7 text-[#55627c]">{{ $page['sidebar']['body'] }}</p>
+                                <x-public.rich-text class="mt-3 text-sm leading-7 text-[#55627c]" :text="$page['sidebar']['body']" />
                             @endif
                         </div>
                     </aside>

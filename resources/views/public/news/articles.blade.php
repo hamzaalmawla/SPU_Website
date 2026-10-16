@@ -32,7 +32,7 @@
     <section class="bg-white py-14 font-hacen md:py-16">
         <div class="container max-w-[1180px]">
             @if (filled($page['intro'] ?? null))
-                <div class="mb-10 whitespace-pre-line rounded-2xl bg-slate-50 p-6 text-base leading-8 text-slate-700 md:p-8">{{ $page['intro'] }}</div>
+                <x-public.rich-text class="mb-10 rounded-2xl bg-slate-50 p-6 text-base leading-8 text-slate-700 md:p-8" :text="$page['intro']" />
             @endif
             <form method="GET" action="/{{ $locale }}{{ $listingPath }}" role="search" class="flex flex-wrap items-end justify-start gap-2">
                 <label class="min-w-[240px] flex-1"><span class="sr-only">{{ $page['searchLabel'] }}</span><input type="search" name="search" value="{{ $search }}" placeholder="{{ $page['searchPlaceholder'] }}" class="h-10 w-full rounded-[5px] border border-slate-200 px-4 text-sm focus:border-spu-blue focus:outline-none focus:ring-2 focus:ring-spu-blue/15"></label>

@@ -19,7 +19,7 @@
                         <span>{{ $event->location }}</span>
                         @if ($event->participants)<span>{{ $event->participants }}</span>@endif
                     </div>
-                    <p class="mt-7 text-base leading-8 text-slate-700">{{ $event->summary }}</p>
+                    <x-public.rich-text class="mt-7 text-base leading-8 text-slate-700" :text="$event->summary" />
 
                     @if ($event->registrationUrl)
                         <div class="mt-8 flex flex-wrap items-center gap-4">

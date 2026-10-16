@@ -27,7 +27,7 @@
                 @endif
                 <h1 class="mt-3 text-[24px] font-bold leading-tight text-spu-blue md:text-[30px]">{{ $achievement->title }}</h1>
                 @if ($achievement->summary)
-                    <p class="mx-auto mt-3 max-w-3xl text-[13px] font-semibold leading-6 text-slate-500">{{ $achievement->summary }}</p>
+                    <x-public.rich-text class="mx-auto mt-3 max-w-3xl text-[13px] font-semibold leading-6 text-slate-500" :text="$achievement->summary" />
                 @endif
 
                 @if ($achievement->publishedAt || $achievement->meta)

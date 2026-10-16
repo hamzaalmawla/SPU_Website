@@ -12,7 +12,7 @@
 
         <h1 class="text-4xl font-black leading-tight text-white md:text-5xl">{{ $title }}</h1>
         @if (! empty($summary))
-            <p class="mx-auto mt-5 max-w-3xl text-base font-semibold leading-8 text-white/80">{{ $summary }}</p>
+            <x-public.rich-text class="mx-auto mt-5 max-w-3xl text-base font-semibold leading-8 text-white/80" :text="$summary" />
         @endif
     </div>
 </section>

@@ -21,7 +21,7 @@
         <div class="absolute bottom-[-50px] left-1/2 z-50 mx-auto max-w-[620px] -translate-x-1/2 transform bg-spu-blue px-6 py-8 shadow-[0_18px_46px_rgba(0,0,0,0.18)] sm:px-10">
             <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-white/70">{{ $localized($trainingHero, 'eyebrow') }}</p>
             <h1 class="mt-3 text-[28px] font-bold leading-tight md:text-[34px]">{{ $localized($trainingHero, 'title') }}</h1>
-            <p class="mx-auto mt-4 max-w-[520px] text-[13px] font-semibold leading-6 text-white/78">{{ $localized($trainingHero, 'summary') }}</p>
+            <x-public.rich-text class="mx-auto mt-4 max-w-[520px] text-[13px] font-semibold leading-6 text-white/78" :text="$localized($trainingHero, 'summary')" />
         </div>
     </div>
 </section>
@@ -37,7 +37,7 @@
                             <img src="{{ $card['icon'] ?? '/images/icons/training.svg' }}" alt="" class="h-4 w-4" aria-hidden="true">
                         </span>
                     </div>
-                    <p class="mt-4 text-[12px] font-semibold leading-6 text-slate-500">{{ $localized($card, 'description') }}</p>
+                    <x-public.rich-text class="mt-4 text-[12px] font-semibold leading-6 text-slate-500" :text="$localized($card, 'description')" />
                 </article>
             @endforeach
         </div>
@@ -54,7 +54,7 @@
                 <article class="relative z-10 text-center">
                     <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-spu-blue text-[14px] font-bold text-white shadow-[0_10px_26px_rgba(32,39,89,0.18)]">{{ $step['number'] ?? $loop->iteration }}</div>
                     <h3 class="mt-4 text-[15px] font-bold text-spu-blue">{{ $localized($step, 'title') }}</h3>
-                    <p class="mx-auto mt-2 max-w-[210px] text-[11px] font-semibold leading-5 text-slate-500">{{ $localized($step, 'description') }}</p>
+                    <x-public.rich-text class="mx-auto mt-2 max-w-[210px] text-[11px] font-semibold leading-5 text-slate-500" :text="$localized($step, 'description')" />
                 </article>
             @endforeach
         </div>
@@ -84,7 +84,7 @@
                             <span class="h-1.5 w-1.5 rounded-full bg-spu-blue"></span>
                             <span>{{ $localized($item, 'category') }}</span>
                         </div>
-                        <p class="mt-3 text-[12px] font-semibold leading-5 text-slate-500">{{ $localized($item, 'description') }}</p>
+                        <x-public.rich-text class="mt-3 text-[12px] font-semibold leading-5 text-slate-500" :text="$localized($item, 'description')" />
                     </div>
                 </a>
             @endforeach

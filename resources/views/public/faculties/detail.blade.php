@@ -163,7 +163,7 @@
                         <div class="mt-6 min-h-[140px] space-y-5">
                             @foreach ($tabs as $tab)
                                 <div x-show="activeTab === '{{ $tab['id'] ?? 'overview' }}'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-3" x-transition:enter-end="opacity-100 translate-y-0" @if (! $loop->first) style="display: none;" @endif>
-                                    <p class="max-w-[680px] text-[20px] leading-[1.8] text-[#46464f]">{{ $tab['body'] ?? '' }}</p>
+                                    <x-public.rich-text class="max-w-[680px] text-[20px] leading-[1.8] text-[#46464f]" :text="$tab['body'] ?? ''" />
                                 </div>
                             @endforeach
                         </div>
@@ -203,9 +203,7 @@
                             <span>{{ __('public.message_from') }}</span>
                             <span style="color: {{ $accent }}">{{ $dean['role'] ?? ($isAr ? ($dean['roleAr'] ?? 'عميد الكلية') : ($dean['roleEn'] ?? 'Faculty Dean')) }}</span>
                         </h2>
-                        <p class="text-lg font-normal leading-relaxed text-[#475467] md:text-2xl">
-                            {{ $dean['message'] ?? ($isAr ? ($dean['messageAr'] ?? '') : ($dean['messageEn'] ?? '')) }}
-                        </p>
+                        <x-public.rich-text class="text-lg font-normal leading-relaxed text-[#475467] md:text-2xl" :text="$dean['message'] ?? ($isAr ? ($dean['messageAr'] ?? '') : ($dean['messageEn'] ?? ''))" />
                     </div>
                 </div>
             </div>

@@ -32,7 +32,7 @@
 
         <section class="bg-white py-20">
             <div class="container mx-auto px-6">
-                <p class="mx-auto max-w-4xl text-center text-base font-bold leading-8 text-slate-700">{{ $page->summary }}</p>
+                <x-public.rich-text class="mx-auto max-w-4xl text-center text-base font-bold leading-8 text-slate-700" :text="$page->summary" />
                 <h2 class="sr-only">{{ $page->cardsTitle }}</h2>
 
                 <div class="mt-12 grid grid-cols-1 items-start gap-6 md:grid-cols-3">
@@ -42,7 +42,7 @@
                                 <img src="{{ $card['icon'] }}" alt="" class="h-7 w-7" aria-hidden="true">
                             </div>
                             <h3 class="text-xl font-black text-spu-blue">{{ $card['title'] }}</h3>
-                            <p class="mt-4 whitespace-pre-line text-sm font-bold leading-7 text-slate-700">{{ $card['body'] }}</p>
+                            <x-public.rich-text class="mt-4 text-sm font-bold leading-7 text-slate-700" :text="$card['body']" />
                         </article>
                     @endforeach
                 </div>
@@ -56,7 +56,7 @@
                     @foreach ($page->pillars as $pillar)
                         <article class="reveal reveal-up rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
                             <h3 class="text-lg font-black text-spu-blue">{{ $pillar['title'] }}</h3>
-                            <p class="mt-3 text-sm font-bold leading-7 text-slate-700">{{ $pillar['summary'] }}</p>
+                            <x-public.rich-text class="mt-3 text-sm font-bold leading-7 text-slate-700" :text="$pillar['summary']" />
                         </article>
                     @endforeach
                 </div>

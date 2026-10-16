@@ -2,9 +2,7 @@
     <div class="mb-16 grid grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-12">
         <div class="flex flex-col items-start lg:col-span-4">
             <h2 class="mb-6 text-[24px] font-bold uppercase leading-tight tracking-wider">{{ $navigation->footerSettings->brandTitle ?? __('public.university_name') }}</h2>
-            <p class="mb-8 max-w-[320px] text-[16px] leading-[1.6] text-white/70">
-                {{ $navigation->footerSettings->brandSummary ?? __('public.footer_mission') }}
-            </p>
+            <x-public.rich-text class="mb-8 max-w-[320px] text-[16px] leading-[1.6] text-white/70" :text="$navigation->footerSettings->brandSummary ?? __('public.footer_mission')" />
 
             @if (($hideFooterSocials ?? false) !== true && ! request()->routeIs('public.news.show') && $navigation->socialContact->socialLinks !== [])
                 <div class="flex items-center gap-6 text-[22px]">

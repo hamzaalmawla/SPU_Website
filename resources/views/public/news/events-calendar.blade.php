@@ -29,7 +29,7 @@
         <div class="container relative z-10 pb-10 text-center text-white sm:pb-14">
             <p class="events-calendar-eyebrow">{{ $locale === 'ar' ? 'أخبار وفعاليات' : 'News & Events' }}</p>
             <h1 class="mt-3 text-[clamp(2rem,7vw,3.75rem)] font-bold leading-tight">{{ $page['calendarTitle'] }}</h1>
-            <p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-white/80 sm:text-base">{{ $page['summary'] }}</p>
+            <x-public.rich-text class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-white/80 sm:text-base" :text="$page['summary']" />
         </div>
     </section>
 
@@ -89,7 +89,7 @@
                         </div>
                         <div class="events-month-card-body">
                             <h3><a href="{{ $event->detailUrl }}">{{ $event->title }}</a></h3>
-                            <p class="events-month-card-summary">{{ $event->summary }}</p>
+                            <x-public.rich-text class="events-month-card-summary" :text="$event->summary" />
                             <div class="events-month-card-meta">
                                 <span>{{ $event->timeLabel }}</span>
                                 <span>{{ $event->location }}</span>

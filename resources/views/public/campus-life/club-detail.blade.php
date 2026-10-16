@@ -20,7 +20,7 @@
                 </nav>
                 @if (! empty($club['tag']))<span class="mt-5 w-fit rounded-full bg-spu-red px-4 py-1.5 text-xs font-bold">{{ $club['tag'] }}</span>@endif
                 <h1 class="mt-4 max-w-4xl text-4xl font-black leading-tight md:text-5xl">{{ $club['title'] ?? '' }}</h1>
-                @if (! empty($club['summary']))<p class="mt-4 max-w-3xl text-base leading-8 text-white/85">{{ $club['summary'] }}</p>@endif
+                @if (! empty($club['summary']))<x-public.rich-text class="mt-4 max-w-3xl text-base leading-8 text-white/85" :text="$club['summary']" />@endif
             </div>
         </div>
     </section>
@@ -30,7 +30,7 @@
             <div class="mx-auto grid max-w-5xl gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
                 <article class="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm md:p-10">
                     <h2 class="text-2xl font-black text-spu-blue">{{ $locale === 'ar' ? 'عن النادي' : 'About the Club' }}</h2>
-                    <div class="mt-5 whitespace-pre-line text-base leading-8 text-slate-700">{{ $club['body'] ?? $club['summary'] ?? '' }}</div>
+                    <x-public.rich-text class="mt-5 text-base leading-8 text-slate-700" :text="$club['body'] ?? $club['summary'] ?? ''" />
                 </article>
                 <aside class="lg:sticky lg:top-28 lg:self-start">
                     <div class="rounded-2xl border border-spu-blue/10 bg-white p-6 shadow-sm">

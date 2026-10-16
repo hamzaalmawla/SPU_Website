@@ -121,8 +121,12 @@ final class AboutWorkflowTest extends TestCase
         $this->get('/en/about/vision-mission')
             ->assertOk()
             ->assertSee('grid grid-cols-1 items-start gap-6 md:grid-cols-3', false)
-            ->assertSee('whitespace-pre-line', false)
-            ->assertSee("1. Advance educational quality.\n2. Strengthen scientific research.\n3. Serve the community.");
+            ->assertSee('<ol class="rich-text__list" role="list">', false)
+            ->assertSeeInOrder([
+                '<span class="rich-text__marker">1.</span><span class="rich-text__item">Advance educational quality.</span>',
+                '<span class="rich-text__marker">2.</span><span class="rich-text__item">Strengthen scientific research.</span>',
+                '<span class="rich-text__marker">3.</span><span class="rich-text__item">Serve the community.</span>',
+            ], false);
     }
 
     public function test_vision_mission_draft_preview_and_publish_workflow(): void

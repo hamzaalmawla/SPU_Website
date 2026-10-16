@@ -14,7 +14,7 @@
         </div>
         <h2 class="mt-[14px] text-[22px] font-bold leading-tight text-spu-blue transition-colors group-hover:text-spu-red">{{ $publication['title'] ?? '' }}</h2>
         @if (! empty($publication['summary']))
-            <p class="mt-[10px] max-w-[500px] text-[16px] leading-[1.75] text-[#263650]">{{ $publication['summary'] }}</p>
+            <x-public.rich-text class="mt-[10px] max-w-[500px] text-[16px] leading-[1.75] text-[#263650]" :text="$publication['summary']" />
         @endif
         @if (! empty($publication['publisher']))
             <p class="mt-[10px] text-[12px] font-bold uppercase tracking-[0.08em] text-[#6f7280]">{{ $publication['publisher'] }}</p>

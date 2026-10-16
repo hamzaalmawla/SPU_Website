@@ -252,7 +252,7 @@
                         <h2 class="mb-5 flex flex-wrap items-center justify-between gap-2 border-b border-spu-blue/[0.08] pb-3 text-lg font-bold text-spu-blue">{{ $isAr ? 'نبذة مهنية' : 'Professional Biography' }}</h2>
                         <div class="space-y-4 text-[0.9375rem] leading-[1.8] text-spu-blue/75">
                             @foreach ($biography as $paragraph)
-                                <p>{{ $paragraph }}</p>
+                                <x-public.rich-text :text="$paragraph" />
                             @endforeach
                         </div>
                     </div>
@@ -295,7 +295,7 @@
                                             </span>
                                         @endif
                                         @if (!empty($edu['description']))
-                                            <p class="mt-2 text-sm text-spu-blue/60">{{ $edu['description'] }}</p>
+                                            <x-public.rich-text class="mt-2 text-sm text-spu-blue/60" :text="$edu['description']" />
                                         @endif
                                     </div>
                                 </div>
@@ -320,7 +320,7 @@
                                             <p class="mb-1 text-sm text-spu-red font-semibold">{{ $membership['position'] }}</p>
                                         @endif
                                         @if (!empty($membership['bio']))
-                                            <p class="text-sm text-spu-blue/60">{{ $membership['bio'] }}</p>
+                                            <x-public.rich-text class="text-sm text-spu-blue/60" :text="$membership['bio']" />
                                         @endif
                                     </div>
                                 </div>
@@ -372,7 +372,7 @@
                                     @endif
                                     
                                     @if (!empty($publication['excerpt']))
-                                        <p class="mb-3 text-sm text-spu-blue/50">{{ \Illuminate\Support\Str::limit($publication['excerpt'], 150) }}</p>
+                                        <x-public.rich-text class="mb-3 text-sm text-spu-blue/50" :text="\Illuminate\Support\Str::limit($publication['excerpt'], 150)" />
                                     @endif
 
                                     @if ($localHref !== '#' || !empty($publication['links']['scholar']))

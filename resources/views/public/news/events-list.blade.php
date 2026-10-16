@@ -6,7 +6,7 @@
         <div class="absolute inset-0 bg-gradient-to-t from-spu-blue/95 via-spu-blue/70 to-spu-blue/25"></div>
         <div class="container relative z-10 pb-12 text-center text-white">
             <h1 class="text-4xl font-bold md:text-5xl">{{ $page['title'] }}</h1>
-            <p class="mx-auto mt-4 max-w-3xl text-sm leading-7 text-white/82">{{ $page['summary'] }}</p>
+            <x-public.rich-text class="mx-auto mt-4 max-w-3xl text-sm leading-7 text-white/82" :text="$page['summary']" />
         </div>
     </section>
 
@@ -27,7 +27,7 @@
                         <div class="p-7">
                             <div class="flex items-center justify-between gap-3 text-xs font-bold"><span class="text-spu-red">{{ $event->categoryLabel }}</span><span class="text-emerald-700">{{ $page['freeLabel'] }}</span></div>
                             <h3 class="mt-3 text-xl font-bold text-spu-blue"><a href="{{ $event->detailUrl }}" class="transition hover:text-spu-red focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-spu-red">{{ $event->title }}</a></h3>
-                            <p class="mt-3 text-sm leading-7 text-slate-600">{{ $event->summary }}</p>
+                            <x-public.rich-text class="mt-3 text-sm leading-7 text-slate-600" :text="$event->summary" />
                             <div class="mt-5 grid gap-2 text-xs text-slate-500 sm:grid-cols-2"><span>{{ $event->dateLabel }}</span><span>{{ $event->timeLabel }}</span><span class="sm:col-span-2">{{ $event->location }}</span></div>
                             <div class="mt-6 flex items-center justify-between gap-4">
                                 @if ($event->remainingCapacity !== null)

@@ -76,9 +76,7 @@
                     <span class="h-1.5 w-1.5 rounded-full bg-spu-gold"></span>
                     {{ __('public.facilities_eyebrow') }}
                 </span>
-                <p class="mt-4 text-[14px] leading-relaxed text-white/75 lg:text-white/70">
-                    {{ $hero['summary'] ?: __('public.facilities_subheading') }}
-                </p>
+                <x-public.rich-text class="mt-4 text-[14px] leading-relaxed text-white/75 lg:text-white/70" :text="$hero['summary'] ?: __('public.facilities_subheading')" />
                 <div class="fac-hub-hero__reveal fac-hub-hero__reveal--d3 mt-8 mb-1 flex flex-wrap gap-3 {{ $isAr ? 'self-start mr-1' : 'self-end' }}">
                     <a href="{{ $hero['applyUrl'] ?? ('/'.$locale.'/admissions/how-to-apply') }}"
                     class="fac-hub-btn-primary inline-flex h-[42px] items-center justify-center rounded-[6px] bg-[#8a1c1c] px-8 text-[14px] font-bold uppercase tracking-[0.14em] text-white transition-colors hover:bg-[#6b1515]">

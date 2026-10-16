@@ -31,7 +31,7 @@
                 <h1 class="mt-5 text-4xl font-black leading-[1.1] tracking-tight text-spu-blue md:text-5xl lg:text-[58px]">
                     {{ $hero['title'] ?? '' }} <span class="relative inline-block text-spu-red">{{ $locale === 'ar' ? 'معنا' : 'With Us' }}<span class="absolute -bottom-2 left-0 h-1.5 w-full rounded-full bg-spu-red/20"></span></span>
                 </h1>
-                <p class="mx-auto mt-6 max-w-[640px] text-base leading-relaxed text-slate-600 md:text-lg">{{ $hero['summary'] ?? '' }}</p>
+                <x-public.rich-text class="mx-auto mt-6 max-w-[640px] text-base leading-relaxed text-slate-600 md:text-lg" :text="$hero['summary'] ?? ''" />
             </div>
         </div>
     </section>

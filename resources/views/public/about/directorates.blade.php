@@ -12,7 +12,7 @@
                         <div class="directorate-number">{{ str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT) }}</div>
                         <div class="directorate-info">
                             <h2 class="directorate-title">{{ $directorate->title }}</h2>
-                            <p class="directorate-desc">{{ $directorate->summary }}</p>
+                            <x-public.rich-text class="directorate-desc" :text="$directorate->summary" />
                         </div>
                     </a>
                 @endforeach
@@ -28,7 +28,7 @@
                     </div>
                     <div>
                         <h3 class="correspondence-title">{{ $locale === 'ar' ? 'المراسلات الإدارية' : 'Administrative Correspondence' }}</h3>
-                        <p class="correspondence-text">{{ $locale === 'ar' ? 'تُوجّه المراسلات المتعلقة بكل مديرية عبر بيانات التواصل المنشورة في صفحتها أو من خلال نموذج التواصل العام.' : 'Correspondence for each directorate can be sent through its published contact details or the university contact form.' }}</p>
+                        <x-public.rich-text class="correspondence-text" :text="$locale === 'ar' ? 'تُوجّه المراسلات المتعلقة بكل مديرية عبر بيانات التواصل المنشورة في صفحتها أو من خلال نموذج التواصل العام.' : 'Correspondence for each directorate can be sent through its published contact details or the university contact form.'" />
                     </div>
                 </div>
 

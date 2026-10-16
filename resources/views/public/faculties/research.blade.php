@@ -19,7 +19,7 @@
                             </div>
                             <h2 class="mt-[14px] text-[22px] font-bold leading-tight text-spu-blue transition-colors group-hover:text-spu-red">{{ $publication['title'] ?? '' }}</h2>
                             @if (! empty($publication['summary']))
-                                <p class="mt-[10px] max-w-[500px] text-[16px] leading-[1.75] text-[#263650]">{{ $publication['summary'] }}</p>
+                                <x-public.rich-text class="mt-[10px] max-w-[500px] text-[16px] leading-[1.75] text-[#263650]" :text="$publication['summary']" />
                             @endif
                             <span class="mt-[20px] inline-flex h-[27px] min-w-[87px] items-center justify-center rounded-[6px] bg-spu-blue px-4 text-[8px] font-bold text-white transition group-hover:bg-[#171d47]">{{ $isAr ? 'عرض المنشور' : 'View Publication' }}</span>
                         </div>
@@ -27,7 +27,7 @@
                 @empty
                     <div class="rounded-[10px] border border-slate-200 bg-section p-8 lg:col-span-2">
                         <h2 class="text-xl font-bold text-spu-blue">{{ $subpage['emptyTitle'] ?? ($isAr ? 'لا توجد منشورات حالياً' : 'No publications available') }}</h2>
-                        <p class="mt-3 text-sm leading-7 text-slate-600">{{ $subpage['emptySummary'] ?? ($isAr ? 'ستظهر منشورات الكلية هنا عند نشرها.' : 'Faculty publications will appear here when published.') }}</p>
+                        <x-public.rich-text class="mt-3 text-sm leading-7 text-slate-600" :text="$subpage['emptySummary'] ?? ($isAr ? 'ستظهر منشورات الكلية هنا عند نشرها.' : 'Faculty publications will appear here when published.')" />
                     </div>
                 @endforelse
             </div>

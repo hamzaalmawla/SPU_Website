@@ -12,7 +12,7 @@
                         <p class="text-xs font-bold text-spu-red">{{ $event->categoryLabel }}</p>
                         <h1 class="mt-2 text-3xl font-bold text-spu-blue">{{ $event->title }}</h1>
                         <div class="mt-5 flex flex-wrap gap-4 text-sm text-slate-500"><span>{{ $event->dateLabel }}</span><span>{{ $event->timeLabel }}</span><span>{{ $event->location }}</span>@if($event->participants)<span>{{ $event->participants }}</span>@endif</div>
-                        <p class="mt-7 text-sm leading-8 text-slate-700">{{ $event->summary }}</p>
+                        <x-public.rich-text class="mt-7 text-sm leading-8 text-slate-700" :text="$event->summary" />
 
                         @if ($event->highlights !== [])
                             <h2 class="mt-10 text-xl font-bold text-spu-blue">{{ $page['highlightsLabel'] }}</h2>

@@ -78,7 +78,7 @@
                     <div class="mt-8">
                         <h1 class="text-[26px] font-bold leading-[34px] text-spu-blue md:text-[32px] md:leading-[42px]">{{ $project['title'] ?? '' }}</h1>
                         @if (! empty($project['summary']))
-                            <p class="mt-4 text-[14px] font-medium leading-[26px] text-slate-600">{{ $project['summary'] }}</p>
+                            <x-public.rich-text class="mt-4 text-[14px] font-medium leading-[26px] text-slate-600" :text="$project['summary']" />
                         @endif
                     </div>
 
@@ -86,7 +86,7 @@
                     @if ($descriptionParagraphs !== [])
                         <div class="mt-8 space-y-4">
                             @foreach ($descriptionParagraphs as $paragraph)
-                                <p class="text-[14px] leading-[26px] text-slate-600">{{ $paragraph }}</p>
+                                <x-public.rich-text class="text-[14px] leading-[26px] text-slate-600" :text="$paragraph" />
                             @endforeach
                         </div>
                     @elseif (! empty($project['overview']))
@@ -95,7 +95,7 @@
                              known and point at the report instead of leaving the column empty. --}}
                         <section class="project-overview mt-8 rounded-[6px] border border-slate-200 bg-slate-50 p-6 md:p-8" aria-labelledby="project-overview-heading">
                             <h2 id="project-overview-heading" class="text-[18px] font-bold text-spu-blue">{{ $aboutLabel }}</h2>
-                            <p class="mt-3 text-[14px] leading-[26px] text-slate-600">{{ $project['overview'] }}</p>
+                            <x-public.rich-text class="mt-3 text-[14px] leading-[26px] text-slate-600" :text="$project['overview']" />
                             @php($overviewDocuments = array_values(array_filter($project['documents'] ?? [], static fn ($document): bool => is_array($document) && ! empty($document['file']))))
                             @if ($overviewDocuments !== [])
                                 <p class="mt-5 text-[13px] font-semibold text-slate-500">{{ $reportNote }}</p>

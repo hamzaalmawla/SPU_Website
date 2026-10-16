@@ -24,7 +24,7 @@
                     <span>{{ $job['title'] ?? '' }}</span>
                 </nav>
                 <h1 class="mt-5 text-4xl font-black leading-tight text-spu-blue md:text-5xl">{{ $job['title'] ?? '' }}</h1>
-                <p class="mx-auto mt-5 max-w-[720px] text-base leading-7 text-slate-600">{{ $job['shortDescription'] ?? '' }}</p>
+                <x-public.rich-text class="mx-auto mt-5 max-w-[720px] text-base leading-7 text-slate-600" :text="$job['shortDescription'] ?? ''" />
                 <div class="mt-7 flex flex-wrap items-center justify-center gap-3 text-xs font-bold text-slate-500">
                     <span class="rounded-full bg-spu-blue/5 px-4 py-2">{{ $job['department'] ?? '' }}</span>
                     <span class="rounded-full bg-spu-blue/5 px-4 py-2">{{ $job['location'] ?? '' }}</span>

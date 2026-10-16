@@ -20,7 +20,7 @@
                     <span class="pointer-events-none absolute bottom-0 left-0 h-[4px] w-[265px] max-w-[42%] bg-white"></span>
                     <h1 class="text-[34px] font-bold leading-tight text-white md:text-[40px]">{{ $data['hero']['title'] ?? '' }}</h1>
                     <p class="mt-5 text-[13px] font-bold leading-none text-white">{{ $data['hero']['eyebrow'] ?? '' }}</p>
-                    <p class="mx-auto mt-2 max-w-[590px] text-[14px] font-bold leading-[1.45] text-white">{{ $data['hero']['summary'] ?? '' }}</p>
+                    <x-public.rich-text class="mx-auto mt-2 max-w-[590px] text-[14px] font-bold leading-[1.45] text-white" :text="$data['hero']['summary'] ?? ''" />
                     <div class="mt-10 flex flex-wrap items-center justify-center gap-9">
                         <a href="{{ $data['hero']['cta1Url'] ?? ('/'.$locale.'/research/publications') }}" class="inline-flex h-[32px] min-w-[145px] items-center justify-center rounded-[2px] bg-spu-blue px-5 text-[10px] font-bold text-white transition hover:bg-[#171d47]">{{ $data['hero']['cta1'] ?? '' }}</a>
                         <a href="{{ $data['hero']['cta2Url'] ?? ('/'.$locale.'/research/centers') }}" class="inline-flex h-[32px] min-w-[145px] items-center justify-center rounded-[2px] bg-spu-blue px-5 text-[10px] font-bold text-white transition hover:bg-[#171d47]">{{ $data['hero']['cta2'] ?? '' }}</a>
@@ -51,7 +51,7 @@
                 <div class="flex-1 px-7 py-9 md:px-[54px] md:py-[68px]">
                     <p class="text-[12px] font-bold uppercase tracking-[0.12em] text-spu-red">{{ $featured['eyebrow'] ?? '' }}</p>
                     <h3 class="mt-5 text-[20px] font-bold leading-snug text-spu-blue md:text-[22px]">{{ $featured['title'] ?? '' }}</h3>
-                    <p class="mt-4 max-w-[625px] text-[14px] leading-[1.55] text-[#333742]">{{ $featured['summary'] ?? '' }}</p>
+                    <x-public.rich-text class="mt-4 max-w-[625px] text-[14px] leading-[1.55] text-[#333742]" :text="$featured['summary'] ?? ''" />
                     <div class="mt-9 flex flex-wrap items-center gap-8 border-s-2 border-[#c8ccd9] ps-8">
                         <div class="min-w-[105px]"><p class="text-[9px] font-medium uppercase tracking-[0.12em] text-[#6f7280]">{{ $featured['authorLabel'] ?? '' }}</p><p class="mt-1 text-[11px] font-bold text-spu-blue">{{ $featured['authorName'] ?? '' }}</p></div>
                         <div class="min-w-[120px]"><p class="text-[9px] font-medium uppercase tracking-[0.12em] text-[#6f7280]">{{ $featured['affiliationLabel'] ?? '' }}</p><p class="mt-1 text-[11px] font-bold text-spu-blue">{{ $featured['affiliation'] ?? '' }}</p></div>
@@ -89,7 +89,7 @@
                     <div class="group relative min-h-[205px] rounded-[6px] border border-[#d2d5df] bg-white px-[27px] pb-7 pt-10 shadow-[0_2px_4px_rgba(0,0,0,0.18)] transition hover:-translate-y-1 hover:shadow-[0_10px_24px_rgba(32,39,89,0.12)]">
                         <div class="absolute -top-[24px] left-[42px] flex h-[50px] w-[50px] items-center justify-center rounded-full border border-[#d2d5df] bg-white text-[22px] font-bold leading-none text-spu-blue shadow-[0_1px_1px_rgba(0,0,0,0.05)] transition group-hover:border-spu-blue group-hover:bg-spu-blue group-hover:text-white rtl:left-auto rtl:right-[42px]">{{ $card['number'] ?? '' }}</div>
                         <h3 class="text-[22px] font-bold leading-tight text-spu-blue">{{ $card['title'] ?? '' }}</h3>
-                        <p class="mt-3 max-w-[280px] text-[15px] leading-[1.7] text-[#50525c]">{{ $card['summary'] ?? '' }}</p>
+                        <x-public.rich-text class="mt-3 max-w-[280px] text-[15px] leading-[1.7] text-[#50525c]" :text="$card['summary'] ?? ''" />
                         <a href="{{ $card['url'] ?? '#' }}" class="mt-4 inline-flex items-center gap-2 text-[15px] font-bold text-spu-red transition hover:gap-3"><span>{{ $card['cta'] ?? '' }}</span><span class="rtl:rotate-180">&rarr;</span></a>
                     </div>
                 @endforeach

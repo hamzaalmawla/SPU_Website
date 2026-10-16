@@ -19,7 +19,7 @@
                  and the heading dropped to 1.27:1 — worse than what it replaced. The
                  scrim behind it is the open item; the colour is not. --}}
             <h1 class="mb-6 text-[clamp(2.15rem,10vw,3rem)] font-bold uppercase tracking-[0.12em] sm:tracking-[0.22em] md:tracking-[0.4em]">{{ $page['heroTitle'] ?? $pageTitle }}</h1>
-            <p class="mb-8 text-[clamp(1.15rem,5vw,1.875rem)] font-bold leading-tight">{{ $page['pageDescription'] ?? $pageDescription }}</p>
+            <x-public.rich-text class="mb-8 text-[clamp(1.15rem,5vw,1.875rem)] font-bold leading-tight" :text="$page['pageDescription'] ?? $pageDescription" />
 
             <div class="mt-12 space-y-4">
                 <div class="flex flex-wrap items-center justify-center gap-4">
@@ -55,7 +55,7 @@
 
                         <h2 class="mb-6 text-3xl font-bold leading-tight text-spu-blue lg:text-4xl">{{ $featured->title }}</h2>
                         @if ($featured->excerpt)
-                            <p class="mb-8 text-lg leading-relaxed text-slate-600">{{ $featured->excerpt }}</p>
+                            <x-public.rich-text class="mb-8 text-lg leading-relaxed text-slate-600" :text="$featured->excerpt" />
                         @endif
 
                         <a href="{{ $featured->url ?? '/'.$locale.'/news/articles' }}" class="group/link inline-flex items-center gap-2 font-bold text-spu-blue">
@@ -150,7 +150,7 @@
                                         <span class="whitespace-nowrap rounded-md bg-[#202759] px-4 py-1.5 text-[11px] font-bold uppercase tracking-widest text-white">{{ $page['newLabel'] ?? ($isAr ? 'جديد' : 'New') }}</span>
                                     </div>
                                     @if ($announcement->excerpt)
-                                        <p class="mb-6 max-w-[90%] text-[17px] leading-relaxed text-slate-600">{{ $announcement->excerpt }}</p>
+                                        <x-public.rich-text class="mb-6 max-w-[90%] text-[17px] leading-relaxed text-slate-600" :text="$announcement->excerpt" />
                                     @endif
                                     <a href="{{ $announcement->url ?? '#' }}" class="group/link inline-flex items-center gap-2 text-[15px] font-bold text-[#202759]">
                                         <span>{{ $page['viewDetailsLabel'] ?? ($isAr ? 'عرض التفاصيل' : 'View Details') }}</span>

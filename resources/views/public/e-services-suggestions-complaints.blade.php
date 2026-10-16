@@ -20,7 +20,7 @@
             </nav>
             <p class="mb-3 text-xs font-black uppercase tracking-[0.2em] text-white/70">{{ $page->hero['eyebrow'] ?? '' }}</p>
             <h1 class="mx-auto max-w-[900px] text-[26px] font-bold leading-tight md:text-[42px]">{{ $page->hero['title'] ?? '' }}</h1>
-            <p class="mx-auto mt-3 max-w-[800px] text-[13px] font-semibold leading-6 text-white/80">{{ $page->hero['summary'] ?? '' }}</p>
+            <x-public.rich-text class="mx-auto mt-3 max-w-[800px] text-[13px] font-semibold leading-6 text-white/80" :text="$page->hero['summary'] ?? ''" />
         </div>
     </section>
 
@@ -30,7 +30,7 @@
                 <form method="POST" action="/{{ $locale }}/e-services/suggestions-complaints" enctype="multipart/form-data" class="rounded-2xl bg-gray-50 p-6 shadow-sm sm:p-8">
                     @csrf
                     <h2 class="mb-2 text-2xl font-black text-spu-blue">{{ $form['formTitle'] ?? '' }}</h2>
-                    <p class="mb-6 text-xs text-gray-500">{{ __('public.required_fields_note') }}</p>
+                    <x-public.rich-text class="mb-6 text-xs text-gray-500" :text="__('public.required_fields_note')" />
 
                     @if (session('suggestions_status'))
                         <div class="mb-5 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-bold text-green-700">{{ session('suggestions_status') }}</div>
@@ -57,12 +57,12 @@
                 <aside class="space-y-4 lg:sticky lg:top-24 lg:self-start">
                     <div class="rounded-2xl border border-spu-blue/10 bg-white p-6 shadow-sm">
                         <h2 class="text-xl font-black text-spu-blue">{{ $form['infoTitle'] ?? '' }}</h2>
-                        <p class="mt-3 text-sm font-bold leading-7 text-spu-blue/65">{{ $form['infoBody'] ?? '' }}</p>
+                        <x-public.rich-text class="mt-3 text-sm font-bold leading-7 text-spu-blue/65" :text="$form['infoBody'] ?? ''" />
                     </div>
                     @foreach (($form['cards'] ?? []) as $card)
                         <article class="rounded-2xl border border-spu-blue/10 bg-white p-6 shadow-sm">
                             <h3 class="text-base font-black text-spu-red">{{ $card['title'] ?? '' }}</h3>
-                            <p class="mt-2 text-sm font-bold leading-6 text-spu-blue/65">{{ $card['body'] ?? '' }}</p>
+                            <x-public.rich-text class="mt-2 text-sm font-bold leading-6 text-spu-blue/65" :text="$card['body'] ?? ''" />
                         </article>
                     @endforeach
                 </aside>

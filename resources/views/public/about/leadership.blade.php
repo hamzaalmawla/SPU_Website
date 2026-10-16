@@ -59,7 +59,7 @@
                                         <h3 class="mb-2 text-lg font-black leading-tight text-spu-blue">{{ $person->name }}</h3>
                                         <p class="text-[0.68rem] font-black uppercase tracking-[0.1em] text-spu-red">{{ $person->role }}</p>
                                         @if ($person->bio)
-                                            <p class="mt-6 text-sm leading-7 text-slate-600">{{ $person->bio }}</p>
+                                            <x-public.rich-text class="mt-6 text-sm leading-7 text-slate-600" :text="$person->bio" />
                                         @endif
                                     </div>
                                 </a>

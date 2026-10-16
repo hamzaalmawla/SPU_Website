@@ -9,7 +9,7 @@
         <div class="container relative z-10 grid items-start gap-8 pb-20 pt-32 md:gap-10 md:pb-32 md:pt-40 lg:grid-cols-[1fr_1.2fr] lg:pb-40 lg:pt-48">
             <div class="flex flex-col gap-10 pt-4">
                 <h1 class="text-[clamp(2.25rem,9vw,3.125rem)] font-bold leading-[1.08] tracking-[-0.96px] text-spu-blue">{{ $landing['hero']['title'] ?? '' }}</h1>
-                <p class="max-w-[580px] text-[clamp(1.25rem,5vw,1.875rem)] font-bold leading-[1.35] text-[#46464f]">{{ $landing['hero']['summary'] ?? '' }}</p>
+                <x-public.rich-text class="max-w-[580px] text-[clamp(1.25rem,5vw,1.875rem)] font-bold leading-[1.35] text-[#46464f]" :text="$landing['hero']['summary'] ?? ''" />
 
                 @if (! empty($landing['hero']['primaryUrl']) || ! empty($landing['hero']['secondaryUrl']))<div class="flex flex-wrap items-center gap-3 md:gap-[23px]">
                     @if (! empty($landing['hero']['primaryUrl']))<a href="{{ $landing['hero']['primaryUrl'] }}" class="inline-flex h-[54px] items-center justify-center rounded-[6px] bg-spu-red px-8 text-xs font-bold uppercase tracking-[1.2px] text-white transition hover:opacity-90">{{ $landing['hero']['ctaPrimary'] ?? '' }}</a>@endif
@@ -78,7 +78,7 @@
                             <div class="relative z-10 flex h-[56px] w-[56px] items-center justify-center rounded-full text-xl font-bold shadow-md {{ ($step['active'] ?? false) ? 'bg-spu-blue text-white shadow-[0_8px_24px_rgba(32,39,89,0.3)]' : 'border-2 border-slate-200 bg-white text-spu-blue' }}">{{ $step['number'] ?? '' }}</div>
                             <div class="mt-5 w-full rounded-2xl bg-white p-6 shadow-[0_4px_20px_rgba(0,0,0,0.04)] {{ ($step['active'] ?? false) ? 'ring-2 ring-spu-blue/15' : '' }}">
                                 <h3 class="text-lg font-bold text-spu-blue">{{ $step['title'] ?? '' }}</h3>
-                                <p class="mt-3 text-sm leading-relaxed text-slate-400">{{ $step['summary'] ?? '' }}</p>
+                                <x-public.rich-text class="mt-3 text-sm leading-relaxed text-slate-400" :text="$step['summary'] ?? ''" />
                             </div>
                         </div>
                     @endforeach
@@ -102,7 +102,7 @@
                 <div class="flex flex-col lg:col-span-7">
                     <p class="text-sm font-bold uppercase tracking-[0.2em] text-spu-red/60">{{ $landing['timeline']['eyebrow'] ?? '' }}</p>
                     <h2 class="mt-3 text-4xl font-bold leading-tight text-spu-blue">{{ $landing['timeline']['title'] ?? '' }}</h2>
-                    <p class="mt-4 max-w-[560px] text-base leading-relaxed text-slate-500">{{ $landing['timeline']['summary'] ?? '' }}</p>
+                    <x-public.rich-text class="mt-4 max-w-[560px] text-base leading-relaxed text-slate-500" :text="$landing['timeline']['summary'] ?? ''" />
                     <div class="mt-10 flex flex-1 flex-col gap-4">
                         @foreach (($landing['timeline']['phases'] ?? []) as $phase)
                             <div class="group flex items-center gap-5 rounded-2xl bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.04)] {{ ($phase['active'] ?? false) ? 'ring-2 ring-spu-blue/10' : '' }}">

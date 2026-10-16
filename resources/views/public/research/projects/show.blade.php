@@ -10,7 +10,7 @@
             <div class="research-project-detail-grid mx-auto max-w-[1100px]">
                 <div>
                     <h2 class="text-[14px] font-bold uppercase tracking-[0.1em] text-spu-red">{{ $locale === 'ar' ? 'نظرة عامة' : 'Overview' }}</h2>
-                    <p class="mt-4 text-[16px] leading-[1.8] text-[#333742]">{{ $item['summary'] ?? '' }}</p>
+                    <x-public.rich-text class="mt-4 text-[16px] leading-[1.8] text-[#333742]" :text="$item['summary'] ?? ''" />
                     <div class="mt-10"><h2 class="text-[14px] font-bold uppercase tracking-[0.1em] text-spu-red">{{ $locale === 'ar' ? 'معلومات المشروع' : 'Project Information' }}</h2><dl class="mt-4 space-y-3">
                         @foreach ([($locale === 'ar' ? 'الكلية' : 'Faculty') => $item['faculty'] ?? '', ($locale === 'ar' ? 'المجال البحثي' : 'Research Theme') => $item['theme'] ?? '', ($locale === 'ar' ? 'سنة البدء' : 'Start Year') => $item['startYear'] ?? '', ($locale === 'ar' ? 'جهة التمويل' : 'Funding') => $item['funding'] ?? ''] as $label => $value)
                             <div class="flex gap-4"><dt class="w-[140px] text-[12px] font-medium text-[#6f7280]">{{ $label }}</dt><dd class="text-[14px] font-medium text-spu-blue">{{ $value }}</dd></div>

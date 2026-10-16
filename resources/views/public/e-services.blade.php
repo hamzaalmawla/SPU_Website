@@ -11,9 +11,7 @@
             <h1 class="text-4xl font-bold leading-tight md:text-5xl lg:text-[44px]">
                 {{ $page->hero['title'] }}
             </h1>
-            <p class="mt-4 max-w-[800px] text-sm font-medium leading-relaxed text-white/90 md:text-base">
-                {{ $page->hero['summary'] }}
-            </p>
+            <x-public.rich-text class="mt-4 max-w-[800px] text-sm font-medium leading-relaxed text-white/90 md:text-base" :text="$page->hero['summary']" />
         </div>
     </div>
 
@@ -47,7 +45,7 @@
                                 </div>
                             </div>
 
-                            <p class="mb-6 flex-grow text-[13px] leading-relaxed text-gray-500">{{ $service['summary'] }}</p>
+                            <x-public.rich-text class="mb-6 flex-grow text-[13px] leading-relaxed text-gray-500" :text="$service['summary']" />
 
                             <div class="mt-auto">
                                 <a href="{{ $service['url'] }}" class="inline-flex w-max items-center justify-center rounded bg-[#1e2756] px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider text-white transition-colors hover:bg-opacity-90">
@@ -74,7 +72,7 @@
                         @endif
                         <p class="text-xs font-bold uppercase tracking-[0.16em] text-spu-blue/50">{{ $card['eyebrow'] }}</p>
                         <h2 class="mt-3 text-[24px] font-bold text-spu-blue">{{ $card['title'] }}</h2>
-                        <p class="mt-3 text-sm leading-6 text-spu-blue/65">{{ $card['summary'] }}</p>
+                        <x-public.rich-text class="mt-3 text-sm leading-6 text-spu-blue/65" :text="$card['summary']" />
                     </article>
                 @endforeach
             </div>

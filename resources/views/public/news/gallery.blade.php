@@ -10,7 +10,7 @@
         <div class="absolute inset-0 bg-gradient-to-t from-spu-blue/95 via-spu-blue/65 to-spu-blue/20"></div>
         <div class="container relative z-10 pb-12 text-center text-white">
             <h1 class="text-4xl font-bold md:text-5xl">{{ $page['title'] }}</h1>
-            <p class="mx-auto mt-4 max-w-3xl text-sm leading-7 text-white/82">{{ $page['summary'] }}</p>
+            <x-public.rich-text class="mx-auto mt-4 max-w-3xl text-sm leading-7 text-white/82" :text="$page['summary']" />
         </div>
     </section>
 

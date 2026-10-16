@@ -32,7 +32,7 @@
                             <blockquote class="history-quote mb-12 text-2xl font-black leading-relaxed text-slate-950">{{ $history['quote'] }}</blockquote>
                             <div class="grid gap-6 text-base leading-relaxed text-slate-700">
                                 @foreach ($history['body'] as $paragraph)
-                                    <p>{{ $paragraph }}</p>
+                                    <x-public.rich-text :text="$paragraph" />
                                 @endforeach
                             </div>
                         </div>
@@ -50,7 +50,7 @@
                                 <div class="history-timeline-content">
                                     <p class="mb-3 text-4xl font-black leading-none text-spu-blue/35" translate="no">{{ $point['year'] }}</p>
                                     <h3 class="text-xl font-black leading-tight text-spu-blue">{{ $point['title'] }}</h3>
-                                    <p class="mt-5 text-sm leading-relaxed text-slate-700">{{ $point['body'] }}</p>
+                                    <x-public.rich-text class="mt-5 text-sm leading-relaxed text-slate-700" :text="$point['body']" />
                                 </div>
                             </article>
                         @endforeach
@@ -66,7 +66,7 @@
                                 <h2 class="text-xl font-black text-spu-blue">{{ $item['title'] }}</h2>
                                 <p class="mt-2 text-xs font-black uppercase tracking-widest text-spu-red">{{ $item['eyebrow'] }}</p>
                             </div>
-                            <p class="max-w-3xl text-lg leading-relaxed text-slate-700">{{ $item['body'] }}</p>
+                            <x-public.rich-text class="max-w-3xl text-lg leading-relaxed text-slate-700" :text="$item['body']" />
                         </article>
                     @endforeach
                 </div>
@@ -76,7 +76,7 @@
                 <div class="container mx-auto px-6">
                     <div class="history-legacy reveal reveal-up mx-auto max-w-4xl">
                         <h2 class="text-3xl font-black text-spu-blue">{{ $history['legacyTitle'] }}</h2>
-                        <p class="mt-5 text-base leading-relaxed text-slate-700">{{ $history['legacyBody'] }}</p>
+                        <x-public.rich-text class="mt-5 text-base leading-relaxed text-slate-700" :text="$history['legacyBody']" />
                     </div>
                 </div>
             </section>
@@ -91,7 +91,7 @@
                         <p class="mb-4 text-center text-xs font-black uppercase tracking-[0.2em] text-spu-red">{{ $page->badge }}</p>
                     @endif
                     <div class="mx-auto mb-14 grid max-w-4xl gap-5 text-base font-bold leading-8 text-slate-700">
-                        @forelse ($page->intro as $paragraph)<p>{{ $paragraph }}</p>@empty<p>{{ $page->summary }}</p>@endforelse
+                        @forelse ($page->intro as $paragraph)<x-public.rich-text :text="$paragraph" />@empty<x-public.rich-text :text="$page->summary" />@endforelse
                     </div>
                     @if ($page->stats !== [])
                         <div class="cms-grid-stats mb-16 gap-4 rounded-2xl bg-spu-blue p-6 text-white">
@@ -108,7 +108,7 @@
                                 </div>
                                 <h2 class="mb-3 text-xl font-black text-spu-blue">{{ $section['title'] ?? '' }}</h2>
                                 @if (! empty($section['body']))
-                                    <p class="text-sm font-bold leading-7 text-slate-700">{{ $section['body'] }}</p>
+                                    <x-public.rich-text class="text-sm font-bold leading-7 text-slate-700" :text="$section['body']" />
                                 @endif
                             </article>
                         @endforeach
@@ -122,7 +122,7 @@
 
             <section class="bg-white py-20 font-hacen">
                 <div class="container mx-auto">
-                    <p class="mx-auto mb-12 max-w-3xl text-center text-slate-700">{{ $page->summary }}</p>
+                    <x-public.rich-text class="mx-auto mb-12 max-w-3xl text-center text-slate-700" :text="$page->summary" />
                     <div class="cms-grid-cards gap-6">
                         @foreach ($page->sections as $section)
                             <article class="reveal reveal-up rounded-2xl border border-slate-100 bg-white p-8 text-center shadow-sm">
@@ -131,7 +131,7 @@
                                 </div>
                                 <h2 class="mb-3 text-xl font-black text-spu-blue">{{ $section['title'] ?? '' }}</h2>
                                 @if (! empty($section['body']))
-                                    <p class="text-slate-700">{{ $section['body'] }}</p>
+                                    <x-public.rich-text class="text-slate-700" :text="$section['body']" />
                                 @endif
                             </article>
                         @endforeach
@@ -147,7 +147,7 @@
                             <article class="reveal reveal-up rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
                                 <h3 class="mb-3 text-lg font-black text-spu-blue">{{ $section['title'] ?? '' }}</h3>
                                 @if (! empty($section['body']))
-                                    <p class="text-slate-700">{{ $section['body'] }}</p>
+                                    <x-public.rich-text class="text-slate-700" :text="$section['body']" />
                                 @endif
                             </article>
                         @endforeach

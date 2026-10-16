@@ -224,7 +224,7 @@
                                     <div class="group relative rounded-xl border border-slate-200 bg-white p-5 transition-all duration-200 hover:border-spu-blue/30 hover:shadow-[0_4px_16px_rgba(32,39,89,0.08)]">
                                         <div class="flex items-center gap-2.5"><span class="h-2.5 w-2.5 rounded-full {{ ($pool['id'] ?? '') === 'university' ? 'bg-spu-blue' : (($pool['id'] ?? '') === 'faculty' ? 'bg-spu-blue/60' : 'bg-slate-400') }}"></span><span class="text-[12px] font-bold uppercase tracking-wider text-slate-600">{{ $poolLabel((string) ($pool['id'] ?? '')) }}</span></div>
                                         <div class="mt-4 flex items-baseline gap-1.5"><span class="text-[28px] font-black leading-none text-spu-red">{{ $pool['requiredHours'] ?? 0 }}</span><span class="text-[12px] font-bold text-slate-400">{{ $label('hoursRequired') }}</span></div>
-                                        <p class="mt-2 text-[12px] leading-5 text-slate-500">{{ $text($pool, 'description') }}</p>
+                                        <x-public.rich-text class="mt-2 text-[12px] leading-5 text-slate-500" :text="$text($pool, 'description')" />
                                     </div>
                                 @endforeach
                             </div>

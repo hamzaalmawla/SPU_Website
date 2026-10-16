@@ -15,7 +15,7 @@
                 </nav>
                 <p class="text-xs font-black uppercase tracking-[0.22em] text-white/70">{{ $page->heroEyebrow }}</p>
                 <h1 class="mt-4 max-w-4xl text-4xl font-black leading-tight sm:text-5xl lg:text-6xl">{{ $page->heroTitle }}</h1>
-                <p class="mt-5 max-w-3xl text-base leading-8 text-white/85 sm:text-lg">{{ $page->heroSummary }}</p>
+                <x-public.rich-text class="mt-5 max-w-3xl text-base leading-8 text-white/85 sm:text-lg" :text="$page->heroSummary" />
             </div>
         </header>
 
@@ -24,7 +24,7 @@
                 <div class="rounded-[1.25rem] border border-spu-blue/10 bg-white p-7 shadow-[0_20px_55px_rgba(32,39,89,0.08)] sm:p-10">
                     <p class="text-xs font-black uppercase tracking-[0.18em] text-spu-red">{{ $page->heroEyebrow }}</p>
                     <h2 id="detail-intro-title" class="mt-3 text-3xl font-black leading-tight sm:text-4xl">{{ $page->introTitle }}</h2>
-                    <p class="mt-5 max-w-3xl text-base leading-8 text-spu-blue/70">{{ $page->introBody }}</p>
+                    <x-public.rich-text class="mt-5 max-w-3xl text-base leading-8 text-spu-blue/70" :text="$page->introBody" />
                 </div>
                 <aside class="rounded-[1.25rem] bg-spu-blue p-7 text-white shadow-[0_20px_55px_rgba(32,39,89,0.16)]" aria-labelledby="related-services-title">
                     <h2 id="related-services-title" class="text-xl font-black">{{ $locale === 'ar' ? 'خدمات ذات صلة' : 'Related services' }}</h2>
@@ -48,7 +48,7 @@
                         <section class="rounded-[1.25rem] border border-spu-blue/10 bg-white p-7 shadow-[0_14px_38px_rgba(32,39,89,0.06)]">
                             <span class="flex h-10 w-10 items-center justify-center rounded-full bg-spu-red/10 text-sm font-black text-spu-red" aria-hidden="true">{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
                             <h3 class="mt-6 text-xl font-black">{{ $section['title'] }}</h3>
-                            <p class="mt-3 text-sm leading-7 text-spu-blue/65">{{ $section['body'] }}</p>
+                            <x-public.rich-text class="mt-3 text-sm leading-7 text-spu-blue/65" :text="$section['body']" />
                         </section>
                     @endforeach
                 </div>
@@ -72,7 +72,7 @@
             <section aria-labelledby="detail-cta-title" class="mt-14 overflow-hidden rounded-[1.5rem] bg-spu-blue px-7 py-10 text-white shadow-[0_24px_60px_rgba(32,39,89,0.2)] sm:mt-20 sm:px-12 lg:flex lg:items-center lg:justify-between lg:gap-12">
                 <div class="max-w-2xl">
                     <h2 id="detail-cta-title" class="text-3xl font-black">{{ $page->ctaTitle }}</h2>
-                    <p class="mt-3 leading-7 text-white/75">{{ $page->ctaBody }}</p>
+                    <x-public.rich-text class="mt-3 leading-7 text-white/75" :text="$page->ctaBody" />
                 </div>
                 <a href="{{ $page->ctaUrl }}" class="mt-7 inline-flex min-h-12 items-center justify-center rounded-xl bg-spu-red px-7 py-3 text-sm font-black text-white transition hover:bg-[#8a2525] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white lg:mt-0">{{ $page->ctaLabel }}</a>
             </section>

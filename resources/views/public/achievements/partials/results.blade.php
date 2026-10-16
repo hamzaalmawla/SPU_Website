@@ -20,7 +20,7 @@
         @empty
             <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center md:col-span-2 xl:col-span-3">
                 <h2 class="text-xl font-black text-spu-blue">{{ __('public.achievements.empty_title') }}</h2>
-                <p class="mt-2 text-sm text-slate-600">{{ __('public.achievements.empty_body') }}</p>
+                <x-public.rich-text class="mt-2 text-sm text-slate-600" :text="__('public.achievements.empty_body')" />
             </div>
         @endforelse
     </div>

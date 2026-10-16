@@ -121,6 +121,7 @@ use App\Contracts\Settings\SettingsServiceInterface;
 use App\Contracts\Shared\AuditServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
 use App\Contracts\Shared\ContinuityServiceInterface;
+use App\Contracts\Shared\PlainTextFormatterInterface;
 use App\Contracts\Shared\PreviewServiceInterface;
 use App\Contracts\Shared\SlugServiceInterface;
 use App\DTOs\ErrorPage\ErrorPageContentDTO;
@@ -294,6 +295,7 @@ use App\Services\Settings\SettingsService;
 use App\Services\Shared\AuditService;
 use App\Services\Shared\CacheService;
 use App\Services\Shared\ContinuityService;
+use App\Services\Shared\PlainTextFormatter;
 use App\Services\Shared\SlugService;
 use App\Support\HtmlSanitizer;
 use App\Support\PageExpiredDiagnostics;
@@ -621,6 +623,7 @@ class AppServiceProvider extends ServiceProvider
             ImageConversionServiceInterface::class => ImageConversionService::class,
             LegacyImageDerivativeServiceInterface::class => LegacyImageDerivativeService::class,
             SlugServiceInterface::class => SlugService::class,
+            PlainTextFormatterInterface::class => PlainTextFormatter::class,
             MenuServiceInterface::class => MenuService::class,
             NewsAdminWorkflowServiceInterface::class => NewsAdminWorkflowService::class,
             NewsArticleCmsServiceInterface::class => NewsArticleCmsService::class,

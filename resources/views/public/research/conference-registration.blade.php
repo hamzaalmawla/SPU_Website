@@ -57,7 +57,7 @@
                                         <div class="flex items-center gap-1.5"><img src="/images/icon-calendar-outline.svg" alt="" class="h-4 w-4" aria-hidden="true"><span>{{ $event['date'] ?? '' }}</span></div>
                                         <div class="flex items-center gap-1.5"><img src="/images/icon-map-outline.svg" alt="" class="h-4 w-4" aria-hidden="true"><span>{{ $event['location'] ?? '' }}</span></div>
                                     </div>
-                                    <p class="text-sm leading-relaxed text-spu-blue/70">{{ $event['description'] ?? '' }}</p>
+                                    <x-public.rich-text class="text-sm leading-relaxed text-spu-blue/70" :text="$event['description'] ?? ''" />
                                 </div>
                             </div>
 

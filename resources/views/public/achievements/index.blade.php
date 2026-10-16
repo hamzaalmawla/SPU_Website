@@ -6,7 +6,7 @@
         <div class="container relative">
             <p class="text-xs font-bold uppercase tracking-[0.2em] text-white/70">{{ __('public.achievements.eyebrow') }}</p>
             <h1 class="mt-3 text-4xl font-black md:text-5xl">{{ __('public.achievements.title') }}</h1>
-            <p class="mt-5 max-w-2xl text-base leading-8 text-white/80">{{ __('public.achievements.description') }}</p>
+            <x-public.rich-text class="mt-5 max-w-2xl text-base leading-8 text-white/80" :text="__('public.achievements.description')" />
         </div>
     </section>
 

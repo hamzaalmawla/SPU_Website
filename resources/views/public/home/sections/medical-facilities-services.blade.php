@@ -17,7 +17,7 @@
                     <div class="p-5 md:p-8 flex-1 flex flex-col justify-between">
                         <div>
                             @if (! empty($mainItem['title']))<h3 class="text-2xl font-bold text-spu-blue mb-4">{{ $mainItem['title'] }}</h3>@endif
-                            @if (! empty($mainItem['summary']))<p class="text-gray-600 leading-relaxed mb-6">{{ $mainItem['summary'] }}</p>@endif
+                            @if (! empty($mainItem['summary']))<x-public.rich-text class="text-gray-600 leading-relaxed mb-6" :text="$mainItem['summary']" />@endif
                             @if (! empty($mainItem['features']))
                             <ul class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                                     @foreach ($mainItem['features'] as $feature)

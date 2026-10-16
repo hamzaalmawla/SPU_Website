@@ -15,7 +15,7 @@
                     <div>
                         <article class="overflow-hidden rounded-2xl bg-white shadow-sm">
                             <img src="{{ $event->imageUrl }}" alt="{{ $event->title }}" class="content-media-image h-72 w-full">
-                            <div class="p-7"><p class="text-xs font-bold text-spu-red">{{ $event->categoryLabel }}</p><h2 class="mt-2 text-2xl font-bold text-spu-blue">{{ $event->title }}</h2><p class="mt-4 text-sm leading-7 text-slate-600">{{ $event->summary }}</p><div class="mt-5 space-y-2 text-sm text-slate-500"><p>{{ $event->dateLabel }} · {{ $event->timeLabel }}</p><p>{{ $event->location }}</p></div></div>
+                            <div class="p-7"><p class="text-xs font-bold text-spu-red">{{ $event->categoryLabel }}</p><h2 class="mt-2 text-2xl font-bold text-spu-blue">{{ $event->title }}</h2><x-public.rich-text class="mt-4 text-sm leading-7 text-slate-600" :text="$event->summary" /><div class="mt-5 space-y-2 text-sm text-slate-500"><p>{{ $event->dateLabel }} · {{ $event->timeLabel }}</p><p>{{ $event->location }}</p></div></div>
                         </article>
                         <p class="mt-6 rounded-xl border border-spu-blue/10 bg-white p-5 text-sm leading-7 text-slate-600">{{ $page['registrationInfo'] }}</p>
                     </div>

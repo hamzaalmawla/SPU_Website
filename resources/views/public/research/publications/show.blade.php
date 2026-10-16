@@ -29,7 +29,7 @@
                     @if (! empty($item['lead']) || ! empty($item['summary']))
                         <div class="rounded-[8px] border border-slate-200 bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)] md:p-8">
                             <h2 class="text-[13px] font-bold uppercase tracking-[0.12em] text-spu-red">{{ __('public.summary') }}</h2>
-                            <p class="mt-4 text-[15px] leading-8 text-slate-700">{{ $item['lead'] ?? $item['summary'] ?? '' }}</p>
+                            <x-public.rich-text class="mt-4 text-[15px] leading-8 text-slate-700" :text="$item['lead'] ?? $item['summary'] ?? ''" />
                         </div>
                     @endif
                     @if (! empty($item['body']) || ! empty($item['paragraphs']))
@@ -38,7 +38,7 @@
                                 <div class="prose max-w-none prose-p:mt-4 prose-p:first:mt-0 prose-p:text-[15px] prose-p:leading-8 prose-headings:text-spu-blue">{!! $item['body'] !!}</div>
                             @else
                                 @foreach ($item['paragraphs'] as $paragraph)
-                                    <p class="mt-4 first:mt-0 text-[15px] leading-8 text-slate-700">{{ $paragraph }}</p>
+                                    <x-public.rich-text class="mt-4 first:mt-0 text-[15px] leading-8 text-slate-700" :text="$paragraph" />
                                 @endforeach
                             @endif
                         </div>

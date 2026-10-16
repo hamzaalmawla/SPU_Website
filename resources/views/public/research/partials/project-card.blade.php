@@ -13,7 +13,7 @@
             <span class="rounded-[5px] border border-[#c8ceda] px-[12px] py-[5px] text-[9px] font-bold text-spu-blue">{{ $labels['since'] ?? ($locale === 'ar' ? 'منذ' : 'Since') }} {{ $project['startYear'] ?? '' }}@if (! empty($project['endYear'])) - {{ $project['endYear'] }}@endif</span>
         </div>
         <h2 class="mt-[14px] text-[20px] font-bold leading-tight text-spu-blue transition-colors group-hover:text-spu-red">{{ $project['title'] ?? '' }}</h2>
-        <p class="mt-[10px] max-w-[500px] text-[15px] leading-[1.75] text-[#263650]">{{ $project['summary'] ?? '' }}</p>
+        <x-public.rich-text class="mt-[10px] max-w-[500px] text-[15px] leading-[1.75] text-[#263650]" :text="$project['summary'] ?? ''" />
         <div class="mt-4 flex items-center gap-4 text-[12px] text-[#6f7280]">
             <span>{{ $project['theme'] ?? '' }}</span>
         </div>

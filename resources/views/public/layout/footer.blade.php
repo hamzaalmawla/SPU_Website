@@ -47,9 +47,7 @@
                 <h2 class="mb-6 text-[24px] font-bold uppercase leading-tight ltr:tracking-wider">{{ $footerBrandTitle }}</h2>
 
                 @if ($footerBrandSummary)
-                    <p class="mb-8 max-w-[320px] text-[16px] leading-[1.6] text-white/70">
-                        {{ $footerBrandSummary }}
-                    </p>
+                    <x-public.rich-text class="mb-8 max-w-[320px] text-[16px] leading-[1.6] text-white/70" :text="$footerBrandSummary" />
                 @endif
 
                 @if ($socialLinks !== [])

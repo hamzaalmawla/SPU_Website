@@ -10,7 +10,7 @@
                     <div class="lg:col-span-3">
                         <p class="dir-eyebrow reveal reveal-up">{{ $locale === 'ar' ? 'مديرية مركزية' : 'Central Directorate' }}</p>
                         <h2 id="directorate-overview-heading" class="dir-section-title reveal reveal-up">{{ $locale === 'ar' ? 'نظرة عامة' : 'Overview' }}</h2>
-                        <p class="dir-overview-text reveal reveal-up reveal-delay-1">{{ $directorate->description }}</p>
+                        <x-public.rich-text class="dir-overview-text reveal reveal-up reveal-delay-1" :text="$directorate->description" />
 
                         <h2 class="dir-section-title dir-section-gap reveal reveal-up">{{ $locale === 'ar' ? 'الخدمات الرئيسية' : 'Key Services' }}</h2>
                         <div class="dir-service-list">

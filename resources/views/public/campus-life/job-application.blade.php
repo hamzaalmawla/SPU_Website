@@ -41,7 +41,7 @@
                         </div>
                         <div>
                             <h2 class="text-lg font-bold text-spu-blue">{{ $section['info']['title'] ?? '' }}</h2>
-                            <p class="mt-1 text-sm text-spu-blue/60">{{ $section['info']['summary'] ?? '' }}</p>
+                            <x-public.rich-text class="mt-1 text-sm text-spu-blue/60" :text="$section['info']['summary'] ?? ''" />
                             <p class="mt-3 text-sm font-bold text-spu-red">{{ $section['info']['selectedJob'] ?? '' }} {{ $selectedJob['title'] ?? '' }}</p>
                         </div>
                     </div>

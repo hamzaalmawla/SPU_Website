@@ -20,7 +20,7 @@
                                 <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-spu-blue/[0.06] text-spu-blue">✓</div>
                                 <div class="flex-1">
                                     <h3 class="mb-2 text-lg font-bold text-spu-blue">{{ $section['title'] ?? '' }}</h3>
-                                    <p class="text-sm text-spu-blue/70">{{ $section['description'] ?? '' }}</p>
+                                    <x-public.rich-text class="text-sm text-spu-blue/70" :text="$section['description'] ?? ''" />
                                 </div>
                             </div>
                             <div class="border-t border-spu-blue/10 pt-4">
@@ -51,7 +51,7 @@
 
             <div class="mx-auto mt-12 max-w-[700px] rounded-xl border border-spu-blue/20 bg-spu-blue/[0.02] p-8">
                 <h2 class="mb-2 text-center text-lg font-bold text-spu-blue">{{ $data['contactSection']['title'] ?? '' }}</h2>
-                <p class="mb-6 text-center text-sm text-spu-blue/70">{{ $data['contactSection']['description'] ?? '' }}</p>
+                <x-public.rich-text class="mb-6 text-center text-sm text-spu-blue/70" :text="$data['contactSection']['description'] ?? ''" />
                 <div class="flex flex-col items-center gap-3 text-sm text-spu-blue">
                     <a href="mailto:{{ $data['contactSection']['email'] ?? '' }}" class="font-semibold hover:text-spu-red">{{ $data['contactSection']['email'] ?? '' }}</a>
                     <a href="tel:{{ $data['contactSection']['phone'] ?? '' }}" class="font-semibold hover:text-spu-red">{{ $data['contactSection']['phone'] ?? '' }}</a>

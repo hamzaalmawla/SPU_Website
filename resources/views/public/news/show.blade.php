@@ -33,7 +33,7 @@
                 <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-spu-red">{{ $article->category?->name ?: __('public.university_news') }}</p>
                 <h1 class="mt-3 text-[24px] font-bold leading-tight text-spu-blue md:text-[30px]">{{ $article->title }}</h1>
                 @if ($article->excerpt)
-                    <p class="mx-auto mt-3 text-[13px] font-semibold leading-6 text-slate-500">{{ $article->excerpt }}</p>
+                    <x-public.rich-text class="mx-auto mt-3 text-[13px] font-semibold leading-6 text-slate-500" :text="$article->excerpt" />
                 @endif
 
                 <div class="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] font-bold uppercase tracking-[0.06em] text-slate-500">
@@ -57,7 +57,7 @@
                         {!! $article->body !!}
                     </div>
                 @elseif ($article->excerpt)
-                    <p class="mb-5">{{ $article->excerpt }}</p>
+                    <x-public.rich-text class="mb-5" :text="$article->excerpt" />
                 @endif
 
                 <div class="my-7 border-l-4 border-spu-red bg-slate-50 px-5 py-4 text-[14px] font-bold leading-7 text-spu-blue rtl:border-l-0 rtl:border-r-4">
@@ -171,7 +171,7 @@
                                     <p class="mt-2 text-[11px] font-bold text-spu-red" translate="no">{{ $related->publishedAt }}</p>
                                 @endif
                                 @if ($related->excerpt)
-                                    <p class="mt-3 min-h-[58px] text-[12px] font-medium leading-[20px] text-slate-600">{{ $related->excerpt }}</p>
+                                    <x-public.rich-text class="mt-3 min-h-[58px] text-[12px] font-medium leading-[20px] text-slate-600" :text="$related->excerpt" />
                                 @endif
                                 <a href="{{ $related->url }}" class="mt-4 inline-flex items-center gap-2 text-[12px] font-bold text-spu-red transition hover:text-spu-blue">
                                     <span>{{ $isAr ? 'اقرأ المزيد' : 'Read More' }}</span>

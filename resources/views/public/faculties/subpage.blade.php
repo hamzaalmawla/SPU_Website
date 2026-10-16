@@ -70,7 +70,7 @@
                 </nav>
                 <h1 class="text-[34px] font-bold leading-tight md:text-[42px]">{{ $heroTitle }}</h1>
                 @if ($heroSummary)
-                    <p class="mx-auto mt-4 max-w-[760px] text-sm font-semibold leading-7 text-white/82">{{ $heroSummary }}</p>
+                    <x-public.rich-text class="mx-auto mt-4 max-w-[760px] text-sm font-semibold leading-7 text-white/82" :text="$heroSummary" />
                 @endif
             </div>
         </section>
@@ -93,9 +93,9 @@
                     <div>
                         <h2 class="text-[30px] font-bold leading-tight text-spu-blue md:text-[38px]">{{ $isAr ? 'لمحة عن الكلية' : 'Faculty Overview' }}</h2>
                         <div class="mt-4 h-[3px] w-14 rounded-full" style="background-color: {{ $accent }}"></div>
-                        <p class="mt-6 text-[15px] leading-8 text-slate-600">{{ $subpage['body'] ?? $faculty['description'] }}</p>
+                        <x-public.rich-text class="mt-6 text-[15px] leading-8 text-slate-600" :text="$subpage['body'] ?? $faculty['description']" />
                         @if ($firstSection)
-                            <p class="mt-5 text-[15px] leading-8 text-slate-600">{{ $firstSection['body'] ?? '' }}</p>
+                            <x-public.rich-text class="mt-5 text-[15px] leading-8 text-slate-600" :text="$firstSection['body'] ?? ''" />
                         @endif
                     </div>
                     <div class="overflow-hidden rounded-[8px] shadow-[0_18px_45px_rgba(9,17,68,0.16)]">
@@ -114,7 +114,7 @@
                                 <div class="mt-4 h-[3px] w-14 rounded-full" style="background-color: {{ $accent }}"></div>
                                 @foreach ([$firstSection, $secondSection] as $section)
                                     @if ($section)
-                                        <p class="mt-6 text-[15px] leading-8 text-slate-600">{{ $section['body'] ?? '' }}</p>
+                                        <x-public.rich-text class="mt-6 text-[15px] leading-8 text-slate-600" :text="$section['body'] ?? ''" />
                                     @endif
                                 @endforeach
                             </div>
@@ -126,7 +126,7 @@
                     <div>
                         <h2 class="text-[30px] font-bold leading-tight text-spu-blue md:text-[38px]">{{ $isAr ? 'الأهداف الأكاديمية' : 'Academic Objectives' }}</h2>
                         <div class="mt-4 h-[3px] w-14 rounded-full" style="background-color: {{ $accent }}"></div>
-                        <p class="mt-6 text-[15px] leading-8 text-slate-600">{{ $secondSection['body'] ?? ($subpage['body'] ?? $faculty['description']) }}</p>
+                        <x-public.rich-text class="mt-6 text-[15px] leading-8 text-slate-600" :text="$secondSection['body'] ?? ($subpage['body'] ?? $faculty['description'])" />
                         <div class="cms-grid-stats cms-grid-stats-cols-4 mt-8 gap-3">
                             @foreach (array_slice($stats, 0, 4) as $stat)
                                 <div class="rounded-[8px] border border-slate-100 bg-white p-5 shadow-[0_10px_28px_rgba(9,17,68,0.05)]">
@@ -159,8 +159,8 @@
                                 <p class="mt-8 text-sm font-bold text-spu-blue">{{ $deanName }}</p>
                             @endif
                             <div class="mt-6 space-y-5 text-[14px] leading-8 text-slate-600">
-                                <p>{{ $dean['message'] ?? ($isAr ? ($dean['messageAr'] ?? '') : ($dean['messageEn'] ?? '')) }}</p>
-                                <p>{{ $firstSection['body'] ?? '' }}</p>
+                                <x-public.rich-text :text="$dean['message'] ?? ($isAr ? ($dean['messageAr'] ?? '') : ($dean['messageEn'] ?? ''))" />
+                                <x-public.rich-text :text="$firstSection['body'] ?? ''" />
                             </div>
                             <div class="mt-8 border-t border-slate-100 pt-5">
                                 <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-spu-blue">{{ $dean['role'] ?? ($isAr ? ($dean['roleAr'] ?? 'عميد الكلية') : ($dean['roleEn'] ?? 'Faculty Dean')) }}</p>
@@ -220,7 +220,7 @@
                                     <h2 class="text-xl font-bold text-spu-blue">{{ $item['title'] ?? '' }}</h2>
                                     <span class="rounded-full bg-section px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-spu-blue/55">{{ $item['degrees'] ?? ($isAr ? 'اختصاص أكاديمي' : 'Academic Track') }}</span>
                                 </div>
-                                <p class="mt-3 max-w-[720px] text-sm leading-7 text-slate-600">{{ $item['summary'] ?? '' }}</p>
+                                <x-public.rich-text class="mt-3 max-w-[720px] text-sm leading-7 text-slate-600" :text="$item['summary'] ?? ''" />
                                 <div class="mt-4 flex flex-wrap gap-2">
                                     @forelse (($item['tags'] ?? []) as $tag)
                                         <span class="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500">{{ $tag }}</span>
@@ -259,7 +259,7 @@
                         </div>
                         <div class="mt-8">
                             <h2 class="mb-4 text-xl font-bold text-spu-blue">{{ $isAr ? 'الوصف' : 'Description' }}</h2>
-                            <p class="text-lg leading-relaxed text-slate-600">{{ $selectedLab['summary'] ?? '' }}</p>
+                            <x-public.rich-text class="text-lg leading-relaxed text-slate-600" :text="$selectedLab['summary'] ?? ''" />
                         </div>
                         @if ($relatedLabs !== [])
                             <div class="mt-12 border-t border-slate-100 pt-8">
@@ -333,7 +333,7 @@
                             </div>
                             <div class="p-6">
                                 <h2 class="min-h-[42px] text-[16px] font-bold leading-[21px] text-spu-blue">{{ $item['title'] ?? '' }}</h2>
-                                <p class="mt-3 min-h-[44px] text-[13px] font-medium leading-[22px] text-slate-600">{{ $item['summary'] ?? '' }}</p>
+                                <x-public.rich-text class="mt-3 min-h-[44px] text-[13px] font-medium leading-[22px] text-slate-600" :text="$item['summary'] ?? ''" />
                                 <div class="mt-6 border-t border-slate-100 pt-4">
                                     {{-- A label with nothing under it reads as missing data rather than
                                          as data that does not exist. The legacy bodies carry a team for
