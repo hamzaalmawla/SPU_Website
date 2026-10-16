@@ -114,7 +114,7 @@ final class MediaPicker
                     ->required($required)
                     ->dehydrated(true),
                 Placeholder::make($statePath.'_selection')
-                    ->key(self::componentKey($statePath, $label, $type))
+                    ->key(fn (Placeholder $component): string => self::componentKey($component->getStatePath(), $label, $type))
                     ->label($label)
                     ->helperText(__('admin.media_picker.existing_value_help'))
                     ->content(fn (Get $get): HtmlString|string => self::preview($get($statePath), $get($mediaIdPath)))
@@ -136,7 +136,7 @@ final class MediaPicker
                     ->required($required)
                     ->dehydrated(true),
                 Placeholder::make($statePath.'_selection')
-                    ->key(self::componentKey($statePath, $label, $type))
+                    ->key(fn (Placeholder $component): string => self::componentKey($component->getStatePath(), $label, $type))
                     ->label($label)
                     ->helperText(__('admin.media_picker.choose_help'))
                     ->content(fn (Get $get): HtmlString|string => self::preview($get($statePath), $get($mediaIdPath)))
@@ -744,6 +744,11 @@ final class MediaPicker
         return implode('.', $segments);
     }
 
+    /**
+     * Built from the absolute state path: Filament finds the component behind a
+     * mounted action by key, first match wins, so pickers repeated in a Repeater
+     * or in both locale tabs would otherwise all write to the first one.
+     */
     private static function componentKey(string $statePath, string $label, string $type): string
     {
         return 'media-picker-'.sha1($statePath.'|'.$label.'|'.$type);
