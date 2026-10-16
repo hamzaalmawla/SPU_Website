@@ -144,6 +144,12 @@ final class HomepageFormSchema
                     TextInput::make('prefix')
                         ->label('Prefix')
                         ->maxLength(20),
+                    // The grey line under the label on the public card.
+                    TextInput::make('helperText')
+                        ->label('Description')
+                        ->helperText('Short grey line shown under the label.')
+                        ->maxLength(255)
+                        ->columnSpan(2),
                     self::mediaField('icon', 'Icon'),
                 ])
                 ->columns(3)
