@@ -13,6 +13,7 @@ use App\Models\Faculty\FacultyPage;
 use App\Models\Faculty\FacultySubpageCard;
 use App\Models\User\User;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -120,18 +121,18 @@ final class FacultySubpageCardService implements FacultySubpageCardServiceInterf
             ->map(fn (FacultySubpageCard $card): FacultySubpageCardDTO => $this->mapToDto($card));
     }
 
+    /** @return Collection<int, FacultySubpageCardDTO> */
+    public function getVisibleCards(string $facultySlug): Collection
+    {
+        return $this->visibleCardsQuery($facultySlug)
+            ->get()
+            ->map(fn (FacultySubpageCard $card): FacultySubpageCardDTO => $this->mapToDto($card));
+    }
+
     /** @return array<int, string> */
     public function getVisibleSubpageSlugs(string $facultySlug): array
     {
-        return FacultySubpageCard::query()
-            ->where('faculty_slug', $facultySlug)
-            ->where('is_visible', true)
-            ->where('status', 'published')
-            ->whereNotNull('published_at')
-            ->where(function ($query): void {
-                $query->whereNull('publish_at')->orWhere('publish_at', '<=', now());
-            })
-            ->orderBy('sort_order')
+        return $this->visibleCardsQuery($facultySlug)
             ->pluck('subpage_slug')
             ->all();
     }
@@ -363,6 +364,21 @@ final class FacultySubpageCardService implements FacultySubpageCardServiceInterf
         $this->afterMutation('faculty_subpage_card.moved', $card, $userId, ['direction' => 'down']);
 
         return true;
+    }
+
+    /** @return Builder<FacultySubpageCard> */
+    private function visibleCardsQuery(string $facultySlug): Builder
+    {
+        return FacultySubpageCard::query()
+            ->where('faculty_slug', $facultySlug)
+            ->where('is_visible', true)
+            ->where('status', 'published')
+            ->whereNotNull('published_at')
+            ->where(function ($query): void {
+                $query->whereNull('publish_at')->orWhere('publish_at', '<=', now());
+            })
+            ->orderBy('sort_order')
+            ->orderBy('id');
     }
 
     private function authorizeCreate(string $facultySlug, int $userId): void

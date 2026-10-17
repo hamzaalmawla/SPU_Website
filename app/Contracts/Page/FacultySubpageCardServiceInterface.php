@@ -19,6 +19,13 @@ interface FacultySubpageCardServiceInterface
     /** @return Collection<int, FacultySubpageCardDTO> */
     public function getAllCards(string $facultySlug): Collection;
 
+    /**
+     * Published, visible cards whose scheduled time has passed, in admin order.
+     *
+     * @return Collection<int, FacultySubpageCardDTO>
+     */
+    public function getVisibleCards(string $facultySlug): Collection;
+
     /** @return array<int, string> */
     public function getVisibleSubpageSlugs(string $facultySlug): array;
 

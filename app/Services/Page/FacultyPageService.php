@@ -22,6 +22,7 @@ use App\DTOs\Faculty\FacultyHubCardDTO;
 use App\DTOs\Faculty\FacultyHubPageDTO;
 use App\DTOs\Faculty\FacultyNavigationItemDTO;
 use App\DTOs\Faculty\FacultyProjectDetailPageDTO;
+use App\DTOs\Faculty\FacultySubpageCardDTO;
 use App\DTOs\Faculty\FacultySubpageDTO;
 use App\DTOs\Faculty\ProjectFieldBlockDTO;
 use App\Models\Career\Alumni;
@@ -80,6 +81,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
         private readonly AboutPageServiceInterface $aboutPageService,
         private readonly ProfilePageServiceInterface $profilePageService,
         private readonly ProjectFieldBlockParserInterface $projectFieldBlockParser,
+        private readonly FacultySubpageCardServiceInterface $subpageCardService,
     ) {}
 
     public function getHub(string $locale): FacultyHubPageDTO
@@ -908,7 +910,14 @@ final class FacultyPageService implements FacultyPageServiceInterface
         ];
     }
 
-    /** @return Collection<int, FacultyNavigationItemDTO> */
+    /**
+     * The faculty's subpage cards, shared by every page that lists them (the
+     * main page's highlights and the overview's pathways), so all of them show
+     * the admin's list: its cards, its order and its title overrides. Without
+     * any cards the faculty falls back to its enabled standard subpages.
+     *
+     * @return Collection<int, FacultyNavigationItemDTO>
+     */
     private function navigation(Faculty $faculty, string $locale, ?string $active): Collection
     {
         $slug = $this->publicSlug($faculty);
@@ -916,7 +925,6 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'overview' => $locale === 'ar' ? 'لمحة عامة' : 'Overview',
             'departments' => $locale === 'ar' ? 'الأقسام' : 'Departments',
             'study-plan' => $locale === 'ar' ? 'الخطة الدراسية' : 'Study Plan',
-            'study-plan-course' => $locale === 'ar' ? 'محاضرات المقرر' : 'Course Lessons',
             'labs' => $locale === 'ar' ? 'المخابر' : 'Laboratories',
             'projects' => $locale === 'ar' ? 'المشاريع' : 'Projects',
             'alumni' => $locale === 'ar' ? 'الخريجون' : 'Alumni',
@@ -925,16 +933,33 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'research' => $locale === 'ar' ? 'البحث العلمي' : 'Research',
             'members' => $locale === 'ar' ? 'أعضاء الهيئة الأكاديمية' : 'Faculty Members',
         ];
+        $pages = $faculty->pages->keyBy('slug');
+        $cards = $this->subpageCardService->getVisibleCards($slug);
 
-        return $faculty->pages
-            ->filter(fn (FacultyPage $page): bool => in_array($page->slug, self::SUBPAGE_SLUGS, true) && $page->slug !== 'study-plan-course')
-            ->filter(fn (FacultyPage $page): bool => $this->isAvailableSubpage($faculty, (string) $page->slug))
-            ->sortBy('sort_order')
-            ->map(fn (FacultyPage $page): FacultyNavigationItemDTO => new FacultyNavigationItemDTO(
-                slug: (string) $page->slug,
-                label: $labels[$page->slug] ?? (string) $page->slug,
-                url: $page->slug === 'overview' ? $this->url($locale, "/faculties/{$slug}/overview") : $this->url($locale, "/faculties/{$slug}/{$page->slug}"),
-                isActive: $active === $page->slug,
+        if ($cards->isNotEmpty()) {
+            $entries = $cards->map(fn (FacultySubpageCardDTO $card): array => [
+                'slug' => $card->subpageSlug,
+                'title' => $locale === 'ar' ? $card->titleOverrideAr : $card->titleOverrideEn,
+            ]);
+        } elseif ($this->subpageCardService->hasAnyCards($slug)) {
+            return collect();
+        } else {
+            $entries = $faculty->pages
+                ->filter(fn (FacultyPage $page): bool => $page->slug !== 'training' || $slug === 'pharmacy')
+                ->sortBy('sort_order')
+                ->map(fn (FacultyPage $page): array => ['slug' => (string) $page->slug, 'title' => null]);
+        }
+
+        // Only subpages that are enabled and have a public route: a card for
+        // anything else (the course-lessons view, a custom page) would 404.
+        return $entries
+            ->filter(fn (array $entry): bool => array_key_exists($entry['slug'], $labels) && $pages->has($entry['slug']))
+            ->unique('slug')
+            ->map(fn (array $entry): FacultyNavigationItemDTO => new FacultyNavigationItemDTO(
+                slug: $entry['slug'],
+                label: is_string($entry['title']) && trim($entry['title']) !== '' ? trim($entry['title']) : $labels[$entry['slug']],
+                url: $this->url($locale, "/faculties/{$slug}/{$entry['slug']}"),
+                isActive: $active === $entry['slug'],
             ))
             ->values();
     }
@@ -2176,11 +2201,10 @@ final class FacultyPageService implements FacultyPageServiceInterface
         }
 
         $facultySlug = $this->publicSlug($faculty);
-        $cardService = app(FacultySubpageCardServiceInterface::class);
-        $visibleSlugs = $cardService->getVisibleSubpageSlugs($facultySlug);
+        $visibleSlugs = $this->subpageCardService->getVisibleSubpageSlugs($facultySlug);
 
         if ($visibleSlugs === []) {
-            if ($cardService->hasAnyCards($facultySlug)) {
+            if ($this->subpageCardService->hasAnyCards($facultySlug)) {
                 return false;
             }
 
