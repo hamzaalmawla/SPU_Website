@@ -92,6 +92,7 @@ use App\Contracts\Legacy\LegacyUrlContinuityTriageServiceInterface;
 use App\Contracts\Legacy\LegacyUrlNormalizerInterface;
 use App\Contracts\Media\ImageConversionServiceInterface;
 use App\Contracts\Media\LegacyImageDerivativeServiceInterface;
+use App\Contracts\Media\LegacyPersonPhotoLibraryServiceInterface;
 use App\Contracts\Media\MediaDisplaySettingsServiceInterface;
 use App\Contracts\Media\MediaServiceInterface;
 use App\Contracts\Navigation\MenuServiceInterface;
@@ -262,6 +263,7 @@ use App\Services\Legacy\ModuleRunners\LegacyLinksImportModuleRunner;
 use App\Services\Legacy\QueryResolvers\LegacyNewsQueryResolver;
 use App\Services\Media\ImageConversionService;
 use App\Services\Media\LegacyImageDerivativeService;
+use App\Services\Media\LegacyPersonPhotoLibraryService;
 use App\Services\Media\MediaDisplaySettingsService;
 use App\Services\Media\MediaFileValidator;
 use App\Services\Media\MediaService;
@@ -627,6 +629,7 @@ class AppServiceProvider extends ServiceProvider
             MediaDisplaySettingsServiceInterface::class => MediaDisplaySettingsService::class,
             ImageConversionServiceInterface::class => ImageConversionService::class,
             LegacyImageDerivativeServiceInterface::class => LegacyImageDerivativeService::class,
+            LegacyPersonPhotoLibraryServiceInterface::class => LegacyPersonPhotoLibraryService::class,
             SlugServiceInterface::class => SlugService::class,
             PlainTextFormatterInterface::class => PlainTextFormatter::class,
             MenuServiceInterface::class => MenuService::class,

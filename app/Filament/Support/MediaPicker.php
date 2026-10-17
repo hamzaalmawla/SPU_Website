@@ -206,21 +206,21 @@ final class MediaPicker
                 TextInput::make('title_ar')
                     ->label(__('admin.media_picker.title_ar'))
                     ->maxLength(255)
-                    ->required(fn (Get $get): bool => self::requiresUploadOrPromotionMetadata($get) && ! self::filledString($get('title_en'))),
+                    ->required(fn (Get $get): bool => self::requiresUploadOrPromotionMetadata($get, 'title') && ! self::filledString($get('title_en'))),
                 TextInput::make('title_en')
                     ->label(__('admin.media_picker.title_en'))
                     ->maxLength(255)
-                    ->required(fn (Get $get): bool => self::requiresUploadOrPromotionMetadata($get) && ! self::filledString($get('title_ar'))),
+                    ->required(fn (Get $get): bool => self::requiresUploadOrPromotionMetadata($get, 'title') && ! self::filledString($get('title_ar'))),
                 TextInput::make('alt_text_ar')
                     ->label(__('admin.media_picker.alt_ar'))
                     ->maxLength(500)
                     ->visible(self::isImageType($type))
-                    ->required(fn (Get $get): bool => self::isImageType($type) && self::requiresUploadOrPromotionMetadata($get) && ! self::filledString($get('alt_text_en'))),
+                    ->required(fn (Get $get): bool => self::isImageType($type) && self::requiresUploadOrPromotionMetadata($get, 'altText') && ! self::filledString($get('alt_text_en'))),
                 TextInput::make('alt_text_en')
                     ->label(__('admin.media_picker.alt_en'))
                     ->maxLength(500)
                     ->visible(self::isImageType($type))
-                    ->required(fn (Get $get): bool => self::isImageType($type) && self::requiresUploadOrPromotionMetadata($get) && ! self::filledString($get('alt_text_ar'))),
+                    ->required(fn (Get $get): bool => self::isImageType($type) && self::requiresUploadOrPromotionMetadata($get, 'altText') && ! self::filledString($get('alt_text_ar'))),
                 Hidden::make('display_fit')
                     ->default('cover')
                     ->visible(self::isImageType($type)),
@@ -643,9 +643,26 @@ final class MediaPicker
         return null;
     }
 
-    private static function requiresUploadOrPromotionMetadata(Get $get): bool
+    /**
+     * Promotion keeps a legacy asset's own title and alt text when the fields
+     * are left empty, so an imported person photo already named after the
+     * person does not make the editor type the name again.
+     *
+     * @param  'title'|'altText'  $field
+     */
+    private static function requiresUploadOrPromotionMetadata(Get $get, string $field): bool
     {
-        return self::hasUpload($get('file')) || is_numeric($get('legacy_media_id'));
+        if (self::hasUpload($get('file'))) {
+            return true;
+        }
+
+        if (! is_numeric($get('legacy_media_id'))) {
+            return false;
+        }
+
+        $legacy = self::mediaResult((int) $get('legacy_media_id'));
+
+        return ! self::filledString($field === 'title' ? $legacy?->title : $legacy?->altText);
     }
 
     private static function isImageType(string $type): bool

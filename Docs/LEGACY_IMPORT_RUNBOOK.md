@@ -179,6 +179,45 @@ php artisan legacy-import:publish-student-profiles honor_students --write --appr
 - Publication replay reports `4904` and `1066` already enabled with no additional writes.
 - Photos remain deferred; public cards use the existing no-image presentation.
 
+### Person Photos In The Legacy Media Library
+
+Honor students, alumni, faculty members and persons were imported with their
+photo as a legacy value in `legacy_photo_path`: usually a bare file name such as
+`1637398791_74758571.jpg`, sometimes already prefixed (`downloads/files/...`).
+The files live in the old document root and are served through the `_legacy`
+mount, for example `/downloads/files/1637398791_74758571.jpg` (checked on v2 on
+2026-10-18: the prefixed path answers `200 image/jpeg`, the bare `/<file>` answers
+`404`). They were in no media library, so the picker's "Choose from the legacy
+archive" search could not offer them, and a timestamp is not searchable anyway.
+
+This command registers each photo as one legacy media asset titled, and given
+alt text, with the AR and EN names of everyone it shows:
+
+```bash
+php artisan legacy-import:person-photos
+php artisan legacy-import:person-photos --write --user=<admin-user-id>
+```
+
+- Dry run by default; `--write` saves. `--root` defaults to the legacy document
+  root `/home/spuedu/public_html`; the command fails when it is missing.
+- A bare name is looked up in `downloads/files`, `downloads/files/thumb`,
+  `downloads/files2` and `images` (case variants too). Values whose file is not
+  found, or that are not images, are reported and skipped.
+- Assets are `library_scope = legacy`, disk `public`, path `/downloads/files/<file>`
+  (the URL the site already renders), `metadata_status = auto_generated`.
+  `faculty_scope_slug` is set when every person in the photo belongs to one
+  faculty, so faculty editors see their own people.
+- Idempotent. An existing legacy asset for the same path only has empty
+  titles and alt text filled; a deleted one stays deleted; a photo already in
+  the main library is left alone. A re-run reports everything as already named.
+- `--user` is recorded as the uploader and in one summary audit entry.
+- In the media picker, type the person's name (AR or EN, any part) into
+  "Choose from the legacy archive". Promoting the photo keeps its title and alt
+  text, so the editor does not have to retype them.
+- It is a data change, so run it only with approval. Council members and career
+  links also carry `legacy_photo_path` but have no names of their own and are
+  not included.
+
 ### Approved News Packets
 
 Generate private, read-only review packets for root news and announcements:
