@@ -25,7 +25,12 @@
              role="group"
              aria-roledescription="{{ __('public.slide') }}"
              :aria-label="slideLabel({{ $loop->index }})"
-             :aria-hidden="isHidden({{ $loop->index }})">
+             :aria-hidden="isHidden({{ $loop->index }})"
+             {{-- Hidden from the first byte, not from when Alpine starts: until
+                  then every slide sat in the viewport, so loading="lazy" did
+                  nothing and slides 2-4 downloaded alongside the stylesheet and
+                  slide 1. x-show takes over the display property once it runs. --}}
+             @unless ($loop->first) style="display: none;" @endunless>
             <img src="{{ $img }}" alt="{{ $loop->first ? $section->payload->title : ($section->payload->slideAlts[$loop->index] ?? $section->payload->title.' '.($loop->index + 1)) }}" class="h-full w-full object-cover" @if ($loop->first) fetchpriority="high" @else loading="lazy" decoding="async" @endif width="1920" height="800">
         </div>
     @endforeach

@@ -62,6 +62,27 @@ final class HomepageImageDeliveryTest extends TestCase
         }
     }
 
+    public function test_only_the_first_hero_slide_is_rendered_visible(): void
+    {
+        foreach (['ar', 'en'] as $locale) {
+            $html = (string) $this->get('/'.$locale)->assertOk()->getContent();
+
+            // Every slide sits in the viewport, so lazy loading alone cannot
+            // keep slides 2+ off the critical path; they must start hidden.
+            preg_match_all('/<div x-show="isCurrent\((\d+)\)"[^>]*>/', $html, $slides, PREG_SET_ORDER);
+
+            $this->assertGreaterThan(1, count($slides), "Locale {$locale} rendered fewer than two hero slides.");
+
+            foreach ($slides as [$tag, $index]) {
+                if ($index === '0') {
+                    $this->assertStringNotContainsString('display: none', $tag);
+                } else {
+                    $this->assertStringContainsString('style="display: none;"', $tag, "Hero slide {$index} must render hidden.");
+                }
+            }
+        }
+    }
+
     public function test_every_homepage_image_declares_intrinsic_dimensions(): void
     {
         foreach (['ar', 'en'] as $locale) {

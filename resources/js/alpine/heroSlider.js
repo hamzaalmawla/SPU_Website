@@ -26,13 +26,29 @@ export function createHeroSlider() {
             if (!this.pageLoaded) {
                 window.addEventListener('load', () => {
                     this.pageLoaded = true;
+                    this.preloadSlides();
                     if (!this.reducedMotion) this.startAuto();
                 }, { once: true });
+            } else {
+                this.preloadSlides();
             }
 
             this._removeMotionObserver = observeReducedMotion((reduced) => {
                 this.reducedMotion = reduced;
                 reduced ? this.stopAuto() : this.startAuto();
+            });
+        },
+
+        // The hidden slides are lazy and display:none, so nothing fetches them
+        // during the page load. Fetch them once it is over, so the first
+        // rotation fades in a decoded image rather than an empty frame.
+        preloadSlides() {
+            if (typeof Image === 'undefined') return;
+
+            this.images.slice(1).forEach((src) => {
+                const image = new Image();
+                image.decoding = 'async';
+                image.src = src;
             });
         },
 
