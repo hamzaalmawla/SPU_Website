@@ -139,6 +139,22 @@ final class LegacyImageDerivativeTest extends TestCase
         $this->assertStringContainsString('1440w', $srcset);
     }
 
+    public function test_the_srcset_is_found_from_the_resolved_derivative_url(): void
+    {
+        $this->writeFixture();
+        app(LegacyImageDerivativeServiceInterface::class)->generate([$this->sourcePath]);
+
+        // NewsService hands views the derivative URL, not the source path.
+        $resolved = (string) MediaUrlResolver::resolveLegacy($this->sourcePath);
+
+        $this->assertSame(
+            MediaUrlResolver::legacySrcset($this->sourcePath),
+            MediaUrlResolver::legacySrcset($resolved),
+        );
+        $this->assertStringContainsString('480w', (string) MediaUrlResolver::legacySrcset($resolved));
+        $this->assertNull(MediaUrlResolver::legacySrcset('/storage/'.MediaUrlResolver::DERIVATIVE_DIRECTORY.'/unknown-480.webp'));
+    }
+
     public function test_generation_is_idempotent(): void
     {
         $this->writeFixture();

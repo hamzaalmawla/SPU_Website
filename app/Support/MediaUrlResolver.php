@@ -157,9 +157,32 @@ final class MediaUrlResolver
             return null;
         }
 
-        $entry = self::legacyDerivativeManifest()[$key] ?? null;
+        $manifest = self::legacyDerivativeManifest();
+        $entry = $manifest[$key] ?? null;
 
-        return is_array($entry) ? $entry : null;
+        if (is_array($entry)) {
+            return $entry;
+        }
+
+        // Services resolve a legacy photo to its derivative before a view
+        // sees it, so a view asking for the srcset usually holds the
+        // derivative URL rather than the source path. Find the entry that
+        // owns that variant.
+        $derivativePrefix = 'storage/'.self::DERIVATIVE_DIRECTORY.'/';
+
+        if (! str_starts_with($key, $derivativePrefix)) {
+            return null;
+        }
+
+        $variantPath = substr($key, strlen('storage/'));
+
+        foreach ($manifest as $candidate) {
+            if (is_array($candidate) && in_array($variantPath, (array) ($candidate['variants'] ?? []), true)) {
+                return $candidate;
+            }
+        }
+
+        return null;
     }
 
     /**
