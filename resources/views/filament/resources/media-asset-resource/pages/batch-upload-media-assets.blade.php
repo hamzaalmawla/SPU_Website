@@ -1,5 +1,5 @@
 <x-filament-panels::page>
-    <x-filament-panels::form wire:submit="upload">
+    <x-filament-panels::form wire:submit="storeBatch">
         {{ $this->form }}
 
         @if ($this->pendingUploads !== [])

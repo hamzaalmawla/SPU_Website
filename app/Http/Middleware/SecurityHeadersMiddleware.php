@@ -92,10 +92,13 @@ final class SecurityHeadersMiddleware
                 "object-src 'none'",
                 "frame-ancestors 'self'",
                 "form-action 'self'",
-                "img-src 'self' data: https:",
+                // blob: for the upload fields' previews of images not yet saved.
+                "img-src 'self' data: blob: https:",
                 "font-src 'self' data: https:",
                 "style-src 'self' 'unsafe-inline' https:",
                 "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+                // The upload fields read image previews in a blob: worker.
+                "worker-src 'self' blob:",
                 "frame-src 'self' https://www.google.com https://maps.google.com",
                 "connect-src 'self' https:",
             ]);
