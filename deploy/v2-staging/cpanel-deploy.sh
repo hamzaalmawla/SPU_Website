@@ -648,6 +648,49 @@ if [[ -f "${STUDY_PLAN_APPROVAL}" ]]; then
     mv "${STUDY_PLAN_APPROVAL}" "${STUDY_PLAN_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
 fi
 
+# ── Approved person photo registration ───────────────────────────────────────
+# Registers the photos imported with honor students, alumni, faculty members and
+# persons as legacy media assets titled with each person's name, so editors can
+# find a photo in the media picker by name. One hardcoded command, inert unless
+# a human places an approval file that is not in git:
+#
+#     storage/app/private/legacy-imports/person-photos.approved
+#         actor=auto        (or a user id)
+#
+# It only adds rows to the legacy media library (library_scope=legacy), which
+# nothing public renders. Existing legacy assets only get empty titles and alt
+# text filled, and the main library is never touched, so a re-run is a no-op.
+# It disarms itself after one run.
+PERSON_PHOTO_APPROVAL="${IMPORT_DIR}/person-photos.approved"
+PERSON_PHOTO_ROOT="/home/spuedu/public_html"
+
+if [[ -f "${PERSON_PHOTO_APPROVAL}" ]]; then
+    log "Person photo registration"
+
+    PP_ACTOR="$(grep -E '^actor=' "${PERSON_PHOTO_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r' | tr -d ' ')"
+    [[ -n "${PP_ACTOR}" ]] || fail "The person photo approval file has no actor= line."
+
+    if [[ "${PP_ACTOR}" == "auto" ]]; then
+        PP_ACTOR="$(cd "${APP}" && "${PHP}" artisan tinker --execute='
+            echo (string) (\DB::table("users")
+                ->where("role_slug", "super_admin")
+                ->where(function ($q) { $q->whereNull("locked_at")->orWhere("locked_at", ""); })
+                ->orderBy("id")
+                ->value("id") ?? "");
+        ' 2>/dev/null | grep -Eo '^[0-9]+$' | head -n 1 || true)"
+        [[ -n "${PP_ACTOR}" ]] || fail "actor=auto found no unlocked super_admin to record the registration as."
+    fi
+    [[ "${PP_ACTOR}" =~ ^[0-9]+$ ]] || fail "The person photo actor must be a numeric user id or 'auto'."
+
+    # Dry run first, so the log shows what was found before anything is written.
+    (cd "${APP}" && "${PHP}" -d memory_limit=1024M artisan legacy-import:person-photos --root="${PERSON_PHOTO_ROOT}" --user="${PP_ACTOR}" --no-ansi) \
+        || fail "The person photo dry run failed. Nothing was written."
+    (cd "${APP}" && "${PHP}" -d memory_limit=1024M artisan legacy-import:person-photos --root="${PERSON_PHOTO_ROOT}" --user="${PP_ACTOR}" --write --no-ansi) \
+        || fail "The person photos could not be registered."
+
+    mv "${PERSON_PHOTO_APPROVAL}" "${PERSON_PHOTO_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
 # ── Faculty-project survey (read-only) ───────────────────────────────────────
 # Answers one question and changes nothing: how many importable projects does
 # the legacy database hold RIGHT NOW, broken down by faculty.

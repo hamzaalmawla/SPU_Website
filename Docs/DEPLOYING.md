@@ -522,3 +522,18 @@ editors wrote:
 For a plan that editors have already changed, nothing is merged automatically. Either they update it in
 the visual editor, or someone runs the command by hand with `--replace-edited` after agreeing that
 their changes may be replaced (the previous draft versions stay in `cms_drafts`).
+
+### Person photos in the legacy media library
+
+To register imported person photos (honor students, alumni, faculty members, persons) as legacy media
+assets searchable by name, place this file on the server:
+
+```
+storage/app/private/legacy-imports/person-photos.approved
+actor=auto
+```
+
+`cpanel-deploy.sh` then runs `legacy-import:person-photos` as a dry run and then with `--write` against
+`/home/spuedu/public_html`, prints both reports in the deploy log, and renames the file to
+`person-photos.approved.consumed-<time>`. It only adds rows to the legacy library and fills empty titles,
+so it is safe to repeat. See `Docs/LEGACY_IMPORT_RUNBOOK.md`.

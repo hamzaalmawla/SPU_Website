@@ -214,7 +214,8 @@ php artisan legacy-import:person-photos --write --user=<admin-user-id>
 - In the media picker, type the person's name (AR or EN, any part) into
   "Choose from the legacy archive". Promoting the photo keeps its title and alt
   text, so the editor does not have to retype them.
-- It is a data change, so run it only with approval. Council members and career
+- It is a data change, so run it only with approval. On v2 there is no shell:
+  place `person-photos.approved` (see `Docs/DEPLOYING.md`) and deploy. Council members and career
   links also carry `legacy_photo_path` but have no names of their own and are
   not included.
 
