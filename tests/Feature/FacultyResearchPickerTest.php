@@ -149,6 +149,26 @@ final class FacultyResearchPickerTest extends TestCase
             ->assertSet('data.selected_research', fn (mixed $items): bool => is_array($items) && array_values($items) === [['publication_slug' => $picked['slug']]]);
     }
 
+    public function test_picker_opens_on_newest_research_and_search_reaches_imported_publications(): void
+    {
+        $imported = $this->createPublication('pharmacy', 'Imported Legacy Bioavailability Study', 'دراسة توافر حيوي مستوردة', now()->subYears(6)->toDateString());
+        ResearchPublication::query()->whereKey($imported['id'])->update(['legacy_source_table' => 'jx_member_categories', 'legacy_source_id' => 7001, 'extraction_status' => 'published']);
+        Cache::flush();
+        $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
+        app()->setLocale('en');
+
+        $page = Livewire::test(ManageMedicineFaculty::class)
+            ->call('loadTarget', 'facilities.medicine')
+            ->set('data.selected_research', ['item-1' => ['publication_slug' => null]]);
+
+        $results = $page->instance()->getFormSelectSearchResults('data.selected_research.item-1.publication_slug', 'Bioavailability');
+        $this->assertContains($imported['slug'], array_column($results, 'value'));
+        $this->assertContains('Imported Legacy Bioavailability Study ('.now()->subYears(6)->format('Y').')', array_column($results, 'label'));
+
+        $options = $page->instance()->getFormSelectOptions('data.selected_research.item-1.publication_slug');
+        $this->assertNotSame([], $options);
+    }
+
     public function test_old_manual_cards_keep_rendering_only_when_they_point_at_published_research(): void
     {
         $linked = $this->createPublication('pharmacy', 'Legacy Linked Research', 'بحث قديم مرتبط');

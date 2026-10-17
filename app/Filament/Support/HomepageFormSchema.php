@@ -4,14 +4,11 @@ declare(strict_types=1);
 
 namespace App\Filament\Support;
 
-use App\Contracts\Research\ResearchPageServiceInterface;
-use App\DTOs\Content\ResearchCardDTO;
 use App\Filament\Components\PageUrlSelect;
 use Filament\Forms\Components\Component;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 
@@ -53,26 +50,13 @@ final class HomepageFormSchema
                 Section::make(__('admin.homepage_selection.research_heading'))
                     ->description(__('admin.homepage_selection.research_help'))
                     ->schema([
-                        Repeater::make("{$prefix}.publication_slugs")
-                            ->label(__('admin.homepage_selection.selected_research'))
-                            ->schema([
-                                Select::make('publication_slug')
-                                    ->label(__('admin.homepage_selection.research_publication'))
-                                    ->options(fn (): array => [])
-                                    ->searchable()
-                                    ->preload(false)
-                                    ->required()
-                                    ->distinct()
-                                    ->disableOptionsWhenSelectedInSiblingRepeaterItems()
-                                    ->getSearchResultsUsing(fn (string $search): array => self::researchOptions($search))
-                                    ->getOptionLabelUsing(fn (mixed $value): ?string => self::researchOptionLabel($value)),
-                            ])
-                            ->minItems(1)
-                            ->maxItems(10)
-                            ->defaultItems(0)
-                            ->reorderable()
-                            ->collapsible()
-                            ->itemLabel(fn (array $state): ?string => self::researchOptionLabel($state['publication_slug'] ?? null)),
+                        ResearchPublicationPicker::make(
+                            "{$prefix}.publication_slugs",
+                            __('admin.homepage_selection.selected_research'),
+                            __('admin.homepage_selection.research_publication'),
+                            maxItems: 10,
+                            minItems: 1,
+                        ),
                     ]),
             ],
             default => [],
@@ -286,26 +270,6 @@ final class HomepageFormSchema
                 ...self::sectionActionFields($prefix),
             ]),
         ];
-    }
-
-    /** @return array<string, string> */
-    private static function researchOptions(string $search): array
-    {
-        return app(ResearchPageServiceInterface::class)
-            ->getHomepagePublicationCards(app()->getLocale(), [], $search, 50)
-            ->mapWithKeys(fn (ResearchCardDTO $card): array => [$card->slug => $card->title])
-            ->all();
-    }
-
-    private static function researchOptionLabel(mixed $value): ?string
-    {
-        if (! is_string($value) || $value === '') {
-            return null;
-        }
-
-        return app(ResearchPageServiceInterface::class)
-            ->getHomepagePublicationCards(app()->getLocale(), [$value], null, 1)
-            ->first()?->title;
     }
 
     /** @return array<int, Component> */

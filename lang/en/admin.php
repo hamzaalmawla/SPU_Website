@@ -366,6 +366,7 @@ return [
             'summary' => 'Shown on research cards. Leave empty to use the start of the abstract.',
             'researcher' => 'The researcher decides which faculty shows this publication.',
             'published_at' => 'Leave empty to keep the current date, or the publish date for a new publication.',
+            'picker' => 'Opens on the newest publications. Type part of a title, author or faculty to find any published research, imported ones included.',
             'legacy_items' => 'These are the old hand-made placeholder publications. Remove them here and publish; new publications are created in',
             'delete' => 'The publication leaves the website and every faculty or homepage selection of it.',
         ],
