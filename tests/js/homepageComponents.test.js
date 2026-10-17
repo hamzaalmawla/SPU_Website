@@ -22,6 +22,7 @@ afterEach(() => {
 function installReducedMotionBrowser() {
     globalThis.document = {
         activeElement: null,
+        readyState: 'complete',
         documentElement: { lang: 'en', direction: 'ltr' },
     };
     globalThis.window = {
@@ -59,6 +60,35 @@ test('hero and honor autoplay remain stopped under reduced motion', () => {
     assert.equal(hero._timer, null);
     assert.equal(honor._timer, null);
     assert.equal(honor.itemLabel(0), 'Show item 1 / 2');
+});
+
+test('hero autoplay waits for the window load event', () => {
+    const listeners = {};
+    globalThis.document = {
+        activeElement: null,
+        readyState: 'interactive',
+        documentElement: { lang: 'en', direction: 'ltr' },
+    };
+    globalThis.window = {
+        getComputedStyle: () => ({ direction: 'ltr' }),
+        addEventListener: (type, listener) => { listeners[type] = listener; },
+        matchMedia: () => ({
+            matches: false,
+            addEventListener() {},
+            removeEventListener() {},
+        }),
+    };
+
+    const hero = createHeroSlider();
+    hero.$el = root({ images: JSON.stringify(['/one.jpg', '/two.jpg']) });
+    hero.init();
+
+    assert.equal(hero._timer, null);
+
+    listeners.load();
+
+    assert.notEqual(hero._timer, null);
+    hero.destroy();
 });
 
 test('calendar selects the current day on init and stops autoplay', () => {

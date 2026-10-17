@@ -32,7 +32,7 @@
                     </button>
                 </div>
 
-                <div id="academic-faculties-track" x-ref="facultiesTrack" class="flex min-h-[390px] h-auto w-full snap-x snap-mandatory flex-nowrap gap-6 bg-transparent overflow-x-auto overflow-y-visible no-scrollbar scroll-smooth overscroll-x-contain ps-2 pe-6 pb-5 items-stretch z-10" role="region" aria-roledescription="{{ __('public.carousel') }}" aria-label="{{ $section->payload->title }}" tabindex="0" @keydown="handleSliderKey($event)">
+                <div id="academic-faculties-track" x-ref="facultiesTrack" class="flex min-h-[390px] h-auto w-full snap-x snap-mandatory scroll-ps-2 flex-nowrap gap-6 bg-transparent overflow-x-auto overflow-y-visible no-scrollbar scroll-smooth overscroll-x-contain ps-2 pe-6 pb-5 items-stretch z-10" role="region" aria-roledescription="{{ __('public.carousel') }}" aria-label="{{ $section->payload->title }}" tabindex="0" @keydown="handleSliderKey($event)">
                     @foreach ($section->payload->items as $item)
                         {{-- The accent is a brand colour, right as the rule across the top
                              and as the badge fill. As the CTA's own text on white it fails AA

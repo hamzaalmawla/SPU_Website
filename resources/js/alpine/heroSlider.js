@@ -4,6 +4,7 @@ export function createHeroSlider() {
     return {
         currentIndex: 0,
         heroVisible: false,
+        pageLoaded: false,
         images: [],
         _timer: null,
         _removeMotionObserver: null,
@@ -17,6 +18,18 @@ export function createHeroSlider() {
             }
 
             this.heroVisible = true;
+
+            // Rotation starts counting once the page has loaded. A slide that
+            // swaps in while the page is still loading paints a new, larger
+            // image, and Chrome reports it as a later Largest Contentful Paint.
+            this.pageLoaded = typeof document === 'undefined' || document.readyState === 'complete';
+            if (!this.pageLoaded) {
+                window.addEventListener('load', () => {
+                    this.pageLoaded = true;
+                    if (!this.reducedMotion) this.startAuto();
+                }, { once: true });
+            }
+
             this._removeMotionObserver = observeReducedMotion((reduced) => {
                 this.reducedMotion = reduced;
                 reduced ? this.stopAuto() : this.startAuto();
@@ -30,7 +43,7 @@ export function createHeroSlider() {
 
         startAuto() {
             this.stopAuto();
-            if (this.reducedMotion || this.images.length <= 1 || this.hasActiveInteraction()) return;
+            if (!this.pageLoaded || this.reducedMotion || this.images.length <= 1 || this.hasActiveInteraction()) return;
 
             this._timer = setInterval(() => this.next(), 5000);
         },

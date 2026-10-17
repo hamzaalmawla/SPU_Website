@@ -44,7 +44,11 @@
         <link rel="icon" href="{{ asset('images/single-logo.png') }}" type="image/png">
         <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
         <link rel="manifest" href="{{ asset('site.webmanifest') }}">
-        <link rel="stylesheet" href="{{ route('media.display-styles') }}">
+        {{-- Per-image object-fit / focal-point overrides. They never change a
+             box's size, so the page can paint before they arrive; loading them
+             as print and switching on load keeps them off the render path. --}}
+        <link rel="stylesheet" href="{{ route('media.display-styles') }}" media="print" onload="this.media='all'">
+        <noscript><link rel="stylesheet" href="{{ route('media.display-styles') }}"></noscript>
         @php
             $publicViteJsEntries = ['resources/js/app.js'];
             $requestedPublicViteJsEntries = trim($__env->yieldContent('publicViteJsEntries'));
