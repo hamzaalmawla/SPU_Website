@@ -133,6 +133,13 @@ final class PreviewController extends Controller
             return $this->renderNewsArticlePreview($locale, $preview, $payload);
         }
 
+        if (is_string($targetKey) && str_starts_with($targetKey, 'entity.research-publication.')) {
+            $page = $this->researchPageService->buildPreviewDatabasePublication($locale, $payload);
+            abort_if($page === null, 404);
+
+            return $this->renderResearchDetailPreview($locale, $preview, $page, 'public.research.publications.show', '/research/publications/'.$page->slug, []);
+        }
+
         if (is_string($targetKey) && str_starts_with($targetKey, 'entity.')) {
             return $this->renderAboutEntityPreview($locale, $preview, $targetKey, $payload);
         }

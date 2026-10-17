@@ -112,6 +112,7 @@ use App\Contracts\Page\PageServiceInterface;
 use App\Contracts\Page\ProfilePageServiceInterface;
 use App\Contracts\Page\VirtualTourPageServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
+use App\Contracts\Research\ResearchPublicationCmsServiceInterface;
 use App\Contracts\Search\SearchIndexServiceInterface;
 use App\Contracts\Search\SiteSearchServiceInterface;
 use App\Contracts\Seo\SeoMetadataServiceInterface;
@@ -151,6 +152,7 @@ use App\Models\Page\AboutPage;
 use App\Models\Page\Page;
 use App\Models\Person\FacultyMember;
 use App\Models\Person\Person;
+use App\Models\Research\ResearchPublication;
 use App\Models\Shared\AuditLog;
 use App\Models\User\User;
 use App\Observers\AboutDomainAuditObserver;
@@ -168,6 +170,7 @@ use App\Policies\MenuItemPolicy;
 use App\Policies\NewsArticlePolicy;
 use App\Policies\NewsCategoryPolicy;
 use App\Policies\PagePolicy;
+use App\Policies\ResearchPublicationPolicy;
 use App\Policies\UserPolicy;
 use App\Services\Achievement\AchievementService;
 use App\Services\Analytics\AnalyticsService;
@@ -286,6 +289,7 @@ use App\Services\Page\VirtualTourPageService;
 use App\Services\Preview\PreviewService;
 use App\Services\Preview\PreviewTokenStore;
 use App\Services\Research\ResearchPageService;
+use App\Services\Research\ResearchPublicationCmsService;
 use App\Services\Search\SearchIndexService;
 use App\Services\Search\SiteSearchService;
 use App\Services\Seo\SeoMetadataService;
@@ -507,6 +511,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(ContactMessage::class, ContactMessagePolicy::class);
         Gate::policy(DynamicFormSubmission::class, DynamicFormSubmissionPolicy::class);
         Gate::policy(NewsArticle::class, NewsArticlePolicy::class);
+        Gate::policy(ResearchPublication::class, ResearchPublicationPolicy::class);
         Gate::policy(NewsCategory::class, NewsCategoryPolicy::class);
         Gate::policy(Achievement::class, AchievementPolicy::class);
         Gate::policy(AchievementCategory::class, AchievementCategoryPolicy::class);
@@ -627,6 +632,7 @@ class AppServiceProvider extends ServiceProvider
             MenuServiceInterface::class => MenuService::class,
             NewsAdminWorkflowServiceInterface::class => NewsAdminWorkflowService::class,
             NewsArticleCmsServiceInterface::class => NewsArticleCmsService::class,
+            ResearchPublicationCmsServiceInterface::class => ResearchPublicationCmsService::class,
             NewsServiceInterface::class => NewsService::class,
             SeoMetadataServiceInterface::class => SeoMetadataService::class,
             StructuredDataServiceInterface::class => StructuredDataService::class,

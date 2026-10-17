@@ -63,6 +63,12 @@ final class InvalidateCmsCache implements ShouldQueue
             $tags[] = 'research';
         }
 
+        // Faculty pages feature research publications by reference.
+        if (str_starts_with($targetKey, 'entity.research-publication.')) {
+            $tags[] = 'research';
+            $tags[] = 'facilities';
+        }
+
         if (str_starts_with($targetKey, 'news.') || str_starts_with($targetKey, 'entity.news-article.')) {
             $tags[] = 'news';
         }

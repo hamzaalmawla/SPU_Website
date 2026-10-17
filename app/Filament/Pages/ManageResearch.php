@@ -8,6 +8,7 @@ use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Exceptions\ConflictException;
 use App\Filament\Components\PageUrlSelect;
+use App\Filament\Resources\ResearchPublicationResource;
 use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
 use App\Support\HtmlSanitizer;
@@ -33,6 +34,7 @@ use Filament\Forms\Get;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -509,17 +511,24 @@ class ManageResearch extends Page implements HasForms
                 Repeater::make($prefix.'.filters.years')->label($this->fieldLabel('year_options'))->schema($this->optionFields())->columns(2)->defaultItems(0)->reorderable()->collapsible()->columnSpanFull(),
             ])->columns(2)->collapsible()->collapsed(),
 
-            Section::make($this->sectionLabel('publication_items'))->schema([
-                Repeater::make($prefix.'.items')
-                    ->label($this->fieldLabel('publications'))
-                    ->schema($this->publicationItemFields())
-                    ->defaultItems(0)
-                    ->reorderable()
-                    ->cloneable()
-                    ->collapsible()
-                    ->itemLabel(fn (array $state): ?string => $state['title'] ?? $state['slug'] ?? null)
-                    ->columnSpanFull(),
-            ])->collapsible()->collapsed(),
+            // Publications are managed in the Research publications list now; this
+            // stays only so editors can review and remove the old hand-made items.
+            Section::make($this->sectionLabel('publication_items'))
+                ->description(fn (): HtmlString => new HtmlString(e(__('admin.research_publication.help.legacy_items')).' <a class="underline" href="'.e(ResearchPublicationResource::getUrl('index')).'">'.e(__('admin.research_publication.plural_model')).'</a>'))
+                ->schema([
+                    Repeater::make($prefix.'.items')
+                        ->label($this->fieldLabel('publications'))
+                        ->schema($this->publicationItemFields())
+                        ->defaultItems(0)
+                        ->addable(false)
+                        ->reorderable()
+                        ->collapsible()
+                        ->itemLabel(fn (array $state): ?string => $state['title'] ?? $state['slug'] ?? null)
+                        ->columnSpanFull(),
+                ])
+                ->visible(fn (): bool => is_array($this->data[$prefix]['items'] ?? null) && $this->data[$prefix]['items'] !== [])
+                ->collapsible()
+                ->collapsed(),
         ];
 
         return $this->targetSections($sections, 'research.publications', $locale);

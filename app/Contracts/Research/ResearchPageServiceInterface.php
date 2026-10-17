@@ -33,6 +33,14 @@ interface ResearchPageServiceInterface
 
     public function publication(string $locale, string $slug): ?ResearchDetailPageDTO;
 
+    /**
+     * The detail page of a database publication as its draft payload would
+     * publish it, built without writing anything.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    public function buildPreviewDatabasePublication(string $locale, array $payload): ?ResearchDetailPageDTO;
+
     /** @param array<int, string> $publicationSlugs @return Collection<int, ResearchCardDTO> */
     public function getHomepagePublicationCards(string $locale, array $publicationSlugs = [], ?string $search = null, int $limit = 50): Collection;
 

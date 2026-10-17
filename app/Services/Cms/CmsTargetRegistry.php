@@ -7,6 +7,7 @@ namespace App\Services\Cms;
 use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\News\NewsArticleCmsServiceInterface;
+use App\Contracts\Research\ResearchPublicationCmsServiceInterface;
 use App\DTOs\Cms\CmsTargetDTO;
 use Illuminate\Support\Collection;
 
@@ -15,6 +16,7 @@ final class CmsTargetRegistry implements CmsTargetRegistryInterface
     public function __construct(
         private readonly AboutEntityCmsServiceInterface $aboutEntityCmsService,
         private readonly NewsArticleCmsServiceInterface $newsArticleCmsService,
+        private readonly ResearchPublicationCmsServiceInterface $researchPublicationCmsService,
     ) {}
 
     /** @return Collection<int, CmsTargetDTO> */
@@ -44,7 +46,8 @@ final class CmsTargetRegistry implements CmsTargetRegistryInterface
     {
         return $this->all()->first(fn (CmsTargetDTO $target): bool => $target->key === $key)
             ?? $this->aboutEntityCmsService->resolveTarget($key)
-            ?? $this->newsArticleCmsService->resolveTarget($key);
+            ?? $this->newsArticleCmsService->resolveTarget($key)
+            ?? $this->researchPublicationCmsService->resolveTarget($key);
     }
 
     /** @return array<int, CmsTargetDTO> */

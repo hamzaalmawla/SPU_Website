@@ -10,6 +10,7 @@ use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
 use App\Contracts\Media\MediaServiceInterface;
 use App\Contracts\News\NewsArticleCmsServiceInterface;
+use App\Contracts\Research\ResearchPublicationCmsServiceInterface;
 use App\Contracts\Shared\AuditServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
 use App\DTOs\Cms\CmsDraftDTO;
@@ -49,6 +50,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
         private readonly MediaServiceInterface $mediaService,
         private readonly AboutEntityCmsServiceInterface $aboutEntityCmsService,
         private readonly NewsArticleCmsServiceInterface $newsArticleCmsService,
+        private readonly ResearchPublicationCmsServiceInterface $researchPublicationCmsService,
         private readonly FacultyStudyPlanLinkServiceInterface $studyPlanLinkService,
     ) {}
 
@@ -91,6 +93,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
             if (! $hasScheduledRelease) {
                 $this->aboutEntityCmsService->markDraft($target->key);
                 $this->newsArticleCmsService->markDraft($target->key);
+                $this->researchPublicationCmsService->markDraft($target->key);
             }
 
             $this->auditService->log('cms.draft.saved', $userId, CmsDraft::class, (int) $draft->getKey(), [
@@ -179,6 +182,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
             ])->save();
             $this->aboutEntityCmsService->markScheduled($target->key);
             $this->newsArticleCmsService->markScheduled($target->key);
+            $this->researchPublicationCmsService->markScheduled($target->key);
         });
 
         $this->auditService->log('cms.publish.scheduled', $userId, CmsDraft::class, (int) $draft->getKey(), [
@@ -198,6 +202,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
             $content = CmsTargetContent::query()->where('target_key', $target->key)->first();
             $entityUnpublished = $this->aboutEntityCmsService->unpublishTarget($target->key);
             $newsArticleUnpublished = $this->newsArticleCmsService->unpublishTarget($target->key);
+            $publicationUnpublished = $this->researchPublicationCmsService->unpublishTarget($target->key);
             $hasWorkingDraft = CmsDraft::query()
                 ->where('target_key', $target->key)
                 ->where('status', PublicationStatus::Draft->value)
@@ -219,7 +224,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
                 ])->save();
             }
 
-            return $content instanceof CmsTargetContent || $entityUnpublished || $newsArticleUnpublished || $cancelledSchedules > 0;
+            return $content instanceof CmsTargetContent || $entityUnpublished || $newsArticleUnpublished || $publicationUnpublished || $cancelledSchedules > 0;
         });
 
         if (! $unpublished) {
@@ -252,7 +257,9 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
                 $errors[$locale][] = 'A localized title or headline is required.';
             }
 
-            if (! $this->hasBodyLikeContent($translation)) {
+            // A research publication may be only a title and its authors; its
+            // own validator decides what it needs.
+            if (! str_starts_with($target->key, 'entity.research-publication.') && ! $this->hasBodyLikeContent($translation)) {
                 $errors[$locale][] = 'Localized body content or content blocks are required.';
             }
         }
@@ -359,6 +366,13 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
         }
 
         foreach ($this->newsArticleCmsService->publishErrors($target->key, $payload) as $field => $messages) {
+            $errors[$field] = array_values(array_unique([
+                ...($errors[$field] ?? []),
+                ...$messages,
+            ]));
+        }
+
+        foreach ($this->researchPublicationCmsService->publishErrors($target->key, $payload) as $field => $messages) {
             $errors[$field] = array_values(array_unique([
                 ...($errors[$field] ?? []),
                 ...$messages,
@@ -488,6 +502,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
         $payload = is_array($draft->payload_json) ? $draft->payload_json : [];
         $this->aboutEntityCmsService->publishTarget($draft->target_key, $payload, $publishedAt);
         $this->newsArticleCmsService->publishTarget($draft->target_key, $payload, $publishedAt, $userId);
+        $this->researchPublicationCmsService->publishTarget($draft->target_key, $payload, $publishedAt, $userId);
 
         CmsTargetContent::query()->updateOrCreate(
             ['target_key' => $draft->target_key],
@@ -678,6 +693,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
 
         $this->aboutEntityCmsService->authorizeTarget($target->key, $userId, $payload);
         $this->newsArticleCmsService->authorizeTarget($target->key, $userId, $payload);
+        $this->researchPublicationCmsService->authorizeTarget($target->key, $userId, $payload);
     }
 
     private function canonicalFacultyScope(string $scope): string

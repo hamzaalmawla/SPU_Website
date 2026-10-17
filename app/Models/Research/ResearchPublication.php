@@ -20,6 +20,7 @@ class ResearchPublication extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'slug',
         'faculty_member_id',
         'person_id',
         'category_key',
@@ -35,6 +36,7 @@ class ResearchPublication extends Model
         'extraction_status',
         'external_url',
         'file_media_id',
+        'image_media_id',
         'sort_order',
         'is_enabled',
     ];
@@ -65,6 +67,11 @@ class ResearchPublication extends Model
     public function fileMedia(): BelongsTo
     {
         return $this->belongsTo(MediaAsset::class, 'file_media_id');
+    }
+
+    public function imageMedia(): BelongsTo
+    {
+        return $this->belongsTo(MediaAsset::class, 'image_media_id');
     }
 
     public function translations(): HasMany
