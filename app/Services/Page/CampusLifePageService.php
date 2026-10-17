@@ -980,13 +980,32 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
         ];
     }
 
+    /**
+     * Fill what the saved payload is missing from the defaults. A saved list
+     * is kept as it is: merging lists by position (array_replace_recursive)
+     * brought back default items the admin had deleted.
+     *
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>  $defaults
+     * @return array<string, mixed>
+     */
+    private function withDefaults(array $payload, array $defaults): array
+    {
+        foreach ($defaults as $key => $default) {
+            if (! array_key_exists($key, $payload) || ($payload[$key] === [] && is_array($default) && ! array_is_list($default))) {
+                $payload[$key] = $default;
+            } elseif (is_array($payload[$key]) && is_array($default) && ! array_is_list($payload[$key]) && ! array_is_list($default)) {
+                $payload[$key] = $this->withDefaults($payload[$key], $default);
+            }
+        }
+
+        return $payload;
+    }
+
     /** @param array<string, mixed> $payload @return array<string, mixed> */
     private function completeTransportPayload(array $payload, string $locale): array
     {
-        $completed = array_replace_recursive(
-            $this->localized($this->transportPayload(), $locale),
-            $payload,
-        );
+        $completed = $this->withDefaults($payload, $this->localized($this->transportPayload(), $locale));
 
         $completed['cards'] = array_map(function (mixed $card) use ($locale): mixed {
             if (! is_array($card)) {

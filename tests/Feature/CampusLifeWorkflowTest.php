@@ -151,6 +151,29 @@ final class CampusLifeWorkflowTest extends TestCase
             ->assertNotFound();
     }
 
+    public function test_items_deleted_from_transport_lists_stay_deleted(): void
+    {
+        $campusLife = app(CampusLifePageServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $payload = $campusLife->getEditablePayload('campus_life.transport');
+
+        foreach (['en', 'ar'] as $locale) {
+            array_pop($payload['translations'][$locale]['fees']['steps']);
+        }
+
+        $workflow->saveDraft('campus_life.transport', $payload, (int) $author->id);
+        $this->assertTrue($workflow->publish('campus_life.transport', (int) $author->id));
+
+        $this->get('/en/campus-life/transport')
+            ->assertOk()
+            ->assertSee('Complete registration')
+            ->assertDontSee('Ask before paying');
+
+        $editable = $campusLife->getEditablePayload('campus_life.transport');
+        $this->assertCount(2, $editable['translations']['en']['fees']['steps']);
+    }
+
     public function test_transport_page_exposes_operational_schedule_routes_fees_and_portal_registration(): void
     {
         $this->publishCampusLifeTarget('campus_life.transport');

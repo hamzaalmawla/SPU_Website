@@ -57,6 +57,15 @@ class ManageHomepage extends Page implements HasForms
     /** @var array<string, mixed> */
     public ?array $data = [];
 
+    /** Sections whose cards are edited through image, description and CTA fields. */
+    private const CARD_FORM_SECTIONS = ['academic_faculties', 'medical_facilities_services'];
+
+    /** Footer fields that edit the first contact link of their type. */
+    private const CONTACT_FIELDS = ['phone' => 'contact_phone', 'email' => 'contact_email', 'address' => 'contact_address'];
+
+    /** Content key holding the contact field values as loaded, to tell which ones the admin changed. */
+    private const LOADED_CONTACT_FIELDS = 'loaded_contact_fields';
+
     private HomepageSectionServiceInterface $sectionService;
 
     private HomepagePublishingServiceInterface $publishingService;
@@ -638,34 +647,46 @@ class ManageHomepage extends Page implements HasForms
         }
 
         $contactLinks = is_array($data['contact_links'] ?? null) ? $data['contact_links'] : [];
+        $loadedContactFields = is_array($content[self::LOADED_CONTACT_FIELDS] ?? null) ? $content[self::LOADED_CONTACT_FIELDS] : [];
 
-        foreach ([
-            'phone' => $data['content']['contact_phone'] ?? null,
-            'email' => $data['content']['contact_email'] ?? null,
-            'address' => $data['content']['contact_address'] ?? null,
-        ] as $type => $value) {
-            if (is_string($value) && $value !== '') {
-                $existingIndex = null;
+        foreach (self::CONTACT_FIELDS as $type => $field) {
+            $value = is_string($content[$field] ?? null) ? trim($content[$field]) : '';
+            $loaded = is_string($loadedContactFields[$type] ?? null) ? trim($loadedContactFields[$type]) : '';
+            unset($content[$field]);
 
-                foreach ($contactLinks as $index => $link) {
-                    if (is_array($link) && strtolower((string) ($link['type'] ?? '')) === $type) {
-                        $existingIndex = $index;
+            // The field and the contact links list both show the first link of
+            // this type. Only a field the admin changed applies, or its loaded
+            // value overwrote an edit made in the list.
+            if ($value === $loaded) {
+                continue;
+            }
 
-                        break;
-                    }
-                }
+            $existingIndex = null;
 
-                if ($existingIndex !== null) {
-                    $contactLinks[$existingIndex]['value'] = $value;
-                } else {
-                    $contactLinks[] = [
-                        'type' => $type,
-                        'label' => ucfirst($type),
-                        'value' => $value,
-                    ];
+            foreach ($contactLinks as $index => $link) {
+                if (is_array($link) && strtolower((string) ($link['type'] ?? '')) === $type) {
+                    $existingIndex = $index;
+
+                    break;
                 }
             }
+
+            if ($value === '') {
+                if ($existingIndex !== null) {
+                    unset($contactLinks[$existingIndex]);
+                }
+            } elseif ($existingIndex !== null) {
+                $contactLinks[$existingIndex]['value'] = $value;
+            } else {
+                $contactLinks[] = [
+                    'type' => $type,
+                    'label' => ucfirst($type),
+                    'value' => $value,
+                ];
+            }
         }
+
+        unset($content[self::LOADED_CONTACT_FIELDS]);
 
         return new HomepageSectionDataDTO(
             title: $data['section_title'] ?? $data['headline'] ?? null,
@@ -802,6 +823,10 @@ class ManageHomepage extends Page implements HasForms
             static function (array $item) use ($sectionKey): array {
                 $mapped = $item;
 
+                if (in_array($sectionKey, self::CARD_FORM_SECTIONS, true)) {
+                    return self::cardFromForm($mapped);
+                }
+
                 if (($mapped['imageUrl'] ?? null) === null) {
                     $image = self::extractFileUploadValue($mapped['image'] ?? null);
 
@@ -839,6 +864,39 @@ class ManageHomepage extends Page implements HasForms
             },
             array_filter($items, static fn (mixed $i): bool => is_array($i)),
         ));
+    }
+
+    /**
+     * A card from a section whose form edits image, description and the CTA
+     * fields. The public page reads imageUrl, summary and action, and the form
+     * loads those too, so they are rebuilt from the edited fields every time:
+     * otherwise the loaded copy won and a new logo or text never showed, and
+     * a cleared field could not remove anything.
+     *
+     * @param  array<string, mixed>  $card
+     * @return array<string, mixed>
+     */
+    private static function cardFromForm(array $card): array
+    {
+        $image = self::extractFileUploadValue($card['image'] ?? null);
+        $summary = self::firstString($card, ['description']);
+        $ctaLabel = self::firstString($card, ['cta_label']);
+        $ctaUrl = self::firstString($card, ['cta_url']);
+
+        $card['image'] = $image;
+        $card['imageUrl'] = $image;
+        $card['summary'] = $summary;
+        $card['action'] = $ctaLabel !== null || $ctaUrl !== null
+            ? array_filter(['label' => $ctaLabel, 'url' => $ctaUrl ?? '#'])
+            : null;
+
+        foreach (['image', 'imageUrl', 'summary', 'action'] as $key) {
+            if ($card[$key] === null) {
+                unset($card[$key]);
+            }
+        }
+
+        return $card;
     }
 
     /**
@@ -971,6 +1029,11 @@ class ManageHomepage extends Page implements HasForms
                     $item['image'] = $item['imageUrl'];
                 }
 
+                // The form edits description; saved cards keep the text as summary.
+                if (isset($item['summary']) && ! isset($item['description'])) {
+                    $item['description'] = $item['summary'];
+                }
+
                 if (is_array($item['action'] ?? null)) {
                     $item['cta_label'] = $item['action']['label'] ?? ($item['cta_label'] ?? null);
                     $item['cta_url'] = $item['action']['url'] ?? ($item['cta_url'] ?? null);
@@ -1071,18 +1134,21 @@ class ManageHomepage extends Page implements HasForms
      */
     private function withContactContentAliases(array $content, array $contactLinks): array
     {
-        foreach ($contactLinks as $link) {
-            $key = match (strtolower($link->type)) {
-                'phone' => 'contact_phone',
-                'email' => 'contact_email',
-                'address' => 'contact_address',
-                default => null,
-            };
-
-            if ($key !== null && ! isset($content[$key])) {
-                $content[$key] = $link->value;
-            }
+        if ($contactLinks === []) {
+            return $content;
         }
+
+        $loaded = [];
+
+        // Always from the links: a value stored in content by an older save
+        // could be out of date.
+        foreach (self::CONTACT_FIELDS as $type => $field) {
+            $link = collect($contactLinks)->first(fn (ContactLinkDTO $link): bool => strtolower($link->type) === $type);
+            $content[$field] = $link?->value;
+            $loaded[$type] = $link?->value;
+        }
+
+        $content[self::LOADED_CONTACT_FIELDS] = $loaded;
 
         return $content;
     }

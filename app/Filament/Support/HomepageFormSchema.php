@@ -8,6 +8,7 @@ use App\Contracts\Research\ResearchPageServiceInterface;
 use App\DTOs\Content\ResearchCardDTO;
 use App\Filament\Components\PageUrlSelect;
 use Filament\Forms\Components\Component;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -463,6 +464,11 @@ final class HomepageFormSchema
                     ->label(__('admin_pages.homepage_form.contact_address'))
                     ->rows(2)
                     ->maxLength(500),
+                // The three fields above as loaded: on save only a field the
+                // admin changed overrides the same contact in the list below.
+                Hidden::make("{$prefix}.content.loaded_contact_fields.phone"),
+                Hidden::make("{$prefix}.content.loaded_contact_fields.email"),
+                Hidden::make("{$prefix}.content.loaded_contact_fields.address"),
             ]),
             Repeater::make("{$prefix}.social_links")
                 ->label(__('admin_pages.homepage_form.social_links'))
