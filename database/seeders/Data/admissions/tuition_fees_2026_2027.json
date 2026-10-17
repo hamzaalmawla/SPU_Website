@@ -19,6 +19,6 @@
         { "faculty": { "ar": "هندسة الذكاء الاصطناعي", "en": "Artificial Intelligence Engineering" }, "scientificAverage": 65, "vocationalAverage": 75, "creditHours": 180, "syrianFee": 10000, "foreignFee": 250 },
         { "faculty": { "ar": "هندسة تكنولوجيا البناء والتشييد", "en": "Building and Construction Technology Engineering" }, "scientificAverage": 65, "creditHours": 180, "syrianFee": 10000, "foreignFee": 200 },
         { "faculty": { "ar": "هندسة البترول", "en": "Petroleum Engineering" }, "scientificAverage": 65, "vocationalAverage": 75, "creditHours": 180, "syrianFee": 10000, "foreignFee": 200 },
-        { "faculty": { "ar": "العلوم الإدارية", "en": "Administrative Sciences" }, "scientificAverage": 55, "vocationalAverage": 55, "literaryAverage": 50, "creditHours": 134, "syrianFee": 7000, "foreignFee": 150 }
+        { "faculty": { "ar": "إدارة الأعمال", "en": "Business Administration" }, "scientificAverage": 55, "vocationalAverage": 55, "literaryAverage": 50, "creditHours": 134, "syrianFee": 7000, "foreignFee": 150 }
     ]
 }

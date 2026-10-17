@@ -149,7 +149,7 @@ final class AdmissionsTuitionFeesTest extends TestCase
             ->assertOk()
             ->assertSeeInOrder(['الطب', '80%', '251', '18,000 ل.س.ج', '350 $'])
             ->assertSeeInOrder(['هندسة البترول', 'الفرع العلمي', '65%', 'الفرع المهني', '75%', '180', '10,000 ل.س.ج', '200 $'])
-            ->assertSeeInOrder(['العلوم الإدارية', '55%', '55%', '50%', '134', '7,000 ل.س.ج', '150 $'])
+            ->assertSeeInOrder(['إدارة الأعمال', '55%', '55%', '50%', '134', '7,000 ل.س.ج', '150 $'])
             ->assertSee('رسوم مفاضلة العام الدراسي 2026 - 2027');
 
         $this->get('/en/admissions/tuition')
