@@ -888,6 +888,18 @@ log "Seeding deterministic redirect rules"
 log "Rebuilding framework caches"
 (cd "${APP}" && "${PHP}" artisan optimize)
 
+# ── Image derivatives ────────────────────────────────────────────────────────
+# Web-sized WebP variants for the photos and uploads the homepage renders. Until
+# this ran on deploy, nothing ever ran it on the server: the news slots shipped
+# 340 KB camera JPEGs into 272px cards and PageSpeed counted 1.2 MB of avoidable
+# image bytes. Idempotent (existing variants are reused), and it must run before
+# the cache clear below so the warmed homepage already carries the srcsets.
+# Image decoding needs more than the host's 128 MB; a failure only means the
+# page keeps serving originals, so it never stops the deploy.
+log "Generating image derivatives"
+(cd "${APP}" && "${PHP}" -d memory_limit=1024M artisan media:generate-legacy-derivatives --no-ansi) \
+    || log "Image derivative generation failed; pages keep serving the originals"
+
 # ── Clearing derived caches ──────────────────────────────────────────────────
 # Warming does not overwrite. CacheWarmCommand goes through remember(), which
 # returns whatever is already stored - so warming a cache full of pre-deploy

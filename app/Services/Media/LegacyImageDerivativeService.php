@@ -77,7 +77,7 @@ final class LegacyImageDerivativeService implements LegacyImageDerivativeService
             }
 
             $considered++;
-            $absolute = public_path($path);
+            $absolute = $this->sourceAbsolutePath($path);
 
             if (! is_file($absolute) || ! is_readable($absolute)) {
                 // The legacy mount is absent on this host (or the row points at
@@ -253,6 +253,26 @@ final class LegacyImageDerivativeService implements LegacyImageDerivativeService
         ), static fn (string $directory): bool => $directory !== ''));
 
         return $directories === [] ? ['downloads/files'] : $directories;
+    }
+
+    /**
+     * Where a source's bytes live on this host.
+     *
+     * Uploads are addressed by their public URL (`storage/media/...`), but the
+     * web root's storage link is not always the app's own public/ directory
+     * (the v2 docroot sits outside the app), so they are read through the
+     * public disk instead of public_path().
+     */
+    private function sourceAbsolutePath(string $path): string
+    {
+        $publicUrlPath = parse_url((string) config('filesystems.disks.public.url', '/storage'), PHP_URL_PATH);
+        $prefix = trim(is_string($publicUrlPath) && $publicUrlPath !== '' ? $publicUrlPath : '/storage', '/').'/';
+
+        if (str_starts_with($path, $prefix)) {
+            return Storage::disk('public')->path(substr($path, strlen($prefix)));
+        }
+
+        return public_path($path);
     }
 
     private function isEligibleSourcePath(string $path): bool

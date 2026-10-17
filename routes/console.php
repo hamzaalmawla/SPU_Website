@@ -24,6 +24,10 @@ Schedule::command('sitemap:generate')->everyFiveMinutes()->withoutOverlapping();
 // it behind. A nightly rebuild reconciles it; it is idempotent by design.
 Schedule::command('search:index')->dailyAt('03:10')->withoutOverlapping();
 
+// News and uploads published between deploys need their web-sized variants too.
+// Existing variants are reused, so a run with nothing new only reads a manifest.
+Schedule::command('media:generate-legacy-derivatives')->hourlyAt(20)->withoutOverlapping();
+
 /*
 |--------------------------------------------------------------------------
 | Legacy Import Commands

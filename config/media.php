@@ -24,13 +24,18 @@ return [
         'enabled' => (bool) env('MEDIA_DERIVATIVES_ENABLED', true),
 
         // Rendered widths across the curated surfaces, smallest first. The
-        // widest variant becomes the default `src`.
-        'widths' => [480, 960, 1440],
+        // widest variant becomes the default `src`. 240 covers the 110px
+        // faculty icons at 2x, which otherwise download a 400px original.
+        'widths' => [240, 480, 960, 1440],
 
-        // Only paths under these legacy directories are considered.
+        // Only paths under these directories are considered. `storage/media`
+        // is the CMS upload library on the public disk: uploads are stored at
+        // up to 1280px whatever slot they fill, so the homepage's small slots
+        // get a srcset from the same manifest.
         'source_directories' => [
             'downloads/files',
             'downloads/files2',
+            'storage/media',
         ],
     ],
 ];

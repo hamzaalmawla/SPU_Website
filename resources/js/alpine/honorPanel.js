@@ -129,6 +129,10 @@ export function createHonorPanel() {
             return item.title || '';
         },
 
+        itemSrcset(item) {
+            return item.imageSrcset || null;
+        },
+
         actionTarget(item) {
             return item.action?.target || null;
         },

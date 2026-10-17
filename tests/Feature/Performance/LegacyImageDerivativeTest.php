@@ -181,6 +181,32 @@ final class LegacyImageDerivativeTest extends TestCase
         $this->assertSame(0, $report->generatedCount);
     }
 
+    public function test_an_uploaded_library_image_gets_a_srcset_down_to_icon_size(): void
+    {
+        $disk = Storage::disk('public');
+        $relative = 'media/image/derivative-upload-fixture.png';
+        $image = imagecreatetruecolor(402, 454);
+        imagefilledrectangle($image, 0, 0, 402, 454, (int) imagecolorallocate($image, 30, 60, 120));
+        ob_start();
+        imagepng($image);
+        $disk->put($relative, (string) ob_get_clean());
+        imagedestroy($image);
+
+        try {
+            $report = app(LegacyImageDerivativeServiceInterface::class)
+                ->generate(['/storage/'.$relative]);
+
+            $this->assertSame(1, $report->generatedCount);
+            $this->assertSame([], $report->missingSources);
+
+            $srcset = (string) MediaUrlResolver::legacySrcset('/storage/'.$relative);
+            $this->assertStringContainsString('240w', $srcset);
+            $this->assertStringContainsString('402w', $srcset);
+        } finally {
+            $disk->delete($relative);
+        }
+    }
+
     public function test_a_missing_source_is_reported_and_leaves_the_original_in_place(): void
     {
         $report = app(LegacyImageDerivativeServiceInterface::class)

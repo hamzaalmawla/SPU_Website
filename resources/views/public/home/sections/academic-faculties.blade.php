@@ -58,7 +58,8 @@
                             @php($image = $item['imageUrl'] ?? ($item['image'] ?? null))
                             @if ($image)
                                 <div class="relative w-[160px] h-[160px] mt-6 mb-4 flex items-center justify-center">
-                                    <img src="{{ $image }}" alt="{{ $item['title'] ?? '' }}" loading="lazy" decoding="async" width="110" height="110" class="relative z-10 w-[110px] h-[110px] object-contain transition-transform duration-500">
+                                    @php($imageSrcset = \App\Support\MediaUrlResolver::legacySrcset($image))
+                                    <img src="{{ $image }}" @if ($imageSrcset) srcset="{{ $imageSrcset }}" sizes="110px" @endif alt="{{ $item['title'] ?? '' }}" loading="lazy" decoding="async" width="110" height="110" class="relative z-10 w-[110px] h-[110px] object-contain transition-transform duration-500">
                                 </div>
                             @endif
                             <div class="flex flex-1 items-center px-4 mb-4">
