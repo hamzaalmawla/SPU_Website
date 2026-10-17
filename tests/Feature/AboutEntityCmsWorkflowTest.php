@@ -174,11 +174,11 @@ final class AboutEntityCmsWorkflowTest extends TestCase
         $this->actingAs($facultyEditor)
             ->get('/admin/faculty-members/'.$prepared->entityId.'/edit')
             ->assertOk()
-            ->assertSee('Preview AR')
-            ->assertSee('Preview EN')
-            ->assertDontSee('Publish')
-            ->assertDontSee('Schedule')
-            ->assertDontSee('Unpublish');
+            ->assertSee(__('admin_pages.about_entity.preview_ar'))
+            ->assertSee(__('admin_pages.about_entity.preview_en'))
+            ->assertDontSee(__('admin_pages.about_entity.publish'))
+            ->assertDontSee(__('admin_pages.about_entity.schedule'))
+            ->assertDontSee(__('admin_pages.about_entity.unpublish'));
 
         $otherFaculty = Faculty::query()->create([
             'slug' => 'other-workflow-faculty',
@@ -310,11 +310,11 @@ final class AboutEntityCmsWorkflowTest extends TestCase
         foreach ($routes as $route) {
             $this->get($route)
                 ->assertOk()
-                ->assertSee('Preview AR')
-                ->assertSee('Preview EN')
-                ->assertSee('Publish')
-                ->assertSee('Schedule')
-                ->assertSee('Unpublish');
+                ->assertSee(__('admin_pages.about_entity.preview_ar'))
+                ->assertSee(__('admin_pages.about_entity.preview_en'))
+                ->assertSee(__('admin_pages.about_entity.publish'))
+                ->assertSee(__('admin_pages.about_entity.schedule'))
+                ->assertSee(__('admin_pages.about_entity.unpublish'));
         }
     }
 

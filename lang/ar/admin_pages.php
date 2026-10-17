@@ -103,7 +103,7 @@ return [
         'entity_was_not_published' => 'السجل غير منشور',
         'preview_ar' => 'معاينة العربية',
         'preview_en' => 'معاينة الإنجليزية',
-        'publish' => 'نشر',
+        'publish' => 'نشر الآن',
         'publish_failed' => 'تعذر النشر',
         'schedule' => 'جدولة النشر',
         'schedule_failed' => 'تعذرت الجدولة',
