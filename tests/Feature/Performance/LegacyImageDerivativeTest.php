@@ -207,6 +207,35 @@ final class LegacyImageDerivativeTest extends TestCase
         }
     }
 
+    public function test_a_source_behind_the_legacy_mount_is_read_where_apache_serves_it(): void
+    {
+        // public/.htaccess rewrites a missing downloads/files/... to
+        // _legacy/downloads/files/..., which is where v2 keeps the old tree.
+        $absolute = public_path('_legacy/'.$this->sourcePath);
+        $directory = dirname($absolute);
+
+        if (! is_dir($directory)) {
+            mkdir($directory, 0755, true);
+        }
+
+        $image = imagecreatetruecolor(1200, 600);
+        imagejpeg($image, $absolute, 90);
+        imagedestroy($image);
+
+        try {
+            $report = app(LegacyImageDerivativeServiceInterface::class)->generate([$this->sourcePath]);
+
+            $this->assertSame(1, $report->generatedCount);
+            $this->assertSame([], $report->missingSources);
+            $this->assertStringContainsString('480w', (string) MediaUrlResolver::legacySrcset($this->sourcePath));
+        } finally {
+            @unlink($absolute);
+            @rmdir(public_path('_legacy/downloads/files'));
+            @rmdir(public_path('_legacy/downloads'));
+            @rmdir(public_path('_legacy'));
+        }
+    }
+
     public function test_a_missing_source_is_reported_and_leaves_the_original_in_place(): void
     {
         $report = app(LegacyImageDerivativeServiceInterface::class)

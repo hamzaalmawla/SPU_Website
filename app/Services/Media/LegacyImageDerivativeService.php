@@ -272,7 +272,18 @@ final class LegacyImageDerivativeService implements LegacyImageDerivativeService
             return Storage::disk('public')->path(substr($path, strlen($prefix)));
         }
 
-        return public_path($path);
+        $direct = public_path($path);
+
+        if (is_file($direct)) {
+            return $direct;
+        }
+
+        // On v2 the old tree is not under downloads/ at all: public/.htaccess
+        // rewrites a missing downloads/files/... to the read-only mount at
+        // _legacy/downloads/files/..., so read the file where Apache serves it.
+        $mounted = public_path('_legacy/'.$path);
+
+        return is_file($mounted) ? $mounted : $direct;
     }
 
     private function isEligibleSourcePath(string $path): bool
