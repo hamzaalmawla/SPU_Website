@@ -37,7 +37,7 @@ final class AdminJobsWorkspaceTest extends TestCase
             ->assertSee('Accept online job applications')
             ->assertDontSee('Choose a Campus Life page')
             ->assertDontSee('Page / Subpage')
-            ->assertDontSee('Job Catalog')
+            ->assertDontSee(__('admin_pages.campus_life.job_catalog'))
             ->assertDontSee('Course ID');
     }
 
@@ -96,7 +96,7 @@ final class AdminJobsWorkspaceTest extends TestCase
             ->test(ManageCampusLife::class)
             ->assertSet('activeTargetKey', 'campus_life.landing')
             ->assertSet('data.target_key', 'campus_life.landing')
-            ->assertDontSee('Target Schema Pending');
+            ->assertDontSee(__('admin_pages.campus_life.target_schema_pending'));
 
         Livewire::test(ManageJobBoard::class)
             ->assertSet('activeTargetKey', 'campus_life.jobs')

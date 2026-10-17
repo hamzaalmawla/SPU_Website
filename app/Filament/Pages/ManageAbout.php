@@ -90,9 +90,9 @@ class ManageAbout extends Page implements HasForms
     {
         return $form
             ->schema([
-                Section::make('About Target')->schema([
+                Section::make(__('admin_pages.about.about_target'))->schema([
                     Select::make('target_key')
-                        ->label('Page / Subpage')
+                        ->label(__('admin_pages.about.page_subpage'))
                         ->options($this->targetOptions())
                         ->required()
                         ->live()
@@ -100,8 +100,8 @@ class ManageAbout extends Page implements HasForms
                 ]),
                 Tabs::make('about_locales')
                     ->tabs([
-                        Tab::make('Arabic')->schema($this->payloadFields('ar')),
-                        Tab::make('English')->schema($this->payloadFields('en')),
+                        Tab::make('Arabic')->label(__('admin_pages.about.arabic'))->schema($this->payloadFields('ar')),
+                        Tab::make('English')->label(__('admin_pages.about.english'))->schema($this->payloadFields('en')),
                     ])
                     ->persistTabInQueryString('locale')
                     ->columnSpanFull(),
@@ -112,27 +112,27 @@ class ManageAbout extends Page implements HasForms
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('save')->label('Save Draft')->icon('heroicon-o-check')->color('gray')->action(function (): void {
+            Action::make('save')->label(__('admin_pages.about.save_draft'))->icon('heroicon-o-check')->color('gray')->action(function (): void {
                 $this->save();
             }),
-            Action::make('preview_ar')->label('Preview AR')->icon('heroicon-o-eye')->color('info')->action(function (): void {
+            Action::make('preview_ar')->label(__('admin_pages.about.preview_ar'))->icon('heroicon-o-eye')->color('info')->action(function (): void {
                 $this->openPreview('ar');
             }),
-            Action::make('preview_en')->label('Preview EN')->icon('heroicon-o-eye')->color('info')->action(function (): void {
+            Action::make('preview_en')->label(__('admin_pages.about.preview_en'))->icon('heroicon-o-eye')->color('info')->action(function (): void {
                 $this->openPreview('en');
             }),
-            Action::make('publish')->label('Publish')->icon('heroicon-o-paper-airplane')->color('success')->requiresConfirmation()->action(function (): void {
+            Action::make('publish')->label(__('admin_pages.about.publish'))->icon('heroicon-o-paper-airplane')->color('success')->requiresConfirmation()->action(function (): void {
                 $this->publish();
             }),
             Action::make('schedule')
-                ->label('Schedule')
+                ->label(__('admin_pages.about.schedule'))
                 ->icon('heroicon-o-clock')
                 ->color('warning')
                 ->form([
-                    DateTimePicker::make('publish_at')->label('Publish At')->required()->minDate(now())->native(false),
+                    DateTimePicker::make('publish_at')->label(__('admin_pages.about.publish_at'))->required()->minDate(now())->native(false),
                 ])
                 ->action(fn (array $data) => $this->schedule((string) $data['publish_at'])),
-            Action::make('unpublish')->label('Unpublish')->icon('heroicon-o-x-circle')->color('danger')->requiresConfirmation()->action(function (): void {
+            Action::make('unpublish')->label(__('admin_pages.about.unpublish'))->icon('heroicon-o-x-circle')->color('danger')->requiresConfirmation()->action(function (): void {
                 $this->unpublish();
             }),
         ];
@@ -217,13 +217,13 @@ class ManageAbout extends Page implements HasForms
             $draft = $this->cmsWorkflowService->saveDraft($this->currentTargetKey(), $this->payloadFromForm($this->currentFormData()), (int) $user->id, $this->draftVersion);
             $this->draftVersion = $draft->version;
 
-            Notification::make()->title('About draft saved')->success()->send();
+            Notification::make()->title(__('admin_pages.about.about_draft_saved'))->success()->send();
         } catch (ConflictException $e) {
             $this->draftVersion = $e->currentVersion;
-            Notification::make()->title('Draft conflict detected')->body('Reload this about target before saving again.')->danger()->persistent()->send();
+            Notification::make()->title(__('admin_pages.about.draft_conflict_detected'))->body(__('admin_pages.about.reload_this_about_target_before_saving_again'))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to save about draft')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('admin_pages.about.failed_to_save_about_draft'))->body($e->getMessage())->danger()->send();
         }
     }
 
@@ -241,10 +241,10 @@ class ManageAbout extends Page implements HasForms
             $this->redirect($preview->previewUrl);
         } catch (ConflictException $e) {
             $this->draftVersion = $e->currentVersion;
-            Notification::make()->title('Draft conflict detected')->body('Reload this about target before previewing again.')->danger()->persistent()->send();
+            Notification::make()->title(__('admin_pages.about.draft_conflict_detected'))->body(__('admin_pages.about.reload_this_about_target_before_previewing_again'))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to create about preview')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('admin_pages.about.failed_to_create_about_preview'))->body($e->getMessage())->danger()->send();
         }
     }
 
@@ -259,12 +259,12 @@ class ManageAbout extends Page implements HasForms
             $this->draftVersion = $draft->version;
             $this->cmsWorkflowService->publish($targetKey, (int) $user->id);
 
-            Notification::make()->title('About target published')->success()->send();
+            Notification::make()->title(__('admin_pages.about.about_target_published'))->success()->send();
         } catch (ValidationException $e) {
-            Notification::make()->title('Publish failed')->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
+            Notification::make()->title(__('admin_pages.about.publish_failed'))->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to publish about target')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('admin_pages.about.failed_to_publish_about_target'))->body($e->getMessage())->danger()->send();
         }
     }
 
@@ -279,12 +279,12 @@ class ManageAbout extends Page implements HasForms
             $this->draftVersion = $draft->version;
             $this->cmsWorkflowService->schedule($targetKey, new \DateTimeImmutable($publishAt), (int) $user->id);
 
-            Notification::make()->title('About target scheduled')->success()->send();
+            Notification::make()->title(__('admin_pages.about.about_target_scheduled'))->success()->send();
         } catch (ValidationException $e) {
-            Notification::make()->title('Schedule failed')->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
+            Notification::make()->title(__('admin_pages.about.schedule_failed'))->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to schedule about target')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('admin_pages.about.failed_to_schedule_about_target'))->body($e->getMessage())->danger()->send();
         }
     }
 
@@ -293,7 +293,7 @@ class ManageAbout extends Page implements HasForms
         /** @var User $user */
         $user = auth()->user();
         $result = $this->cmsWorkflowService->unpublish($this->currentTargetKey(), (int) $user->id);
-        $notification = Notification::make()->title($result ? 'About target unpublished' : 'No published about target found');
+        $notification = Notification::make()->title($result ? __('admin_pages.about.about_target_unpublished') : __('admin_pages.about.no_published_about_target_found'));
 
         ($result ? $notification->success() : $notification->warning())->send();
     }
@@ -319,7 +319,7 @@ class ManageAbout extends Page implements HasForms
         $target = $this->targetRegistry->find($targetKey);
 
         if (! $target instanceof CmsTargetDTO || $target->area !== 'about') {
-            throw new \InvalidArgumentException('Unsupported about target.');
+            throw new \InvalidArgumentException(__('admin_pages.about.unsupported_about_target'));
         }
     }
 
@@ -400,7 +400,7 @@ class ManageAbout extends Page implements HasForms
             ];
         }
 
-        throw new \InvalidArgumentException('This about subpage form will be structured next. Select the About landing page for now.');
+        throw new \InvalidArgumentException(__('admin_pages.about.this_about_subpage_form_will_be_structured_next_select_the_a'));
     }
 
     /** @return array<string, mixed> */
@@ -442,10 +442,10 @@ class ManageAbout extends Page implements HasForms
 
         if ($this->targetKeyForSchema() !== 'about.landing') {
             return [
-                Section::make('Subpage Schema Pending')
-                    ->description('We are converting About one page at a time. The landing page is editable now; this subpage will get its own correct structured form next.')
+                Section::make(__('admin_pages.about.subpage_schema_pending'))
+                    ->description(__('admin_pages.about.we_are_converting_about_one_page_at_a_time_the_landing_page'))
                     ->schema([
-                        TextInput::make($locale.'_subpage_pending')->label('Status')->default('Structured form pending for this subpage')->disabled(),
+                        TextInput::make($locale.'_subpage_pending')->label(__('admin_pages.about.status'))->default(__('admin_pages.about.structured_form_pending_for_this_subpage'))->disabled(),
                     ]),
             ];
         }
@@ -453,28 +453,28 @@ class ManageAbout extends Page implements HasForms
         $prefix = $locale.'_landing';
 
         return [
-            Section::make('Hero and Story')->schema([
-                TextInput::make($prefix.'.title')->label('Title')->required()->maxLength(180),
-                TextInput::make($prefix.'.headline')->label('Headline')->required()->maxLength(255),
-                Textarea::make($prefix.'.summary')->label('Summary')->required()->rows(2)->columnSpanFull(),
-                TextInput::make($prefix.'.badge')->label('Badge')->required()->maxLength(120),
-                Textarea::make($prefix.'.quote')->label('Quote')->required()->rows(3)->columnSpanFull(),
-                Textarea::make($prefix.'.description')->label('Description')->required()->rows(3)->columnSpanFull(),
-                MediaPicker::image($prefix.'.imagePrimary', 'Primary Image', true),
-                MediaPicker::image($prefix.'.imageSecondary', 'Secondary Image', true),
-                MediaPicker::image($prefix.'.imageOverview', 'Overview Image', true),
-                TextInput::make($prefix.'.seoTitle')->label('SEO Title')->required()->maxLength(180),
-                Textarea::make($prefix.'.seoDescription')->label('SEO Description')->required()->rows(2)->columnSpanFull(),
-                MediaPicker::image($prefix.'.seoImage', 'Social Image', true),
+            Section::make(__('admin_pages.about.hero_and_story'))->schema([
+                TextInput::make($prefix.'.title')->label(__('admin_pages.about.title'))->required()->maxLength(180),
+                TextInput::make($prefix.'.headline')->label(__('admin_pages.about.headline'))->required()->maxLength(255),
+                Textarea::make($prefix.'.summary')->label(__('admin_pages.about.summary'))->required()->rows(2)->columnSpanFull(),
+                TextInput::make($prefix.'.badge')->label(__('admin_pages.about.badge'))->required()->maxLength(120),
+                Textarea::make($prefix.'.quote')->label(__('admin_pages.about.quote'))->required()->rows(3)->columnSpanFull(),
+                Textarea::make($prefix.'.description')->label(__('admin_pages.about.description'))->required()->rows(3)->columnSpanFull(),
+                MediaPicker::image($prefix.'.imagePrimary', __('admin_pages.about.primary_image'), true),
+                MediaPicker::image($prefix.'.imageSecondary', __('admin_pages.about.secondary_image'), true),
+                MediaPicker::image($prefix.'.imageOverview', __('admin_pages.about.overview_image'), true),
+                TextInput::make($prefix.'.seoTitle')->label(__('admin_pages.about.seo_title'))->required()->maxLength(180),
+                Textarea::make($prefix.'.seoDescription')->label(__('admin_pages.about.seo_description'))->required()->rows(2)->columnSpanFull(),
+                MediaPicker::image($prefix.'.seoImage', __('admin_pages.about.social_image'), true),
             ])->columns(2),
 
-            Section::make('Stats')->schema([
+            Section::make(__('admin_pages.about.stats'))->schema([
                 Repeater::make($prefix.'.stats')
-                    ->label('Stats')
+                    ->label(__('admin_pages.about.stats'))
                     ->schema([
                         TextInput::make('value')->required()->maxLength(40),
                         TextInput::make('label')->required()->maxLength(120),
-                        MediaPicker::icon('icon', 'Icon'),
+                        MediaPicker::icon('icon', __('admin_pages.about.icon')),
                     ])
                     ->columns(3)
                     ->defaultItems(0)
@@ -483,9 +483,9 @@ class ManageAbout extends Page implements HasForms
                     ->columnSpanFull(),
             ]),
 
-            Section::make('Story Items')->schema([
+            Section::make(__('admin_pages.about.story_items'))->schema([
                 Repeater::make($prefix.'.storyItems')
-                    ->label('Story Items')
+                    ->label(__('admin_pages.about.story_items'))
                     ->schema([
                         TextInput::make('title')->required()->maxLength(160),
                         Textarea::make('summary')->required()->rows(2)->columnSpanFull(),
@@ -498,9 +498,9 @@ class ManageAbout extends Page implements HasForms
                     ->columnSpanFull(),
             ]),
 
-            Section::make('Highlights')->schema([
+            Section::make(__('admin_pages.about.highlights'))->schema([
                 Repeater::make($prefix.'.highlights')
-                    ->label('Highlights')
+                    ->label(__('admin_pages.about.highlights'))
                     ->schema([
                         TextInput::make('title')->required()->maxLength(160),
                     ])
@@ -518,26 +518,26 @@ class ManageAbout extends Page implements HasForms
         $prefix = $locale.'_vision_mission';
 
         return [
-            Section::make('Hero and SEO')->schema([
-                TextInput::make($prefix.'.title')->label('Page Title')->required()->maxLength(180),
-                Textarea::make($prefix.'.summary')->label('Summary')->required()->rows(3)->columnSpanFull(),
-                MediaPicker::image($prefix.'.heroImage', 'Hero Image', true),
-                TextInput::make($prefix.'.seoTitle')->label('SEO Title')->required()->maxLength(180),
-                Textarea::make($prefix.'.seoDescription')->label('SEO Description')->required()->rows(2)->columnSpanFull(),
-                MediaPicker::image($prefix.'.seoImage', 'Social Image', true),
+            Section::make(__('admin_pages.about.hero_and_seo'))->schema([
+                TextInput::make($prefix.'.title')->label(__('admin_pages.about.page_title'))->required()->maxLength(180),
+                Textarea::make($prefix.'.summary')->label(__('admin_pages.about.summary'))->required()->rows(3)->columnSpanFull(),
+                MediaPicker::image($prefix.'.heroImage', __('admin_pages.about.hero_image'), true),
+                TextInput::make($prefix.'.seoTitle')->label(__('admin_pages.about.seo_title'))->required()->maxLength(180),
+                Textarea::make($prefix.'.seoDescription')->label(__('admin_pages.about.seo_description'))->required()->rows(2)->columnSpanFull(),
+                MediaPicker::image($prefix.'.seoImage', __('admin_pages.about.social_image'), true),
             ])->columns(2),
 
-            Section::make('Vision, Mission and Values')->schema([
-                TextInput::make($prefix.'.cardsTitle')->label('Accessible Section Title')->required()->maxLength(180),
+            Section::make(__('admin_pages.about.vision_mission_and_values'))->schema([
+                TextInput::make($prefix.'.cardsTitle')->label(__('admin_pages.about.accessible_section_title'))->required()->maxLength(180),
                 Repeater::make($prefix.'.cards')
-                    ->label('Cards')
+                    ->label(__('admin_pages.about.cards'))
                     ->schema([
-                        MediaPicker::icon('icon', 'Icon', true),
+                        MediaPicker::icon('icon', __('admin_pages.about.icon'), true),
                         TextInput::make('title')->required()->maxLength(180),
                         Textarea::make('body')
                             ->required()
                             ->rows(8)
-                            ->helperText('For numbered objectives, put each objective on a separate line. Public pages preserve these line breaks.')
+                            ->helperText(__('admin_pages.about.for_numbered_objectives_put_each_objective_on_a_separate_lin'))
                             ->columnSpanFull(),
                     ])
                     ->columns(2)
@@ -548,10 +548,10 @@ class ManageAbout extends Page implements HasForms
                     ->columnSpanFull(),
             ]),
 
-            Section::make('Strategic Pillars')->schema([
-                TextInput::make($prefix.'.pillarsTitle')->label('Section Title')->required()->maxLength(180),
+            Section::make(__('admin_pages.about.strategic_pillars'))->schema([
+                TextInput::make($prefix.'.pillarsTitle')->label(__('admin_pages.about.section_title'))->required()->maxLength(180),
                 Repeater::make($prefix.'.pillars')
-                    ->label('Pillars')
+                    ->label(__('admin_pages.about.pillars'))
                     ->schema([
                         TextInput::make('title')->required()->maxLength(180),
                         Textarea::make('summary')->required()->rows(3)->columnSpanFull(),
@@ -572,23 +572,23 @@ class ManageAbout extends Page implements HasForms
         $prefix = $locale.'_'.$stateKey;
 
         $fields = [
-            Section::make('Hero')->schema([
-                TextInput::make($prefix.'.title')->label('Page Title')->required()->maxLength(180),
-                TextInput::make($prefix.'.headline')->label('Headline')->required()->maxLength(255),
-                Textarea::make($prefix.'.summary')->label('Summary')->required()->rows(2)->columnSpanFull(),
-                MediaPicker::image($prefix.'.heroImage', 'Hero Image', true),
-                TextInput::make($prefix.'.seoTitle')->label('SEO Title')->required()->maxLength(180),
-                Textarea::make($prefix.'.seoDescription')->label('SEO Description')->required()->rows(2)->columnSpanFull(),
-                MediaPicker::image($prefix.'.seoImage', 'Social Image', true),
+            Section::make(__('admin_pages.about.hero'))->schema([
+                TextInput::make($prefix.'.title')->label(__('admin_pages.about.page_title'))->required()->maxLength(180),
+                TextInput::make($prefix.'.headline')->label(__('admin_pages.about.headline'))->required()->maxLength(255),
+                Textarea::make($prefix.'.summary')->label(__('admin_pages.about.summary'))->required()->rows(2)->columnSpanFull(),
+                MediaPicker::image($prefix.'.heroImage', __('admin_pages.about.hero_image'), true),
+                TextInput::make($prefix.'.seoTitle')->label(__('admin_pages.about.seo_title'))->required()->maxLength(180),
+                Textarea::make($prefix.'.seoDescription')->label(__('admin_pages.about.seo_description'))->required()->rows(2)->columnSpanFull(),
+                MediaPicker::image($prefix.'.seoImage', __('admin_pages.about.social_image'), true),
             ])->columns(2),
         ];
 
         if ($stateKey === 'partnerships') {
-            $fields[] = Section::make('Partnership Goals')->schema([
+            $fields[] = Section::make(__('admin_pages.about.partnership_goals'))->schema([
                 Repeater::make($prefix.'.sections')
-                    ->label('Goals')
+                    ->label(__('admin_pages.about.goals'))
                     ->schema([
-                        MediaPicker::icon('icon', 'Icon'),
+                        MediaPicker::icon('icon', __('admin_pages.about.icon')),
                         TextInput::make('title')->required()->maxLength(180),
                         Textarea::make('body')->required()->rows(3)->columnSpanFull(),
                     ])
@@ -601,17 +601,17 @@ class ManageAbout extends Page implements HasForms
         }
 
         if ($stateKey === 'leadership') {
-            $fields[] = Section::make('Leadership Presentation')->schema([
+            $fields[] = Section::make(__('admin_pages.about.leadership_presentation'))->schema([
                 Repeater::make($prefix.'.sections')
-                    ->label('Presentation Copy')
+                    ->label(__('admin_pages.about.presentation_copy'))
                     ->schema([
-                        Select::make('key')->label('Content Key')->options([
-                            'rector_quote' => 'Rector Quote',
-                            'vice_presidents_title' => 'Vice Presidents Heading',
-                            'deans_title' => 'Faculty Deans Heading',
+                        Select::make('key')->label(__('admin_pages.about.content_key'))->options([
+                            'rector_quote' => __('admin_pages.about.rector_quote'),
+                            'vice_presidents_title' => __('admin_pages.about.vice_presidents_heading'),
+                            'deans_title' => __('admin_pages.about.faculty_deans_heading'),
                         ])->required(),
-                        TextInput::make('title')->label('Title')->maxLength(180),
-                        Textarea::make('body')->label('Body')->rows(3)->columnSpanFull(),
+                        TextInput::make('title')->label(__('admin_pages.about.title'))->maxLength(180),
+                        Textarea::make('body')->label(__('admin_pages.about.body'))->rows(3)->columnSpanFull(),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -630,24 +630,24 @@ class ManageAbout extends Page implements HasForms
         $prefix = $locale.'_'.$stateKey;
 
         return [
-            Section::make('Hero')->schema([
-                TextInput::make($prefix.'.title')->label('Page Title')->required()->maxLength(180),
-                TextInput::make($prefix.'.headline')->label('Headline')->required()->maxLength(255),
-                Textarea::make($prefix.'.summary')->label('Summary')->required()->rows(2)->columnSpanFull(),
-                MediaPicker::image($prefix.'.heroImage', 'Hero Image', true),
-                TextInput::make($prefix.'.badge')->label('Eyebrow / Badge')->required()->maxLength(120),
-                TextInput::make($prefix.'.seoTitle')->label('SEO Title')->required()->maxLength(180),
-                Textarea::make($prefix.'.seoDescription')->label('SEO Description')->required()->rows(2)->columnSpanFull(),
-                MediaPicker::image($prefix.'.seoImage', 'Social Image', true),
+            Section::make(__('admin_pages.about.hero'))->schema([
+                TextInput::make($prefix.'.title')->label(__('admin_pages.about.page_title'))->required()->maxLength(180),
+                TextInput::make($prefix.'.headline')->label(__('admin_pages.about.headline'))->required()->maxLength(255),
+                Textarea::make($prefix.'.summary')->label(__('admin_pages.about.summary'))->required()->rows(2)->columnSpanFull(),
+                MediaPicker::image($prefix.'.heroImage', __('admin_pages.about.hero_image'), true),
+                TextInput::make($prefix.'.badge')->label(__('admin_pages.about.eyebrow_badge'))->required()->maxLength(120),
+                TextInput::make($prefix.'.seoTitle')->label(__('admin_pages.about.seo_title'))->required()->maxLength(180),
+                Textarea::make($prefix.'.seoDescription')->label(__('admin_pages.about.seo_description'))->required()->rows(2)->columnSpanFull(),
+                MediaPicker::image($prefix.'.seoImage', __('admin_pages.about.social_image'), true),
             ])->columns(2),
 
-            Section::make('Introduction')->schema([
+            Section::make(__('admin_pages.about.introduction'))->schema([
                 Repeater::make($prefix.'.intro')
                     ->schema([Textarea::make('paragraph')->required()->rows(3)->columnSpanFull()])
                     ->defaultItems(0)->reorderable()->collapsible()->columnSpanFull(),
             ]),
 
-            Section::make('Facts')->schema([
+            Section::make(__('admin_pages.about.facts'))->schema([
                 Repeater::make($prefix.'.stats')
                     ->schema([
                         TextInput::make('value')->required()->maxLength(40),
@@ -656,9 +656,9 @@ class ManageAbout extends Page implements HasForms
                     ->columns(2)->defaultItems(0)->reorderable()->collapsible()->columnSpanFull(),
             ]),
 
-            Section::make('Content Cards')->schema([
+            Section::make(__('admin_pages.about.content_cards'))->schema([
                 Repeater::make($prefix.'.sections')
-                    ->label('Cards')
+                    ->label(__('admin_pages.about.cards'))
                     ->schema([
                         TextInput::make('title')->required()->maxLength(180),
                         Textarea::make('body')->required()->rows(3)->columnSpanFull(),
@@ -678,22 +678,22 @@ class ManageAbout extends Page implements HasForms
         $prefix = $locale.'_history';
 
         return [
-            Section::make('Hero')->schema([
-                TextInput::make($prefix.'.title')->label('Page Title')->required()->maxLength(180),
-                TextInput::make($prefix.'.headline')->label('Headline')->required()->maxLength(255),
-                Textarea::make($prefix.'.summary')->label('Summary')->required()->rows(2)->columnSpanFull(),
-                MediaPicker::image($prefix.'.heroImage', 'Hero Image', true),
-                MediaPicker::image($prefix.'.contentImage', 'Founding Image', true),
-                TextInput::make($prefix.'.seoTitle')->label('SEO Title')->required()->maxLength(180),
-                Textarea::make($prefix.'.seoDescription')->label('SEO Description')->required()->rows(2)->columnSpanFull(),
-                MediaPicker::image($prefix.'.seoImage', 'Social Image', true),
+            Section::make(__('admin_pages.about.hero'))->schema([
+                TextInput::make($prefix.'.title')->label(__('admin_pages.about.page_title'))->required()->maxLength(180),
+                TextInput::make($prefix.'.headline')->label(__('admin_pages.about.headline'))->required()->maxLength(255),
+                Textarea::make($prefix.'.summary')->label(__('admin_pages.about.summary'))->required()->rows(2)->columnSpanFull(),
+                MediaPicker::image($prefix.'.heroImage', __('admin_pages.about.hero_image'), true),
+                MediaPicker::image($prefix.'.contentImage', __('admin_pages.about.founding_image'), true),
+                TextInput::make($prefix.'.seoTitle')->label(__('admin_pages.about.seo_title'))->required()->maxLength(180),
+                Textarea::make($prefix.'.seoDescription')->label(__('admin_pages.about.seo_description'))->required()->rows(2)->columnSpanFull(),
+                MediaPicker::image($prefix.'.seoImage', __('admin_pages.about.social_image'), true),
             ])->columns(2),
 
-            Section::make('Founding Vision')->schema([
-                TextInput::make($prefix.'.foundingTitle')->label('Section Title')->required()->maxLength(180),
-                Textarea::make($prefix.'.quote')->label('Quote')->required()->rows(3)->columnSpanFull(),
+            Section::make(__('admin_pages.about.founding_vision'))->schema([
+                TextInput::make($prefix.'.foundingTitle')->label(__('admin_pages.about.section_title'))->required()->maxLength(180),
+                Textarea::make($prefix.'.quote')->label(__('admin_pages.about.quote'))->required()->rows(3)->columnSpanFull(),
                 Repeater::make($prefix.'.body')
-                    ->label('Body Paragraphs')
+                    ->label(__('admin_pages.about.body_paragraphs'))
                     ->schema([
                         Textarea::make('paragraph')->required()->rows(3)->columnSpanFull(),
                     ])
@@ -703,10 +703,10 @@ class ManageAbout extends Page implements HasForms
                     ->columnSpanFull(),
             ]),
 
-            Section::make('Institutional Timeline')->schema([
-                TextInput::make($prefix.'.timelineTitle')->label('Timeline Title')->required()->maxLength(180),
+            Section::make(__('admin_pages.about.institutional_timeline'))->schema([
+                TextInput::make($prefix.'.timelineTitle')->label(__('admin_pages.about.timeline_title'))->required()->maxLength(180),
                 Repeater::make($prefix.'.timeline')
-                    ->label('Timeline Items')
+                    ->label(__('admin_pages.about.timeline_items'))
                     ->schema([
                         TextInput::make('year')->required()->maxLength(40),
                         TextInput::make('title')->required()->maxLength(180),
@@ -719,9 +719,9 @@ class ManageAbout extends Page implements HasForms
                     ->columnSpanFull(),
             ]),
 
-            Section::make('Narratives')->schema([
+            Section::make(__('admin_pages.about.narratives'))->schema([
                 Repeater::make($prefix.'.narratives')
-                    ->label('Narrative Rows')
+                    ->label(__('admin_pages.about.narrative_rows'))
                     ->schema([
                         TextInput::make('title')->required()->maxLength(180),
                         TextInput::make('eyebrow')->required()->maxLength(120),
@@ -734,9 +734,9 @@ class ManageAbout extends Page implements HasForms
                     ->columnSpanFull(),
             ]),
 
-            Section::make('Legacy')->schema([
-                TextInput::make($prefix.'.legacyTitle')->label('Legacy Title')->required()->maxLength(180),
-                Textarea::make($prefix.'.legacyBody')->label('Legacy Body')->required()->rows(3)->columnSpanFull(),
+            Section::make(__('admin_pages.about.legacy'))->schema([
+                TextInput::make($prefix.'.legacyTitle')->label(__('admin_pages.about.legacy_title'))->required()->maxLength(180),
+                Textarea::make($prefix.'.legacyBody')->label(__('admin_pages.about.legacy_body'))->required()->rows(3)->columnSpanFull(),
             ]),
         ];
     }
@@ -1015,7 +1015,7 @@ class ManageAbout extends Page implements HasForms
             'about.organizational-structure' => 'organizational_structure',
             'about.accreditation' => 'accreditation',
             'about.why-spu' => 'why_spu',
-            default => throw new \InvalidArgumentException('Unsupported about content target.'),
+            default => throw new \InvalidArgumentException(__('admin_pages.about.unsupported_about_content_target')),
         };
     }
 

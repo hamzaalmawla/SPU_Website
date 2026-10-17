@@ -58,17 +58,17 @@ trait InteractsWithAboutEntityCmsWorkflow
     {
         return [
             Action::make('preview_ar')
-                ->label('Preview AR')
+                ->label(__('admin_pages.about_entity.preview_ar'))
                 ->icon('heroicon-o-eye')
                 ->color('info')
                 ->action(fn (): mixed => $this->previewEntity('ar')),
             Action::make('preview_en')
-                ->label('Preview EN')
+                ->label(__('admin_pages.about_entity.preview_en'))
                 ->icon('heroicon-o-eye')
                 ->color('info')
                 ->action(fn (): mixed => $this->previewEntity('en')),
             Action::make('publish')
-                ->label('Publish')
+                ->label(__('admin_pages.about_entity.publish'))
                 ->icon('heroicon-o-paper-airplane')
                 ->color('success')
                 ->requiresConfirmation()
@@ -78,13 +78,13 @@ trait InteractsWithAboutEntityCmsWorkflow
                         $this->saveDraft($this->form->getState());
                         $this->cmsWorkflowService->publish($this->targetKey(), $this->userId());
                         $this->draftVersion = null;
-                        Notification::make()->title('Entity published')->success()->send();
+                        Notification::make()->title(__('admin_pages.about_entity.entity_published'))->success()->send();
                     } catch (ValidationException $exception) {
-                        Notification::make()->title('Publish failed')->body($this->validationMessage($exception))->danger()->persistent()->send();
+                        Notification::make()->title(__('admin_pages.about_entity.publish_failed'))->body($this->validationMessage($exception))->danger()->persistent()->send();
                     }
                 }),
             Action::make('schedule')
-                ->label('Schedule')
+                ->label(__('admin_pages.about_entity.schedule'))
                 ->icon('heroicon-o-clock')
                 ->color('warning')
                 ->visible(fn (): bool => Gate::allows('publish-content'))
@@ -99,20 +99,20 @@ trait InteractsWithAboutEntityCmsWorkflow
                             new \DateTimeImmutable((string) $data['publish_at']),
                             $this->userId(),
                         );
-                        Notification::make()->title('Entity scheduled')->success()->send();
+                        Notification::make()->title(__('admin_pages.about_entity.entity_scheduled'))->success()->send();
                     } catch (ValidationException $exception) {
-                        Notification::make()->title('Schedule failed')->body($this->validationMessage($exception))->danger()->persistent()->send();
+                        Notification::make()->title(__('admin_pages.about_entity.schedule_failed'))->body($this->validationMessage($exception))->danger()->persistent()->send();
                     }
                 }),
             Action::make('unpublish')
-                ->label('Unpublish')
+                ->label(__('admin_pages.about_entity.unpublish'))
                 ->icon('heroicon-o-x-circle')
                 ->color('danger')
                 ->requiresConfirmation()
                 ->visible(fn (): bool => Gate::allows('publish-content'))
                 ->action(function (): void {
                     $unpublished = $this->cmsWorkflowService->unpublish($this->targetKey(), $this->userId());
-                    $notification = Notification::make()->title($unpublished ? 'Entity unpublished' : 'Entity was not published');
+                    $notification = Notification::make()->title($unpublished ? __('admin_pages.about_entity.entity_unpublished') : __('admin_pages.about_entity.entity_was_not_published'));
                     ($unpublished ? $notification->success() : $notification->warning())->send();
                 }),
         ];

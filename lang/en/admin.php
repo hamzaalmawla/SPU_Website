@@ -272,6 +272,10 @@ return [
     'actions' => [
         'edit' => 'Edit',
     ],
+    'page_url_select' => [
+        'placeholder' => 'Select a page...',
+        'help' => 'Search and choose an internal page. The URL is filled in automatically.',
+    ],
     'media_picker' => [
         'image' => 'Image',
         'document' => 'Document',

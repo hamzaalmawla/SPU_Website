@@ -67,7 +67,7 @@ final class CampusLifeJobsTest extends TestCase
             ->assertSee('إدارة فرص العمل')
             ->assertSee('المحتوى العربي')
             ->assertSee('المحتوى الإنجليزي')
-            ->assertDontSee('Target Schema Pending');
+            ->assertDontSee(__('admin_pages.campus_life.target_schema_pending'));
     }
 
     public function test_board_and_all_eight_job_details_render_in_both_locales_with_structured_data(): void

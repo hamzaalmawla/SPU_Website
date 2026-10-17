@@ -16,7 +16,7 @@
             @endforeach
         </div>
 
-        @foreach (['ar' => 'العربية (AR)', 'en' => 'English (EN)'] as $locale => $localeLabel)
+        @foreach (['ar' => __('admin_pages.menu.arabic_ar'), 'en' => __('admin_pages.menu.english_en')] as $locale => $localeLabel)
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4" dir="{{ $locale === 'ar' ? 'rtl' : 'ltr' }}">
                 <h3 class="text-base font-semibold mb-4 text-gray-900 dark:text-gray-100">
                     {{ $localeLabel }}
@@ -88,7 +88,7 @@
                         <select wire:model.live="editForm.target_type" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
                             <option value="url">{{ __('admin.menu.custom_url') }}</option>
                             <option value="page">{{ __('admin.menu.page') }}</option>
-                            <option value="route">Named Route</option>
+                            <option value="route">{{ __('admin_pages.menu.named_route') }}</option>
                         </select>
                     </label>
 
@@ -114,7 +114,7 @@
                         </label>
                     @elseif (($editForm['target_type'] ?? 'url') === 'route')
                         <label class="block md:col-span-2">
-                            <span class="text-sm font-medium text-gray-700 dark:text-gray-200">Route Name</span>
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ __('admin_pages.menu.route_name') }}</span>
                             <input type="text" wire:model="editForm.route_name" required maxlength="255" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
                         </label>
                     @else

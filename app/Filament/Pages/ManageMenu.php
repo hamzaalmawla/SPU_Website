@@ -102,7 +102,7 @@ class ManageMenu extends Page implements HasForms
     private function addItemAction(): Action
     {
         return Action::make('addItem')
-            ->label('Add Menu Item')
+            ->label(__('admin_pages.menu.add_menu_item'))
             ->icon('heroicon-o-plus')
             ->form($this->itemFormSchema())
             ->action(function (array $data): void {
@@ -132,7 +132,7 @@ class ManageMenu extends Page implements HasForms
 
         if ($item === null) {
             Notification::make()
-                ->title('Menu item not found.')
+                ->title(__('admin_pages.menu.menu_item_not_found'))
                 ->danger()
                 ->send();
 
@@ -180,7 +180,7 @@ class ManageMenu extends Page implements HasForms
 
         if ($item === null) {
             Notification::make()
-                ->title('Menu item not found.')
+                ->title(__('admin_pages.menu.menu_item_not_found'))
                 ->danger()
                 ->send();
 
@@ -212,7 +212,7 @@ class ManageMenu extends Page implements HasForms
             $this->menuService->updateItem($itemId, $payload);
 
             Notification::make()
-                ->title('Menu item updated.')
+                ->title(__('admin_pages.menu.menu_item_updated'))
                 ->success()
                 ->send();
 
@@ -221,8 +221,8 @@ class ManageMenu extends Page implements HasForms
             report($e);
 
             Notification::make()
-                ->title('Failed to update menu item.')
-                ->body('Please review the menu item and try again.')
+                ->title(__('admin_pages.menu.failed_to_update_menu_item'))
+                ->body(__('admin_pages.menu.please_review_the_menu_item_and_try_again'))
                 ->danger()
                 ->send();
         }
@@ -236,7 +236,7 @@ class ManageMenu extends Page implements HasForms
             $this->menuService->deleteItem($itemId);
 
             Notification::make()
-                ->title('Menu item deleted.')
+                ->title(__('admin_pages.menu.menu_item_deleted'))
                 ->success()
                 ->send();
 
@@ -245,8 +245,8 @@ class ManageMenu extends Page implements HasForms
             report($e);
 
             Notification::make()
-                ->title('Failed to delete menu item.')
-                ->body('The menu item could not be deleted.')
+                ->title(__('admin_pages.menu.failed_to_delete_menu_item'))
+                ->body(__('admin_pages.menu.the_menu_item_could_not_be_deleted'))
                 ->danger()
                 ->send();
         }
@@ -260,7 +260,7 @@ class ManageMenu extends Page implements HasForms
             $this->menuService->toggleItemState($itemId, $enabled);
 
             Notification::make()
-                ->title($enabled ? 'Menu item enabled.' : 'Menu item disabled.')
+                ->title($enabled ? __('admin_pages.menu.menu_item_enabled') : __('admin_pages.menu.menu_item_disabled'))
                 ->success()
                 ->send();
 
@@ -269,8 +269,8 @@ class ManageMenu extends Page implements HasForms
             report($e);
 
             Notification::make()
-                ->title('Failed to toggle menu item.')
-                ->body('The menu item state could not be changed.')
+                ->title(__('admin_pages.menu.failed_to_toggle_menu_item'))
+                ->body(__('admin_pages.menu.the_menu_item_state_could_not_be_changed'))
                 ->danger()
                 ->send();
         }
@@ -291,7 +291,7 @@ class ManageMenu extends Page implements HasForms
             $this->menuService->reorderTree($this->activeGroup, $treeNodes);
 
             Notification::make()
-                ->title('Menu order saved.')
+                ->title(__('admin_pages.menu.menu_order_saved'))
                 ->success()
                 ->send();
 
@@ -300,8 +300,8 @@ class ManageMenu extends Page implements HasForms
             report($e);
 
             Notification::make()
-                ->title('Failed to reorder menu.')
-                ->body('The menu order could not be saved.')
+                ->title(__('admin_pages.menu.failed_to_reorder_menu'))
+                ->body(__('admin_pages.menu.the_menu_order_could_not_be_saved'))
                 ->danger()
                 ->send();
         }
@@ -404,7 +404,7 @@ class ManageMenu extends Page implements HasForms
             }
 
             Notification::make()
-                ->title('Menu item created.')
+                ->title(__('admin_pages.menu.menu_item_created'))
                 ->success()
                 ->send();
 
@@ -413,8 +413,8 @@ class ManageMenu extends Page implements HasForms
             report($e);
 
             Notification::make()
-                ->title('Failed to create menu item.')
-                ->body('Please review the menu item and try again.')
+                ->title(__('admin_pages.menu.failed_to_create_menu_item'))
+                ->body(__('admin_pages.menu.please_review_the_menu_item_and_try_again'))
                 ->danger()
                 ->send();
         }
@@ -536,7 +536,7 @@ class ManageMenu extends Page implements HasForms
     private function assertSubmittedTreeMatchesActiveLocale(array $orderedTree, string $locale): void
     {
         if (! in_array($locale, ['ar', 'en'], true)) {
-            throw new \InvalidArgumentException('Unsupported menu locale.');
+            throw new \InvalidArgumentException(__('admin_pages.menu.unsupported_menu_locale'));
         }
 
         $allowedIds = $this->collectTreeIds($this->getTreeForGroup($this->activeGroup, $locale));
@@ -546,12 +546,12 @@ class ManageMenu extends Page implements HasForms
         sort($submittedIds);
 
         if ($submittedIds !== $allowedIds) {
-            throw new \InvalidArgumentException('Menu order must include every item in the active locale tree.');
+            throw new \InvalidArgumentException(__('admin_pages.menu.menu_order_must_include_every_item_in_the_active_locale_tree'));
         }
 
         foreach ($submittedIds as $itemId) {
             if (! in_array($itemId, $allowedIds, true)) {
-                throw new \InvalidArgumentException('Menu order contains an item outside the active locale tree.');
+                throw new \InvalidArgumentException(__('admin_pages.menu.menu_order_contains_an_item_outside_the_active_locale_tree'));
             }
         }
     }
@@ -615,12 +615,12 @@ class ManageMenu extends Page implements HasForms
             $children = [];
 
             if ($depth > self::MAX_DEPTH) {
-                throw new \InvalidArgumentException('Menu order exceeds the maximum depth.');
+                throw new \InvalidArgumentException(__('admin_pages.menu.menu_order_exceeds_the_maximum_depth'));
             }
 
             if (isset($node['children']) && is_array($node['children'])) {
                 if ($depth >= self::MAX_DEPTH) {
-                    throw new \InvalidArgumentException('Menu order exceeds the maximum depth.');
+                    throw new \InvalidArgumentException(__('admin_pages.menu.menu_order_exceeds_the_maximum_depth'));
                 }
 
                 $children = $this->buildTreeNodesFromOrder($node['children'], $depth + 1);
@@ -644,48 +644,48 @@ class ManageMenu extends Page implements HasForms
     {
         return [
             TextInput::make('label_ar')
-                ->label('Label (AR)')
+                ->label(__('admin_pages.menu.label_ar'))
                 ->required()
                 ->maxLength(255),
             TextInput::make('label_en')
-                ->label('Label (EN)')
+                ->label(__('admin_pages.menu.label_en'))
                 ->required()
                 ->maxLength(255),
             Select::make('target_type')
-                ->label('Target Type')
+                ->label(__('admin_pages.menu.target_type'))
                 ->options([
-                    'page' => 'Page',
-                    'url' => 'Custom URL / External',
+                    'page' => __('admin_pages.menu.page'),
+                    'url' => __('admin_pages.menu.custom_url_external'),
                 ])
                 ->default('url')
                 ->required()
                 ->reactive(),
             TextInput::make('url')
-                ->label('URL')
+                ->label(__('admin_pages.menu.url'))
                 ->url()
                 ->maxLength(2048)
                 ->visible(fn (callable $get): bool => ($get('target_type') ?? 'url') !== 'page'),
             Select::make('target_id')
-                ->label('Target Page')
+                ->label(__('admin_pages.menu.target_page'))
                 ->options(fn (): array => $this->getSharedPageTargetOptions())
                 ->searchable()
                 ->visible(fn (callable $get): bool => ($get('target_type') ?? 'url') === 'page')
                 ->required(fn (callable $get): bool => ($get('target_type') ?? 'url') === 'page'),
             Select::make('parent_ar')
-                ->label('Parent (AR)')
+                ->label(__('admin_pages.menu.parent_ar'))
                 ->options(fn (): array => $this->getParentOptionsForLocale('ar'))
                 ->searchable()
-                ->placeholder('No parent'),
+                ->placeholder(__('admin_pages.menu.no_parent')),
             Select::make('parent_en')
-                ->label('Parent (EN)')
+                ->label(__('admin_pages.menu.parent_en'))
                 ->options(fn (): array => $this->getParentOptionsForLocale('en'))
                 ->searchable()
-                ->placeholder('No parent'),
+                ->placeholder(__('admin_pages.menu.no_parent')),
             Toggle::make('is_enabled')
-                ->label('Enabled')
+                ->label(__('admin_pages.menu.enabled'))
                 ->default(true),
             Toggle::make('open_in_new_tab')
-                ->label('Open in New Tab')
+                ->label(__('admin_pages.menu.open_in_new_tab'))
                 ->default(false),
         ];
     }

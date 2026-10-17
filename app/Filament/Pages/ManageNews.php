@@ -368,7 +368,7 @@ class ManageNews extends Page implements HasForms
         $target = $this->targetRegistry->find($targetKey);
 
         if (! $target instanceof CmsTargetDTO || $target->area !== 'news') {
-            throw new \InvalidArgumentException('Unsupported news target.');
+            throw new \InvalidArgumentException(__('admin_pages.news.unsupported_news_target'));
         }
     }
 
@@ -416,7 +416,7 @@ class ManageNews extends Page implements HasForms
             ];
         }
 
-        throw new \InvalidArgumentException('This news target form will be structured next. Select the News landing page for now.');
+        throw new \InvalidArgumentException(__('admin_pages.news.this_news_target_form_will_be_structured_next_select_the_new'));
     }
 
     /** @return array<string, mixed> */
@@ -454,35 +454,35 @@ class ManageNews extends Page implements HasForms
                 ])
                 ->columns(2)
                 ->visible(fn (): bool => in_array($this->targetKeyForSchema(), ['news.articles', 'news.agreements', 'news.society-events'], true)),
-            Section::make('Events Catalog')
+            Section::make(__('admin_pages.news.events_catalog'))
                 ->schema([
-                    TextInput::make($eventsPrefix.'.title')->label('Page Title')->required()->maxLength(160),
-                    Textarea::make($eventsPrefix.'.summary')->label('Page Summary')->required()->rows(2)->columnSpanFull(),
-                    MediaPicker::image($eventsPrefix.'.heroImage', 'Hero Image', true),
-                    TextInput::make($eventsPrefix.'.calendarTitle')->label('Calendar Title')->required()->maxLength(160),
-                    TextInput::make($eventsPrefix.'.upcomingTitle')->label('Upcoming Title')->required()->maxLength(160),
-                    TextInput::make($eventsPrefix.'.pastTitle')->label('Past Title')->required()->maxLength(160),
-                    TextInput::make($eventsPrefix.'.allCategoriesLabel')->label('All Categories Label')->required()->maxLength(120),
-                    TextInput::make($eventsPrefix.'.registerLabel')->label('Register Label')->required()->maxLength(120),
-                    TextInput::make($eventsPrefix.'.detailsLabel')->label('Details Label')->required()->maxLength(120),
-                    TextInput::make($eventsPrefix.'.freeLabel')->label('Free Label')->required()->maxLength(80),
-                    TextInput::make($eventsPrefix.'.spotsLeftLabel')->label('Spots Left Label')->required()->maxLength(120),
-                    Textarea::make($eventsPrefix.'.emptyLabel')->label('Empty State')->required()->rows(2),
-                    TextInput::make($eventsPrefix.'.registrationTitle')->label('Registration Title')->required()->maxLength(160),
-                    Textarea::make($eventsPrefix.'.registrationInfo')->label('Registration Information')->required()->rows(2),
-                    TextInput::make($eventsPrefix.'.notFoundTitle')->label('Not Found Title')->required()->maxLength(160),
-                    Textarea::make($eventsPrefix.'.notFoundText')->label('Not Found Text')->required()->rows(2),
-                    TextInput::make($eventsPrefix.'.backLabel')->label('Back Label')->required()->maxLength(120),
-                    TextInput::make($eventsPrefix.'.highlightsLabel')->label('Highlights Label')->required()->maxLength(120),
-                    TextInput::make($eventsPrefix.'.speakersLabel')->label('Speakers Label')->required()->maxLength(120),
-                    TextInput::make($eventsPrefix.'.resultsLabel')->label('Results Label')->required()->maxLength(120),
-                    TextInput::make($eventsPrefix.'.galleryLabel')->label('Gallery Label')->required()->maxLength(120),
-                    Repeater::make($eventsPrefix.'.categories')->label('Categories')->schema([
+                    TextInput::make($eventsPrefix.'.title')->label(__('admin_pages.news.page_title'))->required()->maxLength(160),
+                    Textarea::make($eventsPrefix.'.summary')->label(__('admin_pages.news.page_summary'))->required()->rows(2)->columnSpanFull(),
+                    MediaPicker::image($eventsPrefix.'.heroImage', __('admin_pages.news.hero_image'), true),
+                    TextInput::make($eventsPrefix.'.calendarTitle')->label(__('admin_pages.news.calendar_title'))->required()->maxLength(160),
+                    TextInput::make($eventsPrefix.'.upcomingTitle')->label(__('admin_pages.news.upcoming_title'))->required()->maxLength(160),
+                    TextInput::make($eventsPrefix.'.pastTitle')->label(__('admin_pages.news.past_title'))->required()->maxLength(160),
+                    TextInput::make($eventsPrefix.'.allCategoriesLabel')->label(__('admin_pages.news.all_categories_label'))->required()->maxLength(120),
+                    TextInput::make($eventsPrefix.'.registerLabel')->label(__('admin_pages.news.register_label'))->required()->maxLength(120),
+                    TextInput::make($eventsPrefix.'.detailsLabel')->label(__('admin_pages.news.details_label'))->required()->maxLength(120),
+                    TextInput::make($eventsPrefix.'.freeLabel')->label(__('admin_pages.news.free_label'))->required()->maxLength(80),
+                    TextInput::make($eventsPrefix.'.spotsLeftLabel')->label(__('admin_pages.news.spots_left_label'))->required()->maxLength(120),
+                    Textarea::make($eventsPrefix.'.emptyLabel')->label(__('admin_pages.news.empty_state'))->required()->rows(2),
+                    TextInput::make($eventsPrefix.'.registrationTitle')->label(__('admin_pages.news.registration_title'))->required()->maxLength(160),
+                    Textarea::make($eventsPrefix.'.registrationInfo')->label(__('admin_pages.news.registration_information'))->required()->rows(2),
+                    TextInput::make($eventsPrefix.'.notFoundTitle')->label(__('admin_pages.news.not_found_title'))->required()->maxLength(160),
+                    Textarea::make($eventsPrefix.'.notFoundText')->label(__('admin_pages.news.not_found_text'))->required()->rows(2),
+                    TextInput::make($eventsPrefix.'.backLabel')->label(__('admin_pages.news.back_label'))->required()->maxLength(120),
+                    TextInput::make($eventsPrefix.'.highlightsLabel')->label(__('admin_pages.news.highlights_label'))->required()->maxLength(120),
+                    TextInput::make($eventsPrefix.'.speakersLabel')->label(__('admin_pages.news.speakers_label'))->required()->maxLength(120),
+                    TextInput::make($eventsPrefix.'.resultsLabel')->label(__('admin_pages.news.results_label'))->required()->maxLength(120),
+                    TextInput::make($eventsPrefix.'.galleryLabel')->label(__('admin_pages.news.gallery_label'))->required()->maxLength(120),
+                    Repeater::make($eventsPrefix.'.categories')->label(__('admin_pages.news.categories'))->schema([
                         TextInput::make('id')->label(__('admin.editorial_workspace.news_shell.identifier'))->required()->maxLength(80),
                         TextInput::make('label')->required()->maxLength(120),
                     ])->columns(2)->reorderable()->collapsible()->columnSpanFull(),
-                    Repeater::make($eventsPrefix.'.upcoming')->label('Upcoming Events')->schema($this->eventFields(false))->reorderable()->collapsible()->columnSpanFull(),
-                    Repeater::make($eventsPrefix.'.past')->label('Past Events')->schema($this->eventFields(true))->reorderable()->collapsible()->columnSpanFull(),
+                    Repeater::make($eventsPrefix.'.upcoming')->label(__('admin_pages.news.upcoming_events'))->schema($this->eventFields(false))->reorderable()->collapsible()->columnSpanFull(),
+                    Repeater::make($eventsPrefix.'.past')->label(__('admin_pages.news.past_events'))->schema($this->eventFields(true))->reorderable()->collapsible()->columnSpanFull(),
                 ])
                 ->columns(2)
                 ->visible(fn (): bool => $this->targetKeyForSchema() === 'news.events'),
@@ -923,17 +923,17 @@ class ManageNews extends Page implements HasForms
             TextInput::make('location')->required()->maxLength(200),
             TextInput::make('categoryId')->required()->maxLength(80),
             TextInput::make('categoryLabel')->required()->maxLength(120),
-            MediaPicker::image('image', 'Image', true),
+            MediaPicker::image('image', __('admin_pages.news.image'), true),
         ];
 
         if (! $past) {
             $fields[] = Select::make('formId')->options([
-                'conference-registration' => 'Conference Registration',
-                'activity-registration' => 'Activity Registration',
+                'conference-registration' => __('admin_pages.news.conference_registration'),
+                'activity-registration' => __('admin_pages.news.activity_registration'),
             ])->required();
             $fields[] = TextInput::make('capacity')->numeric()->minValue(0)->required();
             $fields[] = TextInput::make('registered')->numeric()->minValue(0)->required();
-            $fields[] = Select::make('featured')->options(['0' => 'No', '1' => 'Yes'])->required();
+            $fields[] = Select::make('featured')->options(['0' => __('admin_pages.news.no'), '1' => __('admin_pages.news.yes')])->required();
 
             return $fields;
         }

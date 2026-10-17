@@ -99,11 +99,11 @@ class TwoFactorSetup extends Page implements HasForms
     {
         return $form
             ->schema([
-                Section::make('Confirm TOTP Code')
-                    ->description('Enter the 6-digit code from your authenticator app to complete setup.')
+                Section::make(__('admin_pages.two_factor.confirm_totp_code'))
+                    ->description(__('admin_pages.two_factor.enter_the_6_digit_code_from_your_authenticator_app_to_comple'))
                     ->schema([
                         TextInput::make('totp_code')
-                            ->label('Authentication Code')
+                            ->label(__('admin_pages.two_factor.authentication_code'))
                             ->required()
                             ->maxLength(6)
                             ->minLength(6)
@@ -142,7 +142,7 @@ class TwoFactorSetup extends Page implements HasForms
     private function enableAction(): Action
     {
         return Action::make('enable')
-            ->label($this->twoFactorUnconfirmed ? 'Complete Two-Factor Setup' : 'Enable Two-Factor Authentication')
+            ->label($this->twoFactorUnconfirmed ? __('admin_pages.two_factor.complete_two_factor_setup') : __('admin_pages.two_factor.enable_two_factor_authentication'))
             ->icon('heroicon-o-shield-check')
             ->color('success')
             ->form($this->currentPasswordForm())
@@ -164,12 +164,12 @@ class TwoFactorSetup extends Page implements HasForms
     private function disableAction(): Action
     {
         return Action::make('disable')
-            ->label('Disable Two-Factor Authentication')
+            ->label(__('admin_pages.two_factor.disable_two_factor_authentication'))
             ->icon('heroicon-o-shield-exclamation')
             ->color('danger')
             ->requiresConfirmation()
-            ->modalHeading('Disable Two-Factor Authentication')
-            ->modalDescription('Are you sure you want to disable two-factor authentication? This will reduce the security of your account.')
+            ->modalHeading(__('admin_pages.two_factor.disable_two_factor_authentication'))
+            ->modalDescription(__('admin_pages.two_factor.are_you_sure_you_want_to_disable_two_factor_authentication_t'))
             ->form($this->currentPasswordForm())
             ->action(function (array $data): void {
                 $this->disableTwoFactor($data);
@@ -179,7 +179,7 @@ class TwoFactorSetup extends Page implements HasForms
     private function showRecoveryCodesAction(): Action
     {
         return Action::make('showRecoveryCodes')
-            ->label('View Recovery Codes')
+            ->label(__('admin_pages.two_factor.view_recovery_codes'))
             ->icon('heroicon-o-key')
             ->color('warning')
             ->action(function (): void {
@@ -187,8 +187,8 @@ class TwoFactorSetup extends Page implements HasForms
                 $this->showRecoveryCodes = false;
 
                 Notification::make()
-                    ->title('Recovery codes cannot be displayed')
-                    ->body('For security, existing recovery codes are stored as hashes. Regenerate them to view a new one-time set.')
+                    ->title(__('admin_pages.two_factor.recovery_codes_cannot_be_displayed'))
+                    ->body(__('admin_pages.two_factor.for_security_existing_recovery_codes_are_stored_as_hashes_re'))
                     ->warning()
                     ->send();
             });
@@ -197,12 +197,12 @@ class TwoFactorSetup extends Page implements HasForms
     private function regenerateRecoveryCodesAction(): Action
     {
         return Action::make('regenerateRecoveryCodes')
-            ->label('Regenerate Recovery Codes')
+            ->label(__('admin_pages.two_factor.regenerate_recovery_codes'))
             ->icon('heroicon-o-arrow-path')
             ->color('gray')
             ->requiresConfirmation()
-            ->modalHeading('Regenerate Recovery Codes')
-            ->modalDescription('This will invalidate your existing recovery codes and generate new ones. Make sure to save the new codes.')
+            ->modalHeading(__('admin_pages.two_factor.regenerate_recovery_codes'))
+            ->modalDescription(__('admin_pages.two_factor.this_will_invalidate_your_existing_recovery_codes_and_genera'))
             ->form($this->currentPasswordForm())
             ->action(function (array $data): void {
                 $this->regenerateRecoveryCodes($data);
@@ -238,8 +238,8 @@ class TwoFactorSetup extends Page implements HasForms
 
         if (! $this->authenticator->verify($user, $code)) {
             Notification::make()
-                ->title('Invalid code')
-                ->body('The authentication code you entered is invalid. Please try again.')
+                ->title(__('admin_pages.two_factor.invalid_code'))
+                ->body(__('admin_pages.two_factor.the_authentication_code_you_entered_is_invalid_please_try_ag'))
                 ->danger()
                 ->send();
 
@@ -255,15 +255,15 @@ class TwoFactorSetup extends Page implements HasForms
         session()->put('2fa_verified_user_id', (int) $user->getAuthIdentifier());
 
         Notification::make()
-            ->title('Two-factor authentication enabled')
-            ->body('Your account is now protected with two-factor authentication.')
+            ->title(__('admin_pages.two_factor.two_factor_authentication_enabled'))
+            ->body(__('admin_pages.two_factor.your_account_is_now_protected_with_two_factor_authentication'))
             ->success()
             ->send();
     }
 
     public function disableTwoFactor(array $data = []): void
     {
-        abort_if($this->requiresTwoFactor(), 403, 'Two-factor authentication is required for this account.');
+        abort_if($this->requiresTwoFactor(), 403, __('admin_pages.two_factor.two_factor_authentication_is_required_for_this_account'));
 
         /** @var User $user */
         $user = auth()->user();
@@ -282,8 +282,8 @@ class TwoFactorSetup extends Page implements HasForms
         session()->forget(['2fa_verified', '2fa_verified_user_id']);
 
         Notification::make()
-            ->title('Two-factor authentication disabled')
-            ->body('Two-factor authentication has been removed from your account.')
+            ->title(__('admin_pages.two_factor.two_factor_authentication_disabled'))
+            ->body(__('admin_pages.two_factor.two_factor_authentication_has_been_removed_from_your_account'))
             ->warning()
             ->send();
     }
@@ -298,8 +298,8 @@ class TwoFactorSetup extends Page implements HasForms
         $this->showRecoveryCodes = true;
 
         Notification::make()
-            ->title('Recovery codes regenerated')
-            ->body('Your previous recovery codes have been invalidated. Save these new codes securely.')
+            ->title(__('admin_pages.two_factor.recovery_codes_regenerated'))
+            ->body(__('admin_pages.two_factor.your_previous_recovery_codes_have_been_invalidated_save_thes'))
             ->success()
             ->send();
     }
@@ -309,7 +309,7 @@ class TwoFactorSetup extends Page implements HasForms
     {
         return [
             TextInput::make('current_password')
-                ->label('Current password')
+                ->label(__('admin_pages.two_factor.current_password'))
                 ->password()
                 ->required()
                 ->revealable()
@@ -324,7 +324,7 @@ class TwoFactorSetup extends Page implements HasForms
 
         if (! $user instanceof User || ! is_string($password) || ! Hash::check($password, (string) $user->password)) {
             throw ValidationException::withMessages([
-                'current_password' => __('The current password is incorrect.'),
+                'current_password' => __('admin_pages.two_factor.current_password_is_incorrect'),
             ]);
         }
     }

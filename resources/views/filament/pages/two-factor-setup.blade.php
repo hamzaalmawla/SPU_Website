@@ -7,7 +7,7 @@
                 <div class="flex items-center gap-2">
                     <x-heroicon-o-shield-check class="h-5 w-5 text-success-600 dark:text-success-400" />
                     <span class="font-medium text-success-800 dark:text-success-200">
-                        Two-factor authentication is enabled.
+                        {{ __('admin_pages.two_factor.status_enabled') }}
                     </span>
                 </div>
             </div>
@@ -17,16 +17,16 @@
                     <x-heroicon-o-shield-exclamation class="h-5 w-5 text-warning-600 dark:text-warning-400" />
                     <span class="font-medium text-warning-800 dark:text-warning-200">
                         @if ($twoFactorUnconfirmed)
-                            Two-factor authentication setup is incomplete.
+                            {{ __('admin_pages.two_factor.status_incomplete') }}
                         @else
-                            Two-factor authentication is not enabled.
+                            {{ __('admin_pages.two_factor.status_not_enabled') }}
                         @endif
                     </span>
                 </div>
             </div>
             @if ($this->requiresTwoFactor())
                 <p class="mt-3 text-sm text-warning-800 dark:text-warning-200">
-                    Confirm enrollment before accessing privileged production administration features.
+                    {{ __('admin_pages.two_factor.confirm_enrollment_before_privileged_access') }}
                 </p>
             @endif
         @endif
@@ -34,10 +34,9 @@
         {{-- Enrollment Flow --}}
         @if ($showEnrollment)
             <x-filament::section>
-                <x-slot name="heading">Set Up Two-Factor Authentication</x-slot>
+                <x-slot name="heading">{{ __('admin_pages.two_factor.set_up_two_factor_authentication') }}</x-slot>
                 <x-slot name="description">
-                    Scan the QR code below with your authenticator app (Google Authenticator, Authy, etc.),
-                    then enter the 6-digit code to confirm setup.
+                    {{ __('admin_pages.two_factor.scan_the_qr_code') }}
                 </x-slot>
 
                 <div class="space-y-4">
@@ -64,7 +63,7 @@
 
                     <div>
                         <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Add this setup URI in your authenticator app, or enter the secret manually:
+                            {{ __('admin_pages.two_factor.add_this_setup_uri') }}
                         </p>
                         <code class="block max-w-full overflow-x-auto rounded bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm font-mono select-all">
                             {{ $qrCodeUrl }}
@@ -74,7 +73,7 @@
                     {{-- Manual Entry Secret --}}
                     <div>
                         <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Or enter this secret manually:
+                            {{ __('admin_pages.two_factor.or_enter_this_secret_manually') }}
                         </p>
                         <code class="block rounded bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm font-mono select-all">
                             {{ $secret }}
@@ -88,7 +87,7 @@
 
                             <div class="mt-4">
                                 <x-filament::button type="submit" color="success">
-                                    Confirm & Enable
+                                    {{ __('admin_pages.two_factor.confirm_and_enable') }}
                                 </x-filament::button>
                             </div>
                         </form>
@@ -100,10 +99,9 @@
         {{-- Recovery Codes --}}
         @if ($showRecoveryCodes && count($recoveryCodes) > 0)
             <x-filament::section>
-                <x-slot name="heading">Recovery Codes</x-slot>
+                <x-slot name="heading">{{ __('admin_pages.two_factor.recovery_codes') }}</x-slot>
                 <x-slot name="description">
-                    Store these recovery codes in a secure location. Each code can only be used once.
-                    If you lose access to your authenticator app, you can use one of these codes to sign in.
+                    {{ __('admin_pages.two_factor.recovery_codes_help') }}
                 </x-slot>
 
                 <div class="rounded-lg bg-gray-50 dark:bg-gray-800 p-4">

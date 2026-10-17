@@ -338,10 +338,10 @@ final class CampusLifeWorkflowTest extends TestCase
 
         $component = Livewire::test(ManageCampusLife::class)
             ->assertSet('data.target_key', 'campus_life.landing')
-            ->assertSee('Hero')
-            ->assertSee('Intro')
-            ->assertSee('Feature Cards')
-            ->assertSee('Digital Portals');
+            ->assertSee(__('admin_pages.campus_life.hero'))
+            ->assertSee(__('admin_pages.campus_life.intro'))
+            ->assertSee(__('admin_pages.campus_life.feature_cards'))
+            ->assertSee(__('admin_pages.campus_life.digital_portals'));
 
         /** @var array<string, mixed> $data */
         $data = $component->get('data');
@@ -420,8 +420,8 @@ final class CampusLifeWorkflowTest extends TestCase
             $component = Livewire::test(ManageCampusLife::class)
                 ->set('data.target_key', $targetKey)
                 ->call('loadTarget', $targetKey)
-                ->assertSee('Information Cards')
-                ->assertDontSee('Target Schema Pending');
+                ->assertSee(__('admin_pages.campus_life.information_cards'))
+                ->assertDontSee(__('admin_pages.campus_life.target_schema_pending'));
 
             /** @var array<string, mixed> $data */
             $data = $component->get('data');
@@ -446,9 +446,9 @@ final class CampusLifeWorkflowTest extends TestCase
         $component = Livewire::test(ManageCampusLife::class)
             ->set('data.target_key', 'campus_life.services')
             ->call('loadTarget', 'campus_life.services')
-            ->assertSee('Hero')
-            ->assertSee('Services Directory')
-            ->assertSee('Support Panel');
+            ->assertSee(__('admin_pages.campus_life.hero'))
+            ->assertSee(__('admin_pages.campus_life.services_directory'))
+            ->assertSee(__('admin_pages.campus_life.support_panel'));
 
         /** @var array<string, mixed> $data */
         $data = $component->get('data');
@@ -481,9 +481,9 @@ final class CampusLifeWorkflowTest extends TestCase
         $component = Livewire::test(ManageCampusLife::class)
             ->set('data.target_key', 'campus_life.transport')
             ->call('loadTarget', 'campus_life.transport')
-            ->assertSee('Hero')
-            ->assertSee('Transport Cards')
-            ->assertSee('Success Panel');
+            ->assertSee(__('admin_pages.campus_life.hero'))
+            ->assertSee(__('admin_pages.campus_life.transport_cards'))
+            ->assertSee(__('admin_pages.campus_life.success_panel'));
 
         /** @var array<string, mixed> $data */
         $data = $component->get('data');
@@ -515,10 +515,10 @@ final class CampusLifeWorkflowTest extends TestCase
         $component = Livewire::test(ManageCampusLife::class)
             ->set('data.target_key', 'campus_life.clubs-activities')
             ->call('loadTarget', 'campus_life.clubs-activities')
-            ->assertSee('Hero')
-            ->assertSee('Clubs Directory')
-            ->assertSee('Featured Activity')
-            ->assertSee('Activity List');
+            ->assertSee(__('admin_pages.campus_life.hero'))
+            ->assertSee(__('admin_pages.campus_life.clubs_directory'))
+            ->assertSee(__('admin_pages.campus_life.featured_activity'))
+            ->assertSee(__('admin_pages.campus_life.activity_list'));
 
         /** @var array<string, mixed> $data */
         $data = $component->get('data');
@@ -551,9 +551,9 @@ final class CampusLifeWorkflowTest extends TestCase
         $component = Livewire::test(ManageCampusLife::class)
             ->set('data.target_key', 'campus_life.career-development')
             ->call('loadTarget', 'campus_life.career-development')
-            ->assertSee('Hero')
-            ->assertSee('Career Services')
-            ->assertSee('Success Panel');
+            ->assertSee(__('admin_pages.campus_life.hero'))
+            ->assertSee(__('admin_pages.campus_life.career_services'))
+            ->assertSee(__('admin_pages.campus_life.success_panel'));
 
         /** @var array<string, mixed> $data */
         $data = $component->get('data');
@@ -584,15 +584,15 @@ final class CampusLifeWorkflowTest extends TestCase
         $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
 
         foreach ([
-            'dental' => ['field' => 'services', 'label' => 'Dental Services', 'title' => 'Curated Dental Clinics', 'item' => 'Curated Dental Service'],
-            'hospital' => ['field' => 'departments', 'label' => 'Medical Departments', 'title' => 'Curated University Hospital', 'item' => 'Curated Hospital Department'],
+            'dental' => ['field' => 'services', 'label' => __('admin_pages.campus_life.dental_services'), 'title' => 'Curated Dental Clinics', 'item' => 'Curated Dental Service'],
+            'hospital' => ['field' => 'departments', 'label' => __('admin_pages.campus_life.medical_departments'), 'title' => 'Curated University Hospital', 'item' => 'Curated Hospital Department'],
         ] as $slug => $case) {
             $component = Livewire::test(ManageCampusLife::class)
                 ->set('data.target_key', 'campus_life.'.$slug)
                 ->call('loadTarget', 'campus_life.'.$slug)
-                ->assertSee('Hero')
+                ->assertSee(__('admin_pages.campus_life.hero'))
                 ->assertSee($case['label'])
-                ->assertSee('Weekly Schedule');
+                ->assertSee(__('admin_pages.campus_life.weekly_schedule'));
 
             /** @var array<string, mixed> $data */
             $data = $component->get('data');
@@ -625,8 +625,8 @@ final class CampusLifeWorkflowTest extends TestCase
         $component = Livewire::test(ManageCampusLife::class)
             ->set('data.target_key', 'campus_life.health-insurance')
             ->call('loadTarget', 'campus_life.health-insurance')
-            ->assertSee('Hero')
-            ->assertSee('Health Insurance Sections');
+            ->assertSee(__('admin_pages.campus_life.hero'))
+            ->assertSee(__('admin_pages.campus_life.health_insurance_sections'));
 
         /** @var array<string, mixed> $data */
         $data = $component->get('data');

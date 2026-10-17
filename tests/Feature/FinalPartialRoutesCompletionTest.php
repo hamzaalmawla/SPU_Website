@@ -136,8 +136,8 @@ final class FinalPartialRoutesCompletionTest extends TestCase
         Livewire::test(ManageCampusLife::class)
             ->set('data.target_key', 'campus_life.virtual_tour')
             ->call('loadTarget', 'campus_life.virtual_tour')
-            ->assertSee('Interactive Photo Viewer')
-            ->assertSee('Photo Scenes');
+            ->assertSee(__('admin_pages.campus_life.interactive_photo_viewer'))
+            ->assertSee(__('admin_pages.campus_life.photo_scenes'));
     }
 
     public function test_suggestions_page_cms_and_secure_private_submission_pipeline(): void
@@ -177,8 +177,8 @@ final class FinalPartialRoutesCompletionTest extends TestCase
         Livewire::test(ManageEServicesPage::class)
             ->set('data.target_key', 'e_services.suggestions-complaints')
             ->call('loadTarget', 'e_services.suggestions-complaints')
-            ->assertSee('Suggestions &amp; Complaints Page', false)
-            ->assertSee('Consent Label');
+            ->assertSee(__('admin_pages.e_services.suggestions_complaints_page'))
+            ->assertSee(__('admin_pages.e_services.consent_label'));
     }
 
     public function test_suggestions_submission_rejects_unsafe_attachments_and_missing_consent(): void

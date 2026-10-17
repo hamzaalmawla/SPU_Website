@@ -105,28 +105,28 @@ class ManageContactPage extends Page implements HasForms
     {
         return [
             Action::make('save')
-                ->label('Save Draft')
+                ->label(__('admin_pages.contact.save_draft'))
                 ->icon('heroicon-o-check')
                 ->color('gray')
                 ->action(function (): void {
                     $this->save();
                 }),
             Action::make('preview_ar')
-                ->label('Preview AR')
+                ->label(__('admin_pages.contact.preview_ar'))
                 ->icon('heroicon-o-eye')
                 ->color('info')
                 ->action(function (): void {
                     $this->openPreview('ar');
                 }),
             Action::make('preview_en')
-                ->label('Preview EN')
+                ->label(__('admin_pages.contact.preview_en'))
                 ->icon('heroicon-o-eye')
                 ->color('info')
                 ->action(function (): void {
                     $this->openPreview('en');
                 }),
             Action::make('publish')
-                ->label('Publish')
+                ->label(__('admin_pages.contact.publish'))
                 ->icon('heroicon-o-paper-airplane')
                 ->color('success')
                 ->requiresConfirmation()
@@ -134,19 +134,19 @@ class ManageContactPage extends Page implements HasForms
                     $this->publish();
                 }),
             Action::make('schedule')
-                ->label('Schedule')
+                ->label(__('admin_pages.contact.schedule'))
                 ->icon('heroicon-o-clock')
                 ->color('warning')
                 ->form([
                     DateTimePicker::make('publish_at')
-                        ->label('Publish At')
+                        ->label(__('admin_pages.contact.publish_at'))
                         ->required()
                         ->minDate(now())
                         ->native(false),
                 ])
                 ->action(fn (array $data) => $this->schedule((string) $data['publish_at'])),
             Action::make('unpublish')
-                ->label('Unpublish')
+                ->label(__('admin_pages.contact.unpublish'))
                 ->icon('heroicon-o-x-circle')
                 ->color('danger')
                 ->requiresConfirmation()
@@ -171,15 +171,15 @@ class ManageContactPage extends Page implements HasForms
             $this->draftVersion = $draft->version;
 
             Notification::make()
-                ->title('Contact page draft saved')
+                ->title(__('admin_pages.contact.contact_page_draft_saved'))
                 ->success()
                 ->send();
         } catch (ConflictException $e) {
             $this->draftVersion = $e->currentVersion;
 
             Notification::make()
-                ->title('Draft conflict detected')
-                ->body('This contact page draft changed elsewhere. Reload the page before saving again.')
+                ->title(__('admin_pages.contact.draft_conflict_detected'))
+                ->body(__('admin_pages.contact.draft_changed_reload_before_saving'))
                 ->danger()
                 ->persistent()
                 ->send();
@@ -187,7 +187,7 @@ class ManageContactPage extends Page implements HasForms
             report($e);
 
             Notification::make()
-                ->title('Failed to save contact page draft')
+                ->title(__('admin_pages.contact.failed_to_save_contact_page_draft'))
                 ->danger()
                 ->send();
         }
@@ -203,17 +203,17 @@ class ManageContactPage extends Page implements HasForms
             $this->draftVersion = $draft->version;
             $this->cmsWorkflowService->publish('contact', (int) $user->id);
 
-            Notification::make()->title('Contact page published')->success()->send();
+            Notification::make()->title(__('admin_pages.contact.contact_page_published'))->success()->send();
         } catch (ValidationException $e) {
             Notification::make()
-                ->title('Publish failed')
+                ->title(__('admin_pages.contact.publish_failed'))
                 ->body($this->formatValidationErrors($e->errors()))
                 ->danger()
                 ->persistent()
                 ->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to publish contact page')->danger()->send();
+            Notification::make()->title(__('admin_pages.contact.failed_to_publish_contact_page'))->danger()->send();
         }
     }
 
@@ -232,14 +232,14 @@ class ManageContactPage extends Page implements HasForms
             $this->draftVersion = $e->currentVersion;
 
             Notification::make()
-                ->title('Draft conflict detected')
-                ->body('This contact page draft changed elsewhere. Reload the page before previewing again.')
+                ->title(__('admin_pages.contact.draft_conflict_detected'))
+                ->body(__('admin_pages.contact.draft_changed_reload_before_previewing'))
                 ->danger()
                 ->persistent()
                 ->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to create contact page preview')->danger()->send();
+            Notification::make()->title(__('admin_pages.contact.failed_to_create_contact_page_preview'))->danger()->send();
         }
     }
 
@@ -253,17 +253,17 @@ class ManageContactPage extends Page implements HasForms
             $this->draftVersion = $draft->version;
             $this->cmsWorkflowService->schedule('contact', new \DateTimeImmutable($publishAt), (int) $user->id);
 
-            Notification::make()->title('Contact page scheduled')->success()->send();
+            Notification::make()->title(__('admin_pages.contact.contact_page_scheduled'))->success()->send();
         } catch (ValidationException $e) {
             Notification::make()
-                ->title('Schedule failed')
+                ->title(__('admin_pages.contact.schedule_failed'))
                 ->body($this->formatValidationErrors($e->errors()))
                 ->danger()
                 ->persistent()
                 ->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to schedule contact page')->danger()->send();
+            Notification::make()->title(__('admin_pages.contact.failed_to_schedule_contact_page'))->danger()->send();
         }
     }
 
@@ -273,47 +273,47 @@ class ManageContactPage extends Page implements HasForms
         $user = auth()->user();
 
         $result = $this->cmsWorkflowService->unpublish('contact', (int) $user->id);
-        $notification = Notification::make()->title($result ? 'Contact page unpublished' : 'No published contact page found');
+        $notification = Notification::make()->title($result ? __('admin_pages.contact.contact_page_unpublished') : __('admin_pages.contact.no_published_contact_page_found'));
 
         ($result ? $notification->success() : $notification->warning())->send();
     }
 
     private function localeTab(string $locale, string $label): Tab
     {
-        return Tab::make($label)->schema([
-            Section::make('Hero')->schema([
-                TextInput::make("{$locale}.hero_title")->label('Hero Title')->required()->maxLength(160),
-                MediaPicker::image("{$locale}.hero_bg_image", 'Hero Background Image', true),
+        return Tab::make($label)->label(__('admin_pages.contact.'.($locale === 'ar' ? 'arabic' : 'english')))->schema([
+            Section::make(__('admin_pages.contact.hero'))->schema([
+                TextInput::make("{$locale}.hero_title")->label(__('admin_pages.contact.hero_title'))->required()->maxLength(160),
+                MediaPicker::image("{$locale}.hero_bg_image", __('admin_pages.contact.hero_background_image'), true),
             ])->columns(2),
 
-            Section::make('Form')->schema([
-                TextInput::make("{$locale}.form_title")->label('Form Title')->required()->maxLength(160),
-                TextInput::make("{$locale}.field_name_label")->label('Name Label')->required()->maxLength(80),
-                TextInput::make("{$locale}.field_email_label")->label('Email Label')->required()->maxLength(80),
-                TextInput::make("{$locale}.field_subject_label")->label('Subject Label')->required()->maxLength(80),
-                TextInput::make("{$locale}.field_message_label")->label('Message Label')->required()->maxLength(80),
-                TextInput::make("{$locale}.submit_label")->label('Submit Button')->required()->maxLength(80),
+            Section::make(__('admin_pages.contact.form'))->schema([
+                TextInput::make("{$locale}.form_title")->label(__('admin_pages.contact.form_title'))->required()->maxLength(160),
+                TextInput::make("{$locale}.field_name_label")->label(__('admin_pages.contact.name_label'))->required()->maxLength(80),
+                TextInput::make("{$locale}.field_email_label")->label(__('admin_pages.contact.email_label'))->required()->maxLength(80),
+                TextInput::make("{$locale}.field_subject_label")->label(__('admin_pages.contact.subject_label'))->required()->maxLength(80),
+                TextInput::make("{$locale}.field_message_label")->label(__('admin_pages.contact.message_label'))->required()->maxLength(80),
+                TextInput::make("{$locale}.submit_label")->label(__('admin_pages.contact.submit_button'))->required()->maxLength(80),
             ])->columns(2),
 
-            Section::make('Contact Information')->schema([
-                TextInput::make("{$locale}.info_title")->label('Info Title')->required()->maxLength(160),
-                TextInput::make("{$locale}.phone_label")->label('Phone Label')->required()->maxLength(80),
-                TextInput::make("{$locale}.phone_value")->label('Phone Value')->required()->maxLength(120),
-                MediaPicker::icon("{$locale}.phone_icon", 'Phone Icon', true),
-                TextInput::make("{$locale}.address_label")->label('Address Label')->required()->maxLength(80),
-                Textarea::make("{$locale}.address_value")->label('Address Value')->required()->rows(3),
-                TextInput::make("{$locale}.email_label")->label('Email Label')->required()->maxLength(80),
-                TextInput::make("{$locale}.email_value")->label('Email Value')->required()->maxLength(160),
-                TextInput::make("{$locale}.hours_label")->label('Office Hours Label')->required()->maxLength(80),
-                TextInput::make("{$locale}.hours_value")->label('Office Hours Value')->required()->maxLength(160),
+            Section::make(__('admin_pages.contact.contact_information'))->schema([
+                TextInput::make("{$locale}.info_title")->label(__('admin_pages.contact.info_title'))->required()->maxLength(160),
+                TextInput::make("{$locale}.phone_label")->label(__('admin_pages.contact.phone_label'))->required()->maxLength(80),
+                TextInput::make("{$locale}.phone_value")->label(__('admin_pages.contact.phone_value'))->required()->maxLength(120),
+                MediaPicker::icon("{$locale}.phone_icon", __('admin_pages.contact.phone_icon'), true),
+                TextInput::make("{$locale}.address_label")->label(__('admin_pages.contact.address_label'))->required()->maxLength(80),
+                Textarea::make("{$locale}.address_value")->label(__('admin_pages.contact.address_value'))->required()->rows(3),
+                TextInput::make("{$locale}.email_label")->label(__('admin_pages.contact.email_label'))->required()->maxLength(80),
+                TextInput::make("{$locale}.email_value")->label(__('admin_pages.contact.email_value'))->required()->maxLength(160),
+                TextInput::make("{$locale}.hours_label")->label(__('admin_pages.contact.office_hours_label'))->required()->maxLength(80),
+                TextInput::make("{$locale}.hours_value")->label(__('admin_pages.contact.office_hours_value'))->required()->maxLength(160),
             ])->columns(2),
 
-            Section::make('Social Links')->schema([
-                TextInput::make("{$locale}.socials_title")->label('Socials Title')->required()->maxLength(120),
+            Section::make(__('admin_pages.contact.social_links'))->schema([
+                TextInput::make("{$locale}.socials_title")->label(__('admin_pages.contact.socials_title'))->required()->maxLength(120),
                 Repeater::make("{$locale}.socials")
-                    ->label('Social Links')
+                    ->label(__('admin_pages.contact.social_links'))
                     ->schema([
-                        MediaPicker::icon('icon', 'Icon', true),
+                        MediaPicker::icon('icon', __('admin_pages.contact.icon'), true),
                         TextInput::make('url')->required()->url()->maxLength(255),
                     ])
                     ->columns(2)
@@ -321,17 +321,17 @@ class ManageContactPage extends Page implements HasForms
                     ->reorderable(),
             ]),
 
-            Section::make('Campus Map')->schema([
-                TextInput::make("{$locale}.location_title")->label('Map Title')->required()->maxLength(160),
-                TextInput::make("{$locale}.location_button")->label('Map Button')->required()->maxLength(120),
-                TextInput::make("{$locale}.map_url")->label('External Map URL')->required()->url()->maxLength(500),
-                TextInput::make("{$locale}.embed_url")->label('Embed Map URL')->required()->url()->maxLength(1000),
+            Section::make(__('admin_pages.contact.campus_map'))->schema([
+                TextInput::make("{$locale}.location_title")->label(__('admin_pages.contact.map_title'))->required()->maxLength(160),
+                TextInput::make("{$locale}.location_button")->label(__('admin_pages.contact.map_button'))->required()->maxLength(120),
+                TextInput::make("{$locale}.map_url")->label(__('admin_pages.contact.external_map_url'))->required()->url()->maxLength(500),
+                TextInput::make("{$locale}.embed_url")->label(__('admin_pages.contact.embed_map_url'))->required()->url()->maxLength(1000),
             ])->columns(2),
 
-            Section::make('SEO')->schema([
-                TextInput::make("{$locale}.seo_title")->label('SEO Title')->required()->maxLength(180),
-                Textarea::make("{$locale}.seo_description")->label('SEO Description')->required()->rows(3),
-                MediaPicker::image("{$locale}.seo_image", 'SEO Image', true),
+            Section::make(__('admin_pages.contact.seo'))->schema([
+                TextInput::make("{$locale}.seo_title")->label(__('admin_pages.contact.seo_title'))->required()->maxLength(180),
+                Textarea::make("{$locale}.seo_description")->label(__('admin_pages.contact.seo_description'))->required()->rows(3),
+                MediaPicker::image("{$locale}.seo_image", __('admin_pages.contact.seo_image'), true),
             ]),
         ]);
     }

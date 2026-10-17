@@ -46,7 +46,7 @@ final class PerformanceBudgetTest extends TestCase
         $response = $this->get('/admin/manage-homepage')->assertOk();
 
         $this->assertLessThanOrEqual(750_000, strlen((string) $response->getContent()));
-        $response->assertSee('Choose one section to edit');
+        $response->assertSee(__('admin_pages.homepage.choose_one_section_to_edit'));
     }
 
     public function test_default_research_editor_does_not_render_every_module(): void

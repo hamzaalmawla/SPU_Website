@@ -114,19 +114,19 @@ class ManageEServicesPage extends Page implements HasForms
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('save')->label('Save Draft')->icon('heroicon-o-check')->color('gray')->action(fn () => $this->save()),
-            Action::make('preview_ar')->label('Preview AR')->icon('heroicon-o-eye')->color('info')->action(fn () => $this->openPreview('ar')),
-            Action::make('preview_en')->label('Preview EN')->icon('heroicon-o-eye')->color('info')->action(fn () => $this->openPreview('en')),
-            Action::make('publish')->label('Publish')->icon('heroicon-o-paper-airplane')->color('success')->requiresConfirmation()->action(fn () => $this->publish()),
+            Action::make('save')->label(__('admin_pages.e_services.save_draft'))->icon('heroicon-o-check')->color('gray')->action(fn () => $this->save()),
+            Action::make('preview_ar')->label(__('admin_pages.e_services.preview_ar'))->icon('heroicon-o-eye')->color('info')->action(fn () => $this->openPreview('ar')),
+            Action::make('preview_en')->label(__('admin_pages.e_services.preview_en'))->icon('heroicon-o-eye')->color('info')->action(fn () => $this->openPreview('en')),
+            Action::make('publish')->label(__('admin_pages.e_services.publish'))->icon('heroicon-o-paper-airplane')->color('success')->requiresConfirmation()->action(fn () => $this->publish()),
             Action::make('schedule')
-                ->label('Schedule')
+                ->label(__('admin_pages.e_services.schedule'))
                 ->icon('heroicon-o-clock')
                 ->color('warning')
                 ->form([
-                    DateTimePicker::make('publish_at')->label('Publish At')->required()->minDate(now())->native(false),
+                    DateTimePicker::make('publish_at')->label(__('admin_pages.e_services.publish_at'))->required()->minDate(now())->native(false),
                 ])
                 ->action(fn (array $data) => $this->schedule((string) $data['publish_at'])),
-            Action::make('unpublish')->label('Unpublish')->icon('heroicon-o-x-circle')->color('danger')->requiresConfirmation()->action(fn () => $this->unpublish()),
+            Action::make('unpublish')->label(__('admin_pages.e_services.unpublish'))->icon('heroicon-o-x-circle')->color('danger')->requiresConfirmation()->action(fn () => $this->unpublish()),
         ];
     }
 
@@ -191,13 +191,13 @@ class ManageEServicesPage extends Page implements HasForms
                 $this->draftVersion,
             );
             $this->draftVersion = $draft->version;
-            Notification::make()->title('E-Services draft saved')->success()->send();
+            Notification::make()->title(__('admin_pages.e_services.e_services_draft_saved'))->success()->send();
         } catch (ConflictException $e) {
             $this->draftVersion = $e->currentVersion;
-            Notification::make()->title('Draft conflict detected')->body('Reload this E-Services target before saving again.')->danger()->persistent()->send();
+            Notification::make()->title(__('admin_pages.e_services.draft_conflict_detected'))->body(__('admin_pages.e_services.reload_this_e_services_target_before_saving_again'))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to save E-Services draft')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('admin_pages.e_services.failed_to_save_e_services_draft'))->body($e->getMessage())->danger()->send();
         }
     }
 
@@ -214,10 +214,10 @@ class ManageEServicesPage extends Page implements HasForms
             $this->redirect($preview->previewUrl);
         } catch (ConflictException $e) {
             $this->draftVersion = $e->currentVersion;
-            Notification::make()->title('Draft conflict detected')->body('Reload this E-Services target before previewing again.')->danger()->persistent()->send();
+            Notification::make()->title(__('admin_pages.e_services.draft_conflict_detected'))->body(__('admin_pages.e_services.reload_this_e_services_target_before_previewing_again'))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to create E-Services preview')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('admin_pages.e_services.failed_to_create_e_services_preview'))->body($e->getMessage())->danger()->send();
         }
     }
 
@@ -231,12 +231,12 @@ class ManageEServicesPage extends Page implements HasForms
             $draft = $this->cmsWorkflowService->saveDraft($targetKey, $this->payloadFromForm($this->form->getState()), (int) $user->id, $this->draftVersion);
             $this->draftVersion = $draft->version;
             $this->cmsWorkflowService->publish($targetKey, (int) $user->id);
-            Notification::make()->title('E-Services target published')->success()->send();
+            Notification::make()->title(__('admin_pages.e_services.e_services_target_published'))->success()->send();
         } catch (ValidationException $e) {
-            Notification::make()->title('Publish failed')->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
+            Notification::make()->title(__('admin_pages.e_services.publish_failed'))->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to publish E-Services target')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('admin_pages.e_services.failed_to_publish_e_services_target'))->body($e->getMessage())->danger()->send();
         }
     }
 
@@ -250,12 +250,12 @@ class ManageEServicesPage extends Page implements HasForms
             $draft = $this->cmsWorkflowService->saveDraft($targetKey, $this->payloadFromForm($this->form->getState()), (int) $user->id, $this->draftVersion);
             $this->draftVersion = $draft->version;
             $this->cmsWorkflowService->schedule($targetKey, new \DateTimeImmutable($publishAt), (int) $user->id);
-            Notification::make()->title('E-Services target scheduled')->success()->send();
+            Notification::make()->title(__('admin_pages.e_services.e_services_target_scheduled'))->success()->send();
         } catch (ValidationException $e) {
-            Notification::make()->title('Schedule failed')->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
+            Notification::make()->title(__('admin_pages.e_services.schedule_failed'))->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to schedule E-Services target')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('admin_pages.e_services.failed_to_schedule_e_services_target'))->body($e->getMessage())->danger()->send();
         }
     }
 
@@ -264,55 +264,55 @@ class ManageEServicesPage extends Page implements HasForms
         /** @var User $user */
         $user = auth()->user();
         $result = $this->cmsWorkflowService->unpublish($this->currentTargetKey(), (int) $user->id);
-        $notification = Notification::make()->title($result ? 'E-Services target unpublished' : 'No published E-Services target found');
+        $notification = Notification::make()->title($result ? __('admin_pages.e_services.e_services_target_unpublished') : __('admin_pages.e_services.no_published_e_services_target_found'));
         ($result ? $notification->success() : $notification->warning())->send();
     }
 
     private function localeTab(string $locale, string $label): Tab
     {
-        return Tab::make($label)->schema([
-            Section::make('Suggestions & Complaints Page')->schema([
-                TextInput::make("{$locale}_suggestions.hero.eyebrow")->label('Eyebrow')->required()->maxLength(160),
-                TextInput::make("{$locale}_suggestions.hero.title")->label('Title')->required()->maxLength(180),
-                Textarea::make("{$locale}_suggestions.hero.summary")->label('Summary')->required()->rows(3)->columnSpanFull(),
-                MediaPicker::image("{$locale}_suggestions.hero.image", 'Hero Image', true),
-                TextInput::make("{$locale}_suggestions.form.title")->label('Form Title')->required()->maxLength(180),
-                TextInput::make("{$locale}_suggestions.form.infoTitle")->label('Information Title')->required()->maxLength(180),
-                Textarea::make("{$locale}_suggestions.form.infoBody")->label('Information Body')->required()->rows(3)->columnSpanFull(),
-                Textarea::make("{$locale}_suggestions.form.consentLabel")->label('Consent Label')->required()->rows(2)->columnSpanFull(),
-                TextInput::make("{$locale}_suggestions.form.attachmentHelp")->label('Attachment Help')->required()->maxLength(255)->columnSpanFull(),
-                Repeater::make("{$locale}_suggestions.form.requestTypes")->label('Request Types')->schema([
-                    Select::make('value')->options(['suggestion' => 'Suggestion', 'complaint' => 'Complaint', 'inquiry' => 'Inquiry'])->required(),
+        return Tab::make($label)->label(__('admin_pages.e_services.'.($locale === 'ar' ? 'arabic' : 'english')))->schema([
+            Section::make(__('admin_pages.e_services.suggestions_complaints_page'))->schema([
+                TextInput::make("{$locale}_suggestions.hero.eyebrow")->label(__('admin_pages.e_services.eyebrow'))->required()->maxLength(160),
+                TextInput::make("{$locale}_suggestions.hero.title")->label(__('admin_pages.e_services.title'))->required()->maxLength(180),
+                Textarea::make("{$locale}_suggestions.hero.summary")->label(__('admin_pages.e_services.summary'))->required()->rows(3)->columnSpanFull(),
+                MediaPicker::image("{$locale}_suggestions.hero.image", __('admin_pages.e_services.hero_image'), true),
+                TextInput::make("{$locale}_suggestions.form.title")->label(__('admin_pages.e_services.form_title'))->required()->maxLength(180),
+                TextInput::make("{$locale}_suggestions.form.infoTitle")->label(__('admin_pages.e_services.information_title'))->required()->maxLength(180),
+                Textarea::make("{$locale}_suggestions.form.infoBody")->label(__('admin_pages.e_services.information_body'))->required()->rows(3)->columnSpanFull(),
+                Textarea::make("{$locale}_suggestions.form.consentLabel")->label(__('admin_pages.e_services.consent_label'))->required()->rows(2)->columnSpanFull(),
+                TextInput::make("{$locale}_suggestions.form.attachmentHelp")->label(__('admin_pages.e_services.attachment_help'))->required()->maxLength(255)->columnSpanFull(),
+                Repeater::make("{$locale}_suggestions.form.requestTypes")->label(__('admin_pages.e_services.request_types'))->schema([
+                    Select::make('value')->options(['suggestion' => __('admin_pages.e_services.suggestion'), 'complaint' => __('admin_pages.e_services.complaint'), 'inquiry' => __('admin_pages.e_services.inquiry')])->required(),
                     TextInput::make('label')->required()->maxLength(120),
                 ])->columns(2)->minItems(3)->maxItems(3)->reorderable(false)->columnSpanFull(),
-                Repeater::make("{$locale}_suggestions.form.cards")->label('Information Cards')->schema([
+                Repeater::make("{$locale}_suggestions.form.cards")->label(__('admin_pages.e_services.information_cards'))->schema([
                     TextInput::make('title')->required()->maxLength(180),
                     Textarea::make('body')->required()->rows(3),
                 ])->columns(2)->columnSpanFull(),
-                TextInput::make("{$locale}_suggestions.seo.title")->label('SEO Title')->required()->maxLength(180),
-                Textarea::make("{$locale}_suggestions.seo.description")->label('SEO Description')->required()->rows(3),
-                MediaPicker::image("{$locale}_suggestions.seo.image", 'SEO Image', true),
+                TextInput::make("{$locale}_suggestions.seo.title")->label(__('admin_pages.e_services.seo_title'))->required()->maxLength(180),
+                Textarea::make("{$locale}_suggestions.seo.description")->label(__('admin_pages.e_services.seo_description'))->required()->rows(3),
+                MediaPicker::image("{$locale}_suggestions.seo.image", __('admin_pages.e_services.seo_image'), true),
             ])->columns(2)->visible(fn (): bool => $this->isSuggestionsTarget()),
-            Section::make('Landing Hero')->schema([
-                TextInput::make("{$locale}_landing.hero_eyebrow")->label('Eyebrow')->required()->maxLength(160),
-                TextInput::make("{$locale}_landing.hero_title")->label('Title')->required()->maxLength(180),
-                Textarea::make("{$locale}_landing.hero_summary")->label('Summary')->required()->rows(3)->columnSpanFull(),
-                MediaPicker::image("{$locale}_landing.image_hero", 'Hero Image', true),
-                MediaPicker::image("{$locale}_landing.image_left", 'Left Background Image', true),
-                MediaPicker::image("{$locale}_landing.image_right", 'Right Background Image', true),
+            Section::make(__('admin_pages.e_services.landing_hero'))->schema([
+                TextInput::make("{$locale}_landing.hero_eyebrow")->label(__('admin_pages.e_services.eyebrow'))->required()->maxLength(160),
+                TextInput::make("{$locale}_landing.hero_title")->label(__('admin_pages.e_services.title'))->required()->maxLength(180),
+                Textarea::make("{$locale}_landing.hero_summary")->label(__('admin_pages.e_services.summary'))->required()->rows(3)->columnSpanFull(),
+                MediaPicker::image("{$locale}_landing.image_hero", __('admin_pages.e_services.hero_image'), true),
+                MediaPicker::image("{$locale}_landing.image_left", __('admin_pages.e_services.left_background_image'), true),
+                MediaPicker::image("{$locale}_landing.image_right", __('admin_pages.e_services.right_background_image'), true),
             ])->columns(2)->visible(fn (): bool => $this->isLandingTarget()),
-            Section::make('Digital Services')->schema([
-                TextInput::make("{$locale}_landing.digital_title")->label('Section Title')->required()->maxLength(160),
+            Section::make(__('admin_pages.e_services.digital_services'))->schema([
+                TextInput::make("{$locale}_landing.digital_title")->label(__('admin_pages.e_services.section_title'))->required()->maxLength(160),
                 Repeater::make("{$locale}_landing.services")->schema([
                     TextInput::make('id')->required()->maxLength(80),
                     TextInput::make('title')->required()->maxLength(160),
                     Textarea::make('summary')->required()->rows(3)->columnSpanFull(),
-                    MediaPicker::icon('icon', 'Icon', true),
+                    MediaPicker::icon('icon', __('admin_pages.e_services.icon'), true),
                     TextInput::make('url')->required()->maxLength(500),
                     TextInput::make('button')->required()->maxLength(80),
                 ])->columns(2)->reorderable()->defaultItems(0)->columnSpanFull(),
             ])->visible(fn (): bool => $this->isLandingTarget()),
-            Section::make('Support Cards')->schema([
+            Section::make(__('admin_pages.e_services.support_cards'))->schema([
                 Repeater::make("{$locale}_landing.support_cards")->schema([
                     TextInput::make('id')->required()->maxLength(80),
                     TextInput::make('eyebrow')->required()->maxLength(120),
@@ -320,49 +320,49 @@ class ManageEServicesPage extends Page implements HasForms
                     Textarea::make('summary')->required()->rows(3)->columnSpanFull(),
                 ])->columns(2)->reorderable()->defaultItems(0),
             ])->visible(fn (): bool => $this->isLandingTarget()),
-            Section::make('Detail Hero and Introduction')->schema([
-                TextInput::make("{$locale}_detail.hero_eyebrow")->label('Eyebrow')->required()->maxLength(160),
-                TextInput::make("{$locale}_detail.hero_title")->label('Title')->required()->maxLength(180),
-                Textarea::make("{$locale}_detail.hero_summary")->label('Summary')->required()->rows(3)->columnSpanFull(),
-                MediaPicker::image("{$locale}_detail.hero_image", 'Hero Image', true),
-                TextInput::make("{$locale}_detail.intro_title")->label('Introduction Title')->required()->maxLength(180),
-                Textarea::make("{$locale}_detail.intro_body")->label('Introduction Body')->required()->rows(5)->columnSpanFull(),
+            Section::make(__('admin_pages.e_services.detail_hero_and_introduction'))->schema([
+                TextInput::make("{$locale}_detail.hero_eyebrow")->label(__('admin_pages.e_services.eyebrow'))->required()->maxLength(160),
+                TextInput::make("{$locale}_detail.hero_title")->label(__('admin_pages.e_services.title'))->required()->maxLength(180),
+                Textarea::make("{$locale}_detail.hero_summary")->label(__('admin_pages.e_services.summary'))->required()->rows(3)->columnSpanFull(),
+                MediaPicker::image("{$locale}_detail.hero_image", __('admin_pages.e_services.hero_image'), true),
+                TextInput::make("{$locale}_detail.intro_title")->label(__('admin_pages.e_services.introduction_title'))->required()->maxLength(180),
+                Textarea::make("{$locale}_detail.intro_body")->label(__('admin_pages.e_services.introduction_body'))->required()->rows(5)->columnSpanFull(),
             ])->columns(2)->visible(fn (): bool => ! $this->isLandingTarget() && ! $this->isSuggestionsTarget()),
-            Section::make('Guidance Sections')->schema([
+            Section::make(__('admin_pages.e_services.guidance_sections'))->schema([
                 Repeater::make("{$locale}_detail.sections")->schema([
                     TextInput::make('id')->required()->maxLength(80),
                     TextInput::make('title')->required()->maxLength(180),
                     Textarea::make('body')->required()->rows(4)->columnSpanFull(),
                 ])->columns(2)->reorderable()->minItems(1)->defaultItems(0),
             ])->visible(fn (): bool => ! $this->isLandingTarget() && ! $this->isSuggestionsTarget()),
-            Section::make('Verified Open Resources')->description('Library resources must use public HTTPS URLs.')->schema([
-                TextInput::make("{$locale}_detail.resources_title")->label('Section Title')->required()->maxLength(180),
+            Section::make(__('admin_pages.e_services.verified_open_resources'))->description(__('admin_pages.e_services.library_resources_must_use_public_https_urls'))->schema([
+                TextInput::make("{$locale}_detail.resources_title")->label(__('admin_pages.e_services.section_title'))->required()->maxLength(180),
                 Repeater::make("{$locale}_detail.resource_links")->schema([
                     TextInput::make('id')->required()->maxLength(80),
                     TextInput::make('title')->required()->maxLength(180),
-                    TextInput::make('url')->label('HTTPS URL')->required()->url()->maxLength(500),
+                    TextInput::make('url')->label(__('admin_pages.e_services.https_url'))->required()->url()->maxLength(500),
                 ])->columns(2)->reorderable()->minItems(1)->defaultItems(0),
             ])->visible(fn (): bool => $this->currentTargetKey() === 'e_services.library'),
-            Section::make('Call to Action and Related Links')->schema([
-                TextInput::make("{$locale}_detail.cta_title")->label('CTA Title')->required()->maxLength(180),
-                Textarea::make("{$locale}_detail.cta_body")->label('CTA Body')->required()->rows(3),
-                TextInput::make("{$locale}_detail.cta_label")->label('CTA Label')->required()->maxLength(100),
-                PageUrlSelect::make("{$locale}_detail.cta_url", 'CTA URL', $locale, true),
+            Section::make(__('admin_pages.e_services.call_to_action_and_related_links'))->schema([
+                TextInput::make("{$locale}_detail.cta_title")->label(__('admin_pages.e_services.cta_title'))->required()->maxLength(180),
+                Textarea::make("{$locale}_detail.cta_body")->label(__('admin_pages.e_services.cta_body'))->required()->rows(3),
+                TextInput::make("{$locale}_detail.cta_label")->label(__('admin_pages.e_services.cta_label'))->required()->maxLength(100),
+                PageUrlSelect::make("{$locale}_detail.cta_url", __('admin_pages.e_services.cta_url'), $locale, true),
                 Repeater::make("{$locale}_detail.related_links")->schema([
                     TextInput::make('id')->required()->maxLength(80),
                     TextInput::make('title')->required()->maxLength(180),
                     TextInput::make('url')->required()->maxLength(500),
                 ])->columns(2)->reorderable()->minItems(1)->defaultItems(0)->columnSpanFull(),
             ])->columns(2)->visible(fn (): bool => ! $this->isLandingTarget() && ! $this->isSuggestionsTarget()),
-            Section::make('Landing SEO')->schema([
-                TextInput::make("{$locale}_landing.seo_title")->label('SEO Title')->required()->maxLength(180),
-                Textarea::make("{$locale}_landing.seo_description")->label('SEO Description')->required()->rows(3),
-                MediaPicker::image("{$locale}_landing.seo_image", 'SEO Image', true),
+            Section::make(__('admin_pages.e_services.landing_seo'))->schema([
+                TextInput::make("{$locale}_landing.seo_title")->label(__('admin_pages.e_services.seo_title'))->required()->maxLength(180),
+                Textarea::make("{$locale}_landing.seo_description")->label(__('admin_pages.e_services.seo_description'))->required()->rows(3),
+                MediaPicker::image("{$locale}_landing.seo_image", __('admin_pages.e_services.seo_image'), true),
             ])->visible(fn (): bool => $this->isLandingTarget()),
-            Section::make('Detail SEO')->schema([
-                TextInput::make("{$locale}_detail.seo_title")->label('SEO Title')->required()->maxLength(180),
-                Textarea::make("{$locale}_detail.seo_description")->label('SEO Description')->required()->rows(3),
-                MediaPicker::image("{$locale}_detail.seo_image", 'SEO Image', true),
+            Section::make(__('admin_pages.e_services.detail_seo'))->schema([
+                TextInput::make("{$locale}_detail.seo_title")->label(__('admin_pages.e_services.seo_title'))->required()->maxLength(180),
+                Textarea::make("{$locale}_detail.seo_description")->label(__('admin_pages.e_services.seo_description'))->required()->rows(3),
+                MediaPicker::image("{$locale}_detail.seo_image", __('admin_pages.e_services.seo_image'), true),
             ])->visible(fn (): bool => ! $this->isLandingTarget() && ! $this->isSuggestionsTarget()),
         ]);
     }
@@ -398,7 +398,7 @@ class ManageEServicesPage extends Page implements HasForms
         $target = $this->targetRegistry->find($targetKey);
 
         if (! $target instanceof CmsTargetDTO || $target->area !== 'e_services') {
-            throw new \InvalidArgumentException('Unsupported E-Services target.');
+            throw new \InvalidArgumentException(__('admin_pages.e_services.unsupported_e_services_target'));
         }
     }
 

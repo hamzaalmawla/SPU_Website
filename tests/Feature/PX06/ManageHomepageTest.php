@@ -64,8 +64,8 @@ class ManageHomepageTest extends TestCase
         $this->actingAs($this->createUser('super_admin'));
 
         Livewire::test(ManageHomepage::class)
-            ->assertSee('Hero')
-            ->assertSee('Footer')
+            ->assertSee(__('admin_pages.homepage.hero'))
+            ->assertSee(__('admin_pages.homepage.footer'))
             ->assertDontSee('Bottom Stats');
     }
 

@@ -115,21 +115,21 @@ class ManageSettings extends Page implements HasForms
     private function saveAction(): Action
     {
         return Action::make('save')
-            ->label('Save Settings Group')
+            ->label(__('admin_pages.settings.save_settings_group'))
             ->icon('heroicon-o-check')
             ->color('success')
             ->form([
                 Select::make('group')
-                    ->label('Settings Group')
+                    ->label(__('admin_pages.settings.settings_group'))
                     ->options([
-                        'navigation' => 'Utility Navigation',
-                        'footer' => 'Footer',
-                        'emergency' => 'Emergency Notice',
-                        'contact' => 'Contact',
-                        'social' => 'Social',
-                        'seo' => 'SEO Defaults',
+                        'navigation' => __('admin_pages.settings.utility_navigation'),
+                        'footer' => __('admin_pages.settings.footer'),
+                        'emergency' => __('admin_pages.settings.emergency_notice'),
+                        'contact' => __('admin_pages.settings.contact'),
+                        'social' => __('admin_pages.settings.social'),
+                        'seo' => __('admin_pages.settings.seo_defaults'),
                     ])
-                    ->placeholder('Choose the group you are editing')
+                    ->placeholder(__('admin_pages.settings.choose_the_group_you_are_editing'))
                     ->required(),
             ])
             ->action(function (array $data): void {
@@ -156,19 +156,19 @@ class ManageSettings extends Page implements HasForms
                 'contact' => $this->saveContact($formData, $user->id),
                 'social' => $this->saveSocial($formData, $user->id),
                 'seo' => $this->saveSeoDefaults($formData, $user->id),
-                default => throw new \InvalidArgumentException('Unsupported settings group.'),
+                default => throw new \InvalidArgumentException(__('admin_pages.settings.unsupported_settings_group')),
             };
 
             Notification::make()
-                ->title('Settings group saved successfully')
+                ->title(__('admin_pages.settings.settings_group_saved_successfully'))
                 ->success()
                 ->send();
         } catch (\Throwable $e) {
             report($e);
 
             Notification::make()
-                ->title('Failed to save settings')
-                ->body('Please review the submitted settings and try again.')
+                ->title(__('admin_pages.settings.failed_to_save_settings'))
+                ->body(__('admin_pages.settings.please_review_the_submitted_settings_and_try_again'))
                 ->danger()
                 ->send();
         }
@@ -177,8 +177,8 @@ class ManageSettings extends Page implements HasForms
     public function save(): void
     {
         Notification::make()
-            ->title('Use the Save Settings Group action')
-            ->body('Choose the settings group to save from the page header action.')
+            ->title(__('admin_pages.settings.use_the_save_settings_group_action'))
+            ->body(__('admin_pages.settings.choose_the_settings_group_to_save_from_the_page_header_actio'))
             ->warning()
             ->send();
     }
@@ -427,10 +427,9 @@ class ManageSettings extends Page implements HasForms
     {
         $hosts = TrustedPortalUrl::trustedHosts();
 
-        return sprintf(
-            'An https:// URL on an approved host (%s), or a site-relative path beginning with "/". Leave empty for "no portal configured".',
-            $hosts === [] ? 'none currently configured' : implode(', ', $hosts),
-        );
+        return __('admin_pages.settings.portal_url_help', [
+            'hosts' => $hosts === [] ? __('admin_pages.settings.none_currently_configured') : implode(', ', $hosts),
+        ]);
     }
 
     private function loadFooter(array &$formData): void
@@ -509,15 +508,15 @@ class ManageSettings extends Page implements HasForms
 
     private function utilityNavigationTab(): Tab
     {
-        return Tab::make('Utility Navigation')
+        return Tab::make('Utility Navigation')->label(__('admin_pages.settings.utility_navigation'))
             ->icon('heroicon-o-link')
             ->schema([
                 Tabs::make('utility_locales')
                     ->tabs([
-                        Tab::make('العربية (AR)')
+                        Tab::make('العربية (AR)')->label(__('admin_pages.settings.arabic_ar'))
                             ->extraAttributes(['dir' => 'rtl'])
                             ->schema($this->utilityNavigationFields('ar')),
-                        Tab::make('English (EN)')
+                        Tab::make('English (EN)')->label(__('admin_pages.settings.english_en'))
                             ->extraAttributes(['dir' => 'ltr'])
                             ->schema($this->utilityNavigationFields('en')),
                     ]),
@@ -528,15 +527,15 @@ class ManageSettings extends Page implements HasForms
                 // it rejected the site-relative paths the policy explicitly allows
                 // - including the seeded default '/e-services/staff-email', which
                 // made the whole Portal URLs section impossible to save.
-                Section::make('Portal URLs')->schema([
+                Section::make(__('admin_pages.settings.portal_urls'))->schema([
                     TextInput::make('utility_student_portal_url')
-                        ->label('Student Portal URL')
+                        ->label(__('admin_pages.settings.student_portal_url'))
                         ->maxLength(2048)
                         ->helperText(self::portalHelperText())
                         ->rule(new TrustedPortalUrlRule),
 
                     TextInput::make('utility_staff_access_url')
-                        ->label('Staff Access URL')
+                        ->label(__('admin_pages.settings.staff_access_url'))
                         ->maxLength(2048)
                         ->helperText(self::portalHelperText())
                         ->rule(new TrustedPortalUrlRule),
@@ -550,15 +549,15 @@ class ManageSettings extends Page implements HasForms
         $prefix = "utility_{$locale}";
 
         return [
-            Section::make('Apply CTA')->schema([
+            Section::make(__('admin_pages.settings.apply_cta'))->schema([
                 TextInput::make("{$prefix}_apply_cta_label")
-                    ->label('CTA Label')
+                    ->label(__('admin_pages.settings.cta_label'))
                     ->maxLength(100),
 
-                PageUrlSelect::make("{$prefix}_apply_cta_url", 'CTA URL', $locale),
+                PageUrlSelect::make("{$prefix}_apply_cta_url", __('admin_pages.settings.cta_url'), $locale),
 
                 Toggle::make("{$prefix}_apply_cta_enabled")
-                    ->label('Enabled')
+                    ->label(__('admin_pages.settings.enabled'))
                     ->default(true),
             ]),
         ];
@@ -566,15 +565,15 @@ class ManageSettings extends Page implements HasForms
 
     private function footerTab(): Tab
     {
-        return Tab::make('Footer')
+        return Tab::make('Footer')->label(__('admin_pages.settings.footer'))
             ->icon('heroicon-o-bars-3-bottom-left')
             ->schema([
                 Tabs::make('footer_locales')
                     ->tabs([
-                        Tab::make('العربية (AR)')
+                        Tab::make('العربية (AR)')->label(__('admin_pages.settings.arabic_ar'))
                             ->extraAttributes(['dir' => 'rtl'])
                             ->schema($this->footerFields('ar')),
-                        Tab::make('English (EN)')
+                        Tab::make('English (EN)')->label(__('admin_pages.settings.english_en'))
                             ->extraAttributes(['dir' => 'ltr'])
                             ->schema($this->footerFields('en')),
                     ]),
@@ -587,53 +586,53 @@ class ManageSettings extends Page implements HasForms
         $prefix = "footer_{$locale}";
 
         return [
-            Section::make('Brand')->schema([
+            Section::make(__('admin_pages.settings.brand'))->schema([
                 TextInput::make("{$prefix}_brand_title")
-                    ->label('Brand Title')
+                    ->label(__('admin_pages.settings.brand_title'))
                     ->maxLength(255),
 
                 Textarea::make("{$prefix}_brand_summary")
-                    ->label('Brand Summary')
+                    ->label(__('admin_pages.settings.brand_summary'))
                     ->rows(3)
                     ->maxLength(1000),
 
-                MediaPicker::image("{$prefix}_logo_url", 'Logo'),
+                MediaPicker::image("{$prefix}_logo_url", __('admin_pages.settings.logo')),
             ]),
 
-            Section::make('Contact')->schema([
+            Section::make(__('admin_pages.settings.contact'))->schema([
                 TextInput::make("{$prefix}_address")
-                    ->label('Address')
+                    ->label(__('admin_pages.settings.address'))
                     ->maxLength(500),
 
                 TextInput::make("{$prefix}_phone")
-                    ->label('Phone')
+                    ->label(__('admin_pages.settings.phone'))
                     ->maxLength(50),
 
                 TextInput::make("{$prefix}_email")
-                    ->label('Email')
+                    ->label(__('admin_pages.settings.email'))
                     ->email()
                     ->maxLength(255),
             ]),
 
-            Section::make('Map & Legal')->schema([
+            Section::make(__('admin_pages.settings.map_legal'))->schema([
                 TextInput::make("{$prefix}_map_embed_url")
-                    ->label('Map Embed URL')
+                    ->label(__('admin_pages.settings.map_embed_url'))
                     ->url()
                     ->maxLength(2048),
 
                 TextInput::make("{$prefix}_copyright")
-                    ->label('Copyright Text')
+                    ->label(__('admin_pages.settings.copyright_text'))
                     ->maxLength(500),
 
                 Repeater::make("{$prefix}_legal_links")
-                    ->label('Legal Links')
+                    ->label(__('admin_pages.settings.legal_links'))
                     ->schema([
                         TextInput::make('label')
-                            ->label('Label')
+                            ->label(__('admin_pages.settings.label'))
                             ->required()
                             ->maxLength(100),
                         TextInput::make('url')
-                            ->label('URL')
+                            ->label(__('admin_pages.settings.url'))
                             ->url()
                             ->required()
                             ->maxLength(2048),
@@ -648,15 +647,15 @@ class ManageSettings extends Page implements HasForms
 
     private function emergencyNoticeTab(): Tab
     {
-        return Tab::make('Emergency Notice')
+        return Tab::make('Emergency Notice')->label(__('admin_pages.settings.emergency_notice'))
             ->icon('heroicon-o-exclamation-triangle')
             ->schema([
                 Tabs::make('emergency_locales')
                     ->tabs([
-                        Tab::make('العربية (AR)')
+                        Tab::make('العربية (AR)')->label(__('admin_pages.settings.arabic_ar'))
                             ->extraAttributes(['dir' => 'rtl'])
                             ->schema($this->emergencyNoticeFields('ar')),
-                        Tab::make('English (EN)')
+                        Tab::make('English (EN)')->label(__('admin_pages.settings.english_en'))
                             ->extraAttributes(['dir' => 'ltr'])
                             ->schema($this->emergencyNoticeFields('en')),
                     ]),
@@ -669,22 +668,22 @@ class ManageSettings extends Page implements HasForms
         $prefix = "emergency_{$locale}";
 
         return [
-            Section::make('Emergency Notice')->schema([
+            Section::make(__('admin_pages.settings.emergency_notice'))->schema([
                 Toggle::make("{$prefix}_enabled")
-                    ->label('Enabled')
+                    ->label(__('admin_pages.settings.enabled'))
                     ->default(false),
 
                 TextInput::make("{$prefix}_title")
-                    ->label('Title')
+                    ->label(__('admin_pages.settings.title'))
                     ->maxLength(255),
 
                 Textarea::make("{$prefix}_message")
-                    ->label('Message')
+                    ->label(__('admin_pages.settings.message'))
                     ->rows(4)
                     ->maxLength(2000),
 
                 TextInput::make("{$prefix}_url")
-                    ->label('Link URL')
+                    ->label(__('admin_pages.settings.link_url'))
                     ->url()
                     ->maxLength(2048),
             ]),
@@ -693,15 +692,15 @@ class ManageSettings extends Page implements HasForms
 
     private function contactTab(): Tab
     {
-        return Tab::make('Contact')
+        return Tab::make('Contact')->label(__('admin_pages.settings.contact'))
             ->icon('heroicon-o-phone')
             ->schema([
                 Tabs::make('contact_locales')
                     ->tabs([
-                        Tab::make('العربية (AR)')
+                        Tab::make('العربية (AR)')->label(__('admin_pages.settings.arabic_ar'))
                             ->extraAttributes(['dir' => 'rtl'])
                             ->schema($this->contactFields('ar')),
-                        Tab::make('English (EN)')
+                        Tab::make('English (EN)')->label(__('admin_pages.settings.english_en'))
                             ->extraAttributes(['dir' => 'ltr'])
                             ->schema($this->contactFields('en')),
                     ]),
@@ -715,19 +714,19 @@ class ManageSettings extends Page implements HasForms
 
         return [
             Repeater::make("{$prefix}_links")
-                ->label('Contact Links')
+                ->label(__('admin_pages.settings.contact_links'))
                 ->schema([
                     TextInput::make('type')
-                        ->label('Type')
-                        ->placeholder('phone, email, fax, etc.')
+                        ->label(__('admin_pages.settings.type'))
+                        ->placeholder(__('admin_pages.settings.phone_email_fax_etc'))
                         ->required()
                         ->maxLength(50),
                     TextInput::make('label')
-                        ->label('Label')
+                        ->label(__('admin_pages.settings.label'))
                         ->required()
                         ->maxLength(255),
                     TextInput::make('value')
-                        ->label('Value')
+                        ->label(__('admin_pages.settings.value'))
                         ->required()
                         ->maxLength(500),
                 ])
@@ -740,15 +739,15 @@ class ManageSettings extends Page implements HasForms
 
     private function socialTab(): Tab
     {
-        return Tab::make('Social')
+        return Tab::make('Social')->label(__('admin_pages.settings.social'))
             ->icon('heroicon-o-share')
             ->schema([
                 Tabs::make('social_locales')
                     ->tabs([
-                        Tab::make('العربية (AR)')
+                        Tab::make('العربية (AR)')->label(__('admin_pages.settings.arabic_ar'))
                             ->extraAttributes(['dir' => 'rtl'])
                             ->schema($this->socialFields('ar')),
-                        Tab::make('English (EN)')
+                        Tab::make('English (EN)')->label(__('admin_pages.settings.english_en'))
                             ->extraAttributes(['dir' => 'ltr'])
                             ->schema($this->socialFields('en')),
                     ]),
@@ -762,20 +761,20 @@ class ManageSettings extends Page implements HasForms
 
         return [
             Repeater::make("{$prefix}_links")
-                ->label('Social Links')
+                ->label(__('admin_pages.settings.social_links'))
                 ->schema([
                     TextInput::make('platform')
-                        ->label('Platform')
-                        ->placeholder('facebook, twitter, instagram, etc.')
+                        ->label(__('admin_pages.settings.platform'))
+                        ->placeholder(__('admin_pages.settings.facebook_twitter_instagram_etc'))
                         ->required()
                         ->maxLength(50),
                     TextInput::make('url')
-                        ->label('URL')
+                        ->label(__('admin_pages.settings.url'))
                         ->url()
                         ->required()
                         ->maxLength(2048),
                     Toggle::make('is_enabled')
-                        ->label('Enabled')
+                        ->label(__('admin_pages.settings.enabled'))
                         ->default(true),
                 ])
                 ->columns(3)
@@ -787,15 +786,15 @@ class ManageSettings extends Page implements HasForms
 
     private function seoDefaultsTab(): Tab
     {
-        return Tab::make('SEO Defaults')
+        return Tab::make('SEO Defaults')->label(__('admin_pages.settings.seo_defaults'))
             ->icon('heroicon-o-magnifying-glass')
             ->schema([
                 Tabs::make('seo_locales')
                     ->tabs([
-                        Tab::make('العربية (AR)')
+                        Tab::make('العربية (AR)')->label(__('admin_pages.settings.arabic_ar'))
                             ->extraAttributes(['dir' => 'rtl'])
                             ->schema($this->seoDefaultsFields('ar')),
-                        Tab::make('English (EN)')
+                        Tab::make('English (EN)')->label(__('admin_pages.settings.english_en'))
                             ->extraAttributes(['dir' => 'ltr'])
                             ->schema($this->seoDefaultsFields('en')),
                     ]),
@@ -808,29 +807,29 @@ class ManageSettings extends Page implements HasForms
         $prefix = "seo_{$locale}";
 
         return [
-            Section::make('Default SEO Settings')->schema([
+            Section::make(__('admin_pages.settings.default_seo_settings'))->schema([
                 TextInput::make("{$prefix}_title")
-                    ->label('Default Title')
+                    ->label(__('admin_pages.settings.default_title'))
                     ->maxLength(70),
 
                 Textarea::make("{$prefix}_meta_description")
-                    ->label('Default Meta Description')
+                    ->label(__('admin_pages.settings.default_meta_description'))
                     ->rows(3)
                     ->maxLength(160),
 
                 TextInput::make("{$prefix}_og_title")
-                    ->label('Default OG Title')
+                    ->label(__('admin_pages.settings.default_og_title'))
                     ->maxLength(70),
 
                 Textarea::make("{$prefix}_og_description")
-                    ->label('Default OG Description')
+                    ->label(__('admin_pages.settings.default_og_description'))
                     ->rows(3)
                     ->maxLength(200),
 
-                MediaPicker::image("{$prefix}_og_image", 'Default OG Image'),
+                MediaPicker::image("{$prefix}_og_image", __('admin_pages.settings.default_og_image')),
 
                 TextInput::make("{$prefix}_robots")
-                    ->label('Default Robots Directive')
+                    ->label(__('admin_pages.settings.default_robots_directive'))
                     ->placeholder('index,follow')
                     ->maxLength(100),
             ]),

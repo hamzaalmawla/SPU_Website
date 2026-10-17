@@ -132,7 +132,7 @@ final class AdmissionsWorkflowTest extends TestCase
         $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
 
         Livewire::test(ManageAdmissions::class)
-            ->assertSee('Admissions')
+            ->assertSet('data.en_landing.hero_title', 'Admissions')
             ->assertSee('القبول والتسجيل');
     }
 
@@ -165,8 +165,8 @@ final class AdmissionsWorkflowTest extends TestCase
         Livewire::test(ManageAdmissions::class)
             ->set('data.target_key', 'admissions.transfer')
             ->call('loadTarget', 'admissions.transfer')
-            ->assertSee('Transfer and International Tabs')
-            ->assertDontSee('Subpage Schema Pending');
+            ->assertSee(__('admin_pages.admissions.transfer_and_international_tabs'))
+            ->assertDontSee(__('admin_pages.admissions.subpage_schema_pending'));
     }
 
     public function test_imported_admissions_pages_render_redirects_and_have_curated_editors(): void
@@ -202,8 +202,8 @@ final class AdmissionsWorkflowTest extends TestCase
             $component = Livewire::test(ManageAdmissions::class)
                 ->set('data.target_key', $targetKey)
                 ->call('loadTarget', $targetKey)
-                ->assertSee('Hero and Intro')
-                ->assertDontSee('Subpage Schema Pending');
+                ->assertSee(__('admin_pages.admissions.hero_and_intro'))
+                ->assertDontSee(__('admin_pages.admissions.subpage_schema_pending'));
 
             /** @var array<string, mixed> $data */
             $data = $component->get('data');
@@ -228,9 +228,9 @@ final class AdmissionsWorkflowTest extends TestCase
         $component = Livewire::test(ManageAdmissions::class)
             ->set('data.target_key', 'admissions.requirements')
             ->call('loadTarget', 'admissions.requirements')
-            ->assertSee('Eligibility Criteria')
-            ->assertSee('Required Documents')
-            ->assertSee('Ready Checklist');
+            ->assertSee(__('admin_pages.admissions.eligibility_criteria'))
+            ->assertSee(__('admin_pages.admissions.required_documents'))
+            ->assertSee(__('admin_pages.admissions.ready_checklist'));
 
         /** @var array<string, mixed> $data */
         $data = $component->get('data');
@@ -262,9 +262,9 @@ final class AdmissionsWorkflowTest extends TestCase
         $component = Livewire::test(ManageAdmissions::class)
             ->set('data.target_key', 'admissions.tuition')
             ->call('loadTarget', 'admissions.tuition')
-            ->assertSee('Fee Table')
-            ->assertSee('Payment Methods')
-            ->assertSee('Financial Notes');
+            ->assertSee(__('admin_pages.admissions.fee_table'))
+            ->assertSee(__('admin_pages.admissions.payment_methods'))
+            ->assertSee(__('admin_pages.admissions.financial_notes'));
 
         /** @var array<string, mixed> $data */
         $data = $component->get('data');
@@ -297,9 +297,9 @@ final class AdmissionsWorkflowTest extends TestCase
         $component = Livewire::test(ManageAdmissions::class)
             ->set('data.target_key', 'admissions.how-to-apply')
             ->call('loadTarget', 'admissions.how-to-apply')
-            ->assertSee('Hero and Intro')
-            ->assertSee('Feature Cards')
-            ->assertSee('Step-by-Step Guide');
+            ->assertSee(__('admin_pages.admissions.hero_and_intro'))
+            ->assertSee(__('admin_pages.admissions.feature_cards'))
+            ->assertSee(__('admin_pages.admissions.step_by_step_guide'));
 
         /** @var array<string, mixed> $data */
         $data = $component->get('data');
@@ -331,9 +331,9 @@ final class AdmissionsWorkflowTest extends TestCase
         $component = Livewire::test(ManageAdmissions::class)
             ->set('data.target_key', 'admissions.faq')
             ->call('loadTarget', 'admissions.faq')
-            ->assertSee('Hero and Search')
-            ->assertSee('FAQ Groups')
-            ->assertSee('Questions');
+            ->assertSee(__('admin_pages.admissions.hero_and_search'))
+            ->assertSee(__('admin_pages.admissions.faq_groups'))
+            ->assertSee(__('admin_pages.admissions.questions'));
 
         /** @var array<string, mixed> $data */
         $data = $component->get('data');
@@ -365,9 +365,9 @@ final class AdmissionsWorkflowTest extends TestCase
         $component = Livewire::test(ManageAdmissions::class)
             ->set('data.target_key', 'admissions.calendar')
             ->call('loadTarget', 'admissions.calendar')
-            ->assertSee('Highlights and Deadlines')
-            ->assertSee('Academic Timeline')
-            ->assertSee('Download and Notice');
+            ->assertSee(__('admin_pages.admissions.highlights_and_deadlines'))
+            ->assertSee(__('admin_pages.admissions.academic_timeline'))
+            ->assertSee(__('admin_pages.admissions.download_and_notice'));
 
         /** @var array<string, mixed> $data */
         $data = $component->get('data');
@@ -397,10 +397,10 @@ final class AdmissionsWorkflowTest extends TestCase
         $component = Livewire::test(ManageAdmissions::class)
             ->set('data.target_key', 'admissions.documents')
             ->call('loadTarget', 'admissions.documents')
-            ->assertSee('Admission Checklist')
-            ->assertSee('University Documents')
-            ->assertSee('Study System and GPA')
-            ->assertSee('Academic Warnings');
+            ->assertSee(__('admin_pages.admissions.admission_checklist'))
+            ->assertSee(__('admin_pages.admissions.university_documents'))
+            ->assertSee(__('admin_pages.admissions.study_system_and_gpa'))
+            ->assertSee(__('admin_pages.admissions.academic_warnings'));
 
         /** @var array<string, mixed> $data */
         $data = $component->get('data');
@@ -431,9 +431,9 @@ final class AdmissionsWorkflowTest extends TestCase
         $component = Livewire::test(ManageAdmissions::class)
             ->set('data.target_key', 'admissions.transfer')
             ->call('loadTarget', 'admissions.transfer')
-            ->assertSee('Hero and Labels')
-            ->assertSee('Transfer and International Tabs')
-            ->assertSee('Process Steps');
+            ->assertSee(__('admin_pages.admissions.hero_and_labels'))
+            ->assertSee(__('admin_pages.admissions.transfer_and_international_tabs'))
+            ->assertSee(__('admin_pages.admissions.process_steps'));
 
         /** @var array<string, mixed> $data */
         $data = $component->get('data');

@@ -92,9 +92,9 @@ class ManageAdmissions extends Page implements HasForms
     {
         return $form
             ->schema([
-                Section::make('Admissions Target')->schema([
+                Section::make(__('admin_pages.admissions.admissions_target'))->schema([
                     Select::make('target_key')
-                        ->label('Page / Subpage')
+                        ->label(__('admin_pages.admissions.page_subpage'))
                         ->options($this->targetOptions())
                         ->required()
                         ->live()
@@ -102,8 +102,8 @@ class ManageAdmissions extends Page implements HasForms
                 ]),
                 Tabs::make('admissions_locales')
                     ->tabs([
-                        Tab::make('Arabic')->schema($this->payloadFields('ar')),
-                        Tab::make('English')->schema($this->payloadFields('en')),
+                        Tab::make('Arabic')->label(__('admin_pages.admissions.arabic'))->schema($this->payloadFields('ar')),
+                        Tab::make('English')->label(__('admin_pages.admissions.english'))->schema($this->payloadFields('en')),
                     ])
                     ->persistTabInQueryString('locale')
                     ->columnSpanFull(),
@@ -115,28 +115,28 @@ class ManageAdmissions extends Page implements HasForms
     {
         return [
             Action::make('save')
-                ->label('Save Draft')
+                ->label(__('admin_pages.admissions.save_draft'))
                 ->icon('heroicon-o-check')
                 ->color('gray')
                 ->action(function (): void {
                     $this->save();
                 }),
             Action::make('preview_ar')
-                ->label('Preview AR')
+                ->label(__('admin_pages.admissions.preview_ar'))
                 ->icon('heroicon-o-eye')
                 ->color('info')
                 ->action(function (): void {
                     $this->openPreview('ar');
                 }),
             Action::make('preview_en')
-                ->label('Preview EN')
+                ->label(__('admin_pages.admissions.preview_en'))
                 ->icon('heroicon-o-eye')
                 ->color('info')
                 ->action(function (): void {
                     $this->openPreview('en');
                 }),
             Action::make('publish')
-                ->label('Publish')
+                ->label(__('admin_pages.admissions.publish'))
                 ->icon('heroicon-o-paper-airplane')
                 ->color('success')
                 ->requiresConfirmation()
@@ -144,19 +144,19 @@ class ManageAdmissions extends Page implements HasForms
                     $this->publish();
                 }),
             Action::make('schedule')
-                ->label('Schedule')
+                ->label(__('admin_pages.admissions.schedule'))
                 ->icon('heroicon-o-clock')
                 ->color('warning')
                 ->form([
                     DateTimePicker::make('publish_at')
-                        ->label('Publish At')
+                        ->label(__('admin_pages.admissions.publish_at'))
                         ->required()
                         ->minDate(now())
                         ->native(false),
                 ])
                 ->action(fn (array $data) => $this->schedule((string) $data['publish_at'])),
             Action::make('unpublish')
-                ->label('Unpublish')
+                ->label(__('admin_pages.admissions.unpublish'))
                 ->icon('heroicon-o-x-circle')
                 ->color('danger')
                 ->requiresConfirmation()
@@ -213,13 +213,13 @@ class ManageAdmissions extends Page implements HasForms
             );
             $this->draftVersion = $draft->version;
 
-            Notification::make()->title('Admissions draft saved')->success()->send();
+            Notification::make()->title(__('admin_pages.admissions.admissions_draft_saved'))->success()->send();
         } catch (ConflictException $e) {
             $this->draftVersion = $e->currentVersion;
-            Notification::make()->title('Draft conflict detected')->body('Reload this admissions target before saving again.')->danger()->persistent()->send();
+            Notification::make()->title(__('admin_pages.admissions.draft_conflict_detected'))->body(__('admin_pages.admissions.reload_this_admissions_target_before_saving_again'))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to save admissions draft')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('admin_pages.admissions.failed_to_save_admissions_draft'))->body($e->getMessage())->danger()->send();
         }
     }
 
@@ -237,10 +237,10 @@ class ManageAdmissions extends Page implements HasForms
             $this->redirect($preview->previewUrl);
         } catch (ConflictException $e) {
             $this->draftVersion = $e->currentVersion;
-            Notification::make()->title('Draft conflict detected')->body('Reload this admissions target before previewing again.')->danger()->persistent()->send();
+            Notification::make()->title(__('admin_pages.admissions.draft_conflict_detected'))->body(__('admin_pages.admissions.reload_this_admissions_target_before_previewing_again'))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to create admissions preview')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('admin_pages.admissions.failed_to_create_admissions_preview'))->body($e->getMessage())->danger()->send();
         }
     }
 
@@ -255,12 +255,12 @@ class ManageAdmissions extends Page implements HasForms
             $this->draftVersion = $draft->version;
             $this->cmsWorkflowService->publish($targetKey, (int) $user->id);
 
-            Notification::make()->title('Admissions target published')->success()->send();
+            Notification::make()->title(__('admin_pages.admissions.admissions_target_published'))->success()->send();
         } catch (ValidationException $e) {
-            Notification::make()->title('Publish failed')->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
+            Notification::make()->title(__('admin_pages.admissions.publish_failed'))->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to publish admissions target')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('admin_pages.admissions.failed_to_publish_admissions_target'))->body($e->getMessage())->danger()->send();
         }
     }
 
@@ -275,12 +275,12 @@ class ManageAdmissions extends Page implements HasForms
             $this->draftVersion = $draft->version;
             $this->cmsWorkflowService->schedule($targetKey, new \DateTimeImmutable($publishAt), (int) $user->id);
 
-            Notification::make()->title('Admissions target scheduled')->success()->send();
+            Notification::make()->title(__('admin_pages.admissions.admissions_target_scheduled'))->success()->send();
         } catch (ValidationException $e) {
-            Notification::make()->title('Schedule failed')->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
+            Notification::make()->title(__('admin_pages.admissions.schedule_failed'))->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
         } catch (\Throwable $e) {
             report($e);
-            Notification::make()->title('Failed to schedule admissions target')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('admin_pages.admissions.failed_to_schedule_admissions_target'))->body($e->getMessage())->danger()->send();
         }
     }
 
@@ -290,7 +290,7 @@ class ManageAdmissions extends Page implements HasForms
         $user = auth()->user();
 
         $result = $this->cmsWorkflowService->unpublish($this->currentTargetKey(), (int) $user->id);
-        $notification = Notification::make()->title($result ? 'Admissions target unpublished' : 'No published admissions target found');
+        $notification = Notification::make()->title($result ? __('admin_pages.admissions.admissions_target_unpublished') : __('admin_pages.admissions.no_published_admissions_target_found'));
 
         ($result ? $notification->success() : $notification->warning())->send();
     }
@@ -316,7 +316,7 @@ class ManageAdmissions extends Page implements HasForms
         $target = $this->targetRegistry->find($targetKey);
 
         if (! $target instanceof CmsTargetDTO || $target->area !== 'admissions') {
-            throw new \InvalidArgumentException('Unsupported admissions target.');
+            throw new \InvalidArgumentException(__('admin_pages.admissions.unsupported_admissions_target'));
         }
     }
 
@@ -406,7 +406,7 @@ class ManageAdmissions extends Page implements HasForms
             ];
         }
 
-        throw new \InvalidArgumentException('This admissions subpage form will be structured next. Select the Admissions hub page for now.');
+        throw new \InvalidArgumentException(__('admin_pages.admissions.this_admissions_subpage_form_will_be_structured_next_select'));
     }
 
     /** @return array<string, mixed> */
@@ -455,12 +455,12 @@ class ManageAdmissions extends Page implements HasForms
         }
 
         return [
-            Section::make('Subpage Schema Pending')
-                ->description('We are converting Admissions one page at a time. The hub page is editable now; this subpage will get its own correct structured form next.')
+            Section::make(__('admin_pages.admissions.subpage_schema_pending'))
+                ->description(__('admin_pages.admissions.we_are_converting_admissions_one_page_at_a_time_the_hub_page'))
                 ->schema([
                     TextInput::make($locale.'_subpage_pending')
-                        ->label('Status')
-                        ->default('Structured form pending for this subpage')
+                        ->label(__('admin_pages.admissions.status'))
+                        ->default(__('admin_pages.admissions.structured_form_pending_for_this_subpage'))
                         ->disabled(),
                 ]),
         ];
@@ -472,15 +472,15 @@ class ManageAdmissions extends Page implements HasForms
         $prefix = $locale.'_'.$stateKey;
 
         return [
-            Section::make('Hero and Intro')->schema([
-                TextInput::make($prefix.'.title')->label('Page Title')->required()->maxLength(180),
-                MediaPicker::image($prefix.'.heroImage', 'Hero Image', true),
-                TextInput::make($prefix.'.breadcrumbHome')->label('Breadcrumb Home')->required()->maxLength(80),
-                TextInput::make($prefix.'.breadcrumbParent')->label('Breadcrumb Parent')->required()->maxLength(120),
-                TextInput::make($prefix.'.breadcrumbCurrent')->label('Breadcrumb Current')->required()->maxLength(160),
-                Textarea::make($prefix.'.seoDescription')->label('SEO Description')->rows(2)->columnSpanFull(),
+            Section::make(__('admin_pages.admissions.hero_and_intro'))->schema([
+                TextInput::make($prefix.'.title')->label(__('admin_pages.admissions.page_title'))->required()->maxLength(180),
+                MediaPicker::image($prefix.'.heroImage', __('admin_pages.admissions.hero_image'), true),
+                TextInput::make($prefix.'.breadcrumbHome')->label(__('admin_pages.admissions.breadcrumb_home'))->required()->maxLength(80),
+                TextInput::make($prefix.'.breadcrumbParent')->label(__('admin_pages.admissions.breadcrumb_parent'))->required()->maxLength(120),
+                TextInput::make($prefix.'.breadcrumbCurrent')->label(__('admin_pages.admissions.breadcrumb_current'))->required()->maxLength(160),
+                Textarea::make($prefix.'.seoDescription')->label(__('admin_pages.admissions.seo_description'))->rows(2)->columnSpanFull(),
                 Repeater::make($prefix.'.intro')
-                    ->label('Intro Paragraphs')
+                    ->label(__('admin_pages.admissions.intro_paragraphs'))
                     ->schema([
                         Textarea::make('paragraph')->required()->rows(3)->columnSpanFull(),
                     ])
@@ -490,10 +490,10 @@ class ManageAdmissions extends Page implements HasForms
                     ->columnSpanFull(),
             ])->columns(2),
 
-            Section::make('Cards')->schema([
-                TextInput::make($prefix.'.cardsTitle')->label('Cards Title')->maxLength(180),
+            Section::make(__('admin_pages.admissions.cards'))->schema([
+                TextInput::make($prefix.'.cardsTitle')->label(__('admin_pages.admissions.cards_title'))->maxLength(180),
                 Repeater::make($prefix.'.cards')
-                    ->label('Cards')
+                    ->label(__('admin_pages.admissions.cards'))
                     ->schema([
                         TextInput::make('title')->required()->maxLength(180),
                         Textarea::make('body')->required()->rows(3)->columnSpanFull(),
@@ -505,10 +505,10 @@ class ManageAdmissions extends Page implements HasForms
                     ->columnSpanFull(),
             ]),
 
-            Section::make('Steps')->schema([
-                TextInput::make($prefix.'.stepsTitle')->label('Steps Title')->maxLength(180),
+            Section::make(__('admin_pages.admissions.steps'))->schema([
+                TextInput::make($prefix.'.stepsTitle')->label(__('admin_pages.admissions.steps_title'))->maxLength(180),
                 Repeater::make($prefix.'.steps')
-                    ->label('Steps')
+                    ->label(__('admin_pages.admissions.steps'))
                     ->schema([
                         TextInput::make('title')->required()->maxLength(180),
                         Textarea::make('body')->required()->rows(3)->columnSpanFull(),
@@ -528,33 +528,33 @@ class ManageAdmissions extends Page implements HasForms
         $prefix = $locale.'_transfer';
 
         return [
-            Section::make('Hero and Labels')->schema([
-                TextInput::make($prefix.'.title')->label('Page Title')->required()->maxLength(180),
-                MediaPicker::image($prefix.'.hero_image', 'Hero Image', true),
-                TextInput::make($prefix.'.breadcrumb_home')->label('Breadcrumb Home')->required()->maxLength(80),
-                TextInput::make($prefix.'.breadcrumb_parent')->label('Breadcrumb Parent')->required()->maxLength(120),
-                TextInput::make($prefix.'.breadcrumb_current')->label('Breadcrumb Current')->required()->maxLength(160),
-                TextInput::make($prefix.'.apply_label')->label('Apply Button')->required()->maxLength(120),
-                PageUrlSelect::make($prefix.'.apply_url', 'Apply Page', $locale, true),
-                TextInput::make($prefix.'.request_info_label')->label('Request Info Button')->required()->maxLength(120),
-                PageUrlSelect::make($prefix.'.request_info_url', 'Request Info Page', $locale, true),
-                TextInput::make($prefix.'.required_label')->label('Required Label')->required()->maxLength(80),
-                TextInput::make($prefix.'.optional_label')->label('Optional Label')->required()->maxLength(120),
-                TextInput::make($prefix.'.notes_title')->label('Notes Title')->required()->maxLength(180),
-                Textarea::make($prefix.'.notes_desc')->label('Notes Description')->required()->rows(3)->columnSpanFull(),
+            Section::make(__('admin_pages.admissions.hero_and_labels'))->schema([
+                TextInput::make($prefix.'.title')->label(__('admin_pages.admissions.page_title'))->required()->maxLength(180),
+                MediaPicker::image($prefix.'.hero_image', __('admin_pages.admissions.hero_image'), true),
+                TextInput::make($prefix.'.breadcrumb_home')->label(__('admin_pages.admissions.breadcrumb_home'))->required()->maxLength(80),
+                TextInput::make($prefix.'.breadcrumb_parent')->label(__('admin_pages.admissions.breadcrumb_parent'))->required()->maxLength(120),
+                TextInput::make($prefix.'.breadcrumb_current')->label(__('admin_pages.admissions.breadcrumb_current'))->required()->maxLength(160),
+                TextInput::make($prefix.'.apply_label')->label(__('admin_pages.admissions.apply_button'))->required()->maxLength(120),
+                PageUrlSelect::make($prefix.'.apply_url', __('admin_pages.admissions.apply_page'), $locale, true),
+                TextInput::make($prefix.'.request_info_label')->label(__('admin_pages.admissions.request_info_button'))->required()->maxLength(120),
+                PageUrlSelect::make($prefix.'.request_info_url', __('admin_pages.admissions.request_info_page'), $locale, true),
+                TextInput::make($prefix.'.required_label')->label(__('admin_pages.admissions.required_label'))->required()->maxLength(80),
+                TextInput::make($prefix.'.optional_label')->label(__('admin_pages.admissions.optional_label'))->required()->maxLength(120),
+                TextInput::make($prefix.'.notes_title')->label(__('admin_pages.admissions.notes_title'))->required()->maxLength(180),
+                Textarea::make($prefix.'.notes_desc')->label(__('admin_pages.admissions.notes_description'))->required()->rows(3)->columnSpanFull(),
             ])->columns(2),
 
-            Section::make('Transfer and International Tabs')->schema([
+            Section::make(__('admin_pages.admissions.transfer_and_international_tabs'))->schema([
                 Repeater::make($prefix.'.tabs')
-                    ->label('Applicant Tabs')
+                    ->label(__('admin_pages.admissions.applicant_tabs'))
                     ->schema([
-                        TextInput::make('id')->label('Tab ID')->required()->maxLength(80),
-                        TextInput::make('label')->label('Tab Label')->required()->maxLength(160),
-                        TextInput::make('policiesTitle')->label('Policies Title')->required()->maxLength(180),
+                        TextInput::make('id')->label(__('admin_pages.admissions.tab_id'))->required()->maxLength(80),
+                        TextInput::make('label')->label(__('admin_pages.admissions.tab_label'))->required()->maxLength(160),
+                        TextInput::make('policiesTitle')->label(__('admin_pages.admissions.policies_title'))->required()->maxLength(180),
                         Repeater::make('policies')
-                            ->label('Policies')
+                            ->label(__('admin_pages.admissions.policies'))
                             ->schema([
-                                MediaPicker::icon('icon', 'Icon', true),
+                                MediaPicker::icon('icon', __('admin_pages.admissions.icon'), true),
                                 TextInput::make('title')->required()->maxLength(180),
                                 Textarea::make('desc')->required()->rows(2)->columnSpanFull(),
                             ])
@@ -563,21 +563,21 @@ class ManageAdmissions extends Page implements HasForms
                             ->reorderable()
                             ->collapsible()
                             ->columnSpanFull(),
-                        TextInput::make('documentsTitle')->label('Documents Title')->required()->maxLength(180),
+                        TextInput::make('documentsTitle')->label(__('admin_pages.admissions.documents_title'))->required()->maxLength(180),
                         Repeater::make('documents')
-                            ->label('Documents')
+                            ->label(__('admin_pages.admissions.documents'))
                             ->schema([
                                 TextInput::make('title')->required()->maxLength(180),
-                                Toggle::make('required')->label('Required'),
+                                Toggle::make('required')->label(__('admin_pages.admissions.required')),
                             ])
                             ->columns(2)
                             ->defaultItems(0)
                             ->reorderable()
                             ->collapsible()
                             ->columnSpanFull(),
-                        TextInput::make('processTitle')->label('Process Title')->required()->maxLength(180),
+                        TextInput::make('processTitle')->label(__('admin_pages.admissions.process_title'))->required()->maxLength(180),
                         Repeater::make('steps')
-                            ->label('Process Steps')
+                            ->label(__('admin_pages.admissions.process_steps'))
                             ->schema([
                                 TextInput::make('title')->required()->maxLength(180),
                                 Textarea::make('desc')->required()->rows(2)->columnSpanFull(),
@@ -603,42 +603,42 @@ class ManageAdmissions extends Page implements HasForms
         $prefix = $locale.'_documents';
 
         return [
-            Section::make('Hero and Labels')->schema([
-                TextInput::make($prefix.'.title')->label('Page Title')->required()->maxLength(180),
-                MediaPicker::image($prefix.'.hero_image', 'Hero Image', true),
-                TextInput::make($prefix.'.breadcrumb_home')->label('Breadcrumb Home')->required()->maxLength(80),
-                TextInput::make($prefix.'.breadcrumb_parent')->label('Breadcrumb Parent')->required()->maxLength(120),
-                TextInput::make($prefix.'.breadcrumb_current')->label('Breadcrumb Current')->required()->maxLength(120),
-                TextInput::make($prefix.'.apply_label')->label('Apply Button')->required()->maxLength(120),
-                PageUrlSelect::make($prefix.'.apply_url', 'Apply Page', $locale, true),
-                TextInput::make($prefix.'.request_info_label')->label('Request Info Button')->required()->maxLength(120),
-                PageUrlSelect::make($prefix.'.request_info_url', 'Request Info Page', $locale, true),
-                TextInput::make($prefix.'.required_label')->label('Required Label')->required()->maxLength(80),
-                TextInput::make($prefix.'.optional_label')->label('Optional Label')->required()->maxLength(80),
-                TextInput::make($prefix.'.download_label')->label('Download Button Label')->required()->maxLength(120),
-                TextInput::make($prefix.'.download_all_label')->label('Download All Title')->required()->maxLength(180),
-                Textarea::make($prefix.'.download_all_desc')->label('Download All Description')->required()->rows(2)->columnSpanFull(),
-                Textarea::make($prefix.'.download_guidance')->label('No Download Guidance')->required()->rows(2)->columnSpanFull(),
-                TextInput::make($prefix.'.last_reviewed_label')->label('Last Reviewed Label')->required()->maxLength(120),
-                TextInput::make($prefix.'.last_reviewed')->label('Last Reviewed Value')->maxLength(120),
+            Section::make(__('admin_pages.admissions.hero_and_labels'))->schema([
+                TextInput::make($prefix.'.title')->label(__('admin_pages.admissions.page_title'))->required()->maxLength(180),
+                MediaPicker::image($prefix.'.hero_image', __('admin_pages.admissions.hero_image'), true),
+                TextInput::make($prefix.'.breadcrumb_home')->label(__('admin_pages.admissions.breadcrumb_home'))->required()->maxLength(80),
+                TextInput::make($prefix.'.breadcrumb_parent')->label(__('admin_pages.admissions.breadcrumb_parent'))->required()->maxLength(120),
+                TextInput::make($prefix.'.breadcrumb_current')->label(__('admin_pages.admissions.breadcrumb_current'))->required()->maxLength(120),
+                TextInput::make($prefix.'.apply_label')->label(__('admin_pages.admissions.apply_button'))->required()->maxLength(120),
+                PageUrlSelect::make($prefix.'.apply_url', __('admin_pages.admissions.apply_page'), $locale, true),
+                TextInput::make($prefix.'.request_info_label')->label(__('admin_pages.admissions.request_info_button'))->required()->maxLength(120),
+                PageUrlSelect::make($prefix.'.request_info_url', __('admin_pages.admissions.request_info_page'), $locale, true),
+                TextInput::make($prefix.'.required_label')->label(__('admin_pages.admissions.required_label'))->required()->maxLength(80),
+                TextInput::make($prefix.'.optional_label')->label(__('admin_pages.admissions.optional_label'))->required()->maxLength(80),
+                TextInput::make($prefix.'.download_label')->label(__('admin_pages.admissions.download_button_label'))->required()->maxLength(120),
+                TextInput::make($prefix.'.download_all_label')->label(__('admin_pages.admissions.download_all_title'))->required()->maxLength(180),
+                Textarea::make($prefix.'.download_all_desc')->label(__('admin_pages.admissions.download_all_description'))->required()->rows(2)->columnSpanFull(),
+                Textarea::make($prefix.'.download_guidance')->label(__('admin_pages.admissions.no_download_guidance'))->required()->rows(2)->columnSpanFull(),
+                TextInput::make($prefix.'.last_reviewed_label')->label(__('admin_pages.admissions.last_reviewed_label'))->required()->maxLength(120),
+                TextInput::make($prefix.'.last_reviewed')->label(__('admin_pages.admissions.last_reviewed_value'))->maxLength(120),
             ])->columns(2),
 
-            Section::make('Admission Checklist')->schema([
-                TextInput::make($prefix.'.checklist_label')->label('Tab Label')->required()->maxLength(160),
+            Section::make(__('admin_pages.admissions.admission_checklist'))->schema([
+                TextInput::make($prefix.'.checklist_label')->label(__('admin_pages.admissions.tab_label'))->required()->maxLength(160),
                 Repeater::make($prefix.'.checklist_subtabs')
-                    ->label('Applicant Checklists')
+                    ->label(__('admin_pages.admissions.applicant_checklists'))
                     ->schema([
                         TextInput::make('id')->required()->maxLength(80),
                         TextInput::make('label')->required()->maxLength(120),
                         Textarea::make('desc')->required()->rows(2)->columnSpanFull(),
-                        MediaPicker::document('download_href', 'Download File'),
-                        TextInput::make('download_size')->label('Download Size')->maxLength(80),
+                        MediaPicker::document('download_href', __('admin_pages.admissions.download_file')),
+                        TextInput::make('download_size')->label(__('admin_pages.admissions.download_size'))->maxLength(80),
                         Repeater::make('items')
-                            ->label('Documents')
+                            ->label(__('admin_pages.admissions.documents'))
                             ->schema([
                                 TextInput::make('name')->required()->maxLength(180),
                                 Textarea::make('note')->rows(2)->columnSpanFull(),
-                                Toggle::make('required')->label('Required'),
+                                Toggle::make('required')->label(__('admin_pages.admissions.required')),
                             ])
                             ->columns(2)
                             ->defaultItems(0)
@@ -653,11 +653,11 @@ class ManageAdmissions extends Page implements HasForms
                     ->columnSpanFull(),
             ]),
 
-            Section::make('University Documents')->schema([
-                TextInput::make($prefix.'.granted_label')->label('Tab Label')->required()->maxLength(160),
-                Textarea::make($prefix.'.granted_intro')->label('Intro')->required()->rows(2)->columnSpanFull(),
+            Section::make(__('admin_pages.admissions.university_documents'))->schema([
+                TextInput::make($prefix.'.granted_label')->label(__('admin_pages.admissions.tab_label'))->required()->maxLength(160),
+                Textarea::make($prefix.'.granted_intro')->label(__('admin_pages.admissions.intro'))->required()->rows(2)->columnSpanFull(),
                 Repeater::make($prefix.'.granted_items')
-                    ->label('Documents')
+                    ->label(__('admin_pages.admissions.documents'))
                     ->schema([
                         TextInput::make('title')->required()->maxLength(180),
                         Textarea::make('desc')->required()->rows(2)->columnSpanFull(),
@@ -670,12 +670,12 @@ class ManageAdmissions extends Page implements HasForms
                     ->columnSpanFull(),
             ]),
 
-            Section::make('Study System and GPA')->schema([
-                TextInput::make($prefix.'.study_label')->label('Tab Label')->required()->maxLength(160),
-                Textarea::make($prefix.'.study_intro')->label('Intro')->required()->rows(2)->columnSpanFull(),
-                TextInput::make($prefix.'.scale_title')->label('Scale Title')->required()->maxLength(160),
+            Section::make(__('admin_pages.admissions.study_system_and_gpa'))->schema([
+                TextInput::make($prefix.'.study_label')->label(__('admin_pages.admissions.tab_label'))->required()->maxLength(160),
+                Textarea::make($prefix.'.study_intro')->label(__('admin_pages.admissions.intro'))->required()->rows(2)->columnSpanFull(),
+                TextInput::make($prefix.'.scale_title')->label(__('admin_pages.admissions.scale_title'))->required()->maxLength(160),
                 Repeater::make($prefix.'.scale_headers')
-                    ->label('Scale Headers')
+                    ->label(__('admin_pages.admissions.scale_headers'))
                     ->schema([
                         TextInput::make('key')->required()->maxLength(80),
                         TextInput::make('label')->required()->maxLength(120),
@@ -686,7 +686,7 @@ class ManageAdmissions extends Page implements HasForms
                     ->collapsible()
                     ->columnSpanFull(),
                 Repeater::make($prefix.'.scale_rows')
-                    ->label('Scale Rows')
+                    ->label(__('admin_pages.admissions.scale_rows'))
                     ->schema([
                         TextInput::make('percentage')->required()->maxLength(80),
                         TextInput::make('gpa')->required()->maxLength(80),
@@ -699,7 +699,7 @@ class ManageAdmissions extends Page implements HasForms
                     ->collapsible()
                     ->columnSpanFull(),
                 Repeater::make($prefix.'.study_notes')
-                    ->label('Study Notes')
+                    ->label(__('admin_pages.admissions.study_notes'))
                     ->schema([
                         Textarea::make('note')->required()->rows(2)->columnSpanFull(),
                     ])
@@ -709,12 +709,12 @@ class ManageAdmissions extends Page implements HasForms
                     ->columnSpanFull(),
             ]),
 
-            Section::make('Academic Warnings')->schema([
-                TextInput::make($prefix.'.warnings_label')->label('Tab Label')->required()->maxLength(160),
-                Textarea::make($prefix.'.warnings_intro')->label('Intro')->required()->rows(2)->columnSpanFull(),
-                TextInput::make($prefix.'.levels_title')->label('Levels Title')->required()->maxLength(160),
+            Section::make(__('admin_pages.admissions.academic_warnings'))->schema([
+                TextInput::make($prefix.'.warnings_label')->label(__('admin_pages.admissions.tab_label'))->required()->maxLength(160),
+                Textarea::make($prefix.'.warnings_intro')->label(__('admin_pages.admissions.intro'))->required()->rows(2)->columnSpanFull(),
+                TextInput::make($prefix.'.levels_title')->label(__('admin_pages.admissions.levels_title'))->required()->maxLength(160),
                 Repeater::make($prefix.'.levels')
-                    ->label('Warning Levels')
+                    ->label(__('admin_pages.admissions.warning_levels'))
                     ->schema([
                         TextInput::make('level')->required()->maxLength(160),
                         TextInput::make('threshold')->required()->maxLength(160),
@@ -736,20 +736,20 @@ class ManageAdmissions extends Page implements HasForms
         $prefix = $locale.'_calendar';
 
         return [
-            Section::make('Hero')->schema([
-                TextInput::make($prefix.'.title')->label('Page Title')->required()->maxLength(180),
-                MediaPicker::image($prefix.'.hero_image', 'Hero Image', true),
-                TextInput::make($prefix.'.breadcrumb_home')->label('Breadcrumb Home')->required()->maxLength(80),
-                TextInput::make($prefix.'.breadcrumb_parent')->label('Breadcrumb Parent')->required()->maxLength(120),
-                TextInput::make($prefix.'.breadcrumb_current')->label('Breadcrumb Current')->required()->maxLength(120),
+            Section::make(__('admin_pages.admissions.hero'))->schema([
+                TextInput::make($prefix.'.title')->label(__('admin_pages.admissions.page_title'))->required()->maxLength(180),
+                MediaPicker::image($prefix.'.hero_image', __('admin_pages.admissions.hero_image'), true),
+                TextInput::make($prefix.'.breadcrumb_home')->label(__('admin_pages.admissions.breadcrumb_home'))->required()->maxLength(80),
+                TextInput::make($prefix.'.breadcrumb_parent')->label(__('admin_pages.admissions.breadcrumb_parent'))->required()->maxLength(120),
+                TextInput::make($prefix.'.breadcrumb_current')->label(__('admin_pages.admissions.breadcrumb_current'))->required()->maxLength(120),
             ])->columns(2),
 
-            Section::make('Highlights and Deadlines')->schema([
+            Section::make(__('admin_pages.admissions.highlights_and_deadlines'))->schema([
                 Repeater::make($prefix.'.stat_cards')
-                    ->label('Stat Cards')
+                    ->label(__('admin_pages.admissions.stat_cards'))
                     ->schema([
                         TextInput::make('title')->required()->maxLength(160),
-                        MediaPicker::icon('icon', 'Icon', true),
+                        MediaPicker::icon('icon', __('admin_pages.admissions.icon'), true),
                         Textarea::make('desc')->required()->rows(2)->columnSpanFull(),
                     ])
                     ->columns(2)
@@ -757,9 +757,9 @@ class ManageAdmissions extends Page implements HasForms
                     ->reorderable()
                     ->collapsible()
                     ->columnSpanFull(),
-                TextInput::make($prefix.'.deadlines_title')->label('Deadlines Title')->required()->maxLength(180),
+                TextInput::make($prefix.'.deadlines_title')->label(__('admin_pages.admissions.deadlines_title'))->required()->maxLength(180),
                 Repeater::make($prefix.'.deadlines')
-                    ->label('Deadlines')
+                    ->label(__('admin_pages.admissions.deadlines'))
                     ->schema([
                         TextInput::make('type')->required()->maxLength(120),
                         TextInput::make('title')->required()->maxLength(160),
@@ -772,14 +772,14 @@ class ManageAdmissions extends Page implements HasForms
                     ->columnSpanFull(),
             ]),
 
-            Section::make('Academic Timeline')->schema([
-                TextInput::make($prefix.'.timeline_title')->label('Timeline Title')->required()->maxLength(180),
+            Section::make(__('admin_pages.admissions.academic_timeline'))->schema([
+                TextInput::make($prefix.'.timeline_title')->label(__('admin_pages.admissions.timeline_title'))->required()->maxLength(180),
                 Repeater::make($prefix.'.semesters')
-                    ->label('Semesters')
+                    ->label(__('admin_pages.admissions.semesters'))
                     ->schema([
                         TextInput::make('title')->required()->maxLength(180),
                         Repeater::make('events')
-                            ->label('Events')
+                            ->label(__('admin_pages.admissions.events'))
                             ->schema([
                                 TextInput::make('date')->required()->maxLength(120),
                                 TextInput::make('title')->required()->maxLength(160),
@@ -797,14 +797,14 @@ class ManageAdmissions extends Page implements HasForms
                     ->columnSpanFull(),
             ]),
 
-            Section::make('Download and Notice')->schema([
-                Textarea::make($prefix.'.schedule_guidance')->label('No Published Dates Guidance')->required()->rows(2)->columnSpanFull(),
-                TextInput::make($prefix.'.download_title')->label('Download Title')->maxLength(180),
-                Textarea::make($prefix.'.download_desc')->label('Download Description')->rows(2)->columnSpanFull(),
-                TextInput::make($prefix.'.download_button')->label('Download Button')->maxLength(120),
-                MediaPicker::document($prefix.'.download_href', 'Download File'),
-                TextInput::make($prefix.'.notice_title')->label('Notice Title')->required()->maxLength(180),
-                Textarea::make($prefix.'.notice_desc')->label('Notice Description')->required()->rows(3)->columnSpanFull(),
+            Section::make(__('admin_pages.admissions.download_and_notice'))->schema([
+                Textarea::make($prefix.'.schedule_guidance')->label(__('admin_pages.admissions.no_published_dates_guidance'))->required()->rows(2)->columnSpanFull(),
+                TextInput::make($prefix.'.download_title')->label(__('admin_pages.admissions.download_title'))->maxLength(180),
+                Textarea::make($prefix.'.download_desc')->label(__('admin_pages.admissions.download_description'))->rows(2)->columnSpanFull(),
+                TextInput::make($prefix.'.download_button')->label(__('admin_pages.admissions.download_button'))->maxLength(120),
+                MediaPicker::document($prefix.'.download_href', __('admin_pages.admissions.download_file')),
+                TextInput::make($prefix.'.notice_title')->label(__('admin_pages.admissions.notice_title'))->required()->maxLength(180),
+                Textarea::make($prefix.'.notice_desc')->label(__('admin_pages.admissions.notice_description'))->required()->rows(3)->columnSpanFull(),
             ])->columns(2),
         ];
     }
@@ -815,29 +815,29 @@ class ManageAdmissions extends Page implements HasForms
         $prefix = $locale.'_faq';
 
         return [
-            Section::make('Hero and Search')->schema([
-                TextInput::make($prefix.'.title')->label('Page Title')->required()->maxLength(180),
-                MediaPicker::image($prefix.'.hero_image', 'Hero Image', true),
-                TextInput::make($prefix.'.breadcrumb_home')->label('Breadcrumb Home')->required()->maxLength(80),
-                TextInput::make($prefix.'.breadcrumb_parent')->label('Breadcrumb Parent')->required()->maxLength(120),
-                TextInput::make($prefix.'.breadcrumb_current')->label('Breadcrumb Current')->required()->maxLength(120),
-                TextInput::make($prefix.'.search_label')->label('Search Label')->required()->maxLength(160),
-                TextInput::make($prefix.'.search_placeholder')->label('Search Placeholder')->required()->maxLength(180),
-                TextInput::make($prefix.'.empty_state')->label('Empty State')->required()->maxLength(180),
+            Section::make(__('admin_pages.admissions.hero_and_search'))->schema([
+                TextInput::make($prefix.'.title')->label(__('admin_pages.admissions.page_title'))->required()->maxLength(180),
+                MediaPicker::image($prefix.'.hero_image', __('admin_pages.admissions.hero_image'), true),
+                TextInput::make($prefix.'.breadcrumb_home')->label(__('admin_pages.admissions.breadcrumb_home'))->required()->maxLength(80),
+                TextInput::make($prefix.'.breadcrumb_parent')->label(__('admin_pages.admissions.breadcrumb_parent'))->required()->maxLength(120),
+                TextInput::make($prefix.'.breadcrumb_current')->label(__('admin_pages.admissions.breadcrumb_current'))->required()->maxLength(120),
+                TextInput::make($prefix.'.search_label')->label(__('admin_pages.admissions.search_label'))->required()->maxLength(160),
+                TextInput::make($prefix.'.search_placeholder')->label(__('admin_pages.admissions.search_placeholder'))->required()->maxLength(180),
+                TextInput::make($prefix.'.empty_state')->label(__('admin_pages.admissions.empty_state'))->required()->maxLength(180),
             ])->columns(2),
 
-            Section::make('FAQ Groups')->schema([
+            Section::make(__('admin_pages.admissions.faq_groups'))->schema([
                 Repeater::make($prefix.'.sections')
-                    ->label('FAQ Groups')
+                    ->label(__('admin_pages.admissions.faq_groups'))
                     ->schema([
-                        TextInput::make('id')->label('Group ID')->required()->maxLength(100),
-                        TextInput::make('title')->label('Group Title')->required()->maxLength(160),
-                        MediaPicker::icon('icon', 'Icon', true),
+                        TextInput::make('id')->label(__('admin_pages.admissions.group_id'))->required()->maxLength(100),
+                        TextInput::make('title')->label(__('admin_pages.admissions.group_title'))->required()->maxLength(160),
+                        MediaPicker::icon('icon', __('admin_pages.admissions.icon'), true),
                         Repeater::make('items')
-                            ->label('Questions')
+                            ->label(__('admin_pages.admissions.questions'))
                             ->schema([
-                                TextInput::make('q')->label('Question')->required()->maxLength(240),
-                                Textarea::make('a')->label('Answer')->required()->rows(3)->columnSpanFull(),
+                                TextInput::make('q')->label(__('admin_pages.admissions.question'))->required()->maxLength(240),
+                                Textarea::make('a')->label(__('admin_pages.admissions.answer'))->required()->rows(3)->columnSpanFull(),
                             ])
                             ->columns(2)
                             ->defaultItems(0)
@@ -860,22 +860,22 @@ class ManageAdmissions extends Page implements HasForms
         $prefix = $locale.'_how_to_apply';
 
         return [
-            Section::make('Hero and Intro')->schema([
-                TextInput::make($prefix.'.title')->label('Page Title')->required()->maxLength(180),
-                MediaPicker::image($prefix.'.hero_image', 'Hero Image', true),
-                TextInput::make($prefix.'.breadcrumb_home')->label('Breadcrumb Home')->required()->maxLength(80),
-                TextInput::make($prefix.'.breadcrumb_parent')->label('Breadcrumb Parent')->required()->maxLength(120),
-                TextInput::make($prefix.'.breadcrumb_current')->label('Breadcrumb Current')->required()->maxLength(120),
-                TextInput::make($prefix.'.hero_title')->label('Intro Title')->required()->maxLength(180),
-                Textarea::make($prefix.'.hero_desc')->label('Intro Description')->required()->rows(3)->columnSpanFull(),
+            Section::make(__('admin_pages.admissions.hero_and_intro'))->schema([
+                TextInput::make($prefix.'.title')->label(__('admin_pages.admissions.page_title'))->required()->maxLength(180),
+                MediaPicker::image($prefix.'.hero_image', __('admin_pages.admissions.hero_image'), true),
+                TextInput::make($prefix.'.breadcrumb_home')->label(__('admin_pages.admissions.breadcrumb_home'))->required()->maxLength(80),
+                TextInput::make($prefix.'.breadcrumb_parent')->label(__('admin_pages.admissions.breadcrumb_parent'))->required()->maxLength(120),
+                TextInput::make($prefix.'.breadcrumb_current')->label(__('admin_pages.admissions.breadcrumb_current'))->required()->maxLength(120),
+                TextInput::make($prefix.'.hero_title')->label(__('admin_pages.admissions.intro_title'))->required()->maxLength(180),
+                Textarea::make($prefix.'.hero_desc')->label(__('admin_pages.admissions.intro_description'))->required()->rows(3)->columnSpanFull(),
             ])->columns(2),
 
-            Section::make('Feature Cards')->schema([
+            Section::make(__('admin_pages.admissions.feature_cards'))->schema([
                 Repeater::make($prefix.'.feature_cards')
-                    ->label('Feature Cards')
+                    ->label(__('admin_pages.admissions.feature_cards'))
                     ->schema([
                         TextInput::make('title')->required()->maxLength(160),
-                        MediaPicker::icon('icon', 'Icon', true),
+                        MediaPicker::icon('icon', __('admin_pages.admissions.icon'), true),
                         Textarea::make('desc')->required()->rows(2)->columnSpanFull(),
                     ])
                     ->columns(2)
@@ -885,18 +885,18 @@ class ManageAdmissions extends Page implements HasForms
                     ->columnSpanFull(),
             ]),
 
-            Section::make('Step-by-Step Guide')->schema([
-                TextInput::make($prefix.'.guide_title')->label('Guide Title')->required()->maxLength(180),
-                TextInput::make($prefix.'.application_title')->label('Application Form Title')->required()->maxLength(180),
-                Textarea::make($prefix.'.application_guidance')->label('Application Form Guidance')->required()->rows(3)->columnSpanFull(),
+            Section::make(__('admin_pages.admissions.step_by_step_guide'))->schema([
+                TextInput::make($prefix.'.guide_title')->label(__('admin_pages.admissions.guide_title'))->required()->maxLength(180),
+                TextInput::make($prefix.'.application_title')->label(__('admin_pages.admissions.application_form_title'))->required()->maxLength(180),
+                Textarea::make($prefix.'.application_guidance')->label(__('admin_pages.admissions.application_form_guidance'))->required()->rows(3)->columnSpanFull(),
                 Repeater::make($prefix.'.steps')
-                    ->label('Steps')
+                    ->label(__('admin_pages.admissions.steps'))
                     ->schema([
                         TextInput::make('number')->required()->maxLength(20),
                         TextInput::make('title')->required()->maxLength(160),
                         Textarea::make('desc')->required()->rows(2)->columnSpanFull(),
-                        TextInput::make('cta')->label('CTA Label')->required()->maxLength(120),
-                        PageUrlSelect::make('href', 'CTA Page', $locale, true),
+                        TextInput::make('cta')->label(__('admin_pages.admissions.cta_label'))->required()->maxLength(120),
+                        PageUrlSelect::make('href', __('admin_pages.admissions.cta_page'), $locale, true),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -913,22 +913,22 @@ class ManageAdmissions extends Page implements HasForms
         $prefix = $locale.'_tuition';
 
         return [
-            Section::make('Hero and Filters')->schema([
-                TextInput::make($prefix.'.title')->label('Page Title')->required()->maxLength(180),
-                MediaPicker::image($prefix.'.hero_image', 'Hero Image', true),
-                TextInput::make($prefix.'.breadcrumb_home')->label('Breadcrumb Home')->required()->maxLength(80),
-                TextInput::make($prefix.'.breadcrumb_parent')->label('Breadcrumb Parent')->required()->maxLength(120),
-                TextInput::make($prefix.'.breadcrumb_current')->label('Breadcrumb Current')->required()->maxLength(120),
-                TextInput::make($prefix.'.faculty_filter_label')->label('Faculty Filter Label')->required()->maxLength(120),
-                TextInput::make($prefix.'.student_type_filter_label')->label('Student Type Filter Label')->required()->maxLength(120),
-                TextInput::make($prefix.'.empty_state')->label('Empty State')->required()->maxLength(180),
-                Textarea::make($prefix.'.availability_guidance')->label('No Published Fees Guidance')->required()->rows(3)->columnSpanFull(),
+            Section::make(__('admin_pages.admissions.hero_and_filters'))->schema([
+                TextInput::make($prefix.'.title')->label(__('admin_pages.admissions.page_title'))->required()->maxLength(180),
+                MediaPicker::image($prefix.'.hero_image', __('admin_pages.admissions.hero_image'), true),
+                TextInput::make($prefix.'.breadcrumb_home')->label(__('admin_pages.admissions.breadcrumb_home'))->required()->maxLength(80),
+                TextInput::make($prefix.'.breadcrumb_parent')->label(__('admin_pages.admissions.breadcrumb_parent'))->required()->maxLength(120),
+                TextInput::make($prefix.'.breadcrumb_current')->label(__('admin_pages.admissions.breadcrumb_current'))->required()->maxLength(120),
+                TextInput::make($prefix.'.faculty_filter_label')->label(__('admin_pages.admissions.faculty_filter_label'))->required()->maxLength(120),
+                TextInput::make($prefix.'.student_type_filter_label')->label(__('admin_pages.admissions.student_type_filter_label'))->required()->maxLength(120),
+                TextInput::make($prefix.'.empty_state')->label(__('admin_pages.admissions.empty_state'))->required()->maxLength(180),
+                Textarea::make($prefix.'.availability_guidance')->label(__('admin_pages.admissions.no_published_fees_guidance'))->required()->rows(3)->columnSpanFull(),
             ])->columns(2),
 
-            Section::make('Fee Table')->schema([
-                TextInput::make($prefix.'.overview_title')->label('Overview Title')->required()->maxLength(180),
+            Section::make(__('admin_pages.admissions.fee_table'))->schema([
+                TextInput::make($prefix.'.overview_title')->label(__('admin_pages.admissions.overview_title'))->required()->maxLength(180),
                 Repeater::make($prefix.'.table_headers')
-                    ->label('Table Headers')
+                    ->label(__('admin_pages.admissions.table_headers'))
                     ->schema([
                         TextInput::make('key')->required()->maxLength(80),
                         TextInput::make('label')->required()->maxLength(120),
@@ -939,13 +939,13 @@ class ManageAdmissions extends Page implements HasForms
                     ->collapsible()
                     ->columnSpanFull(),
                 Repeater::make($prefix.'.fee_rows')
-                    ->label('Fee Rows')
+                    ->label(__('admin_pages.admissions.fee_rows'))
                     ->schema([
                         TextInput::make('faculty')->required()->maxLength(160),
                         TextInput::make('type')->required()->maxLength(120),
-                        TextInput::make('tuitionFee')->label('Tuition Fee')->required()->maxLength(120),
-                        TextInput::make('registrationFee')->label('Registration Fee')->required()->maxLength(120),
-                        TextInput::make('additionalFees')->label('Additional Fees')->required()->maxLength(160),
+                        TextInput::make('tuitionFee')->label(__('admin_pages.admissions.tuition_fee'))->required()->maxLength(120),
+                        TextInput::make('registrationFee')->label(__('admin_pages.admissions.registration_fee'))->required()->maxLength(120),
+                        TextInput::make('additionalFees')->label(__('admin_pages.admissions.additional_fees'))->required()->maxLength(160),
                         Textarea::make('notes')->rows(2)->columnSpanFull(),
                     ])
                     ->columns(2)
@@ -955,17 +955,17 @@ class ManageAdmissions extends Page implements HasForms
                     ->columnSpanFull(),
             ]),
 
-            Section::make('Payment Methods')->schema([
-                TextInput::make($prefix.'.payment_title')->label('Payment Title')->required()->maxLength(180),
-                Textarea::make($prefix.'.payment_guidance')->label('No Published Payment Method Guidance')->required()->rows(3)->columnSpanFull(),
+            Section::make(__('admin_pages.admissions.payment_methods'))->schema([
+                TextInput::make($prefix.'.payment_title')->label(__('admin_pages.admissions.payment_title'))->required()->maxLength(180),
+                Textarea::make($prefix.'.payment_guidance')->label(__('admin_pages.admissions.no_published_payment_method_guidance'))->required()->rows(3)->columnSpanFull(),
                 Repeater::make($prefix.'.methods')
-                    ->label('Payment Methods')
+                    ->label(__('admin_pages.admissions.payment_methods'))
                     ->schema([
-                        MediaPicker::icon('icon', 'Icon', true),
+                        MediaPicker::icon('icon', __('admin_pages.admissions.icon'), true),
                         TextInput::make('title')->required()->maxLength(160),
                         Textarea::make('desc')->required()->rows(2)->columnSpanFull(),
                         Repeater::make('details')
-                            ->label('Details')
+                            ->label(__('admin_pages.admissions.details'))
                             ->schema([
                                 TextInput::make('label')->required()->maxLength(120),
                                 TextInput::make('value')->required()->maxLength(180),
@@ -975,8 +975,8 @@ class ManageAdmissions extends Page implements HasForms
                             ->reorderable()
                             ->collapsible()
                             ->columnSpanFull(),
-                        TextInput::make('cta')->label('CTA Label')->maxLength(120),
-                        PageUrlSelect::make('ctaUrl', 'CTA Page', $locale),
+                        TextInput::make('cta')->label(__('admin_pages.admissions.cta_label'))->maxLength(120),
+                        PageUrlSelect::make('ctaUrl', __('admin_pages.admissions.cta_page'), $locale),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -985,10 +985,10 @@ class ManageAdmissions extends Page implements HasForms
                     ->columnSpanFull(),
             ]),
 
-            Section::make('Financial Notes')->schema([
-                TextInput::make($prefix.'.notes_title')->label('Notes Title')->required()->maxLength(180),
+            Section::make(__('admin_pages.admissions.financial_notes'))->schema([
+                TextInput::make($prefix.'.notes_title')->label(__('admin_pages.admissions.notes_title'))->required()->maxLength(180),
                 Repeater::make($prefix.'.notes')
-                    ->label('Notes')
+                    ->label(__('admin_pages.admissions.notes'))
                     ->schema([
                         Textarea::make('note')->required()->rows(2)->columnSpanFull(),
                     ])
@@ -1006,28 +1006,28 @@ class ManageAdmissions extends Page implements HasForms
         $prefix = $locale.'_requirements';
 
         return [
-            Section::make('Hero and Labels')->schema([
-                TextInput::make($prefix.'.title')->label('Page Title')->required()->maxLength(180),
-                MediaPicker::image($prefix.'.hero_image', 'Hero Image', true),
-                TextInput::make($prefix.'.breadcrumb_home')->label('Breadcrumb Home')->required()->maxLength(80),
-                TextInput::make($prefix.'.breadcrumb_parent')->label('Breadcrumb Parent')->required()->maxLength(120),
-                TextInput::make($prefix.'.breadcrumb_current')->label('Breadcrumb Current')->required()->maxLength(120),
-                TextInput::make($prefix.'.eligibility_title')->label('Eligibility Section Title')->required()->maxLength(160),
-                TextInput::make($prefix.'.documents_title')->label('Documents Section Title')->required()->maxLength(160),
-                TextInput::make($prefix.'.ready_title')->label('Checklist Section Title')->required()->maxLength(160),
-                TextInput::make($prefix.'.notes_title')->label('Notes Section Title')->required()->maxLength(160),
-                TextInput::make($prefix.'.required_label')->label('Required Label')->required()->maxLength(80),
-                TextInput::make($prefix.'.optional_label')->label('Optional Label')->required()->maxLength(120),
+            Section::make(__('admin_pages.admissions.hero_and_labels'))->schema([
+                TextInput::make($prefix.'.title')->label(__('admin_pages.admissions.page_title'))->required()->maxLength(180),
+                MediaPicker::image($prefix.'.hero_image', __('admin_pages.admissions.hero_image'), true),
+                TextInput::make($prefix.'.breadcrumb_home')->label(__('admin_pages.admissions.breadcrumb_home'))->required()->maxLength(80),
+                TextInput::make($prefix.'.breadcrumb_parent')->label(__('admin_pages.admissions.breadcrumb_parent'))->required()->maxLength(120),
+                TextInput::make($prefix.'.breadcrumb_current')->label(__('admin_pages.admissions.breadcrumb_current'))->required()->maxLength(120),
+                TextInput::make($prefix.'.eligibility_title')->label(__('admin_pages.admissions.eligibility_section_title'))->required()->maxLength(160),
+                TextInput::make($prefix.'.documents_title')->label(__('admin_pages.admissions.documents_section_title'))->required()->maxLength(160),
+                TextInput::make($prefix.'.ready_title')->label(__('admin_pages.admissions.checklist_section_title'))->required()->maxLength(160),
+                TextInput::make($prefix.'.notes_title')->label(__('admin_pages.admissions.notes_section_title'))->required()->maxLength(160),
+                TextInput::make($prefix.'.required_label')->label(__('admin_pages.admissions.required_label'))->required()->maxLength(80),
+                TextInput::make($prefix.'.optional_label')->label(__('admin_pages.admissions.optional_label'))->required()->maxLength(120),
             ])->columns(2),
 
-            Section::make('Applicant Tabs')->schema([
+            Section::make(__('admin_pages.admissions.applicant_tabs'))->schema([
                 Repeater::make($prefix.'.tabs')
-                    ->label('Tabs')
+                    ->label(__('admin_pages.admissions.tabs'))
                     ->schema([
-                        TextInput::make('id')->label('Tab ID')->required()->maxLength(80),
-                        TextInput::make('label')->label('Tab Label')->required()->maxLength(120),
+                        TextInput::make('id')->label(__('admin_pages.admissions.tab_id'))->required()->maxLength(80),
+                        TextInput::make('label')->label(__('admin_pages.admissions.tab_label'))->required()->maxLength(120),
                         Repeater::make('criteria')
-                            ->label('Eligibility Criteria')
+                            ->label(__('admin_pages.admissions.eligibility_criteria'))
                             ->schema([
                                 TextInput::make('title')->required()->maxLength(180),
                                 Textarea::make('desc')->required()->rows(2)->columnSpanFull(),
@@ -1038,10 +1038,10 @@ class ManageAdmissions extends Page implements HasForms
                             ->collapsible()
                             ->columnSpanFull(),
                         Repeater::make('documents')
-                            ->label('Required Documents')
+                            ->label(__('admin_pages.admissions.required_documents'))
                             ->schema([
                                 TextInput::make('name')->required()->maxLength(180),
-                                Toggle::make('required')->label('Required'),
+                                Toggle::make('required')->label(__('admin_pages.admissions.required')),
                             ])
                             ->columns(2)
                             ->defaultItems(0)
@@ -1049,7 +1049,7 @@ class ManageAdmissions extends Page implements HasForms
                             ->collapsible()
                             ->columnSpanFull(),
                         Repeater::make('checklist')
-                            ->label('Ready Checklist')
+                            ->label(__('admin_pages.admissions.ready_checklist'))
                             ->schema([
                                 TextInput::make('item')->required()->maxLength(180),
                             ])
@@ -1057,7 +1057,7 @@ class ManageAdmissions extends Page implements HasForms
                             ->reorderable()
                             ->collapsible()
                             ->columnSpanFull(),
-                        Textarea::make('note')->label('Important Note')->required()->rows(3)->columnSpanFull(),
+                        Textarea::make('note')->label(__('admin_pages.admissions.important_note'))->required()->rows(3)->columnSpanFull(),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -1074,21 +1074,21 @@ class ManageAdmissions extends Page implements HasForms
         $prefix = $locale.'_landing';
 
         return [
-            Section::make('Hero')->schema([
-                TextInput::make($prefix.'.hero_title')->label('Title')->required()->maxLength(180),
-                Textarea::make($prefix.'.hero_summary')->label('Summary')->required()->rows(3)->columnSpanFull(),
-                TextInput::make($prefix.'.hero_cta_primary')->label('Primary CTA')->required()->maxLength(80),
-                PageUrlSelect::make($prefix.'.hero_primary_url', 'Primary URL', $locale, true),
-                TextInput::make($prefix.'.hero_cta_secondary')->label('Secondary CTA')->required()->maxLength(80),
-                PageUrlSelect::make($prefix.'.hero_secondary_url', 'Secondary URL', $locale, true),
-                TextInput::make($prefix.'.hero_badge_label')->label('Badge Label')->required()->maxLength(120),
-                TextInput::make($prefix.'.hero_badge_value')->label('Badge Value')->required()->maxLength(120),
-                MediaPicker::image($prefix.'.hero_campus_image', 'Campus Image', true),
-                TextInput::make($prefix.'.hero_campus_alt')->label('Campus Image Alt Text')->required()->maxLength(255),
-                MediaPicker::image($prefix.'.hero_students_image', 'Students Image', true),
-                TextInput::make($prefix.'.hero_students_alt')->label('Students Image Alt Text')->required()->maxLength(255),
+            Section::make(__('admin_pages.admissions.hero'))->schema([
+                TextInput::make($prefix.'.hero_title')->label(__('admin_pages.admissions.title'))->required()->maxLength(180),
+                Textarea::make($prefix.'.hero_summary')->label(__('admin_pages.admissions.summary'))->required()->rows(3)->columnSpanFull(),
+                TextInput::make($prefix.'.hero_cta_primary')->label(__('admin_pages.admissions.primary_cta'))->required()->maxLength(80),
+                PageUrlSelect::make($prefix.'.hero_primary_url', __('admin_pages.admissions.primary_url'), $locale, true),
+                TextInput::make($prefix.'.hero_cta_secondary')->label(__('admin_pages.admissions.secondary_cta'))->required()->maxLength(80),
+                PageUrlSelect::make($prefix.'.hero_secondary_url', __('admin_pages.admissions.secondary_url'), $locale, true),
+                TextInput::make($prefix.'.hero_badge_label')->label(__('admin_pages.admissions.badge_label'))->required()->maxLength(120),
+                TextInput::make($prefix.'.hero_badge_value')->label(__('admin_pages.admissions.badge_value'))->required()->maxLength(120),
+                MediaPicker::image($prefix.'.hero_campus_image', __('admin_pages.admissions.campus_image'), true),
+                TextInput::make($prefix.'.hero_campus_alt')->label(__('admin_pages.admissions.campus_image_alt_text'))->required()->maxLength(255),
+                MediaPicker::image($prefix.'.hero_students_image', __('admin_pages.admissions.students_image'), true),
+                TextInput::make($prefix.'.hero_students_alt')->label(__('admin_pages.admissions.students_image_alt_text'))->required()->maxLength(255),
                 Repeater::make($prefix.'.hero_checklist_items')
-                    ->label('Checklist Items')
+                    ->label(__('admin_pages.admissions.checklist_items'))
                     ->schema([
                         TextInput::make('title')->required()->maxLength(160),
                         Textarea::make('desc')->required()->rows(2)->columnSpanFull(),
@@ -1100,12 +1100,12 @@ class ManageAdmissions extends Page implements HasForms
                     ->columnSpanFull(),
             ])->columns(2),
 
-            Section::make('Trust Bar')->schema([
+            Section::make(__('admin_pages.admissions.trust_bar'))->schema([
                 Repeater::make($prefix.'.trust_bar')
-                    ->label('Trust Items')
+                    ->label(__('admin_pages.admissions.trust_items'))
                     ->schema([
                         TextInput::make('title')->required()->maxLength(160),
-                        MediaPicker::icon('icon', 'Icon', true),
+                        MediaPicker::icon('icon', __('admin_pages.admissions.icon'), true),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -1113,16 +1113,16 @@ class ManageAdmissions extends Page implements HasForms
                     ->collapsible(),
             ]),
 
-            Section::make('Admissions Journey')->schema([
-                TextInput::make($prefix.'.journey_eyebrow')->label('Eyebrow')->required()->maxLength(120),
-                TextInput::make($prefix.'.journey_title')->label('Title')->required()->maxLength(180),
+            Section::make(__('admin_pages.admissions.admissions_journey'))->schema([
+                TextInput::make($prefix.'.journey_eyebrow')->label(__('admin_pages.admissions.eyebrow'))->required()->maxLength(120),
+                TextInput::make($prefix.'.journey_title')->label(__('admin_pages.admissions.title'))->required()->maxLength(180),
                 Repeater::make($prefix.'.journey_steps')
-                    ->label('Journey Steps')
+                    ->label(__('admin_pages.admissions.journey_steps'))
                     ->schema([
                         TextInput::make('number')->required()->maxLength(20),
                         TextInput::make('title')->required()->maxLength(160),
                         Textarea::make('summary')->required()->rows(2)->columnSpanFull(),
-                        Toggle::make('active')->label('Active'),
+                        Toggle::make('active')->label(__('admin_pages.admissions.active')),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -1131,22 +1131,22 @@ class ManageAdmissions extends Page implements HasForms
                     ->columnSpanFull(),
             ])->columns(2),
 
-            Section::make('Timeline')->schema([
-                TextInput::make($prefix.'.timeline_eyebrow')->label('Eyebrow')->required()->maxLength(120),
-                TextInput::make($prefix.'.timeline_title')->label('Title')->required()->maxLength(180),
-                Textarea::make($prefix.'.timeline_summary')->label('Summary')->required()->rows(3)->columnSpanFull(),
-                TextInput::make($prefix.'.timeline_primary_deadline')->label('Primary Deadline')->required()->maxLength(120),
-                TextInput::make($prefix.'.timeline_primary_deadline_label')->label('Deadline Label')->required()->maxLength(120),
-                Textarea::make($prefix.'.timeline_primary_deadline_desc')->label('Deadline Description')->required()->rows(3)->columnSpanFull(),
-                MediaPicker::image($prefix.'.timeline_image', 'Timeline Image', true),
-                TextInput::make($prefix.'.timeline_image_alt')->label('Timeline Image Alt Text')->required()->maxLength(255),
+            Section::make(__('admin_pages.admissions.timeline'))->schema([
+                TextInput::make($prefix.'.timeline_eyebrow')->label(__('admin_pages.admissions.eyebrow'))->required()->maxLength(120),
+                TextInput::make($prefix.'.timeline_title')->label(__('admin_pages.admissions.title'))->required()->maxLength(180),
+                Textarea::make($prefix.'.timeline_summary')->label(__('admin_pages.admissions.summary'))->required()->rows(3)->columnSpanFull(),
+                TextInput::make($prefix.'.timeline_primary_deadline')->label(__('admin_pages.admissions.primary_deadline'))->required()->maxLength(120),
+                TextInput::make($prefix.'.timeline_primary_deadline_label')->label(__('admin_pages.admissions.deadline_label'))->required()->maxLength(120),
+                Textarea::make($prefix.'.timeline_primary_deadline_desc')->label(__('admin_pages.admissions.deadline_description'))->required()->rows(3)->columnSpanFull(),
+                MediaPicker::image($prefix.'.timeline_image', __('admin_pages.admissions.timeline_image'), true),
+                TextInput::make($prefix.'.timeline_image_alt')->label(__('admin_pages.admissions.timeline_image_alt_text'))->required()->maxLength(255),
                 Repeater::make($prefix.'.timeline_phases')
-                    ->label('Timeline Phases')
+                    ->label(__('admin_pages.admissions.timeline_phases'))
                     ->schema([
                         TextInput::make('label')->required()->maxLength(80),
                         TextInput::make('title')->required()->maxLength(160),
                         TextInput::make('date')->required()->maxLength(120),
-                        Toggle::make('active')->label('Active'),
+                        Toggle::make('active')->label(__('admin_pages.admissions.active')),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -1155,19 +1155,19 @@ class ManageAdmissions extends Page implements HasForms
                     ->columnSpanFull(),
             ])->columns(2),
 
-            Section::make('Resources')->schema([
-                TextInput::make($prefix.'.resources_eyebrow')->label('Eyebrow')->required()->maxLength(120),
-                TextInput::make($prefix.'.resources_title')->label('Title')->required()->maxLength(180),
-                Textarea::make($prefix.'.resources_subtitle')->label('Subtitle')->required()->rows(2)->columnSpanFull(),
+            Section::make(__('admin_pages.admissions.resources'))->schema([
+                TextInput::make($prefix.'.resources_eyebrow')->label(__('admin_pages.admissions.eyebrow'))->required()->maxLength(120),
+                TextInput::make($prefix.'.resources_title')->label(__('admin_pages.admissions.title'))->required()->maxLength(180),
+                Textarea::make($prefix.'.resources_subtitle')->label(__('admin_pages.admissions.subtitle'))->required()->rows(2)->columnSpanFull(),
                 Repeater::make($prefix.'.resource_cards')
-                    ->label('Resource Cards')
+                    ->label(__('admin_pages.admissions.resource_cards'))
                     ->schema([
                         TextInput::make('title')->required()->maxLength(160),
-                        MediaPicker::icon('icon', 'Icon', true),
+                        MediaPicker::icon('icon', __('admin_pages.admissions.icon'), true),
                         Textarea::make('desc')->required()->rows(2)->columnSpanFull(),
                         TextInput::make('link')->maxLength(120),
                         TextInput::make('slug')->required()->maxLength(80),
-                        Toggle::make('active')->label('Featured'),
+                        Toggle::make('active')->label(__('admin_pages.admissions.featured')),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -1176,10 +1176,10 @@ class ManageAdmissions extends Page implements HasForms
                     ->columnSpanFull(),
             ])->columns(2),
 
-            Section::make('SEO')->schema([
-                TextInput::make($prefix.'.seoTitle')->label('SEO Title')->required()->maxLength(180),
-                Textarea::make($prefix.'.seoDescription')->label('SEO Description')->required()->rows(2)->columnSpanFull(),
-                MediaPicker::image($prefix.'.seoImage', 'SEO Image', true),
+            Section::make(__('admin_pages.admissions.seo'))->schema([
+                TextInput::make($prefix.'.seoTitle')->label(__('admin_pages.admissions.seo_title'))->required()->maxLength(180),
+                Textarea::make($prefix.'.seoDescription')->label(__('admin_pages.admissions.seo_description'))->required()->rows(2)->columnSpanFull(),
+                MediaPicker::image($prefix.'.seoImage', __('admin_pages.admissions.seo_image'), true),
             ])->columns(2),
         ];
     }
@@ -1946,7 +1946,7 @@ class ManageAdmissions extends Page implements HasForms
         return match ($targetKey) {
             'admissions.filling-vacancies' => 'filling_vacancies',
             'admissions.graduation-exams' => 'graduation_exams',
-            default => throw new \InvalidArgumentException('Unsupported admissions simple page target.'),
+            default => throw new \InvalidArgumentException(__('admin_pages.admissions.unsupported_admissions_simple_page_target')),
         };
     }
 

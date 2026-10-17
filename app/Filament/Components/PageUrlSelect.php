@@ -24,12 +24,12 @@ final class PageUrlSelect
             ->label($label)
             ->searchable()
             ->native(false)
-            ->placeholder('Select a page...')
+            ->placeholder(__('admin.page_url_select.placeholder'))
             ->formatStateUsing(fn (mixed $state): mixed => self::normalizeUrl($state, $locale))
             ->dehydrateStateUsing(fn (mixed $state): mixed => self::normalizeUrl($state, $locale))
             ->getSearchResultsUsing(fn (string $search): array => self::searchOptions($search, $locale))
             ->getOptionLabelUsing(fn (mixed $value): ?string => self::optionLabel($value, $locale))
-            ->helperText('Search and choose an internal page. The URL is filled in automatically.')
+            ->helperText(__('admin.page_url_select.help'))
             ->required($required);
     }
 

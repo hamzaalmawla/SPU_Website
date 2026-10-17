@@ -82,37 +82,37 @@ final class HomepageFormSchema
     public static function heroFields(string $prefix): array
     {
         return [
-            Section::make('Hero Content')->schema([
-                self::mediaField("{$prefix}.background_image", 'Background Image'),
+            Section::make(__('admin_pages.homepage_form.hero_content'))->schema([
+                self::mediaField("{$prefix}.background_image", __('admin_pages.homepage_form.background_image')),
                 Repeater::make("{$prefix}.content.images")
-                    ->label('Hero Carousel Images')
+                    ->label(__('admin_pages.homepage_form.hero_carousel_images'))
                     ->schema([
-                        self::mediaField('path', 'Image', true),
+                        self::mediaField('path', __('admin_pages.homepage_form.image'), true),
                     ])
                     ->columns(1)
                     ->collapsible()
                     ->collapsed()
                     ->defaultItems(0),
                 TextInput::make("{$prefix}.video_url")
-                    ->label('Video URL')
+                    ->label(__('admin_pages.homepage_form.video_url'))
                     ->maxLength(2048),
                 TextInput::make("{$prefix}.headline")
-                    ->label('Headline')
+                    ->label(__('admin_pages.homepage_form.headline'))
                     ->maxLength(255),
                 Textarea::make("{$prefix}.subheadline")
-                    ->label('Subheadline')
+                    ->label(__('admin_pages.homepage_form.subheadline'))
                     ->rows(3)
                     ->maxLength(500),
             ]),
-            Section::make('Call to Action')->schema([
+            Section::make(__('admin_pages.homepage_form.call_to_action'))->schema([
                 TextInput::make("{$prefix}.primary_cta_label")
-                    ->label('Primary CTA Label')
+                    ->label(__('admin_pages.homepage_form.primary_cta_label'))
                     ->maxLength(100),
-                PageUrlSelect::make("{$prefix}.primary_cta_url", 'Primary CTA URL', self::localeFromPrefix($prefix)),
+                PageUrlSelect::make("{$prefix}.primary_cta_url", __('admin_pages.homepage_form.primary_cta_url'), self::localeFromPrefix($prefix)),
                 TextInput::make("{$prefix}.secondary_cta_label")
-                    ->label('Secondary CTA Label')
+                    ->label(__('admin_pages.homepage_form.secondary_cta_label'))
                     ->maxLength(100),
-                PageUrlSelect::make("{$prefix}.secondary_cta_url", 'Secondary CTA URL', self::localeFromPrefix($prefix)),
+                PageUrlSelect::make("{$prefix}.secondary_cta_url", __('admin_pages.homepage_form.secondary_cta_url'), self::localeFromPrefix($prefix)),
             ]),
         ];
     }
@@ -121,36 +121,36 @@ final class HomepageFormSchema
     public static function heroStatsFields(string $prefix): array
     {
         return [
-            Section::make('Section Header')->schema([
+            Section::make(__('admin_pages.homepage_form.section_header'))->schema([
                 TextInput::make("{$prefix}.section_title")
-                    ->label('Section Title')
+                    ->label(__('admin_pages.homepage_form.section_title'))
                     ->required()
                     ->maxLength(255),
             ]),
             Repeater::make("{$prefix}.stats")
-                ->label('Statistics')
+                ->label(__('admin_pages.homepage_form.statistics'))
                 ->schema([
                     TextInput::make('value')
-                        ->label('Value')
+                        ->label(__('admin_pages.homepage_form.value'))
                         ->required()
                         ->maxLength(50),
                     TextInput::make('label')
-                        ->label('Label')
+                        ->label(__('admin_pages.homepage_form.label'))
                         ->required()
                         ->maxLength(100),
                     TextInput::make('suffix')
-                        ->label('Suffix')
+                        ->label(__('admin_pages.homepage_form.suffix'))
                         ->maxLength(20),
                     TextInput::make('prefix')
-                        ->label('Prefix')
+                        ->label(__('admin_pages.homepage_form.prefix'))
                         ->maxLength(20),
                     // The grey line under the label on the public card.
                     TextInput::make('helperText')
-                        ->label('Description')
-                        ->helperText('Short grey line shown under the label.')
+                        ->label(__('admin_pages.homepage_form.description'))
+                        ->helperText(__('admin_pages.homepage_form.short_grey_line_shown_under_the_label'))
                         ->maxLength(255)
                         ->columnSpan(2),
-                    self::mediaField('icon', 'Icon'),
+                    self::mediaField('icon', __('admin_pages.homepage_form.icon')),
                 ])
                 ->columns(3)
                 ->collapsible()
@@ -163,39 +163,39 @@ final class HomepageFormSchema
     public static function academicFacultiesFields(string $prefix): array
     {
         return [
-            Section::make('Section Header')->schema([
+            Section::make(__('admin_pages.homepage_form.section_header'))->schema([
                 TextInput::make("{$prefix}.section_title")
-                    ->label('Section Title')
+                    ->label(__('admin_pages.homepage_form.section_title'))
                     ->maxLength(255),
                 TextInput::make("{$prefix}.subtitle")
-                    ->label('Subtitle')
+                    ->label(__('admin_pages.homepage_form.subtitle'))
                     ->maxLength(500),
                 ...self::sectionActionFields($prefix),
             ]),
             Repeater::make("{$prefix}.featured_items")
-                ->label('Faculty Cards')
+                ->label(__('admin_pages.homepage_form.faculty_cards'))
                 ->schema([
                     TextInput::make('title')
-                        ->label('Title')
+                        ->label(__('admin_pages.homepage_form.title'))
                         ->required()
                         ->maxLength(255),
                     Textarea::make('description')
-                        ->label('Description')
+                        ->label(__('admin_pages.homepage_form.description'))
                         ->rows(2)
                         ->maxLength(500),
-                    self::mediaField('image', 'Image'),
-                    self::mediaField('icon', 'Icon'),
+                    self::mediaField('image', __('admin_pages.homepage_form.image')),
+                    self::mediaField('icon', __('admin_pages.homepage_form.icon')),
                     TextInput::make('accent')
-                        ->label('Accent Color')
+                        ->label(__('admin_pages.homepage_form.accent_color'))
                         ->maxLength(30),
                     TextInput::make('metric')
-                        ->label('Metric')
+                        ->label(__('admin_pages.homepage_form.metric'))
                         ->maxLength(100),
                     TextInput::make('cta_label')
-                        ->label('CTA Label')
+                        ->label(__('admin_pages.homepage_form.cta_label'))
                         ->required()
                         ->maxLength(100),
-                    PageUrlSelect::make('cta_url', 'CTA URL', self::localeFromPrefix($prefix), true),
+                    PageUrlSelect::make('cta_url', __('admin_pages.homepage_form.cta_url'), self::localeFromPrefix($prefix), true),
                 ])
                 ->columns(2)
                 ->collapsible()
@@ -208,12 +208,12 @@ final class HomepageFormSchema
     public static function achievementsHighlightsFields(string $prefix): array
     {
         return [
-            Section::make('Section Header')->schema([
+            Section::make(__('admin_pages.homepage_form.section_header'))->schema([
                 TextInput::make("{$prefix}.section_title")
-                    ->label('Section Title')
+                    ->label(__('admin_pages.homepage_form.section_title'))
                     ->maxLength(255),
                 TextInput::make("{$prefix}.subtitle")
-                    ->label('Subtitle')
+                    ->label(__('admin_pages.homepage_form.subtitle'))
                     ->maxLength(500),
                 ...self::sectionActionFields($prefix),
             ]),
@@ -226,29 +226,29 @@ final class HomepageFormSchema
         $locale = str_ends_with($prefix, '.ar') ? 'ar' : 'en';
 
         return [
-            Section::make('Section Header')->schema([
+            Section::make(__('admin_pages.homepage_form.section_header'))->schema([
                 TextInput::make("{$prefix}.section_title")
-                    ->label('Section Title')
+                    ->label(__('admin_pages.homepage_form.section_title'))
                     ->maxLength(255),
             ]),
             Repeater::make("{$prefix}.path_items")
-                ->label('Path Cards')
+                ->label(__('admin_pages.homepage_form.path_cards'))
                 ->schema([
                     TextInput::make('title')
-                        ->label('Title')
+                        ->label(__('admin_pages.homepage_form.title'))
                         ->required()
                         ->maxLength(255),
-                    self::mediaField('icon', 'Icon'),
+                    self::mediaField('icon', __('admin_pages.homepage_form.icon')),
                     Repeater::make('links')
-                        ->label('Quick Links')
+                        ->label(__('admin_pages.homepage_form.quick_links'))
                         ->schema([
                             TextInput::make('label')
-                                ->label('Link Label')
+                                ->label(__('admin_pages.homepage_form.link_label'))
                                 ->required()
                                 ->maxLength(255),
-                            PageUrlSelect::make('url', 'Link Page', $locale)
-                                ->placeholder('None (text-only link)')
-                                ->helperText('Search and pick an internal page (top-level or subpage). Leave empty for a text-only link.'),
+                            PageUrlSelect::make('url', __('admin_pages.homepage_form.link_page'), $locale)
+                                ->placeholder(__('admin_pages.homepage_form.none_text_only_link'))
+                                ->helperText(__('admin_pages.homepage_form.search_and_pick_an_internal_page_top_level_or_subpage_leave')),
                         ])
                         ->defaultItems(0)
                         ->collapsible()
@@ -265,9 +265,9 @@ final class HomepageFormSchema
     public static function universityNewsFields(string $prefix): array
     {
         return [
-            Section::make('Section Header')->schema([
+            Section::make(__('admin_pages.homepage_form.section_header'))->schema([
                 TextInput::make("{$prefix}.section_title")
-                    ->label('Section Title')
+                    ->label(__('admin_pages.homepage_form.section_title'))
                     ->maxLength(255),
                 ...self::sectionActionFields($prefix),
             ]),
@@ -278,9 +278,9 @@ final class HomepageFormSchema
     public static function researchStudiesFields(string $prefix): array
     {
         return [
-            Section::make('Section Header')->schema([
+            Section::make(__('admin_pages.homepage_form.section_header'))->schema([
                 TextInput::make("{$prefix}.section_title")
-                    ->label('Section Title')
+                    ->label(__('admin_pages.homepage_form.section_title'))
                     ->maxLength(255),
                 ...self::sectionActionFields($prefix),
             ]),
@@ -311,36 +311,36 @@ final class HomepageFormSchema
     public static function eventsActivitiesFields(string $prefix): array
     {
         return [
-            Section::make('Section Header')->schema([
+            Section::make(__('admin_pages.homepage_form.section_header'))->schema([
                 TextInput::make("{$prefix}.section_title")
-                    ->label('Section Title')
+                    ->label(__('admin_pages.homepage_form.section_title'))
                     ->maxLength(255),
                 TextInput::make("{$prefix}.content.event_cta_label")
-                    ->label('Event CTA Label')
+                    ->label(__('admin_pages.homepage_form.event_cta_label'))
                     ->maxLength(100),
             ]),
             Repeater::make("{$prefix}.events")
-                ->label('Event Cards')
+                ->label(__('admin_pages.homepage_form.event_cards'))
                 ->schema([
-                    self::mediaField('image', 'Image'),
+                    self::mediaField('image', __('admin_pages.homepage_form.image')),
                     TextInput::make('title')
-                        ->label('Title')
+                        ->label(__('admin_pages.homepage_form.title'))
                         ->required()
                         ->maxLength(255),
                     TextInput::make('date')
-                        ->label('Date')
+                        ->label(__('admin_pages.homepage_form.date'))
                         ->maxLength(50),
                     TextInput::make('time')
-                        ->label('Time')
+                        ->label(__('admin_pages.homepage_form.time'))
                         ->maxLength(50),
                     TextInput::make('location')
-                        ->label('Location')
+                        ->label(__('admin_pages.homepage_form.location'))
                         ->maxLength(255),
                     Textarea::make('description')
-                        ->label('Description')
+                        ->label(__('admin_pages.homepage_form.description'))
                         ->rows(2)
                         ->maxLength(500),
-                    PageUrlSelect::make('cta_url', 'CTA URL', self::localeFromPrefix($prefix)),
+                    PageUrlSelect::make('cta_url', __('admin_pages.homepage_form.cta_url'), self::localeFromPrefix($prefix)),
                 ])
                 ->columns(2)
                 ->collapsible()
@@ -353,50 +353,50 @@ final class HomepageFormSchema
     public static function medicalFacilitiesFields(string $prefix): array
     {
         return [
-            Section::make('Section Header')->schema([
+            Section::make(__('admin_pages.homepage_form.section_header'))->schema([
                 TextInput::make("{$prefix}.section_title")
-                    ->label('Section Title')
+                    ->label(__('admin_pages.homepage_form.section_title'))
                     ->maxLength(255),
             ]),
             Repeater::make("{$prefix}.items")
-                ->label('Service Cards')
+                ->label(__('admin_pages.homepage_form.service_cards'))
                 ->schema([
                     TextInput::make('title')
-                        ->label('Title')
+                        ->label(__('admin_pages.homepage_form.title'))
                         ->required()
                         ->maxLength(255),
                     Textarea::make('description')
-                        ->label('Description')
+                        ->label(__('admin_pages.homepage_form.description'))
                         ->rows(2)
                         ->maxLength(500),
-                    self::mediaField('image', 'Image'),
+                    self::mediaField('image', __('admin_pages.homepage_form.image')),
                     TextInput::make('cta_label')
-                        ->label('CTA Label')
+                        ->label(__('admin_pages.homepage_form.cta_label'))
                         ->maxLength(100),
-                    PageUrlSelect::make('cta_url', 'CTA URL', self::localeFromPrefix($prefix)),
+                    PageUrlSelect::make('cta_url', __('admin_pages.homepage_form.cta_url'), self::localeFromPrefix($prefix)),
                 ])
                 ->columns(2)
                 ->collapsible()
                 ->collapsed()
                 ->defaultItems(0),
             Repeater::make("{$prefix}.stats")
-                ->label('Facility Statistics')
-                ->helperText('Shown in one row on the homepage; up to 6 fit side by side.')
+                ->label(__('admin_pages.homepage_form.facility_statistics'))
+                ->helperText(__('admin_pages.homepage_form.shown_in_one_row_on_the_homepage_up_to_6_fit_side_by_side'))
                 ->maxItems(6)
                 ->schema([
                     TextInput::make('value')
-                        ->label('Value')
+                        ->label(__('admin_pages.homepage_form.value'))
                         ->required()
                         ->maxLength(50),
                     TextInput::make('label')
-                        ->label('Label')
+                        ->label(__('admin_pages.homepage_form.label'))
                         ->required()
                         ->maxLength(100),
                     TextInput::make('suffix')
-                        ->label('Suffix')
+                        ->label(__('admin_pages.homepage_form.suffix'))
                         ->maxLength(20),
                     TextInput::make('prefix')
-                        ->label('Prefix')
+                        ->label(__('admin_pages.homepage_form.prefix'))
                         ->maxLength(20),
                 ])
                 ->columns(2)
@@ -410,28 +410,28 @@ final class HomepageFormSchema
     public static function bottomStatsFields(string $prefix): array
     {
         return [
-            Section::make('Section Header')->schema([
+            Section::make(__('admin_pages.homepage_form.section_header'))->schema([
                 TextInput::make("{$prefix}.section_title")
-                    ->label('Section Title')
+                    ->label(__('admin_pages.homepage_form.section_title'))
                     ->required()
                     ->maxLength(255),
             ]),
             Repeater::make("{$prefix}.stats")
-                ->label('Statistics')
+                ->label(__('admin_pages.homepage_form.statistics'))
                 ->schema([
                     TextInput::make('value')
-                        ->label('Value')
+                        ->label(__('admin_pages.homepage_form.value'))
                         ->required()
                         ->maxLength(50),
                     TextInput::make('label')
-                        ->label('Label')
+                        ->label(__('admin_pages.homepage_form.label'))
                         ->required()
                         ->maxLength(100),
                     TextInput::make('suffix')
-                        ->label('Suffix')
+                        ->label(__('admin_pages.homepage_form.suffix'))
                         ->maxLength(20),
                     TextInput::make('prefix')
-                        ->label('Prefix')
+                        ->label(__('admin_pages.homepage_form.prefix'))
                         ->maxLength(20),
                 ])
                 ->columns(2)
@@ -445,52 +445,52 @@ final class HomepageFormSchema
     public static function footerFields(string $prefix): array
     {
         return [
-            Section::make('Brand & Contact')->schema([
+            Section::make(__('admin_pages.homepage_form.brand_contact'))->schema([
                 TextInput::make("{$prefix}.brand_title")
-                    ->label('Brand Title')
+                    ->label(__('admin_pages.homepage_form.brand_title'))
                     ->required()
                     ->maxLength(255),
-                self::mediaField("{$prefix}.logo", 'Footer Logo'),
+                self::mediaField("{$prefix}.logo", __('admin_pages.homepage_form.footer_logo')),
                 TextInput::make("{$prefix}.content.contact_phone")
-                    ->label('Contact Phone')
+                    ->label(__('admin_pages.homepage_form.contact_phone'))
                     ->tel()
                     ->maxLength(50),
                 TextInput::make("{$prefix}.content.contact_email")
-                    ->label('Contact Email')
+                    ->label(__('admin_pages.homepage_form.contact_email'))
                     ->email()
                     ->maxLength(255),
                 Textarea::make("{$prefix}.content.contact_address")
-                    ->label('Contact Address')
+                    ->label(__('admin_pages.homepage_form.contact_address'))
                     ->rows(2)
                     ->maxLength(500),
             ]),
             Repeater::make("{$prefix}.social_links")
-                ->label('Social Links')
+                ->label(__('admin_pages.homepage_form.social_links'))
                 ->schema([
                     TextInput::make('platform')
-                        ->label('Platform')
+                        ->label(__('admin_pages.homepage_form.platform'))
                         ->required()
                         ->maxLength(50),
-                    PageUrlSelect::make('url', 'URL', self::localeFromPrefix($prefix), true),
-                    self::mediaField('icon', 'Icon'),
+                    PageUrlSelect::make('url', __('admin_pages.homepage_form.url'), self::localeFromPrefix($prefix), true),
+                    self::mediaField('icon', __('admin_pages.homepage_form.icon')),
                 ])
                 ->columns(3)
                 ->collapsible()
                 ->collapsed()
                 ->defaultItems(0),
             Repeater::make("{$prefix}.contact_links")
-                ->label('Contact Links')
+                ->label(__('admin_pages.homepage_form.contact_links'))
                 ->schema([
                     TextInput::make('type')
-                        ->label('Type')
+                        ->label(__('admin_pages.homepage_form.type'))
                         ->required()
                         ->maxLength(50),
                     TextInput::make('label')
-                        ->label('Label')
+                        ->label(__('admin_pages.homepage_form.label'))
                         ->required()
                         ->maxLength(255),
                     TextInput::make('value')
-                        ->label('Value')
+                        ->label(__('admin_pages.homepage_form.value'))
                         ->required()
                         ->maxLength(255),
                 ])
@@ -499,20 +499,20 @@ final class HomepageFormSchema
                 ->collapsed()
                 ->defaultItems(0),
             Repeater::make("{$prefix}.footer_columns")
-                ->label('Navigation Groups')
+                ->label(__('admin_pages.homepage_form.navigation_groups'))
                 ->schema([
                     TextInput::make('title')
-                        ->label('Group Title')
+                        ->label(__('admin_pages.homepage_form.group_title'))
                         ->required()
                         ->maxLength(255),
                     Repeater::make('links')
-                        ->label('Links')
+                        ->label(__('admin_pages.homepage_form.links'))
                         ->schema([
                             TextInput::make('label')
-                                ->label('Label')
+                                ->label(__('admin_pages.homepage_form.label'))
                                 ->required()
                                 ->maxLength(255),
-                            PageUrlSelect::make('url', 'URL', self::localeFromPrefix($prefix), true),
+                            PageUrlSelect::make('url', __('admin_pages.homepage_form.url'), self::localeFromPrefix($prefix), true),
                         ])
                         ->columns(2)
                         ->collapsible()
@@ -523,21 +523,21 @@ final class HomepageFormSchema
                 ->collapsed()
                 ->defaultItems(0),
             Repeater::make("{$prefix}.content.legal_links")
-                ->label('Legal Links')
+                ->label(__('admin_pages.homepage_form.legal_links'))
                 ->schema([
                     TextInput::make('label')
-                        ->label('Label')
+                        ->label(__('admin_pages.homepage_form.label'))
                         ->required()
                         ->maxLength(255),
-                    PageUrlSelect::make('url', 'URL', self::localeFromPrefix($prefix), true),
+                    PageUrlSelect::make('url', __('admin_pages.homepage_form.url'), self::localeFromPrefix($prefix), true),
                 ])
                 ->columns(2)
                 ->collapsible()
                 ->collapsed()
                 ->defaultItems(0),
-            Section::make('Copyright')->schema([
+            Section::make(__('admin_pages.homepage_form.copyright'))->schema([
                 TextInput::make("{$prefix}.copyright_text")
-                    ->label('Copyright Text')
+                    ->label(__('admin_pages.homepage_form.copyright_text'))
                     ->maxLength(500),
             ]),
         ];
@@ -548,9 +548,9 @@ final class HomepageFormSchema
     {
         return [
             TextInput::make("{$prefix}.section_cta_label")
-                ->label('Section CTA Label')
+                ->label(__('admin_pages.homepage_form.section_cta_label'))
                 ->maxLength(100),
-            PageUrlSelect::make("{$prefix}.section_cta_url", 'Section CTA URL', self::localeFromPrefix($prefix)),
+            PageUrlSelect::make("{$prefix}.section_cta_url", __('admin_pages.homepage_form.section_cta_url'), self::localeFromPrefix($prefix)),
         ];
     }
 

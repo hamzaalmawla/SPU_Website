@@ -272,6 +272,10 @@ return [
     'actions' => [
         'edit' => 'تحرير',
     ],
+    'page_url_select' => [
+        'placeholder' => 'اختر صفحة...',
+        'help' => 'ابحث واختر صفحة داخلية، وسيُملأ الرابط تلقائياً.',
+    ],
     'media_picker' => [
         'image' => 'الصورة',
         'document' => 'المستند',

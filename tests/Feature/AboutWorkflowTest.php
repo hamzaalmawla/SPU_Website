@@ -78,7 +78,7 @@ final class AboutWorkflowTest extends TestCase
             ->assertOk()
             ->assertSee('Vision and Mission')
             ->assertSee('To be a distinguished scientific center')
-            ->assertSee('Strategic Pillars')
+            ->assertSee(__('admin_pages.about.strategic_pillars'))
             ->assertSee('Accredited Education')
             ->assertSee('href="/en/about/vision-mission"', false)
             ->assertSee('rel="canonical" href="http://localhost/en/about/vision-mission"', false)
@@ -163,10 +163,10 @@ final class AboutWorkflowTest extends TestCase
         $component = Livewire::test(ManageAbout::class)
             ->set('data.target_key', 'about.vision-mission')
             ->call('loadTarget', 'about.vision-mission')
-            ->assertSee('Hero and SEO')
-            ->assertSee('Vision, Mission and Values')
-            ->assertSee('Strategic Pillars')
-            ->assertDontSee('Subpage Schema Pending');
+            ->assertSee(__('admin_pages.about.hero_and_seo'))
+            ->assertSee(__('admin_pages.about.vision_mission_and_values'))
+            ->assertSee(__('admin_pages.about.strategic_pillars'))
+            ->assertDontSee(__('admin_pages.about.subpage_schema_pending'));
 
         /** @var array<string, mixed> $data */
         $data = $component->get('data');
@@ -205,8 +205,8 @@ final class AboutWorkflowTest extends TestCase
 
         $component = Livewire::test(ManageAbout::class)
             ->assertSet('data.target_key', 'about.landing')
-            ->assertSee('Hero and Story')
-            ->assertSee('Stats');
+            ->assertSee(__('admin_pages.about.hero_and_story'))
+            ->assertSee(__('admin_pages.about.stats'));
 
         /** @var array<string, mixed> $data */
         $data = $component->get('data');
@@ -236,8 +236,8 @@ final class AboutWorkflowTest extends TestCase
         Livewire::test(ManageAbout::class)
             ->set('data.target_key', 'about.directorates_staff')
             ->call('loadTarget', 'about.directorates_staff')
-            ->assertSee('Hero')
-            ->assertDontSee('Subpage Schema Pending');
+            ->assertSee(__('admin_pages.about.hero'))
+            ->assertDontSee(__('admin_pages.about.subpage_schema_pending'));
     }
 
     public function test_manage_about_partnerships_exposes_and_saves_goal_cards(): void
@@ -247,7 +247,7 @@ final class AboutWorkflowTest extends TestCase
         $component = Livewire::test(ManageAbout::class)
             ->set('data.target_key', 'about.partnerships')
             ->call('loadTarget', 'about.partnerships')
-            ->assertSee('Partnership Goals');
+            ->assertSee(__('admin_pages.about.partnership_goals'));
 
         /** @var array<string, mixed> $data */
         $data = $component->get('data');
@@ -308,10 +308,10 @@ final class AboutWorkflowTest extends TestCase
             Livewire::test(ManageAbout::class)
                 ->set('data.target_key', $targetKey)
                 ->call('loadTarget', $targetKey)
-                ->assertSee('Introduction')
-                ->assertSee('Facts')
-                ->assertSee('Content Cards')
-                ->assertDontSee('Subpage Schema Pending');
+                ->assertSee(__('admin_pages.about.introduction'))
+                ->assertSee(__('admin_pages.about.facts'))
+                ->assertSee(__('admin_pages.about.content_cards'))
+                ->assertDontSee(__('admin_pages.about.subpage_schema_pending'));
         }
     }
 
@@ -419,8 +419,8 @@ final class AboutWorkflowTest extends TestCase
             $component = Livewire::test(ManageAbout::class)
                 ->set('data.target_key', $targetKey)
                 ->call('loadTarget', $targetKey)
-                ->assertSee('Content Cards')
-                ->assertDontSee('Subpage Schema Pending');
+                ->assertSee(__('admin_pages.about.content_cards'))
+                ->assertDontSee(__('admin_pages.about.subpage_schema_pending'));
 
             /** @var array<string, mixed> $data */
             $data = $component->get('data');
@@ -489,10 +489,10 @@ final class AboutWorkflowTest extends TestCase
         $component = Livewire::test(ManageAbout::class)
             ->set('data.target_key', 'about.history')
             ->call('loadTarget', 'about.history')
-            ->assertSee('Founding Vision')
-            ->assertSee('Institutional Timeline')
-            ->assertSee('Narratives')
-            ->assertSee('Legacy');
+            ->assertSee(__('admin_pages.about.founding_vision'))
+            ->assertSee(__('admin_pages.about.institutional_timeline'))
+            ->assertSee(__('admin_pages.about.narratives'))
+            ->assertSee(__('admin_pages.about.legacy'));
 
         /** @var array<string, mixed> $data */
         $data = $component->get('data');
@@ -609,8 +609,8 @@ final class AboutWorkflowTest extends TestCase
         Livewire::test(ManageAbout::class)
             ->set('data.target_key', 'about.leadership')
             ->call('loadTarget', 'about.leadership')
-            ->assertSee('Hero')
-            ->assertSee('Leadership Presentation')
+            ->assertSee(__('admin_pages.about.hero'))
+            ->assertSee(__('admin_pages.about.leadership_presentation'))
             ->set('data.en_leadership.headline', 'Curated Leadership Shell')
             ->call('save');
 
@@ -729,7 +729,7 @@ final class AboutWorkflowTest extends TestCase
             Livewire::test(ManageAbout::class)
                 ->set('data.target_key', $targetKey)
                 ->call('loadTarget', $targetKey)
-                ->assertSee('Hero')
+                ->assertSee(__('admin_pages.about.hero'))
                 ->set('data.'.$stateKey.'.headline', 'Curated '.$targetKey)
                 ->call('save');
 

@@ -117,11 +117,11 @@ class ManageHomepage extends Page implements HasForms
                 ...HomepageFormSchema::selectionFieldsForSection($key, "{$key}.selection"),
                 Tabs::make("{$key}_locales")
                     ->tabs([
-                        Tab::make('العربية (AR)')
+                        Tab::make('العربية (AR)')->label(__('admin_pages.homepage.arabic_ar'))
                             ->schema(HomepageFormSchema::fieldsForSection($key, "{$key}.ar"))
                             ->extraAttributes(['dir' => 'rtl'])
                             ->icon('heroicon-o-language'),
-                        Tab::make('English (EN)')
+                        Tab::make('English (EN)')->label(__('admin_pages.homepage.english_en'))
                             ->schema(HomepageFormSchema::fieldsForSection($key, "{$key}.en"))
                             ->extraAttributes(['dir' => 'ltr'])
                             ->icon('heroicon-o-language'),
@@ -161,7 +161,7 @@ class ManageHomepage extends Page implements HasForms
     private function saveDraftAction(): Action
     {
         return Action::make('saveDraft')
-            ->label('Save Draft')
+            ->label(__('admin_pages.homepage.save_draft'))
             ->icon('heroicon-o-document')
             ->color('gray')
             ->action(fn () => $this->saveDraft());
@@ -170,12 +170,12 @@ class ManageHomepage extends Page implements HasForms
     private function discardDraftAction(): Action
     {
         return Action::make('discardDraft')
-            ->label('Discard Draft')
+            ->label(__('admin_pages.homepage.discard_draft'))
             ->icon('heroicon-o-trash')
             ->color('danger')
             ->requiresConfirmation()
-            ->modalHeading('Discard Draft')
-            ->modalDescription('This will permanently delete the current draft. The live homepage (if published) will not be affected.')
+            ->modalHeading(__('admin_pages.homepage.discard_draft'))
+            ->modalDescription(__('admin_pages.homepage.this_will_permanently_delete_the_current_draft_the_live_home'))
             ->visible(fn (): bool => $this->publishingService->hasEditableDraft())
             ->action(fn () => $this->discardDraft());
     }
@@ -183,7 +183,7 @@ class ManageHomepage extends Page implements HasForms
     private function previewArAction(): Action
     {
         return Action::make('previewAr')
-            ->label('Preview (AR)')
+            ->label(__('admin_pages.homepage.preview_ar'))
             ->icon('heroicon-o-eye')
             ->color('info')
             ->action(fn () => $this->openPreview('ar'));
@@ -192,7 +192,7 @@ class ManageHomepage extends Page implements HasForms
     private function previewEnAction(): Action
     {
         return Action::make('previewEn')
-            ->label('Preview (EN)')
+            ->label(__('admin_pages.homepage.preview_en'))
             ->icon('heroicon-o-eye')
             ->color('info')
             ->action(fn () => $this->openPreview('en'));
@@ -201,24 +201,24 @@ class ManageHomepage extends Page implements HasForms
     private function publishAction(): Action
     {
         return Action::make('publish')
-            ->label('Publish')
+            ->label(__('admin_pages.homepage.publish'))
             ->icon('heroicon-o-check-circle')
             ->color('success')
             ->requiresConfirmation()
-            ->modalHeading('Publish Homepage')
-            ->modalDescription('Are you sure you want to publish the current draft? This will make it live immediately.')
+            ->modalHeading(__('admin_pages.homepage.publish_homepage'))
+            ->modalDescription(__('admin_pages.homepage.are_you_sure_you_want_to_publish_the_current_draft_this_will'))
             ->action(fn () => $this->publishHomepage());
     }
 
     private function scheduleAction(): Action
     {
         return Action::make('schedule')
-            ->label('Schedule')
+            ->label(__('admin_pages.homepage.schedule'))
             ->icon('heroicon-o-clock')
             ->color('warning')
             ->form([
                 DateTimePicker::make('publish_at')
-                    ->label('Publish At')
+                    ->label(__('admin_pages.homepage.publish_at'))
                     ->required()
                     ->minDate(now())
                     ->native(false),
@@ -229,12 +229,12 @@ class ManageHomepage extends Page implements HasForms
     private function unpublishAction(): Action
     {
         return Action::make('unpublish')
-            ->label('Unpublish')
+            ->label(__('admin_pages.homepage.unpublish'))
             ->icon('heroicon-o-x-circle')
             ->color('danger')
             ->requiresConfirmation()
-            ->modalHeading('Unpublish Homepage')
-            ->modalDescription('Are you sure you want to unpublish the homepage? It will no longer be visible to the public.')
+            ->modalHeading(__('admin_pages.homepage.unpublish_homepage'))
+            ->modalDescription(__('admin_pages.homepage.are_you_sure_you_want_to_unpublish_the_homepage_it_will_no_l'))
             ->action(fn () => $this->unpublishHomepage());
     }
 
@@ -251,7 +251,7 @@ class ManageHomepage extends Page implements HasForms
             return;
         }
 
-        Notification::make()->title('Draft saved successfully')->success()->send();
+        Notification::make()->title(__('admin_pages.homepage.draft_saved_successfully'))->success()->send();
     }
 
     public function save(): void
@@ -267,9 +267,9 @@ class ManageHomepage extends Page implements HasForms
         $user = auth()->user();
         $deleted = $this->publishingService->discardEditableDraft((int) $user->id);
         if ($deleted > 0) {
-            Notification::make()->title('Draft discarded')->success()->send();
+            Notification::make()->title(__('admin_pages.homepage.draft_discarded'))->success()->send();
         } else {
-            Notification::make()->title('No draft to discard')->warning()->send();
+            Notification::make()->title(__('admin_pages.homepage.no_draft_to_discard'))->warning()->send();
         }
     }
 
@@ -307,7 +307,7 @@ class ManageHomepage extends Page implements HasForms
 
         if ($validationErrors !== []) {
             Notification::make()
-                ->title('Publish failed')
+                ->title(__('admin_pages.homepage.publish_failed'))
                 ->body($this->formatValidationErrors($validationErrors))
                 ->danger()
                 ->persistent()
@@ -326,10 +326,10 @@ class ManageHomepage extends Page implements HasForms
 
         $result = $this->publishingService->publish($draft->id, $user->id);
         if ($result) {
-            Notification::make()->title('Homepage published successfully')->success()->send();
+            Notification::make()->title(__('admin_pages.homepage.homepage_published_successfully'))->success()->send();
         } else {
-            Notification::make()->title('Publish failed')
-                ->body('The homepage draft did not pass publish validation. Review required fields in Arabic and English.')
+            Notification::make()->title(__('admin_pages.homepage.publish_failed'))
+                ->body(__('admin_pages.homepage.the_homepage_draft_did_not_pass_publish_validation_review_re'))
                 ->danger()
                 ->persistent()
                 ->send();
@@ -347,7 +347,7 @@ class ManageHomepage extends Page implements HasForms
 
         if ($validationErrors !== []) {
             Notification::make()
-                ->title('Schedule failed')
+                ->title(__('admin_pages.homepage.schedule_failed'))
                 ->body($this->formatValidationErrors($validationErrors))
                 ->danger()
                 ->persistent()
@@ -370,10 +370,10 @@ class ManageHomepage extends Page implements HasForms
             $user->id,
         );
         if ($result) {
-            Notification::make()->title('Homepage scheduled for publication')
-                ->body("Scheduled for: {$publishAt}")->success()->send();
+            Notification::make()->title(__('admin_pages.homepage.homepage_scheduled_for_publication'))
+                ->body(__('admin_pages.homepage.scheduled_for', ['date' => $publishAt]))->success()->send();
         } else {
-            Notification::make()->title('Schedule failed')->danger()->send();
+            Notification::make()->title(__('admin_pages.homepage.schedule_failed'))->danger()->send();
         }
     }
 
@@ -385,15 +385,23 @@ class ManageHomepage extends Page implements HasForms
         $user = auth()->user();
         $result = $this->publishingService->unpublish('homepage', null, $user->id);
         if ($result) {
-            Notification::make()->title('Homepage unpublished')->success()->send();
+            Notification::make()->title(__('admin_pages.homepage.homepage_unpublished'))->success()->send();
         } else {
-            Notification::make()->title('Unpublish failed')->danger()->send();
+            Notification::make()->title(__('admin_pages.homepage.unpublish_failed'))->danger()->send();
         }
     }
 
     public function getHomepageState(): string
     {
         return $this->publishingService->latestHomepageState() ?? 'draft';
+    }
+
+    public function getHomepageStateLabel(): string
+    {
+        $state = $this->getHomepageState();
+        $key = 'admin_pages.homepage.states.'.$state;
+
+        return trans()->has($key) ? (string) __($key) : ucfirst($state);
     }
 
     public function getStateBadgeColor(): string
@@ -1138,16 +1146,16 @@ class ManageHomepage extends Page implements HasForms
     private function sectionLabels(): array
     {
         return [
-            'hero' => 'Hero',
-            'hero_stats' => 'Hero Stats',
-            'achievements_highlights' => 'Achievement & Honors',
-            'academic_faculties' => 'Academic Faculties',
-            'choose_your_path' => 'Choose Your Path',
-            'research_studies' => 'Research Studies',
-            'university_news' => 'University News',
-            'events_activities' => 'Events & Activities',
-            'medical_facilities_services' => 'Medical Facilities & Services',
-            'footer' => 'Footer',
+            'hero' => __('admin_pages.homepage.hero'),
+            'hero_stats' => __('admin_pages.homepage.hero_stats'),
+            'achievements_highlights' => __('admin_pages.homepage.achievement_honors'),
+            'academic_faculties' => __('admin_pages.homepage.academic_faculties'),
+            'choose_your_path' => __('admin_pages.homepage.choose_your_path'),
+            'research_studies' => __('admin_pages.homepage.research_studies'),
+            'university_news' => __('admin_pages.homepage.university_news'),
+            'events_activities' => __('admin_pages.homepage.events_activities'),
+            'medical_facilities_services' => __('admin_pages.homepage.medical_facilities_services'),
+            'footer' => __('admin_pages.homepage.footer'),
         ];
     }
 
@@ -1177,8 +1185,8 @@ class ManageHomepage extends Page implements HasForms
         $this->draftVersion = $exception->currentVersion;
 
         Notification::make()
-            ->title('Draft changed')
-            ->body('The homepage draft changed while this page was open. Refresh the admin page, review the latest draft, then save or publish again.')
+            ->title(__('admin_pages.homepage.draft_changed'))
+            ->body(__('admin_pages.homepage.the_homepage_draft_changed_while_this_page_was_open_refresh'))
             ->warning()
             ->persistent()
             ->send();
@@ -1214,7 +1222,7 @@ class ManageHomepage extends Page implements HasForms
     /** @param list<string> $errors */
     private function formatValidationErrors(array $errors): string
     {
-        return "Missing or invalid publish fields:\n- ".implode("\n- ", $errors);
+        return __('admin_pages.homepage.missing_or_invalid_publish_fields')."\n- ".implode("\n- ", $errors);
     }
 
     /**

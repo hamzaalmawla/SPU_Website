@@ -1,14 +1,14 @@
 <x-filament-panels::page>
     <x-admin.cms-shell
         area="homepage"
-        :state="ucfirst($this->getHomepageState())"
+        :state="$this->getHomepageStateLabel()"
         :state-color="$this->getStateBadgeColor()"
     >
         <section class="spu-task-grid" aria-labelledby="homepage-section-heading">
             <div class="spu-task-grid__intro">
-                <p class="spu-workspace__eyebrow">Homepage sections</p>
-                <h2 id="homepage-section-heading">Choose one section to edit</h2>
-                <p>Only the selected bilingual section is loaded. Other homepage sections remain unchanged when you save.</p>
+                <p class="spu-workspace__eyebrow">{{ __('admin_pages.homepage.homepage_sections') }}</p>
+                <h2 id="homepage-section-heading">{{ __('admin_pages.homepage.choose_one_section_to_edit') }}</h2>
+                <p>{{ __('admin_pages.homepage.only_the_selected_section_is_loaded') }}</p>
             </div>
 
             <div class="spu-task-grid__items">
