@@ -90,7 +90,7 @@
             @foreach ($calendarHighlights as $highlight)
                 <div class="inline-block rounded-2xl border border-slate-100 px-5 py-3 me-4 mb-4">
                     @if (! empty($highlight['label']))<p class="font-medium text-spu-blue">{{ $highlight['label'] }}</p>@endif
-                    @if (! empty($highlight['date']))<p class="mt-1 text-sm text-slate-400">{{ $highlight['date'] }}</p>@endif
+                    @if (! empty($highlight['date']))<p class="mt-1 text-sm text-slate-500">{{ $highlight['date'] }}</p>@endif
                 </div>
             @endforeach
         </div>

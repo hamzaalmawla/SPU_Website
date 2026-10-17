@@ -38,7 +38,9 @@
                              and as the badge fill. As the CTA's own text on white it fails AA
                              for three of the faculties — the pharmacy green measured 2.3:1
                              against 4.5:1 — so the text use takes the darkened form, exactly
-                             as the faculties hub does.
+                             as the faculties hub does. The badge carries white text on the
+                             accent, so its fill takes the darkened form too; contrast is
+                             symmetric, and 4.5:1 one way is 4.5:1 the other.
 
                              Single-expression form on purpose. Blade pulls raw PHP blocks out
                              before it compiles anything else, and its pattern runs from the
@@ -49,7 +51,7 @@
                              directive in a comment does it too: the extraction runs before
                              comments are stripped. --}}
                         @php($accentText = ! empty($item['accent']) ? \App\Support\AccessibleColor::onLight($item['accent']) : null)
-                        <article @mouseenter="setActiveFaculty({{ $loop->index }})" @mouseleave="clearActiveFaculty()" :class="facultyCardClass({{ $loop->index }})" class="faculty-card snap-start w-[292px] min-h-[380px] h-auto shrink-0 relative bg-white rounded-[24px] border border-gray-100 shadow-card-sm flex flex-col items-center justify-between text-center transition-all duration-300 group overflow-hidden" role="group" aria-roledescription="{{ __('public.slide') }}" aria-label="{{ __('public.slide_position', ['current' => $loop->iteration, 'total' => count($section->payload->items)]) }}">
+                        <div @mouseenter="setActiveFaculty({{ $loop->index }})" @mouseleave="clearActiveFaculty()" :class="facultyCardClass({{ $loop->index }})" class="faculty-card snap-start w-[292px] min-h-[380px] h-auto shrink-0 relative bg-white rounded-[24px] border border-gray-100 shadow-card-sm flex flex-col items-center justify-between text-center transition-all duration-300 group overflow-hidden" role="group" aria-roledescription="{{ __('public.slide') }}" aria-label="{{ __('public.slide_position', ['current' => $loop->iteration, 'total' => count($section->payload->items)]) }}">
                             @if (! empty($item['accent']))
                                 <div class="absolute top-0 left-0 w-full h-0 group-hover:h-[6px] z-50 transition-all duration-300 ease-in-out" style="background-color: {{ $item['accent'] }};"></div>
                             @endif
@@ -63,15 +65,15 @@
                                 <h3 class="text-[20px] font-bold leading-tight transition-colors duration-300 text-gray-800">{{ $item['title'] ?? '' }}</h3>
                             </div>
                             @if (! empty($item['metric']))
-                                <div class="px-10 py-2.5 rounded-[8px] text-white font-bold text-[12px] mb-6 shadow-card-sm" @if (! empty($item['accent'])) style="background-color: {{ $item['accent'] }};" @endif>{{ $item['metric'] }}</div>
+                                <div class="px-10 py-2.5 rounded-[8px] text-white font-bold text-[12px] mb-6 shadow-card-sm" @if ($accentText) style="background-color: {{ $accentText }};" @endif>{{ $item['metric'] }}</div>
                             @endif
                             @if (! empty($item['action']['url']) && ! empty($item['action']['label']))
                                 <a href="{{ $item['action']['url'] }}" class="mt-auto mb-6 flex items-center gap-2 text-[13px] font-extrabold transition-all duration-300 group-hover:gap-3" @if ($accentText) style="color: {{ $accentText }};" @endif @if (! empty($item['action']['target'])) target="{{ $item['action']['target'] }}" rel="noreferrer" @endif>
-                                    <span>{{ $item['action']['label'] }}</span>
+                                    <span>{{ $item['action']['label'] }}<span class="sr-only"> — {{ $item['title'] ?? '' }}</span></span>
                                     <img src="/images/icon-arrow-right-outline.svg" class="w-2.5 h-2.5 opacity-70 group-hover:opacity-100 transition-all rtl:rotate-180" alt="" width="24" height="24" loading="lazy" decoding="async">
                                 </a>
                             @endif
-                        </article>
+                        </div>
                     @endforeach
                 </div>
             </div>

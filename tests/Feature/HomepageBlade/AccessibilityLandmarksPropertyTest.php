@@ -63,7 +63,12 @@ class AccessibilityLandmarksPropertyTest extends TestCase
         $this->assertStringContainsString('<article', $html, 'News cards should use <article> elements');
     }
 
-    public function test_faculty_cards_use_article_elements(): void
+    /**
+     * Faculty cards are carousel slides. An <article> cannot take role="group"
+     * (axe: aria-allowed-role), and Lighthouse's agentic tree audit fails the
+     * page on it, so each slide is a <div role="group"> named by its position.
+     */
+    public function test_faculty_cards_are_labelled_carousel_slides(): void
     {
         $section = self::makeSection('academic_faculties', [
             'title' => 'Faculties',
@@ -75,6 +80,7 @@ class AccessibilityLandmarksPropertyTest extends TestCase
             'locale' => 'en',
         ])->render();
 
-        $this->assertStringContainsString('<article', $html, 'Faculty cards should use <article> elements');
+        $this->assertMatchesRegularExpression('/<div[^>]*class="faculty-card[^"]*"[^>]*role="group"[^>]*aria-roledescription="[^"]+"[^>]*aria-label="[^"]+"/', $html);
+        $this->assertDoesNotMatchRegularExpression('/<article[^>]*role="group"/', $html);
     }
 }

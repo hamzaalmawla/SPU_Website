@@ -201,7 +201,10 @@ export function createCalendarApp() {
         },
 
         dayNumberClass(day) {
-            let colorClass = 'text-[#d0d0d0]';
+            // Days from the neighbouring months stay clickable (they switch the
+            // month), so they are live controls and need 4.5:1 on white. #767676
+            // is the lightest grey that clears it while still reading as muted.
+            let colorClass = 'text-[#767676]';
 
             if (this.selectedDate === day.date) {
                 colorClass = 'text-white';
