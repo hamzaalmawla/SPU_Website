@@ -2403,6 +2403,18 @@ final class FacilitiesWorkflowTest extends TestCase
     {
         $this->mock(ResearchPageServiceInterface::class, function ($mock): void {
             $mock->shouldReceive('filterFooterColumns')->andReturn([]);
+            $mock->shouldReceive('facultyFeaturedPublications')->andReturnUsing(
+                fn (string $facultySlug, string $locale): ResearchPageDTO => new ResearchPageDTO(
+                    locale: $locale,
+                    direction: $locale === 'ar' ? 'rtl' : 'ltr',
+                    type: 'faculty-featured-publications',
+                    data: ['items' => []],
+                    seoTitle: '',
+                    seoDescription: '',
+                    seoImage: '',
+                    path: '/faculties/'.$facultySlug,
+                ),
+            );
             $mock->shouldReceive('facultyPublications')->andReturnUsing(
                 fn (string $facultySlug, string $locale): ResearchPageDTO => new ResearchPageDTO(
                     locale: $locale,

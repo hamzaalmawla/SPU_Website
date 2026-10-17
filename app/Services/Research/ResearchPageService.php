@@ -138,6 +138,55 @@ final class ResearchPageService implements ResearchPageServiceInterface
         );
     }
 
+    public function facultyFeaturedPublications(string $facultySlug, string $locale, array $selectedSlugs = [], int $limit = 3): ResearchPageDTO
+    {
+        $canonicalFacultySlug = $this->canonicalFacultySlug($facultySlug);
+        $limit = max(1, $limit);
+        $slugs = array_slice(array_values(array_unique(array_filter(
+            array_map(static fn (mixed $slug): string => is_string($slug) ? trim($slug) : '', $selectedSlugs),
+            static fn (string $slug): bool => $slug !== '',
+        ))), 0, $limit);
+        $items = $this->publicPublicationItems($locale);
+        $bySlug = [];
+
+        foreach ($items as $item) {
+            $bySlug[(string) ($item['slug'] ?? '')] ??= $item;
+        }
+
+        $featured = [];
+
+        foreach ($slugs as $slug) {
+            if (isset($bySlug[$slug])) {
+                $featured[$slug] = $bySlug[$slug];
+            }
+        }
+
+        foreach ($items as $item) {
+            if (count($featured) >= $limit) {
+                break;
+            }
+
+            $slug = (string) ($item['slug'] ?? '');
+
+            if ($slug !== '' && ! isset($featured[$slug])
+                && $this->canonicalFacultySlug((string) ($item['facultySlug'] ?? '')) === $canonicalFacultySlug) {
+                $featured[$slug] = $item;
+            }
+        }
+
+        return new ResearchPageDTO(
+            locale: $locale,
+            direction: $locale === 'ar' ? 'rtl' : 'ltr',
+            type: 'faculty-featured-publications',
+            data: ['items' => array_values($featured)],
+            seoTitle: '',
+            seoDescription: '',
+            seoImage: '',
+            path: '/faculties/'.$canonicalFacultySlug,
+            isAvailable: $featured !== [],
+        );
+    }
+
     public function publication(string $locale, string $slug): ?ResearchDetailPageDTO
     {
         $cmsPage = $this->cmsPublication($locale, $slug);

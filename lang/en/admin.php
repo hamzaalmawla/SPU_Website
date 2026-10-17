@@ -864,6 +864,7 @@ return [
                 'gallery' => 'Image gallery',
                 'stats' => 'Statistics',
                 'latest_research' => 'Latest research',
+                'selected_research' => 'Latest research: picked publications',
                 'training_intro' => 'Training introduction',
                 'training_cards' => 'Training program introduction',
                 'training_program' => 'Training program steps',
@@ -879,6 +880,10 @@ return [
                 'advanced' => 'Advanced settings',
             ],
             'fields' => [
+                'selected_research' => 'Picked research publications',
+                'research_publication' => 'Published research publication',
+                'selected_research_help' => 'Pick up to 3 published research publications from the website, in display order. Each card uses the current title, image and link of the publication, so nothing is copied. Empty slots show the newest research of this faculty automatically.',
+                'latest_research_legacy_help' => 'Old manual research cards, kept for reference. Cards that link to a publication are listed as picks in "Latest research: picked publications"; the public page shows only the picks.',
                 'page_title' => 'Page title',
                 'title' => 'Title',
                 'summary' => 'Summary',

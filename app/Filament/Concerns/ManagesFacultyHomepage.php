@@ -15,6 +15,7 @@ use App\Exceptions\ConflictException;
 use App\Filament\Components\PageUrlSelect;
 use App\Filament\Resources\FacultyMemberResource;
 use App\Filament\Support\MediaPicker;
+use App\Filament\Support\ResearchPublicationPicker;
 use App\Models\User\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
@@ -38,6 +39,8 @@ use Illuminate\Validation\ValidationException;
 trait ManagesFacultyHomepage
 {
     use ManagesStudyPlanBoard;
+
+    private const SELECTED_RESEARCH_LIMIT = 3;
 
     /** @var array<string, mixed> */
     public ?array $data = [];
@@ -182,6 +185,7 @@ trait ManagesFacultyHomepage
                 $studentRecords,
             ), static fn (string $key): bool => $key !== '')),
             'student_records' => $studentRecords,
+            'selected_research' => $targetKey === $this->defaultTargetKey() ? $this->selectedResearchForForm($payload) : [],
             'ar_content' => $this->contentForForm($targetKey, is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : []),
             'en_content' => $this->contentForForm($targetKey, is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : []),
         ]);
@@ -228,6 +232,17 @@ trait ManagesFacultyHomepage
                     ])
                     ->persistTabInQueryString('locale')
                     ->columnSpanFull(),
+                Section::make(__('admin.faculty_workspace.editor.sections.selected_research'))
+                    ->description(__('admin.faculty_workspace.editor.fields.selected_research_help'))
+                    ->schema([
+                        ResearchPublicationPicker::make(
+                            'selected_research',
+                            __('admin.faculty_workspace.editor.fields.selected_research'),
+                            __('admin.faculty_workspace.editor.fields.research_publication'),
+                            self::SELECTED_RESEARCH_LIMIT,
+                        )->columnSpanFull(),
+                    ])
+                    ->visible(fn (): bool => $this->currentTargetKeyForSchema() === $this->defaultTargetKey()),
                 $this->bilingualStudentFields()
                     ->visible(fn (): bool => $this->hasFilterableRecords($this->currentTargetKeyForSchema())),
             ])
@@ -582,7 +597,7 @@ trait ManagesFacultyHomepage
                     ->columnSpanFull(),
             ]),
 
-            Section::make(__('admin.faculty_workspace.editor.sections.latest_research'))->schema([
+            Section::make(__('admin.faculty_workspace.editor.sections.latest_research'))->description(__('admin.faculty_workspace.editor.fields.latest_research_legacy_help'))->collapsed()->schema([
                 Repeater::make($prefix.'.latestResearch')
                     ->label(__('admin.faculty_workspace.editor.sections.latest_research'))
                     ->schema([
@@ -632,6 +647,12 @@ trait ManagesFacultyHomepage
             ));
             $arContent['_filteredRecordKeys'] = $visibleKeys;
             $enContent['_filteredRecordKeys'] = $visibleKeys;
+        }
+
+        if ($targetKey === $this->defaultTargetKey()) {
+            $selectedResearch = $this->selectedResearchFromForm($state);
+            $arContent['selectedResearchSlugs'] = $selectedResearch;
+            $enContent['selectedResearchSlugs'] = $selectedResearch;
         }
 
         $payload = [
@@ -1086,6 +1107,45 @@ trait ManagesFacultyHomepage
                 MediaPicker::image($prefix.'.seoImage', __('admin.faculty_workspace.editor.fields.seo_image')),
             ])->columns(2)->collapsed(),
         ];
+    }
+
+    /**
+     * Picks are the same in both languages, since publication slugs are shared.
+     * Content saved before the picker existed offers its old manual cards that
+     * point at a publication, which is what the public page shows for it.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<int, array{publication_slug: string}>
+     */
+    private function selectedResearchForForm(array $payload): array
+    {
+        $content = is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [];
+        $values = array_key_exists('selectedResearchSlugs', $content)
+            ? $content['selectedResearchSlugs']
+            : array_map(static fn (mixed $item): mixed => is_array($item) ? ($item['slug'] ?? null) : null, $this->listOfArrays($content['latestResearch'] ?? []));
+
+        return array_map(
+            static fn (string $slug): array => ['publication_slug' => $slug],
+            $this->researchSlugList($values),
+        );
+    }
+
+    /** @param array<string, mixed> $state @return array<int, string> */
+    private function selectedResearchFromForm(array $state): array
+    {
+        return $this->researchSlugList(array_map(
+            static fn (mixed $item): mixed => is_array($item) ? ($item['publication_slug'] ?? null) : null,
+            $this->listOfArrays($state['selected_research'] ?? []),
+        ));
+    }
+
+    /** @return array<int, string> */
+    private function researchSlugList(mixed $values): array
+    {
+        return array_slice(array_values(array_unique(array_filter(
+            is_array($values) ? $values : [],
+            static fn (mixed $slug): bool => is_string($slug) && preg_match('/^[A-Za-z0-9-]+$/', $slug) === 1,
+        ))), 0, self::SELECTED_RESEARCH_LIMIT);
     }
 
     /** @return array<string, mixed> */

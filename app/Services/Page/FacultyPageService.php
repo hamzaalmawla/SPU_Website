@@ -71,6 +71,8 @@ final class FacultyPageService implements FacultyPageServiceInterface
 
     private const RESEARCH_LIST_PER_PAGE = 6;
 
+    private const LATEST_RESEARCH_LIMIT = 3;
+
     private const MEMORIAL_HONOR_SOURCE_IDS = [134, 359, 390, 898, 1118];
 
     public function __construct(
@@ -192,7 +194,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'sections' => is_array($translation?->sections_json) ? $translation->sections_json : [],
             'dean' => is_array($pagePayload['dean'] ?? null) ? $pagePayload['dean'] : [],
             'gallery' => $this->gallery($faculty),
-            'latestResearch' => $this->latestResearch($faculty, $locale),
+            'latestResearch' => $this->latestResearch($faculty, $locale, $this->selectedResearchSlugs($cmsContent ?? [])),
         ];
         $stats = $this->localizedPayloadList($pagePayload['stats'] ?? [], $locale);
 
@@ -368,7 +370,9 @@ final class FacultyPageService implements FacultyPageServiceInterface
             [$items, $pagination] = $this->paginatedResearchItems($items, $filters);
         }
 
-        $latestResearch = $subpageSlug === 'overview' ? $this->latestResearch($faculty, $locale) : [];
+        $latestResearch = $subpageSlug === 'overview'
+            ? $this->latestResearch($faculty, $locale, $this->selectedResearchSlugs($this->publishedLocalizedPayload('facilities.'.$this->publicSlug($faculty), $locale) ?? []))
+            : [];
         $deanProfile = $subpageSlug === 'overview' ? $this->deanProfile($faculty, $locale, $pageData) : null;
 
         return new FacultySubpageDTO(
@@ -621,7 +625,10 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'dean' => $this->localizedDeanPayload(is_array($pagePayload['dean'] ?? null) ? $pagePayload['dean'] : [], $locale),
             'gallery' => collect($this->gallery($faculty))->map(fn (string $image): array => ['image' => $image])->values()->all(),
             'stats' => $this->localizedPayloadList($pagePayload['stats'] ?? [], $locale),
-            'latestResearch' => $this->latestResearch($faculty, $locale),
+            // Research is picked by reference; prefilling the old manual list here
+            // froze the automatic cards into copies on an editor's first save.
+            'selectedResearchSlugs' => [],
+            'latestResearch' => [],
         ];
     }
 
@@ -736,7 +743,6 @@ final class FacultyPageService implements FacultyPageServiceInterface
         $tabs = $this->arrayList($content['tabs'] ?? []);
         $dean = is_array($content['dean'] ?? null) ? $content['dean'] : [];
         $gallery = $this->imageList($content['gallery'] ?? []);
-        $latestResearch = $this->arrayList($content['latestResearch'] ?? []);
 
         return [
             ...$modelContent,
@@ -746,7 +752,6 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'tabs' => $tabs !== [] ? $tabs : ($modelContent['tabs'] ?? []),
             'dean' => $dean !== [] ? $dean : ($modelContent['dean'] ?? []),
             'gallery' => $gallery !== [] ? $gallery : ($modelContent['gallery'] ?? []),
-            'latestResearch' => $latestResearch !== [] ? $latestResearch : ($modelContent['latestResearch'] ?? []),
         ];
     }
 
@@ -2024,16 +2029,37 @@ final class FacultyPageService implements FacultyPageServiceInterface
         return $titles[$subpageSlug] ?? $subpageSlug;
     }
 
-    /** @return array<int, array<string, mixed>> */
-    private function latestResearch(Faculty $faculty, string $locale): array
+    /**
+     * The research a faculty features, picked by slug from the site-wide
+     * publications. Content saved before the picker existed has no
+     * selectedResearchSlugs key; its old manual cards that point at a
+     * publication count as picks, and cards without one never rendered.
+     *
+     * @param  array<string, mixed>  $content
+     * @return array<int, string>
+     */
+    private function selectedResearchSlugs(array $content): array
     {
-        $researchPage = $this->researchPageService->facultyPublications($this->publicSlug($faculty), $locale);
+        $values = array_key_exists('selectedResearchSlugs', $content)
+            ? $content['selectedResearchSlugs']
+            : array_map(static fn (mixed $item): mixed => is_array($item) ? ($item['slug'] ?? null) : null, $this->arrayList($content['latestResearch'] ?? []));
+
+        return array_slice(array_values(array_unique(array_filter(
+            is_array($values) ? $values : [],
+            static fn (mixed $slug): bool => is_string($slug) && preg_match('/^[A-Za-z0-9-]+$/', $slug) === 1,
+        ))), 0, self::LATEST_RESEARCH_LIMIT);
+    }
+
+    /** @param array<int, string> $selectedSlugs @return array<int, array<string, mixed>> */
+    private function latestResearch(Faculty $faculty, string $locale, array $selectedSlugs = []): array
+    {
+        $researchPage = $this->researchPageService->facultyFeaturedPublications($this->publicSlug($faculty), $locale, $selectedSlugs, self::LATEST_RESEARCH_LIMIT);
 
         return collect($researchPage->data['items'] ?? [])
             ->filter(fn (mixed $item): bool => is_array($item)
                 && preg_match('/^[A-Za-z0-9-]+$/', (string) ($item['slug'] ?? '')) === 1
                 && trim((string) ($item['title'] ?? '')) !== '')
-            ->take(3)
+            ->take(self::LATEST_RESEARCH_LIMIT)
             ->map(fn (array $item): array => [
                 ...$item,
                 'url' => $this->url($locale, '/research/publications/'.(string) $item['slug']),

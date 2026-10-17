@@ -22,6 +22,15 @@ interface ResearchPageServiceInterface
 
     public function facultyPublications(string $facultySlug, string $locale): ResearchPageDTO;
 
+    /**
+     * The publications a faculty page features: published ones picked by slug
+     * first, in the order given, then the faculty's newest to fill the rest.
+     * Picks that are unpublished or deleted are skipped.
+     *
+     * @param  array<int, string>  $selectedSlugs
+     */
+    public function facultyFeaturedPublications(string $facultySlug, string $locale, array $selectedSlugs = [], int $limit = 3): ResearchPageDTO;
+
     public function publication(string $locale, string $slug): ?ResearchDetailPageDTO;
 
     /** @param array<int, string> $publicationSlugs @return Collection<int, ResearchCardDTO> */

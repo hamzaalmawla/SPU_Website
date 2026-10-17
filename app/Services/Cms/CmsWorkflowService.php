@@ -334,6 +334,10 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
             }
         }
 
+        if (preg_match('/^facilities\.[a-z0-9-]+$/', $target->key) === 1 && $target->key !== 'facilities.landing') {
+            $this->appendFacultyResearchSelectionReadinessErrors($payload, $target->locales, $errors);
+        }
+
         if ($target->key === 'facilities.pharmacy.training') {
             $this->appendPharmacyTrainingReadinessErrors($payload, $target->locales, $errors);
         }
@@ -2052,6 +2056,46 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
             if (! $this->isSafePublicAsset($translation['heroImage'] ?? null) || ! $this->isSafePublicAsset($translation['seoImage'] ?? null)) {
                 $errors[$locale][] = 'News Articles shell images must use safe public assets.';
             }
+        }
+    }
+
+    /**
+     * Picked research is stored by publication slug, at most three, and the
+     * same in both languages because publication slugs are shared.
+     *
+     * @param  array<int, string>  $locales
+     * @param  array<string, array<int, string>>  $errors
+     */
+    private function appendFacultyResearchSelectionReadinessErrors(array $payload, array $locales, array &$errors): void
+    {
+        $selections = [];
+
+        foreach ($locales as $locale) {
+            $translation = $this->localePayload($payload, $locale);
+
+            if (! array_key_exists('selectedResearchSlugs', $translation)) {
+                continue;
+            }
+
+            $slugs = $translation['selectedResearchSlugs'];
+
+            if (! is_array($slugs) || ! array_is_list($slugs) || count($slugs) > 3
+                || array_filter($slugs, static fn (mixed $slug): bool => ! is_string($slug) || preg_match('/^[A-Za-z0-9-]+$/', $slug) !== 1) !== []
+                || count(array_unique($slugs)) !== count($slugs)) {
+                $errors['research'][] = 'Pick at most three distinct published research publications.';
+
+                continue;
+            }
+
+            $selections[$locale] = $slugs;
+        }
+
+        if (count(array_unique(array_map('json_encode', $selections))) > 1) {
+            $errors['research'][] = 'Arabic and English must feature the same research publications.';
+        }
+
+        if (isset($errors['research'])) {
+            $errors['research'] = array_values(array_unique($errors['research']));
         }
     }
 
