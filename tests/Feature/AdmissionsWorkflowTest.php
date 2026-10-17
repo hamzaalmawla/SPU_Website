@@ -262,25 +262,22 @@ final class AdmissionsWorkflowTest extends TestCase
         $component = Livewire::test(ManageAdmissions::class)
             ->set('data.target_key', 'admissions.tuition')
             ->call('loadTarget', 'admissions.tuition')
-            ->assertSee(__('admin_pages.admissions.fee_table'))
+            ->assertSee(__('admin_pages.admissions.fees_by_faculty'))
             ->assertSee(__('admin_pages.admissions.payment_methods'))
             ->assertSee(__('admin_pages.admissions.financial_notes'));
 
-        /** @var array<string, mixed> $data */
-        $data = $component->get('data');
-        $feeRows = is_array($data['en_tuition']['fee_rows'] ?? null) ? $data['en_tuition']['fee_rows'] : [];
-        $feeRows[] = [
-            'faculty' => 'Curated Faculty',
-            'type' => 'New',
-            'tuitionFee' => '$1,000',
-            'registrationFee' => '$100',
-            'additionalFees' => '$50',
-            'notes' => 'Saved through the curated tuition editor.',
-        ];
-
         $component
             ->set('data.en_tuition.title', 'Curated Tuition Page')
-            ->set('data.en_tuition.fee_rows', $feeRows)
+            ->set('data.tuition_fees', [
+                'row' => [
+                    'faculty_ar' => 'كلية منسقة',
+                    'faculty_en' => 'Curated Faculty',
+                    'scientific_average' => '70',
+                    'credit_hours' => '150',
+                    'syrian_fee' => '9000',
+                    'foreign_fee' => '200',
+                ],
+            ])
             ->call('save');
 
         $draft = CmsDraft::query()->where('target_key', 'admissions.tuition')->latest('id')->firstOrFail();
@@ -479,11 +476,11 @@ final class AdmissionsWorkflowTest extends TestCase
 
         foreach (['ar', 'en'] as $locale) {
             $payload['translations'][$locale]['feeRows'][] = [
-                'faculty' => 'Medicine',
-                'type' => 'New',
-                'tuitionFee' => '$15,000',
-                'registrationFee' => '$500',
-                'additionalFees' => '$250 (Lab)',
+                'faculty' => 'Lorem ipsum faculty',
+                'scientificAverage' => 80,
+                'creditHours' => 251,
+                'syrianFee' => 15000,
+                'foreignFee' => 500,
             ];
             $payload['translations'][$locale]['methods'][] = [
                 'title' => 'Online payment',

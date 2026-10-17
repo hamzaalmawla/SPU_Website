@@ -827,8 +827,8 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
                     $errors[$locale][] = 'Transparent tuition availability guidance is required when no verified fee rows are published.';
                 }
                 foreach ($rows as $row) {
-                    if (! is_array($row) || ! $this->admissionsFieldsAreFilled($row, ['faculty', 'type', 'tuitionFee', 'registrationFee', 'additionalFees'])) {
-                        $errors[$locale][] = 'Every tuition row requires complete verified fee data.';
+                    if (! is_array($row) || ! $this->tuitionRowIsComplete($row)) {
+                        $errors[$locale][] = 'Every tuition row needs the faculty, at least one certificate track with a minimum average between 0 and 100, the total credit hours, and both fees.';
                     }
                 }
                 if ($methods === [] && ! $this->filledString($translation['paymentGuidance'] ?? null)) {
@@ -927,6 +927,29 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
         }
 
         return true;
+    }
+
+    /** @param array<string, mixed> $row */
+    private function tuitionRowIsComplete(array $row): bool
+    {
+        $averages = array_filter(
+            [$row['scientificAverage'] ?? null, $row['vocationalAverage'] ?? null, $row['literaryAverage'] ?? null],
+            static fn (mixed $average): bool => $average !== null && $average !== '',
+        );
+
+        foreach ($averages as $average) {
+            if (! is_numeric($average) || (float) $average < 0 || (float) $average > 100) {
+                return false;
+            }
+        }
+
+        foreach (['creditHours', 'syrianFee', 'foreignFee'] as $field) {
+            if (! is_numeric($row[$field] ?? null) || (float) $row[$field] <= 0) {
+                return false;
+            }
+        }
+
+        return $averages !== [] && $this->filledString($row['faculty'] ?? null);
     }
 
     private function isSafeAdmissionsPaymentUrl(mixed $url): bool

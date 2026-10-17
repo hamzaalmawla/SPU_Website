@@ -12,6 +12,9 @@ use App\DTOs\Admissions\AdmissionsSectionDTO;
 
 final class AdmissionsPageService implements AdmissionsPageServiceInterface
 {
+    /** General Secondary tracks a tuition row can give a minimum average for, in display order. */
+    private const TUITION_TRACKS = ['scientific', 'vocational', 'literary'];
+
     public function __construct(
         private readonly CmsWorkflowServiceInterface $cmsWorkflowService,
         private readonly MediaServiceInterface $mediaService,
@@ -83,8 +86,8 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
         if (is_array($published['translations']['ar'] ?? null) && is_array($published['translations']['en'] ?? null)) {
             return [
                 'translations' => [
-                    'ar' => $published['translations']['ar'],
-                    'en' => $published['translations']['en'],
+                    'ar' => $targetKey === 'admissions.tuition' ? $this->withTuitionLabelDefaults($published['translations']['ar'], 'ar') : $published['translations']['ar'],
+                    'en' => $targetKey === 'admissions.tuition' ? $this->withTuitionLabelDefaults($published['translations']['en'], 'en') : $published['translations']['en'],
                 ],
             ];
         }
@@ -403,13 +406,35 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
             ],
             'overviewTitleEn' => 'Tuition Fees Overview',
             'overviewTitleAr' => 'نظرة عامة على الرسوم',
-            'tableHeaders' => [
-                ['key' => 'faculty', 'labelEn' => 'Faculty', 'labelAr' => 'الكلية'],
-                ['key' => 'type', 'labelEn' => 'Type', 'labelAr' => 'النوع'],
-                ['key' => 'tuitionFee', 'labelEn' => 'Tuition Fee (Per Year)', 'labelAr' => 'الرسوم السنوية'],
-                ['key' => 'registrationFee', 'labelEn' => 'Registration Fee', 'labelAr' => 'رسم التسجيل'],
-                ['key' => 'additionalFees', 'labelEn' => 'Additional Fees', 'labelAr' => 'رسوم إضافية'],
-                ['key' => 'notes', 'labelEn' => 'Notes', 'labelAr' => 'ملاحظات'],
+            'feeTableIntroEn' => '',
+            'feeTableIntroAr' => '',
+            'feeUnitEn' => '',
+            'feeUnitAr' => '',
+            'columns' => [
+                'facultyEn' => 'Faculty',
+                'facultyAr' => 'الكلية',
+                'certificateEn' => 'Required certificate (General Secondary) and minimum average',
+                'certificateAr' => 'الشهادة المطلوبة (الثانوية العامة) والمعدل المطلوب',
+                'creditHoursEn' => 'Total credit hours',
+                'creditHoursAr' => 'عدد الساعات الكلي',
+                'syrianFeeEn' => 'Syrian students and those treated as Syrians',
+                'syrianFeeAr' => 'الطلبة السوريون ومن في حكمهم',
+                'foreignFeeEn' => 'Arab and foreign students',
+                'foreignFeeAr' => 'الطلبة العرب والأجانب',
+            ],
+            'trackLabels' => [
+                'scientificEn' => 'Scientific',
+                'scientificAr' => 'الفرع العلمي',
+                'vocationalEn' => 'Vocational',
+                'vocationalAr' => 'الفرع المهني',
+                'literaryEn' => 'Literary',
+                'literaryAr' => 'الفرع الأدبي',
+            ],
+            'currencies' => [
+                'syrianEn' => 'new SYP',
+                'syrianAr' => 'ل.س.ج',
+                'foreignEn' => 'USD',
+                'foreignAr' => '$',
             ],
             'feeRows' => [],
             'emptyStateEn' => 'No tuition rows match the selected filters.',
@@ -747,9 +772,13 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
     private function sanitizeSection(string $slug, array $section, string $locale): array
     {
         if ($slug === 'tuition') {
-            $section['feeRows'] = array_values(array_filter(
-                is_array($section['feeRows'] ?? null) ? $section['feeRows'] : [],
-                fn (mixed $row): bool => is_array($row) && ! $this->containsKnownAdmissionsPlaceholder($row),
+            $section = $this->withTuitionLabelDefaults($section, $locale);
+            $section['feeRows'] = array_values(array_map(
+                fn (array $row): array => $this->tuitionDisplayRow($row, $section),
+                array_filter(
+                    is_array($section['feeRows'] ?? null) ? $section['feeRows'] : [],
+                    fn (mixed $row): bool => is_array($row) && $this->filledText($row['faculty'] ?? null) && ! $this->containsKnownAdmissionsPlaceholder($row),
+                ),
             ));
             $section['methods'] = array_values(array_filter(
                 is_array($section['methods'] ?? null) ? $section['methods'] : [],
@@ -812,6 +841,77 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
         }
 
         return $this->removeInertAdmissionsUrls($section);
+    }
+
+    /**
+     * Fills the table's column, track and currency labels that a payload saved before they
+     * existed (or left blank) does not carry.
+     *
+     * @param  array<string, mixed>  $section
+     * @return array<string, mixed>
+     */
+    private function withTuitionLabelDefaults(array $section, string $locale): array
+    {
+        $defaults = (array) $this->localized($this->tuitionPayload($locale), $locale);
+
+        foreach (['columns', 'trackLabels', 'currencies'] as $group) {
+            $section[$group] = array_merge(
+                is_array($defaults[$group] ?? null) ? $defaults[$group] : [],
+                array_filter(is_array($section[$group] ?? null) ? $section[$group] : [], fn (mixed $label): bool => $this->filledText($label)),
+            );
+        }
+
+        return $section;
+    }
+
+    /**
+     * Stored fee rows hold plain numbers shared by both locales; this turns one into the
+     * strings the public table shows, with the locale's track names and currencies.
+     *
+     * @param  array<string, mixed>  $row
+     * @param  array<string, mixed>  $section
+     * @return array{faculty: string, tracks: list<array{label: string, average: string}>, creditHours: string, syrianFee: string, foreignFee: string}
+     */
+    private function tuitionDisplayRow(array $row, array $section): array
+    {
+        $trackLabels = is_array($section['trackLabels'] ?? null) ? $section['trackLabels'] : [];
+        $currencies = is_array($section['currencies'] ?? null) ? $section['currencies'] : [];
+        $tracks = [];
+
+        foreach (self::TUITION_TRACKS as $track) {
+            $average = $row[$track.'Average'] ?? null;
+
+            if (is_numeric($average)) {
+                $tracks[] = ['label' => (string) ($trackLabels[$track] ?? ''), 'average' => $this->formatNumber($average).'%'];
+            }
+        }
+
+        return [
+            'faculty' => trim((string) $row['faculty']),
+            'tracks' => $tracks,
+            'creditHours' => is_numeric($row['creditHours'] ?? null) ? $this->formatNumber($row['creditHours']) : '',
+            'syrianFee' => $this->formatFee($row['syrianFee'] ?? null, (string) ($currencies['syrian'] ?? '')),
+            'foreignFee' => $this->formatFee($row['foreignFee'] ?? null, (string) ($currencies['foreign'] ?? '')),
+        ];
+    }
+
+    private function formatFee(mixed $amount, string $currency): string
+    {
+        return is_numeric($amount) ? trim($this->formatNumber($amount).' '.$currency) : '';
+    }
+
+    private function formatNumber(int|float|string $value): string
+    {
+        $number = (float) $value;
+        $decimals = floor($number) === $number ? 0 : 2;
+        $formatted = number_format($number, $decimals);
+
+        return $decimals > 0 ? rtrim(rtrim($formatted, '0'), '.') : $formatted;
+    }
+
+    private function filledText(mixed $value): bool
+    {
+        return is_string($value) && trim($value) !== '';
     }
 
     /** @param array<string, mixed> $download

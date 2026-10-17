@@ -104,6 +104,7 @@ use App\Contracts\News\NewsServiceInterface;
 use App\Contracts\Page\AboutNavigationCardServiceInterface;
 use App\Contracts\Page\AboutPageServiceInterface;
 use App\Contracts\Page\AdmissionsPageServiceInterface;
+use App\Contracts\Page\AdmissionsTuitionFeeImportServiceInterface;
 use App\Contracts\Page\CampusLifePageServiceInterface;
 use App\Contracts\Page\ContactPageServiceInterface;
 use App\Contracts\Page\EServicesPageServiceInterface;
@@ -276,6 +277,7 @@ use App\Services\News\NewsService;
 use App\Services\Page\AboutNavigationCardService;
 use App\Services\Page\AboutPageService;
 use App\Services\Page\AdmissionsPageService;
+use App\Services\Page\AdmissionsTuitionFeeImportService;
 use App\Services\Page\CampusLifePageService;
 use App\Services\Page\ContactPageService;
 use App\Services\Page\EServicesPageService;
@@ -603,6 +605,7 @@ class AppServiceProvider extends ServiceProvider
             AlumniDirectoryServiceInterface::class => AlumniDirectoryService::class,
             AboutEntityCmsServiceInterface::class => AboutEntityCmsService::class,
             AdmissionsPageServiceInterface::class => AdmissionsPageService::class,
+            AdmissionsTuitionFeeImportServiceInterface::class => AdmissionsTuitionFeeImportService::class,
             AboutNavigationCardServiceInterface::class => AboutNavigationCardService::class,
             FacultySubpageCardServiceInterface::class => FacultySubpageCardService::class,
             AboutPageServiceInterface::class => AboutPageService::class,

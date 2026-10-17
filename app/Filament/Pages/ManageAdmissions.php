@@ -100,6 +100,7 @@ class ManageAdmissions extends Page implements HasForms
                         ->live()
                         ->afterStateUpdated(fn (?string $state): mixed => is_string($state) && $state !== '' ? $this->loadTarget($state) : null),
                 ]),
+                ...($this->targetKeyForSchema() === 'admissions.tuition' ? [$this->tuitionFeeRowsSection()] : []),
                 Tabs::make('admissions_locales')
                     ->tabs([
                         Tab::make('Arabic')->label(__('admin_pages.admissions.arabic'))->schema($this->payloadFields('ar')),
@@ -182,6 +183,7 @@ class ManageAdmissions extends Page implements HasForms
             'en_requirements' => $targetKey === 'admissions.requirements' && is_array($payload['translations']['en'] ?? null) ? $this->requirementsFormData($payload['translations']['en']) : [],
             'ar_tuition' => $targetKey === 'admissions.tuition' && is_array($payload['translations']['ar'] ?? null) ? $this->tuitionFormData($payload['translations']['ar']) : [],
             'en_tuition' => $targetKey === 'admissions.tuition' && is_array($payload['translations']['en'] ?? null) ? $this->tuitionFormData($payload['translations']['en']) : [],
+            'tuition_fees' => $targetKey === 'admissions.tuition' ? $this->tuitionFeeRowsFormData($payload) : [],
             'ar_how_to_apply' => $targetKey === 'admissions.how-to-apply' && is_array($payload['translations']['ar'] ?? null) ? $this->howToApplyFormData($payload['translations']['ar']) : [],
             'en_how_to_apply' => $targetKey === 'admissions.how-to-apply' && is_array($payload['translations']['en'] ?? null) ? $this->howToApplyFormData($payload['translations']['en']) : [],
             'ar_faq' => $targetKey === 'admissions.faq' && is_array($payload['translations']['ar'] ?? null) ? $this->faqFormData($payload['translations']['ar']) : [],
@@ -342,10 +344,12 @@ class ManageAdmissions extends Page implements HasForms
         }
 
         if (($state['target_key'] ?? null) === 'admissions.tuition') {
+            $feeRows = $this->listValue($state, 'tuition_fees');
+
             return [
                 'translations' => [
-                    'ar' => $this->tuitionPayloadFromForm(is_array($state['ar_tuition'] ?? null) ? $state['ar_tuition'] : []),
-                    'en' => $this->tuitionPayloadFromForm(is_array($state['en_tuition'] ?? null) ? $state['en_tuition'] : []),
+                    'ar' => $this->tuitionPayloadFromForm(is_array($state['ar_tuition'] ?? null) ? $state['ar_tuition'] : [], $feeRows, 'ar'),
+                    'en' => $this->tuitionPayloadFromForm(is_array($state['en_tuition'] ?? null) ? $state['en_tuition'] : [], $feeRows, 'en'),
                 ],
             ];
         }
@@ -913,6 +917,27 @@ class ManageAdmissions extends Page implements HasForms
         $prefix = $locale.'_tuition';
 
         return [
+            Section::make(__('admin_pages.admissions.fee_table_text'))
+                ->description(__('admin_pages.admissions.fee_table_text_help'))
+                ->schema([
+                    TextInput::make($prefix.'.overview_title')->label(__('admin_pages.admissions.overview_title'))->required()->maxLength(180),
+                    TextInput::make($prefix.'.fee_unit')->label(__('admin_pages.admissions.fee_unit'))->helperText(__('admin_pages.admissions.fee_unit_help'))->maxLength(120),
+                    Textarea::make($prefix.'.fee_table_intro')->label(__('admin_pages.admissions.fee_table_intro'))->rows(2)->maxLength(500)->columnSpanFull(),
+                    TextInput::make($prefix.'.column_faculty')->label(__('admin_pages.admissions.column_faculty'))->required()->maxLength(120),
+                    TextInput::make($prefix.'.column_certificate')->label(__('admin_pages.admissions.column_certificate'))->required()->maxLength(160),
+                    TextInput::make($prefix.'.column_credit_hours')->label(__('admin_pages.admissions.column_credit_hours'))->required()->maxLength(120),
+                    TextInput::make($prefix.'.column_syrian_fee')->label(__('admin_pages.admissions.column_syrian_fee'))->required()->maxLength(160),
+                    TextInput::make($prefix.'.column_foreign_fee')->label(__('admin_pages.admissions.column_foreign_fee'))->required()->maxLength(160),
+                    TextInput::make($prefix.'.currency_syrian')->label(__('admin_pages.admissions.currency_syrian'))->required()->maxLength(40),
+                    TextInput::make($prefix.'.currency_foreign')->label(__('admin_pages.admissions.currency_foreign'))->required()->maxLength(40),
+                    TextInput::make($prefix.'.track_scientific')->label(__('admin_pages.admissions.track_scientific'))->required()->maxLength(80),
+                    TextInput::make($prefix.'.track_vocational')->label(__('admin_pages.admissions.track_vocational'))->required()->maxLength(80),
+                    TextInput::make($prefix.'.track_literary')->label(__('admin_pages.admissions.track_literary'))->required()->maxLength(80),
+                ])
+                ->columns(2)
+                ->collapsible()
+                ->collapsed(),
+
             Section::make(__('admin_pages.admissions.hero_and_filters'))->schema([
                 TextInput::make($prefix.'.title')->label(__('admin_pages.admissions.page_title'))->required()->maxLength(180),
                 MediaPicker::image($prefix.'.hero_image', __('admin_pages.admissions.hero_image'), true),
@@ -923,37 +948,10 @@ class ManageAdmissions extends Page implements HasForms
                 TextInput::make($prefix.'.student_type_filter_label')->label(__('admin_pages.admissions.student_type_filter_label'))->required()->maxLength(120),
                 TextInput::make($prefix.'.empty_state')->label(__('admin_pages.admissions.empty_state'))->required()->maxLength(180),
                 Textarea::make($prefix.'.availability_guidance')->label(__('admin_pages.admissions.no_published_fees_guidance'))->required()->rows(3)->columnSpanFull(),
-            ])->columns(2),
-
-            Section::make(__('admin_pages.admissions.fee_table'))->schema([
-                TextInput::make($prefix.'.overview_title')->label(__('admin_pages.admissions.overview_title'))->required()->maxLength(180),
-                Repeater::make($prefix.'.table_headers')
-                    ->label(__('admin_pages.admissions.table_headers'))
-                    ->schema([
-                        TextInput::make('key')->required()->maxLength(80),
-                        TextInput::make('label')->required()->maxLength(120),
-                    ])
-                    ->columns(2)
-                    ->defaultItems(0)
-                    ->reorderable()
-                    ->collapsible()
-                    ->columnSpanFull(),
-                Repeater::make($prefix.'.fee_rows')
-                    ->label(__('admin_pages.admissions.fee_rows'))
-                    ->schema([
-                        TextInput::make('faculty')->required()->maxLength(160),
-                        TextInput::make('type')->required()->maxLength(120),
-                        TextInput::make('tuitionFee')->label(__('admin_pages.admissions.tuition_fee'))->required()->maxLength(120),
-                        TextInput::make('registrationFee')->label(__('admin_pages.admissions.registration_fee'))->required()->maxLength(120),
-                        TextInput::make('additionalFees')->label(__('admin_pages.admissions.additional_fees'))->required()->maxLength(160),
-                        Textarea::make('notes')->rows(2)->columnSpanFull(),
-                    ])
-                    ->columns(2)
-                    ->defaultItems(0)
-                    ->reorderable()
-                    ->collapsible()
-                    ->columnSpanFull(),
-            ]),
+            ])
+                ->columns(2)
+                ->collapsible()
+                ->collapsed(),
 
             Section::make(__('admin_pages.admissions.payment_methods'))->schema([
                 TextInput::make($prefix.'.payment_title')->label(__('admin_pages.admissions.payment_title'))->required()->maxLength(180),
@@ -998,6 +996,47 @@ class ManageAdmissions extends Page implements HasForms
                     ->columnSpanFull(),
             ]),
         ];
+    }
+
+    /**
+     * One row per faculty, shared by the Arabic and English pages: only the faculty name is
+     * entered per language, every number is entered once.
+     */
+    private function tuitionFeeRowsSection(): Section
+    {
+        $average = fn (string $name, string $label): TextInput => TextInput::make($name)
+            ->label($label)
+            ->numeric()
+            ->minValue(0)
+            ->maxValue(100)
+            ->suffix('%')
+            ->requiredWithoutAll(array_values(array_diff(['scientific_average', 'vocational_average', 'literary_average'], [$name])))
+            ->validationMessages(['required_without_all' => __('admin_pages.admissions.at_least_one_track')])
+            ->columnSpan(2);
+
+        return Section::make(__('admin_pages.admissions.fees_by_faculty'))
+            ->description(__('admin_pages.admissions.fees_by_faculty_help'))
+            ->schema([
+                Repeater::make('tuition_fees')
+                    ->hiddenLabel()
+                    ->schema([
+                        TextInput::make('faculty_ar')->label(__('admin_pages.admissions.faculty_name_ar'))->required()->maxLength(160)->live(onBlur: true)->columnSpan(3),
+                        TextInput::make('faculty_en')->label(__('admin_pages.admissions.faculty_name_en'))->required()->maxLength(160)->columnSpan(3),
+                        $average('scientific_average', __('admin_pages.admissions.min_average_scientific')),
+                        $average('vocational_average', __('admin_pages.admissions.min_average_vocational')),
+                        $average('literary_average', __('admin_pages.admissions.min_average_literary')),
+                        TextInput::make('credit_hours')->label(__('admin_pages.admissions.total_credit_hours'))->required()->integer()->minValue(1)->columnSpan(2),
+                        TextInput::make('syrian_fee')->label(__('admin_pages.admissions.fee_syrian_students'))->required()->numeric()->minValue(1)->columnSpan(2),
+                        TextInput::make('foreign_fee')->label(__('admin_pages.admissions.fee_foreign_students'))->required()->numeric()->minValue(1)->columnSpan(2),
+                    ])
+                    ->columns(6)
+                    ->itemLabel(fn (array $state): ?string => is_string($state['faculty_ar'] ?? null) && $state['faculty_ar'] !== '' ? $state['faculty_ar'] : null)
+                    ->addActionLabel(__('admin_pages.admissions.add_faculty_fee_row'))
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]);
     }
 
     /** @return array<int, Section> */
@@ -1363,6 +1402,9 @@ class ManageAdmissions extends Page implements HasForms
     private function tuitionFormData(array $payload): array
     {
         $filters = is_array($payload['filters'] ?? null) ? $payload['filters'] : [];
+        $columns = is_array($payload['columns'] ?? null) ? $payload['columns'] : [];
+        $tracks = is_array($payload['trackLabels'] ?? null) ? $payload['trackLabels'] : [];
+        $currencies = is_array($payload['currencies'] ?? null) ? $payload['currencies'] : [];
 
         return [
             'title' => $this->stringValue($payload, 'title'),
@@ -1373,8 +1415,18 @@ class ManageAdmissions extends Page implements HasForms
             'faculty_filter_label' => $this->stringValue($filters, 'facultyLabel'),
             'student_type_filter_label' => $this->stringValue($filters, 'studentTypeLabel'),
             'overview_title' => $this->stringValue($payload, 'overviewTitle'),
-            'table_headers' => $this->listValue($payload, 'tableHeaders'),
-            'fee_rows' => $this->listValue($payload, 'feeRows'),
+            'fee_table_intro' => $this->stringValue($payload, 'feeTableIntro'),
+            'fee_unit' => $this->stringValue($payload, 'feeUnit'),
+            'column_faculty' => $this->stringValue($columns, 'faculty'),
+            'column_certificate' => $this->stringValue($columns, 'certificate'),
+            'column_credit_hours' => $this->stringValue($columns, 'creditHours'),
+            'column_syrian_fee' => $this->stringValue($columns, 'syrianFee'),
+            'column_foreign_fee' => $this->stringValue($columns, 'foreignFee'),
+            'track_scientific' => $this->stringValue($tracks, 'scientific'),
+            'track_vocational' => $this->stringValue($tracks, 'vocational'),
+            'track_literary' => $this->stringValue($tracks, 'literary'),
+            'currency_syrian' => $this->stringValue($currencies, 'syrian'),
+            'currency_foreign' => $this->stringValue($currencies, 'foreign'),
             'empty_state' => $this->stringValue($payload, 'emptyState'),
             'availability_guidance' => $this->stringValue($payload, 'availabilityGuidance'),
             'payment_title' => $this->stringValue($payload, 'paymentTitle'),
@@ -1389,8 +1441,66 @@ class ManageAdmissions extends Page implements HasForms
         ];
     }
 
-    /** @return array<string, mixed> */
-    private function tuitionPayloadFromForm(array $data): array
+    /**
+     * Pairs the Arabic and English fee rows by position into the single row list the editor shows.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return list<array<string, string>>
+     */
+    private function tuitionFeeRowsFormData(array $payload): array
+    {
+        $arabic = $this->listValue(is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [], 'feeRows');
+        $english = $this->listValue(is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [], 'feeRows');
+        $rows = [];
+
+        for ($index = 0; $index < max(count($arabic), count($english)); $index++) {
+            $numbers = $arabic[$index] ?? $english[$index];
+            $rows[] = [
+                'faculty_ar' => $this->stringValue($arabic[$index] ?? [], 'faculty'),
+                'faculty_en' => $this->stringValue($english[$index] ?? [], 'faculty'),
+                'scientific_average' => $this->stringValue($numbers, 'scientificAverage'),
+                'vocational_average' => $this->stringValue($numbers, 'vocationalAverage'),
+                'literary_average' => $this->stringValue($numbers, 'literaryAverage'),
+                'credit_hours' => $this->stringValue($numbers, 'creditHours'),
+                'syrian_fee' => $this->stringValue($numbers, 'syrianFee'),
+                'foreign_fee' => $this->stringValue($numbers, 'foreignFee'),
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     * @return array<string, string|int|float>
+     */
+    private function tuitionFeeRowPayload(array $row, string $locale): array
+    {
+        $number = static function (mixed $value): int|float|null {
+            if (! is_numeric($value)) {
+                return null;
+            }
+
+            return (float) $value === floor((float) $value) ? (int) $value : (float) $value;
+        };
+
+        return array_filter([
+            'faculty' => trim((string) ($row['faculty_'.$locale] ?? '')),
+            'scientificAverage' => $number($row['scientific_average'] ?? null),
+            'vocationalAverage' => $number($row['vocational_average'] ?? null),
+            'literaryAverage' => $number($row['literary_average'] ?? null),
+            'creditHours' => $number($row['credit_hours'] ?? null),
+            'syrianFee' => $number($row['syrian_fee'] ?? null),
+            'foreignFee' => $number($row['foreign_fee'] ?? null),
+        ], static fn (mixed $value): bool => $value !== null);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  list<array<string, mixed>>  $feeRows
+     * @return array<string, mixed>
+     */
+    private function tuitionPayloadFromForm(array $data, array $feeRows, string $locale): array
     {
         return [
             'heroImage' => (string) ($data['hero_image'] ?? ''),
@@ -1403,24 +1513,25 @@ class ManageAdmissions extends Page implements HasForms
                 'studentTypeLabel' => (string) ($data['student_type_filter_label'] ?? ''),
             ],
             'overviewTitle' => (string) ($data['overview_title'] ?? ''),
-            'tableHeaders' => collect($this->listValue($data, 'table_headers'))
-                ->map(static fn (array $header): array => [
-                    'key' => (string) ($header['key'] ?? ''),
-                    'label' => (string) ($header['label'] ?? ''),
-                ])
-                ->values()
-                ->all(),
-            'feeRows' => collect($this->listValue($data, 'fee_rows'))
-                ->map(static fn (array $row): array => [
-                    'faculty' => (string) ($row['faculty'] ?? ''),
-                    'type' => (string) ($row['type'] ?? ''),
-                    'tuitionFee' => (string) ($row['tuitionFee'] ?? ''),
-                    'registrationFee' => (string) ($row['registrationFee'] ?? ''),
-                    'additionalFees' => (string) ($row['additionalFees'] ?? ''),
-                    'notes' => (string) ($row['notes'] ?? ''),
-                ])
-                ->values()
-                ->all(),
+            'feeTableIntro' => (string) ($data['fee_table_intro'] ?? ''),
+            'feeUnit' => (string) ($data['fee_unit'] ?? ''),
+            'columns' => [
+                'faculty' => (string) ($data['column_faculty'] ?? ''),
+                'certificate' => (string) ($data['column_certificate'] ?? ''),
+                'creditHours' => (string) ($data['column_credit_hours'] ?? ''),
+                'syrianFee' => (string) ($data['column_syrian_fee'] ?? ''),
+                'foreignFee' => (string) ($data['column_foreign_fee'] ?? ''),
+            ],
+            'trackLabels' => [
+                'scientific' => (string) ($data['track_scientific'] ?? ''),
+                'vocational' => (string) ($data['track_vocational'] ?? ''),
+                'literary' => (string) ($data['track_literary'] ?? ''),
+            ],
+            'currencies' => [
+                'syrian' => (string) ($data['currency_syrian'] ?? ''),
+                'foreign' => (string) ($data['currency_foreign'] ?? ''),
+            ],
+            'feeRows' => array_map(fn (array $row): array => $this->tuitionFeeRowPayload($row, $locale), $feeRows),
             'emptyState' => (string) ($data['empty_state'] ?? ''),
             'availabilityGuidance' => (string) ($data['availability_guidance'] ?? ''),
             'paymentTitle' => (string) ($data['payment_title'] ?? ''),

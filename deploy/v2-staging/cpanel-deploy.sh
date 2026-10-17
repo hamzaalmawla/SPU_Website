@@ -691,6 +691,50 @@ if [[ -f "${PERSON_PHOTO_APPROVAL}" ]]; then
     mv "${PERSON_PHOTO_APPROVAL}" "${PERSON_PHOTO_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
 fi
 
+# ── Approved admissions fee table ────────────────────────────────────────────
+# Publishes the university's approved 2026-2027 fee table
+# (database/seeders/Data/admissions/tuition_fees_2026_2027.json, shipped with this
+# release) on the Admissions tuition page. One hardcoded command over one hardcoded
+# file, inert unless a human places an approval file that is not in git:
+#
+#     storage/app/private/legacy-imports/admissions-fees.approved
+#         actor=auto        (or a user id)
+#
+# It goes through the CMS workflow (draft, publish readiness, audit log, cache
+# invalidation), starts from the published page so only the fee table changes, and
+# leaves everything alone if an editor has an unpublished tuition draft. Editors can
+# change the fees afterwards in the admin. It disarms itself after one run.
+ADMISSIONS_FEES_APPROVAL="${IMPORT_DIR}/admissions-fees.approved"
+ADMISSIONS_FEES_DATA="${APP}/database/seeders/Data/admissions/tuition_fees_2026_2027.json"
+
+if [[ -f "${ADMISSIONS_FEES_APPROVAL}" ]]; then
+    log "Admissions fee table"
+
+    AF_ACTOR="$(grep -E '^actor=' "${ADMISSIONS_FEES_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r' | tr -d ' ')"
+    [[ -n "${AF_ACTOR}" ]] || fail "The admissions fee approval file has no actor= line."
+
+    if [[ "${AF_ACTOR}" == "auto" ]]; then
+        AF_ACTOR="$(cd "${APP}" && "${PHP}" artisan tinker --execute='
+            echo (string) (\DB::table("users")
+                ->where("role_slug", "super_admin")
+                ->where(function ($q) { $q->whereNull("locked_at")->orWhere("locked_at", ""); })
+                ->orderBy("id")
+                ->value("id") ?? "");
+        ' 2>/dev/null | grep -Eo '^[0-9]+$' | head -n 1 || true)"
+        [[ -n "${AF_ACTOR}" ]] || fail "actor=auto found no unlocked super_admin to publish the fees as."
+    fi
+    [[ "${AF_ACTOR}" =~ ^[0-9]+$ ]] || fail "The admissions fee actor must be a numeric user id or 'auto'."
+    [[ -f "${ADMISSIONS_FEES_DATA}" ]] || fail "No admissions fee data file in this release."
+
+    # Dry run first: it validates and prints the table, and writes nothing.
+    (cd "${APP}" && "${PHP}" artisan admissions:import-tuition-fees "${ADMISSIONS_FEES_DATA}" --user="${AF_ACTOR}" --no-ansi) \
+        || fail "The admissions fee table failed validation. Nothing was written."
+    (cd "${APP}" && "${PHP}" artisan admissions:import-tuition-fees "${ADMISSIONS_FEES_DATA}" --user="${AF_ACTOR}" --publish --no-ansi) \
+        || fail "The admissions fee table could not be published."
+
+    mv "${ADMISSIONS_FEES_APPROVAL}" "${ADMISSIONS_FEES_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
 # ── Faculty-project survey (read-only) ───────────────────────────────────────
 # Answers one question and changes nothing: how many importable projects does
 # the legacy database hold RIGHT NOW, broken down by faculty.
