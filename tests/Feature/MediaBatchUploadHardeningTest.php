@@ -47,7 +47,7 @@ class MediaBatchUploadHardeningTest extends TestCase
             $component->set("data.items.{$key}.alt_text_ar", 'صورة من الحرم');
         }
 
-        $component->call('upload');
+        $component->call('storeBatch');
 
         // First request stores four and asks the browser to continue.
         $this->assertSame(4, $component->get('uploadedCount'));
@@ -58,6 +58,17 @@ class MediaBatchUploadHardeningTest extends TestCase
 
         $this->assertSame(6, MediaAsset::query()->count());
         $this->assertSame([], $component->get('pendingUploads'));
+    }
+
+    public function test_the_upload_button_submits_to_a_method_livewire_does_not_reserve(): void
+    {
+        $this->actingAs(User::factory()->create(['role_slug' => 'editor', 'is_locked' => false]));
+
+        // In the browser $wire.upload() is Livewire's own file-upload helper, so a
+        // form submitting to "upload" never reached the page and stored nothing.
+        Livewire::test(BatchUploadMediaAssets::class)
+            ->assertSeeHtml('wire:submit="storeBatch"')
+            ->assertDontSeeHtml('wire:submit="upload"');
     }
 
     public function test_the_queue_cannot_be_pointed_at_other_files_from_the_browser(): void

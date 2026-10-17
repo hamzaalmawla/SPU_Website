@@ -220,7 +220,7 @@ final class BatchUploadMediaAssets extends Page implements HasForms
         $this->data['items'] = $items;
     }
 
-    public function upload(): void
+    public function storeBatch(): void
     {
         if ($this->pendingUploads !== []) {
             return;
