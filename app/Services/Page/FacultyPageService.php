@@ -336,6 +336,10 @@ final class FacultyPageService implements FacultyPageServiceInterface
         }
 
         if ($this->isStudentListSubpage($subpageSlug)) {
+            if ($subpageSlug === 'valedictorians') {
+                $items = $this->withSharedHonorPhotos($items);
+            }
+
             $filterOptions = $this->studentFilterOptions($items, $subpageSlug);
             $items = $this->filteredStudentItems($items, $subpageSlug, $filters);
             $items = $this->newestStudentItems($items, $subpageSlug);
@@ -1761,6 +1765,50 @@ final class FacultyPageService implements FacultyPageServiceInterface
     }
 
     /** @param array<int, array<string, mixed>> $items @return array<int, array<string, mixed>> */
+    /**
+     * A student on the honor list in several semesters often has a photo on
+     * only one record; the others reuse it. Students match by full name
+     * within the faculty's list, and a record's own photo always wins.
+     *
+     * @param  array<int, array<string, mixed>>  $items
+     * @return array<int, array<string, mixed>>
+     */
+    private function withSharedHonorPhotos(array $items): array
+    {
+        $photos = [];
+
+        foreach ($items as $item) {
+            $key = $this->studentNameKey($item['title'] ?? null);
+            $image = $item['image'] ?? null;
+
+            if ($key !== '' && is_string($image) && trim($image) !== '') {
+                $photos[$key] ??= $image;
+            }
+        }
+
+        return array_map(function (array $item) use ($photos): array {
+            $image = $item['image'] ?? null;
+
+            if (! is_string($image) || trim($image) === '') {
+                $item['image'] = $photos[$this->studentNameKey($item['title'] ?? null)] ?? $image;
+            }
+
+            return $item;
+        }, $items);
+    }
+
+    private function studentNameKey(mixed $name): string
+    {
+        if (! is_string($name)) {
+            return '';
+        }
+
+        // Spellings of the same Arabic name drift between semesters.
+        $name = str_replace(['أ', 'إ', 'آ', 'ة', 'ى', 'ـ'], ['ا', 'ا', 'ا', 'ه', 'ي', ''], $name);
+
+        return mb_strtolower(trim(preg_replace('/\s+/u', ' ', $name) ?? $name));
+    }
+
     private function resolvedStudentImages(array $items): array
     {
         return collect($items)
