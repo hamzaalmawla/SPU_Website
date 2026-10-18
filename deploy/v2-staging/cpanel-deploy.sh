@@ -788,11 +788,22 @@ if [[ -f "${PAGE_TEXTS_APPROVAL}" ]]; then
     PT_FILES="$(grep -E '^file=' "${PAGE_TEXTS_APPROVAL}" | cut -d= -f2- | tr -d '\r' | tr -d ' ' | grep -E '^[a-z0-9_-]+$' || true)"
     [[ -n "${PT_FILES}" ]] || fail "The page texts approval file lists no file= lines."
 
+    # Optional, for when the owner says an editor's open draft can be discarded:
+    #     only=facilities.artificial-intelligence    (one target)
+    #     over-drafts=yes                            (replace that target's open draft)
+    PT_ONLY="$(grep -E '^only=' "${PAGE_TEXTS_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r' | tr -d ' ' | grep -E '^[a-z_]+(\.[a-z0-9_-]+)*$' || true)"
+    PT_EXTRA=()
+    [[ -n "${PT_ONLY}" ]] && PT_EXTRA+=("--only=${PT_ONLY}")
+    if grep -qE '^over-drafts=yes' "${PAGE_TEXTS_APPROVAL}"; then
+        [[ -n "${PT_ONLY}" ]] || fail "over-drafts=yes needs an only= target."
+        PT_EXTRA+=("--over-drafts")
+    fi
+
     while IFS= read -r pt_file; do
         [[ -z "${pt_file}" ]] && continue
         pt_path="${PAGE_TEXTS_DIR}/${pt_file}.json"
         [[ -f "${pt_path}" ]] || fail "No page text file ${pt_file}.json in this release."
-        (cd "${APP}" && "${PHP}" artisan cms:import-page-texts "${pt_path}" --user="${PT_ACTOR}" --write --no-ansi) \
+        (cd "${APP}" && "${PHP}" artisan cms:import-page-texts "${pt_path}" --user="${PT_ACTOR}" --write ${PT_EXTRA[@]+"${PT_EXTRA[@]}"} --no-ansi) \
             || printf '  %s: some pages failed; see the table above\n' "${pt_file}"
     done < <(printf '%s\n' "${PT_FILES}")
 
