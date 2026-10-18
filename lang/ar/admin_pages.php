@@ -11,6 +11,15 @@ declare(strict_types=1);
 
 return [
     'about' => [
+        'chart' => 'المخطط التنظيمي',
+        'chart_help' => 'يمكن أن يرتبط كل مربع بصفحة في الموقع: اكتب مسارها دون اللغة، مثل /faculties/medicine أو /about/directorates/student-affairs.',
+        'chart_apex' => 'قمة المخطط (من مجلس الأمناء إلى الرئيس)',
+        'chart_offices' => 'المكاتب المرتبطة بالرئيس',
+        'chart_branches' => 'الفروع (الأعمدة)',
+        'chart_note' => 'المجلس أو المكتب التابع لرأس الفرع',
+        'chart_units' => 'الوحدات',
+        'chart_children' => 'الوحدات الفرعية',
+        'chart_url' => 'الرابط (/مسار أو https://...)',
         'about_draft_saved' => 'تم حفظ مسودة صفحة «عن الجامعة»',
         'about_target' => 'صفحة «عن الجامعة»',
         'about_target_published' => 'تم نشر صفحة «عن الجامعة»',
@@ -317,6 +326,13 @@ return [
         'we_are_converting_admissions_one_page_at_a_time_the_hub_page' => 'نحوّل صفحات القبول صفحةً تلو الأخرى. الصفحة الرئيسية للقبول قابلة للتحرير الآن، وستحصل هذه الصفحة الفرعية على نموذجها المنظم لاحقاً.',
     ],
     'campus_life' => [
+        'clinical_about' => 'نبذة (نص الموقع القديم)',
+        'clinical_message' => 'كلمة المدير',
+        'clinical_tips' => 'نصائح وإرشادات',
+        'body' => 'النص',
+        'name' => 'الاسم',
+        'role' => 'الصفة',
+        'closing' => 'نص ختامي (بعد القائمة)',
         'images_and_files' => 'الصور والملفات',
         'file_url' => 'رابط الملف (/downloads/... أو https://...)',
         'caption' => 'التعليق',

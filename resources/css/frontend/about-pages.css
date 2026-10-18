@@ -1210,3 +1210,167 @@
         gap: 1.5rem;
     }
 }
+
+/* Organisational chart (about/organizational-structure) */
+.org-chart__stem {
+    display: block;
+    width: 2px;
+    background: rgb(32 39 89 / 0.25);
+}
+
+.org-chart__apex,
+.org-chart__office,
+.org-chart__head,
+.org-chart__note,
+.org-chart__unit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    text-align: center;
+    font-weight: 700;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.org-chart__apex {
+    min-width: 15rem;
+    border: 2px solid #202759;
+    border-radius: 999px;
+    background: #fff;
+    padding: 0.7rem 2rem;
+    color: #202759;
+    font-size: 1rem;
+}
+
+.org-chart__apex--lead {
+    background: #202759;
+    color: #fff;
+    font-size: 1.15rem;
+    box-shadow: 0 14px 30px rgb(32 39 89 / 0.25);
+}
+
+.org-chart__office {
+    border: 1.5px solid #6f1616;
+    border-radius: 999px;
+    background: #fff;
+    padding: 0.5rem 1.25rem;
+    color: #6f1616;
+    font-size: 0.85rem;
+}
+
+.org-chart__branches {
+    position: relative;
+    padding-top: 1.5rem;
+}
+
+.org-chart__branches::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    inset-inline: 10%;
+    height: 2px;
+    background: rgb(32 39 89 / 0.25);
+}
+
+.org-chart__branch {
+    position: relative;
+}
+
+.org-chart__branch::before {
+    content: "";
+    position: absolute;
+    top: -1.5rem;
+    inset-inline-start: 50%;
+    width: 2px;
+    height: 1.5rem;
+    background: rgb(32 39 89 / 0.25);
+}
+
+.org-chart__head {
+    min-height: 5rem;
+    border-radius: 14px;
+    background: #202759;
+    padding: 0.85rem 1rem;
+    color: #fff;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    box-shadow: 0 10px 24px rgb(32 39 89 / 0.18);
+}
+
+.org-chart__note {
+    margin-top: 0.6rem;
+    border: 1.5px dashed #6f1616;
+    border-radius: 10px;
+    background: #fff;
+    padding: 0.45rem 0.75rem;
+    color: #6f1616;
+    font-size: 0.8rem;
+}
+
+.org-chart__unit {
+    justify-content: space-between;
+    border: 1px solid #e2e8f0;
+    border-inline-start: 4px solid #202759;
+    border-radius: 10px;
+    background: #fff;
+    padding: 0.6rem 0.85rem;
+    color: #1e293b;
+    font-size: 0.82rem;
+    line-height: 1.55;
+    text-align: start;
+}
+
+.org-chart__unit--child {
+    border-inline-start-color: #94a3b8;
+    font-size: 0.78rem;
+}
+
+.org-chart__children {
+    margin-inline-start: 1rem;
+    padding-inline-start: 0.75rem;
+    border-inline-start: 2px dotted #cbd5e1;
+}
+
+.org-chart__arrow {
+    flex-shrink: 0;
+    font-size: 0.8em;
+    opacity: 0.7;
+}
+
+[dir="rtl"] .org-chart__arrow {
+    transform: scaleX(-1);
+}
+
+a.org-chart__link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgb(15 23 42 / 0.12);
+}
+
+a.org-chart__unit:hover,
+a.org-chart__note:hover,
+a.org-chart__office:hover {
+    background: #202759;
+    color: #fff;
+}
+
+a.org-chart__link:focus-visible {
+    outline: 2px solid #b91c1c;
+    outline-offset: 3px;
+}
+
+@media (max-width: 1279px) {
+    .org-chart__branches {
+        padding-top: 0;
+    }
+
+    .org-chart__branches::before,
+    .org-chart__branch::before {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    a.org-chart__link:hover {
+        transform: none;
+    }
+}

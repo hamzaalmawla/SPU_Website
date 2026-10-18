@@ -9,6 +9,7 @@ namespace App\DTOs\About;
  * @param  array<int, string>  $intro
  * @param  array<int, array<string, string>>  $stats
  * @param  array<int, array{label: string, url: string}>  $documents  Official files of the page (the old site attached a PDF to most).
+ * @param  array{apex: list<array<string, mixed>>, offices: list<array<string, mixed>>, branches: list<array<string, mixed>>}|array{}  $chart  Organisational chart: boxes are {title, url, children}.
  */
 final readonly class AboutContentPageDTO
 {
@@ -30,5 +31,6 @@ final readonly class AboutContentPageDTO
         public string $seoImage,
         public string $closing = '',
         public array $documents = [],
+        public array $chart = [],
     ) {}
 }

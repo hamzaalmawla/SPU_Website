@@ -686,7 +686,56 @@ final class AboutPageService implements AboutPageServiceInterface
                 ->filter(static fn (array $document): bool => $document['url'] !== '' && preg_match('#^(/|https://)#', $document['url']) === 1)
                 ->values()
                 ->all(),
+            chart: $this->orgChart(is_array($content['chart'] ?? null) ? $content['chart'] : [], $locale),
         );
+    }
+
+    /**
+     * @param  array<string, mixed>  $chart
+     * @return array{apex: list<array<string, mixed>>, offices: list<array<string, mixed>>, branches: list<array<string, mixed>>}|array{}
+     */
+    private function orgChart(array $chart, string $locale): array
+    {
+        $box = function (mixed $node) use (&$box, $locale): ?array {
+            if (! is_array($node) || trim((string) ($node['title'] ?? '')) === '') {
+                return null;
+            }
+
+            return [
+                'title' => trim((string) $node['title']),
+                'url' => $this->chartUrl((string) ($node['url'] ?? ''), $locale),
+                'children' => array_values(array_filter(array_map($box, is_array($node['children'] ?? null) ? $node['children'] : []))),
+            ];
+        };
+        $boxes = static fn (mixed $nodes): array => array_values(array_filter(array_map($box, is_array($nodes) ? $nodes : [])));
+
+        $branches = collect(is_array($chart['branches'] ?? null) ? $chart['branches'] : [])
+            ->filter(static fn (mixed $branch): bool => is_array($branch) && trim((string) ($branch['title'] ?? '')) !== '')
+            ->map(fn (array $branch): array => [
+                'title' => trim((string) $branch['title']),
+                'url' => $this->chartUrl((string) ($branch['url'] ?? ''), $locale),
+                'note' => trim((string) ($branch['note'] ?? '')),
+                'noteUrl' => $this->chartUrl((string) ($branch['noteUrl'] ?? ''), $locale),
+                'units' => $boxes($branch['units'] ?? []),
+            ])
+            ->values()
+            ->all();
+
+        $apex = $boxes($chart['apex'] ?? []);
+
+        return $apex === [] && $branches === [] ? [] : ['apex' => $apex, 'offices' => $boxes($chart['offices'] ?? []), 'branches' => $branches];
+    }
+
+    /** Site paths are stored without the locale ("/faculties/medicine"); the chart links in the reader's language. */
+    private function chartUrl(string $url, string $locale): string
+    {
+        $url = trim($url);
+
+        if (str_starts_with($url, 'https://') || preg_match('#^/(ar|en|downloads)(/|$)#', $url) === 1) {
+            return $url;
+        }
+
+        return str_starts_with($url, '/') ? '/'.$locale.$url : '';
     }
 
     /** @param array<string, mixed> $content */

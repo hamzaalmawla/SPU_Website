@@ -130,6 +130,10 @@
                 </div>
             </section>
 
+            @if ($page->chart !== [])
+                @include('public.about.partials.org-chart')
+            @endif
+
             @include('public.about.partials.navigation-section', ['locale' => $locale])
         @else
             @include('public.about.partials.hero', ['title' => $page->headline, 'summary' => $page->summary, 'image' => $page->heroImage])

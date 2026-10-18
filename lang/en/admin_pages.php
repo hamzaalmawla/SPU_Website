@@ -11,6 +11,15 @@ declare(strict_types=1);
 
 return [
     'about' => [
+        'chart' => 'Organisational chart',
+        'chart_help' => 'Each box can link to a page on the site: write its path without the language, e.g. /faculties/medicine or /about/directorates/student-affairs.',
+        'chart_apex' => 'Top of the chart (board to president)',
+        'chart_offices' => 'Offices attached to the president',
+        'chart_branches' => 'Branches (columns)',
+        'chart_note' => 'Council or office under the branch head',
+        'chart_units' => 'Units',
+        'chart_children' => 'Sub-units',
+        'chart_url' => 'Link (/path or https://...)',
         'about_draft_saved' => 'About draft saved',
         'about_target' => 'About Target',
         'about_target_published' => 'About target published',
@@ -317,6 +326,13 @@ return [
         'we_are_converting_admissions_one_page_at_a_time_the_hub_page' => 'We are converting Admissions one page at a time. The hub page is editable now; this subpage will get its own correct structured form next.',
     ],
     'campus_life' => [
+        'clinical_about' => 'About (old site text)',
+        'clinical_message' => 'Director’s message',
+        'clinical_tips' => 'Health tips',
+        'body' => 'Text',
+        'name' => 'Name',
+        'role' => 'Role',
+        'closing' => 'Closing text (after the list)',
         'images_and_files' => 'Images and files',
         'file_url' => 'File address (/downloads/... or https://...)',
         'caption' => 'Caption',

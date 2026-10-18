@@ -888,6 +888,7 @@ class ManageCampusLife extends Page implements HasForms
                     ->reorderable()
                     ->collapsible()
                     ->columnSpanFull(),
+                Textarea::make($prefix.'.closing')->label(__('admin_pages.campus_life.closing'))->rows(3)->columnSpanFull(),
             ]),
 
             Section::make(__('admin_pages.campus_life.images_and_files'))->schema([
@@ -949,9 +950,9 @@ class ManageCampusLife extends Page implements HasForms
                 Repeater::make($prefix.'.'.$contentList)
                     ->label($contentLabel)
                     ->schema([
-                        TextInput::make('title')->required()->maxLength(160),
-                        MediaPicker::icon('icon', __('admin_pages.campus_life.icon'), true),
-                        Textarea::make('description')->required()->rows(2)->columnSpanFull(),
+                        TextInput::make('title')->required()->maxLength(255),
+                        MediaPicker::icon('icon', __('admin_pages.campus_life.icon'), false),
+                        Textarea::make('description')->rows(3)->columnSpanFull(),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -985,12 +986,49 @@ class ManageCampusLife extends Page implements HasForms
                 TextInput::make($prefix.'.emergency.label')->label(__('admin_pages.campus_life.label'))->required()->maxLength(120),
                 TextInput::make($prefix.'.emergency.status')->label(__('admin_pages.campus_life.status'))->required()->maxLength(120),
                 TextInput::make($prefix.'.emergency.hotlineLabel')->label(__('admin_pages.campus_life.hotline_label'))->required()->maxLength(120),
-                TextInput::make($prefix.'.emergency.phone')->label(__('admin_pages.campus_life.phone'))->required()->maxLength(80),
+                TextInput::make($prefix.'.emergency.phone')->label(__('admin_pages.campus_life.phone'))->maxLength(80),
                 TextInput::make($prefix.'.emergency.callCta')->label(__('admin_pages.campus_life.call_cta'))->required()->maxLength(120),
                 TextInput::make($prefix.'.emergency.directionsCta')->label(__('admin_pages.campus_life.directions_cta'))->required()->maxLength(120),
                 MediaPicker::icon($prefix.'.emergency.icon', __('admin_pages.campus_life.icon'), true),
             ])->columns(2);
         }
+
+        $sections[] = Section::make(__('admin_pages.campus_life.clinical_about'))->schema([
+            TextInput::make($prefix.'.about.title')->label(__('admin_pages.campus_life.title'))->maxLength(180),
+            Textarea::make($prefix.'.about.body')->label(__('admin_pages.campus_life.body'))->rows(8)->columnSpanFull(),
+        ])->collapsible();
+        $sections[] = Section::make(__('admin_pages.campus_life.clinical_message'))->schema([
+            TextInput::make($prefix.'.message.title')->label(__('admin_pages.campus_life.title'))->maxLength(180),
+            TextInput::make($prefix.'.message.name')->label(__('admin_pages.campus_life.name'))->maxLength(180),
+            TextInput::make($prefix.'.message.role')->label(__('admin_pages.campus_life.role'))->maxLength(180),
+            Textarea::make($prefix.'.message.body')->label(__('admin_pages.campus_life.body'))->rows(8)->columnSpanFull(),
+        ])->columns(3)->collapsible();
+        $sections[] = Section::make(__('admin_pages.campus_life.clinical_tips'))->schema([
+            TextInput::make($prefix.'.tips.title')->label(__('admin_pages.campus_life.section_title'))->maxLength(180),
+            Repeater::make($prefix.'.tips.items')
+                ->label(__('admin_pages.campus_life.clinical_tips'))
+                ->schema([
+                    TextInput::make('title')->required()->maxLength(255),
+                    Textarea::make('body')->required()->rows(8)->columnSpanFull(),
+                ])
+                ->defaultItems(0)
+                ->reorderable()
+                ->collapsible()
+                ->columnSpanFull(),
+        ])->collapsible();
+        $sections[] = Section::make(__('admin_pages.campus_life.documents'))->schema([
+            Repeater::make($prefix.'.documents')
+                ->label(__('admin_pages.campus_life.documents'))
+                ->schema([
+                    TextInput::make('label')->label(__('admin_pages.campus_life.button_label'))->maxLength(180),
+                    TextInput::make('url')->label(__('admin_pages.campus_life.file_url'))->required()->maxLength(500)->rule('regex:#^(/|https://)#'),
+                ])
+                ->columns(2)
+                ->defaultItems(0)
+                ->reorderable()
+                ->collapsible()
+                ->columnSpanFull(),
+        ])->collapsible();
 
         $sections[] = Section::make(__('admin_pages.campus_life.seo'))->schema([
             Textarea::make($prefix.'.seoDescription')->label(__('admin_pages.campus_life.seo_description'))->required()->rows(2)->columnSpanFull(),
@@ -1918,6 +1956,12 @@ class ManageCampusLife extends Page implements HasForms
         unset($payload['today']);
         $payload['hero']['breadcrumbs'] = $this->listOfArrays($payload['hero']['breadcrumbs'] ?? []);
         $payload['schedule'] = $this->listOfArrays($payload['schedule'] ?? []);
+        $payload['tips']['items'] = $this->listOfArrays($payload['tips']['items'] ?? []);
+        $payload['documents'] = collect($this->listOfArrays($payload['documents'] ?? []))
+            ->map(static fn (array $document): array => ['label' => (string) ($document['label'] ?? ''), 'url' => (string) ($document['url'] ?? '')])
+            ->filter(static fn (array $document): bool => $document['url'] !== '')
+            ->values()
+            ->all();
 
         if ($kind === 'dental') {
             $payload['services'] = $this->listOfArrays($payload['services'] ?? []);

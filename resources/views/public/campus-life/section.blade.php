@@ -88,7 +88,12 @@
         <section class="relative mx-auto flex min-h-[65vh] items-center justify-center overflow-hidden font-hacen md:min-h-[75vh] lg:min-h-[85vh]"><div class="absolute inset-0 z-0"><img src="{{ $hero['image'] ?? '' }}" class="h-full w-full scale-[1.05] object-cover transition-transform duration-[10000ms] hover:scale-100" alt="{{ $hero['title'] ?? '' }}"><div class="absolute inset-0 bg-gradient-to-t from-spu-blue/90 via-spu-blue/60 to-spu-blue/0"></div></div><div class="container relative z-10 mx-auto pb-12 pt-40 text-center"><div class="mx-auto w-[70%] text-center" data-reveal="left"><nav class="mb-6 flex flex-wrap items-center justify-center gap-2 text-sm font-medium text-white/70 md:text-base">@foreach ($breadcrumbs as $crumb)<a href="{{ $crumb['href'] ?? '#' }}" class="transition-colors hover:text-white {{ $loop->last ? 'font-semibold text-white' : '' }}">{{ $crumb['label'] ?? '' }}</a>@if (! $loop->last)<img src="/images/icon-chevron-right-outline.svg" alt="" class="h-2.5 w-2.5 rtl:rotate-180" aria-hidden="true">@endif @endforeach</nav><h1 class="mb-6 text-4xl font-bold leading-[1.05] tracking-tight text-white sm:text-2xl md:text-[50px]">{{ $hero['title'] ?? '' }}</h1><x-public.rich-text class="mx-auto mb-10 text-base leading-relaxed text-white/90 sm:text-lg md:text-[20px]" :text="$hero['summary'] ?? ''" /><a href="{{ $hero['ctaUrl'] ?? '#' }}" target="_blank" rel="noreferrer noopener" class="inline-flex items-center justify-center gap-3 rounded-full bg-spu-red px-10 py-4 font-semibold text-white shadow-2xl shadow-spu-red/20 transition-all duration-300 hover:bg-white hover:text-spu-blue"><span>{{ $hero['cta'] ?? '' }}</span><img src="/images/icon-map-outline.svg" alt="" class="h-5 w-5 brightness-0 invert" aria-hidden="true"></a></div></div></section>
         <section class="bg-white py-24 font-hacen"><div class="container"><div class="mb-16 text-center"><h2 class="text-5xl font-bold text-spu-blue">{{ $section['sectionHeader']['title'] ?? '' }}</h2></div>
             @if ($type === 'dental')<div class="grid grid-cols-1 gap-6 md:grid-cols-3">@foreach (($section['services'] ?? []) as $service)<div class="flex h-full flex-col rounded-[12px] border border-[#C3C6D180] bg-white p-10 transition-all duration-300 hover:border-slate-200 hover:shadow-xl {{ $loop->first || $loop->last ? 'md:col-span-2' : 'md:col-span-1' }}"><div class="mb-6 flex items-start justify-between"><h3 class="text-2xl font-bold text-[#1e2d5b]">{{ $service['title'] ?? '' }}</h3><div class="flex items-center justify-center"><img src="{{ $service['icon'] ?? '' }}" class="h-12 w-12 object-contain transition-transform duration-300 group-hover:scale-110" alt=""></div></div><x-public.rich-text class="max-w-2xl text-lg leading-relaxed text-slate-500" :text="$service['description'] ?? ''" /></div>@endforeach</div>
-            @else<div class="cms-grid-wide gap-6">@foreach (($section['departments'] ?? []) as $dept)<div class="group flex h-full flex-col rounded-[8px] border border-[#C3C6D180] bg-white p-10 transition-all duration-300 hover:border-slate-200 hover:shadow-xl"><div class="mb-6 flex items-start justify-between"><h3 class="text-2xl font-bold text-[#1e2d5b]">{{ $dept['title'] ?? '' }}</h3><div class="flex items-center justify-center"><img src="{{ $dept['icon'] ?? '' }}" class="h-12 w-12 bg-white text-black" alt=""></div></div><x-public.rich-text class="text-lg leading-relaxed text-slate-500" :text="$dept['description'] ?? ''" /></div>@endforeach</div>@endif
+            @else
+                @php
+                    $manyDepartments = count($section['departments'] ?? []) > 6;
+                @endphp
+                <div class="{{ $manyDepartments ? 'grid gap-4 sm:grid-cols-2 lg:grid-cols-3' : 'cms-grid-wide gap-6' }}">@foreach (($section['departments'] ?? []) as $dept)<div class="group flex h-full flex-col rounded-[8px] border border-[#C3C6D180] bg-white {{ $manyDepartments ? 'p-6' : 'p-10' }} transition-all duration-300 hover:border-slate-200 hover:shadow-xl"><div class="{{ $manyDepartments ? 'mb-3' : 'mb-6' }} flex items-start justify-between gap-4"><h3 class="{{ $manyDepartments ? 'text-lg' : 'text-2xl' }} font-bold text-[#1e2d5b]">{{ $dept['title'] ?? '' }}</h3>@if (! empty($dept['icon']))<div class="flex shrink-0 items-center justify-center"><img src="{{ $dept['icon'] }}" class="{{ $manyDepartments ? 'h-8 w-8' : 'h-12 w-12' }} bg-white text-black" alt=""></div>@endif</div>@if (trim((string) ($dept['description'] ?? '')) !== '')<x-public.rich-text class="{{ $manyDepartments ? 'text-sm leading-7' : 'text-lg leading-relaxed' }} text-slate-500" :text="$dept['description']" />@endif</div>@endforeach</div>@endif
+            @include('public.campus-life.partials.clinical-extra')
         </div><div id="weekly-schedule" class="container mt-24 pb-20"><div class="mb-16 text-center"><h2 class="text-5xl font-bold text-[#1e2d5b]">{{ $section['scheduleSection']['title'] ?? '' }}</h2></div><div class="grid items-stretch {{ $scheduleGridClasses }} lg:grid-cols-2"><div class="flex flex-col items-center justify-center rounded-[8px] bg-[#1e2d5b] {{ $schedulePanelClasses }} text-center text-white shadow-xl"><div class="mb-6"><img src="/images/time.svg" alt="" class="h-[97px] w-[97px] brightness-0 invert" aria-hidden="true"></div><div class="mb-8 space-y-3"><div class="text-2xl font-bold">{{ $section['today']['day'] ?? now()->format('l') }}</div><div class="text-lg font-semibold text-white/80">{{ $section['today']['time'] ?? '' }}</div><div class="inline-block rounded-full px-6 py-1.5 text-sm font-bold shadow-sm transition-colors duration-300{{ ' ' }}
 @php
     $statusClass = 'bg-white text-[#1e2d5b]';
@@ -137,43 +142,68 @@
             </div>
         </section>
 
-        <section class="bg-white py-16 font-hacen md:py-20">
-            <div class="container mx-auto max-w-6xl px-6">
-                <div class="mx-auto mb-12 max-w-3xl text-center">
+        @php
+            $infoItems = collect($section['items'] ?? [])->filter(static fn (mixed $item): bool => is_array($item) && trim((string) ($item['body'] ?? '')) !== '')->values();
+            $infoNumbered = $infoItems->isNotEmpty() && $infoItems->every(static fn (array $item): bool => trim((string) ($item['title'] ?? '')) === '');
+            $infoImages = collect($section['images'] ?? [])->filter(static fn (mixed $image): bool => is_array($image) && preg_match('#^(/|https://)#', (string) ($image['url'] ?? '')) === 1)->values();
+            $infoDocuments = collect($section['documents'] ?? [])->filter(static fn (mixed $document): bool => is_array($document) && preg_match('#^(/|https://)#', (string) ($document['url'] ?? '')) === 1)->values();
+            $infoClosing = trim((string) ($section['closing'] ?? ''));
+        @endphp
+        <section class="bg-slate-50 py-16 font-hacen md:py-20">
+            <div class="container mx-auto max-w-5xl px-4 sm:px-6">
+                <div class="mx-auto mb-10 max-w-3xl text-center">
                     <h2 class="text-3xl font-black text-spu-blue md:text-4xl">{{ $section['overview']['title'] ?? ($hero['title'] ?? '') }}</h2>
-                    @if (! empty($section['overview']['summary']))
-                        <x-public.rich-text class="mt-5 text-base font-bold leading-8 text-slate-700" :text="$section['overview']['summary']" />
-                    @endif
                 </div>
 
-                <div class="cms-grid-cards gap-6">
-                    @foreach (($section['items'] ?? []) as $item)
-                        <article class="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-                            <div class="mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-spu-blue/5">
-                                <img src="/images/icon-check-circle-outline.svg" alt="" class="h-6 w-6" aria-hidden="true">
-                            </div>
-                            @if (! empty($item['title']))
-                                <h3 class="mb-3 text-xl font-black text-spu-blue">{{ $item['title'] }}</h3>
-                            @endif
-                            <x-public.rich-text class="text-sm font-bold leading-7 text-slate-700" :text="$item['body'] ?? ''" />
-                        </article>
-                    @endforeach
-                </div>
+                @if (! empty($section['overview']['summary']))
+                    <div class="mb-10 rounded-2xl border-s-4 border-spu-red bg-white p-6 shadow-sm md:p-8">
+                        <x-public.rich-text class="text-base font-bold leading-8 text-spu-blue md:text-lg" :text="$section['overview']['summary']" />
+                    </div>
+                @endif
 
-                @php
-                    $infoImages = collect($section['images'] ?? [])->filter(static fn (mixed $image): bool => is_array($image) && preg_match('#^(/|https://)#', (string) ($image['url'] ?? '')) === 1)->values();
-                    $infoDocuments = collect($section['documents'] ?? [])->filter(static fn (mixed $document): bool => is_array($document) && preg_match('#^(/|https://)#', (string) ($document['url'] ?? '')) === 1)->values();
-                @endphp
-                @if ($infoImages->isNotEmpty())
-                    <div class="mx-auto mt-14 grid max-w-4xl gap-10">
-                        @foreach ($infoImages as $image)
-                            <figure>
-                                <img src="{{ $image['url'] }}" alt="{{ $image['caption'] ?? '' }}" class="w-full rounded-2xl border border-slate-100 shadow-sm" loading="lazy">
-                                @if (! empty($image['caption']))
-                                    <figcaption class="mt-3 text-center text-sm font-bold text-slate-600">{{ $image['caption'] }}</figcaption>
-                                @endif
-                            </figure>
+                @if ($infoNumbered)
+                    <ol class="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm" role="list">
+                        @foreach ($infoItems as $item)
+                            <li class="flex gap-4 p-5 md:gap-6 md:p-6">
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-spu-blue text-sm font-black text-white" dir="ltr">{{ $loop->iteration }}</span>
+                                <x-public.rich-text class="min-w-0 pt-1 text-[15px] font-semibold leading-8 text-slate-700" :text="$item['body']" />
+                            </li>
                         @endforeach
+                    </ol>
+                @elseif ($infoItems->isNotEmpty())
+                    <div class="grid gap-6 md:grid-cols-2">
+                        @foreach ($infoItems as $item)
+                            <article class="flex flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+                                @if (! empty($item['title']))
+                                    <h3 class="bg-spu-blue px-6 py-4 text-lg font-black leading-7 text-white">{{ $item['title'] }}</h3>
+                                @endif
+                                <x-public.rich-text class="p-6 text-sm font-semibold leading-7 text-slate-700" :text="$item['body']" />
+                            </article>
+                        @endforeach
+                    </div>
+                @endif
+
+                @if ($infoClosing !== '')
+                    <div class="mt-10 rounded-2xl bg-spu-blue p-6 text-center md:p-8">
+                        <x-public.rich-text class="text-base font-bold leading-8 text-white" :text="$infoClosing" />
+                    </div>
+                @endif
+
+                @if ($infoImages->isNotEmpty())
+                    <div class="mt-14">
+                        <h3 class="mb-5 text-center text-lg font-black text-spu-blue">{{ $locale === 'ar' ? 'الوثائق الأصلية' : 'Original documents' }}</h3>
+                        <div class="mx-auto grid max-w-3xl gap-6 sm:grid-cols-2">
+                            @foreach ($infoImages as $image)
+                                <figure class="overflow-hidden rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
+                                    <a href="{{ $image['url'] }}" target="_blank" rel="noopener" class="block focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-blue">
+                                        <img src="{{ $image['url'] }}" alt="{{ $image['caption'] ?? '' }}" class="mx-auto max-h-72 w-auto rounded-xl object-contain" loading="lazy">
+                                    </a>
+                                    @if (! empty($image['caption']))
+                                        <figcaption class="mt-3 text-center text-sm font-bold text-slate-600">{{ $image['caption'] }}</figcaption>
+                                    @endif
+                                </figure>
+                            @endforeach
+                        </div>
                     </div>
                 @endif
                 @if ($infoDocuments->isNotEmpty())

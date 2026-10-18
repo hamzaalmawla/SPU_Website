@@ -625,11 +625,46 @@ class ManageAbout extends Page implements HasForms
     }
 
     /** @return array<int, Section> */
+    private function orgChartFields(string $prefix): array
+    {
+        $url = static fn (): TextInput => TextInput::make('url')->label(__('admin_pages.about.chart_url'))->maxLength(255)->rule('regex:#^(/|https://)#');
+
+        return [
+            Section::make(__('admin_pages.about.chart'))->description(__('admin_pages.about.chart_help'))->schema([
+                Repeater::make($prefix.'.chart.apex')->label(__('admin_pages.about.chart_apex'))
+                    ->schema([TextInput::make('title')->required()->maxLength(255), $url()])
+                    ->columns(2)->defaultItems(0)->reorderable()->collapsible()->columnSpanFull(),
+                Repeater::make($prefix.'.chart.offices')->label(__('admin_pages.about.chart_offices'))
+                    ->schema([TextInput::make('title')->required()->maxLength(255), $url()])
+                    ->columns(2)->defaultItems(0)->reorderable()->collapsible()->columnSpanFull(),
+                Repeater::make($prefix.'.chart.branches')->label(__('admin_pages.about.chart_branches'))
+                    ->schema([
+                        TextInput::make('title')->required()->maxLength(255),
+                        $url(),
+                        TextInput::make('note')->label(__('admin_pages.about.chart_note'))->maxLength(255),
+                        TextInput::make('noteUrl')->label(__('admin_pages.about.chart_url'))->maxLength(255)->rule('regex:#^(/|https://)#'),
+                        Repeater::make('units')->label(__('admin_pages.about.chart_units'))
+                            ->schema([
+                                TextInput::make('title')->required()->maxLength(255),
+                                $url(),
+                                Repeater::make('children')->label(__('admin_pages.about.chart_children'))
+                                    ->schema([TextInput::make('title')->required()->maxLength(255), $url()])
+                                    ->columns(2)->defaultItems(0)->reorderable()->collapsible()->columnSpanFull(),
+                            ])
+                            ->columns(2)->defaultItems(0)->reorderable()->collapsible()->columnSpanFull(),
+                    ])
+                    ->columns(2)->defaultItems(0)->reorderable()->collapsible()->columnSpanFull(),
+            ]),
+        ];
+    }
+
+    /** @return array<int, Section> */
     private function importedContentFields(string $locale, string $stateKey): array
     {
         $prefix = $locale.'_'.$stateKey;
 
         return [
+            ...($stateKey === 'organizational_structure' ? $this->orgChartFields($prefix) : []),
             Section::make(__('admin_pages.about.hero'))->schema([
                 TextInput::make($prefix.'.title')->label(__('admin_pages.about.page_title'))->required()->maxLength(180),
                 TextInput::make($prefix.'.headline')->label(__('admin_pages.about.headline'))->required()->maxLength(255),
@@ -998,6 +1033,7 @@ class ManageAbout extends Page implements HasForms
             'sections' => $this->listValue($payload, 'sections'),
             'closing' => $this->stringValue($payload, 'closing'),
             'documents' => $this->listValue($payload, 'documents'),
+            'chart' => is_array($payload['chart'] ?? null) ? $payload['chart'] : [],
         ];
     }
 
@@ -1029,6 +1065,38 @@ class ManageAbout extends Page implements HasForms
                 ->filter(static fn (array $document): bool => $document['url'] !== '')
                 ->values()
                 ->all(),
+            ...(is_array($data['chart'] ?? null) && $data['chart'] !== [] ? ['chart' => $this->chartFromForm($data['chart'])] : []),
+        ];
+    }
+
+    /**
+     * Repeaters key their items by uuid; the stored chart keeps plain lists.
+     *
+     * @param  array<string, mixed>  $chart
+     * @return array<string, mixed>
+     */
+    private function chartFromForm(array $chart): array
+    {
+        $box = function (mixed $node) use (&$box): array {
+            $node = is_array($node) ? $node : [];
+
+            return [
+                'title' => (string) ($node['title'] ?? ''),
+                'url' => (string) ($node['url'] ?? ''),
+                'children' => array_values(array_map($box, is_array($node['children'] ?? null) ? $node['children'] : [])),
+            ];
+        };
+
+        return [
+            'apex' => array_values(array_map($box, $this->listValue($chart, 'apex'))),
+            'offices' => array_values(array_map($box, $this->listValue($chart, 'offices'))),
+            'branches' => array_values(array_map(fn (array $branch): array => [
+                'title' => (string) ($branch['title'] ?? ''),
+                'url' => (string) ($branch['url'] ?? ''),
+                'note' => (string) ($branch['note'] ?? ''),
+                'noteUrl' => (string) ($branch['noteUrl'] ?? ''),
+                'units' => array_values(array_map($box, $this->listValue($branch, 'units'))),
+            ], $this->listValue($chart, 'branches'))),
         ];
     }
 
