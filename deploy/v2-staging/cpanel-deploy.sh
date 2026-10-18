@@ -597,7 +597,7 @@ fi
 # It disarms itself after one run, so a redeploy cannot repeat it.
 STUDY_PLAN_APPROVAL="${IMPORT_DIR}/study-plans.approved"
 STUDY_PLAN_DATA="${APP}/database/seeders/Data/study_plans"
-STUDY_PLAN_ALLOWED=" artificial-intelligence building-construction-engineering petroleum pharmacy medicine "
+STUDY_PLAN_ALLOWED=" artificial-intelligence building-construction-engineering petroleum pharmacy medicine business-administration "
 
 if [[ -f "${STUDY_PLAN_APPROVAL}" ]]; then
     log "Study plan import"
