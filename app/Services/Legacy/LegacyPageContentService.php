@@ -317,9 +317,15 @@ final class LegacyPageContentService implements LegacyPageContentServiceInterfac
 
         try {
             $url = '/'.$locale.($path === '/' ? '' : $path);
-            $response = $this->kernel->handle(Request::create($url, 'GET'));
+            // The site's own address: production answers a bare localhost request differently.
+            $base = rtrim((string) config('app.url'), '/');
+            $response = $this->kernel->handle(Request::create($base.$url, 'GET'));
             for ($hops = 0; $response->isRedirect() && $hops < 3; $hops++) {
-                $response = $this->kernel->handle(Request::create((string) $response->headers->get('Location'), 'GET'));
+                $location = (string) $response->headers->get('Location');
+                $response = $this->kernel->handle(Request::create(str_starts_with($location, '/') ? $base.$location : $location, 'GET'));
+            }
+            if ($response->getStatusCode() === 200 && preg_match('#<main[^>]*>#i', (string) $response->getContent()) !== 1) {
+                return $this->rendered[$key] = 'HTTP 200 without page content';
             }
             $html = (string) $response->getContent();
             $text = $response->getStatusCode() === 200
