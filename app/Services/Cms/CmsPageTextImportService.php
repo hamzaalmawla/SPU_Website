@@ -68,7 +68,7 @@ final class CmsPageTextImportService implements CmsPageTextImportServiceInterfac
             }
         }
         foreach (is_array($changes['set'] ?? null) ? $changes['set'] : [] as $dottedPath => $value) {
-            Arr::set($payload, (string) $dottedPath, $value);
+            Arr::set($payload, $this->resolvePath($payload, (string) $dottedPath), $value);
             $changed++;
         }
 
@@ -82,6 +82,36 @@ final class CmsPageTextImportService implements CmsPageTextImportServiceInterfac
         $this->cmsWorkflowService->publish($targetKey, $userId);
 
         return 'published ('.$changed.' field(s))';
+    }
+
+    /**
+     * "translations.ar.tabs[id=granted].items" addresses a list item by its id rather than its position,
+     * so the data does not depend on the order the page happens to have.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function resolvePath(array $payload, string $path): string
+    {
+        $resolved = [];
+        $node = $payload;
+        foreach (explode('.', $path) as $segment) {
+            if (preg_match('/^(.+)\[(\w+)=([^\]]+)\]$/', $segment, $match) === 1) {
+                $list = is_array($node[$match[1]] ?? null) ? $node[$match[1]] : [];
+                $index = collect($list)->search(static fn (mixed $item): bool => is_array($item) && (string) ($item[$match[2]] ?? '') === $match[3]);
+                if ($index === false) {
+                    throw new InvalidArgumentException('No '.$match[1].' item with '.$match[2].'='.$match[3].' in '.$path);
+                }
+                $resolved[] = $match[1];
+                $resolved[] = (string) $index;
+                $node = $list[$index];
+
+                continue;
+            }
+            $resolved[] = $segment;
+            $node = is_array($node) && is_array($node[$segment] ?? null) ? $node[$segment] : [];
+        }
+
+        return implode('.', $resolved);
     }
 
     /** @return array<string, mixed> */

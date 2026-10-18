@@ -665,6 +665,16 @@ class ManageAdmissions extends Page implements HasForms
                     ->schema([
                         TextInput::make('title')->required()->maxLength(180),
                         Textarea::make('desc')->required()->rows(2)->columnSpanFull(),
+                        Repeater::make($prefix.'.granted_sections')
+                            ->label(__('admin_pages.admissions.detail_sections'))
+                            ->schema([
+                                TextInput::make('title')->maxLength(255),
+                                Textarea::make('body')->rows(6)->columnSpanFull(),
+                            ])
+                            ->defaultItems(0)
+                            ->reorderable()
+                            ->collapsible()
+                            ->columnSpanFull(),
                         TextInput::make('availability')->required()->maxLength(120),
                     ])
                     ->columns(2)
@@ -711,6 +721,16 @@ class ManageAdmissions extends Page implements HasForms
                     ->reorderable()
                     ->collapsible()
                     ->columnSpanFull(),
+                Repeater::make($prefix.'.study_sections')
+                    ->label(__('admin_pages.admissions.detail_sections'))
+                    ->schema([
+                        TextInput::make('title')->maxLength(255),
+                        Textarea::make('body')->rows(6)->columnSpanFull(),
+                    ])
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
             ]),
 
             Section::make(__('admin_pages.admissions.academic_warnings'))->schema([
@@ -726,6 +746,16 @@ class ManageAdmissions extends Page implements HasForms
                         Textarea::make('recovery')->required()->rows(2)->columnSpanFull(),
                     ])
                     ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+                Repeater::make($prefix.'.warnings_sections')
+                    ->label(__('admin_pages.admissions.detail_sections'))
+                    ->schema([
+                        TextInput::make('title')->maxLength(255),
+                        Textarea::make('body')->rows(6)->columnSpanFull(),
+                    ])
                     ->defaultItems(0)
                     ->reorderable()
                     ->collapsible()
@@ -1789,6 +1819,9 @@ class ManageAdmissions extends Page implements HasForms
             'granted_label' => $this->stringValue(is_array($granted) ? $granted : [], 'label'),
             'granted_intro' => $this->stringValue(is_array($granted) ? $granted : [], 'intro'),
             'granted_items' => $this->listValue(is_array($granted) ? $granted : [], 'items'),
+            'granted_sections' => $this->listValue(is_array($granted) ? $granted : [], 'sections'),
+            'study_sections' => $this->listValue(is_array($study) ? $study : [], 'sections'),
+            'warnings_sections' => $this->listValue(is_array($warnings) ? $warnings : [], 'sections'),
             'study_label' => $this->stringValue(is_array($study) ? $study : [], 'label'),
             'study_intro' => $this->stringValue(is_array($study) ? $study : [], 'intro'),
             'scale_title' => $this->stringValue(is_array($study) ? $study : [], 'scaleTitle'),
@@ -1865,6 +1898,7 @@ class ManageAdmissions extends Page implements HasForms
                         ])
                         ->values()
                         ->all(),
+                    'sections' => $this->detailSectionsFromForm($data, 'granted_sections'),
                 ],
                 [
                     'id' => 'studySystem',
@@ -1892,6 +1926,7 @@ class ManageAdmissions extends Page implements HasForms
                         ->filter(static fn (string $note): bool => $note !== '')
                         ->values()
                         ->all(),
+                    'sections' => $this->detailSectionsFromForm($data, 'study_sections'),
                 ],
                 [
                     'id' => 'warnings',
@@ -1907,9 +1942,20 @@ class ManageAdmissions extends Page implements HasForms
                         ])
                         ->values()
                         ->all(),
+                    'sections' => $this->detailSectionsFromForm($data, 'warnings_sections'),
                 ],
             ],
         ];
+    }
+
+    /** @return list<array{title: string, body: string}> */
+    private function detailSectionsFromForm(array $data, string $key): array
+    {
+        return collect($this->listValue($data, $key))
+            ->map(static fn (array $section): array => ['title' => (string) ($section['title'] ?? ''), 'body' => (string) ($section['body'] ?? '')])
+            ->filter(static fn (array $section): bool => trim($section['title'].$section['body']) !== '')
+            ->values()
+            ->all();
     }
 
     /** @return array<string, mixed> */

@@ -114,6 +114,7 @@ return [
         'unpublish' => 'إلغاء النشر',
     ],
     'admissions' => [
+        'detail_sections' => 'أقسام النص الكامل',
         'academic_timeline' => 'التقويم الأكاديمي',
         'academic_warnings' => 'الإنذارات الأكاديمية',
         'active' => 'نشط',

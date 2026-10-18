@@ -114,6 +114,7 @@ return [
         'unpublish' => 'Unpublish',
     ],
     'admissions' => [
+        'detail_sections' => 'Full text sections',
         'academic_timeline' => 'Academic Timeline',
         'academic_warnings' => 'Academic Warnings',
         'active' => 'Active',

@@ -325,7 +325,9 @@ final class LegacyPageContentService implements LegacyPageContentServiceInterfac
                 $response = $this->kernel->handle(Request::create(str_starts_with($location, '/') ? $base.$location : $location, 'GET'));
             }
             if ($response->getStatusCode() === 200 && preg_match('#<main[^>]*>#i', (string) $response->getContent()) !== 1) {
-                return $this->rendered[$key] = 'HTTP 200 without page content';
+                $body = trim(preg_replace('/\s+/', ' ', strip_tags((string) $response->getContent())) ?? '');
+
+                return $this->rendered[$key] = 'HTTP 200 without page content ('.get_class($response).', '.strlen((string) $response->getContent()).' bytes: '.mb_substr($body, 0, 120).')';
             }
             $html = (string) $response->getContent();
             $text = $response->getStatusCode() === 200
