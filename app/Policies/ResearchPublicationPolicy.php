@@ -45,8 +45,8 @@ final class ResearchPublicationPolicy
             return false;
         }
 
-        $publication->loadMissing('facultyMember.faculty');
-        $faculty = $publication->facultyMember?->faculty;
+        $publication->loadMissing(['faculty', 'facultyMember.faculty']);
+        $faculty = $publication->effectiveFaculty();
 
         return $faculty instanceof Faculty
             && in_array($user->faculty_scope_slug, array_filter([$faculty->faculty_scope_slug, $faculty->public_slug, $faculty->slug]), true);

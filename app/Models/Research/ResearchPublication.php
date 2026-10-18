@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models\Research;
 
 use App\Enums\PublicationStatus;
+use App\Models\Faculty\Faculty;
 use App\Models\Media\MediaAsset;
 use App\Models\Person\FacultyMember;
 use App\Models\Person\Person;
@@ -19,8 +20,12 @@ class ResearchPublication extends Model
 {
     use HasFactory, SoftDeletes;
 
+    /** Staff-profile publications (jx_member_categories) and the faculty research lists (jx_categories). */
+    public const LEGACY_SOURCE_TABLES = ['jx_member_categories', 'jx_categories'];
+
     protected $fillable = [
         'slug',
+        'faculty_id',
         'faculty_member_id',
         'person_id',
         'category_key',
@@ -52,6 +57,11 @@ class ResearchPublication extends Model
             'is_enabled' => 'boolean',
             'deleted_at' => 'datetime',
         ];
+    }
+
+    public function faculty(): BelongsTo
+    {
+        return $this->belongsTo(Faculty::class);
     }
 
     public function facultyMember(): BelongsTo
@@ -89,6 +99,22 @@ class ResearchPublication extends Model
         return $this->hasMany(LegacyResearchFileReference::class)->orderBy('sort_order');
     }
 
+    /** The publication's own faculty, else its faculty member's. */
+    public function effectiveFaculty(): ?Faculty
+    {
+        return $this->faculty ?? $this->facultyMember?->faculty;
+    }
+
+    /** Publications whose effective faculty matches $constraint (applied to the faculties query). */
+    public function scopeWhereEffectiveFaculty(Builder $query, callable $constraint): Builder
+    {
+        return $query->where(fn (Builder $facultyQuery): Builder => $facultyQuery
+            ->whereHas('faculty', $constraint)
+            ->orWhere(fn (Builder $memberQuery): Builder => $memberQuery
+                ->whereNull('faculty_id')
+                ->whereHas('facultyMember.faculty', $constraint)));
+    }
+
     public function scopeEnabled(Builder $query): Builder
     {
         return $query->where('is_enabled', true);
@@ -102,7 +128,7 @@ class ResearchPublication extends Model
                 $publicationQuery
                     ->where(function (Builder $legacyQuery): void {
                         $legacyQuery
-                            ->where('legacy_source_table', 'jx_member_categories')
+                            ->whereIn('legacy_source_table', self::LEGACY_SOURCE_TABLES)
                             ->where('extraction_status', 'published');
                     })
                     ->orWhere(function (Builder $nativeQuery): void {
@@ -116,7 +142,7 @@ class ResearchPublication extends Model
                 $ownershipQuery
                     ->where(function (Builder $legacyQuery): void {
                         $legacyQuery
-                            ->where('legacy_source_table', 'jx_member_categories')
+                            ->whereIn('legacy_source_table', self::LEGACY_SOURCE_TABLES)
                             ->where('extraction_status', 'published');
                     })
                     ->orWhere(function (Builder $nativeQuery): void {

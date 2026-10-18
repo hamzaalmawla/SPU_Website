@@ -925,6 +925,10 @@ final class SearchIndexService implements SearchIndexServiceInterface
      */
     private function researchSlug(ResearchPublication $publication): string
     {
+        if (is_string($publication->slug) && $publication->slug !== '') {
+            return $publication->slug;
+        }
+
         $translations = $publication->translations->keyBy('locale');
         $title = (string) (($translations->get('en')?->title ?? null) ?: ($translations->get('ar')?->title ?? null) ?: 'legacy-research-publication');
         $slug = Str::slug($title);

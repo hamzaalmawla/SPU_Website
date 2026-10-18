@@ -700,6 +700,33 @@ if [[ -f "${STUDY_PLAN_PUBLISH_APPROVAL}" ]]; then
     mv "${STUDY_PLAN_PUBLISH_APPROVAL}" "${STUDY_PLAN_PUBLISH_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
 fi
 
+# ── Approved faculty research import ─────────────────────────────────────────
+# Loads the old research portal's per-faculty research lists
+# (database/seeders/Data/legacy/faculty_research.json, exported from the old site's
+# SQL dump and shipped with this release): every legacy publication gets its
+# faculty, and papers that were only in the faculty lists become public
+# publications. One hardcoded command over one hardcoded file, inert unless a
+# human places an approval file that is not in git:
+#
+#     storage/app/private/legacy-imports/faculty-research.approved
+#
+# Re-running it updates the same rows. It disarms itself after one run.
+FACULTY_RESEARCH_APPROVAL="${IMPORT_DIR}/faculty-research.approved"
+FACULTY_RESEARCH_DATA="${APP}/database/seeders/Data/legacy/faculty_research.json"
+
+if [[ -f "${FACULTY_RESEARCH_APPROVAL}" ]]; then
+    log "Faculty research import"
+    [[ -f "${FACULTY_RESEARCH_DATA}" ]] || fail "No faculty research data file in this release."
+
+    # Dry run first: it validates and prints what it would do, and writes nothing.
+    (cd "${APP}" && "${PHP}" -d memory_limit=512M artisan legacy-import:faculty-research "${FACULTY_RESEARCH_DATA}" --no-ansi) \
+        || fail "The faculty research data failed validation. Nothing was written."
+    (cd "${APP}" && "${PHP}" -d memory_limit=512M artisan legacy-import:faculty-research "${FACULTY_RESEARCH_DATA}" --write --approve=faculty-research-20261018 --no-ansi) \
+        || fail "The faculty research import failed."
+
+    mv "${FACULTY_RESEARCH_APPROVAL}" "${FACULTY_RESEARCH_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
 # ── Approved person photo registration ───────────────────────────────────────
 # Registers the photos imported with honor students, alumni, faculty members and
 # persons as legacy media assets titled with each person's name, so editors can

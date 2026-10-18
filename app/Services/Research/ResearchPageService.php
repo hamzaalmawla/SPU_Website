@@ -1557,7 +1557,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
 
         $publications = ResearchPublication::query()
             ->public()
-            ->with(['translations', 'facultyMember.faculty.translations', 'fileMedia', 'imageMedia', 'files.mediaAsset', 'legacyFileReferences'])
+            ->with(['translations', 'faculty.translations', 'facultyMember.faculty.translations', 'fileMedia', 'imageMedia', 'files.mediaAsset', 'legacyFileReferences'])
             ->orderByDesc('published_at')
             ->orderBy('sort_order')
             ->orderByDesc('id')
@@ -1636,7 +1636,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
         $externalUrl = is_string($publication->external_url) && filter_var($publication->external_url, FILTER_VALIDATE_URL) !== false
             ? $publication->external_url
             : null;
-        $faculty = $publication->facultyMember?->faculty;
+        $faculty = $publication->effectiveFaculty();
         $facultyTranslation = $faculty?->translations->firstWhere('locale', $locale)
             ?? $faculty?->translations->firstWhere('locale', 'en')
             ?? $faculty?->translations->firstWhere('locale', 'ar');

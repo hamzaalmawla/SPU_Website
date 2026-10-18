@@ -41,6 +41,7 @@ use App\Contracts\Legacy\LegacyContentCleaningServiceInterface;
 use App\Contracts\Legacy\LegacyDecisionPlanServiceInterface;
 use App\Contracts\Legacy\LegacyFacultyProfileImportServiceInterface;
 use App\Contracts\Legacy\LegacyFacultyProjectImportServiceInterface;
+use App\Contracts\Legacy\LegacyFacultyResearchImportServiceInterface;
 use App\Contracts\Legacy\LegacyFaqApprovalPacketServiceInterface;
 use App\Contracts\Legacy\LegacyFaqImportServiceInterface;
 use App\Contracts\Legacy\LegacyFaqReviewPacketServiceInterface;
@@ -213,6 +214,7 @@ use App\Services\Legacy\LegacyContentCleaningService;
 use App\Services\Legacy\LegacyDecisionPlanService;
 use App\Services\Legacy\LegacyFacultyProfileImportService;
 use App\Services\Legacy\LegacyFacultyProjectImportService;
+use App\Services\Legacy\LegacyFacultyResearchImportService;
 use App\Services\Legacy\LegacyFaqApprovalPacketService;
 use App\Services\Legacy\LegacyFaqImportService;
 use App\Services\Legacy\LegacyFaqReviewPacketService;
@@ -655,6 +657,7 @@ class AppServiceProvider extends ServiceProvider
             LegacyDecisionPlanServiceInterface::class => LegacyDecisionPlanService::class,
             LegacyFacultyProfileImportServiceInterface::class => LegacyFacultyProfileImportService::class,
             LegacyFacultyProjectImportServiceInterface::class => LegacyFacultyProjectImportService::class,
+            LegacyFacultyResearchImportServiceInterface::class => LegacyFacultyResearchImportService::class,
             LegacyFaqImportServiceInterface::class => LegacyFaqImportService::class,
             LegacyFaqApprovalPacketServiceInterface::class => LegacyFaqApprovalPacketService::class,
             LegacyFaqReviewPacketServiceInterface::class => LegacyFaqReviewPacketService::class,

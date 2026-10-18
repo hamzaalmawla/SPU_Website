@@ -51,6 +51,9 @@ interface ResearchPublicationCmsServiceInterface
     /** @return array<string, string> Faculty public slugs keyed to names in the admin locale. */
     public function facultyFilterOptions(): array;
 
+    /** @return array<int, string> Faculties keyed by id, named in the admin locale. */
+    public function facultyOptions(): array;
+
     /** @return array<int, string> */
     public function yearFilterOptions(): array;
 }

@@ -78,7 +78,7 @@ class ResearchPublicationResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return self::scopeQueryToCurrentUser(parent::getEloquentQuery())
-            ->with(['translations', 'facultyMember.faculty.translations']);
+            ->with(['translations', 'faculty.translations', 'facultyMember.faculty.translations']);
     }
 
     public static function form(Form $form): Form
@@ -148,6 +148,11 @@ class ResearchPublicationResource extends Resource
                         ->schema([
                             Section::make(__('admin.research_publication.sections.attribution'))
                                 ->schema([
+                                    Select::make('faculty_id')
+                                        ->label(__('admin.research_publication.fields.faculty'))
+                                        ->helperText(__('admin.research_publication.help.faculty'))
+                                        ->native(false)
+                                        ->options(fn (): array => app(ResearchPublicationCmsServiceInterface::class)->facultyOptions()),
                                     Select::make('faculty_member_id')
                                         ->label(__('admin.research_publication.fields.researcher'))
                                         ->helperText(__('admin.research_publication.help.researcher'))
@@ -253,7 +258,7 @@ class ResearchPublicationResource extends Resource
                     ->label(__('admin.research_publication.filters.faculty'))
                     ->options(fn (): array => app(ResearchPublicationCmsServiceInterface::class)->facultyFilterOptions())
                     ->query(fn (Builder $query, array $data): Builder => filled($data['value'] ?? null)
-                        ? $query->whereHas('facultyMember.faculty', fn (Builder $facultyQuery): Builder => $facultyQuery->where('public_slug', $data['value']))
+                        ? $query->whereEffectiveFaculty(fn (Builder $facultyQuery): Builder => $facultyQuery->where('public_slug', $data['value']))
                         : $query),
                 SelectFilter::make('publication_year')
                     ->label(__('admin.research_publication.filters.year'))
@@ -314,7 +319,7 @@ class ResearchPublicationResource extends Resource
 
         return $scope === ''
             ? $query->whereRaw('1 = 0')
-            : $query->whereHas('facultyMember.faculty', fn (Builder $facultyQuery): Builder => $facultyQuery->where(
+            : $query->whereEffectiveFaculty(fn (Builder $facultyQuery): Builder => $facultyQuery->where(
                 fn (Builder $scopeQuery): Builder => $scopeQuery
                     ->where('faculty_scope_slug', $scope)
                     ->orWhere('public_slug', $scope)
@@ -354,7 +359,7 @@ class ResearchPublicationResource extends Resource
     {
         $locale = app()->getLocale() === 'en' ? 'en' : 'ar';
 
-        return (string) ($publication->facultyMember?->faculty?->translations->firstWhere('locale', $locale)?->name ?? '');
+        return (string) ($publication->effectiveFaculty()?->translations->firstWhere('locale', $locale)?->name ?? '');
     }
 
     private static function direction(mixed $locale): string

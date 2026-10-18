@@ -29,8 +29,6 @@ final class ResearchPublicationCmsService implements ResearchPublicationCmsServi
 {
     private const TARGET_PREFIX = 'entity.research-publication.';
 
-    private const LEGACY_SOURCE_TABLE = 'jx_member_categories';
-
     public function __construct(
         private readonly AuditServiceInterface $auditService,
         private readonly CacheServiceInterface $cacheService,
@@ -51,6 +49,7 @@ final class ResearchPublicationCmsService implements ResearchPublicationCmsServi
         if (! $publication instanceof ResearchPublication) {
             // A new publication is a hidden native row until its first publish.
             $publication = DB::transaction(fn (): ResearchPublication => ResearchPublication::query()->create([
+                'faculty_id' => $payload['faculty_id'],
                 'faculty_member_id' => $payload['faculty_member_id'],
                 'published_at' => null,
                 'publication_year' => $payload['publication_year'],
@@ -60,7 +59,7 @@ final class ResearchPublicationCmsService implements ResearchPublicationCmsServi
         }
 
         $payload['entity_id'] = (int) $publication->getKey();
-        $payload['is_legacy'] = $publication->legacy_source_table === self::LEGACY_SOURCE_TABLE;
+        $payload['is_legacy'] = in_array($publication->legacy_source_table, ResearchPublication::LEGACY_SOURCE_TABLES, true);
         $payload['updated_by'] = $userId;
 
         return new ResearchPublicationCmsDataDTO(
@@ -87,7 +86,7 @@ final class ResearchPublicationCmsService implements ResearchPublicationCmsServi
             return null;
         }
 
-        $facultyScope = $this->facultyScope($publication->faculty_member_id);
+        $facultyScope = $this->facultyScope($publication->faculty_id, $publication->faculty_member_id);
         $slug = $this->storedSlug($publication);
 
         return new CmsTargetDTO(
@@ -148,7 +147,7 @@ final class ResearchPublicationCmsService implements ResearchPublicationCmsServi
 
         $published = DB::transaction(function () use ($id, $payload, $publishedAt): bool {
             $publication = ResearchPublication::query()->with('translations')->lockForUpdate()->findOrFail($id);
-            $isLegacy = $publication->legacy_source_table === self::LEGACY_SOURCE_TABLE;
+            $isLegacy = in_array($publication->legacy_source_table, ResearchPublication::LEGACY_SOURCE_TABLES, true);
             // The slug is fixed on first publish from the title the site already
             // used, so an edited title keeps the URL and every pick of it.
             // A new publication has no live title yet, so its draft title names it.
@@ -165,6 +164,7 @@ final class ResearchPublicationCmsService implements ResearchPublicationCmsServi
 
             $publication->forceFill([
                 'slug' => $slug,
+                'faculty_id' => $payload['faculty_id'],
                 'faculty_member_id' => $payload['faculty_member_id'],
                 'publication_year' => $payload['publication_year'],
                 'published_at' => $publishedOn,
@@ -294,6 +294,21 @@ final class ResearchPublicationCmsService implements ResearchPublicationCmsServi
             ->all();
     }
 
+    public function facultyOptions(): array
+    {
+        $locale = app()->getLocale() === 'en' ? 'en' : 'ar';
+
+        return Faculty::query()
+            ->with('translations')
+            ->whereNotNull('public_slug')
+            ->orderBy('sort_order')
+            ->get()
+            ->mapWithKeys(fn (Faculty $faculty): array => [
+                (int) $faculty->getKey() => (string) ($faculty->translations->firstWhere('locale', $locale)?->name ?? $faculty->public_slug),
+            ])
+            ->all();
+    }
+
     public function yearFilterOptions(): array
     {
         return ResearchPublication::query()
@@ -315,6 +330,7 @@ final class ResearchPublicationCmsService implements ResearchPublicationCmsServi
             'entity_id' => $this->nullableInt($value('entity_id')),
             'slug' => $this->stringValue($value('slug')),
             'is_legacy' => (bool) $value('is_legacy'),
+            'faculty_id' => $this->nullableInt($value('faculty_id')),
             'faculty_member_id' => $this->nullableInt($value('faculty_member_id')),
             'publication_year' => $year,
             'published_at' => $this->nullableString($value('published_at')),
@@ -361,7 +377,8 @@ final class ResearchPublicationCmsService implements ResearchPublicationCmsServi
         return [
             'entity_id' => (int) $publication->getKey(),
             'slug' => $publication->slug ?? '',
-            'is_legacy' => $publication->legacy_source_table === self::LEGACY_SOURCE_TABLE,
+            'is_legacy' => in_array($publication->legacy_source_table, ResearchPublication::LEGACY_SOURCE_TABLES, true),
+            'faculty_id' => $publication->faculty_id,
             'faculty_member_id' => $publication->faculty_member_id,
             'publication_year' => $publication->publication_year,
             'published_at' => $publication->published_at?->toDateString(),
@@ -414,6 +431,12 @@ final class ResearchPublicationCmsService implements ResearchPublicationCmsServi
             $errors['external_url'][] = 'The external link must be a full http or https address.';
         }
 
+        $facultyId = $this->nullableInt($payload['faculty_id'] ?? null);
+
+        if ($facultyId !== null && ! Faculty::query()->whereKey($facultyId)->exists()) {
+            $errors['faculty_id'][] = 'The selected faculty no longer exists.';
+        }
+
         $memberId = $this->nullableInt($payload['faculty_member_id'] ?? null);
 
         if ($memberId !== null && ! FacultyMember::query()->whereKey($memberId)->exists()) {
@@ -462,19 +485,20 @@ final class ResearchPublicationCmsService implements ResearchPublicationCmsServi
         if ($payload !== null && $user->role_slug === 'faculty_editor') {
             $scope = $this->canonicalScope((string) $user->faculty_scope_slug);
 
-            if ($scope === '' || $this->facultyScope($this->nullableInt($payload['faculty_member_id'] ?? null)) !== $scope) {
+            if ($scope === '' || $this->facultyScope($this->nullableInt($payload['faculty_id'] ?? null), $this->nullableInt($payload['faculty_member_id'] ?? null)) !== $scope) {
                 throw new AuthorizationException('You may only manage research publications of your assigned faculty.');
             }
         }
     }
 
-    private function facultyScope(?int $facultyMemberId): ?string
+    /** The publication's own faculty decides; without one, its researcher's faculty does. */
+    private function facultyScope(?int $facultyId, ?int $facultyMemberId): ?string
     {
-        if ($facultyMemberId === null) {
-            return null;
-        }
-
-        $faculty = FacultyMember::query()->with('faculty')->find($facultyMemberId)?->faculty;
+        $faculty = match (true) {
+            $facultyId !== null => Faculty::query()->find($facultyId),
+            $facultyMemberId !== null => FacultyMember::query()->with('faculty')->find($facultyMemberId)?->faculty,
+            default => null,
+        };
 
         if (! $faculty instanceof Faculty) {
             return null;
@@ -523,7 +547,7 @@ final class ResearchPublicationCmsService implements ResearchPublicationCmsServi
         // Same suffix as the public site: the import's source id, else the key.
         $sourceId = MigrationLog::query()
             ->where('module', 'research')
-            ->where('source_table', self::LEGACY_SOURCE_TABLE)
+            ->where('source_table', 'jx_member_categories')
             ->where('target_table', 'research_publications')
             ->where('status', 'success')
             ->where('target_id', $publication->getKey())
