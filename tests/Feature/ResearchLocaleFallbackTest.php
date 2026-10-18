@@ -43,6 +43,21 @@ final class ResearchLocaleFallbackTest extends TestCase
             ->assertSee('A. Author');
     }
 
+    public function test_the_archive_search_finds_a_paper_by_its_title_in_the_other_language(): void
+    {
+        $this->publication('two-titles', [
+            'ar' => ['title' => 'نشر بحث علمي جديد بعنوان :  "Automated Detection"'],
+            'en' => ['title' => 'Publication of a new scientific research paper entitled: "Automated Detection"'],
+        ]);
+
+        $this->get('/en/research/publications?q='.urlencode('نشر بحث علمي جديد بعنوان : "Automated'))
+            ->assertOk()
+            ->assertSee('Publication of a new scientific research paper entitled');
+        $this->get('/ar/research/publications?q='.urlencode('Publication of a new scientific'))
+            ->assertOk()
+            ->assertSee('نشر بحث علمي جديد بعنوان');
+    }
+
     /** @param array<string, array<string, ?string>> $translations */
     private function publication(string $slug, array $translations): void
     {

@@ -424,6 +424,16 @@ final class SearchIndexService implements SearchIndexServiceInterface
                     $abstract,
                     SearchTextNormalizer::plainText((string) $translation->publisher),
                     SearchTextNormalizer::plainText((string) $translation->citation),
+                    // The other language's title, authors and keywords, so a paper is found by its
+                    // Arabic title on the English site and the other way round.
+                    ...$record->translations
+                        ->reject(fn (Model $other): bool => $other->is($translation))
+                        ->flatMap(fn (Model $other): array => [
+                            SearchTextNormalizer::plainText((string) $other->getAttribute('title')),
+                            SearchTextNormalizer::plainText((string) $other->getAttribute('authors')),
+                            is_array($other->getAttribute('keywords')) ? implode(' ', array_map('strval', $other->getAttribute('keywords'))) : '',
+                        ])
+                        ->all(),
                 ],
                 url: '/'.$locale.'/research/publications/'.rawurlencode($slug),
                 meta: $authors !== '' ? $authors : null,

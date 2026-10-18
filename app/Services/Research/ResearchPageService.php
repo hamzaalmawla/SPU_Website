@@ -1331,8 +1331,9 @@ final class ResearchPageService implements ResearchPageServiceInterface
             return true;
         }
 
-        $haystack = strtolower(implode(' ', array_filter([
+        $haystack = $this->searchKey(implode(' ', array_filter([
             $item['title'] ?? null,
+            $item['searchText'] ?? null,
             $item['summary'] ?? null,
             $item['lead'] ?? null,
             $item['category'] ?? null,
@@ -1344,7 +1345,13 @@ final class ResearchPageService implements ResearchPageServiceInterface
             implode(' ', array_filter($this->scalarList($item['keywords'] ?? []))),
         ], static fn (mixed $value): bool => is_scalar($value) && trim((string) $value) !== '')));
 
-        return str_contains($haystack, strtolower($filters['q']));
+        return str_contains($haystack, $this->searchKey($filters['q']));
+    }
+
+    /** Lower case with runs of spaces collapsed: legacy titles often carry double spaces. */
+    private function searchKey(string $value): string
+    {
+        return mb_strtolower(preg_replace('/\s+/u', ' ', trim($value)) ?? $value);
     }
 
     /** @param array<string, mixed> $content @param array<string, mixed> $filters @return array<string, mixed> */
@@ -1669,6 +1676,17 @@ final class ResearchPageService implements ResearchPageServiceInterface
             'rate' => $publication->journal_rank,
             'citation' => $citation,
             'keywords' => $keywords,
+            // Titles, authors and keywords in every language, so a search on the English site finds
+            // a paper by its Arabic title and the other way round.
+            'searchText' => $ordered
+                ->flatMap(fn (ResearchPublicationTranslation $item): array => [
+                    $this->plainText($item->title),
+                    $this->plainText($item->authors),
+                    ...(is_array($item->keywords) ? array_map('strval', $item->keywords) : []),
+                ])
+                ->filter(fn (string $value): bool => $value !== '')
+                ->unique()
+                ->implode(' '),
             'resolvedThemes' => [],
             'scholarUrl' => $externalUrl,
             'scopusUrl' => null,
