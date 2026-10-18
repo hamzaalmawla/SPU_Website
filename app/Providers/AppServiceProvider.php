@@ -64,6 +64,7 @@ use App\Contracts\Legacy\LegacyNewsImportServiceInterface;
 use App\Contracts\Legacy\LegacyNewsPublicationServiceInterface;
 use App\Contracts\Legacy\LegacyNewsSlugCleanupApplyServiceInterface;
 use App\Contracts\Legacy\LegacyNewsSlugCleanupPlannerServiceInterface;
+use App\Contracts\Legacy\LegacyPageContentServiceInterface;
 use App\Contracts\Legacy\LegacyPhaseSixApprovalServiceInterface;
 use App\Contracts\Legacy\LegacyPhaseSixCandidateServiceInterface;
 use App\Contracts\Legacy\LegacyPhaseSixMenuLinkImportServiceInterface;
@@ -236,6 +237,7 @@ use App\Services\Legacy\LegacyNewsImportService;
 use App\Services\Legacy\LegacyNewsPublicationService;
 use App\Services\Legacy\LegacyNewsSlugCleanupApplyService;
 use App\Services\Legacy\LegacyNewsSlugCleanupPlannerService;
+use App\Services\Legacy\LegacyPageContentService;
 use App\Services\Legacy\LegacyPhaseSixApprovalService;
 use App\Services\Legacy\LegacyPhaseSixCandidateService;
 use App\Services\Legacy\LegacyPhaseSixMenuLinkImportService;
@@ -658,6 +660,7 @@ class AppServiceProvider extends ServiceProvider
             LegacyFacultyProfileImportServiceInterface::class => LegacyFacultyProfileImportService::class,
             LegacyFacultyProjectImportServiceInterface::class => LegacyFacultyProjectImportService::class,
             LegacyFacultyResearchImportServiceInterface::class => LegacyFacultyResearchImportService::class,
+            LegacyPageContentServiceInterface::class => LegacyPageContentService::class,
             LegacyFaqImportServiceInterface::class => LegacyFaqImportService::class,
             LegacyFaqApprovalPacketServiceInterface::class => LegacyFaqApprovalPacketService::class,
             LegacyFaqReviewPacketServiceInterface::class => LegacyFaqReviewPacketService::class,

@@ -1135,6 +1135,31 @@ MAINTENANCE=0
 log "Warming caches"
 (cd "${APP}" && "${PHP}" artisan cache:warm --include-sitemap) || true
 
+# ── Old-site content coverage report (read-only) ─────────────────────────────
+# For every page of the old site and its subsites, how much of its text the
+# matching new page shows, and for every old record list how many items were
+# migrated (database/seeders/Data/legacy/page_content.json, exported from the
+# old site's SQL dump). Writes nothing but the report file. It runs after the
+# site is back up, because it renders the pages. Inert unless a human
+# places the marker, and runs once:
+#
+#     storage/app/private/legacy-imports/page-coverage.approved
+#
+# The full result is saved next to the marker as page-coverage-<time>.json.
+PAGE_COVERAGE_APPROVAL="${IMPORT_DIR}/page-coverage.approved"
+PAGE_CONTENT_DATA="${APP}/database/seeders/Data/legacy/page_content.json"
+
+if [[ -f "${PAGE_COVERAGE_APPROVAL}" ]]; then
+    log "Old-site content coverage report (read-only)"
+    [[ -f "${PAGE_CONTENT_DATA}" ]] || fail "No old-site page content file in this release."
+
+    PAGE_COVERAGE_OUT="${IMPORT_DIR}/page-coverage-$(date -u +%Y%m%d-%H%M%S).json"
+    (cd "${APP}" && "${PHP}" -d memory_limit=1024M artisan legacy-import:page-coverage "${PAGE_CONTENT_DATA}" --gaps --json="${PAGE_COVERAGE_OUT}" --no-ansi | tail -n 60) \
+        || printf '  the coverage report failed; nothing was changed\n'
+
+    mv "${PAGE_COVERAGE_APPROVAL}" "${PAGE_COVERAGE_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
 # ── Verify ───────────────────────────────────────────────────────────────────
 # A deploy that reports success while the site is down is worse than one that
 # fails, so end by proving the application still boots.

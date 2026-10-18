@@ -15,6 +15,7 @@ use App\Models\Research\ResearchPublication;
 use App\Models\Research\ResearchPublicationTranslation;
 use App\Models\Shared\MigrationLog;
 use App\Support\LegacyImport\HtmlSanitizer;
+use App\Support\LegacyImport\SqlDumpReader;
 use App\Support\LegacyImport\TextCleaner;
 use App\Support\ResearchPublicationSlug;
 use Illuminate\Support\Facades\DB;
@@ -61,6 +62,7 @@ final class LegacyFacultyResearchImportService implements LegacyFacultyResearchI
         private readonly HtmlSanitizer $htmlSanitizer,
         private readonly TextCleaner $textCleaner,
         private readonly CacheServiceInterface $cacheService,
+        private readonly SqlDumpReader $dumpReader,
     ) {}
 
     public function export(string $dumpPath, string $jsonPath): int
@@ -74,7 +76,7 @@ final class LegacyFacultyResearchImportService implements LegacyFacultyResearchI
         $items = [];
         $owners = ['jx_councils' => [], 'jx_councils1' => []];
 
-        foreach ($this->dumpRows($dumpPath, ['jx_categories', 'jx_items', 'jx_councils', 'jx_councils1']) as [$table, $row]) {
+        foreach ($this->dumpReader->rows($dumpPath, ['jx_categories', 'jx_items', 'jx_councils', 'jx_councils1']) as [$table, $row]) {
             $service = (int) ($row['service_type'] ?? 0);
 
             if ($table === 'jx_categories' && in_array($service, $services, true)) {
@@ -627,57 +629,5 @@ final class LegacyFacultyResearchImportService implements LegacyFacultyResearchI
         }
 
         return $values;
-    }
-
-    /**
-     * Rows of the given tables from a phpMyAdmin dump ("INSERT INTO `t` (`a`, `b`) VALUES" then one
-     * "(...)," line per row), keyed by column name.
-     *
-     * @param  list<string>  $tables
-     * @return iterable<array{0: string, 1: array<string, ?string>}>
-     */
-    private function dumpRows(string $path, array $tables): iterable
-    {
-        $handle = fopen($path, 'rb');
-        if ($handle === false) {
-            throw new RuntimeException('Unable to open the SQL dump.');
-        }
-
-        $table = null;
-        $columns = [];
-
-        try {
-            while (($line = fgets($handle)) !== false) {
-                if (str_starts_with($line, 'INSERT INTO `')) {
-                    $table = null;
-                    if (preg_match('/^INSERT INTO `([^`]+)` \(([^)]*)\) VALUES/', $line, $matches) === 1 && in_array($matches[1], $tables, true)) {
-                        $table = $matches[1];
-                        $columns = array_map(static fn (string $column): string => trim($column, ' `'), explode(',', $matches[2]));
-                    }
-
-                    continue;
-                }
-
-                $line = trim($line);
-                if ($table === null || $line === '' || $line[0] !== '(') {
-                    continue;
-                }
-
-                $values = str_getcsv(substr(rtrim($line, ',;'), 1, -1), ',', "'", '\\');
-                if (count($values) !== count($columns)) {
-                    continue;
-                }
-
-                $row = [];
-                foreach ($columns as $index => $column) {
-                    $value = trim($values[$index]);
-                    $row[$column] = strtoupper($value) === 'NULL' ? null : str_replace(['\\r', '\\n', '\\t', "\\'", '\\"', '\\\\'], ["\r", "\n", "\t", "'", '"', '\\'], $value);
-                }
-
-                yield [$table, $row];
-            }
-        } finally {
-            fclose($handle);
-        }
     }
 }
