@@ -727,6 +727,52 @@ if [[ -f "${FACULTY_RESEARCH_APPROVAL}" ]]; then
     mv "${FACULTY_RESEARCH_APPROVAL}" "${FACULTY_RESEARCH_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
 fi
 
+# ── Approved old-site page texts ─────────────────────────────────────────────
+# Publishes the old site's page text, laid into the new page structures
+# (database/seeders/Data/legacy/page_texts/<name>.json, shipped with this
+# release), through the CMS workflow: draft, readiness, publish, audit log and
+# cache invalidation. A page with an editor's unpublished draft is skipped and
+# reported, never overwritten. Inert unless a human places an approval file:
+#
+#     storage/app/private/legacy-imports/page-texts.approved
+#         actor=auto       (or a user id)
+#         file=about       (one line per data file)
+#
+# It disarms itself after one run.
+PAGE_TEXTS_APPROVAL="${IMPORT_DIR}/page-texts.approved"
+PAGE_TEXTS_DIR="${APP}/database/seeders/Data/legacy/page_texts"
+
+if [[ -f "${PAGE_TEXTS_APPROVAL}" ]]; then
+    log "Old-site page texts"
+
+    PT_ACTOR="$(grep -E '^actor=' "${PAGE_TEXTS_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r' | tr -d ' ')"
+    [[ -n "${PT_ACTOR}" ]] || fail "The page texts approval file has no actor= line."
+    if [[ "${PT_ACTOR}" == "auto" ]]; then
+        PT_ACTOR="$(cd "${APP}" && "${PHP}" artisan tinker --execute='
+            echo (string) (\DB::table("users")
+                ->where("role_slug", "super_admin")
+                ->where(function ($q) { $q->whereNull("locked_at")->orWhere("locked_at", ""); })
+                ->orderBy("id")
+                ->value("id") ?? "");
+        ' 2>/dev/null | grep -Eo '^[0-9]+$' | head -n 1 || true)"
+        [[ -n "${PT_ACTOR}" ]] || fail "actor=auto found no unlocked super_admin to publish the pages as."
+    fi
+    [[ "${PT_ACTOR}" =~ ^[0-9]+$ ]] || fail "The page texts actor must be a numeric user id or 'auto'."
+
+    PT_FILES="$(grep -E '^file=' "${PAGE_TEXTS_APPROVAL}" | cut -d= -f2- | tr -d '\r' | tr -d ' ' | grep -E '^[a-z0-9_-]+$' || true)"
+    [[ -n "${PT_FILES}" ]] || fail "The page texts approval file lists no file= lines."
+
+    while IFS= read -r pt_file; do
+        [[ -z "${pt_file}" ]] && continue
+        pt_path="${PAGE_TEXTS_DIR}/${pt_file}.json"
+        [[ -f "${pt_path}" ]] || fail "No page text file ${pt_file}.json in this release."
+        (cd "${APP}" && "${PHP}" artisan cms:import-page-texts "${pt_path}" --user="${PT_ACTOR}" --write --no-ansi) \
+            || printf '  %s: some pages failed; see the table above\n' "${pt_file}"
+    done < <(printf '%s\n' "${PT_FILES}")
+
+    mv "${PAGE_TEXTS_APPROVAL}" "${PAGE_TEXTS_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
 # ── Approved person photo registration ───────────────────────────────────────
 # Registers the photos imported with honor students, alumni, faculty members and
 # persons as legacy media assets titled with each person's name, so editors can

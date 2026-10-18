@@ -8,6 +8,7 @@ namespace App\DTOs\About;
  * @param  array<int, array<string, mixed>>  $sections
  * @param  array<int, string>  $intro
  * @param  array<int, array<string, string>>  $stats
+ * @param  array<int, array{label: string, url: string}>  $documents  Official files of the page (the old site attached a PDF to most).
  */
 final readonly class AboutContentPageDTO
 {
@@ -27,5 +28,7 @@ final readonly class AboutContentPageDTO
         public string $seoTitle,
         public string $seoDescription,
         public string $seoImage,
+        public string $closing = '',
+        public array $documents = [],
     ) {}
 }

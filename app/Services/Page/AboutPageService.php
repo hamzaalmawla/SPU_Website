@@ -680,6 +680,12 @@ final class AboutPageService implements AboutPageServiceInterface
             seoTitle: (string) ($content['seoTitle'] ?? ($content['title'] ?? '')),
             seoDescription: (string) ($content['seoDescription'] ?? ($content['summary'] ?? '')),
             seoImage: (string) ($content['seoImage'] ?? ($content['heroImage'] ?? '/images/about/hero-img.jpg')),
+            closing: (string) ($content['closing'] ?? ''),
+            documents: collect($this->listValue($content, 'documents'))
+                ->map(static fn (array $document): array => ['label' => trim((string) ($document['label'] ?? '')), 'url' => trim((string) ($document['url'] ?? ''))])
+                ->filter(static fn (array $document): bool => $document['url'] !== '' && preg_match('#^(/|https://)#', $document['url']) === 1)
+                ->values()
+                ->all(),
         );
     }
 

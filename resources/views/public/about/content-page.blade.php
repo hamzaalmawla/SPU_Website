@@ -60,7 +60,7 @@
 
             <section class="bg-white py-16 font-hacen">
                 <div class="container mx-auto max-w-6xl px-6">
-                    @foreach ($history['narratives'] as $item)
+                    @foreach ($history['narratives'] ?? [] as $item)
                         <article class="history-row reveal reveal-up">
                             <div>
                                 <h2 class="text-xl font-black text-spu-blue">{{ $item['title'] }}</h2>
@@ -106,13 +106,27 @@
                                 <div class="mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-spu-blue/5">
                                     <img src="/images/icon-check-circle-outline.svg" alt="" class="h-7 w-7">
                                 </div>
-                                <h2 class="mb-3 text-xl font-black text-spu-blue">{{ $section['title'] ?? '' }}</h2>
+                                @if (! empty($section['title']))
+                                    <h2 class="mb-3 text-xl font-black text-spu-blue">{{ $section['title'] }}</h2>
+                                @endif
                                 @if (! empty($section['body']))
                                     <x-public.rich-text class="text-sm font-bold leading-7 text-slate-700" :text="$section['body']" />
                                 @endif
                             </article>
                         @endforeach
                     </div>
+                    @if ($page->closing !== '')
+                        <x-public.rich-text class="mx-auto mt-14 max-w-4xl text-base font-bold leading-8 text-slate-700" :text="$page->closing" />
+                    @endif
+                    @if ($page->documents !== [])
+                        <div class="mx-auto mt-10 flex max-w-4xl flex-wrap justify-center gap-3">
+                            @foreach ($page->documents as $document)
+                                <a href="{{ $document['url'] }}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-full bg-spu-blue px-6 py-3 text-sm font-bold text-white transition hover:bg-spu-red focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-blue">
+                                    <span aria-hidden="true">⤓</span>{{ $document['label'] !== '' ? $document['label'] : ($locale === 'ar' ? 'تحميل الملف' : 'Download the file') }}
+                                </a>
+                            @endforeach
+                        </div>
+                    @endif
                 </div>
             </section>
 

@@ -660,8 +660,24 @@ class ManageAbout extends Page implements HasForms
                 Repeater::make($prefix.'.sections')
                     ->label(__('admin_pages.about.cards'))
                     ->schema([
-                        TextInput::make('title')->required()->maxLength(180),
-                        Textarea::make('body')->required()->rows(3)->columnSpanFull(),
+                        TextInput::make('title')->maxLength(255),
+                        Textarea::make('body')->rows(3)->columnSpanFull(),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+                Textarea::make($prefix.'.closing')->label(__('admin_pages.about.closing'))->rows(3)->columnSpanFull(),
+            ]),
+
+            Section::make(__('admin_pages.about.documents'))->schema([
+                Repeater::make($prefix.'.documents')
+                    ->label(__('admin_pages.about.documents'))
+                    ->schema([
+                        TextInput::make('label')->label(__('admin_pages.about.document_label'))->maxLength(180),
+                        TextInput::make('url')->label(__('admin_pages.about.document_url'))->required()->maxLength(500)
+                            ->rule('regex:#^(/|https://)#'),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -980,6 +996,8 @@ class ManageAbout extends Page implements HasForms
             'seoDescription' => $this->stringValue($payload, 'seoDescription') ?: $this->stringValue($payload, 'summary'),
             'seoImage' => $this->stringValue($payload, 'seoImage') ?: $this->stringValue($payload, 'heroImage'),
             'sections' => $this->listValue($payload, 'sections'),
+            'closing' => $this->stringValue($payload, 'closing'),
+            'documents' => $this->listValue($payload, 'documents'),
         ];
     }
 
@@ -1002,6 +1020,13 @@ class ManageAbout extends Page implements HasForms
                     'title' => (string) ($section['title'] ?? ''),
                     'body' => (string) ($section['body'] ?? ''),
                 ])
+                ->filter(static fn (array $section): bool => $section['title'] !== '' || $section['body'] !== '')
+                ->values()
+                ->all(),
+            'closing' => (string) ($data['closing'] ?? ''),
+            'documents' => collect($this->listValue($data, 'documents'))
+                ->map(static fn (array $document): array => ['label' => (string) ($document['label'] ?? ''), 'url' => (string) ($document['url'] ?? '')])
+                ->filter(static fn (array $document): bool => $document['url'] !== '')
                 ->values()
                 ->all(),
         ];

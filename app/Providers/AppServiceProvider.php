@@ -10,6 +10,7 @@ use App\Contracts\Auth\AuthServiceInterface;
 use App\Contracts\Auth\TotpAuthenticatorInterface;
 use App\Contracts\Career\AlumniDirectoryServiceInterface;
 use App\Contracts\Cms\AboutEntityCmsServiceInterface;
+use App\Contracts\Cms\CmsPageTextImportServiceInterface;
 use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Content\PersonServiceInterface;
@@ -182,6 +183,7 @@ use App\Services\Auth\AuthService;
 use App\Services\Auth\TotpAuthenticator;
 use App\Services\Career\AlumniDirectoryService;
 use App\Services\Cms\AboutEntityCmsService;
+use App\Services\Cms\CmsPageTextImportService;
 use App\Services\Cms\CmsTargetRegistry;
 use App\Services\Cms\CmsWorkflowService;
 use App\Services\Content\PersonService;
@@ -661,6 +663,7 @@ class AppServiceProvider extends ServiceProvider
             LegacyFacultyProjectImportServiceInterface::class => LegacyFacultyProjectImportService::class,
             LegacyFacultyResearchImportServiceInterface::class => LegacyFacultyResearchImportService::class,
             LegacyPageContentServiceInterface::class => LegacyPageContentService::class,
+            CmsPageTextImportServiceInterface::class => CmsPageTextImportService::class,
             LegacyFaqImportServiceInterface::class => LegacyFaqImportService::class,
             LegacyFaqApprovalPacketServiceInterface::class => LegacyFaqApprovalPacketService::class,
             LegacyFaqReviewPacketServiceInterface::class => LegacyFaqReviewPacketService::class,
