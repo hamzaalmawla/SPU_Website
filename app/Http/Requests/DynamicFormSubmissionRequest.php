@@ -17,6 +17,31 @@ final class DynamicFormSubmissionRequest extends FormRequest
         return true;
     }
 
+    /**
+     * Arabic keyboards type ٠١٢… (and Persian ones ۰۱۲…), which the phone,
+     * number and date rules refuse: a fully filled form was turned away.
+     */
+    protected function prepareForValidation(): void
+    {
+        $normalized = [];
+
+        foreach (app(DynamicFormSubmissionServiceInterface::class)->formSchema($this->formId()) as $field) {
+            $name = (string) ($field['name'] ?? '');
+            $value = $this->input($name);
+
+            if (in_array($field['type'] ?? null, ['tel', 'number', 'date'], true) && is_string($value)) {
+                $normalized[$name] = trim(strtr($value, self::EASTERN_DIGITS));
+            }
+        }
+
+        $this->merge($normalized);
+    }
+
+    private const EASTERN_DIGITS = [
+        '٠' => '0', '١' => '1', '٢' => '2', '٣' => '3', '٤' => '4', '٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9',
+        '۰' => '0', '۱' => '1', '۲' => '2', '۳' => '3', '۴' => '4', '۵' => '5', '۶' => '6', '۷' => '7', '۸' => '8', '۹' => '9',
+    ];
+
     /** @return array<string, array<int, string>> */
     public function rules(): array
     {

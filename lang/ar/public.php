@@ -161,7 +161,8 @@ return [
     'subject' => 'الموضوع',
     'message_label' => 'الرسالة',
     'required_fields_note' => 'الحقول المشار إليها بعلامة * مطلوبة.',
-    'error_review_fields' => 'يرجى مراجعة الحقول المطلوبة.',
+    'error_review_fields' => 'يرجى تصحيح الحقول المشار إليها.',
+    'reattach_file' => 'إذا كنت قد أرفقت ملفاً، يرجى إرفاقه مرة أخرى.',
     'submit_request' => 'إرسال الطلب',
     'e_services' => 'الخدمات الإلكترونية',
 

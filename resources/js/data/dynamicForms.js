@@ -129,7 +129,7 @@ export const dynamicForms = {
                 { name: 'contractType', type: 'select', labelEn: 'Contract Type', labelAr: 'نوع التعاقد', required: true, options: [{ value: '', labelEn: 'Select contract type', labelAr: 'اختر نوع التعاقد' }, { value: 'full-time', labelEn: 'Full-time', labelAr: 'دوام كامل' }, { value: 'part-time', labelEn: 'Part-time', labelAr: 'دوام جزئي' }, { value: 'visiting', labelEn: 'Visiting', labelAr: 'زائر' }, { value: 'contract', labelEn: 'Contract', labelAr: 'عقد' }] },
             ] },
             { titleEn: 'CV & Documents', titleAr: 'السيرة الذاتية والمستندات', fields: [
-                { name: 'cvFile', type: 'file', labelEn: 'Upload CV (PDF)', labelAr: 'رفع السيرة الذاتية (PDF)', accept: '.pdf', required: true },
+                { name: 'cvFile', type: 'file', labelEn: 'Upload CV (PDF)', labelAr: 'رفع السيرة الذاتية (PDF)', accept: '.pdf', maxKilobytes: 5120, required: true },
                 { name: 'coverLetter', type: 'textarea', labelEn: 'Cover Letter / Statement of Purpose', labelAr: 'رسالة التغطية / بيانات الغرض', placeholderEn: 'Tell us about yourself and why you are applying...', placeholderAr: 'أخبرنا عن نفسك ولماذا تقدم...', required: false, rows: 6 },
             ] },
             { titleEn: 'Additional Requirements', titleAr: 'المتطلبات الإضافية', fields: [

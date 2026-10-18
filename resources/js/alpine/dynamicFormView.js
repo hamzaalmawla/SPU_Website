@@ -20,7 +20,7 @@ export function createDynamicFormView() {
         label(field) { return this.isAr ? field.labelAr : field.labelEn; },
         placeholder(field) { return this.isAr ? field.placeholderAr || '' : field.placeholderEn || ''; },
         optionLabel(option) { return this.isAr ? option.labelAr : option.labelEn; },
-        stepTitle(step) { return this.isAr ? step.titleAr : step.titleEn; },
+        stepTitle(step) { return step ? (this.isAr ? step.titleAr : step.titleEn) : ''; },
         stepButtonClass(idx) {
             if (idx === this.store.currentStep) return 'border-spu-red bg-spu-red text-white shadow-lg shadow-spu-red/30';
             return this.store.completedSteps.includes(idx) ? 'border-green-500 bg-green-500 text-white' : 'border-gray-300 bg-white text-gray-400';
@@ -37,7 +37,10 @@ export function createDynamicFormView() {
         invalid(field) { return this.store.errors[field.name] ? 'true' : 'false'; },
         inputClass(field) { return this.store.errors[field.name] ? 'border-red-400 focus:border-red-500 focus:ring-red-100' : ''; },
         fileBoxClass(field) { return this.store.errors[field.name] ? 'border-red-400 bg-red-50' : 'border-gray-300 bg-gray-50 hover:border-spu-red hover:bg-spu-red/5'; },
-        errorText() { return this.isAr ? 'هذا الحقل مطلوب' : 'This field is required'; },
+        errorText(field) {
+            const error = this.store.errors[field.name];
+            return typeof error === 'string' && error !== '' ? error : this.store.message('required');
+        },
         successTitle() { return this.isAr ? 'تم الإرسال بنجاح!' : 'Submitted Successfully!'; },
         successText() { return this.isAr ? 'شكراً لك. تم استلام طلبك بنجاح.' : 'Thank you. Your application has been received successfully.'; },
         closeText() { return this.isAr ? 'إغلاق' : 'Close'; },
@@ -47,7 +50,12 @@ export function createDynamicFormView() {
         submittingText() { return this.isAr ? 'جاري الإرسال...' : 'Submitting...'; },
         previewText() { return this.isAr ? 'وضع المعاينة: لن يتم إرسال هذا النموذج.' : 'Preview mode: this form will not submit.'; },
         uploadText() { return this.isAr ? 'اضغط للرفع' : 'Click to upload'; },
-        allowedText(field) { return field.accept ? 'Allowed: ' + field.accept : 'PDF, DOC, DOCX'; },
+        allowedText(field) {
+            const types = (field.accept || '.pdf,.doc,.docx').split(',').map((type) => type.trim().replace(/^\./, '').toUpperCase()).join(', ');
+            const size = field.maxKilobytes ? Math.round(field.maxKilobytes / 1024) : null;
+            if (this.isAr) return 'الأنواع المسموحة: ' + types + (size ? ' — بحد أقصى ' + size + ' ميغابايت' : '');
+            return 'Allowed: ' + types + (size ? ' — up to ' + size + ' MB' : '');
+        },
         setValue(field, value) { this.store.setFieldValue(field.name, value); },
         setFile(field, file) { this.store.setFile(field.name, file); },
     };

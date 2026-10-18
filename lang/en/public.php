@@ -161,7 +161,8 @@ return [
     'subject' => 'Subject',
     'message_label' => 'Message',
     'required_fields_note' => 'Fields marked with * are required.',
-    'error_review_fields' => 'Please review the required fields.',
+    'error_review_fields' => 'Please correct the highlighted fields.',
+    'reattach_file' => 'If you attached a file, please attach it again.',
     'submit_request' => 'Submit Request',
     'e_services' => 'E-Services',
 
