@@ -21,5 +21,6 @@ final readonly class FacultyStudyPlanImportResultDTO
         public bool $valid,
         public bool $skipped = false,
         public ?string $skipReason = null,
+        public bool $published = false,
     ) {}
 }

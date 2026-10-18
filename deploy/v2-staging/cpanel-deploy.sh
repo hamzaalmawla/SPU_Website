@@ -648,6 +648,58 @@ if [[ -f "${STUDY_PLAN_APPROVAL}" ]]; then
     mv "${STUDY_PLAN_APPROVAL}" "${STUDY_PLAN_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
 fi
 
+# ── Approved study plan publish ──────────────────────────────────────────────
+# Loads the converted curriculum for the listed faculties and PUBLISHES it, replacing
+# whatever draft or published plan is there (--replace-edited). Used when the import
+# above left a plan as an unreviewed draft, or skipped it over an old draft, and the
+# product owner has approved the converted plan going public as it is. Inert unless a
+# human places an approval file that is not in git:
+#
+#     storage/app/private/legacy-imports/study-plans-publish.approved
+#         actor=auto                       (or a user id)
+#         faculty=artificial-intelligence  (one line per plan to publish)
+#
+# It goes through the CMS workflow (draft, publish readiness, audit log, cache
+# invalidation). It disarms itself after one run.
+STUDY_PLAN_PUBLISH_APPROVAL="${IMPORT_DIR}/study-plans-publish.approved"
+
+if [[ -f "${STUDY_PLAN_PUBLISH_APPROVAL}" ]]; then
+    log "Study plan publish"
+
+    SPP_ACTOR="$(grep -E '^actor=' "${STUDY_PLAN_PUBLISH_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r' | tr -d ' ')"
+    [[ -n "${SPP_ACTOR}" ]] || fail "The study plan publish approval file has no actor= line."
+
+    if [[ "${SPP_ACTOR}" == "auto" ]]; then
+        SPP_ACTOR="$(cd "${APP}" && "${PHP}" artisan tinker --execute='
+            echo (string) (\DB::table("users")
+                ->where("role_slug", "super_admin")
+                ->where(function ($q) { $q->whereNull("locked_at")->orWhere("locked_at", ""); })
+                ->orderBy("id")
+                ->value("id") ?? "");
+        ' 2>/dev/null | grep -Eo '^[0-9]+$' | head -n 1 || true)"
+        [[ -n "${SPP_ACTOR}" ]] || fail "actor=auto found no unlocked super_admin to publish the plans as."
+    fi
+    [[ "${SPP_ACTOR}" =~ ^[0-9]+$ ]] || fail "The study plan publish actor must be a numeric user id or 'auto'."
+
+    SPP_FACULTIES="$(grep -E '^faculty=' "${STUDY_PLAN_PUBLISH_APPROVAL}" | cut -d= -f2- | tr -d '\r' | tr -d ' ' | grep -E '^[a-z-]+$' || true)"
+    [[ -n "${SPP_FACULTIES}" ]] || fail "The study plan publish approval file lists no faculty= lines."
+
+    while IFS= read -r spp_faculty; do
+        [[ -z "${spp_faculty}" ]] && continue
+        [[ "${STUDY_PLAN_ALLOWED}" == *" ${spp_faculty} "* ]] || fail "'${spp_faculty}' is not an approved study plan."
+        spp_file="${STUDY_PLAN_DATA}/${spp_faculty}.json"
+        [[ -f "${spp_file}" ]] || fail "No study plan data file for ${spp_faculty} in this release."
+
+        (cd "${APP}" && "${PHP}" artisan faculty:import-study-plan "${spp_faculty}" "${spp_file}" --user="${SPP_ACTOR}" --replace-edited --no-ansi) \
+            || fail "Study plan ${spp_faculty} failed validation. Nothing was written for it."
+        (cd "${APP}" && "${PHP}" artisan faculty:import-study-plan "${spp_faculty}" "${spp_file}" --user="${SPP_ACTOR}" --replace-edited --write --publish --no-ansi) \
+            || fail "Study plan ${spp_faculty} could not be published."
+        printf '  %s: published\n' "${spp_faculty}"
+    done < <(printf '%s\n' "${SPP_FACULTIES}")
+
+    mv "${STUDY_PLAN_PUBLISH_APPROVAL}" "${STUDY_PLAN_PUBLISH_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
 # ── Approved person photo registration ───────────────────────────────────────
 # Registers the photos imported with honor students, alumni, faculty members and
 # persons as legacy media assets titled with each person's name, so editors can

@@ -112,6 +112,31 @@ final class FacultyStudyPlanImportTest extends TestCase
         $this->assertSame(2, $result->draftVersion);
     }
 
+    public function test_publish_replaces_an_edited_plan_and_makes_it_public(): void
+    {
+        $user = User::factory()->create(['role_slug' => 'super_admin', 'is_locked' => false]);
+        $this->importer()->import('dentistry', $this->source(), (string) $user->getKey(), true);
+
+        $result = $this->importer()->import('dentistry', $this->source(), (string) $user->getKey(), true, true, true);
+
+        $this->assertTrue($result->published);
+        $published = app(CmsWorkflowServiceInterface::class)->getPublishedPayload(self::TARGET);
+        $this->assertNotEmpty($published['translations']['en']['payload']['plan']['departments'] ?? []);
+        $this->assertNotEmpty($published['translations']['ar']['payload']['plan']['departments'] ?? []);
+    }
+
+    public function test_publish_needs_write(): void
+    {
+        $user = $this->editor();
+
+        $this->artisan('faculty:import-study-plan', [
+            'faculty' => 'dentistry',
+            'file' => database_path('seeders/Data/study_plans/pharmacy.json'),
+            '--user' => (string) $user->getKey(),
+            '--publish' => true,
+        ])->assertExitCode(2);
+    }
+
     public function test_a_dry_run_on_an_edited_plan_reports_the_skip_too(): void
     {
         $user = $this->editor();

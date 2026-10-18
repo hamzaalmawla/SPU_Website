@@ -25,7 +25,7 @@ final class FacultyStudyPlanImportService implements FacultyStudyPlanImportServi
         private readonly FacultyStudyPlanEditorServiceInterface $studyPlanEditorService,
     ) {}
 
-    public function import(string $facultySlug, array $source, string $actor, bool $write, bool $replaceEdited = false): FacultyStudyPlanImportResultDTO
+    public function import(string $facultySlug, array $source, string $actor, bool $write, bool $replaceEdited = false, bool $publish = false): FacultyStudyPlanImportResultDTO
     {
         $targetKey = 'facilities.'.$facultySlug.'.study_plan';
         $userId = $this->actorId($actor);
@@ -85,6 +85,8 @@ final class FacultyStudyPlanImportService implements FacultyStudyPlanImportServi
             $draftVersion = $draft->version;
         }
 
+        $published = $draftVersion !== null && $publish && $this->cmsWorkflowService->publish($targetKey, $userId);
+
         return new FacultyStudyPlanImportResultDTO(
             targetKey: $targetKey,
             departmentCount: count($sourceDepartments),
@@ -94,6 +96,7 @@ final class FacultyStudyPlanImportService implements FacultyStudyPlanImportServi
             draftVersion: $draftVersion,
             errors: $errors,
             valid: $errors === [],
+            published: $published,
         );
     }
 
