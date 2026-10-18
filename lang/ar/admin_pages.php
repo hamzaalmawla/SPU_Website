@@ -317,6 +317,10 @@ return [
         'we_are_converting_admissions_one_page_at_a_time_the_hub_page' => 'نحوّل صفحات القبول صفحةً تلو الأخرى. الصفحة الرئيسية للقبول قابلة للتحرير الآن، وستحصل هذه الصفحة الفرعية على نموذجها المنظم لاحقاً.',
     ],
     'campus_life' => [
+        'images_and_files' => 'الصور والملفات',
+        'file_url' => 'رابط الملف (/downloads/... أو https://...)',
+        'caption' => 'التعليق',
+        'button_label' => 'عنوان الزر',
         'academic' => 'أكاديمي',
         'access_label' => 'عنوان الوصول',
         'activities' => 'الأنشطة',

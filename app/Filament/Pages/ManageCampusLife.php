@@ -880,8 +880,33 @@ class ManageCampusLife extends Page implements HasForms
                 Repeater::make($prefix.'.items')
                     ->label(__('admin_pages.campus_life.cards'))
                     ->schema([
-                        TextInput::make('title')->required()->maxLength(180),
-                        Textarea::make('body')->required()->rows(3)->columnSpanFull(),
+                        TextInput::make('title')->maxLength(255),
+                        Textarea::make('body')->required()->rows(4)->columnSpanFull(),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]),
+
+            Section::make(__('admin_pages.campus_life.images_and_files'))->schema([
+                Repeater::make($prefix.'.images')
+                    ->label(__('admin_pages.campus_life.images'))
+                    ->schema([
+                        TextInput::make('url')->label(__('admin_pages.campus_life.file_url'))->required()->maxLength(500)->rule('regex:#^(/|https://)#'),
+                        TextInput::make('caption')->label(__('admin_pages.campus_life.caption'))->maxLength(255),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+                Repeater::make($prefix.'.documents')
+                    ->label(__('admin_pages.campus_life.documents'))
+                    ->schema([
+                        TextInput::make('label')->label(__('admin_pages.campus_life.button_label'))->maxLength(180),
+                        TextInput::make('url')->label(__('admin_pages.campus_life.file_url'))->required()->maxLength(500)->rule('regex:#^(/|https://)#'),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -1937,6 +1962,16 @@ class ManageCampusLife extends Page implements HasForms
                 'title' => (string) ($item['title'] ?? ''),
                 'body' => (string) ($item['body'] ?? ''),
             ])
+            ->values()
+            ->all();
+        $payload['images'] = collect($this->listOfArrays($payload['images'] ?? []))
+            ->map(static fn (array $image): array => ['url' => (string) ($image['url'] ?? ''), 'caption' => (string) ($image['caption'] ?? '')])
+            ->filter(static fn (array $image): bool => $image['url'] !== '')
+            ->values()
+            ->all();
+        $payload['documents'] = collect($this->listOfArrays($payload['documents'] ?? []))
+            ->map(static fn (array $document): array => ['label' => (string) ($document['label'] ?? ''), 'url' => (string) ($document['url'] ?? '')])
+            ->filter(static fn (array $document): bool => $document['url'] !== '')
             ->values()
             ->all();
 

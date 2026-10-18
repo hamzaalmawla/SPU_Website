@@ -152,11 +152,39 @@
                             <div class="mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-spu-blue/5">
                                 <img src="/images/icon-check-circle-outline.svg" alt="" class="h-6 w-6" aria-hidden="true">
                             </div>
-                            <h3 class="mb-3 text-xl font-black text-spu-blue">{{ $item['title'] ?? '' }}</h3>
+                            @if (! empty($item['title']))
+                                <h3 class="mb-3 text-xl font-black text-spu-blue">{{ $item['title'] }}</h3>
+                            @endif
                             <x-public.rich-text class="text-sm font-bold leading-7 text-slate-700" :text="$item['body'] ?? ''" />
                         </article>
                     @endforeach
                 </div>
+
+                @php
+                    $infoImages = collect($section['images'] ?? [])->filter(static fn (mixed $image): bool => is_array($image) && preg_match('#^(/|https://)#', (string) ($image['url'] ?? '')) === 1)->values();
+                    $infoDocuments = collect($section['documents'] ?? [])->filter(static fn (mixed $document): bool => is_array($document) && preg_match('#^(/|https://)#', (string) ($document['url'] ?? '')) === 1)->values();
+                @endphp
+                @if ($infoImages->isNotEmpty())
+                    <div class="mx-auto mt-14 grid max-w-4xl gap-10">
+                        @foreach ($infoImages as $image)
+                            <figure>
+                                <img src="{{ $image['url'] }}" alt="{{ $image['caption'] ?? '' }}" class="w-full rounded-2xl border border-slate-100 shadow-sm" loading="lazy">
+                                @if (! empty($image['caption']))
+                                    <figcaption class="mt-3 text-center text-sm font-bold text-slate-600">{{ $image['caption'] }}</figcaption>
+                                @endif
+                            </figure>
+                        @endforeach
+                    </div>
+                @endif
+                @if ($infoDocuments->isNotEmpty())
+                    <div class="mx-auto mt-12 flex max-w-4xl flex-wrap justify-center gap-3">
+                        @foreach ($infoDocuments as $document)
+                            <a href="{{ $document['url'] }}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-full bg-spu-blue px-6 py-3 text-sm font-bold text-white transition hover:bg-spu-red focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-blue">
+                                <span aria-hidden="true">⤓</span>{{ ($document['label'] ?? '') !== '' ? $document['label'] : ($locale === 'ar' ? 'تحميل الملف' : 'Download the file') }}
+                            </a>
+                        @endforeach
+                    </div>
+                @endif
             </div>
         </section>
     @endif

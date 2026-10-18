@@ -317,6 +317,10 @@ return [
         'we_are_converting_admissions_one_page_at_a_time_the_hub_page' => 'We are converting Admissions one page at a time. The hub page is editable now; this subpage will get its own correct structured form next.',
     ],
     'campus_life' => [
+        'images_and_files' => 'Images and files',
+        'file_url' => 'File address (/downloads/... or https://...)',
+        'caption' => 'Caption',
+        'button_label' => 'Button label',
         'academic' => 'Academic',
         'access_label' => 'Access Label',
         'activities' => 'Activities',
