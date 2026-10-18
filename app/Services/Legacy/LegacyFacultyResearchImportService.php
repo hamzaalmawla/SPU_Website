@@ -251,6 +251,21 @@ final class LegacyFacultyResearchImportService implements LegacyFacultyResearchI
             }
         }
 
+        // The first import stored card images as bare file names, which resolve to the site root and
+        // 404; they live in the photo directory. Some "photos" are PDF or XPS files (missing on the
+        // old site too), which are no card image: those cards use the default image.
+        $imagesRepaired = 0;
+        foreach (ResearchPublication::query()->whereNotNull('legacy_image_path')->get() as $publication) {
+            $repaired = $this->imagePath($publication->legacy_image_path);
+            if ($repaired === $publication->legacy_image_path) {
+                continue;
+            }
+            $imagesRepaired++;
+            if ($write) {
+                $publication->forceFill(['legacy_image_path' => $repaired])->save();
+            }
+        }
+
         if ($write && ! $this->cacheService->flushTags(['research', 'facilities', 'public-pages', 'seo', 'sitemap'])) {
             $this->cacheService->flushAll();
         }
@@ -273,6 +288,7 @@ final class LegacyFacultyResearchImportService implements LegacyFacultyResearchI
             duplicatesInLists: $counts['duplicates'],
             facultyFromOwner: $counts['owner'],
             withoutFaculty: $withoutFaculty + ($entriesByFaculty[''] ?? 0),
+            imagesRepaired: $imagesRepaired,
             publicPublications: $public->count(),
             entriesByFaculty: $entriesByFaculty,
             publicPublicationsByFaculty: $publicByFaculty,
@@ -289,6 +305,8 @@ final class LegacyFacultyResearchImportService implements LegacyFacultyResearchI
                 'faculty_id' => $facultyId ?? $publication->faculty_id,
                 'is_enabled' => true,
                 'extraction_status' => 'published',
+                // The staff-page copy's own image, else the faculty list's.
+                'legacy_image_path' => $this->legacyFilePath($publication->legacy_image_path) ?? $this->imagePath($entry['photo'] ?? null),
             ])->save();
 
             $known = $publication->legacyFileReferences()->pluck('legacy_path')->all();
@@ -556,12 +574,13 @@ final class LegacyFacultyResearchImportService implements LegacyFacultyResearchI
         return is_string($value) && trim($value) !== '' ? $this->textCleaner->clean($value) : null;
     }
 
+    /** A card image, in the photo directory like every other legacy image (a bare name 404s at the site root). */
     private function imagePath(mixed $value): ?string
     {
-        $path = is_string($value) ? trim(str_replace('\\', '/', $value)) : '';
-        $extension = strtolower(pathinfo((string) parse_url($path, PHP_URL_PATH), PATHINFO_EXTENSION));
+        $path = $this->legacyFilePath($value);
+        $extension = strtolower(pathinfo((string) parse_url((string) $path, PHP_URL_PATH), PATHINFO_EXTENSION));
 
-        return $path !== '' && in_array($extension, self::IMAGE_EXTENSIONS, true) ? $path : null;
+        return $path !== null && in_array($extension, self::IMAGE_EXTENSIONS, true) ? $path : null;
     }
 
     /** Same location rule as the staff-profile research import: bare file names live in the photo directory. */

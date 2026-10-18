@@ -62,7 +62,7 @@ final class LegacyFacultyResearchImportTest extends TestCase
 
     public function test_a_new_entry_becomes_a_public_publication_of_its_faculty_with_its_files(): void
     {
-        $this->writeData([$this->entry(10, 47, 'A New Paper', [['id' => 5, 'visible' => true, 'en_file' => '123_paper.pdf']])]);
+        $this->writeData([[...$this->entry(10, 47, 'A New Paper', [['id' => 5, 'visible' => true, 'en_file' => '123_paper.pdf']]), 'photo' => '1_cover.png']]);
 
         $this->importer()->import($this->path, true, LegacyFacultyResearchImportService::APPROVAL_TOKEN);
 
@@ -71,6 +71,7 @@ final class LegacyFacultyResearchImportTest extends TestCase
         self::assertSame('a-new-paper-10', $publication->slug);
         self::assertTrue(ResearchPublication::query()->public()->whereKey($publication->getKey())->exists());
         self::assertSame(['downloads/files/123_paper.pdf'], $publication->legacyFileReferences()->pluck('legacy_path')->all());
+        self::assertSame('downloads/files/1_cover.png', $publication->legacy_image_path);
 
         $this->get('/en/research/publications?faculty=pharmacy')->assertOk()->assertSee('A New Paper');
         $this->get('/en/research/publications?faculty=medicine')->assertOk()->assertDontSee('A New Paper');
@@ -86,6 +87,23 @@ final class LegacyFacultyResearchImportTest extends TestCase
         self::assertSame(1, $result->linkedToExisting);
         self::assertSame(0, ResearchPublication::query()->where('legacy_source_table', 'jx_categories')->count());
         self::assertSame('petroleum', $existing->refresh()->faculty?->public_slug);
+    }
+
+    public function test_bare_image_names_move_to_the_photo_directory_and_a_missing_one_comes_from_the_list(): void
+    {
+        $bare = $this->staffPublication('Bare Image', ownerId: 1);
+        $bare->forceFill(['legacy_image_path' => '9_old.JPG'])->save();
+        $notImage = $this->staffPublication('Pdf Photo', ownerId: 3);
+        $notImage->forceFill(['legacy_image_path' => '7_paper.pdf'])->save();
+        $missing = $this->staffPublication('No Image', ownerId: 2);
+        $this->writeData([[...$this->entry(10, 27, 'No Image'), 'photo' => '5_list.png']]);
+
+        $result = $this->importer()->import($this->path, true, LegacyFacultyResearchImportService::APPROVAL_TOKEN);
+
+        self::assertSame('downloads/files/9_old.JPG', $bare->refresh()->legacy_image_path);
+        self::assertSame('downloads/files/5_list.png', $missing->refresh()->legacy_image_path);
+        self::assertNull($notImage->refresh()->legacy_image_path);
+        self::assertSame(2, $result->imagesRepaired);
     }
 
     public function test_a_held_duplicate_the_faculty_list_published_becomes_public(): void

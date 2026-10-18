@@ -59,6 +59,7 @@ final class LegacyImportFacultyResearchCommand extends Command
             ['Same paper listed twice (kept once)', $result->duplicatesInLists],
             ['Staff-page publications given their owner\'s faculty', $result->facultyFromOwner],
             ['Without a faculty', $result->withoutFaculty],
+            ['Card image paths repaired', $result->imagesRepaired],
             ['Public publications now', $result->publicPublications],
         ]);
         $this->table(['Faculty', 'Visible list entries'], collect($result->entriesByFaculty)

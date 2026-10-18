@@ -20,6 +20,7 @@ final readonly class LegacyFacultyResearchImportResultDTO
         public int $duplicatesInLists,
         public int $facultyFromOwner,
         public int $withoutFaculty,
+        public int $imagesRepaired,
         public int $publicPublications,
         public array $entriesByFaculty,
         public array $publicPublicationsByFaculty,
