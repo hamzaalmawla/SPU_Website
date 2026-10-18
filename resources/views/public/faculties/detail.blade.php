@@ -183,10 +183,10 @@
         <section id="dean" class="relative overflow-hidden bg-section font-hacen md:mt-16 lg:mt-24">
             <div class="absolute left-0 top-0 z-10 w-full bg-white md:h-[70px]"></div>
             <div class="container relative z-20">
-                <div class="flex min-h-[600px] flex-col items-center gap-12 lg:min-h-[700px] lg:flex-row lg:gap-24">
+                <div class="flex min-h-[600px] flex-col items-center gap-12 lg:min-h-[700px] lg:flex-row lg:gap-24" x-data="deanMessage" data-more-label="{{ __('public.show_more') }}" data-less-label="{{ __('public.show_less') }}">
                     <div class="relative w-full lg:w-1/2">
                         <div class="relative overflow-hidden">
-                            <img src="{{ $dean['image'] ?? ($faculty['heroImage'] ?? '/images/uni-main-place.JPG') }}" alt="" class="w-full object-top">
+                            <img x-ref="photo" x-on:load="measure()" src="{{ $dean['image'] ?? ($faculty['heroImage'] ?? '/images/uni-main-place.JPG') }}" alt="" class="w-full object-top">
                             <div class="absolute bottom-[10%] rounded-md bg-white px-6 py-4 text-center text-[#1e2652] shadow-2xl shadow-black/10 ltr:left-4 rtl:right-4">
                                 <h5 class="text-[24px] font-bold">{{ $dean['name'] ?? ($isAr ? ($dean['nameAr'] ?? '') : ($dean['nameEn'] ?? '')) }}</h5>
                                 <p class="text-[16px] font-normal">{{ $dean['role'] ?? ($isAr ? ($dean['roleAr'] ?? __('public.faculty_dean')) : ($dean['roleEn'] ?? __('public.faculty_dean'))) }}</p>
@@ -203,7 +203,11 @@
                             <span>{{ __('public.message_from') }}</span>
                             <span style="color: {{ $accent }}">{{ $dean['role'] ?? ($isAr ? ($dean['roleAr'] ?? 'عميد الكلية') : ($dean['roleEn'] ?? 'Faculty Dean')) }}</span>
                         </h2>
-                        <x-public.rich-text class="text-lg font-normal leading-relaxed text-[#475467] md:text-2xl" :text="$dean['message'] ?? ($isAr ? ($dean['messageAr'] ?? '') : ($dean['messageEn'] ?? ''))" />
+                        <div x-ref="text" id="dean-message-text" class="relative overflow-hidden" x-bind:style="textStyle()">
+                            <x-public.rich-text class="text-base font-normal leading-7 text-[#475467] md:text-lg md:leading-8" :text="$dean['message'] ?? ($isAr ? ($dean['messageAr'] ?? '') : ($dean['messageEn'] ?? ''))" />
+                            <div x-show="isCollapsed()" x-cloak class="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#fafcff] to-transparent" aria-hidden="true"></div>
+                        </div>
+                        <button type="button" x-show="overflowing" x-cloak x-on:click="toggle()" x-bind:aria-expanded="ariaExpanded()" aria-controls="dean-message-text" class="mt-4 inline-flex items-center gap-2 text-sm font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4" style="color: {{ $accent }}" x-text="toggleLabel()">{{ __('public.show_more') }}</button>
                     </div>
                 </div>
             </div>

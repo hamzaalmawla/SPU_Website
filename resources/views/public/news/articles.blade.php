@@ -79,7 +79,7 @@
                                 <p class="text-[12px] font-bold text-spu-red" translate="no">{{ $article->publishedAt }}</p>
                             @endif
                             <a href="{{ $article->url }}" class="mt-3 block rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-red" aria-label="{{ $article->title }}">
-                                <h2 class="line-clamp-3 text-[18px] font-bold leading-[1.45] text-spu-blue transition-colors group-hover:text-spu-red sm:text-[19px]">{{ $article->title }}</h2>
+                                <h2 class="card-title text-[18px] font-bold leading-[1.45] text-spu-blue transition-colors group-hover:text-spu-red sm:text-[19px]" dir="auto">{{ $article->title }}</h2>
                             </a>
                             @if ($article->excerpt)
                                 <p class="mt-4 line-clamp-3 text-[14px] font-medium leading-7 text-slate-600">{{ $article->excerpt }}</p>

@@ -85,7 +85,7 @@
                             @endif
                         </div>
                         <div class="p-5 text-center">
-                            <h2 class="text-[15px] font-bold text-spu-blue">{{ $item['title'] }}</h2>
+                            <h2 class="card-title card-title-center text-[15px] font-bold text-spu-blue" dir="auto">{{ $item['title'] }}</h2>
                             @if ($item['graduationYear'] !== null)
                                 <p class="mt-2 text-[11px] font-bold text-spu-red">{{ $isAr ? 'سنة التخرج: ' : 'Graduation year: ' }}<span dir="ltr">{{ $item['graduationYear'] }}</span></p>
                             @endif

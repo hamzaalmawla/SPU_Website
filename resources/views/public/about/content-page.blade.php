@@ -49,7 +49,7 @@
                                 <span class="history-timeline-dot" aria-hidden="true"></span>
                                 <div class="history-timeline-content">
                                     <p class="mb-3 text-4xl font-black leading-none text-spu-blue/35" translate="no">{{ $point['year'] }}</p>
-                                    <h3 class="text-xl font-black leading-tight text-spu-blue">{{ $point['title'] }}</h3>
+                                    <h3 class="card-title text-xl font-black leading-tight text-spu-blue" dir="auto">{{ $point['title'] }}</h3>
                                     <x-public.rich-text class="mt-5 text-sm leading-relaxed text-slate-700" :text="$point['body']" />
                                 </div>
                             </article>
@@ -63,7 +63,7 @@
                     @foreach ($history['narratives'] ?? [] as $item)
                         <article class="history-row reveal reveal-up">
                             <div>
-                                <h2 class="text-xl font-black text-spu-blue">{{ $item['title'] }}</h2>
+                                <h2 class="card-title text-xl font-black text-spu-blue" dir="auto">{{ $item['title'] }}</h2>
                                 <p class="mt-2 text-xs font-black uppercase tracking-widest text-spu-red">{{ $item['eyebrow'] }}</p>
                             </div>
                             <x-public.rich-text class="max-w-3xl text-lg leading-relaxed text-slate-700" :text="$item['body']" />
@@ -107,7 +107,7 @@
                                     <img src="/images/icon-check-circle-outline.svg" alt="" class="h-7 w-7">
                                 </div>
                                 @if (! empty($section['title']))
-                                    <h2 class="mb-3 text-xl font-black text-spu-blue">{{ $section['title'] }}</h2>
+                                    <h2 class="card-title mb-3 text-xl font-black text-spu-blue" dir="auto">{{ $section['title'] }}</h2>
                                 @endif
                                 @if (! empty($section['body']))
                                     <x-public.rich-text class="text-sm font-bold leading-7 text-slate-700" :text="$section['body']" />
@@ -147,7 +147,7 @@
                                 <div class="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-spu-blue/5">
                                     <img src="/images/icon-check-circle-outline.svg" alt="" class="h-7 w-7">
                                 </div>
-                                <h2 class="mb-3 text-xl font-black text-spu-blue">{{ $section['title'] ?? '' }}</h2>
+                                <h2 class="card-title mb-3 text-xl font-black text-spu-blue" dir="auto">{{ $section['title'] ?? '' }}</h2>
                                 @if (! empty($section['body']))
                                     <x-public.rich-text class="text-slate-700" :text="$section['body']" />
                                 @endif

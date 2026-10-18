@@ -30,7 +30,7 @@
                                     <span>{{ $event['date'] ?? '' }}</span>
                                     <span>{{ $event['location'] ?? '' }}</span>
                                 </div>
-                                <h3 class="mb-2 text-lg font-bold text-spu-blue">{{ $event['title'] ?? '' }}</h3>
+                                <h3 class="card-title mb-2 text-lg font-bold text-spu-blue" dir="auto">{{ $event['title'] ?? '' }}</h3>
                                 <x-public.rich-text class="mb-5 text-sm text-spu-blue/70" :text="$event['description'] ?? ''" />
                                 @if (! empty($event['registrationUrl']) && $event['registrationUrl'] !== '#')
                                     <a href="{{ $event['registrationUrl'] }}" class="inline-flex h-10 items-center justify-center rounded-lg bg-spu-red px-6 text-xs font-bold text-white transition hover:bg-spu-blue">
@@ -56,7 +56,7 @@
                                         <span>{{ $conf['participants'] }}</span>
                                     @endif
                                 </div>
-                                <h3 class="mb-2 text-base font-bold text-spu-blue">{{ $conf['title'] ?? '' }}</h3>
+                                <h3 class="card-title mb-2 text-base font-bold text-spu-blue" dir="auto">{{ $conf['title'] ?? '' }}</h3>
                                 <x-public.rich-text class="mb-4 text-sm text-spu-blue/70" :text="$conf['description'] ?? ''" />
 
                                 @if (! empty($conf['hasProceedings']))

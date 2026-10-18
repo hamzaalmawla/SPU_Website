@@ -88,7 +88,7 @@
                             <p>{{ $event->dateLabel }}</p>
                         </div>
                         <div class="events-month-card-body">
-                            <h3><a href="{{ $event->detailUrl }}">{{ $event->title }}</a></h3>
+                            <h3 class="card-title" dir="auto"><a href="{{ $event->detailUrl }}">{{ $event->title }}</a></h3>
                             <x-public.rich-text class="events-month-card-summary" :text="$event->summary" />
                             <div class="events-month-card-meta">
                                 <span>{{ $event->timeLabel }}</span>

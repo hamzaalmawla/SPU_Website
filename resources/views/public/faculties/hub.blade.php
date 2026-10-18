@@ -211,11 +211,11 @@
                 @php
                     $featured = ! empty($card['featured']) || (! $hasFeaturedModelCard && $loop->first);
                 @endphp
-                <article data-featured="{{ $featured ? 'true' : 'false' }}" class="flex flex-col items-center text-center rounded-xl p-8 lg:p-10 transition-transform hover:-translate-y-1
+                <article data-featured="{{ $featured ? 'true' : 'false' }}" class="flex flex-col items-start text-start rounded-xl p-8 lg:p-10 transition-transform hover:-translate-y-1
                                 {{ $featured ? 'bg-[#1e2652] text-white shadow-[0_20px_40px_rgba(30,38,82,0.2)]' : 'bg-white text-[#1e2652] shadow-[0_15px_40px_rgba(0,0,0,0.06)]' }}
                                 ">
 
-                    <h3 class="text-[1.2rem] lg:text-[1.3rem] font-bold leading-snug {{ $featured ? 'text-white' : 'text-[#1e2652]' }}">
+                    <h3 class="card-title w-full text-[1.2rem] lg:text-[1.3rem] font-bold leading-snug {{ $featured ? 'text-white' : 'text-[#1e2652]' }}" dir="auto">
                         {{ $card['title'] ?? '' }}
                     </h3>
                     <p class="mt-4 text-[14px] leading-relaxed {{ $featured ? 'text-white/80' : 'text-[#4b5563]' }}">

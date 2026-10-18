@@ -39,7 +39,7 @@
                     @foreach ($page->digitalServices['services'] as $service)
                         <div class="relative flex min-h-[314px] flex-col rounded-xl border border-[#94A3B880] bg-white p-8 shadow-[0_4px_20px_rgb(0,0,0,0.03)] transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
                             <div class="mb-4 flex items-start justify-between">
-                                <h3 class="pr-4 text-[20px] font-bold text-[#1e2756] rtl:pr-0 rtl:pl-4">{{ $service['title'] }}</h3>
+                                <h3 class="card-title pr-4 text-[20px] font-bold text-[#1e2756] rtl:pr-0 rtl:pl-4" dir="auto">{{ $service['title'] }}</h3>
                                 <div class="mt-1 text-[#1e2756]">
                                     <img src="{{ $service['icon'] }}" alt="" class="h-5 w-5 object-contain services-card-icon" aria-hidden="true">
                                 </div>
@@ -71,7 +71,7 @@
                             <span id="cookies" class="sr-only"></span>
                         @endif
                         <p class="text-xs font-bold uppercase tracking-[0.16em] text-spu-blue/50">{{ $card['eyebrow'] }}</p>
-                        <h2 class="mt-3 text-[24px] font-bold text-spu-blue">{{ $card['title'] }}</h2>
+                        <h2 class="card-title mt-3 text-[24px] font-bold text-spu-blue" dir="auto">{{ $card['title'] }}</h2>
                         <x-public.rich-text class="mt-3 text-sm leading-6 text-spu-blue/65" :text="$card['summary']" />
                     </article>
                 @endforeach

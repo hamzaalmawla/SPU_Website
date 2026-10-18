@@ -10,7 +10,7 @@
                         <article class="partner-goal-card reveal reveal-up">
                             <div class="partner-goal-icon" aria-hidden="true">{{ $goal['icon'] ?? '' }}</div>
                             <div class="partner-goal-content">
-                                <h3>{{ $goal['title'] ?? '' }}</h3>
+                                <h3 class="card-title" dir="auto">{{ $goal['title'] ?? '' }}</h3>
                                 <x-public.rich-text :text="$goal['body'] ?? ''" />
                             </div>
                         </article>
@@ -62,7 +62,7 @@
                         <div class="partner-logo-box">@if ($partnership->logo)<img src="{{ $partnership->logo }}" alt="{{ $partnership->name }}">@endif</div>
                         <div class="partner-card-body">
                             <div class="partner-meta"><span class="partner-status {{ $partnership->statusKey }}">{{ $partnership->status }}</span><span class="partner-established">{{ $partnership->establishedLabel }}</span></div>
-                            <h2 class="partner-title">{{ $partnership->name }}</h2>
+                            <h2 class="card-title partner-title" dir="auto">{{ $partnership->name }}</h2>
                             <p class="partner-category">{{ $partnership->category }}</p>
                             <x-public.rich-text class="partner-desc" :text="$partnership->description" />
                             @if ($partnership->scope)<p class="partner-scope"><strong>{{ $locale === 'ar' ? 'النطاق:' : 'Scope:' }}</strong> {{ $partnership->scope }}</p>@endif

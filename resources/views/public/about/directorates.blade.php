@@ -11,7 +11,7 @@
                     <a href="/{{ $locale }}/about/directorates/{{ $directorate->slug }}" class="directorate-item reveal reveal-up">
                         <div class="directorate-number">{{ str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT) }}</div>
                         <div class="directorate-info">
-                            <h2 class="directorate-title">{{ $directorate->title }}</h2>
+                            <h2 class="card-title directorate-title" dir="auto">{{ $directorate->title }}</h2>
                             <x-public.rich-text class="directorate-desc" :text="$directorate->summary" />
                         </div>
                     </a>

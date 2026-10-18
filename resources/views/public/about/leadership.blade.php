@@ -56,7 +56,7 @@
                                 <a href="{{ route('public.about.profile', ['locale' => $locale, 'slug' => $person->slug]) }}" class="vp-card reveal reveal-up block transition hover:-translate-y-1 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-blue">
                                     <div class="vp-card-media">@if ($person->image)<img src="{{ $person->image }}" alt="{{ $person->name }}">@else<div class="flex h-full items-center justify-center bg-slate-100"><img src="/images/icon-user-graduate-outline.svg" alt="" class="h-16 w-16 opacity-30" aria-hidden="true"></div>@endif</div>
                                     <div class="vp-card-body">
-                                        <h3 class="mb-2 text-lg font-black leading-tight text-spu-blue">{{ $person->name }}</h3>
+                                        <h3 class="card-title card-title-center mb-2 text-lg font-black leading-tight text-spu-blue" dir="auto">{{ $person->name }}</h3>
                                         <p class="text-[0.68rem] font-black uppercase tracking-[0.1em] text-spu-red">{{ $person->role }}</p>
                                         @if ($person->bio)
                                             <x-public.rich-text class="mt-6 text-sm leading-7 text-slate-600" :text="$person->bio" />
@@ -92,7 +92,7 @@
                                    aria-label="{{ ($loop->index + 1).' '.($locale === 'ar' ? 'من' : 'of').' '.$deans->count().': '.$person->name }}">
                                     <div class="dean-card-media">@if ($person->image)<img src="{{ $person->image }}" alt="{{ $person->name }}">@else<div class="flex h-full items-center justify-center bg-slate-100"><img src="/images/icon-user-graduate-outline.svg" alt="" class="h-16 w-16 opacity-30" aria-hidden="true"></div>@endif</div>
                                     <div class="dean-card-body">
-                                        <h3 class="mb-2 text-lg font-black leading-tight text-spu-blue">{{ $person->name }}</h3>
+                                        <h3 class="card-title card-title-center mb-2 text-lg font-black leading-tight text-spu-blue" dir="auto">{{ $person->name }}</h3>
                                         <p class="text-[0.68rem] font-black uppercase tracking-[0.1em] text-spu-red">{{ $person->role }}</p>
                                     </div>
                                 </a>

@@ -42,7 +42,7 @@
                                         <div class="flex items-center gap-3">
                                             <img src="{{ $researcher['image'] ?? '/images/uni-main-place.JPG' }}" alt="{{ $researcher['name'] ?? '' }}" class="h-12 w-12 rounded-full object-cover">
                                             <div>
-                                                <h3 class="text-[13px] font-bold text-spu-blue group-hover:text-spu-red">{{ $researcher['name'] ?? '' }}</h3>
+                                                <h3 class="card-title card-title-center text-[13px] font-bold text-spu-blue group-hover:text-spu-red" dir="auto">{{ $researcher['name'] ?? '' }}</h3>
                                                 <p class="mt-1 text-[11px] text-slate-500">{{ $researcher['title'] ?? $researcher['role'] ?? '' }}</p>
                                             </div>
                                         </div>
@@ -60,7 +60,7 @@
                         <div class="mt-5 grid gap-4 sm:grid-cols-2">
                             @forelse (($data['publications'] ?? []) as $publication)
                                 <a href="/{{ $locale }}/research/publications/{{ $publication['slug'] ?? '' }}" class="group block rounded-[8px] border border-slate-100 p-4 transition hover:border-spu-blue/20 hover:shadow-[0_4px_12px_rgba(32,39,89,0.06)]">
-                                    <h3 class="line-clamp-2 text-[14px] font-bold leading-snug text-spu-blue group-hover:text-spu-red">{{ $publication['title'] ?? '' }}</h3>
+                                    <h3 class="card-title text-[14px] font-bold leading-snug text-spu-blue group-hover:text-spu-red" dir="auto">{{ $publication['title'] ?? '' }}</h3>
                                     <p class="mt-2 text-[12px] text-slate-500">{{ $publication['author'] ?? '' }} · {{ $publication['year'] ?? '' }}</p>
                                     <p class="mt-2 text-[10px] font-bold uppercase tracking-wider text-spu-red">{{ $publication['type'] ?? '' }}</p>
                                 </a>
@@ -79,7 +79,7 @@
                             @forelse (($data['projects'] ?? []) as $project)
                                 <a href="/{{ $locale }}/research/projects/{{ $project['slug'] ?? '' }}" class="group block rounded-[8px] border border-slate-100 p-4 transition hover:border-spu-blue/20 hover:shadow-[0_4px_12px_rgba(32,39,89,0.06)]">
                                     <div class="flex flex-wrap items-start justify-between gap-3">
-                                        <h3 class="text-[14px] font-bold text-spu-blue group-hover:text-spu-red">{{ $project['title'] ?? '' }}</h3>
+                                        <h3 class="card-title text-[14px] font-bold text-spu-blue group-hover:text-spu-red" dir="auto">{{ $project['title'] ?? '' }}</h3>
                                         <span class="rounded-full bg-spu-blue/5 px-2.5 py-1 text-[10px] font-semibold text-spu-blue">{{ $project['status'] ?? '' }}</span>
                                     </div>
                                     <p class="mt-2 line-clamp-2 text-[12px] leading-6 text-slate-600">{{ $project['summary'] ?? '' }}</p>

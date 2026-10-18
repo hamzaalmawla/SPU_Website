@@ -19,7 +19,7 @@
                             <div class="mb-4 flex items-start gap-4">
                                 <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-spu-blue/[0.06] text-spu-blue">✓</div>
                                 <div class="flex-1">
-                                    <h3 class="mb-2 text-lg font-bold text-spu-blue">{{ $section['title'] ?? '' }}</h3>
+                                    <h3 class="card-title mb-2 text-lg font-bold text-spu-blue" dir="auto">{{ $section['title'] ?? '' }}</h3>
                                     <x-public.rich-text class="text-sm text-spu-blue/70" :text="$section['description'] ?? ''" />
                                 </div>
                             </div>

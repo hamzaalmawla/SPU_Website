@@ -32,6 +32,8 @@ return [
     'previous' => 'Previous',
     'next' => 'Next',
     'read_more' => 'Read More',
+    'show_more' => 'Show more',
+    'show_less' => 'Show less',
     'view_details' => 'View Details',
     'search' => 'Search',
     'filter_faculty' => 'Filter by faculty',

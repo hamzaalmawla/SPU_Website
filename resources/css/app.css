@@ -35,6 +35,7 @@
 @import './frontend/admissions-subpages.css';
 @import './frontend/events-calendar.css';
 @import './frontend/utilities.css';
+@import './frontend/cards.css';
 
 body {
     position: relative;

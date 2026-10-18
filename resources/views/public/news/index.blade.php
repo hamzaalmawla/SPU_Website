@@ -90,7 +90,7 @@
                                 <p class="text-[12px] font-bold text-spu-red" translate="no">{{ $news->publishedAt }}</p>
                             @endif
                             <a href="{{ $news->url ?? '#' }}" class="mt-3 block rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-red">
-                                <h3 class="line-clamp-3 text-[19px] font-bold leading-[1.45] text-spu-blue transition-colors group-hover:text-spu-red sm:text-[20px]">{{ $news->title }}</h3>
+                                <h3 class="card-title text-[19px] font-bold leading-[1.45] text-spu-blue transition-colors group-hover:text-spu-red sm:text-[20px]" dir="auto">{{ $news->title }}</h3>
                             </a>
                             @if ($news->excerpt)
                                 <p class="mt-4 line-clamp-3 text-[14px] font-medium leading-7 text-slate-600">{{ $news->excerpt }}</p>
@@ -176,7 +176,7 @@
                         <img src="/images/icon-file-outline.svg" alt="" class="h-8 w-8" aria-hidden="true">
                     </div>
                     <div>
-                        <h3 class="mb-3 text-3xl font-bold">{{ $page['archiveTitle'] ?? ($isAr ? 'أرشيف الأخبار' : 'News Archive') }}</h3>
+                        <h3 class="card-title mb-3 text-3xl font-bold" dir="auto">{{ $page['archiveTitle'] ?? ($isAr ? 'أرشيف الأخبار' : 'News Archive') }}</h3>
                         <p class="flex items-center justify-center gap-2 text-sm font-bold uppercase tracking-widest opacity-60"><span>{{ $page['archiveCta'] ?? ($isAr ? 'انقر للزيارة' : 'Visit Room') }}</span><span class="text-lg">→</span></p>
                     </div>
                 </a>
@@ -186,7 +186,7 @@
                         <img src="/images/icon-book-outline.svg" alt="" class="h-8 w-8" aria-hidden="true">
                     </div>
                     <div>
-                        <h3 class="mb-3 text-3xl font-bold">{{ $page['agreementsCardTitle'] ?? ($isAr ? 'الاتفاقيات ومذكرات التفاهم' : 'Agreements and Memoranda of Understanding') }}</h3>
+                        <h3 class="card-title mb-3 text-3xl font-bold" dir="auto">{{ $page['agreementsCardTitle'] ?? ($isAr ? 'الاتفاقيات ومذكرات التفاهم' : 'Agreements and Memoranda of Understanding') }}</h3>
                         <p class="flex items-center justify-center gap-2 text-sm font-bold uppercase tracking-widest opacity-60"><span>{{ $page['agreementsCardCta'] ?? ($isAr ? 'انقر للزيارة' : 'Visit Room') }}</span><span class="text-lg">→</span></p>
                     </div>
                 </a>
@@ -196,7 +196,7 @@
                         <img src="/images/icon-book-outline.svg" alt="" class="h-8 w-8" aria-hidden="true">
                     </div>
                     <div>
-                        <h3 class="mb-3 text-3xl font-bold">{{ $page['announcementsCardTitle'] ?? ($isAr ? 'الإعلانات' : 'Announcements') }}</h3>
+                        <h3 class="card-title mb-3 text-3xl font-bold" dir="auto">{{ $page['announcementsCardTitle'] ?? ($isAr ? 'الإعلانات' : 'Announcements') }}</h3>
                         <p class="flex items-center justify-center gap-2 text-sm font-bold uppercase tracking-widest opacity-60"><span>{{ $page['announcementsCardCta'] ?? ($isAr ? 'انقر للزيارة' : 'Visit Room') }}</span><span class="text-lg">→</span></p>
                     </div>
                 </a>

@@ -45,7 +45,7 @@
                                     <div class="h-40 md:h-48 overflow-hidden"><img src="{{ $sideImage }}" @if ($sideSrcset) srcset="{{ $sideSrcset }}" sizes="(max-width: 1024px) 100vw, 560px" @endif alt="{{ $sideItem['title'] ?? '' }}" loading="lazy" decoding="async" width="560" height="192" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"></div>
                                 @endif
                                 <div class="p-5 md:p-6">
-                                    @if (! empty($sideItem['title']))<h4 class="text-xl font-bold text-spu-blue mb-2">{{ $sideItem['title'] }}</h4>@endif
+                                    @if (! empty($sideItem['title']))<h4 class="card-title text-xl font-bold text-spu-blue mb-2" dir="auto">{{ $sideItem['title'] }}</h4>@endif
                                     @if (! empty($sideItem['summary']))<p class="text-gray-500 text-sm line-clamp-2">{{ $sideItem['summary'] }}</p>@endif
                                     @if (! empty($sideItem['action']['url']) && ! empty($sideItem['action']['label']))
                                         <a href="{{ $sideItem['action']['url'] }}" class="text-spu-blue font-bold text-sm flex items-center gap-2 hover:text-spu-red transition-colors mt-2" @if (! empty($sideItem['action']['target'])) target="{{ $sideItem['action']['target'] }}" rel="noreferrer" @endif><span>{{ $sideItem['action']['label'] }}</span><img src="/images/icon-chevron-right-outline.svg" class="w-2.5 h-2.5 rtl:rotate-180" alt="" width="24" height="24" loading="lazy" decoding="async"></a>

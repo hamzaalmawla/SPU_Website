@@ -32,6 +32,8 @@ return [
     'previous' => 'السابق',
     'next' => 'التالي',
     'read_more' => 'اقرأ المزيد',
+    'show_more' => 'عرض المزيد',
+    'show_less' => 'عرض أقل',
     'view_details' => 'عرض التفاصيل',
     'search' => 'بحث',
     'filter_faculty' => 'تصفية حسب الكلية',

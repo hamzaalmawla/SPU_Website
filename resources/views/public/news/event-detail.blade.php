@@ -36,7 +36,7 @@
                     @endif
                     @if ($event->speakers !== [])
                         <h2 class="mt-10 text-xl font-bold text-spu-blue">{{ $page['speakersLabel'] }}</h2>
-                        <div class="mt-4 grid gap-4 md:grid-cols-2">@foreach($event->speakers as $speaker)<div class="rounded border border-slate-200 p-5"><h3 class="font-bold text-spu-blue">{{ $speaker['name'] }}</h3><p class="mt-1 text-sm text-slate-500">{{ $speaker['title'] }}</p></div>@endforeach</div>
+                        <div class="mt-4 grid gap-4 md:grid-cols-2">@foreach($event->speakers as $speaker)<div class="rounded border border-slate-200 p-5"><h3 class="card-title font-bold text-spu-blue" dir="auto">{{ $speaker['name'] }}</h3><p class="mt-1 text-sm text-slate-500">{{ $speaker['title'] }}</p></div>@endforeach</div>
                     @endif
                     @if ($event->results)
                         <h2 class="mt-10 text-xl font-bold text-spu-blue">{{ $page['resultsLabel'] }}</h2>

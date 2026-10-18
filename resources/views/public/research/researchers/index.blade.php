@@ -63,7 +63,7 @@
                         <div class="relative mb-4 h-28 w-28 overflow-hidden rounded-full border-2 border-spu-blue/10 transition-all group-hover:border-spu-red">
                             <img src="{{ $researcher['image'] ?? '/images/unkown.jpeg' }}" alt="{{ $researcher['name'] ?? '' }}" class="h-full w-full object-cover object-top">
                         </div>
-                        <h2 class="mb-1 text-base font-bold text-spu-blue transition-colors group-hover:text-spu-red">{{ $researcher['name'] ?? '' }}</h2>
+                        <h2 class="card-title card-title-center card-title-center mb-1 text-base font-bold text-spu-blue transition-colors group-hover:text-spu-red" dir="auto">{{ $researcher['name'] ?? '' }}</h2>
                         <p class="mb-2 text-sm text-spu-blue/70">{{ $researcher['faculty'] ?? '' }}</p>
                         <p class="text-xs font-semibold text-spu-blue/60">{{ $researcher['publications'] ?? 0 }} {{ $data['publicationsLabel'] ?? ($locale === 'ar' ? 'منشور' : 'Publications') }}</p>
                     </a>

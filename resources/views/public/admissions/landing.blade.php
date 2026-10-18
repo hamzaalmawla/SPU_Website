@@ -21,7 +21,7 @@
                         <div class="flex items-start gap-4">
                             <span class="mt-0.5 shrink-0 text-spu-blue"><img src="/images/icon-check-circle-outline.svg" alt="" class="h-6 w-6" aria-hidden="true"></span>
                             <div class="flex flex-col gap-1">
-                                <h2 class="text-lg font-bold leading-7 text-[#1b1b1f]">{{ $item['title'] ?? '' }}</h2>
+                                <h2 class="card-title text-lg font-bold leading-7 text-[#1b1b1f]" dir="auto">{{ $item['title'] ?? '' }}</h2>
                                 <p class="text-sm leading-5 text-[#46464f]">{{ $item['desc'] ?? '' }}</p>
                             </div>
                         </div>
@@ -51,12 +51,12 @@
             <div class="relative overflow-hidden rounded-lg bg-spu-blue shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_8px_10px_-6px_rgba(0,0,0,0.1)]">
                 <div class="cms-grid-stats cms-grid-stats-cols-4">
                     @foreach (($landing['trustBar'] ?? []) as $item)
-                        <div class="relative flex flex-col items-center gap-3 px-6 py-10 text-center">
+                        <div class="relative flex flex-col items-start gap-3 px-6 py-10 text-start">
                             @if (! $loop->first)
                                 <div class="absolute left-0 top-1/2 hidden h-full w-px -translate-y-1/2 bg-white/10 md:block rtl:left-auto rtl:right-0" aria-hidden="true"></div>
                             @endif
                             <span class="text-2xl text-white"><img src="{{ $item['icon'] ?? '' }}" alt="" class="h-7 w-7 brightness-0 invert" aria-hidden="true"></span>
-                            <h2 class="text-lg font-semibold leading-[31.2px] text-white md:text-xl">{{ $item['title'] ?? '' }}</h2>
+                            <h2 class="card-title w-full text-lg font-semibold leading-[31.2px] text-white md:text-xl" dir="auto">{{ $item['title'] ?? '' }}</h2>
                         </div>
                     @endforeach
                 </div>
@@ -77,7 +77,7 @@
                         <div class="group relative flex flex-col items-center text-center">
                             <div class="relative z-10 flex h-[56px] w-[56px] items-center justify-center rounded-full text-xl font-bold shadow-md {{ ($step['active'] ?? false) ? 'bg-spu-blue text-white shadow-[0_8px_24px_rgba(32,39,89,0.3)]' : 'border-2 border-slate-200 bg-white text-spu-blue' }}">{{ $step['number'] ?? '' }}</div>
                             <div class="mt-5 w-full rounded-2xl bg-white p-6 shadow-[0_4px_20px_rgba(0,0,0,0.04)] {{ ($step['active'] ?? false) ? 'ring-2 ring-spu-blue/15' : '' }}">
-                                <h3 class="text-lg font-bold text-spu-blue">{{ $step['title'] ?? '' }}</h3>
+                                <h3 class="card-title text-lg font-bold text-spu-blue" dir="auto">{{ $step['title'] ?? '' }}</h3>
                                 <x-public.rich-text class="mt-3 text-sm leading-relaxed text-slate-400" :text="$step['summary'] ?? ''" />
                             </div>
                         </div>
@@ -130,7 +130,7 @@
                 @foreach (($landing['resources']['cards'] ?? []) as $card)
                     <a href="/{{ $locale }}/admissions/{{ $card['slug'] ?? '' }}" class="group relative flex flex-col overflow-hidden rounded-2xl p-7 transition-all duration-300 hover:-translate-y-1 {{ ($card['active'] ?? false) ? 'bg-spu-blue text-white shadow-[0_20px_50px_rgba(32,39,89,0.25)]' : 'bg-white text-spu-blue shadow-[0_4px_24px_rgba(0,0,0,0.06)] hover:shadow-[0_16px_48px_rgba(0,0,0,0.1)]' }}">
                         <div class="flex h-12 w-12 items-center justify-center rounded-xl {{ ($card['active'] ?? false) ? 'bg-white/15' : 'bg-spu-blue/5' }}"><img src="{{ $card['icon'] ?? '' }}" alt="" class="h-5 w-5 {{ ($card['active'] ?? false) ? 'brightness-0 invert' : '' }}" aria-hidden="true"></div>
-                        <h3 class="mt-5 text-xl font-bold leading-snug">{{ $card['title'] ?? '' }}</h3>
+                        <h3 class="card-title mt-5 text-xl font-bold leading-snug" dir="auto">{{ $card['title'] ?? '' }}</h3>
                         <p class="mt-2 text-sm leading-relaxed {{ ($card['active'] ?? false) ? 'text-white/70' : 'text-slate-400' }}">{{ $card['desc'] ?? '' }}</p>
                         <div class="mt-auto pt-5"><span class="text-xs font-bold uppercase tracking-[1px] {{ ($card['active'] ?? false) ? 'text-white/80' : 'text-spu-red' }}">{{ $card['link'] ?? ($locale === 'ar' ? 'اكتشف' : 'Explore') }}</span></div>
                     </a>

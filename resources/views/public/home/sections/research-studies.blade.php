@@ -29,7 +29,7 @@
                         @endif
                         <div class="flex min-h-0 flex-1 flex-col items-start border-b-[3px] border-transparent p-5 transition-colors duration-200 group-hover:border-spu-red">
                             <div class="min-h-0 overflow-hidden">
-                                <h3 class="line-clamp-4 text-[18px] font-bold leading-[1.35] text-spu-blue">{{ $item->title }}</h3>
+                                <h3 class="card-title text-[18px] font-bold leading-[1.35] text-spu-blue" dir="auto">{{ $item->title }}</h3>
                                 @if ($item->summary)
                                     <p class="mt-3 line-clamp-2 text-[14px] leading-6 text-gray-500">{{ $item->summary }}</p>
                                 @endif
