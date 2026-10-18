@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Page\EServicesPageServiceInterface;
 use App\Models\Form\DynamicFormSubmission;
+use App\Models\User\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -119,6 +122,58 @@ final class PublicFormLocalizationTest extends TestCase
         $this->from('/ar/e-services/suggestions-complaints')->post('/ar/e-services/suggestions-complaints', [
             'attachment' => UploadedFile::fake()->create('notes.docx', 20, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
         ])->assertSessionHasErrors(['attachment' => 'يجب أن يكون حقل المرفق ملفاً من نوع: pdf, jpg, jpeg, png, webp.']);
+    }
+
+    public function test_numbers_typed_with_arabic_or_persian_digits_are_accepted(): void
+    {
+        $this->postJson('/ar/forms/admissions-application/submissions', [
+            'fullName' => 'علي حسن',
+            'email' => 'arabic-digits@example.com',
+            'phone' => '٠٩٤٤ ١٢٣ ٤٥٦',
+            'applicantType' => 'new',
+            'targetFaculty' => 'medicine',
+            'secondaryCertificate' => 'علمي',
+            'certificateCountry' => 'سوريا',
+            'agreeToTerms' => 'true',
+        ])->assertCreated();
+
+        $this->postJson('/ar/forms/activity-registration/submissions', [
+            'fullName' => 'سارا',
+            'email' => 'persian-digits@example.com',
+            'phone' => '۰۹۴۴۱۲۳۴۵۶',
+        ])->assertCreated();
+
+        $phones = DynamicFormSubmission::query()->orderBy('id')->get()->map(fn (DynamicFormSubmission $submission): string => $submission->payload_json['phone'])->all();
+        $this->assertSame(['0944 123 456', '0944123456'], $phones);
+    }
+
+    public function test_a_phone_with_letters_is_still_refused_with_its_own_message(): void
+    {
+        $this->postJson('/ar/forms/activity-registration/submissions', [
+            'fullName' => 'سارا',
+            'email' => 'letters@example.com',
+            'phone' => '0944 ext 2',
+        ])->assertUnprocessable()
+            ->assertJsonPath('errors.phone.0', 'صيغة حقل رقم الهاتف غير صالحة.');
+    }
+
+    public function test_suggestions_form_shows_the_message_under_each_field(): void
+    {
+        $payload = app(EServicesPageServiceInterface::class)->getSuggestionsComplaintsEditablePayload();
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        app(CmsWorkflowServiceInterface::class)->saveDraft('e_services.suggestions-complaints', $payload, (int) $author->id);
+        app(CmsWorkflowServiceInterface::class)->publish('e_services.suggestions-complaints', (int) $author->id);
+
+        $this->followingRedirects()
+            ->from('/ar/e-services/suggestions-complaints')
+            ->post('/ar/e-services/suggestions-complaints', ['email' => 'not-an-email'])
+            ->assertOk()
+            ->assertSee('يجب أن يكون حقل البريد الإلكتروني عنوان بريد إلكتروني صالحاً.')
+            ->assertSee('حقل نوع الطلب مطلوب.')
+            ->assertSee('حقل الموضوع مطلوب.')
+            ->assertSee('يجب قبول حقل تقديم الموافقة.')
+            ->assertSee('يرجى تصحيح الحقول المشار إليها.')
+            ->assertSee('إذا كنت قد أرفقت ملفاً، يرجى إرفاقه مرة أخرى.');
     }
 
     public function test_dynamic_form_honeypot_message_follows_the_page_locale(): void

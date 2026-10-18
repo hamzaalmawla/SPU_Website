@@ -68,7 +68,7 @@
 
                         <div class="relative">
                             <template x-if="item.meta"><p class="text-white/75 text-xs md:text-sm font-semibold tracking-wide mb-2 md:mb-3" x-text="item.meta"></p></template>
-                            <h3 class="text-xl sm:text-2xl lg:text-4xl font-bold leading-snug text-balance line-clamp-3 mb-2.5 md:mb-4" x-text="item.title"></h3>
+                            <h3 class="card-title text-xl sm:text-2xl lg:text-4xl font-bold leading-snug text-balance mb-2.5 md:mb-4" x-text="item.title" dir="auto"></h3>
                             <template x-if="item.summary"><p class="text-white/80 text-sm md:text-base leading-relaxed mb-4 md:mb-6 line-clamp-2" x-text="item.summary"></p></template>
                             <template x-if="hasAction(item)">
                                 <a :href="item.action.url" class="honor-panel-cta text-white/90 inline-flex items-center gap-2.5 md:gap-3 text-sm md:text-base font-bold group/link" x-bind:target="actionTarget(item)" x-bind:rel="actionRel(item)">

@@ -32,6 +32,8 @@ return [
     'previous' => 'Previous',
     'next' => 'Next',
     'read_more' => 'Read More',
+    'show_more' => 'Show more',
+    'show_less' => 'Show less',
     'view_details' => 'View Details',
     'search' => 'Search',
     'filter_faculty' => 'Filter by faculty',
@@ -161,7 +163,8 @@ return [
     'subject' => 'Subject',
     'message_label' => 'Message',
     'required_fields_note' => 'Fields marked with * are required.',
-    'error_review_fields' => 'Please review the required fields.',
+    'error_review_fields' => 'Please correct the highlighted fields.',
+    'reattach_file' => 'If you attached a file, please attach it again.',
     'submit_request' => 'Submit Request',
     'e_services' => 'E-Services',
 

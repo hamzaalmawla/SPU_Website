@@ -1,7 +1,7 @@
 <div x-data="dynamicFormView()" x-cloak>
     <template x-if="$store.dynamicForm.schema">
     <div>
-    <input type="text" name="website" value="" data-form-honeypot tabindex="-1" autocomplete="off" class="absolute -left-[9999px] h-px w-px overflow-hidden" aria-label="Website">
+    <input type="text" name="website" value="" data-form-honeypot tabindex="-1" autocomplete="off" class="sr-only" aria-hidden="true" aria-label="Website">
     <div x-show="$store.dynamicForm.isPreview" class="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800" x-text="$store.dynamicForm.isPreview ? previewText() : ''"></div>
     <div x-show="$store.dynamicForm.submitted" class="rounded-2xl border border-green-200 bg-green-50 p-8 text-center" role="status" aria-live="polite" aria-atomic="true">
         <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">

@@ -97,14 +97,45 @@ export function registerDynamicFormStore(Alpine) {
         },
 
         setFile(name, file) {
-            if (file) {
+            delete this.errors[name];
+            const problem = file ? this.fileProblem(this.fields().find((field) => field.name === name), file) : '';
+
+            if (file && !problem) {
                 this.files[name] = file;
                 this.formData[name] = file.name;
             } else {
                 delete this.files[name];
                 this.formData[name] = '';
             }
-            delete this.errors[name];
+
+            if (problem) this.errors[name] = problem;
+        },
+
+        // The server's rules for the file, checked on selection so a wrong
+        // type or size is explained at once rather than after submitting.
+        fileProblem(field, file) {
+            if (!field) return '';
+            const extension = (file.name || '').split('.').pop().toLowerCase();
+            const allowed = (field.accept || '').split(',').map((type) => type.trim().replace(/^\./, '').toLowerCase()).filter(Boolean);
+
+            if (allowed.length && !allowed.includes(extension)) return this.message('fileType', { types: allowed.join(', ').toUpperCase() });
+            if (field.maxKilobytes && file.size > field.maxKilobytes * 1024) return this.message('fileSize', { size: Math.round(field.maxKilobytes / 1024) });
+
+            return '';
+        },
+
+        message(key, values = {}) {
+            const ar = this.locale === 'ar';
+            const text = {
+                required: ar ? 'هذا الحقل مطلوب.' : 'This field is required.',
+                email: ar ? 'أدخل بريداً إلكترونياً صالحاً.' : 'Enter a valid email address.',
+                fileType: ar ? 'نوع الملف غير مقبول. الأنواع المسموحة: :types.' : 'This file type is not accepted. Allowed: :types.',
+                fileSize: ar ? 'حجم الملف أكبر من :size ميغابايت.' : 'The file is larger than :size MB.',
+                review: ar ? 'يرجى تصحيح الحقول المشار إليها.' : 'Please correct the highlighted fields.',
+                failed: ar ? 'تعذر إرسال النموذج. حاول مرة أخرى.' : 'Unable to submit the form. Please try again.',
+            }[key] || '';
+
+            return Object.keys(values).reduce((result, name) => result.replace(`:${name}`, values[name]), text);
         },
 
         validateFields(fields) {
@@ -117,19 +148,19 @@ export function registerDynamicFormStore(Alpine) {
 
                 if (field.type === 'checkbox') {
                     if (field.required && !value) {
-                        this.errors[field.name] = true;
+                        this.errors[field.name] = this.message('required');
                         valid = false;
                     }
                     return;
                 }
 
                 if (field.required && !textValue) {
-                    this.errors[field.name] = true;
+                    this.errors[field.name] = this.message('required');
                     valid = false;
                 }
 
                 if (textValue && field.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(textValue)) {
-                    this.errors[field.name] = true;
+                    this.errors[field.name] = this.message('email');
                     valid = false;
                 }
             });
@@ -223,10 +254,7 @@ export function registerDynamicFormStore(Alpine) {
                 });
 
                 if (response.status === 422) {
-                    const payload = await response.json();
-                    this.errors = Object.fromEntries(Object.keys(payload.errors || {}).map((key) => [key, true]));
-                    this.submitError = this.locale === 'ar' ? 'يرجى مراجعة الحقول المطلوبة.' : 'Please review the required fields.';
-                    this.focusFirstError();
+                    this.showServerErrors((await response.json()).errors || {});
                     return;
                 }
 
@@ -234,10 +262,38 @@ export function registerDynamicFormStore(Alpine) {
 
                 this.submitted = true;
             } catch (error) {
-                this.submitError = this.locale === 'ar' ? 'تعذر إرسال النموذج. حاول مرة أخرى.' : 'Unable to submit the form. Please try again.';
+                this.submitError = this.message('failed');
             } finally {
                 this.submitting = false;
             }
+        },
+
+        // The server's own messages: under their field, or at the top when
+        // they are not about a field (an event that closed or filled up, a
+        // job no longer open). A fixed "required fields" text hid them all.
+        showServerErrors(serverErrors) {
+            const fieldNames = this.fields().map((field) => field.name);
+            const general = [];
+
+            this.errors = {};
+            Object.keys(serverErrors).forEach((key) => {
+                const text = [].concat(serverErrors[key])[0] || this.message('review');
+
+                if (fieldNames.includes(key)) {
+                    this.errors[key] = text;
+                } else {
+                    general.push(text);
+                }
+            });
+
+            this.submitError = general.length ? general.join(' ') : this.message('review');
+
+            if (this.isMultiStep) {
+                const step = this.schema.steps.findIndex((item) => (item.fields || []).some((field) => this.errors[field.name]));
+                if (step >= 0) this.currentStep = step;
+            }
+
+            this.focusFirstError();
         },
     });
 }

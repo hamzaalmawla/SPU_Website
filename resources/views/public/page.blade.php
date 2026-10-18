@@ -56,7 +56,7 @@
                         <div class="cms-grid-cards mb-8 gap-4">
                             @foreach ($page['overviewCards'] as $card)
                                 <div class="rounded-[18px] border border-slate-100 bg-slate-50 p-5">
-                                    <h3 class="text-lg font-bold text-spu-blue">{{ $card['title'] ?? '' }}</h3>
+                                    <h3 class="card-title text-lg font-bold text-spu-blue" dir="auto">{{ $card['title'] ?? '' }}</h3>
                                     @if (! empty($card['summary']))
                                         <x-public.rich-text class="mt-2 text-sm leading-6 text-[#55627c]" :text="$card['summary']" />
                                     @endif

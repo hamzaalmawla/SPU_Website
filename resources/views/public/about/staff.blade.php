@@ -44,7 +44,7 @@
                             <a href="{{ route('public.about.profile', ['locale' => $locale, 'slug' => $person->slug]) }}" class="staff-card reveal reveal-up block transition hover:-translate-y-1 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-blue">
                             <div class="staff-card-media">@if ($person->image)<img src="{{ $person->image }}" alt="{{ $person->name }}" loading="lazy">@else<div class="flex h-full items-center justify-center bg-slate-100"><img src="/images/icon-user-graduate-outline.svg" alt="" class="h-16 w-16 opacity-30" aria-hidden="true"></div>@endif</div>
                             <div class="staff-card-body">
-                                <h2 class="staff-card-name">{{ $person->name }}</h2>
+                                <h2 class="card-title card-title-center staff-card-name" dir="auto">{{ $person->name }}</h2>
                                 <p class="staff-card-role">{{ $person->role }}</p>
                                 @if ($person->facultyName)
                                     <p class="mt-3 text-xs font-bold text-slate-500">{{ $person->facultyName }}</p>

@@ -17,7 +17,7 @@
                                     @endif
                                 @endforeach
                             </div>
-                            <h2 dir="auto" class="mt-[14px] text-[22px] font-bold leading-tight text-spu-blue transition-colors group-hover:text-spu-red">{{ $publication['title'] ?? '' }}</h2>
+                            <h2 dir="auto" class="card-title mt-[14px] text-[22px] font-bold leading-tight text-spu-blue transition-colors group-hover:text-spu-red">{{ $publication['title'] ?? '' }}</h2>
                             @if (! empty($publication['summary']))
                                 <x-public.rich-text dir="auto" class="mt-[10px] max-w-[500px] text-[16px] leading-[1.75] text-[#263650]" :text="$publication['summary']" />
                             @endif

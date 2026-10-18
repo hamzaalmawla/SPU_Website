@@ -87,7 +87,7 @@
                         @foreach ($relatedJobs as $related)
                             <a href="{{ $previewToken ? '/'.$locale.'/preview?token='.$previewToken.'&job='.urlencode((string) ($related['slug'] ?? '')) : '/'.$locale.'/campus-life/career-development/jobs/'.($related['slug'] ?? '') }}" class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-spu-blue">
                                 <span class="text-xs font-bold text-spu-red">{{ $related['department'] ?? '' }}</span>
-                                <h3 class="mt-2 font-black text-spu-blue">{{ $related['title'] ?? '' }}</h3>
+                                <h3 class="card-title mt-2 font-black text-spu-blue" dir="auto">{{ $related['title'] ?? '' }}</h3>
                             </a>
                         @endforeach
                     </div>

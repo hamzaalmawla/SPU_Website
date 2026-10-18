@@ -17,7 +17,7 @@
                             @foreach ($directorate->services as $service)
                                 <article class="dir-service-item reveal reveal-up">
                                     <span class="dir-service-icon" aria-hidden="true"><img src="/images/icon-check-circle-outline.svg" alt="" class="h-4 w-4"></span>
-                                    <h3 class="dir-service-name">{{ $service }}</h3>
+                                    <h3 class="card-title dir-service-name" dir="auto">{{ $service }}</h3>
                                 </article>
                             @endforeach
                         </div>
@@ -32,7 +32,7 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                                             </svg>
                                         </span>
-                                        <h3 class="dir-service-name">{{ $link['title'] ?? '' }}</h3>
+                                        <h3 class="card-title dir-service-name" dir="auto">{{ $link['title'] ?? '' }}</h3>
                                     </a>
                                 @endforeach
                             </div>

@@ -3,7 +3,7 @@
         <div>
             <label x-bind:for="fieldId(field)" class="text-xs font-bold uppercase tracking-wide text-gray-700"><span x-text="label(field)"></span><span x-show="field.required" class="ms-0.5 text-spu-red" aria-hidden="true">*</span></label>
             <input x-bind:id="fieldId(field)" x-bind:name="field.name" x-bind:type="field.type" x-bind:required="field.required" x-bind:aria-required="field.required ? 'true' : null" x-bind:aria-invalid="invalid(field)" x-bind:aria-describedby="describedBy(field)" x-bind:value="$store.dynamicForm.formData[field.name]" x-on:input="setValue(field, $event.target.value)" x-bind:placeholder="placeholder(field)" x-bind:class="inputClass(field)" class="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition-all focus:border-spu-red focus:ring-2 focus:ring-spu-red/10">
-            <p x-show="$store.dynamicForm.errors[field.name]" x-bind:id="errorId(field)" class="mt-1 text-xs text-red-500" role="alert" x-text="errorText()"></p>
+            <p x-show="$store.dynamicForm.errors[field.name]" x-bind:id="errorId(field)" class="mt-1 text-xs text-red-500" role="alert" x-text="errorText(field)"></p>
         </div>
     </template>
 
@@ -21,7 +21,7 @@
                 </label>
             </div>
             <p x-show="$store.dynamicForm.formData[field.name]" class="mt-2 flex items-center gap-1.5 text-xs text-green-600"><svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span x-text="$store.dynamicForm.formData[field.name]"></span></p>
-            <p x-show="$store.dynamicForm.errors[field.name]" x-bind:id="errorId(field)" class="mt-1 text-xs text-red-500" role="alert" x-text="errorText()"></p>
+            <p x-show="$store.dynamicForm.errors[field.name]" x-bind:id="errorId(field)" class="mt-1 text-xs text-red-500" role="alert" x-text="errorText(field)"></p>
         </div>
     </template>
 
@@ -33,7 +33,7 @@
                     <option x-bind:value="opt.value" x-bind:selected="$store.dynamicForm.formData[field.name] === opt.value" x-text="optionLabel(opt)"></option>
                 </template>
             </select>
-            <p x-show="$store.dynamicForm.errors[field.name]" x-bind:id="errorId(field)" class="mt-1 text-xs text-red-500" role="alert" x-text="errorText()"></p>
+            <p x-show="$store.dynamicForm.errors[field.name]" x-bind:id="errorId(field)" class="mt-1 text-xs text-red-500" role="alert" x-text="errorText(field)"></p>
         </div>
     </template>
 
@@ -41,14 +41,14 @@
         <div>
             <label x-bind:for="fieldId(field)" class="text-xs font-bold uppercase tracking-wide text-gray-700"><span x-text="label(field)"></span><span x-show="field.required" class="ms-0.5 text-spu-red" aria-hidden="true">*</span></label>
             <textarea x-bind:id="fieldId(field)" x-bind:name="field.name" x-bind:required="field.required" x-bind:aria-required="field.required ? 'true' : null" x-bind:aria-invalid="invalid(field)" x-bind:aria-describedby="describedBy(field)" x-bind:rows="field.rows || 4" x-bind:value="$store.dynamicForm.formData[field.name]" x-on:input="setValue(field, $event.target.value)" x-bind:placeholder="placeholder(field)" x-bind:class="inputClass(field)" class="w-full resize-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition-all focus:border-spu-red focus:ring-2 focus:ring-spu-red/10"></textarea>
-            <p x-show="$store.dynamicForm.errors[field.name]" x-bind:id="errorId(field)" class="mt-1 text-xs text-red-500" role="alert" x-text="errorText()"></p>
+            <p x-show="$store.dynamicForm.errors[field.name]" x-bind:id="errorId(field)" class="mt-1 text-xs text-red-500" role="alert" x-text="errorText(field)"></p>
         </div>
     </template>
 
     <template x-if="field.type === 'checkbox'">
         <div>
             <div class="flex cursor-pointer items-start gap-3"><input x-bind:id="fieldId(field)" x-bind:name="field.name" type="checkbox" x-bind:required="field.required" x-bind:aria-required="field.required ? 'true' : null" x-bind:aria-invalid="invalid(field)" x-bind:aria-describedby="describedBy(field)" x-bind:checked="$store.dynamicForm.formData[field.name]" x-on:change="setValue(field, $event.target.checked)" class="mt-0.5 h-4 w-4 rounded border-gray-300 text-spu-red focus:ring-spu-red/20"><label x-bind:for="fieldId(field)" class="text-sm text-gray-700"><span x-text="label(field)"></span><span x-show="field.required" class="ms-0.5 text-spu-red" aria-hidden="true">*</span></label></div>
-            <p x-show="$store.dynamicForm.errors[field.name]" x-bind:id="errorId(field)" class="mt-1 text-xs text-red-500" role="alert" x-text="errorText()"></p>
+            <p x-show="$store.dynamicForm.errors[field.name]" x-bind:id="errorId(field)" class="mt-1 text-xs text-red-500" role="alert" x-text="errorText(field)"></p>
         </div>
     </template>
 </div>

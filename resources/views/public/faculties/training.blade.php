@@ -33,7 +33,7 @@
             @foreach (($training['introCards'] ?? []) as $card)
                 <article class="min-h-[150px] border border-slate-200 bg-white p-6 shadow-[0_8px_26px_rgba(15,23,42,0.04)]">
                     <div class="flex items-start justify-between gap-4">
-                        <h2 class="text-[15px] font-bold text-spu-blue">{{ $localized($card, 'title') }}</h2>
+                        <h2 class="card-title text-[15px] font-bold text-spu-blue" dir="auto">{{ $localized($card, 'title') }}</h2>
                         <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#eef4ff]">
                             <img src="{{ $card['icon'] ?? '/images/icons/training.svg' }}" alt="" class="h-4 w-4" aria-hidden="true">
                         </span>
@@ -59,7 +59,7 @@
             @foreach (($programme['steps'] ?? []) as $step)
                 <article class="relative z-10 text-center">
                     <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-spu-blue text-[14px] font-bold text-white shadow-[0_10px_26px_rgba(32,39,89,0.18)]">{{ $step['number'] ?? $loop->iteration }}</div>
-                    <h3 class="mt-4 text-[15px] font-bold text-spu-blue">{{ $localized($step, 'title') }}</h3>
+                    <h3 class="card-title mt-4 text-[15px] font-bold text-spu-blue" dir="auto">{{ $localized($step, 'title') }}</h3>
                     <x-public.rich-text class="mx-auto mt-2 max-w-[210px] text-[11px] font-semibold leading-5 text-slate-500" :text="$localized($step, 'description')" />
                 </article>
             @endforeach
@@ -119,7 +119,7 @@
                         <img src="{{ $item['image'] ?? '/images/pharmacy-place.jpg' }}" alt="{{ $localized($item, 'title') }}" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105">
                     </div>
                     <div class="p-5">
-                        <h3 class="text-[15px] font-bold text-spu-blue">{{ $localized($item, 'title') }}</h3>
+                        <h3 class="card-title text-[15px] font-bold text-spu-blue" dir="auto">{{ $localized($item, 'title') }}</h3>
                         <div class="mt-3 flex items-center gap-2 text-[11px] font-semibold text-slate-500">
                             <span class="h-1.5 w-1.5 rounded-full bg-spu-blue"></span>
                             <span>{{ $localized($item, 'category') }}</span>

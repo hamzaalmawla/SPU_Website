@@ -25,7 +25,7 @@
                             </div>
                         @endif
                         <div class="p-6 text-center flex flex-col flex-1">
-                            <h3 class="text-[22px] font-bold text-[#1B1B1F] mb-1 leading-tight">{{ $article->title }}</h3>
+                            <h3 class="card-title text-[22px] font-bold text-[#1B1B1F] mb-1 leading-tight" dir="auto">{{ $article->title }}</h3>
                             @if ($article->publishedAt)
                                 <p class="text-spu-red text-[15px] mb-3" translate="no">{{ $article->publishedAt }}</p>
                             @endif

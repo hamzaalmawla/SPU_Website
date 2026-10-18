@@ -32,6 +32,8 @@ return [
     'previous' => 'السابق',
     'next' => 'التالي',
     'read_more' => 'اقرأ المزيد',
+    'show_more' => 'عرض المزيد',
+    'show_less' => 'عرض أقل',
     'view_details' => 'عرض التفاصيل',
     'search' => 'بحث',
     'filter_faculty' => 'تصفية حسب الكلية',
@@ -161,7 +163,8 @@ return [
     'subject' => 'الموضوع',
     'message_label' => 'الرسالة',
     'required_fields_note' => 'الحقول المشار إليها بعلامة * مطلوبة.',
-    'error_review_fields' => 'يرجى مراجعة الحقول المطلوبة.',
+    'error_review_fields' => 'يرجى تصحيح الحقول المشار إليها.',
+    'reattach_file' => 'إذا كنت قد أرفقت ملفاً، يرجى إرفاقه مرة أخرى.',
     'submit_request' => 'إرسال الطلب',
     'e_services' => 'الخدمات الإلكترونية',
 

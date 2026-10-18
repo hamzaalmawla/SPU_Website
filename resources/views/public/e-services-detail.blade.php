@@ -47,7 +47,7 @@
                     @foreach ($page->sections as $section)
                         <section class="rounded-[1.25rem] border border-spu-blue/10 bg-white p-7 shadow-[0_14px_38px_rgba(32,39,89,0.06)]">
                             <span class="flex h-10 w-10 items-center justify-center rounded-full bg-spu-red/10 text-sm font-black text-spu-red" aria-hidden="true">{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
-                            <h3 class="mt-6 text-xl font-black">{{ $section['title'] }}</h3>
+                            <h3 class="card-title mt-6 text-xl font-black" dir="auto">{{ $section['title'] }}</h3>
                             <x-public.rich-text class="mt-3 text-sm leading-7 text-spu-blue/65" :text="$section['body']" />
                         </section>
                     @endforeach

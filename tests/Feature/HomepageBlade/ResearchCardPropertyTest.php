@@ -76,7 +76,7 @@ class ResearchCardPropertyTest extends TestCase
 
         $this->assertStringContainsString('href="/en/research/publications/imported-publication"', $html);
         $this->assertStringContainsString('data-research-card-link', $html);
-        $this->assertStringContainsString('line-clamp-4', $html);
+        $this->assertStringContainsString('class="card-title ', $html);
         $this->assertStringContainsString('View Details', $html);
     }
 

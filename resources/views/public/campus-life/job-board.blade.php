@@ -81,7 +81,7 @@
                         </div>
 
                         <div class="flex flex-1 flex-col p-5">
-                            <h2 class="text-base font-bold leading-tight text-spu-blue">{{ $job['title'] ?? '' }}</h2>
+                            <h2 class="card-title text-base font-bold leading-tight text-spu-blue" dir="auto">{{ $job['title'] ?? '' }}</h2>
                             <p class="mt-2 line-clamp-2 text-xs leading-5 text-slate-600">{{ $job['shortDescription'] ?? '' }}</p>
 
                             <div class="mt-auto flex flex-wrap gap-2 pt-5">

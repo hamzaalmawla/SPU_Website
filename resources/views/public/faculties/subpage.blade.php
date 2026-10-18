@@ -217,7 +217,7 @@
                             <div class="text-[32px] font-bold leading-none text-spu-red/80">{{ $item['code'] ?? str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</div>
                             <div>
                                 <div class="flex flex-wrap items-center gap-3">
-                                    <h2 class="text-xl font-bold text-spu-blue">{{ $item['title'] ?? '' }}</h2>
+                                    <h2 class="card-title text-xl font-bold text-spu-blue" dir="auto">{{ $item['title'] ?? '' }}</h2>
                                     <span class="rounded-full bg-section px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-spu-blue/55">{{ $item['degrees'] ?? ($isAr ? 'اختصاص أكاديمي' : 'Academic Track') }}</span>
                                 </div>
                                 <x-public.rich-text class="mt-3 max-w-[720px] text-sm leading-7 text-slate-600" :text="$item['summary'] ?? ''" />
@@ -272,7 +272,7 @@
                                             @if (! empty($relatedLab['image']))
                                                 <img src="{{ $relatedLab['image'] }}" alt="{{ $relatedLab['title'] ?? '' }}" class="h-28 w-full object-cover">
                                             @endif
-                                            <span class="block p-4 text-sm font-bold text-spu-blue">{{ $relatedLab['title'] ?? '' }}</span>
+                                            <span class="card-title block p-4 text-sm font-bold text-spu-blue" dir="auto">{{ $relatedLab['title'] ?? '' }}</span>
                                         </a>
                                     @endforeach
                                 </div>
@@ -298,7 +298,7 @@
                                     <div class="h-1.5" style="background-color: {{ $accent }}" aria-hidden="true"></div>
                                 @endif
                                 <div class="p-5">
-                                    <h3 class="text-lg font-bold leading-tight text-spu-blue">{{ $item['title'] ?? '' }}</h3>
+                                    <h3 class="card-title text-lg font-bold leading-tight text-spu-blue" dir="auto">{{ $item['title'] ?? '' }}</h3>
                                     @if (! empty($item['department']))
                                         <p class="mt-2 text-xs font-medium uppercase tracking-wide text-slate-500">{{ $isAr ? 'القسم' : 'Department' }}</p>
                                         <p class="text-sm text-slate-600">{{ $item['department'] }}</p>
@@ -343,7 +343,7 @@
                                 <span class="absolute left-3 top-3 rounded-[3px] bg-spu-red px-2 py-1 text-[10px] font-bold leading-none text-white rtl:left-auto rtl:right-3">{{ $item['tag'] ?? ($isAr ? 'مشروع' : 'Project') }}</span>
                             </div>
                             <div class="p-6">
-                                <h2 class="min-h-[42px] text-[16px] font-bold leading-[21px] text-spu-blue">{{ $item['title'] ?? '' }}</h2>
+                                <h2 class="card-title min-h-[42px] text-[16px] font-bold leading-[21px] text-spu-blue" dir="auto">{{ $item['title'] ?? '' }}</h2>
                                 <x-public.rich-text class="mt-3 min-h-[44px] text-[13px] font-medium leading-[22px] text-slate-600" :text="$item['summary'] ?? ''" />
                                 <div class="mt-6 border-t border-slate-100 pt-4">
                                     {{-- A label with nothing under it reads as missing data rather than
@@ -428,7 +428,7 @@
                                 @endif
                             </div>
                             <div class="p-4 text-center">
-                                <h2 class="text-[14px] font-bold text-spu-blue">{{ $item['title'] ?? '' }}</h2>
+                                <h2 class="card-title card-title-center text-[14px] font-bold text-spu-blue" dir="auto">{{ $item['title'] ?? '' }}</h2>
                                 <p class="mt-2 text-[11px] font-bold text-spu-red">{{ $isAr ? 'سنة التخرج: ' : 'Graduation Year: ' }}{{ $item['graduationYear'] ?? '' }}</p>
                                 <p class="mt-1 text-[11px] font-bold text-spu-red">{{ $isAr ? 'الفصل: ' : 'Semester: ' }}{{ $item['semester'] ?? '' }}</p>
                                 <p class="mt-1 text-[11px] font-semibold text-slate-500">{{ $isAr ? 'القسم: ' : 'Department: ' }}{{ $item['department'] ?? $faculty['title'] }}</p>
@@ -536,7 +536,7 @@
                                     </span>
                                 @endif
                                 <div @if ($isMemorial) style="position: relative; z-index: 2;" @endif>
-                                    <h3 class="honor-card__name">{{ $item['title'] ?? '' }}</h3>
+                                    <h3 class="card-title honor-card__name" dir="auto">{{ $item['title'] ?? '' }}</h3>
                                     <p class="mt-2 text-[10px] font-bold uppercase tracking-[0.08em] text-spu-blue/45">{{ $item['faculty'] ?? $faculty['title'] }}</p>
                                     <div class="mt-6 flex items-center justify-end gap-5">
                                         @if (! empty($item['semester']))
@@ -583,7 +583,7 @@
                                     @endif
                                 </div>
                                 <div class="staff-card-body">
-                                    <h2 class="staff-card-name">{{ $member['name'] ?? '' }}</h2>
+                                    <h2 class="card-title card-title-center staff-card-name" dir="auto">{{ $member['name'] ?? '' }}</h2>
                                     @if (! empty($member['position']))
                                         <p class="staff-card-role">{{ $member['position'] }}</p>
                                     @endif

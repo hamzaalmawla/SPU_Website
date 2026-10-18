@@ -50,7 +50,7 @@
                                 <div class="flex items-start gap-3">
                                     <img src="/images/icon-check-circle-outline.svg" class="mt-1 h-5 w-5" alt="" aria-hidden="true">
                                     <div>
-                                        <h3 class="font-bold text-spu-blue">{{ $highlight['title'] ?? '' }}</h3>
+                                        <h3 class="card-title font-bold text-spu-blue" dir="auto">{{ $highlight['title'] ?? '' }}</h3>
                                         @if (! empty($highlight['summary']))<x-public.rich-text class="text-sm text-slate-500" :text="$highlight['summary']" />@endif
                                     </div>
                                 </div>

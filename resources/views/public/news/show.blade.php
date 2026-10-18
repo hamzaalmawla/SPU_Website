@@ -166,7 +166,7 @@
                             </a>
 
                             <div class="p-4">
-                                <h3 class="text-[15px] font-bold leading-[20px] text-spu-blue">{{ $related->title }}</h3>
+                                <h3 class="card-title text-[15px] font-bold leading-[20px] text-spu-blue" dir="auto">{{ $related->title }}</h3>
                                 @if ($related->publishedAt)
                                     <p class="mt-2 text-[11px] font-bold text-spu-red" translate="no">{{ $related->publishedAt }}</p>
                                 @endif

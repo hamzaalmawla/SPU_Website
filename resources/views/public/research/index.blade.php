@@ -50,7 +50,7 @@
             <div class="mx-auto flex max-w-[1120px] flex-col overflow-hidden rounded-[5px] border border-[#d9dce7] bg-white shadow-[0_2px_4px_rgba(0,0,0,0.2)] lg:min-h-[400px] lg:flex-row">
                 <div class="flex-1 px-7 py-9 md:px-[54px] md:py-[68px]">
                     <p class="text-[12px] font-bold uppercase tracking-[0.12em] text-spu-red">{{ $featured['eyebrow'] ?? '' }}</p>
-                    <h3 class="mt-5 text-[20px] font-bold leading-snug text-spu-blue md:text-[22px]">{{ $featured['title'] ?? '' }}</h3>
+                    <h3 class="card-title mt-5 text-[20px] font-bold leading-snug text-spu-blue md:text-[22px]" dir="auto">{{ $featured['title'] ?? '' }}</h3>
                     <x-public.rich-text class="mt-4 max-w-[625px] text-[14px] leading-[1.55] text-[#333742]" :text="$featured['summary'] ?? ''" />
                     <div class="mt-9 flex flex-wrap items-center gap-8 border-s-2 border-[#c8ccd9] ps-8">
                         <div class="min-w-[105px]"><p class="text-[9px] font-medium uppercase tracking-[0.12em] text-[#6f7280]">{{ $featured['authorLabel'] ?? '' }}</p><p class="mt-1 text-[11px] font-bold text-spu-blue">{{ $featured['authorName'] ?? '' }}</p></div>
@@ -88,7 +88,7 @@
                 @foreach (($data['gateway']['cards'] ?? []) as $card)
                     <div class="group relative min-h-[205px] rounded-[6px] border border-[#d2d5df] bg-white px-[27px] pb-7 pt-10 shadow-[0_2px_4px_rgba(0,0,0,0.18)] transition hover:-translate-y-1 hover:shadow-[0_10px_24px_rgba(32,39,89,0.12)]">
                         <div class="absolute -top-[24px] left-[42px] flex h-[50px] w-[50px] items-center justify-center rounded-full border border-[#d2d5df] bg-white text-[22px] font-bold leading-none text-spu-blue shadow-[0_1px_1px_rgba(0,0,0,0.05)] transition group-hover:border-spu-blue group-hover:bg-spu-blue group-hover:text-white rtl:left-auto rtl:right-[42px]">{{ $card['number'] ?? '' }}</div>
-                        <h3 class="text-[22px] font-bold leading-tight text-spu-blue">{{ $card['title'] ?? '' }}</h3>
+                        <h3 class="card-title text-[22px] font-bold leading-tight text-spu-blue" dir="auto">{{ $card['title'] ?? '' }}</h3>
                         <x-public.rich-text class="mt-3 max-w-[280px] text-[15px] leading-[1.7] text-[#50525c]" :text="$card['summary'] ?? ''" />
                         <a href="{{ $card['url'] ?? '#' }}" class="mt-4 inline-flex items-center gap-2 text-[15px] font-bold text-spu-red transition hover:gap-3"><span>{{ $card['cta'] ?? '' }}</span><span class="rtl:rotate-180">&rarr;</span></a>
                     </div>

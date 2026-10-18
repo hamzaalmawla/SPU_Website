@@ -171,7 +171,7 @@
                                         <a href="/{{ $locale }}/faculties/{{ $page->facultySlug }}/alumni" class="flex items-center gap-3 transition hover:opacity-80">
                                             <div class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-[11px] font-bold text-slate-500">{{ $initials((string) ($member['name'] ?? '')) }}</div>
                                             <div>
-                                                <p class="text-[12px] font-bold text-spu-blue">{{ $member['name'] ?? '' }}</p>
+                                                <p class="card-title card-title-center text-[12px] font-bold text-spu-blue" dir="auto">{{ $member['name'] ?? '' }}</p>
                                                 <p class="text-[10px] text-slate-400">{{ $member['role'] ?? '' }}</p>
                                             </div>
                                         </a>
@@ -249,7 +249,7 @@
                                         <img src="{{ $related['image'] ?? '/images/Gemini_Generated_Image_c89yjwc89yjwc89y.webp' }}" alt="{{ $related['title'] ?? '' }}" class="h-full w-full object-cover transition duration-500 hover:scale-[1.03]">
                                     </div>
                                     <div class="p-4">
-                                        <h3 class="line-clamp-2 text-[13px] font-bold leading-[20px] text-spu-blue">{{ $related['title'] ?? '' }}</h3>
+                                        <h3 class="card-title text-[13px] font-bold leading-[20px] text-spu-blue" dir="auto">{{ $related['title'] ?? '' }}</h3>
                                         @if (is_string($related['detailRoute'] ?? null) && $related['detailRoute'] !== '#')
                                             <a href="{{ $related['detailRoute'] }}" class="mt-3 inline-flex items-center gap-1.5 text-[11px] font-bold text-spu-red transition hover:text-spu-blue">
                                                 <span>{{ $detailsLabel }}</span>
