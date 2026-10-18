@@ -1,0 +1,17 @@
+{
+  "source": "Old site spu.edu.sy, Contact Us (jx_categories 3415, 58, 18): phone 011/6990251 and info@spu.edu.sy. Replaces the placeholder phone +963 11 123 4567; the address is the one the university's footer already uses.",
+  "targets": {
+    "contact": {
+      "ar": {
+        "info.callUs.value": "011 6990251",
+        "info.address.value": "مقر الجامعة الرئيس، أوتوستراد درعا الدولي، بعد بلدة الكسوة، خيارة دنون، دمشق",
+        "info.emailUs.value": "info@spu.edu.sy"
+      },
+      "en": {
+        "info.callUs.value": "011 6990251",
+        "info.address.value": "University headquarters, Daraa International Highway, past Al-Kiswa, Khayara Danoun, Damascus",
+        "info.emailUs.value": "info@spu.edu.sy"
+      }
+    }
+  }
+}

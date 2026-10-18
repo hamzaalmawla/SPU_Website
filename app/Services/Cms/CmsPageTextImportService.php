@@ -9,6 +9,7 @@ use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Page\AboutPageServiceInterface;
 use App\Contracts\Page\AdmissionsPageServiceInterface;
 use App\Contracts\Page\CampusLifePageServiceInterface;
+use App\Contracts\Page\ContactPageServiceInterface;
 use App\Contracts\Page\FacultyPageServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Models\User\User;
@@ -28,6 +29,7 @@ final class CmsPageTextImportService implements CmsPageTextImportServiceInterfac
         private readonly CampusLifePageServiceInterface $campusLifePageService,
         private readonly FacultyPageServiceInterface $facultyPageService,
         private readonly ResearchPageServiceInterface $researchPageService,
+        private readonly ContactPageServiceInterface $contactPageService,
     ) {}
 
     public function import(string $path, string $actor, bool $write, bool $overDrafts = false, ?string $only = null): array
@@ -125,6 +127,9 @@ final class CmsPageTextImportService implements CmsPageTextImportServiceInterfac
             'campus_life' => $this->campusLifePageService->getEditablePayload($targetKey),
             'facilities' => $this->facultyPageService->getEditablePayload($targetKey),
             'research' => $this->researchPageService->getEditablePayload($targetKey),
+            'contact' => $this->contactPageService->getEditablePayload(),
+            // E-services detail pages render only their published content.
+            'e_services' => $this->cmsWorkflowService->getPublishedPayload($targetKey) ?? ['translations' => ['ar' => [], 'en' => []]],
             default => throw new InvalidArgumentException('No page text import for '.$targetKey),
         };
     }

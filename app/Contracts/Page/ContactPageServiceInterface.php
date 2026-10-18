@@ -14,6 +14,13 @@ interface ContactPageServiceInterface
 
     public function getContent(string $locale): ContactPageContentDTO;
 
+    /**
+     * The page content as the CMS edits it: the published payload, else the content settings.
+     *
+     * @return array{translations: array{ar: array<string, mixed>, en: array<string, mixed>}}
+     */
+    public function getEditablePayload(): array;
+
     /** @param array<string, mixed> $content */
     public function buildPreviewPage(string $locale, array $content): ContactPageDTO;
 

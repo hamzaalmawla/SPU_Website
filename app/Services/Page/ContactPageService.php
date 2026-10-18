@@ -114,6 +114,25 @@ final class ContactPageService implements ContactPageServiceInterface
         return $this->contentFromArray(is_array($content) ? $content : []);
     }
 
+    public function getEditablePayload(): array
+    {
+        $published = $this->cmsWorkflowService->getPublishedPayload('contact');
+        $translations = [];
+        foreach (['ar', 'en'] as $locale) {
+            if (is_array($published['translations'][$locale] ?? null)) {
+                $translations[$locale] = $published['translations'][$locale];
+
+                continue;
+            }
+
+            $settings = $this->settingsService->getGroup('contact_page', $locale);
+            $content = collect($settings->values)->firstWhere('key', 'content')?->jsonValue ?? [];
+            $translations[$locale] = is_array($content) ? $content : [];
+        }
+
+        return ['translations' => $translations];
+    }
+
     /** @param array<string, mixed> $content */
     private function contentFromArray(array $content): ContactPageContentDTO
     {
