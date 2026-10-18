@@ -319,12 +319,19 @@ final class LegacyPageContentService implements LegacyPageContentServiceInterfac
             $url = '/'.$locale.($path === '/' ? '' : $path);
             // The site's own address: production answers a bare localhost request differently.
             $base = rtrim((string) config('app.url'), '/');
-            $response = $this->kernel->handle(Request::create($base.$url, 'GET'));
+            // Uncompressed: the server compresses responses for clients that accept it.
+            $server = ['HTTP_ACCEPT_ENCODING' => 'identity'];
+            $response = $this->kernel->handle(Request::create($base.$url, 'GET', [], [], [], $server));
             for ($hops = 0; $response->isRedirect() && $hops < 3; $hops++) {
                 $location = (string) $response->headers->get('Location');
-                $response = $this->kernel->handle(Request::create(str_starts_with($location, '/') ? $base.$location : $location, 'GET'));
+                $response = $this->kernel->handle(Request::create(str_starts_with($location, '/') ? $base.$location : $location, 'GET', [], [], [], $server));
             }
-            if ($response->getStatusCode() === 200 && preg_match('#<main[^>]*>#i', (string) $response->getContent()) !== 1) {
+            $content = (string) $response->getContent();
+            if (str_starts_with($content, '')) {
+                $content = (string) @gzdecode($content);
+                $response->setContent($content);
+            }
+            if ($response->getStatusCode() === 200 && preg_match('#<main[^>]*>#i', $content) !== 1) {
                 $body = trim(preg_replace('/\s+/', ' ', strip_tags((string) $response->getContent())) ?? '');
 
                 return $this->rendered[$key] = 'HTTP 200 without page content ('.get_class($response).', '.strlen((string) $response->getContent()).' bytes: '.mb_substr($body, 0, 120).')';
@@ -375,7 +382,7 @@ final class LegacyPageContentService implements LegacyPageContentServiceInterfac
         $text = implode("\n", $lines);
 
         return preg_match('/^(?:under construction|sous construction|قيد الإعداد|spu)$/iu', trim($text)) === 1
-            || preg_match('/translation (?:to|in) english will|this page is (?:temporarily )?unavailable/i', $text) === 1 ? '' : $text;
+            || preg_match('/translation (?:to|in) english will|this page is (?:temporarily )?unavailable|this site is currently under preparation/i', $text) === 1 ? '' : $text;
     }
 
     private function title(?string $value): string

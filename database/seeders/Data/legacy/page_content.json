@@ -6757,8 +6757,8 @@
             "link": "index.php?mylang&page=faqs&ex=2&dir=faqs",
             "in_menu": true,
             "files": 1,
-            "text_ar": "This site is currently under preparation",
-            "text_en": "This site is currently under preparation",
+            "text_ar": "",
+            "text_en": "",
             "new_path": "/admissions/faq"
         },
         {
