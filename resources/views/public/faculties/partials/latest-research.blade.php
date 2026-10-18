@@ -33,11 +33,11 @@
                                     <span>{{ $publication['year'] }}</span>
                                 @endif
                             </div>
-                            <h3 class="mt-3 text-xl font-bold leading-tight text-spu-blue">
+                            <h3 dir="auto" class="mt-3 text-xl font-bold leading-tight text-spu-blue">
                                 <a href="{{ $publicationUrl }}" class="transition-colors hover:text-spu-red focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-blue">{{ $publication['title'] }}</a>
                             </h3>
                             @if (! empty($publication['summary']))
-                                <p class="mt-4 line-clamp-3 text-sm leading-7 text-slate-600">{{ $publication['summary'] }}</p>
+                                <p dir="auto" class="mt-4 line-clamp-3 text-sm leading-7 text-slate-600">{{ $publication['summary'] }}</p>
                             @endif
                             <a href="{{ $publicationUrl }}" class="mt-auto inline-flex items-center gap-2 pt-6 text-sm font-bold transition-colors hover:text-spu-red focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-blue" style="color: {{ $accent }}" aria-label="{{ ($locale === 'ar' ? 'عرض المنشور: ' : 'View publication: ').$publication['title'] }}">
                                 <span>{{ $locale === 'ar' ? 'عرض المنشور' : 'View Publication' }}</span>

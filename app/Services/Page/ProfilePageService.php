@@ -504,12 +504,16 @@ final class ProfilePageService implements ProfilePageServiceInterface
 
                 $publishedAt = $publication->getAttribute('published_at');
 
+                // A field this locale lacks comes from the other one, as on the research archive.
+                $other = $publication->translations->first(fn ($item): bool => $item->locale !== $translation->locale);
+                $pick = static fn (?string $value, ?string $fallback): ?string => is_string($value) && trim($value) !== '' ? $value : $fallback;
+
                 return [
                     'id' => (int) $publication->getKey(),
                     'slug' => $this->publicationSlug($publication),
-                    'title' => $translation->title ?? '',
-                    'excerpt' => $translation->excerpt,
-                    'publisher' => $translation->publisher,
+                    'title' => $pick($translation->title, $other?->title) ?? '',
+                    'excerpt' => $pick($translation->excerpt, $other?->excerpt),
+                    'publisher' => $pick($translation->publisher, $other?->publisher),
                     'year' => $publishedAt instanceof CarbonInterface ? $publishedAt->year : null,
                     'publishedAt' => $publishedAt instanceof CarbonInterface ? $publishedAt->toDateString() : null,
                     'externalUrl' => $this->safeExternalUrl($publication->external_url),

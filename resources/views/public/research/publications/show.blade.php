@@ -18,7 +18,7 @@
             <figure class="mx-auto aspect-auto container overflow-hidden rounded-[8px]">
                 <img src="{{ $item['image'] ?? '/images/uni-main-place.JPG' }}" alt="{{ $item['title'] ?? '' }}" class="mx-auto h-full w-full object-cover object-top ">
             </figure>
-            <h1 class="mx-auto mt-8 max-w-[820px] text-center text-2xl font-bold leading-snug text-spu-blue md:text-[32px] md:leading-tight">{{ $item['title'] ?? '' }}</h1>
+            <h1 dir="auto" class="mx-auto mt-8 max-w-[820px] text-center text-2xl font-bold leading-snug text-spu-blue md:text-[32px] md:leading-tight">{{ $item['title'] ?? '' }}</h1>
         </div>
     </section>
 
@@ -29,7 +29,7 @@
                     @if (! empty($item['lead']) || ! empty($item['summary']))
                         <div class="rounded-[8px] border border-slate-200 bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)] md:p-8">
                             <h2 class="text-[13px] font-bold uppercase tracking-[0.12em] text-spu-red">{{ __('public.summary') }}</h2>
-                            <x-public.rich-text class="mt-4 text-[15px] leading-8 text-slate-700" :text="$item['lead'] ?? $item['summary'] ?? ''" />
+                            <x-public.rich-text dir="auto" class="mt-4 text-[15px] leading-8 text-slate-700" :text="$item['lead'] ?? $item['summary'] ?? ''" />
                         </div>
                     @endif
                     @if (! empty($item['body']) || ! empty($item['paragraphs']))
@@ -38,7 +38,7 @@
                                 <div class="prose max-w-none prose-p:mt-4 prose-p:first:mt-0 prose-p:text-[15px] prose-p:leading-8 prose-headings:text-spu-blue">{!! $item['body'] !!}</div>
                             @else
                                 @foreach ($item['paragraphs'] as $paragraph)
-                                    <x-public.rich-text class="mt-4 first:mt-0 text-[15px] leading-8 text-slate-700" :text="$paragraph" />
+                                    <x-public.rich-text dir="auto" class="mt-4 first:mt-0 text-[15px] leading-8 text-slate-700" :text="$paragraph" />
                                 @endforeach
                             @endif
                         </div>
@@ -51,7 +51,7 @@
                             <h2 class="text-[13px] font-bold uppercase tracking-[0.12em] text-spu-red">{{ __('public.keywords') }}</h2>
                             <div class="mt-4 flex flex-wrap gap-2">
                                 @foreach (($item['keywords'] ?? []) as $keyword)
-                                    <span class="inline-flex rounded-full border border-spu-blue/15 bg-spu-blue/5 px-3.5 py-1.5 text-xs font-semibold text-spu-blue">{{ $keyword }}</span>
+                                    <span dir="auto" class="inline-flex rounded-full border border-spu-blue/15 bg-spu-blue/5 px-3.5 py-1.5 text-xs font-semibold text-spu-blue">{{ $keyword }}</span>
                                 @endforeach
                             </div>
                         </div>
@@ -89,7 +89,7 @@
                             <div class="mt-5 grid gap-4 sm:grid-cols-3">
                                 @foreach ($data['related'] as $related)
                                     <a href="/{{ $locale }}/research/publications/{{ $related['slug'] ?? '' }}" class="group rounded-[8px] border border-slate-100 p-4 transition hover:border-spu-blue/20 hover:shadow-[0_4px_12px_rgba(32,39,89,0.06)]">
-                                        <h3 class="text-[13px] font-bold leading-snug text-spu-blue group-hover:text-spu-red">{{ $related['title'] ?? '' }}</h3>
+                                        <h3 dir="auto" class="text-[13px] font-bold leading-snug text-spu-blue group-hover:text-spu-red">{{ $related['title'] ?? '' }}</h3>
                                         <p class="mt-2 text-[11px] text-slate-500">{{ $related['year'] ?? '' }}</p>
                                     </a>
                                 @endforeach
@@ -110,7 +110,7 @@
                     <dl class="mt-5 divide-y divide-slate-100">
                         @foreach ([__('public.category') => $item['category'] ?? $item['type'] ?? '', __('public.author') => $item['author'] ?? '', __('public.publication_date') => $item['publicationDate'] ?? $item['year'] ?? '', __('public.journal') => $item['journalTitle'] ?? $item['publisher'] ?? '', __('public.volume') => $item['volume'] ?? '', __('public.issue') => $item['issue'] ?? '', __('public.pages') => $item['pages'] ?? '', __('public.issn') => $item['issn'] ?? '', __('public.license') => $item['license'] ?? '', __('public.faculty') => $item['faculty'] ?? '', __('public.quartile') => $item['rate'] ?? '', __('public.type') => $item['type'] ?? ''] as $label => $value)
                             @if ($value !== '')
-                                <div class="py-3 first:pt-0"><dt class="text-[11px] font-bold uppercase tracking-wider text-slate-400">{{ $label }}</dt><dd class="mt-1 text-sm font-bold text-spu-blue">{{ $value }}</dd></div>
+                                <div class="py-3 first:pt-0"><dt class="text-[11px] font-bold uppercase tracking-wider text-slate-400">{{ $label }}</dt><dd dir="auto" class="mt-1 text-sm font-bold text-spu-blue">{{ $value }}</dd></div>
                             @endif
                         @endforeach
                         @if (! empty($item['doi']))

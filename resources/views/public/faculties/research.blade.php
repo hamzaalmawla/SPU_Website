@@ -17,9 +17,9 @@
                                     @endif
                                 @endforeach
                             </div>
-                            <h2 class="mt-[14px] text-[22px] font-bold leading-tight text-spu-blue transition-colors group-hover:text-spu-red">{{ $publication['title'] ?? '' }}</h2>
+                            <h2 dir="auto" class="mt-[14px] text-[22px] font-bold leading-tight text-spu-blue transition-colors group-hover:text-spu-red">{{ $publication['title'] ?? '' }}</h2>
                             @if (! empty($publication['summary']))
-                                <x-public.rich-text class="mt-[10px] max-w-[500px] text-[16px] leading-[1.75] text-[#263650]" :text="$publication['summary']" />
+                                <x-public.rich-text dir="auto" class="mt-[10px] max-w-[500px] text-[16px] leading-[1.75] text-[#263650]" :text="$publication['summary']" />
                             @endif
                             <span class="mt-[20px] inline-flex h-[27px] min-w-[87px] items-center justify-center rounded-[6px] bg-spu-blue px-4 text-[8px] font-bold text-white transition group-hover:bg-[#171d47]">{{ $isAr ? 'عرض المنشور' : 'View Publication' }}</span>
                         </div>

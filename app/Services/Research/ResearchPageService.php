@@ -1598,23 +1598,29 @@ final class ResearchPageService implements ResearchPageServiceInterface
     {
         $translations = $publication->translations->keyBy('locale');
         $translation = $translations->get($locale) ?? $translations->get('en') ?? $translations->get('ar');
-        $title = $translation instanceof ResearchPublicationTranslation ? trim((string) $translation->title) : '';
+        // Every paper shows in both languages: a field missing in this locale comes from the other
+        // one (many legacy papers were entered in one language only, or half in each).
+        $ordered = collect([$translation])->merge($translations->values())->filter()->unique('locale')->values();
+        $field = fn (string $name): string => (string) ($ordered
+            ->map(fn (ResearchPublicationTranslation $item): string => $this->plainText($item->{$name}))
+            ->first(fn (string $value): bool => $value !== '') ?? '');
+        $title = $field('title');
 
         if ($title === '' || preg_match('/^(?:Legacy research publication|Research publication)\s+\d+$/i', $title) === 1) {
             return null;
         }
         $metadata = LegacyPublicationMetadata::withFallback(
             LegacyPublicationMetadata::parse($translation instanceof ResearchPublicationTranslation ? $translation->abstract : null),
-            $translations->map(fn (ResearchPublicationTranslation $item): ?string => $item->abstract)->values()->all(),
+            $ordered->map(fn (ResearchPublicationTranslation $item): ?string => $item->abstract)->values()->all(),
         );
-        $abstract = $metadata['abstract'] !== '' ? $metadata['abstract'] : ($translation instanceof ResearchPublicationTranslation ? $this->plainText($translation->abstract) : '');
-        $summary = $translation instanceof ResearchPublicationTranslation ? $this->plainText($translation->excerpt) : '';
-        $authors = $translation instanceof ResearchPublicationTranslation ? $this->plainText($translation->authors) : '';
-        $citation = $translation instanceof ResearchPublicationTranslation ? $this->plainText($translation->citation) : '';
-        $publisher = $translation instanceof ResearchPublicationTranslation ? $this->plainText($translation->publisher) : '';
-        $keywords = $translation instanceof ResearchPublicationTranslation && is_array($translation->keywords)
-            ? array_values(array_filter(array_map('strval', $translation->keywords)))
-            : [];
+        $abstract = $metadata['abstract'] !== '' ? $metadata['abstract'] : $field('abstract');
+        $summary = $field('excerpt');
+        $authors = $field('authors');
+        $citation = $field('citation');
+        $publisher = $field('publisher');
+        $keywords = $ordered
+            ->map(fn (ResearchPublicationTranslation $item): array => is_array($item->keywords) ? array_values(array_filter(array_map('strval', $item->keywords))) : [])
+            ->first(fn (array $values): bool => $values !== []) ?? [];
 
         if ($publisher === '') {
             $publisher = $citation !== '' ? $citation : $metadata['publisher'];
