@@ -2281,6 +2281,17 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
             return true;
         }
 
+        // A page whose content is its overview text or attached files and images (the old site
+        // published some regulations only as a PDF or a notice image).
+        if (is_array($payload['overview'] ?? null) && $this->filledString($payload['overview']['summary'] ?? null)) {
+            return true;
+        }
+        foreach (['documents', 'images'] as $key) {
+            if (is_array($payload[$key] ?? null) && $payload[$key] !== []) {
+                return true;
+            }
+        }
+
         foreach (['info', 'form', 'location', 'digitalServices', 'supportCards', 'trustBar', 'journey', 'timeline', 'resources', 'tabs', 'sections', 'services', 'departments', 'support', 'clubs', 'activities', 'facts', 'model', 'feeRows', 'steps', 'featureCards', 'statCards', 'deadlines'] as $key) {
             if (is_array($payload[$key] ?? null) && $payload[$key] !== []) {
                 return true;

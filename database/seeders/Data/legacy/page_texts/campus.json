@@ -1,0 +1,143 @@
+{
+  "source": "Old site spu.edu.sy, Student Life > Regulations and the library (jx_categories 5716 exam sanctions, 1245 examination instructions, 5360 general rules, 2218 Damascus Center publications). Arabic is the old site's text; the exam sanctions had no English on the old site, so their English is a faithful translation. They replace the redesign's invented penalties and rules.",
+  "targets": {
+    "campus_life.exam-penalties": {
+      "ar": {
+        "hero.title": "العقوبات الامتحانية",
+        "overview": {
+          "title": "العقوبات الخاصة بالمخالفات الامتحانية والعقوبات المسلكية",
+          "summary": "أولاً: العقوبات الخاصة بالمخالفات الامتحانية. الهدف: الحفاظ على تكافؤ الفروقات المعرفية لدى الطلاب وعلى مصداقية الشهادات الأكاديمية الممنوحة من قبل الجامعة وسمعتها.\n\nثانياً: العقوبات المسلكية لمخالفات الأنظمة والقوانين الجامعية والأعراف المجتمعية. الهدف: الحفاظ على النظام العام والأخلاقيات والسمعة الحسنة للمجتمع الجامعي."
+        },
+        "seoDescription": "العقوبات الخاصة بالمخالفات الامتحانية والعقوبات المسلكية في الجامعة السورية الخاصة.",
+        "items": [
+          {"title": "1. عدم اصطحاب الطالب للبطاقتين الشخصية والجامعية أثناء الامتحان", "body": "في الاختبارات التحريرية أو الشفهية أو العملية:\n1. تنبيه كتابي للمرة الأولى\n2. إنذار مسجل للمرة الثانية\n3. (F) في المقرر للمرة الثالثة\n\nفي الامتحان النهائي: حرمان من التقدم للامتحان النهائي."},
+          {"title": "2. محاولة الغش", "body": "ضبط قصاصات ورقية عائدة للمقرر.\n\nفي الاختبارات: (F) في المقرر.\nفي الامتحان النهائي: (F) في جميع مقررات الفصل."},
+          {"title": "3. محاولة النظر إلى ورقة زميل", "body": "في الاختبارات: تنبيه.\n\nفي الامتحان النهائي:\n- إنذار مسجل للمرة الأولى\n- (F) في المقرر في حال تكرار المخالفة"},
+          {"title": "4. الغش الفعلي", "body": "تسهيل النقل لزميل داخل القاعة مشافهة أو من خلال الإشارات – تبادل إجابات مع زميل / تمرير أي وسيلة غش ورقية أو غير ذلك.\n\nفي الاختبارات: (F) في المقرر.\nفي الامتحان النهائي: (F) في المقرر وفي امتحانات المواد المتبقية في الفصل."},
+          {"title": "5. حيازة الهاتف المحمول أو ساعة ذكية (مغلق)", "body": "في الاختبارات: إنذار مسجل.\nفي الامتحان النهائي: (F) في المقرر."},
+          {"title": "6. حيازة الهاتف المحمول أو ساعة ذكية (مفتوح)", "body": "في الاختبارات: (F) في المقرر.\nفي الامتحان النهائي: (F) في جميع مقررات الفصل."},
+          {"title": "7. استخدام وسائل التواصل", "body": "سماعات سلكية أو لا سلكية – تراسل متبادل عبر الهاتف المحمول.\n\nفي الاختبارات: حرمان من التقدم للامتحان النهائي في الفصل الذي ضبطت فيه المخالفة.\nفي الامتحان النهائي: الفصل من الجامعة لفترة فصلين دراسيين."},
+          {"title": "8. الكتابة على الأدوات المصرح باستخدامها أثناء الامتحان", "body": "الكتابة على الأدوات المصرح باستخدامها أثناء الامتحان من قبل أستاذ المقرر (الآلة الحاسبة، مساطر..) أو على أعضاء الجسم بكتابات تتعلق بالمقرر.\n\nفي الاختبارات: (F) في المقرر الذي ضبطت فيه المخالفة.\nفي الامتحان النهائي: (F) في جميع مقررات الفصل."},
+          {"title": "9. الغش المنظم", "body": "التورط في شبكة غش جماعي عبر وسائط التواصل الاجتماعي.\n\nفي الاختبارات: الفصل من الجامعة لمدة عام دراسي كامل (3 فصول) لكافة المشاركين في عملية الغش.\nفي الامتحان النهائي: الفصل النهائي من الجامعة."},
+          {"title": "10. التهديد أو الاعتداء على أحد المراقبين أو رؤساء اللجان", "body": "تطاول الطالب أو التهديد أو عدم الاحترام أو الاعتداء على أحد المراقبين أو رؤساء اللجان بالضرب أو ثبوت توجيه تهديدات خاصة له (لفظياً أو فيزيائياً).\n\nفي الاختبارات: الفصل من الجامعة لمدة عام دراسي كامل (3 فصول).\nفي الامتحان النهائي: الفصل النهائي من الجامعة."},
+          {"title": "11. إثارة الفوضى والشغب في قاعة الامتحان", "body": "إثارة الضجيج أو التكلم بغرض تسهيل الغش وافتعال المشاحنات مع المراقبين في القاعة.\n\nفي الاختبارات: إنذار خطي وبالعقوبة الأشد في حال تكرار المخالفة.\nفي الامتحان النهائي: (F) في المقرر."},
+          {"title": "12. انتحال شخصية طالب آخر", "body": "تقديم الامتحان بالنيابة عن الطالب الأصلي.\n\nالعقوبة: الفصل النهائي من الجامعة للطالبين."},
+          {"title": "13. إخفاء أو محاولة إخفاء أو تمزيق ورقة الإجابة الامتحانية أو عدم تسليمها", "body": "رفض تسليم ورقة الإجابة الامتحانية أو تشويهها أو تمزيقها.\n\nفي الاختبارات: (F) في المقرر وفي امتحانات المواد المتبقية في الفصل.\nفي الامتحان النهائي: (F) في جميع مقررات الفصل."},
+          {"title": "14. تغيير الطالب لقاعته الامتحانية المحددة له", "body": "من غير إذن رسمي من اللجنة الامتحانية.\n\nفي الامتحان النهائي: تنبيه في المرة الأولى من قبل اللجنة الامتحانية، ويُعطى التقدير (F) في المقرر الذي ضبطت فيه المخالفة عند التكرار."},
+          {"title": "15. استخدام القلم المغاير للون الأزرق في الامتحان النهائي", "body": "في كلا الامتحانين المؤتمت أو غير المؤتمت، أو كتابة الاسم بشكل واضح أو أية إشارة أخرى تدل على الطالب الممتحن أو كتابة درجات جزئية من الأعمال الفصلية.\n\nفي الاختبارات: تنبيه كتابي – وعند التكرار يعطى الطالب إنذاراً ثم صفراً في المقرر.\nفي الامتحان النهائي: (F) في المقرر الذي ضبطت فيه المخالفة."},
+          {"title": "16. مخالفة الطالب لإدارة القاعة الامتحانية", "body": "المخالفة بأي شكل من الأشكال (المماطلة أو عدم تسليم الدفتر الامتحاني – تغيير مكان الجلوس – وغير ذلك).\n\nالعقوبة: (F) في المقرر الذي ضبطت فيه المخالفة."},
+          {"title": "عقوبة مسلكية 1. التصرفات غير اللائقة أخلاقياً", "body": "مثل: مضايقة الآخرين، سلوك مشين.\n\nالعقوبة: الإنذار الكتابي، أو الحرمان من بعض الخدمات الجامعية لفترة محددة، أو الإيقاف عن الدراسة لفصل دراسي واحد."},
+          {"title": "عقوبة مسلكية 2. التعدي بالضرب على زميل أو أحد أعضاء هيئة التدريس أو الإداريين", "body": "مخالفة فردية أو جماعية.\n\nالعقوبة: فصل من الجامعة لعام دراسي كامل، وقد تصل العقوبة إلى الفصل النهائي، مع إحالة الأمر للجهات المختصة (الشرطة) إذا لزم الأمر."},
+          {"title": "عقوبة مسلكية 3. تعطيل الأنشطة الأكاديمية أو الإدارية عمداً", "body": "إرغام الطلاب على رفض الدوام وعدم حضور المحاضرات... وغيرها.\n\nالعقوبة: الإنذار الكتابي، أو الحرمان من المشاركة في الأنشطة الطلابية، أو الفصل من الجامعة لفترة محددة."},
+          {"title": "عقوبة مسلكية 4. إتلاف الممتلكات العامة للجامعة", "body": "تخريب المرافق ومقتنيات المخابر والقاعات عمداً.\n\nالعقوبة: إلزام الطالب بدفع مثلي قيمة الأضرار، مع حرمانه من الخدمات المرتبطة بالمكان المتضرر، أو الفصل من الجامعة لفترة محددة (3 فصول دراسية) حسب درجة المخالفة."},
+          {"title": "عقوبة مسلكية 5. انتحال صفة أو تزوير مستندات جامعية", "body": "تقديم مستندات مزورة للتسجيل أو لتعادل المقررات من جامعات أخرى أو نقل توجيهات وتوصيات تمثل شخصيات اعتبارية معروفة.\n\nالعقوبة: الفصل النهائي من الجامعة، مع إبلاغ الجهات المعنية."},
+          {"title": "عقوبة مسلكية 6. نشر أفكار متطرفة أو التحريض على العنف", "body": "إحالة الطالب للتحقيق الفوري وإلى لجنة الانضباط المركزية، حفاظاً على أمن المجتمع الجامعي.\n\nالعقوبة: الفصل النهائي من الجامعة."},
+          {"title": "عقوبة مسلكية 7. تعاطي أو ترويج المواد المخدرة داخل الحرم الجامعي", "body": "إحالة الطالب للتحقيق الفوري وإلى لجنة الانضباط المركزية، حفاظاً على أمن المجتمع الجامعي.\n\nالعقوبة: الفصل النهائي من الجامعة فوراً، مع إبلاغ الجهات الأمنية."},
+          {"title": "عقوبة مسلكية 8. إساءة استخدام مرافق الجامعة", "body": "مثل المخابر، القاعات، المكتبة، الحمامات، الملاعب، المسجد.\n\nالعقوبة:\n1. الإنذار الكتابي\n2. ثم الحرمان من استخدام تلك المرافق لفترة محدودة في حال التكرار."}
+        ],
+        "images": [],
+        "documents": [{"label": "العقوبات الامتحانية (PDF)", "url": "/downloads/files/1775881935_5.pdf"}]
+      },
+      "en": {
+        "hero.title": "Exam Sanctions",
+        "overview": {
+          "title": "Sanctions for Examination Violations and Disciplinary Sanctions",
+          "summary": "First: sanctions for examination violations. Purpose: to preserve fairness between students' levels of knowledge and the credibility and reputation of the academic degrees the university awards.\n\nSecond: disciplinary sanctions for violations of university regulations and laws and of social norms. Purpose: to preserve public order, ethics and the good reputation of the university community."
+        },
+        "seoDescription": "Sanctions for examination violations and disciplinary sanctions at the Syrian Private University.",
+        "items": [
+          {"title": "1. Not carrying both the personal ID card and the university card during the exam", "body": "In written, oral or practical tests:\n1. Written notice the first time\n2. Recorded warning the second time\n3. (F) in the course the third time\n\nIn the final exam: barred from sitting the final exam."},
+          {"title": "2. Attempted cheating", "body": "Being caught with paper notes related to the course.\n\nIn tests: (F) in the course.\nIn the final exam: (F) in all courses of the semester."},
+          {"title": "3. Attempting to look at a classmate's paper", "body": "In tests: notice.\n\nIn the final exam:\n- Recorded warning the first time\n- (F) in the course if the violation is repeated"},
+          {"title": "4. Actual cheating", "body": "Helping a classmate copy in the room orally or by signals, exchanging answers with a classmate, or passing any paper or other means of cheating.\n\nIn tests: (F) in the course.\nIn the final exam: (F) in the course and in the exams of the remaining courses of the semester."},
+          {"title": "5. Possessing a mobile phone or smart watch (switched off)", "body": "In tests: recorded warning.\nIn the final exam: (F) in the course."},
+          {"title": "6. Possessing a mobile phone or smart watch (switched on)", "body": "In tests: (F) in the course.\nIn the final exam: (F) in all courses of the semester."},
+          {"title": "7. Using means of communication", "body": "Wired or wireless earphones, or exchanging messages by mobile phone.\n\nIn tests: barred from the final exams of the semester in which the violation was caught.\nIn the final exam: dismissal from the university for two semesters."},
+          {"title": "8. Writing on permitted tools during the exam", "body": "Writing on tools the course teacher permits during the exam (calculator, rulers, etc.) or on parts of the body, with writing related to the course.\n\nIn tests: (F) in the course in which the violation was caught.\nIn the final exam: (F) in all courses of the semester."},
+          {"title": "9. Organised cheating", "body": "Involvement in a group cheating network through social media.\n\nIn tests: dismissal from the university for a full academic year (3 semesters) for everyone involved.\nIn the final exam: final dismissal from the university."},
+          {"title": "10. Threatening or assaulting an invigilator or committee head", "body": "Insolence, threats, disrespect or physical assault towards an invigilator or committee head, or proven verbal or physical threats against them.\n\nIn tests: dismissal from the university for a full academic year (3 semesters).\nIn the final exam: final dismissal from the university."},
+          {"title": "11. Causing disorder in the exam room", "body": "Making noise or talking to facilitate cheating, or provoking quarrels with the invigilators in the room.\n\nIn tests: written warning, and the harsher sanction if repeated.\nIn the final exam: (F) in the course."},
+          {"title": "12. Impersonating another student", "body": "Sitting the exam on behalf of the actual student.\n\nSanction: final dismissal from the university for both students."},
+          {"title": "13. Hiding, attempting to hide, tearing or not handing in the answer sheet", "body": "Refusing to hand in, defacing or tearing the answer sheet.\n\nIn tests: (F) in the course and in the exams of the remaining courses of the semester.\nIn the final exam: (F) in all courses of the semester."},
+          {"title": "14. Changing the assigned exam room", "body": "Without official permission from the examination committee.\n\nIn the final exam: notice the first time from the examination committee, and grade (F) in the course in which the violation was caught if it is repeated."},
+          {"title": "15. Using a pen other than blue in the final exam", "body": "In both automated and non-automated exams, or writing the name clearly or any other mark identifying the student, or writing partial marks of the semester work.\n\nIn tests: written notice, and if repeated a warning then zero in the course.\nIn the final exam: (F) in the course in which the violation was caught."},
+          {"title": "16. Disobeying the exam room management", "body": "Any form of violation (stalling or not handing in the exam booklet, changing seats, and the like).\n\nSanction: (F) in the course in which the violation was caught."},
+          {"title": "Disciplinary 1. Morally improper behaviour", "body": "Such as harassing others or disgraceful conduct.\n\nSanction: written warning, or deprivation of some university services for a set period, or suspension from study for one semester."},
+          {"title": "Disciplinary 2. Physically assaulting a classmate, faculty member or staff member", "body": "An individual or group violation.\n\nSanction: dismissal from the university for a full academic year, which may extend to final dismissal, with referral to the competent authorities (police) if necessary."},
+          {"title": "Disciplinary 3. Deliberately disrupting academic or administrative activities", "body": "Forcing students to boycott attendance and not attend lectures, and the like.\n\nSanction: written warning, or deprivation of participation in student activities, or dismissal from the university for a set period."},
+          {"title": "Disciplinary 4. Damaging university property", "body": "Deliberately vandalising facilities and the contents of laboratories and halls.\n\nSanction: the student pays twice the value of the damage and is deprived of the services of the damaged place, or is dismissed from the university for a set period (3 semesters) depending on the severity of the violation."},
+          {"title": "Disciplinary 5. Impersonation or forging university documents", "body": "Submitting forged documents for registration or for the equivalence of courses from other universities, or passing on directives and recommendations claiming to come from well-known public figures.\n\nSanction: final dismissal from the university, with the relevant authorities informed."},
+          {"title": "Disciplinary 6. Spreading extremist ideas or inciting violence", "body": "The student is referred for immediate investigation and to the central disciplinary committee, to protect the security of the university community.\n\nSanction: final dismissal from the university."},
+          {"title": "Disciplinary 7. Using or dealing drugs on campus", "body": "The student is referred for immediate investigation and to the central disciplinary committee, to protect the security of the university community.\n\nSanction: immediate final dismissal from the university, with the security authorities informed."},
+          {"title": "Disciplinary 8. Misusing university facilities", "body": "Such as laboratories, halls, the library, toilets, sports grounds and the mosque.\n\nSanction:\n1. Written warning\n2. Then deprivation of the use of those facilities for a limited period if repeated."}
+        ],
+        "images": [],
+        "documents": [{"label": "Exam Sanctions (PDF, Arabic)", "url": "/downloads/files/1775881935_5.pdf"}]
+      }
+    },
+    "campus_life.exam-instructions": {
+      "ar": {
+        "hero.title": "التعليمات الامتحانية",
+        "overview": {"title": "التعليمات الامتحانية", "summary": "للاطلاع على التعليمات الامتحانية يرجى الضغط على الملف المرفق."},
+        "seoDescription": "التعليمات الامتحانية في الجامعة السورية الخاصة.",
+        "items": [],
+        "images": [],
+        "documents": [{"label": "التعليمات الامتحانية (PDF)", "url": "/downloads/files/1768418081_fi.pdf"}]
+      },
+      "en": {
+        "hero.title": "Examination Instructions",
+        "overview": {"title": "Examination Instructions", "summary": "To view the examination instructions, please click on the attached file."},
+        "seoDescription": "Examination instructions at the Syrian Private University.",
+        "items": [],
+        "images": [],
+        "documents": [{"label": "Examination Instructions (PDF)", "url": "/downloads/files/1768418081_fi.pdf"}]
+      }
+    },
+    "campus_life.general-rules": {
+      "ar": {
+        "hero.title": "قواعد وتعليمات عامة",
+        "overview": {"title": "قواعد وتعليمات عامة", "summary": "قواعد مناقشة مشاريع التخرج، وحالات طلب وثيقة التبرع بالدم."},
+        "seoDescription": "قواعد مناقشة مشاريع التخرج وحالات طلب وثيقة التبرع بالدم في الجامعة السورية الخاصة.",
+        "items": [],
+        "images": [
+          {"url": "/downloads/files/1768419487_8875037143.jpg", "caption": "قواعد مناقشة مشاريع التخرج"},
+          {"url": "/downloads/files/1769033904_8022623555.jpg", "caption": "حالات طلب وثيقة التبرع بالدم"}
+        ],
+        "documents": []
+      },
+      "en": {
+        "hero.title": "General Rules and Instructions",
+        "overview": {"title": "General Rules and Instructions", "summary": "Rules for graduation project defences, and the cases that require a blood donation certificate."},
+        "seoDescription": "Rules for graduation project defences and cases requiring a blood donation certificate at the Syrian Private University.",
+        "items": [],
+        "images": [
+          {"url": "/downloads/files/1768419487_8875037143.jpg", "caption": "Rules for graduation project defences (Arabic)"},
+          {"url": "/downloads/files/1769033904_8022623555.jpg", "caption": "Cases requiring a blood donation certificate (Arabic)"}
+        ],
+        "documents": []
+      }
+    },
+    "campus_life.damascus-research-pub": {
+      "ar": {
+        "hero.title": "منشورات مركز دمشق للأبحاث والدراسات",
+        "overview": {"title": "منشورات مركز دمشق للأبحاث والدراسات (مداد)", "summary": "وقعت الجامعة السورية الخاصة على مذكرة تفاهم مع مركز دمشق للأبحاث والدراسات (مداد)، وهو مؤسسة بحثية مستقلة غير ربحية معنية بإجراء دراسات وإقامة فعاليات علمية رصينة تتعلق بالشأن العام. وتنفيذاً لبنود الاتفاقية ستقوم الجامعة بنشر مختارات من منشورات المركز وأبحاثه على موقعها، وذلك تحقيقاً لرسالة نشر العلم والمعرفة وخدمة للمجتمع."},
+        "seoDescription": "مختارات من منشورات مركز دمشق للأبحاث والدراسات (مداد) بموجب مذكرة التفاهم مع الجامعة السورية الخاصة.",
+        "items": [
+          {"title": "التعليم في سورية خلال سنوات الحرب", "body": "نشر \"مداد\" مؤخراً بحثاً هاماً حول التعليم في سورية خلال سنوات الحرب. لتحميل الملف، يرجى الضغط على الرابط أدناه."}
+        ],
+        "images": [],
+        "documents": [{"label": "التعليم في سورية (PDF)", "url": "/downloads/files/1535362354_Education in Syria during the war.pdf"}]
+      },
+      "en": {
+        "hero.title": "Damascus Center for Research and Studies Publications",
+        "overview": {"title": "Damascus Center for Research and Studies (Midad)", "summary": "The Syrian Private University and the Damascus Center for Research and Studies (http://www.dcrs.sy/) signed an MOU in 2017 to enhance access for knowledge seekers to various disciplines, even beyond the academic offerings currently provided by SPU. DCRS is a non-profit independent research entity which generates its funds through donations and on a contractual basis."},
+        "seoDescription": "Selected publications of the Damascus Center for Research and Studies under its MOU with the Syrian Private University.",
+        "items": [
+          {"title": "Syrian Education during the war", "body": "Recently DCRS published an important study about the status of education in Syria during the war (2011-2018). The study, entitled \"Syrian Education: between typified analysis and the scope of goals,\" is published in Arabic. The full document is available in the attachment below."}
+        ],
+        "images": [],
+        "documents": [{"label": "Syrian Education during the war (PDF, Arabic)", "url": "/downloads/files/1535362354_Education in Syria during the war.pdf"}]
+      }
+    }
+  }
+}
