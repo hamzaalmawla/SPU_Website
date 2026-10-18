@@ -47,6 +47,7 @@ class ManagePetroleumFaculty extends Page implements HasForms
             'facilities.petroleum.research' => __('admin.cms.targets.facilities.research'),
             'facilities.petroleum.alumni' => 'Alumni',
             'facilities.petroleum.valedictorians' => 'Valedictorians',
+            'facilities.petroleum.final-exams' => __('admin.cms.targets.facilities.final-exams'),
             'facilities.petroleum.members' => __('admin.cms.targets.facilities.members'),
         ];
     }

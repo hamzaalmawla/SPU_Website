@@ -762,6 +762,8 @@ trait ManagesFacultyHomepage
             'alumni' => [...$sections, ...$this->alumniSubpageFields($prefix)],
             'valedictorians' => [...$sections, ...$this->valedictoriansSubpageFields($prefix)],
             'training' => [...$sections, ...$this->trainingSubpageFields($prefix)],
+            'clinical-cases' => [...$sections, ...$this->clinicalCasesSubpageFields($prefix)],
+            'final-exams' => [...$sections, ...$this->finalExamsSubpageFields($prefix)],
             'research' => [...$sections, ...$this->researchSubpageFields($prefix)],
             'members' => [...$sections, ...$this->membersSubpageFields($prefix)],
             default => throw new \InvalidArgumentException('Unsupported faculty subpage target.'),
@@ -812,9 +814,17 @@ trait ManagesFacultyHomepage
                     Textarea::make('description')->label(__('admin.faculty_workspace.editor.fields.description'))->required()->rows(3)->columnSpanFull(),
                 ])->columns(2)->reorderable()->minItems(1)->columnSpanFull(),
             ]),
+            Section::make(__('admin.faculty_workspace.editor.sections.training_regulations'))->schema([
+                TextInput::make($prefix.'.payload.regulations.title')->label(__('admin.faculty_workspace.editor.fields.title'))->maxLength(180),
+                Repeater::make($prefix.'.payload.regulations.items')->schema([
+                    TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.title'))->maxLength(255),
+                    Textarea::make('body')->label(__('admin.faculty_workspace.editor.fields.body'))->required()->rows(5)->columnSpanFull(),
+                ])->columns(2)->defaultItems(0)->reorderable()->collapsible()->columnSpanFull(),
+            ]),
+            ...$this->pageDocumentsFields($prefix),
             Section::make(__('admin.faculty_workspace.editor.sections.training_destinations'))->description(__('admin.faculty_workspace.editor.help.verified_routes'))->schema([
-                TextInput::make($prefix.'.payload.partners.title')->label(__('admin.faculty_workspace.editor.fields.title'))->required()->maxLength(180),
-                TextInput::make($prefix.'.payload.partners.cta')->label(__('admin.faculty_workspace.editor.fields.action_label'))->required()->maxLength(120),
+                TextInput::make($prefix.'.payload.partners.title')->label(__('admin.faculty_workspace.editor.fields.title'))->maxLength(180),
+                TextInput::make($prefix.'.payload.partners.cta')->label(__('admin.faculty_workspace.editor.fields.action_label'))->maxLength(120),
                 Repeater::make($prefix.'.payload.partners.items')->schema([
                     TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.title'))->required()->maxLength(180),
                     TextInput::make('category')->label(__('admin.faculty_workspace.editor.fields.category'))->required()->maxLength(120),
@@ -835,6 +845,105 @@ trait ManagesFacultyHomepage
                 Textarea::make($prefix.'.seoDescription')->label(__('admin.faculty_workspace.editor.fields.seo_description'))->required()->rows(2),
                 MediaPicker::image($prefix.'.seoImage', __('admin.faculty_workspace.editor.fields.seo_image'), true),
             ])->columns(2),
+        ];
+    }
+
+    /** @return array<int, Section> */
+    private function clinicalCasesSubpageFields(string $prefix): array
+    {
+        return [
+            Section::make(__('admin.faculty_workspace.editor.sections.clinical_cases'))->schema([
+                Repeater::make($prefix.'.payload.entries')
+                    ->label(__('admin.faculty_workspace.editor.sections.clinical_cases'))
+                    ->schema([
+                        TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.title'))->required()->maxLength(255),
+                        TextInput::make('meta')->label(__('admin.faculty_workspace.editor.fields.case_credit'))->maxLength(255),
+                        Textarea::make('body')->label(__('admin.faculty_workspace.editor.fields.body'))->required()->rows(5)->columnSpanFull(),
+                        TextInput::make('videoUrl')->label(__('admin.faculty_workspace.editor.fields.video_url'))->maxLength(500)->rule('regex:#^https://#'),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]),
+            ...$this->pageDocumentsFields($prefix),
+            ...$this->optionalSeoFields($prefix),
+        ];
+    }
+
+    /** @return array<int, Section> */
+    private function finalExamsSubpageFields(string $prefix): array
+    {
+        return [
+            Section::make(__('admin.faculty_workspace.editor.sections.exam_schedules'))->description(__('admin.faculty_workspace.editor.help.exam_schedules'))->schema([
+                Repeater::make($prefix.'.payload.schedules')
+                    ->label(__('admin.faculty_workspace.editor.sections.exam_schedules'))
+                    ->schema([
+                        TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.title'))->required()->maxLength(255),
+                        Textarea::make('note')->label(__('admin.faculty_workspace.editor.fields.description'))->rows(2)->columnSpanFull(),
+                        Repeater::make('documents')
+                            ->label(__('admin.faculty_workspace.editor.fields.files'))
+                            ->schema([
+                                TextInput::make('label')->label(__('admin.faculty_workspace.editor.fields.action_label'))->maxLength(180),
+                                TextInput::make('url')->label(__('admin.faculty_workspace.editor.fields.file_url'))->required()->maxLength(500)->rule('regex:#^(/|https://)#'),
+                            ])
+                            ->columns(2)
+                            ->defaultItems(0)
+                            ->reorderable()
+                            ->columnSpanFull(),
+                        Repeater::make('rows')
+                            ->label(__('admin.faculty_workspace.editor.fields.exam_rows'))
+                            ->schema([
+                                TextInput::make('day')->label(__('admin.faculty_workspace.editor.fields.exam_day'))->maxLength(60),
+                                TextInput::make('date')->label(__('admin.faculty_workspace.editor.fields.date'))->maxLength(60),
+                                TextInput::make('time')->label(__('admin.faculty_workspace.editor.fields.exam_time'))->maxLength(60),
+                                TextInput::make('course')->label(__('admin.faculty_workspace.editor.fields.exam_course'))->required()->maxLength(255),
+                                TextInput::make('year')->label(__('admin.faculty_workspace.editor.fields.exam_year'))->maxLength(120),
+                                TextInput::make('room')->label(__('admin.faculty_workspace.editor.fields.exam_room'))->maxLength(120),
+                            ])
+                            ->columns(3)
+                            ->defaultItems(0)
+                            ->reorderable()
+                            ->collapsible()
+                            ->columnSpanFull(),
+                    ])
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]),
+            ...$this->optionalSeoFields($prefix),
+        ];
+    }
+
+    /** @return array<int, Section> */
+    private function pageDocumentsFields(string $prefix): array
+    {
+        return [
+            Section::make(__('admin.faculty_workspace.editor.fields.files'))->schema([
+                Repeater::make($prefix.'.payload.documents')
+                    ->label(__('admin.faculty_workspace.editor.fields.files'))
+                    ->schema([
+                        TextInput::make('label')->label(__('admin.faculty_workspace.editor.fields.action_label'))->maxLength(180),
+                        TextInput::make('url')->label(__('admin.faculty_workspace.editor.fields.file_url'))->required()->maxLength(500)->rule('regex:#^(/|https://)#'),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->columnSpanFull(),
+            ]),
+        ];
+    }
+
+    /** @return array<int, Section> */
+    private function optionalSeoFields(string $prefix): array
+    {
+        return [
+            Section::make(__('admin.faculty_workspace.editor.sections.seo'))->schema([
+                TextInput::make($prefix.'.seoTitle')->label(__('admin.faculty_workspace.editor.fields.seo_title'))->maxLength(180),
+                Textarea::make($prefix.'.seoDescription')->label(__('admin.faculty_workspace.editor.fields.seo_description'))->rows(2),
+            ])->columns(2)->collapsed(),
         ];
     }
 

@@ -61,7 +61,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
         'business' => 'business-administration',
     ];
 
-    private const SUBPAGE_SLUGS = ['overview', 'departments', 'study-plan', 'study-plan-course', 'labs', 'projects', 'alumni', 'valedictorians', 'training', 'research', 'members'];
+    private const SUBPAGE_SLUGS = ['overview', 'departments', 'study-plan', 'study-plan-course', 'labs', 'projects', 'alumni', 'valedictorians', 'training', 'clinical-cases', 'final-exams', 'research', 'members'];
 
     private const ALUMNI_LIST_PER_PAGE = 12;
 
@@ -939,6 +939,8 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'alumni' => $locale === 'ar' ? 'الخريجون' : 'Alumni',
             'valedictorians' => $locale === 'ar' ? 'قائمة الشرف' : 'Honor List',
             'training' => $locale === 'ar' ? 'التدريب' : 'Training',
+            'clinical-cases' => $locale === 'ar' ? 'الحالات السريرية' : 'Clinical Cases',
+            'final-exams' => $locale === 'ar' ? 'برنامج الامتحان النهائي' : 'Final Exam Schedule',
             'research' => $locale === 'ar' ? 'البحث العلمي' : 'Research',
             'members' => $locale === 'ar' ? 'أعضاء الهيئة الأكاديمية' : 'Faculty Members',
         ];
@@ -954,7 +956,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
             return collect();
         } else {
             $entries = $faculty->pages
-                ->filter(fn (FacultyPage $page): bool => $page->slug !== 'training' || $slug === 'pharmacy')
+                ->filter(fn (FacultyPage $page): bool => $this->facultyMayUseSubpage($slug, (string) $page->slug))
                 ->sortBy('sort_order')
                 ->map(fn (FacultyPage $page): array => ['slug' => (string) $page->slug, 'title' => null]);
         }
@@ -2070,6 +2072,8 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'alumni' => $locale === 'ar' ? 'الخريجون' : 'Alumni',
             'valedictorians' => $locale === 'ar' ? 'قائمة الشرف' : 'Honor List',
             'training' => $locale === 'ar' ? 'التدريب' : 'Training',
+            'clinical-cases' => $locale === 'ar' ? 'الحالات السريرية' : 'Clinical Cases',
+            'final-exams' => $locale === 'ar' ? 'برنامج الامتحان النهائي' : 'Final Exam Schedule',
             'research' => $locale === 'ar' ? 'أحدث الأبحاث' : 'Latest Research',
             'members' => $locale === 'ar' ? 'أعضاء الهيئة الأكاديمية' : 'Faculty Members',
         ];
@@ -2275,6 +2279,11 @@ final class FacultyPageService implements FacultyPageServiceInterface
         }
 
         $facultySlug = $this->publicSlug($faculty);
+
+        if (! $this->facultyMayUseSubpage($facultySlug, $subpageSlug)) {
+            return false;
+        }
+
         $visibleSlugs = $this->subpageCardService->getVisibleSubpageSlugs($facultySlug);
 
         if ($visibleSlugs === []) {
@@ -2282,10 +2291,23 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 return false;
             }
 
-            return $subpageSlug !== 'training' || $this->publicSlug($faculty) === 'pharmacy';
+            return ! $this->isRestrictedSubpage($subpageSlug) || $faculty->pages->contains(fn (FacultyPage $page): bool => $page->slug === $subpageSlug);
         }
 
         return in_array($subpageSlug, $visibleSlugs, true);
+    }
+
+    /** A faculty-specific subpage (config faculty_subpages.restricted) is only for the faculties listed with it. */
+    private function facultyMayUseSubpage(string $facultySlug, string $subpageSlug): bool
+    {
+        $allowed = config('faculty_subpages.restricted.'.$subpageSlug);
+
+        return ! is_array($allowed) || in_array($facultySlug, $allowed, true);
+    }
+
+    private function isRestrictedSubpage(string $subpageSlug): bool
+    {
+        return is_array(config('faculty_subpages.restricted.'.$subpageSlug));
     }
 
     private function direction(string $locale): string

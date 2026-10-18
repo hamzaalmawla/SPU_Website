@@ -21,7 +21,7 @@
         };
         $heroTitle = $isLabDetail ? ($selectedLab['title'] ?? '') : ($subpage['title'] ?? '');
         $heroSummary = match ($page->subpageSlug) {
-            'labs' => $isLabDetail ? null : count($page->items).($isAr ? ' مخابر بحثية وتدريبية' : ' research and training labs'),
+            'labs' => $isLabDetail ? null : (int) ($page->pagination['total_items'] ?? count($page->items)).($isAr ? ' مخابر بحثية وتدريبية' : ' research and training labs'),
             'members' => count($page->items).($isAr ? ' عضو هيئة أكاديمية' : ' faculty members'),
             'projects', 'alumni', 'valedictorians' => null,
             default => $subpage['summary'] ?? null,
@@ -242,21 +242,23 @@
             <div class="container">
                 @if ($selectedLab)
                     <div class="mx-auto max-w-4xl">
-                        <div class="relative h-[300px] overflow-hidden rounded-[10px]">
-                            @if (! empty($selectedLab['image']))
+                        @if (! empty($selectedLab['image']))
+                            <div class="relative mb-8 h-[300px] overflow-hidden rounded-[10px]">
                                 <img src="{{ $selectedLab['image'] }}" alt="{{ $selectedLab['title'] ?? '' }}" class="h-full w-full object-cover">
-                            @endif
-                        </div>
-                        <div class="mt-8 space-y-4">
-                            <div class="flex flex-wrap items-center gap-4">
+                            </div>
+                        @endif
+                        @if (! empty($selectedLab['department']))
+                            <div class="mb-4 flex flex-wrap items-center gap-4">
                                 <span class="rounded-full bg-section px-4 py-2 text-sm font-bold text-spu-blue">{{ $isAr ? 'القسم' : 'Department' }}</span>
-                                <span class="text-lg font-semibold text-slate-700">{{ $selectedLab['department'] ?? $faculty['title'] }}</span>
+                                <span class="text-lg font-semibold text-slate-700">{{ $selectedLab['department'] }}</span>
                             </div>
-                            <div class="flex flex-wrap items-center gap-4">
+                        @endif
+                        @if (! empty($selectedLab['instructor']))
+                            <div class="mb-4 flex flex-wrap items-center gap-4">
                                 <span class="rounded-full bg-section px-4 py-2 text-sm font-bold text-spu-blue">{{ $isAr ? 'المشرف' : 'Instructor' }}</span>
-                                <span class="text-lg font-semibold text-slate-700">{{ $selectedLab['instructor'] ?? '' }}</span>
+                                <span class="text-lg font-semibold text-slate-700">{{ $selectedLab['instructor'] }}</span>
                             </div>
-                        </div>
+                        @endif
                         <div class="mt-8">
                             <h2 class="mb-4 text-xl font-bold text-spu-blue">{{ $isAr ? 'الوصف' : 'Description' }}</h2>
                             <x-public.rich-text class="text-lg leading-relaxed text-slate-600" :text="$selectedLab['summary'] ?? ''" />
@@ -285,20 +287,29 @@
                     <div class="cms-grid-cards gap-6 lg:gap-8">
                         @forelse ($page->items as $item)
                             <a href="{{ $labDetailUrl((string) ($item['slug'] ?? '')) }}" class="group overflow-hidden rounded-[10px] bg-white shadow-[0_4px_20px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(0,0,0,0.15)]">
-                                <div class="relative h-[180px] overflow-hidden">
-                                    @if (! empty($item['image']))
+                                @if (! empty($item['image']))
+                                    <div class="relative h-[180px] overflow-hidden">
                                         <img src="{{ $item['image'] }}" alt="{{ $item['title'] ?? '' }}" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105">
-                                    @endif
-                                    <div class="absolute right-3 top-3 rtl:left-3 rtl:right-auto">
-                                        <span class="flex items-center gap-1 rounded border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-bold text-spu-blue shadow-sm">{{ $item['department'] ?? $faculty['title'] }}</span>
+                                        <div class="absolute right-3 top-3 rtl:left-3 rtl:right-auto">
+                                            <span class="flex items-center gap-1 rounded border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-bold text-spu-blue shadow-sm">{{ $item['department'] ?? $faculty['title'] }}</span>
+                                        </div>
                                     </div>
-                                </div>
+                                @else
+                                    <div class="h-1.5" style="background-color: {{ $accent }}" aria-hidden="true"></div>
+                                @endif
                                 <div class="p-5">
                                     <h3 class="text-lg font-bold leading-tight text-spu-blue">{{ $item['title'] ?? '' }}</h3>
-                                    <p class="mt-2 text-xs font-medium uppercase tracking-wide text-slate-500">{{ $isAr ? 'القسم' : 'Department' }}</p>
-                                    <p class="text-sm text-slate-600">{{ $item['department'] ?? '' }}</p>
-                                    <p class="mt-2 text-xs font-medium uppercase tracking-wide text-slate-500">{{ $isAr ? 'المشرف' : 'Instructor' }}</p>
-                                    <p class="text-sm text-slate-400">{{ $item['instructor'] ?? '' }}</p>
+                                    @if (! empty($item['department']))
+                                        <p class="mt-2 text-xs font-medium uppercase tracking-wide text-slate-500">{{ $isAr ? 'القسم' : 'Department' }}</p>
+                                        <p class="text-sm text-slate-600">{{ $item['department'] }}</p>
+                                    @endif
+                                    @if (! empty($item['instructor']))
+                                        <p class="mt-2 text-xs font-medium uppercase tracking-wide text-slate-500">{{ $isAr ? 'المشرف' : 'Instructor' }}</p>
+                                        <p class="text-sm text-slate-400">{{ $item['instructor'] }}</p>
+                                    @endif
+                                    @if (empty($item['department']) && empty($item['instructor']) && trim((string) ($item['summary'] ?? '')) !== '')
+                                        <p class="mt-3 line-clamp-3 whitespace-pre-line text-sm leading-6 text-slate-600">{{ trim((string) $item['summary']) }}</p>
+                                    @endif
                                 </div>
                             </a>
                         @empty
@@ -549,6 +560,8 @@
                 @endif
             </div>
         </section>
+    @elseif (in_array($page->subpageSlug, ['clinical-cases', 'final-exams'], true))
+        @include('public.faculties.partials.info-subpage')
     @elseif ($page->subpageSlug === 'members')
         <section class="bg-white py-14 font-hacen md:py-18">
             <div class="container">

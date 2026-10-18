@@ -1084,7 +1084,7 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
             'scheduleSection' => ['titleEn' => 'Weekly Schedule', 'titleAr' => 'ساعات العمل الأسبوعية', 'statusEn' => 'Open Now', 'statusAr' => 'مفتوح الآن', 'statusClosedEn' => 'Closed Now', 'statusClosedAr' => 'مغلق الآن'],
             'scheduleDetailsEn' => 'Regular outpatient services and clinics are currently operating.',
             'scheduleDetailsAr' => 'العيادات الخارجية والخدمات العادية تعمل حالياً.',
-            'emergency' => ['labelEn' => 'Emergency Support', 'labelAr' => 'دعم الطوارئ', 'statusEn' => 'AVAILABLE 24/7', 'statusAr' => 'متاح 24/7', 'hotlineLabelEn' => 'Emergency Hotline', 'hotlineLabelAr' => 'خط الطوارئ الساخن', 'phone' => '+963 11 123 4567', 'callCtaEn' => 'Call Now', 'callCtaAr' => 'اتصل الآن', 'directionsCtaEn' => 'Get Directions', 'directionsCtaAr' => 'الحصول على الاتجاهات', 'icon' => '/images/icons/univ-icon.png'],
+            'emergency' => ['labelEn' => 'Emergency Support', 'labelAr' => 'دعم الطوارئ', 'statusEn' => 'AVAILABLE 24/7', 'statusAr' => 'متاح 24/7', 'hotlineLabelEn' => 'Emergency Hotline', 'hotlineLabelAr' => 'خط الطوارئ الساخن', 'phone' => '', 'callCtaEn' => 'Call Now', 'callCtaAr' => 'اتصل الآن', 'directionsCtaEn' => 'Get Directions', 'directionsCtaAr' => 'الحصول على الاتجاهات', 'icon' => '/images/icons/univ-icon.png'],
             'seoDescriptionEn' => 'Explore the SPU University Hospital, offering specialized medical services and emergency care.',
             'seoDescriptionAr' => 'استكشف المستشفى الجامعي في SPU وخدماته الطبية المتخصصة ورعاية الطوارئ.',
         ];

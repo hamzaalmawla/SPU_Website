@@ -47,6 +47,7 @@ class ManageMedicineFaculty extends Page implements HasForms
             'facilities.medicine.research' => __('admin.cms.targets.facilities.research'),
             'facilities.medicine.alumni' => 'Alumni',
             'facilities.medicine.valedictorians' => 'Valedictorians',
+            'facilities.medicine.final-exams' => __('admin.cms.targets.facilities.final-exams'),
             'facilities.medicine.members' => __('admin.cms.targets.facilities.members'),
         ];
     }

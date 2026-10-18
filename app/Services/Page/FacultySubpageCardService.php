@@ -78,10 +78,15 @@ final class FacultySubpageCardService implements FacultySubpageCardServiceInterf
 
         $slugs = ['overview', 'departments', 'study-plan', 'labs', 'projects', 'alumni', 'valedictorians', 'research', 'members'];
 
-        if ($faculty instanceof Faculty) {
-            if ($faculty->public_slug === 'pharmacy') {
-                $slugs[] = 'training';
+        $publicSlug = $faculty instanceof Faculty ? (string) $faculty->public_slug : $facultySlug;
+
+        foreach ((array) config('faculty_subpages.restricted', []) as $restrictedSlug => $faculties) {
+            if (is_array($faculties) && in_array($publicSlug, $faculties, true)) {
+                $slugs[] = (string) $restrictedSlug;
             }
+        }
+
+        if ($faculty instanceof Faculty) {
 
             $custom = FacultyPage::query()
                 ->where('faculty_id', $faculty->getKey())
@@ -94,8 +99,6 @@ final class FacultySubpageCardService implements FacultySubpageCardServiceInterf
                     $slugs[] = $slug;
                 }
             }
-        } elseif ($facultySlug === 'pharmacy') {
-            $slugs[] = 'training';
         }
 
         $options = [];

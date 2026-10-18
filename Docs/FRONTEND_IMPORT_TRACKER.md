@@ -276,3 +276,20 @@ gate. Current status is tracked only in
 - Added bilingual achievement and active-category storage, authorized Filament editors, publication visibility, homepage pinning/order, media-backed cards, audit logging, and homepage cache invalidation.
 - Added `/ar/achievements` and `/en/achievements` archives with active multi-category OR filtering, pagination, AJAX partial updates, loading and empty states, locale SEO, and a tested non-JavaScript fallback.
 - Replaced homepage achievement card JSON maintenance with live published achievement hydration capped at three cards; homepage settings now retain only localized section copy and the configurable archive action.
+
+## Old-Site Faculty Structure And Pages - 2026-10-18
+
+- These pages are not in the reference frontend. The product owner approved them on 2026-10-18 because the old site had them.
+- `faculty:import-structure` (data `database/seeders/Data/legacy/faculty_structure.json`) replaces the invented departments and labs with the old site's real ones:
+  - departments for all seven faculties
+  - labs for medicine (11), dentistry (10), pharmacy (23) and petroleum (9)
+  - AI, business and construction have no labs on the old site, so their invented labs are switched off and the labs card is hidden.
+- The departments pages lose their "sample data" summary and invented stats.
+- New faculty subpages, enabled per faculty through `config/faculty_subpages.php`, each with a CMS editor, draft/publish workflow and AR/EN:
+  - `/faculties/dentistry/clinical-cases`: 8 clinical cases with their videos.
+  - `/faculties/pharmacy/training`: the pharmacy internship ("Mulazama") regulation and its PDF.
+  - `/faculties/{medicine,artificial-intelligence,petroleum,business-administration}/final-exams`: each semester's PDF, plus an optional schedule table.
+- Their text is loaded by `cms:import-page-texts` from `page_texts/faculty-pages.json`.
+- `page_texts/faculty-landings.json` replaces the invented one-line vision, mission and objectives tabs with the old text. It covers medicine, dentistry, pharmacy, AI and construction, and adds the AI dean's message.
+- Lab cards no longer show empty image, department or instructor rows.
+- Both imports deploy through the approval files `faculty-structure.approved` and `page-texts.approved`.

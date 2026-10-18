@@ -727,6 +727,32 @@ if [[ -f "${FACULTY_RESEARCH_APPROVAL}" ]]; then
     mv "${FACULTY_RESEARCH_APPROVAL}" "${FACULTY_RESEARCH_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
 fi
 
+# ── Approved faculty structure import ────────────────────────────────────────
+# Replaces the redesign's invented departments and labs with the old site's real
+# ones and adds the subpages the old site had (dentistry clinical cases, the
+# pharmacy internship system, final exam schedules), from
+# database/seeders/Data/legacy/faculty_structure.json shipped with this release.
+# Invented records are switched off, not deleted. Runs before the page texts so
+# their new pages exist. Inert unless a human places an approval file:
+#
+#     storage/app/private/legacy-imports/faculty-structure.approved
+#
+# Re-running it changes nothing. It disarms itself after one run.
+FACULTY_STRUCTURE_APPROVAL="${IMPORT_DIR}/faculty-structure.approved"
+FACULTY_STRUCTURE_DATA="${APP}/database/seeders/Data/legacy/faculty_structure.json"
+
+if [[ -f "${FACULTY_STRUCTURE_APPROVAL}" ]]; then
+    log "Faculty structure import"
+    [[ -f "${FACULTY_STRUCTURE_DATA}" ]] || fail "No faculty structure data file in this release."
+
+    (cd "${APP}" && "${PHP}" artisan faculty:import-structure "${FACULTY_STRUCTURE_DATA}" --no-ansi) \
+        || fail "The faculty structure data failed validation. Nothing was written."
+    (cd "${APP}" && "${PHP}" artisan faculty:import-structure "${FACULTY_STRUCTURE_DATA}" --write --no-ansi) \
+        || fail "The faculty structure import failed."
+
+    mv "${FACULTY_STRUCTURE_APPROVAL}" "${FACULTY_STRUCTURE_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
 # ── Approved old-site page texts ─────────────────────────────────────────────
 # Publishes the old site's page text, laid into the new page structures
 # (database/seeders/Data/legacy/page_texts/<name>.json, shipped with this

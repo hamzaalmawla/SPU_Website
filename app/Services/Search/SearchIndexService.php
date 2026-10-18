@@ -75,6 +75,8 @@ final class SearchIndexService implements SearchIndexServiceInterface
         'alumni',
         'valedictorians',
         'training',
+        'clinical-cases',
+        'final-exams',
         'research',
         'members',
     ];

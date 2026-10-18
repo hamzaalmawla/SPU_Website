@@ -70,8 +70,11 @@ final class CmsPageTextImportService implements CmsPageTextImportServiceInterfac
             }
         }
         foreach (is_array($changes['set'] ?? null) ? $changes['set'] : [] as $dottedPath => $value) {
-            Arr::set($payload, $this->resolvePath($payload, (string) $dottedPath), $value);
+            Arr::set($payload, $this->resolvePath($payload, (string) $dottedPath, true), $value);
             $changed++;
+        }
+        foreach (is_array($changes['remove'] ?? null) ? $changes['remove'] : [] as $dottedPath) {
+            $changed += $this->removeListItem($payload, (string) $dottedPath) ? 1 : 0;
         }
 
         if (! $write) {
@@ -87,12 +90,41 @@ final class CmsPageTextImportService implements CmsPageTextImportServiceInterfac
     }
 
     /**
-     * "translations.ar.tabs[id=granted].items" addresses a list item by its id rather than its position,
-     * so the data does not depend on the order the page happens to have.
+     * Drops the list item a path ending in "list[key=value]" names, keeping the list a list.
+     * A missing item is not an error: the page may never have had it.
      *
-     * @param  array<string, mixed>  $payload
+     * @param  array<array-key, mixed>  $payload
      */
-    private function resolvePath(array $payload, string $path): string
+    private function removeListItem(array &$payload, string $path): bool
+    {
+        if (preg_match('/^(.*?)([^.]+)\[(\w+)=([^\]]+)\]$/', $path, $match) !== 1) {
+            throw new InvalidArgumentException('A remove path must end in list[key=value]: '.$path);
+        }
+
+        $listPath = $this->resolvePath($payload, rtrim($match[1], '.').($match[1] === '' ? '' : '.').$match[2]);
+        $list = Arr::get($payload, $listPath);
+        if (! is_array($list)) {
+            return false;
+        }
+
+        $kept = array_values(array_filter($list, static fn (mixed $item): bool => ! is_array($item) || (string) ($item[$match[3]] ?? '') !== $match[4]));
+        if (count($kept) === count($list)) {
+            return false;
+        }
+
+        Arr::set($payload, $listPath, $kept);
+
+        return true;
+    }
+
+    /**
+     * "translations.ar.tabs[id=granted].items" addresses a list item by its id rather than its position,
+     * so the data does not depend on the order the page happens to have. With $create a missing item
+     * is appended to its list (carrying just that key), so a "set" can add a tab the page lacks.
+     *
+     * @param  array<array-key, mixed>  $payload
+     */
+    private function resolvePath(array &$payload, string $path, bool $create = false): string
     {
         $resolved = [];
         $node = $payload;
@@ -100,6 +132,12 @@ final class CmsPageTextImportService implements CmsPageTextImportServiceInterfac
             if (preg_match('/^(.+)\[(\w+)=([^\]]+)\]$/', $segment, $match) === 1) {
                 $list = is_array($node[$match[1]] ?? null) ? $node[$match[1]] : [];
                 $index = collect($list)->search(static fn (mixed $item): bool => is_array($item) && (string) ($item[$match[2]] ?? '') === $match[3]);
+                if ($index === false && $create) {
+                    $list = array_values($list);
+                    $list[] = [$match[2] => $match[3]];
+                    $index = count($list) - 1;
+                    Arr::set($payload, implode('.', [...$resolved, $match[1]]), $list);
+                }
                 if ($index === false) {
                     throw new InvalidArgumentException('No '.$match[1].' item with '.$match[2].'='.$match[3].' in '.$path);
                 }

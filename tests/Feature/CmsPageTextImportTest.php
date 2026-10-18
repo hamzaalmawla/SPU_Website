@@ -68,6 +68,28 @@ final class CmsPageTextImportTest extends TestCase
         self::assertNull($workflow->getPublishedPayload('about.accreditation'));
     }
 
+    public function test_a_set_adds_a_missing_list_item_and_a_remove_drops_one(): void
+    {
+        $admin = User::factory()->create(['role_slug' => 'super_admin', 'is_locked' => false]);
+        $this->writeTargets(['facilities.medicine' => [
+            'set' => [
+                'translations.ar.tabs[id=section-0].body' => 'رؤية الكلية الحقيقية',
+                'translations.ar.tabs[id=extra-tab].label' => 'تبويب جديد',
+                'translations.ar.tabs[id=extra-tab].body' => 'نص التبويب الجديد',
+            ],
+            'remove' => ['translations.ar.tabs[id=section-1]', 'translations.ar.tabs[id=no-such-tab]'],
+        ]]);
+
+        $result = app(CmsPageTextImportServiceInterface::class)->import($this->path, (string) $admin->getKey(), true);
+
+        self::assertStringStartsWith('published', $result[0]['result']);
+        $tabs = collect(app(CmsWorkflowServiceInterface::class)->getPublishedPayload('facilities.medicine')['translations']['ar']['tabs'])->keyBy('id');
+        self::assertSame('رؤية الكلية الحقيقية', $tabs['section-0']['body']);
+        self::assertSame('نص التبويب الجديد', $tabs['extra-tab']['body']);
+        self::assertFalse($tabs->has('section-1'));
+        self::assertTrue(array_is_list(app(CmsWorkflowServiceInterface::class)->getPublishedPayload('facilities.medicine')['translations']['ar']['tabs']));
+    }
+
     /** @param array<string, mixed> $targets */
     private function writeTargets(array $targets): void
     {

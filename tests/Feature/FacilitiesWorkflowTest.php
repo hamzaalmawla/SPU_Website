@@ -1475,6 +1475,11 @@ final class FacilitiesWorkflowTest extends TestCase
             $expectedTargets[] = 'facilities.pharmacy.training';
         }
 
+        if ($facultySlug === 'dentistry') {
+            $expectedTargets[] = 'facilities.dentistry.clinical-cases';
+        }
+
+        $expectedTargets[] = 'facilities.'.$facultySlug.'.final-exams';
         $expectedTargets[] = 'facilities.'.$facultySlug.'.members';
 
         $reflection = new \ReflectionClass($pageClass);

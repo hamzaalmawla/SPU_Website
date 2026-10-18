@@ -74,6 +74,7 @@ final class LegacyPageContentService implements LegacyPageContentServiceInterfac
 
     /** Faculty-site page titles to the faculty subpage that carries them, first match wins. */
     private const FACULTY_RULES = [
+        'حالات سريرية' => '/clinical-cases', 'حالة سريرية' => '/clinical-cases', 'الامتحان النهائي' => '/final-exams',
         'كلمة' => '', 'الرؤية' => '', 'الرسالة' => '', 'حول الكلية' => '/overview', 'الدراسة في الكلية' => '/overview',
         'الهيكل التنظيمي' => '/overview', 'أسئلة' => '/overview', 'التخصصات' => '/departments', 'الأقسام' => '/departments',
         'الخطة' => '/study-plan', 'توصيف' => '/study-plan', 'المحاضرات' => '/study-plan', 'مخابر' => '/labs', 'مخبر' => '/labs',

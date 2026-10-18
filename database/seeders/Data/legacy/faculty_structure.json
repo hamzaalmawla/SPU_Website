@@ -1,0 +1,814 @@
+{
+  "source": "Old site spu.edu.sy faculty sites: 'Specializations and Sections' pages (jx_categories 81, 181, 201, 229, 245, 270, 5268) and 'Laboratories' pages (105, 116, 211, 1463-1480). Arabic is the old text; English is the old site's English where it had one (cleaned of its machine-translation errors), otherwise a faithful translation. They replace the redesign's invented departments and labs. 'pages' are subpages the old site had that the redesign lacked (clinical cases 3043, pharmacy internship 1415, final exam schedules 5348/5357/6075/5345); their text is loaded by cms:import-page-texts from page_texts/faculty-pages.json. An empty 'labs' list means the old site lists no labs for that faculty, so the invented ones are switched off and the labs card is hidden.",
+  "faculties": {
+    "medicine": {
+      "departments": [
+        {
+          "slug": "anatomy-embryology-genetics",
+          "nameAr": "قسم التشريح والجنين والوراثة",
+          "nameEn": "Department of Anatomy, Embryology, and Genetics",
+          "descriptionAr": "يقوم بتدريس مقررات علم الجنين الطبي، والتشريح 1-2-3-4 وعلم الوراثة.",
+          "descriptionEn": "Offers courses in Medical Embryology, Anatomy I–IV, and Genetics."
+        },
+        {
+          "slug": "histology-pathology-forensic-medicine",
+          "nameAr": "قسم النسج والتشريح المرضي والطب الشرعي",
+          "nameEn": "Department of Histology, Pathology, and Forensic Medicine",
+          "descriptionAr": "يقوم بتدريس مقررات علم الأنسجة 1-2 والأمراض 1-2 والطب الشرعي والسموم.",
+          "descriptionEn": "Offers courses in Histology I–II, Pathology I–II, Forensic Medicine, and Toxicology."
+        },
+        {
+          "slug": "biology-microbiology-immunology",
+          "nameAr": "قسم علم الحياة والأحياء الدقيقة والمناعة",
+          "nameEn": "Department of Biology, Microbiology, and Immunology",
+          "descriptionAr": "يقوم بتدريس مقررات علم الحياة والخلية والأحياء الدقيقة 1-2 وعلم المناعة.",
+          "descriptionEn": "Offers courses in General Biology and Cell Biology, Microbiology I–II, and Immunology."
+        },
+        {
+          "slug": "chemistry-molecular-biology",
+          "nameAr": "قسم الكيمياء والبيولوجيا الجزيئية",
+          "nameEn": "Department of Chemistry and Molecular Biology",
+          "descriptionAr": "يقوم بتدريس مقررات الكيمياء العامة والعضوية، والكيمياء الحيوية الطبية 1-2 والكيمياء السريرية.",
+          "descriptionEn": "Offers courses in General and Organic Chemistry, Medical Biochemistry I–II, and Clinical Chemistry."
+        },
+        {
+          "slug": "physiology-pharmacology",
+          "nameAr": "قسم علم وظائف الأعضاء (الفيزيولوجيا) والأدوية",
+          "nameEn": "Department of Physiology and Pharmacology",
+          "descriptionAr": "يقوم بتدريس مقررات علم وظائف الأعضاء (الفيزيولوجيا 1-2) وعلم الأدوية 1-2.",
+          "descriptionEn": "Offers courses in Physiology I–II and Pharmacology I–II."
+        },
+        {
+          "slug": "radiology-radiotherapy-medical-physics",
+          "nameAr": "قسم التشخيص والعلاج الشعاعي والفيزياء الطبية",
+          "nameEn": "Department of Radiological Diagnosis, Radiotherapy, and Medical Physics",
+          "descriptionAr": "يقوم بتدريس مقررات علم الأشعة والمعالجة الشعاعية، والفيزياء الطبية.",
+          "descriptionEn": "Offers courses in Radiology, Radiation Therapy, and Medical Physics."
+        },
+        {
+          "slug": "internal-medicine",
+          "nameAr": "قسم الأمراض الباطنة",
+          "nameEn": "Department of Internal Medicine",
+          "descriptionAr": "يقوم بتدريس مقررات الطب الباطني (الأعراض والتشخيص) و(الهضمية وأمراض الدم) و(القلبية الوعائية والصدرية) و(الأمراض العصبية وأمراض الكلية) و(أمراض الجهاز الحركي والأمراض الخمجية) و(الغدد والاستقلاب والتغذية والشيخوخة) والطب النفسي، وأمراض الجلد والأمراض المنتقلة بالجنس.",
+          "descriptionEn": "Offers courses in Internal Medicine (Symptoms and Diagnosis), Gastroenterology and Hematology, Cardiovascular and Respiratory Diseases, Neurology and Nephrology, Musculoskeletal and Infectious Diseases, Endocrinology, Metabolism, Nutrition, Geriatrics, Psychiatry, Dermatology, and Sexually Transmitted Diseases."
+        },
+        {
+          "slug": "surgery",
+          "nameAr": "قسم الجراحة",
+          "nameEn": "Department of Surgery",
+          "descriptionAr": "يقوم بتدريس الجراحة الصغرى، الجراحة العامة، جراحة البطن، القلبية الوعائية والصدرية، العصبية والبولية والأطفال، العظمية والتجميل، طب الطوارئ، التخدير والإنعاش، وأمراض الأذن والأنف والحنجرة، وأمراض العين وجراحتها.",
+          "descriptionEn": "Offers courses in Minor Surgery, General Surgery, Abdominal Surgery, Cardiovascular and Thoracic Surgery, Neurosurgery, Urology, Pediatric Surgery, Orthopedics and Plastic Surgery, Emergency Medicine, Anesthesiology and Resuscitation, Otolaryngology, and Ophthalmology and Eye Surgery."
+        },
+        {
+          "slug": "pediatrics",
+          "nameAr": "قسم الأطفال",
+          "nameEn": "Department of Pediatrics",
+          "descriptionAr": "يقوم بتدريس مقررات أمراض الأطفال 1-2.",
+          "descriptionEn": "Offers courses in Pediatrics I–II."
+        },
+        {
+          "slug": "obstetrics-gynecology",
+          "nameAr": "قسم التوليد وأمراض النساء",
+          "nameEn": "Department of Obstetrics and Gynecology",
+          "descriptionAr": "يقوم بتدريس مقرر طب التوليد ومقرر أمراض النساء.",
+          "descriptionEn": "Offers courses in Obstetrics and Gynecology."
+        },
+        {
+          "slug": "community-medicine",
+          "nameAr": "قسم طب المجتمع",
+          "nameEn": "Department of Community Medicine",
+          "descriptionAr": "يقوم بتدريس مقررات الصحة العامة والمهنية، والوبائيات والإحصاء الحيوي، والطب الوقائي وطب الأسرة.",
+          "descriptionEn": "Offers courses in Public and Occupational Health, Epidemiology and Biostatistics, Preventive Medicine, and Family Medicine."
+        },
+        {
+          "slug": "medical-education-clinical-training",
+          "nameAr": "قسم التعليم الطبي والتدريب السريري",
+          "nameEn": "Department of Medical Education and Clinical Training",
+          "descriptionAr": "يشرف على التخطيط الاستراتيجي للمنهاج وتطويره وآليات التعليم والتعلم والتدريب السريري.",
+          "descriptionEn": "Oversees strategic curriculum planning and development, as well as teaching, learning, and clinical training methodologies."
+        }
+      ],
+      "labs": [
+        {
+          "slug": "ml1-anatomy-1",
+          "titleAr": "مخبر التشريح 1",
+          "titleEn": "Anatomy Laboratory 1",
+          "descriptionAr": "رمز المخبر: ML1\nالموقع: تجمع الكليات – الطابق الثاني",
+          "descriptionEn": "Lab code: ML1\nLocation: Faculties complex – second floor"
+        },
+        {
+          "slug": "ml2-anatomy-2",
+          "titleAr": "مخبر التشريح 2",
+          "titleEn": "Anatomy Laboratory 2",
+          "descriptionAr": "رمز المخبر: ML2\nالموقع: تجمع الكليات – الطابق الثاني",
+          "descriptionEn": "Lab code: ML2\nLocation: Faculties complex – second floor"
+        },
+        {
+          "slug": "ml3-cell-biology-embryology",
+          "titleAr": "مخبر علم الخلية والجنين",
+          "titleEn": "Cell Biology and Embryology Laboratory",
+          "descriptionAr": "رمز المخبر: ML3\nالموقع: كلية طب الأسنان – الطابق الأول",
+          "descriptionEn": "Lab code: ML3\nLocation: Faculty of Dentistry – first floor"
+        },
+        {
+          "slug": "ml4-physiology",
+          "titleAr": "مخبر الفيزيولوجيا",
+          "titleEn": "Physiology Laboratory",
+          "descriptionAr": "رمز المخبر: ML4\nالموقع: كلية الصيدلة – الطابق الثالث",
+          "descriptionEn": "Lab code: ML4\nLocation: Faculty of Pharmacy – third floor"
+        },
+        {
+          "slug": "ml5-organic-chemistry",
+          "titleAr": "مخبر الكيمياء العضوية",
+          "titleEn": "Organic Chemistry Laboratory",
+          "descriptionAr": "رمز المخبر: ML5\nالموقع: كلية الصيدلة – الطابق الثالث",
+          "descriptionEn": "Lab code: ML5\nLocation: Faculty of Pharmacy – third floor"
+        },
+        {
+          "slug": "ml6-biochemistry",
+          "titleAr": "مخبر الكيمياء الحيوية",
+          "titleEn": "Biochemistry Laboratory",
+          "descriptionAr": "رمز المخبر: ML6\nالموقع: كلية الصيدلة – الطابق الثالث",
+          "descriptionEn": "Lab code: ML6\nLocation: Faculty of Pharmacy – third floor"
+        },
+        {
+          "slug": "ml8-pathology",
+          "titleAr": "مخبر الأمراض",
+          "titleEn": "Pathology Laboratory",
+          "descriptionAr": "رمز المخبر: ML8\nالموقع: كلية الصيدلة – الطابق الثالث",
+          "descriptionEn": "Lab code: ML8\nLocation: Faculty of Pharmacy – third floor"
+        },
+        {
+          "slug": "ml9-histology",
+          "titleAr": "مخبر علم الأنسجة",
+          "titleEn": "Histology Laboratory",
+          "descriptionAr": "رمز المخبر: ML9\nالموقع: كلية الصيدلة – الطابق الثالث",
+          "descriptionEn": "Lab code: ML9\nLocation: Faculty of Pharmacy – third floor"
+        },
+        {
+          "slug": "ml10-medical-physics",
+          "titleAr": "مخبر الفيزياء الطبية",
+          "titleEn": "Medical Physics Laboratory",
+          "descriptionAr": "رمز المخبر: ML10\nالموقع: كلية الصيدلة – الطابق الثالث",
+          "descriptionEn": "Lab code: ML10\nLocation: Faculty of Pharmacy – third floor"
+        },
+        {
+          "slug": "ml11-pharmacology",
+          "titleAr": "مخبر الأدوية",
+          "titleEn": "Pharmacology Laboratory",
+          "descriptionAr": "رمز المخبر: ML11\nالموقع: كلية الصيدلة – الطابق الثالث",
+          "descriptionEn": "Lab code: ML11\nLocation: Faculty of Pharmacy – third floor"
+        },
+        {
+          "slug": "dl12-microbiology",
+          "titleAr": "مخبر الأحياء الدقيقة",
+          "titleEn": "Microbiology Laboratory",
+          "descriptionAr": "رمز المخبر: DL12\nالموقع: كلية طب الأسنان – الطابق الأول",
+          "descriptionEn": "Lab code: DL12\nLocation: Faculty of Dentistry – first floor"
+        }
+      ],
+      "departmentsSummary": {
+        "ar": "الأقسام العلمية في كلية الطب البشري.",
+        "en": "The academic departments of the Faculty of Medicine."
+      },
+      "pages": [
+        {
+          "slug": "final-exams",
+          "titleAr": "برنامج الامتحان النهائي",
+          "titleEn": "Final Examination Schedule"
+        }
+      ]
+    },
+    "dentistry": {
+      "departments": [
+        {
+          "slug": "life-sciences",
+          "nameAr": "قسم علوم الحياة",
+          "nameEn": "Department of Life Sciences",
+          "descriptionAr": "",
+          "descriptionEn": ""
+        },
+        {
+          "slug": "histology-oral-pathology",
+          "nameAr": "قسم النسج والتشريح المرضي",
+          "nameEn": "Department of Histology and Oral Pathology",
+          "descriptionAr": "",
+          "descriptionEn": ""
+        },
+        {
+          "slug": "oral-medicine",
+          "nameAr": "قسم طب الفم",
+          "nameEn": "Department of Oral Medicine",
+          "descriptionAr": "",
+          "descriptionEn": ""
+        },
+        {
+          "slug": "operative-dentistry",
+          "nameAr": "قسم مداواة الأسنان",
+          "nameEn": "Department of Operative Dentistry",
+          "descriptionAr": "",
+          "descriptionEn": ""
+        },
+        {
+          "slug": "pediatric-dentistry",
+          "nameAr": "قسم طب أسنان الأطفال",
+          "nameEn": "Department of Pediatric Dentistry",
+          "descriptionAr": "",
+          "descriptionEn": ""
+        },
+        {
+          "slug": "periodontology",
+          "nameAr": "قسم علم النسج حول السنية",
+          "nameEn": "Department of Periodontology",
+          "descriptionAr": "",
+          "descriptionEn": ""
+        },
+        {
+          "slug": "removable-prosthodontics",
+          "nameAr": "قسم التعويضات المتحركة",
+          "nameEn": "Department of Removable Prosthodontics",
+          "descriptionAr": "",
+          "descriptionEn": ""
+        },
+        {
+          "slug": "fixed-prosthodontics",
+          "nameAr": "قسم التعويضات الثابتة",
+          "nameEn": "Department of Fixed Prosthodontics",
+          "descriptionAr": "",
+          "descriptionEn": ""
+        },
+        {
+          "slug": "orthodontics",
+          "nameAr": "قسم تقويم الأسنان",
+          "nameEn": "Department of Orthodontics",
+          "descriptionAr": "",
+          "descriptionEn": ""
+        },
+        {
+          "slug": "oral-maxillofacial-surgery",
+          "nameAr": "قسم جراحة الفم والوجه والفكين",
+          "nameEn": "Department of Oral and Maxillofacial Surgery",
+          "descriptionAr": "",
+          "descriptionEn": ""
+        }
+      ],
+      "labs": [
+        {
+          "slug": "phantom-lab-1",
+          "titleAr": "مخبر الفانتوم (1)",
+          "titleEn": "Phantom Laboratory (1)",
+          "descriptionAr": "يستخدم للمقررات الآتية: ترميمية (2)، ثابتة (3)\n\nيحتوي على التجهيزات الآتية:\n1. كرسي فانتوم عدد 20\n2. جهاز داتا شو عدد 1\n3. جهاز ملغميتر عدد 1\n4. جهاز لايت كيور عدد 1\n5. كاميرا فيديو عدد 1",
+          "descriptionEn": "Used for the following courses: restorative (2), fixed (3)\n\nEquipment:\n1. Phantom chairs: 20\n2. Data show projector: 1\n3. Amalgamator: 1\n4. Light curing unit: 1\n5. Video camera: 1"
+        },
+        {
+          "slug": "phantom-lab-2",
+          "titleAr": "مخبر الفانتوم (2)",
+          "titleEn": "Phantom Laboratory (2)",
+          "descriptionAr": "يستخدم للمقررات الآتية: ثابتة (1، 2)، لبية (2)، ترميمية (1)، طب أسنان أطفال (1)\n\nيحتوي على التجهيزات الآتية:\n1. كرسي فانتوم عدد 20\n2. جهاز داتا شو عدد 1\n3. جهاز ملغميتر عدد 1\n4. جهاز لايت كيور عدد 1\n5. جهاز لوبز عدد 2\n6. كاميرا فيديو عدد 1",
+          "descriptionEn": "Used for the following courses: fixed prosthodontics (1, 2), endodontics (2), restorative (1), pediatric dentistry (1)\n\nEquipment:\n1. Phantom chairs: 20\n2. Data show projector: 1\n3. Amalgamator: 1\n4. Light curing unit: 1\n5. Loupes: 2\n6. Video camera: 1"
+        },
+        {
+          "slug": "histology-lab",
+          "titleAr": "مخبر النسج",
+          "titleEn": "Histology Laboratory",
+          "descriptionAr": "يستخدم للمقررات الآتية: تشريح مرضي خاص، تشريح مرضي عام، علم النسج العام، علم النسج حول السنية (1)، علم النسج الخاص بالفم والأسنان.\n\nيحتوي على التجهيزات الآتية:\n1. مجاهر عدد 20\n2. جهاز داتا شو عدد 1",
+          "descriptionEn": "Used for the following courses: special pathology, general pathology, general histology, periodontology (1), oral and dental histology.\n\nEquipment:\n1. Microscopes: 20\n2. Data show projector: 1"
+        },
+        {
+          "slug": "chemistry-lab",
+          "titleAr": "مخبر الكيمياء",
+          "titleEn": "Chemistry Laboratory",
+          "descriptionAr": "يستخدم للمقررات الآتية: كيمياء حيوية 2، كيمياء حيوية 1، متحركة (1+2)\n\nيحتوي على التجهيزات الآتية:\n1. جهاز داتا شو عدد 1\n2. ميزان حساس عدد 1\n3. جهاز مغناطيسي الطيف الضوئي عدد 1\n4. سخان كهربائي عدد 1",
+          "descriptionEn": "Used for the following courses: Biochemistry 2, Biochemistry 1, removable prosthodontics (1 + 2)\n\nEquipment:\n1. Data show projector: 1\n2. Sensitive balance: 1\n3. Spectrophotometer: 1\n4. Electric heater: 1"
+        },
+        {
+          "slug": "radiology-lab",
+          "titleAr": "مخبر الأشعة",
+          "titleEn": "Radiology Laboratory",
+          "descriptionAr": "يستخدم للمقررات الآتية: علم الأشعة، الفيزياء الطبية، مواد سنية (1).\n\nيحتوي على التجهيزات الآتية:\n1. جهاز داتا شو عدد 1\n2. أجهزة خاصة بالفيزياء",
+          "descriptionEn": "Used for the following courses: Radiology, Medical Physics, Dental Materials (1).\n\nEquipment:\n1. Data show projector: 1\n2. Physics equipment"
+        },
+        {
+          "slug": "computer-lab",
+          "titleAr": "مخبر الحاسوب",
+          "titleEn": "Computer Laboratory",
+          "descriptionAr": "يستخدم لمقرر علم الحاسوب.\n\nيحتوي على التجهيزات الآتية:\n1. جهاز داتا شو عدد 1\n2. جهاز حاسوب عدد 20",
+          "descriptionEn": "Used for the computer science course.\n\nEquipment:\n1. Data show projector: 1\n2. Computers: 20"
+        },
+        {
+          "slug": "surgery-lab",
+          "titleAr": "مخبر الجراحة",
+          "titleEn": "Surgery Laboratory",
+          "descriptionAr": "يستخدم للمقررات الآتية: تشريح رأس وعنق، الإسعافات الأولية، مبادئ السيطرة على الألم\n\nيحتوي على التجهيزات الآتية:\n1. هيكل عظمي للصدر والظهر\n2. حقيبة فانتوم\n3. كابلات\n4. حقيبة إسعافات أولية\n5. جماجم\n6. عضلة اللسان\n7. عظام الأيدي\n8. مجسم القلب\n9. جهاز داتا شو\n10. طاولات مخبرية",
+          "descriptionEn": "Used for the following courses: head and neck anatomy, first aid, principles of pain control\n\nEquipment:\n1. Skeleton of the chest and back\n2. Phantom bag\n3. Cables\n4. First aid kit\n5. Skulls\n6. Tongue muscle model\n7. Hand bones\n8. Heart model\n9. Data show projector\n10. Laboratory tables"
+        },
+        {
+          "slug": "microbiology-lab",
+          "titleAr": "مخبر الأحياء الدقيقة",
+          "titleEn": "Microbiology Laboratory",
+          "descriptionAr": "يستخدم للمقررات الآتية: الأحياء الدقيقة، علم الخلية\n\nيحتوي على التجهيزات الآتية:\n1. جهاز داتا شو عدد 1\n2. طاولات مخبرية\n3. مجاهر عدد 10\n4. براد\n5. معقمة",
+          "descriptionEn": "Used for the following courses: microbiology, cell biology\n\nEquipment:\n1. Data show projector: 1\n2. Laboratory tables\n3. Microscopes: 10\n4. Refrigerator\n5. Autoclave"
+        },
+        {
+          "slug": "cell-lab",
+          "titleAr": "مخبر الخلية",
+          "titleEn": "Cell Laboratory",
+          "descriptionAr": "يستخدم للمقررات الآتية: تشريح أسنان (1+2)\n\nيحتوي على التجهيزات الآتية:\n1. جهاز داتا شو عدد 1\n2. طاولات مخبرية",
+          "descriptionEn": "Used for the following courses: dental anatomy (1 + 2)\n\nEquipment:\n1. Data show projector: 1\n2. Laboratory tables"
+        },
+        {
+          "slug": "physiology-lab",
+          "titleAr": "مخبر الفيزيولوجيا",
+          "titleEn": "Physiology Laboratory",
+          "descriptionAr": "يستخدم لمقرر الفيزيولوجيا\n\nيحتوي على التجهيزات الآتية:\n1. جهاز داتا شو\n2. طاولات مخبرية\n3. معقمة",
+          "descriptionEn": "Used for the physiology course\n\nEquipment:\n1. Data show projector\n2. Laboratory tables\n3. Autoclave"
+        }
+      ],
+      "departmentsSummary": {
+        "ar": "الأقسام العلمية في كلية طب الأسنان.",
+        "en": "The academic departments of the Faculty of Dentistry."
+      },
+      "pages": [
+        {
+          "slug": "clinical-cases",
+          "titleAr": "حالات سريرية منجزة بالتكبير المجهري",
+          "titleEn": "Clinical Cases Performed Under the Dental Microscope"
+        }
+      ]
+    },
+    "pharmacy": {
+      "departments": [
+        {
+          "slug": "pharmaceutical-chemistry-drug-control",
+          "nameAr": "قسم الكيمياء الصيدلية والمراقبة الدوائية (PHCC)",
+          "nameEn": "Department of Pharmaceutical Chemistry and Drug Control (PHCC)",
+          "descriptionAr": "ويتبع له المقررات التالية: الكيمياء العامة واللاعضوية – الكيمياء العضوية الصيدلانية (1، 2) – التخليق الدوائي – الكيمياء الصيدلية (1، 2) – الكيمياء الدوائية: تصميم الدواء – مراقبة الأدوية – مواد صيدلانية مشعة.",
+          "descriptionEn": "Its courses: General and Inorganic Chemistry – Pharmaceutical Organic Chemistry (1, 2) – Drug Synthesis – Pharmaceutical Chemistry (1, 2) – Medicinal Chemistry: Drug Design – Drug Control – Radiopharmaceuticals."
+        },
+        {
+          "slug": "pharmaceutics-pharmaceutical-technology",
+          "nameAr": "قسم الصيدلانيات والتكنولوجيا الصيدلانية (PHPT)",
+          "nameEn": "Department of Pharmaceutics and Pharmaceutical Technology (PHPT)",
+          "descriptionAr": "ويتبع له المقررات التالية: المدخل إلى علم الصيدلة – الصيدلانيات (1، 2) – التكنولوجيا الصيدلانية – الصيدلة الصناعية – الصيدلة الحيوية وحرائك الدواء – الصيدلة السريرية وصيدلية المستشفيات – مستحضرات التجميل – الحسابات الصيدلانية.",
+          "descriptionEn": "Its courses: Introduction to Pharmacy – Pharmaceutics (1, 2) – Pharmaceutical Technology – Industrial Pharmacy – Biopharmaceutics and Pharmacokinetics – Clinical and Hospital Pharmacy – Cosmetics – Pharmaceutical Calculations."
+        },
+        {
+          "slug": "pharmacology-toxicology",
+          "nameAr": "قسم علم الأدوية والسموم (PHPP)",
+          "nameEn": "Department of Pharmacology and Toxicology (PHPP)",
+          "descriptionAr": "ويتبع له المقررات التالية: فيزيولوجيا وفيزيولوجيا مرضية – علم الأدوية (1، 2) – علم الأدوية الجزيئي – علم السموم – سموم تطبيقية وشرعية.",
+          "descriptionEn": "Its courses: Physiology and Pathophysiology – Pharmacology (1, 2) – Molecular Pharmacology – Toxicology – Applied and Forensic Toxicology."
+        },
+        {
+          "slug": "pharmacognosy",
+          "nameAr": "قسم العقاقير (PHPC)",
+          "nameEn": "Department of Pharmacognosy (PHPC)",
+          "descriptionAr": "ويتبع له المقررات التالية: بيولوجيا نباتية – العقاقير (1، 2) – كيمياء العقاقير – عقاقير تطبيقية.",
+          "descriptionEn": "Its courses: Plant Biology – Pharmacognosy (1, 2) – Phytochemistry – Applied Pharmacognosy."
+        },
+        {
+          "slug": "biochemistry-microbiology",
+          "nameAr": "قسم الكيمياء الحيوية والميكروبيولوجيا (PHBM)",
+          "nameEn": "Department of Biochemistry and Microbiology (PHBM)",
+          "descriptionAr": "ويتبع له المقررات التالية: بيولوجيا حيوانية – الكيمياء الحيوية العامة (1، 2) – الكيمياء الحيوية السريرية – الجراثيم والفيروسات – الطفيليات والفطريات – دمويات ومناعيات – البيولوجيا الجزيئية – هندسة وراثية – اللقاحات والمواد البيولوجية الممنِّعة.",
+          "descriptionEn": "Its courses: Animal Biology – General Biochemistry (1, 2) – Clinical Biochemistry – Bacteriology and Virology – Parasitology and Mycology – Hematology and Immunology – Molecular Biology – Genetic Engineering – Vaccines and Immunobiologicals."
+        },
+        {
+          "slug": "analytical-food-chemistry",
+          "nameAr": "قسم الكيمياء التحليلية والغذائية (PHAC)",
+          "nameEn": "Department of Analytical and Food Chemistry (PHAC)",
+          "descriptionAr": "ويتبع له المقررات التالية: الكيمياء التحليلية الصيدلانية (1، 2) – التحليل الآلي – الصيدلة الفيزيائية – الكيمياء الغذائية.",
+          "descriptionEn": "Its courses: Pharmaceutical Analytical Chemistry (1, 2) – Instrumental Analysis – Physical Pharmacy – Food Chemistry."
+        }
+      ],
+      "labs": [
+        {
+          "slug": "m1-language",
+          "titleAr": "مخبر اللغة",
+          "titleEn": "Language Laboratory",
+          "descriptionAr": "الرمز: م 1\nالمساحة: 65 م²",
+          "descriptionEn": "Code: M1\nArea: 65 m²"
+        },
+        {
+          "slug": "m2-computer",
+          "titleAr": "مخبر الحاسوب",
+          "titleEn": "Computer Laboratory",
+          "descriptionAr": "الرمز: م 2\nالمساحة: 65 م²",
+          "descriptionEn": "Code: M2\nArea: 65 m²"
+        },
+        {
+          "slug": "m3-pharmaceutics",
+          "titleAr": "مخبر الصيدلانيات",
+          "titleEn": "Pharmaceutics Laboratory",
+          "descriptionAr": "الرمز: م 3\nالمساحة: 65 م²",
+          "descriptionEn": "Code: M3\nArea: 65 m²"
+        },
+        {
+          "slug": "m4-clinical-pharmacy",
+          "titleAr": "مخبر الصيدلة السريرية",
+          "titleEn": "Clinical Pharmacy Laboratory",
+          "descriptionAr": "الرمز: م 4\nالمساحة: 65 م²",
+          "descriptionEn": "Code: M4\nArea: 65 m²"
+        },
+        {
+          "slug": "m5-industrial-pharmacy",
+          "titleAr": "مخبر الصيدلة الصناعية",
+          "titleEn": "Industrial Pharmacy Laboratory",
+          "descriptionAr": "الرمز: م 5\nالمساحة: 65 م²",
+          "descriptionEn": "Code: M5\nArea: 65 m²"
+        },
+        {
+          "slug": "m6-technology",
+          "titleAr": "مخبر التكنولوجيا",
+          "titleEn": "Technology Laboratory",
+          "descriptionAr": "الرمز: م 6\nالمساحة: 65 م²",
+          "descriptionEn": "Code: M6\nArea: 65 m²"
+        },
+        {
+          "slug": "m7-pharmacognosy-plant-biology",
+          "titleAr": "مخبر العقاقير والبيولوجيا النباتية",
+          "titleEn": "Pharmacognosy and Plant Biology Laboratory",
+          "descriptionAr": "الرمز: م 7\nالمساحة: 65 م²",
+          "descriptionEn": "Code: M7\nArea: 65 m²"
+        },
+        {
+          "slug": "m8-phytochemistry",
+          "titleAr": "مخبر كيمياء العقاقير",
+          "titleEn": "Phytochemistry Laboratory",
+          "descriptionAr": "الرمز: م 8\nالمساحة: 65 م²",
+          "descriptionEn": "Code: M8\nArea: 65 m²"
+        },
+        {
+          "slug": "m9-general-chemistry",
+          "titleAr": "مخبر الكيمياء العامة",
+          "titleEn": "General Chemistry Laboratory",
+          "descriptionAr": "الرمز: م 9\nالمساحة: 65 م²",
+          "descriptionEn": "Code: M9\nArea: 65 m²"
+        },
+        {
+          "slug": "m10-drug-control",
+          "titleAr": "مخبر مراقبة الدواء",
+          "titleEn": "Drug Control Laboratory",
+          "descriptionAr": "الرمز: م 10\nالمساحة: 65 م²",
+          "descriptionEn": "Code: M10\nArea: 65 m²"
+        },
+        {
+          "slug": "m11-instrumental-analysis",
+          "titleAr": "مخبر التحليل الآلي",
+          "titleEn": "Instrumental Analysis Laboratory",
+          "descriptionAr": "الرمز: م 11\nالمساحة: 65 م²",
+          "descriptionEn": "Code: M11\nArea: 65 m²"
+        },
+        {
+          "slug": "m12-analytical-chemistry",
+          "titleAr": "مخبر الكيمياء التحليلية",
+          "titleEn": "Analytical Chemistry Laboratory",
+          "descriptionAr": "الرمز: م 12\nالمساحة: 65 م²",
+          "descriptionEn": "Code: M12\nArea: 65 m²"
+        },
+        {
+          "slug": "m13-physical-chemistry",
+          "titleAr": "مخبر الكيمياء الفيزيائية",
+          "titleEn": "Physical Chemistry Laboratory",
+          "descriptionAr": "الرمز: م 13\nالمساحة: 65 م²",
+          "descriptionEn": "Code: M13\nArea: 65 m²"
+        },
+        {
+          "slug": "m14-clinical-biochemistry",
+          "titleAr": "مخبر الكيمياء الحيوية السريرية",
+          "titleEn": "Clinical Biochemistry Laboratory",
+          "descriptionAr": "الرمز: م 14\nالمساحة: 65 م²",
+          "descriptionEn": "Code: M14\nArea: 65 m²"
+        },
+        {
+          "slug": "m15-general-biochemistry",
+          "titleAr": "مخبر الكيمياء الحيوية العامة",
+          "titleEn": "General Biochemistry Laboratory",
+          "descriptionAr": "الرمز: م 15\nالمساحة: 65 م²",
+          "descriptionEn": "Code: M15\nArea: 65 m²"
+        },
+        {
+          "slug": "m16-toxicology",
+          "titleAr": "مخبر السموم",
+          "titleEn": "Toxicology Laboratory",
+          "descriptionAr": "الرمز: م 16\nالمساحة: 65 م²",
+          "descriptionEn": "Code: M16\nArea: 65 m²"
+        },
+        {
+          "slug": "m17-pharmacology",
+          "titleAr": "مخبر الأدوية",
+          "titleEn": "Pharmacology Laboratory",
+          "descriptionAr": "الرمز: م 17\nالمساحة: 65 م²",
+          "descriptionEn": "Code: M17\nArea: 65 m²"
+        },
+        {
+          "slug": "m18-animal-biology",
+          "titleAr": "مخبر البيولوجيا الحيوانية",
+          "titleEn": "Animal Biology Laboratory",
+          "descriptionAr": "الرمز: م 18\nالمساحة: 65 م²",
+          "descriptionEn": "Code: M18\nArea: 65 m²"
+        },
+        {
+          "slug": "m19-research",
+          "titleAr": "مخبر الأبحاث",
+          "titleEn": "Research Laboratory",
+          "descriptionAr": "الرمز: م 19\nالمساحة: 95 م²",
+          "descriptionEn": "Code: M19\nArea: 95 m²"
+        },
+        {
+          "slug": "m20-bacteriology-parasitology",
+          "titleAr": "مخبر الجراثيم والطفيليات",
+          "titleEn": "Bacteriology and Parasitology Laboratory",
+          "descriptionAr": "الرمز: م 20\nالمساحة: 115 م²",
+          "descriptionEn": "Code: M20\nArea: 115 m²"
+        },
+        {
+          "slug": "m21-physics",
+          "titleAr": "مخبر الفيزياء",
+          "titleEn": "Physics Laboratory",
+          "descriptionAr": "الرمز: م 21\nالمساحة: 70 م²",
+          "descriptionEn": "Code: M21\nArea: 70 m²"
+        },
+        {
+          "slug": "m22-pharmaceutical-chemistry",
+          "titleAr": "مخبر الكيمياء الصيدلانية",
+          "titleEn": "Pharmaceutical Chemistry Laboratory",
+          "descriptionAr": "الرمز: م 22\nالمساحة: 132 م²",
+          "descriptionEn": "Code: M22\nArea: 132 m²"
+        },
+        {
+          "slug": "m23-organic-chemistry",
+          "titleAr": "مخبر الكيمياء العضوية",
+          "titleEn": "Organic Chemistry Laboratory",
+          "descriptionAr": "الرمز: م 23\nالمساحة: 112 م²",
+          "descriptionEn": "Code: M23\nArea: 112 m²"
+        }
+      ],
+      "departmentsSummary": {
+        "ar": "الأقسام العلمية في كلية الصيدلة.",
+        "en": "The academic departments of the Faculty of Pharmacy."
+      },
+      "pages": [
+        {
+          "slug": "training",
+          "titleAr": "نظام الملازمة والتدريب",
+          "titleEn": "Pharmacy Internship and Training System"
+        }
+      ]
+    },
+    "artificial-intelligence": {
+      "departments": [
+        {
+          "slug": "software-engineering-intelligent-information-systems",
+          "nameAr": "قسم هندسة البرمجيات ونظم المعلومات الذكية",
+          "nameEn": "Department of Software Engineering and Intelligent Information Systems",
+          "descriptionAr": "",
+          "descriptionEn": ""
+        },
+        {
+          "slug": "ai-data-science",
+          "nameAr": "قسم هندسة الذكاء الاصطناعي وعلوم البيانات",
+          "nameEn": "Department of Artificial Intelligence Engineering and Data Science",
+          "descriptionAr": "",
+          "descriptionEn": ""
+        },
+        {
+          "slug": "intelligent-information-security",
+          "nameAr": "قسم هندسة نظم أمن المعلومات الذكية",
+          "nameEn": "Department of Intelligent Information Security Systems Engineering",
+          "descriptionAr": "",
+          "descriptionEn": ""
+        },
+        {
+          "slug": "robotics-intelligent-systems",
+          "nameAr": "قسم هندسة الروبوت والنظم الذكية",
+          "nameEn": "Department of Robotics and Intelligent Systems Engineering",
+          "descriptionAr": "",
+          "descriptionEn": ""
+        },
+        {
+          "slug": "intelligent-communications",
+          "nameAr": "قسم هندسة الاتصالات الذكية",
+          "nameEn": "Department of Intelligent Communications Engineering",
+          "descriptionAr": "",
+          "descriptionEn": ""
+        },
+        {
+          "slug": "intelligent-medical-engineering-bioinformatics",
+          "nameAr": "قسم الهندسة الطبية الذكية والمعلوماتية الحيوية",
+          "nameEn": "Department of Intelligent Medical Engineering and Bioinformatics",
+          "descriptionAr": "",
+          "descriptionEn": ""
+        }
+      ],
+      "departmentsSummary": {
+        "ar": "الأقسام العلمية في كلية هندسة الذكاء الاصطناعي.",
+        "en": "The academic departments of the Faculty of Artificial Intelligence Engineering."
+      },
+      "labs": [],
+      "pages": [
+        {
+          "slug": "final-exams",
+          "titleAr": "برنامج الامتحان النهائي",
+          "titleEn": "Final Examination Schedule"
+        }
+      ]
+    },
+    "petroleum": {
+      "departments": [
+        {
+          "slug": "petroleum-basic-sciences",
+          "nameAr": "قسم العلوم الأساسية",
+          "nameEn": "Department of Basic Sciences",
+          "descriptionAr": "",
+          "descriptionEn": ""
+        },
+        {
+          "slug": "petroleum-geology-exploration",
+          "nameAr": "قسم الجيولوجيا والاستكشاف البترولي",
+          "nameEn": "Department of Geology and Petroleum Exploration",
+          "descriptionAr": "",
+          "descriptionEn": ""
+        },
+        {
+          "slug": "drilling-engineering",
+          "nameAr": "قسم هندسة الحفر",
+          "nameEn": "Department of Drilling Engineering",
+          "descriptionAr": "",
+          "descriptionEn": ""
+        },
+        {
+          "slug": "reservoir-production-engineering",
+          "nameAr": "قسم هندسة المخزون والإنتاج",
+          "nameEn": "Department of Reservoir and Production Engineering",
+          "descriptionAr": "",
+          "descriptionEn": ""
+        }
+      ],
+      "labs": [
+        {
+          "slug": "physics-lab-1",
+          "titleAr": "مخبر الفيزياء (1)",
+          "titleEn": "Physics Laboratory (1)",
+          "descriptionAr": "تبلغ مساحة المخبر 60 م²، وهو مجهز بمجموعة من التجارب الأساسية التي تغطي الجزء العملي المخبري للمقرر.\n\nالتجارب:\n1. أجهزة القياس: القدم القنوية، الدوارة اللولبية\n2. اللزوجة: عبوة غليسيرين، كرات زجاجية، قمع متوسط الحجم\n3. الكثافة بطريقة الدورق: كرات زجاجية، دورق زجاجي مع غطاء، ميزان حرارة، ميزان حساس للكتلة\n4. سرعة الصوت في الهواء: أنابيب زجاجية مختلفة الارتفاع، رنانات بأحجام مختلفة\n5. النواس البسيط: كرات، خيط للتعليق، حامل، عداد زمن، مسطرة\n6. قانون هوك: نوابض مختلفة، مسطرة، عداد زمن، كرات مختلفة النوع\n7. التوتر السطحي: جهاز التوتر السطحي\n8. حرارة انصهار الجليد: مسعر، ميزان حرارة، ميزان عادي كهربائي\n9. المعادل الميكانيكي للحريرة: مسعر، بيشر مرقم، مولد فولط متناوب، مقاييس فولط وأمبير، ميزان حرارة، ميزان حساس للكتلة\n10. قرينة انكسار الماء: مرآة مقعرة، علبة دبابيس\n11. العدسات الرقيقة: جسر ضوئي، حوامل للعدسات، عدسات مقربة، عدسات مبعدة، حامل للجسم المضيء",
+          "descriptionEn": "Area: 60 m², equipped with a set of basic experiments covering the practical laboratory part of the course.\n\nExperiments:\n1. Measuring instruments: vernier caliper, micrometer screw gauge\n2. Viscosity: glycerin, glass balls, medium funnel\n3. Density by the flask method: glass balls, glass flask with cover, thermometer, sensitive mass balance\n4. Speed of sound in air: glass tubes of different heights, tuning forks of different sizes\n5. Simple pendulum: balls, suspension thread, stand, timer, ruler\n6. Hooke's law: different springs, ruler, timer, different balls\n7. Surface tension: surface tension apparatus\n8. Heat of fusion of ice: calorimeter, thermometer, electric balance\n9. Mechanical equivalent of heat: calorimeter, graduated beaker, AC generator, voltmeter and ammeter, thermometer, sensitive mass balance\n10. Refractive index of water: concave mirror, box of pins\n11. Thin lenses: optical bench, lens holders, converging lenses, diverging lenses, light source holder"
+        },
+        {
+          "slug": "physics-lab-2",
+          "titleAr": "مخبر الفيزياء (2)",
+          "titleEn": "Physics Laboratory (2)",
+          "descriptionAr": "التجارب:\n1. جسر وطسطن: جسر وطسطن، علبة مقاومات عيارية، مقاومات مختلفة، مقياس غلفاني، مقاييس فولط وأمبير\n2. قانونا كيرشوف: مولد فولط مستمر، مقاييس أمبير، مقاومات ثابتة\n3. قانون أوم (V=R.I): مقاييس فولط وأمبير، مقاومة متغيرة، مولد فولط مستمر، لوحات خشبية مثبت عليها أسلاك\n4. قانون أوم بدلالة أطوال الأسلاك والمقاطع ونوع الأسلاك\n5. القوة المحركة الكهربائية: مقاومات من علبة المقاومات العيارية، مقياس أمبير، خلية جافة\n6. راسم الاهتزاز المهبطي: ملف يعطي إجهادات مختلفة، راسم اهتزاز، بطاريات\n7. جمع المقاومات على التسلسل: مقاييس فولط وأمبير، مقاومة متغيرة، منبع للتيار المستمر، مقاومتين مجهولتين\n8. جمع المقاومات على التفرع\n9. المحول الكهربائي: مولد جهد متناوب، مقاومات\n10. وصل المكثفات على التسلسل وعلى التفرع: مولد جهد، مكثفات، أفوميتر، عداد ثواني، مقياس فولط",
+          "descriptionEn": "Experiments:\n1. Wheatstone bridge: Wheatstone bridge, standard resistance box, different resistors, galvanometer, voltmeters and ammeters\n2. Kirchhoff's laws: DC generator, ammeters, fixed resistors\n3. Ohm's law (V=R.I): voltmeters and ammeters, rheostat, DC generator, wooden boards with wires\n4. Ohm's law in terms of wire lengths, cross-sections and type\n5. Electromotive force: standard resistance box, ammeter, dry cell\n6. Cathode-ray oscilloscope: coil giving different voltages, oscilloscope, batteries\n7. Resistors in series: voltmeters and ammeters, rheostat, DC source, two unknown resistors\n8. Resistors in parallel\n9. Transformer: AC generator, resistors\n10. Capacitors in series and in parallel: voltage generator, capacitors, multimeter, stopwatch, voltmeter"
+        },
+        {
+          "slug": "general-organic-chemistry-lab",
+          "titleAr": "مخبر الكيمياء العامة والعضوية",
+          "titleEn": "General and Organic Chemistry Laboratory",
+          "descriptionAr": "التجارب:\n1. الترشيح\n2. إزالة اللون\n3. التصعيد\n4. إعادة البلورة\n5. التقطير البسيط\n6. التقطير بالجرف بالبخار\n7. حساب مردود تفاعل كيميائي عن طريق عملية ترشيح لنواتج التفاعل\n8. الاستخلاص\n9. المعايرة الحجمية\n10. الكتلة الحجمية\n11. تعيين درجة الانصهار لمادة عضوية",
+          "descriptionEn": "Experiments:\n1. Filtration\n2. Decolorisation\n3. Sublimation\n4. Recrystallisation\n5. Simple distillation\n6. Steam distillation\n7. Calculating the yield of a chemical reaction by filtering its products\n8. Extraction\n9. Volumetric titration\n10. Density\n11. Determining the melting point of an organic substance"
+        },
+        {
+          "slug": "physical-chemistry-lab",
+          "titleAr": "مخبر الكيمياء الفيزيائية",
+          "titleEn": "Physical Chemistry Laboratory",
+          "descriptionAr": "تبلغ مساحة المخبر 60 م²، وهو مجهز بمجموعة من التجارب الأساسية والضرورية التي تغطي الجزء العملي المخبري للمقرر.\n\nالتجارب:\n1. تعيين حرارة التعادل لحمض وأساس قويين\n2. تعيين حرارة الذوبان لملح\n3. تأثير درجة الحرارة على سرعة التفاعل\n4. تأثير التركيز على سرعة التفاعل\n5. التوازن الكيميائي ومبدأ لوشاتولييه\n6. التوازنات الشاردية في الجمل غير المتجانسة (جداء الانحلال)\n7. دراسة الانحلالية المشتركة للسوائل\n8. امتزاز حمض الخل على الفحم الفعال تبعاً لدرجة الحرارة\n9. الخواص الترموديناميكية لجملة ثلاثية المكون",
+          "descriptionEn": "Area: 60 m², equipped with a set of basic and essential experiments covering the practical laboratory part of the course.\n\nExperiments:\n1. Heat of neutralisation of a strong acid and base\n2. Heat of solution of a salt\n3. Effect of temperature on reaction rate\n4. Effect of concentration on reaction rate\n5. Chemical equilibrium and Le Chatelier's principle\n6. Ionic equilibria in heterogeneous systems (solubility product)\n7. Mutual solubility of liquids\n8. Adsorption of acetic acid on activated carbon depending on temperature\n9. Thermodynamic properties of a three-component system"
+        },
+        {
+          "slug": "electrical-engineering-lab",
+          "titleAr": "مخبر الهندسة الكهربائية",
+          "titleEn": "Electrical Engineering Laboratory",
+          "descriptionAr": "تبلغ مساحة المخبر 60 م²، وهو مجهز بمجموعة من التجارب الأساسية والضرورية التي تغطي الجزء العملي المخبري للمقرر.\n\nالتجارب:\n1. التحقق من صحة قانون أوم\n2. جسر وطسطن وقياس قيمة المقاومة المجهولة\n3. إيجاد القوة المحركة الكهربائية والمقاومة الداخلية لبطارية باستخدام الطريقة البيانية\n4. قياس طول سلك باستخدام طريقة المقاومة\n5. إثبات صحة قانوني كيرشوف\n6. المحول الكهربائي ودارات التقويم\n7. القياسات الكهربائية باستخدام راسم الإشارة\n\nملاحظة: يتم في الجزء الثاني من العملي حل مسائل في الهندسة الكهربائية.",
+          "descriptionEn": "Area: 60 m², equipped with a set of basic and essential experiments covering the practical laboratory part of the course.\n\nExperiments:\n1. Verifying Ohm's law\n2. Wheatstone bridge and measuring an unknown resistance\n3. Finding the electromotive force and internal resistance of a battery graphically\n4. Measuring the length of a wire by the resistance method\n5. Verifying Kirchhoff's two laws\n6. The transformer and rectifier circuits\n7. Electrical measurements with an oscilloscope\n\nNote: the second part of the practical work solves problems in electrical engineering."
+        },
+        {
+          "slug": "petroleum-geochemistry-lab",
+          "titleAr": "مخبر جيوكيمياء النفط",
+          "titleEn": "Petroleum Geochemistry Laboratory",
+          "descriptionAr": "تبلغ مساحة المخبر 60 م²، وهو مجهز بمجموعة من التجارب الأساسية والضرورية التي تغطي الجزء العملي المخبري للمقرر.\n\nالتجارب:\n1. تعريف بعلم الجيوكيمياء بشكل عام وبعملي المقرر بشكل خاص\n2. طحن العينة الصخرية\n3. الاستخلاص\n4. الاستخلاص المستمر (سوكسليت)\n5. المبخر الدوار\n6. الكروماتوغرافيا: مقدمة عن علم الكروماتوغرافيا وأنواعها\n7. كروماتوغرافيا العمود\n8. كروماتوغرافيا الطبقة الرقيقة\n9. تحديد نسبة الكربون في الكيروجين واستخدام مخططات فان كريفلين\n10. استخدام مخططات الكروماتوغراف الغازي في حساب نسب المركبات الهيدروكربونية\n11. تمثيل وتصنيف مياه الحقول النفطية\n12. تفسير حالات شاذ الضغط الطبقي\n13. استخدام SCI في الاستكشاف البترولي",
+          "descriptionEn": "Area: 60 m², equipped with a set of basic and essential experiments covering the practical laboratory part of the course.\n\nExperiments:\n1. Introduction to geochemistry and to the course's practical work\n2. Grinding a rock sample\n3. Extraction\n4. Continuous (Soxhlet) extraction\n5. Rotary evaporator\n6. Chromatography: introduction and types\n7. Column chromatography\n8. Thin-layer chromatography\n9. Determining the carbon content of kerogen using Van Krevelen diagrams\n10. Using gas chromatograms to calculate hydrocarbon compound ratios\n11. Representing and classifying oilfield waters\n12. Interpreting abnormal formation pressures\n13. Using SCI in petroleum exploration"
+        },
+        {
+          "slug": "fluid-mechanics-lab",
+          "titleAr": "مخبر ميكانيك السوائل",
+          "titleEn": "Fluid Mechanics Laboratory",
+          "descriptionAr": "تبلغ مساحة المخبر 60 م²، وهو مجهز بمجموعة من التجارب الأساسية والضرورية التي تغطي الجزء العملي المخبري للمقرر.\n\nالأجهزة:\n1. جهاز قياس كثافة السوائل (الهيدرومتر): 5\n2. جهاز قياس كثافة السوائل (البكنومتر): 4\n3. جهاز قياس كثافة الأجسام الصلبة: 1\n4. جهاز قياس اللزوجة بالكرة الساقطة: 1\n5. جهاز قياس اللزوجة بطريقة أوستفالد: 1\n6. محطة مخبرية لاستعراض عمل الصمامات: 1\n7. محطة مخبرية لقياس ضياع الضغط بالاحتكاك، وتحديد عدد رينولدز، ودراسة نوعية الجريان ومنحنيات الجريان: 1",
+          "descriptionEn": "Area: 60 m², equipped with a set of basic and essential experiments covering the practical laboratory part of the course.\n\nEquipment:\n1. Hydrometer for liquid density: 5\n2. Pycnometer for liquid density: 4\n3. Solid density apparatus: 1\n4. Falling-ball viscometer: 1\n5. Ostwald viscometer: 1\n6. Laboratory station demonstrating valve operation: 1\n7. Laboratory station for friction pressure loss, Reynolds number, flow regimes and flow curves: 1"
+        },
+        {
+          "slug": "drilling-engineering-lab",
+          "titleAr": "مخبر هندسة الحفر",
+          "titleEn": "Drilling Engineering Laboratory",
+          "descriptionAr": "تبلغ مساحة المخبر 60 م²، وهو مجهز بمجموعة من التجارب الأساسية التي تغطي الجزء العملي المخبري للمقرر.\n\nالأجهزة:\n1. جهاز قياس فاقد الرشح: 1\n2. جهاز قياس السطح النوعي للإسمنت: 1\n3. جهاز قياس محتوى الرمل: 2\n4. جهاز قياس زمن الشك (إبرة فيكات): 2\n5. جهاز قياس درجة الحموضة PH: 3\n6. جهاز قياس محتوى الغضار: 2\n7. جهاز قياس محتوى الكالسيوم: 2\n8. خلاط إسمنتي: 2\n9. خلاط سائل الحفر: 2\n10. جهاز قياس الوزن النوعي لسائل الحفر: 1\n11. جهاز قياس اللزوجة الزمنية لسائل الحفر (قمع مارش): 3\n12. جهاز مقياس اللزوجة الدوار متعدد السرعات: 1",
+          "descriptionEn": "Area: 60 m², equipped with a set of basic experiments covering the practical laboratory part of the course.\n\nEquipment:\n1. Filtrate loss tester: 1\n2. Cement specific surface tester: 1\n3. Sand content kit: 2\n4. Setting time tester (Vicat needle): 2\n5. pH meter: 3\n6. Clay content tester: 2\n7. Calcium content tester: 2\n8. Cement mixer: 2\n9. Drilling fluid mixer: 2\n10. Drilling fluid density balance: 1\n11. Marsh funnel viscometer: 3\n12. Multi-speed rotational viscometer: 1"
+        },
+        {
+          "slug": "reservoir-production-lab",
+          "titleAr": "مخبر هندسة المخزون والإنتاج",
+          "titleEn": "Reservoir and Production Engineering Laboratory",
+          "descriptionAr": "تبلغ مساحة المخبر 60 م²، وهو مجهز بمجموعة من التجارب الأساسية والضرورية التي تغطي الجزء العملي المخبري للمقرر.\n\nالأجهزة والتجارب:\n1. جهاز سوكسليت: غسل العينات الصخرية\n2. جهاز تمثيلي لعملية حقن المياه الطبقية: إزاحة النفط من الطبقة عن طريق حقن الماء\n3. وحدة ضخ معلق بجزئيها السطحي والجوفي: الضخ المعلق\n4. جهاز قياس المسامية: قياس المسامية\n5. جهاز قياس النفوذية: قياس النفوذية",
+          "descriptionEn": "Area: 60 m², equipped with a set of basic and essential experiments covering the practical laboratory part of the course.\n\nEquipment and experiments:\n1. Soxhlet apparatus: washing rock samples\n2. Water injection model: oil displacement by water injection\n3. Sucker-rod pumping unit (surface and downhole parts): sucker-rod pumping\n4. Porosimeter: porosity measurement\n5. Permeameter: permeability measurement"
+        }
+      ],
+      "departmentsSummary": {
+        "ar": "الأقسام العلمية في كلية هندسة البترول.",
+        "en": "The academic departments of the Faculty of Petroleum Engineering."
+      },
+      "pages": [
+        {
+          "slug": "final-exams",
+          "titleAr": "برنامج الامتحان النهائي",
+          "titleEn": "Final Examination Schedule"
+        }
+      ]
+    },
+    "business-administration": {
+      "departments": [
+        {
+          "slug": "human-resources",
+          "nameAr": "قسم الموارد البشرية",
+          "nameEn": "Department of Human Resources",
+          "descriptionAr": "",
+          "descriptionEn": ""
+        },
+        {
+          "slug": "accounting",
+          "nameAr": "قسم المحاسبة",
+          "nameEn": "Department of Accounting",
+          "descriptionAr": "",
+          "descriptionEn": ""
+        },
+        {
+          "slug": "business-administration",
+          "nameAr": "قسم إدارة الأعمال",
+          "nameEn": "Department of Business Administration",
+          "descriptionAr": "",
+          "descriptionEn": ""
+        },
+        {
+          "slug": "marketing",
+          "nameAr": "قسم التسويق",
+          "nameEn": "Department of Marketing",
+          "descriptionAr": "",
+          "descriptionEn": ""
+        },
+        {
+          "slug": "finance-banking",
+          "nameAr": "قسم التمويل والمصارف",
+          "nameEn": "Department of Finance and Banking",
+          "descriptionAr": "",
+          "descriptionEn": ""
+        }
+      ],
+      "departmentsSummary": {
+        "ar": "الأقسام العلمية في كلية إدارة الأعمال.",
+        "en": "The academic departments of the Faculty of Business Administration."
+      },
+      "labs": [],
+      "pages": [
+        {
+          "slug": "final-exams",
+          "titleAr": "برنامج الامتحان النهائي",
+          "titleEn": "Final Examination Schedule"
+        }
+      ]
+    },
+    "building-construction-engineering": {
+      "departments": [
+        {
+          "slug": "construction-basic-sciences",
+          "nameAr": "قسم العلوم الأساسية",
+          "nameEn": "Department of Basic Sciences",
+          "descriptionAr": "",
+          "descriptionEn": ""
+        },
+        {
+          "slug": "materials-construction-technology",
+          "nameAr": "قسم هندسة تكنولوجيا المواد والبناء",
+          "nameEn": "Department of Materials and Construction Technology Engineering",
+          "descriptionAr": "",
+          "descriptionEn": ""
+        },
+        {
+          "slug": "architecture-executive-design",
+          "nameAr": "قسم الهندسة المعمارية والتصميمات التنفيذية",
+          "nameEn": "Department of Architecture and Executive Design",
+          "descriptionAr": "",
+          "descriptionEn": ""
+        },
+        {
+          "slug": "construction-engineering",
+          "nameAr": "قسم هندسة التشييد",
+          "nameEn": "Department of Construction Engineering",
+          "descriptionAr": "",
+          "descriptionEn": ""
+        }
+      ],
+      "departmentsSummary": {
+        "ar": "الأقسام العلمية في كلية هندسة التشييد والبناء.",
+        "en": "The academic departments of the Faculty of Building and Construction Engineering."
+      },
+      "labs": []
+    }
+  }
+}
