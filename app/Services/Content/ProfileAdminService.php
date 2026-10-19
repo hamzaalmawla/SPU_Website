@@ -14,12 +14,15 @@ use App\DTOs\Content\FacultyMemberTranslationDataDTO;
 use App\DTOs\Content\LocalizedEducationDataDTO;
 use App\DTOs\Content\PersonDataDTO;
 use App\DTOs\Content\PersonTranslationDataDTO;
+use App\Enums\PublicationStatus;
+use App\Models\Cms\CmsDraft;
 use App\Models\Faculty\Department;
 use App\Models\Faculty\Faculty;
 use App\Models\Person\FacultyMember;
 use App\Models\Person\FacultyMemberEducation;
 use App\Models\Person\FacultyMemberTranslation;
 use App\Models\Person\Person;
+use App\Models\Person\PersonAppointment;
 use App\Models\Person\PersonEducation;
 use App\Models\Person\PersonTranslation;
 use App\Models\User\User;
@@ -52,9 +55,11 @@ final class ProfileAdminService implements ProfileAdminServiceInterface
             throw new AuthorizationException('You are not authorized to view faculty profile options.');
         }
 
+        $locale = app()->getLocale() === 'ar' ? 'ar' : 'en';
+
         return $query->get()->mapWithKeys(fn (Faculty $faculty): array => [
-            (int) $faculty->getKey() => $faculty->translations->firstWhere('locale', 'en')?->name
-                ?? $faculty->translations->firstWhere('locale', 'ar')?->name
+            (int) $faculty->getKey() => $faculty->translations->firstWhere('locale', $locale)?->name
+                ?? $faculty->translations->firstWhere('locale', $locale === 'ar' ? 'en' : 'ar')?->name
                 ?? (string) $faculty->slug,
         ])->all();
     }
@@ -205,6 +210,63 @@ final class ProfileAdminService implements ProfileAdminServiceInterface
         $this->invalidatePublicProfiles();
 
         return true;
+    }
+
+    /** @param array<int, int> $ids */
+    public function deleteFacultyMembers(array $ids, int $userId): int
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids), static fn (int $id): bool => $id > 0)));
+        if ($ids === []) {
+            return 0;
+        }
+
+        // Authorize the whole selection first, so a faculty editor cannot
+        // delete part of a selection that reaches into another faculty.
+        foreach ($ids as $id) {
+            $this->authorizeExistingFacultyMember($id, $userId);
+        }
+
+        $deleted = DB::transaction(function () use ($ids, $userId): array {
+            $deleted = [];
+            foreach (FacultyMember::query()->whereKey($ids)->get() as $member) {
+                $id = (int) $member->getKey();
+
+                // A pending draft or schedule must not bring the member back.
+                CmsDraft::query()
+                    ->where('target_key', 'entity.faculty-member.'.$id)
+                    ->whereIn('status', [PublicationStatus::Draft->value, PublicationStatus::Scheduled->value])
+                    ->update([
+                        'status' => PublicationStatus::Superseded->value,
+                        'scheduled_at' => null,
+                        'updated_by' => $userId,
+                    ]);
+
+                // A member linked to a canonical person is shown through that
+                // person's appointment, so take it off this faculty as well.
+                if ($member->person_id !== null && $member->faculty_id !== null) {
+                    PersonAppointment::query()
+                        ->where('person_id', $member->person_id)
+                        ->where('type', 'faculty_member')
+                        ->where('faculty_id', $member->faculty_id)
+                        ->update(['is_enabled' => false]);
+                }
+
+                $member->delete();
+                $deleted[] = $id;
+            }
+
+            return $deleted;
+        });
+
+        foreach ($deleted as $id) {
+            $this->auditService->log('faculty_member.deleted', $userId, FacultyMember::class, $id);
+        }
+
+        if ($deleted !== []) {
+            $this->invalidatePublicProfiles();
+        }
+
+        return count($deleted);
     }
 
     /** @return array<string, mixed> */

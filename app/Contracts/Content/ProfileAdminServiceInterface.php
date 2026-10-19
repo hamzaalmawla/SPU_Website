@@ -32,4 +32,11 @@ interface ProfileAdminServiceInterface
     public function createFacultyMember(FacultyMemberDataDTO $data, int $userId): FacultyMemberDataDTO;
 
     public function updateFacultyMember(int $id, FacultyMemberDataDTO $data, int $userId): bool;
+
+    /**
+     * Soft-deletes the given faculty members and returns how many were removed.
+     *
+     * @param  array<int, int>  $ids
+     */
+    public function deleteFacultyMembers(array $ids, int $userId): int;
 }

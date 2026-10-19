@@ -116,6 +116,12 @@
                             <span class="text-xs font-semibold">ORCID</span>
                         </a>
                     @endif
+                    @if (!empty($socialLinks['scopus']))
+                        <a href="{{ $socialLinks['scopus'] }}" target="_blank" rel="noopener" class="flex h-10 items-center justify-center gap-2 rounded-[10px] bg-[#E9711C] px-4 text-white transition-all hover:-translate-y-0.5 hover:bg-[#c85f15]" title="Scopus">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 7.5C15.8 5.9 14 5 12 5c-3.3 0-6 2.2-6 4.5S8.7 13 12 13s6 1.4 6 3.8S15.3 21 12 21c-2.2 0-4.1-1-5.2-2.6"/></svg>
+                            <span class="text-xs font-semibold">Scopus</span>
+                        </a>
+                    @endif
                     @if (!empty($socialLinks['researchgate']))
                         <a href="{{ $socialLinks['researchgate'] }}" target="_blank" rel="noopener" class="flex h-10 items-center justify-center gap-2 rounded-[10px] bg-[#00CCBB] px-4 text-white transition-all hover:-translate-y-0.5 hover:bg-[#009999]" title="ResearchGate">
                             <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19.586 0c-1.31 0-2.938.95-4.27 2.392C14.056.866 12.44 0 11.13 0c-1.31 0-2.938.95-4.27 2.392C5.526.866 3.91 0 2.6 0H0v24h2.6c1.31 0 2.938-.95 4.27-2.392C8.204 23.134 9.82 24 11.13 24c1.31 0 2.938-.95 4.27-2.392C16.764 23.134 18.38 24 19.69 24H24V0h-4.414zM11.13 19.2c-1.31 0-2.938-.95-4.27-2.392C5.526 15.334 3.91 14.4 2.6 14.4H1.2v-4.8h1.4c1.31 0 2.938-.95 4.27-2.392C8.204 5.734 9.82 4.8 11.13 4.8c1.31 0 2.938.95 4.27 2.392C16.764 9.666 18.38 10.6 19.69 10.6h1.4v4.8h-1.4c-1.31 0-2.938.95-4.27 2.392C14.056 18.266 12.44 19.2 11.13 19.2z"/></svg>
