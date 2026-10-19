@@ -2138,35 +2138,75 @@ final class FacultyPageService implements FacultyPageServiceInterface
      */
     private function deanProfileFor(Faculty $faculty, string $locale, array $deanPayload): ?ProfilePageDTO
     {
+        $displayName = (string) ($deanPayload['name'] ?? $deanPayload['name'.ucfirst($locale)] ?? '');
+        if ($displayName === '') {
+            return null;
+        }
+
+        // The name in the dean message decides who is linked. A dean is not
+        // always filed with the "dean" category (some are council members with
+        // a dean appointment), so every leadership profile with that name is a
+        // candidate, and the one filed as this faculty's dean wins.
         $facultySlug = $this->publicSlug($faculty);
         $dean = $this->aboutPageService->getLeadershipProfiles($locale)
-            ->first(fn (PersonDTO $person): bool => $person->category === 'dean'
-                && $this->canonicalFacultySlug((string) $person->facultySlug) === $facultySlug);
+            ->filter(fn (PersonDTO $person): bool => $this->samePersonName($displayName, $person->name))
+            ->sortByDesc(fn (PersonDTO $person): int => ($person->category === 'dean' ? 2 : 0)
+                + ($this->canonicalFacultySlug((string) $person->facultySlug) === $facultySlug ? 1 : 0))
+            ->first();
 
         if (! $dean instanceof PersonDTO) {
             return null;
         }
 
         $profile = $this->profilePageService->getProfile($locale, 'person', $dean->slug);
-        $displayName = (string) ($deanPayload['name'] ?? $deanPayload['name'.ucfirst($locale)] ?? '');
 
-        if (! $profile instanceof ProfilePageDTO || $displayName === '' || ! $this->samePersonName($displayName, $profile->name)) {
-            return null;
-        }
-
-        return $profile;
+        return $profile instanceof ProfilePageDTO ? $profile : null;
     }
 
     private function samePersonName(string $first, string $second): bool
     {
-        $normalize = static function (string $name): string {
-            $name = mb_strtolower(trim($name));
-            $name = str_replace(['الأستاذ الدكتور', 'الأستاذة الدكتورة', 'الدكتور', 'الدكتورة', 'أ.د.', 'د.', 'professor', 'prof.', 'dr.'], '', $name);
+        $firstTokens = $this->personNameTokens($first);
+        $secondTokens = $this->personNameTokens($second);
 
-            return (string) preg_replace('/[^\p{L}\p{N}]+/u', '', $name);
-        };
+        if ($firstTokens === [] || $secondTokens === []) {
+            return false;
+        }
 
-        return $normalize($first) !== '' && $normalize($first) === $normalize($second);
+        if (implode('', $firstTokens) === implode('', $secondTokens)) {
+            return true;
+        }
+
+        // Allow a middle name present on one side only ("Ayman Ali" vs
+        // "Ayman Mohammad Ali"), as long as two or more names still agree.
+        [$shorter, $longer] = count($firstTokens) <= count($secondTokens) ? [$firstTokens, $secondTokens] : [$secondTokens, $firstTokens];
+
+        return count($shorter) >= 2
+            && $shorter[0] === $longer[0]
+            && end($shorter) === end($longer)
+            && array_diff($shorter, $longer) === [];
+    }
+
+    /**
+     * A person's name without academic titles, punctuation or Arabic letter
+     * variants, as comparable tokens.
+     *
+     * @return array<int, string>
+     */
+    private function personNameTokens(string $name): array
+    {
+        $name = mb_strtolower(trim($name));
+        $name = strtr($name, ['أ' => 'ا', 'إ' => 'ا', 'آ' => 'ا', 'ة' => 'ه', 'ى' => 'ي', 'ـ' => '']);
+        $name = (string) preg_replace('/[^\p{L}\p{N}]+/u', ' ', $name);
+
+        $titles = [
+            'prof', 'professor', 'dr', 'doctor', 'assoc', 'associate', 'asst', 'assistant', 'eng', 'engineer', 'mr', 'mrs', 'ms',
+            'ا', 'د', 'م', 'اد', 'امد', 'استاذ', 'الاستاذ', 'الاستاذه', 'دكتور', 'الدكتور', 'الدكتوره', 'المهندس', 'المهندسه', 'المساعد', 'المساعده', 'المشارك', 'المشاركه',
+        ];
+
+        return array_values(array_filter(
+            explode(' ', $name),
+            static fn (string $token): bool => $token !== '' && ! in_array($token, $titles, true),
+        ));
     }
 
     /** @return array<int, array{id: string, label: string, body: string}> */

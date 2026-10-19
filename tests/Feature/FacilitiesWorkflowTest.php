@@ -37,6 +37,7 @@ use App\Models\Research\ResearchPublication;
 use App\Models\Research\ResearchPublicationTranslation;
 use App\Models\Shared\MigrationLog;
 use App\Models\User\User;
+use App\Services\Page\FacultyPageService;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -2368,6 +2369,30 @@ final class FacilitiesWorkflowTest extends TestCase
             $this->get('/'.$locale.'/faculties/'.$facultySlug)
                 ->assertOk()
                 ->assertSee('href="/'.$locale.'/about/profile/'.$profileSlug.'"', false);
+        }
+    }
+
+    public function test_dean_link_survives_title_variants_and_a_dean_filed_as_council_member(): void
+    {
+        $faculty = Faculty::query()->where('public_slug', 'artificial-intelligence')->firstOrFail();
+        $person = Person::query()->where('slug', 'mouhib-alnoukari')->firstOrFail();
+        $person->forceFill(['category' => 'council'])->save();
+        $person->appointments()->create(['type' => 'dean', 'faculty_id' => $faculty->getKey(), 'sort_order' => 0, 'is_enabled' => true]);
+
+        $service = app(FacultyPageService::class);
+        $samePersonName = (new \ReflectionMethod($service, 'samePersonName'))->getClosure($service);
+
+        $this->assertTrue($samePersonName('Assoc. Prof. Dr. Mouhib Al-Noukari', 'Dr. Mouhib Alnoukari'));
+        $this->assertTrue($samePersonName('أ.م.د. مهيب النقري', 'د. مهيب النقري'));
+        $this->assertTrue($samePersonName('الأستاذ الدكتور أيمن محمد علي', 'د. أيمن علي'));
+        $this->assertFalse($samePersonName('Dr. Mouhib Alnoukari', 'Dr. Ayman Ali'));
+        $this->assertFalse($samePersonName('Dr. Ali', 'Prof. Ayman Ali'));
+
+        foreach (['en', 'ar'] as $locale) {
+            $this->assertSame(
+                '/'.$locale.'/about/profile/mouhib-alnoukari',
+                app(FacultyPageServiceInterface::class)->getFaculty('artificial-intelligence', $locale)?->content['dean']['profileUrl'] ?? null,
+            );
         }
     }
 
