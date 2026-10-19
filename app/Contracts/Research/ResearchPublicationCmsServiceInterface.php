@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Contracts\Research;
 
 use App\DTOs\Cms\CmsTargetDTO;
+use App\DTOs\Research\ResearcherDataDTO;
 use App\DTOs\Research\ResearchPublicationCmsDataDTO;
 use DateTimeInterface;
 
@@ -56,4 +57,15 @@ interface ResearchPublicationCmsServiceInterface
 
     /** @return array<int, string> */
     public function yearFilterOptions(): array;
+
+    /**
+     * Registered researchers matching a name, keyed by id; with $selectedId,
+     * just that researcher (to label a saved choice).
+     *
+     * @return array<int, string>
+     */
+    public function researcherOptions(?string $search = null, ?int $selectedId = null): array;
+
+    /** Registers a researcher from the publication form and returns their id. */
+    public function createResearcher(ResearcherDataDTO $data, int $userId): int;
 }

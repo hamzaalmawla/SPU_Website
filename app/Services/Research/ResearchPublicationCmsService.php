@@ -8,10 +8,12 @@ use App\Contracts\Research\ResearchPublicationCmsServiceInterface;
 use App\Contracts\Shared\AuditServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
 use App\DTOs\Cms\CmsTargetDTO;
+use App\DTOs\Research\ResearcherDataDTO;
 use App\DTOs\Research\ResearchPublicationCmsDataDTO;
 use App\Models\Faculty\Faculty;
 use App\Models\Media\MediaAsset;
 use App\Models\Person\FacultyMember;
+use App\Models\Research\Researcher;
 use App\Models\Research\ResearchPublication;
 use App\Models\Research\ResearchPublicationTranslation;
 use App\Models\Shared\MigrationLog;
@@ -152,11 +154,11 @@ final class ResearchPublicationCmsService implements ResearchPublicationCmsServi
             // used, so an edited title keeps the URL and every pick of it.
             // A new publication has no live title yet, so its draft title names it.
             $slug = $this->stringValue($payload['slug'] ?? null) ?: ($publication->translations->isEmpty() && ! (is_string($publication->slug) && $publication->slug !== '')
-                ? $this->uniqueSlug(ResearchPublicationSlug::derive(
+                ? $this->uniqueSlug(ResearchPublicationSlug::storable(ResearchPublicationSlug::derive(
                     $this->stringValue($payload['translations']['en']['title'] ?? null),
                     $this->stringValue($payload['translations']['ar']['title'] ?? null),
                     (int) $publication->getKey(),
-                ), (int) $publication->getKey())
+                )), (int) $publication->getKey())
                 : $this->storedSlug($publication));
             $publishedOn = $this->nullableString($payload['published_at'] ?? null)
                 ?? $publication->published_at?->toDateString()
@@ -171,6 +173,12 @@ final class ResearchPublicationCmsService implements ResearchPublicationCmsServi
                 'doi' => $this->nullableString($payload['doi'] ?? null),
                 'journal_rank' => $this->nullableString($payload['journal_rank'] ?? null),
                 'external_url' => $this->nullableString($payload['external_url'] ?? null),
+                // Every paper gets a register number, as in the research office's system.
+                'research_number' => $payload['research_number'] ?? $publication->research_number ?? $this->nextResearchNumber($publishedAt),
+                'publication_type' => $payload['publication_type'],
+                'study_type' => $payload['study_type'],
+                'issn' => $payload['issn'],
+                'notes' => $payload['notes'],
                 'file_media_id' => $payload['file_media_id'],
                 'image_media_id' => $payload['image_media_id'],
                 'is_enabled' => true,
@@ -190,6 +198,15 @@ final class ResearchPublicationCmsService implements ResearchPublicationCmsServi
                     'keywords' => $this->keywords($translation['keywords'] ?? []),
                 ]);
             }
+
+            $publication->researchers()->sync(collect($payload['researchers'])
+                ->values()
+                ->mapWithKeys(fn (array $researcher, int $index): array => [$researcher['researcher_id'] => [
+                    'role' => $researcher['role'],
+                    'sort_order' => $index + 1,
+                    'affiliation_snapshot' => $researcher['affiliation_snapshot'],
+                ]])
+                ->all());
 
             return true;
         });
@@ -337,12 +354,46 @@ final class ResearchPublicationCmsService implements ResearchPublicationCmsServi
             'doi' => $this->nullableString($value('doi')),
             'journal_rank' => $this->nullableString($value('journal_rank')),
             'external_url' => $this->nullableString($value('external_url')),
+            'research_number' => $this->nullableString($value('research_number')),
+            'publication_type' => $this->nullableString($value('publication_type')),
+            'study_type' => $this->nullableString($value('study_type')),
+            'issn' => $this->nullableString($value('issn')),
+            'notes' => $this->nullableString($value('notes')),
+            'researchers' => $this->researcherRecords($value('researchers')),
             'file_media_id' => $this->nullableInt($value('file_media_id')),
             'image_media_id' => $this->nullableInt($value('image_media_id')),
             'legacy_image_path' => $this->nullableString($fallback['legacy_image_path'] ?? $payload['legacy_image_path'] ?? null),
             'updated_by' => $this->nullableInt($value('updated_by')),
             'translations' => $this->localizedRecords($payload['translations'] ?? $fallback['translations'] ?? []),
         ];
+    }
+
+    /**
+     * The paper's researchers in author order: one row per person, each with a
+     * known role.
+     *
+     * @return list<array{researcher_id: int, role: string, affiliation_snapshot: ?string}>
+     */
+    private function researcherRecords(mixed $records): array
+    {
+        $normalized = [];
+
+        foreach (is_array($records) ? $records : [] as $record) {
+            $id = is_array($record) ? $this->nullableInt($record['researcher_id'] ?? null) : null;
+
+            if ($id === null || isset($normalized[$id])) {
+                continue;
+            }
+
+            $role = $this->stringValue($record['role'] ?? null);
+            $normalized[$id] = [
+                'researcher_id' => $id,
+                'role' => in_array($role, ResearchPublication::RESEARCHER_ROLES, true) ? $role : 'co_author',
+                'affiliation_snapshot' => $this->nullableString($record['affiliation_snapshot'] ?? null),
+            ];
+        }
+
+        return array_values($normalized);
     }
 
     /**
@@ -354,7 +405,7 @@ final class ResearchPublicationCmsService implements ResearchPublicationCmsServi
      */
     private function storedPayload(ResearchPublication $publication): array
     {
-        $publication->loadMissing('translations');
+        $publication->loadMissing(['translations', 'researchers']);
         $abstracts = $publication->translations->map(fn (ResearchPublicationTranslation $translation): ?string => $translation->abstract)->values()->all();
         $translations = [];
 
@@ -385,6 +436,16 @@ final class ResearchPublicationCmsService implements ResearchPublicationCmsServi
             'doi' => $publication->doi,
             'journal_rank' => $publication->journal_rank,
             'external_url' => $publication->external_url,
+            'research_number' => $publication->research_number,
+            'publication_type' => $publication->publication_type,
+            'study_type' => $publication->study_type,
+            'issn' => $publication->issn,
+            'notes' => $publication->notes,
+            'researchers' => $publication->researchers->map(fn (Researcher $researcher): array => [
+                'researcher_id' => (int) $researcher->getKey(),
+                'role' => (string) $researcher->pivot->getAttribute('role'),
+                'affiliation_snapshot' => $researcher->pivot->getAttribute('affiliation_snapshot'),
+            ])->values()->all(),
             'file_media_id' => $publication->file_media_id,
             'image_media_id' => $publication->image_media_id,
             'legacy_image_path' => $publication->legacy_image_path,
@@ -446,7 +507,88 @@ final class ResearchPublicationCmsService implements ResearchPublicationCmsServi
         $this->appendMediaError($errors, 'image_media_id', $payload['image_media_id'] ?? null, true);
         $this->appendMediaError($errors, 'file_media_id', $payload['file_media_id'] ?? null, false);
 
+        $researchNumber = $this->nullableString($payload['research_number'] ?? null);
+
+        if ($researchNumber !== null && ResearchPublication::query()->withTrashed()->where('research_number', $researchNumber)->whereKeyNot($publicationId)->exists()) {
+            $errors['research_number'][] = 'This research number is already used by another publication.';
+        }
+
+        $publicationType = $this->nullableString($payload['publication_type'] ?? null);
+
+        if ($publicationType !== null && ! in_array($publicationType, ResearchPublication::PUBLICATION_TYPES, true)) {
+            $errors['publication_type'][] = 'Choose a publication type from the list.';
+        }
+
+        $studyType = $this->nullableString($payload['study_type'] ?? null);
+
+        if ($studyType !== null && ! in_array($studyType, ResearchPublication::STUDY_TYPES, true)) {
+            $errors['study_type'][] = 'Choose a study type from the list.';
+        }
+
+        $researcherIds = array_column(is_array($payload['researchers'] ?? null) ? $payload['researchers'] : [], 'researcher_id');
+
+        if ($researcherIds !== [] && Researcher::query()->whereKey($researcherIds)->count() !== count($researcherIds)) {
+            $errors['researchers'][] = 'One of the selected researchers no longer exists.';
+        }
+
         return $errors;
+    }
+
+    /** RES + year + a three-digit sequence, the research office's numbering (RES2026001). */
+    private function nextResearchNumber(DateTimeInterface $publishedAt): string
+    {
+        $prefix = 'RES'.$publishedAt->format('Y');
+        $last = ResearchPublication::query()->withTrashed()
+            ->where('research_number', 'like', $prefix.'%')
+            ->pluck('research_number')
+            ->map(fn (string $number): int => (int) substr($number, strlen($prefix)))
+            ->max() ?? 0;
+
+        return $prefix.str_pad((string) ($last + 1), 3, '0', STR_PAD_LEFT);
+    }
+
+    public function researcherOptions(?string $search = null, ?int $selectedId = null): array
+    {
+        $search = trim((string) $search);
+
+        return Researcher::query()
+            ->when($selectedId !== null, fn (Builder $query): Builder => $query->whereKey($selectedId))
+            ->when($selectedId === null && $search !== '', fn (Builder $query): Builder => $query->where('full_name', 'like', '%'.$search.'%'))
+            ->orderBy('full_name')
+            ->limit(50)
+            ->get(['id', 'full_name', 'affiliation'])
+            ->mapWithKeys(fn (Researcher $researcher): array => [
+                (int) $researcher->getKey() => trim($researcher->full_name).(filled($researcher->affiliation) ? ' ('.trim((string) $researcher->affiliation).')' : ''),
+            ])
+            ->all();
+    }
+
+    public function createResearcher(ResearcherDataDTO $data, int $userId): int
+    {
+        $user = User::query()->find($userId);
+
+        if (! $user instanceof User || (bool) $user->is_locked || Gate::forUser($user)->denies('create', ResearchPublication::class)) {
+            throw new AuthorizationException('This user is not authorized to register researchers.');
+        }
+
+        $name = trim($data->fullName);
+
+        if ($name === '') {
+            throw ValidationException::withMessages(['full_name' => ['The researcher\'s name is required.']]);
+        }
+
+        $researcher = Researcher::query()->create([
+            'full_name' => $name,
+            'email' => $this->nullableString($data->email),
+            'affiliation' => $this->nullableString($data->affiliation),
+            'faculty_id' => $data->facultyId,
+            'faculty_member_id' => $data->facultyMemberId,
+            'registration_status' => 'registered',
+            'created_by' => $userId,
+        ]);
+        $this->auditService->log('researcher.created', $userId, Researcher::class, (int) $researcher->getKey());
+
+        return (int) $researcher->getKey();
     }
 
     /** @param array<string, array<int, string>> $errors */

@@ -46,6 +46,7 @@ use App\Models\Person\FacultyMember;
 use App\Models\Person\Person;
 use App\Models\Shared\MigrationLog;
 use App\Support\MediaUrlResolver;
+use App\Support\PersonName;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -2165,48 +2166,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
 
     private function samePersonName(string $first, string $second): bool
     {
-        $firstTokens = $this->personNameTokens($first);
-        $secondTokens = $this->personNameTokens($second);
-
-        if ($firstTokens === [] || $secondTokens === []) {
-            return false;
-        }
-
-        if (implode('', $firstTokens) === implode('', $secondTokens)) {
-            return true;
-        }
-
-        // Allow a middle name present on one side only ("Ayman Ali" vs
-        // "Ayman Mohammad Ali"), as long as two or more names still agree.
-        [$shorter, $longer] = count($firstTokens) <= count($secondTokens) ? [$firstTokens, $secondTokens] : [$secondTokens, $firstTokens];
-
-        return count($shorter) >= 2
-            && $shorter[0] === $longer[0]
-            && end($shorter) === end($longer)
-            && array_diff($shorter, $longer) === [];
-    }
-
-    /**
-     * A person's name without academic titles, punctuation or Arabic letter
-     * variants, as comparable tokens.
-     *
-     * @return array<int, string>
-     */
-    private function personNameTokens(string $name): array
-    {
-        $name = mb_strtolower(trim($name));
-        $name = strtr($name, ['أ' => 'ا', 'إ' => 'ا', 'آ' => 'ا', 'ة' => 'ه', 'ى' => 'ي', 'ـ' => '']);
-        $name = (string) preg_replace('/[^\p{L}\p{N}]+/u', ' ', $name);
-
-        $titles = [
-            'prof', 'professor', 'dr', 'doctor', 'assoc', 'associate', 'asst', 'assistant', 'eng', 'engineer', 'mr', 'mrs', 'ms',
-            'ا', 'د', 'م', 'اد', 'امد', 'استاذ', 'الاستاذ', 'الاستاذه', 'دكتور', 'الدكتور', 'الدكتوره', 'المهندس', 'المهندسه', 'المساعد', 'المساعده', 'المشارك', 'المشاركه',
-        ];
-
-        return array_values(array_filter(
-            explode(' ', $name),
-            static fn (string $token): bool => $token !== '' && ! in_array($token, $titles, true),
-        ));
+        return PersonName::same($first, $second);
     }
 
     /** @return array<int, array{id: string, label: string, body: string}> */

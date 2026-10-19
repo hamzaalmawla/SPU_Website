@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources;
 
 use App\Contracts\Research\ResearchPublicationCmsServiceInterface;
+use App\DTOs\Research\ResearcherDataDTO;
 use App\Filament\Resources\ResearchPublicationResource\Pages;
 use App\Filament\Support\MediaPicker;
 use App\Models\Research\ResearchPublication;
@@ -108,6 +109,7 @@ class ResearchPublicationResource extends Resource
                                         ->extraInputAttributes(fn (Get $get): array => ['dir' => self::direction($get('locale'))]),
                                     TextInput::make('authors')
                                         ->label(__('admin.research_publication.fields.authors'))
+                                        ->helperText(__('admin.research_publication.help.authors_text'))
                                         ->maxLength(1000)
                                         ->extraInputAttributes(fn (Get $get): array => ['dir' => self::direction($get('locale'))]),
                                     TextInput::make('publisher')
@@ -146,6 +148,84 @@ class ResearchPublicationResource extends Resource
                     Tab::make(__('admin.research_publication.tabs.details'))
                         ->icon('heroicon-o-information-circle')
                         ->schema([
+                            Section::make(__('admin.research_publication.sections.classification'))
+                                ->schema([
+                                    TextInput::make('research_number')
+                                        ->label(__('admin.research_publication.fields.research_number'))
+                                        ->helperText(__('admin.research_publication.help.research_number'))
+                                        ->maxLength(30),
+                                    Select::make('publication_type')
+                                        ->label(__('admin.research_publication.fields.publication_type'))
+                                        ->options(self::codeOptions('publication_types', ResearchPublication::PUBLICATION_TYPES))
+                                        ->native(false),
+                                    Select::make('study_type')
+                                        ->label(__('admin.research_publication.fields.study_type'))
+                                        ->options(self::codeOptions('study_types', ResearchPublication::STUDY_TYPES))
+                                        ->native(false),
+                                    TextInput::make('issn')
+                                        ->label(__('admin.research_publication.fields.issn'))
+                                        ->maxLength(30),
+                                    Textarea::make('notes')
+                                        ->label(__('admin.research_publication.fields.notes'))
+                                        ->helperText(__('admin.research_publication.help.notes'))
+                                        ->rows(2)
+                                        ->columnSpanFull(),
+                                ])
+                                ->columns(2),
+                            Section::make(__('admin.research_publication.sections.researchers'))
+                                ->description(__('admin.research_publication.help.researchers'))
+                                ->schema([
+                                    Repeater::make('researchers')
+                                        ->hiddenLabel()
+                                        ->schema([
+                                            Select::make('researcher_id')
+                                                ->label(__('admin.research_publication.fields.researcher_person'))
+                                                ->required()
+                                                ->searchable()
+                                                ->native(false)
+                                                ->options(fn (): array => [])
+                                                ->getSearchResultsUsing(fn (string $search): array => app(ResearchPublicationCmsServiceInterface::class)->researcherOptions($search))
+                                                ->getOptionLabelUsing(fn (mixed $value): ?string => is_numeric($value) ? (app(ResearchPublicationCmsServiceInterface::class)->researcherOptions(null, (int) $value)[(int) $value] ?? null) : null)
+                                                ->createOptionForm([
+                                                    TextInput::make('full_name')->label(__('admin.research_publication.fields.full_name'))->required()->maxLength(200),
+                                                    TextInput::make('email')->label(__('admin.research_publication.fields.email'))->email()->maxLength(150),
+                                                    TextInput::make('affiliation')->label(__('admin.research_publication.fields.affiliation'))->maxLength(255),
+                                                    Select::make('faculty_member_id')
+                                                        ->label(__('admin.research_publication.fields.researcher_faculty_member'))
+                                                        ->helperText(__('admin.research_publication.help.researcher_faculty_member'))
+                                                        ->searchable()
+                                                        ->native(false)
+                                                        ->options(fn (): array => [])
+                                                        ->getSearchResultsUsing(fn (string $search): array => self::facultyMemberOptions($search)),
+                                                ])
+                                                ->createOptionUsing(function (array $data): int {
+                                                    $user = auth()->user();
+                                                    abort_unless($user instanceof User, 403);
+
+                                                    return app(ResearchPublicationCmsServiceInterface::class)->createResearcher(new ResearcherDataDTO(
+                                                        fullName: (string) ($data['full_name'] ?? ''),
+                                                        email: is_string($data['email'] ?? null) ? $data['email'] : null,
+                                                        affiliation: is_string($data['affiliation'] ?? null) ? $data['affiliation'] : null,
+                                                        facultyMemberId: is_numeric($data['faculty_member_id'] ?? null) ? (int) $data['faculty_member_id'] : null,
+                                                    ), (int) $user->getKey());
+                                                })
+                                                ->columnSpan(2),
+                                            Select::make('role')
+                                                ->label(__('admin.research_publication.fields.role'))
+                                                ->options(self::codeOptions('roles', ResearchPublication::RESEARCHER_ROLES))
+                                                ->default('co_author')
+                                                ->required()
+                                                ->native(false),
+                                            TextInput::make('affiliation_snapshot')
+                                                ->label(__('admin.research_publication.fields.affiliation'))
+                                                ->maxLength(255),
+                                        ])
+                                        ->columns(4)
+                                        ->defaultItems(0)
+                                        ->reorderable()
+                                        ->addActionLabel(__('admin.research_publication.fields.researcher_person').' +')
+                                        ->columnSpanFull(),
+                                ]),
                             Section::make(__('admin.research_publication.sections.attribution'))
                                 ->schema([
                                     Select::make('faculty_id')
@@ -180,6 +260,7 @@ class ResearchPublicationResource extends Resource
                                         ->maxLength(32),
                                     TextInput::make('external_url')
                                         ->label(__('admin.research_publication.fields.external_url'))
+                                        ->helperText(__('admin.research_publication.help.external_url'))
                                         ->url()
                                         ->maxLength(255),
                                 ])
@@ -360,6 +441,15 @@ class ResearchPublicationResource extends Resource
         $locale = app()->getLocale() === 'en' ? 'en' : 'ar';
 
         return (string) ($publication->effectiveFaculty()?->translations->firstWhere('locale', $locale)?->name ?? '');
+    }
+
+    /**
+     * @param  list<string>  $codes
+     * @return array<string, string>
+     */
+    private static function codeOptions(string $group, array $codes): array
+    {
+        return collect($codes)->mapWithKeys(fn (string $code): array => [$code => __('research.'.$group.'.'.$code)])->all();
     }
 
     private static function direction(mixed $locale): string

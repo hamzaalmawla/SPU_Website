@@ -727,6 +727,32 @@ if [[ -f "${FACULTY_RESEARCH_APPROVAL}" ]]; then
     mv "${FACULTY_RESEARCH_APPROVAL}" "${FACULTY_RESEARCH_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
 fi
 
+# ── Approved research register import ───────────────────────────────────────
+# Adds the research office register's papers the website does not have yet,
+# with their researchers (database/seeders/Data/research/spu_sci_research.json,
+# converted from the office's database dump and shipped with this release).
+# Papers already on the site are left alone. One hardcoded command over one
+# hardcoded file, inert unless a human places an approval file not in git:
+#
+#     storage/app/private/legacy-imports/research-register.approved
+#
+# Re-running it adds nothing twice. It disarms itself after one run.
+RESEARCH_REGISTER_APPROVAL="${IMPORT_DIR}/research-register.approved"
+RESEARCH_REGISTER_DATA="${APP}/database/seeders/Data/research/spu_sci_research.json"
+
+if [[ -f "${RESEARCH_REGISTER_APPROVAL}" ]]; then
+    log "Research register import"
+    [[ -f "${RESEARCH_REGISTER_DATA}" ]] || fail "No research register data file in this release."
+
+    # Dry run first: it validates and prints what it would do, and writes nothing.
+    (cd "${APP}" && "${PHP}" -d memory_limit=512M artisan research:import-register "${RESEARCH_REGISTER_DATA}" --no-ansi) \
+        || fail "The research register data failed validation. Nothing was written."
+    (cd "${APP}" && "${PHP}" -d memory_limit=512M artisan research:import-register "${RESEARCH_REGISTER_DATA}" --write --approve=research-register-20261019 --no-ansi) \
+        || fail "The research register import failed."
+
+    mv "${RESEARCH_REGISTER_APPROVAL}" "${RESEARCH_REGISTER_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
 # ── Approved faculty structure import ────────────────────────────────────────
 # Replaces the redesign's invented departments and labs with the old site's real
 # ones and adds the subpages the old site had (dentistry clinical cases, the

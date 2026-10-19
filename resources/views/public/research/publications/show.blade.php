@@ -56,8 +56,30 @@
                             </div>
                         </div>
                     @endif
-                    @if (! empty($item['scholarUrl']) || ! empty($item['scopusUrl']))
+                    @if (! empty($item['researchers']))
+                        <section class="rounded-[8px] border border-slate-200 bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)]" aria-labelledby="publication-researchers-heading">
+                            <h2 id="publication-researchers-heading" class="text-[13px] font-bold uppercase tracking-[0.12em] text-spu-red">{{ __('public.researchers') }}</h2>
+                            <ul class="mt-4 grid gap-3 sm:grid-cols-2">
+                                @foreach ($item['researchers'] as $researcher)
+                                    <li class="flex min-h-12 flex-col justify-center rounded-[6px] border border-spu-blue/10 px-4 py-2.5">
+                                        @if (! empty($researcher['profileUrl']))
+                                            <a href="{{ $researcher['profileUrl'] }}" dir="auto" class="text-sm font-bold text-spu-blue transition hover:text-spu-red hover:underline">{{ $researcher['name'] }}</a>
+                                        @else
+                                            <span dir="auto" class="text-sm font-bold text-spu-blue">{{ $researcher['name'] }}</span>
+                                        @endif
+                                        @if (! empty($researcher['role']))
+                                            <span class="mt-0.5 text-[11px] font-semibold text-slate-500">{{ $researcher['role'] }}</span>
+                                        @endif
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </section>
+                    @endif
+                    @if (! empty($item['paperUrl']) || ! empty($item['scholarUrl']) || ! empty($item['scopusUrl']))
                         <div class="flex flex-wrap gap-3">
+                            @if (! empty($item['paperUrl']) && empty($item['scholarUrl']))
+                                <a href="{{ $item['paperUrl'] }}" target="_blank" rel="noopener" class="inline-flex h-12 items-center gap-2.5 rounded-[6px] bg-spu-red px-6 text-xs font-bold uppercase tracking-[0.08em] text-white transition hover:bg-spu-red/90 hover:shadow-lg">{{ __('public.read_paper') }}</a>
+                            @endif
                             @if (! empty($item['scholarUrl']))
                                 <a href="{{ $item['scholarUrl'] }}" target="_blank" rel="noopener" class="inline-flex h-12 items-center gap-2.5 rounded-[6px] bg-spu-red px-6 text-xs font-bold uppercase tracking-[0.08em] text-white transition hover:bg-spu-red/90 hover:shadow-lg">{{ __('public.view_on_google_scholar') }}</a>
                             @endif
@@ -108,7 +130,7 @@
                 <aside class="rounded-[8px] order-1 lg:order-2 border border-slate-200 bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)] lg:sticky lg:top-28">
                     <h2 class="text-[13px] font-bold uppercase tracking-[0.12em] text-spu-red">{{ __('public.publication_info') }}</h2>
                     <dl class="mt-5 divide-y divide-slate-100">
-                        @foreach ([__('public.category') => $item['category'] ?? $item['type'] ?? '', __('public.author') => $item['author'] ?? '', __('public.publication_date') => $item['publicationDate'] ?? $item['year'] ?? '', __('public.journal') => $item['journalTitle'] ?? $item['publisher'] ?? '', __('public.volume') => $item['volume'] ?? '', __('public.issue') => $item['issue'] ?? '', __('public.pages') => $item['pages'] ?? '', __('public.issn') => $item['issn'] ?? '', __('public.license') => $item['license'] ?? '', __('public.faculty') => $item['faculty'] ?? '', __('public.quartile') => $item['rate'] ?? '', __('public.type') => $item['type'] ?? ''] as $label => $value)
+                        @foreach ([__('public.category') => $item['category'] ?? $item['type'] ?? '', __('public.publication_type') => $item['publicationType'] ?? '', __('public.study_type') => $item['studyType'] ?? '', __('public.author') => empty($item['researchers']) ? ($item['author'] ?? '') : '', __('public.publication_date') => $item['publicationDate'] ?? $item['year'] ?? '', __('public.journal') => $item['journalTitle'] ?? $item['publisher'] ?? '', __('public.publication_details') => ($item['citation'] ?? '') !== ($item['publisher'] ?? '') ? ($item['citation'] ?? '') : '',__('public.volume') => $item['volume'] ?? '', __('public.issue') => $item['issue'] ?? '', __('public.pages') => $item['pages'] ?? '', __('public.issn') => $item['issn'] ?? '', __('public.license') => $item['license'] ?? '', __('public.faculty') => $item['faculty'] ?? '', __('public.quartile') => $item['rate'] ?? '', __('public.type') => $item['type'] ?? ''] as $label => $value)
                             @if ($value !== '')
                                 <div class="py-3 first:pt-0"><dt class="text-[11px] font-bold uppercase tracking-wider text-slate-400">{{ $label }}</dt><dd dir="auto" class="mt-1 text-sm font-bold text-spu-blue">{{ $value }}</dd></div>
                             @endif

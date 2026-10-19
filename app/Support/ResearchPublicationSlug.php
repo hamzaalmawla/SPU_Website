@@ -24,6 +24,25 @@ final class ResearchPublicationSlug
         return ($slug !== '' ? $slug : 'legacy-research-publication').'-'.$suffix;
     }
 
+    /**
+     * A derived slug short enough to store, with room left for a "-2" style
+     * suffix: long titles are cut at a word, and the numeric suffix is kept.
+     * Only for slugs about to be stored; a stored or live slug never changes.
+     */
+    public static function storable(string $slug, int $maxLength = 180): string
+    {
+        if (mb_strlen($slug) <= $maxLength || preg_match('/^(.*)-(\d+)$/', $slug, $matches) !== 1) {
+            return mb_substr($slug, 0, $maxLength);
+        }
+
+        $room = $maxLength - mb_strlen($matches[2]) - 1;
+        $head = mb_substr($matches[1], 0, $room);
+        $cut = mb_strrpos($head, '-');
+        $head = $cut !== false && $cut > $room / 2 ? mb_substr($head, 0, $cut) : rtrim($head, '-');
+
+        return $head.'-'.$matches[2];
+    }
+
     public static function isValid(string $slug): bool
     {
         return mb_strlen($slug) <= 191 && preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug) === 1;

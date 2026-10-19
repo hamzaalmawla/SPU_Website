@@ -119,6 +119,7 @@ use App\Contracts\Page\ProfilePageServiceInterface;
 use App\Contracts\Page\VirtualTourPageServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Contracts\Research\ResearchPublicationCmsServiceInterface;
+use App\Contracts\Research\ResearchRegisterImportServiceInterface;
 use App\Contracts\Search\SearchIndexServiceInterface;
 use App\Contracts\Search\SiteSearchServiceInterface;
 use App\Contracts\Seo\SeoMetadataServiceInterface;
@@ -302,6 +303,7 @@ use App\Services\Preview\PreviewService;
 use App\Services\Preview\PreviewTokenStore;
 use App\Services\Research\ResearchPageService;
 use App\Services\Research\ResearchPublicationCmsService;
+use App\Services\Research\ResearchRegisterImportService;
 use App\Services\Search\SearchIndexService;
 use App\Services\Search\SiteSearchService;
 use App\Services\Seo\SeoMetadataService;
@@ -648,6 +650,7 @@ class AppServiceProvider extends ServiceProvider
             NewsAdminWorkflowServiceInterface::class => NewsAdminWorkflowService::class,
             NewsArticleCmsServiceInterface::class => NewsArticleCmsService::class,
             ResearchPublicationCmsServiceInterface::class => ResearchPublicationCmsService::class,
+            ResearchRegisterImportServiceInterface::class => ResearchRegisterImportService::class,
             NewsServiceInterface::class => NewsService::class,
             SeoMetadataServiceInterface::class => SeoMetadataService::class,
             StructuredDataServiceInterface::class => StructuredDataService::class,

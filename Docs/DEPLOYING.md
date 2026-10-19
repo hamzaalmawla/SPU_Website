@@ -523,6 +523,23 @@ For a plan that editors have already changed, nothing is merged automatically. E
 the visual editor, or someone runs the command by hand with `--replace-edited` after agreeing that
 their changes may be replaced (the previous draft versions stay in `cms_drafts`).
 
+### The research office register
+
+The research office's register (its spu_sci database) is converted by
+`database/seeders/Data/research/convert_spu_sci.py` into `spu_sci_research.json`, which ships with the
+release. The converter merges papers and researchers entered twice, maps the register's free-text study
+types to the office's codes (kept verbatim in each paper's internal notes) and leaves out researchers'
+emails and phone numbers. Deploying does not load it. To load it, place this empty file on the server:
+
+```
+storage/app/private/legacy-imports/research-register.approved
+```
+
+`cpanel-deploy.sh` then runs `research:import-register` once (dry run, then write) and renames the file.
+Papers the site already has (same title) are left alone, re-running adds nothing twice, and papers with
+no publication date come in hidden until an editor adds one. To refresh the data from a newer dump, re-run
+the converter locally and ship the new JSON.
+
 ### Person photos in the legacy media library
 
 To register imported person photos (honor students, alumni, faculty members, persons) as legacy media

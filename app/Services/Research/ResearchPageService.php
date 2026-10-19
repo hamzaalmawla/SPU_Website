@@ -16,12 +16,14 @@ use App\DTOs\Research\ResearchPageDTO;
 use App\DTOs\Settings\FooterColumnDTO;
 use App\Models\Media\MediaAsset;
 use App\Models\Person\FacultyMember;
+use App\Models\Research\Researcher;
 use App\Models\Research\ResearchPublication;
 use App\Models\Research\ResearchPublicationTranslation;
 use App\Models\Shared\MigrationLog;
 use App\Support\LegacyPublicationMetadata;
 use App\Support\MediaUrlResolver;
 use App\Support\ResearchPublicationSlug;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -38,6 +40,9 @@ final class ResearchPageService implements ResearchPageServiceInterface
 
     /** @var array<string, mixed>|null */
     private ?array $detailContent = null;
+
+    /** @var array<string, bool> Staff profile slugs already checked for being public. */
+    private array $publicProfiles = [];
 
     public function __construct(
         private readonly CmsWorkflowServiceInterface $cmsWorkflowService,
@@ -1186,9 +1191,13 @@ final class ResearchPageService implements ResearchPageServiceInterface
             'doi' => is_string($payload['doi'] ?? null) ? $payload['doi'] : null,
             'journal_rank' => is_string($payload['journal_rank'] ?? null) ? $payload['journal_rank'] : null,
             'external_url' => is_string($payload['external_url'] ?? null) ? $payload['external_url'] : null,
+            'publication_type' => is_string($payload['publication_type'] ?? null) ? $payload['publication_type'] : null,
+            'study_type' => is_string($payload['study_type'] ?? null) ? $payload['study_type'] : null,
+            'issn' => is_string($payload['issn'] ?? null) ? $payload['issn'] : null,
             'file_media_id' => is_numeric($payload['file_media_id'] ?? null) ? (int) $payload['file_media_id'] : null,
             'image_media_id' => is_numeric($payload['image_media_id'] ?? null) ? (int) $payload['image_media_id'] : null,
         ]);
+        $draft->setRelation('researchers', $this->previewResearchers(is_array($payload['researchers'] ?? null) ? $payload['researchers'] : []));
         $draft->setRelation('facultyMember', $draft->faculty_member_id !== null
             ? FacultyMember::query()->with('faculty.translations')->find($draft->faculty_member_id)
             : null);
@@ -1564,7 +1573,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
 
         $publications = ResearchPublication::query()
             ->public()
-            ->with(['translations', 'faculty.translations', 'facultyMember.faculty.translations', 'fileMedia', 'imageMedia', 'files.mediaAsset', 'legacyFileReferences'])
+            ->with(['translations', 'faculty.translations', 'facultyMember.faculty.translations', 'fileMedia', 'imageMedia', 'files.mediaAsset', 'legacyFileReferences', 'researchers.facultyMember'])
             ->orderByDesc('published_at')
             ->orderBy('sort_order')
             ->orderByDesc('id')
@@ -1655,6 +1664,19 @@ final class ResearchPageService implements ResearchPageServiceInterface
             ?? $faculty?->translations->firstWhere('locale', 'ar');
 
         $downloads = $this->publicationDownloads($publication, $locale);
+        $researchers = $this->publicationResearchers($publication, $locale);
+
+        // The researchers list, when the paper has one, is the author line.
+        if ($researchers !== []) {
+            $authors = implode(', ', array_column($researchers, 'name'));
+        }
+
+        $publicationType = in_array($publication->publication_type, ResearchPublication::PUBLICATION_TYPES, true)
+            ? (string) trans('research.publication_types.'.$publication->publication_type, [], $locale)
+            : '';
+        $studyType = in_array($publication->study_type, ResearchPublication::STUDY_TYPES, true)
+            ? (string) trans('research.study_types.'.$publication->study_type, [], $locale)
+            : '';
 
         return [
             'id' => $sourceId !== null ? 'legacy-'.$sourceId : 'research-publication-'.$publication->getKey(),
@@ -1672,6 +1694,11 @@ final class ResearchPageService implements ResearchPageServiceInterface
             'faculty' => (string) ($facultyTranslation?->name ?? ''),
             'facultySlug' => $faculty !== null ? $this->canonicalFacultySlug((string) ($faculty->public_slug ?: $faculty->slug)) : '',
             'author' => $authors,
+            'researchers' => $researchers,
+            'publicationType' => $publicationType,
+            'studyType' => $studyType,
+            'issn' => (string) ($publication->issn ?? ''),
+            'paperUrl' => $externalUrl,
             'doi' => $publication->doi,
             'rate' => $publication->journal_rank,
             'citation' => $citation,
@@ -1688,7 +1715,8 @@ final class ResearchPageService implements ResearchPageServiceInterface
                 ->unique()
                 ->implode(' '),
             'resolvedThemes' => [],
-            'scholarUrl' => $externalUrl,
+            // The paper link is labelled "View on Google Scholar" only when it goes there.
+            'scholarUrl' => $externalUrl !== null && str_contains((string) parse_url($externalUrl, PHP_URL_HOST), 'scholar.google.') ? $externalUrl : null,
             'scopusUrl' => null,
             'image' => ($publication->imageMedia instanceof MediaAsset ? MediaUrlResolver::resolveImage($publication->imageMedia->webp_path, $publication->imageMedia->path, $publication->imageMedia->disk) : null)
                 ?? MediaUrlResolver::resolveLegacy($publication->legacy_image_path)
@@ -1859,6 +1887,62 @@ final class ResearchPageService implements ResearchPageServiceInterface
     }
 
     /** @return array<int, array{label: string, url: string, type: string}> */
+    /**
+     * The paper's researchers in author order, each with their role and, when
+     * they are a staff member with a public profile, a link to it.
+     *
+     * @return list<array{name: string, role: string, profileUrl: ?string}>
+     */
+    private function publicationResearchers(ResearchPublication $publication, string $locale): array
+    {
+        if (! $publication->relationLoaded('researchers')) {
+            return [];
+        }
+
+        return $publication->researchers
+            ->map(function (Researcher $researcher) use ($locale): array {
+                $role = (string) $researcher->pivot->getAttribute('role');
+                $memberSlug = (string) ($researcher->facultyMember?->slug ?? '');
+
+                return [
+                    'name' => trim($researcher->full_name),
+                    'role' => in_array($role, ResearchPublication::RESEARCHER_ROLES, true) ? (string) trans('research.roles.'.$role, [], $locale) : '',
+                    'profileUrl' => $memberSlug !== '' && $this->hasPublicProfile($memberSlug) ? '/'.$locale.'/about/profile/'.$memberSlug : null,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * The draft's researchers as unsaved pivot rows, so a preview shows them
+     * before the paper is published.
+     *
+     * @param  array<int, mixed>  $rows
+     * @return \Illuminate\Database\Eloquent\Collection<int, Researcher>
+     */
+    private function previewResearchers(array $rows): \Illuminate\Database\Eloquent\Collection
+    {
+        $ids = collect($rows)->map(fn (mixed $row): ?int => is_array($row) && is_numeric($row['researcher_id'] ?? null) ? (int) $row['researcher_id'] : null)->filter()->values();
+        $researchers = Researcher::query()->with('facultyMember')->whereKey($ids->all())->get()->keyBy('id');
+
+        return new \Illuminate\Database\Eloquent\Collection(collect($rows)
+            ->filter(fn (mixed $row): bool => is_array($row) && is_numeric($row['researcher_id'] ?? null) && $researchers->has((int) $row['researcher_id']))
+            ->map(function (array $row) use ($researchers): Researcher {
+                $researcher = clone $researchers->get((int) $row['researcher_id']);
+                $researcher->setRelation('pivot', new Pivot(['role' => (string) ($row['role'] ?? 'co_author')]));
+
+                return $researcher;
+            })
+            ->values()
+            ->all());
+    }
+
+    private function hasPublicProfile(string $slug): bool
+    {
+        return $this->publicProfiles[$slug] ??= $this->profilePageService->hasPublicProfile($slug);
+    }
+
     private function publicationDownloads(ResearchPublication $publication, string $locale): array
     {
         $downloads = [];

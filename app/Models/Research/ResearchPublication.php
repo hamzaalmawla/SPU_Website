@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -23,8 +24,20 @@ class ResearchPublication extends Model
     /** Staff-profile publications (jx_member_categories) and the faculty research lists (jx_categories). */
     public const LEGACY_SOURCE_TABLES = ['jx_member_categories', 'jx_categories'];
 
+    /** The research office's register codes (its "gamma" system). */
+    public const PUBLICATION_TYPES = ['original_research', 'review_article', 'conference_paper', 'book_chapter', 'case_report', 'other'];
+
+    public const STUDY_TYPES = ['fundamental', 'applied', 'clinical', 'theoretical', 'empirical', 'other'];
+
+    public const RESEARCHER_ROLES = ['lead_author', 'corresponding_author', 'co_author', 'supervisor', 'contributor'];
+
     protected $fillable = [
         'slug',
+        'research_number',
+        'publication_type',
+        'study_type',
+        'issn',
+        'notes',
         'faculty_id',
         'faculty_member_id',
         'person_id',
@@ -87,6 +100,15 @@ class ResearchPublication extends Model
     public function translations(): HasMany
     {
         return $this->hasMany(ResearchPublicationTranslation::class)->orderBy('locale');
+    }
+
+    /** The paper's researchers in author order, with each one's role. */
+    public function researchers(): BelongsToMany
+    {
+        return $this->belongsToMany(Researcher::class, 'research_publication_researcher')
+            ->withPivot(['role', 'sort_order', 'affiliation_snapshot'])
+            ->withTimestamps()
+            ->orderByPivot('sort_order');
     }
 
     public function files(): HasMany
