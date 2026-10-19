@@ -164,6 +164,42 @@ final class ResearchRegisterTest extends TestCase
         $this->assertSame(3, ResearchPublication::query()->count());
     }
 
+    public function test_a_second_run_adds_links_and_faculties_without_overwriting_editors(): void
+    {
+        $dentistry = Faculty::query()->where('public_slug', 'dentistry')->firstOrFail();
+        $pharmacy = Faculty::query()->where('public_slug', 'pharmacy')->firstOrFail();
+        $import = app(ResearchRegisterImportServiceInterface::class);
+        $first = $this->registerFile([
+            $this->paper(1, 'RES2025010', 'Orthodontic Pain After Separation', [11]),
+            $this->paper(2, 'RES2025011', 'Essential Oil Activity Against Fungi', [11]),
+        ]);
+        $import->import($first, true, ResearchRegisterImportService::APPROVAL_TOKEN);
+
+        // An editor sets one paper's faculty by hand before the second run.
+        $edited = ResearchPublication::query()->where('research_number', 'RES2025011')->firstOrFail();
+        $edited->forceFill(['faculty_id' => $pharmacy->getKey()])->save();
+
+        $second = $this->registerFile([
+            [...$this->paper(1, 'RES2025010', 'Orthodontic Pain After Separation', [11]), 'doi' => '10.1186/S40510-024-00001-1', 'doi_source' => 'Crossref (exact title, same ISSN)', 'faculty' => 'dentistry', 'faculty_reason' => 'subject: orthodontic'],
+            [...$this->paper(2, 'RES2025011', 'Essential Oil Activity Against Fungi', [11]), 'faculty' => 'medicine', 'faculty_reason' => 'subject: clinical or health topic'],
+        ]);
+        $result = $import->import($second, true, ResearchRegisterImportService::APPROVAL_TOKEN);
+
+        $this->assertSame([0, 1, 1, 1], [$result->created, $result->updated, $result->linksAdded, $result->facultiesAdded]);
+        $paper = ResearchPublication::query()->where('research_number', 'RES2025010')->firstOrFail();
+        $this->assertSame(['10.1186/s40510-024-00001-1', 'https://doi.org/10.1186/s40510-024-00001-1', (int) $dentistry->getKey()], [$paper->doi, $paper->external_url, (int) $paper->faculty_id]);
+        $this->assertStringContainsString('Faculty suggested from subject: orthodontic.', (string) $paper->notes);
+        $this->assertSame((int) $pharmacy->getKey(), (int) $edited->refresh()->faculty_id);
+        $this->assertSame((int) $dentistry->getKey(), (int) Researcher::query()->where('full_name', 'Rana Aziz')->value('faculty_id'));
+
+        Cache::flush();
+        $this->get('/en/research/publications/'.$paper->slug)
+            ->assertOk()
+            ->assertSee('Read the paper')
+            ->assertSee('https://doi.org/10.1186/s40510-024-00001-1', false)
+            ->assertSee('Faculty of Dentistry');
+    }
+
     public function test_person_names_match_without_titles_or_spelling_noise(): void
     {
         $this->assertTrue(PersonName::same('Assoc. Prof. Dr. Mouhib Al-Noukari', 'Mouhib Alnoukari'));

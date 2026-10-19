@@ -12,6 +12,7 @@ personal data and this file is committed.
 """
 
 import json
+import os
 import re
 import sys
 from collections import OrderedDict
@@ -101,10 +102,175 @@ def venue(place):
     return name or None
 
 
+DOI = re.compile(r'\b10\.\d{4,9}/[^\s;،,]+', re.I)
+
+
+def doi(*texts):
+    """The DOI written in the register's text, e.g. "… DOI: 10.1097/MD.0000000000037708"."""
+    for text in texts:
+        match = DOI.search(text or '')
+        if match:
+            return match.group(0).rstrip('.)]').lower()
+    return None
+
+
+# ── Faculty ──────────────────────────────────────────────────────────────────
+# The register does not record a paper's faculty, so it is read from the
+# paper's subject: words in the journal's name weigh more than words in the
+# title. Rules are whole-word and checked in this order of specificity.
+FACULTY_TERMS = {
+    'dentistry': {
+        'journal': r'dent|oral|orthodon|endodon|periodon|prosthodon|odont|stomatolog|maxillofac|craniofac',
+        'title': r'dental|dentists?|dentition|tooth|teeth|orthodontics?|orthodontic|endodontics?|endodontic|periodontal|periodontitis|'
+                 r'prosthodontic|oral health|oral hygiene|oral mucosa|oral cavity|caries|carious|molars?|incisors?|premolars?|canines?|'
+                 r'dentures?|endocrowns?|crowns?|pulp|pulpal|pulpotomy|occlusal|occlusion|malocclusion|maxillary|mandibular|mandible|'
+                 r'maxilla|gingival|gingivitis|enamel|dentin|dentine|root canals?|implants?|alveolar|cleft lip|cleft palate|'
+                 r'temporomandibular|tmj|orthognathic|veneers?|zirconia|glass ionomer|brackets?|aligners?|periapical|apices|'
+                 r'odontoma|bruxism|halitosis|mouthwash|toothbrush\w*|twin block|facemask therapy|class ii+|herpes labialis|'
+                 r'third molar|jaw|jawbones?|panoramic',
+    },
+    'pharmacy': {
+        'journal': r'pharma\w*|drug|medicinal chemistry|natural product|phytochem|antibiotics|molecules|pathogens|toxicolog|'
+                   r'biochemistry|chemistry|chromatograph',
+        'title': r'pharmaceutical|pharmacist|pharmacy|pharmacokinetic\w*|synthesis|synthesized|derivatives?|formulations?|'
+                 r'tablets?|nanoparticles?|hplc|chromatograph\w*|spectrophotometr\w*|extracts?|essential oils?|antimicrobial activity|'
+                 r'antibacterial activity|antifungals?|antioxidant|phytochemical|docking|qsar|bioavailability|dissolution|'
+                 r'excipients?|zebrafish|metabolomic\w*|in vitro activity|antiviral activity|antileishmanial|drug use|'
+                 r'antibiotic usage|self-medication|medication use',
+    },
+    'artificial-intelligence': {
+        'journal': r'ieee|acm|computer science|computing|informatics|artificial intelligence|software|intelligent systems',
+        'title': r'machine learning|deep learning|neural networks?|artificial intelligence|software|devops|algorithms?|'
+                 r'cloud computing|blockchain|cybersecurity|internet of things|iot|data mining|big data|information systems?|'
+                 r'robot\w*|natural language processing|chatbots?|chatgpt|large language models?|image processing|'
+                 r'computer vision(?! syndrome)|maturity model|cmmi|prediction model|predictive model',
+    },
+    'business-administration': {
+        'journal': r'business|management|marketing|economic\w*|finance|accounting|entrepreneur\w*',
+        'title': r'marketing|accounting|economics?|economy|financial|banking|entrepreneur\w*|e-commerce|supply chain|'
+                 r'human resources?|organizational performance|job satisfaction|employees?|customers?|consumers?|brand',
+    },
+    'petroleum': {
+        'journal': r'petroleum|oil and gas|energy fuels|geoscience|reservoir',
+        'title': r'petroleum|oil fields?|reservoirs?|drilling|crude oil|natural gas|hydrocarbons?|refinery|refining|'
+                 r'well logging|porosity|permeability',
+    },
+    'building-construction-engineering': {
+        'journal': r'construction|civil engineering|structural|building|concrete|cement',
+        'title': r'concrete|cement|structural|construction|civil engineering|buildings?|seismic|asphalt|soil|beams?|'
+                 r'columns?|reinforced',
+    },
+}
+MEDICAL = (r'case reports?|patients?|clinical|syndrome|diseases?|cancer|tumou?rs?|medical|medicine|health|hospitals?|'
+           r'surgery|surgical|covid|infections?|students?|nurs\w*|diagnos\w*|therap\w*|treatment|cureus|lancet|heliyon|'
+           r'oncolog\w*|cardi\w*|pediatric|paediatric|psychi\w*|depress\w*|anxiety|blood|virus|bacteri\w*|lungs?|renal|'
+           r'kidneys?|liver|pregnan\w*|women|child\w*|infants?|neonat\w*|epidemiolog\w*|prevalence|vaccin\w*|stroke|'
+           r'otolaryng\w*|ear|nose|throat|laryn\w*|literature review|systematic review|meta-analysis|physician\w*|doctors?|'
+           r'injur\w*|wounds?|diabet\w*|amputation|trauma\w*|ocular|fractures?')
+
+
+def faculty_scores(paper):
+    title = ' ' + paper['title'].lower() + ' '
+    journal = ' ' + ' '.join(filter(None, [paper.get('venue'), paper.get('original_venue')])).lower() + ' '
+    scores = {}
+    for faculty, terms in FACULTY_TERMS.items():
+        journal_hits = set(re.findall(r'\b(?:%s)' % terms['journal'], journal))
+        title_hits = set(re.findall(r'\b(?:%s)\b' % terms['title'], title))
+        score = 3 * len(journal_hits) + 2 * len(title_hits)
+        if score:
+            scores[faculty] = (score, sorted(journal_hits | title_hits))
+    return scores
+
+
+def subject_faculty(paper):
+    """(faculty, reason, confident) from the paper's subject alone."""
+    scores = faculty_scores(paper)
+    if scores:
+        ranked = sorted(scores.items(), key=lambda item: -item[1][0])
+        faculty, (score, words) = ranked[0]
+        runner_up = ranked[1][1][0] if len(ranked) > 1 else 0
+        if score > runner_up:
+            return faculty, 'subject: ' + ', '.join(words[:4]), score >= 3 and score >= 2 * runner_up
+    text = (paper['title'] + ' ' + (paper.get('original_venue') or '')).lower()
+    if re.search(r'\b(?:%s)' % MEDICAL, text):
+        return 'medicine', 'subject: clinical or health topic', False
+    return None, None, False
+
+
+def assign_faculties(papers):
+    """Each paper's faculty: its subject when clear, else its researchers' usual faculty."""
+    subject = {paper['research_number']: subject_faculty(paper) for paper in papers}
+
+    # A researcher's usual faculty, from the papers whose subject is clear.
+    usual = {}
+    for paper in papers:
+        faculty, _reason, confident = subject[paper['research_number']]
+        if faculty and confident:
+            for person in paper['researchers']:
+                usual.setdefault(person, {}).setdefault(faculty, 0)
+                usual[person][faculty] += 1
+
+    for paper in papers:
+        faculty, reason, _confident = subject[paper['research_number']]
+        # Co-authors decide only when the subject says nothing at all: a
+        # clinical case report stays medical even if its authors also
+        # wrote pharmacology papers.
+        if faculty is None:
+            votes = {}
+            for person in paper['researchers']:
+                for candidate, count in usual.get(person, {}).items():
+                    votes[candidate] = votes.get(candidate, 0) + count
+            if votes:
+                ranked = sorted(votes.items(), key=lambda item: -item[1])
+                if len(ranked) == 1 or ranked[0][1] > ranked[1][1]:
+                    faculty = ranked[0][0]
+                    reason = 'co-authors\' other papers'
+        paper['faculty'] = faculty
+        paper['faculty_reason'] = reason
+
+
 def valid_date(value):
     if not value or not re.match(r'^\d{4}-\d{2}-\d{2}$', value) or int(value[:4]) < 1950:
         return None
     return value
+
+
+FACULTY_NAMES = {
+    'medicine': 'Medicine', 'dentistry': 'Dentistry', 'pharmacy': 'Pharmacy',
+    'artificial-intelligence': 'AI Engineering', 'business-administration': 'Business Administration',
+    'petroleum': 'Petroleum Engineering', 'building-construction-engineering': 'Building & Construction Engineering',
+}
+
+
+def write_report(papers, path):
+    """A list for the research office to check each paper's faculty and link."""
+    lines = [
+        '# Research register: faculty and link of each paper',
+        '',
+        'Generated by `convert_spu_sci.py`. The register does not record faculties, so each paper\'s faculty',
+        'is suggested from its subject (journal and title words) or, when the subject says nothing, from its',
+        'co-authors\' other papers. On import, a researcher who is on the staff pages decides first.',
+        'DOIs come from the register\'s own text or, failing that, from Crossref when the title matched.',
+        'Anything wrong can be corrected on the paper in the admin (Research publications).',
+        '',
+        '| Faculty | Papers | With a DOI link |',
+        '|---|---|---|',
+    ]
+    by_faculty = {}
+    for paper in papers:
+        by_faculty.setdefault(paper['faculty'] or '', []).append(paper)
+    for faculty, items in sorted(by_faculty.items(), key=lambda item: -len(item[1])):
+        lines.append('| %s | %d | %d |' % (FACULTY_NAMES.get(faculty, 'None'), len(items), sum(1 for p in items if p['doi'])))
+    for faculty, items in sorted(by_faculty.items(), key=lambda item: -len(item[1])):
+        lines += ['', '## %s (%d)' % (FACULTY_NAMES.get(faculty, 'No faculty'), len(items)), '',
+                  '| No. | Title | Journal | Why this faculty | DOI |', '|---|---|---|---|---|']
+        for paper in sorted(items, key=lambda p: p['research_number']):
+            cell = lambda value: (value or '').replace('|', '/')
+            lines.append('| %s | %s | %s | %s | %s |' % (
+                paper['research_number'], cell(paper['title']), cell(paper['venue']), cell(paper['faculty_reason']),
+                ('[%s](https://doi.org/%s)' % (paper['doi'], paper['doi'])) if paper['doi'] else '-'))
+    with open(path, 'w', encoding='utf-8', newline='\n') as handle:
+        handle.write('\n'.join(lines) + '\n')
 
 
 def main():
@@ -163,6 +329,7 @@ def main():
             'study_type': study_type(study),
             'venue': venue(place),
             'issn': clean(issn) or None,
+            'doi': doi(info, place, title),
             'publication_info': info,
             'published_at': valid_date(published),
             'journal_rank': clean(rank) or None,
@@ -170,7 +337,7 @@ def main():
             'original_venue': clean(place) or None,
             'researchers': list(authors.get(int(rid), [])),
         }
-        score = sum(1 for field in ('venue', 'issn', 'publication_info', 'published_at') if candidate[field])
+        score = sum(1 for field in ('venue', 'issn', 'publication_info', 'published_at', 'doi') if candidate[field])
         if key not in merged:
             merged[key] = (score, candidate)
             continue
@@ -182,14 +349,33 @@ def main():
             candidate['researchers'] = kept['researchers']
             merged[key] = (score, candidate)
 
+    papers_out = [paper for _score, paper in merged.values()]
+    assign_faculties(papers_out)
+
+    # DOIs: the one written in the register first, else the Crossref match
+    # (lookup_crossref.py), which only keeps papers whose title matched.
+    crossref_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'crossref_matches.json')
+    crossref = json.load(open(crossref_path, encoding='utf-8')) if os.path.exists(crossref_path) else {}
+    for paper in papers_out:
+        if paper['doi']:
+            paper['doi_source'] = "the register's publication details"
+        elif (crossref.get(paper['research_number']) or {}).get('doi'):
+            match = crossref[paper['research_number']]
+            paper['doi'] = match['doi']
+            paper['doi_source'] = 'Crossref (%s)' % match['match']
+        else:
+            paper['doi_source'] = None
+
     data = {
         'source': 'spu_sci research register',
         'researchers': list(people.values()),
-        'papers': [paper for _score, paper in merged.values()],
+        'papers': papers_out,
     }
     with open(out_path, 'w', encoding='utf-8', newline='\n') as handle:
         json.dump(data, handle, ensure_ascii=False, indent=1)
         handle.write('\n')
+
+    write_report(papers_out, os.path.splitext(out_path)[0] + '.report.md')
 
     print('researchers %d (from %d rows), papers %d (from %d rows), without date %d, without researchers %d' % (
         len(data['researchers']), len(researchers), len(data['papers']), len(papers),

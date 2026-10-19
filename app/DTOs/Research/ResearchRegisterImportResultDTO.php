@@ -18,5 +18,8 @@ final readonly class ResearchRegisterImportResultDTO
         public int $researchersCreated,
         public int $researchersLinkedToStaff,
         public array $papersByFaculty,
+        public int $updated = 0,
+        public int $linksAdded = 0,
+        public int $facultiesAdded = 0,
     ) {}
 }

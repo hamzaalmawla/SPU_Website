@@ -54,17 +54,34 @@ final class ResearchRegisterImportService implements ResearchRegisterImportServi
         $existingTitles = ResearchPublicationTranslation::query()->pluck('title')
             ->map(fn (mixed $title): string => $this->titleKey((string) $title))
             ->flip();
-        $existingNumbers = ResearchPublication::query()->withTrashed()->whereNotNull('research_number')->pluck('research_number')->flip();
-        $facultySlugs = Faculty::query()->pluck('public_slug', 'id');
+        $imported = ResearchPublication::query()->withTrashed()->whereNotNull('research_number')
+            ->get(['id', 'research_number', 'doi', 'external_url', 'faculty_id'])
+            ->keyBy('research_number');
+        $facultyIds = Faculty::query()->whereNotNull('public_slug')->pluck('id', 'public_slug');
+        $facultySlugs = $facultyIds->flip();
 
         $alreadyOnSite = 0;
-        $alreadyImported = 0;
         $toCreate = [];
+        $toUpdate = [];
         $byFaculty = [];
 
         foreach ($data['papers'] as $paper) {
-            if ($existingNumbers->has($paper['research_number'])) {
-                $alreadyImported++;
+            [$paper['faculty_id'], $paper['faculty_reason']] = $this->paperFaculty($paper, $staffByResearcher, $facultyIds->all());
+            $paper['url'] = $paper['doi'] !== null ? 'https://doi.org/'.$paper['doi'] : null;
+            $existing = $imported->get($paper['research_number']);
+
+            if ($existing instanceof ResearchPublication) {
+                // Imported before: fill only what is still empty, so an
+                // editor's own changes stay.
+                $gaps = array_filter([
+                    'doi' => $existing->doi === null ? $paper['doi'] : null,
+                    'external_url' => $existing->external_url === null ? $paper['url'] : null,
+                    'faculty_id' => $existing->faculty_id === null ? $paper['faculty_id'] : null,
+                ], fn (mixed $value): bool => $value !== null);
+
+                if ($gaps !== []) {
+                    $toUpdate[] = ['publication' => $existing, 'gaps' => $gaps, 'paper' => $paper];
+                }
 
                 continue;
             }
@@ -75,7 +92,6 @@ final class ResearchRegisterImportService implements ResearchRegisterImportServi
                 continue;
             }
 
-            $paper['faculty_id'] = $this->paperFaculty($paper['researchers'], $staffByResearcher);
             $slug = $paper['faculty_id'] !== null ? (string) ($facultySlugs[$paper['faculty_id']] ?? '') : '';
             $byFaculty[$slug] = ($byFaculty[$slug] ?? 0) + 1;
             $toCreate[] = $paper;
@@ -87,50 +103,70 @@ final class ResearchRegisterImportService implements ResearchRegisterImportServi
         ksort($byFaculty);
 
         if ($write) {
-            $this->write($data['researchers'], $toCreate, $staffByResearcher);
+            $this->write($data['researchers'], $data['papers'], $toCreate, $toUpdate, $staffByResearcher, $facultyIds->all());
         }
 
         return new ResearchRegisterImportResultDTO(
             written: $write,
             papersInFile: count($data['papers']),
             alreadyOnSite: $alreadyOnSite,
-            alreadyImported: $alreadyImported,
+            alreadyImported: $imported->intersectByKeys(collect($data['papers'])->keyBy('research_number'))->count(),
             created: count($toCreate),
             hiddenWithoutDate: count(array_filter($toCreate, fn (array $paper): bool => $paper['published_at'] === null)),
             researchersInFile: count($data['researchers']),
             researchersCreated: $researchersCreated,
             researchersLinkedToStaff: $linkedToStaff,
             papersByFaculty: $byFaculty,
+            updated: count($toUpdate),
+            linksAdded: count(array_filter($toCreate, fn (array $paper): bool => $paper['url'] !== null))
+                + count(array_filter($toUpdate, fn (array $update): bool => isset($update['gaps']['external_url']))),
+            facultiesAdded: count(array_filter($toUpdate, fn (array $update): bool => isset($update['gaps']['faculty_id']))),
         );
     }
 
     /**
      * @param  list<array<string, mixed>>  $researchers
+     * @param  list<array<string, mixed>>  $allPapers
      * @param  list<array<string, mixed>>  $papers
+     * @param  list<array{publication: ResearchPublication, gaps: array<string, mixed>, paper: array<string, mixed>}>  $updates
      * @param  array<int, ?array{member_id: int, faculty_id: ?int}>  $staffByResearcher
+     * @param  array<string, int>  $facultyIds
      */
-    private function write(array $researchers, array $papers, array $staffByResearcher): void
+    private function write(array $researchers, array $allPapers, array $papers, array $updates, array $staffByResearcher, array $facultyIds): void
     {
-        DB::transaction(function () use ($researchers, $papers, $staffByResearcher): void {
+        // A researcher's faculty: their staff profile's, else the faculty most of their papers belong to.
+        $usualFaculty = [];
+        foreach ($allPapers as $paper) {
+            [$facultyId] = $this->paperFaculty($paper, $staffByResearcher, $facultyIds);
+            foreach ($facultyId !== null ? $paper['researchers'] : [] as $sourceId) {
+                $usualFaculty[$sourceId][$facultyId] = ($usualFaculty[$sourceId][$facultyId] ?? 0) + 1;
+            }
+        }
+
+        DB::transaction(function () use ($researchers, $papers, $updates, $staffByResearcher, $usualFaculty): void {
             $researcherIds = [];
 
             foreach ($researchers as $researcher) {
                 $staff = $staffByResearcher[$researcher['source_id']] ?? null;
+                $votes = $usualFaculty[$researcher['source_id']] ?? [];
+                arsort($votes);
                 $model = Researcher::query()->withTrashed()->firstOrNew([
                     'legacy_source' => self::LEGACY_SOURCE,
                     'legacy_source_id' => $researcher['source_id'],
                 ]);
 
-                // A re-run fills gaps only, so an editor's later changes stay.
                 if (! $model->exists) {
                     $model->fill([
                         'full_name' => $researcher['full_name'],
                         'affiliation' => $researcher['affiliation'],
                         'registration_status' => $researcher['registration_status'],
-                        'faculty_member_id' => $staff['member_id'] ?? null,
-                        'faculty_id' => $staff['faculty_id'] ?? null,
-                    ])->save();
+                    ]);
                 }
+
+                // A re-run fills gaps only, so an editor's later changes stay.
+                $model->faculty_member_id ??= $staff['member_id'] ?? null;
+                $model->faculty_id ??= $staff['faculty_id'] ?? (array_key_first($votes) !== null ? (int) array_key_first($votes) : null);
+                $model->save();
 
                 $researcherIds[$researcher['source_id']] = (int) $model->getKey();
             }
@@ -138,11 +174,20 @@ final class ResearchRegisterImportService implements ResearchRegisterImportServi
             foreach ($papers as $paper) {
                 $this->createPaper($paper, $researcherIds);
             }
+
+            foreach ($updates as $update) {
+                $publication = $update['publication'];
+                $publication->forceFill([
+                    ...$update['gaps'],
+                    'notes' => trim(($publication->notes ?? '')."\n".$this->provenance($update['paper'])),
+                ])->save();
+            }
         });
 
         $this->auditService->log('research.register_imported', null, ResearchPublication::class, null, [
             'batch' => self::APPROVAL_TOKEN,
             'papers' => count($papers),
+            'papers_completed' => count($updates),
             'researchers' => count($researchers),
         ]);
         $this->cacheService->flushTags(['research', 'facilities', 'public-pages', 'seo', 'sitemap']);
@@ -161,6 +206,8 @@ final class ResearchRegisterImportService implements ResearchRegisterImportServi
             'publication_type' => $paper['publication_type'],
             'study_type' => $paper['study_type'],
             'issn' => $paper['issn'],
+            'doi' => $paper['doi'],
+            'external_url' => $paper['url'],
             'journal_rank' => $paper['journal_rank'],
             'published_at' => $publishedAt,
             'publication_year' => $publishedAt !== null ? (int) substr($publishedAt, 0, 4) : null,
@@ -222,22 +269,47 @@ final class ResearchRegisterImportService implements ResearchRegisterImportServi
             'Imported from the research office register ('.$paper['research_number'].').',
             $paper['original_study_type'] !== null ? 'Study type as registered: '.$paper['original_study_type'] : null,
             $paper['original_venue'] !== null ? 'Venue as registered: '.$paper['original_venue'] : null,
+            $this->provenance($paper),
         ]));
     }
 
     /**
-     * @param  list<int>  $researchers
-     * @param  array<int, ?array{member_id: int, faculty_id: ?int}>  $staffByResearcher
+     * Where the paper's faculty and DOI came from, for editors checking them.
+     *
+     * @param  array<string, mixed>  $paper
      */
-    private function paperFaculty(array $researchers, array $staffByResearcher): ?int
+    private function provenance(array $paper): string
     {
-        $faculties = collect($researchers)
+        return implode("\n", array_filter([
+            $paper['faculty_reason'] !== null ? 'Faculty suggested from '.$paper['faculty_reason'].'.' : null,
+            $paper['doi'] !== null ? 'DOI from '.($paper['doi_source'] ?? 'the register').'.' : null,
+        ]));
+    }
+
+    /**
+     * The paper's faculty: a researcher's staff profile when there is one,
+     * else the faculty its subject points to.
+     *
+     * @param  array<string, mixed>  $paper
+     * @param  array<int, ?array{member_id: int, faculty_id: ?int}>  $staffByResearcher
+     * @param  array<string, int>  $facultyIds
+     * @return array{0: ?int, 1: ?string}
+     */
+    private function paperFaculty(array $paper, array $staffByResearcher, array $facultyIds): array
+    {
+        $faculties = collect($paper['researchers'])
             ->map(fn (int $sourceId): ?int => $staffByResearcher[$sourceId]['faculty_id'] ?? null)
             ->filter()
             ->countBy()
             ->sortDesc();
 
-        return $faculties->isEmpty() ? null : (int) $faculties->keys()->first();
+        if ($faculties->isNotEmpty()) {
+            return [(int) $faculties->keys()->first(), 'a researcher\'s staff profile'];
+        }
+
+        $slug = $paper['faculty'];
+
+        return $slug !== null && isset($facultyIds[$slug]) ? [$facultyIds[$slug], $paper['faculty_reason'] ?? 'the paper\'s subject'] : [null, null];
     }
 
     /**
@@ -331,6 +403,10 @@ final class ResearchRegisterImportService implements ResearchRegisterImportServi
                 'original_study_type' => $this->nullableString($paper['original_study_type'] ?? null),
                 'original_venue' => $this->nullableString($paper['original_venue'] ?? null),
                 'researchers' => array_values(array_filter(is_array($paper['researchers'] ?? null) ? $paper['researchers'] : [], 'is_int')),
+                'doi' => $this->validDoi($paper['doi'] ?? null),
+                'doi_source' => $this->nullableString($paper['doi_source'] ?? null),
+                'faculty' => $this->nullableString($paper['faculty'] ?? null),
+                'faculty_reason' => $this->nullableString($paper['faculty_reason'] ?? null),
             ];
         }
 
@@ -340,6 +416,13 @@ final class ResearchRegisterImportService implements ResearchRegisterImportServi
     private function titleKey(string $title): string
     {
         return (string) preg_replace('/[^a-z0-9]+/', '', mb_strtolower(html_entity_decode(strip_tags($title), ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+    }
+
+    private function validDoi(mixed $value): ?string
+    {
+        $doi = $this->nullableString($value);
+
+        return $doi !== null && preg_match('~^10\.\d{4,9}/\S+$~i', $doi) === 1 ? strtolower($doi) : null;
     }
 
     private function nullableString(mixed $value): ?string

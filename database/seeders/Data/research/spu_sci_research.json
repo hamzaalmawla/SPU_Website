@@ -1391,6 +1391,7 @@
    "study_type": "empirical",
    "venue": "Heliyon",
    "issn": "2405-8440",
+   "doi": "10.1016/j.heliyon.2022.e09451",
    "publication_info": "Heliyon, Volume 8, IssueHeliyon, Volume 8, Issue 5, Article e09451, May 20225, Article e09451, May 2022",
    "published_at": "2022-05-01",
    "journal_rank": "Q1",
@@ -1398,7 +1399,10 @@
    "original_venue": "مجلة Q1 Heliyon (Elsevier) – مجلة علمية دولية مفتوحة الوصول",
    "researchers": [
     21
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 10,
@@ -1408,6 +1412,7 @@
    "study_type": "empirical",
    "venue": "BMC Medical Education",
    "issn": "1472-6920",
+   "doi": "10.1186/s12909-021-02673-0",
    "publication_info": "BMC Medical Education, Volume 21, Article Number 251, May 2021",
    "published_at": "2021-05-01",
    "journal_rank": "Q1",
@@ -1421,7 +1426,10 @@
     5,
     57,
     53
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 11,
@@ -1431,6 +1439,7 @@
    "study_type": "empirical",
    "venue": "European Journal of Psychotraumatology",
    "issn": "2000-8198",
+   "doi": "10.1192/bjo.2021.163",
    "publication_info": "Eur J Psychotraumatol. 2021 Sep 24; 12(1):1954774. eCollection 2021",
    "published_at": "2021-01-01",
    "journal_rank": "Q1",
@@ -1442,7 +1451,10 @@
     13,
     12,
     53
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, other ISSN)"
   },
   {
    "source_id": 12,
@@ -1452,6 +1464,7 @@
    "study_type": "clinical",
    "venue": "Oxf Med Case Reports",
    "issn": "2053-8855",
+   "doi": "10.1093/omcr/omac045",
    "publication_info": "Oxf Med Case Reports. 2022 May 23;2022(5):omac045. eCollection 2022 May.",
    "published_at": null,
    "journal_rank": "Q2",
@@ -1459,7 +1472,10 @@
    "original_venue": "Oxf Med Case Reports – Oxford University Press (مجلة دولية مفتوحة الوصول Open Access) — مصنفة Q2 (حسب SCImagojr)",
    "researchers": [
     21
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 14,
@@ -1469,6 +1485,7 @@
    "study_type": "empirical",
    "venue": null,
    "issn": "2405-8440",
+   "doi": "10.1016/j.heliyon.2020.e03819",
    "publication_info": "Heliyon, Volume 6, Issue 4, Article e03819, April 2020",
    "published_at": "2020-01-01",
    "journal_rank": "Q1",
@@ -1477,7 +1494,10 @@
    "researchers": [
     21,
     22
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 16,
@@ -1487,6 +1507,7 @@
    "study_type": "clinical",
    "venue": "Oxford Medical Case Reports",
    "issn": "2053-8855",
+   "doi": "10.1093/omcr/omac123",
    "publication_info": "Oxf Med Case Reports. 2022 Nov 24;2022(11):omac123. eCollection 2022 Nov.",
    "published_at": "2022-11-24",
    "journal_rank": "Q3",
@@ -1494,7 +1515,10 @@
    "original_venue": "Oxford Medical Case Reports (Oxf Med Case Reports) – مجلة دولية مفتوحة الوصول – Oxford University Press",
    "researchers": [
     63
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 17,
@@ -1504,6 +1528,7 @@
    "study_type": "clinical",
    "venue": "Journal of Reproduction & Infertility",
    "issn": "2228-5482",
+   "doi": null,
    "publication_info": "J Reprod Infertil. 2018 Jan–Mar; 19(1): 61–66",
    "published_at": "2018-01-01",
    "journal_rank": "Q3",
@@ -1511,7 +1536,10 @@
    "original_venue": "Journal of Reproduction & Infertility — مجلة دولية",
    "researchers": [
     67
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": null
   },
   {
    "source_id": 18,
@@ -1521,6 +1549,7 @@
    "study_type": "empirical",
    "venue": "Medicine",
    "issn": "0025-7974",
+   "doi": "10.1097/md.0000000000037708",
    "publication_info": "Medicine (Baltimore). 2024 Apr 5;103(14):e37708. DOI: 10.1097/MD.0000000000037708",
    "published_at": "2024-04-05",
    "journal_rank": "Q2",
@@ -1528,7 +1557,10 @@
    "original_venue": "Medicine (Baltimore) – مجلة دولية مفتوحة الوصول (Open Access)، تصنيف تقريبًا Q2",
    "researchers": [
     60
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 20,
@@ -1538,6 +1570,7 @@
    "study_type": "empirical",
    "venue": "Insights into Imaging",
    "issn": "1869-4101",
+   "doi": "10.1186/s13244-020-00937-9",
    "publication_info": "Insights Imaging, Volume 11, Article 124, Published November 23, 2020",
    "published_at": "2020-11-23",
    "journal_rank": "Q1",
@@ -1551,7 +1584,10 @@
     57,
     16,
     53
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 21,
@@ -1561,6 +1597,7 @@
    "study_type": "clinical",
    "venue": "SAGE Open Medical Case Reports",
    "issn": "2050-313X",
+   "doi": "10.1177/2050313x241233117",
    "publication_info": "SAGE Open Med Case Rep. 2024 Feb 19;12:2050313X241233117. eCollection 2024.",
    "published_at": "2024-02-02",
    "journal_rank": "Q1",
@@ -1568,7 +1605,10 @@
    "original_venue": "SAGE Open Medical Case Reports – مجلة دولية مفتوحة الوصول (Open Access Journal) – SAGE Publications",
    "researchers": [
     82
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 22,
@@ -1578,6 +1618,7 @@
    "study_type": "empirical",
    "venue": "Arab Joal of Gastroenterology",
    "issn": "1687-1979",
+   "doi": "10.1016/j.ajg.2018.02.012",
    "publication_info": "Arab J Gastroenterol. 2018 Jun; 19(2):80–83. Epub 2018 Jun 20",
    "published_at": "2018-06-20",
    "journal_rank": "Q3",
@@ -1587,7 +1628,10 @@
     67,
     83,
     90
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 23,
@@ -1597,6 +1641,7 @@
    "study_type": "clinical",
    "venue": "International Journal of Surgery Case Reports",
    "issn": "2210-2612",
+   "doi": "10.1016/j.ijscr.2017.01.010",
    "publication_info": "Int J Surg Case Rep. 2017; 31:254–261. Epub 2017 Jan 31",
    "published_at": "2017-01-31",
    "journal_rank": "Q3",
@@ -1604,7 +1649,10 @@
    "original_venue": "International Journal of Surgery Case Reports — Elsevier — مجلة دولية مفتوحة الوصول",
    "researchers": [
     85
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 24,
@@ -1614,6 +1662,7 @@
    "study_type": "clinical",
    "venue": "International Journal of Surgery Case Reports",
    "issn": "2210-2612",
+   "doi": "10.1016/j.ijscr.2016.09.004",
    "publication_info": "Int J Surg Case Rep. 2016; 28:124–126. Epub 2016 Sep 22",
    "published_at": "2016-09-22",
    "journal_rank": "Q3",
@@ -1621,7 +1670,10 @@
    "original_venue": "International Journal of Surgery Case Reports — Elsevier — مجلة دولية مفتوحة الوصول",
    "researchers": [
     85
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 25,
@@ -1631,6 +1683,7 @@
    "study_type": "clinical",
    "venue": "International Journal of Surgery Case Reports",
    "issn": "2210-2612",
+   "doi": "10.1016/j.ijscr.2018.11.052",
    "publication_info": "Int J Surg Case Rep. 2018;53:433-435. DOI: 10.1016/j.ijscr.2018.11.052. Epub 2018 Nov 24",
    "published_at": "2018-11-24",
    "journal_rank": "Q2",
@@ -1638,7 +1691,10 @@
    "original_venue": "International Journal of Surgery Case Reports – مجلة دولية مفتوحة الوصول (Elsevier – Open Access)، تصنيف تقريبًا Q2–Q3",
    "researchers": [
     85
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 35,
@@ -1648,6 +1704,7 @@
    "study_type": "empirical",
    "venue": "International Journal of Social Psychiatry",
    "issn": "0020-7640",
+   "doi": "10.1177/00207640211015701",
    "publication_info": "Int J Soc Psychiatry, Volume 68, Issue 5, Pages 1054–1062, August 2022",
    "published_at": "2022-08-01",
    "journal_rank": "Q2",
@@ -1655,7 +1712,10 @@
    "original_venue": "مجلة International Journal of Social Psychiatry – تصنيف Q2 (Scopus, 2024) – SAGE Publications – مجلة دولية مفتوحة الوصول جزئيًا (Partially Open-Access Journal)",
    "researchers": [
     28
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 36,
@@ -1665,6 +1725,7 @@
    "study_type": "clinical",
    "venue": "Med Mycol Case Rep.",
    "issn": "2211-7539",
+   "doi": "10.1016/j.mmcr.2024.100628",
    "publication_info": "Med Mycol Case Rep. 2024 Jan 22; 43:100628. DOI: 10.1016/j.mmcr.2024.100628. eCollection 2024 Mar.",
    "published_at": "2024-01-22",
    "journal_rank": "Q1",
@@ -1672,7 +1733,10 @@
    "original_venue": "Med Mycol Case Rep. – مجلة دولية مفتوحة الوصول (Open Access) – الناشر: Elsevier",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 37,
@@ -1682,6 +1746,7 @@
    "study_type": "empirical",
    "venue": "Medicine",
    "issn": "0025-7974",
+   "doi": "10.1097/md.0000000000034419",
    "publication_info": "Medicine (Baltimore). 2023 Oct 20;102(42):e34419. DOI: 10.1097/MD.0000000000034419.",
    "published_at": "2023-10-20",
    "journal_rank": "Q2",
@@ -1691,7 +1756,10 @@
     87,
     88,
     89
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: cleft lip",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 38,
@@ -1701,6 +1769,7 @@
    "study_type": "clinical",
    "venue": "Indian Journal of Otolaryngology Head & Neck Surgery",
    "issn": "0973-7707",
+   "doi": "10.1007/s12070-023-04034-3",
    "publication_info": "Indian J Otolaryngol Head Neck Surg. 2023 Dec; 75(4): 3628–3635. DOI: 10.1007/s12070-023-04034-3. Epub 2023 Jul 12.",
    "published_at": "2023-07-12",
    "journal_rank": "Q3",
@@ -1709,7 +1778,10 @@
    "researchers": [
     87,
     93
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 39,
@@ -1719,6 +1791,7 @@
    "study_type": "other",
    "venue": "International Journal of Surgery Case Reports",
    "issn": "2210-2612",
+   "doi": "10.1016/j.ijscr.2024.109479",
    "publication_info": "Int J Surg Case Rep. 2024 Apr; 117:109479. DOI: 10.1016/j.ijscr.2024.109479. Epub 2024 Mar 6.",
    "published_at": "2024-03-06",
    "journal_rank": "Q2",
@@ -1726,7 +1799,10 @@
    "original_venue": "International Journal of Surgery Case Reports – مجلة دولية مفتوحة الوصول (Open Access) – تصنيف Elsevier، وتصنيف المجلّة عادة Q2 تقريبًا وفق Scimago.",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 41,
@@ -1736,6 +1812,7 @@
    "study_type": "empirical",
    "venue": "Clinical Toxicology",
    "issn": "1556-3650",
+   "doi": "10.1080/15563650.2022.2156882",
    "publication_info": "Clin Toxicol (Phila), Volume 61, Issue 2, Pages 116–122, February 2023",
    "published_at": "2023-02-01",
    "journal_rank": "Q1",
@@ -1743,7 +1820,10 @@
    "original_venue": "مجلة Clinical Toxicology (Philadelphia) – تصنيف Q1 (Scopus, 2024) – Taylor & Francis – مجلة دولية مفتوحة الوصول جزئيًا (Partially Open-Access Journal)",
    "researchers": [
     64
-   ]
+   ],
+   "faculty": "pharmacy",
+   "faculty_reason": "subject: toxicolog",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 43,
@@ -1753,6 +1833,7 @@
    "study_type": "clinical",
    "venue": "International Journal of Surgery Case Reports",
    "issn": "2210-2612",
+   "doi": "10.1016/j.ijscr.2024.109266",
    "publication_info": "Int J Surg Case Rep. 2024 Feb; 115:109266. DOI: 10.1016/j.ijscr.2024.109266. Epub 2024 Jan 13.",
    "published_at": "2024-02-01",
    "journal_rank": "Q2",
@@ -1760,7 +1841,10 @@
    "original_venue": "International Journal of Surgery Case Reports (IJSCR) – مجلة دولية مفتوحة الوصول (Open Access) – تصنيف تقريبي: Q2 – Elsevier",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 45,
@@ -1770,6 +1854,7 @@
    "study_type": "empirical",
    "venue": "Heliyon",
    "issn": "2405-8440",
+   "doi": "10.1016/j.heliyon.2021.e06537",
    "publication_info": "Heliyon, Volume 7, Issue 3, Article e06537, March 2021",
    "published_at": "2021-03-12",
    "journal_rank": "Q1",
@@ -1782,7 +1867,10 @@
     53,
     87,
     30
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 46,
@@ -1792,6 +1880,7 @@
    "study_type": "empirical",
    "venue": "Heliyon",
    "issn": "2405-8440",
+   "doi": null,
    "publication_info": "Heliyon, Volume 8, Issue 3, Article e09124, March 2022",
    "published_at": "2022-03-01",
    "journal_rank": "Q1",
@@ -1803,7 +1892,10 @@
     35,
     36,
     53
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": null
   },
   {
    "source_id": 48,
@@ -1813,6 +1905,7 @@
    "study_type": "empirical",
    "venue": "BMJ Open",
    "issn": "2044-6055",
+   "doi": "10.1136/bmjopen-2022-068849",
    "publication_info": "BMJ Open, Volume 13, Issue 3, Article e068849, March 2023",
    "published_at": "2023-03-01",
    "journal_rank": "Q1",
@@ -1824,7 +1917,10 @@
     42,
     53,
     43
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 49,
@@ -1834,6 +1930,7 @@
    "study_type": "empirical",
    "venue": "PLOS ONE",
    "issn": "1932-6203",
+   "doi": "10.1371/journal.pone.0264257",
    "publication_info": "PLOS ONE, Volume 17, Issue 3, Article e0264257, March 2022",
    "published_at": null,
    "journal_rank": "Q1",
@@ -1846,7 +1943,10 @@
     28,
     48,
     53
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 50,
@@ -1856,6 +1956,7 @@
    "study_type": "empirical",
    "venue": "Injury",
    "issn": "0020-1383",
+   "doi": "10.1016/j.injury.2020.11.069",
    "publication_info": "Injury, Volume 52, Issue 2, Pages 299–304, February 2021",
    "published_at": "2021-02-01",
    "journal_rank": "Q1",
@@ -1870,7 +1971,10 @@
     67,
     53,
     54
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 51,
@@ -1880,6 +1984,7 @@
    "study_type": "empirical",
    "venue": "BMC Medical Education",
    "issn": "1472-6920",
+   "doi": "10.1186/s12909-018-1146-x",
    "publication_info": "BMC Med Educ, Volume 18, Issue 1, Article 39, March 2018",
    "published_at": "2018-03-01",
    "journal_rank": "Q1",
@@ -1888,7 +1993,10 @@
    "researchers": [
     22,
     11
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 52,
@@ -1898,6 +2006,7 @@
    "study_type": "empirical",
    "venue": "BMC Psychiatry",
    "issn": "1471-244X",
+   "doi": "10.1186/s12888-023-04593-3",
    "publication_info": "BMC Psychiatry, Volume 23, Issue 1, Article 97, February 2023",
    "published_at": "2023-02-01",
    "journal_rank": "Q1",
@@ -1907,7 +2016,10 @@
     64,
     63,
     28
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 53,
@@ -1917,6 +2029,7 @@
    "study_type": "empirical",
    "venue": "Heliyon",
    "issn": "2405-8440",
+   "doi": "10.1016/j.heliyon.2022.e09816",
    "publication_info": "Heliyon, Volume 8, Issue 7, Article e09816, June 2022",
    "published_at": "2022-06-01",
    "journal_rank": "Q1",
@@ -1924,7 +2037,10 @@
    "original_venue": "مجلة Heliyon – تصنيف Q1 (Scopus, 2024) – Elsevier – مجلة دولية مفتوحة الوصول (International Open-Access Journal)",
    "researchers": [
     21
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 54,
@@ -1934,6 +2050,7 @@
    "study_type": "clinical",
    "venue": "BMC Pregnancy and Childbirth",
    "issn": "1471-2393",
+   "doi": "10.1186/s12884-022-04412-9",
    "publication_info": "BMC Pregnancy Childbirth, Volume 22, Issue 1, Article 184, March 2022",
    "published_at": "2022-03-01",
    "journal_rank": "Q1",
@@ -1941,7 +2058,10 @@
    "original_venue": "مجلة BMC Pregnancy and Childbirth – تصنيف Q1 (Scopus, 2024) – Springer Nature – مجلة دولية مفتوحة الوصول (International Open-Access Journal)",
    "researchers": [
     67
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 55,
@@ -1951,6 +2071,7 @@
    "study_type": "empirical",
    "venue": "Annals of Medicine",
    "issn": "0785-3890",
+   "doi": "10.1080/07853890.2023.2241351",
    "publication_info": "Ann Med, Volume 55, Issue 2, Article 2241351, 2023",
    "published_at": "2023-10-12",
    "journal_rank": "Q1",
@@ -1961,7 +2082,10 @@
     42,
     53,
     43
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 56,
@@ -1971,6 +2095,7 @@
    "study_type": "empirical",
    "venue": "PLoS One",
    "issn": "1932-6203",
+   "doi": "10.1371/journal.pone.0273483",
    "publication_info": "PLoS One. 2022 Sep 15;17(9):e0273483.",
    "published_at": "2022-09-01",
    "journal_rank": "Q1",
@@ -1980,7 +2105,10 @@
     73,
     72,
     11
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 57,
@@ -1990,6 +2118,7 @@
    "study_type": "empirical",
    "venue": "PLoS One",
    "issn": "1932-6203",
+   "doi": "10.1371/journal.pone.0275669",
    "publication_info": "PLoS One. 2022 Oct 14;17(10):e0275669.",
    "published_at": "2022-10-01",
    "journal_rank": "Q1",
@@ -2004,7 +2133,10 @@
     78,
     91,
     8
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 59,
@@ -2014,6 +2146,7 @@
    "study_type": "empirical",
    "venue": "Frontiers in Public Health",
    "issn": "2296-2565",
+   "doi": "10.3389/fpubh.2022.955321",
    "publication_info": "Front Public Health. 2022 Nov 9;10:955321.",
    "published_at": "2022-01-11",
    "journal_rank": "Q1",
@@ -2023,7 +2156,10 @@
     73,
     72,
     11
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 60,
@@ -2033,6 +2169,7 @@
    "study_type": "empirical",
    "venue": "Injury",
    "issn": "0020-1383",
+   "doi": "10.1016/j.injury.2022.11.067",
    "publication_info": "Injury. 2023 Feb;54(2):435-441. Epub 2022 Nov 29.",
    "published_at": "2022-11-29",
    "journal_rank": "Q1",
@@ -2049,7 +2186,10 @@
     94,
     96,
     98
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 61,
@@ -2059,6 +2199,7 @@
    "study_type": "empirical",
    "venue": "Frontiers in Public Health",
    "issn": "2296-2565",
+   "doi": "10.3389/fpubh.2022.955362",
    "publication_info": "Front Public Health. 2022 Oct 13;10:955362. eCollection 2022.",
    "published_at": "2022-01-10",
    "journal_rank": "Q1",
@@ -2068,7 +2209,10 @@
     73,
     72,
     11
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 62,
@@ -2078,6 +2222,7 @@
    "study_type": "other",
    "venue": "Frontiers in Public Health",
    "issn": "2296-2565",
+   "doi": "10.3389/fpubh.2022.1112817",
    "publication_info": null,
    "published_at": "2022-01-12",
    "journal_rank": "Q1",
@@ -2087,7 +2232,10 @@
     73,
     72,
     11
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 63,
@@ -2097,6 +2245,7 @@
    "study_type": "empirical",
    "venue": "Vaccines",
    "issn": "2076-393X",
+   "doi": "10.3390/vaccines11040759",
    "publication_info": "Vaccines (Basel). 2023 Mar 29;11(4):759.",
    "published_at": "2023-01-03",
    "journal_rank": "Q1",
@@ -2104,7 +2253,10 @@
    "original_venue": "مجلة Vaccines (Basel) – تصنيف Q1 (MDPI – Switzerland) – مجلة دولية مفتوحة الوصول (International Open-Access Journal)",
    "researchers": [
     11
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 64,
@@ -2114,6 +2266,7 @@
    "study_type": "clinical",
    "venue": "International Journal of Surgery Case Reports",
    "issn": "2210-2612",
+   "doi": "10.1016/j.ijscr.2024.109500",
    "publication_info": "Int J Surg Case Rep. 2024 Apr; 117:109500. DOI: 10.1016/j.ijscr.2024.109500. Epub 2024 Mar 11.",
    "published_at": "2024-03-11",
    "journal_rank": "Q2",
@@ -2121,7 +2274,10 @@
    "original_venue": "International Journal of Surgery Case Reports (Int J Surg Case Rep.) — مجلة دولية مفتوحة الوصول (Open Access) — تصنيف تقريبي Q2",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 65,
@@ -2131,6 +2287,7 @@
    "study_type": "clinical",
    "venue": "Int J Surg Case Rep.",
    "issn": "2210-2612",
+   "doi": "10.1016/j.ijscr.2016.07.004",
    "publication_info": "Int J Surg Case Rep. 2016; 26:30–33. DOI: 10.1016/j.ijscr.2016.07.004. Epub 2016 Jul 14.",
    "published_at": "2016-07-14",
    "journal_rank": "Q3",
@@ -2138,7 +2295,10 @@
    "original_venue": "Int J Surg Case Rep. – مجلة دولية (Elsevier) – مفتوحة الوصول (Open Access)",
    "researchers": [
     92
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 68,
@@ -2148,6 +2308,7 @@
    "study_type": "empirical",
    "venue": "Psychological Medicine",
    "issn": "0033-2917",
+   "doi": "10.1017/s0033291720003761",
    "publication_info": "Psychol Med. 2022 Jul;52(10):1923–1933. Epub 2020 Dec 3.",
    "published_at": "2022-01-06",
    "journal_rank": "Q1",
@@ -2155,7 +2316,10 @@
    "original_venue": "مجلة Psychological Medicine (Psychol Med) – تصنيف Q1 (Cambridge University Press) – مجلة دولية محكمة (International Peer-Reviewed Journal)",
    "researchers": [
     28
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 84,
@@ -2165,6 +2329,7 @@
    "study_type": "clinical",
    "venue": "Int J Surg Case Rep.",
    "issn": "2210-2612",
+   "doi": "10.1016/j.ijscr.2023.109089",
    "publication_info": "Int J Surg Case Rep. 2023 Dec; 113:109089. DOI: 10.1016/j.ijscr.2023.109089",
    "published_at": "2023-12-01",
    "journal_rank": "Q2",
@@ -2172,7 +2337,10 @@
    "original_venue": "Int J Surg Case Rep. – مجلة دولية محكّمة – Elsevier – مفتوحة الوصول (Open Access) – تصنيف (Q2 تقريبًا)",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 85,
@@ -2182,6 +2350,7 @@
    "study_type": "clinical",
    "venue": "J Med Case Rep.",
    "issn": "1752-1947",
+   "doi": "10.1186/s13256-023-04055-0",
    "publication_info": "J Med Case Rep. 2023 Jul 27; 17(1):322. DOI: 10.1186/s13256-023-04055-0",
    "published_at": "2023-07-27",
    "journal_rank": "Q3",
@@ -2190,7 +2359,10 @@
    "researchers": [
     21,
     80
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 86,
@@ -2200,6 +2372,7 @@
    "study_type": "clinical",
    "venue": "Journal of Medical Case Reports",
    "issn": "1752-1947",
+   "doi": "10.1186/s13256-020-02567-7",
    "publication_info": "J Med Case Rep. 2020 Dec 10; 14(1):241. doi: 10.1186/s13256-020-02567-7.",
    "published_at": "2020-12-10",
    "journal_rank": "Q3",
@@ -2207,7 +2380,10 @@
    "original_venue": "Journal of Medical Case Reports (J Med Case Rep.) – مجلة دولية مفتوحة الوصول (Open Access), ناشر: BMC – Springer Nature",
    "researchers": [
     67
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 87,
@@ -2217,6 +2393,7 @@
    "study_type": "other",
    "venue": "International Journal of Surgery Case Reports",
    "issn": "2210-2612",
+   "doi": "10.1016/j.ijscr.2022.107333",
    "publication_info": "Int J Surg Case Rep. 2022 Jul;96:107333. doi: 10.1016/j.ijscr.2022.107333. Epub 2022 Jun 22.",
    "published_at": "2022-07-22",
    "journal_rank": "Q2",
@@ -2224,7 +2401,10 @@
    "original_venue": "International Journal of Surgery Case Reports (Int J Surg Case Rep.) – مجلة دولية مفتوحة الوصول (Elsevier, Open Access), مصنّفة Q2",
    "researchers": [
     63
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 88,
@@ -2234,6 +2414,7 @@
    "study_type": "empirical",
    "venue": "BMJ Open",
    "issn": "2044-6055",
+   "doi": "10.1136/bmjopen-2020-043305",
    "publication_info": "BMJ Open. 2021 Apr 20;11(4):e043305.",
    "published_at": "2021-04-01",
    "journal_rank": "Q1",
@@ -2244,7 +2425,10 @@
     36,
     53,
     91
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 89,
@@ -2254,6 +2438,7 @@
    "study_type": "clinical",
    "venue": "European Journal of Case Reports in Internal Medicine",
    "issn": "2499-6564",
+   "doi": "10.12890/2023_003972",
    "publication_info": "Eur J Case Rep Intern Med. 2023 Jul 29; 10(8): 003972. DOI: 10.12890/2023_003972",
    "published_at": null,
    "journal_rank": "Q3",
@@ -2261,7 +2446,10 @@
    "original_venue": "European Journal of Case Reports in Internal Medicine (Eur J Case Rep Intern Med.) – مجلة دولية مفتوحة الوصول (Open Access Journal) – تصنيف تقريباً Q3",
    "researchers": [
     80
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 90,
@@ -2271,6 +2459,7 @@
    "study_type": "clinical",
    "venue": "Medicine",
    "issn": "0025-7974",
+   "doi": "10.1097/md.0000000000031869",
    "publication_info": "Medicine (Baltimore). 2022 Dec 9; 101(49): e31869. DOI: 10.1097/MD.0000000000031869",
    "published_at": "2022-12-09",
    "journal_rank": "Q2",
@@ -2278,7 +2467,10 @@
    "original_venue": "Medicine (Baltimore) – مجلة دولية مفتوحة الوصول (Open Access Journal) – تصنيف تقريباً Q2",
    "researchers": [
     57
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 91,
@@ -2288,6 +2480,7 @@
    "study_type": "clinical",
    "venue": "International Journal of Surgical Case Reports",
    "issn": "2210-2612",
+   "doi": "10.1016/j.ijscr.2022.106963epub",
    "publication_info": "Int J Surg Case Rep. 2022 Apr; 93:106963.DOI: 10.1016/j.ijscr.2022.106963Epub 2022 Mar 28",
    "published_at": "2022-04-01",
    "journal_rank": "Q2",
@@ -2295,7 +2488,10 @@
    "original_venue": "International Journal of Surgical Case Reports (Int J Surg Case Rep) – Elsevier – مجلة دولية محكّمة مفتوحة الوصول (Open Access Journal) – التصنيف العام للمجلة: Q2",
    "researchers": [
     81
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 92,
@@ -2305,6 +2501,7 @@
    "study_type": "empirical",
    "venue": "Asian Journal of Psychiatry",
    "issn": "1876-2018",
+   "doi": "10.1016/j.ajp.2021.102681",
    "publication_info": "Asian J Psychiatr. 2021 Jul;61:102681. Epub 2021 May 10.",
    "published_at": "2021-07-01",
    "journal_rank": "Q1",
@@ -2312,7 +2509,10 @@
    "original_venue": "مجلة Asian Journal of Psychiatry – تصنيف Q1 (Elsevier) – مجلة دولية مفتوحة الوصول (International Open-Access Journal)",
    "researchers": [
     28
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 95,
@@ -2322,6 +2522,7 @@
    "study_type": "empirical",
    "venue": "BMC Public Health",
    "issn": "1471-2458",
+   "doi": null,
    "publication_info": "BMC Public Health. 2021 Nov 18;21(1):2117.",
    "published_at": "2021-11-01",
    "journal_rank": "Q1",
@@ -2334,7 +2535,10 @@
     60,
     57,
     67
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": null
   },
   {
    "source_id": 96,
@@ -2344,6 +2548,7 @@
    "study_type": "empirical",
    "venue": "East Mediterranean Health Journal",
    "issn": "1020-3397",
+   "doi": "10.26719/2018.24.2.154",
    "publication_info": "East Mediterr Health J. 2018 May 3; 24(2):154–160. PMID: 29748944",
    "published_at": "2018-05-03",
    "journal_rank": "Q3",
@@ -2353,7 +2558,10 @@
     11,
     101,
     102
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 97,
@@ -2363,6 +2571,7 @@
    "study_type": "empirical",
    "venue": "Medicine",
    "issn": "0025-7974",
+   "doi": "10.1097/md.0000000000032261",
    "publication_info": "Medicine (Baltimore). 2022 Dec 9; 101(49): e32261. DOI: 10.1097/MD.0000000000032261",
    "published_at": "2022-12-09",
    "journal_rank": "Q2",
@@ -2374,7 +2583,10 @@
     106,
     107,
     104
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 98,
@@ -2384,6 +2596,7 @@
    "study_type": null,
    "venue": "Tex Heart Institute Journal",
    "issn": "1526-6702",
+   "doi": "10.14503/thij-21-7808",
    "publication_info": "Tex Heart Inst J. 2022 Mar 1; 49(2): e217808. DOI: 10.14503/THIJ-21-7808",
    "published_at": "2022-03-01",
    "journal_rank": "Q3",
@@ -2391,7 +2604,10 @@
    "original_venue": "Tex Heart Institute Journal (Tex Heart Inst J) – مجلة دولية، مفتوحة الوصول Open Access",
    "researchers": [
     11
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 99,
@@ -2401,6 +2617,7 @@
    "study_type": "empirical",
    "venue": "BMC Health Services Research",
    "issn": "1472-6963",
+   "doi": "10.1186/s12913-022-08911-5",
    "publication_info": "Hiba Al Tarcheh",
    "published_at": "2020-01-01",
    "journal_rank": "Q1",
@@ -2411,7 +2628,10 @@
     35,
     28,
     103
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 100,
@@ -2421,6 +2641,7 @@
    "study_type": "empirical",
    "venue": "Avicenna Journal of Medicine",
    "issn": "2231-0770",
+   "doi": "10.4103/2231-0770.179553",
    "publication_info": "Avicenna J Med. 2016 Apr-Jun; 6(2):39-46. DOI: 10.4103/2231-0770.179553",
    "published_at": "2016-06-01",
    "journal_rank": "Q3",
@@ -2431,7 +2652,10 @@
     101,
     102,
     252
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 101,
@@ -2441,6 +2665,7 @@
    "study_type": "other",
    "venue": "Journal of Thoracic Disease",
    "issn": "2072-1439",
+   "doi": "10.21037/jtd.2018.12.84",
    "publication_info": "المجلد 10، العدد 12، الصفحات 7064-7072، تاريخ النشر: ديسمبر 2018. doi:10.21037/jtd.2018.12.84 (PubMed)",
    "published_at": "2018-12-01",
    "journal_rank": "Q2",
@@ -2448,7 +2673,10 @@
    "original_venue": "Journal of Thoracic Disease (AME Publishing) – مجلة دولية مفتوحة الوصول (Open Access) – تصنيف Q2 (PubMed)",
    "researchers": [
     108
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 102,
@@ -2458,6 +2686,7 @@
    "study_type": "empirical",
    "venue": "J Thorac Dis",
    "issn": "2077-6624",
+   "doi": "10.21037/jtd.2017.08.86",
    "publication_info": "J Thorac Dis. 2017 Sep; 9(9):3415–3424. doi: 10.21037/jtd.2017.08.86",
    "published_at": "2017-09-01",
    "journal_rank": "Q1",
@@ -2465,7 +2694,10 @@
    "original_venue": "J Thorac Dis (Journal of Thoracic Disease) – مجلة دولية مفتوحة الوصول (Open Access Journal) – من مجلات AME Publishing – مصنّفة Q1",
    "researchers": [
     11
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 103,
@@ -2475,6 +2707,7 @@
    "study_type": "empirical",
    "venue": "Health Science Reports",
    "issn": "2398-8835",
+   "doi": "10.1002/hsr2.833",
    "publication_info": "Health Sci Rep. 2022 Oct 3; 5(6): e833. DOI: 10.1002/hsr2.833 • eCollection 2022 Nov",
    "published_at": "2022-10-03",
    "journal_rank": "Q2",
@@ -2482,7 +2715,10 @@
    "original_venue": "Health Science Reports (Health Sci Rep.) – Wiley Online Library، مجلة دولية مفتوحة الوصول (Open Access Journal) وتصنيفها الدولي Q2 (Wiley).",
    "researchers": [
     11
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 104,
@@ -2492,6 +2728,7 @@
    "study_type": "empirical",
    "venue": "Infectious Chemotherapy",
    "issn": "2093-2340",
+   "doi": "10.3947/ic.2020.0111",
    "publication_info": "Infect Chemother. 2021 Mar; 53(1):63-74. DOI: 10.3947/ic.2020.0111 (PubMed)",
    "published_at": "2021-03-01",
    "journal_rank": "Q2",
@@ -2499,7 +2736,10 @@
    "original_venue": "Infectious Chemotherapy (Infect Chemother.) – الناشر: Korean Society of Infectious Diseases / Korean Society for Antimicrobial Therapy – مجلة دولية محكمة – مفتوحة الوصول (Open Access) تصنيف: تقريباً Q2",
    "researchers": [
     36
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 105,
@@ -2509,6 +2749,7 @@
    "study_type": "clinical",
    "venue": "Gastroenterology Report",
    "issn": "2052-0034",
+   "doi": "10.1093/gastro/gow009",
    "publication_info": "Gastroenterol Rep (Oxf). 2017 May; 5(2):161–164. DOI: 10.1093/gastro/gow009 – نُشر إلكترونيًا بتاريخ May 30, 2016",
    "published_at": "2017-05-01",
    "journal_rank": "Q2",
@@ -2517,7 +2758,10 @@
    "researchers": [
     11,
     102
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 106,
@@ -2527,6 +2771,7 @@
    "study_type": "empirical",
    "venue": "Arthritis Research & Therapy",
    "issn": "1478-6354",
+   "doi": "10.1186/s13075-021-02614-8",
    "publication_info": "Arthritis Res Ther. 2021 Sep 3;23(1):229. doi: 10.1186/s13075-021-02614-8",
    "published_at": "2021-09-01",
    "journal_rank": "Q1",
@@ -2537,7 +2782,10 @@
     80,
     109,
     110
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 107,
@@ -2547,6 +2795,7 @@
    "study_type": "clinical",
    "venue": "Journal of Translational Internal Medicine",
    "issn": "2225-534",
+   "doi": "10.1515/jtim-2015-0029",
    "publication_info": "J Transl Int Med. 2015 Oct–Dec; 3(4): 167–170. DOI: 10.1515/jtim-2015-0029",
    "published_at": "2015-12-01",
    "journal_rank": "Q2",
@@ -2554,7 +2803,10 @@
    "original_venue": "Journal of Translational Internal Medicine (J Transl Int Med) – مجلة محكمة – مفتوحة الوصول – تصنيفها الدولي Q2",
    "researchers": [
     108
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 108,
@@ -2564,6 +2816,7 @@
    "study_type": "empirical",
    "venue": "Archives of Public Health",
    "issn": "2049-3258",
+   "doi": "10.1186/s13690-023-01132-0",
    "publication_info": "Arch Public Health. 2023 Aug 3;81(1):139. doi: 10.1186/s13690-023-01132-0",
    "published_at": "2023-08-01",
    "journal_rank": "Q1",
@@ -2574,7 +2827,10 @@
     115,
     114,
     116
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 109,
@@ -2584,6 +2840,7 @@
    "study_type": "empirical",
    "venue": "Health Science Reports",
    "issn": "2398-8835",
+   "doi": "10.1002/hsr2.1149",
    "publication_info": "Health Sci Rep. 2023 Mar 13; 6(3):e1149. DOI: 10.1002/hsr2.1149 eCollection 2023 Mar",
    "published_at": "2023-03-13",
    "journal_rank": "Q2",
@@ -2600,7 +2857,10 @@
     112,
     118,
     113
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 110,
@@ -2610,6 +2870,7 @@
    "study_type": "empirical",
    "venue": "BMC Psychiatry",
    "issn": "1475-2859",
+   "doi": null,
    "publication_info": "BMC Psychiatry. 2022 Nov 24;22(1):732.",
    "published_at": "2022-11-01",
    "journal_rank": "Q1",
@@ -2617,7 +2878,10 @@
    "original_venue": "مجلة BMC Psychiatry – Springer Nature تصنيف المجلة: Q1 مجلة دولية مفتوحة الوصول (International Open-Access Journal)",
    "researchers": [
     122
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": null
   },
   {
    "source_id": 111,
@@ -2627,6 +2891,7 @@
    "study_type": null,
    "venue": "Journal of Thoracic Disease",
    "issn": "2072-1439",
+   "doi": "10.21037/jtd.2019.02.76",
    "publication_info": "J Thorac Dis. 2019 Mar; 11(3):1047–1055. DOI: 10.21037/jtd.2019.02.76",
    "published_at": "2019-03-01",
    "journal_rank": "Q1",
@@ -2637,7 +2902,10 @@
     125,
     124,
     108
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 112,
@@ -2647,6 +2915,7 @@
    "study_type": "empirical",
    "venue": "Health Science Reports",
    "issn": "2398-8835",
+   "doi": "10.1002/hsr2.2070",
    "publication_info": "Health Sci Rep. 2024 Apr 23; 7(4):e2070 DOI: 10.1002/hsr2.2070 eCollection 2024 Apr",
    "published_at": "2024-04-23",
    "journal_rank": "Q2",
@@ -2654,7 +2923,10 @@
    "original_venue": "Health Science Reports (Health Sci Rep) – Wiley مجلة دولية مفتوحة الوصول (Open Access Journal) مصنفة Q2",
    "researchers": [
     126
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 113,
@@ -2664,6 +2936,7 @@
    "study_type": "empirical",
    "venue": "Journal of Thoracic Disease",
    "issn": "2077-6624",
+   "doi": "10.21037/jtd-23-251",
    "publication_info": "J Thorac Dis. 2023 May 30; 15(5):2873–2881 DOI: 10.21037/jtd-23-251 Epub 2023 May 29",
    "published_at": "2023-05-29",
    "journal_rank": "Q2",
@@ -2671,7 +2944,10 @@
    "original_venue": "Journal of Thoracic Disease (J Thorac Dis) – AME Publishing مجلة دولية مفتوحة الوصول (Open Access Journal) مصنّفة Q2 في مجلات Pulmonary Medicine",
    "researchers": [
     28
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 114,
@@ -2681,6 +2957,7 @@
    "study_type": "empirical",
    "venue": "PeerJ",
    "issn": "2167-8359",
+   "doi": "10.7717/peerj.13555",
    "publication_info": "PeerJ. 2022 Jul 15;10:e13555. doi: 10.7717/peerj.13555",
    "published_at": "2022-07-01",
    "journal_rank": "Q1",
@@ -2688,7 +2965,10 @@
    "original_venue": "PeerJ – PeerJ Publishing تصنيف المجلة: Q1 مجلة دولية مفتوحة الوصول (International Open-Access Journal)",
    "researchers": [
     122
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 115,
@@ -2698,6 +2978,7 @@
    "study_type": "empirical",
    "venue": "IJID Regions",
    "issn": "2772-7076",
+   "doi": "10.1016/j.ijregi.2023.02.010",
    "publication_info": "IJID Reg. 2023 Mar 3; 7:66–71 DOI: 10.1016/j.ijregi.2023.02.010 eCollection 2023 Jun",
    "published_at": "2023-03-03",
    "journal_rank": "Q2",
@@ -2708,7 +2989,10 @@
     60,
     128,
     127
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 116,
@@ -2718,6 +3002,7 @@
    "study_type": "empirical",
    "venue": "BMC Rheumatology",
    "issn": "2520-1022",
+   "doi": "10.1186/s41927-022-00294-8",
    "publication_info": "BMC Rheumatol. 2022 Oct 31; 6(1):62 DOI: 10.1186/s41927-022-00294-8",
    "published_at": "2022-10-31",
    "journal_rank": "Q2",
@@ -2733,7 +3018,10 @@
     94,
     130,
     112
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 117,
@@ -2743,6 +3031,7 @@
    "study_type": "empirical",
    "venue": "Health Science Reports",
    "issn": "2398-8835",
+   "doi": "10.1002/hsr2.1426",
    "publication_info": "Health Sci Rep. 2023 Jul 12; 6(7):e1426 DOI: 10.1002/hsr2.1426 eCollection 2023 Jul",
    "published_at": "2023-07-12",
    "journal_rank": "Q2",
@@ -2750,7 +3039,10 @@
    "original_venue": "Health Science Reports (Health Sci Rep.) الناشر: Wiley مجلة دولية مفتوحة الوصول (Open Access Journal) تصنيف: Q2 – Peer-Reviewed Journal",
    "researchers": [
     131
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 118,
@@ -2760,6 +3052,7 @@
    "study_type": "empirical",
    "venue": "Health Science Reports",
    "issn": "2398-8835",
+   "doi": "10.1002/hsr2.1389",
    "publication_info": "Health Sci Rep. 2023 Jul 3; 6(7):e1389 DOI: 10.1002/hsr2.1389 eCollection 2023 Jul",
    "published_at": "2023-07-03",
    "journal_rank": "Q2",
@@ -2767,7 +3060,10 @@
    "original_venue": "Health Science Reports (Health Sci Rep.) الناشر: Wiley مجلة دولية مفتوحة الوصول (Open Access Journal) تصنيف: Q2 – مجلة محكّمة (Peer-Reviewed Journal)",
    "researchers": [
     134
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 119,
@@ -2777,6 +3073,7 @@
    "study_type": "clinical",
    "venue": "Skin Health and Disease",
    "issn": "2688-7397",
+   "doi": "10.1002/ski2.255",
    "publication_info": "Skin Health Dis. 2023 May 25; 3(5):e255 DOI: 10.1002/ski2.255 eCollection 2023 Oct",
    "published_at": "2023-05-25",
    "journal_rank": "Q2",
@@ -2784,7 +3081,10 @@
    "original_venue": "Skin Health and Disease (Skin Health Dis.) الناشر: Wiley مجلة دولية مفتوحة الوصول (Open Access Journal) تصنيف: Q2 – مجلة محكّمة (Peer-Reviewed Journal)",
    "researchers": [
     137
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 120,
@@ -2794,6 +3094,7 @@
    "study_type": "empirical",
    "venue": "Health Science Reports",
    "issn": "2398-8835",
+   "doi": "10.1002/hsr2.2062",
    "publication_info": "Health Sci Rep. 2024 Apr 21; 7(4):e2062 DOI: 10.1002/hsr2.2062 eCollection 2024 Apr",
    "published_at": "2024-04-21",
    "journal_rank": "Q2",
@@ -2809,7 +3110,10 @@
     87,
     142,
     111
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 121,
@@ -2819,6 +3123,7 @@
    "study_type": "empirical",
    "venue": "Journal of Nutrition and Metabolism",
    "issn": "2090-0724",
+   "doi": "10.1155/2022/5621701",
    "publication_info": "J Nutr Metab. 2022 Mar 24; 2022:5621701. DOI: 10.1155/2022/5621701 eCollection 2022",
    "published_at": "2022-03-24",
    "journal_rank": "Q2",
@@ -2826,7 +3131,10 @@
    "original_venue": "Journal of Nutrition and Metabolism (J Nutr Metab) الناشر: Hindawi – Wiley مجلة دولية مفتوحة الوصول (Open Access Journal) تصنيف: Q2 – مجلة مُحكّمة (Peer-Reviewed Journal)",
    "researchers": [
     145
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 122,
@@ -2836,6 +3144,7 @@
    "study_type": "empirical",
    "venue": "JCO Global Oncology الناشر: American Society of Clinical Oncology",
    "issn": "2687-8941",
+   "doi": "10.1200/go.21.00283",
    "publication_info": "JCO Glob Oncol. 2022 Mar; 8:e2100283. DOI: 10.1200/GO.21.00283",
    "published_at": "2022-03-08",
    "journal_rank": "Q3",
@@ -2847,7 +3156,10 @@
     42,
     53,
     43
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 123,
@@ -2857,6 +3169,7 @@
    "study_type": "empirical",
    "venue": "International Journal of Tuberculosis and Lung Disease",
    "issn": "1027-3719",
+   "doi": "10.5588/ijtld.13.0912",
    "publication_info": "Int J Tuberc Lung Dis. 2014 Nov;18(11):1279-1284. doi:10.5588/ijtld.13.0912",
    "published_at": "2014-11-18",
    "journal_rank": "Q1",
@@ -2864,7 +3177,10 @@
    "original_venue": "مجلة International Journal of Tuberculosis and Lung Disease – IJTLD (The Union) تصنيف: Q1 مجلة دولية محكّمة (International, Peer-Reviewed Journal)",
    "researchers": [
     148
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 124,
@@ -2874,6 +3190,7 @@
    "study_type": "empirical",
    "venue": "Frontiers in Psychiatry",
    "issn": "1664-0640",
+   "doi": "10.3389/fpsyt.2022.1013623",
    "publication_info": "Front Psychiatry. 2023 Jan 16;13:1013623. doi:10.3389/fpsyt.2022.1013623. eCollection 2022.",
    "published_at": "2023-01-01",
    "journal_rank": "Q1",
@@ -2882,7 +3199,10 @@
    "researchers": [
     72,
     11
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 125,
@@ -2892,6 +3212,7 @@
    "study_type": "clinical",
    "venue": "International Journal of Surgery Case Reports",
    "issn": "2210-2612",
+   "doi": "10.1016/j.ijscr.2024.109688",
    "publication_info": "Int J Surg Case Rep. 2024 May;118:109688. doi:10.1016/j.ijscr.2024.109688.",
    "published_at": "2024-05-01",
    "journal_rank": "Q1",
@@ -2899,7 +3220,10 @@
    "original_venue": "مجلة International Journal of Surgery Case Reports – Elsevier تصنيف: Q1 مجلة دولية مفتوحة الوصول (Open-Access International Journal)",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 126,
@@ -2909,6 +3233,7 @@
    "study_type": "empirical",
    "venue": "PLOS ONE",
    "issn": "1932-6203",
+   "doi": "10.1371/journal.pone.0273900",
    "publication_info": "PLOS ONE. 2022 Oct 31;17(10):e0273900. doi:10.1371/journal.pone.0273900 (PLOS)",
    "published_at": "2022-10-31",
    "journal_rank": "Q1",
@@ -2917,7 +3242,10 @@
    "researchers": [
     11,
     149
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 127,
@@ -2927,6 +3255,7 @@
    "study_type": "empirical",
    "venue": "BMC Health Services Research",
    "issn": "1472-6963",
+   "doi": "10.1186/s12913-019-4375-8",
    "publication_info": "BMC Health Serv Res. 2019 Aug 5; 19(1): 549. doi: 10.1186/s12913-019-4375-8",
    "published_at": "2019-08-05",
    "journal_rank": "Q1",
@@ -2935,7 +3264,10 @@
    "researchers": [
     67,
     148
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 128,
@@ -2945,6 +3277,7 @@
    "study_type": "empirical",
    "venue": "Journal of Diabetes and its Complications",
    "issn": "1056-8727",
+   "doi": "10.1016/j.jdiacomp.2019.107493",
    "publication_info": "J Diabetes Complications. 2020 Feb;34(2):107493. (PubMed)",
    "published_at": "2020-02-01",
    "journal_rank": "Q1",
@@ -2952,7 +3285,10 @@
    "original_venue": "مجلة Journal of Diabetes and its Complications – Elsevier تصنيف: Q1 مجلة دولية محكَّمة",
    "researchers": [
     85
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 129,
@@ -2962,6 +3298,7 @@
    "study_type": "empirical",
    "venue": "Injury",
    "issn": "0020-1383",
+   "doi": "10.1016/j.injury.2017.02.005",
    "publication_info": "Injury. 2017 May;48(5):1054-1057. (PubMed)",
    "published_at": "2017-05-01",
    "journal_rank": "Q1",
@@ -2969,7 +3306,10 @@
    "original_venue": "مجلة Injury – Elsevier تصنيف Q1 مجلة دولية محكّمة",
    "researchers": [
     85
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 130,
@@ -2979,6 +3319,7 @@
    "study_type": "empirical",
    "venue": "BMC Public Health",
    "issn": "1471-2458",
+   "doi": "10.1186/s12889-023-16440-x",
    "publication_info": "BMC Public Health. 2023 Aug 9; 23(1):1506.doi: 10.1186/s12889-023-16440-x",
    "published_at": "2023-08-09",
    "journal_rank": "Q1",
@@ -2986,7 +3327,10 @@
    "original_venue": "BMC Public Health – Springer Natureمجلة دولية مفتوحة الوصول (Open-Access International Journal)",
    "researchers": [
     122
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 131,
@@ -2996,6 +3340,7 @@
    "study_type": "empirical",
    "venue": "International Journal of Gynaecology & Obstetrics",
    "issn": "0020-7292",
+   "doi": "10.1002/ijgo.15152",
    "publication_info": "Int J Gynaecol Obstet. 2024 Mar;164(3):1086-1093. Epub 2023 Sep 25. doi: 10.1002/ijgo.15152",
    "published_at": "2024-03-01",
    "journal_rank": "Q1",
@@ -3017,7 +3362,10 @@
     140,
     94,
     111
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 132,
@@ -3027,6 +3375,7 @@
    "study_type": "empirical",
    "venue": "PLoS ONE",
    "issn": "1932-6203",
+   "doi": "10.1371/journal.pone.0262617",
    "publication_info": "PLoS ONE. 2022 Jan 28; 17(1): e0262617. doi: 10.1371/journal.pone.0262617. eCollection 2022.",
    "published_at": "2022-06-01",
    "journal_rank": "Q1",
@@ -3034,7 +3383,10 @@
    "original_venue": "PLoS ONE – Public Library of Science (PLoS) تصنيف المجلة: Q1 مجلة دولية مفتوحة الوصول (International Open-Access Journal)",
    "researchers": [
     122
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 133,
@@ -3044,12 +3396,16 @@
    "study_type": "empirical",
    "venue": "Frontiers in Public Health",
    "issn": "2296-2565",
+   "doi": "10.3389/fpubh.2022.779498",
    "publication_info": "Front Public Health. 2022 Mar 2;10:779498. eCollection 2022. doi: 10.3389/fpubh.2022.779498",
    "published_at": "2022-03-01",
    "journal_rank": "Q1",
    "original_study_type": "دراسة مقطعية (Cross-Sectional Study) – دراسة وصفية تحليلية",
    "original_venue": "مجلة Frontiers in Public Health – دار النشر Frontiers Media S.A. تصنيف المجلة: Q1 (Public Health Category) مجلة دولية مفتوحة الوصول (International Open-Access Journal)",
-   "researchers": []
+   "researchers": [],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 134,
@@ -3059,6 +3415,7 @@
    "study_type": "empirical",
    "venue": "BMC Psychiatry",
    "issn": "1471-244X",
+   "doi": "10.1186/s12888-021-03617-0",
    "publication_info": "BMC Psychiatry.2022 Jan 21;22(1):48.doi: 10.1186/s12888-021-03617-0",
    "published_at": "2022-01-01",
    "journal_rank": "Q3",
@@ -3066,7 +3423,10 @@
    "original_venue": "BMC Psychiatry – مجلة دولية مفتوحة الوصول (Open-Access Journal)",
    "researchers": [
     122
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 135,
@@ -3076,6 +3436,7 @@
    "study_type": "empirical",
    "venue": "Heliyon",
    "issn": "2405-8440",
+   "doi": "10.1016/j.heliyon.2021.e07957ecollection",
    "publication_info": "Heliyon. 2021 Sep; 7(9): e07957.doi: 10.1016/j.heliyon.2021.e07957eCollection 2021 Sep",
    "published_at": "2021-09-01",
    "journal_rank": "Q1",
@@ -3090,7 +3451,10 @@
     153,
     159,
     110
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: cleft lip",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 140,
@@ -3100,6 +3464,7 @@
    "study_type": "clinical",
    "venue": "Heliyon",
    "issn": "2405-8440",
+   "doi": "10.1016/j.heliyon.2023.e19157",
    "publication_info": "Heliyon, Volume 9, Issue 9, Article e19157, August 2023",
    "published_at": "2023-08-01",
    "journal_rank": "Q1",
@@ -3107,7 +3472,10 @@
    "original_venue": "مجلة Heliyon – تصنيف Q1 (Scopus, 2024) – Elsevier – مجلة دولية مفتوحة الوصول (International Open-Access Journal)",
    "researchers": [
     21
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 141,
@@ -3117,6 +3485,7 @@
    "study_type": "clinical",
    "venue": "International Journal of Surgery Case Reports",
    "issn": "2210-2612",
+   "doi": "10.1016/j.ijscr.2019.03.028",
    "publication_info": "Int J Surg Case Rep. 2019; 57:190–193. DOI: 10.1016/j.ijscr.2019.03.028. Epub 2019 Mar 28.",
    "published_at": "2019-03-28",
    "journal_rank": "Q2",
@@ -3125,7 +3494,10 @@
    "researchers": [
     9,
     85
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 142,
@@ -3135,6 +3507,7 @@
    "study_type": "clinical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1097/ms9.0000000000000139",
    "publication_info": "Ann Med Surg (Lond.), Volume 85, Issue 4, Pages 951–954, March 2023",
    "published_at": "2023-03-01",
    "journal_rank": "Q2",
@@ -3142,7 +3515,10 @@
    "original_venue": "مجلة Annals of Medicine and Surgery (Lond.) – تصنيف Q2 (Scopus, 2024) – Elsevier – مجلة دولية مفتوحة الوصول (International Open-Access Journal)",
    "researchers": [
     60
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 143,
@@ -3152,6 +3528,7 @@
    "study_type": "other",
    "venue": "Clinical Oral Investigations",
    "issn": "1432-6981",
+   "doi": "10.1007/s00784-024-05629-y",
    "publication_info": "Clin Oral Investig., Volume 28, Issue 5, Page 249, April 2024",
    "published_at": "2024-04-01",
    "journal_rank": "Q1",
@@ -3159,7 +3536,10 @@
    "original_venue": "مجلة Clinical Oral Investigations (Springer Nature) – مصنفة Q1 ضمن مجلات طب الأسنان، ومفهرسة في PubMed و Scopus",
    "researchers": [
     162
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: aligners, oral, orthodontic",
+   "doi_source": "Crossref (exact title, other ISSN)"
   },
   {
    "source_id": 144,
@@ -3169,6 +3549,7 @@
    "study_type": "other",
    "venue": "European Journal of Orthodontics",
    "issn": "1460-2210",
+   "doi": "10.1093/ejo/cjaf027",
    "publication_info": "Eur J Orthod. 2025 Jun 12; Vol 47, Issue 4. DOI: 10.1093/ejo/cjaf027",
    "published_at": "2025-06-12",
    "journal_rank": "Q1",
@@ -3180,7 +3561,10 @@
     162,
     164,
     168
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: orthodon, orthodontic, tooth",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 145,
@@ -3190,6 +3574,7 @@
    "study_type": "other",
    "venue": "World Journal of Clinical Cases",
    "issn": null,
+   "doi": "10.12998/wjcc.v12.i21.4460",
    "publication_info": "World J Clin Cases, Volume 12, Issue 21, Pages 4460–4468, July 26, 2024",
    "published_at": "2024-07-26",
    "journal_rank": "Q3",
@@ -3197,7 +3582,10 @@
    "original_venue": "مجلة World Journal of Clinical Cases (WJCC) – Baishideng Publishing Group، مصنّفة Q3 – مجلة دولية محكّمة مفتوحة الوصول",
    "researchers": [
     169
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: endodontic",
+   "doi_source": "Crossref (exact title, other ISSN)"
   },
   {
    "source_id": 146,
@@ -3207,6 +3595,7 @@
    "study_type": "empirical",
    "venue": "International Journal of Environmental Research and Public Health",
    "issn": "1660-4601",
+   "doi": "10.3390/ijerph19031658",
    "publication_info": "Int J Environ Res Public Health. 2022 Jan 31; Volume 19, Issue 3, Article 1658. DOI: 10.3390/ijerph19031658",
    "published_at": "2022-01-31",
    "journal_rank": "Q1",
@@ -3215,7 +3604,10 @@
    "researchers": [
     171,
     122
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: dental, oral health",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 148,
@@ -3225,6 +3617,7 @@
    "study_type": "other",
    "venue": "Journal of International Medical Research",
    "issn": "1473-2300",
+   "doi": "10.1177/03000605251328608",
    "publication_info": "J Int Med Res. 2025 Apr; 53(4):3000605251328608. Epub 2025 Apr 11. DOI: 10.1177/03000605251328608",
    "published_at": "2025-04-11",
    "journal_rank": "Q2",
@@ -3232,7 +3625,10 @@
    "original_venue": "Journal of International Medical Research (J Int Med Res.) – مجلة دولية مفتوحة الوصول – مفهرسة في PubMed و Scopus (Q2 – SAGE Publications)",
    "researchers": [
     167
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: bracket",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 149,
@@ -3242,6 +3638,7 @@
    "study_type": "other",
    "venue": "European Journal of Orthodontics",
    "issn": "1460-2210",
+   "doi": "10.1093/ejo/cjad078",
    "publication_info": "Eur J Orthod. 2024 Jan 1; 46(1): cj ad078. DOI: 10.1093/ejo/cjad078",
    "published_at": "2024-01-01",
    "journal_rank": "Q1",
@@ -3249,7 +3646,10 @@
    "original_venue": "European Journal of Orthodontics (Eur J Orthod.) – مجلة دولية محكمة، مفهرسة في PubMed و Scopus (Q1) – الناشر: Oxford University Press",
    "researchers": [
     162
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: orthodon, orthodontic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 150,
@@ -3259,6 +3659,7 @@
    "study_type": "empirical",
    "venue": "Education for Health",
    "issn": "1469-5804",
+   "doi": "10.4103/efh.efh_127_23",
    "publication_info": "Educ Health (Abingdon). 2023 Sep 1; 36(3): 123–130. DOI: 10.4103/efh.efh_127_23. Epub 2023 Dec 22",
    "published_at": "2023-12-22",
    "journal_rank": "Q3",
@@ -3266,7 +3667,10 @@
    "original_venue": "Education for Health (Educ Health – Abingdon) – مجلة محكّمة، مفتوحة الوصول، مفهرسة في PubMed و Scopus (Q3)",
    "researchers": [
     172
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: dental",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 151,
@@ -3276,6 +3680,7 @@
    "study_type": "empirical",
    "venue": "Cureus",
    "issn": "2168-8184",
+   "doi": "10.7759/cureus.44853",
    "publication_info": "Cureus. 2023 Sep 7; 15(9): e44853. eCollection 2023 Sep. DOI: 10.7759/cureus.44853",
    "published_at": "2023-07-07",
    "journal_rank": "Q2",
@@ -3283,7 +3688,10 @@
    "original_venue": "Cureus – مجلة طبية دولية مفتوحة الوصول (Open Access), مصنّفة ضمن Scopus Q2",
    "researchers": [
     122
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 152,
@@ -3293,6 +3701,7 @@
    "study_type": "clinical",
    "venue": "F1000Research",
    "issn": "2046-1402",
+   "doi": "10.12688/f1000research.130941.1",
    "publication_info": "F1000Res. 2023 Mar 13; 12:264. eCollection 2023. DOI: 10.12688/f1000research.130941.1",
    "published_at": "2023-03-13",
    "journal_rank": "Q1",
@@ -3300,7 +3709,10 @@
    "original_venue": "F1000Research – مجلة علمية دولية مفتوحة الوصول (Open Access) – مدرجة في Scopus Q1",
    "researchers": [
     162
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: class iii, mandible, maxillary, temporomandibular",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 153,
@@ -3310,6 +3722,7 @@
    "study_type": "empirical",
    "venue": "International Dental Journal",
    "issn": "0020-6539",
+   "doi": "10.1111/idj.12579",
    "publication_info": "Int Dent J. 2020 Oct; 70(5):328–339. Epub 2020 Jun 5. DOI: 10.1111/idj.12579",
    "published_at": "2020-10-01",
    "journal_rank": "Q1",
@@ -3317,7 +3730,10 @@
    "original_venue": "International Dental Journal (IDJ) – مجلة عالمية محكّمة – مدرجة في Scopus Q1 – الناشر: Wiley",
    "researchers": [
     162
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: dent, dentists",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 154,
@@ -3327,6 +3743,7 @@
    "study_type": "clinical",
    "venue": "Clinical Oral Investigations",
    "issn": "1432-6981",
+   "doi": "10.1007/s00784-024-05541-5",
    "publication_info": "Clin Oral Investig. 2024 Feb 20; 28(2):157. DOI: 10.1007/s00784-024-05541-5",
    "published_at": "2024-02-20",
    "journal_rank": "Q1",
@@ -3334,7 +3751,10 @@
    "original_venue": "Clinical Oral Investigations (Clin Oral Investig.) – مجلة محكمة، مصنفة Scopus Q1 – Springer",
    "researchers": [
     173
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: herpes labialis, oral",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 155,
@@ -3344,6 +3764,7 @@
    "study_type": "clinical",
    "venue": "European Journal of Orthodontics",
    "issn": "1460-2210",
+   "doi": "10.1093/ejo/cjac012",
    "publication_info": "Eur J Orthod. 2022 Dec; 44(6): 595–602. DOI: 10.1093/ejo/cjac012",
    "published_at": "2022-12-01",
    "journal_rank": "Q1",
@@ -3351,7 +3772,10 @@
    "original_venue": "European Journal of Orthodontics (Eur J Orthod.) – مجلة دولية محكّمة، Scopus Q1، Oxford University Press",
    "researchers": [
     162
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: aligners, oral health, orthodon, orthodontic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 156,
@@ -3361,6 +3785,7 @@
    "study_type": "clinical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1016/j.amsu.2022.104313",
    "publication_info": "Ann Med Surg (Lond). 2022 Aug 2; 80: 104313. eCollection 2022 Aug. DOI: 10.1016/j.amsu.2022.104313",
    "published_at": "2022-08-02",
    "journal_rank": "Q2",
@@ -3368,7 +3793,10 @@
    "original_venue": "Annals of Medicine and Surgery (Ann Med Surg – Elsevier) – مجلة طبية مفتوحة الوصول، Scopus Q2",
    "researchers": [
     122
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: dental, implants, zirconia",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 157,
@@ -3378,6 +3806,7 @@
    "study_type": "clinical",
    "venue": "International Journal of Dentistry",
    "issn": "1687-8744",
+   "doi": "10.1155/2021/4683689",
    "publication_info": "Int J Dent. 2021 Sep 7; 2021: 4683689. eCollection 2021. DOI: 10.1155/2021/4683689",
    "published_at": "2021-09-07",
    "journal_rank": "Q2",
@@ -3386,7 +3815,10 @@
    "researchers": [
     174,
     172
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: dent, endodontic",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 158,
@@ -3396,6 +3828,7 @@
    "study_type": "clinical",
    "venue": "Journal of Family Medicine and Primary Care",
    "issn": "2278-7135",
+   "doi": "10.4103/jfmpc.jfmpc_342_20",
    "publication_info": "J Family Med Prim Care. 2020 Jul 30; 9(7): 3474–3479. DOI: 10.4103/jfmpc.jfmpc_342_20",
    "published_at": "2020-07-30",
    "journal_rank": "Q3",
@@ -3403,7 +3836,10 @@
    "original_venue": "Journal of Family Medicine and Primary Care – مجلة طبية دولية مفتوحة الوصول، مفهرسة في PubMed، Scopus Q3",
    "researchers": [
     172
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: teeth",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 159,
@@ -3413,6 +3849,7 @@
    "study_type": "empirical",
    "venue": "Journal of Contemporary Dental Practice",
    "issn": "0972-2612",
+   "doi": "10.5005/jp-journals-10024-1981",
    "publication_info": "J Contemp Dent Pract. 2017 Jan 1; 18(1): 16–22. DOI: 10.5005/jp-journals-10024-1981",
    "published_at": "2017-01-01",
    "journal_rank": "Q3",
@@ -3420,7 +3857,10 @@
    "original_venue": "Journal of Contemporary Dental Practice – مجلة دولية محكمة، Scopus Q3",
    "researchers": [
     162
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: apices, dent, teeth",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 160,
@@ -3430,6 +3870,7 @@
    "study_type": "empirical",
    "venue": "Journal of the Egyptian Public Health Association",
    "issn": "2090-2546",
+   "doi": "10.1097/01.epx.0000475614.20865.db",
    "publication_info": "J Egypt Public Health Assoc. 2015 Dec; 90(4):146–149. DOI: 10.1097/01.EPX.0000475614.20865.db",
    "published_at": "2015-12-01",
    "journal_rank": "Q3",
@@ -3438,7 +3879,10 @@
    "researchers": [
     162,
     176
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: teeth",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 161,
@@ -3448,6 +3892,7 @@
    "study_type": "empirical",
    "venue": "Oral Radiology",
    "issn": "1613-9674",
+   "doi": "10.1007/s11282-018-0358-4",
    "publication_info": "Oral Radiol. 2019 May;35(2):159–170. Epub 2018 Nov 7. DOI: 10.1007/s11282-018-0358-4",
    "published_at": "2019-05-01",
    "journal_rank": "Q3",
@@ -3455,7 +3900,10 @@
    "original_venue": "Oral Radiology — مجلة محكمة — ناشر: Springer — مفهرسة Scopus وPubMed",
    "researchers": [
     175
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: jawbone, oral, panoramic, periapical",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 163,
@@ -3465,6 +3913,7 @@
    "study_type": "clinical",
    "venue": "Cureus",
    "issn": "2168-8184",
+   "doi": "10.7759/cureus.25897",
    "publication_info": "Cureus. 2022 Jun 13; 14(6): e25897. DOI: 10.7759/cureus.25897. eCollection 2022 Jun.",
    "published_at": "2022-06-13",
    "journal_rank": "Q3",
@@ -3472,7 +3921,10 @@
    "original_venue": "Cureus – مجلة طبية دولية مفتوحة الوصول، مفهرسة في PubMed و Scopus",
    "researchers": [
     162
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: class iii, malocclusion, temporomandibular, twin block",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 164,
@@ -3482,6 +3934,7 @@
    "study_type": "clinical",
    "venue": "Cureus",
    "issn": "2168-8184",
+   "doi": "10.7759/cureus.26489",
    "publication_info": "Cureus, 2022 Jul 1; Vol. 14(7): e26489. eCollection Jul 2022",
    "published_at": "2022-07-01",
    "journal_rank": "Q3",
@@ -3489,7 +3942,10 @@
    "original_venue": "Cureus – مجلة علمية دولية مفتوحة الوصول",
    "researchers": [
     162
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: orthodontic, teeth",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 165,
@@ -3499,6 +3955,7 @@
    "study_type": "clinical",
    "venue": "Cureus",
    "issn": "2168-8184",
+   "doi": "10.7759/cureus.23449",
    "publication_info": "Cureus, 2022 Mar 24; Vol. 14(3): e23449. eCollection Mar 2022",
    "published_at": "2022-03-24",
    "journal_rank": "Q3",
@@ -3506,7 +3963,10 @@
    "original_venue": "Cureus – مجلة علمية دولية مفتوحة الوصول",
    "researchers": [
     162
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: class ii, malocclusion",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 166,
@@ -3516,6 +3976,7 @@
    "study_type": "clinical",
    "venue": "International Journal of Dental Hygiene",
    "issn": "1601-5037",
+   "doi": "10.1111/idh.12540",
    "publication_info": "Volume 20, Issue 2, Pages 391–400, May 2022 (Epub 2021 Aug 4)",
    "published_at": "2022-05-01",
    "journal_rank": "Q3",
@@ -3523,7 +3984,10 @@
    "original_venue": "International Journal of Dental Hygiene – مجلة دولية محكّمة (Wiley)",
    "researchers": [
     177
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: dent, dental",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 167,
@@ -3533,6 +3997,7 @@
    "study_type": "clinical",
    "venue": "Cureus Journal of Medical Science",
    "issn": "2168-8184",
+   "doi": "10.7759/cureus.23379",
    "publication_info": "Cureus, Volume 14, Issue 3, Article e23379, March 2022",
    "published_at": "2022-03-01",
    "journal_rank": "Q2",
@@ -3540,7 +4005,10 @@
    "original_venue": "Cureus Journal of Medical Science – مجلة دولية مفتوحة الوصول (Q2 حسب تصنيف Cureus)",
    "researchers": [
     162
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: oral health, orthodontic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 168,
@@ -3550,6 +4018,7 @@
    "study_type": "clinical",
    "venue": "Dental and Medical Problems",
    "issn": "1644-387",
+   "doi": "10.17219/dmp/99158",
    "publication_info": "2018 Oct–Dec; Vol 55, Issue 4, pp. 371–378",
    "published_at": "2018-12-01",
    "journal_rank": "Q3",
@@ -3557,7 +4026,10 @@
    "original_venue": "Dental and Medical Problems – مجلة دولية محكمة",
    "researchers": [
     171
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: dent, maxillary",
+   "doi_source": "Crossref (exact title, other ISSN)"
   },
   {
    "source_id": 169,
@@ -3567,6 +4039,7 @@
    "study_type": "clinical",
    "venue": "Cureus",
    "issn": "2168-8184",
+   "doi": "10.7759/cureus.25077",
    "publication_info": "Cureus. 2022 May 17;14(5):e25077",
    "published_at": "2022-05-17",
    "journal_rank": "Q3",
@@ -3574,7 +4047,10 @@
    "original_venue": "Cureus – مجلة مفتوحة الوصول، مفهرسة في PubMed",
    "researchers": [
     162
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: teeth",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 170,
@@ -3584,6 +4060,7 @@
    "study_type": "other",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1016/j.amsu.2022.103355",
    "publication_info": "Ann Med Surg (Lond). 2022 Feb;74:103355. eCollection 2022 Feb. DOI: 10.1016/j.amsu.2022.103355",
    "published_at": "2022-02-01",
    "journal_rank": "Q3",
@@ -3591,7 +4068,10 @@
    "original_venue": "Annals of Medicine and Surgery (Elsevier) – مجلة دولية مفتوحة الوصول – مفهرسة في PubMed و Scopus",
    "researchers": [
     122
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: dentition, mandible, odontoma",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 171,
@@ -3601,6 +4081,7 @@
    "study_type": "empirical",
    "venue": "Cureus",
    "issn": "2168-8184",
+   "doi": "10.7759/cureus.68699",
    "publication_info": "المجلد 16، العدد 9، رقم المقال e68699، سنة النشر: Sep 2024، eCollection 2024 Sep",
    "published_at": "2024-09-01",
    "journal_rank": "Q2",
@@ -3608,7 +4089,10 @@
    "original_venue": "Cureus — مجلة دولية مفتوحة الوصول، مصنفة Q2 في بعض المجالات (SCImago)",
    "researchers": [
     178
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: teeth, veneers",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 172,
@@ -3618,6 +4102,7 @@
    "study_type": "empirical",
    "venue": "Quantitative Imaging in Medicine and Surgery",
    "issn": "2223-4306",
+   "doi": "10.21037/qims-20-1053",
    "publication_info": "2021 Aug; 11(8): 3890-3892.",
    "published_at": "2021-08-01",
    "journal_rank": "Q3",
@@ -3625,7 +4110,10 @@
    "original_venue": "Quantitative Imaging in Medicine and Surgery — مجلة دولية محكمة ومفهرسة في PubMed & Scopus",
    "researchers": [
     122
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: mandible, panoramic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 173,
@@ -3635,6 +4123,7 @@
    "study_type": "empirical",
    "venue": "Clinical and Experimental Dental Research",
    "issn": "2057-4347",
+   "doi": "10.1002/cre2.782",
    "publication_info": "2023 Dec; 9(6): 1149-1155.",
    "published_at": "2023-12-01",
    "journal_rank": "Q3",
@@ -3642,7 +4131,10 @@
    "original_venue": "Clinical and Experimental Dental Research — مجلة دولية محكمة ومفهرسة في PubMed & Scopus (Wiley)",
    "researchers": [
     179
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: dent, maxillary, molars, root canal",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 174,
@@ -3652,6 +4144,7 @@
    "study_type": "clinical",
    "venue": "Cureus",
    "issn": "2168-8184",
+   "doi": "10.7759/cureus.63142",
    "publication_info": "Cureus, 2024 Jun 25; 16(6): e63142",
    "published_at": "2024-06-25",
    "journal_rank": "Q3",
@@ -3659,7 +4152,10 @@
    "original_venue": "Cureus – مجلة علمية دولية مفتوحة الوصول (Indexed in PubMed & Scopus)",
    "researchers": [
     162
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 175,
@@ -3669,6 +4165,7 @@
    "study_type": "empirical",
    "venue": "Journal of Contemporary Dental Practice",
    "issn": "1526-3711",
+   "doi": "10.5005/jp-journals-10024-1948",
    "publication_info": "J Contemp Dent Pract. 2016 Nov 1;17(11):884–889",
    "published_at": "2016-11-01",
    "journal_rank": "Q3",
@@ -3676,7 +4173,10 @@
    "original_venue": "Journal of Contemporary Dental Practice (J Contemp Dent Pract) – مجلة دولية محكمة",
    "researchers": [
     162
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: dent, pulp, tooth",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 176,
@@ -3686,6 +4186,7 @@
    "study_type": "empirical",
    "venue": "Cureus",
    "issn": "2168-8184",
+   "doi": "10.7759/cureus.33455",
    "publication_info": "Cureus. 2023 Jan 6; 15(1):e33455. eCollection 2023 Jan.",
    "published_at": "2023-01-06",
    "journal_rank": "Q3",
@@ -3693,7 +4194,10 @@
    "original_venue": "Cureus – مجلة علمية دولية مفتوحة الوصول (PubMed Indexed)",
    "researchers": [
     162
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: class ii, malocclusion",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 177,
@@ -3703,6 +4207,7 @@
    "study_type": "empirical",
    "venue": "Cureus",
    "issn": "2168-8184",
+   "doi": "10.7759/cureus.54869",
    "publication_info": "Cureus. 2024 Feb 25; 16(2): e54869.",
    "published_at": "2024-02-25",
    "journal_rank": "Q3",
@@ -3711,7 +4216,10 @@
    "researchers": [
     180,
     181
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: dental",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 178,
@@ -3721,6 +4229,7 @@
    "study_type": "clinical",
    "venue": "BMC Oral Health",
    "issn": "1472-6831",
+   "doi": "10.1186/s12903-024-03926-2",
    "publication_info": "BMC Oral Health. 2024 Feb 2; 24(1):166.",
    "published_at": "2024-02-02",
    "journal_rank": "Q2",
@@ -3728,7 +4237,10 @@
    "original_venue": "BMC Oral Health – Springer Nature – مجلة Q2 مفتوحة الوصول ومفهرسة PubMed/Scopus",
    "researchers": [
     162
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: oral, orthodontic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 179,
@@ -3738,6 +4250,7 @@
    "study_type": "clinical",
    "venue": "Dental and Medical Problems",
    "issn": "2300-9020",
+   "doi": "10.17219/dmp/126304",
    "publication_info": "2021 Apr–Jun؛ المجلد 58، العدد 2، الصفحات 163–172",
    "published_at": "2021-04-01",
    "journal_rank": "Q3",
@@ -3745,7 +4258,10 @@
    "original_venue": "Dental and Medical Problems — مجلة دولية محكّمة",
    "researchers": [
     162
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: class iii, dent, malocclusion, orthodontic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 180,
@@ -3755,6 +4271,7 @@
    "study_type": "clinical",
    "venue": "Progress in Orthodontics",
    "issn": "2196-1042",
+   "doi": "10.1186/s40510-021-00391-3",
    "publication_info": "2021 Dec 23؛ المجلد 22، العدد 1، رقم المقال: 50",
    "published_at": "2021-12-23",
    "journal_rank": "Q1",
@@ -3762,7 +4279,10 @@
    "original_venue": "Progress in Orthodontics — مجلة دولية مفتوحة الوصول (Springer) — Q1",
    "researchers": [
     162
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: facemask therapy, orthodon",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 181,
@@ -3772,6 +4292,7 @@
    "study_type": "clinical",
    "venue": "Journal of International Medical Research",
    "issn": "1473-2300",
+   "doi": "10.1177/03000605221138461",
    "publication_info": "2022 Nov؛ المجلد 50، العدد 11، رقم المقال 3000605221138461",
    "published_at": "2022-11-01",
    "journal_rank": "Q3",
@@ -3779,7 +4300,10 @@
    "original_venue": "Journal of International Medical Research — مجلة عالمية محكمة",
    "researchers": [
     162
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: alveolar, teeth",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 182,
@@ -3789,6 +4313,7 @@
    "study_type": "clinical",
    "venue": "International Journal of Dental Hygiene",
    "issn": "1601-5037",
+   "doi": "10.1111/idh.12519",
    "publication_info": "Int J Dent Hyg. 2021 Aug;19(3):262–272. Epub 2021 Jul 2.",
    "published_at": "2021-07-02",
    "journal_rank": "Q3",
@@ -3797,7 +4322,10 @@
    "researchers": [
     182,
     177
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: dent, dental, periodontal",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 183,
@@ -3807,6 +4335,7 @@
    "study_type": "clinical",
    "venue": "Medicina Oral Patología Oral y Cirugía Bucal",
    "issn": "1698-6946",
+   "doi": "10.4317/medoral.23666",
    "publication_info": "Med Oral Patol Oral Cir Bucal. 2020 Sep 1;25(5):e660–e667.",
    "published_at": "2020-09-01",
    "journal_rank": "Q1",
@@ -3814,7 +4343,10 @@
    "original_venue": "Medicina Oral Patología Oral y Cirugía Bucal (Med Oral Patol Oral Cir Bucal) – مجلة دولية محكمة (Scopus Q1)",
    "researchers": [
     122
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: mandibular, oral, third molar",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 184,
@@ -3824,6 +4356,7 @@
    "study_type": "empirical",
    "venue": "Journal of Investigative and Clinical Dentistry",
    "issn": "2041-1626",
+   "doi": "10.1111/jicd.12332",
    "publication_info": "J Investig Clin Dent. 2018 Aug;9(3):e12332. Epub 2018 Mar 25.",
    "published_at": "2018-08-01",
    "journal_rank": "Q3",
@@ -3831,7 +4364,10 @@
    "original_venue": "Journal of Investigative and Clinical Dentistry – Wiley – مجلة محكمة دولية",
    "researchers": [
     175
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: dent, jawbones",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 185,
@@ -3841,6 +4377,7 @@
    "study_type": "clinical",
    "venue": "International Journal of Surgery Case Reports",
    "issn": "2210-2612",
+   "doi": "10.1016/j.ijscr.2024.110679",
    "publication_info": "المجلد 126، رقم المقال 110679، يناير 2025",
    "published_at": "2025-01-01",
    "journal_rank": "Q3",
@@ -3848,7 +4385,10 @@
    "original_venue": "International Journal of Surgery Case Reports – مجلة دولية محكّمة (Elsevier) – مفهرسة في Scopus",
    "researchers": [
     122
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: alveolar, dental, mandibular",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 186,
@@ -3858,6 +4398,7 @@
    "study_type": "empirical",
    "venue": "Journal of Contemporary Dental Practice",
    "issn": "1526-3711",
+   "doi": "10.5005/jp-journals-10024-2521",
    "publication_info": "المجلد 20، العدد 3، الصفحات 347–354، مارس 2019",
    "published_at": "2019-03-01",
    "journal_rank": "Q3",
@@ -3866,7 +4407,10 @@
    "researchers": [
     183,
     172
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: dent, dentists, root canal",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 187,
@@ -3876,6 +4420,7 @@
    "study_type": "clinical",
    "venue": "International Orthodontics",
    "issn": "1761-7227",
+   "doi": "10.1016/j.ortho.2021.10.001",
    "publication_info": "المجلد 19، العدد 4، الصفحات 580–590، ديسمبر 2021",
    "published_at": "2021-12-01",
    "journal_rank": "Q3",
@@ -3883,7 +4428,10 @@
    "original_venue": "International Orthodontics (Int Orthod) – مجلة محكّمة تصدر عن Elsevier – مفهرسة في Scopus",
    "researchers": [
     162
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: orthodon, teeth",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 188,
@@ -3893,6 +4441,7 @@
    "study_type": "clinical",
    "venue": "Journal of Contemporary Dental Practice",
    "issn": "1526-3711",
+   "doi": "10.5005/jp-journals-10024-2565",
    "publication_info": "المجلد 20، العدد 5، الصفحات 598–602، تاريخ النشر: May 1, 2019",
    "published_at": "2019-05-01",
    "journal_rank": "Q3",
@@ -3900,7 +4449,10 @@
    "original_venue": "Journal of Contemporary Dental Practice (J Contemp Dent Pract) — مجلة مفهرسة دولياً",
    "researchers": [
     162
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: dent, temporomandibular",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 189,
@@ -3910,6 +4462,7 @@
    "study_type": "empirical",
    "venue": "Journal of Contemporary Dental Practice",
    "issn": "1526-3711",
+   "doi": "10.5005/jp-journals-10024-2675",
    "publication_info": "المجلد 20، العدد 10، الصفحات 1141–1145، تاريخ النشر: October 1, 2019",
    "published_at": "2019-10-01",
    "journal_rank": "Q3",
@@ -3917,7 +4470,10 @@
    "original_venue": "Journal of Contemporary Dental Practice (J Contemp Dent Pract) — مجلة مفهرسة دولياً",
    "researchers": [
     169
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: dent, dental, teeth",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 190,
@@ -3927,6 +4483,7 @@
    "study_type": "empirical",
    "venue": "Journal of Indian Prosthodontic Society",
    "issn": "0972-4052",
+   "doi": "10.4103/0972-4052.164882",
    "publication_info": "المجلد 16، العدد 1، الصفحات 49–52، تاريخ النشر: Jan–Mar 2016",
    "published_at": "2016-03-01",
    "journal_rank": "Q3",
@@ -3934,7 +4491,10 @@
    "original_venue": "Journal of Indian Prosthodontic Society (J Indian Prosthodont Soc) — مجلة مفهرسة دولياً",
    "researchers": [
     185
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: prosthodon",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 191,
@@ -3944,6 +4504,7 @@
    "study_type": "empirical",
    "venue": "Imaging Science in Dentistry",
    "issn": "1598-5240",
+   "doi": "10.5624/isd.2016.46.3.185",
    "publication_info": "2016 Sep;46(3):185-202.",
    "published_at": "2016-09-01",
    "journal_rank": "Q3",
@@ -3951,7 +4512,10 @@
    "original_venue": "Imaging Science in Dentistry – مجلة علمية محكمة مفهرسة في PubMed",
    "researchers": [
     186
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: dent, dental",
+   "doi_source": "Crossref (exact title, other ISSN)"
   },
   {
    "source_id": 192,
@@ -3961,6 +4525,7 @@
    "study_type": "clinical",
    "venue": "Journal of International Medical Research",
    "issn": "1473-2300",
+   "doi": "10.1177/03000605251370333",
    "publication_info": "2025 Sep;53(9):3000605251370333.",
    "published_at": "2025-09-01",
    "journal_rank": "Q3",
@@ -3968,7 +4533,10 @@
    "original_venue": "Journal of International Medical Research – مجلة دولية محكمة",
    "researchers": [
     187
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: bracket, orthodontic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 193,
@@ -3978,6 +4546,7 @@
    "study_type": "empirical",
    "venue": "Dentomaxillofacial Radiology",
    "issn": "0250-832X",
+   "doi": "10.1259/dmfr.20160323",
    "publication_info": "2017 Aug;46(6):20160323.",
    "published_at": "2017-08-01",
    "journal_rank": "Q3",
@@ -3985,7 +4554,10 @@
    "original_venue": "Dentomaxillofacial Radiology – مجلة دولية محكمة (BMJ Journals)",
    "researchers": [
     175
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: dent, maxillary",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 194,
@@ -3995,6 +4567,7 @@
    "study_type": "empirical",
    "venue": "Cureus",
    "issn": "2168-8184",
+   "doi": "10.7759/cureus.77021",
    "publication_info": "Cureus. 2025 Jan 6;17(1):e77021.",
    "published_at": "2025-01-06",
    "journal_rank": "Q2",
@@ -4002,7 +4575,10 @@
    "original_venue": "Cureus – مجلة طبية دولية مفتوحة الوصول (Scopus Q2 تقريباً)",
    "researchers": [
     162
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 195,
@@ -4012,6 +4588,7 @@
    "study_type": "empirical",
    "venue": "Journal of Egypt Public Health Association",
    "issn": "0013-2446",
+   "doi": "10.1097/01.epx.0000491269.07145.d1",
    "publication_info": "J Egypt Public Health Assoc. 2016 Sep;91(3):150-155.",
    "published_at": "2016-09-01",
    "journal_rank": "Q3",
@@ -4019,7 +4596,10 @@
    "original_venue": "Journal of Egypt Public Health Association – مجلة دولية محكّمة",
    "researchers": [
     162
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: cleft lip, dental",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 196,
@@ -4029,6 +4609,7 @@
    "study_type": "empirical",
    "venue": "International Dental Journal",
    "issn": "0020-6539",
+   "doi": "10.1016/j.identj.2025.109286",
    "publication_info": "Int Dent J. 2025 Nov 27;76(1):109286. doi: 10.1016/j.identj.2025.109286. Online ahead of print.",
    "published_at": "2025-11-01",
    "journal_rank": "Q1",
@@ -4036,7 +4617,10 @@
    "original_venue": "International Dental Journal (Int Dent J) – مجلة دولية محكّمة، تصنيف Q1 (Elsevier)",
    "researchers": [
     122
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: dent, enamel",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 197,
@@ -4046,6 +4630,7 @@
    "study_type": "clinical",
    "venue": "International Journal of Surgery Case Reports",
    "issn": "2210-2612:",
+   "doi": "10.1016/j.ijscr.2025.111933",
    "publication_info": "Int J Surg Case Rep. 2025 Oct;135:111933. doi: 10.1016/j.ijscr.2025.111933. Epub 2025 Sep 10.",
    "published_at": "2025-10-01",
    "journal_rank": "Q2",
@@ -4053,7 +4638,10 @@
    "original_venue": "International Journal of Surgery Case Reports – مجلة طبية دولية محكّمة (Elsevier) تصنيف Q2",
    "researchers": [
     122
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: alveolar, dental, implant, mandibular",
+   "doi_source": "the register's publication details"
   },
   {
    "source_id": 198,
@@ -4063,6 +4651,7 @@
    "study_type": "empirical",
    "venue": "Dental Research Journal",
    "issn": "1735-3327",
+   "doi": null,
    "publication_info": "Dent Res J (Isfahan). 2014 Nov;11(6):624–630.",
    "published_at": "2014-11-01",
    "journal_rank": "Q2",
@@ -4071,7 +4660,10 @@
    "researchers": [
     188,
     189
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: dent, dental",
+   "doi_source": null
   },
   {
    "source_id": 199,
@@ -4081,6 +4673,7 @@
    "study_type": "clinical",
    "venue": "International Orthodontics",
    "issn": "1761-7227",
+   "doi": "10.1016/j.ortho.2025.100968",
    "publication_info": "Int Orthod. 2025 Jun; 23(2):100968. Epub 2025 Jan 20.",
    "published_at": "2025-06-01",
    "journal_rank": "Q3",
@@ -4088,7 +4681,10 @@
    "original_venue": "International Orthodontics (Int Orthod) – مجلة دولية محكمة تابعة لـ Elsevier",
    "researchers": [
     162
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: alveolar, orthodon, orthodontic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 200,
@@ -4098,6 +4694,7 @@
    "study_type": "empirical",
    "venue": "International Journal of Stem Cells",
    "issn": "2005-0235",
+   "doi": "10.15283/ijsc.2014.7.1.23",
    "publication_info": "Int J Stem Cells. 2014 May;7(1):23-29.",
    "published_at": "2014-05-01",
    "journal_rank": "Q3",
@@ -4105,7 +4702,10 @@
    "original_venue": "International Journal of Stem Cells (Int J Stem Cells) – مجلة دولية محكمة",
    "researchers": [
     190
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: alveolar",
+   "doi_source": "Crossref (exact title, other ISSN)"
   },
   {
    "source_id": 201,
@@ -4115,6 +4715,7 @@
    "study_type": "clinical",
    "venue": "Journal of Contemporary Dental Practice",
    "issn": "1526-3711",
+   "doi": "10.5005/jp-journals-10024-1883",
    "publication_info": "J Contemp Dent Pract. 2016 Jul 1;17(7):522-529.",
    "published_at": "2016-07-01",
    "journal_rank": "Q3",
@@ -4122,7 +4723,10 @@
    "original_venue": "Journal of Contemporary Dental Practice (J Contemp Dent Pract) – مجلة دولية محكمة",
    "researchers": [
     162
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: class iii, dent, malocclusion",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 202,
@@ -4132,6 +4736,7 @@
    "study_type": "other",
    "venue": "Future Science OA",
    "issn": "2056-5623",
+   "doi": "10.1080/20565623.2025.2476923",
    "publication_info": "Future Sci OA. 2025 Dec; 11(1): 2476923. Epub 2025 Mar 8.",
    "published_at": "2025-12-01",
    "journal_rank": "Q3",
@@ -4141,7 +4746,10 @@
     191,
     94,
     98
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 203,
@@ -4151,6 +4759,7 @@
    "study_type": "empirical",
    "venue": "BMC Medical Education",
    "issn": "1472-6920",
+   "doi": "10.1186/s12909-024-05817-0",
    "publication_info": "2024; 24(1):826",
    "published_at": "2024-01-01",
    "journal_rank": "Q1",
@@ -4164,7 +4773,10 @@
     81,
     192,
     140
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 204,
@@ -4174,6 +4786,7 @@
    "study_type": "empirical",
    "venue": "Medicine",
    "issn": "1536-5964",
+   "doi": "10.1097/md.0000000000041680",
    "publication_info": "2025; 104(8): e41680",
    "published_at": "2025-01-01",
    "journal_rank": "Q1",
@@ -4182,7 +4795,10 @@
    "researchers": [
     87,
     193
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 205,
@@ -4192,6 +4808,7 @@
    "study_type": "other",
    "venue": "Current Research in Pharmacology & Drug Discovery",
    "issn": "2666-5169",
+   "doi": "10.1016/j.crphar.2024.100198",
    "publication_info": "2024; 7: 100198",
    "published_at": "2024-01-01",
    "journal_rank": "Q1",
@@ -4199,7 +4816,10 @@
    "original_venue": "Current Research in Pharmacology & Drug Discovery – مجلة دولية محكّمة (Elsevier) – Q1",
    "researchers": [
     194
-   ]
+   ],
+   "faculty": "pharmacy",
+   "faculty_reason": "subject: drug, pharmacology",
+   "doi_source": "Crossref (exact title, other ISSN)"
   },
   {
    "source_id": 206,
@@ -4209,6 +4829,7 @@
    "study_type": "other",
    "venue": "Ear, Nose & Throat Journal",
    "issn": "0145-5613",
+   "doi": "10.1177/01455613251314604",
    "publication_info": "2025 Jan 19; 1455613251314604",
    "published_at": "2025-01-19",
    "journal_rank": "Q3",
@@ -4216,7 +4837,10 @@
    "original_venue": "Ear, Nose & Throat Journal – مجلة دولية محكّمة – SCOPUS Q3",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 207,
@@ -4226,6 +4850,7 @@
    "study_type": "empirical",
    "venue": "Folia Medica Cracoviensia",
    "issn": "0015-5632",
+   "doi": "10.24425/fmc.2024.150145",
    "publication_info": "2024; 64(1): 87–96",
    "published_at": "2024-01-01",
    "journal_rank": "Q3",
@@ -4233,7 +4858,10 @@
    "original_venue": "Folia Medica Cracoviensia – مجلة دولية محكّمة – SCOPUS Q3",
    "researchers": [
     195
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, other ISSN)"
   },
   {
    "source_id": 208,
@@ -4243,6 +4871,7 @@
    "study_type": "other",
    "venue": "Archives of Orthopaedic and Trauma Surgery",
    "issn": "0936-8051",
+   "doi": "10.1007/s00402-023-05171-8",
    "publication_info": "2024; 144(3): 1091–1106",
    "published_at": "2024-01-01",
    "journal_rank": "Q1",
@@ -4250,7 +4879,10 @@
    "original_venue": "Archives of Orthopaedic and Trauma Surgery – مجلة دولية محكّمة – SCOPUS Q1",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, other ISSN)"
   },
   {
    "source_id": 209,
@@ -4260,6 +4892,7 @@
    "study_type": "other",
    "venue": "Sleep Medicine",
    "issn": "1389-9457",
+   "doi": "10.1016/j.sleep.2025.106540",
    "publication_info": "2025 Jul; 131: 106540",
    "published_at": "2025-07-01",
    "journal_rank": "Q1",
@@ -4267,7 +4900,10 @@
    "original_venue": "Sleep Medicine – مجلة دولية محكّمة – SCOPUS Q1",
    "researchers": [
     196
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 210,
@@ -4277,6 +4913,7 @@
    "study_type": "other",
    "venue": "BMC Oral Health",
    "issn": "1472-6831",
+   "doi": "10.1186/s12903-024-05109-5",
    "publication_info": "24(1):1331 – 2024 Nov 1",
    "published_at": "2024-11-01",
    "journal_rank": "Q1",
@@ -4284,7 +4921,10 @@
    "original_venue": "BMC Oral Health – Q1 – مجلة دولية مفتوحة الوصول",
    "researchers": [
     167
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: gingival, oral",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 211,
@@ -4294,6 +4934,7 @@
    "study_type": "other",
    "venue": "Pharmaceuticals",
    "issn": "1424-8247",
+   "doi": "10.3390/ph18030364",
    "publication_info": "18(3):364 – 2025 Mar 4",
    "published_at": "2025-03-04",
    "journal_rank": "Q1",
@@ -4301,7 +4942,10 @@
    "original_venue": "Pharmaceuticals (Basel) – Q1 – مجلة دولية مفتوحة الوصول",
    "researchers": [
     197
-   ]
+   ],
+   "faculty": "pharmacy",
+   "faculty_reason": "subject: antifungals, pharmaceuticals",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 212,
@@ -4311,6 +4955,7 @@
    "study_type": "other",
    "venue": "European Journal of Clinical Pharmacology",
    "issn": "1432-1041",
+   "doi": "10.1007/s00228-025-03904-9",
    "publication_info": "81(11):1555–1568 – 2025 Nov (إلكتروني أولاً: 2025 Aug 20)",
    "published_at": "2025-11-01",
    "journal_rank": "Q1",
@@ -4318,7 +4963,10 @@
    "original_venue": "European Journal of Clinical Pharmacology – Q1 – مجلة دولية محكّمة",
    "researchers": [
     196
-   ]
+   ],
+   "faculty": "pharmacy",
+   "faculty_reason": "subject: pharmacology",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 213,
@@ -4328,6 +4976,7 @@
    "study_type": "other",
    "venue": "The Lancet",
    "issn": "0140-6736",
+   "doi": "10.1016/s0140-6736(25)00321-6",
    "publication_info": "405(10484):1049–1050 – 2025 Mar 29",
    "published_at": "2025-03-29",
    "journal_rank": "Q1",
@@ -4335,7 +4984,10 @@
    "original_venue": "The Lancet – Q1 – مجلة دولية محكّمة رفيعة المستوى",
    "researchers": [
     57
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 214,
@@ -4345,6 +4997,7 @@
    "study_type": "other",
    "venue": "The Egyptian Heart Journal",
    "issn": "1110-2608",
+   "doi": "10.1186/s43044-025-00653-z",
    "publication_info": "77(1):56 – 2025 Jun 6",
    "published_at": "2025-06-06",
    "journal_rank": "Q1",
@@ -4352,7 +5005,10 @@
    "original_venue": "The Egyptian Heart Journal – Q1 – مجلة دولية مفتوحة الوصول",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, other ISSN)"
   },
   {
    "source_id": 215,
@@ -4362,6 +5018,7 @@
    "study_type": "other",
    "venue": "Ear, Nose & Throat Journal",
    "issn": "0145-5613",
+   "doi": "10.1177/01455613241261455",
    "publication_info": "(Online ahead of print) – 2024 Jun 14",
    "published_at": "2024-06-14",
    "journal_rank": "Q3",
@@ -4369,7 +5026,10 @@
    "original_venue": "Ear, Nose & Throat Journal – مجلة دولية محكّمة (Ear Nose Throat J)",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 216,
@@ -4379,6 +5039,7 @@
    "study_type": "other",
    "venue": "Ear, Nose & Throat Journal",
    "issn": "0145-5613",
+   "doi": "10.1177/01455613241307753",
    "publication_info": "(Online ahead of print) – 2024 Dec 16",
    "published_at": "2024-12-16",
    "journal_rank": "Q3",
@@ -4386,7 +5047,10 @@
    "original_venue": "Ear, Nose & Throat Journal – مجلة دولية محكّمة",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 217,
@@ -4396,6 +5060,7 @@
    "study_type": "clinical",
    "venue": "Case Reports in Oncology",
    "issn": "1662-6575",
+   "doi": "10.1159/000546358",
    "publication_info": "18(1):786–793 – 2025 May 9 (eCollection 2025 Jan–Dec)",
    "published_at": "2025-05-09",
    "journal_rank": "Q3",
@@ -4403,7 +5068,10 @@
    "original_venue": "Case Reports in Oncology – مجلة دولية محكّمة",
    "researchers": [
     198
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 218,
@@ -4413,6 +5081,7 @@
    "study_type": "other",
    "venue": "Journal of Perianesthesia Nursing",
    "issn": "1089-9472",
+   "doi": "10.1016/j.jopan.2024.10.007",
    "publication_info": "40(4):1043–1052.e1 – 2025 Aug (Epub 2025 Jan 16)",
    "published_at": "2025-08-01",
    "journal_rank": "Q3",
@@ -4420,7 +5089,10 @@
    "original_venue": "Journal of Perianesthesia Nursing – J Perianesth Nurs – مجلة دولية محكّمة",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 219,
@@ -4430,6 +5102,7 @@
    "study_type": "clinical",
    "venue": "Journal of Medical Case Reports",
    "issn": "1752-1947",
+   "doi": "10.1186/s13256-024-04741-7",
    "publication_info": "18(1):397 – 2024 Aug 24",
    "published_at": "2024-08-24",
    "journal_rank": "Q3",
@@ -4437,7 +5110,10 @@
    "original_venue": "Journal of Medical Case Reports – مجلة دولية مفتوحة الوصول",
    "researchers": [
     199
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 220,
@@ -4447,6 +5123,7 @@
    "study_type": "clinical",
    "venue": "International Journal of Surgery Case Reports",
    "issn": "2210-2612",
+   "doi": "10.1016/j.ijscr.2024.110256",
    "publication_info": "123:110256 – 2024 Oct (Epub 2024 Sep 12)",
    "published_at": "2024-10-01",
    "journal_rank": "Q3",
@@ -4454,7 +5131,10 @@
    "original_venue": "International Journal of Surgery Case Reports – مجلة دولية محكّمة",
    "researchers": [
     94
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 221,
@@ -4464,6 +5144,7 @@
    "study_type": "other",
    "venue": "Ear, Nose & Throat Journal",
    "issn": "0145-5613",
+   "doi": "10.1177/01455613241305602",
    "publication_info": "(Online ahead of print) – 2024 Dec 10",
    "published_at": "2024-12-10",
    "journal_rank": "Q3",
@@ -4471,7 +5152,10 @@
    "original_venue": "Ear, Nose & Throat Journal – مجلة دولية محكّمة",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 222,
@@ -4481,6 +5165,7 @@
    "study_type": "other",
    "venue": "Ear, Nose & Throat Journal",
    "issn": "0145-5613",
+   "doi": "10.1177/01455613241290177",
    "publication_info": "(Online ahead of print) – 2024 Oct 8",
    "published_at": "2024-10-08",
    "journal_rank": "Q3",
@@ -4488,7 +5173,10 @@
    "original_venue": "Ear, Nose & Throat Journal – مجلة دولية محكّمة",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 223,
@@ -4498,6 +5186,7 @@
    "study_type": "clinical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1097/ms9.0000000000001517",
    "publication_info": "86(1):535–538 – 2023 Nov 16 (eCollection 2024 Jan)",
    "published_at": "2023-11-16",
    "journal_rank": "Q1",
@@ -4505,7 +5194,10 @@
    "original_venue": "Annals of Medicine and Surgery (Lond) – مجلة دولية محكّمة",
    "researchers": [
     134
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 224,
@@ -4515,6 +5207,7 @@
    "study_type": "other",
    "venue": "Seminars in Ophthalmology",
    "issn": "0882-0538",
+   "doi": "10.1080/08820538.2024.2420969",
    "publication_info": "40(2):86–96 – 2025 Feb (Epub 2024 Nov 1)",
    "published_at": "2025-02-01",
    "journal_rank": "Q3",
@@ -4522,7 +5215,10 @@
    "original_venue": "Seminars in Ophthalmology – مجلة دولية محكّمة",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 225,
@@ -4532,6 +5228,7 @@
    "study_type": "other",
    "venue": "Ear, Nose & Throat Journal",
    "issn": "0145-5613",
+   "doi": "10.1177/01455613251349608",
    "publication_info": "(Online ahead of print) – 2025 Jun 16",
    "published_at": "2025-06-16",
    "journal_rank": "Q3",
@@ -4539,7 +5236,10 @@
    "original_venue": "Ear, Nose & Throat Journal – مجلة دولية محكّمة",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 226,
@@ -4549,6 +5249,7 @@
    "study_type": "other",
    "venue": "International Journal of Lower Extremity Wounds",
    "issn": null,
+   "doi": "10.1177/15347346251385355",
    "publication_info": "(Online ahead of print) – 2025 Oct 15",
    "published_at": "2025-10-15",
    "journal_rank": "Q3",
@@ -4556,7 +5257,10 @@
    "original_venue": "International Journal of Lower Extremity Wounds – مجلة دولية محكّمة",
    "researchers": [
     196
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, other ISSN)"
   },
   {
    "source_id": 227,
@@ -4566,6 +5270,7 @@
    "study_type": "empirical",
    "venue": "Pharmaceuticals",
    "issn": "1424-8247",
+   "doi": "10.3390/ph17091189",
    "publication_info": "17(9):1189 – 2024 Sep 10",
    "published_at": "2024-09-10",
    "journal_rank": "Q1",
@@ -4573,7 +5278,10 @@
    "original_venue": "Pharmaceuticals (Basel) – مجلة دولية مفتوحة الوصول – Q1",
    "researchers": [
     197
-   ]
+   ],
+   "faculty": "pharmacy",
+   "faculty_reason": "subject: antiviral activity, essential oil, pharmaceuticals",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 228,
@@ -4583,6 +5291,7 @@
    "study_type": "other",
    "venue": "Ear, Nose & Throat Journal",
    "issn": "0145-5613",
+   "doi": "10.1177/01455613251342858",
    "publication_info": "(Online ahead of print) – 2025 May 16",
    "published_at": "2025-05-16",
    "journal_rank": "Q3",
@@ -4590,7 +5299,10 @@
    "original_venue": "Ear, Nose & Throat Journal – مجلة دولية محكّمة",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 229,
@@ -4600,6 +5312,7 @@
    "study_type": "clinical",
    "venue": "Journal of Medical Case Reports",
    "issn": "1752-1947",
+   "doi": "10.1186/s13256-025-05352-6",
    "publication_info": "19(1):292 – 2025 Jun 23",
    "published_at": "2025-06-23",
    "journal_rank": "Q3",
@@ -4607,7 +5320,10 @@
    "original_venue": "Journal of Medical Case Reports – مجلة دولية مفتوحة الوصول",
    "researchers": [
     200
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 230,
@@ -4617,6 +5333,7 @@
    "study_type": "empirical",
    "venue": "Preventive Medicine Reports",
    "issn": "2211-3355",
+   "doi": "10.1016/j.pmedr.2024.102804",
    "publication_info": "44:102804 – 2024 Jun 24 (eCollection 2024 Aug)",
    "published_at": "2024-06-24",
    "journal_rank": "Q3",
@@ -4624,7 +5341,10 @@
    "original_venue": "Preventive Medicine Reports (Prev Med Rep) – مجلة دولية مفتوحة الوصول",
    "researchers": [
     60
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 231,
@@ -4634,6 +5354,7 @@
    "study_type": "clinical",
    "venue": "Ear, Nose & Throat Journal",
    "issn": "0145-5613",
+   "doi": "10.1177/01455613241305994",
    "publication_info": "(Online ahead of print) – 2024 Dec 10",
    "published_at": "2024-12-10",
    "journal_rank": "Q3",
@@ -4641,7 +5362,10 @@
    "original_venue": "Ear, Nose & Throat Journal – مجلة دولية محكّمة",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 232,
@@ -4651,6 +5375,7 @@
    "study_type": "clinical",
    "venue": "Ear, Nose & Throat Journal",
    "issn": "0145-5613",
+   "doi": "10.1177/01455613241301227",
    "publication_info": "(Online ahead of print) – 2024 Nov 16",
    "published_at": "2024-11-16",
    "journal_rank": "Q3",
@@ -4658,7 +5383,10 @@
    "original_venue": "Ear, Nose & Throat Journal – مجلة دولية محكّمة",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 233,
@@ -4668,6 +5396,7 @@
    "study_type": "empirical",
    "venue": "Psychological Assessment",
    "issn": "1040-3590",
+   "doi": null,
    "publication_info": "36(1):14–29 – 2024 Jan (Epub 2023 Nov 27)",
    "published_at": "2023-11-27",
    "journal_rank": "Q1",
@@ -4677,7 +5406,10 @@
     29,
     201,
     202
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": null
   },
   {
    "source_id": 234,
@@ -4687,6 +5419,7 @@
    "study_type": "empirical",
    "venue": "Frontiers in Clinical Diabetes and Healthcare",
    "issn": "2674-0621",
+   "doi": "10.3389/fcdhc.2024.1380244",
    "publication_info": "5:1380244 – 2024 May 23 (eCollection 2024)",
    "published_at": "2024-05-23",
    "journal_rank": "Q3",
@@ -4694,7 +5427,10 @@
    "original_venue": "Frontiers in Clinical Diabetes and Healthcare (Front Clin Diabetes Healthc) – مجلة دولية مفتوحة الوصول",
    "researchers": [
     195
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, other ISSN)"
   },
   {
    "source_id": 236,
@@ -4704,6 +5440,7 @@
    "study_type": "empirical",
    "venue": "Cureus",
    "issn": "2168-8184",
+   "doi": "10.7759/cureus.51937",
    "publication_info": "16(1):e51937 – 2024 Jan 9 (eCollection 2024 Jan)",
    "published_at": "2024-01-09",
    "journal_rank": "Q3",
@@ -4711,7 +5448,10 @@
    "original_venue": "Cureus – مجلة دولية مفتوحة الوصول",
    "researchers": [
     11
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 237,
@@ -4721,6 +5461,7 @@
    "study_type": "empirical",
    "venue": "BDJ Open",
    "issn": "2056-807",
+   "doi": "10.1038/s41405-024-00242-3",
    "publication_info": "10(1):57 – 2024 Jul 7",
    "published_at": "2024-07-07",
    "journal_rank": "Q3",
@@ -4728,7 +5469,10 @@
    "original_venue": "BDJ Open – مجلة دولية محكّمة تابعة لـ Nature",
    "researchers": [
     87
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: oral health",
+   "doi_source": "Crossref (exact title, other ISSN)"
   },
   {
    "source_id": 239,
@@ -4738,6 +5482,7 @@
    "study_type": "clinical",
    "venue": "Oxford Medical Case Reports",
    "issn": "2053-8855",
+   "doi": "10.1093/omcr/omae172",
    "publication_info": "2025(1):omae172 – 2025 Jan 18 (eCollection 2025 Jan)",
    "published_at": "2025-01-18",
    "journal_rank": "Q3",
@@ -4746,7 +5491,10 @@
    "researchers": [
     57,
     78
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 240,
@@ -4756,6 +5504,7 @@
    "study_type": "empirical",
    "venue": "Natural Product Research",
    "issn": "1478-6419",
+   "doi": "10.1080/14786419.2024.2301741",
    "publication_info": "39(6):1520–1528 – 2025 Mar (Epub 2024 Jan 31)",
    "published_at": "2025-03-01",
    "journal_rank": "Q3",
@@ -4763,7 +5512,10 @@
    "original_venue": "Natural Product Research (Nat Prod Res) – مجلة دولية محكّمة",
    "researchers": [
     197
-   ]
+   ],
+   "faculty": "pharmacy",
+   "faculty_reason": "subject: natural product",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 241,
@@ -4773,6 +5525,7 @@
    "study_type": "empirical",
    "venue": "Journal of International Medical Research",
    "issn": "0300-0605",
+   "doi": "10.1177/03000605241299943",
    "publication_info": "52(11):3000605241299943 – 2024 Nov",
    "published_at": "2024-11-01",
    "journal_rank": "Q3",
@@ -4782,7 +5535,10 @@
     41,
     42,
     204
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 242,
@@ -4792,6 +5548,7 @@
    "study_type": "clinical",
    "venue": "Ear, Nose & Throat Journal",
    "issn": "0145-5613",
+   "doi": "10.1177/01455613251336869",
    "publication_info": "(Online ahead of print) – 2025 Apr 25",
    "published_at": "2025-04-25",
    "journal_rank": "Q3",
@@ -4799,7 +5556,10 @@
    "original_venue": "Ear, Nose & Throat Journal – مجلة دولية محكّمة",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 243,
@@ -4809,6 +5569,7 @@
    "study_type": "clinical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1097/ms9.0000000000001607",
    "publication_info": "86(2):1112–1115 – 2024 Jan 3 (eCollection 2024 Feb)",
    "published_at": "2024-02-01",
    "journal_rank": "Q3",
@@ -4819,7 +5580,10 @@
     207,
     206,
     205
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 245,
@@ -4829,6 +5593,7 @@
    "study_type": "empirical",
    "venue": "Health Science Reports",
    "issn": "2398-8835",
+   "doi": "10.1002/hsr2.71041",
    "publication_info": "8(7):e71041 – 2025 Jul 14 (eCollection 2025 Jul)",
    "published_at": "2025-07-14",
    "journal_rank": "Q3",
@@ -4840,7 +5605,10 @@
     150,
     111,
     133
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 246,
@@ -4850,6 +5618,7 @@
    "study_type": "empirical",
    "venue": "Cureus",
    "issn": "2168-8184",
+   "doi": "10.7759/cureus.63650",
    "publication_info": "16(7):e63650 – 2024 Jul 2 (eCollection 2024 Jul)",
    "published_at": "2024-07-02",
    "journal_rank": "Q3",
@@ -4857,7 +5626,10 @@
    "original_venue": "Cureus – مجلة دولية مفتوحة الوصول",
    "researchers": [
     87
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: oral health",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 247,
@@ -4867,6 +5639,7 @@
    "study_type": "clinical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1097/ms9.0000000000001891",
    "publication_info": "86(5):3025–3028 – 2024 Mar 6 (eCollection 2024 May)",
    "published_at": "2024-03-06",
    "journal_rank": "Q3",
@@ -4874,7 +5647,10 @@
    "original_venue": "Annals of Medicine and Surgery (Lond) – مجلة دولية محكّمة",
    "researchers": [
     60
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 249,
@@ -4884,6 +5660,7 @@
    "study_type": "clinical",
    "venue": "International Journal of Surgery Case Reports",
    "issn": "2210-2612",
+   "doi": "10.1016/j.ijscr.2024.110448",
    "publication_info": "124:110448 — 2024 Nov (Epub 2024 Oct 12)",
    "published_at": "2024-11-01",
    "journal_rank": "Q3",
@@ -4891,7 +5668,10 @@
    "original_venue": "International Journal of Surgery Case Reports — مجلة دولية محكّمة",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 250,
@@ -4901,6 +5681,7 @@
    "study_type": "empirical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1097/ms9.0000000000002361",
    "publication_info": "86(9):5096–5100 – 2024 Jul 8 (eCollection 2024 Sep)",
    "published_at": "2024-07-08",
    "journal_rank": "Q3",
@@ -4909,7 +5690,10 @@
    "researchers": [
     208,
     209
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 251,
@@ -4919,6 +5703,7 @@
    "study_type": "other",
    "venue": "Molecules",
    "issn": "1420-3049",
+   "doi": "10.3390/molecules29153466",
    "publication_info": "29(15):3466 – 2024 Jul 24",
    "published_at": "2024-07-24",
    "journal_rank": "Q1",
@@ -4926,7 +5711,10 @@
    "original_venue": "Molecules – Q1 – مجلة دولية مفتوحة الوصول",
    "researchers": [
     197
-   ]
+   ],
+   "faculty": "pharmacy",
+   "faculty_reason": "subject: molecules",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 252,
@@ -4936,6 +5724,7 @@
    "study_type": "empirical",
    "venue": "Antibiotics",
    "issn": "2079-6382",
+   "doi": "10.3390/antibiotics14030293",
    "publication_info": "14(3):293 – 2025 Mar 12",
    "published_at": "2025-03-12",
    "journal_rank": "Q3",
@@ -4943,7 +5732,10 @@
    "original_venue": "Antibiotics (Basel) – مجلة دولية مفتوحة الوصول",
    "researchers": [
     197
-   ]
+   ],
+   "faculty": "pharmacy",
+   "faculty_reason": "subject: antibiotics, antileishmanial, essential oil, extract",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 257,
@@ -4953,6 +5745,7 @@
    "study_type": "empirical",
    "venue": "Medicine",
    "issn": "0025-7974",
+   "doi": "10.1097/md.0000000000038554",
    "publication_info": "103(24):e38554 – 2024 Jun 14",
    "published_at": "2024-06-14",
    "journal_rank": "Q1",
@@ -4960,7 +5753,10 @@
    "original_venue": "Medicine (Baltimore) – مجلة دولية محكّمة – Q1",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 258,
@@ -4970,6 +5766,7 @@
    "study_type": "clinical",
    "venue": "Oxford Medical Case Reports",
    "issn": "2053-8855",
+   "doi": "10.1093/omcr/omae129",
    "publication_info": "2024(11):omae129 – 2024 Nov 20 (eCollection 2024 Nov)",
    "published_at": "2024-11-01",
    "journal_rank": "Q3",
@@ -4977,7 +5774,10 @@
    "original_venue": "Oxford Medical Case Reports (Oxf Med Case Reports) – مجلة دولية محكّمة",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 260,
@@ -4987,6 +5787,7 @@
    "study_type": "clinical",
    "venue": "Journal of Surgical Case Reports",
    "issn": "2042-8812",
+   "doi": "10.1093/jscr/rjae335",
    "publication_info": "2024(5):rjae335 – 2024 May 28 (eCollection 2024 May)",
    "published_at": "2024-05-28",
    "journal_rank": "Q3",
@@ -4994,7 +5795,10 @@
    "original_venue": "Journal of Surgical Case Reports (J Surg Case Rep) – مجلة دولية محكّمة",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 261,
@@ -5004,6 +5808,7 @@
    "study_type": "empirical",
    "venue": "BMC Public Health",
    "issn": "1471-2458",
+   "doi": "10.1186/s12889-024-19981-x",
    "publication_info": "24(1):2428 – 2024 Sep 6",
    "published_at": "2024-09-06",
    "journal_rank": "Q1",
@@ -5012,7 +5817,10 @@
    "researchers": [
     57,
     111
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 262,
@@ -5022,6 +5830,7 @@
    "study_type": "clinical",
    "venue": "Oxford Medical Case Reports",
    "issn": "2053-8855",
+   "doi": "10.1093/omcr/omae179",
    "publication_info": "2025(1):omae179 – 2025 Jan 18 (eCollection 2025 Jan)",
    "published_at": "2025-01-18",
    "journal_rank": "Q3",
@@ -5030,7 +5839,10 @@
    "researchers": [
     208,
     209
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 263,
@@ -5040,6 +5852,7 @@
    "study_type": "clinical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1097/ms9.0000000000003087",
    "publication_info": "87(4):2398–2401 – 2025 Mar 27 (eCollection 2025 Apr)",
    "published_at": "2025-03-27",
    "journal_rank": "Q3",
@@ -5048,7 +5861,10 @@
    "researchers": [
     210,
     211
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 265,
@@ -5058,6 +5874,7 @@
    "study_type": "clinical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1097/ms9.0000000000002141",
    "publication_info": "86(7):4161–4164 – 2024 May 15 (eCollection 2024 Jul)",
    "published_at": "2024-05-15",
    "journal_rank": "Q3",
@@ -5065,7 +5882,10 @@
    "original_venue": "Annals of Medicine and Surgery (Lond) – مجلة دولية محكّمة",
    "researchers": [
     212
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 266,
@@ -5075,6 +5895,7 @@
    "study_type": "clinical",
    "venue": "Journal of Surgical Case Reports",
    "issn": "2042-8812",
+   "doi": "10.1093/jscr/rjae389",
    "publication_info": "2024(6):rjae389 – 2024 Jun 3 (eCollection 2024 Jun)",
    "published_at": "2024-06-03",
    "journal_rank": "Q2",
@@ -5082,7 +5903,10 @@
    "original_venue": "Journal of Surgical Case Reports (J Surg Case Rep) – مجلة دولية محكّمة – Q2",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 267,
@@ -5092,6 +5916,7 @@
    "study_type": "empirical",
    "venue": "Cureus",
    "issn": "2168-8184",
+   "doi": "10.7759/cureus.54477",
    "publication_info": "2024 Feb; 16(2): e54477 (eCollection 2024 Feb)",
    "published_at": "2024-02-01",
    "journal_rank": "Q2",
@@ -5099,7 +5924,10 @@
    "original_venue": "Cureus – مجلة طبية محكّمة مفتوحة الوصول (Open Access) – Q2",
    "researchers": [
     11
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 268,
@@ -5109,6 +5937,7 @@
    "study_type": "empirical",
    "venue": "Cureus",
    "issn": "غير مذكور",
+   "doi": "10.7759/cureus.68686",
    "publication_info": "2024 Sep 5;16(9):e68686.",
    "published_at": "2024-09-05",
    "journal_rank": "Q3",
@@ -5117,7 +5946,10 @@
    "researchers": [
     57,
     78
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, other ISSN)"
   },
   {
    "source_id": 269,
@@ -5127,6 +5959,7 @@
    "study_type": "clinical",
    "venue": "Case Reports in Nephrology",
    "issn": "2090-6988",
+   "doi": "10.1155/crin/3405566",
    "publication_info": "2025 May 12; eCollection 2025.",
    "published_at": "2025-05-12",
    "journal_rank": "Q3",
@@ -5134,7 +5967,10 @@
    "original_venue": "Case Reports in Nephrology",
    "researchers": [
     213
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, other ISSN)"
   },
   {
    "source_id": 270,
@@ -5144,6 +5980,7 @@
    "study_type": "clinical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1097/ms9.0000000000003102",
    "publication_info": "2025 Mar 7; 87(4): 2417-2420 (eCollection 2025 Apr)",
    "published_at": "2025-03-07",
    "journal_rank": "Q2",
@@ -5151,7 +5988,10 @@
    "original_venue": "Annals of Medicine and Surgery (Lond) – مجلة محكمة – Q2",
    "researchers": [
     211
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 271,
@@ -5161,6 +6001,7 @@
    "study_type": "empirical",
    "venue": "International Urology and Nephrology",
    "issn": "0301-1623",
+   "doi": "10.1007/s11255-025-04555-6",
    "publication_info": "2025 Nov; 57(11): 3725–3731 (Epub 2025 May 7)",
    "published_at": "2025-11-01",
    "journal_rank": "Q2",
@@ -5170,7 +6011,10 @@
     214,
     82,
     215
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, other ISSN)"
   },
   {
    "source_id": 272,
@@ -5180,6 +6024,7 @@
    "study_type": "empirical",
    "venue": "BMC Oral Health",
    "issn": "1472-6831",
+   "doi": "10.1186/s12903-025-06428-x",
    "publication_info": "2025 Jul 2; 25(1):1056",
    "published_at": "2025-07-02",
    "journal_rank": "Q2",
@@ -5187,7 +6032,10 @@
    "original_venue": "BMC Oral Health – Q2 (Springer Nature)",
    "researchers": [
     174
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: oral",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 273,
@@ -5197,6 +6045,7 @@
    "study_type": "other",
    "venue": "Health Science Reports",
    "issn": "غير مذكور",
+   "doi": null,
    "publication_info": "2024 May 9; 7(5): e882.",
    "published_at": "2024-05-09",
    "journal_rank": "Q3",
@@ -5204,7 +6053,10 @@
    "original_venue": "Health Science Reports",
    "researchers": [
     11
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": null
   },
   {
    "source_id": 274,
@@ -5214,6 +6066,7 @@
    "study_type": "empirical",
    "venue": "Health Sci Rep",
    "issn": "غير مذكور",
+   "doi": "10.1002/hsr2.1860",
    "publication_info": "2024 Feb 13;7(2):e1860.",
    "published_at": "2024-02-13",
    "journal_rank": "Q3",
@@ -5230,7 +6083,10 @@
     111,
     112,
     220
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, other ISSN)"
   },
   {
    "source_id": 275,
@@ -5240,6 +6096,7 @@
    "study_type": "clinical",
    "venue": "J Surg Case Rep",
    "issn": "غير مذكور",
+   "doi": "10.1093/jscr/rjae422",
    "publication_info": "2024 Jun 21;2024(6):rjae422.",
    "published_at": "2024-06-21",
    "journal_rank": "Q3",
@@ -5248,7 +6105,10 @@
    "researchers": [
     222,
     223
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, other ISSN)"
   },
   {
    "source_id": 276,
@@ -5258,6 +6118,7 @@
    "study_type": "empirical",
    "venue": "Medicine",
    "issn": "0025-7974",
+   "doi": "10.1097/md.0000000000045045",
    "publication_info": "2025 Oct 17; 104(42): e45045",
    "published_at": "2025-10-17",
    "journal_rank": "Q3",
@@ -5268,7 +6129,10 @@
     226,
     225,
     211
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 277,
@@ -5278,6 +6142,7 @@
    "study_type": "clinical",
    "venue": "International Journal of Surgery Case Reports",
    "issn": "2210-2612",
+   "doi": "10.1016/j.ijscr.2024.110329",
    "publication_info": "2024 Oct; 123: 110329",
    "published_at": "2024-10-01",
    "journal_rank": "Q3",
@@ -5285,7 +6150,10 @@
    "original_venue": "International Journal of Surgery Case Reports (IJSCR) – Q3 (Elsevier)",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 280,
@@ -5295,6 +6163,7 @@
    "study_type": "other",
    "venue": "Journal of Surgical Case Reports",
    "issn": "2042-8812",
+   "doi": "10.1093/jscr/rjaf468",
    "publication_info": "2025 Jul; 2025(7): rjaf468",
    "published_at": "2025-07-01",
    "journal_rank": "Q2",
@@ -5302,7 +6171,10 @@
    "original_venue": "Journal of Surgical Case Reports (JSCR) – Q2",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 281,
@@ -5312,6 +6184,7 @@
    "study_type": "clinical",
    "venue": "International Journal of Surgery Case Reports",
    "issn": "2210-2612",
+   "doi": "10.1016/j.ijscr.2024.110234",
    "publication_info": "2024 Oct; 123: 110234",
    "published_at": "2024-10-01",
    "journal_rank": "Q2",
@@ -5319,7 +6192,10 @@
    "original_venue": "International Journal of Surgery Case Reports – Q2",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 282,
@@ -5329,6 +6205,7 @@
    "study_type": "empirical",
    "venue": "Medicine",
    "issn": "0025-7974",
+   "doi": "10.1097/md.0000000000038170",
    "publication_info": "2024 May; 103(20): e38170",
    "published_at": "2024-05-01",
    "journal_rank": "Q2",
@@ -5338,7 +6215,10 @@
     60,
     229,
     228
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 283,
@@ -5348,6 +6228,7 @@
    "study_type": "other",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1097/ms9.0000000000002041",
    "publication_info": "2024 Apr; 86(7): 4146–4151",
    "published_at": "2024-04-01",
    "journal_rank": "Q3",
@@ -5355,7 +6236,10 @@
    "original_venue": "Annals of Medicine and Surgery (Lond) – Q3",
    "researchers": [
     200
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 284,
@@ -5365,6 +6249,7 @@
    "study_type": "clinical",
    "venue": "International Journal of Surgery Case Reports",
    "issn": "2210-2612",
+   "doi": "10.1016/j.ijscr.2024.109540",
    "publication_info": "2024 Apr; 117: 109540",
    "published_at": "2024-04-01",
    "journal_rank": "Q3",
@@ -5372,7 +6257,10 @@
    "original_venue": "International Journal of Surgery Case Reports – Q3",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 286,
@@ -5382,6 +6270,7 @@
    "study_type": "other",
    "venue": "International Journal of Surgery Case Reports",
    "issn": "2210-2612",
+   "doi": "10.1016/j.ijscr.2025.111437",
    "publication_info": "2025 Jul; 132: 111437",
    "published_at": "2025-07-01",
    "journal_rank": "Q3",
@@ -5389,7 +6278,10 @@
    "original_venue": "International Journal of Surgery Case Reports – Q3",
    "researchers": [
     231
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 287,
@@ -5399,6 +6291,7 @@
    "study_type": "clinical",
    "venue": "International Journal of Surgery Case Reports",
    "issn": "2210-2612",
+   "doi": "10.1016/j.ijscr.2024.110292",
    "publication_info": "2024 Oct; 123: 110292",
    "published_at": "2024-10-01",
    "journal_rank": "Q3",
@@ -5406,7 +6299,10 @@
    "original_venue": "International Journal of Surgery Case Reports – Q3",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 288,
@@ -5416,6 +6312,7 @@
    "study_type": "empirical",
    "venue": "BMC Gastroenterology",
    "issn": "1471-230X",
+   "doi": "10.1186/s12876-025-04098-1",
    "publication_info": "2025 Sep; 25(1): 647",
    "published_at": "2025-09-01",
    "journal_rank": "Q2",
@@ -5423,7 +6320,10 @@
    "original_venue": "BMC Gastroenterology – Q2",
    "researchers": [
     232
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 289,
@@ -5433,6 +6333,7 @@
    "study_type": "empirical",
    "venue": "European Journal of Psychotraumatology",
    "issn": "2000-8066",
+   "doi": "10.1080/20008066.2024.2433836",
    "publication_info": "2024; 15(1): 2433836",
    "published_at": "2024-01-01",
    "journal_rank": "Q1",
@@ -5442,7 +6343,10 @@
     60,
     81,
     140
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 290,
@@ -5452,6 +6356,7 @@
    "study_type": "empirical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1097/ms9.0000000000001903",
    "publication_info": "2024 Mar; 86(5): 2549–2554",
    "published_at": "2024-03-01",
    "journal_rank": "Q3",
@@ -5460,7 +6365,10 @@
    "researchers": [
     208,
     209
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 291,
@@ -5470,6 +6378,7 @@
    "study_type": "clinical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1097/ms9.0000000000002979",
    "publication_info": "2025 Jan; 87(2): 920–923",
    "published_at": "2025-01-01",
    "journal_rank": "Q3",
@@ -5479,7 +6388,10 @@
     234,
     235,
     233
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 292,
@@ -5489,6 +6401,7 @@
    "study_type": "empirical",
    "venue": "Health Science Reports",
    "issn": "2637-661",
+   "doi": "10.1002/hsr2.70604",
    "publication_info": "2025 Apr; 8(4): e70604",
    "published_at": "2025-04-01",
    "journal_rank": "Q2",
@@ -5500,7 +6413,10 @@
     238,
     240,
     239
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, other ISSN)"
   },
   {
    "source_id": 293,
@@ -5510,6 +6426,7 @@
    "study_type": "clinical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1097/ms9.0000000000003249",
    "publication_info": "2025 Apr; 87(6): 3870–3873",
    "published_at": "2025-04-01",
    "journal_rank": "Q3",
@@ -5517,7 +6434,10 @@
    "original_venue": "Annals of Medicine and Surgery (Lond) – Q3",
    "researchers": [
     241
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 294,
@@ -5527,6 +6447,7 @@
    "study_type": "other",
    "venue": "International Journal of Surgery Case Reports",
    "issn": "2210-2612",
+   "doi": "10.1016/j.ijscr.2024.110565",
    "publication_info": "2024 Dec; 125: 110565",
    "published_at": "2024-12-01",
    "journal_rank": "Q3",
@@ -5534,7 +6455,10 @@
    "original_venue": "International Journal of Surgery Case Reports – Q3",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (near title, same ISSN)"
   },
   {
    "source_id": 295,
@@ -5544,6 +6468,7 @@
    "study_type": "empirical",
    "venue": "Health Science Reports",
    "issn": "2637-661X",
+   "doi": "10.21203/rs.3.rs-3911986/v1",
    "publication_info": "2025 May; 8(5): e70828",
    "published_at": "2025-05-01",
    "journal_rank": "Q2",
@@ -5552,7 +6477,10 @@
    "researchers": [
     96,
     242
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, other ISSN)"
   },
   {
    "source_id": 296,
@@ -5562,6 +6490,7 @@
    "study_type": "other",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1097/ms9.0000000000003146",
    "publication_info": "2025; Volume 87, Issue 4, Pages 2453–2457. eCollection 2025 Apr",
    "published_at": "2025-04-01",
    "journal_rank": "Q3",
@@ -5570,7 +6499,10 @@
    "researchers": [
     243,
     211
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 297,
@@ -5580,6 +6512,7 @@
    "study_type": "clinical",
    "venue": "Case Reports in Oncology",
    "issn": "1662-6567",
+   "doi": "10.1159/000548087",
    "publication_info": "2025 Aug 20; Volume 18(1): 1393–1402. eCollection 2025 Jan–Dec",
    "published_at": "2025-08-20",
    "journal_rank": "Q3",
@@ -5587,7 +6520,10 @@
    "original_venue": "Case Reports in Oncology – مجلة Q3 – دار النشر Karger – مفتوحة الوصول",
    "researchers": [
     244
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, other ISSN)"
   },
   {
    "source_id": 298,
@@ -5597,6 +6533,7 @@
    "study_type": "clinical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1097/ms9.0000000000002814",
    "publication_info": "2025 Jun 16; Volume 87(8): 5196–5200. eCollection 2025 Aug",
    "published_at": "2025-06-16",
    "journal_rank": "Q3",
@@ -5604,7 +6541,10 @@
    "original_venue": "Annals of Medicine and Surgery (Lond) – مجلة Q3 – مفتوحة الوصول",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 299,
@@ -5614,6 +6554,7 @@
    "study_type": "clinical",
    "venue": "International Journal of Surgery Case Reports",
    "issn": "2210-2612",
+   "doi": "10.1016/j.ijscr.2025.111440",
    "publication_info": "2025 Jul; 132:111440. Epub 2025 May 16",
    "published_at": "2025-05-16",
    "journal_rank": "Q3",
@@ -5621,7 +6562,10 @@
    "original_venue": "International Journal of Surgery Case Reports – مجلة Q3 – مفتوحة الوصول",
    "researchers": [
     245
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 300,
@@ -5631,6 +6575,7 @@
    "study_type": "other",
    "venue": "BDJ Open",
    "issn": "2056-7910",
+   "doi": "10.1038/s41405-024-00250-3",
    "publication_info": "2024 Aug 5; 10(1):64",
    "published_at": "2024-08-05",
    "journal_rank": "Q3",
@@ -5638,7 +6583,10 @@
    "original_venue": "BDJ Open – مجلة مفتوحة الوصول (Springer Nature)",
    "researchers": [
     87
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: oral health",
+   "doi_source": "Crossref (exact title, other ISSN)"
   },
   {
    "source_id": 301,
@@ -5648,6 +6596,7 @@
    "study_type": "empirical",
    "venue": "Journal of Sleep Research",
    "issn": "0962-1105",
+   "doi": "10.1111/jsr.14469",
    "publication_info": "2025 Aug; 34(4): e14469",
    "published_at": "2025-08-01",
    "journal_rank": "Q1",
@@ -5655,7 +6604,10 @@
    "original_venue": "Journal of Sleep Research (J Sleep Res) – Q1 (Wiley)",
    "researchers": [
     246
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 302,
@@ -5665,6 +6617,7 @@
    "study_type": "other",
    "venue": "Cochrane Database of Systematic Reviews",
    "issn": "1469-493",
+   "doi": null,
    "publication_info": "2021 Feb 3; (2): CD008684",
    "published_at": "2021-02-03",
    "journal_rank": "Q1",
@@ -5672,7 +6625,10 @@
    "original_venue": "Cochrane Database of Systematic Reviews – Q1 (Wiley)",
    "researchers": [
     10
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": null
   },
   {
    "source_id": 304,
@@ -5682,6 +6638,7 @@
    "study_type": "empirical",
    "venue": "BJPsych International",
    "issn": "2056-4740",
+   "doi": "10.1192/bji.2021.16",
    "publication_info": "2021 Aug; 18(3):E8",
    "published_at": "2021-08-01",
    "journal_rank": "Q2",
@@ -5695,7 +6652,10 @@
     53,
     247,
     30
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 305,
@@ -5705,6 +6665,7 @@
    "study_type": "other",
    "venue": "Journal of Infection in Developing Countries",
    "issn": "2036-6590",
+   "doi": "10.3855/jidc.13807",
    "publication_info": "2021 Mar 7; 15(2):179–184",
    "published_at": "2021-03-07",
    "journal_rank": "Q3",
@@ -5712,7 +6673,10 @@
    "original_venue": "Journal of Infection in Developing Countries (JIDC) – Q3",
    "researchers": [
     197
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, other ISSN)"
   },
   {
    "source_id": 307,
@@ -5722,6 +6686,7 @@
    "study_type": "other",
    "venue": "BMC Emergency Medicine",
    "issn": "1471-227",
+   "doi": "10.21203/rs.3.rs-1738869/v1",
    "publication_info": "2023 Mar 29; 23(1):35",
    "published_at": "2023-03-29",
    "journal_rank": "Q1",
@@ -5730,7 +6695,10 @@
    "researchers": [
     249,
     250
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, other ISSN)"
   },
   {
    "source_id": 308,
@@ -5740,6 +6708,7 @@
    "study_type": "other",
    "venue": "Proceedings",
    "issn": "0899-8280",
+   "doi": "10.1080/08998280.2022.2093588",
    "publication_info": "2022 Jul 13; 36(1):61–65. eCollection 2023",
    "published_at": "2022-07-13",
    "journal_rank": "Q3",
@@ -5747,7 +6716,10 @@
    "original_venue": "Proceedings (Baylor University Medical Center) – Q3",
    "researchers": [
     11
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 309,
@@ -5757,6 +6729,7 @@
    "study_type": "empirical",
    "venue": "International Wound Journal",
    "issn": "1742-4801",
+   "doi": "10.1111/iwj.13651",
    "publication_info": "2022 Mar; 19(3):531–537. Epub 2021 Jul 4",
    "published_at": "2022-03-01",
    "journal_rank": "Q1",
@@ -5764,7 +6737,10 @@
    "original_venue": "International Wound Journal (Int Wound J) – Q1",
    "researchers": [
     85
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 310,
@@ -5774,6 +6750,7 @@
    "study_type": "other",
    "venue": "BMC Surgery",
    "issn": "1471-2482",
+   "doi": "10.1186/s12893-022-01775-w",
    "publication_info": "2022 Aug 29; 22(1):325",
    "published_at": "2022-08-29",
    "journal_rank": "Q2",
@@ -5781,7 +6758,10 @@
    "original_venue": "BMC Surgery (BMC Surg) – Q2",
    "researchers": [
     251
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 311,
@@ -5791,6 +6771,7 @@
    "study_type": "other",
    "venue": "Clinical Rheumatology",
    "issn": "0770-3198",
+   "doi": "10.1007/s10067-017-3814-3",
    "publication_info": "2017 Dec; 36(12):2697–2707",
    "published_at": "2017-12-01",
    "journal_rank": "Q1",
@@ -5798,7 +6779,10 @@
    "original_venue": "Clinical Rheumatology (Clin Rheumatol) – Q1",
    "researchers": [
     11
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 312,
@@ -5808,6 +6792,7 @@
    "study_type": "clinical",
    "venue": "BMC Medical Education",
    "issn": "1472-6920",
+   "doi": "10.1186/s12909-018-1241-z",
    "publication_info": "2018 Jun 18; 18(1):142",
    "published_at": "2018-06-18",
    "journal_rank": "Q1",
@@ -5817,7 +6802,10 @@
     22,
     11,
     252
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 313,
@@ -5827,6 +6815,7 @@
    "study_type": "clinical",
    "venue": "Clinical Case Reports",
    "issn": "2050-0904",
+   "doi": "10.1002/ccr3.7761",
    "publication_info": "2023 Aug 7; 11(8): e7761",
    "published_at": "2023-08-07",
    "journal_rank": "Q2",
@@ -5834,7 +6823,10 @@
    "original_venue": "Clinical Case Reports (Clin Case Rep) – Q2",
    "researchers": [
     134
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 314,
@@ -5844,6 +6836,7 @@
    "study_type": "clinical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1097/ms9.0000000000000937",
    "publication_info": "2023 Jun 5; 85(7): 3381–3385",
    "published_at": "2023-06-05",
    "journal_rank": "Q2",
@@ -5852,7 +6845,10 @@
    "researchers": [
     253,
     254
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 315,
@@ -5862,6 +6858,7 @@
    "study_type": "clinical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1016/j.amsu.2021.102907",
    "publication_info": "2021 Oct 8; 71: 102907",
    "published_at": "2021-10-08",
    "journal_rank": "Q2",
@@ -5869,7 +6866,10 @@
    "original_venue": "Annals of Medicine and Surgery (Lond) – Q2",
    "researchers": [
     11
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 316,
@@ -5879,6 +6879,7 @@
    "study_type": "empirical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1016/j.amsu.2021.103181",
    "publication_info": "2022 Jan; 73: 103181",
    "published_at": "2022-01-01",
    "journal_rank": "Q2",
@@ -5886,7 +6887,10 @@
    "original_venue": "Annals of Medicine and Surgery (Lond) – Q2",
    "researchers": [
     11
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 317,
@@ -5896,6 +6900,7 @@
    "study_type": "clinical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1016/j.amsu.2022.103961",
    "publication_info": "2022 Jun; 78: 103961",
    "published_at": "2022-06-01",
    "journal_rank": "Q2",
@@ -5904,7 +6909,10 @@
    "researchers": [
     7,
     57
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 318,
@@ -5914,6 +6922,7 @@
    "study_type": "other",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1016/j.amsu.2021.102470",
    "publication_info": "2021 Jun; 67: 102470",
    "published_at": "2021-06-01",
    "journal_rank": "Q2",
@@ -5921,7 +6930,10 @@
    "original_venue": "Annals of Medicine and Surgery (Lond) – Q2",
    "researchers": [
     63
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 319,
@@ -5931,6 +6943,7 @@
    "study_type": "empirical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1016/j.amsu.2021.102465",
    "publication_info": "2021 Jun; 66: 102465",
    "published_at": "2021-06-01",
    "journal_rank": "Q2",
@@ -5942,7 +6955,10 @@
     256,
     87,
     255
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 320,
@@ -5952,6 +6968,7 @@
    "study_type": "empirical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1016/j.amsu.2021.103206",
    "publication_info": "2022 Jan; 73: 103206",
    "published_at": "2022-01-01",
    "journal_rank": "Q2",
@@ -5959,7 +6976,10 @@
    "original_venue": "Annals of Medicine and Surgery (Lond) – Q2",
    "researchers": [
     11
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 321,
@@ -5969,6 +6989,7 @@
    "study_type": "empirical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1016/j.amsu.2022.103504",
    "publication_info": "2022 Apr 11; 77: 103504",
    "published_at": "2022-04-11",
    "journal_rank": "Q2",
@@ -5985,7 +7006,10 @@
     53,
     131,
     87
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 322,
@@ -5995,6 +7019,7 @@
    "study_type": "empirical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1016/j.amsu.2022.104405",
    "publication_info": "2022 Sep; 81:104405. eCollection 2022 Sep",
    "published_at": "2022-09-01",
    "journal_rank": "Q2",
@@ -6008,7 +7033,10 @@
     87,
     81,
     258
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 323,
@@ -6018,6 +7046,7 @@
    "study_type": "clinical",
    "venue": "Clinical Case Reports",
    "issn": "2050-0904",
+   "doi": "10.1002/ccr3.6301",
    "publication_info": "2022 Sep; 10(9): e6301",
    "published_at": "2022-09-01",
    "journal_rank": "Q3",
@@ -6026,7 +7055,10 @@
    "researchers": [
     7,
     11
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 324,
@@ -6036,6 +7068,7 @@
    "study_type": "clinical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1016/j.amsu.2022.104327",
    "publication_info": "2022 Aug 24; 81: 104327 (Epub 2022 Sep)",
    "published_at": "2022-08-24",
    "journal_rank": "Q3",
@@ -6044,7 +7077,10 @@
    "researchers": [
     80,
     259
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 325,
@@ -6054,6 +7090,7 @@
    "study_type": "clinical",
    "venue": "Clinical Case Reports",
    "issn": "2050-0904",
+   "doi": "10.1002/ccr3.7197",
    "publication_info": "2023 Apr 12; 11(4): e7197 (Epub 2023 Apr)",
    "published_at": "2023-04-12",
    "journal_rank": "Q3",
@@ -6063,7 +7100,10 @@
     7,
     57,
     112
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 327,
@@ -6073,6 +7113,7 @@
    "study_type": "clinical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1016/j.amsu.2021.103064",
    "publication_info": "2021 Nov 17; 72:103064 (Epub 2021 Dec)",
    "published_at": "2021-12-01",
    "journal_rank": "Q3",
@@ -6080,7 +7121,10 @@
    "original_venue": "Annals of Medicine and Surgery (Lond) – مجلة دولية مفتوحة الوصول (Elsevier)",
    "researchers": [
     11
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 328,
@@ -6090,6 +7134,7 @@
    "study_type": "empirical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1097/ms9.0000000000000267",
    "publication_info": "2023 Mar 9; 85(3):418–423 — eCollection 2023 Mar",
    "published_at": "2023-03-09",
    "journal_rank": "Q3",
@@ -6097,7 +7142,10 @@
    "original_venue": "Annals of Medicine and Surgery (Lond) – مجلة دولية مفتوحة الوصول (Elsevier)",
    "researchers": [
     260
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 329,
@@ -6107,6 +7155,7 @@
    "study_type": "empirical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1016/j.amsu.2021.102473",
    "publication_info": "2021 Jun 8; 67:102473 — eCollection 2021 Jul",
    "published_at": "2021-06-08",
    "journal_rank": "Q3",
@@ -6116,7 +7165,10 @@
     22,
     67,
     261
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 330,
@@ -6126,6 +7178,7 @@
    "study_type": "clinical",
    "venue": "Clinical Case Reports",
    "issn": "2050-0904",
+   "doi": "10.1002/ccr3.7074",
    "publication_info": "2023 Mar 8; 11(3): e7074 — eCollection 2023 Mar",
    "published_at": "2023-03-08",
    "journal_rank": "Q3",
@@ -6133,7 +7186,10 @@
    "original_venue": "Clinical Case Reports – مجلة دولية مفتوحة الوصول (Wiley)",
    "researchers": [
     262
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 331,
@@ -6143,6 +7199,7 @@
    "study_type": "empirical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1097/ms9.0000000000000477",
    "publication_info": "2023 Apr 5; 85(5): 1448–1453 — eCollection 2023 May",
    "published_at": "2023-04-05",
    "journal_rank": "Q3",
@@ -6150,7 +7207,10 @@
    "original_venue": "Annals of Medicine and Surgery (Lond) – مجلة دولية مفتوحة الوصول (Elsevier)",
    "researchers": [
     80
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 332,
@@ -6160,6 +7220,7 @@
    "study_type": "clinical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1016/j.amsu.2021.103106",
    "publication_info": "2021 Nov 25; 72:103106 — eCollection 2021 Dec",
    "published_at": "2021-11-25",
    "journal_rank": "Q3",
@@ -6167,7 +7228,10 @@
    "original_venue": "Annals of Medicine and Surgery (Lond) – مجلة دولية مفتوحة الوصول (Elsevier)",
    "researchers": [
     11
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 333,
@@ -6177,6 +7241,7 @@
    "study_type": "clinical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1016/j.amsu.2021.01.016",
    "publication_info": "2021 Jan 16; 62:283–287 — eCollection 2021 Feb",
    "published_at": "2021-01-16",
    "journal_rank": "Q3",
@@ -6185,7 +7250,10 @@
    "researchers": [
     85,
     263
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 334,
@@ -6195,6 +7263,7 @@
    "study_type": "clinical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1097/ms9.0000000000000256",
    "publication_info": "2023 Feb 17; 85(3):532–535 — eCollection 2023 Mar",
    "published_at": "2023-02-17",
    "journal_rank": "Q3",
@@ -6202,7 +7271,10 @@
    "original_venue": "Annals of Medicine and Surgery (Lond) – مجلة طبية محكمة مفتوحة الوصول (Elsevier)",
    "researchers": [
     80
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 335,
@@ -6212,6 +7284,7 @@
    "study_type": "empirical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1016/j.amsu.2022.103816",
    "publication_info": "2022 Jun; 78:103816 — Epub 2022 May 21",
    "published_at": "2022-05-21",
    "journal_rank": "Q3",
@@ -6220,7 +7293,10 @@
    "researchers": [
     8,
     63
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 337,
@@ -6230,6 +7306,7 @@
    "study_type": "clinical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1097/ms9.0000000000001108",
    "publication_info": "2023 Jul 31; 85(9):4633–4637 — eCollection 2023 Sep",
    "published_at": "2023-07-31",
    "journal_rank": "Q3",
@@ -6237,7 +7314,10 @@
    "original_venue": "Annals of Medicine and Surgery (Lond) – مجلة طبية محكمة مفتوحة الوصول (Elsevier)",
    "researchers": [
     264
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 338,
@@ -6247,6 +7327,7 @@
    "study_type": "clinical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1097/ms9.0000000000000304",
    "publication_info": "2023 Mar 25; 85(4):1026–1029 — eCollection 2023 Apr",
    "published_at": "2023-03-25",
    "journal_rank": "Q3",
@@ -6254,7 +7335,10 @@
    "original_venue": "Annals of Medicine and Surgery (Lond) – مجلة طبية محكمة مفتوحة الوصول (Elsevier)",
    "researchers": [
     265
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 339,
@@ -6264,6 +7348,7 @@
    "study_type": "clinical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1016/j.amsu.2021.102281",
    "publication_info": "2021 Apr 10; 65:102281 — eCollection 2021 May",
    "published_at": "2021-04-10",
    "journal_rank": "Q3",
@@ -6271,7 +7356,10 @@
    "original_venue": "Annals of Medicine and Surgery (Lond) – مجلة محكمة مفتوحة الوصول (Elsevier)",
    "researchers": [
     85
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 340,
@@ -6281,6 +7369,7 @@
    "study_type": "empirical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1016/j.amsu.2022.104166",
    "publication_info": "2022 Aug; 80:104166 — Epub 2022 Jul 15",
    "published_at": "2022-08-01",
    "journal_rank": "Q3",
@@ -6290,7 +7379,10 @@
     7,
     11,
     57
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 341,
@@ -6300,6 +7392,7 @@
    "study_type": "empirical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1097/ms9.0000000000001264",
    "publication_info": "2023 Sep 5; 85(10): 4824–4829 — eCollection 2023 Oct",
    "published_at": "2023-09-05",
    "journal_rank": "Q3",
@@ -6309,7 +7402,10 @@
     267,
     266,
     268
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 342,
@@ -6319,6 +7415,7 @@
    "study_type": "clinical",
    "venue": "Clinical Case Reports",
    "issn": "2050-0904",
+   "doi": "10.1002/ccr3.6398",
    "publication_info": "2022 Oct; 10(10): e6398 — eCollection 2022 Oct",
    "published_at": "2022-10-01",
    "journal_rank": "Q3",
@@ -6326,7 +7423,10 @@
    "original_venue": "Clinical Case Reports – Wiley – مجلة دولية مفتوحة الوصول، تصنيف Q3",
    "researchers": [
     262
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 343,
@@ -6336,6 +7436,7 @@
    "study_type": "clinical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1016/j.amsu.2021.102179",
    "publication_info": "2021 Feb 25; 63:102179 — eCollection 2021 Mar",
    "published_at": "2021-02-25",
    "journal_rank": "Q3",
@@ -6343,7 +7444,10 @@
    "original_venue": "Annals of Medicine and Surgery (Lond) – Elsevier – مجلة طبية دولية مفتوحة الوصول، تصنيف Q3",
    "researchers": [
     85
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 344,
@@ -6353,6 +7457,7 @@
    "study_type": "clinical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1016/j.amsu.2022.104526",
    "publication_info": "2022 Oct 6; 83:104526 — eCollection 2022 Nov",
    "published_at": "2022-10-06",
    "journal_rank": "Q3",
@@ -6360,7 +7465,10 @@
    "original_venue": "Annals of Medicine and Surgery (Lond) – Elsevier – مجلة طبية مفتوحة الوصول، تصنيف Q3",
    "researchers": [
     11
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 346,
@@ -6370,6 +7478,7 @@
    "study_type": "empirical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1016/j.amsu.2021.102301",
    "publication_info": "2021 Apr 18; 65:102301 — eCollection 2021 May",
    "published_at": "2021-04-18",
    "journal_rank": "Q3",
@@ -6377,7 +7486,10 @@
    "original_venue": "Annals of Medicine and Surgery (Lond) – Elsevier – مجلة طبية مفتوحة الوصول، تصنيف Q3",
    "researchers": [
     67
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 347,
@@ -6387,6 +7499,7 @@
    "study_type": "clinical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1016/j.amsu.2021.102815",
    "publication_info": "2021 Sep 4; 70:102815 — eCollection 2021 Oct",
    "published_at": "2021-09-04",
    "journal_rank": "Q3",
@@ -6394,7 +7507,10 @@
    "original_venue": "Annals of Medicine and Surgery (Lond) – Elsevier – تصنيف Q3",
    "researchers": [
     67
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 348,
@@ -6404,6 +7520,7 @@
    "study_type": "clinical",
    "venue": "Clinical Case Reports",
    "issn": "2050-0904",
+   "doi": "10.1002/ccr3.1141",
    "publication_info": "2017 Nov 9; 5(12): 2093–2096 — eCollection 2017 Dec",
    "published_at": "2017-11-09",
    "journal_rank": "Q3",
@@ -6411,7 +7528,10 @@
    "original_venue": "Clinical Case Reports – Wiley – تصنيف Q3",
    "researchers": [
     85
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 354,
@@ -6421,6 +7541,7 @@
    "study_type": "empirical",
    "venue": "Annals of Medicine and Surgery",
    "issn": "2049-0801",
+   "doi": "10.1097/ms9.0000000000001903",
    "publication_info": "2024 Mar 6; Volume 86(5): 2549-2554 — eCollection 2024 May",
    "published_at": "2024-03-06",
    "journal_rank": "Q3",
@@ -6429,7 +7550,10 @@
    "researchers": [
     208,
     209
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 360,
@@ -6439,6 +7563,7 @@
    "study_type": "empirical",
    "venue": "Cureus",
    "issn": "2168-8184",
+   "doi": "10.7759/cureus.39388",
    "publication_info": "2023 May; 15(5): e39388 — eCollection 2023 May",
    "published_at": "2023-05-01",
    "journal_rank": "Q3",
@@ -6447,7 +7572,10 @@
    "researchers": [
     63,
     120
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 361,
@@ -6457,6 +7585,7 @@
    "study_type": "clinical",
    "venue": "Cureus",
    "issn": "2168-8184",
+   "doi": "10.7759/cureus.29396",
    "publication_info": "2022 Sep 21; 14(9): e29396 — eCollection 2022 Sep",
    "published_at": "2022-09-21",
    "journal_rank": "Q3",
@@ -6464,7 +7593,10 @@
    "original_venue": "Cureus — مجلة محكّمة مفتوحة الوصول، مفهرسة في PubMed",
    "researchers": [
     63
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 362,
@@ -6474,6 +7606,7 @@
    "study_type": "empirical",
    "venue": "Cureus",
    "issn": "2168-8184",
+   "doi": "10.7759/cureus.37846",
    "publication_info": "2023 Apr 19; 15(4): e37846 — eCollection 2023 Apr",
    "published_at": "2023-04-19",
    "journal_rank": "Q3",
@@ -6481,7 +7614,10 @@
    "original_venue": "Cureus — مجلة محكّمة، مفتوحة الوصول، ومفهرسة في PubMed",
    "researchers": [
     63
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 363,
@@ -6491,6 +7627,7 @@
    "study_type": "empirical",
    "venue": "Avicenna Journal of Medicine",
    "issn": "2231-0789",
+   "doi": "10.1055/s-0041-1732815",
    "publication_info": "2021 Jul; 11(3): 132–138 — Published Aug 13, 2021",
    "published_at": "2021-07-01",
    "journal_rank": "Q3",
@@ -6501,7 +7638,10 @@
     3,
     57,
     129
-   ]
+   ],
+   "faculty": "pharmacy",
+   "faculty_reason": "subject: antibiotic usage",
+   "doi_source": "Crossref (exact title, other ISSN)"
   },
   {
    "source_id": 364,
@@ -6511,6 +7651,7 @@
    "study_type": "other",
    "venue": "Allergy",
    "issn": "0105-4538",
+   "doi": null,
    "publication_info": "Allergy. 2021 Mar; 76(3): 689–697. Published online 21 Sep 2020",
    "published_at": "2021-03-01",
    "journal_rank": "Q1",
@@ -6518,7 +7659,10 @@
    "original_venue": "Allergy – مجلة دولية رائدة، تصنيف Q1 (Top 5%) في Immunology & Allergy، الناشر: Wiley",
    "researchers": [
     108
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": null
   },
   {
    "source_id": 365,
@@ -6528,6 +7672,7 @@
    "study_type": "empirical",
    "venue": "Cureus",
    "issn": "2168-8184",
+   "doi": "10.7759/cureus.5315",
    "publication_info": "Cureus. 2019 Aug 3; 11(8): e5315",
    "published_at": "2019-08-03",
    "journal_rank": "Q2",
@@ -6538,7 +7683,10 @@
     67,
     261,
     269
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 366,
@@ -6548,6 +7696,7 @@
    "study_type": "empirical",
    "venue": "Advances in Medicine",
    "issn": "2314-7539",
+   "doi": "10.1155/2020/7014212",
    "publication_info": "Adv Med. 2020 Feb 19; 2020:7014212",
    "published_at": "2020-02-19",
    "journal_rank": "Q3",
@@ -6555,7 +7704,10 @@
    "original_venue": "Advances in Medicine (Adv Med) – مجلة محكّمة دولية مفتوحة الوصول (Hindawi)",
    "researchers": [
     270
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, other ISSN)"
   },
   {
    "source_id": 367,
@@ -6565,6 +7717,7 @@
    "study_type": "clinical",
    "venue": "Case Reports in Gastrointestinal Medicine",
    "issn": "2090-6668",
+   "doi": "10.1155/2018/5831257",
    "publication_info": "2018 Dec 10; 2018:5831257",
    "published_at": "2018-12-10",
    "journal_rank": "Q3",
@@ -6572,7 +7725,10 @@
    "original_venue": "Case Reports in Gastrointestinal Medicine – مجلة دولية محكّمة مفتوحة الوصول (Hindawi)",
    "researchers": [
     271
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, other ISSN)"
   },
   {
    "source_id": 369,
@@ -6582,6 +7738,7 @@
    "study_type": "clinical",
    "venue": "Case Reports in Gastrointestinal Medicine",
    "issn": "2090-6978",
+   "doi": "10.1155/2019/5984094",
    "publication_info": "2019 Feb 26; 2019:5984094",
    "published_at": "2019-02-26",
    "journal_rank": "Q3",
@@ -6590,7 +7747,10 @@
    "researchers": [
     67,
     255
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, other ISSN)"
   },
   {
    "source_id": 372,
@@ -6600,6 +7760,7 @@
    "study_type": "clinical",
    "venue": "Clinical and Experimental Dental Research",
    "issn": "2057-4347",
+   "doi": "10.1002/cre2.70298",
    "publication_info": "2026؛ المجلد 12؛ العدد 1؛ رقم المقال e70298",
    "published_at": "2026-01-01",
    "journal_rank": "Q3",
@@ -6607,7 +7768,10 @@
    "original_venue": "Clinical and Experimental Dental Research – مجلة علمية دولية مفتوحة الوصول",
    "researchers": [
     272
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: crowns, dent, endocrowns, molars",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 373,
@@ -6617,6 +7781,7 @@
    "study_type": "empirical",
    "venue": "Worldviews on Evidence-Based Nursing",
    "issn": "1545-102X",
+   "doi": "10.1111/wvn.70097",
    "publication_info": "2026؛ المجلد 23؛ العدد 1؛ رقم المقال e70097",
    "published_at": "2026-01-01",
    "journal_rank": "Q3",
@@ -6624,7 +7789,10 @@
    "original_venue": "Worldviews on Evidence-Based Nursing",
    "researchers": [
     112
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 374,
@@ -6634,6 +7802,7 @@
    "study_type": "clinical",
    "venue": "International Journal of Paediatric Dentistry",
    "issn": "0960-7439",
+   "doi": "10.1111/ipd.70035",
    "publication_info": "2026؛ المجلد 36؛ العدد 1؛ الصفحات 129–139",
    "published_at": "2026-01-01",
    "journal_rank": "Q3",
@@ -6641,7 +7810,10 @@
    "original_venue": "International Journal of Paediatric Dentistry",
    "researchers": [
     87
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: dent, oral health",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 375,
@@ -6651,6 +7823,7 @@
    "study_type": "other",
    "venue": "Medicine",
    "issn": "0025-7974",
+   "doi": "10.1097/md.0000000000046789",
    "publication_info": "2025؛ المجلد 104؛ العدد 52؛ رقم المقال e46789",
    "published_at": "2025-01-01",
    "journal_rank": "Q3",
@@ -6658,7 +7831,10 @@
    "original_venue": "Medicine (Baltimore)",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 376,
@@ -6668,6 +7844,7 @@
    "study_type": "empirical",
    "venue": "BMC Psychology",
    "issn": "2050-7283",
+   "doi": "10.1186/s40359-025-03879-3",
    "publication_info": "2025؛ المجلد 14؛ العدد 1؛ رقم المقال 100",
    "published_at": "2025-01-01",
    "journal_rank": "Q3",
@@ -6675,7 +7852,10 @@
    "original_venue": "BMC Psychology – مجلة علمية دولية مفتوحة الوصول",
    "researchers": [
     82
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 377,
@@ -6685,6 +7865,7 @@
    "study_type": "clinical",
    "venue": "Journal of Medical Case Reports",
    "issn": "1752-1947",
+   "doi": "10.1186/s13256-025-05765-3",
    "publication_info": "2025؛ المجلد 20؛ العدد 1؛ رقم المقال 44",
    "published_at": "2025-01-01",
    "journal_rank": "Q3",
@@ -6692,7 +7873,10 @@
    "original_venue": "Journal of Medical Case Reports – مجلة علمية دولية مفتوحة الوصول",
    "researchers": [
     273
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 378,
@@ -6702,6 +7886,7 @@
    "study_type": "empirical",
    "venue": "Comparative Biochemistry and Physiology Part C: Toxicology & Pharmacology",
    "issn": "1532-0456",
+   "doi": "10.1016/j.cbpc.2026.110457",
    "publication_info": "2026؛ المجلد 302؛ رقم المقال 110457",
    "published_at": "2026-01-01",
    "journal_rank": "Q3",
@@ -6709,7 +7894,10 @@
    "original_venue": "Comparative Biochemistry and Physiology Part C: Toxicology & Pharmacology – مجلة علمية دولية محكّمة",
    "researchers": [
     274
-   ]
+   ],
+   "faculty": "pharmacy",
+   "faculty_reason": "subject: biochemistry, metabolomic, pharmacology, toxicolog",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 379,
@@ -6719,6 +7907,7 @@
    "study_type": "other",
    "venue": "Cureus",
    "issn": "2168-8184",
+   "doi": "10.7759/cureus.99283",
    "publication_info": "2025؛ المجلد 17؛ العدد 12؛ رقم المقال e99283",
    "published_at": "2025-01-01",
    "journal_rank": "Q3",
@@ -6726,7 +7915,10 @@
    "original_venue": "Cureus – مجلة علمية دولية مفتوحة الوصول",
    "researchers": [
     262
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 380,
@@ -6736,6 +7928,7 @@
    "study_type": "clinical",
    "venue": "Case Reports in Dentistry",
    "issn": "2090-6447",
+   "doi": "10.1155/crid/8216241",
    "publication_info": "2025؛ رقم المقال 8216241",
    "published_at": "2025-01-01",
    "journal_rank": "Q3",
@@ -6743,7 +7936,10 @@
    "original_venue": "Case Reports in Dentistry – مجلة علمية دولية مفتوحة الوصول",
    "researchers": [
     172
-   ]
+   ],
+   "faculty": "dentistry",
+   "faculty_reason": "subject: dent, tooth",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 381,
@@ -6753,6 +7949,7 @@
    "study_type": "empirical",
    "venue": "Journal of Infection in Developing Countries",
    "issn": "1972-2680",
+   "doi": "10.3855/jidc.21485",
    "publication_info": "2025؛ المجلد 19؛ العدد 12؛ الصفحات 1780–1788",
    "published_at": "2025-01-01",
    "journal_rank": "Q3",
@@ -6760,7 +7957,10 @@
    "original_venue": "Journal of Infection in Developing Countries – مجلة علمية دولية",
    "researchers": [
     197
-   ]
+   ],
+   "faculty": "pharmacy",
+   "faculty_reason": "subject: antimicrobial activity, extracts",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 382,
@@ -6770,6 +7970,7 @@
    "study_type": "other",
    "venue": "Naunyn-Schmiedeberg’s Archives of Pharmacology",
    "issn": "0028-1298",
+   "doi": "10.1007/s00210-025-04937-8",
    "publication_info": "2026، مقال منشور إلكترونيًا قبل الطباعة (Online ahead of print)",
    "published_at": "2026-01-01",
    "journal_rank": "Q3",
@@ -6777,7 +7978,10 @@
    "original_venue": "Naunyn-Schmiedeberg’s Archives of Pharmacology – مجلة علمية دولية",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "pharmacy",
+   "faculty_reason": "subject: pharmacology",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 383,
@@ -6787,6 +7991,7 @@
    "study_type": "other",
    "venue": "Pathogens",
    "issn": "2076-0817",
+   "doi": "10.3390/pathogens15010028",
    "publication_info": "المجلد 15، العدد 1، رقم المقال 28، 2025",
    "published_at": "2025-01-01",
    "journal_rank": "Q3",
@@ -6794,7 +7999,10 @@
    "original_venue": "Pathogens – مجلة علمية دولية مفتوحة الوصول",
    "researchers": [
     197
-   ]
+   ],
+   "faculty": "pharmacy",
+   "faculty_reason": "subject: pathogens",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 384,
@@ -6804,6 +8012,7 @@
    "study_type": "other",
    "venue": "Health Science Reports",
    "issn": "2398-8835",
+   "doi": "10.1002/hsr2.71710",
    "publication_info": "المجلد 9، العدد 1، رقم المقال e71710، 2026",
    "published_at": "2026-01-01",
    "journal_rank": "Q3",
@@ -6811,7 +8020,10 @@
    "original_venue": "Health Science Reports – مجلة علمية دولية مفتوحة الوصول (Wiley)",
    "researchers": [
     86
-   ]
+   ],
+   "faculty": "medicine",
+   "faculty_reason": "subject: clinical or health topic",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 385,
@@ -6821,6 +8033,7 @@
    "study_type": "fundamental",
    "venue": "IEEE Access",
    "issn": "2169-3536",
+   "doi": "10.1109/access.2025.3542630",
    "publication_info": null,
    "published_at": "2025-02-14",
    "journal_rank": "Q1",
@@ -6829,7 +8042,10 @@
    "researchers": [
     275,
     276
-   ]
+   ],
+   "faculty": "artificial-intelligence",
+   "faculty_reason": "subject: devops, ieee",
+   "doi_source": "Crossref (exact title, same ISSN)"
   },
   {
    "source_id": 386,
@@ -6839,6 +8055,7 @@
    "study_type": "fundamental",
    "venue": "Turkish Journal of Public Health",
    "issn": "2169-3536",
+   "doi": null,
    "publication_info": null,
    "published_at": "2025-01-01",
    "journal_rank": "Q2",
@@ -6846,7 +8063,10 @@
    "original_venue": "Turkish Journal of Public Health",
    "researchers": [
     275
-   ]
+   ],
+   "faculty": "artificial-intelligence",
+   "faculty_reason": "subject: machine learning",
+   "doi_source": null
   }
  ]
 }
