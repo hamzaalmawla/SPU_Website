@@ -44,7 +44,7 @@
     </div>
 
     <div class="container">
-        <div style="margin-top: -7rem;" class="relative grid grid-cols-[130px_minmax(0,1fr)] items-center gap-4 border-b border-spu-blue/10 sm:grid-cols-[160px_minmax(0,1fr)] md:flex md:gap-8">
+        <div style="margin-top: -7rem;" class="relative grid grid-cols-[130px_minmax(0,1fr)] items-center gap-4 border-b border-spu-blue/10 sm:grid-cols-[160px_minmax(0,1fr)] md:flex md:items-start md:gap-8">
             <div class="shrink-0">
                 <div class="h-[130px] w-[130px] overflow-hidden rounded-full border-[6px] border-white bg-[#f6f8fc] shadow-[0_8px_32px_rgba(32,39,89,0.2)] sm:h-[160px] sm:w-[160px] md:h-[260px] md:w-[260px]">
                     @if ($image)
@@ -58,7 +58,11 @@
             </div>
 
             <div class="contents min-w-0 flex-1 md:block">
-                <h1 class="text-[1.875rem] mb-3 font-bold leading-tight text-white/90">{{ $name }}</h1>
+                {{-- The name sits at the foot of the banner and grows upward when it wraps,
+                     so it stays on the photo however much (or little) text follows it. --}}
+                <div class="relative h-[7rem] self-start md:h-[8rem]">
+                    <h1 class="absolute inset-x-0 bottom-3 text-[1.875rem] font-bold leading-tight text-white/90 [text-shadow:0_2px_12px_rgba(0,0,0,0.35)] md:bottom-[1.75rem]">{{ $name }}</h1>
+                </div>
 
                 <div class="col-span-2 my-1 flex flex-wrap items-center gap-1 md:col-auto">
                     @if ($position !== null && $position !== '')

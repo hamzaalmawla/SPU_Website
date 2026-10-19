@@ -2354,6 +2354,23 @@ final class FacilitiesWorkflowTest extends TestCase
         }
     }
 
+    #[DataProvider('facultyOverviewProvider')]
+    public function test_faculty_homepage_dean_name_links_to_the_dean_profile(
+        string $facultySlug,
+        string $profileSlug,
+        string $englishTitle,
+        string $arabicTitle,
+    ): void {
+        foreach (['en', 'ar'] as $locale) {
+            $page = app(FacultyPageServiceInterface::class)->getFaculty($facultySlug, $locale);
+
+            $this->assertSame('/'.$locale.'/about/profile/'.$profileSlug, $page?->content['dean']['profileUrl'] ?? null);
+            $this->get('/'.$locale.'/faculties/'.$facultySlug)
+                ->assertOk()
+                ->assertSee('href="/'.$locale.'/about/profile/'.$profileSlug.'"', false);
+        }
+    }
+
     public function test_all_faculty_overview_drafts_preview_localized_content_without_public_leaks_and_publish(): void
     {
         $facilities = app(FacultyPageServiceInterface::class);

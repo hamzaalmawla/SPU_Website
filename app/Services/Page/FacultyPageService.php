@@ -208,6 +208,10 @@ final class FacultyPageService implements FacultyPageServiceInterface
             }
         }
 
+        if (is_array($content['dean'] ?? null) && $content['dean'] !== []) {
+            $content['dean']['profileUrl'] = $this->deanProfileFor($faculty, $locale, $content['dean'])?->path;
+        }
+
         return new FacultyDetailPageDTO(
             locale: $locale,
             direction: $this->direction($locale),
@@ -2123,6 +2127,17 @@ final class FacultyPageService implements FacultyPageServiceInterface
     /** @param array<string, mixed> $pageData */
     private function deanProfile(Faculty $faculty, string $locale, array $pageData): ?ProfilePageDTO
     {
+        return $this->deanProfileFor($faculty, $locale, is_array($pageData['payload']['dean'] ?? null) ? $pageData['payload']['dean'] : []);
+    }
+
+    /**
+     * The faculty's dean profile, when the dean shown in the message is the
+     * same person as the published dean profile for this faculty.
+     *
+     * @param  array<string, mixed>  $deanPayload
+     */
+    private function deanProfileFor(Faculty $faculty, string $locale, array $deanPayload): ?ProfilePageDTO
+    {
         $facultySlug = $this->publicSlug($faculty);
         $dean = $this->aboutPageService->getLeadershipProfiles($locale)
             ->first(fn (PersonDTO $person): bool => $person->category === 'dean'
@@ -2133,7 +2148,6 @@ final class FacultyPageService implements FacultyPageServiceInterface
         }
 
         $profile = $this->profilePageService->getProfile($locale, 'person', $dean->slug);
-        $deanPayload = is_array($pageData['payload']['dean'] ?? null) ? $pageData['payload']['dean'] : [];
         $displayName = (string) ($deanPayload['name'] ?? $deanPayload['name'.ucfirst($locale)] ?? '');
 
         if (! $profile instanceof ProfilePageDTO || $displayName === '' || ! $this->samePersonName($displayName, $profile->name)) {

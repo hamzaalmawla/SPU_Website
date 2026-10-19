@@ -188,7 +188,14 @@
                         <div class="relative overflow-hidden">
                             <img x-ref="photo" x-on:load="measure()" src="{{ $dean['image'] ?? ($faculty['heroImage'] ?? '/images/uni-main-place.JPG') }}" alt="" class="w-full object-top">
                             <div class="absolute bottom-[10%] rounded-md bg-white px-6 py-4 text-center text-[#1e2652] shadow-2xl shadow-black/10 ltr:left-4 rtl:right-4">
-                                <h5 class="text-[24px] font-bold">{{ $dean['name'] ?? ($isAr ? ($dean['nameAr'] ?? '') : ($dean['nameEn'] ?? '')) }}</h5>
+                                @php($deanName = $dean['name'] ?? ($isAr ? ($dean['nameAr'] ?? '') : ($dean['nameEn'] ?? '')))
+                                <h5 class="text-[24px] font-bold">
+                                    @if (! empty($dean['profileUrl']))
+                                        <a href="{{ $dean['profileUrl'] }}" class="underline decoration-transparent underline-offset-4 transition-colors hover:text-spu-red hover:decoration-current focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-blue">{{ $deanName }}</a>
+                                    @else
+                                        {{ $deanName }}
+                                    @endif
+                                </h5>
                                 <p class="text-[16px] font-normal">{{ $dean['role'] ?? ($isAr ? ($dean['roleAr'] ?? __('public.faculty_dean')) : ($dean['roleEn'] ?? __('public.faculty_dean'))) }}</p>
                             </div>
                         </div>
