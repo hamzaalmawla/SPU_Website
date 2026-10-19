@@ -180,7 +180,10 @@ final class ResearchRegisterImportService implements ResearchRegisterImportServi
                 $model->faculty_id ??= $staff['faculty_id'] ?? (array_key_first($votes) !== null ? (int) array_key_first($votes) : null);
                 $model->save();
 
-                $researcherIds[$researcher['source_id']] = (int) $model->getKey();
+                // A researcher merged into another record since: their papers go to that record.
+                $researcherIds[$researcher['source_id']] = $model->trashed() && $model->merged_into_id !== null
+                    ? (int) $model->merged_into_id
+                    : (int) $model->getKey();
             }
 
             foreach ($papers as $paper) {

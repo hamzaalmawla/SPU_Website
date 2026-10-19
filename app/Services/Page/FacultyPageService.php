@@ -1094,7 +1094,12 @@ final class FacultyPageService implements FacultyPageServiceInterface
             })
             ->filter(fn (?array $item): bool => $item !== null);
 
+        // A member linked to a person already listed above is that person's
+        // card, not a second one.
+        $listedPersonIds = $people->modelKeys();
+
         $facultyMemberItems = $facultyMembers
+            ->reject(fn (FacultyMember $member): bool => $member->person_id !== null && in_array((int) $member->person_id, $listedPersonIds, true))
             ->map(function (FacultyMember $member) use ($locale): ?array {
                 $slug = (string) $member->slug;
                 if (preg_match('/^[A-Za-z0-9-]+$/', $slug) !== 1) {

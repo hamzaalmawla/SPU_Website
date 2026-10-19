@@ -753,6 +753,28 @@ if [[ -f "${RESEARCH_REGISTER_APPROVAL}" ]]; then
     mv "${RESEARCH_REGISTER_APPROVAL}" "${RESEARCH_REGISTER_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
 fi
 
+# ── Approved people merge ───────────────────────────────────────────────────
+# Merges researchers and faculty members entered twice (same name, same
+# faculty) and links staff who also have a leadership profile, as listed by
+# people:duplicates. Merged-away records are soft-deleted and their profile
+# addresses redirect to the kept profile; someone listed in two faculties is
+# left alone. Inert unless a human places an approval file not in git:
+#
+#     storage/app/private/legacy-imports/people-merge.approved
+#
+# It disarms itself after one run.
+PEOPLE_MERGE_APPROVAL="${IMPORT_DIR}/people-merge.approved"
+
+if [[ -f "${PEOPLE_MERGE_APPROVAL}" ]]; then
+    log "People merge"
+    (cd "${APP}" && "${PHP}" -d memory_limit=512M artisan people:merge --no-ansi) \
+        || fail "The people merge dry run failed. Nothing was changed."
+    (cd "${APP}" && "${PHP}" -d memory_limit=512M artisan people:merge --write --approve=people-merge-20261019 --no-ansi) \
+        || fail "The people merge failed."
+
+    mv "${PEOPLE_MERGE_APPROVAL}" "${PEOPLE_MERGE_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
 # ── Approved faculty structure import ────────────────────────────────────────
 # Replaces the redesign's invented departments and labs with the old site's real
 # ones and adds the subpages the old site had (dentistry clinical cases, the

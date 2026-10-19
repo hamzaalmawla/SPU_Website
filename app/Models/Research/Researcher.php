@@ -33,6 +33,7 @@ class Researcher extends Model
         'notes',
         'legacy_source',
         'legacy_source_id',
+        'merged_into_id',
         'created_by',
     ];
 
@@ -40,6 +41,7 @@ class Researcher extends Model
     {
         return [
             'legacy_source_id' => 'integer',
+            'merged_into_id' => 'integer',
         ];
     }
 
