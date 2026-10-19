@@ -21,5 +21,7 @@ final readonly class ResearchRegisterImportResultDTO
         public int $updated = 0,
         public int $linksAdded = 0,
         public int $facultiesAdded = 0,
+        public int $existingPapersGivenResearchers = 0,
+        public int $authorLinksAdded = 0,
     ) {}
 }

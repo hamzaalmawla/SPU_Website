@@ -13,6 +13,7 @@ use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Cms\CmsPageTextImportServiceInterface;
 use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Content\PeopleDuplicateReportServiceInterface;
 use App\Contracts\Content\PersonServiceInterface;
 use App\Contracts\Content\ProfileAdminServiceInterface;
 use App\Contracts\ErrorPage\ErrorPageRendererInterface;
@@ -188,6 +189,7 @@ use App\Services\Cms\AboutEntityCmsService;
 use App\Services\Cms\CmsPageTextImportService;
 use App\Services\Cms\CmsTargetRegistry;
 use App\Services\Cms\CmsWorkflowService;
+use App\Services\Content\PeopleDuplicateReportService;
 use App\Services\Content\PersonService;
 use App\Services\Content\ProfileAdminService;
 use App\Services\ErrorPage\ErrorPageRenderer;
@@ -728,6 +730,7 @@ class AppServiceProvider extends ServiceProvider
             VirtualTourPageServiceInterface::class => VirtualTourPageService::class,
             PersonServiceInterface::class => PersonService::class,
             ProfileAdminServiceInterface::class => ProfileAdminService::class,
+            PeopleDuplicateReportServiceInterface::class => PeopleDuplicateReportService::class,
             ResearchPageServiceInterface::class => ResearchPageService::class,
             SearchIndexServiceInterface::class => SearchIndexService::class,
             SiteSearchServiceInterface::class => SiteSearchService::class,

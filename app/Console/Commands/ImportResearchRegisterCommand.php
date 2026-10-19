@@ -42,6 +42,8 @@ final class ImportResearchRegisterCommand extends Command
         $this->table(['', 'Count'], [
             ['Papers in the register', $result->papersInFile],
             ['Already on the website (same title, left alone)', $result->alreadyOnSite],
+            ['  of which given their researchers now', $result->existingPapersGivenResearchers],
+            ['  author links added to them', $result->authorLinksAdded],
             ['Imported before (same research number)', $result->alreadyImported],
             ['  of which completed now (empty DOI, link or faculty filled)', $result->updated],
             ['  of which given a faculty now', $result->facultiesAdded],

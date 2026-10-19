@@ -51,9 +51,11 @@ final class ResearchRegisterImportService implements ResearchRegisterImportServi
             $staffByResearcher[$researcher['source_id']] = $this->matchStaff($researcher['full_name'], $staff);
         }
 
-        $existingTitles = ResearchPublicationTranslation::query()->pluck('title')
-            ->map(fn (mixed $title): string => $this->titleKey((string) $title))
-            ->flip();
+        // Title key to the publication the site already has under that title.
+        $existingTitles = ResearchPublicationTranslation::query()->get(['title', 'research_publication_id'])
+            ->mapWithKeys(fn (ResearchPublicationTranslation $translation): array => [$this->titleKey((string) $translation->title) => (int) $translation->research_publication_id]);
+        $publicationsWithResearchers = ResearchPublication::query()->has('researchers')->pluck('id')->flip();
+        $toLink = [];
         $imported = ResearchPublication::query()->withTrashed()->whereNotNull('research_number')
             ->get(['id', 'research_number', 'doi', 'external_url', 'faculty_id'])
             ->keyBy('research_number');
@@ -88,6 +90,13 @@ final class ResearchRegisterImportService implements ResearchRegisterImportServi
 
             if ($existingTitles->has($this->titleKey($paper['title']))) {
                 $alreadyOnSite++;
+                $publicationId = (int) $existingTitles->get($this->titleKey($paper['title']));
+
+                // The paper itself is left as it is; only its researchers are
+                // added, and only when it lists none yet.
+                if ($paper['researchers'] !== [] && ! $publicationsWithResearchers->has($publicationId)) {
+                    $toLink[$publicationId] = $paper['researchers'];
+                }
 
                 continue;
             }
@@ -103,7 +112,7 @@ final class ResearchRegisterImportService implements ResearchRegisterImportServi
         ksort($byFaculty);
 
         if ($write) {
-            $this->write($data['researchers'], $data['papers'], $toCreate, $toUpdate, $staffByResearcher, $facultyIds->all());
+            $this->write($data['researchers'], $data['papers'], $toCreate, $toUpdate, $toLink, $staffByResearcher, $facultyIds->all());
         }
 
         return new ResearchRegisterImportResultDTO(
@@ -121,6 +130,8 @@ final class ResearchRegisterImportService implements ResearchRegisterImportServi
             linksAdded: count(array_filter($toCreate, fn (array $paper): bool => $paper['url'] !== null))
                 + count(array_filter($toUpdate, fn (array $update): bool => isset($update['gaps']['external_url']))),
             facultiesAdded: count(array_filter($toUpdate, fn (array $update): bool => isset($update['gaps']['faculty_id']))),
+            existingPapersGivenResearchers: count($toLink),
+            authorLinksAdded: array_sum(array_map('count', $toLink)),
         );
     }
 
@@ -129,10 +140,11 @@ final class ResearchRegisterImportService implements ResearchRegisterImportServi
      * @param  list<array<string, mixed>>  $allPapers
      * @param  list<array<string, mixed>>  $papers
      * @param  list<array{publication: ResearchPublication, gaps: array<string, mixed>, paper: array<string, mixed>}>  $updates
+     * @param  array<int, list<int>>  $links  Publication id to the register ids of its researchers
      * @param  array<int, ?array{member_id: int, faculty_id: ?int}>  $staffByResearcher
      * @param  array<string, int>  $facultyIds
      */
-    private function write(array $researchers, array $allPapers, array $papers, array $updates, array $staffByResearcher, array $facultyIds): void
+    private function write(array $researchers, array $allPapers, array $papers, array $updates, array $links, array $staffByResearcher, array $facultyIds): void
     {
         // A researcher's faculty: their staff profile's, else the faculty most of their papers belong to.
         $usualFaculty = [];
@@ -143,7 +155,7 @@ final class ResearchRegisterImportService implements ResearchRegisterImportServi
             }
         }
 
-        DB::transaction(function () use ($researchers, $papers, $updates, $staffByResearcher, $usualFaculty): void {
+        DB::transaction(function () use ($researchers, $papers, $updates, $links, $staffByResearcher, $usualFaculty): void {
             $researcherIds = [];
 
             foreach ($researchers as $researcher) {
@@ -173,6 +185,17 @@ final class ResearchRegisterImportService implements ResearchRegisterImportServi
 
             foreach ($papers as $paper) {
                 $this->createPaper($paper, $researcherIds);
+            }
+
+            foreach ($links as $publicationId => $sourceIds) {
+                $order = 1;
+                $pivot = [];
+                foreach ($sourceIds as $sourceId) {
+                    if (isset($researcherIds[$sourceId])) {
+                        $pivot[$researcherIds[$sourceId]] = ['role' => 'co_author', 'sort_order' => $order++];
+                    }
+                }
+                ResearchPublication::query()->findOrFail($publicationId)->researchers()->syncWithoutDetaching($pivot);
             }
 
             foreach ($updates as $update) {

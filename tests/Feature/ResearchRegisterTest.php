@@ -144,6 +144,11 @@ final class ResearchRegisterTest extends TestCase
         $result = $import->import($path, true, ResearchRegisterImportService::APPROVAL_TOKEN);
         $this->assertSame([2, 2, 1], [$result->created, $result->researchersCreated, $result->researchersLinkedToStaff]);
 
+        // The paper the site already had keeps its content and gains its researcher.
+        $this->assertSame(['Sami Khoury'], $existing->refresh()->researchers->pluck('full_name')->all());
+        $this->assertNull($existing->research_number);
+        $this->assertSame([1, 1], [$result->existingPapersGivenResearchers, $result->authorLinksAdded]);
+
         $paper = ResearchPublication::query()->where('research_number', 'RES2025002')->with('researchers')->firstOrFail();
         $this->assertTrue((bool) $paper->is_enabled);
         $this->assertSame((int) $medicine->getKey(), (int) $paper->faculty_id);
@@ -198,6 +203,25 @@ final class ResearchRegisterTest extends TestCase
             ->assertSee('Read the paper')
             ->assertSee('https://doi.org/10.1186/s40510-024-00001-1', false)
             ->assertSee('Faculty of Dentistry');
+    }
+
+    public function test_the_duplicate_report_lists_people_entered_twice_and_changes_nothing(): void
+    {
+        $medicine = Faculty::query()->where('public_slug', 'medicine')->firstOrFail();
+        foreach (['dr-ramez-skerek' => 'Dr. Ramez Skerek', 'dr-ramez-slaiman-skerek' => 'Dr. Ramez Slaiman Skerek'] as $slug => $name) {
+            FacultyMember::query()->create(['slug' => $slug, 'faculty_id' => $medicine->getKey(), 'is_enabled' => true, 'publication_status' => 'published'])
+                ->translations()->create(['locale' => 'en', 'full_name' => $name]);
+        }
+        Researcher::query()->create(['full_name' => 'Saeed A Kadri']);
+        Researcher::query()->create(['full_name' => 'Saeed Kadri']);
+        $counts = [FacultyMember::query()->count(), Researcher::query()->count()];
+
+        $this->artisan('people:duplicates')
+            ->expectsOutputToContain('Dr. Ramez Slaiman Skerek')
+            ->expectsOutputToContain('Saeed Kadri')
+            ->assertSuccessful();
+
+        $this->assertSame($counts, [FacultyMember::query()->count(), Researcher::query()->count()]);
     }
 
     public function test_person_names_match_without_titles_or_spelling_noise(): void

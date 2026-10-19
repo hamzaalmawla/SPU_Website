@@ -1318,6 +1318,12 @@ log "CMS content status"
 (cd "${APP}" && "${PHP}" artisan cms:content-status --summary --drafts) || \
     printf '   (cms:content-status unavailable in this release)\n'
 
+# Researchers, faculty members and people that look like the same person, so
+# duplicates can be reviewed before anything is merged. Read-only; never fatal.
+log "People that look like duplicates"
+(cd "${APP}" && "${PHP}" -d memory_limit=512M artisan people:duplicates --no-ansi) || \
+    printf '   (people:duplicates unavailable in this release)\n'
+
 # The tarball-based deployment extracts into .release/ inside the repository,
 # which leaves the working tree dirty - and cPanel refuses to deploy a repository
 # with uncommitted changes, so the NEXT deploy is blocked by the last one. Clean
