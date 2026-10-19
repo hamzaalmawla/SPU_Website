@@ -11,6 +11,7 @@ use App\DTOs\Cms\CmsTargetDTO;
 use App\DTOs\EServices\EServicesDetailPageDTO;
 use App\Exceptions\ConflictException;
 use App\Filament\Components\PageUrlSelect;
+use App\Filament\Support\FormPicker;
 use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
 use Filament\Actions\Action;
@@ -100,6 +101,9 @@ class ManageEServicesPage extends Page implements HasForms
                         ->live()
                         ->afterStateUpdated(fn (?string $state): mixed => is_string($state) && $state !== '' ? $this->loadTarget($state) : null),
                 ]),
+                Section::make(__('admin.forms.fields.form'))
+                    ->schema([FormPicker::make('suggestions_form_id')->label(__('admin.forms.fields.form'))->required(fn (): bool => $this->isSuggestionsTarget())])
+                    ->visible(fn (): bool => $this->isSuggestionsTarget()),
                 Tabs::make('e_services_page_locales')
                     ->tabs([
                         $this->localeTab('ar', 'Arabic'),
@@ -148,12 +152,14 @@ class ManageEServicesPage extends Page implements HasForms
             'en_detail' => [],
             'ar_suggestions' => [],
             'en_suggestions' => [],
+            'suggestions_form_id' => null,
         ];
 
         if ($isSuggestions) {
             $payload = is_array($draftPayload) ? $draftPayload : $this->eServicesPageService->getSuggestionsComplaintsEditablePayload();
             $state['ar_suggestions'] = is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [];
             $state['en_suggestions'] = is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [];
+            $state['suggestions_form_id'] = (string) ($payload['translations']['ar']['form']['formId'] ?? 'suggestions-complaints');
             $this->form->fill($state);
 
             return;
@@ -279,12 +285,6 @@ class ManageEServicesPage extends Page implements HasForms
                 TextInput::make("{$locale}_suggestions.form.title")->label(__('admin_pages.e_services.form_title'))->required()->maxLength(180),
                 TextInput::make("{$locale}_suggestions.form.infoTitle")->label(__('admin_pages.e_services.information_title'))->required()->maxLength(180),
                 Textarea::make("{$locale}_suggestions.form.infoBody")->label(__('admin_pages.e_services.information_body'))->required()->rows(3)->columnSpanFull(),
-                Textarea::make("{$locale}_suggestions.form.consentLabel")->label(__('admin_pages.e_services.consent_label'))->required()->rows(2)->columnSpanFull(),
-                TextInput::make("{$locale}_suggestions.form.attachmentHelp")->label(__('admin_pages.e_services.attachment_help'))->required()->maxLength(255)->columnSpanFull(),
-                Repeater::make("{$locale}_suggestions.form.requestTypes")->label(__('admin_pages.e_services.request_types'))->schema([
-                    Select::make('value')->options(['suggestion' => __('admin_pages.e_services.suggestion'), 'complaint' => __('admin_pages.e_services.complaint'), 'inquiry' => __('admin_pages.e_services.inquiry')])->required(),
-                    TextInput::make('label')->required()->maxLength(120),
-                ])->columns(2)->minItems(3)->maxItems(3)->reorderable(false)->columnSpanFull(),
                 Repeater::make("{$locale}_suggestions.form.cards")->label(__('admin_pages.e_services.information_cards'))->schema([
                     TextInput::make('title')->required()->maxLength(180),
                     Textarea::make('body')->required()->rows(3),
@@ -478,12 +478,18 @@ class ManageEServicesPage extends Page implements HasForms
         $isLanding = $targetKey === 'e_services';
 
         if ($targetKey === 'e_services.suggestions-complaints') {
-            return [
-                'translations' => [
-                    'ar' => is_array($state['ar_suggestions'] ?? null) ? $state['ar_suggestions'] : [],
-                    'en' => is_array($state['en_suggestions'] ?? null) ? $state['en_suggestions'] : [],
-                ],
-            ];
+            // The fields (request types, consent, attachment) belong to the picked form.
+            $translations = [];
+
+            foreach (['ar', 'en'] as $locale) {
+                $translation = is_array($state[$locale.'_suggestions'] ?? null) ? $state[$locale.'_suggestions'] : [];
+                $form = is_array($translation['form'] ?? null) ? $translation['form'] : [];
+                unset($form['consentLabel'], $form['attachmentHelp'], $form['requestTypes']);
+                $translation['form'] = ['formId' => (string) ($state['suggestions_form_id'] ?? 'suggestions-complaints')] + $form;
+                $translations[$locale] = $translation;
+            }
+
+            return ['translations' => $translations];
         }
 
         return [

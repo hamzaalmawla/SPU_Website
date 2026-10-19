@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Research;
 
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Form\FormDefinitionServiceInterface;
 use App\Contracts\Page\ProfilePageServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
 use App\DTOs\Content\ProfilePageDTO;
@@ -51,6 +52,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
     public function __construct(
         private readonly CmsWorkflowServiceInterface $cmsWorkflowService,
         private readonly ProfilePageServiceInterface $profilePageService,
+        private readonly FormDefinitionServiceInterface $formDefinitions,
     ) {}
 
     public function landing(string $locale): ResearchPageDTO
@@ -706,7 +708,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
             if ($id !== ''
                 && hash_equals($id, $eventId)
                 && $title !== ''
-                && in_array($formId, ['conference-registration', 'symposium-registration'], true)) {
+                && $this->formDefinitions->isEnabled($formId)) {
                 return $event;
             }
         }
@@ -2118,7 +2120,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
             if (! $this->isSafePublicResourceUrl($event['registrationUrl'] ?? null)) {
                 $id = trim((string) ($event['id'] ?? ''));
                 $formId = trim((string) ($event['formId'] ?? ''));
-                $event['registrationUrl'] = $id !== '' && in_array($formId, ['conference-registration', 'symposium-registration'], true)
+                $event['registrationUrl'] = $id !== '' && $this->formDefinitions->isEnabled($formId)
                     ? '/research/conferences/register?event='.rawurlencode($id)
                     : null;
             }

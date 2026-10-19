@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 return [
+    'unavailable' => 'This form is not accepting submissions at the moment.',
     'errors' => [
         'not_submitted' => 'The form could not be submitted.',
         'unsupported_form' => 'This form is not available.',

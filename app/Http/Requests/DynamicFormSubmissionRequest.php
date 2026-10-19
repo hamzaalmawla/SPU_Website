@@ -69,9 +69,17 @@ final class DynamicFormSubmissionRequest extends FormRequest
         foreach (app(DynamicFormSubmissionServiceInterface::class)->formSchema($this->formId()) as $field) {
             $name = (string) ($field['name'] ?? '');
             $key = 'form_submissions.fields.'.$name;
+            $label = (string) ($locale === 'ar' ? ($field['labelAr'] ?? '') : ($field['labelEn'] ?? ''));
 
-            if ($name !== '' && trans()->has($key, $locale)) {
+            if ($name === '') {
+                continue;
+            }
+
+            // Fields an editor added in the admin use the label they gave it.
+            if (trans()->has($key, $locale)) {
                 $attributes[$name] = __($key, [], $locale);
+            } elseif ($label !== '') {
+                $attributes[$name] = $label;
             }
         }
 

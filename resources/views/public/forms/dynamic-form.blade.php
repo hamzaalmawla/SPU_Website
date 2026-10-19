@@ -1,3 +1,10 @@
+{{-- The form picked for this place, as built under Forms in the admin. A form that was switched off shows a notice instead. --}}
+@inject('formDefinitions', 'App\Contracts\Form\FormDefinitionServiceInterface')
+@php($formSchema = $formDefinitions->publicSchema((string) ($formKey ?? '')))
+@if ($formSchema === null)
+<p class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800" role="status" data-form-unavailable>{{ __('forms.unavailable') }}</p>
+@else
+<script type="application/json" data-form-schema>{!! json_encode($formSchema, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}</script>
 <div x-data="dynamicFormView()" x-cloak>
     <template x-if="$store.dynamicForm.schema">
     <div>
@@ -85,3 +92,4 @@
     </div>
     </template>
 </div>
+@endif

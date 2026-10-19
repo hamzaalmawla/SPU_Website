@@ -193,6 +193,9 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
         }
 
         $payload = $this->localized($this->jobApplicationPayload(), $locale);
+        // The job board editor picks the form; the built-in job application otherwise.
+        $board = $this->publishedLocalizedPayload('campus_life.jobs', $locale) ?? [];
+        $payload['applicationFormId'] = is_string($board['applicationFormId'] ?? null) && $board['applicationFormId'] !== '' ? $board['applicationFormId'] : 'job-application';
         $payload['selectedJob'] = [
             'id' => $job->id,
             'slug' => $job->slug,

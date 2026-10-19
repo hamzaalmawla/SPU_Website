@@ -72,7 +72,7 @@
 
                         <div class="rounded-2xl bg-gray-50 p-6 sm:p-8 lg:sticky lg:top-24 lg:self-start">
                             <h3 class="mb-6 border-b border-gray-200 pb-4 text-lg font-bold text-gray-900" x-text="$store.dynamicForm.schema ? (document.documentElement.lang === 'ar' ? $store.dynamicForm.schema.titleAr : $store.dynamicForm.schema.titleEn) : ''"></h3>
-                            @include('public.forms.dynamic-form')
+                            @include('public.forms.dynamic-form', ['formKey' => $formId])
                         </div>
                     </div>
                 </div>

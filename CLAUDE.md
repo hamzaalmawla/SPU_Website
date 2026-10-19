@@ -24,6 +24,11 @@ The imported `AGENTS.MD` is the authoritative project rulebook (scope, architect
 - `FacultyStudyPlanEditorService` workspace methods (`buildWorkspace`, `mergeWorkspace`) belong to the removed per-term form and are unused by the app; `validationErrors` is still the validator.
 - Tests are slow (Livewire pages take 5-10s each); run classes separately with `--filter`, and run long ones in the background.
 
+## Public forms
+- Forms are built in the admin (Contact → Forms, `FormDefinitionResource`) and stored in `form_definitions` (fields in `schema_json`, optionally in steps). `FormDefinitionServiceInterface` is the only reader; the six original forms are inserted by the migration from `database/seeders/Data/forms/built-in-forms.json`.
+- Pages pick a form with `App\Filament\Support\FormPicker` (event `formId`, admissions/jobs `applicationFormId`, suggestions `form.formId`). The page prints the schema via `public.forms.dynamic-form` (`formKey`) and the Alpine store reads it; there is no form list in the JS.
+- A form in use (a page picks it, or it has submissions) can't be deleted, only disabled. Submissions go to the inbox set on the form.
+
 ## Where to look
 - `Docs/ARCHITECTURE.md`, `Docs/BACKEND_RULES.md`, `Docs/STYLEGUIDE.md`, `Docs/WORKFLOW.md`: layering and conventions
 - `Docs/FRONTEND_IMPORT_TRACKER.md`, `Docs/FRONTEND_ROUTE_PARITY_MATRIX.md`: parity status per route

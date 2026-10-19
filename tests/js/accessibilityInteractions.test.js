@@ -1,9 +1,14 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { afterEach, test } from 'node:test';
 
 import { registerDynamicFormStore } from '../../resources/js/alpine/dynamicFormStore.js';
 import { createDynamicFormView } from '../../resources/js/alpine/dynamicFormView.js';
 import { createMobileNav, NAV_DESKTOP_BREAKPOINT } from '../../resources/js/alpine/mobileNav.js';
+
+const jobApplication = JSON.parse(readFileSync(new URL('../../database/seeders/Data/forms/built-in-forms.json', import.meta.url), 'utf8'))
+    .find((form) => form.key === 'job-application');
+const jobApplicationSchema = { multiStep: true, steps: jobApplication.steps };
 
 const originalDocument = globalThis.document;
 const originalWindow = globalThis.window;
@@ -84,7 +89,7 @@ test('dynamic forms generate deterministic field and error associations', () => 
     globalThis.window = { setTimeout: (callback) => callback() };
     registerDynamicFormStore({ store: (_name, value) => { store = value; } });
 
-    store.open('job-application', 'en');
+    store.open('job-application', 'en', null, {}, jobApplicationSchema);
     const field = store.fields()[0];
     const view = createDynamicFormView();
     view.$store = { dynamicForm: store };
@@ -105,7 +110,7 @@ test('dynamic form validation focuses the first invalid control', () => {
     globalThis.window = { setTimeout: (callback) => callback() };
     registerDynamicFormStore({ store: (_name, value) => { store = value; } });
 
-    store.open('job-application', 'en');
+    store.open('job-application', 'en', null, {}, jobApplicationSchema);
     assert.equal(store.validate(), false);
     assert.equal(focusedId, store.fieldId(Object.keys(store.errors)[0]));
 });

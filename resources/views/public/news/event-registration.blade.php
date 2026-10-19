@@ -20,7 +20,7 @@
                         <p class="mt-6 rounded-xl border border-spu-blue/10 bg-white p-5 text-sm leading-7 text-slate-600">{{ $page['registrationInfo'] }}</p>
                     </div>
                     <div class="rounded-2xl bg-white p-7 shadow-sm lg:sticky lg:top-24 lg:self-start">
-                        @include('public.forms.dynamic-form')
+                        @include('public.forms.dynamic-form', ['formKey' => $event->formId])
                     </div>
                 </div>
             @endif

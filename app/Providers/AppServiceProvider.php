@@ -28,6 +28,7 @@ use App\Contracts\Faculty\ProjectFieldBlockParserInterface;
 use App\Contracts\Form\ContactMessageReviewServiceInterface;
 use App\Contracts\Form\DynamicFormSubmissionReviewServiceInterface;
 use App\Contracts\Form\DynamicFormSubmissionServiceInterface;
+use App\Contracts\Form\FormDefinitionServiceInterface;
 use App\Contracts\Form\FormSubmissionNotificationServiceInterface;
 use App\Contracts\Homepage\HomepageContentSelectionServiceInterface;
 use App\Contracts\Homepage\HomepagePreviewAssemblerInterface;
@@ -154,6 +155,7 @@ use App\Models\Faculty\FacultyPage;
 use App\Models\Faculty\FacultyStudentProject;
 use App\Models\Faculty\FacultySubpageCard;
 use App\Models\Form\DynamicFormSubmission;
+use App\Models\Form\FormDefinition;
 use App\Models\Media\MediaAsset;
 use App\Models\Navigation\MenuItem;
 use App\Models\News\NewsArticle;
@@ -174,6 +176,7 @@ use App\Policies\AuditLogPolicy;
 use App\Policies\ContactMessagePolicy;
 use App\Policies\DynamicFormSubmissionPolicy;
 use App\Policies\FacultyDomainPolicy;
+use App\Policies\FormDefinitionPolicy;
 use App\Policies\HomepagePolicy;
 use App\Policies\MediaAssetPolicy;
 use App\Policies\MenuItemPolicy;
@@ -206,6 +209,7 @@ use App\Services\Faculty\ProjectFieldBlockParser;
 use App\Services\Form\ContactMessageReviewService;
 use App\Services\Form\DynamicFormSubmissionReviewService;
 use App\Services\Form\DynamicFormSubmissionService;
+use App\Services\Form\FormDefinitionService;
 use App\Services\Form\FormSubmissionNotificationService;
 use App\Services\Homepage\HomepageContentSelectionService;
 use App\Services\Homepage\HomepageDraftReader;
@@ -533,6 +537,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(MediaAsset::class, MediaAssetPolicy::class);
         Gate::policy(ContactMessage::class, ContactMessagePolicy::class);
         Gate::policy(DynamicFormSubmission::class, DynamicFormSubmissionPolicy::class);
+        Gate::policy(FormDefinition::class, FormDefinitionPolicy::class);
         Gate::policy(NewsArticle::class, NewsArticlePolicy::class);
         Gate::policy(ResearchPublication::class, ResearchPublicationPolicy::class);
         Gate::policy(NewsCategory::class, NewsCategoryPolicy::class);
@@ -637,6 +642,7 @@ class AppServiceProvider extends ServiceProvider
             ContactPageServiceInterface::class => ContactPageService::class,
             DynamicFormSubmissionReviewServiceInterface::class => DynamicFormSubmissionReviewService::class,
             DynamicFormSubmissionServiceInterface::class => DynamicFormSubmissionService::class,
+            FormDefinitionServiceInterface::class => FormDefinitionService::class,
             ContactMessageReviewServiceInterface::class => ContactMessageReviewService::class,
             FormSubmissionNotificationServiceInterface::class => FormSubmissionNotificationService::class,
             EServicesPageServiceInterface::class => EServicesPageService::class,

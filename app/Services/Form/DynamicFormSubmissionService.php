@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Form;
 
 use App\Contracts\Form\DynamicFormSubmissionServiceInterface;
+use App\Contracts\Form\FormDefinitionServiceInterface;
 use App\Contracts\Form\FormSubmissionNotificationServiceInterface;
 use App\Contracts\News\NewsServiceInterface;
 use App\Contracts\Page\CampusLifePageServiceInterface;
@@ -13,6 +14,7 @@ use App\DTOs\CampusLife\CampusLifeJobDTO;
 use App\DTOs\Form\DynamicFormSubmissionDataDTO;
 use App\DTOs\News\NewsEventDTO;
 use App\DTOs\Research\ResearchConferenceRegistrationDTO;
+use App\Enums\FormSubmissionInbox;
 use App\Models\Form\DynamicFormSubmission;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -22,40 +24,34 @@ use Throwable;
 
 final class DynamicFormSubmissionService implements DynamicFormSubmissionServiceInterface
 {
-    /** @var array<int, string> */
-    private const EVENT_REGISTRATION_FORMS = ['conference-registration', 'symposium-registration', 'activity-registration'];
-
     public function __construct(
         private readonly NewsServiceInterface $newsService,
         private readonly CampusLifePageServiceInterface $campusLifePageService,
         private readonly ResearchPageServiceInterface $researchPageService,
         private readonly FormSubmissionNotificationServiceInterface $notificationService,
+        private readonly FormDefinitionServiceInterface $formDefinitions,
     ) {}
 
     /** @return array<int, string> */
     public function allowedFormIds(): array
     {
-        return array_keys($this->schemas());
+        return $this->formDefinitions->enabledKeys();
     }
 
     /** @return array<int, array<string, mixed>> */
     public function formSchema(string $formId): array
     {
-        return $this->schemas()[$formId] ?? [];
+        return $this->formDefinitions->isEnabled($formId)
+            ? $this->formDefinitions->find($formId)?->fields ?? []
+            : [];
     }
 
     /** @return array<string, array<int, string>> */
     public function validationRules(string $formId): array
     {
-        $schema = $this->schemas()[$formId] ?? null;
-
-        if (! is_array($schema)) {
-            return [];
-        }
-
         $rules = [];
 
-        foreach ($schema as $field) {
+        foreach ($this->formSchema($formId) as $field) {
             $name = (string) ($field['name'] ?? '');
             $type = (string) ($field['type'] ?? 'text');
 
@@ -92,7 +88,7 @@ final class DynamicFormSubmissionService implements DynamicFormSubmissionService
             } elseif ($type === 'file') {
                 $fieldRules[] = 'file';
                 $fieldRules[] = 'max:'.(int) ($field['maxKilobytes'] ?? 5120);
-                $fieldRules[] = 'mimes:'.(string) ($field['mimes'] ?? 'pdf');
+                $fieldRules[] = 'mimes:'.(str_replace('.', '', (string) ($field['accept'] ?? '')) ?: 'pdf');
             } elseif ($type === 'textarea') {
                 $fieldRules[] = 'string';
                 $fieldRules[] = 'max:'.(int) ($field['maxLength'] ?? 5000);
@@ -119,15 +115,17 @@ final class DynamicFormSubmissionService implements DynamicFormSubmissionService
             $payload['_context'] = $this->validatedEventContext($data);
         }
 
-        if ($data->formId === 'job-application') {
+        $inbox = $this->formDefinitions->inboxFor($data->formId);
+
+        if ($inbox === FormSubmissionInbox::JOBS) {
             $payload['_context'] = $this->validatedJobContext($data);
         }
 
-        if ($data->formId === 'admissions-application') {
+        if ($inbox === FormSubmissionInbox::ADMISSIONS) {
             $payload['_context'] = ['source' => 'admissions'];
         }
 
-        if ($data->formId === 'suggestions-complaints') {
+        if ($inbox === FormSubmissionInbox::SUGGESTIONS) {
             $payload['_context'] = ['source' => 'e-services-suggestions-complaints'];
         }
 
@@ -200,10 +198,12 @@ final class DynamicFormSubmissionService implements DynamicFormSubmissionService
             throw ValidationException::withMessages(['event_id' => [__('forms.errors.event_not_open', [], $data->locale)]]);
         }
 
+        // Registrations are matched by the event they name, whichever form an
+        // editor attached to it.
         $email = is_string($data->payload['email'] ?? null) ? mb_strtolower(trim($data->payload['email'])) : '';
         $registrations = DynamicFormSubmission::query()
-            ->whereIn('form_id', self::EVENT_REGISTRATION_FORMS)
             ->whereRaw('LOWER(applicant_email) = ?', [$email])
+            ->where('payload_json', 'like', '%"event_id":'.json_encode($event->id).'%')
             ->get();
 
         if ($registrations->contains(fn (DynamicFormSubmission $submission): bool => ($submission->payload_json['_context']['source'] ?? null) === $data->eventSource
@@ -213,7 +213,7 @@ final class DynamicFormSubmissionService implements DynamicFormSubmissionService
 
         if ($event instanceof NewsEventDTO) {
             $submittedCount = DynamicFormSubmission::query()
-                ->whereIn('form_id', ['conference-registration', 'activity-registration'])
+                ->where('payload_json', 'like', '%"event_id":'.json_encode($event->id).'%')
                 ->get()
                 ->filter(fn (DynamicFormSubmission $submission): bool => ($submission->payload_json['_context']['source'] ?? null) === 'news-events'
                     && ($submission->payload_json['_context']['event_id'] ?? null) === $event->id)
@@ -288,83 +288,5 @@ final class DynamicFormSubmissionService implements DynamicFormSubmissionService
         $name = trim(((string) ($payload['firstNameAr'] ?? '')).' '.((string) ($payload['lastNameAr'] ?? '')));
 
         return $name !== '' ? $name : null;
-    }
-
-    /** @return array<string, array<int, array<string, mixed>>> */
-    private function schemas(): array
-    {
-        return [
-            'conference-registration' => [
-                ['name' => 'fullName', 'type' => 'text', 'required' => true],
-                ['name' => 'email', 'type' => 'email', 'required' => true],
-                ['name' => 'phone', 'type' => 'tel', 'required' => false],
-                ['name' => 'affiliation', 'type' => 'text', 'required' => true],
-                ['name' => 'role', 'type' => 'select', 'required' => true, 'options' => [['value' => 'attendee'], ['value' => 'presenter'], ['value' => 'poster'], ['value' => 'moderator']]],
-                ['name' => 'dietary', 'type' => 'select', 'required' => false, 'options' => [['value' => 'vegetarian'], ['value' => 'vegan'], ['value' => 'halal'], ['value' => 'other']]],
-                ['name' => 'specialNeeds', 'type' => 'textarea', 'required' => false],
-            ],
-            'symposium-registration' => [
-                ['name' => 'fullName', 'type' => 'text', 'required' => true],
-                ['name' => 'email', 'type' => 'email', 'required' => true],
-                ['name' => 'phone', 'type' => 'tel', 'required' => false],
-                ['name' => 'department', 'type' => 'text', 'required' => true],
-                ['name' => 'year', 'type' => 'select', 'required' => true, 'options' => [['value' => '1'], ['value' => '2'], ['value' => '3'], ['value' => '4'], ['value' => '5'], ['value' => 'master'], ['value' => 'phd'], ['value' => 'faculty'], ['value' => 'external']]],
-                ['name' => 'specialNeeds', 'type' => 'textarea', 'required' => false],
-            ],
-            'activity-registration' => [
-                ['name' => 'fullName', 'type' => 'text', 'required' => true],
-                ['name' => 'email', 'type' => 'email', 'required' => true],
-                ['name' => 'phone', 'type' => 'tel', 'required' => false],
-                ['name' => 'studentId', 'type' => 'text', 'required' => false],
-                ['name' => 'notes', 'type' => 'textarea', 'required' => false],
-            ],
-            'admissions-application' => [
-                ['name' => 'fullName', 'type' => 'text', 'required' => true],
-                ['name' => 'email', 'type' => 'email', 'required' => true],
-                ['name' => 'phone', 'type' => 'tel', 'required' => true],
-                ['name' => 'applicantType', 'type' => 'select', 'required' => true, 'options' => [['value' => 'new'], ['value' => 'transfer'], ['value' => 'equivalency'], ['value' => 'international']]],
-                ['name' => 'targetFaculty', 'type' => 'select', 'required' => true, 'options' => [['value' => 'medicine'], ['value' => 'dentistry'], ['value' => 'pharmacy'], ['value' => 'artificial-intelligence'], ['value' => 'building-construction-engineering'], ['value' => 'petroleum'], ['value' => 'business-administration']]],
-                ['name' => 'secondaryCertificate', 'type' => 'text', 'required' => true],
-                ['name' => 'certificateCountry', 'type' => 'text', 'required' => true],
-                ['name' => 'notes', 'type' => 'textarea', 'required' => false],
-                ['name' => 'agreeToTerms', 'type' => 'checkbox', 'required' => true],
-            ],
-            'job-application' => [
-                ['name' => 'firstNameAr', 'type' => 'text', 'required' => true],
-                ['name' => 'lastNameAr', 'type' => 'text', 'required' => true],
-                ['name' => 'email', 'type' => 'email', 'required' => true],
-                ['name' => 'phone', 'type' => 'tel', 'required' => true],
-                ['name' => 'gender', 'type' => 'select', 'required' => true, 'options' => [['value' => 'male'], ['value' => 'female']]],
-                ['name' => 'profession', 'type' => 'text', 'required' => true],
-                ['name' => 'birthDate', 'type' => 'date', 'required' => true],
-                ['name' => 'address', 'type' => 'text', 'required' => false],
-                ['name' => 'educationLevel', 'type' => 'select', 'required' => true, 'options' => [['value' => 'phd'], ['value' => 'master'], ['value' => 'bachelor'], ['value' => 'institute'], ['value' => 'none']]],
-                ['name' => 'highestUniversity', 'type' => 'text', 'required' => true],
-                ['name' => 'academicExperience', 'type' => 'number', 'required' => false],
-                ['name' => 'englishLevel', 'type' => 'select', 'required' => true, 'options' => [['value' => 'native'], ['value' => 'fluent'], ['value' => 'advanced'], ['value' => 'intermediate'], ['value' => 'basic']]],
-                ['name' => 'personalSkills', 'type' => 'select', 'required' => false, 'options' => [['value' => 'excellent'], ['value' => 'very-good'], ['value' => 'good'], ['value' => 'acceptable']]],
-                ['name' => 'institutionName', 'type' => 'text', 'required' => false],
-                ['name' => 'targetFaculty', 'type' => 'select', 'required' => true, 'options' => [['value' => 'ai'], ['value' => 'business'], ['value' => 'construction'], ['value' => 'dentistry'], ['value' => 'medicine'], ['value' => 'petroleum'], ['value' => 'pharmacy']]],
-                ['name' => 'generalSpecialization', 'type' => 'text', 'required' => true],
-                ['name' => 'preciseSpecialization', 'type' => 'text', 'required' => true],
-                ['name' => 'academicRank', 'type' => 'select', 'required' => true, 'options' => [['value' => 'professor'], ['value' => 'associate-professor'], ['value' => 'assistant-professor'], ['value' => 'lecturer'], ['value' => 'teaching-assistant']]],
-                ['name' => 'contractType', 'type' => 'select', 'required' => true, 'options' => [['value' => 'full-time'], ['value' => 'part-time'], ['value' => 'visiting'], ['value' => 'contract']]],
-                ['name' => 'cvFile', 'type' => 'file', 'required' => true],
-                ['name' => 'coverLetter', 'type' => 'textarea', 'required' => false],
-                ['name' => 'hasPriorCriminalRecord', 'type' => 'select', 'required' => true, 'options' => [['value' => 'no'], ['value' => 'yes']]],
-                ['name' => 'canProvideReferences', 'type' => 'select', 'required' => true, 'options' => [['value' => 'yes'], ['value' => 'no']]],
-                ['name' => 'agreeToTerms', 'type' => 'checkbox', 'required' => true],
-            ],
-            'suggestions-complaints' => [
-                ['name' => 'fullName', 'type' => 'text', 'required' => true, 'maxLength' => 120],
-                ['name' => 'email', 'type' => 'email', 'required' => true],
-                ['name' => 'phone', 'type' => 'tel', 'required' => true],
-                ['name' => 'requestType', 'type' => 'select', 'required' => true, 'options' => [['value' => 'suggestion'], ['value' => 'complaint'], ['value' => 'inquiry']]],
-                ['name' => 'subject', 'type' => 'text', 'required' => true, 'maxLength' => 180],
-                ['name' => 'message', 'type' => 'textarea', 'required' => true, 'maxLength' => 5000],
-                ['name' => 'attachment', 'type' => 'file', 'required' => false, 'mimes' => 'pdf,jpg,jpeg,png,webp', 'maxKilobytes' => 5120],
-                ['name' => 'consent', 'type' => 'checkbox', 'required' => true],
-            ],
-        ];
     }
 }

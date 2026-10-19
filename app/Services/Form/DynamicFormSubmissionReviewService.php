@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Form;
 
 use App\Contracts\Form\DynamicFormSubmissionReviewServiceInterface;
-use App\Contracts\Form\DynamicFormSubmissionServiceInterface;
+use App\Contracts\Form\FormDefinitionServiceInterface;
 use App\Contracts\Form\FormSubmissionNotificationServiceInterface;
 use App\Contracts\Shared\AuditServiceInterface;
 use App\DTOs\Form\DynamicFormSubmissionAttachmentDTO;
@@ -33,9 +33,9 @@ final class DynamicFormSubmissionReviewService implements DynamicFormSubmissionR
     ];
 
     public function __construct(
-        private readonly DynamicFormSubmissionServiceInterface $submissionService,
         private readonly AuditServiceInterface $auditService,
         private readonly FormSubmissionNotificationServiceInterface $notificationService,
+        private readonly FormDefinitionServiceInterface $formDefinitions,
     ) {}
 
     public function getDetails(int $submissionId, string $adminLocale, int $actorId): DynamicFormSubmissionDetailDTO
@@ -45,14 +45,14 @@ final class DynamicFormSubmissionReviewService implements DynamicFormSubmissionR
         $this->authorizedActor($actorId, 'view', $submission);
         $formId = (string) $submission->form_id;
         $payload = is_array($submission->payload_json) ? $submission->payload_json : [];
-        $inbox = FormSubmissionInbox::tryFromFormId($formId);
+        $inbox = $this->formDefinitions->inboxFor($formId);
         $rawStatus = (string) $submission->status;
         $status = FormSubmissionStatus::tryFrom($rawStatus);
 
         return new DynamicFormSubmissionDetailDTO(
             id: (int) $submission->getKey(),
             formId: $formId,
-            formLabel: $this->translation('forms.'.$formId, $locale, $formId),
+            formLabel: $this->translation('forms.'.$formId, $locale, $this->formName($formId, $locale) ?? $formId),
             inbox: $inbox,
             inboxLabel: $inbox instanceof FormSubmissionInbox
                 ? $this->translation('inboxes.'.$inbox->value, $locale, $inbox->value)
@@ -89,7 +89,7 @@ final class DynamicFormSubmissionReviewService implements DynamicFormSubmissionR
             $submission = DynamicFormSubmission::query()->findOrFail($submissionId);
             $actor = $this->authorizedActor($actorId, 'transitionStatus', $submission);
             $formId = (string) $submission->form_id;
-            $inbox = FormSubmissionInbox::tryFromFormId($formId);
+            $inbox = $this->formDefinitions->inboxFor($formId);
             $currentStatus = (string) $submission->status;
 
             if ($currentStatus !== $expectedStatus->value) {
@@ -206,7 +206,7 @@ final class DynamicFormSubmissionReviewService implements DynamicFormSubmissionR
 
         $formId = (string) $submission->form_id;
 
-        if ((self::ATTACHMENT_FIELDS[$formId] ?? null) !== $field) {
+        if (! in_array($field, $this->attachmentFields($formId), true)) {
             throw new \InvalidArgumentException('This field is not a downloadable submission attachment.');
         }
 
@@ -259,7 +259,7 @@ final class DynamicFormSubmissionReviewService implements DynamicFormSubmissionR
         $fields = [];
         $knownFields = [];
 
-        foreach ($this->submissionService->formSchema($formId) as $definition) {
+        foreach ($this->formDefinitions->find($formId)?->fields ?? [] as $definition) {
             $key = is_string($definition['name'] ?? null) ? $definition['name'] : '';
             $type = is_string($definition['type'] ?? null) ? $definition['type'] : 'text';
 
@@ -276,7 +276,7 @@ final class DynamicFormSubmissionReviewService implements DynamicFormSubmissionR
             [$displayValue, $isLegacyValue] = $this->displayValue($payload[$key], $type, $definition, $locale);
             $fields[] = new DynamicFormSubmissionDetailFieldDTO(
                 key: $key,
-                label: $this->translation('fields.'.$key, $locale, $key),
+                label: $this->translation('fields.'.$key, $locale, $this->formDefinitions->fieldLabel($formId, $key, $locale) ?? $key),
                 rawValue: $payload[$key],
                 displayValue: $displayValue,
                 isLegacyValue: $isLegacyValue,
@@ -364,9 +364,12 @@ final class DynamicFormSubmissionReviewService implements DynamicFormSubmissionR
             is_array($definition['options'] ?? null) ? $definition['options'] : [],
         )));
         $isLegacy = ! in_array($rawValue, $options, true);
+        $entered = collect(is_array($definition['options'] ?? null) ? $definition['options'] : [])
+            ->first(fn (mixed $option): bool => is_array($option) && ($option['value'] ?? null) === $rawValue);
+        $enteredLabel = is_array($entered) ? (string) ($locale === 'ar' ? ($entered['labelAr'] ?? '') : ($entered['labelEn'] ?? '')) : '';
 
         return [
-            $isLegacy ? $rawValue : $this->translation('options.'.$rawValue, $locale, $rawValue),
+            $isLegacy ? $rawValue : $this->translation('options.'.$rawValue, $locale, $enteredLabel !== '' ? $enteredLabel : $rawValue),
             $isLegacy,
         ];
     }
@@ -406,25 +409,52 @@ final class DynamicFormSubmissionReviewService implements DynamicFormSubmissionR
      */
     private function attachments(string $formId, mixed $files, string $locale): array
     {
-        $field = self::ATTACHMENT_FIELDS[$formId] ?? null;
-
-        if ($field === null || ! is_array($files) || ! is_array($files[$field] ?? null)) {
+        if (! is_array($files)) {
             return [];
         }
 
-        $metadata = $files[$field];
-        $storedPath = is_string($metadata['path'] ?? null) ? $metadata['path'] : '';
-        $originalName = is_string($metadata['original_name'] ?? null)
-            ? $metadata['original_name']
-            : basename($storedPath);
+        $attachments = [];
 
-        return [new DynamicFormSubmissionAttachmentDTO(
-            field: $field,
-            label: $this->translation('fields.'.$field, $locale, $field),
-            originalName: $this->sanitizedFilename($originalName, $storedPath),
-            mimeType: is_string($metadata['mime_type'] ?? null) ? $metadata['mime_type'] : null,
-            size: is_int($metadata['size'] ?? null) ? $metadata['size'] : null,
-        )];
+        foreach ($this->attachmentFields($formId) as $field) {
+            if (! is_array($files[$field] ?? null)) {
+                continue;
+            }
+
+            $metadata = $files[$field];
+            $storedPath = is_string($metadata['path'] ?? null) ? $metadata['path'] : '';
+            $originalName = is_string($metadata['original_name'] ?? null)
+                ? $metadata['original_name']
+                : basename($storedPath);
+
+            $attachments[] = new DynamicFormSubmissionAttachmentDTO(
+                field: $field,
+                label: $this->translation('fields.'.$field, $locale, $this->formDefinitions->fieldLabel($formId, $field, $locale) ?? $field),
+                originalName: $this->sanitizedFilename($originalName, $storedPath),
+                mimeType: is_string($metadata['mime_type'] ?? null) ? $metadata['mime_type'] : null,
+                size: is_int($metadata['size'] ?? null) ? $metadata['size'] : null,
+            );
+        }
+
+        return $attachments;
+    }
+
+    /**
+     * The form's file fields; the old fixed field when the form is gone.
+     *
+     * @return list<string>
+     */
+    private function attachmentFields(string $formId): array
+    {
+        $form = $this->formDefinitions->find($formId);
+
+        if ($form === null) {
+            return isset(self::ATTACHMENT_FIELDS[$formId]) ? [self::ATTACHMENT_FIELDS[$formId]] : [];
+        }
+
+        return array_values(array_map(
+            static fn (array $field): string => (string) $field['name'],
+            array_filter($form->fields, static fn (array $field): bool => ($field['type'] ?? null) === 'file'),
+        ));
     }
 
     private function authorizedActor(int $actorId, string $ability, DynamicFormSubmission $submission): User
@@ -486,6 +516,17 @@ final class DynamicFormSubmissionReviewService implements DynamicFormSubmissionR
     }
 
     /** @param array<string, string> $replace */
+    private function formName(string $formId, string $locale): ?string
+    {
+        $form = $this->formDefinitions->find($formId);
+
+        if ($form === null) {
+            return null;
+        }
+
+        return $locale === 'ar' ? $form->nameAr : $form->nameEn;
+    }
+
     private function translation(
         string $key,
         string $locale,

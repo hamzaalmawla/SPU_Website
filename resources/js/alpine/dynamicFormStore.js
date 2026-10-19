@@ -1,8 +1,8 @@
-import { getFormSchema } from '../data/dynamicForms.js';
-
 export function registerDynamicFormStore(Alpine) {
     Alpine.store('dynamicForm', {
         activeFormId: null,
+        // The form as built under Forms in the admin, sent with the page.
+        activeSchema: null,
         locale: document.documentElement.lang || 'ar',
         formData: {},
         files: {},
@@ -16,7 +16,7 @@ export function registerDynamicFormStore(Alpine) {
         isPreview: false,
 
         get schema() {
-            return this.activeFormId ? getFormSchema(this.activeFormId) : null;
+            return this.activeFormId ? this.activeSchema : null;
         },
 
         get isMultiStep() {
@@ -35,8 +35,9 @@ export function registerDynamicFormStore(Alpine) {
             return this.currentStepSchema?.fields || [];
         },
 
-        open(formId, locale, initialData, context) {
+        open(formId, locale, initialData, context, schema) {
             this.activeFormId = formId;
+            this.activeSchema = schema && typeof schema === 'object' ? schema : null;
             this.locale = locale || document.documentElement.lang || 'ar';
             this.formData = {};
             this.files = {};
@@ -67,6 +68,7 @@ export function registerDynamicFormStore(Alpine) {
 
         close() {
             this.activeFormId = null;
+            this.activeSchema = null;
             this.formData = {};
             this.files = {};
             this.errors = {};

@@ -89,19 +89,18 @@ final class PublicFormLocalizationTest extends TestCase
 
     public function test_suggestions_form_names_fields_in_arabic(): void
     {
-        $this->from('/ar/e-services/suggestions-complaints')->post('/ar/e-services/suggestions-complaints', [])
-            ->assertSessionHasErrors([
-                'fullName' => 'حقل الاسم الكامل مطلوب.',
-                'requestType' => 'حقل نوع الطلب مطلوب.',
-                'consent' => 'يجب قبول حقل تقديم الموافقة.',
-            ]);
+        $this->postJson('/ar/forms/suggestions-complaints/submissions', [])
+            ->assertUnprocessable()
+            ->assertJsonPath('errors.fullName.0', 'حقل الاسم الكامل مطلوب.')
+            ->assertJsonPath('errors.requestType.0', 'حقل نوع الطلب مطلوب.')
+            ->assertJsonPath('errors.consent.0', 'يجب قبول حقل تقديم الموافقة.');
     }
 
     public function test_suggestions_form_accepts_a_webp_attachment(): void
     {
         Storage::fake('local');
 
-        $this->post('/ar/e-services/suggestions-complaints', [
+        $this->post('/ar/forms/suggestions-complaints/submissions', [
             'fullName' => 'مقدم الطلب',
             'email' => 'webp@example.com',
             'phone' => '+963110000000',
@@ -110,8 +109,7 @@ final class PublicFormLocalizationTest extends TestCase
             'message' => 'أرفقت لقطة شاشة من الهاتف.',
             'attachment' => UploadedFile::fake()->image('screenshot.webp', 640, 480),
             'consent' => '1',
-        ])->assertRedirect('/ar/e-services/suggestions-complaints')
-            ->assertSessionHasNoErrors();
+        ], ['Accept' => 'application/json'])->assertCreated();
 
         $submission = DynamicFormSubmission::query()->where('form_id', 'suggestions-complaints')->firstOrFail();
         Storage::disk('local')->assertExists($submission->files_json['attachment']['path']);
@@ -119,9 +117,9 @@ final class PublicFormLocalizationTest extends TestCase
 
     public function test_suggestions_form_still_rejects_other_file_types_in_arabic(): void
     {
-        $this->from('/ar/e-services/suggestions-complaints')->post('/ar/e-services/suggestions-complaints', [
+        $this->post('/ar/forms/suggestions-complaints/submissions', [
             'attachment' => UploadedFile::fake()->create('notes.docx', 20, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
-        ])->assertSessionHasErrors(['attachment' => 'يجب أن يكون حقل المرفق ملفاً من نوع: pdf, jpg, jpeg, png, webp.']);
+        ], ['Accept' => 'application/json'])->assertJsonPath('errors.attachment.0', 'يجب أن يكون حقل المرفق ملفاً من نوع: pdf, jpg, jpeg, png, webp.');
     }
 
     public function test_numbers_typed_with_arabic_or_persian_digits_are_accepted(): void
@@ -164,16 +162,19 @@ final class PublicFormLocalizationTest extends TestCase
         app(CmsWorkflowServiceInterface::class)->saveDraft('e_services.suggestions-complaints', $payload, (int) $author->id);
         app(CmsWorkflowServiceInterface::class)->publish('e_services.suggestions-complaints', (int) $author->id);
 
-        $this->followingRedirects()
-            ->from('/ar/e-services/suggestions-complaints')
-            ->post('/ar/e-services/suggestions-complaints', ['email' => 'not-an-email'])
+        // The page prints the form for the shared form script, which shows each
+        // message under its own field (see tests/js/dynamicFormStore.test.js).
+        $this->get('/ar/e-services/suggestions-complaints')
             ->assertOk()
-            ->assertSee('يجب أن يكون حقل البريد الإلكتروني عنوان بريد إلكتروني صالحاً.')
-            ->assertSee('حقل نوع الطلب مطلوب.')
-            ->assertSee('حقل الموضوع مطلوب.')
-            ->assertSee('يجب قبول حقل تقديم الموافقة.')
-            ->assertSee('يرجى تصحيح الحقول المشار إليها.')
-            ->assertSee('إذا كنت قد أرفقت ملفاً، يرجى إرفاقه مرة أخرى.');
+            ->assertSee('data-form-schema', false)
+            ->assertSee('"name":"requestType"', false);
+
+        $this->postJson('/ar/forms/suggestions-complaints/submissions', ['email' => 'not-an-email'])
+            ->assertUnprocessable()
+            ->assertJsonPath('errors.email.0', 'يجب أن يكون حقل البريد الإلكتروني عنوان بريد إلكتروني صالحاً.')
+            ->assertJsonPath('errors.requestType.0', 'حقل نوع الطلب مطلوب.')
+            ->assertJsonPath('errors.subject.0', 'حقل الموضوع مطلوب.')
+            ->assertJsonPath('errors.consent.0', 'يجب قبول حقل تقديم الموافقة.');
     }
 
     public function test_dynamic_form_honeypot_message_follows_the_page_locale(): void

@@ -64,10 +64,6 @@ Route::prefix('{locale}')
             ->where(['detail' => 'library|staff-email|it-support'])
             ->name('public.e-services.detail');
         Route::get('/e-services/suggestions-complaints', [EServicesController::class, 'suggestionsComplaints'])->name('public.e-services.suggestions-complaints');
-        Route::post('/e-services/suggestions-complaints', [EServicesController::class, 'storeSuggestionsComplaints'])
-            ->defaults('form', 'suggestions-complaints')
-            ->middleware('throttle:public-form')
-            ->name('public.e-services.suggestions-complaints.submit');
         Route::get('/virtual-tour', VirtualTourController::class)->name('public.virtual-tour');
         Route::get('/achievements', AchievementController::class)->name('public.achievements.index');
         Route::get('/achievements/{achievement}', [AchievementController::class, 'show'])
@@ -199,7 +195,8 @@ Route::prefix('{locale}')
             ->name('public.contact.submit');
 
         Route::post('/forms/{form}/submissions', DynamicFormSubmissionController::class)
-            ->where(['form' => 'conference-registration|symposium-registration|activity-registration|job-application|admissions-application|suggestions-complaints'])
+            // Any form built under Forms; the request checks it exists and is switched on.
+            ->where(['form' => '[a-z0-9]+(?:-[a-z0-9]+)*'])
             ->middleware('throttle:public-form')
             ->name('public.forms.submit');
 

@@ -74,11 +74,10 @@ final class EServicesPageService implements EServicesPageServiceInterface
             ],
             digitalServices: [
                 'formTitle' => $this->stringValue($form, 'title'),
-                'requestTypes' => array_values(array_filter(is_array($form['requestTypes'] ?? null) ? $form['requestTypes'] : [], 'is_array')),
+                // Picked on the page editor from the forms built under Forms.
+                'formId' => $this->stringValue($form, 'formId') ?: 'suggestions-complaints',
                 'infoTitle' => $this->stringValue($form, 'infoTitle'),
                 'infoBody' => $this->stringValue($form, 'infoBody'),
-                'consentLabel' => $this->stringValue($form, 'consentLabel'),
-                'attachmentHelp' => $this->stringValue($form, 'attachmentHelp'),
                 'cards' => array_values(array_filter(is_array($form['cards'] ?? null) ? $form['cards'] : [], 'is_array')),
             ],
             supportCards: [],
@@ -104,15 +103,9 @@ final class EServicesPageService implements EServicesPageServiceInterface
             ],
             'form' => [
                 'title' => $isArabic ? 'قدّم طلبك' : 'Submit Your Request',
-                'requestTypes' => [
-                    ['value' => 'suggestion', 'label' => $isArabic ? 'اقتراح' : 'Suggestion'],
-                    ['value' => 'complaint', 'label' => $isArabic ? 'شكوى' : 'Complaint'],
-                    ['value' => 'inquiry', 'label' => $isArabic ? 'استفسار' : 'Inquiry'],
-                ],
+                'formId' => 'suggestions-complaints',
                 'infoTitle' => $isArabic ? 'نقدّر ملاحظاتك' : 'We Value Your Feedback',
                 'infoBody' => $isArabic ? 'تتم مراجعة كل رسالة بعناية من قبل القسم المعني.' : 'Every submission is reviewed carefully by the relevant department.',
-                'consentLabel' => $isArabic ? 'أوافق على معالجة بياناتي للرد على هذا الطلب.' : 'I consent to the processing of my data to respond to this request.',
-                'attachmentHelp' => $isArabic ? 'اختياري: PDF أو JPG أو PNG أو WebP، بحد أقصى 5 ميغابايت.' : 'Optional: PDF, JPG, PNG, or WebP, up to 5 MB.',
                 'cards' => [
                     ['title' => $isArabic ? 'السرية' : 'Confidentiality', 'body' => $isArabic ? 'تُحفظ المرفقات بشكل خاص ولا تتاح إلا للمراجعين المخولين.' : 'Attachments are stored privately and are available only to authorized reviewers.'],
                 ],

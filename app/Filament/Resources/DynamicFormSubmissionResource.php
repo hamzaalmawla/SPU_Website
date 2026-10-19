@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources;
 
+use App\Contracts\Form\FormDefinitionServiceInterface;
 use App\Enums\FormSubmissionInbox;
 use App\Enums\FormSubmissionStatus;
 use App\Filament\Resources\DynamicFormSubmissionResource\Pages;
@@ -86,15 +87,14 @@ class DynamicFormSubmissionResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        $formIds = collect(FormSubmissionInbox::cases())
-            ->flatMap(fn (FormSubmissionInbox $inbox): array => $inbox->formIds())
-            ->all();
+        $forms = app(FormDefinitionServiceInterface::class);
+        $formIds = $forms->all()->keys()->all();
 
         $query = parent::getEloquentQuery()->whereIn('form_id', $formIds);
         $user = auth()->user();
 
         if ($user instanceof User && $user->role_slug === 'hr') {
-            $query->where('form_id', 'job-application');
+            $query->whereIn('form_id', $forms->keysForInbox(FormSubmissionInbox::JOBS));
         }
 
         return $query;
@@ -185,14 +185,9 @@ class DynamicFormSubmissionResource extends Resource
             ->filters([
                 SelectFilter::make('form_id')
                     ->label(__('form_submissions.filters.form_type'))
-                    ->options([
-                        'conference-registration' => __('form_submissions.forms.conference-registration'),
-                        'symposium-registration' => __('form_submissions.forms.symposium-registration'),
-                        'activity-registration' => __('form_submissions.forms.activity-registration'),
-                        'job-application' => __('form_submissions.forms.job-application'),
-                        'admissions-application' => __('form_submissions.forms.admissions-application'),
-                        'suggestions-complaints' => __('form_submissions.forms.suggestions-complaints'),
-                    ]),
+                    ->options(fn (): array => app(FormDefinitionServiceInterface::class)->all()
+                        ->mapWithKeys(fn ($form): array => [$form->key => self::formLabel($form->key)])
+                        ->all()),
                 SelectFilter::make('locale')
                     ->label(__('form_submissions.filters.locale'))
                     ->options([
@@ -238,7 +233,17 @@ class DynamicFormSubmissionResource extends Resource
         $key = 'form_submissions.forms.'.$formId;
         $label = __($key);
 
-        return $label === $key ? __('form_submissions.inboxes.unknown') : $label;
+        if ($label !== $key) {
+            return $label;
+        }
+
+        $form = app(FormDefinitionServiceInterface::class)->find($formId);
+
+        if ($form === null) {
+            return __('form_submissions.inboxes.unknown');
+        }
+
+        return app()->getLocale() === 'ar' ? $form->nameAr : $form->nameEn;
     }
 
     private static function statusLabel(string $status): string

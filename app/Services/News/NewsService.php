@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\News;
 
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Form\FormDefinitionServiceInterface;
 use App\Contracts\Media\MediaServiceInterface;
 use App\Contracts\News\NewsServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
@@ -35,6 +36,7 @@ final class NewsService implements NewsServiceInterface
         private readonly CacheServiceInterface $cacheService,
         private readonly CmsWorkflowServiceInterface $cmsWorkflowService,
         private readonly MediaServiceInterface $mediaService,
+        private readonly FormDefinitionServiceInterface $formDefinitions,
     ) {}
 
     public function getIndexPageContent(string $locale): array
@@ -1058,7 +1060,7 @@ final class NewsService implements NewsServiceInterface
             return [];
         }
 
-        $allowedForms = ['conference-registration', 'activity-registration'];
+        $allowedForms = $this->formDefinitions->enabledKeys();
         $normalized = [];
         $seen = [];
 

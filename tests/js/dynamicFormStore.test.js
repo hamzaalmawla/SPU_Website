@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
 globalThis.document = {
@@ -10,10 +11,19 @@ globalThis.window = { setTimeout: (callback) => callback() };
 
 const { registerDynamicFormStore } = await import('../../resources/js/alpine/dynamicFormStore.js');
 
+const builtInForms = JSON.parse(readFileSync(new URL('../../database/seeders/Data/forms/built-in-forms.json', import.meta.url), 'utf8'));
+
+// The page prints the form the way FormDefinitionService::publicSchema() shapes it.
+function schemaFor(formId) {
+    const form = builtInForms.find((item) => item.key === formId);
+
+    return form.multiStep ? { multiStep: true, steps: form.steps } : { fields: form.steps.flatMap((step) => step.fields) };
+}
+
 function openForm(formId, locale = 'ar', context = {}) {
     let store;
     registerDynamicFormStore({ store: (name, definition) => { store = definition; } });
-    store.open(formId, locale, null, context);
+    store.open(formId, locale, null, context, schemaFor(formId));
 
     return store;
 }
@@ -75,4 +85,13 @@ test('the page check names the problem instead of a fixed text', () => {
 
     assert.equal(store.validate(), false);
     assert.equal(store.errors.email, 'Enter a valid email address.');
+});
+
+test('a form the page did not print (switched off) shows nothing', () => {
+    let store;
+    registerDynamicFormStore({ store: (name, definition) => { store = definition; } });
+    store.open('activity-registration', 'ar', null, {}, null);
+
+    assert.equal(store.schema, null);
+    assert.deepEqual(store.fields(), []);
 });

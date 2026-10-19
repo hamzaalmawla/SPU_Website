@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit;
 
 use App\Contracts\Form\DynamicFormSubmissionReviewServiceInterface;
+use App\Contracts\Form\FormDefinitionServiceInterface;
 use App\DTOs\Form\DynamicFormSubmissionDetailSectionDTO;
 use App\Enums\FormSubmissionInbox;
 use App\Enums\FormSubmissionStatus;
@@ -36,13 +37,14 @@ final class DynamicFormSubmissionReviewServiceTest extends TestCase
 
     public function test_inbox_maps_all_supported_forms_and_statuses_have_inbox_specific_transitions(): void
     {
-        $this->assertSame(FormSubmissionInbox::EVENT_REGISTRATIONS, FormSubmissionInbox::fromFormId('conference-registration'));
-        $this->assertSame(FormSubmissionInbox::EVENT_REGISTRATIONS, FormSubmissionInbox::fromFormId('symposium-registration'));
-        $this->assertSame(FormSubmissionInbox::EVENT_REGISTRATIONS, FormSubmissionInbox::fromFormId('activity-registration'));
-        $this->assertSame(FormSubmissionInbox::JOBS, FormSubmissionInbox::fromFormId('job-application'));
-        $this->assertSame(FormSubmissionInbox::ADMISSIONS, FormSubmissionInbox::fromFormId('admissions-application'));
-        $this->assertSame(FormSubmissionInbox::SUGGESTIONS, FormSubmissionInbox::fromFormId('suggestions-complaints'));
-        $this->assertNull(FormSubmissionInbox::tryFromFormId('legacy-form'));
+        $forms = app(FormDefinitionServiceInterface::class);
+        $this->assertSame(FormSubmissionInbox::EVENT_REGISTRATIONS, $forms->inboxFor('conference-registration'));
+        $this->assertSame(FormSubmissionInbox::EVENT_REGISTRATIONS, $forms->inboxFor('symposium-registration'));
+        $this->assertSame(FormSubmissionInbox::EVENT_REGISTRATIONS, $forms->inboxFor('activity-registration'));
+        $this->assertSame(FormSubmissionInbox::JOBS, $forms->inboxFor('job-application'));
+        $this->assertSame(FormSubmissionInbox::ADMISSIONS, $forms->inboxFor('admissions-application'));
+        $this->assertSame(FormSubmissionInbox::SUGGESTIONS, $forms->inboxFor('suggestions-complaints'));
+        $this->assertNull($forms->inboxFor('legacy-form'));
 
         $this->assertTrue(FormSubmissionStatus::NEW->canTransitionTo(FormSubmissionStatus::IN_REVIEW, FormSubmissionInbox::JOBS));
         $this->assertTrue(FormSubmissionStatus::IN_REVIEW->canTransitionTo(FormSubmissionStatus::ACCEPTED, FormSubmissionInbox::ADMISSIONS));
