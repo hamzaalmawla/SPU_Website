@@ -269,7 +269,7 @@ class FormDefinitionResource extends Resource
     public static function saveForm(?int $id, array $data, callable $halt): int
     {
         try {
-            $saved = app(FormDefinitionServiceInterface::class)->save($id, $data, self::userId());
+            return app(FormDefinitionServiceInterface::class)->save($id, $data, self::userId())->id;
         } catch (ValidationException $exception) {
             Notification::make()
                 ->title(__('admin.forms.notifications.not_saved'))
@@ -278,9 +278,10 @@ class FormDefinitionResource extends Resource
                 ->persistent()
                 ->send();
             $halt();
-        }
 
-        return $saved->id;
+            // halt() stops the page; this line is never reached.
+            throw $exception;
+        }
     }
 
     private static function userId(): int
