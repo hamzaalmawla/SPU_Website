@@ -129,7 +129,8 @@ class FacultyMemberResource extends Resource
                     Hidden::make('translations.en.locale')->default('en'),
                     TextInput::make('translations.ar.full_name')->label(__('admin_resources.faculty_member.name_arabic'))->required()->maxLength(255),
                     TextInput::make('translations.en.full_name')->label(__('admin_resources.faculty_member.name_english'))->required()->maxLength(255)->live(onBlur: true),
-                    TextInput::make('email')->label(__('admin_resources.faculty_member.email'))->email()->maxLength(255)->columnSpanFull(),
+                    TextInput::make('email')->label(__('admin_resources.faculty_member.email'))->email()->maxLength(255),
+                    TextInput::make('social_links.linkedin')->label(__('admin_resources.faculty_member.linkedin_url'))->url()->maxLength(255)->placeholder('https://www.linkedin.com/in/...'),
                     TextInput::make('social_links.orcid')->label(__('admin_resources.faculty_member.orcid_url'))->url()->maxLength(255)->placeholder('https://orcid.org/0000-0000-0000-0000'),
                     TextInput::make('social_links.scopus')->label(__('admin_resources.faculty_member.scopus_url'))->url()->maxLength(255)->placeholder('https://www.scopus.com/authid/detail.uri?authorId=...'),
                     TextInput::make('social_links.researchgate')->label(__('admin_resources.faculty_member.researchgate_url'))->url()->maxLength(255)->placeholder('https://www.researchgate.net/profile/...'),
@@ -189,7 +190,6 @@ class FacultyMemberResource extends Resource
                         TextInput::make('office_location')->label(__('admin_resources.faculty_member.office'))->maxLength(255),
                     ])->columns(2),
                     Section::make(__('admin_resources.faculty_member.other_links'))->schema([
-                        TextInput::make('social_links.linkedin')->label(__('admin_resources.faculty_member.linkedin_url'))->url()->maxLength(255),
                         TextInput::make('social_links.twitter')->label(__('admin_resources.faculty_member.twitter_x_url'))->url()->maxLength(255),
                     ])->columns(2),
                     Section::make(__('admin_resources.faculty_member.advanced_url'))->schema([

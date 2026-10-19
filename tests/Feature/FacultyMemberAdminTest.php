@@ -52,6 +52,7 @@ final class FacultyMemberAdminTest extends TestCase
                 'social_links.scopus' => 'https://www.scopus.com/authid/detail.uri?authorId=1',
                 'social_links.researchgate' => 'https://www.researchgate.net/profile/New-Member',
                 'social_links.scholar' => 'https://scholar.google.com/citations?user=abc',
+                'social_links.linkedin' => 'https://www.linkedin.com/in/new-member',
             ])
             ->call('create')
             ->assertHasNoFormErrors();
@@ -62,6 +63,7 @@ final class FacultyMemberAdminTest extends TestCase
         $payload = CmsDraft::query()->where('target_key', 'entity.faculty-member.'.$member->getKey())->latest('id')->firstOrFail()->payload_json;
         $this->assertSame('https://www.scopus.com/authid/detail.uri?authorId=1', $payload['social_links']['scopus'] ?? null);
         $this->assertSame('new.member@spu.edu.sy', $payload['email'] ?? null);
+        $this->assertSame('https://www.linkedin.com/in/new-member', $payload['social_links']['linkedin'] ?? null);
     }
 
     public function test_faculty_members_list_keeps_its_faculty_and_bulk_deletes_the_selection(): void
