@@ -378,6 +378,7 @@ final class ArchitectureGuardTest extends TestCase
     {
         $frameworkModelRehydration = [
             'app/Filament/Resources/DirectorateResource/Pages/CreateDirectorate.php' => '/return\s+Directorate::query\(\)->findOrFail\(\$prepared->entityId\);/',
+            'app/Filament/Resources/FormDefinitionResource/Pages/CreateFormDefinition.php' => '/return\s+FormDefinition::query\(\)->findOrFail\(\$id\);/',
             'app/Filament/Resources/FacultyMemberResource/Pages/CreateFacultyMember.php' => '/return\s+FacultyMember::query\(\)->findOrFail\(\$prepared->entityId\);/',
             'app/Filament/Resources/NewsArticleResource/Pages/CreateNewsArticle.php' => '/return\s+NewsArticle::query\(\)->findOrFail\(\$prepared->articleId\);/',
             'app/Filament/Resources/PartnershipResource/Pages/CreatePartnership.php' => '/return\s+Partnership::query\(\)->findOrFail\(\$prepared->entityId\);/',

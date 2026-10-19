@@ -9,6 +9,7 @@ use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\News\NewsServiceInterface;
 use App\DTOs\Cms\CmsTargetDTO;
 use App\Exceptions\ConflictException;
+use App\Filament\Support\FormPicker;
 use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
 use Filament\Actions\Action;
@@ -643,10 +644,7 @@ class ManageNews extends Page implements HasForms
         if (! $past) {
             array_splice($fields, 1, 0, [
                 Section::make(__('admin.editorial_workspace.events.sections.registration'))->schema([
-                    Radio::make('formId')->label(__('admin.editorial_workspace.fields.registration_form'))->options([
-                        'conference-registration' => __('admin.editorial_workspace.events.forms.conference'),
-                        'activity-registration' => __('admin.editorial_workspace.events.forms.activity'),
-                    ])->required()->inline(),
+                    FormPicker::make()->label(__('admin.editorial_workspace.fields.registration_form'))->required(),
                     TextInput::make('capacity')->label(__('admin.editorial_workspace.fields.capacity'))->numeric()->minValue(0)->required(),
                     Hidden::make('registered')->default(0),
                     Toggle::make('featured')->label(__('admin.editorial_workspace.fields.featured')),
@@ -927,10 +925,7 @@ class ManageNews extends Page implements HasForms
         ];
 
         if (! $past) {
-            $fields[] = Select::make('formId')->options([
-                'conference-registration' => __('admin_pages.news.conference_registration'),
-                'activity-registration' => __('admin_pages.news.activity_registration'),
-            ])->required();
+            $fields[] = FormPicker::make()->required();
             $fields[] = TextInput::make('capacity')->numeric()->minValue(0)->required();
             $fields[] = TextInput::make('registered')->numeric()->minValue(0)->required();
             $fields[] = Select::make('featured')->options(['0' => __('admin_pages.news.no'), '1' => __('admin_pages.news.yes')])->required();

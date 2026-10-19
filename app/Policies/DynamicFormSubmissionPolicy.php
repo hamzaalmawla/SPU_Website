@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Contracts\Form\FormDefinitionServiceInterface;
+use App\Enums\FormSubmissionInbox;
 use App\Models\Form\DynamicFormSubmission;
 use App\Models\User\User;
 
@@ -59,6 +61,6 @@ final class DynamicFormSubmissionPolicy
 
     private function isJobApplication(DynamicFormSubmission $submission): bool
     {
-        return $submission->form_id === 'job-application';
+        return app(FormDefinitionServiceInterface::class)->inboxFor((string) $submission->form_id) === FormSubmissionInbox::JOBS;
     }
 }

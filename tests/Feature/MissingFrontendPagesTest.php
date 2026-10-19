@@ -61,9 +61,9 @@ final class MissingFrontendPagesTest extends TestCase
             ->assertOk()
             ->assertSee('Suggestions &amp; Complaints', false)
             ->assertSee('Submit Your Request')
-            ->assertSee('/en/e-services/suggestions-complaints');
+            ->assertSee('data-form-id="suggestions-complaints"', false);
 
-        $this->post('/en/e-services/suggestions-complaints', [
+        $this->postJson('/en/forms/suggestions-complaints/submissions', [
             'fullName' => 'Jane Student',
             'email' => 'jane@example.com',
             'phone' => '+963 11 000 0000',
@@ -71,7 +71,7 @@ final class MissingFrontendPagesTest extends TestCase
             'subject' => 'Library access',
             'message' => 'Please review the library access process.',
             'consent' => '1',
-        ])->assertRedirect('/en/e-services/suggestions-complaints');
+        ])->assertCreated();
 
         $this->assertDatabaseHas('dynamic_form_submissions', [
             'form_id' => 'suggestions-complaints',

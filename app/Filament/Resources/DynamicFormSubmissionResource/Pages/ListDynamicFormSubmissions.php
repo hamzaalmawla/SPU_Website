@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\DynamicFormSubmissionResource\Pages;
 
+use App\Contracts\Form\FormDefinitionServiceInterface;
 use App\Enums\FormSubmissionInbox;
 use App\Filament\Resources\DynamicFormSubmissionResource;
 use App\Models\User\User;
@@ -26,7 +27,7 @@ class ListDynamicFormSubmissions extends ListRecords
             $tabs[$inbox->value] = Tab::make(__('form_submissions.inboxes.'.$inbox->value))
                 ->icon($this->inboxIcon($inbox))
                 ->badge(fn (): int => $this->inboxCount($inbox))
-                ->modifyQueryUsing(fn (Builder $query): Builder => $query->whereIn('form_id', $inbox->formIds()));
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->whereIn('form_id', app(FormDefinitionServiceInterface::class)->keysForInbox($inbox)));
         }
 
         return $tabs;
@@ -61,7 +62,7 @@ class ListDynamicFormSubmissions extends ListRecords
     private function inboxCount(FormSubmissionInbox $inbox): int
     {
         return DynamicFormSubmissionResource::getEloquentQuery()
-            ->whereIn('form_id', $inbox->formIds())
+            ->whereIn('form_id', app(FormDefinitionServiceInterface::class)->keysForInbox($inbox))
             ->whereNull('read_at')
             ->count();
     }

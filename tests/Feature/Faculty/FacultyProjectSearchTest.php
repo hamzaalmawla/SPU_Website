@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Tests\Feature\Faculty;
 
 use App\Models\Faculty\Faculty;
-use App\Models\Faculty\FacultyTranslation;
 use App\Models\Faculty\FacultyStudentProject;
 use App\Models\Faculty\FacultyStudentProjectTranslation;
+use App\Models\Faculty\FacultyTranslation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

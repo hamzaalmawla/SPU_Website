@@ -11,6 +11,7 @@ use App\Contracts\Page\VirtualTourPageServiceInterface;
 use App\DTOs\Cms\CmsTargetDTO;
 use App\Exceptions\ConflictException;
 use App\Filament\Components\PageUrlSelect;
+use App\Filament\Support\FormPicker;
 use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
 use Filament\Actions\Action;
@@ -125,6 +126,11 @@ class ManageCampusLife extends Page implements HasForms
                 Section::make(__('admin.jobs_workspace.heading'))
                     ->description(__('admin.jobs_workspace.description'))
                     ->schema($this->jobsWorkspaceFields())
+                    ->visible(fn (): bool => $this->targetKeyForSchema() === 'campus_life.jobs'),
+                Section::make(__('admin.forms.fields.form'))
+                    ->schema([
+                        FormPicker::make('application_form_id')->label(__('admin.forms.fields.application_form'))->required(fn (): bool => $this->targetKeyForSchema() === 'campus_life.jobs'),
+                    ])
                     ->visible(fn (): bool => $this->targetKeyForSchema() === 'campus_life.jobs'),
                 Tabs::make('campus_life_locales')
                     ->tabs([
@@ -259,6 +265,7 @@ class ManageCampusLife extends Page implements HasForms
                     is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
                 )
                 : [],
+            'application_form_id' => $targetKey === 'campus_life.jobs' ? (string) ($payload['translations']['ar']['applicationFormId'] ?? 'job-application') : null,
             'ar_dental' => $targetKey === 'campus_life.dental' && is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
             'en_dental' => $targetKey === 'campus_life.dental' && is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
             'ar_hospital' => $targetKey === 'campus_life.hospital' && is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
@@ -496,11 +503,13 @@ class ManageCampusLife extends Page implements HasForms
 
         if (($state['target_key'] ?? null) === 'campus_life.jobs') {
             $workspace = is_array($state['jobs_workspace'] ?? null) ? $state['jobs_workspace'] : [];
+            // The application form is one choice for both languages, kept in each.
+            $form = ['applicationFormId' => (string) ($state['application_form_id'] ?? 'job-application')];
 
             return [
                 'translations' => [
-                    'ar' => $this->normalizeJobsPayload($this->jobsTranslationFromWorkspace($workspace, 'ar')),
-                    'en' => $this->normalizeJobsPayload($this->jobsTranslationFromWorkspace($workspace, 'en')),
+                    'ar' => $this->normalizeJobsPayload($this->jobsTranslationFromWorkspace($workspace, 'ar')) + $form,
+                    'en' => $this->normalizeJobsPayload($this->jobsTranslationFromWorkspace($workspace, 'en')) + $form,
                 ],
             ];
         }

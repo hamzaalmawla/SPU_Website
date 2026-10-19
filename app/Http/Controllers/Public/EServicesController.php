@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Public;
 
-use App\Contracts\Form\DynamicFormSubmissionServiceInterface;
 use App\Contracts\Navigation\NavigationServiceInterface;
 use App\Contracts\Page\EServicesPageServiceInterface;
 use App\Contracts\Seo\SeoMetadataServiceInterface;
@@ -13,16 +12,13 @@ use App\DTOs\EServices\EServicesDetailPageDTO;
 use App\DTOs\EServices\EServicesPageDTO;
 use App\DTOs\Navigation\LanguageSwitchLinkDTO;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\DynamicFormSubmissionRequest;
 use Illuminate\Contracts\View\View;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 final class EServicesController extends Controller
 {
     public function __construct(
         private readonly EServicesPageServiceInterface $eServicesPageService,
-        private readonly DynamicFormSubmissionServiceInterface $submissionService,
         private readonly NavigationServiceInterface $navigationService,
         private readonly SettingsServiceInterface $settingsService,
         private readonly SeoMetadataServiceInterface $seoMetadataService,
@@ -78,15 +74,6 @@ final class EServicesController extends Controller
             'structuredData' => $this->detailStructuredData($locale, $page),
             'page' => $page,
         ]);
-    }
-
-    public function storeSuggestionsComplaints(DynamicFormSubmissionRequest $request, string $locale): RedirectResponse
-    {
-        $this->submissionService->submit($request->toDto('suggestions-complaints', $locale));
-
-        return redirect()
-            ->route('public.e-services.suggestions-complaints', ['locale' => $locale])
-            ->with('suggestions_status', $locale === 'ar' ? 'تم إرسال طلبك بنجاح.' : 'Your request has been submitted.');
     }
 
     private function seo(string $locale, EServicesPageDTO $page, string $suffix = ''): mixed

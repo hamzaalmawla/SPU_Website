@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 return [
+    'unavailable' => 'هذا النموذج لا يستقبل طلبات حالياً.',
     'errors' => [
         'not_submitted' => 'تعذر إرسال النموذج.',
         'unsupported_form' => 'هذا النموذج غير متاح.',

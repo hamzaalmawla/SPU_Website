@@ -1,3 +1,16 @@
+/** The form's fields, printed by the page as JSON inside the shell; null when the form is switched off. */
+export function readFormSchema(root) {
+    const script = root?.querySelector?.('script[data-form-schema]');
+
+    if (!script) return null;
+
+    try {
+        return JSON.parse(script.textContent || 'null');
+    } catch {
+        return null;
+    }
+}
+
 export function createDynamicFormShell() {
     return {
         init() {
@@ -7,7 +20,7 @@ export function createDynamicFormShell() {
                 jobId: this.$el.dataset.jobId || '',
                 jobSlug: this.$el.dataset.jobSlug || '',
                 preview: this.$el.dataset.preview === '1',
-            });
+            }, readFormSchema(this.$el));
         },
     };
 }

@@ -8,6 +8,7 @@ use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
+use App\Contracts\Form\FormDefinitionServiceInterface;
 use App\Contracts\Media\MediaServiceInterface;
 use App\Contracts\News\NewsArticleCmsServiceInterface;
 use App\Contracts\Research\ResearchPublicationCmsServiceInterface;
@@ -52,6 +53,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
         private readonly NewsArticleCmsServiceInterface $newsArticleCmsService,
         private readonly ResearchPublicationCmsServiceInterface $researchPublicationCmsService,
         private readonly FacultyStudyPlanLinkServiceInterface $studyPlanLinkService,
+        private readonly FormDefinitionServiceInterface $formDefinitions,
     ) {}
 
     /** @param array<string, mixed> $payload */
@@ -1628,7 +1630,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
 
                     if ($targetKey === 'research.conferences' && $path === 'upcoming') {
                         $formId = trim((string) ($item['formId'] ?? ''));
-                        if ($formId !== '' && ! in_array($formId, ['conference-registration', 'symposium-registration'], true)) {
+                        if ($formId !== '' && $this->formDefinitions->find($formId) === null) {
                             $errors['research'][] = 'Choose an approved conference registration form.';
                         }
                         if (is_string($item['registrationUrl'] ?? null) && str_contains($item['registrationUrl'], '/research/conferences/register') && $formId === '') {
@@ -1925,7 +1927,6 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
     /** @param array<int, string> $locales @param array<string, array<int, string>> $errors */
     private function appendSuggestionsComplaintsReadinessErrors(array $payload, array $locales, array &$errors): void
     {
-        $expectedTypes = ['complaint', 'inquiry', 'suggestion'];
 
         foreach ($locales as $locale) {
             $translation = $this->localePayload($payload, $locale);
@@ -1938,10 +1939,13 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
                     $errors[$locale][] = "The suggestions hero {$field} field is required.";
                 }
             }
-            foreach (['title', 'infoTitle', 'infoBody', 'consentLabel', 'attachmentHelp'] as $field) {
+            foreach (['title', 'infoTitle', 'infoBody'] as $field) {
                 if (! $this->filledString($form[$field] ?? null)) {
                     $errors[$locale][] = "The suggestions form {$field} field is required.";
                 }
+            }
+            if ($this->filledString($form['formId'] ?? null) && $this->formDefinitions->find((string) $form['formId']) === null) {
+                $errors[$locale][] = 'Choose a form from the Forms page.';
             }
             foreach (['title', 'description', 'image'] as $field) {
                 if (! $this->filledString($seo[$field] ?? null)) {
@@ -1949,11 +1953,6 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
                 }
             }
 
-            $types = collect(is_array($form['requestTypes'] ?? null) ? $form['requestTypes'] : [])
-                ->filter(fn (mixed $item): bool => is_array($item))->pluck('value')->sort()->values()->all();
-            if ($types !== $expectedTypes) {
-                $errors[$locale][] = 'Suggestion, complaint, and inquiry request types must each be configured exactly once.';
-            }
             if (! $this->isSafePublicAsset($hero['image'] ?? null) || ! $this->isSafePublicAsset($seo['image'] ?? null)) {
                 $errors[$locale][] = 'Suggestions page images must use safe public assets.';
             }

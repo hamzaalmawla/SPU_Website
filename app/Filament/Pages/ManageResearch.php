@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Filament\Pages;
 
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Form\FormDefinitionServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Exceptions\ConflictException;
 use App\Filament\Components\PageUrlSelect;
 use App\Filament\Resources\ResearchPublicationResource;
+use App\Filament\Support\FormPicker;
 use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
 use App\Support\HtmlSanitizer;
@@ -1121,10 +1123,7 @@ class ManageResearch extends Page implements HasForms
 
         if ($upcoming) {
             $fields[] = TextInput::make('eventType')->label($this->fieldLabel('event_type'))->required()->maxLength(160);
-            $fields[] = Select::make('formId')->label($this->fieldLabel('registration_form'))->options([
-                'conference-registration' => __('admin.research_workspace.options.registration_forms.conference'),
-                'symposium-registration' => __('admin.research_workspace.options.registration_forms.symposium'),
-            ])->placeholder(__('admin.research_workspace.options.registration_forms.none'));
+            $fields[] = FormPicker::make()->label($this->fieldLabel('registration_form'))->placeholder(__('admin.research_workspace.options.registration_forms.none'));
             $fields[] = Section::make($this->sectionLabel('advanced'))->schema([
                 TextInput::make('registrationUrl')->label($this->fieldLabel('external_registration_url'))->maxLength(255)->helperText(__('admin.research_workspace.help.registration_url'))->columnSpanFull(),
             ])->collapsible()->collapsed()->columnSpanFull();
@@ -1297,7 +1296,7 @@ class ManageResearch extends Page implements HasForms
             $formId = trim((string) ($event['formId'] ?? ''));
             $eventId = trim((string) ($event['id'] ?? ''));
 
-            if (in_array($formId, ['conference-registration', 'symposium-registration'], true) && $eventId !== '') {
+            if ($formId !== '' && app(FormDefinitionServiceInterface::class)->find($formId) !== null && $eventId !== '') {
                 $event['registrationUrl'] = '/research/conferences/register?event='.rawurlencode($eventId);
             } elseif (($event['registrationUrl'] ?? null) === '#') {
                 $event['registrationUrl'] = null;

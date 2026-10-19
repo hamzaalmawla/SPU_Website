@@ -6,6 +6,7 @@
         $hero = $section['hero'] ?? [];
         $breadcrumbs = $hero['breadcrumbs'] ?? [];
         $selectedJob = is_array($section['selectedJob'] ?? null) ? $section['selectedJob'] : [];
+        $applicationFormId = (string) ($section['applicationFormId'] ?? 'job-application');
     @endphp
 
     <section class="relative bg-white font-hacen">
@@ -31,7 +32,7 @@
         </div>
     </section>
 
-    <section class="bg-white py-12 font-hacen md:py-16" x-data="dynamicFormShell()" data-form-id="job-application" data-locale="{{ $locale }}" data-job-id="{{ $selectedJob['id'] ?? '' }}" data-job-slug="{{ $selectedJob['slug'] ?? '' }}" data-preview="{{ !empty($isPreview) ? '1' : '0' }}">
+    <section class="bg-white py-12 font-hacen md:py-16" x-data="dynamicFormShell()" data-form-id="{{ $applicationFormId }}" data-locale="{{ $locale }}" data-job-id="{{ $selectedJob['id'] ?? '' }}" data-job-slug="{{ $selectedJob['slug'] ?? '' }}" data-preview="{{ !empty($isPreview) ? '1' : '0' }}">
         <div class="container mx-auto">
             <div class="mx-auto">
                 <div class="mb-8 rounded-2xl border border-spu-blue/10 bg-spu-blue/[0.03] p-6">
@@ -48,7 +49,7 @@
                 </div>
 
                 <div class="rounded-2xl bg-gray-50 p-6 sm:p-8">
-                    @include('public.forms.dynamic-form')
+                    @include('public.forms.dynamic-form', ['formKey' => $applicationFormId])
                 </div>
             </div>
         </div>

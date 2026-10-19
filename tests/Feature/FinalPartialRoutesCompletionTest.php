@@ -156,7 +156,12 @@ final class FinalPartialRoutesCompletionTest extends TestCase
         $this->assertTrue($workflow->publish('e_services.suggestions-complaints', (int) $author->id));
         $this->get('/sitemaps/sitemap-static.xml')->assertOk()->assertSee('/en/e-services/suggestions-complaints');
 
-        $this->post('/en/e-services/suggestions-complaints', [
+        $this->get('/en/e-services/suggestions-complaints')
+            ->assertOk()
+            ->assertSee('data-form-id="suggestions-complaints"', false)
+            ->assertSee('data-form-schema', false);
+
+        $this->post('/en/forms/suggestions-complaints/submissions', [
             'fullName' => 'Secure Reviewer',
             'email' => 'reviewer@example.com',
             'phone' => '+963110000000',
@@ -165,7 +170,7 @@ final class FinalPartialRoutesCompletionTest extends TestCase
             'message' => 'Please review this suggestion in the secure review queue.',
             'attachment' => UploadedFile::fake()->create('evidence.pdf', 256, 'application/pdf'),
             'consent' => '1',
-        ])->assertRedirect('/en/e-services/suggestions-complaints');
+        ], ['Accept' => 'application/json'])->assertCreated();
 
         $submission = DynamicFormSubmission::query()->where('form_id', 'suggestions-complaints')->firstOrFail();
         $this->assertSame('e-services-suggestions-complaints', $submission->payload_json['_context']['source']);
@@ -178,14 +183,15 @@ final class FinalPartialRoutesCompletionTest extends TestCase
             ->set('data.target_key', 'e_services.suggestions-complaints')
             ->call('loadTarget', 'e_services.suggestions-complaints')
             ->assertSee(__('admin_pages.e_services.suggestions_complaints_page'))
-            ->assertSee(__('admin_pages.e_services.consent_label'));
+            ->assertSet('data.suggestions_form_id', 'suggestions-complaints')
+            ->assertDontSee(__('admin_pages.e_services.consent_label'));
     }
 
     public function test_suggestions_submission_rejects_unsafe_attachments_and_missing_consent(): void
     {
         Storage::fake('local');
 
-        $this->from('/en/e-services/suggestions-complaints')->post('/en/e-services/suggestions-complaints', [
+        $this->post('/en/forms/suggestions-complaints/submissions', [
             'fullName' => 'Invalid Attachment',
             'email' => 'invalid@example.com',
             'phone' => '+963110000000',
@@ -193,8 +199,8 @@ final class FinalPartialRoutesCompletionTest extends TestCase
             'subject' => 'Unsafe upload',
             'message' => 'This submission must not be stored.',
             'attachment' => UploadedFile::fake()->create('script.exe', 100, 'application/octet-stream'),
-        ])->assertRedirect('/en/e-services/suggestions-complaints')
-            ->assertSessionHasErrors(['attachment', 'consent']);
+        ], ['Accept' => 'application/json'])->assertUnprocessable()
+            ->assertJsonValidationErrors(['attachment', 'consent']);
 
         $this->assertDatabaseCount('dynamic_form_submissions', 0);
         Storage::disk('local')->assertMissing('dynamic-form-submissions');
