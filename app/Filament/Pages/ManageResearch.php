@@ -694,26 +694,14 @@ class ManageResearch extends Page implements HasForms
             Section::make($this->sectionLabel('expert_filters'))->schema([
                 TextInput::make($prefix.'.filters.allFaculties')->label($this->fieldLabel('all_faculties_label'))->required()->maxLength(100),
                 TextInput::make($prefix.'.filters.allExpertise')->label($this->fieldLabel('all_expertise_label'))->required()->maxLength(100),
-                Repeater::make($prefix.'.faculties')->label($this->fieldLabel('faculty_options'))->schema([
-                    Hidden::make('id')->dehydrated(),
-                    TextInput::make('name')->label($this->fieldLabel('faculty_name'))->required()->maxLength(160),
-                ])->columns(2)->defaultItems(0)->reorderable()->collapsible()->columnSpanFull(),
-                Repeater::make($prefix.'.expertiseAreas')->label($this->fieldLabel('expertise_filters'))->schema([
-                    Hidden::make('id')->dehydrated(),
-                    TextInput::make('name')->label($this->fieldLabel('expertise_name'))->required()->maxLength(160),
-                ])->columns(2)->defaultItems(0)->reorderable()->collapsible()->columnSpanFull(),
             ])->columns(2)->collapsible()->collapsed(),
+            // The people, faculties and expertise filters come from the
+            // Researchers list and staff profiles, not from this page.
             Section::make($this->sectionLabel('expert_profiles'))->schema([
-                Repeater::make($prefix.'.researchers')
-                    ->label($this->fieldLabel('researchers'))
-                    ->schema($this->expertItemFields($locale))
-                    ->defaultItems(0)
-                    ->reorderable()
-                    ->cloneable()
-                    ->collapsible()
-                    ->itemLabel(fn (array $state): ?string => $state['name'] ?? $state['slug'] ?? null)
-                    ->columnSpanFull(),
-            ])->collapsible()->collapsed(),
+                Placeholder::make($prefix.'_directory_source')
+                    ->hiddenLabel()
+                    ->content(__('admin.researcher.help.directory_source')),
+            ]),
         ];
 
         return $this->targetSections($sections, 'research.experts', $locale);
@@ -1120,55 +1108,6 @@ class ManageResearch extends Page implements HasForms
     }
 
     /** @return array<int, mixed> */
-    private function expertItemFields(string $locale): array
-    {
-        return [
-            Hidden::make('id')->dehydrated(),
-            Hidden::make('slug')->dehydrated(),
-            TextInput::make('name')->label($this->fieldLabel('name'))->required()->maxLength(180),
-            TextInput::make('title')->label($this->fieldLabel('role'))->required()->maxLength(180),
-            TextInput::make('faculty')->label($this->fieldLabel('faculty'))->required()->maxLength(180),
-            Select::make('facultyId')->label($this->fieldLabel('faculty_assignment'))->required()->options($this->facultyOptions(true)),
-            Hidden::make('facultySlug')->dehydrated(),
-            TextInput::make('department')->label($this->fieldLabel('department'))->maxLength(180),
-            Textarea::make('bio')->label($this->fieldLabel('short_biography'))->rows(2)->columnSpanFull(),
-            TagsInput::make('biography')->label($this->fieldLabel('biography'))->columnSpanFull(),
-            TagsInput::make('expertise')->label($this->fieldLabel('expertise'))->columnSpanFull(),
-            Select::make('expertiseSlugs')->label($this->fieldLabel('expertise_filters'))->multiple()->options(fn (): array => $this->expertiseOptions($locale))->columnSpanFull(),
-            TextInput::make('email')->label($this->fieldLabel('email'))->email()->maxLength(180),
-            MediaPicker::image('image', $this->fieldLabel('profile_image'), true)->columnSpanFull(),
-            TextInput::make('office.fullAddress')->label($this->fieldLabel('office'))->maxLength(255)->columnSpanFull(),
-            Repeater::make('education')->label($this->fieldLabel('education'))->schema([
-                TextInput::make('degree')->label($this->fieldLabel('degree'))->required()->maxLength(180),
-                TextInput::make('institution')->label($this->fieldLabel('institution'))->maxLength(180),
-                TextInput::make('year')->label($this->fieldLabel('year'))->maxLength(40),
-            ])->columns(3)->defaultItems(0)->reorderable()->collapsible()->columnSpanFull(),
-            Repeater::make('courses')->label($this->fieldLabel('courses'))->schema([
-                Hidden::make('id')->dehydrated(),
-                TextInput::make('code')->label($this->fieldLabel('course_code'))->required()->maxLength(40),
-                TextInput::make('name')->label($this->fieldLabel('course_name'))->required()->maxLength(180),
-                Hidden::make('departmentId')->dehydrated(),
-            ])->columns(2)->defaultItems(0)->reorderable()->collapsible()->columnSpanFull(),
-            Repeater::make('profilePublications')->label($this->fieldLabel('profile_publications'))->schema([
-                Hidden::make('id')->dehydrated(),
-                TextInput::make('title')->label($this->fieldLabel('title'))->required()->maxLength(240)->columnSpanFull(),
-                TextInput::make('journal')->label($this->fieldLabel('journal'))->maxLength(180),
-                TextInput::make('year')->label($this->fieldLabel('year'))->maxLength(40),
-                Section::make($this->sectionLabel('advanced'))->schema([
-                    TextInput::make('links.local')->label($this->fieldLabel('local_url'))->maxLength(255)->columnSpanFull(),
-                    TextInput::make('links.scholar')->label($this->fieldLabel('scholar_url'))->maxLength(255)->columnSpanFull(),
-                ])->collapsible()->collapsed()->columnSpanFull(),
-            ])->columns(2)->defaultItems(0)->reorderable()->collapsible()->columnSpanFull(),
-            Section::make($this->sectionLabel('advanced'))->schema([
-                TextInput::make('orcidUrl')->label($this->fieldLabel('orcid_url'))->maxLength(255)->columnSpanFull(),
-                TextInput::make('scholarUrl')->label($this->fieldLabel('scholar_url'))->maxLength(255)->columnSpanFull(),
-                Hidden::make('publications')->dehydrated(),
-                Hidden::make('citations')->dehydrated(),
-            ])->collapsible()->collapsed()->columnSpanFull(),
-        ];
-    }
-
-    /** @return array<int, mixed> */
     private function conferenceEventFields(bool $upcoming): array
     {
         $fields = [
@@ -1502,23 +1441,6 @@ class ManageResearch extends Page implements HasForms
         $options['ai'] = $options['artificial-intelligence'];
         $options['construction'] = $options['building-construction-engineering'];
         $options['business'] = $options['business-administration'];
-
-        return $options;
-    }
-
-    /** @return array<string, string> */
-    private function expertiseOptions(string $locale): array
-    {
-        $areas = data_get($this->sourcePayload, 'translations.'.$locale.'.expertiseAreas', []);
-        $options = [];
-
-        foreach ($this->listOfArrays($areas) as $area) {
-            $id = trim((string) ($area['id'] ?? ''));
-            $name = trim((string) ($area['name'] ?? ''));
-            if ($id !== '' && $name !== '') {
-                $options[$id] = $name;
-            }
-        }
 
         return $options;
     }

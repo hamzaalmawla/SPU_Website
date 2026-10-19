@@ -21,6 +21,7 @@ use App\Models\Person\PersonAppointmentTranslation;
 use App\Models\Person\PersonEducation;
 use App\Models\Person\PersonEducationTranslation;
 use App\Models\Person\PersonTranslation;
+use App\Models\Research\Researcher;
 use App\Models\Research\ResearchPublication;
 use App\Models\Shared\MigrationLog;
 use App\Support\MediaUrlResolver;
@@ -31,6 +32,9 @@ use Illuminate\Support\Str;
 
 final class ProfilePageService implements ProfilePageServiceInterface
 {
+    /** @var array<int, int>|null Faculty member ids that a researcher record is linked to */
+    private ?array $membersWithResearchers = null;
+
     public function getProfile(string $locale, string $source, string $slug): ?ProfilePageDTO
     {
         if ($source === 'person') {
@@ -317,7 +321,10 @@ final class ProfilePageService implements ProfilePageServiceInterface
             officeLocation: $person->office_location,
             socialLinks: $this->personSocialLinks($person),
             educations: $this->mapPersonEducations($person->educations, $locale),
-            publications: $this->mapPublications($person->researchPublications, $locale),
+            publications: $this->mapPublications($this->withResearcherPapers(
+                $person->researchPublications,
+                FacultyMember::query()->where('person_id', $person->getKey())->pluck('id')->map(fn (mixed $id): int => (int) $id)->all(),
+            ), $locale),
             councilMemberships: $this->mapCouncilMemberships($person->councilMemberships, $locale),
             cvUrl: $this->resolveCvUrl($person),
             profileUrl: '/'.$locale.'/about/profile/'.$person->slug,
@@ -371,7 +378,7 @@ final class ProfilePageService implements ProfilePageServiceInterface
             officeLocation: $member->office_location,
             socialLinks: $this->safeExternalLinks($member->social_links),
             educations: $this->mapFacultyMemberEducations($member->educations, $locale),
-            publications: $this->mapPublications($member->researchPublications, $locale),
+            publications: $this->mapPublications($this->withResearcherPapers($member->researchPublications, [(int) $member->getKey()]), $locale),
             councilMemberships: $this->mapCouncilMemberships($member->councilMemberships, $locale),
             cvUrl: $this->resolveFacultyMemberCvUrl($member),
             profileUrl: '/'.$locale.'/about/profile/'.$member->slug,
@@ -487,6 +494,37 @@ final class ProfilePageService implements ProfilePageServiceInterface
             ->filter(fn (mixed $education): bool => $education instanceof EducationDTO)
             ->values()
             ->all();
+    }
+
+    /**
+     * A staff profile's papers: those attributed to the profile itself, plus
+     * the papers of the researcher records linked to it (the research
+     * office's register names staff as researchers), newest first.
+     *
+     * @param  Collection<int, ResearchPublication>  $own
+     * @param  list<int>  $memberIds
+     * @return Collection<int, ResearchPublication>
+     */
+    private function withResearcherPapers(Collection $own, array $memberIds): Collection
+    {
+        $this->membersWithResearchers ??= Researcher::query()->whereNotNull('faculty_member_id')->pluck('faculty_member_id')
+            ->map(fn (mixed $id): int => (int) $id)->flip()->all();
+        $memberIds = array_values(array_filter($memberIds, fn (int $id): bool => isset($this->membersWithResearchers[$id])));
+
+        if ($memberIds === []) {
+            return $own;
+        }
+
+        $researcherPapers = ResearchPublication::query()
+            ->public()
+            ->whereHas('researchers', fn (Builder $query): Builder => $query->whereIn('faculty_member_id', $memberIds))
+            ->with('translations')
+            ->get();
+
+        return $own->concat($researcherPapers)
+            ->unique(fn (ResearchPublication $publication): int => (int) $publication->getKey())
+            ->sortByDesc(fn (ResearchPublication $publication): string => (string) ($publication->published_at?->toDateString() ?? ''))
+            ->values();
     }
 
     /** @param Collection<int, ResearchPublication> $publications @return array<int, array<string, mixed>> */

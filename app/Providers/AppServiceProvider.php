@@ -119,6 +119,7 @@ use App\Contracts\Page\FacultySubpageCardServiceInterface;
 use App\Contracts\Page\PageServiceInterface;
 use App\Contracts\Page\ProfilePageServiceInterface;
 use App\Contracts\Page\VirtualTourPageServiceInterface;
+use App\Contracts\Research\ResearcherAdminServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Contracts\Research\ResearchPublicationCmsServiceInterface;
 use App\Contracts\Research\ResearchRegisterImportServiceInterface;
@@ -305,6 +306,7 @@ use App\Services\Page\ProfilePageService;
 use App\Services\Page\VirtualTourPageService;
 use App\Services\Preview\PreviewService;
 use App\Services\Preview\PreviewTokenStore;
+use App\Services\Research\ResearcherAdminService;
 use App\Services\Research\ResearchPageService;
 use App\Services\Research\ResearchPublicationCmsService;
 use App\Services\Research\ResearchRegisterImportService;
@@ -356,6 +358,9 @@ class AppServiceProvider extends ServiceProvider
         // Scoped: one admin request builds the link picker list once, however
         // many pickers its form renders.
         $this->app->scoped(PageLinkOptionServiceInterface::class, PageLinkOptionService::class);
+        // Scoped: the researchers list matches every row against the staff
+        // list, which is loaded once per request.
+        $this->app->scoped(ResearcherAdminServiceInterface::class, ResearcherAdminService::class);
     }
 
     /**

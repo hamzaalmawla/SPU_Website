@@ -120,17 +120,30 @@ final class ResearchController extends Controller
         return $this->renderPage($request, $locale, $this->researchPageService->researchers($locale, $request->only(['q', 'faculty', 'expertise', 'page'])), 'public.research.researchers.index', '/research/researchers');
     }
 
-    public function researcher(Request $request, string $locale, string $slug): RedirectResponse
+    public function researcher(Request $request, string $locale, string $slug): RedirectResponse|View
     {
+        $registered = $this->researchPageService->registeredResearcher($locale, $slug);
+
+        if ($registered !== null) {
+            $redirectTo = $registered->data['redirectTo'] ?? null;
+
+            return is_string($redirectTo)
+                ? redirect($redirectTo, 301)
+                : $this->renderDetail($request, $locale, $registered, 'public.research.researchers.show', '/research/researchers/'.$slug);
+        }
+
         $profile = $this->profilePageService->getProfile($locale, 'unified', $slug);
         abort_if($profile === null, 404);
 
         return redirect($profile->profileUrl, 301);
     }
 
-    public function expertFinder(Request $request, string $locale): View
+    /** Expert Finder is the researchers directory (research module spec): one page, one address. */
+    public function expertFinder(Request $request, string $locale): RedirectResponse
     {
-        return $this->renderPage($request, $locale, $this->researchPageService->expertFinder($locale, $request->only(['q', 'faculty', 'page'])), 'public.research.expert-finder', '/research/expert-finder');
+        $query = http_build_query($request->only(['q', 'faculty', 'expertise', 'page']));
+
+        return redirect('/'.$locale.'/research/researchers'.($query !== '' ? '?'.$query : ''), 301);
     }
 
     public function conferences(Request $request, string $locale): View

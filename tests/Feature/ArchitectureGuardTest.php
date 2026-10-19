@@ -382,6 +382,7 @@ final class ArchitectureGuardTest extends TestCase
             'app/Filament/Resources/NewsArticleResource/Pages/CreateNewsArticle.php' => '/return\s+NewsArticle::query\(\)->findOrFail\(\$prepared->articleId\);/',
             'app/Filament/Resources/PartnershipResource/Pages/CreatePartnership.php' => '/return\s+Partnership::query\(\)->findOrFail\(\$prepared->entityId\);/',
             'app/Filament/Resources/ResearchPublicationResource/Pages/CreateResearchPublication.php' => '/return\s+ResearchPublication::query\(\)->findOrFail\(\$prepared->publicationId\);/',
+            'app/Filament/Resources/ResearcherResource/Pages/CreateResearcher.php' => '/return\s+Researcher::query\(\)->findOrFail\(\$id\);/',
             'app/Filament/Resources/PersonResource/Pages/CreatePerson.php' => '/return\s+Person::query\(\)->findOrFail\(\$prepared->entityId\);/',
             'app/Filament/Resources/UserResource/Pages/CreateUser.php' => '/return\s+User::query\(\)->findOrFail\(\$userId\);/',
         ];

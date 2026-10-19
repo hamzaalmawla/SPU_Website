@@ -83,6 +83,13 @@ interface ResearchPageServiceInterface
 
     public function researcher(string $locale, string $slug): ?ResearchDetailPageDTO;
 
+    /**
+     * The page of a researcher from the research office's register
+     * ("name-r12"). When they are linked to a public staff profile, the page's
+     * data carries 'redirectTo', that profile's address.
+     */
+    public function registeredResearcher(string $locale, string $slug): ?ResearchDetailPageDTO;
+
     /** @param array<string, mixed> $filters */
     public function expertFinder(string $locale, array $filters = []): ResearchPageDTO;
 

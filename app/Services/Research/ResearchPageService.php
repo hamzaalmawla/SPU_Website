@@ -14,6 +14,7 @@ use App\DTOs\Research\ResearchConferenceRegistrationDTO;
 use App\DTOs\Research\ResearchDetailPageDTO;
 use App\DTOs\Research\ResearchPageDTO;
 use App\DTOs\Settings\FooterColumnDTO;
+use App\Models\Faculty\Faculty;
 use App\Models\Media\MediaAsset;
 use App\Models\Person\FacultyMember;
 use App\Models\Research\Researcher;
@@ -43,6 +44,9 @@ final class ResearchPageService implements ResearchPageServiceInterface
 
     /** @var array<string, bool> Staff profile slugs already checked for being public. */
     private array $publicProfiles = [];
+
+    /** @var array<string, list<array{id: string, name: string}>> Faculties for the directory filter, per locale. */
+    private array $directoryFaculties = [];
 
     public function __construct(
         private readonly CmsWorkflowServiceInterface $cmsWorkflowService,
@@ -526,23 +530,21 @@ final class ResearchPageService implements ResearchPageServiceInterface
 
     public function researchers(string $locale, array $filters = []): ResearchPageDTO
     {
+        // The CMS edits the page's text (hero, labels); the people listed are
+        // everyone with a published paper: researchers and staff profiles.
         $cmsContent = $this->publishedLocalizedPayload('research.experts', $locale);
-
-        if (is_array($cmsContent)) {
-            $cmsContent = $this->canonicalCmsResearchersContent($locale, $this->normalizedCmsExpertsContent($cmsContent));
-
-            return $this->pageDto($locale, 'researchers', $this->withFilteredResearchers($cmsContent, $filters), '/research/researchers', $cmsContent['hero'] ?? [], true);
-        }
-
-        $databaseContent = $this->databaseResearchersContent($locale);
+        $content = [
+            ...(is_array($cmsContent) ? array_diff_key($cmsContent, array_flip(['researchers', 'items', 'expertiseAreas', 'faculties'])) : []),
+            ...$this->databaseResearchersContent($locale),
+        ];
 
         return $this->pageDto(
             $locale,
             'researchers',
-            $this->withFilteredResearchers($databaseContent, $filters),
+            $this->withFilteredResearchers($content, $filters),
             '/research/researchers',
-            [],
-            $databaseContent['items'] !== [],
+            is_array($content['hero'] ?? null) ? $content['hero'] : [],
+            $content['items'] !== [] || is_array($cmsContent),
         );
     }
 
@@ -571,26 +573,76 @@ final class ResearchPageService implements ResearchPageServiceInterface
         ], '/research/researchers/'.$slug, $databaseProfile['image'] ?? '/images/uni-main-place.JPG');
     }
 
-    public function expertFinder(string $locale, array $filters = []): ResearchPageDTO
+    public function registeredResearcher(string $locale, string $slug): ?ResearchDetailPageDTO
     {
-        $cmsContent = $this->publishedLocalizedPayload('research.experts', $locale);
-
-        if (is_array($cmsContent)) {
-            $cmsContent = $this->canonicalCmsResearchersContent($locale, $this->normalizedCmsExpertsContent($cmsContent));
-
-            return $this->pageDto($locale, 'expert-finder', $this->withFilteredResearchers($cmsContent, $filters, false), '/research/expert-finder', $cmsContent['hero'] ?? [], true);
+        if (preg_match('/-r([1-9][0-9]*)$/', $slug, $matches) !== 1) {
+            return null;
         }
 
-        $databaseContent = $this->databaseResearchersContent($locale);
+        $researcher = Researcher::query()->where('is_enabled', true)->with(['faculty.translations', 'facultyMember.canonicalPerson'])->find((int) $matches[1]);
 
-        return $this->pageDto(
-            $locale,
-            'expert-finder',
-            $this->withFilteredResearchers($databaseContent, $filters, false),
-            '/research/expert-finder',
-            [],
-            $databaseContent['items'] !== [],
-        );
+        if (! $researcher instanceof Researcher || $researcher->publicSlug() !== $slug) {
+            return null;
+        }
+
+        $member = $researcher->facultyMember;
+        $profileSlug = $member?->canonicalPerson?->slug ?? $member?->slug;
+        if (is_string($profileSlug) && $profileSlug !== '' && $this->hasPublicProfile($profileSlug)) {
+            return $this->detailDto($locale, 'researcher', $slug, ['name' => $researcher->full_name], ['redirectTo' => '/'.$locale.'/about/profile/'.$profileSlug], '/research/researchers/'.$slug, '/images/uni-main-place.JPG');
+        }
+
+        $papers = ResearchPublication::query()
+            ->public()
+            ->whereHas('researchers', fn ($query) => $query->whereKey($researcher->getKey()))
+            ->with('translations')
+            ->orderByDesc('published_at')
+            ->get();
+
+        if ($papers->isEmpty()) {
+            return null;
+        }
+
+        $faculty = $researcher->faculty;
+        $facultyName = (string) ($faculty?->translations->firstWhere('locale', $locale)?->name ?? $faculty?->translations->first()?->name ?? '');
+        $publications = $papers->map(function (ResearchPublication $publication) use ($locale): array {
+            $translation = $publication->translations->firstWhere('locale', $locale) ?? $publication->translations->first();
+
+            return [
+                'title' => (string) ($translation?->title ?? ''),
+                'year' => (string) ($publication->publication_year ?? ''),
+                'journal' => (string) ($translation?->publisher ?? ''),
+                'links' => ['local' => '/'.$locale.'/research/publications/'.$publication->slug],
+            ];
+        })->values()->all();
+
+        $profile = [
+            'name' => trim($researcher->full_name),
+            'role' => (string) ($researcher->affiliation ?? ''),
+            'faculty' => ['name' => $facultyName, 'slug' => (string) ($faculty?->public_slug ?? '')],
+            'department' => '',
+            'description' => '',
+            'biography' => [],
+            'education' => [],
+            'courses' => [],
+            'expertise' => $this->scalarList($researcher->expertise ?? []),
+            'email' => '',
+            'image' => '/images/unkown.jpeg',
+            'orcidUrl' => (string) ($researcher->orcid_url ?? ''),
+            'scholarUrl' => (string) ($researcher->scholar_url ?? ''),
+            'researchStats' => ['publications' => count($publications), 'citations' => 0],
+            'publications' => $publications,
+        ];
+
+        return $this->detailDto($locale, 'researcher', $slug, ['name' => $profile['name'], 'title' => $profile['role'], 'image' => $profile['image'], 'faculty' => $facultyName], [
+            'profile' => $profile,
+            'publications' => $publications,
+        ], '/research/researchers/'.$slug, '/images/uni-main-place.JPG');
+    }
+
+    public function expertFinder(string $locale, array $filters = []): ResearchPageDTO
+    {
+        // The same directory: the public route redirects here.
+        return $this->researchers($locale, $filters);
     }
 
     public function conferences(string $locale): ResearchPageDTO
@@ -2220,18 +2272,103 @@ final class ResearchPageService implements ResearchPageServiceInterface
         return $content;
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Everyone with a published paper: a researcher linked to a public staff
+     * profile is shown as that profile; other researchers get their own page;
+     * staff with papers of their own are listed too. Alphabetical.
+     *
+     * @return array<string, mixed>
+     */
     private function databaseResearchersContent(string $locale): array
     {
-        $items = array_map(
-            fn (ProfilePageDTO $profile): array => $this->profileResearcherItem($profile),
-            $this->profilePageService->getPublicProfiles($locale),
-        );
+        $profiles = [];
+        foreach ($this->profilePageService->getPublicProfiles($locale) as $profile) {
+            $profiles[$profile->slug] = $profile;
+        }
+
+        $items = [];
+        $publicPaperIds = ResearchPublication::query()->public()->pluck('id')->all();
+        $researchers = Researcher::query()
+            ->where('is_enabled', true)
+            ->whereHas('publications', fn ($query) => $query->whereIn('research_publications.id', $publicPaperIds))
+            ->withCount(['publications' => fn ($query) => $query->whereIn('research_publications.id', $publicPaperIds)])
+            ->with(['faculty.translations', 'facultyMember.canonicalPerson'])
+            ->get();
+
+        foreach ($researchers as $researcher) {
+            $member = $researcher->facultyMember;
+            $profileSlug = $member?->canonicalPerson?->slug ?? $member?->slug;
+            $profile = is_string($profileSlug) ? ($profiles[$profileSlug] ?? null) : null;
+
+            if ($profile instanceof ProfilePageDTO) {
+                $items[$profile->slug] ??= $this->profileResearcherItem($profile);
+
+                continue;
+            }
+
+            $items['r'.$researcher->getKey()] = $this->registeredResearcherItem($researcher, $locale);
+        }
+
+        foreach ($profiles as $slug => $profile) {
+            if (! isset($items[$slug]) && $profile->publications !== []) {
+                $items[$slug] = $this->profileResearcherItem($profile);
+            }
+        }
+
+        $items = array_values($items);
+        usort($items, fn (array $a, array $b): int => strcasecmp((string) $a['name'], (string) $b['name']));
+
+        $expertise = [];
+        foreach ($items as $index => $item) {
+            $slugs = [];
+            foreach ($this->scalarList($item['expertise'] ?? []) as $name) {
+                $slug = Str::slug($name) ?: md5($name);
+                $expertise[$slug] ??= ['id' => $slug, 'name' => $name];
+                $slugs[] = $slug;
+            }
+            $items[$index]['expertiseSlugs'] = $slugs;
+        }
+        uasort($expertise, fn (array $a, array $b): int => strcasecmp($a['name'], $b['name']));
 
         return [
             'items' => $items,
             'researchers' => $items,
+            'faculties' => $this->directoryFaculties($locale),
+            'expertiseAreas' => array_values($expertise),
         ];
+    }
+
+    /** @return array<string, mixed> A researcher without a public staff profile, linking to their own page. */
+    private function registeredResearcherItem(Researcher $researcher, string $locale): array
+    {
+        $faculty = $researcher->faculty;
+        $slug = $researcher->publicSlug();
+
+        return [
+            'slug' => $slug,
+            'name' => trim($researcher->full_name),
+            'title' => (string) ($researcher->affiliation ?? ''),
+            'role' => (string) ($researcher->affiliation ?? ''),
+            'faculty' => (string) ($faculty?->translations->firstWhere('locale', $locale)?->name ?? $faculty?->translations->first()?->name ?? ''),
+            'facultySlug' => (string) ($faculty?->public_slug ?? ''),
+            'department' => '',
+            'image' => '/images/unkown.jpeg',
+            'publications' => (int) $researcher->publications_count,
+            'expertise' => $this->scalarList($researcher->expertise ?? []),
+            'profileUrl' => '/'.$locale.'/research/researchers/'.$slug,
+        ];
+    }
+
+    /** @return list<array{id: string, name: string}> */
+    private function directoryFaculties(string $locale): array
+    {
+        return $this->directoryFaculties[$locale] ??= Faculty::query()->with('translations')->enabled()->whereNotNull('public_slug')->orderBy('sort_order')->get()
+            ->map(fn (Faculty $faculty): array => [
+                'id' => (string) $faculty->public_slug,
+                'name' => (string) ($faculty->translations->firstWhere('locale', $locale)?->name ?? $faculty->public_slug),
+            ])
+            ->values()
+            ->all();
     }
 
     /** @param array<string, mixed> $content @return array<string, mixed> */
@@ -2263,12 +2400,15 @@ final class ResearchPageService implements ResearchPageServiceInterface
     /** @return array<string, mixed> */
     private function profileResearcherItem(ProfilePageDTO $profile): array
     {
+        $facultySlug = (string) (collect($this->directoryFaculties($profile->locale))->firstWhere('name', (string) $profile->facultyName)['id'] ?? '');
+
         return [
             'slug' => $profile->slug,
             'name' => $profile->name,
             'title' => $profile->title ?? $profile->position ?? '',
             'role' => $profile->position ?? $profile->title ?? '',
             'faculty' => $profile->facultyName ?? '',
+            'facultySlug' => $facultySlug,
             'department' => $profile->departmentName ?? '',
             'image' => $profile->image ?? '/images/uni-main-place.JPG',
             'publications' => count($profile->publications),

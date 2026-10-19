@@ -126,10 +126,10 @@ final class ResearchPublicPagesTest extends TestCase
             '/en/research/repository',
             '/en/research/publications',
             '/en/research/researchers',
-            '/en/research/expert-finder',
         ] as $uri) {
             $this->get($uri)->assertOk();
         }
+        $this->get('/en/research/expert-finder')->assertRedirect('/en/research/researchers');
 
         // Published CMS sections render normally. setUp() publishes centers,
         // projects and themes.
@@ -237,12 +237,16 @@ final class ResearchPublicPagesTest extends TestCase
             ->assertSee('Dr. Ayman Ali')
             ->assertSee('/ar/research/researchers?expertise=clinical-medicine', false);
 
-        $response = $this->get('/en/research/expert-finder?faculty=petroleum')
+        // Expert Finder is the researchers directory: its address redirects
+        // there and keeps the search.
+        $this->get('/en/research/expert-finder?faculty=petroleum')
+            ->assertRedirect('/en/research/researchers?faculty=petroleum');
+        $response = $this->get('/en/research/researchers?faculty=petroleum')
             ->assertOk()
             ->assertSee('Dr. Mahmoud Hadid');
         $this->assertStringNotContainsString('Dr. Ayman Ali', $this->mainContent($response->getContent()));
 
-        $this->get('/en/research/expert-finder?q=no-such-expert')
+        $this->get('/en/research/researchers?q=no-such-expert')
             ->assertOk()
             ->assertSee('No results found')
             ->assertSee('Clear filters');
@@ -471,7 +475,7 @@ final class ResearchPublicPagesTest extends TestCase
             ->assertDontSee('name="citation_doi"', false);
     }
 
-    public function test_research_experts_use_cms_for_selection_but_exclude_noncanonical_profiles(): void
+    public function test_research_experts_cms_edits_the_page_text_but_never_lists_people(): void
     {
         $user = User::factory()->create(['role_slug' => 'super_admin']);
         $payload = [
@@ -485,12 +489,12 @@ final class ResearchPublicPagesTest extends TestCase
         $workflow->saveDraft('research.experts', $payload, (int) $user->getKey());
         $workflow->publish('research.experts', (int) $user->getKey());
 
-        $response = $this->get('/en/research/expert-finder')
+        // The CMS hero shows; its old hand-picked people never do: the list
+        // is everyone with a published paper.
+        $this->get('/en/research/researchers')
             ->assertOk()
             ->assertSee('CMS Expert Finder')
             ->assertDontSee('Dr. CMS Expert');
-        $mainContent = explode('</main>', explode('<main', $response->getContent(), 2)[1] ?? '', 2)[0] ?? '';
-        $this->assertStringNotContainsString('Dr. Ayman Ali', $mainContent);
 
         $this->get('/en/research/researchers/cms-expert')->assertNotFound();
     }

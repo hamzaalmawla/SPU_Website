@@ -775,6 +775,26 @@ if [[ -f "${PEOPLE_MERGE_APPROVAL}" ]]; then
     mv "${PEOPLE_MERGE_APPROVAL}" "${PEOPLE_MERGE_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
 fi
 
+# ── Approved researcher ↔ staff links ───────────────────────────────────────
+# Links every researcher whose name matches exactly one staff member, so their
+# papers show on that staff profile. Looser matches are left as suggestions in
+# the admin's Researchers list. Inert unless a human places:
+#
+#     storage/app/private/legacy-imports/researcher-staff-links.approved
+#
+# It disarms itself after one run.
+RESEARCHER_LINKS_APPROVAL="${IMPORT_DIR}/researcher-staff-links.approved"
+
+if [[ -f "${RESEARCHER_LINKS_APPROVAL}" ]]; then
+    log "Researcher to staff links"
+    (cd "${APP}" && "${PHP}" -d memory_limit=512M artisan researchers:link-staff --no-ansi) \
+        || fail "The researcher link dry run failed. Nothing was changed."
+    (cd "${APP}" && "${PHP}" -d memory_limit=512M artisan researchers:link-staff --write --approve=researcher-staff-links-20261019 --no-ansi) \
+        || fail "Linking researchers to staff failed."
+
+    mv "${RESEARCHER_LINKS_APPROVAL}" "${RESEARCHER_LINKS_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
 # ── Approved faculty structure import ────────────────────────────────────────
 # Replaces the redesign's invented departments and labs with the old site's real
 # ones and adds the subpages the old site had (dentistry clinical cases, the

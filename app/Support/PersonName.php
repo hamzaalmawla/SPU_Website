@@ -39,6 +39,52 @@ final class PersonName
             && array_diff($shorter, $longer) === [];
     }
 
+    /**
+     * Probably the same person written in another Latin spelling ("Nizar
+     * Aldaher" and "Nizar Daher", "Yousra Haddeh" and "Yousra Haddah"): first
+     * and last names agree once vowels, doubled letters and common
+     * transliteration variants are set aside. Looser than same(), so it is a
+     * suggestion for an editor to confirm, never applied on its own.
+     */
+    public static function likelySame(string $first, string $second): bool
+    {
+        if (self::same($first, $second)) {
+            return true;
+        }
+
+        $firstSkeleton = self::skeleton($first);
+        $secondSkeleton = self::skeleton($second);
+
+        return count($firstSkeleton) >= 2
+            && count($secondSkeleton) >= 2
+            && $firstSkeleton[0] === $secondSkeleton[0]
+            && end($firstSkeleton) === end($secondSkeleton);
+    }
+
+    /** @return list<string> Consonant outlines of a Latin name's words, without titles. */
+    private static function skeleton(string $name): array
+    {
+        $words = preg_split('/[^A-Za-z]+/', $name, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $outline = [];
+
+        foreach ($words as $word) {
+            $word = strtolower($word);
+            if (in_array($word, [...self::TITLES, 'mohd', 'md', 'phd', 'al', 'el', 'abu', 'bin'], true)) {
+                continue;
+            }
+
+            $word = (string) preg_replace('/^(?:al|el)(?=[a-z]{3,})/', '', $word);
+            $word = strtr($word, ['ou' => 'u', 'oo' => 'u', 'ee' => 'i', 'ph' => 'f', 'q' => 'k', 'c' => 'k', 'dh' => 'd', 'th' => 't', 'sh' => 's', 'kh' => 'k', 'gh' => 'g', 'z' => 's', 'j' => 'g']);
+            $word = (string) preg_replace('/(.)\1+/', '$1', $word);
+
+            if ($word !== '') {
+                $outline[] = $word[0].preg_replace('/[aeiouyhw]/', '', substr($word, 1));
+            }
+        }
+
+        return $outline;
+    }
+
     /** @return array<int, string> */
     public static function tokens(string $name): array
     {

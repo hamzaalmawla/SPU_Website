@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 /**
  * A person named on the university's research papers, as the research office
@@ -29,7 +30,12 @@ class Researcher extends Model
         'faculty_id',
         'faculty_member_id',
         'affiliation',
+        'orcid_url',
+        'scholar_url',
+        'scopus_url',
+        'expertise',
         'registration_status',
+        'is_enabled',
         'notes',
         'legacy_source',
         'legacy_source_id',
@@ -42,7 +48,15 @@ class Researcher extends Model
         return [
             'legacy_source_id' => 'integer',
             'merged_into_id' => 'integer',
+            'expertise' => 'array',
+            'is_enabled' => 'boolean',
         ];
+    }
+
+    /** The public address of a researcher without a staff profile: name, then id (nizar-aldaher-r12). */
+    public function publicSlug(): string
+    {
+        return trim(Str::slug($this->full_name).'-r'.$this->getKey(), '-');
     }
 
     public function faculty(): BelongsTo

@@ -120,7 +120,7 @@ See `Docs/CURRENT_REMEDIATION_EXECUTION_CHECKLIST.md`.
 | `/research/themes/energy-systems/` | D | Y | Y | Y | Y | Complete | Published theme catalog drives detail relationships, preview, SEO, sitemap, and tests. |
 | `/research/themes/data-science/` | D | Y | Y | Y | Y | Complete | Published theme catalog drives detail relationships, preview, SEO, sitemap, and tests. |
 | `/research/themes/structural-engineering/` | D | Y | Y | Y | Y | Complete | Published theme catalog drives detail relationships, preview, SEO, sitemap, and tests. |
-| `/research/expert-finder/` | D | Y | Y | Y | Y | Complete | CMS-backed search and faculty filtering, pagination, reset/empty state, canonical profiles, and tests are implemented. |
+| `/research/expert-finder/` | D | Y | Y | Y | Y | Complete | 301 to `/research/researchers` (research module spec, FR-RES04): one directory of everyone with a published paper, with search, faculty and expertise filters; the CMS edits its text only. |
 | `/research/conferences/` | D | Y | Y | Y | Y | Complete | Verified proceedings/registration destinations, transparent unavailable states, bilingual CMS workflow, preview, and tests are implemented. |
 | `/research/conferences/register/` | D | Y | Y | Y | Y | Complete | Accessible program/speaker/topic content and server-validated event-bound submissions with authorized review are implemented. |
 | `/research/library/` | D | Y | Y | Y | Y | Complete | Dedicated CMS-backed resource page. |
