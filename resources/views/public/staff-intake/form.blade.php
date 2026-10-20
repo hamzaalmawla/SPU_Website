@@ -55,8 +55,8 @@
             <fieldset class="space-y-4">
                 <legend class="mb-2 text-lg font-bold text-spu-blue">{{ __('staff_intake.public.section_about', [], $locale) }}</legend>
                 <div class="grid gap-4 sm:grid-cols-2">
-                    @include('public.staff-intake.field', ['name' => 'bio_ar', 'value' => $fields['bio_ar'], 'type' => 'textarea'])
-                    @include('public.staff-intake.field', ['name' => 'bio_en', 'value' => $fields['bio_en'], 'type' => 'textarea'])
+                    @include('public.staff-intake.field', ['name' => 'bio_ar', 'value' => $fields['bio_ar'], 'type' => 'textarea', 'required' => true])
+                    @include('public.staff-intake.field', ['name' => 'bio_en', 'value' => $fields['bio_en'], 'type' => 'textarea', 'required' => true])
                     @include('public.staff-intake.field', ['name' => 'specializations_ar', 'value' => implode('، ', $fields['specializations_ar']), 'max' => 1000, 'hint' => __('staff_intake.public.specializations_hint', [], $locale)])
                     @include('public.staff-intake.field', ['name' => 'specializations_en', 'value' => implode(', ', $fields['specializations_en']), 'max' => 1000, 'hint' => __('staff_intake.public.specializations_hint', [], $locale)])
                 </div>

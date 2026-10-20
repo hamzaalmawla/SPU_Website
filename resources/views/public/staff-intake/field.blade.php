@@ -4,7 +4,7 @@
 <div class="space-y-1 {{ $class ?? '' }}">
     <label for="{{ $fieldId }}" class="block text-sm font-bold text-slate-700">{{ __('staff_intake.fields.'.$name, [], $locale) }}@if (! empty($required))<span class="text-spu-red" aria-hidden="true"> *</span>@endif</label>
     @if (($type ?? 'text') === 'textarea')
-        <textarea id="{{ $fieldId }}" name="{{ $name }}" rows="5" maxlength="5000" @if ($fieldDir) dir="{{ $fieldDir }}" @endif
+        <textarea id="{{ $fieldId }}" name="{{ $name }}" rows="5" maxlength="5000" @if (! empty($required)) required aria-required="true" @endif @if ($fieldDir) dir="{{ $fieldDir }}" @endif
             aria-invalid="{{ $errors->has($name) ? 'true' : 'false' }}" @if ($errors->has($name)) aria-describedby="{{ $fieldId }}-error" @endif
             class="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-spu-blue focus:ring-4 focus:ring-spu-blue/10">{{ old($name, $value) }}</textarea>
     @else

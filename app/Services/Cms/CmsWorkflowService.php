@@ -260,12 +260,9 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
                 $errors[$locale][] = 'A localized title or headline is required.';
             }
 
-            // A research publication may be only a title and its authors, and a
-            // faculty member only a name: position, bio and education are optional
-            // in the admin form and in the staff intake form alike.
-            if (! str_starts_with($target->key, 'entity.research-publication.')
-                && ! str_starts_with($target->key, 'entity.faculty-member.')
-                && ! $this->hasBodyLikeContent($translation)) {
+            // A research publication may be only a title and its authors; its
+            // own validator decides what it needs.
+            if (! str_starts_with($target->key, 'entity.research-publication.') && ! $this->hasBodyLikeContent($translation)) {
                 $errors[$locale][] = 'Localized body content or content blocks are required.';
             }
         }

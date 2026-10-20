@@ -142,7 +142,7 @@ final class StaffIntakeTest extends TestCase
         $this->assertSame(1, (int) StaffIntakeLink::query()->whereKey($created->link->id)->value('submissions_count'));
 
         $log = StaffIntakeAccessLog::query()->where('event', 'submitted')->sole();
-        $this->assertSame(['position_ar', 'position_en', 'email', 'linkedin', 'orcid', 'scopus', 'researchgate', 'scholar', 'photo', 'cv'], $log->changed_fields);
+        $this->assertSame(['position_ar', 'position_en', 'bio_ar', 'bio_en', 'email', 'linkedin', 'orcid', 'scopus', 'researchgate', 'scholar', 'photo', 'cv'], $log->changed_fields);
         $this->assertSame('IntakeTestBrowser/1.0', $log->user_agent);
         $this->assertNotNull($log->ip_address);
         Mail::assertQueued(StaffIntakeSubmittedNotification::class, fn (StaffIntakeSubmittedNotification $mail): bool => $mail->hasTo($this->facultyEditor->email));
@@ -260,24 +260,26 @@ final class StaffIntakeTest extends TestCase
         $this->assertSame(1, StaffIntakeRequest::query()->count());
     }
 
-    public function test_an_editor_approval_publishes_a_profile_with_only_the_required_fields(): void
+    public function test_the_biography_is_required_and_an_editor_approval_publishes_the_profile(): void
     {
         $member = $this->member('maya-intake', 'مايا إنتيك', 'Maya Intake', $this->dentistry);
         $token = $this->token($this->link());
         $ref = $this->refFor($token, 'Maya Intake');
-        // No position, biography or education: none of them is required, on the
-        // intake form or in the admin, so the profile still publishes.
-        $this->post('/en/staff-intake/'.$token.'/form', $this->formData($ref, ['name_ar' => 'مايا إنتيك', 'name_en' => 'Maya Intake', 'phone' => '٠٩٤٤١٢٣٤٥٦']))->assertRedirect();
 
+        // Publishing needs a biography (or a position) in both languages, so the form asks for one.
+        $this->post('/en/staff-intake/'.$token.'/form', $this->formData($ref, ['name_ar' => 'مايا إنتيك', 'name_en' => 'Maya Intake', 'bio_ar' => '', 'bio_en' => ' ']))
+            ->assertSessionHasErrors(['bio_ar', 'bio_en']);
+        $this->assertSame(0, StaffIntakeRequest::query()->count());
+        $this->get('/en/staff-intake/'.$token)->assertOk();
+
+        $this->post('/en/staff-intake/'.$token.'/form', $this->formData($ref, ['name_ar' => 'مايا إنتيك', 'name_en' => 'Maya Intake', 'phone' => '٠٩٤٤١٢٣٤٥٦']))->assertRedirect();
         $request = StaffIntakeRequest::query()->sole();
         $result = app(StaffIntakeReviewServiceInterface::class)->approve((int) $request->getKey(), (int) $this->user('editor')->getKey());
 
         $this->assertTrue($result->published, implode(' ', $result->publishErrors));
-        $this->assertSame([], $result->publishErrors);
-        $this->assertSame(StaffIntakeRequest::STATUS_APPROVED, $request->fresh()?->status);
         $this->assertSame('0944123456', $member->fresh()?->phone);
         $this->assertSame(PublicationStatus::Published->value, $member->fresh()?->publication_status);
-        $this->get('/en/about/profile/maya-intake')->assertOk()->assertSee('Maya Intake');
+        $this->assertSame('About the teacher.', $member->fresh()?->translations()->where('locale', 'en')->value('bio'));
     }
 
     public function test_rejecting_leaves_the_profile_alone(): void
@@ -432,6 +434,8 @@ final class StaffIntakeTest extends TestCase
     {
         return [
             'email' => 'teacher@spu.edu.sy',
+            'bio_ar' => 'نبذة عن الأستاذ.',
+            'bio_en' => 'About the teacher.',
             'linkedin' => 'https://www.linkedin.com/in/teacher',
             'orcid' => 'https://orcid.org/0000-0001-2345-6789',
             'scopus' => 'https://www.scopus.com/authid/detail.uri?authorId=1',
