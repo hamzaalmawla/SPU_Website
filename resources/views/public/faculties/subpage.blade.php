@@ -419,7 +419,7 @@
                     {{ $isAr ? 'عرض' : 'Showing' }} {{ $pagination['from'] ?? 0 }}-{{ $pagination['to'] ?? 0 }} {{ $isAr ? 'من' : 'of' }} {{ $pagination['total_items'] ?? count($page->items) }}
                 </p>
 
-                <div class="grid gap-5" style="grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 24rem));">
+                <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
                     @forelse ($page->items as $item)
                         <article class="overflow-hidden border border-slate-200 bg-white shadow-[0_8px_26px_rgba(15,23,42,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_44px_rgba(15,23,42,0.1)]">
                             <div class="h-[230px] overflow-hidden bg-slate-100">
@@ -430,7 +430,9 @@
                             <div class="p-4 text-center">
                                 <h2 class="card-title card-title-center text-[14px] font-bold text-spu-blue" dir="auto">{{ $item['title'] ?? '' }}</h2>
                                 <p class="mt-2 text-[11px] font-bold text-spu-red">{{ $isAr ? 'سنة التخرج: ' : 'Graduation Year: ' }}{{ $item['graduationYear'] ?? '' }}</p>
-                                <p class="mt-1 text-[11px] font-bold text-spu-red">{{ $isAr ? 'الفصل: ' : 'Semester: ' }}{{ $item['semester'] ?? '' }}</p>
+                                @if (filled($item['semester'] ?? null))
+                                    <p class="mt-1 text-[11px] font-bold text-spu-red">{{ $isAr ? 'الفصل: ' : 'Semester: ' }}{{ $item['semester'] }}</p>
+                                @endif
                                 <p class="mt-1 text-[11px] font-semibold text-slate-500">{{ $isAr ? 'القسم: ' : 'Department: ' }}{{ $item['department'] ?? $faculty['title'] }}</p>
                             </div>
                         </article>
@@ -473,7 +475,7 @@
                 <p class="mt-5 text-[12px] font-semibold text-slate-500">
                     {{ $isAr ? 'عرض' : 'Showing' }} {{ $pagination['from'] ?? 0 }}-{{ $pagination['to'] ?? 0 }} {{ $isAr ? 'من' : 'of' }} {{ $pagination['total_items'] ?? count($page->items) }}
                 </p>
-                <div class="mt-9 grid gap-x-8 gap-y-12" style="grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 24rem));">
+                <div class="mt-9 grid grid-cols-1 gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
                     @forelse ($page->items as $item)
                         @php($isMemorial = (bool) ($item['isMemorial'] ?? false))
                         <article class="honor-card" @if ($isMemorial) style="position: relative; border-color: rgba(236, 214, 160, 0.95); background: linear-gradient(180deg, #fffdf7 0%, #ffffff 54%); box-shadow: 0 14px 34px rgba(111, 22, 22, 0.10);" @endif>
