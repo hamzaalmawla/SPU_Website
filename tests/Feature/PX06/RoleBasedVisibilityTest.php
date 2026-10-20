@@ -54,7 +54,7 @@ class RoleBasedVisibilityTest extends TestCase
 
     public function test_faculty_editor_sees_only_scoped_pages_and_media(): void
     {
-        $this->actingAs($this->createUser('faculty_editor'));
+        $this->actingAs($this->createUser('faculty_editor', ['medicine']));
 
         $this->assertTrue(PageResource::canAccess());
         $this->assertTrue(MediaAssetResource::canAccess());
@@ -89,10 +89,12 @@ class RoleBasedVisibilityTest extends TestCase
         $this->get('/admin/manage-homepage')->assertForbidden();
     }
 
-    private function createUser(string $role): User
+    /** @param  list<string>  $faculties */
+    private function createUser(string $role, array $faculties = []): User
     {
         return User::factory()->create([
             'role_slug' => $role,
+            'faculty_scopes' => $faculties === [] ? null : $faculties,
             'is_locked' => false,
         ]);
     }

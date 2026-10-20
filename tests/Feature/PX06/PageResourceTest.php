@@ -35,7 +35,7 @@ class PageResourceTest extends TestCase
 
     public function test_faculty_editor_can_access_page_resource(): void
     {
-        $this->actingAs($this->createUser('faculty_editor'));
+        $this->actingAs($this->createUser('faculty_editor', ['medicine']));
 
         $this->assertTrue(PageResource::canAccess());
     }
@@ -75,10 +75,12 @@ class PageResourceTest extends TestCase
         $this->assertContains($sibling->id, $ids);
     }
 
-    private function createUser(string $role): User
+    /** @param  list<string>  $faculties */
+    private function createUser(string $role, array $faculties = []): User
     {
         return User::factory()->create([
             'role_slug' => $role,
+            'faculty_scopes' => $faculties === [] ? null : $faculties,
             'is_locked' => false,
         ]);
     }
