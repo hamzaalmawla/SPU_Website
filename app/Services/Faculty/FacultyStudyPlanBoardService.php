@@ -207,6 +207,7 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
             'prerequisites' => $this->stringList($en['prerequisites'] ?? []),
             'prerequisiteCredits' => (int) ($en['prerequisiteCredits'] ?? 0),
             'lessons' => $lessons,
+            'specificationUrl' => (string) ($en['specificationUrl'] ?? ''),
         ];
     }
 
@@ -229,6 +230,7 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
             'prerequisites' => [],
             'prerequisiteCredits' => 0,
             'lessons' => [],
+            'specificationUrl' => '',
         ];
     }
 
@@ -304,6 +306,15 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
                 $record['lessons'] = $this->lessonsFromForm($form['lessons'], $this->records($existing['lessons'] ?? []), $id, $locale, $this->lessonIds($department, $id));
             } else {
                 $record['lessons'] = $this->records($existing['lessons'] ?? []);
+            }
+
+            // One course specification PDF per course, shared by both languages.
+            $specificationUrl = array_key_exists('specificationUrl', $form)
+                ? trim((string) $form['specificationUrl'])
+                : trim((string) ($existing['specificationUrl'] ?? ''));
+            unset($record['specificationUrl']);
+            if ($specificationUrl !== '') {
+                $record['specificationUrl'] = $specificationUrl;
             }
 
             if ($fromTerm === $targetIndex && isset($existing['row'])) {
@@ -553,6 +564,19 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
                 'pdfUrl' => $lesson['pdfUrl'],
             ];
         }
+
+        return $this->saveCourse($payload, $departmentId, $form);
+    }
+
+    public function setSpecification(array $payload, string $departmentId, string $courseId, string $pdfUrl): array
+    {
+        $form = $this->courseForm($payload, $departmentId, $courseId);
+
+        if ($form === null) {
+            throw new InvalidArgumentException('That course no longer exists. Reload the page.');
+        }
+
+        $form['specificationUrl'] = $pdfUrl;
 
         return $this->saveCourse($payload, $departmentId, $form);
     }

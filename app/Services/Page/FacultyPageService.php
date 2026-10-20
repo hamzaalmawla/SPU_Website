@@ -2060,6 +2060,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
         $instructor = is_array($course['instructor'] ?? null) ? $course['instructor'] : null;
         $course['instructorUrl'] = $this->courseInstructorUrl($locale, $instructor);
         $course['lessons'] = $lessons->all();
+        $course['specificationUrl'] = $this->studyPlanLinkService->sanitizeCourseMaterialPath($course['specificationUrl'] ?? null);
         $validatedFilters = ['department' => $departmentId, 'course' => $courseId];
 
         if (($filters['_type_provided'] ?? false) === true) {
@@ -2113,6 +2114,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
                             ])
                             ->values()
                             ->all();
+                        $course['specificationUrl'] = $this->studyPlanLinkService->sanitizeCourseMaterialPath($course['specificationUrl'] ?? null);
 
                         return $course;
                     })

@@ -184,6 +184,37 @@
                             </div>
                         @endif
                     </fieldset>
+
+                    <fieldset class="spu-board-form spu-board-form--stack">
+                        <legend>{{ $t('specification') }}</legend>
+                        @if ($this->boardCourseIsNew)
+                            <p class="spu-board-hint">{{ $t('specification_save_first') }}</p>
+                        @else
+                            <p class="spu-board-hint">{{ $t('specification_help') }}</p>
+
+                            @if (($course['specificationUrl'] ?? '') !== '')
+                                <div class="spu-board-lecture" wire:key="specification-{{ md5($course['specificationUrl']) }}">
+                                    <span dir="ltr">{{ basename($course['specificationUrl']) }}</span>
+                                    <span class="spu-board-lecture__actions">
+                                        <a href="{{ $course['specificationUrl'] }}" target="_blank" rel="noopener">{{ $t('lecture_open') }}</a>
+                                        <button type="button" class="spu-board__icon is-danger" wire:click="removeBoardSpecification" title="{{ $t('specification_remove') }}" aria-label="{{ $t('specification_remove') }}">&times;</button>
+                                    </span>
+                                </div>
+                            @else
+                                <p class="spu-board-hint">{{ $t('specification_none') }}</p>
+                            @endif
+
+                            <div class="spu-board-upload">
+                                <input type="file" accept="application/pdf,.pdf" wire:model="specificationUpload" aria-label="{{ $t('specification_file') }}">
+                                @error('specificationUpload')<p class="spu-board-error">{{ $message }}</p>@enderror
+                                <button type="button" class="spu-board__btn" wire:click="uploadBoardSpecification" wire:loading.attr="disabled" wire:target="specificationUpload,uploadBoardSpecification"
+                                    @if ($this->specificationUpload === null) disabled @endif>
+                                    <span wire:loading.remove wire:target="uploadBoardSpecification">{{ ($course['specificationUrl'] ?? '') !== '' ? $t('replace_specification') : $t('upload_specification') }}</span>
+                                    <span wire:loading wire:target="specificationUpload,uploadBoardSpecification">{{ $t('uploading') }}</span>
+                                </button>
+                            </div>
+                        @endif
+                    </fieldset>
                 </div>
 
                 <footer class="spu-board-panel__foot">

@@ -106,4 +106,12 @@ interface FacultyStudyPlanBoardServiceInterface
      * @return array<string, mixed>
      */
     public function addLessons(array $payload, string $departmentId, string $courseId, array $lessons): array;
+
+    /**
+     * Sets the course specification PDF of a course, replacing any earlier one.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function setSpecification(array $payload, string $departmentId, string $courseId, string $pdfUrl): array;
 }

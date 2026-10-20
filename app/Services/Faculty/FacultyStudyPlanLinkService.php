@@ -153,6 +153,11 @@ final class FacultyStudyPlanLinkService implements FacultyStudyPlanLinkServiceIn
                                 $errors[$locale][] = 'Course materials must reference an existing internal PDF file.';
                             }
                         }
+
+                        $specification = trim((string) ($course['specificationUrl'] ?? ''));
+                        if ($specification !== '' && $this->sanitizeCourseMaterialPath($specification) === null) {
+                            $errors[$locale][] = 'A course specification must reference an existing internal PDF file.';
+                        }
                     }
                 }
             }

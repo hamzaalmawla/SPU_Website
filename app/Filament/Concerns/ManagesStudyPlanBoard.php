@@ -40,6 +40,8 @@ trait ManagesStudyPlanBoard
     /** @var array<int, mixed> */
     public array $lectureUploads = [];
 
+    public mixed $specificationUpload = null;
+
     private FacultyStudyPlanBoardServiceInterface $studyPlanBoardService;
 
     private MediaServiceInterface $boardMediaService;
@@ -116,6 +118,7 @@ trait ManagesStudyPlanBoard
         $this->boardDepartmentIsNew = false;
         $this->boardPrerequisiteSearch = '';
         $this->lectureUploads = [];
+        $this->specificationUpload = null;
     }
 
     public function saveBoardCourse(): void
@@ -270,6 +273,66 @@ trait ManagesStudyPlanBoard
 
         [$lessons[$index], $lessons[$target]] = [$lessons[$target], $lessons[$index]];
         $this->boardCourse['lessons'] = $lessons;
+    }
+
+    public function removeBoardSpecification(): void
+    {
+        if (is_array($this->boardCourse)) {
+            $this->boardCourse['specificationUrl'] = '';
+        }
+    }
+
+    /**
+     * Stores the selected PDF in the media library as the course specification of the open
+     * course, replacing any earlier one. The course form is saved at the same time.
+     */
+    public function uploadBoardSpecification(): void
+    {
+        $courseId = (string) ($this->boardCourse['originalId'] ?? '');
+
+        if ($courseId === '' || ! $this->specificationUpload instanceof TemporaryUploadedFile) {
+            return;
+        }
+
+        $this->validate(
+            ['specificationUpload' => ['file', 'mimes:pdf', 'max:20480']],
+            [],
+            ['specificationUpload' => __('admin.faculty_workspace.board.specification_file')],
+        );
+
+        $upload = $this->specificationUpload;
+
+        try {
+            $title = $this->lectureTitleFromFilename($upload->getClientOriginalName());
+            $result = $this->boardMediaService->upload([
+                'file' => new UploadedFile($upload->getRealPath(), $upload->getClientOriginalName(), $upload->getMimeType(), null, true),
+                'original_name' => $upload->getClientOriginalName(),
+                'directory' => 'media/document/'.now()->format('Y/m'),
+                'title_ar' => $title,
+                'title_en' => $title,
+                'uploaded_by' => $this->authenticatedUserId(),
+                'faculty_scope_slug' => $this->facultyScope,
+            ]);
+        } catch (Throwable $exception) {
+            report($exception);
+            $this->boardNotice('specification_failed', 'danger');
+
+            return;
+        }
+
+        $form = $this->boardCourse;
+        $departmentId = $this->boardDepartmentIdOrFirst();
+        $saved = $this->commitStudyPlanChange(function (array $payload) use ($departmentId, $form, $result, $courseId): array {
+            $payload = $this->studyPlanBoardService->saveCourse($payload, $departmentId, $form);
+
+            return $this->studyPlanBoardService->setSpecification($payload, $departmentId, $courseId, $result->url);
+        }, 'specification_added');
+
+        if ($saved) {
+            $this->specificationUpload = null;
+            $this->boardCache = null;
+            $this->boardCourse = $this->studyPlanBoardService->courseForm($this->studyPlanPayload(), $departmentId, $courseId);
+        }
     }
 
     /**

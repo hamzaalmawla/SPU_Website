@@ -197,6 +197,30 @@ final class FacultyStudyPlanBoardServiceTest extends TestCase
         $this->assertSame('/storage/b.pdf', $lessons[0]['pdfUrl']);
     }
 
+    public function test_each_course_keeps_one_specification_that_survives_edits_and_can_be_removed(): void
+    {
+        $payload = $this->service->setSpecification($this->payload(), 'cs', 'cs-101', '/storage/media/document/spec-1.pdf');
+        $payload = $this->service->setSpecification($payload, 'cs', 'cs-101', '/storage/media/document/spec-2.pdf');
+
+        foreach (['ar', 'en'] as $locale) {
+            $course = $payload['translations'][$locale]['payload']['plan']['departments'][0]['terms'][0]['courses'][0];
+            $this->assertSame('/storage/media/document/spec-2.pdf', $course['specificationUrl']);
+        }
+
+        $payload = $this->service->saveCourse($payload, 'cs', $this->form($payload, 'cs-101', ['titleEn' => 'Renamed']));
+        $payload = $this->service->moveCourse($payload, 'cs', 'cs-101', '2');
+        $this->assertSame('/storage/media/document/spec-2.pdf', $this->service->courseForm($payload, 'cs', 'cs-101')['specificationUrl']);
+
+        $payload = $this->service->saveCourse($payload, 'cs', $this->form($payload, 'cs-101', ['specificationUrl' => '']));
+
+        $this->assertSame('', $this->service->courseForm($payload, 'cs', 'cs-101')['specificationUrl']);
+        foreach ($payload['translations']['en']['payload']['plan']['departments'][0]['terms'] as $term) {
+            foreach ($term['courses'] as $course) {
+                $this->assertArrayNotHasKey('specificationUrl', $course);
+            }
+        }
+    }
+
     /**
      * @param  array<string, mixed>  $payload
      * @param  array<string, mixed>  $override

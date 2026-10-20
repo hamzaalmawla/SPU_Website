@@ -1019,6 +1019,7 @@ trait ManagesFacultyHomepage
                 TextInput::make($prefix.'.payload.courseLabels.all')->label(__('admin.faculty_workspace.study_plan.labels.all_lessons'))->maxLength(120),
                 TextInput::make($prefix.'.payload.courseLabels.viewPdf')->label(__('admin.faculty_workspace.study_plan.labels.view_pdf'))->maxLength(120),
                 TextInput::make($prefix.'.payload.courseLabels.download')->label(__('admin.faculty_workspace.study_plan.labels.download'))->maxLength(120),
+                TextInput::make($prefix.'.payload.courseLabels.specification')->label(__('admin.faculty_workspace.study_plan.labels.specification'))->maxLength(120),
             ])->columns(2)->collapsed(),
 
             Section::make(__('admin.faculty_workspace.study_plan.plan_settings'))->schema([
