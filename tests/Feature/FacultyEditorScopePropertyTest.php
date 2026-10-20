@@ -127,12 +127,12 @@ class FacultyEditorScopePropertyTest extends TestCase
         string $userScope,
         array $pageScopes,
     ): void {
-        $policy = new PagePolicy;
+        $policy = app(PagePolicy::class);
 
         // Create a faculty_editor user with the given scope
         $user = User::factory()->create([
             'role_slug' => 'faculty_editor',
-            'faculty_scope_slug' => $userScope,
+            'faculty_scopes' => [$userScope],
             'is_locked' => false,
         ]);
 
@@ -185,11 +185,11 @@ class FacultyEditorScopePropertyTest extends TestCase
         string $userScope,
         array $pageScopes,
     ): void {
-        $policy = new PagePolicy;
+        $policy = app(PagePolicy::class);
 
         $user = User::factory()->create([
             'role_slug' => 'faculty_editor',
-            'faculty_scope_slug' => $userScope,
+            'faculty_scopes' => [$userScope],
             'is_locked' => false,
         ]);
 

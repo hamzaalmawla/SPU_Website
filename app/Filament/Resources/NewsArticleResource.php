@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources;
 
+use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\News\NewsArticleCmsServiceInterface;
 use App\Filament\Resources\NewsArticleResource\Pages;
+use App\Filament\Support\GrantedFacultySelect;
 use App\Filament\Support\MediaPicker;
 use App\Models\News\NewsArticle;
 use App\Models\News\NewsCategory;
@@ -205,6 +207,7 @@ class NewsArticleResource extends Resource
                                         ->maxLength(255)
                                         ->alphaDash()
                                         ->visible(fn (): bool => in_array(auth()->user()?->role_slug, ['super_admin', 'editor'], true)),
+                                    GrantedFacultySelect::make('faculty_scope_slug', __('admin.news_article.fields.faculty_scope')),
                                 ])
                                 ->columns(2),
                             Section::make(__('admin.news_article.sections.seo'))
@@ -312,13 +315,13 @@ class NewsArticleResource extends Resource
     {
         $user = auth()->user();
 
-        if (! $user instanceof User || $user->role_slug !== 'faculty_editor') {
+        if (! $user instanceof User || ! $user->isLimitedEditor()) {
             return $query;
         }
 
-        $scope = is_string($user->faculty_scope_slug) ? $user->faculty_scope_slug : '';
+        $scopes = app(AdminAccessServiceInterface::class)->facultyScopeValues($user);
 
-        return $scope === '' ? $query->whereRaw('1 = 0') : $query->where('faculty_scope_slug', $scope);
+        return $scopes === [] ? $query->whereRaw('1 = 0') : $query->whereIn('faculty_scope_slug', $scopes);
     }
 
     /** @return array<string, string> */

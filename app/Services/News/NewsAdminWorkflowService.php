@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\News;
 
+use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\News\NewsAdminWorkflowServiceInterface;
 use App\Contracts\Shared\AuditServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
@@ -13,6 +14,7 @@ use App\Models\News\NewsCategory;
 use App\Models\User\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 final class NewsAdminWorkflowService implements NewsAdminWorkflowServiceInterface
@@ -29,6 +31,7 @@ final class NewsAdminWorkflowService implements NewsAdminWorkflowServiceInterfac
         private readonly AuditServiceInterface $auditService,
         private readonly CacheServiceInterface $cacheService,
         private readonly SlugServiceInterface $slugService,
+        private readonly AdminAccessServiceInterface $access,
     ) {}
 
     public function prepareArticleDataForCreate(array $data, ?int $userId): array
@@ -45,8 +48,8 @@ final class NewsAdminWorkflowService implements NewsAdminWorkflowServiceInterfac
         $data['created_by'] = $userId;
         $data['updated_by'] = $userId;
 
-        if ($user instanceof User && $user->role_slug === 'faculty_editor') {
-            $data['faculty_scope_slug'] = is_string($user->faculty_scope_slug) ? $user->faculty_scope_slug : null;
+        if ($user instanceof User && $user->isLimitedEditor()) {
+            $data['faculty_scope_slug'] = $this->grantedFacultyOrFail($user, $this->requestedFaculty($data));
         }
 
         return $this->normalizePublicationDates($data);
@@ -77,8 +80,11 @@ final class NewsAdminWorkflowService implements NewsAdminWorkflowServiceInterfac
         $data = $this->applyArticleSlugForUpdate($article, $data);
         $data['updated_by'] = $userId;
 
-        if ($user instanceof User && $user->role_slug === 'faculty_editor') {
-            $data['faculty_scope_slug'] = is_string($user->faculty_scope_slug) ? $user->faculty_scope_slug : null;
+        if ($user instanceof User && $user->isLimitedEditor()) {
+            $data['faculty_scope_slug'] = $this->grantedFacultyOrFail(
+                $user,
+                $this->requestedFaculty($data) ?? $article->getAttribute('faculty_scope_slug'),
+            );
         }
 
         return $this->normalizePublicationDates($data);
@@ -367,5 +373,26 @@ final class NewsAdminWorkflowService implements NewsAdminWorkflowServiceInterfac
         if (! $this->cacheService->flushTags(['news', 'public-pages', 'public-shell', 'seo', 'sitemap'])) {
             $this->cacheService->flushAll();
         }
+    }
+
+    private function grantedFacultyOrFail(User $user, mixed $requestedFaculty): string
+    {
+        $faculty = $this->access->facultyForWrite($user, is_string($requestedFaculty) ? $requestedFaculty : null);
+
+        if ($faculty === null) {
+            throw ValidationException::withMessages([
+                'faculty_scope_slug' => [__('admin_resources.user.choose_one_of_your_faculties')],
+            ]);
+        }
+
+        return $faculty;
+    }
+
+    /** @param array<string, mixed> $data */
+    private function requestedFaculty(array $data): ?string
+    {
+        $faculty = $data['faculty_scope_slug'] ?? null;
+
+        return is_string($faculty) && trim($faculty) !== '' ? $faculty : null;
     }
 }

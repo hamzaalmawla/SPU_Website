@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources;
 
+use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\Media\MediaServiceInterface;
 use App\Filament\Resources\LegacyMediaAssetResource\Pages;
 use App\Models\Media\MediaAsset;
@@ -75,11 +76,13 @@ final class LegacyMediaAssetResource extends Resource
             return $query;
         }
 
-        if ($user->role_slug !== 'faculty_editor' || ! is_string($user->faculty_scope_slug) || $user->faculty_scope_slug === '') {
+        $scopes = $user->isLimitedEditor() ? app(AdminAccessServiceInterface::class)->facultyScopeValues($user) : [];
+
+        if ($scopes === []) {
             return $query->whereRaw('1 = 0');
         }
 
-        return $query->where('faculty_scope_slug', $user->faculty_scope_slug);
+        return $query->whereIn('faculty_scope_slug', $scopes);
     }
 
     public static function form(Form $form): Form

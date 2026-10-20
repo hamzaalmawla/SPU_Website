@@ -236,7 +236,7 @@ final class CampusLifeJobsTest extends TestCase
     {
         $user = User::factory()->create([
             'role_slug' => 'faculty_editor',
-            'faculty_scope_slug' => 'medicine',
+            'faculty_scopes' => ['medicine'],
         ]);
 
         $this->expectException(AuthorizationException::class);

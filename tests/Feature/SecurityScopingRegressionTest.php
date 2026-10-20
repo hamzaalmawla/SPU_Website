@@ -24,7 +24,7 @@ final class SecurityScopingRegressionTest extends TestCase
     {
         $user = User::factory()->create([
             'role_slug' => 'faculty_editor',
-            'faculty_scope_slug' => 'medicine',
+            'faculty_scopes' => ['medicine'],
         ]);
 
         $matchingPage = Page::factory()->create(['faculty_scope_slug' => 'medicine']);
@@ -38,7 +38,7 @@ final class SecurityScopingRegressionTest extends TestCase
     {
         $user = User::factory()->create([
             'role_slug' => 'faculty_editor',
-            'faculty_scope_slug' => 'medicine',
+            'faculty_scopes' => ['medicine'],
         ]);
 
         $matchingPage = Page::factory()->create(['faculty_scope_slug' => 'medicine']);
@@ -56,7 +56,7 @@ final class SecurityScopingRegressionTest extends TestCase
     {
         $user = User::factory()->create([
             'role_slug' => 'faculty_editor',
-            'faculty_scope_slug' => 'medicine',
+            'faculty_scopes' => ['medicine'],
         ]);
 
         $page = Page::factory()->create([
@@ -83,7 +83,7 @@ final class SecurityScopingRegressionTest extends TestCase
     {
         $user = User::factory()->create([
             'role_slug' => 'faculty_editor',
-            'faculty_scope_slug' => 'medicine',
+            'faculty_scopes' => ['medicine'],
         ]);
 
         $matchingAsset = $this->createMediaAsset('medicine');
@@ -101,7 +101,7 @@ final class SecurityScopingRegressionTest extends TestCase
     {
         $user = User::factory()->create([
             'role_slug' => 'faculty_editor',
-            'faculty_scope_slug' => 'medicine',
+            'faculty_scopes' => ['medicine'],
         ]);
 
         $asset = $this->createMediaAsset('pharmacy');
@@ -113,7 +113,7 @@ final class SecurityScopingRegressionTest extends TestCase
     {
         $user = User::factory()->create([
             'role_slug' => 'faculty_editor',
-            'faculty_scope_slug' => 'medicine',
+            'faculty_scopes' => ['medicine'],
         ]);
 
         $matchingAsset = $this->createMediaAsset('medicine');

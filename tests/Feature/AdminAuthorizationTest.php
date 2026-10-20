@@ -67,7 +67,7 @@ class AdminAuthorizationTest extends TestCase
             'name' => 'Faculty Editor',
             'email' => 'faculty-editor@example.com',
             'role_slug' => 'faculty_editor',
-            'faculty_scope_slug' => 'medicine',
+            'faculty_scopes' => ['medicine'],
         ]);
 
         $hr = new User;

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Models\Career\Alumni;
 use App\Models\Career\HonorStudent;
 use App\Models\Faculty\Faculty;
@@ -17,6 +18,10 @@ use App\Models\User\User;
 
 final class FacultyDomainPolicy
 {
+    public function __construct(
+        private readonly AdminAccessServiceInterface $access,
+    ) {}
+
     public function before(User $user, string $ability): ?bool
     {
         return $user->role_slug === 'super_admin' ? true : null;
@@ -25,7 +30,7 @@ final class FacultyDomainPolicy
     public function create(User $user): bool
     {
         return $user->role_slug === 'editor'
-            || ($user->role_slug === 'faculty_editor' && is_string($user->faculty_scope_slug) && $user->faculty_scope_slug !== '');
+            || $this->access->grantedFaculties($user) !== [];
     }
 
     public function delete(User $user, mixed $record): bool
@@ -35,7 +40,7 @@ final class FacultyDomainPolicy
 
     public function manage(User $user): bool
     {
-        return in_array($user->role_slug, ['editor', 'faculty_editor'], true);
+        return $user->role_slug === 'editor' || $this->access->grantedFaculties($user) !== [];
     }
 
     public function update(User $user, mixed $record): bool
@@ -44,13 +49,7 @@ final class FacultyDomainPolicy
             return true;
         }
 
-        if ($user->role_slug !== 'faculty_editor') {
-            return false;
-        }
-
-        $userScope = is_string($user->faculty_scope_slug) ? $user->faculty_scope_slug : '';
-
-        return $userScope !== '' && $this->recordScope($record) === $this->canonicalScope($userScope);
+        return $user->isLimitedEditor() && $this->access->canManageFaculty($user, $this->recordScope($record));
     }
 
     public function viewAny(User $user): bool
@@ -61,15 +60,6 @@ final class FacultyDomainPolicy
     public function view(User $user, mixed $record): bool
     {
         return $this->update($user, $record);
-    }
-
-    private function canonicalScope(string $scope): string
-    {
-        return Faculty::query()
-            ->where('faculty_scope_slug', $scope)
-            ->orWhere('public_slug', $scope)
-            ->orWhere('slug', $scope)
-            ->value('public_slug') ?: $scope;
     }
 
     private function recordScope(mixed $record): ?string

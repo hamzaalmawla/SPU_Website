@@ -162,7 +162,7 @@ final class AboutEntityCmsWorkflowTest extends TestCase
         $faculty = Faculty::query()->findOrFail($payload['faculty_id']);
         $facultyEditor = User::factory()->create([
             'role_slug' => 'faculty_editor',
-            'faculty_scope_slug' => $faculty->faculty_scope_slug,
+            'faculty_scopes' => [$faculty->faculty_scope_slug],
             'is_locked' => false,
         ]);
 

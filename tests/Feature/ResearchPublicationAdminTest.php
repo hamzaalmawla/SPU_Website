@@ -168,7 +168,7 @@ final class ResearchPublicationAdminTest extends TestCase
     {
         $own = $this->legacyPublication('medicine', 'Medicine owned study');
         $other = $this->legacyPublication('pharmacy', 'Pharmacy owned study');
-        $facultyEditor = User::factory()->create(['role_slug' => 'faculty_editor', 'faculty_scope_slug' => 'medicine', 'is_locked' => false]);
+        $facultyEditor = User::factory()->create(['role_slug' => 'faculty_editor', 'faculty_scopes' => ['medicine'], 'is_locked' => false]);
         $this->actingAs($facultyEditor, 'web');
 
         Livewire::test(ListResearchPublications::class)

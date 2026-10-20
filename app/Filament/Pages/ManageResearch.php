@@ -9,6 +9,7 @@ use App\Contracts\Form\FormDefinitionServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Exceptions\ConflictException;
 use App\Filament\Components\PageUrlSelect;
+use App\Filament\Concerns\LimitsCmsTargetsToGrants;
 use App\Filament\Resources\ResearchPublicationResource;
 use App\Filament\Support\FormPicker;
 use App\Filament\Support\MediaPicker;
@@ -43,6 +44,7 @@ use Illuminate\Validation\ValidationException;
 class ManageResearch extends Page implements HasForms
 {
     use InteractsWithForms;
+    use LimitsCmsTargetsToGrants;
 
     protected static ?string $navigationIcon = 'heroicon-o-academic-cap';
 
@@ -78,7 +80,7 @@ class ManageResearch extends Page implements HasForms
 
     public static function canAccess(): bool
     {
-        return Gate::allows('manage-pages');
+        return static::canAccessCmsArea('manage-pages', 'research');
     }
 
     public static function getNavigationGroup(): ?string
@@ -101,7 +103,7 @@ class ManageResearch extends Page implements HasForms
         $requestedTarget = request()->query('target', 'research.index');
         $targetKey = is_string($requestedTarget) && array_key_exists($requestedTarget, $this->targetOptions())
             ? $requestedTarget
-            : 'research.index';
+            : $this->firstGrantedTarget('research.index', $this->targetOptions());
 
         $this->loadTarget($targetKey);
     }
@@ -139,7 +141,7 @@ class ManageResearch extends Page implements HasForms
 
         return is_string($requestedTarget) && array_key_exists($requestedTarget, $this->targetOptions())
             ? $requestedTarget
-            : 'research.index';
+            : $this->firstGrantedTarget('research.index', $this->targetOptions());
     }
 
     /** @return array<int, Component> */
@@ -391,7 +393,7 @@ class ManageResearch extends Page implements HasForms
     /** @return array<string, string> */
     private function targetOptions(): array
     {
-        return [
+        return $this->onlyGrantedTargets([
             'research.index' => __('admin.cms.targets.research.index'),
             'research.publications' => __('admin.cms.targets.research.publications'),
             'research.centers' => __('admin.cms.targets.research.centers'),
@@ -402,7 +404,7 @@ class ManageResearch extends Page implements HasForms
             'research.library' => __('admin.cms.targets.research.library'),
             'research.office' => __('admin.cms.targets.research.office'),
             'research.policies' => __('admin.cms.targets.research.policies'),
-        ];
+        ]);
     }
 
     private function currentTargetKey(): string

@@ -8,6 +8,7 @@ use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Page\FacultyPageServiceInterface;
 use App\Exceptions\ConflictException;
 use App\Filament\Components\PageUrlSelect;
+use App\Filament\Concerns\LimitsCmsTargetsToGrants;
 use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
 use Filament\Actions\Action;
@@ -30,6 +31,7 @@ use Illuminate\Validation\ValidationException;
 class ManageFacilities extends Page implements HasForms
 {
     use InteractsWithForms;
+    use LimitsCmsTargetsToGrants;
 
     protected static ?string $navigationIcon = 'heroicon-o-building-library';
 
@@ -58,7 +60,7 @@ class ManageFacilities extends Page implements HasForms
 
     public static function canAccess(): bool
     {
-        return Gate::allows('manage-faculties');
+        return static::canAccessCmsArea('manage-faculties', 'facilities', 'facilities.landing');
     }
 
     public static function getNavigationGroup(): ?string

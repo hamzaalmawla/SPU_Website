@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Models\Faculty\Faculty;
 use App\Models\Research\ResearchPublication;
 use App\Models\User\User;
@@ -14,6 +15,10 @@ use App\Models\User\User;
  */
 final class ResearchPublicationPolicy
 {
+    public function __construct(
+        private readonly AdminAccessServiceInterface $access,
+    ) {}
+
     public function before(User $user, string $ability): ?bool
     {
         return $user->role_slug === 'super_admin' ? true : null;
@@ -21,7 +26,7 @@ final class ResearchPublicationPolicy
 
     public function viewAny(User $user): bool
     {
-        return in_array($user->role_slug, ['editor', 'faculty_editor'], true);
+        return $user->role_slug === 'editor' || $this->access->grantedFaculties($user) !== [];
     }
 
     public function view(User $user, ResearchPublication $publication): bool
@@ -32,7 +37,7 @@ final class ResearchPublicationPolicy
     public function create(User $user): bool
     {
         return $user->role_slug === 'editor'
-            || ($user->role_slug === 'faculty_editor' && is_string($user->faculty_scope_slug) && $user->faculty_scope_slug !== '');
+            || $this->access->grantedFaculties($user) !== [];
     }
 
     public function update(User $user, ResearchPublication $publication): bool
@@ -41,7 +46,7 @@ final class ResearchPublicationPolicy
             return true;
         }
 
-        if ($user->role_slug !== 'faculty_editor' || ! is_string($user->faculty_scope_slug) || $user->faculty_scope_slug === '') {
+        if ($this->access->grantedFaculties($user) === []) {
             return false;
         }
 
@@ -49,7 +54,7 @@ final class ResearchPublicationPolicy
         $faculty = $publication->effectiveFaculty();
 
         return $faculty instanceof Faculty
-            && in_array($user->faculty_scope_slug, array_filter([$faculty->faculty_scope_slug, $faculty->public_slug, $faculty->slug]), true);
+            && $this->access->canManageFaculty($user, $faculty->public_slug ?: $faculty->faculty_scope_slug ?: $faculty->slug);
     }
 
     public function delete(User $user, ResearchPublication $publication): bool

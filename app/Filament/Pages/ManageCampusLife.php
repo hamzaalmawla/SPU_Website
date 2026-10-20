@@ -11,6 +11,7 @@ use App\Contracts\Page\VirtualTourPageServiceInterface;
 use App\DTOs\Cms\CmsTargetDTO;
 use App\Exceptions\ConflictException;
 use App\Filament\Components\PageUrlSelect;
+use App\Filament\Concerns\LimitsCmsTargetsToGrants;
 use App\Filament\Support\FormPicker;
 use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
@@ -41,6 +42,7 @@ use Illuminate\Validation\ValidationException;
 class ManageCampusLife extends Page implements HasForms
 {
     use InteractsWithForms;
+    use LimitsCmsTargetsToGrants;
 
     protected static ?string $navigationIcon = 'heroicon-o-sparkles';
 
@@ -79,7 +81,7 @@ class ManageCampusLife extends Page implements HasForms
 
     public static function canAccess(): bool
     {
-        return Gate::allows('manage-faculties');
+        return static::canAccessCmsArea('manage-faculties', 'campus_life');
     }
 
     public static function getNavigationGroup(): ?string
@@ -102,7 +104,7 @@ class ManageCampusLife extends Page implements HasForms
         $requestedTarget = request()->query('target', $this->defaultCampusLifeTargetKey());
         $targetKey = is_string($requestedTarget) && array_key_exists($requestedTarget, $this->targetOptions())
             ? $requestedTarget
-            : $this->defaultCampusLifeTargetKey();
+            : $this->firstGrantedTarget($this->defaultCampusLifeTargetKey(), $this->targetOptions());
 
         if (! $this->showsTargetSelector()) {
             $targetKey = $this->defaultCampusLifeTargetKey();
@@ -407,7 +409,7 @@ class ManageCampusLife extends Page implements HasForms
 
         unset($options['campus_life.jobs']);
 
-        return $options;
+        return $this->onlyGrantedTargets($options);
     }
 
     private function currentTargetKey(): string

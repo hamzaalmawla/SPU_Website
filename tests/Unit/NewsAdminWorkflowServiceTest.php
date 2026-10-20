@@ -29,7 +29,7 @@ final class NewsAdminWorkflowServiceTest extends TestCase
     {
         $user = User::factory()->create([
             'role_slug' => 'faculty_editor',
-            'faculty_scope_slug' => 'pharmacy',
+            'faculty_scopes' => ['pharmacy'],
         ]);
 
         $data = $this->service->prepareArticleDataForCreate([
@@ -126,7 +126,7 @@ final class NewsAdminWorkflowServiceTest extends TestCase
     {
         $user = User::factory()->create([
             'role_slug' => 'faculty_editor',
-            'faculty_scope_slug' => 'pharmacy',
+            'faculty_scopes' => ['pharmacy'],
         ]);
         $article = NewsArticle::query()->create([
             'slug' => 'published-pharmacy-news',

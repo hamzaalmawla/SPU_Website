@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources;
 
+use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\Content\ProfileAdminServiceInterface;
 use App\Contracts\Shared\SlugServiceInterface;
 use App\Filament\Resources\FacultyMemberResource\Pages;
@@ -88,20 +89,26 @@ class FacultyMemberResource extends Resource
             ->with(['translations', 'faculty.translations', 'department.translations', 'canonicalPerson']);
 
         $user = auth()->user();
-        if ($user instanceof User && $user->role_slug === 'faculty_editor') {
-            self::whereFacultyScope($query, (string) $user->faculty_scope_slug);
+        if ($user instanceof User && $user->isLimitedEditor()) {
+            self::whereFacultyScope($query, app(AdminAccessServiceInterface::class)->facultyScopeValues($user));
         }
 
         return $query;
     }
 
-    /** Limits a member query to one faculty, matched by any of its slugs. */
-    public static function whereFacultyScope(Builder $query, string $scope): Builder
+    /**
+     * Limits a member query to the given faculties, matched by any of their slugs.
+     *
+     * @param  list<string>|string  $scopes
+     */
+    public static function whereFacultyScope(Builder $query, array|string $scopes): Builder
     {
+        $scopes = (array) $scopes;
+
         return $query->whereHas('faculty', fn (Builder $facultyQuery): Builder => $facultyQuery
-            ->where('faculty_scope_slug', $scope)
-            ->orWhere('public_slug', $scope)
-            ->orWhere('slug', $scope));
+            ->whereIn('faculty_scope_slug', $scopes)
+            ->orWhereIn('public_slug', $scopes)
+            ->orWhereIn('slug', $scopes));
     }
 
     public static function form(Form $form): Form
@@ -306,9 +313,10 @@ class FacultyMemberResource extends Resource
     }
 
     /**
-     * The faculty a new member belongs to without anyone choosing it: a
-     * faculty editor's own faculty, or the faculty page the form was opened
-     * from. Null when the editor has to pick one.
+     * The faculty a new member belongs to without anyone choosing it: the
+     * faculty page the form was opened from (for a limited editor, only when
+     * it is one of their faculties), or a limited editor's only faculty. Null
+     * when the editor has to pick one.
      */
     public static function contextFacultyId(mixed $livewire = null): ?int
     {
@@ -317,8 +325,8 @@ class FacultyMemberResource extends Resource
             return null;
         }
 
-        $scope = $user->role_slug === 'faculty_editor'
-            ? (string) $user->faculty_scope_slug
+        $scope = $user->isLimitedEditor()
+            ? (string) app(AdminAccessServiceInterface::class)->facultyForWrite($user, self::contextScope($livewire))
             : self::contextScope($livewire);
 
         return $scope !== ''

@@ -12,6 +12,11 @@ final class ManageEvents extends ManageNews
 
     protected static ?int $navigationSort = 5;
 
+    public static function canAccess(): bool
+    {
+        return self::canAccessCmsArea('manage-pages', 'news', 'news.events');
+    }
+
     public static function getNavigationLabel(): string
     {
         return __('admin.navigation.items.events');

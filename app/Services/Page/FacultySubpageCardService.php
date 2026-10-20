@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Page;
 
+use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\Page\FacultySubpageCardServiceInterface;
 use App\Contracts\Shared\AuditServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
@@ -23,19 +24,18 @@ final class FacultySubpageCardService implements FacultySubpageCardServiceInterf
     public function __construct(
         private readonly AuditServiceInterface $auditService,
         private readonly CacheServiceInterface $cacheService,
+        private readonly AdminAccessServiceInterface $access,
     ) {}
 
-    public function scopedFacultySlug(int $userId): ?string
+    public function scopedFacultySlugs(int $userId): ?array
     {
         $user = User::query()->find($userId);
 
-        if (! $user instanceof User || $user->role_slug !== 'faculty_editor') {
+        if (! $user instanceof User || ! $user->isLimitedEditor()) {
             return null;
         }
 
-        $scope = trim((string) ($user->faculty_scope_slug ?? ''));
-
-        return $scope === '' ? null : $this->canonicalFacultyScope($scope);
+        return $this->access->grantedFaculties($user);
     }
 
     /** @return array<string, string> */
@@ -44,9 +44,8 @@ final class FacultySubpageCardService implements FacultySubpageCardServiceInterf
         $user = $this->authorizedUser($userId);
         $query = Faculty::query()->where('is_enabled', true);
 
-        if ($user->role_slug === 'faculty_editor') {
-            $scope = $this->canonicalFacultyScope((string) ($user->faculty_scope_slug ?? ''));
-            $query->where('public_slug', $scope);
+        if ($user->isLimitedEditor()) {
+            $query->whereIn('public_slug', $this->access->grantedFaculties($user));
         }
 
         return $query->pluck('public_slug', 'public_slug')->all();
@@ -430,28 +429,9 @@ final class FacultySubpageCardService implements FacultySubpageCardServiceInterf
 
     private function assertFacultyScope(User $user, string $facultySlug): void
     {
-        if ($user->role_slug !== 'faculty_editor') {
-            return;
+        if ($user->isLimitedEditor() && ! $this->access->canManageFaculty($user, $facultySlug)) {
+            throw new AuthorizationException('This editor is not authorized to manage this faculty.');
         }
-
-        $userScope = $this->canonicalFacultyScope((string) ($user->faculty_scope_slug ?? ''));
-
-        if ($userScope === '' || $userScope !== $this->canonicalFacultyScope($facultySlug)) {
-            throw new AuthorizationException('This faculty editor is not authorized to manage this faculty.');
-        }
-    }
-
-    private function canonicalFacultyScope(string $scope): string
-    {
-        if (trim($scope) === '') {
-            return '';
-        }
-
-        return Faculty::query()
-            ->where('faculty_scope_slug', $scope)
-            ->orWhere('public_slug', $scope)
-            ->orWhere('slug', $scope)
-            ->value('public_slug') ?: $scope;
     }
 
     /** @param array<string, mixed> $metadata */

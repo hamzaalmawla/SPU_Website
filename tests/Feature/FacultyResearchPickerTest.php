@@ -123,7 +123,7 @@ final class FacultyResearchPickerTest extends TestCase
     public function test_faculty_editor_saves_picks_of_any_faculty_research_as_references_in_both_locales(): void
     {
         $picked = $this->createPublication('pharmacy', 'Editor Picked Pharmacy Research', 'بحث صيدلة اختاره المحرر');
-        $editor = User::factory()->create(['role_slug' => 'faculty_editor', 'faculty_scope_slug' => 'medicine']);
+        $editor = User::factory()->create(['role_slug' => 'faculty_editor', 'faculty_scopes' => ['medicine']]);
         $this->actingAs($editor, 'web');
 
         Livewire::test(ManageMedicineFaculty::class)

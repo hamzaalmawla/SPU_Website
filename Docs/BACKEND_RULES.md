@@ -167,7 +167,7 @@ Not acceptable:
   - super_admin
   - editor
   - faculty_editor
-- `faculty_editor` is scoped according to the ownership field used by this foundation schema, currently `faculty_scope_slug`
+- `faculty_editor` (limited editor) is scoped to the faculties in `users.faculty_scopes` and the CMS pages in `users.page_scopes`, both chosen by a super_admin; records keep their own `faculty_scope_slug` ownership column, and every check goes through `AdminAccessServiceInterface`
 - MFA is future-phase only, not required in this sprint implementation
 - Passwords use bcrypt / Laravel hashing
 - Sessions use secure framework defaults

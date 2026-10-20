@@ -54,7 +54,7 @@ final class AdminJobsWorkspaceTest extends TestCase
     {
         $facultyEditor = User::factory()->create([
             'role_slug' => 'faculty_editor',
-            'faculty_scope_slug' => 'dentistry',
+            'faculty_scopes' => ['dentistry'],
             'is_locked' => false,
         ]);
 

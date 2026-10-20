@@ -609,7 +609,7 @@ final class FacilitiesWorkflowTest extends TestCase
         $workflow = app(CmsWorkflowServiceInterface::class);
         $facultyEditor = User::factory()->create([
             'role_slug' => 'faculty_editor',
-            'faculty_scope_slug' => 'medicine',
+            'faculty_scopes' => ['medicine'],
         ]);
 
         $this->actingAs($facultyEditor, 'web');

@@ -36,7 +36,8 @@ class UserFactory extends Factory
             'is_locked' => false,
             'locked_at' => null,
             'last_login_at' => null,
-            'faculty_scope_slug' => null,
+            'faculty_scopes' => null,
+            'page_scopes' => null,
             'remember_token' => Str::random(10),
         ];
     }

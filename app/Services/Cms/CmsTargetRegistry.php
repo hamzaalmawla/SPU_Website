@@ -50,6 +50,16 @@ final class CmsTargetRegistry implements CmsTargetRegistryInterface
             ?? $this->researchPublicationCmsService->resolveTarget($key);
     }
 
+    /** @return Collection<int, CmsTargetDTO> */
+    public function grantablePages(): Collection
+    {
+        return $this->all()
+            ->filter(fn (CmsTargetDTO $target): bool => $target->facultyScopeSlug === null
+                && $target->publicPath !== null
+                && $target->key !== 'campus_life.jobs')
+            ->values();
+    }
+
     /** @return array<int, CmsTargetDTO> */
     private function homepageTargets(): array
     {

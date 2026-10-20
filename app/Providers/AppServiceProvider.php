@@ -6,6 +6,7 @@ namespace App\Providers;
 
 use App\Contracts\Achievement\AchievementServiceInterface;
 use App\Contracts\Analytics\AnalyticsServiceInterface;
+use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\Auth\AuthServiceInterface;
 use App\Contracts\Auth\TotpAuthenticatorInterface;
 use App\Contracts\Career\AlumniDirectoryServiceInterface;
@@ -187,6 +188,7 @@ use App\Policies\ResearchPublicationPolicy;
 use App\Policies\UserPolicy;
 use App\Services\Achievement\AchievementService;
 use App\Services\Analytics\AnalyticsService;
+use App\Services\Auth\AdminAccessService;
 use App\Services\Auth\AuthService;
 use App\Services\Auth\TotpAuthenticator;
 use App\Services\Career\AlumniDirectoryService;
@@ -635,6 +637,7 @@ class AppServiceProvider extends ServiceProvider
             AboutPageServiceInterface::class => AboutPageService::class,
             CampusLifePageServiceInterface::class => CampusLifePageService::class,
             AuditServiceInterface::class => AuditService::class,
+            AdminAccessServiceInterface::class => AdminAccessService::class,
             AuthServiceInterface::class => AuthService::class,
             CmsTargetRegistryInterface::class => CmsTargetRegistry::class,
             CmsWorkflowServiceInterface::class => CmsWorkflowService::class,

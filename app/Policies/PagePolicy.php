@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Models\Page\Page;
 use App\Models\User\User;
 
@@ -12,11 +13,15 @@ use App\Models\User\User;
  *
  * The `manage` ability is reserved for full page management (editor-only) and is used
  * by the `manage-pages` gate. The `viewAny` ability grants list-level access to both
- * editors and faculty editors. Faculty editors are scoped to pages matching their
- * `faculty_scope_slug`.
+ * editors and limited editors. Limited editors are scoped to pages whose
+ * `faculty_scope_slug` is one of their granted faculties.
  */
 final class PagePolicy
 {
+    public function __construct(
+        private readonly AdminAccessServiceInterface $access,
+    ) {}
+
     public function before(User $user, string $ability): ?bool
     {
         return $user->role_slug === 'super_admin' ? true : null;
@@ -53,19 +58,14 @@ final class PagePolicy
             return true;
         }
 
-        if ($user->role_slug === 'faculty_editor') {
-            $userScope = is_string($user->faculty_scope_slug) ? $user->faculty_scope_slug : '';
-            $pageScope = $page->getAttribute('faculty_scope_slug');
+        $pageScope = $page->getAttribute('faculty_scope_slug');
 
-            return $userScope !== '' && is_string($pageScope) && $pageScope === $userScope;
-        }
-
-        return false;
+        return $user->isLimitedEditor() && is_string($pageScope) && $this->access->canManageFaculty($user, $pageScope);
     }
 
     public function viewAny(User $user): bool
     {
-        return in_array($user->role_slug, ['editor', 'faculty_editor'], true);
+        return $user->role_slug === 'editor' || $this->access->grantedFaculties($user) !== [];
     }
 
     public function view(User $user, Page $page): bool

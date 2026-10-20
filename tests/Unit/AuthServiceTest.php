@@ -128,7 +128,7 @@ class AuthServiceTest extends TestCase
         $user = User::factory()->create([
             'email' => 'faculty-editor@example.com',
             'role_slug' => 'faculty_editor',
-            'faculty_scope_slug' => 'medicine',
+            'faculty_scopes' => ['medicine'],
             'is_locked' => true,
             'locked_at' => now(),
         ]);
@@ -143,7 +143,7 @@ class AuthServiceTest extends TestCase
 
         $this->assertSame('Updated Faculty Editor', $user->name);
         $this->assertSame('faculty_editor', $user->role_slug);
-        $this->assertSame('medicine', $user->faculty_scope_slug);
+        $this->assertSame(['medicine'], $user->facultyScopes());
         $this->assertTrue($user->is_locked);
         $this->assertNotNull($user->locked_at);
     }

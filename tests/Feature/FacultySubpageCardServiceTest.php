@@ -143,7 +143,7 @@ final class FacultySubpageCardServiceTest extends TestCase
         $card = $service->createCard('medicine', 'publication-bypass', $editor->id);
         $facultyEditor = User::factory()->create([
             'role_slug' => 'faculty_editor',
-            'faculty_scope_slug' => 'medicine',
+            'faculty_scopes' => ['medicine'],
             'is_locked' => false,
         ]);
 
@@ -159,7 +159,7 @@ final class FacultySubpageCardServiceTest extends TestCase
         $card = FacultySubpageCard::query()->where('faculty_slug', 'dentistry')->firstOrFail();
         $facultyEditor = User::factory()->create([
             'role_slug' => 'faculty_editor',
-            'faculty_scope_slug' => 'medicine',
+            'faculty_scopes' => ['medicine'],
             'is_locked' => false,
         ]);
 

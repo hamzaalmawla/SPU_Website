@@ -249,7 +249,7 @@ class HomepageCmsWorkflowTest extends TestCase
     {
         $facultyEditor = User::factory()->create([
             'role_slug' => 'faculty_editor',
-            'faculty_scope_slug' => 'medicine',
+            'faculty_scopes' => ['medicine'],
         ]);
 
         $this->expectException(AuthorizationException::class);
@@ -655,7 +655,7 @@ class HomepageCmsWorkflowTest extends TestCase
 
         $this->assertTrue($this->publishingService()->schedulePublish($draft->id, now()->addHour(), $actor->id));
         HomepageDraft::query()->whereKey($draft->id)->update(['scheduled_at' => now()->subMinute()]);
-        $actor->forceFill(['role_slug' => 'faculty_editor', 'faculty_scope_slug' => 'medicine'])->save();
+        $actor->forceFill(['role_slug' => 'faculty_editor', 'faculty_scopes' => ['medicine']])->save();
 
         $this->assertSame(0, $this->publishingService()->publishDueScheduled());
         $this->assertDatabaseHas('homepage_drafts', ['id' => $draft->id, 'status' => 'scheduled']);

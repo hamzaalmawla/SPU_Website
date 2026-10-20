@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Cms;
 
+use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Media\MediaServiceInterface;
 use App\DTOs\Cms\AboutEntityCmsDataDTO;
@@ -43,6 +44,7 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
 
     public function __construct(
         private readonly MediaServiceInterface $mediaService,
+        private readonly AdminAccessServiceInterface $access,
     ) {}
 
     public function prepareDraft(AboutEntityCmsDataDTO $data, int $userId): AboutEntityCmsDataDTO
@@ -1215,22 +1217,22 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             ]);
         }
 
-        if ($user->role_slug !== 'faculty_editor') {
+        if (! $user->isLimitedEditor()) {
             return;
         }
 
-        $scope = is_string($user->faculty_scope_slug) ? $user->faculty_scope_slug : '';
-        $inScope = $scope !== '' && $facultyId !== null && Faculty::query()
+        $scopes = $this->access->facultyScopeValues($user);
+        $inScope = $scopes !== [] && $facultyId !== null && Faculty::query()
             ->whereKey($facultyId)
-            ->where(function ($query) use ($scope): void {
-                $query->where('faculty_scope_slug', $scope)
-                    ->orWhere('public_slug', $scope)
-                    ->orWhere('slug', $scope);
+            ->where(function ($query) use ($scopes): void {
+                $query->whereIn('faculty_scope_slug', $scopes)
+                    ->orWhereIn('public_slug', $scopes)
+                    ->orWhereIn('slug', $scopes);
             })
             ->exists();
 
         if (! $inScope) {
-            throw new AuthorizationException('You may only manage faculty members in your assigned faculty.');
+            throw new AuthorizationException('You may only manage faculty members in your granted faculties.');
         }
     }
 

@@ -153,9 +153,9 @@ The homepage is a fixed 11-section CMS page. Each section supports independent A
 |------|----------|-------|------|-------|----------|-------|-------|
 | super_admin | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | editor | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
-| faculty_editor | ❌ | scoped | ❌ | scoped | ❌ | ❌ | ❌ |
+| faculty_editor | if granted | granted only | ❌ | scoped | ❌ | ❌ | ❌ |
 
-Faculty editors see only pages and media matching their `faculty_scope_slug`.
+Limited editors (`faculty_editor`) see only the faculties and single pages a super admin granted them on the user form (`users.faculty_scopes`, `users.page_scopes`), plus media they uploaded.
 
 ## Caching
 

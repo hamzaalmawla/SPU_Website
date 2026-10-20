@@ -4,17 +4,23 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Models\Media\MediaAsset;
 use App\Models\User\User;
 
 /**
  * Authorizes media asset management actions.
  *
- * super_admin has full access via before(). Editors and faculty editors
- * can view and upload media. Only editors can delete.
+ * super_admin has full access via before(). Editors and limited editors
+ * can view and upload media; a limited editor only sees media of their granted
+ * faculties and media they uploaded. Only editors can delete.
  */
 final class MediaAssetPolicy
 {
+    public function __construct(
+        private readonly AdminAccessServiceInterface $access,
+    ) {}
+
     public function before(User $user, string $ability): ?bool
     {
         return $user->role_slug === 'super_admin' ? true : null;
@@ -51,13 +57,13 @@ final class MediaAssetPolicy
             return true;
         }
 
-        if ($user->role_slug !== 'faculty_editor') {
+        if (! $user->isLimitedEditor()) {
             return false;
         }
 
-        $userScope = is_string($user->faculty_scope_slug) ? $user->faculty_scope_slug : '';
         $assetScope = $mediaAsset->getAttribute('faculty_scope_slug');
 
-        return $userScope !== '' && is_string($assetScope) && $assetScope === $userScope;
+        return (int) $mediaAsset->getAttribute('uploaded_by') === (int) $user->getKey()
+            || (is_string($assetScope) && $this->access->canManageFaculty($user, $assetScope));
     }
 }

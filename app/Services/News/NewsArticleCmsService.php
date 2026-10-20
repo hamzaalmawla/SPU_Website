@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\News;
 
+use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\News\NewsArticleCmsServiceInterface;
 use App\Contracts\Shared\SlugServiceInterface;
 use App\DTOs\Cms\CmsTargetDTO;
@@ -33,6 +34,7 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
     public function __construct(
         private readonly SlugServiceInterface $slugService,
         private readonly HtmlSanitizer $htmlSanitizer,
+        private readonly AdminAccessServiceInterface $access,
     ) {}
 
     /** @return array<int, string> */
@@ -71,8 +73,11 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
         $stored = $article instanceof NewsArticle ? $this->storedPayload($article) : [];
         $payload = $this->normalizePayload($data->payload, $stored);
         $user = User::query()->find($userId);
-        if (! $article instanceof NewsArticle && $user instanceof User && $user->role_slug === 'faculty_editor') {
-            $payload['faculty_scope_slug'] = $this->nullableString($user->faculty_scope_slug);
+        if ($user instanceof User && $user->isLimitedEditor()) {
+            $payload['faculty_scope_slug'] = $this->access->facultyForWrite(
+                $user,
+                $this->nullableString($payload['faculty_scope_slug'] ?? null) ?? $article?->faculty_scope_slug,
+            );
         }
         $this->authorizeManagement($userId, $article, $payload);
 
@@ -495,11 +500,9 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
             throw new AuthorizationException('This user is not authorized to manage this news article.');
         }
 
-        if ($payload !== null && $user->role_slug === 'faculty_editor') {
-            $scope = $this->nullableString($user->faculty_scope_slug);
-            if ($scope === null || $this->nullableString($payload['faculty_scope_slug'] ?? null) !== $scope) {
-                throw new AuthorizationException('You may only manage news articles in your assigned faculty.');
-            }
+        if ($payload !== null && $user->isLimitedEditor()
+            && ! $this->access->canManageFaculty($user, $this->nullableString($payload['faculty_scope_slug'] ?? null))) {
+            throw new AuthorizationException('You may only manage news articles in your granted faculties.');
         }
     }
 

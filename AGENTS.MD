@@ -136,10 +136,11 @@ When generating code:
 Roles:
 - `super_admin` → full access
 - `editor` → all global content modules / pages / menu / media / settings within granted permissions
-- `faculty_editor` → scoped content access only, using the ownership model defined by the current schema (`faculty_scope_slug` if applicable)
+- `faculty_editor` (shown as "Limited editor") → edits only what a super_admin granted on the user form: any number of faculties (`users.faculty_scopes`, faculty public slugs) and any number of single CMS pages (`users.page_scopes`, CMS target keys from `CmsTargetRegistryInterface::grantablePages()`). Drafts and previews only; publishing stays with editors
 
 Rules:
 - Never bypass role checks
+- Answer "may this user edit X?" through `AdminAccessServiceInterface`, not by reading `role_slug` or the scope columns directly
 - Use Gates / Policies
 - Locked accounts cannot log in
 - 5 failed attempts must lock the account

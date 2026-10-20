@@ -293,7 +293,7 @@ final class CmsWorkflowServiceTest extends TestCase
     {
         $user = User::factory()->create([
             'role_slug' => 'faculty_editor',
-            'faculty_scope_slug' => 'medicine',
+            'faculty_scopes' => ['medicine'],
         ]);
 
         $this->expectException(AuthorizationException::class);
@@ -339,7 +339,7 @@ final class CmsWorkflowServiceTest extends TestCase
     {
         $user = User::factory()->create([
             'role_slug' => 'faculty_editor',
-            'faculty_scope_slug' => 'medicine',
+            'faculty_scopes' => ['medicine'],
         ]);
 
         foreach (['research.projects', 'research.themes'] as $targetKey) {

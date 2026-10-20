@@ -18,7 +18,8 @@ final class HomepagePolicy
 
     public function manage(User $user): bool
     {
-        return $user->role_slug === 'editor';
+        return $user->role_slug === 'editor'
+            || ($user->isLimitedEditor() && $user->hasPageScope('homepage'));
     }
 
     public function preview(User $user): bool
@@ -28,7 +29,7 @@ final class HomepagePolicy
 
     public function publish(User $user): bool
     {
-        return $this->manage($user);
+        return $user->role_slug === 'editor';
     }
 
     public function update(User $user): bool

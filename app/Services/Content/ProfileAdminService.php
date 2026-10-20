@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Content;
 
+use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\Content\ProfileAdminServiceInterface;
 use App\Contracts\Media\MediaServiceInterface;
 use App\Contracts\Shared\AuditServiceInterface;
@@ -36,6 +37,7 @@ final class ProfileAdminService implements ProfileAdminServiceInterface
         private readonly AuditServiceInterface $auditService,
         private readonly CacheServiceInterface $cacheService,
         private readonly MediaServiceInterface $mediaService,
+        private readonly AdminAccessServiceInterface $access,
     ) {}
 
     /** @return array<int, string> */
@@ -44,12 +46,12 @@ final class ProfileAdminService implements ProfileAdminServiceInterface
         $user = User::query()->findOrFail($userId);
         $query = Faculty::query()->enabled()->with('translations')->orderBy('sort_order');
 
-        if ($user->role_slug === 'faculty_editor') {
-            $scope = (string) ($user->faculty_scope_slug ?? '');
-            $query->where(function ($facultyQuery) use ($scope): void {
-                $facultyQuery->where('faculty_scope_slug', $scope)
-                    ->orWhere('public_slug', $scope)
-                    ->orWhere('slug', $scope);
+        if ($user->isLimitedEditor()) {
+            $scopes = $this->access->facultyScopeValues($user);
+            $query->where(function ($facultyQuery) use ($scopes): void {
+                $facultyQuery->whereIn('faculty_scope_slug', $scopes)
+                    ->orWhereIn('public_slug', $scopes)
+                    ->orWhereIn('slug', $scopes);
             });
         } elseif (! in_array($user->role_slug, ['super_admin', 'editor'], true)) {
             throw new AuthorizationException('You are not authorized to view faculty profile options.');
@@ -91,12 +93,12 @@ final class ProfileAdminService implements ProfileAdminServiceInterface
             ->with('translations')
             ->when($facultyId !== null, fn ($departmentQuery) => $departmentQuery->where('faculty_id', $facultyId));
 
-        if ($user->role_slug === 'faculty_editor') {
-            $scope = (string) ($user->faculty_scope_slug ?? '');
-            $query->whereHas('faculty', function ($facultyQuery) use ($scope): void {
-                $facultyQuery->where('faculty_scope_slug', $scope)
-                    ->orWhere('public_slug', $scope)
-                    ->orWhere('slug', $scope);
+        if ($user->isLimitedEditor()) {
+            $scopes = $this->access->facultyScopeValues($user);
+            $query->whereHas('faculty', function ($facultyQuery) use ($scopes): void {
+                $facultyQuery->whereIn('faculty_scope_slug', $scopes)
+                    ->orWhereIn('public_slug', $scopes)
+                    ->orWhereIn('slug', $scopes);
             });
         } elseif (! in_array($user->role_slug, ['super_admin', 'editor'], true)) {
             throw new AuthorizationException('You are not authorized to view department profile options.');
@@ -455,21 +457,21 @@ final class ProfileAdminService implements ProfileAdminServiceInterface
             return;
         }
 
-        $scope = is_string($user->faculty_scope_slug) ? $user->faculty_scope_slug : '';
-        $hasScope = $user->role_slug === 'faculty_editor'
-            && $scope !== ''
+        $scopes = $this->access->facultyScopeValues($user);
+        $hasScope = $user->isLimitedEditor()
+            && $scopes !== []
             && $data->facultyId !== null
             && Faculty::query()
                 ->whereKey($data->facultyId)
-                ->where(function ($query) use ($scope): void {
-                    $query->where('faculty_scope_slug', $scope)
-                        ->orWhere('public_slug', $scope)
-                        ->orWhere('slug', $scope);
+                ->where(function ($query) use ($scopes): void {
+                    $query->whereIn('faculty_scope_slug', $scopes)
+                        ->orWhereIn('public_slug', $scopes)
+                        ->orWhereIn('slug', $scopes);
                 })
                 ->exists();
 
         if (! $hasScope) {
-            throw new AuthorizationException('You may only manage faculty members in your assigned faculty.');
+            throw new AuthorizationException('You may only manage faculty members in your granted faculties.');
         }
     }
 
@@ -480,20 +482,20 @@ final class ProfileAdminService implements ProfileAdminServiceInterface
             return;
         }
 
-        $scope = is_string($user->faculty_scope_slug) ? $user->faculty_scope_slug : '';
-        $allowed = $user->role_slug === 'faculty_editor'
-            && $scope !== ''
+        $scopes = $this->access->facultyScopeValues($user);
+        $allowed = $user->isLimitedEditor()
+            && $scopes !== []
             && FacultyMember::query()
                 ->whereKey($memberId)
-                ->whereHas('faculty', function ($query) use ($scope): void {
-                    $query->where('faculty_scope_slug', $scope)
-                        ->orWhere('public_slug', $scope)
-                        ->orWhere('slug', $scope);
+                ->whereHas('faculty', function ($query) use ($scopes): void {
+                    $query->whereIn('faculty_scope_slug', $scopes)
+                        ->orWhereIn('public_slug', $scopes)
+                        ->orWhereIn('slug', $scopes);
                 })
                 ->exists();
 
         if (! $allowed) {
-            throw new AuthorizationException('You may only update faculty members in your assigned faculty.');
+            throw new AuthorizationException('You may only update faculty members in your granted faculties.');
         }
     }
 

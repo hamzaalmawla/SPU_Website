@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources;
 
+use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\Research\ResearchPublicationCmsServiceInterface;
 use App\DTOs\Research\ResearcherDataDTO;
 use App\Filament\Resources\ResearchPublicationResource\Pages;
@@ -392,19 +393,19 @@ class ResearchPublicationResource extends Resource
     {
         $user = auth()->user();
 
-        if (! $user instanceof User || $user->role_slug !== 'faculty_editor') {
+        if (! $user instanceof User || ! $user->isLimitedEditor()) {
             return $query;
         }
 
-        $scope = is_string($user->faculty_scope_slug) ? $user->faculty_scope_slug : '';
+        $scopes = app(AdminAccessServiceInterface::class)->facultyScopeValues($user);
 
-        return $scope === ''
+        return $scopes === []
             ? $query->whereRaw('1 = 0')
             : $query->whereEffectiveFaculty(fn (Builder $facultyQuery): Builder => $facultyQuery->where(
                 fn (Builder $scopeQuery): Builder => $scopeQuery
-                    ->where('faculty_scope_slug', $scope)
-                    ->orWhere('public_slug', $scope)
-                    ->orWhere('slug', $scope)
+                    ->whereIn('faculty_scope_slug', $scopes)
+                    ->orWhereIn('public_slug', $scopes)
+                    ->orWhereIn('slug', $scopes)
             ));
     }
 

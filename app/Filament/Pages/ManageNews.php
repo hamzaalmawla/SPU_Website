@@ -9,6 +9,7 @@ use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\News\NewsServiceInterface;
 use App\DTOs\Cms\CmsTargetDTO;
 use App\Exceptions\ConflictException;
+use App\Filament\Concerns\LimitsCmsTargetsToGrants;
 use App\Filament\Support\FormPicker;
 use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
@@ -37,6 +38,7 @@ use Illuminate\Validation\ValidationException;
 class ManageNews extends Page implements HasForms
 {
     use InteractsWithForms;
+    use LimitsCmsTargetsToGrants;
 
     protected static ?string $navigationIcon = 'heroicon-o-newspaper';
 
@@ -71,7 +73,7 @@ class ManageNews extends Page implements HasForms
 
     public static function canAccess(): bool
     {
-        return Gate::allows('manage-pages');
+        return static::canAccessCmsArea('manage-pages', 'news');
     }
 
     public static function getNavigationGroup(): ?string
@@ -94,7 +96,7 @@ class ManageNews extends Page implements HasForms
         $requestedTarget = request()->query('target', $this->defaultNewsTargetKey());
         $targetKey = is_string($requestedTarget) && array_key_exists($requestedTarget, $this->targetOptions())
             ? $requestedTarget
-            : $this->defaultNewsTargetKey();
+            : $this->firstGrantedTarget($this->defaultNewsTargetKey(), $this->targetOptions());
 
         if (! $this->showsTargetSelector()) {
             $targetKey = $this->defaultNewsTargetKey();
@@ -353,7 +355,7 @@ class ManageNews extends Page implements HasForms
             return isset($options[$targetKey]) ? [$targetKey => $options[$targetKey]] : [];
         }
 
-        return array_diff_key($options, array_flip(['news.article', 'news.events']));
+        return $this->onlyGrantedTargets(array_diff_key($options, array_flip(['news.article', 'news.events'])));
     }
 
     private function currentTargetKey(): string

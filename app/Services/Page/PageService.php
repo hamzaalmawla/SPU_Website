@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Page;
 
+use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\Page\PageServiceInterface;
 use App\Contracts\Shared\AuditServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
@@ -73,6 +74,7 @@ final class PageService implements PageServiceInterface
         private readonly PageUrlResolver $urlResolver,
         private readonly PagePublishabilityValidator $publishabilityValidator,
         private readonly HtmlSanitizer $htmlSanitizer,
+        private readonly AdminAccessServiceInterface $access,
         private readonly ?PreviewTokenStore $previewTokenStore = null,
     ) {}
 
@@ -670,13 +672,8 @@ final class PageService implements PageServiceInterface
             throw new AuthorizationException('This user is not authorized to modify the requested page.');
         }
 
-        if ($user->role_slug === 'faculty_editor') {
-            $userScope = trim((string) ($user->faculty_scope_slug ?? ''));
-            $pageScope = trim((string) ($page->faculty_scope_slug ?? ''));
-
-            if ($userScope === '' || $pageScope === '' || $userScope !== $pageScope) {
-                throw new AuthorizationException('This faculty editor is not authorized to modify this page.');
-            }
+        if ($user->isLimitedEditor() && ! $this->access->canManageFaculty($user, $page->faculty_scope_slug)) {
+            throw new AuthorizationException('This editor is not authorized to modify this page.');
         }
     }
 
@@ -693,16 +690,13 @@ final class PageService implements PageServiceInterface
     {
         $user = User::query()->find($userId);
 
-        if (! $user instanceof User || $user->role_slug !== 'faculty_editor') {
+        if (! $user instanceof User || ! $user->isLimitedEditor()) {
             return;
         }
 
-        if (! is_string($user->faculty_scope_slug) || $user->faculty_scope_slug === '') {
-            throw new AuthorizationException('Faculty editors must have a faculty scope.');
-        }
-
-        if ($requestedScope !== $page->faculty_scope_slug || $requestedScope !== $user->faculty_scope_slug) {
-            throw new AuthorizationException('Faculty editors cannot change page faculty scope.');
+        // A limited editor may move a page only between their own faculties.
+        if (! $this->access->canManageFaculty($user, $requestedScope)) {
+            throw new AuthorizationException('Limited editors can only assign their granted faculties to a page.');
         }
     }
 

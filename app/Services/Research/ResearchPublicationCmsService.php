@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Research;
 
+use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\Research\ResearchPublicationCmsServiceInterface;
 use App\Contracts\Shared\AuditServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
@@ -34,6 +35,7 @@ final class ResearchPublicationCmsService implements ResearchPublicationCmsServi
     public function __construct(
         private readonly AuditServiceInterface $auditService,
         private readonly CacheServiceInterface $cacheService,
+        private readonly AdminAccessServiceInterface $access,
     ) {}
 
     public function prepareDraft(ResearchPublicationCmsDataDTO $data, int $userId): ResearchPublicationCmsDataDTO
@@ -279,9 +281,9 @@ final class ResearchPublicationCmsService implements ResearchPublicationCmsServi
             ->orderBy('id')
             ->limit(50);
 
-        if ($user->role_slug === 'faculty_editor') {
-            $scope = $this->canonicalScope((string) $user->faculty_scope_slug);
-            $query->whereHas('faculty', fn (Builder $facultyQuery): Builder => $this->whereFacultyScope($facultyQuery, $scope));
+        if ($user->isLimitedEditor()) {
+            $scopes = $this->access->facultyScopeValues($user);
+            $query->whereHas('faculty', fn (Builder $facultyQuery): Builder => $this->whereFacultyScope($facultyQuery, $scopes));
         }
 
         return $query->get()
@@ -624,12 +626,9 @@ final class ResearchPublicationCmsService implements ResearchPublicationCmsServi
             throw new AuthorizationException('This user is not authorized to manage this research publication.');
         }
 
-        if ($payload !== null && $user->role_slug === 'faculty_editor') {
-            $scope = $this->canonicalScope((string) $user->faculty_scope_slug);
-
-            if ($scope === '' || $this->facultyScope($this->nullableInt($payload['faculty_id'] ?? null), $this->nullableInt($payload['faculty_member_id'] ?? null)) !== $scope) {
-                throw new AuthorizationException('You may only manage research publications of your assigned faculty.');
-            }
+        if ($payload !== null && $user->isLimitedEditor()
+            && ! $this->access->canManageFaculty($user, $this->facultyScope($this->nullableInt($payload['faculty_id'] ?? null), $this->nullableInt($payload['faculty_member_id'] ?? null)))) {
+            throw new AuthorizationException('You may only manage research publications of your granted faculties.');
         }
     }
 
@@ -648,35 +647,16 @@ final class ResearchPublicationCmsService implements ResearchPublicationCmsServi
 
         $scope = (string) ($faculty->public_slug ?: $faculty->faculty_scope_slug ?: $faculty->slug);
 
-        return $scope !== '' ? $this->canonicalScope($scope) : null;
+        return $scope !== '' ? $this->access->canonicalFacultySlug($scope) : null;
     }
 
-    private function canonicalScope(string $scope): string
-    {
-        $scope = trim($scope);
-
-        if ($scope === '') {
-            return '';
-        }
-
-        $publicSlug = Faculty::query()
-            ->where(fn (Builder $query): Builder => $this->whereFacultyScope($query, $scope))
-            ->value('public_slug');
-
-        return match ($publicSlug ?: $scope) {
-            'ai', 'ai-engineering' => 'artificial-intelligence',
-            'construction' => 'building-construction-engineering',
-            'business' => 'business-administration',
-            default => (string) ($publicSlug ?: $scope),
-        };
-    }
-
-    private function whereFacultyScope(Builder $query, string $scope): Builder
+    /** @param  list<string>  $scopes */
+    private function whereFacultyScope(Builder $query, array $scopes): Builder
     {
         return $query->where(fn (Builder $scopeQuery): Builder => $scopeQuery
-            ->where('faculty_scope_slug', $scope)
-            ->orWhere('public_slug', $scope)
-            ->orWhere('slug', $scope));
+            ->whereIn('faculty_scope_slug', $scopes)
+            ->orWhereIn('public_slug', $scopes)
+            ->orWhereIn('slug', $scopes));
     }
 
     private function storedSlug(ResearchPublication $publication): string

@@ -9,7 +9,13 @@ use Illuminate\Support\Collection;
 
 interface FacultySubpageCardServiceInterface
 {
-    public function scopedFacultySlug(int $userId): ?string;
+    /**
+     * The faculties a limited editor is restricted to (public slugs), or null
+     * when the user may manage every faculty.
+     *
+     * @return list<string>|null
+     */
+    public function scopedFacultySlugs(int $userId): ?array;
 
     /** @return array<string, string> */
     public function facultyOptions(int $userId): array;

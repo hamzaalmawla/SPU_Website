@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Cms;
 
+use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
@@ -54,6 +55,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
         private readonly ResearchPublicationCmsServiceInterface $researchPublicationCmsService,
         private readonly FacultyStudyPlanLinkServiceInterface $studyPlanLinkService,
         private readonly FormDefinitionServiceInterface $formDefinitions,
+        private readonly AdminAccessServiceInterface $access,
     ) {}
 
     /** @param array<string, mixed> $payload */
@@ -677,35 +679,23 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
         $user = User::query()->find($userId);
         $ability = $this->manageAbilityForTarget($target);
 
-        if (! $user instanceof User || (bool) $user->is_locked || Gate::forUser($user)->denies($ability)) {
+        if (! $user instanceof User || (bool) $user->is_locked) {
             throw new AuthorizationException('This user is not authorized to manage this CMS target.');
         }
 
-        if ($user->role_slug === 'faculty_editor' && $target->facultyScopeSlug === null) {
-            throw new AuthorizationException('Faculty editors cannot manage global CMS targets.');
-        }
-
-        if ($target->facultyScopeSlug !== null && $user->role_slug === 'faculty_editor') {
-            $userScope = $this->canonicalFacultyScope((string) $user->faculty_scope_slug);
-
-            if ($userScope === '' || $userScope !== $this->canonicalFacultyScope($target->facultyScopeSlug)) {
-                throw new AuthorizationException('This faculty editor is not authorized to manage this faculty target.');
+        // A limited editor edits exactly what was granted: faculty pages of a
+        // granted faculty and pages granted one by one. Area gates do not apply.
+        if ($user->isLimitedEditor()) {
+            if (! $this->access->canManageTarget($user, $target)) {
+                throw new AuthorizationException('This editor has not been granted this page.');
             }
+        } elseif (Gate::forUser($user)->denies($ability)) {
+            throw new AuthorizationException('This user is not authorized to manage this CMS target.');
         }
 
         $this->aboutEntityCmsService->authorizeTarget($target->key, $userId, $payload);
         $this->newsArticleCmsService->authorizeTarget($target->key, $userId, $payload);
         $this->researchPublicationCmsService->authorizeTarget($target->key, $userId, $payload);
-    }
-
-    private function canonicalFacultyScope(string $scope): string
-    {
-        return match ($scope) {
-            'ai', 'ai-engineering' => 'artificial-intelligence',
-            'construction' => 'building-construction-engineering',
-            'business' => 'business-administration',
-            default => $scope,
-        };
     }
 
     private function manageAbilityForArea(string $area): string

@@ -63,16 +63,30 @@ class FacultySubpageCardResource extends Resource
     {
         $query = parent::getEloquentQuery();
 
-        if (static::scopedFacultySlug() !== null) {
-            $query->where('faculty_slug', static::scopedFacultySlug());
+        $scopedFaculties = self::scopedFacultySlugs();
+
+        if ($scopedFaculties !== null) {
+            $query->whereIn('faculty_slug', $scopedFaculties);
         }
 
         return $query;
     }
 
+    /** @return list<string>|null */
+    private static function scopedFacultySlugs(): ?array
+    {
+        return app(FacultySubpageCardServiceInterface::class)->scopedFacultySlugs((int) auth()->id());
+    }
+
+    /**
+     * The faculty a limited editor with exactly one granted faculty works in;
+     * with several, the editor picks one from their own faculties.
+     */
     private static function scopedFacultySlug(): ?string
     {
-        return app(FacultySubpageCardServiceInterface::class)->scopedFacultySlug((int) auth()->id());
+        $faculties = self::scopedFacultySlugs();
+
+        return $faculties !== null && count($faculties) === 1 ? $faculties[0] : null;
     }
 
     /** @return array<string, string> */

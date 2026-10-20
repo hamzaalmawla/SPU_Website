@@ -576,7 +576,7 @@ class MediaServiceTest extends TestCase
     {
         $facultyEditor = User::factory()->create([
             'role_slug' => 'faculty_editor',
-            'faculty_scope_slug' => 'medicine',
+            'faculty_scopes' => ['medicine'],
         ]);
 
         $uploaded = $this->service->upload([
@@ -595,7 +595,7 @@ class MediaServiceTest extends TestCase
     {
         $facultyEditor = User::factory()->create([
             'role_slug' => 'faculty_editor',
-            'faculty_scope_slug' => null,
+            'faculty_scopes' => null,
         ]);
 
         $this->expectException(AuthorizationException::class);

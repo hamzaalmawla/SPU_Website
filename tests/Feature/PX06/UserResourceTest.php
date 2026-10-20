@@ -66,7 +66,6 @@ class UserResourceTest extends TestCase
             'email' => 'new.editor@spu.edu.sy',
             'password' => 'strong-password-123',
             'role_slug' => $role->slug,
-            'faculty_scope_slug' => null,
         ], (int) $actor->getKey());
 
         $user = User::query()->where('email', 'new.editor@spu.edu.sy')->first();

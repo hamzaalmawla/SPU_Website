@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\Auth;
 
+use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\Auth\AuthServiceInterface;
 use App\Contracts\Auth\TotpAuthenticatorInterface;
+use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Shared\AuditServiceInterface;
 use App\DTOs\Auth\LoginCredentialsDTO;
 use App\Models\User\Role;
@@ -19,6 +21,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Timebox;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Framework-backed authentication service for admin access checks.
@@ -38,6 +41,8 @@ final class AuthService implements AuthServiceInterface
         private readonly Request $request,
         private readonly Session $session,
         private readonly Timebox $timebox,
+        private readonly AdminAccessServiceInterface $access,
+        private readonly CmsTargetRegistryInterface $targetRegistry,
     ) {}
 
     /**
@@ -212,14 +217,16 @@ final class AuthService implements AuthServiceInterface
             return null;
         }
 
+        $access = $this->accessScopes($role->slug, $payload['faculty_scopes'] ?? [], $payload['page_scopes'] ?? []);
+
         $user = new User;
         $user->fill([
             'name' => (string) ($payload['name'] ?? ''),
             'email' => $email,
             'password' => Hash::make($password),
-            'faculty_scope_slug' => $payload['faculty_scope_slug'] ?? null,
         ]);
         $user->forceFill([
+            ...$access,
             'role_slug' => $role->slug,
             'role_id' => $role->getKey(),
             'is_locked' => false,
@@ -240,6 +247,8 @@ final class AuthService implements AuthServiceInterface
                 'actor_email' => $actor->email,
                 'target_email' => $user->email,
                 'role_slug' => $user->role_slug,
+                'faculty_scopes' => $user->facultyScopes(),
+                'page_scopes' => $user->pageScopes(),
             ],
         );
 
@@ -290,10 +299,13 @@ final class AuthService implements AuthServiceInterface
         $user->fill([
             'name' => $payload['name'] ?? $user->name,
             'email' => $payload['email'] ?? $user->email,
-            'faculty_scope_slug' => array_key_exists('faculty_scope_slug', $payload)
-                ? $payload['faculty_scope_slug']
-                : $user->faculty_scope_slug,
         ]);
+
+        $user->forceFill($this->accessScopes(
+            $requestedRole,
+            array_key_exists('faculty_scopes', $payload) ? $payload['faculty_scopes'] : $user->facultyScopes(),
+            array_key_exists('page_scopes', $payload) ? $payload['page_scopes'] : $user->pageScopes(),
+        ));
 
         if (array_key_exists('role_slug', $payload)) {
             $role = Role::query()->where('slug', (string) $payload['role_slug'])->first();
@@ -352,10 +364,63 @@ final class AuthService implements AuthServiceInterface
                 'actor_email' => $actor->email,
                 'target_email' => $user->email,
                 'changed_fields' => $changedFields,
+                'faculty_scopes' => $user->facultyScopes(),
+                'page_scopes' => $user->pageScopes(),
             ],
         );
 
         return true;
+    }
+
+    /**
+     * The faculties and pages a limited editor is granted, checked against
+     * what exists. Other roles carry no grants: their role decides.
+     *
+     * @return array{faculty_scopes: list<string>|null, page_scopes: list<string>|null}
+     */
+    private function accessScopes(string $roleSlug, mixed $faculties, mixed $pages): array
+    {
+        if ($roleSlug !== 'faculty_editor') {
+            return ['faculty_scopes' => null, 'page_scopes' => null];
+        }
+
+        $faculties = array_values(array_unique(array_map(
+            fn (string $faculty): string => $this->access->canonicalFacultySlug($faculty),
+            $this->stringList($faculties),
+        )));
+        $pages = array_values(array_unique($this->stringList($pages)));
+        $grantablePages = $this->targetRegistry->grantablePages()->pluck('key')->all();
+
+        if (array_diff($faculties, array_keys($this->access->facultyOptions())) !== []
+            || array_diff($pages, $grantablePages) !== []) {
+            throw ValidationException::withMessages([
+                'faculty_scopes' => [__('admin_resources.user.unknown_faculty_or_page')],
+            ]);
+        }
+
+        if ($faculties === [] && $pages === []) {
+            throw ValidationException::withMessages([
+                'faculty_scopes' => [__('admin_resources.user.choose_at_least_one_faculty_or_page')],
+            ]);
+        }
+
+        return [
+            'faculty_scopes' => $faculties === [] ? null : $faculties,
+            'page_scopes' => $pages === [] ? null : $pages,
+        ];
+    }
+
+    /** @return list<string> */
+    private function stringList(mixed $value): array
+    {
+        if (! is_array($value)) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            array_map(static fn (mixed $item): string => is_string($item) ? trim($item) : '', $value),
+            static fn (string $item): bool => $item !== '',
+        ));
     }
 
     private function guardName(): string

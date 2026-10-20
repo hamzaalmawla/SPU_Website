@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources;
 
+use App\Contracts\Auth\AdminAccessServiceInterface;
+use App\Contracts\Cms\CmsTargetRegistryInterface;
+use App\DTOs\Cms\CmsTargetDTO;
 use App\Filament\Resources\UserResource\Pages;
 use App\Models\User\User;
 use Filament\Forms\Components\Section;
@@ -11,6 +14,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\IconColumn;
@@ -83,14 +87,34 @@ class UserResource extends Resource
                         'editor' => __('admin_resources.user.editor'),
                         'faculty_editor' => __('admin_resources.user.faculty_editor'),
                     ])
-                    ->required(),
-
-                TextInput::make('faculty_scope_slug')
-                    ->label(__('admin_resources.user.faculty_scope_slug'))
-                    ->maxLength(255)
-                    ->placeholder(__('admin_resources.user.only_for_faculty_editor_role'))
-                    ->helperText(__('admin_resources.user.restricts_content_access_to_a_specific_faculty')),
+                    ->helperText(__('admin_resources.user.role_help'))
+                    ->required()
+                    ->live(),
             ])->columns(2),
+
+            // A limited editor edits only what is picked here. The service
+            // validates the picks again and clears them for any other role.
+            Section::make(__('admin_resources.user.access'))
+                ->description(__('admin_resources.user.access_help'))
+                ->schema([
+                    Select::make('faculty_scopes')
+                        ->label(__('admin_resources.user.faculty_scopes'))
+                        ->helperText(__('admin_resources.user.faculty_scopes_help'))
+                        ->multiple()
+                        ->searchable()
+                        ->requiredWithout('page_scopes')
+                        ->validationMessages(['required_without' => __('admin_resources.user.choose_at_least_one_faculty_or_page')])
+                        ->options(fn (): array => app(AdminAccessServiceInterface::class)->facultyOptions()),
+
+                    Select::make('page_scopes')
+                        ->label(__('admin_resources.user.page_scopes'))
+                        ->helperText(__('admin_resources.user.page_scopes_help'))
+                        ->multiple()
+                        ->searchable()
+                        ->options(fn (): array => self::grantablePageOptions()),
+                ])
+                ->columns(2)
+                ->visible(fn (Get $get): bool => $get('role_slug') === 'faculty_editor'),
 
             Section::make(__('admin_resources.user.account_status'))->schema([
                 Toggle::make('is_locked')
@@ -150,6 +174,7 @@ class UserResource extends Resource
 
                 TextColumn::make('role_slug')
                     ->label(__('admin_resources.user.role'))
+                    ->formatStateUsing(fn (string $state): string => __('admin_resources.user.'.$state))
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'super_admin' => 'danger',
@@ -157,6 +182,15 @@ class UserResource extends Resource
                         'faculty_editor' => 'info',
                         default => 'gray',
                     }),
+
+                TextColumn::make('access')
+                    ->label(__('admin_resources.user.access'))
+                    ->getStateUsing(static fn (User $record): string => $record->isLimitedEditor()
+                        ? __('admin_resources.user.access_summary', [
+                            'faculties' => count($record->facultyScopes()),
+                            'pages' => count($record->pageScopes()),
+                        ])
+                        : __('admin_resources.user.access_everything')),
 
                 IconColumn::make('is_locked')
                     ->label(__('admin_resources.user.locked'))
@@ -192,5 +226,25 @@ class UserResource extends Resource
             'create' => Pages\CreateUser::route('/create'),
             'edit' => Pages\EditUser::route('/{record}/edit'),
         ];
+    }
+
+    /**
+     * Grantable pages grouped by site section, for the page picker.
+     *
+     * @return array<string, array<string, string>>
+     */
+    private static function grantablePageOptions(): array
+    {
+        $groups = [];
+
+        foreach (app(CmsTargetRegistryInterface::class)->grantablePages() as $target) {
+            /** @var CmsTargetDTO $target */
+            $group = $target->area === 'homepage'
+                ? __('admin.cms.targets.homepage')
+                : __('admin.navigation.groups.'.$target->area);
+            $groups[$group][$target->key] = __($target->labelKey);
+        }
+
+        return $groups;
     }
 }

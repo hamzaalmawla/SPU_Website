@@ -7,6 +7,7 @@ namespace App\Filament\Pages;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Page\ContactPageServiceInterface;
 use App\Exceptions\ConflictException;
+use App\Filament\Concerns\LimitsCmsTargetsToGrants;
 use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
 use Filament\Actions\Action;
@@ -22,12 +23,12 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 class ManageContactPage extends Page implements HasForms
 {
     use InteractsWithForms;
+    use LimitsCmsTargetsToGrants;
 
     protected static ?string $navigationIcon = 'heroicon-o-envelope-open';
 
@@ -56,7 +57,7 @@ class ManageContactPage extends Page implements HasForms
 
     public static function canAccess(): bool
     {
-        return Gate::allows('manage-pages');
+        return static::canAccessCmsArea('manage-pages', 'contact', 'contact');
     }
 
     public static function getNavigationGroup(): ?string

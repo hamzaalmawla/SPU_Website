@@ -11,6 +11,7 @@ use App\DTOs\Cms\CmsTargetDTO;
 use App\DTOs\EServices\EServicesDetailPageDTO;
 use App\Exceptions\ConflictException;
 use App\Filament\Components\PageUrlSelect;
+use App\Filament\Concerns\LimitsCmsTargetsToGrants;
 use App\Filament\Support\FormPicker;
 use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
@@ -28,12 +29,12 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 class ManageEServicesPage extends Page implements HasForms
 {
     use InteractsWithForms;
+    use LimitsCmsTargetsToGrants;
 
     protected static ?string $navigationIcon = 'heroicon-o-computer-desktop';
 
@@ -66,7 +67,7 @@ class ManageEServicesPage extends Page implements HasForms
 
     public static function canAccess(): bool
     {
-        return Gate::allows('manage-pages');
+        return static::canAccessCmsArea('manage-pages', 'e_services');
     }
 
     public static function getNavigationGroup(): ?string
@@ -86,7 +87,7 @@ class ManageEServicesPage extends Page implements HasForms
 
     public function mount(): void
     {
-        $this->loadTarget('e_services');
+        $this->loadTarget($this->firstGrantedTarget('e_services', $this->targetOptions()));
     }
 
     public function form(Form $form): Form
@@ -370,9 +371,9 @@ class ManageEServicesPage extends Page implements HasForms
     /** @return array<string, string> */
     private function targetOptions(): array
     {
-        return $this->targetRegistry->forArea('e_services')
+        return $this->onlyGrantedTargets($this->targetRegistry->forArea('e_services')
             ->mapWithKeys(fn (CmsTargetDTO $target): array => [$target->key => __($target->labelKey)])
-            ->all();
+            ->all());
     }
 
     private function currentTargetKey(): string

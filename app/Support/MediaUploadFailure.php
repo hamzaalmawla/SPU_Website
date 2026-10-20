@@ -67,7 +67,7 @@ final class MediaUploadFailure
                     : $exception->getMessage(),
                 'user_id' => auth()->id(),
                 'role' => $user?->getAttribute('role_slug'),
-                'has_faculty_scope' => is_string($user?->getAttribute('faculty_scope_slug')) && $user->getAttribute('faculty_scope_slug') !== '',
+                'has_faculty_scope' => is_array($user?->getAttribute('faculty_scopes')) && $user->getAttribute('faculty_scopes') !== [],
             ]);
         } catch (Throwable) {
             // Recording the failure must not replace it with another one.

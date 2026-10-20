@@ -201,7 +201,7 @@ final class AdminDynamicFormSubmissionInboxTest extends TestCase
         Storage::disk('local')->put($path, 'private');
         $facultyEditor = User::factory()->create([
             'role_slug' => 'faculty_editor',
-            'faculty_scope_slug' => 'medicine',
+            'faculty_scopes' => ['medicine'],
         ]);
         $submission = $this->submission('job-application', ['fullName' => 'Applicant'], [
             'cvFile' => [

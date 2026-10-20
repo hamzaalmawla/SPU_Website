@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
+use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\Shared\AuditServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
 use App\DTOs\Page\PageTranslationDTO;
@@ -43,6 +44,7 @@ final class PageServiceSanitizationTest extends TestCase
             app(PageUrlResolver::class),
             app(PagePublishabilityValidator::class),
             app(HtmlSanitizer::class),
+            app(AdminAccessServiceInterface::class),
         );
     }
 

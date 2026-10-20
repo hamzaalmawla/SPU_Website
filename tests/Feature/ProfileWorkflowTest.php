@@ -386,7 +386,7 @@ final class ProfileWorkflowTest extends TestCase
         $this->adminService->createFacultyMember($this->facultyMemberData('other-member', (int) $secondFaculty->getKey()), (int) $this->admin->getKey());
         $editor = User::factory()->create([
             'role_slug' => 'faculty_editor',
-            'faculty_scope_slug' => 'scoped-faculty',
+            'faculty_scopes' => ['scoped-faculty'],
             'is_locked' => false,
         ]);
         $this->actingAs($editor);
@@ -421,7 +421,7 @@ final class ProfileWorkflowTest extends TestCase
         );
         $editor = User::factory()->create([
             'role_slug' => 'faculty_editor',
-            'faculty_scope_slug' => 'assigned-faculty',
+            'faculty_scopes' => ['assigned-faculty'],
             'is_locked' => false,
         ]);
 

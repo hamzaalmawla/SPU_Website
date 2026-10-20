@@ -32,7 +32,7 @@ class AdminUserSeeder extends Seeder
             'is_locked' => false,
             'locked_at' => null,
             'last_login_at' => null,
-            'faculty_scope_slug' => null,
+            'faculty_scopes' => null,
             'deleted_at' => null,
         ]);
         $user->save();

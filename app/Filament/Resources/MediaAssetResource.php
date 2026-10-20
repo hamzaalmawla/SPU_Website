@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources;
 
+use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Filament\Components\FocalPointPicker;
 use App\Filament\Resources\MediaAssetResource\Pages;
+use App\Filament\Support\GrantedFacultySelect;
 use App\Models\Media\MediaAsset;
 use App\Models\User\User;
 use App\Support\MediaUrlResolver;
@@ -86,11 +88,19 @@ class MediaAssetResource extends Resource
             return $query;
         }
 
-        if ($user->role_slug !== 'faculty_editor' || ! is_string($user->faculty_scope_slug) || $user->faculty_scope_slug === '') {
+        if (! $user->isLimitedEditor()) {
             return $query->whereRaw('1 = 0');
         }
 
-        return $query->where('faculty_scope_slug', $user->faculty_scope_slug);
+        $scopes = app(AdminAccessServiceInterface::class)->facultyScopeValues($user);
+
+        return $query->where(function (Builder $builder) use ($scopes, $user): void {
+            $builder->where('uploaded_by', $user->getKey());
+
+            if ($scopes !== []) {
+                $builder->orWhereIn('faculty_scope_slug', $scopes);
+            }
+        });
     }
 
     public static function form(Form $form): Form
@@ -303,6 +313,8 @@ class MediaAssetResource extends Resource
                         ->maxLength(255)
                         ->alphaDash()
                         ->visible(fn (): bool => in_array(auth()->user()?->role_slug, ['super_admin', 'editor'], true)),
+
+                    GrantedFacultySelect::make('faculty_scope_slug', __('admin_resources.media_asset.faculty_scope_slug')),
                 ]),
             ]);
     }

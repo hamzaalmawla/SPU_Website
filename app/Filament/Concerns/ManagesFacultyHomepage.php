@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Concerns;
 
+use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanBoardServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanEditorServiceInterface;
@@ -104,22 +105,11 @@ trait ManagesFacultyHomepage
 
         $user = auth()->user();
 
-        if (! $user instanceof User || $user->role_slug !== 'faculty_editor') {
+        if (! $user instanceof User || ! $user->isLimitedEditor()) {
             return true;
         }
 
-        return self::canonicalManagedFacultyScope((string) $user->faculty_scope_slug)
-            === self::canonicalManagedFacultyScope(static::managedFacultyScope());
-    }
-
-    private static function canonicalManagedFacultyScope(string $scope): string
-    {
-        return match ($scope) {
-            'ai', 'ai-engineering' => 'artificial-intelligence',
-            'construction' => 'building-construction-engineering',
-            'business' => 'business-administration',
-            default => $scope,
-        };
+        return app(AdminAccessServiceInterface::class)->canManageFaculty($user, static::managedFacultyScope());
     }
 
     public static function getNavigationGroup(): ?string

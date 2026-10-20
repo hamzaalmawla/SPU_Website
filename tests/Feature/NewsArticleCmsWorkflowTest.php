@@ -210,7 +210,7 @@ final class NewsArticleCmsWorkflowTest extends TestCase
         $article = $this->publishedArticle('Faculty article', 'medicine');
         $facultyEditor = User::factory()->create([
             'role_slug' => 'faculty_editor',
-            'faculty_scope_slug' => 'medicine',
+            'faculty_scopes' => ['medicine'],
             'is_locked' => false,
         ]);
         $payload = $this->payloadFor($article, 'Faculty private draft');

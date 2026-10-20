@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Media;
 
+use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\Media\ImageConversionServiceInterface;
 use App\Contracts\Media\MediaServiceInterface;
 use App\Contracts\Shared\AuditServiceInterface;
@@ -38,6 +39,7 @@ final class MediaService implements MediaServiceInterface
         private readonly MediaFileValidator $fileValidator,
         private readonly CacheServiceInterface $cacheService,
         private readonly ImageConversionServiceInterface $imageConversionService,
+        private readonly AdminAccessServiceInterface $access,
     ) {
         $this->diskName = (string) config('filesystems.media_disk', 'public');
         $this->disk = Storage::disk($this->diskName);
@@ -452,9 +454,7 @@ final class MediaService implements MediaServiceInterface
                 $builder->whereNull('webp_path')->orWhere('webp_path', '');
             });
 
-        if ($user->role_slug === 'faculty_editor') {
-            $query->where('faculty_scope_slug', $user->faculty_scope_slug);
-        }
+        $this->scopeQueryToLimitedEditor($query, $user);
 
         if ($limit !== null) {
             $query->limit(max(1, $limit));
@@ -755,8 +755,8 @@ final class MediaService implements MediaServiceInterface
             $query->where('uploaded_by', $filters['uploaded_by']);
         }
 
-        if ($user->role_slug === 'faculty_editor') {
-            $query->where('faculty_scope_slug', $user->faculty_scope_slug);
+        if ($user->isLimitedEditor()) {
+            $this->scopeQueryToLimitedEditor($query, $user);
         } elseif (isset($filters['faculty_scope_slug']) && is_string($filters['faculty_scope_slug']) && $filters['faculty_scope_slug'] !== '') {
             $query->where('faculty_scope_slug', $filters['faculty_scope_slug']);
         }
@@ -816,8 +816,12 @@ final class MediaService implements MediaServiceInterface
             ->where('checksum', $checksum)
             ->where('library_scope', 'main');
 
-        if ($user->role_slug === 'faculty_editor') {
+        if ($user->isLimitedEditor()) {
             $query->where('faculty_scope_slug', $facultyScope);
+
+            if ($facultyScope === null) {
+                $query->where('uploaded_by', $user->getKey());
+            }
         }
 
         return $query->first();
@@ -991,12 +995,18 @@ final class MediaService implements MediaServiceInterface
 
         $user = User::query()->find((int) $payload['uploaded_by']);
 
-        if ($user instanceof User && $user->role_slug === 'faculty_editor') {
-            if (! is_string($user->faculty_scope_slug) || $user->faculty_scope_slug === '') {
-                throw new AuthorizationException('Faculty editors must have a faculty scope to upload media.');
+        // A limited editor files the upload under the requested faculty when it
+        // is theirs, else under their only faculty; otherwise (page-only grants,
+        // or several faculties and none chosen) it stays unscoped and is visible
+        // to them as its uploader.
+        if ($user instanceof User && $user->isLimitedEditor()) {
+            if ($user->facultyScopes() === [] && $user->pageScopes() === []) {
+                throw new AuthorizationException('This user has not been granted any faculty or page.');
             }
 
-            return $user->faculty_scope_slug;
+            $requested = $payload['faculty_scope_slug'] ?? null;
+
+            return $this->access->facultyForWrite($user, is_string($requested) ? $requested : null);
         }
 
         if (isset($payload['faculty_scope_slug']) && is_string($payload['faculty_scope_slug']) && $payload['faculty_scope_slug'] !== '') {
@@ -1023,8 +1033,8 @@ final class MediaService implements MediaServiceInterface
             throw new AuthorizationException('This user is not authorized to list media assets.');
         }
 
-        if ($user->role_slug === 'faculty_editor' && (! is_string($user->faculty_scope_slug) || $user->faculty_scope_slug === '')) {
-            throw new AuthorizationException('This user is not authorized to list media assets without a faculty scope.');
+        if ($user->isLimitedEditor() && $user->facultyScopes() === [] && $user->pageScopes() === []) {
+            throw new AuthorizationException('This user has not been granted any faculty or page.');
         }
 
         return $user;
@@ -1043,14 +1053,36 @@ final class MediaService implements MediaServiceInterface
             throw new AuthorizationException('A valid authenticated user is required to manage media.');
         }
 
-        if ($user->role_slug !== 'faculty_editor') {
+        if (! $user->isLimitedEditor() || $metadata['faculty_scope_slug'] === $asset->faculty_scope_slug) {
             return $metadata;
         }
 
-        if ($metadata['faculty_scope_slug'] !== $asset->faculty_scope_slug || $metadata['faculty_scope_slug'] !== $user->faculty_scope_slug) {
-            throw new AuthorizationException('Faculty editors cannot change media faculty scope.');
+        $requested = is_string($metadata['faculty_scope_slug']) ? $metadata['faculty_scope_slug'] : null;
+
+        if (! $this->access->canManageFaculty($user, $requested)) {
+            throw new AuthorizationException('Limited editors can only assign their granted faculties to media.');
         }
 
+        $metadata['faculty_scope_slug'] = $this->access->canonicalFacultySlug((string) $requested);
+
         return $metadata;
+    }
+
+    /** A limited editor sees media of their faculties and media they uploaded. */
+    private function scopeQueryToLimitedEditor(Builder $query, User $user): void
+    {
+        if (! $user->isLimitedEditor()) {
+            return;
+        }
+
+        $scopes = $this->access->facultyScopeValues($user);
+
+        $query->where(function (Builder $builder) use ($scopes, $user): void {
+            $builder->where('uploaded_by', $user->getKey());
+
+            if ($scopes !== []) {
+                $builder->orWhereIn('faculty_scope_slug', $scopes);
+            }
+        });
     }
 }

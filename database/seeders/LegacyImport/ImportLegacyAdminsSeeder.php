@@ -76,7 +76,7 @@ class ImportLegacyAdminsSeeder extends BaseLegacyImportSeeder
                 'is_locked' => true,
                 'locked_at' => now(),
                 'last_login_at' => null,
-                'faculty_scope_slug' => $this->cleanedString($row, ['faculty_scope_slug', 'scope_slug']),
+                'faculty_scopes' => ($legacyScope = $this->cleanedString($row, ['faculty_scope_slug', 'scope_slug'])) !== null ? [$legacyScope] : null,
                 'deleted_at' => null,
                 'created_at' => $createdAt ?? $user->created_at ?? now(),
                 'updated_at' => now(),

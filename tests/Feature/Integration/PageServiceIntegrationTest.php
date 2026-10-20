@@ -205,7 +205,7 @@ class PageServiceIntegrationTest extends TestCase
         Page::query()->whereKey($page->id)->update(['publish_at' => now()->subMinute()]);
         $actor->forceFill([
             'role_slug' => 'faculty_editor',
-            'faculty_scope_slug' => 'medicine',
+            'faculty_scopes' => ['medicine'],
         ])->save();
 
         $this->assertSame(0, $this->pageService()->publishDueScheduled());

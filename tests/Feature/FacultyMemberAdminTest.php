@@ -137,7 +137,7 @@ final class FacultyMemberAdminTest extends TestCase
     {
         return User::factory()->create([
             'role_slug' => $role,
-            'faculty_scope_slug' => $scope,
+            'faculty_scopes' => $scope !== null ? [$scope] : null,
             'is_locked' => false,
         ]);
     }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources;
 
+use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\Page\PageServiceInterface;
 use App\Filament\Components\PageUrlSelect;
 use App\Filament\Resources\PageResource\Pages;
@@ -412,17 +413,13 @@ class PageResource extends Resource
             return $query;
         }
 
-        if ($user->role_slug !== 'faculty_editor') {
+        $scopes = $user->isLimitedEditor() ? app(AdminAccessServiceInterface::class)->facultyScopeValues($user) : [];
+
+        if ($scopes === []) {
             return $query->whereRaw('1 = 0');
         }
 
-        $scope = is_string($user->faculty_scope_slug) ? $user->faculty_scope_slug : '';
-
-        if ($scope === '') {
-            return $query->whereRaw('1 = 0');
-        }
-
-        return $query->where('faculty_scope_slug', $scope);
+        return $query->whereIn('faculty_scope_slug', $scopes);
     }
 
     private static function scopeParentQueryToCurrentUser(Builder $query, ?Page $record): Builder
