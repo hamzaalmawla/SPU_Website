@@ -19,6 +19,9 @@ interface StaffIntakeReviewServiceInterface
 
     public function pendingCount(int $actorId): int;
 
+    /** Whether the actor may approve or reject this request. */
+    public function canDecide(int $requestId, int $actorId): bool;
+
     public function detail(int $requestId, string $locale, int $actorId): StaffIntakeRequestDetailDTO;
 
     /**

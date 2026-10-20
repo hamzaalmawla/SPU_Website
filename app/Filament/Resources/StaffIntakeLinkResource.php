@@ -121,7 +121,7 @@ class StaffIntakeLinkResource extends Resource
                     ->color('warning')
                     ->requiresConfirmation()
                     ->modalDescription(__('staff_intake.admin.actions.rotate_confirm'))
-                    ->visible(fn (StaffIntakeLink $record): bool => $record->revoked_at === null)
+                    ->visible(fn (StaffIntakeLink $record): bool => $record->revoked_at === null && self::canManage($record))
                     ->action(function (StaffIntakeLink $record): void {
                         self::notifyLink(
                             app(StaffIntakeLinkServiceInterface::class)->rotate((int) $record->getKey(), (int) auth()->id()),
@@ -134,7 +134,7 @@ class StaffIntakeLinkResource extends Resource
                     ->color('danger')
                     ->requiresConfirmation()
                     ->modalDescription(__('staff_intake.admin.actions.revoke_confirm'))
-                    ->visible(fn (StaffIntakeLink $record): bool => $record->revoked_at === null)
+                    ->visible(fn (StaffIntakeLink $record): bool => $record->revoked_at === null && self::canManage($record))
                     ->action(function (StaffIntakeLink $record): void {
                         app(StaffIntakeLinkServiceInterface::class)->revoke((int) $record->getKey(), (int) auth()->id());
                         Notification::make()->title(__('staff_intake.admin.notifications.link_revoked'))->success()->send();
@@ -172,6 +172,11 @@ class StaffIntakeLinkResource extends Resource
     private static function facultyIds(): array
     {
         return array_map('intval', array_keys(app(StaffIntakeLinkServiceInterface::class)->facultyOptions((int) auth()->id())));
+    }
+
+    private static function canManage(StaffIntakeLink $record): bool
+    {
+        return app(StaffIntakeLinkServiceInterface::class)->canManage((int) $record->getKey(), (int) auth()->id());
     }
 
     private static function facultyName(StaffIntakeLink $record): string

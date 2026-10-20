@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Staff;
 
-use App\Contracts\Content\ProfileAdminServiceInterface;
+use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\Shared\AuditServiceInterface;
 use App\Contracts\Staff\StaffIntakeLinkServiceInterface;
 use App\DTOs\Staff\StaffIntakeLinkCreatedDTO;
@@ -12,6 +12,7 @@ use App\DTOs\Staff\StaffIntakeLinkDTO;
 use App\DTOs\Staff\StaffIntakeLinkInputDTO;
 use App\Models\Faculty\Faculty;
 use App\Models\Staff\StaffIntakeLink;
+use App\Models\User\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -19,13 +20,13 @@ use Illuminate\Validation\ValidationException;
 final class StaffIntakeLinkService implements StaffIntakeLinkServiceInterface
 {
     public function __construct(
-        private readonly ProfileAdminServiceInterface $profiles,
+        private readonly AdminAccessServiceInterface $access,
         private readonly AuditServiceInterface $auditService,
     ) {}
 
     public function create(StaffIntakeLinkInputDTO $input, int $actorId): StaffIntakeLinkCreatedDTO
     {
-        if (! array_key_exists($input->facultyId, $this->facultyOptions($actorId))) {
+        if (! array_key_exists($input->facultyId, $this->facultyOptions($actorId, 'staff_intake_links.create'))) {
             throw new AuthorizationException('You may only make links for your own faculties.');
         }
 
@@ -81,20 +82,36 @@ final class StaffIntakeLinkService implements StaffIntakeLinkServiceInterface
         return true;
     }
 
-    public function facultyOptions(int $actorId): array
+    public function facultyOptions(int $actorId, string $permission = 'staff_intake_links.view'): array
     {
-        try {
-            return $this->profiles->facultyOptions($actorId);
-        } catch (AuthorizationException) {
+        $user = User::query()->find($actorId);
+        if (! $user instanceof User || ! $this->access->can($user, $permission)) {
             return [];
         }
+
+        $query = Faculty::query()->enabled()->with('translations')->orderBy('sort_order');
+        if ($this->access->hasFacultyLimit($user)) {
+            $scopes = $this->access->facultyScopeValues($user);
+            $query->where(fn ($faculties) => $faculties
+                ->whereIn('faculty_scope_slug', $scopes)
+                ->orWhereIn('public_slug', $scopes)
+                ->orWhereIn('slug', $scopes));
+        }
+
+        $locale = app()->getLocale() === 'en' ? 'en' : 'ar';
+
+        return $query->get()->mapWithKeys(fn (Faculty $faculty): array => [
+            (int) $faculty->getKey() => (string) ($faculty->translations->firstWhere('locale', $locale)?->name
+                ?? $faculty->translations->first()?->name
+                ?? $faculty->slug),
+        ])->all();
     }
 
     public function canManage(int $linkId, int $actorId): bool
     {
         $facultyId = StaffIntakeLink::query()->whereKey($linkId)->value('faculty_id');
 
-        return $facultyId !== null && array_key_exists((int) $facultyId, $this->facultyOptions($actorId));
+        return $facultyId !== null && array_key_exists((int) $facultyId, $this->facultyOptions($actorId, 'staff_intake_links.update'));
     }
 
     private function manageable(int $linkId, int $actorId): StaffIntakeLink

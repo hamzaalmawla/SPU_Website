@@ -20,12 +20,13 @@ class ListStaffIntakeLinks extends ListRecords
     protected function getHeaderActions(): array
     {
         $links = app(StaffIntakeLinkServiceInterface::class);
-        $faculties = $links->facultyOptions((int) auth()->id());
+        $faculties = $links->facultyOptions((int) auth()->id(), 'staff_intake_links.create');
 
         return [
             Action::make('create_link')
                 ->label(__('staff_intake.admin.actions.create'))
                 ->icon('heroicon-o-plus')
+                ->visible($faculties !== [])
                 ->form([
                     Select::make('faculty_id')
                         ->label(__('staff_intake.admin.form.faculty'))

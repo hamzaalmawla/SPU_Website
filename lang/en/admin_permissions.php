@@ -37,6 +37,8 @@ return [
         'faculty_petroleum' => 'Faculty of Petroleum Engineering',
         'faculty_pharmacy' => 'Faculty of Pharmacy',
         'faculty_subpage_cards' => 'Faculty sub-page cards',
+        'staff_intake_links' => 'Staff intake links',
+        'staff_intake_requests' => 'Staff intake requests',
         'form_submissions' => 'Form submissions (all inboxes)',
         'forms' => 'Forms',
         'homepage' => 'Homepage',

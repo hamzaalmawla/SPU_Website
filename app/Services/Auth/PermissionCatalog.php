@@ -70,6 +70,10 @@ final class PermissionCatalog implements PermissionCatalogInterface
                 ...$faculties,
                 'faculty_members' => self::PUBLISHED_RECORDS,
                 'faculty_subpage_cards' => self::PUBLISHED_RECORDS,
+                // update: rotate or revoke a link.
+                'staff_intake_links' => ['view', 'create', 'update'],
+                // update: approve or reject what staff sent.
+                'staff_intake_requests' => ['view', 'update'],
             ],
             'news_media' => [
                 'news_articles' => self::PUBLISHED_RECORDS,

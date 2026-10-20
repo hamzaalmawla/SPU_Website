@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Services\Staff;
 
+use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Content\ProfileAdminServiceInterface;
 use App\Contracts\Media\MediaServiceInterface;
 use App\Contracts\Shared\AuditServiceInterface;
 use App\Contracts\Shared\SlugServiceInterface;
+use App\Contracts\Staff\StaffIntakeLinkServiceInterface;
 use App\Contracts\Staff\StaffIntakeReviewServiceInterface;
 use App\DTOs\Cms\AboutEntityCmsDataDTO;
 use App\DTOs\Staff\StaffIntakeApprovalResultDTO;
@@ -25,7 +27,6 @@ use App\Models\User\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
@@ -45,15 +46,21 @@ final class StaffIntakeReviewService implements StaffIntakeReviewServiceInterfac
         private readonly MediaServiceInterface $mediaService,
         private readonly SlugServiceInterface $slugService,
         private readonly AuditServiceInterface $auditService,
+        private readonly AdminAccessServiceInterface $access,
+        private readonly StaffIntakeLinkServiceInterface $links,
     ) {}
 
     public function reviewableFacultyIds(int $actorId): array
     {
-        try {
-            return array_map('intval', array_keys($this->profiles->facultyOptions($actorId)));
-        } catch (AuthorizationException) {
-            return [];
-        }
+        return array_map('intval', array_keys($this->links->facultyOptions($actorId, 'staff_intake_requests.view')));
+    }
+
+    public function canDecide(int $requestId, int $actorId): bool
+    {
+        $facultyId = StaffIntakeRequest::query()->whereKey($requestId)->value('faculty_id');
+
+        return $facultyId !== null
+            && array_key_exists((int) $facultyId, $this->links->facultyOptions($actorId, 'staff_intake_requests.update'));
     }
 
     public function pendingCount(int $actorId): int
@@ -156,7 +163,7 @@ final class StaffIntakeReviewService implements StaffIntakeReviewServiceInterfac
 
     public function approve(int $requestId, int $actorId, ?int $targetMemberId = null, ?string $note = null): StaffIntakeApprovalResultDTO
     {
-        $request = $this->authorizedRequest($requestId, $actorId);
+        $request = $this->decidableRequest($requestId, $actorId);
         $actor = User::query()->findOrFail($actorId);
 
         $result = DB::transaction(function () use ($request, $actor, $actorId, $targetMemberId, $note): StaffIntakeApprovalResultDTO {
@@ -185,7 +192,7 @@ final class StaffIntakeReviewService implements StaffIntakeReviewServiceInterfac
             // editor's own unpublished change.
             $published = false;
             $publishErrors = [];
-            if (Gate::forUser($actor)->allows('publish-content')) {
+            if ($this->access->can($actor, 'faculty_members.publish')) {
                 $readiness = $this->cmsWorkflow->readiness($targetKey);
                 foreach ($readiness->errors as $key => $messages) {
                     foreach ($messages as $message) {
@@ -218,7 +225,7 @@ final class StaffIntakeReviewService implements StaffIntakeReviewServiceInterfac
 
     public function reject(int $requestId, int $actorId, ?string $note = null): bool
     {
-        $request = $this->authorizedRequest($requestId, $actorId);
+        $request = $this->decidableRequest($requestId, $actorId);
         if ($request->status !== StaffIntakeRequest::STATUS_PENDING) {
             return false;
         }
@@ -260,6 +267,15 @@ final class StaffIntakeReviewService implements StaffIntakeReviewServiceInterfac
         }
 
         return $request;
+    }
+
+    private function decidableRequest(int $requestId, int $actorId): StaffIntakeRequest
+    {
+        if (! $this->canDecide($requestId, $actorId)) {
+            throw new AuthorizationException('You may not review this request.');
+        }
+
+        return StaffIntakeRequest::query()->findOrFail($requestId);
     }
 
     /**

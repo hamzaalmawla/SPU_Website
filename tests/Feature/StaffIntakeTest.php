@@ -329,6 +329,17 @@ final class StaffIntakeTest extends TestCase
         Livewire::test(ListStaffIntakeLinks::class)->assertCanNotSeeTableRecords([$link]);
     }
 
+    public function test_staff_intake_needs_its_own_permissions(): void
+    {
+        $hr = $this->user('hr');
+        $this->assertSame([], app(StaffIntakeLinkServiceInterface::class)->facultyOptions((int) $hr->getKey()));
+        $this->assertSame([], app(StaffIntakeReviewServiceInterface::class)->reviewableFacultyIds((int) $hr->getKey()));
+
+        $this->actingAs($hr, 'web');
+        $this->get(\App\Filament\Resources\StaffIntakeLinkResource::getUrl('index'))->assertForbidden();
+        $this->get(\App\Filament\Resources\StaffIntakeRequestResource::getUrl('index'))->assertForbidden();
+    }
+
     private function link(?int $maxSubmissions = null): StaffIntakeLinkCreatedDTO
     {
         return app(StaffIntakeLinkServiceInterface::class)->create(

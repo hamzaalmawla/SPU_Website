@@ -31,7 +31,7 @@ The imported `AGENTS.MD` is the authoritative project rulebook (scope, architect
 
 ## Staff intake links
 - Per-faculty link (`/{locale}/staff-intake/{token}`) where academic staff find their profile by name and send corrections or a new profile. Plan and as-built notes: `Docs/STAFF_INTAKE_LINK_PLAN.md`.
-- Nothing a teacher sends changes a profile: it is a `staff_intake_requests` row until a reviewer approves it, and approval goes through the About-entity CMS draft/publish workflow. Every open, claim and submit is logged in `staff_intake_access_logs`.
+- Nothing a teacher sends changes a profile: it is a `staff_intake_requests` row until a reviewer approves it, and approval goes through the About-entity CMS draft/publish workflow. Every open, claim and submit is logged in `staff_intake_access_logs`. Admin access uses the `staff_intake_links.*` and `staff_intake_requests.*` permissions.
 - Name suggestions use `App\Support\PersonName::matchRank()`; keep `tests/Unit/PersonNameMatchingTest.php` green when touching name matching (the merge and research services share it).
 
 ## Where to look

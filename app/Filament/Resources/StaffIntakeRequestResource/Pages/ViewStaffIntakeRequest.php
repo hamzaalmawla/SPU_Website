@@ -41,7 +41,8 @@ class ViewStaffIntakeRequest extends ViewRecord
     protected function getHeaderActions(): array
     {
         $details = $this->details();
-        if ($details->status !== StaffIntakeRequest::STATUS_PENDING) {
+        if ($details->status !== StaffIntakeRequest::STATUS_PENDING
+            || ! $this->reviewService->canDecide((int) $this->getRecord()->getKey(), (int) auth()->id())) {
             return [];
         }
 

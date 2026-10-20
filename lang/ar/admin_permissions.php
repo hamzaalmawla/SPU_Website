@@ -37,6 +37,8 @@ return [
         'faculty_petroleum' => 'كلية هندسة البترول',
         'faculty_pharmacy' => 'كلية الصيدلة',
         'faculty_subpage_cards' => 'بطاقات الصفحات الفرعية للكليات',
+        'staff_intake_links' => 'روابط بيانات الكادر',
+        'staff_intake_requests' => 'طلبات بيانات الكادر',
         'form_submissions' => 'الطلبات المرسلة (كل صناديق الوارد)',
         'forms' => 'النماذج',
         'homepage' => 'الصفحة الرئيسية',
