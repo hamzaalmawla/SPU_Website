@@ -52,12 +52,13 @@ final class NewsImportLegacyCalendarEventsCommand extends Command
 
         $this->line('To add: '.($result->added === [] ? 'none' : implode(', ', $result->added)));
         $this->line('Already on the Events page: '.($result->present === [] ? 'none' : implode(', ', $result->present)));
+        $this->line('Missing fields filled in: '.($result->completed === [] ? 'none' : implode(', ', $result->completed)));
 
         $this->line(match (true) {
             $result->published => 'Saved and published.',
             $result->written && $result->hadPendingDraft => 'Added to the open Events draft; publish it from News > Events.',
             $result->written => 'Saved as a draft, but publishing failed; publish it from News > Events.',
-            $result->added === [] => 'Nothing to do.',
+            $result->added === [] && $result->completed === [] => 'Nothing to do.',
             default => 'Dry run: re-run with --write to save and publish.',
         });
 

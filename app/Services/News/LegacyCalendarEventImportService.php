@@ -40,6 +40,7 @@ final class LegacyCalendarEventImportService implements LegacyCalendarEventImpor
         $expectedVersion = $this->cmsWorkflowService->latestEditableDraftVersion(self::TARGET, $userId);
         $added = [];
         $present = [];
+        $completed = [];
 
         foreach (['ar', 'en'] as $locale) {
             $content = is_array($payload['translations'][$locale] ?? null) ? $payload['translations'][$locale] : [];
@@ -50,10 +51,9 @@ final class LegacyCalendarEventImportService implements LegacyCalendarEventImpor
                 $content['past'] = [];
             }
 
-            $existingIds = array_map(
-                static fn (mixed $event): string => is_array($event) ? (string) ($event['id'] ?? '') : '',
-                array_merge(is_array($content['upcoming'] ?? null) ? $content['upcoming'] : [], is_array($content['past'] ?? null) ? $content['past'] : []),
-            );
+            $content['categories'] = $this->withCategories($content['categories'] ?? [], $events, $locale);
+            $categoryLabels = array_column($content['categories'], 'label', 'id');
+            $upcoming = is_array($content['upcoming'] ?? null) ? array_values($content['upcoming']) : [];
             $past = is_array($content['past'] ?? null) ? array_values($content['past']) : [];
 
             foreach ($events as $event) {
@@ -64,7 +64,37 @@ final class LegacyCalendarEventImportService implements LegacyCalendarEventImpor
                     throw new InvalidArgumentException('Event "'.$id.'" needs an id, a start date and a '.$locale.' title.');
                 }
 
-                if (in_array($id, $existingIds, true)) {
+                $categoryId = is_array($event['category'] ?? null) ? (string) ($event['category']['id'] ?? '') : '';
+                // What the admin's event form requires to publish.
+                $required = [
+                    'timeLabel' => (string) ($text['timeLabel'] ?? ''),
+                    'location' => (string) ($text['location'] ?? ''),
+                    'categoryId' => $categoryId,
+                    'categoryLabel' => (string) ($categoryLabels[$categoryId] ?? ''),
+                    'image' => (string) ($event['image'] ?? ''),
+                ];
+
+                $found = false;
+
+                foreach (['upcoming', 'past'] as $list) {
+                    foreach (${$list} as $index => $record) {
+                        if (! is_array($record) || (string) ($record['id'] ?? '') !== $id) {
+                            continue;
+                        }
+
+                        $found = true;
+
+                        // Fill only what is missing; whatever an editor wrote stays.
+                        foreach ($required as $field => $value) {
+                            if (trim((string) ($record[$field] ?? '')) === '' && $value !== '') {
+                                ${$list}[$index][$field] = $value;
+                                $completed[$id] = $id;
+                            }
+                        }
+                    }
+                }
+
+                if ($found) {
                     $present[$id] = $id;
 
                     continue;
@@ -77,11 +107,7 @@ final class LegacyCalendarEventImportService implements LegacyCalendarEventImpor
                     'startsAt' => (string) $event['startsAt'],
                     'endsAt' => is_string($event['endsAt'] ?? null) && $event['endsAt'] !== '' ? $event['endsAt'] : null,
                     'dateLabel' => (string) ($text['dateLabel'] ?? ''),
-                    'timeLabel' => '',
-                    'location' => (string) ($text['location'] ?? ''),
-                    'categoryId' => '',
-                    'categoryLabel' => '',
-                    'image' => (string) ($event['image'] ?? ''),
+                    ...$required,
                     'participants' => '',
                     'highlights' => [],
                     'speakers' => [],
@@ -92,6 +118,7 @@ final class LegacyCalendarEventImportService implements LegacyCalendarEventImpor
             }
 
             usort($past, static fn (array $a, array $b): int => strcmp((string) ($b['startsAt'] ?? ''), (string) ($a['startsAt'] ?? '')));
+            $content['upcoming'] = $upcoming;
             $content['past'] = $past;
             $payload['translations'][$locale] = $content;
         }
@@ -99,7 +126,7 @@ final class LegacyCalendarEventImportService implements LegacyCalendarEventImpor
         $written = false;
         $published = false;
 
-        if ($write && $added !== []) {
+        if ($write && ($added !== [] || $completed !== [])) {
             $this->cmsWorkflowService->saveDraft(self::TARGET, $payload, $userId, $expectedVersion);
             $written = true;
             // An editor's unfinished draft is not published along with the import.
@@ -109,10 +136,36 @@ final class LegacyCalendarEventImportService implements LegacyCalendarEventImpor
         return new LegacyCalendarEventImportResultDTO(
             added: array_values($added),
             present: array_values(array_diff($present, $added)),
+            completed: array_values(array_diff($completed, $added)),
             written: $written,
             published: $published,
             hadPendingDraft: is_array($draftPayload),
         );
+    }
+
+    /**
+     * The events' categories, added to the page's category list when missing.
+     *
+     * @param  list<array<string, mixed>>  $events
+     * @return list<array{id: string, label: string}>
+     */
+    private function withCategories(mixed $categories, array $events, string $locale): array
+    {
+        $list = array_values(array_filter(is_array($categories) ? $categories : [], static fn (mixed $category): bool => is_array($category) && is_string($category['id'] ?? null) && is_string($category['label'] ?? null)));
+        $ids = array_column($list, 'id');
+
+        foreach ($events as $event) {
+            $category = is_array($event['category'] ?? null) ? $event['category'] : [];
+            $id = trim((string) ($category['id'] ?? ''));
+            $label = trim((string) ($category[$locale] ?? ''));
+
+            if ($id !== '' && $label !== '' && ! in_array($id, $ids, true)) {
+                $list[] = ['id' => $id, 'label' => $label];
+                $ids[] = $id;
+            }
+        }
+
+        return $list;
     }
 
     private function actorId(string $actor): int
