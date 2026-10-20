@@ -165,10 +165,11 @@ final class ProfileWorkflowTest extends TestCase
                 ->values()
                 ->all(),
         );
+        // The address stays the leadership profile's; the content, name included,
+        // is the linked faculty member's (since 2026-10-20).
         $this->get('/en/about/profile/linked-profile')
             ->assertOk()
-            ->assertSee('English Profile')
-            ->assertDontSee('English Faculty Member');
+            ->assertSee('English Faculty Member');
     }
 
     public function test_unpublished_profile_publications_are_hidden(): void

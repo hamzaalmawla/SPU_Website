@@ -370,8 +370,7 @@ final class ProfilePageService implements ProfilePageServiceInterface
             direction: $profile->direction,
             sourceType: $profile->sourceType,
             slug: $profile->slug,
-            // The leadership profile is the canonical identity; it keeps its name.
-            name: (string) $pick($profile->name, $linked->name),
+            name: (string) $pick($linked->name, $profile->name),
             title: $pick($linked->title, $profile->title),
             // The leadership role (Dean, Vice President, ...) describes them best.
             position: $pick($profile->position, $linked->position),
@@ -391,7 +390,7 @@ final class ProfilePageService implements ProfilePageServiceInterface
             councilMemberships: $pick($profile->councilMemberships, $linked->councilMemberships),
             cvUrl: $pick($linked->cvUrl, $profile->cvUrl),
             profileUrl: $profile->profileUrl,
-            seoTitle: (string) $pick($profile->name, $linked->name).' - '.config('app.name', 'SPU'),
+            seoTitle: (string) $pick($linked->name, $profile->name).' - '.config('app.name', 'SPU'),
             seoDescription: is_string($bio) && trim($bio) !== '' ? $bio : $profile->seoDescription,
             seoImage: $pick($linked->image, $profile->seoImage),
             path: $profile->path,

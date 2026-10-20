@@ -35,7 +35,7 @@ The imported `AGENTS.MD` is the authoritative project rulebook (scope, architect
 - Name suggestions use `App\Support\PersonName::matchRank()`; keep `tests/Unit/PersonNameMatchingTest.php` green when touching name matching (the merge and research services share it).
 
 ## Leadership profiles linked to faculty members
-- A faculty member linked to a leadership profile (`faculty_members.person_id`) is shown as that profile: the leadership address, name and role stay, and its page and cards show the member's photo, bio, title, specializations, education, links, CV and papers (`ProfilePageService::withLinkedFacultyMember`, `AboutPageService::personImage`). The member's own address 301s to it. Linking copies nothing onto the leadership profile.
+- A faculty member linked to a leadership profile (`faculty_members.person_id`) is shown as that profile: the leadership address and role stay, and its page and cards show the member's name, photo, bio, title, specializations, education, links, CV and papers (`ProfilePageService::withLinkedFacultyMember`, `AboutPageService::personImage`). The member's own address 301s to it. Linking copies nothing onto the leadership profile.
 - Editors link or unlink on the faculty member editor ("Link to leadership profile", `PeopleMergeServiceInterface::linkFacultyMember`); `people:merge` links exact name matches. `people:duplicates` (in every deploy log) lists unlinked matches and the linked pairs.
 
 ## Graduates and top students import

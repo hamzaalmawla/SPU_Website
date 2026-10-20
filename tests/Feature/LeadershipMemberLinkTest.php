@@ -93,7 +93,7 @@ final class LeadershipMemberLinkTest extends TestCase
         Cache::flush();
         $this->get('/en/about/profile/test-dean-leadership')
             ->assertOk()
-            ->assertSee('Dr. Zayd Testdean')
+            ->assertSee('Prof. Zayd Testdean')
             ->assertSee('Dean of the Faculty')
             ->assertSee('A full biography sent through the intake form.')
             ->assertDontSee('Short old text.')
