@@ -6,6 +6,7 @@ namespace App\Filament\Concerns;
 
 use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\Auth\PermissionCatalogInterface;
+use App\Contracts\Career\StudentListImportServiceInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanBoardServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanEditorServiceInterface;
@@ -40,6 +41,7 @@ use Illuminate\Validation\ValidationException;
 
 trait ManagesFacultyHomepage
 {
+    use ImportsStudentLists;
     use ManagesStudyPlanBoard;
 
     private const SELECTED_RESEARCH_LIMIT = 3;
@@ -88,6 +90,7 @@ trait ManagesFacultyHomepage
         FacultySubpageCardServiceInterface $subpageCardService,
         FacultyStudyPlanBoardServiceInterface $studyPlanBoardService,
         MediaServiceInterface $mediaService,
+        StudentListImportServiceInterface $studentListImports,
     ): void {
         $this->facultyPageService = $facultyPageService;
         $this->cmsWorkflowService = $cmsWorkflowService;
@@ -96,6 +99,7 @@ trait ManagesFacultyHomepage
         $this->subpageCardService = $subpageCardService;
         $this->studyPlanBoardService = $studyPlanBoardService;
         $this->boardMediaService = $mediaService;
+        $this->studentListImports = $studentListImports;
     }
 
     public static function canAccess(): bool
@@ -243,6 +247,7 @@ trait ManagesFacultyHomepage
     protected function getHeaderActions(): array
     {
         return [
+            ...$this->studentListImportActions(),
             Action::make('save')->label(__('admin.faculty_workspace.actions.save_draft'))->icon('heroicon-o-check')->color('gray')->action(function (): void {
                 $this->save();
             }),

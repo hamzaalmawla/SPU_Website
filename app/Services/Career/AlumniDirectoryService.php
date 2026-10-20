@@ -6,6 +6,7 @@ namespace App\Services\Career;
 
 use App\Contracts\Career\AlumniDirectoryServiceInterface;
 use App\DTOs\Career\AlumniDirectoryPageDTO;
+use App\Enums\GraduationGrade;
 use App\Models\Career\Alumni;
 use App\Models\Career\AlumniTranslation;
 use App\Models\Faculty\Department;
@@ -108,6 +109,7 @@ final class AlumniDirectoryService implements AlumniDirectoryServiceInterface
                 'department_id',
                 'degree',
                 'graduation_year',
+                'grade',
                 'photo_media_id',
                 'legacy_photo_path',
             ])
@@ -165,6 +167,7 @@ final class AlumniDirectoryService implements AlumniDirectoryServiceInterface
                     'department' => $departmentName !== null && trim((string) $departmentName) !== '' ? (string) $departmentName : null,
                     'faculty' => (string) $facultyName,
                     'degree' => $alumni->degree,
+                    'grade' => GraduationGrade::tryFrom((string) $alumni->grade)?->label($locale),
                     'image' => $alumni->photoMedia instanceof MediaAsset
                         ? MediaUrlResolver::resolveImage($alumni->photoMedia->webp_path, $alumni->photoMedia->path, $alumni->photoMedia->disk)
                         : MediaUrlResolver::resolveLegacy($legacyPhoto),
@@ -241,6 +244,7 @@ final class AlumniDirectoryService implements AlumniDirectoryServiceInterface
             'department' => $record['department'],
             'faculty' => $record['faculty'],
             'degree' => $record['degree'],
+            'grade' => $record['grade'],
             'image' => $record['image'],
         ];
     }

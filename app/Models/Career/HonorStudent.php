@@ -23,6 +23,9 @@ class HonorStudent extends Model
         'faculty_id',
         'department_id',
         'academic_year',
+        'study_year',
+        'semester',
+        'student_list_import_id',
         'gpa',
         'photo_media_id',
         'legacy_photo_path',
@@ -35,6 +38,7 @@ class HonorStudent extends Model
         return [
             'gpa' => 'decimal:2',
             'sort_order' => 'integer',
+            'study_year' => 'integer',
             'is_enabled' => 'boolean',
             'deleted_at' => 'datetime',
         ];
@@ -53,6 +57,11 @@ class HonorStudent extends Model
     public function photoMedia(): BelongsTo
     {
         return $this->belongsTo(MediaAsset::class, 'photo_media_id');
+    }
+
+    public function studentListImport(): BelongsTo
+    {
+        return $this->belongsTo(StudentListImport::class);
     }
 
     public function translations(): HasMany

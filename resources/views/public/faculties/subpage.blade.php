@@ -393,6 +393,14 @@
                             <option value="{{ $year }}" @selected(($filters['year'] ?? '') === (string) $year)>{{ $year }}</option>
                         @endforeach
                     </select>
+                    @if (($filterOptions['semesters'] ?? []) !== [])
+                        <select name="semester" onchange="this.form.submit()" class="h-9 w-full min-w-0 rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue sm:w-auto sm:min-w-[150px]">
+                            <option value="">{{ $isAr ? 'كل الفصول' : 'All Semesters' }}</option>
+                            @foreach ($filterOptions['semesters'] as $semester)
+                                <option value="{{ $semester['key'] }}" @selected(($filters['semester'] ?? '') === (string) $semester['key'])>{{ $semester['label'] }}</option>
+                            @endforeach
+                        </select>
+                    @endif
                     <select name="department" onchange="this.form.submit()" class="h-9 w-full min-w-0 rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue sm:w-auto sm:min-w-[150px]">
                         <option value="">{{ $isAr ? 'القسم' : 'Department' }}</option>
                         @foreach (($filterOptions['departments'] ?? []) as $department)
@@ -431,7 +439,10 @@
                                 <h2 class="card-title card-title-center text-[14px] font-bold text-spu-blue" dir="auto">{{ $item['title'] ?? '' }}</h2>
                                 <p class="mt-2 text-[11px] font-bold text-spu-red">{{ $isAr ? 'سنة التخرج: ' : 'Graduation Year: ' }}{{ $item['graduationYear'] ?? '' }}</p>
                                 @if (filled($item['semester'] ?? null))
-                                    <p class="mt-1 text-[11px] font-bold text-spu-red">{{ $isAr ? 'الفصل: ' : 'Semester: ' }}{{ $item['semester'] }}</p>
+                                    <p class="mt-1 text-[11px] font-bold text-spu-red">{{ $item['semester'] }}@if (filled($item['academicYear'] ?? null)) <span dir="ltr">{{ $item['academicYear'] }}</span>@endif</p>
+                                @endif
+                                @if (filled($item['grade'] ?? null))
+                                    <p class="mt-1 text-[11px] font-bold text-spu-blue">{{ __('student_lists.public.grade', [], $locale) }}: {{ $item['grade'] }}</p>
                                 @endif
                                 <p class="mt-1 text-[11px] font-semibold text-slate-500">{{ $isAr ? 'القسم: ' : 'Department: ' }}{{ $item['department'] ?? $faculty['title'] }}</p>
                             </div>
@@ -540,9 +551,12 @@
                                 <div @if ($isMemorial) style="position: relative; z-index: 2;" @endif>
                                     <h3 class="card-title honor-card__name" dir="auto">{{ $item['title'] ?? '' }}</h3>
                                     <p class="mt-2 text-[10px] font-bold uppercase tracking-[0.08em] text-spu-blue/45">{{ $item['faculty'] ?? $faculty['title'] }}</p>
+                                    @if (filled($item['studyYear'] ?? null) || filled($item['department'] ?? null))
+                                        <p class="mt-1 text-[11px] font-semibold text-slate-500">{{ collect([$item['studyYear'] ?? null, $item['department'] ?? null])->filter()->implode(' · ') }}</p>
+                                    @endif
                                     <div class="mt-6 flex items-center justify-end gap-5">
                                         @if (! empty($item['semester']))
-                                            <span class="honor-card__semester">{{ $item['semester'] }}</span>
+                                            <span class="honor-card__semester">{{ $item['semester'] }}@if (filled($item['academicYear'] ?? null)) <span dir="ltr">{{ $item['academicYear'] }}</span>@endif</span>
                                         @endif
                                         <span class="honor-card__rank">{{ $isAr ? 'قائمة الشرف' : 'Honor List' }}</span>
                                     </div>

@@ -30,6 +30,12 @@ class Alumni extends Model
         'department_id',
         'degree',
         'graduation_year',
+        'gpa_points',
+        'gpa_percent',
+        'grade',
+        'academic_year',
+        'semester',
+        'student_list_import_id',
         'country_id',
         'city_id',
         'photo_media_id',
@@ -42,6 +48,8 @@ class Alumni extends Model
     {
         return [
             'graduation_year' => 'integer',
+            'gpa_points' => 'decimal:2',
+            'gpa_percent' => 'decimal:2',
             'is_featured' => 'boolean',
             'is_enabled' => 'boolean',
             'deleted_at' => 'datetime',
@@ -71,6 +79,11 @@ class Alumni extends Model
     public function photoMedia(): BelongsTo
     {
         return $this->belongsTo(MediaAsset::class, 'photo_media_id');
+    }
+
+    public function studentListImport(): BelongsTo
+    {
+        return $this->belongsTo(StudentListImport::class);
     }
 
     public function translations(): HasMany

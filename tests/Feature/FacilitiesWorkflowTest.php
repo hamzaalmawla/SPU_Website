@@ -1148,6 +1148,8 @@ final class FacilitiesWorkflowTest extends TestCase
                 $alumni = Alumni::query()->create([
                     'faculty_id' => (int) $faculty->getKey(),
                     'graduation_year' => 2026,
+                    // The semester filter below applies; it used to have no effect.
+                    'semester' => 'first',
                     'is_enabled' => true,
                 ]);
 
@@ -1176,6 +1178,7 @@ final class FacilitiesWorkflowTest extends TestCase
                 $student = HonorStudent::query()->create([
                     'faculty_id' => (int) $faculty->getKey(),
                     'academic_year' => '2026 / 2027',
+                    'semester' => 'first',
                     'gpa' => 95,
                     'sort_order' => 100 + $index,
                     'is_enabled' => true,
@@ -1210,7 +1213,8 @@ final class FacilitiesWorkflowTest extends TestCase
             foreach (['ar', 'en'] as $locale) {
                 foreach (['alumni' => 12, 'valedictorians' => 6] as $subpage => $perPage) {
                     $search = 'Parity '.$facultySlug;
-                    $filters = ['q' => $search, 'year' => '2026', 'semester' => 'first'];
+                    // "2026 / 2027" is one academic year, so the honor list filters on all of it.
+                    $filters = ['q' => $search, 'year' => $subpage === 'alumni' ? '2026' : '2026/2027', 'semester' => 'first'];
                     $firstPage = $facilities->getSubpage($facultySlug, $subpage, $locale, [...$filters, 'page' => 1]);
                     $secondPage = $facilities->getSubpage($facultySlug, $subpage, $locale, [...$filters, 'page' => 2]);
                     $boundedPage = $facilities->getSubpage($facultySlug, $subpage, $locale, [...$filters, 'page' => 999]);

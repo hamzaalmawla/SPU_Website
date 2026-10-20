@@ -25,6 +25,8 @@ use App\DTOs\Faculty\FacultyProjectDetailPageDTO;
 use App\DTOs\Faculty\FacultySubpageCardDTO;
 use App\DTOs\Faculty\FacultySubpageDTO;
 use App\DTOs\Faculty\ProjectFieldBlockDTO;
+use App\Enums\AcademicSemester;
+use App\Enums\GraduationGrade;
 use App\Models\Career\Alumni;
 use App\Models\Career\AlumniTranslation;
 use App\Models\Career\HonorStudent;
@@ -315,6 +317,12 @@ final class FacultyPageService implements FacultyPageServiceInterface
                         'detailRoute' => $this->projectDetailRoute($faculty, $locale, (string) ($item['slug'] ?? '')),
                     ])->values()->all()
                     : $cmsItems;
+
+                // An editor's published list is a copy of the records at the time;
+                // students imported from a decision since then are added to it.
+                if ($this->isStudentListSubpage($subpageSlug)) {
+                    $items = [...$items, ...$this->importedStudentsMissingFrom($items, $faculty, $subpageSlug, $locale)];
+                }
             }
         }
 
@@ -1505,8 +1513,12 @@ final class FacultyPageService implements FacultyPageServiceInterface
                     'department' => $department,
                     'faculty' => $this->facultyTranslation($faculty, $locale)->name,
                     'degree' => $alumni->degree,
-                    'semester' => null,
-                    'semesterKey' => null,
+                    'grade' => GraduationGrade::tryFrom((string) $alumni->grade)?->label($locale),
+                    'gpaPercent' => $alumni->gpa_percent,
+                    'academicYear' => $alumni->academic_year,
+                    'semester' => AcademicSemester::tryFrom((string) $alumni->semester)?->label($locale),
+                    'semesterKey' => AcademicSemester::tryFrom((string) $alumni->semester)?->value,
+                    'importedFromDecision' => $alumni->student_list_import_id !== null,
                     'academicPhase' => $locale === 'ar' ? 'خريج' : 'Graduate',
                     'image' => $alumni->photoMedia === null
                         ? MediaUrlResolver::resolveLegacy($legacyPhoto)
@@ -1533,8 +1545,12 @@ final class FacultyPageService implements FacultyPageServiceInterface
                     'academicYear' => $student->academic_year,
                     'department' => $department,
                     'gpa' => $student->gpa,
-                    'semester' => null,
-                    'semesterKey' => null,
+                    'semester' => AcademicSemester::tryFrom((string) $student->semester)?->label($locale),
+                    'semesterKey' => AcademicSemester::tryFrom((string) $student->semester)?->value,
+                    'studyYear' => $student->study_year !== null ? __('student_lists.study_years.'.$student->study_year, [], $locale) : null,
+                    'studyYearNumber' => $student->study_year,
+                    'rank' => $student->student_list_import_id !== null ? $student->sort_order : null,
+                    'importedFromDecision' => $student->student_list_import_id !== null,
                     'faculty' => $this->facultyTranslation($faculty, $locale)->name,
                     'image' => $student->photoMedia === null
                         ? MediaUrlResolver::resolveLegacy($legacyPhoto)
@@ -1542,6 +1558,21 @@ final class FacultyPageService implements FacultyPageServiceInterface
                     'isMemorial' => $this->isMemorialHonorStudent($metadata),
                 ];
             })->values()->all();
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $items
+     * @return array<int, array<string, mixed>>
+     */
+    private function importedStudentsMissingFrom(array $items, Faculty $faculty, string $subpageSlug, string $locale): array
+    {
+        $listed = array_flip(array_map('intval', array_filter(array_column($items, 'id'))));
+        $records = $subpageSlug === 'alumni' ? $this->alumniItems($faculty, $locale) : $this->honorItems($faculty, $locale);
+
+        return array_values(array_filter(
+            $records,
+            static fn (array $record): bool => ($record['importedFromDecision'] ?? false) === true && ! isset($listed[(int) $record['id']]),
+        ));
     }
 
     /** @param array<string, mixed> $metadata */
@@ -1693,6 +1724,10 @@ final class FacultyPageService implements FacultyPageServiceInterface
                     return false;
                 }
 
+                if ($filters['semester'] !== '' && (string) ($item['semesterKey'] ?? '') !== (string) $filters['semester']) {
+                    return false;
+                }
+
                 return $filters['academic_phase'] === '' || (string) ($item['academicPhase'] ?? '') === (string) $filters['academic_phase'];
             })
             ->values()
@@ -1738,11 +1773,37 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 : $this->academicYearSortValue($right['academicYear'] ?? null);
 
             return ($rightYear <=> $leftYear)
+                ?: ($this->semesterOrder($right) <=> $this->semesterOrder($left))
+                ?: $this->decisionOrder($left, $right)
                 ?: ((int) ($right['id'] ?? 0) <=> (int) ($left['id'] ?? 0))
                 ?: strnatcasecmp((string) ($left['title'] ?? ''), (string) ($right['title'] ?? ''));
         });
 
         return $items;
+    }
+
+    /** @param array<string, mixed> $item */
+    private function semesterOrder(array $item): int
+    {
+        return AcademicSemester::tryFrom((string) ($item['semesterKey'] ?? ''))?->order() ?? 0;
+    }
+
+    /**
+     * Within one imported semester: top students by study year then rank,
+     * graduates by GPA, as the faculty decision lists them.
+     *
+     * @param  array<string, mixed>  $left
+     * @param  array<string, mixed>  $right
+     */
+    private function decisionOrder(array $left, array $right): int
+    {
+        if (($left['importedFromDecision'] ?? false) !== true || ($right['importedFromDecision'] ?? false) !== true) {
+            return 0;
+        }
+
+        return ((int) ($left['studyYearNumber'] ?? 0) <=> (int) ($right['studyYearNumber'] ?? 0))
+            ?: ((int) ($left['rank'] ?? 0) <=> (int) ($right['rank'] ?? 0))
+            ?: ((float) ($right['gpaPercent'] ?? 0) <=> (float) ($left['gpaPercent'] ?? 0));
     }
 
     private function academicYearSortValue(mixed $academicYear): int
@@ -1888,6 +1949,10 @@ final class FacultyPageService implements FacultyPageServiceInterface
 
         if ($value === null) {
             return null;
+        }
+
+        if (preg_match('/^(\d{4})\s*\/\s*(\d{4})$/', $value, $match) === 1 && (int) $match[2] === (int) $match[1] + 1) {
+            return $match[1].'/'.$match[2];
         }
 
         $parts = array_map('trim', explode('/', $value));

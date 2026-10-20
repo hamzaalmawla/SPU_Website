@@ -93,6 +93,9 @@
                             @if ($item['department'])
                                 <p class="mt-1 text-[11px] font-semibold text-slate-500">{{ $item['department'] }}</p>
                             @endif
+                            @if (filled($item['grade'] ?? null))
+                                <p class="mt-1 text-[11px] font-bold text-spu-blue">{{ __('student_lists.public.grade', [], $locale) }}: {{ $item['grade'] }}</p>
+                            @endif
                             @if ($item['degree'])
                                 <p class="mt-1 text-[11px] font-semibold text-slate-400">{{ $item['degree'] }}</p>
                             @endif

@@ -1026,3 +1026,57 @@
 .spu-board-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)) auto; gap: .5rem; align-items: end; padding: .5rem; border: 1px solid var(--board-line); border-radius: .5rem; }
 .spu-board-row label { display: flex; flex-direction: column; gap: .25rem; font-size: .75rem; font-weight: 600; color: var(--board-muted); }
 .spu-board-row input, .spu-board-row select { width: 100%; border: 1px solid var(--board-line); border-radius: .5rem; background: var(--board-surface); color: var(--board-text); padding: .4rem .55rem; font-size: .8125rem; font-weight: 400; }
+
+/* Student list import (faculty Alumni and Honor List pages) */
+.spu-import-table-wrap {
+    max-height: 26rem;
+    overflow: auto;
+    border: 1px solid var(--spu-line);
+    border-radius: 0.5rem;
+}
+
+.spu-import-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+}
+
+.spu-import-table th,
+.spu-import-table td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--spu-line);
+    text-align: start;
+    vertical-align: top;
+}
+
+.spu-import-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--spu-surface-muted);
+    font-weight: 700;
+    color: var(--spu-ink);
+    white-space: nowrap;
+}
+
+.spu-import-table__note {
+    display: block;
+    margin-top: 0.125rem;
+    font-size: 0.75rem;
+    color: var(--spu-muted);
+}
+
+.spu-import-table__note--danger {
+    color: var(--spu-red);
+}
+
+.dark .spu-import-table thead th {
+    background: rgb(255 255 255 / 5%);
+    color: inherit;
+}
+
+.dark .spu-import-table th,
+.dark .spu-import-table td,
+.dark .spu-import-table-wrap {
+    border-color: rgb(255 255 255 / 10%);
+}

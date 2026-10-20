@@ -34,6 +34,12 @@ The imported `AGENTS.MD` is the authoritative project rulebook (scope, architect
 - Nothing a teacher sends changes a profile: it is a `staff_intake_requests` row until a reviewer approves it, and approval goes through the About-entity CMS draft/publish workflow. Every open, claim and submit is logged in `staff_intake_access_logs`. Admin access uses the `staff_intake_links.*` and `staff_intake_requests.*` permissions.
 - Name suggestions use `App\Support\PersonName::matchRank()`; keep `tests/Unit/PersonNameMatchingTest.php` green when touching name matching (the merge and research services share it).
 
+## Graduates and top students import
+- Each semester faculties send council decisions (.docx) listing graduates and top students. Editors import them from the faculty's Alumni / Honor List admin page ("Import from decision"): upload, review, confirm, and the rows are live. Plan and as-built notes: `Docs/STUDENT_LIST_IMPORT_PLAN.md`.
+- `StudentListImportServiceInterface` does all reading and writing; the parsing is in `app/Support/StudentLists/`. Students are matched on university ID (`student_identifier`), so a re-import updates. Every import is a `student_list_imports` row that can be undone, newest first.
+- Access is publish on that faculty page (`canManageTarget(..., 'publish')`), not a separate permission.
+- Real decision files name real students: never commit them. Tests build look-alike files with `tests/Support/DecisionDocxFactory.php`.
+
 ## Where to look
 - `Docs/ARCHITECTURE.md`, `Docs/BACKEND_RULES.md`, `Docs/STYLEGUIDE.md`, `Docs/WORKFLOW.md`: layering and conventions
 - `Docs/FRONTEND_IMPORT_TRACKER.md`, `Docs/FRONTEND_ROUTE_PARITY_MATRIX.md`: parity status per route
