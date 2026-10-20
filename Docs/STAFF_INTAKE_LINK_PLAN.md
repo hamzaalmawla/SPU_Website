@@ -1,6 +1,6 @@
 # Academic Staff Intake Link: Plan
 
-Status: proposal, nothing built yet. Decisions agreed on 2026-10-20 are listed under "Decisions"; the one left open is marked **(decide)**.
+Status: proposal, nothing built yet. Decisions agreed on 2026-10-20 are listed under "Decisions".
 
 ## Goal
 
@@ -31,7 +31,7 @@ Every submission becomes a **staff update request** that waits for review. An ed
 - Approval runs the same validation, scope checks, slug rules, cache invalidation and audit log as an admin edit, so other pages stay consistent.
 - Duplicates are caught by a person before anything is created.
 
-**(decide)** Recommended: approval for everything, both edits and new staff.
+Agreed: approval for everything, both edits and new staff.
 
 ## Flow
 
@@ -80,6 +80,28 @@ Not in the form: faculty (fixed by the link), slug, sort order, publication stat
 
 The teacher fills in all of these themselves, in both Arabic and English; English full name is required for a new member, the rest may be left empty.
 
+## Name suggestions: Arabic and English, spelling-tolerant
+
+The teacher can type in Arabic or English, and suggestions appear as they type (from the 3rd letter). Each suggestion shows **both** the Arabic and English name, so the teacher recognises themselves whichever language they typed in. Matching runs against both the AR and EN `full_name` of every member, using `App\Support\PersonName`, extended for this:
+
+| Variation | Example | Handled by |
+| --- | --- | --- |
+| Hamza / alef forms | أحمد = احمد = إحمد = آحمد | `tokens()` (already) |
+| Taa marbuta, alef maqsura | فاطمة = فاطمه, على = علي | `tokens()` (already) |
+| Tatweel | محـمد = محمد | `tokens()` (already) |
+| Diacritics (tashkeel) | مُحَمَّد = محمد | **to add**: today the marks split the word and the match fails (verified) |
+| Hamza on waw / yaa | مؤمن = مومن, هانئ = هاني | **to add** to `tokens()` |
+| Joined / split names | عبد الله = عبدالله | `same()` (already) |
+| Upper / lower case | AHMAD = Ahmad = ahmad | `tokens()` (already) |
+| Latin spelling variants | Ahmad = Ahmed, Mohammad = Muhammad = Mohamed, Khaled = Khalid, Abdullah = Abdallah, Hasan = Hassan | `likelySame()` consonant outline (already) |
+| Titles | د. / Dr. / Prof. / المهندس | ignored (already) |
+| Missing middle name | Ayman Ali = Ayman Mohammad Ali | `same()` (already) |
+| Partial typing | "Ahm", "احم", "Mohamed Kh" | **to add**: `PersonName::startsLike()`, prefix match on the normalised words and on their consonant outlines |
+
+Ranking: exact name, then `same()`, then `likelySame()`, then prefix-only. Members of the link's faculty come before other faculties. At most 5 are shown. The diacritics and hamza fixes also make the existing duplicate report and merge more accurate. Before the change, run `PeopleMergeService` in dry-run mode and compare its output, so the fix doesn't silently change what gets merged.
+
+Typing English when a member only has an Arabic name (or the other way round) can't be matched reliably by spelling rules. Such members are listed in the admin ("missing EN name") so editors can fill them in before the link goes out.
+
 ## No duplicates, no mismatches
 
 1. **Lookup** compares the typed name with `PersonName::same()` (strong) and `likelySame()` (weak) against every live `faculty_members` translation in all faculties, against `persons`, and against pending requests. It needs at least two name parts to suggest.
@@ -118,6 +140,7 @@ The teacher fills in all of these themselves, in both Arabic and English; Englis
 ## Tests
 
 - Feature: token states (valid, expired, revoked, rotated, cap reached, other faculty) and 404 parity. Suggestions carry only name/title/department/photo and are throttled; claim returns the full record. Every step writes the expected access-log row with changed fields. Submit validation, including a department from another faculty being rejected. Honeypot.
+- Name matching: unit tests for every row of the variation table above, in both directions, including partial typing and ranking.
 - Duplicates: strong and weak matches, Arabic variants, "not me" with a strong match flags the request, a second submission supersedes the first, a member in another faculty is linked by `person_id`, a concurrent submit doesn't create two requests.
 - Review: a faculty editor can't see another faculty's requests. Approve-update changes only the claimed member. Approve-create gives a Draft with a unique slug and nothing public until published. Cache invalidated, audit written.
 - `ArchitectureGuardTest` stays green (no Eloquent in controllers).
@@ -125,13 +148,13 @@ The teacher fills in all of these themselves, in both Arabic and English; Englis
 ## Delivery slices
 
 1. Tables, models, link service and admin link resource (create, rotate, revoke).
-2. Public page, lookup, claim, submit, access log, all security controls; requests saved.
+2. `PersonName` extensions (diacritics, hamza on waw/yaa, prefix match) with tests; public page, lookup, claim, submit, access log, all security controls; requests saved.
 3. Review queue, diff, approve/reject through `ProfileAdminService`, notifications.
 4. Duplicate report section, retention command, CMS user guide section, `FRONTEND_IMPORT_TRACKER.md` entry.
 
 ## Decisions
 
-1. **(decide)** Approval for every submission (recommended), or apply edits to existing profiles directly?
+1. Every submission (edits and new staff) waits for approval before anything public changes.
 2. No email code. "This is me" fills in everything we hold; the link is shared only with the faculty's staff group, and the access log records who entered and what they changed.
 3. The teacher fills in all their data (every field in the table), in both languages.
 4. Expiry and submission cap are chosen by whoever generates the link.
