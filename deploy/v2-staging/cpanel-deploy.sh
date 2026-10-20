@@ -1449,7 +1449,8 @@ if [[ -f "${MEMBERS_ACTIVITY_APPROVAL}" ]]; then
         [[ "${ACTIVITY_FACULTY}" =~ ^[a-z-]+$ ]] || continue
         (cd "${APP}" && "${PHP}" -d memory_limit=512M artisan faculty-members:activity "${ACTIVITY_FACULTY}" --since="${ACTIVITY_SINCE}" --no-ansi) || \
             printf '   (faculty-members:activity failed for %s)\n' "${ACTIVITY_FACULTY}"
-    done < <(grep -E '^[[:space:]]*faculty=' "${MEMBERS_ACTIVITY_APPROVAL}" | cut -d= -f2- | tr -d '\r[:space:]' || true)
+    # sed, not tr: tr would also delete the newlines read needs.
+    done < <(grep -E '^[[:space:]]*faculty=' "${MEMBERS_ACTIVITY_APPROVAL}" | cut -d= -f2- | sed 's/[[:space:]]//g' || true)
     mv "${MEMBERS_ACTIVITY_APPROVAL}" "${MEMBERS_ACTIVITY_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
 fi
 
