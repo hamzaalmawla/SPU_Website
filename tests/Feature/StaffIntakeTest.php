@@ -15,7 +15,6 @@ use App\Filament\Resources\StaffIntakeLinkResource\Pages\ListStaffIntakeLinks;
 use App\Filament\Resources\StaffIntakeRequestResource;
 use App\Filament\Resources\StaffIntakeRequestResource\Pages\ViewStaffIntakeRequest;
 use App\Mail\StaffIntakeSubmittedNotification;
-use App\Models\Cms\CmsDraft;
 use App\Models\Faculty\Department;
 use App\Models\Faculty\Faculty;
 use App\Models\Person\FacultyMember;
@@ -261,22 +260,24 @@ final class StaffIntakeTest extends TestCase
         $this->assertSame(1, StaffIntakeRequest::query()->count());
     }
 
-    public function test_an_approval_the_cms_cannot_publish_yet_is_kept_as_a_draft(): void
+    public function test_an_editor_approval_publishes_a_profile_with_only_the_required_fields(): void
     {
         $member = $this->member('maya-intake', 'مايا إنتيك', 'Maya Intake', $this->dentistry);
         $token = $this->token($this->link());
         $ref = $this->refFor($token, 'Maya Intake');
-        // Without a position or biography the CMS will not publish a profile.
+        // No position, biography or education: none of them is required, on the
+        // intake form or in the admin, so the profile still publishes.
         $this->post('/en/staff-intake/'.$token.'/form', $this->formData($ref, ['name_ar' => 'مايا إنتيك', 'name_en' => 'Maya Intake', 'phone' => '٠٩٤٤١٢٣٤٥٦']))->assertRedirect();
 
         $request = StaffIntakeRequest::query()->sole();
         $result = app(StaffIntakeReviewServiceInterface::class)->approve((int) $request->getKey(), (int) $this->user('editor')->getKey());
 
-        $this->assertFalse($result->published);
-        $this->assertNotSame([], $result->publishErrors);
+        $this->assertTrue($result->published, implode(' ', $result->publishErrors));
+        $this->assertSame([], $result->publishErrors);
         $this->assertSame(StaffIntakeRequest::STATUS_APPROVED, $request->fresh()?->status);
-        $this->assertNull($member->fresh()?->phone, 'The live profile changed without being published.');
-        $this->assertSame('0944123456', CmsDraft::query()->where('target_key', 'entity.faculty-member.'.$member->getKey())->latest('id')->firstOrFail()->payload_json['phone'] ?? null);
+        $this->assertSame('0944123456', $member->fresh()?->phone);
+        $this->assertSame(PublicationStatus::Published->value, $member->fresh()?->publication_status);
+        $this->get('/en/about/profile/maya-intake')->assertOk()->assertSee('Maya Intake');
     }
 
     public function test_rejecting_leaves_the_profile_alone(): void
