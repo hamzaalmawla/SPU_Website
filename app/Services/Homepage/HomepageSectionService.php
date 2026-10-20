@@ -329,7 +329,7 @@ final class HomepageSectionService implements HomepageSectionServiceInterface
     {
         $user = $this->authFactory->guard((string) config('auth.admin_guard', 'web'))->user();
 
-        if (! $user instanceof User || Gate::forUser($user)->denies('manage-homepage')) {
+        if (! $user instanceof User || Gate::forUser($user)->denies('homepage.update')) {
             throw new AuthorizationException('This user is not authorized to manage homepage sections.');
         }
 

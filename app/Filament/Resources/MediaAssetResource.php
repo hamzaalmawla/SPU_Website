@@ -50,7 +50,7 @@ class MediaAssetResource extends Resource
 
     public static function canAccess(): bool
     {
-        return Gate::allows('manage-media');
+        return Gate::allows('viewAny', MediaAsset::class);
     }
 
     public static function getModelLabel(): string
@@ -84,12 +84,8 @@ class MediaAssetResource extends Resource
 
         $query->where('library_scope', 'main');
 
-        if (in_array($user->role_slug, ['super_admin', 'editor'], true)) {
+        if (! $user->hasFacultyLimit()) {
             return $query;
-        }
-
-        if (! $user->isLimitedEditor()) {
-            return $query->whereRaw('1 = 0');
         }
 
         $scopes = app(AdminAccessServiceInterface::class)->facultyScopeValues($user);
@@ -312,7 +308,7 @@ class MediaAssetResource extends Resource
                         ->helperText(__('admin_resources.media_asset.optional_faculty_editors_only_access_media_matching_their_sc'))
                         ->maxLength(255)
                         ->alphaDash()
-                        ->visible(fn (): bool => in_array(auth()->user()?->role_slug, ['super_admin', 'editor'], true)),
+                        ->visible(fn (): bool => auth()->user() instanceof User && ! auth()->user()->hasFacultyLimit()),
 
                     GrantedFacultySelect::make('faculty_scope_slug', __('admin_resources.media_asset.faculty_scope_slug')),
                 ]),

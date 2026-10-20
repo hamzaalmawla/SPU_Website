@@ -43,7 +43,7 @@ class AuditLogResource extends Resource
 
     public static function canAccess(): bool
     {
-        return Gate::allows('view-audit-log');
+        return Gate::allows('viewAny', AuditLog::class);
     }
 
     public static function getModelLabel(): string

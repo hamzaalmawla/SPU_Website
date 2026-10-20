@@ -8,6 +8,8 @@ use App\Contracts\Achievement\AchievementServiceInterface;
 use App\Contracts\Analytics\AnalyticsServiceInterface;
 use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\Auth\AuthServiceInterface;
+use App\Contracts\Auth\PermissionCatalogInterface;
+use App\Contracts\Auth\RoleAdminServiceInterface;
 use App\Contracts\Auth\TotpAuthenticatorInterface;
 use App\Contracts\Career\AlumniDirectoryServiceInterface;
 use App\Contracts\Cms\AboutEntityCmsServiceInterface;
@@ -177,8 +179,9 @@ use App\Policies\AuditLogPolicy;
 use App\Policies\ContactMessagePolicy;
 use App\Policies\DynamicFormSubmissionPolicy;
 use App\Policies\FacultyDomainPolicy;
+use App\Policies\FacultyMemberPolicy;
+use App\Policies\FacultySubpageCardPolicy;
 use App\Policies\FormDefinitionPolicy;
-use App\Policies\HomepagePolicy;
 use App\Policies\MediaAssetPolicy;
 use App\Policies\MenuItemPolicy;
 use App\Policies\NewsArticlePolicy;
@@ -190,6 +193,8 @@ use App\Services\Achievement\AchievementService;
 use App\Services\Analytics\AnalyticsService;
 use App\Services\Auth\AdminAccessService;
 use App\Services\Auth\AuthService;
+use App\Services\Auth\PermissionCatalog;
+use App\Services\Auth\RoleAdminService;
 use App\Services\Auth\TotpAuthenticator;
 use App\Services\Career\AlumniDirectoryService;
 use App\Services\Cms\AboutEntityCmsService;
@@ -332,6 +337,8 @@ use App\Support\PageExpiredDiagnostics;
 use Filament\Http\Responses\Auth\Contracts\LogoutResponse as LogoutResponseContract;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Queue\Events\JobProcessing;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
@@ -546,29 +553,26 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Achievement::class, AchievementPolicy::class);
         Gate::policy(AchievementCategory::class, AchievementCategoryPolicy::class);
         Gate::policy(Faculty::class, FacultyDomainPolicy::class);
-        Gate::policy(FacultyMember::class, FacultyDomainPolicy::class);
+        Gate::policy(FacultyMember::class, FacultyMemberPolicy::class);
         Gate::policy(FacultyPage::class, FacultyDomainPolicy::class);
         Gate::policy(FacultyHighlight::class, FacultyDomainPolicy::class);
         Gate::policy(FacultyLab::class, FacultyDomainPolicy::class);
         Gate::policy(FacultyStudentProject::class, FacultyDomainPolicy::class);
         Gate::policy(Alumni::class, FacultyDomainPolicy::class);
         Gate::policy(HonorStudent::class, FacultyDomainPolicy::class);
-        Gate::policy(FacultySubpageCard::class, FacultyDomainPolicy::class);
+        Gate::policy(FacultySubpageCard::class, FacultySubpageCardPolicy::class);
 
-        Gate::define('manage-users', [UserPolicy::class, 'manageUsers']);
-        Gate::define('manage-settings', [UserPolicy::class, 'manageSettings']);
-        Gate::define('manage-homepage', [HomepagePolicy::class, 'manage']);
-        Gate::define('manage-pages', [PagePolicy::class, 'manage']);
-        Gate::define('manage-menu', [MenuItemPolicy::class, 'manage']);
-        Gate::define('manage-news', [NewsArticlePolicy::class, 'manage']);
-        Gate::define('manage-faculties', [FacultyDomainPolicy::class, 'manage']);
-        Gate::define('manage-jobs', [UserPolicy::class, 'manageJobs']);
-        Gate::define('manage-media', [UserPolicy::class, 'manageMedia']);
-        Gate::define('publish-content', [UserPolicy::class, 'publishContent']);
-        Gate::define('preview-content', [UserPolicy::class, 'previewContent']);
-        Gate::define('publish-jobs', [UserPolicy::class, 'publishJobs']);
-        Gate::define('preview-jobs', [UserPolicy::class, 'previewJobs']);
-        Gate::define('view-audit-log', [UserPolicy::class, 'viewAuditLog']);
+        // One gate per catalog permission (`news_articles.update`, ...). Users,
+        // roles and the permission system itself stay with the super admin.
+        foreach ($this->app->make(PermissionCatalogInterface::class)->all() as $permission) {
+            Gate::define($permission, fn (User $user): bool => $this->app->make(AdminAccessServiceInterface::class)->can($user, $permission));
+        }
+
+        Gate::define('manage-users', fn (User $user): bool => $user->isSuperAdmin());
+
+        Event::listen(JobProcessing::class, function (): void {
+            $this->app->make(AdminAccessServiceInterface::class)->flushPermissions();
+        });
     }
 
     private function configureRateLimiting(): void
@@ -639,6 +643,8 @@ class AppServiceProvider extends ServiceProvider
             AuditServiceInterface::class => AuditService::class,
             AdminAccessServiceInterface::class => AdminAccessService::class,
             AuthServiceInterface::class => AuthService::class,
+            PermissionCatalogInterface::class => PermissionCatalog::class,
+            RoleAdminServiceInterface::class => RoleAdminService::class,
             CmsTargetRegistryInterface::class => CmsTargetRegistry::class,
             CmsWorkflowServiceInterface::class => CmsWorkflowService::class,
             ContinuityServiceInterface::class => ContinuityService::class,

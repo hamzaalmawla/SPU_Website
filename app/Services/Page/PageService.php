@@ -672,7 +672,7 @@ final class PageService implements PageServiceInterface
             throw new AuthorizationException('This user is not authorized to modify the requested page.');
         }
 
-        if ($user->isLimitedEditor() && ! $this->access->canManageFaculty($user, $page->faculty_scope_slug)) {
+        if ($user->hasFacultyLimit() && ! $this->access->withinFacultyLimit($user, $page->faculty_scope_slug)) {
             throw new AuthorizationException('This editor is not authorized to modify this page.');
         }
     }
@@ -690,12 +690,12 @@ final class PageService implements PageServiceInterface
     {
         $user = User::query()->find($userId);
 
-        if (! $user instanceof User || ! $user->isLimitedEditor()) {
+        if (! $user instanceof User || ! $user->hasFacultyLimit()) {
             return;
         }
 
         // A limited editor may move a page only between their own faculties.
-        if (! $this->access->canManageFaculty($user, $requestedScope)) {
+        if (! $this->access->withinFacultyLimit($user, $requestedScope)) {
             throw new AuthorizationException('Limited editors can only assign their granted faculties to a page.');
         }
     }

@@ -6,9 +6,9 @@ namespace App\Filament\Resources;
 
 use App\Contracts\Research\ResearcherAdminServiceInterface;
 use App\Contracts\Research\ResearchPublicationCmsServiceInterface;
+use App\Filament\Resources\Concerns\AuthorizesThroughPermissions;
 use App\Filament\Resources\ResearcherResource\Pages;
 use App\Models\Research\Researcher;
-use App\Models\Research\ResearchPublication;
 use App\Models\User\User;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Section;
@@ -27,7 +27,6 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\HtmlString;
 
 /**
@@ -37,6 +36,8 @@ use Illuminate\Support\HtmlString;
  */
 class ResearcherResource extends Resource
 {
+    use AuthorizesThroughPermissions;
+
     protected static ?string $model = Researcher::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-user-circle';
@@ -63,9 +64,9 @@ class ResearcherResource extends Resource
         return __('admin.navigation.groups.research');
     }
 
-    public static function canAccess(): bool
+    protected static function permissionComponent(): string
     {
-        return Gate::allows('create', ResearchPublication::class);
+        return 'researchers';
     }
 
     public static function getRecordTitle(?Model $record): string

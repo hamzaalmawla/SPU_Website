@@ -18,7 +18,7 @@ interface CmsTargetRegistryInterface
     public function find(string $key): ?CmsTargetDTO;
 
     /**
-     * Pages a super administrator can grant one by one to a limited editor:
+     * Pages a super administrator can choose one by one as a user's page limit:
      * every fixed public page except faculty pages (granted with their
      * faculty) and the job board (HR's own screen).
      *

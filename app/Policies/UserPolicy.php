@@ -7,90 +7,33 @@ namespace App\Policies;
 use App\Models\User\User;
 
 /**
- * Authorizes admin user-management actions against the existing users table.
+ * Admin accounts, roles and permissions are managed by super admins only:
+ * a user who can grant permissions could grant themselves anything.
  */
 final class UserPolicy
 {
-    public function before(User $user, string $ability): ?bool
+    public function viewAny(User $user): bool
     {
-        return $user->role_slug === 'super_admin' ? true : null;
-    }
-
-    public function create(User $user): bool
-    {
-        return false;
-    }
-
-    public function delete(User $user, User $targetUser): bool
-    {
-        return false;
-    }
-
-    public function manageUsers(User $user): bool
-    {
-        return false;
-    }
-
-    public function manageSettings(User $user): bool
-    {
-        return $this->hasAnyRole($user, ['editor']);
-    }
-
-    public function manageMedia(User $user): bool
-    {
-        return $this->hasAnyRole($user, ['editor', 'faculty_editor']);
-    }
-
-    public function publishContent(User $user): bool
-    {
-        return $this->hasAnyRole($user, ['editor']);
-    }
-
-    public function previewContent(User $user): bool
-    {
-        return $this->hasAnyRole($user, ['editor', 'faculty_editor']);
-    }
-
-    public function manageJobs(User $user): bool
-    {
-        return $this->hasAnyRole($user, ['editor', 'hr']);
-    }
-
-    public function publishJobs(User $user): bool
-    {
-        return $this->hasAnyRole($user, ['editor', 'hr']);
-    }
-
-    public function previewJobs(User $user): bool
-    {
-        return $this->hasAnyRole($user, ['editor', 'hr']);
-    }
-
-    public function update(User $user, User $targetUser): bool
-    {
-        return false;
+        return $user->isSuperAdmin();
     }
 
     public function view(User $user, User $targetUser): bool
     {
-        return false;
+        return $user->isSuperAdmin();
     }
 
-    public function viewAny(User $user): bool
+    public function create(User $user): bool
     {
-        return false;
+        return $user->isSuperAdmin();
     }
 
-    public function viewAuditLog(User $user): bool
+    public function update(User $user, User $targetUser): bool
     {
-        return false;
+        return $user->isSuperAdmin();
     }
 
-    /**
-     * @param  array<int, string>  $roles
-     */
-    private function hasAnyRole(User $user, array $roles): bool
+    public function delete(User $user, User $targetUser): bool
     {
-        return in_array($user->role_slug, $roles, true);
+        return $user->isSuperAdmin();
     }
 }

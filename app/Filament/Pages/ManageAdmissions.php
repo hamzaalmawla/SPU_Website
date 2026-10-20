@@ -67,7 +67,7 @@ class ManageAdmissions extends Page implements HasForms
 
     public static function canAccess(): bool
     {
-        return static::canAccessCmsArea('manage-pages', 'admissions');
+        return static::canAccessCmsArea('admissions', 'admissions');
     }
 
     public static function getNavigationGroup(): ?string
@@ -143,7 +143,7 @@ class ManageAdmissions extends Page implements HasForms
                 ->action(function (): void {
                     $this->openPreview('en');
                 }),
-            Action::make('publish')
+            Action::make('publish')->visible(fn (): bool => static::canPublishCmsArea('admissions'))
                 ->label(__('admin_pages.admissions.publish'))
                 ->icon('heroicon-o-paper-airplane')
                 ->color('success')
@@ -151,7 +151,7 @@ class ManageAdmissions extends Page implements HasForms
                 ->action(function (): void {
                     $this->publish();
                 }),
-            Action::make('schedule')
+            Action::make('schedule')->visible(fn (): bool => static::canPublishCmsArea('admissions'))
                 ->label(__('admin_pages.admissions.schedule'))
                 ->icon('heroicon-o-clock')
                 ->color('warning')
@@ -163,7 +163,7 @@ class ManageAdmissions extends Page implements HasForms
                         ->native(false),
                 ])
                 ->action(fn (array $data) => $this->schedule((string) $data['publish_at'])),
-            Action::make('unpublish')
+            Action::make('unpublish')->visible(fn (): bool => static::canPublishCmsArea('admissions'))
                 ->label(__('admin_pages.admissions.unpublish'))
                 ->icon('heroicon-o-x-circle')
                 ->color('danger')

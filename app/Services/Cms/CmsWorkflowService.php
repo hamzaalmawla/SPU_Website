@@ -31,7 +31,6 @@ use App\Support\ExternalSignupUrl;
 use DateTimeInterface;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -653,80 +652,38 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
 
     private function authorizePreview(CmsTargetDTO $target, int $userId): void
     {
-        $user = User::query()->find($userId);
-
-        if (! $user instanceof User || Gate::forUser($user)->denies($this->previewAbilityForTarget($target))) {
-            throw new AuthorizationException('This user is not authorized to preview CMS content.');
-        }
-
         $this->authorizeTargetWrite($target, $userId);
     }
 
     private function authorizePublish(CmsTargetDTO $target, int $userId): void
     {
-        $user = User::query()->find($userId);
-
-        if (! $user instanceof User || Gate::forUser($user)->denies($this->publishAbilityForTarget($target))) {
-            throw new AuthorizationException('This user is not authorized to publish CMS content.');
-        }
-
+        $this->authorizeTarget($target, $userId, 'publish');
         $this->authorizeTargetWrite($target, $userId);
     }
 
     /** @param array<string, mixed>|null $payload */
     private function authorizeTargetWrite(CmsTargetDTO $target, int $userId, ?array $payload = null): void
     {
-        $user = User::query()->find($userId);
-        $ability = $this->manageAbilityForTarget($target);
-
-        if (! $user instanceof User || (bool) $user->is_locked) {
-            throw new AuthorizationException('This user is not authorized to manage this CMS target.');
-        }
-
-        // A limited editor edits exactly what was granted: faculty pages of a
-        // granted faculty and pages granted one by one. Area gates do not apply.
-        if ($user->isLimitedEditor()) {
-            if (! $this->access->canManageTarget($user, $target)) {
-                throw new AuthorizationException('This editor has not been granted this page.');
-            }
-        } elseif (Gate::forUser($user)->denies($ability)) {
-            throw new AuthorizationException('This user is not authorized to manage this CMS target.');
-        }
+        $this->authorizeTarget($target, $userId, 'update');
 
         $this->aboutEntityCmsService->authorizeTarget($target->key, $userId, $payload);
         $this->newsArticleCmsService->authorizeTarget($target->key, $userId, $payload);
         $this->researchPublicationCmsService->authorizeTarget($target->key, $userId, $payload);
     }
 
-    private function manageAbilityForArea(string $area): string
+    /**
+     * The page's component permission (`about.update`, `faculty_medicine.publish`,
+     * ...) plus the user's faculty and page limits.
+     */
+    private function authorizeTarget(CmsTargetDTO $target, int $userId, string $action): void
     {
-        return match ($area) {
-            'homepage' => 'manage-homepage',
-            'faculty', 'facilities', 'campus_life' => 'manage-faculties',
-            'news' => 'manage-news',
-            default => 'manage-pages',
-        };
-    }
+        $user = User::query()->find($userId);
 
-    private function manageAbilityForTarget(CmsTargetDTO $target): string
-    {
-        return $target->key === 'campus_life.jobs'
-            ? 'manage-jobs'
-            : $this->manageAbilityForArea($target->area);
-    }
-
-    private function previewAbilityForTarget(CmsTargetDTO $target): string
-    {
-        return $target->key === 'campus_life.jobs'
-            ? 'preview-jobs'
-            : 'preview-content';
-    }
-
-    private function publishAbilityForTarget(CmsTargetDTO $target): string
-    {
-        return $target->key === 'campus_life.jobs'
-            ? 'publish-jobs'
-            : 'publish-content';
+        if (! $user instanceof User || (bool) $user->is_locked || ! $this->access->canManageTarget($user, $target, $action)) {
+            throw new AuthorizationException($action === 'publish'
+                ? 'This user is not authorized to publish this CMS page.'
+                : 'This user is not authorized to manage this CMS page.');
+        }
     }
 
     /** @param array<string, mixed> $payload */

@@ -7,6 +7,7 @@ namespace App\Filament\Resources;
 use App\Contracts\Page\AboutNavigationCardServiceInterface;
 use App\DTOs\About\AboutNavigationCardDTO;
 use App\Filament\Resources\AboutNavigationCardResource\Pages;
+use App\Filament\Resources\Concerns\AuthorizesThroughPermissions;
 use App\Models\Page\AboutNavigationCard;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
@@ -23,19 +24,20 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\Gate;
 
 class AboutNavigationCardResource extends Resource
 {
+    use AuthorizesThroughPermissions;
+
     protected static ?string $model = AboutNavigationCard::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-squares-2x2';
 
     protected static ?int $navigationSort = 4;
 
-    public static function canAccess(): bool
+    protected static function permissionComponent(): string
     {
-        return Gate::allows('manage-pages');
+        return 'about_cards';
     }
 
     public static function getNavigationGroup(): ?string
@@ -251,7 +253,7 @@ class AboutNavigationCardResource extends Resource
                             ->success()
                             ->send();
                     })
-                    ->visible(fn (): bool => Gate::allows('manage-pages')),
+                    ->visible(fn (): bool => static::canCreate()),
             ]);
     }
 

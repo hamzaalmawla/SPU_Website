@@ -73,7 +73,13 @@ class ManageNews extends Page implements HasForms
 
     public static function canAccess(): bool
     {
-        return static::canAccessCmsArea('manage-pages', 'news');
+        return static::canAccessCmsArea('news_pages', 'news');
+    }
+
+    /** The permission component this screen's pages belong to. */
+    protected function cmsComponent(): string
+    {
+        return 'news_pages';
     }
 
     public static function getNavigationGroup(): ?string
@@ -146,7 +152,7 @@ class ManageNews extends Page implements HasForms
                 $this->openPreview('en');
             }),
             Action::make('publish')->label(__('admin.editorial_workspace.actions.publish'))->icon('heroicon-o-paper-airplane')->color('success')->requiresConfirmation()
-                ->visible(fn (): bool => Gate::allows('publish-content'))->action(function (): void {
+                ->visible(fn (): bool => Gate::allows($this->cmsComponent().'.publish'))->action(function (): void {
                     $this->publish();
                 }),
             Action::make('schedule')
@@ -156,10 +162,10 @@ class ManageNews extends Page implements HasForms
                 ->form([
                     DateTimePicker::make('publish_at')->label(__('admin.editorial_workspace.publish_at'))->required()->minDate(now())->native(false),
                 ])
-                ->visible(fn (): bool => Gate::allows('publish-content'))
+                ->visible(fn (): bool => Gate::allows($this->cmsComponent().'.publish'))
                 ->action(fn (array $data) => $this->schedule((string) $data['publish_at'])),
             Action::make('unpublish')->label(__('admin.editorial_workspace.actions.unpublish'))->icon('heroicon-o-x-circle')->color('danger')->requiresConfirmation()
-                ->visible(fn (): bool => Gate::allows('publish-content'))->action(function (): void {
+                ->visible(fn (): bool => Gate::allows($this->cmsComponent().'.publish'))->action(function (): void {
                     $this->unpublish();
                 }),
         ];

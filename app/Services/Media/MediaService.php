@@ -454,7 +454,7 @@ final class MediaService implements MediaServiceInterface
                 $builder->whereNull('webp_path')->orWhere('webp_path', '');
             });
 
-        $this->scopeQueryToLimitedEditor($query, $user);
+        $this->scopeQueryToFacultyLimit($query, $user);
 
         if ($limit !== null) {
             $query->limit(max(1, $limit));
@@ -755,8 +755,8 @@ final class MediaService implements MediaServiceInterface
             $query->where('uploaded_by', $filters['uploaded_by']);
         }
 
-        if ($user->isLimitedEditor()) {
-            $this->scopeQueryToLimitedEditor($query, $user);
+        if ($user->hasFacultyLimit()) {
+            $this->scopeQueryToFacultyLimit($query, $user);
         } elseif (isset($filters['faculty_scope_slug']) && is_string($filters['faculty_scope_slug']) && $filters['faculty_scope_slug'] !== '') {
             $query->where('faculty_scope_slug', $filters['faculty_scope_slug']);
         }
@@ -816,7 +816,7 @@ final class MediaService implements MediaServiceInterface
             ->where('checksum', $checksum)
             ->where('library_scope', 'main');
 
-        if ($user->isLimitedEditor()) {
+        if ($user->hasFacultyLimit()) {
             $query->where('faculty_scope_slug', $facultyScope);
 
             if ($facultyScope === null) {
@@ -995,15 +995,11 @@ final class MediaService implements MediaServiceInterface
 
         $user = User::query()->find((int) $payload['uploaded_by']);
 
-        // A limited editor files the upload under the requested faculty when it
-        // is theirs, else under their only faculty; otherwise (page-only grants,
-        // or several faculties and none chosen) it stays unscoped and is visible
-        // to them as its uploader.
-        if ($user instanceof User && $user->isLimitedEditor()) {
-            if ($user->facultyScopes() === [] && $user->pageScopes() === []) {
-                throw new AuthorizationException('This user has not been granted any faculty or page.');
-            }
-
+        // A user with a faculty limit files the upload under the requested
+        // faculty when it is inside the limit, else under their only faculty;
+        // otherwise (several faculties and none chosen) it stays unscoped and
+        // is visible to them as its uploader.
+        if ($user instanceof User && $user->hasFacultyLimit()) {
             $requested = $payload['faculty_scope_slug'] ?? null;
 
             return $this->access->facultyForWrite($user, is_string($requested) ? $requested : null);
@@ -1033,10 +1029,6 @@ final class MediaService implements MediaServiceInterface
             throw new AuthorizationException('This user is not authorized to list media assets.');
         }
 
-        if ($user->isLimitedEditor() && $user->facultyScopes() === [] && $user->pageScopes() === []) {
-            throw new AuthorizationException('This user has not been granted any faculty or page.');
-        }
-
         return $user;
     }
 
@@ -1053,14 +1045,14 @@ final class MediaService implements MediaServiceInterface
             throw new AuthorizationException('A valid authenticated user is required to manage media.');
         }
 
-        if (! $user->isLimitedEditor() || $metadata['faculty_scope_slug'] === $asset->faculty_scope_slug) {
+        if (! $user->hasFacultyLimit() || $metadata['faculty_scope_slug'] === $asset->faculty_scope_slug) {
             return $metadata;
         }
 
         $requested = is_string($metadata['faculty_scope_slug']) ? $metadata['faculty_scope_slug'] : null;
 
-        if (! $this->access->canManageFaculty($user, $requested)) {
-            throw new AuthorizationException('Limited editors can only assign their granted faculties to media.');
+        if (! $this->access->withinFacultyLimit($user, $requested)) {
+            throw new AuthorizationException('Media can only be assigned to faculties inside your faculty limit.');
         }
 
         $metadata['faculty_scope_slug'] = $this->access->canonicalFacultySlug((string) $requested);
@@ -1068,10 +1060,10 @@ final class MediaService implements MediaServiceInterface
         return $metadata;
     }
 
-    /** A limited editor sees media of their faculties and media they uploaded. */
-    private function scopeQueryToLimitedEditor(Builder $query, User $user): void
+    /** A user with a faculty limit sees media of those faculties and media they uploaded. */
+    private function scopeQueryToFacultyLimit(Builder $query, User $user): void
     {
-        if (! $user->isLimitedEditor()) {
+        if (! $user->hasFacultyLimit()) {
             return;
         }
 

@@ -64,7 +64,7 @@ class ManageAbout extends Page implements HasForms
 
     public static function canAccess(): bool
     {
-        return static::canAccessCmsArea('manage-pages', 'about');
+        return static::canAccessCmsArea('about', 'about');
     }
 
     public static function getNavigationGroup(): ?string
@@ -122,10 +122,10 @@ class ManageAbout extends Page implements HasForms
             Action::make('preview_en')->label(__('admin_pages.about.preview_en'))->icon('heroicon-o-eye')->color('info')->action(function (): void {
                 $this->openPreview('en');
             }),
-            Action::make('publish')->label(__('admin_pages.about.publish'))->icon('heroicon-o-paper-airplane')->color('success')->requiresConfirmation()->action(function (): void {
+            Action::make('publish')->visible(fn (): bool => static::canPublishCmsArea('about'))->label(__('admin_pages.about.publish'))->icon('heroicon-o-paper-airplane')->color('success')->requiresConfirmation()->action(function (): void {
                 $this->publish();
             }),
-            Action::make('schedule')
+            Action::make('schedule')->visible(fn (): bool => static::canPublishCmsArea('about'))
                 ->label(__('admin_pages.about.schedule'))
                 ->icon('heroicon-o-clock')
                 ->color('warning')
@@ -133,7 +133,7 @@ class ManageAbout extends Page implements HasForms
                     DateTimePicker::make('publish_at')->label(__('admin_pages.about.publish_at'))->required()->minDate(now())->native(false),
                 ])
                 ->action(fn (array $data) => $this->schedule((string) $data['publish_at'])),
-            Action::make('unpublish')->label(__('admin_pages.about.unpublish'))->icon('heroicon-o-x-circle')->color('danger')->requiresConfirmation()->action(function (): void {
+            Action::make('unpublish')->visible(fn (): bool => static::canPublishCmsArea('about'))->label(__('admin_pages.about.unpublish'))->icon('heroicon-o-x-circle')->color('danger')->requiresConfirmation()->action(function (): void {
                 $this->unpublish();
             }),
         ];

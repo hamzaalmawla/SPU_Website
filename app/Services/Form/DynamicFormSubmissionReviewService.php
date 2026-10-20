@@ -172,7 +172,10 @@ final class DynamicFormSubmissionReviewService implements DynamicFormSubmissionR
         $submission = DynamicFormSubmission::query()->findOrFail($submissionId);
         $actor = $this->authorizedActor($actorId, 'updateReview', $submission);
 
-        if ($assigneeId !== null && ! User::query()->whereKey($assigneeId)->whereIn('role_slug', ['super_admin', 'editor', 'hr'])->exists()) {
+        $assignee = $assigneeId !== null ? User::query()->find($assigneeId) : null;
+
+        // The reviewer must be able to review this submission themselves.
+        if ($assigneeId !== null && (! $assignee instanceof User || Gate::forUser($assignee)->denies('updateReview', $submission))) {
             throw new \InvalidArgumentException('The selected reviewer is not eligible.');
         }
 

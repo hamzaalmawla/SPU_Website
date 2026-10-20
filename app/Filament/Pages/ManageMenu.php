@@ -65,7 +65,7 @@ class ManageMenu extends Page implements HasForms
 
     public static function canAccess(): bool
     {
-        return Gate::allows('manage-menu');
+        return Gate::allows('menu.view');
     }
 
     public static function getNavigationGroup(): ?string
@@ -116,7 +116,7 @@ class ManageMenu extends Page implements HasForms
 
     public function switchGroup(string $group): void
     {
-        Gate::authorize('manage-menu');
+        Gate::authorize('menu.view');
 
         if (in_array($group, MenuServiceInterface::GROUP_KEYS, true)) {
             $this->activeGroup = $group;
@@ -126,7 +126,7 @@ class ManageMenu extends Page implements HasForms
 
     public function editItem(int $itemId): void
     {
-        Gate::authorize('manage-menu');
+        Gate::authorize('menu.view');
 
         $item = $this->findItemInTrees($itemId);
 
@@ -174,7 +174,7 @@ class ManageMenu extends Page implements HasForms
 
     public function updateItem(int $itemId, array $formData): void
     {
-        Gate::authorize('manage-menu');
+        Gate::authorize('menu.update');
 
         $item = $this->findItemInTrees($itemId);
 
@@ -230,7 +230,7 @@ class ManageMenu extends Page implements HasForms
 
     public function deleteItem(int $itemId): void
     {
-        Gate::authorize('manage-menu');
+        Gate::authorize('menu.update');
 
         try {
             $this->menuService->deleteItem($itemId);
@@ -254,7 +254,7 @@ class ManageMenu extends Page implements HasForms
 
     public function toggleItem(int $itemId, bool $enabled): void
     {
-        Gate::authorize('manage-menu');
+        Gate::authorize('menu.update');
 
         try {
             $this->menuService->toggleItemState($itemId, $enabled);
@@ -283,7 +283,7 @@ class ManageMenu extends Page implements HasForms
      */
     public function reorderItems(array $orderedTree, string $locale): void
     {
-        Gate::authorize('manage-menu');
+        Gate::authorize('menu.update');
 
         try {
             $this->assertSubmittedTreeMatchesActiveLocale($orderedTree, $locale);
@@ -376,7 +376,7 @@ class ManageMenu extends Page implements HasForms
 
     private function createItem(array $data): void
     {
-        Gate::authorize('manage-menu');
+        Gate::authorize('menu.update');
 
         try {
             foreach (['ar', 'en'] as $locale) {

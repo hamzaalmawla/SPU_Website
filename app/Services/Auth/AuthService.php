@@ -6,6 +6,7 @@ namespace App\Services\Auth;
 
 use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\Auth\AuthServiceInterface;
+use App\Contracts\Auth\PermissionCatalogInterface;
 use App\Contracts\Auth\TotpAuthenticatorInterface;
 use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Shared\AuditServiceInterface;
@@ -18,6 +19,8 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Contracts\Session\Session;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Timebox;
@@ -43,6 +46,7 @@ final class AuthService implements AuthServiceInterface
         private readonly Timebox $timebox,
         private readonly AdminAccessServiceInterface $access,
         private readonly CmsTargetRegistryInterface $targetRegistry,
+        private readonly PermissionCatalogInterface $permissionCatalog,
     ) {}
 
     /**
@@ -205,11 +209,10 @@ final class AuthService implements AuthServiceInterface
         }
 
         $email = strtolower(trim((string) ($payload['email'] ?? '')));
-        $roleSlug = (string) ($payload['role_slug'] ?? '');
         $password = $payload['password'] ?? null;
-        $role = Role::query()->where('slug', $roleSlug)->first();
+        $roles = $this->requestedRoles($payload);
 
-        if ($email === '' || ! is_string($password) || $password === '' || ! $role instanceof Role) {
+        if ($email === '' || ! is_string($password) || $password === '' || $roles->isEmpty()) {
             return null;
         }
 
@@ -217,7 +220,8 @@ final class AuthService implements AuthServiceInterface
             return null;
         }
 
-        $access = $this->accessScopes($role->slug, $payload['faculty_scopes'] ?? [], $payload['page_scopes'] ?? []);
+        $mainRole = $this->mainRole($roles);
+        $grants = $this->accessGrants($mainRole->slug, $payload['extra_permissions'] ?? [], $payload['faculty_scopes'] ?? [], $payload['page_scopes'] ?? []);
 
         $user = new User;
         $user->fill([
@@ -226,15 +230,26 @@ final class AuthService implements AuthServiceInterface
             'password' => Hash::make($password),
         ]);
         $user->forceFill([
-            ...$access,
-            'role_slug' => $role->slug,
-            'role_id' => $role->getKey(),
+            'faculty_scopes' => $grants['faculty_scopes'],
+            'page_scopes' => $grants['page_scopes'],
+            'role_slug' => $mainRole->slug,
+            'role_id' => $mainRole->getKey(),
             'is_locked' => false,
             'two_factor_enabled' => false,
             'two_factor_confirmed_at' => null,
         ]);
 
-        if (! $user->save()) {
+        $saved = DB::transaction(function () use ($user, $roles, $grants): bool {
+            if (! $user->save()) {
+                return false;
+            }
+
+            $this->syncRolesAndPermissions($user, $roles, $grants['extra_permissions']);
+
+            return true;
+        });
+
+        if (! $saved) {
             return null;
         }
 
@@ -247,6 +262,8 @@ final class AuthService implements AuthServiceInterface
                 'actor_email' => $actor->email,
                 'target_email' => $user->email,
                 'role_slug' => $user->role_slug,
+                'roles' => $roles->pluck('slug')->all(),
+                'extra_permissions' => $grants['extra_permissions'],
                 'faculty_scopes' => $user->facultyScopes(),
                 'page_scopes' => $user->pageScopes(),
             ],
@@ -272,7 +289,15 @@ final class AuthService implements AuthServiceInterface
         // "locked" toggle, which shows the live state, is read against it.
         $this->releaseExpiredLock($user);
 
-        $requestedRole = array_key_exists('role_slug', $payload) ? (string) $payload['role_slug'] : (string) $user->role_slug;
+        $rolesChanged = array_key_exists('role_slugs', $payload) || array_key_exists('role_slug', $payload);
+        $roles = $rolesChanged ? $this->requestedRoles($payload) : $this->currentRoles($user);
+
+        if ($roles->isEmpty()) {
+            throw ValidationException::withMessages(['role_slugs' => [__('admin_resources.user.choose_at_least_one_role')]]);
+        }
+
+        $mainRole = $this->mainRole($roles);
+        $requestedRole = $mainRole->slug;
         $shouldLock = array_key_exists('is_locked', $payload) ? (bool) $payload['is_locked'] : (bool) $user->is_locked;
 
         if ($userId === $actorUserId && ($shouldLock || $requestedRole !== 'super_admin')) {
@@ -301,20 +326,20 @@ final class AuthService implements AuthServiceInterface
             'email' => $payload['email'] ?? $user->email,
         ]);
 
-        $user->forceFill($this->accessScopes(
+        $grants = $this->accessGrants(
             $requestedRole,
+            array_key_exists('extra_permissions', $payload) ? $payload['extra_permissions'] : $user->extraPermissions()->pluck('permission')->all(),
             array_key_exists('faculty_scopes', $payload) ? $payload['faculty_scopes'] : $user->facultyScopes(),
             array_key_exists('page_scopes', $payload) ? $payload['page_scopes'] : $user->pageScopes(),
-        ));
+        );
+        $previousGrants = $this->grantSummary($user);
 
-        if (array_key_exists('role_slug', $payload)) {
-            $role = Role::query()->where('slug', (string) $payload['role_slug'])->first();
-
-            $user->forceFill([
-                'role_slug' => $payload['role_slug'],
-                'role_id' => $role?->getKey(),
-            ]);
-        }
+        $user->forceFill([
+            'faculty_scopes' => $grants['faculty_scopes'],
+            'page_scopes' => $grants['page_scopes'],
+            'role_slug' => $mainRole->slug,
+            'role_id' => $mainRole->getKey(),
+        ]);
 
         if (array_key_exists('password', $payload) && is_string($payload['password']) && $payload['password'] !== '') {
             $user->password = Hash::make($payload['password']);
@@ -336,7 +361,15 @@ final class AuthService implements AuthServiceInterface
         }
 
         $changedFields = array_keys($user->getDirty());
-        $saved = $user->save();
+        $saved = DB::transaction(function () use ($user, $roles, $grants): bool {
+            if (! $user->save()) {
+                return false;
+            }
+
+            $this->syncRolesAndPermissions($user, $roles, $grants['extra_permissions']);
+
+            return true;
+        });
 
         if (! $saved) {
             return false;
@@ -364,8 +397,8 @@ final class AuthService implements AuthServiceInterface
                 'actor_email' => $actor->email,
                 'target_email' => $user->email,
                 'changed_fields' => $changedFields,
-                'faculty_scopes' => $user->facultyScopes(),
-                'page_scopes' => $user->pageScopes(),
+                'access_before' => $previousGrants,
+                'access_after' => $this->grantSummary($user),
             ],
         );
 
@@ -373,40 +406,108 @@ final class AuthService implements AuthServiceInterface
     }
 
     /**
-     * The faculties and pages a limited editor is granted, checked against
-     * what exists. Other roles carry no grants: their role decides.
+     * The roles a payload asks for: `role_slugs` (the user form) or a single
+     * `role_slug`.
      *
-     * @return array{faculty_scopes: list<string>|null, page_scopes: list<string>|null}
+     * @param  array<string, mixed>  $payload
+     * @return Collection<int, Role>
      */
-    private function accessScopes(string $roleSlug, mixed $faculties, mixed $pages): array
+    private function requestedRoles(array $payload): Collection
     {
-        if ($roleSlug !== 'faculty_editor') {
-            return ['faculty_scopes' => null, 'page_scopes' => null];
+        $slugs = array_key_exists('role_slugs', $payload)
+            ? $this->stringList($payload['role_slugs'])
+            : $this->stringList([$payload['role_slug'] ?? null]);
+        $roles = Role::query()->whereIn('slug', $slugs)->get();
+
+        if ($roles->count() !== count(array_unique($slugs))) {
+            throw ValidationException::withMessages(['role_slugs' => [__('admin_resources.user.unknown_role')]]);
         }
 
+        return $roles->values();
+    }
+
+    /** @return Collection<int, Role> */
+    private function currentRoles(User $user): Collection
+    {
+        return Role::query()
+            ->where('slug', (string) $user->role_slug)
+            ->orWhereIn('id', $user->roles()->pluck('roles.id'))
+            ->get();
+    }
+
+    /**
+     * The main role (users.role_slug): super admin whenever it is one of the
+     * roles, so every super-admin check stays a single column read.
+     *
+     * @param  Collection<int, Role>  $roles
+     */
+    private function mainRole(Collection $roles): Role
+    {
+        /** @var Role */
+        return $roles->firstWhere('slug', 'super_admin') ?? $roles->sortBy('id')->first();
+    }
+
+    /**
+     * Extra permissions and the optional faculty and page limits, checked
+     * against what exists. A super admin already has everything and no limits.
+     *
+     * @return array{extra_permissions: list<string>, faculty_scopes: list<string>|null, page_scopes: list<string>|null}
+     */
+    private function accessGrants(string $mainRole, mixed $permissions, mixed $faculties, mixed $pages): array
+    {
+        if ($mainRole === 'super_admin') {
+            return ['extra_permissions' => [], 'faculty_scopes' => null, 'page_scopes' => null];
+        }
+
+        $permissions = array_values(array_unique($this->stringList($permissions)));
         $faculties = array_values(array_unique(array_map(
             fn (string $faculty): string => $this->access->canonicalFacultySlug($faculty),
             $this->stringList($faculties),
         )));
         $pages = array_values(array_unique($this->stringList($pages)));
-        $grantablePages = $this->targetRegistry->grantablePages()->pluck('key')->all();
 
-        if (array_diff($faculties, array_keys($this->access->facultyOptions())) !== []
-            || array_diff($pages, $grantablePages) !== []) {
-            throw ValidationException::withMessages([
-                'faculty_scopes' => [__('admin_resources.user.unknown_faculty_or_page')],
-            ]);
+        if (array_diff($permissions, $this->permissionCatalog->all()) !== []) {
+            throw ValidationException::withMessages(['extra_permissions' => [__('admin_permissions.role.unknown_permission')]]);
         }
 
-        if ($faculties === [] && $pages === []) {
-            throw ValidationException::withMessages([
-                'faculty_scopes' => [__('admin_resources.user.choose_at_least_one_faculty_or_page')],
-            ]);
+        if (array_diff($faculties, array_keys($this->access->facultyOptions())) !== []
+            || array_diff($pages, $this->targetRegistry->grantablePages()->pluck('key')->all()) !== []) {
+            throw ValidationException::withMessages(['faculty_scopes' => [__('admin_resources.user.unknown_faculty_or_page')]]);
         }
 
         return [
+            'extra_permissions' => $permissions,
             'faculty_scopes' => $faculties === [] ? null : $faculties,
             'page_scopes' => $pages === [] ? null : $pages,
+        ];
+    }
+
+    /**
+     * @param  Collection<int, Role>  $roles
+     * @param  list<string>  $permissions
+     */
+    private function syncRolesAndPermissions(User $user, Collection $roles, array $permissions): void
+    {
+        $user->roles()->sync($roles->pluck('id')->all());
+        $user->extraPermissions()->whereNotIn('permission', $permissions)->delete();
+
+        $existing = $user->extraPermissions()->pluck('permission')->all();
+
+        foreach (array_diff($permissions, $existing) as $permission) {
+            $user->extraPermissions()->create(['permission' => $permission]);
+        }
+
+        $this->access->flushPermissions();
+    }
+
+    /** @return array<string, mixed> */
+    private function grantSummary(User $user): array
+    {
+        return [
+            'roles' => $this->currentRoles($user)->pluck('slug')->sort()->values()->all(),
+            'extra_permissions' => $user->extraPermissions()->pluck('permission')->sort()->values()->all(),
+            'faculty_scopes' => $user->facultyScopes(),
+            'page_scopes' => $user->pageScopes(),
         ];
     }
 
@@ -430,7 +531,7 @@ final class AuthService implements AuthServiceInterface
 
     private function canAccessAdmin(User $user): bool
     {
-        return in_array($user->role_slug, ['super_admin', 'editor', 'faculty_editor', 'hr'], true);
+        return $this->access->hasAdminAccess($user);
     }
 
     private function activeSuperAdminCount(): int

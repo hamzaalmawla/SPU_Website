@@ -591,10 +591,10 @@ class MediaServiceTest extends TestCase
         $this->assertSame('medicine', $asset->faculty_scope_slug);
     }
 
-    public function test_upload_rejects_faculty_editor_without_scope(): void
+    public function test_upload_rejects_a_user_without_the_media_create_permission(): void
     {
-        $facultyEditor = User::factory()->create([
-            'role_slug' => 'faculty_editor',
+        $hrUser = User::factory()->create([
+            'role_slug' => 'hr',
             'faculty_scopes' => null,
         ]);
 
@@ -603,7 +603,7 @@ class MediaServiceTest extends TestCase
         try {
             $this->service->upload([
                 'file' => UploadedFile::fake()->create('faculty.jpg', 200, 'image/jpeg'),
-                'uploaded_by' => $facultyEditor->id,
+                'uploaded_by' => $hrUser->id,
             ]);
         } finally {
             $this->assertDatabaseCount('media_assets', 0);

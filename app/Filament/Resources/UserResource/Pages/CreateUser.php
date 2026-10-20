@@ -27,7 +27,7 @@ class CreateUser extends CreateRecord
         $actor = auth()->user();
         abort_unless($actor instanceof User, 403);
 
-        $userId = $this->authService->createUser($data, (int) $actor->getKey());
+        $userId = UserResource::withFormErrors(fn (): ?int => $this->authService->createUser($data, (int) $actor->getKey()));
 
         if ($userId === null) {
             throw new \RuntimeException('The user could not be created. Check the email and role, then try again.');

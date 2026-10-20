@@ -54,8 +54,8 @@ final class LegacyNewsPublicationService implements LegacyNewsPublicationService
         }
 
         $actor = User::query()->find($actorUserId);
-        if (! $actor instanceof User || $actor->isAccountLocked() || ! Gate::forUser($actor)->allows('publish-content')) {
-            throw new InvalidArgumentException('The publication actor must be an unlocked user with content publication permission.');
+        if (! $actor instanceof User || $actor->isAccountLocked() || ! Gate::forUser($actor)->allows('news_articles.publish')) {
+            throw new InvalidArgumentException('The publication actor must be an unlocked user with news publishing permission.');
         }
 
         $articles = NewsArticle::query()

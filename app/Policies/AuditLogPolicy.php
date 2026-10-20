@@ -4,29 +4,26 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Models\Shared\AuditLog;
 use App\Models\User\User;
 
 /**
- * Authorizes audit log viewing actions.
- *
- * Only super_admin can view audit logs (granted via before() hook).
- * All other roles are denied.
+ * Audit entries are read-only; reading them needs `audit_log.view`.
  */
 final class AuditLogPolicy
 {
-    public function before(User $user, string $ability): ?bool
-    {
-        return $user->role_slug === 'super_admin' ? true : null;
-    }
+    public function __construct(
+        private readonly AdminAccessServiceInterface $access,
+    ) {}
 
     public function viewAny(User $user): bool
     {
-        return false;
+        return $this->access->can($user, 'audit_log.view');
     }
 
     public function view(User $user, AuditLog $auditLog): bool
     {
-        return false;
+        return $this->access->can($user, 'audit_log.view');
     }
 }

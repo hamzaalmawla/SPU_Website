@@ -56,7 +56,7 @@ class FacultySubpageCardResource extends Resource
 
     public static function canAccess(): bool
     {
-        return Gate::allows('manage-faculties');
+        return Gate::allows('viewAny', FacultySubpageCard::class);
     }
 
     public static function getEloquentQuery(): Builder
@@ -79,7 +79,7 @@ class FacultySubpageCardResource extends Resource
     }
 
     /**
-     * The faculty a limited editor with exactly one granted faculty works in;
+     * The faculty a user whose faculty limit holds exactly one faculty works in;
      * with several, the editor picks one from their own faculties.
      */
     private static function scopedFacultySlug(): ?string
@@ -213,7 +213,7 @@ class FacultySubpageCardResource extends Resource
                         ->icon('heroicon-o-paper-airplane')
                         ->color('success')
                         ->requiresConfirmation()
-                        ->visible(fn (): bool => Gate::allows('publish-content'))
+                        ->visible(fn (): bool => Gate::allows('faculty_subpage_cards.publish'))
                         ->action(function (Collection $records): void {
                             $service = app(FacultySubpageCardServiceInterface::class);
                             foreach ($records as $record) {
@@ -230,7 +230,7 @@ class FacultySubpageCardResource extends Resource
                         ->icon('heroicon-o-x-circle')
                         ->color('danger')
                         ->requiresConfirmation()
-                        ->visible(fn (): bool => Gate::allows('publish-content'))
+                        ->visible(fn (): bool => Gate::allows('faculty_subpage_cards.publish'))
                         ->action(function (Collection $records): void {
                             $service = app(FacultySubpageCardServiceInterface::class);
                             foreach ($records as $record) {
@@ -313,7 +313,7 @@ class FacultySubpageCardResource extends Resource
                             ->success()
                             ->send();
                     })
-                    ->visible(fn (): bool => Gate::allows('manage-faculties')),
+                    ->visible(fn (): bool => Gate::allows('create', FacultySubpageCard::class)),
             ]);
     }
 

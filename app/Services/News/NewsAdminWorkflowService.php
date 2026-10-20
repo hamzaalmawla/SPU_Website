@@ -48,7 +48,7 @@ final class NewsAdminWorkflowService implements NewsAdminWorkflowServiceInterfac
         $data['created_by'] = $userId;
         $data['updated_by'] = $userId;
 
-        if ($user instanceof User && $user->isLimitedEditor()) {
+        if ($user instanceof User && $user->hasFacultyLimit()) {
             $data['faculty_scope_slug'] = $this->grantedFacultyOrFail($user, $this->requestedFaculty($data));
         }
 
@@ -80,7 +80,7 @@ final class NewsAdminWorkflowService implements NewsAdminWorkflowServiceInterfac
         $data = $this->applyArticleSlugForUpdate($article, $data);
         $data['updated_by'] = $userId;
 
-        if ($user instanceof User && $user->isLimitedEditor()) {
+        if ($user instanceof User && $user->hasFacultyLimit()) {
             $data['faculty_scope_slug'] = $this->grantedFacultyOrFail(
                 $user,
                 $this->requestedFaculty($data) ?? $article->getAttribute('faculty_scope_slug'),
@@ -338,7 +338,7 @@ final class NewsAdminWorkflowService implements NewsAdminWorkflowServiceInterfac
     {
         return $user instanceof User
             && ! (bool) $user->is_locked
-            && in_array($user->role_slug, ['super_admin', 'editor'], true);
+            && $this->access->can($user, 'news_articles.publish');
     }
 
     private function user(?int $userId): ?User

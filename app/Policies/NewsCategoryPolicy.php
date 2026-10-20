@@ -4,43 +4,41 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Models\News\NewsCategory;
 use App\Models\User\User;
 
+/**
+ * Authorizes NewsCategory records through the `news_categories.*` permissions.
+ */
 final class NewsCategoryPolicy
 {
-    public function before(User $user, string $ability): ?bool
-    {
-        return $user->role_slug === 'super_admin' ? true : null;
-    }
-
-    public function create(User $user): bool
-    {
-        return $user->role_slug === 'editor';
-    }
-
-    public function delete(User $user, NewsCategory $category): bool
-    {
-        return $this->update($user, $category);
-    }
-
-    public function manage(User $user): bool
-    {
-        return $user->role_slug === 'editor';
-    }
-
-    public function update(User $user, NewsCategory $category): bool
-    {
-        return $user->role_slug === 'editor';
-    }
+    public function __construct(
+        private readonly AdminAccessServiceInterface $access,
+    ) {}
 
     public function viewAny(User $user): bool
     {
-        return in_array($user->role_slug, ['editor', 'faculty_editor'], true);
+        return $this->access->can($user, 'news_categories.view');
     }
 
     public function view(User $user, NewsCategory $category): bool
     {
-        return $this->viewAny($user);
+        return $this->access->can($user, 'news_categories.view');
+    }
+
+    public function create(User $user): bool
+    {
+        return $this->access->can($user, 'news_categories.create');
+    }
+
+    public function update(User $user, NewsCategory $category): bool
+    {
+        return $this->access->can($user, 'news_categories.update');
+    }
+
+    public function delete(User $user, NewsCategory $category): bool
+    {
+        return $this->access->can($user, 'news_categories.delete');
     }
 }

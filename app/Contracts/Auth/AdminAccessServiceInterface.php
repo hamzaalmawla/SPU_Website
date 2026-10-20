@@ -8,67 +8,93 @@ use App\DTOs\Cms\CmsTargetDTO;
 use Illuminate\Contracts\Auth\Authenticatable;
 
 /**
- * The one place that answers "what may this admin edit?".
+ * The one place that answers "what may this admin do?".
  *
- * Super administrators and editors keep full content access. A limited editor
- * (role `faculty_editor`) edits only what a super administrator granted on the
- * user form: any number of faculties and any number of individual CMS pages.
+ * Permissions (`<component>.<action>`, see PermissionCatalogInterface) come
+ * from the user's roles plus extra permissions given to the user alone. The
+ * super admin role holds every permission.
+ *
+ * On top of permissions a user may carry two optional limits: a faculty
+ * limit (faculty content only of the listed faculties) and a page limit
+ * (multi-page CMS screens only for the listed pages). No limit means no
+ * restriction beyond the permissions.
  */
 interface AdminAccessServiceInterface
 {
-    public function isLimitedEditor(Authenticatable $user): bool;
+    public function isSuperAdmin(Authenticatable $user): bool;
+
+    public function can(Authenticatable $user, string $permission): bool;
+
+    /** @param list<string> $permissions */
+    public function canAny(Authenticatable $user, array $permissions): bool;
+
+    /** @return list<string> */
+    public function permissionsFor(Authenticatable $user): array;
+
+    /** Whether the user may sign in to the admin panel at all. */
+    public function hasAdminAccess(Authenticatable $user): bool;
 
     /**
-     * Whether the user may edit content owned by this faculty. Accepts any of
-     * a faculty's slugs (public, internal or scope slug). Editors and super
-     * administrators may edit every faculty.
+     * Unlocked users holding a permission (super admins included), for
+     * assignee lists and notifications.
+     *
+     * @return list<int>
      */
-    public function canManageFaculty(Authenticatable $user, ?string $facultySlug): bool;
+    public function userIdsWithPermission(string $permission): array;
+
+    /** Forget remembered permissions after roles or grants change. */
+    public function flushPermissions(): void;
 
     /**
-     * Whether the user may edit this CMS page. Faculty pages follow the
-     * faculty grant; every other page needs its own page grant.
+     * Whether the user may do `$action` (view, update, publish) on this CMS
+     * page: the owning component's permission, then the faculty and page
+     * limits.
      */
-    public function canManageTarget(Authenticatable $user, CmsTargetDTO $target): bool;
+    public function canManageTarget(Authenticatable $user, CmsTargetDTO $target, string $action = 'update'): bool;
 
     /**
-     * Whether a limited editor holds at least one page grant in this admin
-     * area (for example `about` or `admissions`), so its admin screen opens.
+     * Whether a CMS screen opens: its view permission and, for a user with a
+     * page limit, at least one allowed page in the screen's area.
      */
-    public function canEnterArea(Authenticatable $user, string $area): bool;
+    public function canOpenScreen(Authenticatable $user, string $component, ?string $area = null): bool;
+
+    public function hasFacultyLimit(Authenticatable $user): bool;
 
     /**
-     * Every slug spelling of the user's granted faculties, for filtering
-     * records that may store a faculty's public, internal or scope slug.
+     * Whether content owned by this faculty is inside the user's faculty
+     * limit. Accepts any slug spelling. Without a limit everything is inside;
+     * with one, content owned by no faculty is outside.
+     */
+    public function withinFacultyLimit(Authenticatable $user, ?string $facultySlug): bool;
+
+    public function withinPageLimit(Authenticatable $user, CmsTargetDTO $target): bool;
+
+    /**
+     * The limit's faculties as public slugs; empty when there is no limit.
+     *
+     * @return list<string>
+     */
+    public function limitedFaculties(Authenticatable $user): array;
+
+    /**
+     * Every slug spelling of the limit's faculties, for filtering records that
+     * may store a faculty's public, internal or scope slug.
      *
      * @return list<string>
      */
     public function facultyScopeValues(Authenticatable $user): array;
 
     /**
-     * The granted faculties as public slugs.
-     *
-     * @return list<string>
-     */
-    public function grantedFaculties(Authenticatable $user): array;
-
-    /**
-     * The user's only granted faculty, used to stamp new content; null when the
-     * user has none or several (then the editor must choose).
-     */
-    public function singleGrantedFaculty(Authenticatable $user): ?string;
-
-    /**
-     * The faculty a limited editor's record is saved under: the requested
-     * faculty when it is granted, otherwise their only granted faculty. Null
-     * when neither applies (the write must then be refused).
+     * The faculty a record is saved under. With a faculty limit: the requested
+     * faculty when inside it, otherwise the limit's only faculty, otherwise
+     * null (the write must be refused). Without a limit: the requested faculty.
      */
     public function facultyForWrite(Authenticatable $user, ?string $requestedFaculty): ?string;
 
     public function canonicalFacultySlug(string $facultySlug): string;
 
     /**
-     * Faculties a super administrator can grant, keyed by public slug.
+     * Faculties a super admin can choose, keyed by public slug.
      *
      * @return array<string, string>
      */

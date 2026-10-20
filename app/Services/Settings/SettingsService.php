@@ -200,7 +200,7 @@ final class SettingsService implements SettingsServiceInterface
     {
         $user = User::query()->find($userId);
 
-        if (! $user instanceof User || Gate::forUser($user)->denies('manage-settings')) {
+        if (! $user instanceof User || Gate::forUser($user)->denies('settings.update')) {
             throw new AuthorizationException('This user is not authorized to update settings.');
         }
     }

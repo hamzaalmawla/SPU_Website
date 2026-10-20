@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Filament\Resources;
 
 use App\Contracts\Auth\AdminAccessServiceInterface;
+use App\Contracts\Auth\PermissionCatalogInterface;
+use App\Contracts\Auth\RoleAdminServiceInterface;
 use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\DTOs\Cms\CmsTargetDTO;
 use App\Filament\Resources\UserResource\Pages;
@@ -21,6 +23,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Filament resource for managing admin user accounts (super_admin only).
@@ -80,30 +83,37 @@ class UserResource extends Resource
                     ->unique(ignoreRecord: true)
                     ->maxLength(255),
 
-                Select::make('role_slug')
-                    ->label(__('admin_resources.user.role'))
-                    ->options([
-                        'super_admin' => __('admin_resources.user.super_admin'),
-                        'editor' => __('admin_resources.user.editor'),
-                        'faculty_editor' => __('admin_resources.user.faculty_editor'),
-                    ])
-                    ->helperText(__('admin_resources.user.role_help'))
+                Select::make('role_slugs')
+                    ->label(__('admin_resources.user.roles'))
+                    ->options(fn (): array => app(RoleAdminServiceInterface::class)->roleOptions())
+                    ->helperText(__('admin_resources.user.roles_help'))
+                    ->multiple()
                     ->required()
                     ->live(),
             ])->columns(2),
 
-            // A limited editor edits only what is picked here. The service
-            // validates the picks again and clears them for any other role.
-            Section::make(__('admin_resources.user.access'))
-                ->description(__('admin_resources.user.access_help'))
+            // Everything below adds to or narrows the roles. A super admin
+            // already holds everything, so the service clears these for one.
+            Section::make(__('admin_resources.user.extra_permissions'))
+                ->description(__('admin_resources.user.extra_permissions_help'))
+                ->schema([
+                    Select::make('extra_permissions')
+                        ->hiddenLabel()
+                        ->multiple()
+                        ->searchable()
+                        ->options(fn (): array => app(PermissionCatalogInterface::class)->options()),
+                ])
+                ->collapsible()
+                ->visible(fn (Get $get): bool => ! self::isSuperAdminSelection($get('role_slugs'))),
+
+            Section::make(__('admin_resources.user.limits'))
+                ->description(__('admin_resources.user.limits_help'))
                 ->schema([
                     Select::make('faculty_scopes')
                         ->label(__('admin_resources.user.faculty_scopes'))
                         ->helperText(__('admin_resources.user.faculty_scopes_help'))
                         ->multiple()
                         ->searchable()
-                        ->requiredWithout('page_scopes')
-                        ->validationMessages(['required_without' => __('admin_resources.user.choose_at_least_one_faculty_or_page')])
                         ->options(fn (): array => app(AdminAccessServiceInterface::class)->facultyOptions()),
 
                     Select::make('page_scopes')
@@ -114,7 +124,8 @@ class UserResource extends Resource
                         ->options(fn (): array => self::grantablePageOptions()),
                 ])
                 ->columns(2)
-                ->visible(fn (Get $get): bool => $get('role_slug') === 'faculty_editor'),
+                ->collapsible()
+                ->visible(fn (Get $get): bool => ! self::isSuperAdminSelection($get('role_slugs'))),
 
             Section::make(__('admin_resources.user.account_status'))->schema([
                 Toggle::make('is_locked')
@@ -173,24 +184,19 @@ class UserResource extends Resource
                     ->sortable(),
 
                 TextColumn::make('role_slug')
-                    ->label(__('admin_resources.user.role'))
-                    ->formatStateUsing(fn (string $state): string => __('admin_resources.user.'.$state))
+                    ->label(__('admin_resources.user.main_role'))
+                    ->formatStateUsing(fn (string $state): string => app(RoleAdminServiceInterface::class)->roleOptions()[$state] ?? $state)
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'super_admin' => 'danger',
-                        'editor' => 'warning',
-                        'faculty_editor' => 'info',
-                        default => 'gray',
-                    }),
+                    ->color(fn (string $state): string => $state === 'super_admin' ? 'danger' : 'info'),
 
                 TextColumn::make('access')
-                    ->label(__('admin_resources.user.access'))
-                    ->getStateUsing(static fn (User $record): string => $record->isLimitedEditor()
+                    ->label(__('admin_resources.user.limits'))
+                    ->getStateUsing(static fn (User $record): string => $record->hasFacultyLimit() || $record->hasPageLimit()
                         ? __('admin_resources.user.access_summary', [
                             'faculties' => count($record->facultyScopes()),
                             'pages' => count($record->pageScopes()),
                         ])
-                        : __('admin_resources.user.access_everything')),
+                        : __('admin_resources.user.no_limits')),
 
                 IconColumn::make('is_locked')
                     ->label(__('admin_resources.user.locked'))
@@ -229,7 +235,32 @@ class UserResource extends Resource
     }
 
     /**
-     * Grantable pages grouped by site section, for the page picker.
+     * Runs a service write and shows its validation errors on the form fields
+     * (Filament keys them under `data.`).
+     *
+     * @template TResult
+     *
+     * @param  callable(): TResult  $write
+     * @return TResult
+     */
+    public static function withFormErrors(callable $write): mixed
+    {
+        try {
+            return $write();
+        } catch (ValidationException $exception) {
+            throw ValidationException::withMessages(collect($exception->errors())
+                ->mapWithKeys(fn (array $messages, string $field): array => ['data.'.$field => $messages])
+                ->all());
+        }
+    }
+
+    private static function isSuperAdminSelection(mixed $roles): bool
+    {
+        return is_array($roles) && in_array('super_admin', $roles, true);
+    }
+
+    /**
+     * Pages a page limit can name, grouped by site section.
      *
      * @return array<string, array<string, string>>
      */

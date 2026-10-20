@@ -281,7 +281,7 @@ final class ResearchPublicationCmsService implements ResearchPublicationCmsServi
             ->orderBy('id')
             ->limit(50);
 
-        if ($user->isLimitedEditor()) {
+        if ($user->hasFacultyLimit()) {
             $scopes = $this->access->facultyScopeValues($user);
             $query->whereHas('faculty', fn (Builder $facultyQuery): Builder => $this->whereFacultyScope($facultyQuery, $scopes));
         }
@@ -626,8 +626,8 @@ final class ResearchPublicationCmsService implements ResearchPublicationCmsServi
             throw new AuthorizationException('This user is not authorized to manage this research publication.');
         }
 
-        if ($payload !== null && $user->isLimitedEditor()
-            && ! $this->access->canManageFaculty($user, $this->facultyScope($this->nullableInt($payload['faculty_id'] ?? null), $this->nullableInt($payload['faculty_member_id'] ?? null)))) {
+        if ($payload !== null && $user->hasFacultyLimit()
+            && ! $this->access->withinFacultyLimit($user, $this->facultyScope($this->nullableInt($payload['faculty_id'] ?? null), $this->nullableInt($payload['faculty_member_id'] ?? null)))) {
             throw new AuthorizationException('You may only manage research publications of your granted faculties.');
         }
     }

@@ -5,16 +5,21 @@ declare(strict_types=1);
 namespace App\Services\Auth;
 
 use App\Contracts\Auth\AdminAccessServiceInterface;
+use App\Contracts\Auth\PermissionCatalogInterface;
 use App\DTOs\Cms\CmsTargetDTO;
 use App\Models\Faculty\Faculty;
+use App\Models\User\Role;
+use App\Models\User\RolePermission;
 use App\Models\User\User;
+use App\Models\User\UserPermission;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Builder;
 
 final class AdminAccessService implements AdminAccessServiceInterface
 {
     /**
      * Older internal slugs still found on some records, mapped to the public
-     * slug a grant is stored as.
+     * slug a limit is stored as.
      */
     private const FACULTY_ALIASES = [
         'ai' => 'artificial-intelligence',
@@ -33,50 +38,107 @@ final class AdminAccessService implements AdminAccessServiceInterface
         'business-administration' => 'admin_resources.person.business_administration',
     ];
 
-    public function isLimitedEditor(Authenticatable $user): bool
+    /**
+     * Permissions per user for this request (or queued job). Role and grant
+     * writes call flushPermissions(); the queue flushes before each job.
+     *
+     * @var array<string, list<string>>
+     */
+    private array $permissions = [];
+
+    public function __construct(
+        private readonly PermissionCatalogInterface $catalog,
+    ) {}
+
+    public function isSuperAdmin(Authenticatable $user): bool
     {
-        return $user instanceof User && $user->isLimitedEditor();
+        return $user instanceof User && $user->isSuperAdmin();
     }
 
-    public function canManageFaculty(Authenticatable $user, ?string $facultySlug): bool
+    public function can(Authenticatable $user, string $permission): bool
+    {
+        return $this->isSuperAdmin($user) || in_array($permission, $this->permissionsFor($user), true);
+    }
+
+    public function canAny(Authenticatable $user, array $permissions): bool
+    {
+        foreach ($permissions as $permission) {
+            if ($this->can($user, $permission)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function permissionsFor(Authenticatable $user): array
     {
         if (! $user instanceof User) {
+            return [];
+        }
+
+        if ($user->isSuperAdmin()) {
+            return $this->catalog->all();
+        }
+
+        // Keyed by the user's state too, so a save of the user (new role,
+        // changed grants) is seen at once in the same request.
+        $key = $user->getKey().'|'.$user->role_slug.'|'.$user->updated_at?->format('U.u');
+
+        return $this->permissions[$key] ??= $this->loadPermissions($user);
+    }
+
+    public function hasAdminAccess(Authenticatable $user): bool
+    {
+        return $this->isSuperAdmin($user) || $this->permissionsFor($user) !== [];
+    }
+
+    public function userIdsWithPermission(string $permission): array
+    {
+        $roleIds = RolePermission::query()->where('permission', $permission)->pluck('role_id')->all();
+        $roleSlugs = Role::query()->whereKey($roleIds)->pluck('slug')->all();
+
+        return User::query()
+            ->where(function (Builder $query) use ($permission, $roleIds, $roleSlugs): void {
+                $query->where('role_slug', 'super_admin')
+                    ->orWhereIn('role_slug', $roleSlugs)
+                    ->orWhereHas('roles', fn (Builder $roles): Builder => $roles->whereIn('roles.id', $roleIds))
+                    ->orWhereHas('extraPermissions', fn (Builder $grants): Builder => $grants->where('permission', $permission));
+            })
+            ->orderBy('id')
+            ->pluck('id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->all();
+    }
+
+    public function flushPermissions(): void
+    {
+        $this->permissions = [];
+    }
+
+    public function canManageTarget(Authenticatable $user, CmsTargetDTO $target, string $action = 'update'): bool
+    {
+        $component = $this->catalog->componentForTarget($target);
+
+        if ($component === null || ! $this->can($user, $component.'.'.$action)) {
             return false;
         }
 
-        if (in_array($user->role_slug, ['super_admin', 'editor'], true)) {
+        if ($target->facultyScopeSlug !== null && ! $this->withinFacultyLimit($user, $target->facultyScopeSlug)) {
+            return false;
+        }
+
+        return $this->withinPageLimit($user, $target);
+    }
+
+    public function canOpenScreen(Authenticatable $user, string $component, ?string $area = null): bool
+    {
+        if (! $this->can($user, $component.'.view')) {
+            return false;
+        }
+
+        if ($area === null || ! $user instanceof User || ! $user->hasPageLimit()) {
             return true;
-        }
-
-        if (! $user->isLimitedEditor() || ! is_string($facultySlug) || trim($facultySlug) === '') {
-            return false;
-        }
-
-        return in_array($this->canonicalFacultySlug($facultySlug), $this->grantedFaculties($user), true);
-    }
-
-    public function canManageTarget(Authenticatable $user, CmsTargetDTO $target): bool
-    {
-        if (! $user instanceof User) {
-            return false;
-        }
-
-        if (! $user->isLimitedEditor()) {
-            return in_array($user->role_slug, ['super_admin', 'editor'], true)
-                || ($target->key === 'campus_life.jobs' && $user->role_slug === 'hr');
-        }
-
-        if ($target->facultyScopeSlug !== null) {
-            return $this->canManageFaculty($user, $target->facultyScopeSlug);
-        }
-
-        return $user->hasPageScope($target->key);
-    }
-
-    public function canEnterArea(Authenticatable $user, string $area): bool
-    {
-        if (! $user instanceof User || ! $user->isLimitedEditor()) {
-            return false;
         }
 
         foreach ($user->pageScopes() as $targetKey) {
@@ -88,21 +150,39 @@ final class AdminAccessService implements AdminAccessServiceInterface
         return false;
     }
 
-    public function facultyScopeValues(Authenticatable $user): array
+    public function hasFacultyLimit(Authenticatable $user): bool
     {
-        $spellings = $this->facultySpellings();
-        $values = [];
-
-        foreach ($this->grantedFaculties($user) as $publicSlug) {
-            array_push($values, ...($spellings[$publicSlug] ?? [$publicSlug]));
-        }
-
-        return array_values(array_unique($values));
+        return $user instanceof User && ! $user->isSuperAdmin() && $user->hasFacultyLimit();
     }
 
-    public function grantedFaculties(Authenticatable $user): array
+    public function withinFacultyLimit(Authenticatable $user, ?string $facultySlug): bool
     {
-        if (! $user instanceof User || ! $user->isLimitedEditor()) {
+        if (! $this->hasFacultyLimit($user)) {
+            return true;
+        }
+
+        return is_string($facultySlug) && trim($facultySlug) !== ''
+            && in_array($this->canonicalFacultySlug($facultySlug), $this->limitedFaculties($user), true);
+    }
+
+    public function withinPageLimit(Authenticatable $user, CmsTargetDTO $target): bool
+    {
+        if (! $user instanceof User || $user->isSuperAdmin() || ! $user->hasPageLimit()) {
+            return true;
+        }
+
+        // Only fixed site pages are limited; faculty pages follow the faculty
+        // limit and records (articles, profiles) follow their own permissions.
+        $isFixedPage = $target->facultyScopeSlug === null
+            && $target->publicPath !== null
+            && ! str_starts_with($target->key, 'entity.');
+
+        return ! $isFixedPage || $user->hasPageScope($target->key);
+    }
+
+    public function limitedFaculties(Authenticatable $user): array
+    {
+        if (! $user instanceof User || ! $this->hasFacultyLimit($user)) {
             return [];
         }
 
@@ -112,24 +192,35 @@ final class AdminAccessService implements AdminAccessServiceInterface
         )));
     }
 
-    public function singleGrantedFaculty(Authenticatable $user): ?string
+    public function facultyScopeValues(Authenticatable $user): array
     {
-        $faculties = $this->grantedFaculties($user);
+        $spellings = $this->facultySpellings();
+        $values = [];
 
-        return count($faculties) === 1 ? $faculties[0] : null;
+        foreach ($this->limitedFaculties($user) as $publicSlug) {
+            array_push($values, ...($spellings[$publicSlug] ?? [$publicSlug]));
+        }
+
+        return array_values(array_unique($values));
     }
 
     public function facultyForWrite(Authenticatable $user, ?string $requestedFaculty): ?string
     {
-        if (is_string($requestedFaculty) && trim($requestedFaculty) !== '') {
-            $requested = $this->canonicalFacultySlug($requestedFaculty);
+        $requested = is_string($requestedFaculty) && trim($requestedFaculty) !== ''
+            ? $this->canonicalFacultySlug($requestedFaculty)
+            : null;
 
-            if (in_array($requested, $this->grantedFaculties($user), true)) {
-                return $requested;
-            }
+        if (! $this->hasFacultyLimit($user)) {
+            return $requested;
         }
 
-        return $this->singleGrantedFaculty($user);
+        $faculties = $this->limitedFaculties($user);
+
+        if ($requested !== null && in_array($requested, $faculties, true)) {
+            return $requested;
+        }
+
+        return count($faculties) === 1 ? $faculties[0] : null;
     }
 
     public function canonicalFacultySlug(string $facultySlug): string
@@ -148,6 +239,25 @@ final class AdminAccessService implements AdminAccessServiceInterface
     public function facultyOptions(): array
     {
         return array_map(static fn (string $key): string => __($key), self::FACULTY_LABEL_KEYS);
+    }
+
+    /** @return list<string> */
+    private function loadPermissions(User $user): array
+    {
+        $roleIds = Role::query()
+            ->where('slug', (string) $user->role_slug)
+            ->pluck('id')
+            ->merge($user->roles()->pluck('roles.id'))
+            ->unique()
+            ->all();
+
+        $granted = RolePermission::query()->whereIn('role_id', $roleIds)->pluck('permission')
+            ->merge(UserPermission::query()->where('user_id', $user->getKey())->pluck('permission'))
+            ->unique()
+            ->all();
+
+        // Keys the catalog no longer lists grant nothing.
+        return array_values(array_intersect($this->catalog->all(), $granted));
     }
 
     /**

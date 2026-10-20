@@ -90,12 +90,12 @@ final class PreviewService implements PreviewServiceInterface
     {
         $user = User::query()->find($userId);
 
-        if (! $user instanceof User || Gate::forUser($user)->denies('preview-content')) {
+        if (! $user instanceof User) {
             throw new AuthorizationException('This user is not authorized to create preview tokens.');
         }
 
         if ($targetType === 'homepage') {
-            if ($targetId !== null || Gate::forUser($user)->denies('manage-homepage')) {
+            if ($targetId !== null || Gate::forUser($user)->denies('homepage.update')) {
                 throw new AuthorizationException('This user is not authorized to preview the homepage.');
             }
 

@@ -46,14 +46,14 @@ final class ProfileAdminService implements ProfileAdminServiceInterface
         $user = User::query()->findOrFail($userId);
         $query = Faculty::query()->enabled()->with('translations')->orderBy('sort_order');
 
-        if ($user->isLimitedEditor()) {
+        if ($user->hasFacultyLimit()) {
             $scopes = $this->access->facultyScopeValues($user);
             $query->where(function ($facultyQuery) use ($scopes): void {
                 $facultyQuery->whereIn('faculty_scope_slug', $scopes)
                     ->orWhereIn('public_slug', $scopes)
                     ->orWhereIn('slug', $scopes);
             });
-        } elseif (! in_array($user->role_slug, ['super_admin', 'editor'], true)) {
+        } elseif (! $this->access->canAny($user, ['faculty_members.view', 'people.view'])) {
             throw new AuthorizationException('You are not authorized to view faculty profile options.');
         }
 
@@ -93,14 +93,14 @@ final class ProfileAdminService implements ProfileAdminServiceInterface
             ->with('translations')
             ->when($facultyId !== null, fn ($departmentQuery) => $departmentQuery->where('faculty_id', $facultyId));
 
-        if ($user->isLimitedEditor()) {
+        if ($user->hasFacultyLimit()) {
             $scopes = $this->access->facultyScopeValues($user);
             $query->whereHas('faculty', function ($facultyQuery) use ($scopes): void {
                 $facultyQuery->whereIn('faculty_scope_slug', $scopes)
                     ->orWhereIn('public_slug', $scopes)
                     ->orWhereIn('slug', $scopes);
             });
-        } elseif (! in_array($user->role_slug, ['super_admin', 'editor'], true)) {
+        } elseif (! $this->access->canAny($user, ['faculty_members.view', 'people.view'])) {
             throw new AuthorizationException('You are not authorized to view department profile options.');
         }
 
@@ -130,7 +130,7 @@ final class ProfileAdminService implements ProfileAdminServiceInterface
 
     public function createPerson(PersonDataDTO $data, int $userId): PersonDataDTO
     {
-        $this->authorizePersonManagement($userId);
+        $this->authorizePersonManagement($userId, 'create');
         $this->validatePersonData($data);
 
         $person = DB::transaction(function () use ($data): Person {
@@ -150,7 +150,7 @@ final class ProfileAdminService implements ProfileAdminServiceInterface
 
     public function updatePerson(int $id, PersonDataDTO $data, int $userId): bool
     {
-        $this->authorizePersonManagement($userId);
+        $this->authorizePersonManagement($userId, 'update');
         $this->validatePersonData($data);
 
         DB::transaction(function () use ($id, $data): void {
@@ -176,7 +176,7 @@ final class ProfileAdminService implements ProfileAdminServiceInterface
     public function createFacultyMember(FacultyMemberDataDTO $data, int $userId): FacultyMemberDataDTO
     {
         $this->validateFacultyMemberData($data);
-        $this->authorizeFacultyScope($data, $userId);
+        $this->authorizeFacultyScope($data, $userId, 'create');
         $this->validateFacultyMedia($data, $userId);
 
         $member = DB::transaction(function () use ($data): FacultyMember {
@@ -197,8 +197,8 @@ final class ProfileAdminService implements ProfileAdminServiceInterface
     public function updateFacultyMember(int $id, FacultyMemberDataDTO $data, int $userId): bool
     {
         $this->validateFacultyMemberData($data);
-        $this->authorizeExistingFacultyMember($id, $userId);
-        $this->authorizeFacultyScope($data, $userId);
+        $this->authorizeExistingFacultyMember($id, $userId, 'update');
+        $this->authorizeFacultyScope($data, $userId, 'update');
         $this->validateFacultyMedia($data, $userId);
 
         DB::transaction(function () use ($id, $data): void {
@@ -225,7 +225,7 @@ final class ProfileAdminService implements ProfileAdminServiceInterface
         // Authorize the whole selection first, so a faculty editor cannot
         // delete part of a selection that reaches into another faculty.
         foreach ($ids as $id) {
-            $this->authorizeExistingFacultyMember($id, $userId);
+            $this->authorizeExistingFacultyMember($id, $userId, 'delete');
         }
 
         $deleted = DB::transaction(function () use ($ids, $userId): array {
@@ -450,17 +450,19 @@ final class ProfileAdminService implements ProfileAdminServiceInterface
         }
     }
 
-    private function authorizeFacultyScope(FacultyMemberDataDTO $data, int $userId): void
+    private function authorizeFacultyScope(FacultyMemberDataDTO $data, int $userId, string $action): void
     {
         $user = User::query()->findOrFail($userId);
-        if (in_array($user->role_slug, ['super_admin', 'editor'], true)) {
+        if (! $this->access->can($user, 'faculty_members.'.$action)) {
+            throw new AuthorizationException('You are not authorized to manage faculty members.');
+        }
+
+        if (! $this->access->hasFacultyLimit($user)) {
             return;
         }
 
         $scopes = $this->access->facultyScopeValues($user);
-        $hasScope = $user->isLimitedEditor()
-            && $scopes !== []
-            && $data->facultyId !== null
+        $hasScope = $data->facultyId !== null
             && Faculty::query()
                 ->whereKey($data->facultyId)
                 ->where(function ($query) use ($scopes): void {
@@ -475,35 +477,37 @@ final class ProfileAdminService implements ProfileAdminServiceInterface
         }
     }
 
-    private function authorizeExistingFacultyMember(int $memberId, int $userId): void
+    private function authorizeExistingFacultyMember(int $memberId, int $userId, string $action): void
     {
         $user = User::query()->findOrFail($userId);
-        if (in_array($user->role_slug, ['super_admin', 'editor'], true)) {
+        if (! $this->access->can($user, 'faculty_members.'.$action)) {
+            throw new AuthorizationException('You are not authorized to manage faculty members.');
+        }
+
+        if (! $this->access->hasFacultyLimit($user)) {
             return;
         }
 
         $scopes = $this->access->facultyScopeValues($user);
-        $allowed = $user->isLimitedEditor()
-            && $scopes !== []
-            && FacultyMember::query()
-                ->whereKey($memberId)
-                ->whereHas('faculty', function ($query) use ($scopes): void {
-                    $query->whereIn('faculty_scope_slug', $scopes)
-                        ->orWhereIn('public_slug', $scopes)
-                        ->orWhereIn('slug', $scopes);
-                })
-                ->exists();
+        $allowed = FacultyMember::query()
+            ->whereKey($memberId)
+            ->whereHas('faculty', function ($query) use ($scopes): void {
+                $query->whereIn('faculty_scope_slug', $scopes)
+                    ->orWhereIn('public_slug', $scopes)
+                    ->orWhereIn('slug', $scopes);
+            })
+            ->exists();
 
         if (! $allowed) {
             throw new AuthorizationException('You may only update faculty members in your granted faculties.');
         }
     }
 
-    private function authorizePersonManagement(int $userId): void
+    private function authorizePersonManagement(int $userId, string $action): void
     {
         $user = User::query()->findOrFail($userId);
 
-        if (! in_array($user->role_slug, ['super_admin', 'editor'], true)) {
+        if (! $this->access->can($user, 'people.'.$action)) {
             throw new AuthorizationException('You are not authorized to manage university profiles.');
         }
     }

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
-use Illuminate\Support\Facades\Gate;
-
 final class ManageJobBoard extends ManageCampusLife
 {
     protected static ?string $navigationIcon = 'heroicon-o-briefcase';
@@ -16,7 +14,7 @@ final class ManageJobBoard extends ManageCampusLife
 
     public static function canAccess(): bool
     {
-        return Gate::allows('manage-jobs');
+        return self::canAccessCmsArea('job_board');
     }
 
     public static function getNavigationLabel(): string
@@ -46,6 +44,6 @@ final class ManageJobBoard extends ManageCampusLife
 
     protected function publishAbility(): string
     {
-        return 'publish-jobs';
+        return 'job_board.publish';
     }
 }

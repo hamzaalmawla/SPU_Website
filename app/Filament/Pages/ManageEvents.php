@@ -14,7 +14,7 @@ final class ManageEvents extends ManageNews
 
     public static function canAccess(): bool
     {
-        return self::canAccessCmsArea('manage-pages', 'news', 'news.events');
+        return self::canAccessCmsArea('events', 'news.events');
     }
 
     public static function getNavigationLabel(): string
@@ -30,6 +30,11 @@ final class ManageEvents extends ManageNews
     protected function defaultNewsTargetKey(): string
     {
         return 'news.events';
+    }
+
+    protected function cmsComponent(): string
+    {
+        return 'events';
     }
 
     protected function showsTargetSelector(): bool

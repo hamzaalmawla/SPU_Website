@@ -103,13 +103,14 @@ Counts move as the site grows — `ArchitectureGuardTest` is what actually holds
 
 | Resource / Page | URL | Access |
 |----------------|-----|--------|
-| ManageHomepage | `/admin/manage-homepage` | super_admin, editor |
-| ManageMenu | `/admin/manage-menu` | super_admin, editor |
-| ManageSettings | `/admin/manage-settings` | super_admin, editor |
-| PageResource | `/admin/pages` | super_admin, editor, faculty_editor |
-| MediaAssetResource | `/admin/media-assets` | super_admin, editor, faculty_editor |
+| ManageHomepage | `/admin/manage-homepage` | `homepage.view` |
+| ManageMenu | `/admin/manage-menu` | `menu.view` |
+| ManageSettings | `/admin/manage-settings` | `settings.view` |
+| PageResource | `/admin/pages` | `pages.view` |
+| MediaAssetResource | `/admin/media-assets` | `media.view` |
+| RoleResource | `/admin/roles` | super_admin only |
 | UserResource | `/admin/users` | super_admin only |
-| AuditLogResource | `/admin/audit-logs` | super_admin only |
+| AuditLogResource | `/admin/audit-logs` | `audit_log.view` |
 | TwoFactorSetup | `/admin/two-factor-setup` | All authenticated |
 
 ### CMS Workflow
@@ -121,7 +122,7 @@ Counts move as the site grows — `ArchitectureGuardTest` is what actually holds
 - **Optimistic locking** — Version-based conflict detection prevents concurrent editors from overwriting each other
 
 ### Security
-- **RBAC** — Three roles (super_admin, editor, faculty_editor) enforced via Gates and Policies
+- **Permissions** — editable roles built from per-section permissions, enforced via Gates and Policies
 - **Account locking** — 5 failed login attempts lock the account; requires super_admin to unlock
 - **HTML sanitization** — HTMLPurifier with strict allowlist on all user-supplied content
 - **2FA** — TOTP-based two-factor authentication
@@ -149,13 +150,7 @@ The homepage is a fixed 11-section CMS page. Each section supports independent A
 
 ## Role System
 
-| Role | Homepage | Pages | Menu | Media | Settings | Users | Audit |
-|------|----------|-------|------|-------|----------|-------|-------|
-| super_admin | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| editor | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
-| faculty_editor | if granted | granted only | ❌ | scoped | ❌ | ❌ | ❌ |
-
-Limited editors (`faculty_editor`) see only the faculties and single pages a super admin granted them on the user form (`users.faculty_scopes`, `users.page_scopes`), plus media they uploaded.
+Access is permission-based. Super admins build roles (named sets of permissions such as "News articles › Edit" or "Admissions › Publish") under **Administration › Roles**, and give each user one or more roles, optional extra permissions, and optional limits (only certain faculties, only certain pages). The default roles `editor`, `faculty_editor` and `hr` start with the access they had before; `super_admin` always has everything and is the only role that manages users and roles.
 
 ## Caching
 

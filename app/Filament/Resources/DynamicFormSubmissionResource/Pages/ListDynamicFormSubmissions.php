@@ -7,7 +7,6 @@ namespace App\Filament\Resources\DynamicFormSubmissionResource\Pages;
 use App\Contracts\Form\FormDefinitionServiceInterface;
 use App\Enums\FormSubmissionInbox;
 use App\Filament\Resources\DynamicFormSubmissionResource;
-use App\Models\User\User;
 use Filament\Resources\Components\Tab;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Database\Eloquent\Builder;
@@ -80,9 +79,7 @@ class ListDynamicFormSubmissions extends ListRecords
     /** @return list<FormSubmissionInbox> */
     private function visibleInboxes(): array
     {
-        $user = auth()->user();
-
-        return $user instanceof User && $user->role_slug === 'hr'
+        return DynamicFormSubmissionResource::seesOnlyJobApplications()
             ? [FormSubmissionInbox::JOBS]
             : FormSubmissionInbox::cases();
     }

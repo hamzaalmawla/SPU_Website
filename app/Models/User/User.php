@@ -13,6 +13,7 @@ use Database\Factories\User\UserFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -90,6 +91,17 @@ class User extends Authenticatable
         return $this->belongsTo(Role::class);
     }
 
+    /** Every role the user holds; role_slug names the main one. */
+    public function roles(): BelongsToMany
+    {
+        return $this->belongsToMany(Role::class, 'role_user')->withTimestamps();
+    }
+
+    public function extraPermissions(): HasMany
+    {
+        return $this->hasMany(UserPermission::class);
+    }
+
     public function auditLogs(): HasMany
     {
         return $this->hasMany(AuditLog::class, 'user_id');
@@ -131,13 +143,28 @@ class User extends Authenticatable
     }
 
     /**
-     * A limited editor (role `faculty_editor`) works only on what a super
-     * administrator granted: the faculties in faculty_scopes and the CMS pages
-     * (target keys) in page_scopes.
+     * The super admin role holds every permission. AuthService keeps it as
+     * the main role (role_slug) whenever it is one of the user's roles.
      */
-    public function isLimitedEditor(): bool
+    public function isSuperAdmin(): bool
     {
-        return $this->role_slug === 'faculty_editor';
+        return $this->role_slug === 'super_admin';
+    }
+
+    /**
+     * Optional limits a super admin sets on top of permissions: when
+     * faculty_scopes is filled, faculty content is limited to those faculties;
+     * when page_scopes is filled, multi-page CMS screens are limited to those
+     * pages (CMS target keys).
+     */
+    public function hasFacultyLimit(): bool
+    {
+        return $this->facultyScopes() !== [];
+    }
+
+    public function hasPageLimit(): bool
+    {
+        return $this->pageScopes() !== [];
     }
 
     /** @return list<string> faculty public slugs */

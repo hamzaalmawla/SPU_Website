@@ -10,7 +10,7 @@ use Illuminate\Support\Collection;
 interface FacultySubpageCardServiceInterface
 {
     /**
-     * The faculties a limited editor is restricted to (public slugs), or null
+     * The faculties a user's faculty limit restricts them to (public slugs), or null
      * when the user may manage every faculty.
      *
      * @return list<string>|null

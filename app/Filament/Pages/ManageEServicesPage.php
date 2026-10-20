@@ -67,7 +67,7 @@ class ManageEServicesPage extends Page implements HasForms
 
     public static function canAccess(): bool
     {
-        return static::canAccessCmsArea('manage-pages', 'e_services');
+        return static::canAccessCmsArea('e_services', 'e_services');
     }
 
     public static function getNavigationGroup(): ?string
@@ -122,8 +122,8 @@ class ManageEServicesPage extends Page implements HasForms
             Action::make('save')->label(__('admin_pages.e_services.save_draft'))->icon('heroicon-o-check')->color('gray')->action(fn () => $this->save()),
             Action::make('preview_ar')->label(__('admin_pages.e_services.preview_ar'))->icon('heroicon-o-eye')->color('info')->action(fn () => $this->openPreview('ar')),
             Action::make('preview_en')->label(__('admin_pages.e_services.preview_en'))->icon('heroicon-o-eye')->color('info')->action(fn () => $this->openPreview('en')),
-            Action::make('publish')->label(__('admin_pages.e_services.publish'))->icon('heroicon-o-paper-airplane')->color('success')->requiresConfirmation()->action(fn () => $this->publish()),
-            Action::make('schedule')
+            Action::make('publish')->visible(fn (): bool => static::canPublishCmsArea('e_services'))->label(__('admin_pages.e_services.publish'))->icon('heroicon-o-paper-airplane')->color('success')->requiresConfirmation()->action(fn () => $this->publish()),
+            Action::make('schedule')->visible(fn (): bool => static::canPublishCmsArea('e_services'))
                 ->label(__('admin_pages.e_services.schedule'))
                 ->icon('heroicon-o-clock')
                 ->color('warning')
@@ -131,7 +131,7 @@ class ManageEServicesPage extends Page implements HasForms
                     DateTimePicker::make('publish_at')->label(__('admin_pages.e_services.publish_at'))->required()->minDate(now())->native(false),
                 ])
                 ->action(fn (array $data) => $this->schedule((string) $data['publish_at'])),
-            Action::make('unpublish')->label(__('admin_pages.e_services.unpublish'))->icon('heroicon-o-x-circle')->color('danger')->requiresConfirmation()->action(fn () => $this->unpublish()),
+            Action::make('unpublish')->visible(fn (): bool => static::canPublishCmsArea('e_services'))->label(__('admin_pages.e_services.unpublish'))->icon('heroicon-o-x-circle')->color('danger')->requiresConfirmation()->action(fn () => $this->unpublish()),
         ];
     }
 

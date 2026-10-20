@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources;
 
+use App\Filament\Resources\Concerns\AuthorizesThroughPermissions;
 use App\Filament\Resources\DirectorateResource\Pages;
 use App\Filament\Support\MediaPicker;
 use App\Models\Content\Directorate;
@@ -22,10 +23,11 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Gate;
 
 class DirectorateResource extends Resource
 {
+    use AuthorizesThroughPermissions;
+
     protected static ?string $model = Directorate::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-squares-2x2';
@@ -43,9 +45,9 @@ class DirectorateResource extends Resource
         return filled($translation?->title) ? trim((string) $translation->title) : $record->slug;
     }
 
-    public static function canAccess(): bool
+    protected static function permissionComponent(): string
     {
-        return Gate::allows('manage-pages');
+        return 'directorates';
     }
 
     public static function getModelLabel(): string

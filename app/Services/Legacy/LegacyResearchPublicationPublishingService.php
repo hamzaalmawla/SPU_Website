@@ -36,8 +36,8 @@ final class LegacyResearchPublicationPublishingService implements LegacyResearch
         }
 
         $actor = User::query()->find($actorUserId);
-        if (! $actor instanceof User || $actor->isAccountLocked() || ! Gate::forUser($actor)->allows('publish-content')) {
-            throw new InvalidArgumentException('The publication actor must be an unlocked user with content publication permission.');
+        if (! $actor instanceof User || $actor->isAccountLocked() || ! Gate::forUser($actor)->allows('research_publications.publish')) {
+            throw new InvalidArgumentException('The publication actor must be an unlocked user with research publishing permission.');
         }
 
         $publications = ResearchPublication::query()

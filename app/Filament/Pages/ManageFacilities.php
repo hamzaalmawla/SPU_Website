@@ -60,7 +60,7 @@ class ManageFacilities extends Page implements HasForms
 
     public static function canAccess(): bool
     {
-        return static::canAccessCmsArea('manage-faculties', 'facilities', 'facilities.landing');
+        return static::canAccessCmsArea('faculties_hub', 'facilities.landing');
     }
 
     public static function getNavigationGroup(): ?string
@@ -118,7 +118,7 @@ class ManageFacilities extends Page implements HasForms
                 $this->openPreview('en');
             }),
             Action::make('publish')->label(__('admin.campus_workspace.actions.publish'))->icon('heroicon-o-paper-airplane')->color('success')->requiresConfirmation()
-                ->visible(fn (): bool => Gate::allows('publish-content'))->action(function (): void {
+                ->visible(fn (): bool => Gate::allows('faculties_hub.publish'))->action(function (): void {
                     $this->publish();
                 }),
             Action::make('schedule')
@@ -128,12 +128,12 @@ class ManageFacilities extends Page implements HasForms
                 ->form([
                     DateTimePicker::make('publish_at')->label(__('admin.campus_workspace.publish_at'))->required()->minDate(now())->native(false),
                 ])
-                ->visible(fn (): bool => Gate::allows('publish-content'))
+                ->visible(fn (): bool => Gate::allows('faculties_hub.publish'))
                 ->action(function (array $data): void {
                     $this->schedule((string) $data['publish_at']);
                 }),
             Action::make('unpublish')->label(__('admin.campus_workspace.actions.unpublish'))->icon('heroicon-o-x-circle')->color('danger')->requiresConfirmation()
-                ->visible(fn (): bool => Gate::allows('publish-content'))->action(function (): void {
+                ->visible(fn (): bool => Gate::allows('faculties_hub.publish'))->action(function (): void {
                     $this->unpublish();
                 }),
         ];

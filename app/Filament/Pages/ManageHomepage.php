@@ -95,7 +95,7 @@ class ManageHomepage extends Page implements HasForms
 
     public static function canAccess(): bool
     {
-        return Gate::allows('manage-homepage');
+        return Gate::allows('homepage.view');
     }
 
     public static function getNavigationLabel(): string
@@ -210,6 +210,7 @@ class ManageHomepage extends Page implements HasForms
     private function publishAction(): Action
     {
         return Action::make('publish')
+            ->visible(fn (): bool => Gate::allows('homepage.publish'))
             ->label(__('admin_pages.homepage.publish'))
             ->icon('heroicon-o-check-circle')
             ->color('success')
@@ -222,6 +223,7 @@ class ManageHomepage extends Page implements HasForms
     private function scheduleAction(): Action
     {
         return Action::make('schedule')
+            ->visible(fn (): bool => Gate::allows('homepage.publish'))
             ->label(__('admin_pages.homepage.schedule'))
             ->icon('heroicon-o-clock')
             ->color('warning')
@@ -238,6 +240,7 @@ class ManageHomepage extends Page implements HasForms
     private function unpublishAction(): Action
     {
         return Action::make('unpublish')
+            ->visible(fn (): bool => Gate::allows('homepage.publish'))
             ->label(__('admin_pages.homepage.unpublish'))
             ->icon('heroicon-o-x-circle')
             ->color('danger')
@@ -249,7 +252,7 @@ class ManageHomepage extends Page implements HasForms
 
     private function saveDraft(): void
     {
-        Gate::authorize('manage-homepage');
+        Gate::authorize('homepage.update');
 
         $formData = $this->form->getState();
         try {
@@ -270,7 +273,7 @@ class ManageHomepage extends Page implements HasForms
 
     private function discardDraft(): void
     {
-        Gate::authorize('manage-homepage');
+        Gate::authorize('homepage.update');
 
         /** @var User $user */
         $user = auth()->user();
@@ -284,7 +287,7 @@ class ManageHomepage extends Page implements HasForms
 
     private function openPreview(string $locale): void
     {
-        Gate::authorize('manage-homepage');
+        Gate::authorize('homepage.update');
 
         /** @var User $user */
         $user = auth()->user();
@@ -307,7 +310,7 @@ class ManageHomepage extends Page implements HasForms
 
     private function publishHomepage(): void
     {
-        Gate::authorize('manage-homepage');
+        Gate::authorize('homepage.publish');
 
         /** @var User $user */
         $user = auth()->user();
@@ -347,7 +350,7 @@ class ManageHomepage extends Page implements HasForms
 
     private function schedulePublish(string $publishAt): void
     {
-        Gate::authorize('manage-homepage');
+        Gate::authorize('homepage.publish');
 
         /** @var User $user */
         $user = auth()->user();
@@ -388,7 +391,7 @@ class ManageHomepage extends Page implements HasForms
 
     private function unpublishHomepage(): void
     {
-        Gate::authorize('manage-homepage');
+        Gate::authorize('homepage.publish');
 
         /** @var User $user */
         $user = auth()->user();

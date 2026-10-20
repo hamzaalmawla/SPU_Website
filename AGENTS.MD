@@ -131,16 +131,19 @@ When generating code:
 
 ---
 
-## Role System
+## Role System (permissions)
 
-Roles:
-- `super_admin` → full access
-- `editor` → all global content modules / pages / menu / media / settings within granted permissions
-- `faculty_editor` (shown as "Limited editor") → edits only what a super_admin granted on the user form: any number of faculties (`users.faculty_scopes`, faculty public slugs) and any number of single CMS pages (`users.page_scopes`, CMS target keys from `CmsTargetRegistryInterface::grantablePages()`). Drafts and previews only; publishing stays with editors
+Access is permission-based. A permission is `<component>.<action>` (for example `news_articles.update`); the full list lives in code in `PermissionCatalogInterface` (`app/Services/Auth/PermissionCatalog.php`), with AR/EN labels in `lang/*/admin_permissions.php`.
+
+- A **role** is an editable, named set of permissions (`roles`, `role_permissions`), managed by super admins under Administration › Roles.
+- A **user** holds one or more roles (`role_user`; `users.role_slug` is the main role) plus optional **extra permissions** (`user_permissions`).
+- Optional **limits** on a user narrow their permissions: `users.faculty_scopes` (faculty content only of those faculties) and `users.page_scopes` (multi-page CMS screens only for those pages). Empty means no limit.
+- `super_admin` holds every permission and no limits. Only super admins manage users, roles and permissions.
+- Default roles `editor`, `faculty_editor` and `hr` start with the access they had before permissions existed; super admins can change them.
 
 Rules:
-- Never bypass role checks
-- Answer "may this user edit X?" through `AdminAccessServiceInterface`, not by reading `role_slug` or the scope columns directly
+- Every check goes through `AdminAccessServiceInterface` (or the per-permission Gates and the policies built on it); never compare `role_slug` to decide access
+- A new admin screen or resource adds its component to the catalog, both label files, and checks `<component>.view` to open plus the matching action permission for each write
 - Use Gates / Policies
 - Locked accounts cannot log in
 - 5 failed attempts must lock the account

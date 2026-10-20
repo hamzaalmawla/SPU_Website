@@ -101,7 +101,7 @@ trait InteractsWithResearchPublicationCmsWorkflow
                 ->icon('heroicon-o-paper-airplane')
                 ->color('success')
                 ->requiresConfirmation()
-                ->visible(fn (): bool => Gate::allows('publish-content'))
+                ->visible(fn (): bool => Gate::allows('research_publications.publish'))
                 ->action(function (): void {
                     try {
                         $this->saveDraft($this->form->getState());
@@ -123,7 +123,7 @@ trait InteractsWithResearchPublicationCmsWorkflow
                 ->label(__('admin.research_publication.actions.schedule'))
                 ->icon('heroicon-o-clock')
                 ->color('warning')
-                ->visible(fn (): bool => Gate::allows('publish-content'))
+                ->visible(fn (): bool => Gate::allows('research_publications.publish'))
                 ->form([
                     DateTimePicker::make('publish_at')
                         ->label(__('admin.research_publication.fields.publish_at'))
@@ -155,7 +155,7 @@ trait InteractsWithResearchPublicationCmsWorkflow
                 ->icon('heroicon-o-x-circle')
                 ->color('danger')
                 ->requiresConfirmation()
-                ->visible(fn (): bool => Gate::allows('publish-content'))
+                ->visible(fn (): bool => Gate::allows('research_publications.publish'))
                 ->action(function (): void {
                     try {
                         $unpublished = $this->cmsWorkflowService->unpublish($this->targetKey(), $this->userId());

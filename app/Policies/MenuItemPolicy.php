@@ -4,35 +4,30 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Models\Navigation\MenuItem;
 use App\Models\User\User;
 
 /**
- * Authorizes menu-management actions against the current menu item model.
+ * Opening the menu builder needs `menu.view`; any change needs `menu.update`.
  */
 final class MenuItemPolicy
 {
-    public function before(User $user, string $ability): ?bool
-    {
-        return $user->role_slug === 'super_admin' ? true : null;
-    }
+    public function __construct(
+        private readonly AdminAccessServiceInterface $access,
+    ) {}
 
-    public function create(User $user): bool
+    public function viewAny(User $user): bool
     {
-        return $this->manage($user);
-    }
-
-    public function delete(User $user, MenuItem $menuItem): bool
-    {
-        return $this->manage($user);
+        return $this->access->can($user, 'menu.view');
     }
 
     public function manage(User $user): bool
     {
-        return $user->role_slug === 'editor';
+        return $this->access->can($user, 'menu.update');
     }
 
-    public function reorder(User $user): bool
+    public function create(User $user): bool
     {
         return $this->manage($user);
     }
@@ -42,7 +37,12 @@ final class MenuItemPolicy
         return $this->manage($user);
     }
 
-    public function viewAny(User $user): bool
+    public function delete(User $user, MenuItem $menuItem): bool
+    {
+        return $this->manage($user);
+    }
+
+    public function reorder(User $user): bool
     {
         return $this->manage($user);
     }

@@ -10,8 +10,9 @@ use App\Models\Research\ResearchPublication;
 use App\Models\User\User;
 
 /**
- * Editors manage every research publication. Faculty editors manage the ones
- * attributed to a researcher of their own faculty.
+ * Authorizes research publications through the `research_publications.*`
+ * permissions. A user with a faculty limit only reaches publications whose
+ * faculty (or researcher's faculty) is inside it.
  */
 final class ResearchPublicationPolicy
 {
@@ -19,46 +20,50 @@ final class ResearchPublicationPolicy
         private readonly AdminAccessServiceInterface $access,
     ) {}
 
-    public function before(User $user, string $ability): ?bool
-    {
-        return $user->role_slug === 'super_admin' ? true : null;
-    }
-
     public function viewAny(User $user): bool
     {
-        return $user->role_slug === 'editor' || $this->access->grantedFaculties($user) !== [];
+        return $this->access->can($user, 'research_publications.view');
     }
 
     public function view(User $user, ResearchPublication $publication): bool
     {
-        return $this->update($user, $publication);
+        return $this->allowed($user, 'research_publications.view', $publication);
     }
 
     public function create(User $user): bool
     {
-        return $user->role_slug === 'editor'
-            || $this->access->grantedFaculties($user) !== [];
+        return $this->access->can($user, 'research_publications.create');
     }
 
     public function update(User $user, ResearchPublication $publication): bool
     {
-        if ($user->role_slug === 'editor') {
-            return true;
+        return $this->allowed($user, 'research_publications.update', $publication);
+    }
+
+    public function publish(User $user, ResearchPublication $publication): bool
+    {
+        return $this->allowed($user, 'research_publications.publish', $publication);
+    }
+
+    public function delete(User $user, ResearchPublication $publication): bool
+    {
+        return $this->allowed($user, 'research_publications.delete', $publication);
+    }
+
+    private function allowed(User $user, string $permission, ResearchPublication $publication): bool
+    {
+        if (! $this->access->can($user, $permission)) {
+            return false;
         }
 
-        if ($this->access->grantedFaculties($user) === []) {
-            return false;
+        if (! $this->access->hasFacultyLimit($user)) {
+            return true;
         }
 
         $publication->loadMissing(['faculty', 'facultyMember.faculty']);
         $faculty = $publication->effectiveFaculty();
 
         return $faculty instanceof Faculty
-            && $this->access->canManageFaculty($user, $faculty->public_slug ?: $faculty->faculty_scope_slug ?: $faculty->slug);
-    }
-
-    public function delete(User $user, ResearchPublication $publication): bool
-    {
-        return $this->update($user, $publication);
+            && $this->access->withinFacultyLimit($user, $faculty->public_slug ?: $faculty->faculty_scope_slug ?: $faculty->slug);
     }
 }

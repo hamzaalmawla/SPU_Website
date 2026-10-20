@@ -233,7 +233,7 @@ class PageResource extends Resource
                         ->helperText(__('admin_resources.page.optional_when_set_faculty_editors_only_access_pages_matching'))
                         ->maxLength(255)
                         ->alphaDash()
-                        ->visible(fn (): bool => in_array(auth()->user()?->role_slug, ['super_admin', 'editor'], true)),
+                        ->visible(fn (): bool => auth()->user() instanceof User && ! auth()->user()->hasFacultyLimit()),
 
                     Select::make('template')
                         ->label(__('admin_resources.page.template'))
@@ -409,17 +409,11 @@ class PageResource extends Resource
             return $query->whereRaw('1 = 0');
         }
 
-        if (in_array($user->role_slug, ['super_admin', 'editor'], true)) {
+        if (! $user->hasFacultyLimit()) {
             return $query;
         }
 
-        $scopes = $user->isLimitedEditor() ? app(AdminAccessServiceInterface::class)->facultyScopeValues($user) : [];
-
-        if ($scopes === []) {
-            return $query->whereRaw('1 = 0');
-        }
-
-        return $query->whereIn('faculty_scope_slug', $scopes);
+        return $query->whereIn('faculty_scope_slug', app(AdminAccessServiceInterface::class)->facultyScopeValues($user));
     }
 
     private static function scopeParentQueryToCurrentUser(Builder $query, ?Page $record): Builder

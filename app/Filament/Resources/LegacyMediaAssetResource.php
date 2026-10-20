@@ -35,7 +35,7 @@ final class LegacyMediaAssetResource extends Resource
 
     public static function canAccess(): bool
     {
-        return Gate::allows('manage-media');
+        return Gate::allows('viewAny', MediaAsset::class);
     }
 
     public static function canCreate(): bool
@@ -72,17 +72,11 @@ final class LegacyMediaAssetResource extends Resource
             return $query->whereRaw('1 = 0');
         }
 
-        if (in_array($user->role_slug, ['super_admin', 'editor'], true)) {
+        if (! $user->hasFacultyLimit()) {
             return $query;
         }
 
-        $scopes = $user->isLimitedEditor() ? app(AdminAccessServiceInterface::class)->facultyScopeValues($user) : [];
-
-        if ($scopes === []) {
-            return $query->whereRaw('1 = 0');
-        }
-
-        return $query->whereIn('faculty_scope_slug', $scopes);
+        return $query->whereIn('faculty_scope_slug', app(AdminAccessServiceInterface::class)->facultyScopeValues($user));
     }
 
     public static function form(Form $form): Form

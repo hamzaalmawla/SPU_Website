@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Form;
 
+use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\Form\FormSubmissionNotificationServiceInterface;
 use App\Enums\FormSubmissionStatus;
 use App\Mail\ContactMessageAdminNotification;
@@ -22,6 +23,10 @@ use Throwable;
 
 final class FormSubmissionNotificationService implements FormSubmissionNotificationServiceInterface
 {
+    public function __construct(
+        private readonly AdminAccessServiceInterface $access,
+    ) {}
+
     public function queueDynamicReceived(int $submissionId): bool
     {
         $submission = DynamicFormSubmission::query()->find($submissionId);
@@ -209,10 +214,13 @@ final class FormSubmissionNotificationService implements FormSubmissionNotificat
     private function adminRecipients(?string $formId = null): array
     {
         $configured = is_array(config('mail.form_admin_recipients')) ? config('mail.form_admin_recipients') : [];
-        $roles = $formId === 'job-application'
-            ? ['super_admin', 'editor', 'hr']
-            : ['super_admin', 'editor'];
-        $staff = User::query()->whereIn('role_slug', $roles)->pluck('email')->all();
+        $permissions = match (true) {
+            $formId === null => ['contact_messages.view'],
+            $formId === 'job-application' => ['form_submissions.view', 'job_applications.view'],
+            default => ['form_submissions.view'],
+        };
+        $userIds = array_merge(...array_map(fn (string $permission): array => $this->access->userIdsWithPermission($permission), $permissions));
+        $staff = User::query()->whereKey($userIds)->pluck('email')->all();
 
         return array_values(array_unique(array_filter(array_map(
             static fn (mixed $email): string => is_string($email) ? trim($email) : '',

@@ -80,7 +80,7 @@ class ManageResearch extends Page implements HasForms
 
     public static function canAccess(): bool
     {
-        return static::canAccessCmsArea('manage-pages', 'research');
+        return static::canAccessCmsArea('research_pages', 'research');
     }
 
     public static function getNavigationGroup(): ?string
@@ -239,7 +239,7 @@ class ManageResearch extends Page implements HasForms
                 ->requiresConfirmation()
                 ->modalHeading(__('admin.research_workspace.confirm.publish_heading'))
                 ->modalDescription(__('admin.research_workspace.confirm.publish_description'))
-                ->visible(fn (): bool => Gate::allows('publish-content'))
+                ->visible(fn (): bool => Gate::allows('research_pages.publish'))
                 ->action(function (): void {
                     $this->publish();
                 }),
@@ -250,7 +250,7 @@ class ManageResearch extends Page implements HasForms
                 ->form([
                     DateTimePicker::make('publish_at')->label(__('admin.research_workspace.fields.publish_at'))->required()->minDate(now())->native(false),
                 ])
-                ->visible(fn (): bool => Gate::allows('publish-content'))
+                ->visible(fn (): bool => Gate::allows('research_pages.publish'))
                 ->action(function (array $data): void {
                     $this->schedule((string) $data['publish_at']);
                 }),
@@ -261,7 +261,7 @@ class ManageResearch extends Page implements HasForms
                 ->requiresConfirmation()
                 ->modalHeading(__('admin.research_workspace.confirm.unpublish_heading'))
                 ->modalDescription(__('admin.research_workspace.confirm.unpublish_description'))
-                ->visible(fn (): bool => Gate::allows('publish-content'))
+                ->visible(fn (): bool => Gate::allows('research_pages.publish'))
                 ->action(function (): void {
                     $this->unpublish();
                 }),

@@ -59,7 +59,7 @@ class ManageSettings extends Page implements HasForms
 
     public static function canAccess(): bool
     {
-        return Gate::allows('manage-settings');
+        return Gate::allows('settings.view');
     }
 
     public static function getNavigationGroup(): ?string
@@ -115,6 +115,7 @@ class ManageSettings extends Page implements HasForms
     private function saveAction(): Action
     {
         return Action::make('save')
+            ->visible(fn (): bool => Gate::allows('settings.update'))
             ->label(__('admin_pages.settings.save_settings_group'))
             ->icon('heroicon-o-check')
             ->color('success')

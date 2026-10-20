@@ -73,7 +73,7 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
         $stored = $article instanceof NewsArticle ? $this->storedPayload($article) : [];
         $payload = $this->normalizePayload($data->payload, $stored);
         $user = User::query()->find($userId);
-        if ($user instanceof User && $user->isLimitedEditor()) {
+        if ($user instanceof User && $user->hasFacultyLimit()) {
             $payload['faculty_scope_slug'] = $this->access->facultyForWrite(
                 $user,
                 $this->nullableString($payload['faculty_scope_slug'] ?? null) ?? $article?->faculty_scope_slug,
@@ -500,8 +500,8 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
             throw new AuthorizationException('This user is not authorized to manage this news article.');
         }
 
-        if ($payload !== null && $user->isLimitedEditor()
-            && ! $this->access->canManageFaculty($user, $this->nullableString($payload['faculty_scope_slug'] ?? null))) {
+        if ($payload !== null && $user->hasFacultyLimit()
+            && ! $this->access->withinFacultyLimit($user, $this->nullableString($payload['faculty_scope_slug'] ?? null))) {
             throw new AuthorizationException('You may only manage news articles in your granted faculties.');
         }
     }

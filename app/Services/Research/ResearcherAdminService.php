@@ -34,7 +34,7 @@ final class ResearcherAdminService implements ResearcherAdminServiceInterface
 
     public function create(ResearcherDataDTO $data, int $userId): int
     {
-        $this->authorize($userId);
+        $this->authorize($userId, 'create');
         $researcher = new Researcher(['registration_status' => 'registered', 'created_by' => $userId]);
         $this->fill($researcher, $data);
         $researcher->save();
@@ -47,7 +47,7 @@ final class ResearcherAdminService implements ResearcherAdminServiceInterface
 
     public function update(int $id, ResearcherDataDTO $data, int $userId): bool
     {
-        $this->authorize($userId);
+        $this->authorize($userId, 'update');
         $researcher = Researcher::query()->findOrFail($id);
         $this->fill($researcher, $data);
         $researcher->save();
@@ -60,7 +60,7 @@ final class ResearcherAdminService implements ResearcherAdminServiceInterface
 
     public function delete(int $id, int $userId): bool
     {
-        $this->authorize($userId);
+        $this->authorize($userId, 'delete');
         $researcher = Researcher::query()->find($id);
 
         if (! $researcher instanceof Researcher) {
@@ -104,7 +104,7 @@ final class ResearcherAdminService implements ResearcherAdminServiceInterface
 
     public function linkToStaff(int $researcherId, int $facultyMemberId, int $userId): bool
     {
-        $this->authorize($userId);
+        $this->authorize($userId, 'update');
         $researcher = Researcher::query()->findOrFail($researcherId);
         $member = FacultyMember::query()->findOrFail($facultyMemberId);
 
@@ -245,11 +245,11 @@ final class ResearcherAdminService implements ResearcherAdminServiceInterface
         return $rows;
     }
 
-    private function authorize(int $userId): void
+    private function authorize(int $userId, string $action): void
     {
         $user = User::query()->find($userId);
 
-        if (! $user instanceof User || (bool) $user->is_locked || Gate::forUser($user)->denies('create', ResearchPublication::class)) {
+        if (! $user instanceof User || (bool) $user->is_locked || Gate::forUser($user)->denies('researchers.'.$action)) {
             throw new AuthorizationException('This user is not authorized to manage researchers.');
         }
     }

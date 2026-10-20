@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\AboutPageResource\Pages;
+use App\Filament\Resources\Concerns\AuthorizesThroughPermissions;
 use App\Filament\Support\JsonEditor;
 use App\Filament\Support\MediaPicker;
 use App\Models\Page\AboutPage;
@@ -22,10 +23,11 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Gate;
 
 class AboutPageResource extends Resource
 {
+    use AuthorizesThroughPermissions;
+
     protected static ?string $model = AboutPage::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-building-library';
@@ -43,9 +45,9 @@ class AboutPageResource extends Resource
         return filled($translation?->title) ? trim((string) $translation->title) : $record->slug;
     }
 
-    public static function canAccess(): bool
+    protected static function permissionComponent(): string
     {
-        return Gate::allows('manage-pages');
+        return 'about_pages';
     }
 
     public static function getModelLabel(): string

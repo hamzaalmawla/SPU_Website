@@ -6,6 +6,7 @@ namespace App\Filament\Resources;
 
 use App\Contracts\Content\ProfileAdminServiceInterface;
 use App\Contracts\Shared\SlugServiceInterface;
+use App\Filament\Resources\Concerns\AuthorizesThroughPermissions;
 use App\Filament\Resources\PersonResource\Pages;
 use App\Filament\Support\MediaPicker;
 use App\Models\Person\Person;
@@ -27,11 +28,12 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 
 class PersonResource extends Resource
 {
+    use AuthorizesThroughPermissions;
+
     protected static ?string $model = Person::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
@@ -51,9 +53,9 @@ class PersonResource extends Resource
         return filled($name) ? trim((string) $name) : (filled($arabicName) ? trim((string) $arabicName) : $record->slug);
     }
 
-    public static function canAccess(): bool
+    protected static function permissionComponent(): string
     {
-        return Gate::allows('manage-pages');
+        return 'people';
     }
 
     public static function getModelLabel(): string

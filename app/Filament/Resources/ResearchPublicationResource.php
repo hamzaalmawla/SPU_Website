@@ -240,7 +240,7 @@ class ResearchPublicationResource extends Resource
                                         ->searchable()
                                         ->native(false)
                                         ->preload(false)
-                                        ->required(fn (): bool => auth()->user()?->role_slug === 'faculty_editor')
+                                        ->required(fn (): bool => auth()->user() instanceof User && auth()->user()->hasFacultyLimit())
                                         ->options(fn (): array => [])
                                         ->getSearchResultsUsing(fn (string $search): array => self::facultyMemberOptions($search))
                                         ->getOptionLabelUsing(fn (mixed $value): ?string => is_numeric($value) ? (self::facultyMemberOptions(null, (int) $value)[(int) $value] ?? null) : null),
@@ -393,7 +393,7 @@ class ResearchPublicationResource extends Resource
     {
         $user = auth()->user();
 
-        if (! $user instanceof User || ! $user->isLimitedEditor()) {
+        if (! $user instanceof User || ! $user->hasFacultyLimit()) {
             return $query;
         }
 

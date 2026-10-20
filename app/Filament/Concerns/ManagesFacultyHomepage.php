@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Concerns;
 
 use App\Contracts\Auth\AdminAccessServiceInterface;
+use App\Contracts\Auth\PermissionCatalogInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanBoardServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanEditorServiceInterface;
@@ -99,17 +100,17 @@ trait ManagesFacultyHomepage
 
     public static function canAccess(): bool
     {
-        if (! Gate::allows('manage-faculties')) {
-            return false;
-        }
-
         $user = auth()->user();
 
-        if (! $user instanceof User || ! $user->isLimitedEditor()) {
-            return true;
-        }
+        return $user instanceof User
+            && Gate::allows(static::facultyComponent().'.view')
+            && app(AdminAccessServiceInterface::class)->withinFacultyLimit($user, static::managedFacultyScope());
+    }
 
-        return app(AdminAccessServiceInterface::class)->canManageFaculty($user, static::managedFacultyScope());
+    /** This faculty's permission component, for example `faculty_medicine`. */
+    protected static function facultyComponent(): string
+    {
+        return app(PermissionCatalogInterface::class)->componentForFaculty(static::managedFacultyScope());
     }
 
     public static function getNavigationGroup(): ?string
@@ -252,7 +253,7 @@ trait ManagesFacultyHomepage
                 $this->openPreview('en');
             }),
             Action::make('publish')->label(__('admin.faculty_workspace.actions.publish'))->icon('heroicon-o-paper-airplane')->color('success')->requiresConfirmation()
-                ->visible(fn (): bool => Gate::allows('publish-content'))->action(function (): void {
+                ->visible(fn (): bool => Gate::allows(static::facultyComponent().'.publish'))->action(function (): void {
                     $this->publish();
                 }),
             Action::make('schedule')
@@ -262,12 +263,12 @@ trait ManagesFacultyHomepage
                 ->form([
                     DateTimePicker::make('publish_at')->label(__('admin.faculty_workspace.fields.publish_at'))->required()->minDate(now())->native(false),
                 ])
-                ->visible(fn (): bool => Gate::allows('publish-content'))
+                ->visible(fn (): bool => Gate::allows(static::facultyComponent().'.publish'))
                 ->action(function (array $data): void {
                     $this->schedule((string) $data['publish_at']);
                 }),
             Action::make('unpublish')->label(__('admin.faculty_workspace.actions.unpublish'))->icon('heroicon-o-x-circle')->color('danger')->requiresConfirmation()
-                ->visible(fn (): bool => Gate::allows('publish-content'))->action(function (): void {
+                ->visible(fn (): bool => Gate::allows(static::facultyComponent().'.publish'))->action(function (): void {
                     $this->unpublish();
                 }),
         ];

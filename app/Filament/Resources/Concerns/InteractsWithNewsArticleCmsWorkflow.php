@@ -100,7 +100,7 @@ trait InteractsWithNewsArticleCmsWorkflow
                 ->icon('heroicon-o-paper-airplane')
                 ->color('success')
                 ->requiresConfirmation()
-                ->visible(fn (): bool => Gate::allows('publish-content'))
+                ->visible(fn (): bool => Gate::allows('news_articles.publish'))
                 ->action(function (): void {
                     try {
                         $this->saveDraft($this->form->getState());
@@ -121,7 +121,7 @@ trait InteractsWithNewsArticleCmsWorkflow
                 ->label(__('admin.news_article.workflow.actions.schedule'))
                 ->icon('heroicon-o-clock')
                 ->color('warning')
-                ->visible(fn (): bool => Gate::allows('publish-content'))
+                ->visible(fn (): bool => Gate::allows('news_articles.publish'))
                 ->form([
                     DateTimePicker::make('publish_at')
                         ->label(__('admin.news_article.workflow.fields.publish_at'))
@@ -153,7 +153,7 @@ trait InteractsWithNewsArticleCmsWorkflow
                 ->icon('heroicon-o-x-circle')
                 ->color('danger')
                 ->requiresConfirmation()
-                ->visible(fn (): bool => Gate::allows('publish-content'))
+                ->visible(fn (): bool => Gate::allows('news_articles.publish'))
                 ->action(function (): void {
                     try {
                         $unpublished = $this->cmsWorkflowService->unpublish($this->targetKey(), $this->userId());

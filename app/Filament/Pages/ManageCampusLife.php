@@ -81,7 +81,7 @@ class ManageCampusLife extends Page implements HasForms
 
     public static function canAccess(): bool
     {
-        return static::canAccessCmsArea('manage-faculties', 'campus_life');
+        return static::canAccessCmsArea('campus_life', 'campus_life');
     }
 
     public static function getNavigationGroup(): ?string
@@ -187,7 +187,7 @@ class ManageCampusLife extends Page implements HasForms
 
     protected function publishAbility(): string
     {
-        return 'publish-content';
+        return 'campus_life.publish';
     }
 
     protected function showsTargetSelector(): bool

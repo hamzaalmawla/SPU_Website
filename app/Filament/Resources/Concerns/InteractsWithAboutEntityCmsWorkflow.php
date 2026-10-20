@@ -26,6 +26,17 @@ trait InteractsWithAboutEntityCmsWorkflow
 
     abstract protected function entityType(): string;
 
+    /** The permission component of this entity type, for example `directorates`. */
+    protected function entityPermissionComponent(): string
+    {
+        return match ($this->entityType()) {
+            'person' => 'people',
+            'faculty-member' => 'faculty_members',
+            'directorate' => 'directorates',
+            default => 'partnerships',
+        };
+    }
+
     public function boot(
         AboutEntityCmsServiceInterface $aboutEntityCmsService,
         CmsWorkflowServiceInterface $cmsWorkflowService,
@@ -72,7 +83,7 @@ trait InteractsWithAboutEntityCmsWorkflow
                 ->icon('heroicon-o-paper-airplane')
                 ->color('success')
                 ->requiresConfirmation()
-                ->visible(fn (): bool => Gate::allows('publish-content'))
+                ->visible(fn (): bool => Gate::allows($this->entityPermissionComponent().'.publish'))
                 ->action(function (): void {
                     try {
                         $this->saveDraft($this->form->getState());
@@ -87,7 +98,7 @@ trait InteractsWithAboutEntityCmsWorkflow
                 ->label(__('admin_pages.about_entity.schedule'))
                 ->icon('heroicon-o-clock')
                 ->color('warning')
-                ->visible(fn (): bool => Gate::allows('publish-content'))
+                ->visible(fn (): bool => Gate::allows($this->entityPermissionComponent().'.publish'))
                 ->form([
                     DateTimePicker::make('publish_at')->required()->minDate(now())->native(false),
                 ])
@@ -109,7 +120,7 @@ trait InteractsWithAboutEntityCmsWorkflow
                 ->icon('heroicon-o-x-circle')
                 ->color('danger')
                 ->requiresConfirmation()
-                ->visible(fn (): bool => Gate::allows('publish-content'))
+                ->visible(fn (): bool => Gate::allows($this->entityPermissionComponent().'.publish'))
                 ->action(function (): void {
                     $unpublished = $this->cmsWorkflowService->unpublish($this->targetKey(), $this->userId());
                     $notification = Notification::make()->title($unpublished ? __('admin_pages.about_entity.entity_unpublished') : __('admin_pages.about_entity.entity_was_not_published'));

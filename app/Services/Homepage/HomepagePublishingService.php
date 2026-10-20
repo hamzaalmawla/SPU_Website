@@ -572,7 +572,7 @@ final class HomepagePublishingService implements HomepagePublishingServiceInterf
     {
         $user = User::query()->find($userId);
 
-        $gateAbility = $ability === 'publish' ? 'publish-content' : 'manage-homepage';
+        $gateAbility = $ability === 'publish' ? 'homepage.publish' : 'homepage.update';
 
         if (! $user instanceof User || (bool) $user->is_locked || Gate::forUser($user)->denies($gateAbility)) {
             throw new AuthorizationException('This user is not authorized to manage the homepage.');

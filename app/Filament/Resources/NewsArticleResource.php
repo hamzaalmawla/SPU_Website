@@ -206,7 +206,7 @@ class NewsArticleResource extends Resource
                                         ->label(__('admin.news_article.fields.faculty_scope'))
                                         ->maxLength(255)
                                         ->alphaDash()
-                                        ->visible(fn (): bool => in_array(auth()->user()?->role_slug, ['super_admin', 'editor'], true)),
+                                        ->visible(fn (): bool => auth()->user() instanceof User && ! auth()->user()->hasFacultyLimit()),
                                     GrantedFacultySelect::make('faculty_scope_slug', __('admin.news_article.fields.faculty_scope')),
                                 ])
                                 ->columns(2),
@@ -315,7 +315,7 @@ class NewsArticleResource extends Resource
     {
         $user = auth()->user();
 
-        if (! $user instanceof User || ! $user->isLimitedEditor()) {
+        if (! $user instanceof User || ! $user->hasFacultyLimit()) {
             return $query;
         }
 

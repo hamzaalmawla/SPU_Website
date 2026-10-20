@@ -4,24 +4,27 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Models\Contact\ContactMessage;
 use App\Models\User\User;
 
+/**
+ * Messages arrive from the public form, so nobody creates them here.
+ */
 final class ContactMessagePolicy
 {
-    public function before(User $user, string $ability): ?bool
-    {
-        return $user->role_slug === 'super_admin' ? true : null;
-    }
+    public function __construct(
+        private readonly AdminAccessServiceInterface $access,
+    ) {}
 
     public function viewAny(User $user): bool
     {
-        return $user->role_slug === 'editor';
+        return $this->access->can($user, 'contact_messages.view');
     }
 
     public function view(User $user, ContactMessage $contactMessage): bool
     {
-        return $this->viewAny($user);
+        return $this->access->can($user, 'contact_messages.view');
     }
 
     public function create(User $user): bool
@@ -31,16 +34,16 @@ final class ContactMessagePolicy
 
     public function update(User $user, ContactMessage $contactMessage): bool
     {
-        return in_array($user->role_slug, ['super_admin', 'editor'], true);
+        return $this->access->can($user, 'contact_messages.update');
     }
 
     public function updateReview(User $user, ContactMessage $contactMessage): bool
     {
-        return in_array($user->role_slug, ['super_admin', 'editor'], true);
+        return $this->access->can($user, 'contact_messages.update');
     }
 
     public function delete(User $user, ContactMessage $contactMessage): bool
     {
-        return in_array($user->role_slug, ['super_admin', 'editor'], true);
+        return $this->access->can($user, 'contact_messages.delete');
     }
 }

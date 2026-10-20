@@ -11,31 +11,28 @@ use App\Models\User\User;
 use Illuminate\Support\Facades\Gate;
 
 /**
- * Lets a limited editor into a CMS area screen only for the pages a super
- * administrator granted them. Full editors keep using the area's gate.
+ * Opens a CMS screen through its component's `view` permission and narrows
+ * its page picker to the pages the user may edit (their page limit, if they
+ * have one). Publish buttons follow the component's `publish` permission.
  *
- * The page picker is narrowed here for the editor's convenience; the CMS
- * workflow service still refuses any save, preview or publish of a page
- * that was not granted.
+ * The picker is narrowed here for the editor's convenience; the CMS workflow
+ * service still refuses any save, preview or publish the user may not do.
  */
 trait LimitsCmsTargetsToGrants
 {
     /**
-     * @param  string|null  $targetKey  set when the screen edits one page only
+     * @param  string|null  $area  the screen's CMS area, for a user with a page limit
      */
-    protected static function canAccessCmsArea(string $ability, string $area, ?string $targetKey = null): bool
+    protected static function canAccessCmsArea(string $component, ?string $area = null): bool
     {
         $user = auth()->user();
 
-        if (! $user instanceof User || ! $user->isLimitedEditor()) {
-            return Gate::allows($ability);
-        }
+        return $user instanceof User && app(AdminAccessServiceInterface::class)->canOpenScreen($user, $component, $area);
+    }
 
-        if ($targetKey !== null) {
-            return $user->hasPageScope($targetKey);
-        }
-
-        return app(AdminAccessServiceInterface::class)->canEnterArea($user, $area);
+    protected static function canPublishCmsArea(string $component): bool
+    {
+        return Gate::allows($component.'.publish');
     }
 
     /**
@@ -46,8 +43,8 @@ trait LimitsCmsTargetsToGrants
     {
         $user = auth()->user();
 
-        if (! $user instanceof User || ! $user->isLimitedEditor()) {
-            return $options;
+        if (! $user instanceof User) {
+            return [];
         }
 
         $access = app(AdminAccessServiceInterface::class);
@@ -58,7 +55,7 @@ trait LimitsCmsTargetsToGrants
             static function (string $key) use ($access, $registry, $user): bool {
                 $target = $registry->find($key);
 
-                return $target instanceof CmsTargetDTO && $access->canManageTarget($user, $target);
+                return $target instanceof CmsTargetDTO && $access->canManageTarget($user, $target, 'view');
             },
             ARRAY_FILTER_USE_KEY,
         );
@@ -66,7 +63,7 @@ trait LimitsCmsTargetsToGrants
 
     /**
      * The page a screen opens on: its usual first page when the editor may
-     * edit it, otherwise the first page they were granted.
+     * edit it, otherwise the first page they may.
      *
      * @param  array<string, string>  $options
      */

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
+use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\Auth\TotpAuthenticatorInterface;
 use App\Models\User\User;
 use Filament\Actions\Action;
@@ -66,7 +67,7 @@ class TwoFactorSetup extends Page implements HasForms
 
         return $user instanceof User
             && ! $user->isAccountLocked()
-            && in_array($user->role_slug, ['super_admin', 'editor', 'faculty_editor', 'hr'], true);
+            && app(AdminAccessServiceInterface::class)->hasAdminAccess($user);
     }
 
     public static function getNavigationGroup(): ?string

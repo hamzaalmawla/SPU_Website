@@ -1177,7 +1177,13 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
         }
 
         if ($type !== 'faculty-member') {
-            if (Gate::forUser($user)->denies('manage-pages')) {
+            $component = match ($type) {
+                'person' => 'people',
+                'directorate' => 'directorates',
+                default => 'partnerships',
+            };
+
+            if (Gate::forUser($user)->denies($component.($entityId === null ? '.create' : '.update'))) {
                 throw new AuthorizationException('This user is not authorized to manage About entities.');
             }
 
@@ -1217,7 +1223,7 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             ]);
         }
 
-        if (! $user->isLimitedEditor()) {
+        if (! $user->hasFacultyLimit()) {
             return;
         }
 

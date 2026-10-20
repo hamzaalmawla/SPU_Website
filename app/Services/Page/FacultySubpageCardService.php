@@ -31,11 +31,11 @@ final class FacultySubpageCardService implements FacultySubpageCardServiceInterf
     {
         $user = User::query()->find($userId);
 
-        if (! $user instanceof User || ! $user->isLimitedEditor()) {
+        if (! $user instanceof User || ! $user->hasFacultyLimit()) {
             return null;
         }
 
-        return $this->access->grantedFaculties($user);
+        return $this->access->limitedFaculties($user);
     }
 
     /** @return array<string, string> */
@@ -44,8 +44,8 @@ final class FacultySubpageCardService implements FacultySubpageCardServiceInterf
         $user = $this->authorizedUser($userId);
         $query = Faculty::query()->where('is_enabled', true);
 
-        if ($user->isLimitedEditor()) {
-            $query->whereIn('public_slug', $this->access->grantedFaculties($user));
+        if ($user->hasFacultyLimit()) {
+            $query->whereIn('public_slug', $this->access->limitedFaculties($user));
         }
 
         return $query->pluck('public_slug', 'public_slug')->all();
@@ -409,7 +409,7 @@ final class FacultySubpageCardService implements FacultySubpageCardServiceInterf
     {
         $user = $this->authorizedUser($userId);
 
-        if (Gate::forUser($user)->denies('publish-content') || Gate::forUser($user)->denies('update', $card)) {
+        if (Gate::forUser($user)->denies('publish', $card)) {
             throw new AuthorizationException('This user is not authorized to publish faculty subpage cards.');
         }
 
@@ -420,7 +420,7 @@ final class FacultySubpageCardService implements FacultySubpageCardServiceInterf
     {
         $user = User::query()->find($userId);
 
-        if (! $user instanceof User || (bool) $user->is_locked || Gate::forUser($user)->denies('manage-faculties')) {
+        if (! $user instanceof User || (bool) $user->is_locked || Gate::forUser($user)->denies('viewAny', FacultySubpageCard::class)) {
             throw new AuthorizationException('This user is not authorized to manage faculty subpage cards.');
         }
 
@@ -429,7 +429,7 @@ final class FacultySubpageCardService implements FacultySubpageCardServiceInterf
 
     private function assertFacultyScope(User $user, string $facultySlug): void
     {
-        if ($user->isLimitedEditor() && ! $this->access->canManageFaculty($user, $facultySlug)) {
+        if ($user->hasFacultyLimit() && ! $this->access->withinFacultyLimit($user, $facultySlug)) {
             throw new AuthorizationException('This editor is not authorized to manage this faculty.');
         }
     }

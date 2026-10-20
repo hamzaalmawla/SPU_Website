@@ -52,7 +52,10 @@ final class ContactMessageReviewService implements ContactMessageReviewServiceIn
         $message = ContactMessage::query()->findOrFail($messageId);
         $actor = $this->authorizedActor($actorId, $message);
 
-        if ($assigneeId !== null && ! User::query()->whereKey($assigneeId)->whereIn('role_slug', ['super_admin', 'editor'])->exists()) {
+        $assignee = $assigneeId !== null ? User::query()->find($assigneeId) : null;
+
+        // The reviewer must be able to review messages themselves.
+        if ($assigneeId !== null && (! $assignee instanceof User || Gate::forUser($assignee)->denies('updateReview', $message))) {
             throw new \InvalidArgumentException('The selected reviewer is not eligible.');
         }
 

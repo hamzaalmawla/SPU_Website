@@ -35,14 +35,14 @@ class DynamicFormSubmissionResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return auth()->user()?->role_slug === 'hr'
+        return self::seesOnlyJobApplications()
             ? __('admin.navigation.groups.job_board')
             : __('admin.navigation.groups.contact');
     }
 
     public static function getNavigationLabel(): string
     {
-        return auth()->user()?->role_slug === 'hr'
+        return self::seesOnlyJobApplications()
             ? __('admin.navigation.items.job_applications')
             : __('admin.navigation.items.dynamic_form_submissions');
     }
@@ -91,13 +91,17 @@ class DynamicFormSubmissionResource extends Resource
         $formIds = $forms->all()->keys()->all();
 
         $query = parent::getEloquentQuery()->whereIn('form_id', $formIds);
-        $user = auth()->user();
-
-        if ($user instanceof User && $user->role_slug === 'hr') {
+        if (self::seesOnlyJobApplications()) {
             $query->whereIn('form_id', $forms->keysForInbox(FormSubmissionInbox::JOBS));
         }
 
         return $query;
+    }
+
+    /** A user with `job_applications.view` but not `form_submissions.view` reads the jobs inbox only. */
+    public static function seesOnlyJobApplications(): bool
+    {
+        return Gate::allows('job_applications.view') && Gate::denies('form_submissions.view');
     }
 
     public static function canCreate(): bool

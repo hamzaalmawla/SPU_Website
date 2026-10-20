@@ -60,7 +60,7 @@ class FacultyMemberResource extends Resource
 
     public static function canAccess(): bool
     {
-        return Gate::allows('manage-faculties');
+        return Gate::allows('viewAny', FacultyMember::class);
     }
 
     public static function getModelLabel(): string
@@ -89,7 +89,7 @@ class FacultyMemberResource extends Resource
             ->with(['translations', 'faculty.translations', 'department.translations', 'canonicalPerson']);
 
         $user = auth()->user();
-        if ($user instanceof User && $user->isLimitedEditor()) {
+        if ($user instanceof User && $user->hasFacultyLimit()) {
             self::whereFacultyScope($query, app(AdminAccessServiceInterface::class)->facultyScopeValues($user));
         }
 
@@ -250,7 +250,7 @@ class FacultyMemberResource extends Resource
             TextColumn::make('canonicalPerson.slug')
                 ->label(__('admin_resources.faculty_member.canonical_profile'))
                 ->placeholder(__('admin_resources.faculty_member.not_linked'))
-                ->url(fn (FacultyMember $record): ?string => $record->person_id !== null && Gate::allows('manage-pages')
+                ->url(fn (FacultyMember $record): ?string => $record->person_id !== null && Gate::allows('people.view')
                     ? PersonResource::getUrl('edit', ['record' => $record->person_id])
                     : null),
             TextColumn::make('faculty.translations.name')->label(__('admin_resources.faculty_member.faculty'))->limit(30),
@@ -314,8 +314,8 @@ class FacultyMemberResource extends Resource
 
     /**
      * The faculty a new member belongs to without anyone choosing it: the
-     * faculty page the form was opened from (for a limited editor, only when
-     * it is one of their faculties), or a limited editor's only faculty. Null
+     * faculty page the form was opened from (for a user with a faculty limit, only when
+     * it is one of their faculties), or the limit's only faculty. Null
      * when the editor has to pick one.
      */
     public static function contextFacultyId(mixed $livewire = null): ?int
@@ -325,7 +325,7 @@ class FacultyMemberResource extends Resource
             return null;
         }
 
-        $scope = $user->isLimitedEditor()
+        $scope = $user->hasFacultyLimit()
             ? (string) app(AdminAccessServiceInterface::class)->facultyForWrite($user, self::contextScope($livewire))
             : self::contextScope($livewire);
 

@@ -386,6 +386,7 @@ final class ArchitectureGuardTest extends TestCase
             'app/Filament/Resources/ResearcherResource/Pages/CreateResearcher.php' => '/return\s+Researcher::query\(\)->findOrFail\(\$id\);/',
             'app/Filament/Resources/PersonResource/Pages/CreatePerson.php' => '/return\s+Person::query\(\)->findOrFail\(\$prepared->entityId\);/',
             'app/Filament/Resources/UserResource/Pages/CreateUser.php' => '/return\s+User::query\(\)->findOrFail\(\$userId\);/',
+            'app/Filament/Resources/RoleResource/Pages/CreateRole.php' => '/return\s+Role::query\(\)->findOrFail\(\$id\);/',
         ];
         $violations = [];
 

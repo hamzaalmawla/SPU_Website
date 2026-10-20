@@ -54,7 +54,7 @@ class AdminAuthorizationTest extends TestCase
     /**
      * It resolves the required RBAC gates for each supported role slug.
      */
-    public function test_required_rbac_gates_resolve_cleanly(): void
+    public function test_default_roles_resolve_to_their_permissions(): void
     {
         $superAdmin = new User;
         $superAdmin->forceFill(['name' => 'Super Admin', 'email' => 'super-admin@example.com', 'role_slug' => 'super_admin']);
@@ -74,41 +74,27 @@ class AdminAuthorizationTest extends TestCase
         $hr->forceFill(['name' => 'HR User', 'email' => 'hr@example.com', 'role_slug' => 'hr']);
 
         $this->assertTrue(Gate::forUser($superAdmin)->allows('manage-users'));
-        $this->assertTrue(Gate::forUser($superAdmin)->allows('manage-settings'));
-        $this->assertTrue(Gate::forUser($superAdmin)->allows('manage-homepage'));
-        $this->assertTrue(Gate::forUser($superAdmin)->allows('manage-pages'));
-        $this->assertTrue(Gate::forUser($superAdmin)->allows('manage-menu'));
-        $this->assertTrue(Gate::forUser($superAdmin)->allows('manage-media'));
-        $this->assertTrue(Gate::forUser($superAdmin)->allows('publish-content'));
-        $this->assertTrue(Gate::forUser($superAdmin)->allows('preview-content'));
-        $this->assertTrue(Gate::forUser($superAdmin)->allows('view-audit-log'));
+        foreach (['settings.update', 'homepage.update', 'about.update', 'menu.update', 'media.create', 'about.publish', 'audit_log.view'] as $permission) {
+            $this->assertTrue(Gate::forUser($superAdmin)->allows($permission), $permission);
+        }
 
         $this->assertFalse(Gate::forUser($editor)->allows('manage-users'));
-        $this->assertTrue(Gate::forUser($editor)->allows('manage-settings'));
-        $this->assertTrue(Gate::forUser($editor)->allows('manage-homepage'));
-        $this->assertTrue(Gate::forUser($editor)->allows('manage-pages'));
-        $this->assertTrue(Gate::forUser($editor)->allows('manage-menu'));
-        $this->assertTrue(Gate::forUser($editor)->allows('manage-media'));
-        $this->assertTrue(Gate::forUser($editor)->allows('publish-content'));
-        $this->assertTrue(Gate::forUser($editor)->allows('preview-content'));
-        $this->assertFalse(Gate::forUser($editor)->allows('view-audit-log'));
+        foreach (['settings.update', 'homepage.update', 'about.update', 'menu.update', 'media.create', 'about.publish', 'homepage.publish'] as $permission) {
+            $this->assertTrue(Gate::forUser($editor)->allows($permission), $permission);
+        }
+        $this->assertFalse(Gate::forUser($editor)->allows('audit_log.view'));
 
         $this->assertFalse(Gate::forUser($facultyEditor)->allows('manage-users'));
-        $this->assertFalse(Gate::forUser($facultyEditor)->allows('manage-settings'));
-        $this->assertFalse(Gate::forUser($facultyEditor)->allows('manage-homepage'));
-        $this->assertFalse(Gate::forUser($facultyEditor)->allows('manage-pages'));
-        $this->assertFalse(Gate::forUser($facultyEditor)->allows('manage-menu'));
-        $this->assertTrue(Gate::forUser($facultyEditor)->allows('manage-media'));
-        $this->assertFalse(Gate::forUser($facultyEditor)->allows('publish-content'));
-        $this->assertTrue(Gate::forUser($facultyEditor)->allows('preview-content'));
-        $this->assertFalse(Gate::forUser($facultyEditor)->allows('view-audit-log'));
+        foreach (['settings.update', 'homepage.update', 'about.update', 'menu.update', 'faculty_medicine.publish', 'audit_log.view'] as $permission) {
+            $this->assertFalse(Gate::forUser($facultyEditor)->allows($permission), $permission);
+        }
+        $this->assertTrue(Gate::forUser($facultyEditor)->allows('media.create'));
+        $this->assertTrue(Gate::forUser($facultyEditor)->allows('faculty_medicine.update'));
 
-        $this->assertTrue(Gate::forUser($hr)->allows('manage-jobs'));
-        $this->assertTrue(Gate::forUser($hr)->allows('publish-jobs'));
-        $this->assertTrue(Gate::forUser($hr)->allows('preview-jobs'));
-        $this->assertFalse(Gate::forUser($hr)->allows('manage-faculties'));
-        $this->assertFalse(Gate::forUser($hr)->allows('manage-pages'));
-        $this->assertFalse(Gate::forUser($hr)->allows('publish-content'));
-        $this->assertFalse(Gate::forUser($hr)->allows('manage-settings'));
+        $this->assertTrue(Gate::forUser($hr)->allows('job_board.update'));
+        $this->assertTrue(Gate::forUser($hr)->allows('job_board.publish'));
+        foreach (['faculty_medicine.update', 'about.update', 'about.publish', 'settings.update'] as $permission) {
+            $this->assertFalse(Gate::forUser($hr)->allows($permission), $permission);
+        }
     }
 }

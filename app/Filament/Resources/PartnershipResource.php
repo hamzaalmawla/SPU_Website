@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources;
 
+use App\Filament\Resources\Concerns\AuthorizesThroughPermissions;
 use App\Filament\Resources\PartnershipResource\Pages;
 use App\Filament\Support\MediaPicker;
 use App\Models\Content\Partnership;
@@ -22,10 +23,11 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Gate;
 
 class PartnershipResource extends Resource
 {
+    use AuthorizesThroughPermissions;
+
     protected static ?string $model = Partnership::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-link';
@@ -43,9 +45,9 @@ class PartnershipResource extends Resource
         return filled($translation?->name) ? trim((string) $translation->name) : $record->slug;
     }
 
-    public static function canAccess(): bool
+    protected static function permissionComponent(): string
     {
-        return Gate::allows('manage-pages');
+        return 'partnerships';
     }
 
     public static function getModelLabel(): string

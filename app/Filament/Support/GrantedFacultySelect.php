@@ -9,7 +9,7 @@ use App\Models\User\User;
 use Filament\Forms\Components\Select;
 
 /**
- * The faculty picker a limited editor sees when they hold more than one
+ * The faculty picker a user with a faculty limit sees when it holds more than one
  * faculty: only their own faculties are offered. With a single faculty the
  * record is filed under it automatically, so the field stays hidden.
  */
@@ -29,12 +29,12 @@ final class GrantedFacultySelect
     {
         $user = auth()->user();
 
-        if (! $user instanceof User || ! $user->isLimitedEditor()) {
+        if (! $user instanceof User || ! $user->hasFacultyLimit()) {
             return [];
         }
 
         $access = app(AdminAccessServiceInterface::class);
 
-        return array_intersect_key($access->facultyOptions(), array_flip($access->grantedFaculties($user)));
+        return array_intersect_key($access->facultyOptions(), array_flip($access->limitedFaculties($user)));
     }
 }

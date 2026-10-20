@@ -9,11 +9,9 @@ use App\Models\Media\MediaAsset;
 use App\Models\User\User;
 
 /**
- * Authorizes media asset management actions.
- *
- * super_admin has full access via before(). Editors and limited editors
- * can view and upload media; a limited editor only sees media of their granted
- * faculties and media they uploaded. Only editors can delete.
+ * Authorizes the media library through the `media.*` permissions. A user
+ * with a faculty limit reaches media of those faculties and media they
+ * uploaded themselves.
  */
 final class MediaAssetPolicy
 {
@@ -21,49 +19,40 @@ final class MediaAssetPolicy
         private readonly AdminAccessServiceInterface $access,
     ) {}
 
-    public function before(User $user, string $ability): ?bool
-    {
-        return $user->role_slug === 'super_admin' ? true : null;
-    }
-
     public function viewAny(User $user): bool
     {
-        return in_array($user->role_slug, ['editor', 'faculty_editor'], true);
+        return $this->access->can($user, 'media.view');
     }
 
     public function view(User $user, MediaAsset $mediaAsset): bool
     {
-        return $this->canAccessScopedAsset($user, $mediaAsset);
+        return $this->allowed($user, 'media.view', $mediaAsset);
     }
 
     public function create(User $user): bool
     {
-        return in_array($user->role_slug, ['editor', 'faculty_editor'], true);
+        return $this->access->can($user, 'media.create');
     }
 
     public function update(User $user, MediaAsset $mediaAsset): bool
     {
-        return $this->canAccessScopedAsset($user, $mediaAsset);
+        return $this->allowed($user, 'media.update', $mediaAsset);
     }
 
     public function delete(User $user, MediaAsset $mediaAsset): bool
     {
-        return $user->role_slug === 'editor';
+        return $this->allowed($user, 'media.delete', $mediaAsset);
     }
 
-    private function canAccessScopedAsset(User $user, MediaAsset $mediaAsset): bool
+    private function allowed(User $user, string $permission, MediaAsset $mediaAsset): bool
     {
-        if ($user->role_slug === 'editor') {
-            return true;
-        }
-
-        if (! $user->isLimitedEditor()) {
+        if (! $this->access->can($user, $permission)) {
             return false;
         }
 
-        $assetScope = $mediaAsset->getAttribute('faculty_scope_slug');
+        $scope = $mediaAsset->getAttribute('faculty_scope_slug');
 
         return (int) $mediaAsset->getAttribute('uploaded_by') === (int) $user->getKey()
-            || (is_string($assetScope) && $this->access->canManageFaculty($user, $assetScope));
+            || $this->access->withinFacultyLimit($user, is_string($scope) ? $scope : null);
     }
 }
