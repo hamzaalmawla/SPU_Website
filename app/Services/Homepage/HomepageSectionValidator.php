@@ -164,7 +164,8 @@ final class HomepageSectionValidator
             ],
             'events_activities' => [
                 'title' => ['required', 'string', 'max:255'],
-                'events' => ['required', 'array', 'min:1'],
+                // Filled from the Events page when shown; the editor no longer lists them.
+                'events' => ['nullable', 'array'],
                 'events.*.imageUrl' => ['nullable', 'string', $this->assetPathRule()],
                 'events.*.title' => ['required', 'string', 'max:255'],
                 'events.*.startsAt' => ['required', 'date'],

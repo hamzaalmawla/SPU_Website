@@ -7,6 +7,7 @@ namespace App\Filament\Support;
 use App\Filament\Components\PageUrlSelect;
 use Filament\Forms\Components\Component;
 use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Textarea;
@@ -284,33 +285,9 @@ final class HomepageFormSchema
                     ->label(__('admin_pages.homepage_form.event_cta_label'))
                     ->maxLength(100),
             ]),
-            Repeater::make("{$prefix}.events")
-                ->label(__('admin_pages.homepage_form.event_cards'))
-                ->schema([
-                    self::mediaField('image', __('admin_pages.homepage_form.image')),
-                    TextInput::make('title')
-                        ->label(__('admin_pages.homepage_form.title'))
-                        ->required()
-                        ->maxLength(255),
-                    TextInput::make('date')
-                        ->label(__('admin_pages.homepage_form.date'))
-                        ->maxLength(50),
-                    TextInput::make('time')
-                        ->label(__('admin_pages.homepage_form.time'))
-                        ->maxLength(50),
-                    TextInput::make('location')
-                        ->label(__('admin_pages.homepage_form.location'))
-                        ->maxLength(255),
-                    Textarea::make('description')
-                        ->label(__('admin_pages.homepage_form.description'))
-                        ->rows(2)
-                        ->maxLength(500),
-                    PageUrlSelect::make('cta_url', __('admin_pages.homepage_form.cta_url'), self::localeFromPrefix($prefix)),
-                ])
-                ->columns(2)
-                ->collapsible()
-                ->collapsed()
-                ->defaultItems(0),
+            Placeholder::make("{$prefix}.events_note")
+                ->hiddenLabel()
+                ->content(__('admin_pages.homepage_form.events_from_events_page')),
         ];
     }
 

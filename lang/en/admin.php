@@ -1669,6 +1669,7 @@ return [
             'event_image' => 'Event image',
             'registration_form' => 'Registration form',
             'capacity' => 'Available capacity',
+            'capacity_help' => 'Enter 0 for no limit on registrations.',
             'featured' => 'Featured event',
             'event_title' => 'Event title',
             'summary' => 'Summary',

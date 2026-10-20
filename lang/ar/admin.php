@@ -1669,6 +1669,7 @@ return [
             'event_image' => 'صورة الفعالية',
             'registration_form' => 'نموذج التسجيل',
             'capacity' => 'السعة المتاحة',
+            'capacity_help' => 'اكتب 0 إذا لم يكن هناك حد لعدد المسجلين.',
             'featured' => 'فعالية مميزة',
             'event_title' => 'عنوان الفعالية',
             'summary' => 'الملخص',

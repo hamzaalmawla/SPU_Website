@@ -75,7 +75,7 @@
             <div class="events-month-heading mt-10 sm:mt-14">
                 <div>
                     <p class="events-calendar-eyebrow text-spu-red">{{ $locale === 'ar' ? 'ضمن الشهر المحدد' : 'Selected month' }}</p>
-                    <h2>{{ $page['upcomingTitle'] }}</h2>
+                    <h2>{{ __('public.events_this_month') }}</h2>
                 </div>
                 <span class="events-month-count">{{ $events->count() }}</span>
             </div>

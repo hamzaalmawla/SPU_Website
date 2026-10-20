@@ -680,6 +680,7 @@ return [
         'date' => 'Date',
         'description' => 'Description',
         'event_cards' => 'Event Cards',
+        'events_from_events_page' => 'The calendar shows the events from the Events page (News › Events), upcoming and past. Add an event there to show it on the calendar.',
         'event_cta_label' => 'Event CTA Label',
         'facility_statistics' => 'Facility Statistics',
         'faculty_cards' => 'Faculty Cards',

@@ -13,10 +13,14 @@ use App\DTOs\Content\ArticleCardDTO;
 use App\DTOs\Content\ResearchCardDTO;
 use App\DTOs\Homepage\HomepageSectionDataDTO;
 use App\DTOs\Homepage\HomepageSectionDTO;
+use App\DTOs\News\NewsEventDTO;
 use App\Support\HomepagePayloadMapper;
 
 final class HomepageContentSelectionService implements HomepageContentSelectionServiceInterface
 {
+    /** Sections whose cards come from their own module rather than the homepage editor. */
+    private const LIVE_SECTIONS = ['achievements_highlights', 'university_news', 'research_studies', 'events_activities'];
+
     public function __construct(
         private readonly NewsServiceInterface $newsService,
         private readonly ResearchPageServiceInterface $researchService,
@@ -25,7 +29,7 @@ final class HomepageContentSelectionService implements HomepageContentSelectionS
 
     public function hydrateSection(HomepageSectionDTO $section, string $locale): HomepageSectionDTO
     {
-        if (! in_array($section->key, ['achievements_highlights', 'university_news', 'research_studies'], true)) {
+        if (! in_array($section->key, self::LIVE_SECTIONS, true)) {
             return $section;
         }
 
@@ -49,7 +53,7 @@ final class HomepageContentSelectionService implements HomepageContentSelectionS
 
     public function hydratePayload(HomepageSectionDataDTO $payload, string $sectionKey, string $locale): HomepageSectionDataDTO
     {
-        if (! in_array($sectionKey, ['achievements_highlights', 'university_news', 'research_studies'], true)) {
+        if (! in_array($sectionKey, self::LIVE_SECTIONS, true)) {
             return $payload;
         }
 
@@ -70,6 +74,13 @@ final class HomepageContentSelectionService implements HomepageContentSelectionS
                 ])
                 ->all();
             $data['featuredItems'] = [];
+        } elseif ($sectionKey === 'events_activities') {
+            // The calendar shows the Events page, upcoming and past.
+            $data['events'] = $this->newsService->listNewsEvents($locale)
+                ->concat($this->newsService->listNewsEvents($locale, true))
+                ->values()
+                ->map(fn (NewsEventDTO $event, int $index): array => $this->eventToArray($event, $index, $locale))
+                ->all();
         } elseif ($sectionKey === 'university_news') {
             $cards = $this->newsService->getHomepageCategoryCards($locale);
             $data['articles'] = $cards->map(fn (ArticleCardDTO $card): array => $this->articleToArray($card))->all();
@@ -129,6 +140,27 @@ final class HomepageContentSelectionService implements HomepageContentSelectionS
             'url' => $card->url,
             'categoryLabel' => $card->categoryLabel,
             'badgeTag' => $card->badgeTag,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function eventToArray(NewsEventDTO $event, int $index, string $locale): array
+    {
+        $summary = trim((string) preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags($event->summary), ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+
+        return [
+            'id' => $index + 1,
+            'locale' => $locale,
+            'title' => $event->title,
+            'slug' => $event->id,
+            'summary' => mb_strimwidth($summary, 0, 240, '…'),
+            'startsAt' => $event->startsAt,
+            'endsAt' => $event->endsAt,
+            'location' => $event->location,
+            'url' => $event->detailUrl,
+            'imageUrl' => $event->imageUrl,
+            // Shown as the card's badge.
+            'timeLabel' => $event->categoryLabel !== '' ? $event->categoryLabel : ($locale === 'ar' ? 'فعالية' : 'Event'),
         ];
     }
 

@@ -12,9 +12,21 @@ const MONTHS = {
     ar: ['كانون الثاني','شباط','آذار','نيسان','أيار','حزيران','تموز','آب','أيلول','تشرين الأول','تشرين الثاني','كانون الأول'],
 };
 
+// Longer spans are not marked day by day.
+const MAX_EVENT_DAYS = 31;
+
+function formatDate(date) {
+    return getCurrentLocale() === 'ar'
+        ? `${date.date()} ${MONTHS.ar[date.month()]} ${date.year()}`
+        : date.format('MMM D, YYYY');
+}
+
 function normalizeEvent(event, index) {
     const parsed = dayjs(event.startsAt ?? event.date);
     if (!parsed.isValid()) return null;
+
+    const ends = event.endsAt ? dayjs(event.endsAt) : null;
+    const lastDay = ends?.isValid() && ends.isAfter(parsed, 'day') && ends.diff(parsed, 'day') < MAX_EVENT_DAYS ? ends : parsed;
 
     return {
         id: event.id ?? `event-${index + 1}`,
@@ -24,7 +36,8 @@ function normalizeEvent(event, index) {
         image: event.image ?? event.imageUrl ?? '/images/slider-1.webp',
         link: event.url ?? event.link ?? '#',
         dateKey: parsed.format('YYYY-MM-DD'),
-        dateText: parsed.format('MMM D, YYYY'),
+        endKey: lastDay.format('YYYY-MM-DD'),
+        dateText: lastDay.isSame(parsed, 'day') ? formatDate(parsed) : `${formatDate(parsed)} – ${formatDate(lastDay)}`,
     };
 }
 
@@ -74,8 +87,11 @@ export function createCalendarApp() {
 
         get eventsByDate() {
             return this.rawEvents.reduce((acc, event) => {
-                if (!acc[event.dateKey]) acc[event.dateKey] = [];
-                acc[event.dateKey].push(event);
+                for (let day = dayjs(event.dateKey); !day.isAfter(dayjs(event.endKey), 'day'); day = day.add(1, 'day')) {
+                    const key = day.format('YYYY-MM-DD');
+                    if (!acc[key]) acc[key] = [];
+                    acc[key].push(event);
+                }
                 return acc;
             }, {});
         },
@@ -146,9 +162,9 @@ export function createCalendarApp() {
 
         changeMonth(step) {
             const next = this.viewDate.add(step, 'month').startOf('month');
-            const first = this.rawEvents.find((e) => dayjs(e.dateKey).isSame(next, 'month'));
+            const first = Object.keys(this.eventsByDate).sort().find((date) => dayjs(date).isSame(next, 'month'));
             this.viewDate = next;
-            this.selectedDate = first?.dateKey ?? next.format('YYYY-MM-DD');
+            this.selectedDate = first ?? next.format('YYYY-MM-DD');
             this.activeEventIndex = 0;
         },
 

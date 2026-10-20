@@ -47,6 +47,7 @@ return [
     'show_slide' => 'Show slide',
     'show_item' => 'Show item',
     'show_event' => 'Show event',
+    'events_this_month' => 'Events this month',
     'slide_position' => 'Slide :current of :total',
 
     // Footer

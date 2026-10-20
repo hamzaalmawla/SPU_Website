@@ -110,6 +110,22 @@ test('calendar selects the current day on init and stops autoplay', () => {
     assert.equal(calendar.carouselInterval, null);
 });
 
+test('calendar marks every day of an event that spans several days', () => {
+    installReducedMotionBrowser();
+    const calendar = createCalendarApp();
+    calendar.$el = root({
+        events: JSON.stringify([
+            { id: 1, title: 'Book fair', startsAt: '2026-02-05', endsAt: '2026-02-16' },
+        ]),
+    });
+
+    calendar.init();
+    calendar.selectDate('2026-02-10');
+
+    assert.equal(calendar.selectedEvent.title, 'Book fair');
+    assert.equal(calendar.calendarDays.filter((day) => day.hasEvent).length, 12);
+});
+
 test('calendar stays on today when today has no events', () => {
     installReducedMotionBrowser();
     const calendar = createCalendarApp();

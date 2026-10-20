@@ -133,10 +133,14 @@ final class NewsService implements NewsServiceInterface
 
     public function getNewsEventCalendar(string $locale, ?string $month = null): array
     {
-        $events = $this->listNewsEvents($locale);
+        $upcoming = $this->listNewsEvents($locale);
+        // Past events stay on the calendar, as they did on the old site.
+        $events = $upcoming->concat($this->listNewsEvents($locale, true))
+            ->sortBy(fn (NewsEventDTO $event): string => $event->startsAt)
+            ->values();
         $selectedMonth = is_string($month) && preg_match('/^\d{4}-\d{2}$/', $month) === 1
             ? $month
-            : substr($events->first()?->startsAt ?? now()->format('Y-m'), 0, 7);
+            : substr($upcoming->first()?->startsAt ?? now()->format('Y-m'), 0, 7);
 
         $monthDate = CarbonImmutable::createFromFormat('Y-m-d', $selectedMonth.'-01')->startOfMonth();
         $gridStart = $monthDate->startOfWeek(CarbonImmutable::SUNDAY);
@@ -1047,6 +1051,7 @@ final class NewsService implements NewsServiceInterface
         ));
         $defaults['upcoming'] = $this->normalizeEventRecords($content['upcoming'] ?? [], false);
         $defaults['past'] = $this->normalizeEventRecords($content['past'] ?? [], true);
+        [$defaults['upcoming'], $defaults['past']] = $this->moveFinishedEventsToPast($defaults['upcoming'], $defaults['past']);
         $defaults['upcoming'] = array_map(fn (array $event): array => $this->normalizeEventImage($event), $defaults['upcoming']);
         $defaults['past'] = array_map(fn (array $event): array => $this->normalizeEventImage($event), $defaults['past']);
 
@@ -1079,7 +1084,8 @@ final class NewsService implements NewsServiceInterface
 
             $seen[$id] = true;
             $formId = is_string($record['formId'] ?? null) && in_array($record['formId'], $allowedForms, true) ? $record['formId'] : null;
-            $capacity = is_numeric($record['capacity'] ?? null) ? max(0, (int) $record['capacity']) : null;
+            // The editor saves a blank capacity as 0, which means "no limit", not "full".
+            $capacity = is_numeric($record['capacity'] ?? null) && (int) $record['capacity'] > 0 ? (int) $record['capacity'] : null;
             $registered = is_numeric($record['registered'] ?? null) ? max(0, (int) $record['registered']) : 0;
 
             $normalized[] = array_merge($record, [
@@ -1093,6 +1099,44 @@ final class NewsService implements NewsServiceInterface
         }
 
         return $normalized;
+    }
+
+    /**
+     * Editors list an event under "upcoming" and rarely come back to move it,
+     * so an event whose end (or, without one, its start day) has passed is
+     * shown with the past events and stops taking registrations.
+     *
+     * @param  array<int, array<string, mixed>>  $upcoming
+     * @param  array<int, array<string, mixed>>  $past
+     * @return array{0: array<int, array<string, mixed>>, 1: array<int, array<string, mixed>>}
+     */
+    private function moveFinishedEventsToPast(array $upcoming, array $past): array
+    {
+        $now = CarbonImmutable::now();
+        $pastIds = array_flip(array_map(static fn (array $event): string => (string) $event['id'], $past));
+        $stillUpcoming = [];
+        $finished = [];
+
+        foreach ($upcoming as $event) {
+            if (! $this->eventEndsAt($event)->lessThan($now)) {
+                $stillUpcoming[] = $event;
+            } elseif (! isset($pastIds[(string) $event['id']])) {
+                $finished[] = array_merge($event, ['formId' => null]);
+            }
+        }
+
+        return [$stillUpcoming, array_merge($finished, $past)];
+    }
+
+    /** @param array<string, mixed> $event */
+    private function eventEndsAt(array $event): CarbonImmutable
+    {
+        $timezone = (string) config('app.admin_timezone', 'Asia/Damascus');
+        $endsAt = is_string($event['endsAt'] ?? null) && strtotime($event['endsAt']) !== false ? trim($event['endsAt']) : (string) $event['startsAt'];
+        $moment = CarbonImmutable::parse($endsAt, $timezone);
+
+        // A bare date means the whole day.
+        return preg_match('/^\d{4}-\d{2}-\d{2}$/', $endsAt) === 1 ? $moment->endOfDay() : $moment;
     }
 
     /** @param array<string, mixed> $event */

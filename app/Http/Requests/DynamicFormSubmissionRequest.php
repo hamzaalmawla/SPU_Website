@@ -32,6 +32,12 @@ final class DynamicFormSubmissionRequest extends FormRequest
             if (in_array($field['type'] ?? null, ['tel', 'number', 'date'], true) && is_string($value)) {
                 $normalized[$name] = trim(strtr($value, self::EASTERN_DIGITS));
             }
+
+            // The page sends a tick box as the text "true" or "false", which the
+            // boolean rule refuses: an unticked optional box failed the form.
+            if (($field['type'] ?? null) === 'checkbox' && is_string($value)) {
+                $normalized[$name] = in_array(strtolower(trim($value)), ['true', '1', 'on', 'yes'], true);
+            }
         }
 
         $this->merge($normalized);

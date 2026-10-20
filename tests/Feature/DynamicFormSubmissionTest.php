@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Form\FormDefinitionServiceInterface;
 use App\Contracts\News\NewsServiceInterface;
 use App\Contracts\Page\CampusLifePageServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
+use App\Enums\FormSubmissionInbox;
 use App\Mail\EventRegistrationReceived;
 use App\Models\Form\DynamicFormSubmission;
 use App\Models\User\User;
@@ -169,6 +171,84 @@ final class DynamicFormSubmissionTest extends TestCase
         $this->postJson('/en/forms/conference-registration/submissions', $conference)
             ->assertUnprocessable()
             ->assertJsonValidationErrors('event_id');
+    }
+
+    public function test_an_unticked_optional_tick_box_does_not_fail_the_form(): void
+    {
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $this->actingAs($author, 'web');
+        app(FormDefinitionServiceInterface::class)->save(null, [
+            'key' => 'ai-workshop',
+            'nameAr' => 'ورشة',
+            'nameEn' => 'Workshop',
+            'inbox' => FormSubmissionInbox::EVENT_REGISTRATIONS->value,
+            'multiStep' => false,
+            'steps' => [['fields' => [
+                ['name' => 'fullName', 'type' => 'text', 'labelAr' => 'الاسم', 'labelEn' => 'Name', 'required' => true],
+                ['name' => 'email', 'type' => 'email', 'labelAr' => 'البريد', 'labelEn' => 'Email', 'required' => true],
+                ['name' => 'agree', 'type' => 'checkbox', 'labelAr' => 'أوافق', 'labelEn' => 'I agree', 'required' => true],
+                ['name' => 'newsletter', 'type' => 'checkbox', 'labelAr' => 'النشرة', 'labelEn' => 'Newsletter', 'required' => false],
+            ]]],
+        ], (int) $author->getKey());
+        auth()->logout();
+
+        // What the page sends: tick boxes as the text "true" / "false".
+        $this->post('/ar/forms/ai-workshop/submissions', [
+            'fullName' => 'متقدم',
+            'email' => 'applicant@example.com',
+            'agree' => 'true',
+            'newsletter' => 'false',
+        ], ['Accept' => 'application/json'])->assertCreated();
+
+        $submission = DynamicFormSubmission::query()->where('form_id', 'ai-workshop')->firstOrFail();
+        $this->assertTrue($submission->payload_json['agree']);
+        $this->assertFalse($submission->payload_json['newsletter']);
+
+        $this->post('/ar/forms/ai-workshop/submissions', [
+            'fullName' => 'متقدم',
+            'email' => 'other@example.com',
+            'agree' => 'false',
+            'newsletter' => 'false',
+        ], ['Accept' => 'application/json'])->assertUnprocessable()->assertJsonValidationErrors('agree');
+    }
+
+    public function test_an_upcoming_event_that_has_ended_moves_to_past_and_closes_registration(): void
+    {
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $news = app(NewsServiceInterface::class);
+        $events = $news->getEditablePayload('news.events');
+
+        foreach (['ar', 'en'] as $locale) {
+            $events['translations'][$locale]['upcoming'][0]['startsAt'] = now()->subDays(2)->toIso8601String();
+            $events['translations'][$locale]['upcoming'][0]['endsAt'] = now()->subDay()->toIso8601String();
+            // A bare date lasts the whole day.
+            $events['translations'][$locale]['upcoming'][1]['startsAt'] = now('Asia/Damascus')->toDateString();
+            $events['translations'][$locale]['upcoming'][1]['endsAt'] = null;
+        }
+
+        $workflow->saveDraft('news.events', $events, (int) $author->getKey());
+        $this->assertTrue($workflow->publish('news.events', (int) $author->getKey()));
+
+        $this->assertNotContains('evt-001', $news->listNewsEvents('en')->pluck('id')->all());
+        $this->assertContains('evt-002', $news->listNewsEvents('en')->pluck('id')->all());
+        $past = $news->listNewsEvents('en', true)->firstWhere('id', 'evt-001');
+        $this->assertNotNull($past);
+        $this->assertFalse($past->isRegisterable);
+        $this->assertNull($past->registrationUrl);
+
+        $this->postJson('/en/forms/conference-registration/submissions', [
+            'fullName' => 'Late Applicant',
+            'email' => 'late@example.com',
+            'affiliation' => 'SPU',
+            'role' => 'attendee',
+            'event_source' => 'news-events',
+            'event_id' => 'evt-001',
+        ])->assertUnprocessable()->assertJsonValidationErrors('event_id');
+
+        // The calendar keeps past events.
+        $calendar = $news->getNewsEventCalendar('en', now()->subDays(2)->format('Y-m'));
+        $this->assertContains('evt-001', $calendar['events']->pluck('id')->all());
     }
 
     public function test_research_conference_and_symposium_registrations_store_trusted_localized_context(): void

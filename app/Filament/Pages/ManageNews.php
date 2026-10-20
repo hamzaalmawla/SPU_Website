@@ -653,7 +653,7 @@ class ManageNews extends Page implements HasForms
             array_splice($fields, 1, 0, [
                 Section::make(__('admin.editorial_workspace.events.sections.registration'))->schema([
                     FormPicker::make()->label(__('admin.editorial_workspace.fields.registration_form'))->required(),
-                    TextInput::make('capacity')->label(__('admin.editorial_workspace.fields.capacity'))->numeric()->minValue(0)->required(),
+                    TextInput::make('capacity')->label(__('admin.editorial_workspace.fields.capacity'))->helperText(__('admin.editorial_workspace.fields.capacity_help'))->numeric()->minValue(0)->required(),
                     Hidden::make('registered')->default(0),
                     Toggle::make('featured')->label(__('admin.editorial_workspace.fields.featured')),
                 ])->columns(2),

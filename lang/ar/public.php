@@ -47,6 +47,7 @@ return [
     'show_slide' => 'عرض الشريحة',
     'show_item' => 'عرض العنصر',
     'show_event' => 'عرض الفعالية',
+    'events_this_month' => 'فعاليات الشهر',
     'slide_position' => 'الشريحة :current من :total',
 
     // Footer
