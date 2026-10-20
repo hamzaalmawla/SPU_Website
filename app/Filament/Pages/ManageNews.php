@@ -298,7 +298,7 @@ class ManageNews extends Page implements HasForms
 
         try {
             $targetKey = $this->currentTargetKey();
-            $draft = $this->cmsWorkflowService->saveDraft($targetKey, $this->payloadFromForm($this->form->getState()), (int) $user->id, $this->draftVersion);
+            $draft = $this->cmsWorkflowService->saveDraft($targetKey, $this->payloadFromForm($this->validatedFormState()), (int) $user->id, $this->draftVersion);
             $this->draftVersion = $draft->version;
             $this->cmsWorkflowService->publish($targetKey, (int) $user->id);
 
@@ -318,7 +318,7 @@ class ManageNews extends Page implements HasForms
 
         try {
             $targetKey = $this->currentTargetKey();
-            $draft = $this->cmsWorkflowService->saveDraft($targetKey, $this->payloadFromForm($this->form->getState()), (int) $user->id, $this->draftVersion);
+            $draft = $this->cmsWorkflowService->saveDraft($targetKey, $this->payloadFromForm($this->validatedFormState()), (int) $user->id, $this->draftVersion);
             $this->draftVersion = $draft->version;
             $this->cmsWorkflowService->schedule($targetKey, new \DateTimeImmutable($publishAt), (int) $user->id);
 
@@ -426,6 +426,18 @@ class ManageNews extends Page implements HasForms
         }
 
         throw new \InvalidArgumentException(__('admin_pages.news.this_news_target_form_will_be_structured_next_select_the_new'));
+    }
+
+    /**
+     * The validated form, with the page's target. The Events page hides the target
+     * selector, and a hidden field is left out of the validated state, so its
+     * publish could not tell which page it was publishing.
+     *
+     * @return array<string, mixed>
+     */
+    private function validatedFormState(): array
+    {
+        return [...$this->form->getState(), 'target_key' => $this->currentTargetKey()];
     }
 
     /** @return array<string, mixed> */
