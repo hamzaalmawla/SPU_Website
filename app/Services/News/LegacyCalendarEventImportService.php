@@ -41,6 +41,7 @@ final class LegacyCalendarEventImportService implements LegacyCalendarEventImpor
         $added = [];
         $present = [];
         $completed = [];
+        $samples = $this->untouchedSampleIds($payload);
 
         foreach (['ar', 'en'] as $locale) {
             $content = is_array($payload['translations'][$locale] ?? null) ? $payload['translations'][$locale] : [];
@@ -53,8 +54,10 @@ final class LegacyCalendarEventImportService implements LegacyCalendarEventImpor
 
             $content['categories'] = $this->withCategories($content['categories'] ?? [], $events, $locale);
             $categoryLabels = array_column($content['categories'], 'label', 'id');
-            $upcoming = is_array($content['upcoming'] ?? null) ? array_values($content['upcoming']) : [];
-            $past = is_array($content['past'] ?? null) ? array_values($content['past']) : [];
+            // The sample events the editor started from are not real events.
+            $notSample = static fn (mixed $event): bool => ! is_array($event) || ! in_array((string) ($event['id'] ?? ''), $samples, true);
+            $upcoming = array_values(array_filter(is_array($content['upcoming'] ?? null) ? $content['upcoming'] : [], $notSample));
+            $past = array_values(array_filter(is_array($content['past'] ?? null) ? $content['past'] : [], $notSample));
 
             foreach ($events as $event) {
                 $id = trim((string) ($event['id'] ?? ''));
@@ -126,7 +129,7 @@ final class LegacyCalendarEventImportService implements LegacyCalendarEventImpor
         $written = false;
         $published = false;
 
-        if ($write && ($added !== [] || $completed !== [])) {
+        if ($write && ($added !== [] || $completed !== [] || $samples !== [])) {
             $this->cmsWorkflowService->saveDraft(self::TARGET, $payload, $userId, $expectedVersion);
             $written = true;
             // An editor's unfinished draft is not published along with the import.
@@ -137,10 +140,79 @@ final class LegacyCalendarEventImportService implements LegacyCalendarEventImpor
             added: array_values($added),
             present: array_values(array_diff($present, $added)),
             completed: array_values(array_diff($completed, $added)),
+            removedSamples: $samples,
+            incomplete: $this->incompleteEvents($payload),
             written: $written,
             published: $published,
             hadPendingDraft: is_array($draftPayload),
         );
+    }
+
+    /**
+     * Sample events (resources/data/news-events-content.json) still carrying
+     * their sample title in both languages. One an editor rewrote is kept.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return list<string>
+     */
+    private function untouchedSampleIds(array $payload): array
+    {
+        $path = resource_path('data/news-events-content.json');
+        $sample = is_file($path) ? json_decode((string) file_get_contents($path), true) : null;
+        $titles = [];
+        $matches = ['ar' => [], 'en' => []];
+
+        foreach (['ar', 'en'] as $locale) {
+            foreach (['upcoming', 'past'] as $list) {
+                foreach (is_array($sample['translations'][$locale][$list] ?? null) ? $sample['translations'][$locale][$list] : [] as $event) {
+                    $titles[$locale][(string) ($event['id'] ?? '')] = trim((string) ($event['title'] ?? ''));
+                }
+
+                foreach (is_array($payload['translations'][$locale][$list] ?? null) ? $payload['translations'][$locale][$list] : [] as $event) {
+                    $id = is_array($event) ? (string) ($event['id'] ?? '') : '';
+                    $matches[$locale][$id] = isset($titles[$locale][$id]) && $titles[$locale][$id] === trim((string) ($event['title'] ?? ''));
+                }
+            }
+        }
+
+        return array_values(array_keys(array_filter(
+            $matches['ar'] ?? [],
+            static fn (bool $unchanged, string $id): bool => $unchanged && ($matches['en'][$id] ?? false),
+            ARRAY_FILTER_USE_BOTH,
+        )));
+    }
+
+    /**
+     * Events the events editor will refuse to publish, with the fields they lack.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return list<string>
+     */
+    private function incompleteEvents(array $payload): array
+    {
+        $report = [];
+
+        foreach (['ar', 'en'] as $locale) {
+            foreach (['upcoming', 'past'] as $list) {
+                foreach (is_array($payload['translations'][$locale][$list] ?? null) ? $payload['translations'][$locale][$list] : [] as $event) {
+                    if (! is_array($event)) {
+                        continue;
+                    }
+
+                    $missing = array_keys(array_filter(
+                        ['title' => 0, 'summary' => 0, 'startsAt' => 0, 'dateLabel' => 0, 'timeLabel' => 0, 'location' => 0, 'categoryId' => 0, 'image' => 0],
+                        static fn (int $unused, string $field): bool => trim((string) ($event[$field] ?? '')) === '',
+                        ARRAY_FILTER_USE_BOTH,
+                    ));
+
+                    if ($missing !== []) {
+                        $report[] = $list.' '.(string) ($event['id'] ?? '?').' "'.(string) ($event['title'] ?? '').'" ('.$locale.'): '.implode(', ', $missing);
+                    }
+                }
+            }
+        }
+
+        return $report;
     }
 
     /**

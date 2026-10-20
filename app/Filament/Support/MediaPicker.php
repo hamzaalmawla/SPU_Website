@@ -112,6 +112,8 @@ final class MediaPicker
                 Hidden::make($mediaIdPath),
                 Hidden::make($statePath)
                     ->required($required)
+                    // Named in the error, so an editor knows which picture is missing.
+                    ->validationAttribute($label)
                     ->dehydrated(true),
                 Placeholder::make($statePath.'_selection')
                     ->key(fn (Placeholder $component): string => self::componentKey($component->getStatePath(), $label, $type))
@@ -134,6 +136,8 @@ final class MediaPicker
                 Hidden::make($mediaIdPath),
                 Hidden::make($statePath)
                     ->required($required)
+                    // Named in the error, so an editor knows which picture is missing.
+                    ->validationAttribute($label)
                     ->dehydrated(true),
                 Placeholder::make($statePath.'_selection')
                     ->key(fn (Placeholder $component): string => self::componentKey($component->getStatePath(), $label, $type))
