@@ -228,6 +228,71 @@ if [[ "${SPU_DEPLOY_ENV:-staging}" == "production" || "${APP_ENV_VALUE}" == "pro
     log "Verified pre-deployment database backup: ${BACKUP_REFERENCE}"
 fi
 
+# ── Data-migration gate ──────────────────────────────────────────────────────
+# A normal production release may add or alter schema, but must not silently
+# rewrite editorial rows. A release whose pending migrations INSERT, UPDATE or
+# DELETE rows needs an approval that is never stored in git, given one of two
+# ways:
+#
+#   - SPU_ALLOW_DATA_MIGRATIONS=1 in the deploy process environment (only for an
+#     operator with a shell; cPanel's deploy cannot pass one), or
+#   - storage/app/private/legacy-imports/data-migrations.approved, listing every
+#     pending migration by name, one per line:
+#         migration=2026_10_19_000004_create_form_definitions_table
+#     The list must match the pending migrations exactly, so an approval cannot
+#     carry over to migrations nobody reviewed. It is renamed to
+#     .consumed-<time> after the migrations run.
+#
+# The gate runs twice. First here, before the source sync, with the release's
+# migrations read from ${SOURCE} by the code already on the server, so a
+# refused release leaves the site exactly as it was. (Before 2026-10-20 it only
+# ran after the sync, and a refusal left new code running on the old schema.)
+# Then again after the sync, against the release's own code.
+DATA_MIGRATION_APPROVAL="${APP}/storage/app/private/legacy-imports/data-migrations.approved"
+DATA_MIGRATIONS_APPROVED_BY_FILE=0
+
+data_migration_gate() {
+    local preview="$1" stage="$2"
+    [[ "${SPU_DEPLOY_ENV:-staging}" == "production" || "${APP_ENV_VALUE}" == "production" ]] || return 0
+    printf '%s\n' "${preview}" | grep -Eiq '(^|[[:space:]])(update|delete[[:space:]]+from|insert[[:space:]]+into)[[:space:]]' || return 0
+
+    if [[ "${SPU_ALLOW_DATA_MIGRATIONS:-0}" == "1" ]]; then
+        printf '  Data migrations allowed by SPU_ALLOW_DATA_MIGRATIONS (%s)\n' "${stage}"
+        return 0
+    fi
+
+    local pending approved
+    pending="$(printf '%s\n' "${preview}" | grep -Eo '^[[:space:]]*[0-9]{4}_[0-9]{2}_[0-9]{2}_[0-9]{6}_[A-Za-z0-9_]+' | sed 's/[[:space:]]//g' | sort -u || true)"
+
+    if [[ -f "${DATA_MIGRATION_APPROVAL}" ]]; then
+        approved="$(grep -E '^[[:space:]]*migration=' "${DATA_MIGRATION_APPROVAL}" | cut -d= -f2- | sed 's/[[:space:]]//g' | sort -u || true)"
+        if [[ -n "${pending}" && "${pending}" == "${approved}" ]]; then
+            printf '  Data migrations approved by %s (%s):\n' "$(basename "${DATA_MIGRATION_APPROVAL}")" "${stage}"
+            printf '    %s\n' ${pending}
+            DATA_MIGRATIONS_APPROVED_BY_FILE=1
+            return 0
+        fi
+        printf '  Pending migrations:\n' >&2
+        printf '    %s\n' ${pending} >&2
+        printf '  Approved in %s:\n' "$(basename "${DATA_MIGRATION_APPROVAL}")" >&2
+        printf '    %s\n' ${approved} >&2
+        fail "The data-migration approval does not match the pending migrations exactly (${stage}). Nothing was migrated."
+    fi
+
+    printf '  Pending migrations:\n' >&2
+    printf '    %s\n' ${pending} >&2
+    fail "Pending migrations contain row INSERT/UPDATE/DELETE statements (${stage}). Production content was not changed. Review the SQL above and approve exactly these migrations in ${DATA_MIGRATION_APPROVAL} (one 'migration=<name>' line each)."
+}
+
+if [[ -f "${APP}/vendor/autoload.php" && -d "${SOURCE}/database/migrations" ]]; then
+    log "Checking the release's migrations before syncing"
+    if ! PRE_SYNC_PREVIEW="$(cd "${APP}" && "${PHP}" artisan migrate --pretend --force --no-interaction --path="${SOURCE}/database/migrations" --realpath 2>&1)"; then
+        printf '%s\n' "${PRE_SYNC_PREVIEW}" >&2
+        fail "Could not preview the release's migrations with the code on the server. Nothing was synced and the site is untouched."
+    fi
+    data_migration_gate "${PRE_SYNC_PREVIEW}" "before sync"
+fi
+
 # ── Sync source ──────────────────────────────────────────────────────────────
 # Only the trees that are code. .env, storage/ and public/build/ are state and
 # are never touched. bootstrap/cache is excluded deliberately: shipping a
@@ -423,18 +488,17 @@ if ! MIGRATION_PREVIEW="$(cd "${APP}" && "${PHP}" artisan migrate --pretend --fo
 fi
 printf '%s\n' "${MIGRATION_PREVIEW}"
 
-# A normal production release may add or alter schema, but must not silently
-# rewrite editorial rows. Data migrations require a separate reviewed release
-# and an explicit server-side approval flag that is never stored in git.
-if [[ "${SPU_DEPLOY_ENV:-staging}" == "production" || "${APP_ENV_VALUE}" == "production" ]]; then
-    if printf '%s\n' "${MIGRATION_PREVIEW}" | grep -Eiq '(^|[[:space:]])(update|delete[[:space:]]+from|insert[[:space:]]+into)[[:space:]]'; then
-        [[ "${SPU_ALLOW_DATA_MIGRATIONS:-0}" == "1" ]] || fail \
-            "Pending migrations contain row INSERT/UPDATE/DELETE statements. Production content was not changed. Review the SQL and set SPU_ALLOW_DATA_MIGRATIONS=1 only for an approved data migration release."
-    fi
-fi
+# Same gate as before the sync (see "Data-migration gate"), now against the
+# release's own code.
+data_migration_gate "${MIGRATION_PREVIEW}" "after sync"
 
 log "Running migrations"
 (cd "${APP}" && "${PHP}" artisan migrate --force --no-interaction)
+
+if [[ "${DATA_MIGRATIONS_APPROVED_BY_FILE}" == "1" && -f "${DATA_MIGRATION_APPROVAL}" ]]; then
+    mv "${DATA_MIGRATION_APPROVAL}" "${DATA_MIGRATION_APPROVAL}.consumed-$(date +%Y%m%d%H%M%S)"
+    printf '  Data-migration approval consumed\n'
+fi
 
 # ── Approved legacy faculty-project import ───────────────────────────────────
 # Runs an editorially approved one-off import that otherwise needs a shell, and

@@ -116,10 +116,24 @@ existing media metadata. Normal production deployment never runs
 
 Production deployment also inspects the SQL preview and stops before migration
 when any pending migration contains row `INSERT`, `UPDATE`, or `DELETE`
-statements. The failure leaves production content unchanged. A separately
-reviewed data-migration release requires the server-only
-`SPU_ALLOW_DATA_MIGRATIONS=1` approval flag; do not set it for ordinary code or
-schema releases.
+statements. The check runs before the source sync (with the release's
+migrations previewed by the code already on the server) and again after it, so
+a refused release leaves the site as it was. A separately reviewed
+data-migration release is approved by placing
+`storage/app/private/legacy-imports/data-migrations.approved` on the server
+(cPanel File Manager or `Fileman save_file_content`), listing every pending
+migration, one per line:
+
+```
+migration=2026_10_19_000004_create_form_definitions_table
+migration=2026_10_20_000001_replace_user_faculty_scope_with_access_scopes
+```
+
+The list must match the pending migrations exactly; the deploy log prints them
+when it refuses. The file is renamed to `.consumed-<time>` after the migrations
+run, so it never approves a later release. `SPU_ALLOW_DATA_MIGRATIONS=1` in the
+process environment still works for an operator with a shell; cPanel's deploy
+cannot pass it, and the script does not read it from `.env`.
 
 ---
 
