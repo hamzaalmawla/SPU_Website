@@ -192,3 +192,28 @@ test('research slider advances by the rendered card width and gap', () => {
 
     assert.deepEqual(scrollCalls, [{ left: 294, behavior: 'smooth' }]);
 });
+
+test('research slider measures the card selector it is given', () => {
+    globalThis.window = {
+        getComputedStyle: () => ({ direction: 'ltr', columnGap: '32px', gap: '32px' }),
+        matchMedia: () => ({ matches: false }),
+    };
+
+    const scrollCalls = [];
+    const selectors = [];
+    const slider = createResearchSlider('.news-slide');
+    slider.$refs = {
+        researchTrack: {
+            querySelector: (selector) => {
+                selectors.push(selector);
+                return { getBoundingClientRect: () => ({ width: 320 }) };
+            },
+            scrollBy: (options) => scrollCalls.push(options),
+        },
+    };
+
+    slider.slide('next');
+
+    assert.deepEqual(selectors, ['.news-slide']);
+    assert.deepEqual(scrollCalls, [{ left: 352, behavior: 'smooth' }]);
+});

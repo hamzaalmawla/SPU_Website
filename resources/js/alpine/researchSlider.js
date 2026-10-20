@@ -1,12 +1,12 @@
 import { horizontalKeyAction, scrollByDirection } from '../utils/motionDirection.js';
 
-export function createResearchSlider() {
+export function createResearchSlider(cardSelector = '.research-card') {
     return {
         slide(action) {
             const track = this.$refs.researchTrack;
             if (!track) return;
 
-            const firstCard = track.querySelector('.research-card');
+            const firstCard = track.querySelector(cardSelector);
             const cardWidth = firstCard?.getBoundingClientRect().width ?? 320;
             const styles = typeof window !== 'undefined' && typeof window.getComputedStyle === 'function'
                 ? window.getComputedStyle(track)
