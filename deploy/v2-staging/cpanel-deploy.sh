@@ -1430,6 +1430,29 @@ log "People that look like duplicates"
 (cd "${APP}" && "${PHP}" -d memory_limit=512M artisan people:duplicates --no-ansi) || \
     printf '   (people:duplicates unavailable in this release)\n'
 
+# A faculty's members (listed, hidden, deleted) and the admin activity on them,
+# for investigating a members page that lost people. Read-only. Runs once when a
+# human places an approval file that is not in git:
+#
+#     storage/app/private/legacy-imports/faculty-members-activity.approved
+#         faculty=artificial-intelligence   (one line per faculty)
+#         since=2026-10-20                  (optional, default today)
+#
+# It disarms itself after one run. Never fatal.
+MEMBERS_ACTIVITY_APPROVAL="${IMPORT_DIR}/faculty-members-activity.approved"
+
+if [[ -f "${MEMBERS_ACTIVITY_APPROVAL}" ]]; then
+    log "Faculty members activity"
+    ACTIVITY_SINCE="$(grep -E '^[[:space:]]*since=' "${MEMBERS_ACTIVITY_APPROVAL}" | tail -n 1 | cut -d= -f2- | tr -d '\r[:space:]' || true)"
+    [[ "${ACTIVITY_SINCE}" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || ACTIVITY_SINCE="$(date +%Y-%m-%d)"
+    while IFS= read -r ACTIVITY_FACULTY; do
+        [[ "${ACTIVITY_FACULTY}" =~ ^[a-z-]+$ ]] || continue
+        (cd "${APP}" && "${PHP}" -d memory_limit=512M artisan faculty-members:activity "${ACTIVITY_FACULTY}" --since="${ACTIVITY_SINCE}" --no-ansi) || \
+            printf '   (faculty-members:activity failed for %s)\n' "${ACTIVITY_FACULTY}"
+    done < <(grep -E '^[[:space:]]*faculty=' "${MEMBERS_ACTIVITY_APPROVAL}" | cut -d= -f2- | tr -d '\r[:space:]' || true)
+    mv "${MEMBERS_ACTIVITY_APPROVAL}" "${MEMBERS_ACTIVITY_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
 # The tarball-based deployment extracts into .release/ inside the repository,
 # which leaves the working tree dirty - and cPanel refuses to deploy a repository
 # with uncommitted changes, so the NEXT deploy is blocked by the last one. Clean

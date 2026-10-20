@@ -17,6 +17,7 @@ use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Cms\CmsPageTextImportServiceInterface;
 use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Content\FacultyMemberActivityReportServiceInterface;
 use App\Contracts\Content\PeopleDuplicateReportServiceInterface;
 use App\Contracts\Content\PeopleMergeServiceInterface;
 use App\Contracts\Content\PersonServiceInterface;
@@ -206,6 +207,7 @@ use App\Services\Cms\AboutEntityCmsService;
 use App\Services\Cms\CmsPageTextImportService;
 use App\Services\Cms\CmsTargetRegistry;
 use App\Services\Cms\CmsWorkflowService;
+use App\Services\Content\FacultyMemberActivityReportService;
 use App\Services\Content\PeopleDuplicateReportService;
 use App\Services\Content\PeopleMergeService;
 use App\Services\Content\PersonService;
@@ -648,6 +650,7 @@ class AppServiceProvider extends ServiceProvider
             ErrorPageRendererInterface::class => ErrorPageRenderer::class,
             AlumniDirectoryServiceInterface::class => AlumniDirectoryService::class,
             StudentListImportServiceInterface::class => StudentListImportService::class,
+            FacultyMemberActivityReportServiceInterface::class => FacultyMemberActivityReportService::class,
             AboutEntityCmsServiceInterface::class => AboutEntityCmsService::class,
             AdmissionsPageServiceInterface::class => AdmissionsPageService::class,
             AdmissionsTuitionFeeImportServiceInterface::class => AdmissionsTuitionFeeImportService::class,
