@@ -1029,6 +1029,44 @@ if [[ -f "${ADMISSIONS_FEES_APPROVAL}" ]]; then
     mv "${ADMISSIONS_FEES_APPROVAL}" "${ADMISSIONS_FEES_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
 fi
 
+# ── Approved old calendar events ────────────────────────────────────────────
+# Adds the 2025-2026 events of the old homepage calendar to the Events page as
+# past events (database/seeders/Data/legacy-calendar-events.json), so the
+# homepage calendar shows them. Events already there are left alone. Inert
+# unless a human places an approval file with an actor= line (a user id or
+# auto):
+#
+#     storage/app/private/legacy-imports/calendar-events.approved
+#
+# It disarms itself after one run.
+CALENDAR_EVENTS_APPROVAL="${IMPORT_DIR}/calendar-events.approved"
+
+if [[ -f "${CALENDAR_EVENTS_APPROVAL}" ]]; then
+    log "Old calendar events"
+
+    CE_ACTOR="$(grep -E '^actor=' "${CALENDAR_EVENTS_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r' | tr -d ' ')"
+    [[ -n "${CE_ACTOR}" ]] || fail "The calendar events approval file has no actor= line."
+
+    if [[ "${CE_ACTOR}" == "auto" ]]; then
+        CE_ACTOR="$(cd "${APP}" && "${PHP}" artisan tinker --execute='
+            echo (string) (\DB::table("users")
+                ->where("role_slug", "super_admin")
+                ->where(function ($q) { $q->whereNull("locked_at")->orWhere("locked_at", ""); })
+                ->orderBy("id")
+                ->value("id") ?? "");
+        ' 2>/dev/null | grep -Eo '^[0-9]+$' | head -n 1 || true)"
+        [[ -n "${CE_ACTOR}" ]] || fail "actor=auto found no unlocked super_admin to publish the events as."
+    fi
+    [[ "${CE_ACTOR}" =~ ^[0-9]+$ ]] || fail "The calendar events actor must be a numeric user id or 'auto'."
+
+    (cd "${APP}" && "${PHP}" artisan news:import-legacy-calendar-events --user="${CE_ACTOR}" --no-ansi) \
+        || fail "The calendar events dry run failed. Nothing was written."
+    (cd "${APP}" && "${PHP}" artisan news:import-legacy-calendar-events --user="${CE_ACTOR}" --write --no-ansi) \
+        || fail "The calendar events could not be saved."
+
+    mv "${CALENDAR_EVENTS_APPROVAL}" "${CALENDAR_EVENTS_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
 # ── Faculty-project survey (read-only) ───────────────────────────────────────
 # Answers one question and changes nothing: how many importable projects does
 # the legacy database hold RIGHT NOW, broken down by faculty.

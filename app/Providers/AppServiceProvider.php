@@ -110,6 +110,7 @@ use App\Contracts\Media\MediaServiceInterface;
 use App\Contracts\Navigation\MenuServiceInterface;
 use App\Contracts\Navigation\NavigationServiceInterface;
 use App\Contracts\Navigation\PageLinkOptionServiceInterface;
+use App\Contracts\News\LegacyCalendarEventImportServiceInterface;
 use App\Contracts\News\NewsAdminWorkflowServiceInterface;
 use App\Contracts\News\NewsArticleCmsServiceInterface;
 use App\Contracts\News\NewsServiceInterface;
@@ -303,6 +304,7 @@ use App\Services\Media\MediaService;
 use App\Services\Navigation\MenuService;
 use App\Services\Navigation\NavigationService;
 use App\Services\Navigation\PageLinkOptionService;
+use App\Services\News\LegacyCalendarEventImportService;
 use App\Services\News\NewsAdminWorkflowService;
 use App\Services\News\NewsArticleCmsService;
 use App\Services\News\NewsService;
@@ -675,6 +677,7 @@ class AppServiceProvider extends ServiceProvider
             EServicesPageServiceInterface::class => EServicesPageService::class,
             FacultyStudyPlanEditorServiceInterface::class => FacultyStudyPlanEditorService::class,
             FacultyStudyPlanImportServiceInterface::class => FacultyStudyPlanImportService::class,
+            LegacyCalendarEventImportServiceInterface::class => LegacyCalendarEventImportService::class,
             FacultyStructureImportServiceInterface::class => FacultyStructureImportService::class,
             FacultyStudyPlanBoardServiceInterface::class => FacultyStudyPlanBoardService::class,
             FacultyStudyPlanLinkServiceInterface::class => FacultyStudyPlanLinkService::class,
