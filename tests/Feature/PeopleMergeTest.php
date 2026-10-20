@@ -91,7 +91,10 @@ final class PeopleMergeTest extends TestCase
         $this->assertGreaterThanOrEqual(1, $result->membersLinked);
         $this->assertSame((int) $person->getKey(), (int) $member->refresh()->person_id);
         $this->assertTrue($person->appointments()->where('type', 'faculty_member')->where('faculty_id', $pharmacy->getKey())->exists());
-        $this->assertSame('Pharmacology.', $person->translations()->where('locale', 'en')->value('bio'));
+        // Nothing is copied; the leadership page shows the member's content.
+        $this->assertNull($person->translations()->where('locale', 'en')->value('bio'));
+        Cache::flush();
+        $this->get('/en/about/profile/hossam-shahrour-test')->assertOk()->assertSee('Pharmacology.')->assertSee('Dean');
 
         Cache::flush();
         $page = $this->get('/en/faculties/pharmacy/members')->assertOk()->getContent();

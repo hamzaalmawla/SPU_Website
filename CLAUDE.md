@@ -34,6 +34,10 @@ The imported `AGENTS.MD` is the authoritative project rulebook (scope, architect
 - Nothing a teacher sends changes a profile: it is a `staff_intake_requests` row until a reviewer approves it, and approval goes through the About-entity CMS draft/publish workflow. Every open, claim and submit is logged in `staff_intake_access_logs`. Admin access uses the `staff_intake_links.*` and `staff_intake_requests.*` permissions.
 - Name suggestions use `App\Support\PersonName::matchRank()`; keep `tests/Unit/PersonNameMatchingTest.php` green when touching name matching (the merge and research services share it).
 
+## Leadership profiles linked to faculty members
+- A faculty member linked to a leadership profile (`faculty_members.person_id`) is shown as that profile: the leadership address, name and role stay, and its page and cards show the member's photo, bio, title, specializations, education, links, CV and papers (`ProfilePageService::withLinkedFacultyMember`, `AboutPageService::personImage`). The member's own address 301s to it. Linking copies nothing onto the leadership profile.
+- Editors link or unlink on the faculty member editor ("Link to leadership profile", `PeopleMergeServiceInterface::linkFacultyMember`); `people:merge` links exact name matches. `people:duplicates` (in every deploy log) lists unlinked matches and the linked pairs.
+
 ## Graduates and top students import
 - Each semester faculties send council decisions (.docx) listing graduates and top students. Editors import them from the faculty's Alumni / Honor List admin page ("Import from decision"): upload, review, confirm, and the rows are live. Plan and as-built notes: `Docs/STUDENT_LIST_IMPORT_PLAN.md`.
 - `StudentListImportServiceInterface` does all reading and writing; the parsing is in `app/Support/StudentLists/`. Students are matched on university ID (`student_identifier`), so a re-import updates. Every import is a `student_list_imports` row that can be undone, newest first.

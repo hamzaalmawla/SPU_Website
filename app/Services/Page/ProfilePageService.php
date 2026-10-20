@@ -301,7 +301,7 @@ final class ProfilePageService implements ProfilePageServiceInterface
             }
         }
 
-        return new ProfilePageDTO(
+        $profile = new ProfilePageDTO(
             locale: $locale,
             direction: $locale === 'ar' ? 'rtl' : 'ltr',
             sourceType: 'person',
@@ -332,6 +332,69 @@ final class ProfilePageService implements ProfilePageServiceInterface
             seoDescription: $translation->bio ?? (string) $translation->name,
             seoImage: $this->resolvePersonImage($person),
             path: '/'.$locale.'/about/profile/'.$person->slug,
+        );
+
+        return $this->withLinkedFacultyMember($person, $profile, $locale);
+    }
+
+    /**
+     * A leadership profile linked to a faculty member (faculty_members.person_id)
+     * shows the faculty member's content: that is the record staff keep current,
+     * through the admin and the staff intake form. The leadership profile keeps
+     * its address and adds what only it has (its role, quote and council seats)
+     * and fills whatever the faculty member leaves empty.
+     */
+    private function withLinkedFacultyMember(Person $person, ProfilePageDTO $profile, string $locale): ProfilePageDTO
+    {
+        $member = $this->facultyMemberProfileQuery($locale)
+            ->where('person_id', $person->getKey())
+            ->orderByDesc('updated_at')
+            ->first();
+        $linked = $member instanceof FacultyMember ? $this->buildFacultyMemberProfileDto($member, $locale) : null;
+
+        if (! $linked instanceof ProfilePageDTO) {
+            return $profile;
+        }
+
+        $filled = static fn (mixed $value): bool => is_string($value) ? trim($value) !== '' : ($value !== null && $value !== []);
+        $pick = static fn (mixed $first, mixed $second): mixed => $filled($first) ? $first : $second;
+        $publications = collect([...$linked->publications, ...$profile->publications])
+            ->unique(fn (array $publication): int => (int) ($publication['id'] ?? 0))
+            ->sortByDesc(fn (array $publication): string => (string) ($publication['publishedAt'] ?? ''))
+            ->values()
+            ->all();
+        $bio = $pick($linked->bio, $profile->bio);
+
+        return new ProfilePageDTO(
+            locale: $profile->locale,
+            direction: $profile->direction,
+            sourceType: $profile->sourceType,
+            slug: $profile->slug,
+            // The leadership profile is the canonical identity; it keeps its name.
+            name: (string) $pick($profile->name, $linked->name),
+            title: $pick($linked->title, $profile->title),
+            // The leadership role (Dean, Vice President, ...) describes them best.
+            position: $pick($profile->position, $linked->position),
+            category: $profile->category,
+            facultyName: $pick($linked->facultyName, $profile->facultyName),
+            departmentName: $pick($linked->departmentName, $profile->departmentName),
+            email: $pick($linked->email, $profile->email),
+            phone: $pick($linked->phone, $profile->phone),
+            image: $pick($linked->image, $profile->image),
+            bio: $bio,
+            quote: $profile->quote,
+            specializations: $pick($linked->specializations, $profile->specializations),
+            officeLocation: $pick($linked->officeLocation, $profile->officeLocation),
+            socialLinks: $pick($linked->socialLinks, $profile->socialLinks),
+            educations: $pick($linked->educations, $profile->educations),
+            publications: $publications,
+            councilMemberships: $pick($profile->councilMemberships, $linked->councilMemberships),
+            cvUrl: $pick($linked->cvUrl, $profile->cvUrl),
+            profileUrl: $profile->profileUrl,
+            seoTitle: (string) $pick($profile->name, $linked->name).' - '.config('app.name', 'SPU'),
+            seoDescription: is_string($bio) && trim($bio) !== '' ? $bio : $profile->seoDescription,
+            seoImage: $pick($linked->image, $profile->seoImage),
+            path: $profile->path,
         );
     }
 

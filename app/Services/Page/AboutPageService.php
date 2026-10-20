@@ -510,7 +510,7 @@ final class AboutPageService implements AboutPageServiceInterface
             role: $role,
             category: is_string($category) && $category !== '' ? $category : null,
             facultySlug: is_string($facultySlug) && $facultySlug !== '' ? $facultySlug : null,
-            bio: $translation->bio,
+            bio: $this->linkedMemberBio($person, $locale) ?? $translation->bio,
             quote: $translation->quote,
             image: $this->personImage($person),
             email: $person->email,
@@ -525,6 +525,12 @@ final class AboutPageService implements AboutPageServiceInterface
      */
     private function personImage(Person $person): ?string
     {
+        // A linked faculty member's photo wins, as on the profile page.
+        $member = $this->linkedMember($person);
+        if ($member?->photoMedia instanceof MediaAsset) {
+            return MediaUrlResolver::resolveImage($member->photoMedia->webp_path, $member->photoMedia->path, $member->photoMedia->disk);
+        }
+
         if ($person->photoMedia instanceof MediaAsset) {
             return MediaUrlResolver::resolveImage($person->photoMedia->webp_path, $person->photoMedia->path, $person->photoMedia->disk);
         }
@@ -534,6 +540,23 @@ final class AboutPageService implements AboutPageServiceInterface
         }
 
         return MediaUrlResolver::resolveLegacy($person->legacy_photo_path);
+    }
+
+    /** The published faculty member profile linked to this person, if any. */
+    private function linkedMember(Person $person): ?FacultyMember
+    {
+        $person->loadMissing(['linkedFacultyMembers' => fn ($query) => $query->public()->with(['photoMedia', 'translations'])->orderByDesc('updated_at')]);
+        $member = $person->linkedFacultyMembers->first();
+
+        return $member instanceof FacultyMember ? $member : null;
+    }
+
+    private function linkedMemberBio(Person $person, string $locale): ?string
+    {
+        $translations = $this->linkedMember($person)?->translations;
+        $bio = $translations?->firstWhere('locale', $locale)?->bio ?? $translations?->firstWhere('locale', 'ar')?->bio;
+
+        return is_string($bio) && trim($bio) !== '' ? $bio : null;
     }
 
     /** @param Collection<int, Person> $persons @return Collection<int, PersonDTO> */

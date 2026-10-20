@@ -1032,6 +1032,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 'translations',
                 'appointments' => fn ($q) => $q->enabled()->where('type', 'faculty_member')->where('faculty_id', $faculty->getKey())->with(['translations', 'department.translations']),
                 'photoMedia',
+                'linkedFacultyMembers' => fn ($q) => $q->public()->with('photoMedia')->orderByDesc('updated_at'),
             ])
             ->orderBy('sort_order')
             ->orderBy('id')
@@ -1086,8 +1087,10 @@ final class FacultyPageService implements FacultyPageServiceInterface
                     $department = $this->departmentTranslation($apt->department, $locale)->name ?? null;
                 }
 
-                $image = $person->photoMedia instanceof MediaAsset
-                    ? MediaUrlResolver::resolveImage($person->photoMedia->webp_path, $person->photoMedia->path, $person->photoMedia->disk)
+                // A linked faculty member's photo wins, as on the profile page.
+                $photo = $person->linkedFacultyMembers->first()?->photoMedia ?? $person->photoMedia;
+                $image = $photo instanceof MediaAsset
+                    ? MediaUrlResolver::resolveImage($photo->webp_path, $photo->path, $photo->disk)
                     : (is_string($person->image) && $person->image !== '' ? $person->image : MediaUrlResolver::resolveLegacy($person->legacy_photo_path));
 
                 return [

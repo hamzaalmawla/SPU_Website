@@ -59,6 +59,15 @@ final class PeopleDuplicateReportService implements PeopleDuplicateReportService
                     array_values(array_filter($liveMembers, fn (array $member): bool => $member['person_id'] === null)),
                     $people,
                 ),
+                // Since 2026-10-20 the People profile shows the linked member's content.
+                'People profiles showing a linked faculty member\'s content' => collect($liveMembers)
+                    ->filter(fn (array $member): bool => $member['person_id'] !== null)
+                    ->map(fn (array $member): array => [
+                        collect($people)->firstWhere('id', (int) $member['person_id'])['line'] ?? 'P'.$member['person_id'].' (missing)',
+                        $member['line'],
+                    ])
+                    ->values()
+                    ->all(),
                 'Researchers who match a faculty member but are not linked' => $this->pairs(
                     array_values(array_filter($researchers, fn (array $researcher): bool => $researcher['linked_member'] === null)),
                     $liveMembers,

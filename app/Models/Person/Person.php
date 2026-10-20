@@ -86,6 +86,15 @@ class Person extends Model
         return $this->hasMany(ResearchPublication::class)->orderByDesc('published_at');
     }
 
+    /**
+     * Faculty member profiles linked to this person (faculty_members.person_id).
+     * Their content is shown for this person; see ProfilePageService.
+     */
+    public function linkedFacultyMembers(): HasMany
+    {
+        return $this->hasMany(FacultyMember::class, 'person_id');
+    }
+
     public function councilMemberships(): HasMany
     {
         return $this->hasMany(CouncilMember::class)->orderBy('sort_order');
