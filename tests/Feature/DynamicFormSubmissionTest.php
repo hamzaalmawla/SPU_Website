@@ -251,6 +251,34 @@ final class DynamicFormSubmissionTest extends TestCase
         $this->assertContains('evt-001', $calendar['events']->pluck('id')->all());
     }
 
+    public function test_an_event_with_a_long_identifier_takes_registrations(): void
+    {
+        $author = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $events = app(NewsServiceInterface::class)->getEditablePayload('news.events');
+        // Identifiers built from a full title run past 80 characters.
+        $longId = 'workshop-'.str_repeat('artificial-intelligence-skills-', 4).'2026';
+
+        foreach (['ar', 'en'] as $locale) {
+            $events['translations'][$locale]['upcoming'][0]['id'] = $longId;
+        }
+
+        $workflow->saveDraft('news.events', $events, (int) $author->getKey());
+        $this->assertTrue($workflow->publish('news.events', (int) $author->getKey()));
+        $this->assertGreaterThan(80, strlen($longId));
+
+        $this->postJson('/en/forms/conference-registration/submissions', [
+            'fullName' => 'Workshop Applicant',
+            'email' => 'workshop@example.com',
+            'affiliation' => 'SPU',
+            'role' => 'attendee',
+            'event_source' => 'news-events',
+            'event_id' => $longId,
+        ])->assertCreated();
+
+        $this->assertSame($longId, DynamicFormSubmission::query()->firstOrFail()->payload_json['_context']['event_id'] ?? null);
+    }
+
     public function test_research_conference_and_symposium_registrations_store_trusted_localized_context(): void
     {
         $this->postJson('/en/forms/conference-registration/submissions', [
