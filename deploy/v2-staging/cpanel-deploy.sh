@@ -1424,8 +1424,13 @@ MAINTENANCE=0
 # on this host is the most expensive request the site ever serves. The clear it
 # depends on happens further up, before the build artefacts are written.
 #
+#
+# It renders a few dozen pages in one process, which holds about 130 MB; the
+# host's 128 MB default killed it after /ar/admissions on every deploy (and
+# logged an "Allowed memory size" error each time), leaving the rest cold.
+# One page on its own needs 60-75 MB, so visitors are not affected.
 log "Warming caches"
-(cd "${APP}" && "${PHP}" artisan cache:warm --include-sitemap) || true
+(cd "${APP}" && "${PHP}" -d memory_limit=1024M artisan cache:warm --include-sitemap) || true
 
 # ── Old-site content coverage report (read-only) ─────────────────────────────
 # For every page of the old site and its subsites, how much of its text the
