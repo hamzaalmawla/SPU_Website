@@ -28,6 +28,9 @@ final class StaffIntakeFields
     /** The social_links keys the admin profile form edits. */
     public const LINKS = ['linkedin', 'orcid', 'scopus', 'researchgate', 'scholar', 'twitter'];
 
+    /** Academic profile links every teacher must give (X / Twitter stays optional). */
+    public const REQUIRED_LINKS = ['linkedin', 'orcid', 'scopus', 'researchgate', 'scholar'];
+
     public const EDUCATION = ['degree_ar', 'degree_en', 'institution_ar', 'institution_en', 'field_ar', 'field_en', 'year_start', 'year_end'];
 
     /** @return list<string> Every flat field key, in form order. */

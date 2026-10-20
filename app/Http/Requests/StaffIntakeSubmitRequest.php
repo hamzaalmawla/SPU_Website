@@ -56,7 +56,7 @@ final class StaffIntakeSubmitRequest extends FormRequest
             'name_ar' => ['required', 'string', 'max:255'],
             'name_en' => ['required', 'string', 'max:255'],
             'department_id' => ['nullable', 'integer'],
-            'email' => ['nullable', 'email:rfc', 'max:255'],
+            'email' => ['required', 'email:rfc', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30', 'regex:/^[0-9+()\-\s]+$/'],
             'office_location' => ['nullable', 'string', 'max:255'],
             'educations' => ['nullable', 'array', 'max:20'],
@@ -78,7 +78,7 @@ final class StaffIntakeSubmitRequest extends FormRequest
         }
 
         foreach (StaffIntakeFields::LINKS as $link) {
-            $rules[$link] = ['nullable', 'url:http,https', 'max:255'];
+            $rules[$link] = [in_array($link, StaffIntakeFields::REQUIRED_LINKS, true) ? 'required' : 'nullable', 'url:http,https', 'max:255'];
         }
 
         return $rules;

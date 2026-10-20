@@ -121,8 +121,9 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
                 fields: $fields,
                 educations: StaffIntakeFields::educationsFromMember($member),
                 departments: $departments,
-                photoUrl: $this->photoUrl($member),
-                cvUrl: $this->cvUrl($member),
+                // Another faculty's profile passes on only media library files.
+                photoUrl: $sameFaculty || $member->photo_media_id !== null ? $this->photoUrl($member) : null,
+                cvUrl: $sameFaculty || $member->cv_media_id !== null ? $this->cvUrl($member) : null,
                 relatedFacultyName: $sameFaculty || ! $member->faculty instanceof Faculty ? null : $this->facultyName($member->faculty, $locale),
             );
         }
@@ -166,6 +167,7 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
         }
 
         $isUpdate = $claimed instanceof FacultyMember && (int) $claimed->faculty_id === (int) $link->faculty_id;
+        $this->requireFiles($submission, $claimed, $isUpdate);
         $fields = $this->cleanFields($submission->fields, (int) $link->faculty_id, $submission->locale);
         $educations = $this->cleanEducations($submission->educations, $isUpdate ? $claimed : null, $submission->locale);
 
@@ -432,6 +434,29 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
         }
 
         return $clean;
+    }
+
+    /**
+     * A photo and a CV are required. A profile being updated keeps the ones it
+     * has; a new profile started from one in another faculty reuses its media
+     * library files. Anything else must send them.
+     */
+    private function requireFiles(StaffIntakeSubmissionDTO $submission, ?FacultyMember $claimed, bool $isUpdate): void
+    {
+        $hasPhoto = $claimed instanceof FacultyMember && ($isUpdate ? $this->photoUrl($claimed) !== null : $claimed->photo_media_id !== null);
+        $hasCv = $claimed instanceof FacultyMember && ($isUpdate ? $this->cvUrl($claimed) !== null : $claimed->cv_media_id !== null);
+
+        $errors = [];
+        if (! $submission->photo instanceof UploadedFile && ! $hasPhoto) {
+            $errors['photo'] = __('staff_intake.public.errors.photo_required', [], $submission->locale);
+        }
+        if (! $submission->cv instanceof UploadedFile && ! $hasCv) {
+            $errors['cv'] = __('staff_intake.public.errors.cv_required', [], $submission->locale);
+        }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
     }
 
     /** @return array<string, array{path: string, name: string, mime: string, size: int}> */

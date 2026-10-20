@@ -336,9 +336,15 @@ final class StaffIntakeReviewService implements StaffIntakeReviewServiceInterfac
         $base['educations'] = $this->cmsEducations(is_array($base['educations'] ?? null) ? $base['educations'] : [], $educations, $targetId !== null);
 
         $name = (string) ($fields['name_en'] ?? '') ?: (string) ($fields['name_ar'] ?? '');
+        $related = $targetId === null && $request->related_faculty_member_id !== null
+            ? FacultyMember::query()->find($request->related_faculty_member_id)
+            : null;
         foreach (['photo' => 'photo_media_id', 'cv' => 'cv_media_id'] as $kind => $column) {
             if (is_array($uploads[$kind] ?? null)) {
                 $base[$column] = $this->importUpload($uploads[$kind], $request, $name, $fields, $actorId);
+            } elseif ($related instanceof FacultyMember && $related->getAttribute($column) !== null) {
+                // A new profile started from one in another faculty keeps its files.
+                $base[$column] = (int) $related->getAttribute($column);
             }
         }
 

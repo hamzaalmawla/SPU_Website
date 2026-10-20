@@ -77,7 +77,7 @@
                         @error('department_id')<p class="text-xs font-bold text-spu-red" role="alert">{{ $message }}</p>@enderror
                     </div>
                     @include('public.staff-intake.field', ['name' => 'office_location', 'value' => $fields['office_location']])
-                    @include('public.staff-intake.field', ['name' => 'email', 'value' => $fields['email'], 'type' => 'email', 'dir' => 'ltr', 'autocomplete' => 'email'])
+                    @include('public.staff-intake.field', ['name' => 'email', 'value' => $fields['email'], 'type' => 'email', 'dir' => 'ltr', 'autocomplete' => 'email', 'required' => true])
                     @include('public.staff-intake.field', ['name' => 'phone', 'value' => $fields['phone'], 'type' => 'tel', 'dir' => 'ltr', 'max' => 30, 'autocomplete' => 'tel'])
                 </div>
             </fieldset>
@@ -86,7 +86,7 @@
                 <legend class="mb-2 text-lg font-bold text-spu-blue">{{ __('staff_intake.public.section_links', [], $locale) }}</legend>
                 <div class="grid gap-4 sm:grid-cols-2">
                     @foreach (['linkedin', 'orcid', 'scopus', 'researchgate', 'scholar', 'twitter'] as $linkField)
-                        @include('public.staff-intake.field', ['name' => $linkField, 'value' => $fields[$linkField], 'type' => 'url', 'dir' => 'ltr'])
+                        @include('public.staff-intake.field', ['name' => $linkField, 'value' => $fields[$linkField], 'type' => 'url', 'dir' => 'ltr', 'required' => $linkField !== 'twitter'])
                     @endforeach
                 </div>
             </fieldset>
@@ -110,20 +110,20 @@
                 <legend class="mb-2 text-lg font-bold text-spu-blue">{{ __('staff_intake.public.section_files', [], $locale) }}</legend>
                 <div class="grid gap-6 sm:grid-cols-2">
                     <div class="space-y-2">
-                        <label for="si-photo" class="block text-sm font-bold text-slate-700">{{ __('staff_intake.fields.photo', [], $locale) }}</label>
+                        <label for="si-photo" class="block text-sm font-bold text-slate-700">{{ __('staff_intake.fields.photo', [], $locale) }}<span class="text-spu-red" aria-hidden="true"> *</span></label>
                         @if ($form->photoUrl)
                             <img src="{{ $form->photoUrl }}" alt="{{ __('staff_intake.public.current_photo', [], $locale) }}" class="h-24 w-24 rounded-full object-cover">
                         @endif
-                        <input id="si-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="si-photo-hint" class="block w-full text-sm">
+                        <input id="si-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="si-photo-hint" class="block w-full text-sm" @if (! $form->photoUrl) required aria-required="true" @endif>
                         <p id="si-photo-hint" class="text-xs text-slate-500">{{ __('staff_intake.public.photo_hint', [], $locale) }}</p>
                         @error('photo')<p class="text-xs font-bold text-spu-red" role="alert">{{ $message }}</p>@enderror
                     </div>
                     <div class="space-y-2">
-                        <label for="si-cv" class="block text-sm font-bold text-slate-700">{{ __('staff_intake.fields.cv', [], $locale) }}</label>
+                        <label for="si-cv" class="block text-sm font-bold text-slate-700">{{ __('staff_intake.fields.cv', [], $locale) }}<span class="text-spu-red" aria-hidden="true"> *</span></label>
                         @if ($form->cvUrl)
                             <a href="{{ $form->cvUrl }}" target="_blank" rel="noopener noreferrer" class="block text-sm font-bold text-spu-blue underline">{{ __('staff_intake.public.current_cv', [], $locale) }}</a>
                         @endif
-                        <input id="si-cv" name="cv" type="file" accept="application/pdf" aria-describedby="si-cv-hint" class="block w-full text-sm">
+                        <input id="si-cv" name="cv" type="file" accept="application/pdf" aria-describedby="si-cv-hint" class="block w-full text-sm" @if (! $form->cvUrl) required aria-required="true" @endif>
                         <p id="si-cv-hint" class="text-xs text-slate-500">{{ __('staff_intake.public.cv_hint', [], $locale) }}</p>
                         @error('cv')<p class="text-xs font-bold text-spu-red" role="alert">{{ $message }}</p>@enderror
                     </div>

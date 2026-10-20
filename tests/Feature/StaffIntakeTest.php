@@ -26,7 +26,9 @@ use App\Models\User\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -44,6 +46,8 @@ final class StaffIntakeTest extends TestCase
     {
         parent::setUp();
 
+        Storage::fake('local');
+        Storage::fake((string) config('filesystems.media_disk', 'public'));
         $this->seed(DatabaseSeeder::class);
         $this->dentistry = Faculty::query()->where('public_slug', 'dentistry')->firstOrFail();
         $this->pharmacy = Faculty::query()->where('public_slug', 'pharmacy')->firstOrFail();
@@ -139,7 +143,7 @@ final class StaffIntakeTest extends TestCase
         $this->assertSame(1, (int) StaffIntakeLink::query()->whereKey($created->link->id)->value('submissions_count'));
 
         $log = StaffIntakeAccessLog::query()->where('event', 'submitted')->sole();
-        $this->assertSame(['position_ar', 'position_en', 'email'], $log->changed_fields);
+        $this->assertSame(['position_ar', 'position_en', 'email', 'linkedin', 'orcid', 'scopus', 'researchgate', 'scholar', 'photo', 'cv'], $log->changed_fields);
         $this->assertSame('IntakeTestBrowser/1.0', $log->user_agent);
         $this->assertNotNull($log->ip_address);
         Mail::assertQueued(StaffIntakeSubmittedNotification::class, fn (StaffIntakeSubmittedNotification $mail): bool => $mail->hasTo($this->facultyEditor->email));
@@ -329,6 +333,43 @@ final class StaffIntakeTest extends TestCase
         Livewire::test(ListStaffIntakeLinks::class)->assertCanNotSeeTableRecords([$link]);
     }
 
+    public function test_photo_email_cv_and_academic_profiles_are_required(): void
+    {
+        $token = $this->token($this->link());
+        $ref = $this->newRef($token, 'Zaid Required');
+        $form = $this->get('/en/staff-intake/'.$token.'/form?name=Zaid+Required')->assertOk();
+        foreach (['email', 'linkedin', 'orcid', 'scopus', 'researchgate', 'scholar', 'photo', 'cv'] as $field) {
+            $this->assertMatchesRegularExpression('/name="'.$field.'"[^>]*required/', (string) $form->getContent(), $field.' is not marked required');
+        }
+
+        $missing = ['ref' => $ref, 'name_ar' => 'زيد مطلوب', 'name_en' => 'Zaid Required'];
+        $this->post('/en/staff-intake/'.$token.'/form', $missing)
+            ->assertSessionHasErrors(['email', 'linkedin', 'orcid', 'scopus', 'researchgate', 'scholar']);
+        $this->post('/en/staff-intake/'.$token.'/form', [...$missing, ...$this->requiredFields(), 'photo' => null, 'cv' => null])
+            ->assertSessionHasErrors(['photo', 'cv']);
+        $this->post('/en/staff-intake/'.$token.'/form', [...$missing, ...$this->requiredFields(), 'orcid' => 'not a link'])
+            ->assertSessionHasErrors(['orcid']);
+        $this->assertSame(0, StaffIntakeRequest::query()->count());
+
+        // X (Twitter) stays optional.
+        $this->post('/en/staff-intake/'.$token.'/form', [...$missing, ...$this->requiredFields()])->assertRedirect('/en/staff-intake/'.$token.'/sent');
+    }
+
+    public function test_a_profile_that_already_has_a_photo_and_cv_need_not_send_them_again(): void
+    {
+        $member = $this->member('huda-files', 'هدى ملفات', 'Huda Files', $this->dentistry, 'huda@spu.edu.sy');
+        $member->forceFill(['legacy_photo_path' => 'images/staff/huda.jpg', 'legacy_cv_path' => 'files/huda.pdf'])->save();
+        $token = $this->token($this->link());
+        $ref = $this->refFor($token, 'Huda Files');
+
+        $form = $this->get('/en/staff-intake/'.$token.'/form?ref='.urlencode($ref))->getContent();
+        $this->assertDoesNotMatchRegularExpression('/name="photo"[^>]*required/', (string) $form);
+
+        $this->post('/en/staff-intake/'.$token.'/form', $this->formData($ref, ['name_ar' => 'هدى ملفات', 'name_en' => 'Huda Files', 'photo' => null, 'cv' => null]))
+            ->assertRedirect('/en/staff-intake/'.$token.'/sent');
+        $this->assertSame([], StaffIntakeRequest::query()->sole()->payload['uploads']);
+    }
+
     public function test_staff_intake_needs_its_own_permissions(): void
     {
         $hr = $this->user('hr');
@@ -336,8 +377,8 @@ final class StaffIntakeTest extends TestCase
         $this->assertSame([], app(StaffIntakeReviewServiceInterface::class)->reviewableFacultyIds((int) $hr->getKey()));
 
         $this->actingAs($hr, 'web');
-        $this->get(\App\Filament\Resources\StaffIntakeLinkResource::getUrl('index'))->assertForbidden();
-        $this->get(\App\Filament\Resources\StaffIntakeRequestResource::getUrl('index'))->assertForbidden();
+        $this->get(StaffIntakeLinkResource::getUrl('index'))->assertForbidden();
+        $this->get(StaffIntakeRequestResource::getUrl('index'))->assertForbidden();
     }
 
     private function link(?int $maxSubmissions = null): StaffIntakeLinkCreatedDTO
@@ -382,7 +423,22 @@ final class StaffIntakeTest extends TestCase
      */
     private function formData(string $ref, array $fields): array
     {
-        return ['ref' => $ref, ...$fields];
+        return ['ref' => $ref, ...$this->requiredFields(), ...$fields];
+    }
+
+    /** @return array<string, mixed> The fields every submission must carry. */
+    private function requiredFields(): array
+    {
+        return [
+            'email' => 'teacher@spu.edu.sy',
+            'linkedin' => 'https://www.linkedin.com/in/teacher',
+            'orcid' => 'https://orcid.org/0000-0001-2345-6789',
+            'scopus' => 'https://www.scopus.com/authid/detail.uri?authorId=1',
+            'researchgate' => 'https://www.researchgate.net/profile/Teacher',
+            'scholar' => 'https://scholar.google.com/citations?user=abc',
+            'photo' => UploadedFile::fake()->image('photo.jpg', 400, 400),
+            'cv' => UploadedFile::fake()->createWithContent('cv.pdf', "%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n"),
+        ];
     }
 
     private function member(string $slug, string $nameAr, string $nameEn, Faculty $faculty, ?string $email = null): FacultyMember
