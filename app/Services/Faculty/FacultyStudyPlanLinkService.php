@@ -10,6 +10,7 @@ use App\Enums\PublicationStatus;
 use App\Models\Cms\CmsTargetContent;
 use App\Models\Faculty\Faculty;
 use App\Models\Faculty\FacultyPage;
+use App\Support\MediaUrlResolver;
 use Illuminate\Support\Facades\Storage;
 
 final class FacultyStudyPlanLinkService implements FacultyStudyPlanLinkServiceInterface
@@ -214,6 +215,11 @@ final class FacultyStudyPlanLinkService implements FacultyStudyPlanLinkServiceIn
             || parse_url($path, PHP_URL_FRAGMENT) !== null
             || strtolower((string) pathinfo($path, PATHINFO_EXTENSION)) !== 'pdf') {
             return null;
+        }
+
+        // Files from the old site are served from its downloads folder, outside public/.
+        if (preg_match('#^/downloads/files2?/[^/]+$#', $path) === 1) {
+            return MediaUrlResolver::resolveLegacy($path);
         }
 
         if (str_starts_with($path, '/storage/')) {

@@ -29,6 +29,7 @@ use App\Contracts\Faculty\FacultyStudyPlanBoardServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanEditorServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanImportServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
+use App\Contracts\Faculty\LegacyCourseSpecificationImportServiceInterface;
 use App\Contracts\Faculty\ProjectFieldBlockParserInterface;
 use App\Contracts\Form\ContactMessageReviewServiceInterface;
 use App\Contracts\Form\DynamicFormSubmissionReviewServiceInterface;
@@ -220,6 +221,7 @@ use App\Services\Faculty\FacultyStudyPlanBoardService;
 use App\Services\Faculty\FacultyStudyPlanEditorService;
 use App\Services\Faculty\FacultyStudyPlanImportService;
 use App\Services\Faculty\FacultyStudyPlanLinkService;
+use App\Services\Faculty\LegacyCourseSpecificationImportService;
 use App\Services\Faculty\ProjectFieldBlockParser;
 use App\Services\Form\ContactMessageReviewService;
 use App\Services\Form\DynamicFormSubmissionReviewService;
@@ -678,6 +680,7 @@ class AppServiceProvider extends ServiceProvider
             FacultyStudyPlanEditorServiceInterface::class => FacultyStudyPlanEditorService::class,
             FacultyStudyPlanImportServiceInterface::class => FacultyStudyPlanImportService::class,
             LegacyCalendarEventImportServiceInterface::class => LegacyCalendarEventImportService::class,
+            LegacyCourseSpecificationImportServiceInterface::class => LegacyCourseSpecificationImportService::class,
             FacultyStructureImportServiceInterface::class => FacultyStructureImportService::class,
             FacultyStudyPlanBoardServiceInterface::class => FacultyStudyPlanBoardService::class,
             FacultyStudyPlanLinkServiceInterface::class => FacultyStudyPlanLinkService::class,

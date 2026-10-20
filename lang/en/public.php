@@ -48,6 +48,10 @@ return [
     'show_item' => 'Show item',
     'show_event' => 'Show event',
     'events_this_month' => 'Events this month',
+    'course_specification' => 'Course specification',
+    'course_specification_text' => 'The course aims, content and assessment in one file.',
+    'course_specification_view' => 'View file',
+    'course_specification_download' => 'Download',
     'slide_position' => 'Slide :current of :total',
 
     // Footer

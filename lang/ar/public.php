@@ -48,6 +48,10 @@ return [
     'show_item' => 'عرض العنصر',
     'show_event' => 'عرض الفعالية',
     'events_this_month' => 'فعاليات الشهر',
+    'course_specification' => 'توصيف المقرر',
+    'course_specification_text' => 'أهداف المقرر ومحتواه وطرق تقييمه في ملف واحد.',
+    'course_specification_view' => 'عرض الملف',
+    'course_specification_download' => 'تحميل',
     'slide_position' => 'الشريحة :current من :total',
 
     // Footer

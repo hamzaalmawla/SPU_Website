@@ -1067,6 +1067,45 @@ if [[ -f "${CALENDAR_EVENTS_APPROVAL}" ]]; then
     mv "${CALENDAR_EVENTS_APPROVAL}" "${CALENDAR_EVENTS_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
 fi
 
+# ── Approved course specifications ──────────────────────────────────────────
+# Attaches the old faculty sites' course specification PDFs
+# (database/seeders/Data/legacy-course-specifications.json) to the study plan
+# courses with the same Arabic title, and publishes the plans. A course that
+# already has a specification keeps it; lecture files are not imported. Inert
+# unless a human places an approval file with an actor= line (a user id or
+# auto):
+#
+#     storage/app/private/legacy-imports/course-specifications.approved
+#
+# It disarms itself after one run.
+COURSE_SPECS_APPROVAL="${IMPORT_DIR}/course-specifications.approved"
+
+if [[ -f "${COURSE_SPECS_APPROVAL}" ]]; then
+    log "Course specifications"
+
+    CS_ACTOR="$(grep -E '^actor=' "${COURSE_SPECS_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r' | tr -d ' ')"
+    [[ -n "${CS_ACTOR}" ]] || fail "The course specifications approval file has no actor= line."
+
+    if [[ "${CS_ACTOR}" == "auto" ]]; then
+        CS_ACTOR="$(cd "${APP}" && "${PHP}" artisan tinker --execute='
+            echo (string) (\DB::table("users")
+                ->where("role_slug", "super_admin")
+                ->where(function ($q) { $q->whereNull("locked_at")->orWhere("locked_at", ""); })
+                ->orderBy("id")
+                ->value("id") ?? "");
+        ' 2>/dev/null | grep -Eo '^[0-9]+$' | head -n 1 || true)"
+        [[ -n "${CS_ACTOR}" ]] || fail "actor=auto found no unlocked super_admin to publish the plans as."
+    fi
+    [[ "${CS_ACTOR}" =~ ^[0-9]+$ ]] || fail "The course specifications actor must be a numeric user id or 'auto'."
+
+    (cd "${APP}" && "${PHP}" -d memory_limit=1024M artisan faculty:import-course-specifications --user="${CS_ACTOR}" --no-ansi) \
+        || fail "The course specifications dry run failed. Nothing was written."
+    (cd "${APP}" && "${PHP}" -d memory_limit=1024M artisan faculty:import-course-specifications --user="${CS_ACTOR}" --write --no-ansi) \
+        || fail "The course specifications could not be saved."
+
+    mv "${COURSE_SPECS_APPROVAL}" "${COURSE_SPECS_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
 # ── Faculty-project survey (read-only) ───────────────────────────────────────
 # Answers one question and changes nothing: how many importable projects does
 # the legacy database hold RIGHT NOW, broken down by faculty.
