@@ -66,7 +66,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
         $cmsContent = $this->publishedLocalizedPayload('research.index', $locale);
 
         $isAvailable = is_array($cmsContent);
-        $data = $isAvailable ? $this->sanitizeLandingContent($cmsContent) : [];
+        $data = $isAvailable ? $this->sanitizeLandingContent($cmsContent, $locale) : [];
 
         return $this->pageDto(
             $locale,
@@ -76,6 +76,11 @@ final class ResearchPageService implements ResearchPageServiceInterface
             is_array($data['hero'] ?? null) ? $data['hero'] : [],
             $isAvailable,
         );
+    }
+
+    public function publicationCount(string $locale): int
+    {
+        return count($this->publicPublicationItems($locale));
     }
 
     public function repository(string $locale, array $filters = []): ResearchPageDTO
@@ -345,7 +350,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
 
     public function buildPreviewLanding(string $locale, array $content): ResearchPageDTO
     {
-        $content = $this->sanitizeLandingContent($content);
+        $content = $this->sanitizeLandingContent($content, $locale);
 
         return $this->pageDto($locale, 'landing', $content, '/research', $content['hero'] ?? []);
     }
@@ -2099,8 +2104,18 @@ final class ResearchPageService implements ResearchPageServiceInterface
     }
 
     /** @param array<string, mixed> $content @return array<string, mixed> */
-    private function sanitizeLandingContent(array $content): array
+    private function sanitizeLandingContent(array $content, string $locale): array
     {
+        // A stat flagged as the publications counter is never stored: it always
+        // shows how many publications the publications page lists right now.
+        $stats = $this->arrayList($content['stats'] ?? []);
+        foreach ($stats as $index => $stat) {
+            if (($stat['counter'] ?? null) === 'publications') {
+                $stats[$index]['value'] = (string) $this->publicationCount($locale);
+            }
+        }
+        $content['stats'] = $stats;
+
         $featured = is_array($content['featuredPublication'] ?? null) ? $content['featuredPublication'] : [];
         $doi = trim((string) ($featured['doi'] ?? ''));
 

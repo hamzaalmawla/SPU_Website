@@ -749,6 +749,36 @@ final class ResearchPublicPagesTest extends TestCase
             ->assertDontSee('Research at SPU');
     }
 
+    public function test_research_landing_publications_counter_follows_the_publication_catalog(): void
+    {
+        $user = User::factory()->create(['role_slug' => 'super_admin']);
+        $content = $this->cmsLandingContent('CMS Research Landing', 'CMS Research Gateway');
+        $content['stats'][0] = ['counter' => 'publications', 'value' => '', 'label' => 'CMS PUBLICATIONS'];
+
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $workflow->saveDraft('research.index', ['translations' => ['ar' => $content, 'en' => $content]], (int) $user->getKey());
+        $workflow->publish('research.index', (int) $user->getKey());
+
+        $service = app(ResearchPageServiceInterface::class);
+        $initial = $service->publicationCount('en');
+        $this->assertSame((string) $initial, $service->landing('en')->data['stats'][0]['value']);
+        $this->assertSame('7', $service->landing('en')->data['stats'][1]['value']);
+
+        $publication = ResearchPublication::query()->create(['published_at' => now()->subDay(), 'is_enabled' => true]);
+        ResearchPublicationTranslation::query()->create([
+            'research_publication_id' => $publication->getKey(),
+            'locale' => 'en',
+            'title' => 'Counted Database Publication',
+        ]);
+
+        $this->assertSame($initial + 1, $service->publicationCount('en'));
+        $this->assertSame((string) ($initial + 1), $service->landing('en')->data['stats'][0]['value']);
+
+        $publication->delete();
+
+        $this->assertSame((string) $initial, $service->landing('en')->data['stats'][0]['value']);
+    }
+
     public function test_research_conferences_use_published_cms_payload(): void
     {
         $user = User::factory()->create(['role_slug' => 'super_admin']);

@@ -822,6 +822,7 @@ return [
             'publication_files' => 'Publication files',
             'publication_image' => 'Publication image',
             'publication_slug' => 'Linked publication identifier',
+            'publications_counter' => 'Count publications automatically',
             'documents_unavailable' => 'Documents unavailable',
             'documents_unavailable_help' => 'Use this when this policy section has no published documents yet.',
             'publication_type' => 'Publication type',
@@ -874,6 +875,7 @@ return [
         ],
         'help' => [
             'open_access' => 'Open Access is computed from the presence of at least one valid publication file.',
+            'publications_counter' => 'The value is the number of publications on the publications page. It updates by itself when a publication is added or removed.',
             'registration_url' => 'Leave blank when using an approved SPU registration form. Use only a safe HTTPS URL for external registration.',
         ],
         'options' => [

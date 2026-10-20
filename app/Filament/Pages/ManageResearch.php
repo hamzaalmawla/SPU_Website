@@ -441,7 +441,19 @@ class ManageResearch extends Page implements HasForms
                 Repeater::make($prefix.'.stats')
                     ->label($this->fieldLabel('statistics'))
                     ->schema([
-                        TextInput::make('value')->label($this->fieldLabel('value'))->required()->maxLength(60),
+                        Toggle::make('counter')
+                            ->label($this->fieldLabel('publications_counter'))
+                            ->helperText(__('admin.research_workspace.help.publications_counter'))
+                            ->formatStateUsing(fn (mixed $state): bool => $state === 'publications' || $state === true)
+                            ->dehydrateStateUsing(fn (mixed $state): ?string => $state ? 'publications' : null)
+                            ->live()
+                            ->columnSpanFull(),
+                        TextInput::make('value')
+                            ->label($this->fieldLabel('value'))
+                            ->required(fn (Get $get): bool => ! $get('counter'))
+                            ->disabled(fn (Get $get): bool => (bool) $get('counter'))
+                            ->placeholder(fn (Get $get): ?string => $get('counter') ? (string) $this->researchPageService->publicationCount($locale) : null)
+                            ->maxLength(60),
                         TextInput::make('label')->label($this->fieldLabel('label'))->required()->maxLength(140),
                     ])
                     ->columns(2)
@@ -1359,7 +1371,16 @@ class ManageResearch extends Page implements HasForms
     private function normalizeLandingContent(array $content): array
     {
         $featuredSlug = trim((string) ($content['featuredPublication']['slug'] ?? ''));
-        $content['stats'] = $this->listOfArrays($content['stats'] ?? []);
+        $content['stats'] = array_map(static function (array $stat): array {
+            if (($stat['counter'] ?? null) === 'publications') {
+                // Filled from the live publication count when the page renders.
+                $stat['value'] = '';
+            } else {
+                unset($stat['counter']);
+            }
+
+            return $stat;
+        }, $this->listOfArrays($content['stats'] ?? []));
         if ($featuredSlug !== '') {
             $content['featuredPublication']['links']['local'] = '/research/publications/'.$featuredSlug.'/';
         }

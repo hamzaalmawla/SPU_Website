@@ -20,6 +20,9 @@ interface ResearchPageServiceInterface
     /** @param array<string, mixed> $filters */
     public function publications(string $locale, array $filters = []): ResearchPageDTO;
 
+    /** Number of publications listed on the public publications page. */
+    public function publicationCount(string $locale): int;
+
     public function facultyPublications(string $facultySlug, string $locale): ResearchPageDTO;
 
     /**
