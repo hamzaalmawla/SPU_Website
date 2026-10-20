@@ -139,6 +139,9 @@ use App\Contracts\Shared\ContinuityServiceInterface;
 use App\Contracts\Shared\PlainTextFormatterInterface;
 use App\Contracts\Shared\PreviewServiceInterface;
 use App\Contracts\Shared\SlugServiceInterface;
+use App\Contracts\Staff\StaffIntakeLinkServiceInterface;
+use App\Contracts\Staff\StaffIntakeReviewServiceInterface;
+use App\Contracts\Staff\StaffIntakeServiceInterface;
 use App\DTOs\ErrorPage\ErrorPageContentDTO;
 use App\DTOs\Homepage\HomepageSectionDTO;
 use App\Http\Responses\LogoutResponse;
@@ -332,6 +335,9 @@ use App\Services\Shared\CacheService;
 use App\Services\Shared\ContinuityService;
 use App\Services\Shared\PlainTextFormatter;
 use App\Services\Shared\SlugService;
+use App\Services\Staff\StaffIntakeLinkService;
+use App\Services\Staff\StaffIntakeReviewService;
+use App\Services\Staff\StaffIntakeService;
 use App\Support\HtmlSanitizer;
 use App\Support\PageExpiredDiagnostics;
 use Filament\Http\Responses\Auth\Contracts\LogoutResponse as LogoutResponseContract;
@@ -594,6 +600,12 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(20)->by('public-form|'.$request->ip());
         });
 
+        // Name suggestions on a staff intake link: enough for typing a name a
+        // few times over, too few to walk the staff list.
+        RateLimiter::for('staff-intake-lookup', function (Request $request): Limit {
+            return Limit::perMinute(40)->by('staff-intake-lookup|'.$request->ip());
+        });
+
         // Search runs an indexed scan, so it is cheaper than a form post but
         // far from free on a five-worker server. 30/min per IP is generous for
         // a person refining a query and hostile to a scraper walking the index.
@@ -752,6 +764,9 @@ class AppServiceProvider extends ServiceProvider
             VirtualTourPageServiceInterface::class => VirtualTourPageService::class,
             PersonServiceInterface::class => PersonService::class,
             ProfileAdminServiceInterface::class => ProfileAdminService::class,
+            StaffIntakeLinkServiceInterface::class => StaffIntakeLinkService::class,
+            StaffIntakeServiceInterface::class => StaffIntakeService::class,
+            StaffIntakeReviewServiceInterface::class => StaffIntakeReviewService::class,
             PeopleDuplicateReportServiceInterface::class => PeopleDuplicateReportService::class,
             PeopleMergeServiceInterface::class => PeopleMergeService::class,
             ResearchPageServiceInterface::class => ResearchPageService::class,

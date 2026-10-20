@@ -6,8 +6,8 @@ namespace App\Support;
 
 /**
  * Compares people's names the way a reader would: without academic titles,
- * punctuation, spacing or Arabic letter variants, and allowing a middle name
- * present on one side only.
+ * punctuation, spacing, diacritics or Arabic letter variants, and allowing a
+ * middle name present on one side only.
  */
 final class PersonName
 {
@@ -73,23 +73,121 @@ final class PersonName
                 continue;
             }
 
-            $word = (string) preg_replace('/^(?:al|el)(?=[a-z]{3,})/', '', $word);
-            $word = strtr($word, ['ou' => 'u', 'oo' => 'u', 'ee' => 'i', 'ph' => 'f', 'q' => 'k', 'c' => 'k', 'dh' => 'd', 'th' => 't', 'sh' => 's', 'kh' => 'k', 'gh' => 'g', 'z' => 's', 'j' => 'g']);
-            $word = (string) preg_replace('/(.)\1+/', '$1', $word);
-
-            if ($word !== '') {
-                $outline[] = $word[0].preg_replace('/[aeiouyhw]/', '', substr($word, 1));
+            $skeleton = self::wordSkeleton($word);
+            if ($skeleton !== '') {
+                $outline[] = $skeleton;
             }
         }
 
         return $outline;
     }
 
+    /** Consonant outline of one lowercase Latin word: "ahmed" and "ahmad" both give "ahmd". */
+    private static function wordSkeleton(string $word): string
+    {
+        $word = (string) preg_replace('/^(?:al|el)(?=[a-z]{3,})/', '', $word);
+        $word = strtr($word, ['ou' => 'u', 'oo' => 'u', 'ee' => 'i', 'ph' => 'f', 'q' => 'k', 'c' => 'k', 'dh' => 'd', 'th' => 't', 'sh' => 's', 'kh' => 'k', 'gh' => 'g', 'z' => 's', 'j' => 'g']);
+        $word = (string) preg_replace('/(.)\1+/', '$1', $word);
+
+        return $word === '' ? '' : $word[0].preg_replace('/[aeiouyhw]/', '', substr($word, 1));
+    }
+
+    /**
+     * How well a name typed so far matches a stored name, for suggestions
+     * while someone types: 4 the same words, 3 same(), 2 likelySame(), 1 the
+     * typed words start the name's words ("Ahm" for "Ahmad Ali", "Mohamed
+     * Kh" for "Muhammad Khaled"), 0 no match.
+     */
+    public static function matchRank(string $typed, string $name): int
+    {
+        $typedTokens = self::tokens($typed);
+        $nameTokens = self::tokens($name);
+
+        if ($typedTokens === [] || $nameTokens === [] || mb_strlen(implode('', $typedTokens)) < 3) {
+            return 0;
+        }
+
+        if (implode('', $typedTokens) === implode('', $nameTokens)) {
+            return 4;
+        }
+
+        if (count($typedTokens) >= 2 && self::same($typed, $name)) {
+            return 3;
+        }
+
+        if (count($typedTokens) >= 2 && self::likelySame($typed, $name)) {
+            return 2;
+        }
+
+        return self::startsLike($typedTokens, $nameTokens) ? 1 : 0;
+    }
+
+    /**
+     * Every typed word is one of the name's words, in any spelling variant,
+     * and the last typed word may still be incomplete.
+     *
+     * @param  array<int, string>  $typedTokens
+     * @param  array<int, string>  $nameTokens
+     */
+    private static function startsLike(array $typedTokens, array $nameTokens): bool
+    {
+        $available = $nameTokens;
+        $last = count($typedTokens) - 1;
+
+        foreach (array_values($typedTokens) as $index => $typedToken) {
+            $found = null;
+            foreach ($available as $key => $nameToken) {
+                if ($index === $last ? self::wordStartsLike($typedToken, $nameToken) : self::wordsAlike($typedToken, $nameToken)) {
+                    $found = $key;
+                    break;
+                }
+            }
+
+            if ($found === null) {
+                return false;
+            }
+
+            unset($available[$found]);
+        }
+
+        return true;
+    }
+
+    private static function wordsAlike(string $first, string $second): bool
+    {
+        if ($first === $second || self::withoutArticle($first) === self::withoutArticle($second)) {
+            return true;
+        }
+
+        return self::isLatin($first) && self::isLatin($second) && self::wordSkeleton($first) === self::wordSkeleton($second);
+    }
+
+    private static function wordStartsLike(string $typed, string $word): bool
+    {
+        if (str_starts_with($word, $typed) || str_starts_with(self::withoutArticle($word), self::withoutArticle($typed))) {
+            return true;
+        }
+
+        return self::isLatin($typed) && self::isLatin($word) && mb_strlen($typed) >= 2
+            && str_starts_with(self::wordSkeleton($word), self::wordSkeleton($typed));
+    }
+
+    /** "الحسن" and "حسن", "alhasan" and "hasan" are one name. */
+    private static function withoutArticle(string $word): string
+    {
+        return (string) preg_replace('/^(?:ال|al|el)(?=\p{L}{3,})/u', '', $word);
+    }
+
+    private static function isLatin(string $word): bool
+    {
+        return preg_match('/^[a-z]+$/', $word) === 1;
+    }
+
     /** @return array<int, string> */
     public static function tokens(string $name): array
     {
-        $name = mb_strtolower(trim($name));
-        $name = strtr($name, ['أ' => 'ا', 'إ' => 'ا', 'آ' => 'ا', 'ة' => 'ه', 'ى' => 'ي', 'ـ' => '']);
+        // Folds diacritics, tatweel, hamza forms (أ إ آ ؤ ئ), ة, ى and case.
+        $name = SearchTextNormalizer::normalize($name);
         $name = (string) preg_replace('/[^\p{L}\p{N}]+/u', ' ', $name);
 
         return array_values(array_filter(

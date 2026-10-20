@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\DynamicFormSubmissionAttachmentController;
+use App\Http\Controllers\Admin\StaffIntakeUploadController;
 use App\Http\Controllers\Admin\TwoFactorChallengeController;
 use App\Http\Controllers\Public\AboutController;
 use App\Http\Controllers\Public\AchievementController;
@@ -23,6 +24,7 @@ use App\Http\Controllers\Public\PublicContactController;
 use App\Http\Controllers\Public\ResearchController;
 use App\Http\Controllers\Public\SearchController;
 use App\Http\Controllers\Public\SitemapController;
+use App\Http\Controllers\Public\StaffIntakeController;
 use App\Http\Controllers\Public\VirtualTourController;
 use App\Http\Middleware\AdminLocaleMiddleware;
 use App\Support\AdminPath;
@@ -53,6 +55,22 @@ Route::get('/media-display.css', MediaDisplayStylesheetController::class)->name(
 Route::get('/{referencePath}', BrowserLocaleRedirectController::class)
     ->where('referencePath', '(?!.*\.php$)(?:about|achievements|admissions|alumni|research|campus-life|e-services|events|faculties|facilities|news|contact|projects|search|student-life|virtual-tour)(?:/.*)?')
     ->name('reference.locale');
+
+// Staff intake links sent to each faculty's academic staff. Kept out of the
+// public page cache (the pages hold a secret link and staff contact details)
+// and registered ahead of the CMS catch-all below.
+Route::prefix('{locale}/staff-intake/{token}')
+    ->where(['locale' => 'ar|en', 'token' => '[A-Za-z0-9]{40}'])
+    ->middleware(['locale', 'staff.intake'])
+    ->name('public.staff-intake.')
+    ->controller(StaffIntakeController::class)
+    ->group(function (): void {
+        Route::get('/', 'show')->name('show');
+        Route::get('/suggestions', 'suggestions')->middleware('throttle:staff-intake-lookup')->name('suggestions');
+        Route::get('/form', 'form')->name('form');
+        Route::post('/form', 'submit')->middleware('throttle:public-form')->name('submit');
+        Route::get('/sent', 'sent')->name('sent');
+    });
 
 Route::prefix('{locale}')
     ->where(['locale' => 'ar|en'])
@@ -289,6 +307,11 @@ Route::prefix(AdminPath::prefix())
                     ->whereNumber('submission')
                     ->whereIn('field', ['cvFile', 'attachment'])
                     ->name('form-submissions.attachments.download');
+
+                Route::get('/staff-intake-requests/{staffIntakeRequest}/files/{kind}', StaffIntakeUploadController::class)
+                    ->whereNumber('staffIntakeRequest')
+                    ->whereIn('kind', ['photo', 'cv'])
+                    ->name('staff-intake-requests.files.download');
 
                 Route::get('/two-factor-challenge', [TwoFactorChallengeController::class, 'create'])
                     ->name('two-factor.challenge');

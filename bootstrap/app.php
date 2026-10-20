@@ -10,6 +10,7 @@ use App\Http\Middleware\MinifyPublicHtml;
 use App\Http\Middleware\RedirectContinuityMiddleware;
 use App\Http\Middleware\RestrictAdminAccess;
 use App\Http\Middleware\SecurityHeadersMiddleware;
+use App\Http\Middleware\StaffIntakeHeaders;
 use App\Http\Middleware\TwoFactorChallengeMiddleware;
 use App\Http\Middleware\VerifyWebhookSignature;
 use App\Support\PageExpiredDiagnostics;
@@ -55,6 +56,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'minify.html' => MinifyPublicHtml::class,
             'compress' => CompressPublicResponses::class,
             'verify.webhook' => VerifyWebhookSignature::class,
+            'staff.intake' => StaffIntakeHeaders::class,
         ]);
 
         // Resolved lazily: config is not loaded yet when this file runs.

@@ -1,6 +1,23 @@
 # Academic Staff Intake Link: Plan
 
-Status: proposal, nothing built yet. Decisions agreed on 2026-10-20 are listed under "Decisions".
+Status: built on `dev` (2026-10-20), not deployed. Decisions agreed on 2026-10-20 are listed under "Decisions". Where the build differs from the plan below, "As built" says so.
+
+## As built
+
+- **Approval path**: approval does not call `ProfileAdminService` directly. It goes through the same CMS workflow as the admin profile form (`AboutEntityCmsService::prepareDraft` → `CmsWorkflowService::saveDraft` → `publish`). So an editor or super admin approval publishes at once. A faculty editor's approval (they cannot publish) leaves a draft for an editor. A profile the CMS will not publish yet (no position or bio in both languages) is also kept as a draft, and the reviewer is told why.
+- **Profiles from another faculty**: picking one starts a new profile in the link's faculty, prefilled from the other one (`related_faculty_member_id`). It is not linked by `person_id`: a linked member is rendered through its People profile, which has no appointment in the new faculty.
+- **People-linked profiles**: when the claimed member has a `person_id`, the public page shows the People profile, so the review screen warns the reviewer to update that profile too.
+- **Referrer**: the site-wide `Referrer-Policy: strict-origin-when-cross-origin` already keeps the link from other sites. The pages also add `<meta name="referrer" content="no-referrer">`.
+- **Access log events**: opened, claimed, started_new, submitted, superseded. Searches are not logged one by one.
+- **Not built yet**: the retention command (step 4) and a duplicate-report section for pending requests.
+- **Name matching**: `PersonName::tokens()` now folds through `SearchTextNormalizer` (diacritics, ؤ, ئ), and `PersonName::matchRank()` is new. This makes `PeopleMergeService` match slightly more names. Run `people:merge` as a dry run on production data before the next real merge and compare its output with the previous run.
+
+### Where the code is
+
+- Public: `routes/web.php` (`public.staff-intake.*`, outside the page cache), `StaffIntakeController`, `StaffIntakeSubmitRequest`, `StaffIntakeHeaders`, views in `resources/views/public/staff-intake/`, script `resources/js/staffIntake.js`.
+- Services: `app/Services/Staff/` (`StaffIntakeLinkService`, `StaffIntakeService`, `StaffIntakeReviewService`, `StaffIntakeFields`), contracts in `app/Contracts/Staff/`.
+- Admin: Faculties → "Staff intake links" (`StaffIntakeLinkResource`, with its access log) and "Staff intake requests" (`StaffIntakeRequestResource`, review screen with the diff, the duplicates and approve/reject).
+- Tests: `tests/Feature/StaffIntakeTest.php`, `tests/Unit/PersonNameMatchingTest.php`.
 
 ## Goal
 

@@ -29,6 +29,11 @@ The imported `AGENTS.MD` is the authoritative project rulebook (scope, architect
 - Pages pick a form with `App\Filament\Support\FormPicker` (event `formId`, admissions/jobs `applicationFormId`, suggestions `form.formId`). The page prints the schema via `public.forms.dynamic-form` (`formKey`) and the Alpine store reads it; there is no form list in the JS.
 - A form in use (a page picks it, or it has submissions) can't be deleted, only disabled. Submissions go to the inbox set on the form.
 
+## Staff intake links
+- Per-faculty link (`/{locale}/staff-intake/{token}`) where academic staff find their profile by name and send corrections or a new profile. Plan and as-built notes: `Docs/STAFF_INTAKE_LINK_PLAN.md`.
+- Nothing a teacher sends changes a profile: it is a `staff_intake_requests` row until a reviewer approves it, and approval goes through the About-entity CMS draft/publish workflow. Every open, claim and submit is logged in `staff_intake_access_logs`.
+- Name suggestions use `App\Support\PersonName::matchRank()`; keep `tests/Unit/PersonNameMatchingTest.php` green when touching name matching (the merge and research services share it).
+
 ## Where to look
 - `Docs/ARCHITECTURE.md`, `Docs/BACKEND_RULES.md`, `Docs/STYLEGUIDE.md`, `Docs/WORKFLOW.md`: layering and conventions
 - `Docs/FRONTEND_IMPORT_TRACKER.md`, `Docs/FRONTEND_ROUTE_PARITY_MATRIX.md`: parity status per route
