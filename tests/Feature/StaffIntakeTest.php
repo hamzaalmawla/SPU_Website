@@ -295,6 +295,36 @@ final class StaffIntakeTest extends TestCase
         $this->assertSame('nour@spu.edu.sy', $member->fresh()?->email);
     }
 
+    public function test_a_links_address_can_be_shown_again_to_whoever_manages_it(): void
+    {
+        $created = $this->link();
+        $service = app(StaffIntakeLinkServiceInterface::class);
+        $editorId = (int) $this->facultyEditor->getKey();
+
+        $shown = $service->address($created->link->id, $editorId);
+        $this->assertSame($created->urlAr, $shown?->urlAr);
+        $this->assertSame($created->urlEn, $shown?->urlEn);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'staff_intake_link.address_viewed', 'entity_id' => $created->link->id]);
+
+        // Stored encrypted, never in plain text.
+        $this->assertDatabaseMissing('staff_intake_links', ['token_encrypted' => $this->token($created)]);
+
+        $rotated = $service->rotate($created->link->id, $editorId);
+        $this->assertSame($rotated->urlAr, $service->address($created->link->id, $editorId)?->urlAr);
+
+        // Links made before addresses were kept have none to show.
+        StaffIntakeLink::query()->whereKey($created->link->id)->update(['token_encrypted' => null]);
+        $this->assertNull($service->address($created->link->id, $editorId));
+
+        $this->actingAs($this->facultyEditor, 'web');
+        Livewire::test(ListStaffIntakeLinks::class)
+            ->callTableAction('show_link', StaffIntakeLink::query()->findOrFail($created->link->id))
+            ->assertNotified(__('staff_intake.admin.notifications.link_unknown'));
+
+        $this->expectException(AuthorizationException::class);
+        $service->address($created->link->id, (int) $this->user('faculty_editor', 'pharmacy')->getKey());
+    }
+
     public function test_the_admin_screens_make_links_and_review_requests_within_the_editors_faculty(): void
     {
         $this->actingAs($this->facultyEditor, 'web');

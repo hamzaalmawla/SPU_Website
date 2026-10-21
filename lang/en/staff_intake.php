@@ -170,6 +170,7 @@ return [
         ],
         'actions' => [
             'create' => 'New link',
+            'show_link' => 'Show link',
             'rotate' => 'New address',
             'rotate_confirm' => 'The current address stops working at once. Send the new one to the staff group.',
             'revoke' => 'Revoke',
@@ -190,7 +191,9 @@ return [
         'notifications' => [
             'link_created' => 'Link created',
             'link_rotated' => 'New address created',
-            'link_body' => "Copy the link now: it is not shown again.\n\nArabic: :ar\n\nEnglish: :en",
+            'link_body' => "Send this to the staff group. You can show it again from the links list (Show link).\n\nArabic: :ar\n\nEnglish: :en",
+            'link_shown' => 'Link address',
+            'link_unknown' => 'This link was made before addresses were kept, so it cannot be shown. Use "New address" to get one; the old address stops working.',
             'link_revoked' => 'Link revoked',
             'approved_published' => 'Approved and published',
             'approved_draft' => 'Approved and saved as a draft for an editor to publish',

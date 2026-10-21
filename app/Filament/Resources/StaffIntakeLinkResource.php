@@ -114,6 +114,21 @@ class StaffIntakeLinkResource extends Resource
                 TextColumn::make('created_at')->label(__('staff_intake.admin.columns.created_at'))->dateTime()->sortable(),
             ])
             ->actions([
+                Tables\Actions\Action::make('show_link')
+                    ->label(__('staff_intake.admin.actions.show_link'))
+                    ->icon('heroicon-o-clipboard-document')
+                    ->visible(fn (StaffIntakeLink $record): bool => $record->revoked_at === null && self::canManage($record))
+                    ->action(function (StaffIntakeLink $record): void {
+                        $address = app(StaffIntakeLinkServiceInterface::class)->address((int) $record->getKey(), (int) auth()->id());
+
+                        if ($address === null) {
+                            Notification::make()->title(__('staff_intake.admin.notifications.link_unknown'))->warning()->persistent()->send();
+
+                            return;
+                        }
+
+                        self::notifyLink($address, __('staff_intake.admin.notifications.link_shown'));
+                    }),
                 Tables\Actions\ViewAction::make()->label(__('staff_intake.admin.actions.access_log')),
                 Tables\Actions\Action::make('rotate')
                     ->label(__('staff_intake.admin.actions.rotate'))

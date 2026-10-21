@@ -19,6 +19,12 @@ interface StaffIntakeLinkServiceInterface
     /** A new address for the link; the old one stops working at once. */
     public function rotate(int $linkId, int $actorId): StaffIntakeLinkCreatedDTO;
 
+    /**
+     * The link's current address, for whoever manages it. Null for links made
+     * before addresses were kept: those need a new address (rotate).
+     */
+    public function address(int $linkId, int $actorId): ?StaffIntakeLinkCreatedDTO;
+
     public function revoke(int $linkId, int $actorId): bool;
 
     /**

@@ -15,6 +15,7 @@ class StaffIntakeLink extends Model
     protected $fillable = [
         'faculty_id',
         'token_hash',
+        'token_encrypted',
         'label',
         'expires_at',
         'revoked_at',
@@ -23,7 +24,7 @@ class StaffIntakeLink extends Model
         'created_by',
     ];
 
-    protected $hidden = ['token_hash'];
+    protected $hidden = ['token_hash', 'token_encrypted'];
 
     protected function casts(): array
     {

@@ -14,6 +14,8 @@ use App\Models\Faculty\Faculty;
 use App\Models\Staff\StaffIntakeLink;
 use App\Models\User\User;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -43,6 +45,7 @@ final class StaffIntakeLinkService implements StaffIntakeLinkServiceInterface
         $link = StaffIntakeLink::query()->create([
             'faculty_id' => $input->facultyId,
             'token_hash' => hash('sha256', $token),
+            'token_encrypted' => Crypt::encryptString($token),
             'label' => $label !== null ? mb_substr($label, 0, 255) : null,
             'expires_at' => $input->expiresAt,
             'max_submissions' => $input->maxSubmissions,
@@ -62,9 +65,28 @@ final class StaffIntakeLinkService implements StaffIntakeLinkServiceInterface
     {
         $link = $this->manageable($linkId, $actorId);
         $token = self::newToken();
-        $link->forceFill(['token_hash' => hash('sha256', $token)])->save();
+        $link->forceFill(['token_hash' => hash('sha256', $token), 'token_encrypted' => Crypt::encryptString($token)])->save();
 
         $this->auditService->log('staff_intake_link.rotated', $actorId, StaffIntakeLink::class, $linkId);
+
+        return $this->created($link, $token);
+    }
+
+    public function address(int $linkId, int $actorId): ?StaffIntakeLinkCreatedDTO
+    {
+        $link = $this->manageable($linkId, $actorId);
+
+        try {
+            $token = is_string($link->token_encrypted) ? Crypt::decryptString($link->token_encrypted) : null;
+        } catch (DecryptException) {
+            $token = null;
+        }
+
+        if (! is_string($token) || $token === '' || ! hash_equals((string) $link->token_hash, hash('sha256', $token))) {
+            return null;
+        }
+
+        $this->auditService->log('staff_intake_link.address_viewed', $actorId, StaffIntakeLink::class, $linkId);
 
         return $this->created($link, $token);
     }

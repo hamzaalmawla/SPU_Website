@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\DTOs\Staff;
 
-/** A link just made or rotated: the only moment its address is known. */
+/** A link with its address: just made, rotated, or shown again to its manager. */
 final readonly class StaffIntakeLinkCreatedDTO
 {
     public function __construct(
