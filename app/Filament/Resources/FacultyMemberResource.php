@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources;
 
 use App\Contracts\Auth\AdminAccessServiceInterface;
+use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Content\ProfileAdminServiceInterface;
 use App\Contracts\Shared\SlugServiceInterface;
 use App\Filament\Resources\FacultyMemberResource\Pages;
@@ -274,6 +275,16 @@ class FacultyMemberResource extends Resource
                 ->visible(fn (FacultyMember $record): bool => Gate::allows('delete', $record))
                 ->action(fn (FacultyMember $record) => self::deleteMembers([(int) $record->getKey()])),
         ])->bulkActions([
+            Tables\Actions\BulkAction::make('publishSelected')
+                ->label(__('admin_resources.faculty_member.publish_selected'))
+                ->icon('heroicon-m-paper-airplane')
+                ->color('success')
+                ->requiresConfirmation()
+                ->modalHeading(__('admin_resources.faculty_member.publish_heading'))
+                ->modalDescription(fn (Collection $records): string => __('admin_resources.faculty_member.publish_description', ['count' => $records->count()]))
+                ->visible(fn (): bool => Gate::allows('faculty_members.publish'))
+                ->deselectRecordsAfterCompletion()
+                ->action(fn (Collection $records) => self::publishMembers($records)),
             Tables\Actions\BulkAction::make('deleteSelected')
                 ->label(__('admin_resources.faculty_member.delete_selected'))
                 ->icon('heroicon-m-trash')
@@ -300,6 +311,39 @@ class FacultyMemberResource extends Resource
         }
 
         Notification::make()->title(__('admin_resources.faculty_member.deleted_count', ['count' => $count]))->success()->send();
+    }
+
+    /**
+     * Publishes the pending draft of each selected member. Members without one
+     * stay as they are; members whose draft is not ready are named with why.
+     *
+     * @param  Collection<int, FacultyMember>  $records
+     */
+    private static function publishMembers(Collection $records): void
+    {
+        $members = $records->keyBy(fn (FacultyMember $record): string => 'entity.faculty-member.'.$record->getKey());
+
+        try {
+            $result = app(CmsWorkflowServiceInterface::class)->publishMany($members->keys()->all(), (int) auth()->id());
+        } catch (AuthorizationException) {
+            Notification::make()->title(__('admin_resources.faculty_member.publish_denied'))->danger()->send();
+
+            return;
+        }
+
+        $lines = [];
+        if ($result->unchanged !== []) {
+            $lines[] = __('admin_resources.faculty_member.publish_unchanged', ['count' => count($result->unchanged)]);
+        }
+        foreach ($result->failed as $targetKey => $errors) {
+            $lines[] = self::getRecordTitle($members->get($targetKey)).': '.implode(' ', $errors);
+        }
+
+        $notification = Notification::make()
+            ->title(__('admin_resources.faculty_member.published_count', ['count' => count($result->published)]))
+            ->body($lines !== [] ? implode("\n", $lines) : null);
+
+        ($result->failed !== [] ? $notification->warning()->persistent() : $notification->success())->send();
     }
 
     public static function getPages(): array

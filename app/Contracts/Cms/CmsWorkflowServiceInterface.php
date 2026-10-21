@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Contracts\Cms;
 
+use App\DTOs\Cms\CmsBulkPublishResultDTO;
 use App\DTOs\Cms\CmsDraftDTO;
 use App\DTOs\Cms\CmsPreviewTokenDTO;
 use App\DTOs\Cms\CmsPublishReadinessDTO;
@@ -17,6 +18,16 @@ interface CmsWorkflowServiceInterface
     public function preview(string $targetKey, string $locale, int $userId, ?string $device = null): CmsPreviewTokenDTO;
 
     public function publish(string $targetKey, int $userId): bool;
+
+    /**
+     * Publishes the pending draft of several targets (an admin list's bulk
+     * publish). The user must be allowed to publish every target, or nothing
+     * is published. A target without a pending draft is left as it is, and
+     * one whose draft is not ready is reported without stopping the others.
+     *
+     * @param  list<string>  $targetKeys
+     */
+    public function publishMany(array $targetKeys, int $userId): CmsBulkPublishResultDTO;
 
     public function schedule(string $targetKey, DateTimeInterface $publishAt, int $userId): bool;
 

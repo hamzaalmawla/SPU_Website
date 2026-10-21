@@ -15,6 +15,7 @@ use App\Contracts\News\NewsArticleCmsServiceInterface;
 use App\Contracts\Research\ResearchPublicationCmsServiceInterface;
 use App\Contracts\Shared\AuditServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
+use App\DTOs\Cms\CmsBulkPublishResultDTO;
 use App\DTOs\Cms\CmsDraftDTO;
 use App\DTOs\Cms\CmsPreviewTokenDTO;
 use App\DTOs\Cms\CmsPublishReadinessDTO;
@@ -156,6 +157,58 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
         }
 
         return $published;
+    }
+
+    public function publishMany(array $targetKeys, int $userId): CmsBulkPublishResultDTO
+    {
+        $targets = [];
+
+        // Authorize the whole selection first, so nothing is published when
+        // part of it reaches into a faculty the user cannot publish.
+        foreach (array_values(array_unique($targetKeys)) as $targetKey) {
+            $target = $this->requireTarget($targetKey);
+            $this->authorizePublish($target, $userId);
+            $targets[] = $target;
+        }
+
+        $published = [];
+        $unchanged = [];
+        $failed = [];
+
+        foreach ($targets as $target) {
+            $draft = $this->latestEditableDraft($target->key);
+
+            if (! $draft instanceof CmsDraft) {
+                $unchanged[] = $target->key;
+
+                continue;
+            }
+
+            $readiness = $this->readiness($target->key, is_array($draft->payload_json) ? $draft->payload_json : []);
+
+            if (! $readiness->isReady) {
+                $failed[$target->key] = array_values(array_map('strval', collect($readiness->errors)->flatten()->all()));
+
+                continue;
+            }
+
+            try {
+                $wasPublished = DB::transaction(fn (): bool => $this->publishDraft($draft, $userId));
+            } catch (ValidationException $exception) {
+                $failed[$target->key] = array_values(array_map('strval', collect($exception->errors())->flatten()->all()));
+
+                continue;
+            }
+
+            if ($wasPublished) {
+                $this->invalidatePublishedTarget($target->key, $userId, 'cms.published');
+                $published[] = $target->key;
+            } else {
+                $unchanged[] = $target->key;
+            }
+        }
+
+        return new CmsBulkPublishResultDTO($published, $unchanged, $failed);
     }
 
     public function schedule(string $targetKey, DateTimeInterface $publishAt, int $userId): bool

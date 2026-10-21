@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Contracts\Cms\AboutEntityCmsServiceInterface;
+use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Content\ProfileAdminServiceInterface;
+use App\DTOs\Cms\AboutEntityCmsDataDTO;
 use App\Enums\PublicationStatus;
 use App\Filament\Resources\FacultyMemberResource\Pages\CreateFacultyMember;
 use App\Filament\Resources\FacultyMemberResource\Pages\ListFacultyMembers;
@@ -116,6 +119,73 @@ final class FacultyMemberAdminTest extends TestCase
         $this->assertNotSoftDeleted($foreign);
         $this->assertSame(1, app(ProfileAdminServiceInterface::class)->deleteFacultyMembers([(int) $own->getKey()], (int) $editor->getKey()));
         $this->assertSoftDeleted($own);
+    }
+
+    public function test_faculty_members_list_publishes_the_pending_drafts_of_the_selection(): void
+    {
+        $editor = $this->user('editor');
+        $this->actingAs($editor, 'web');
+        $ready = $this->draftMember('ready-member', $this->dentistry, $editor, 'Lecturer');
+        $unready = $this->draftMember('unready-member', $this->dentistry, $editor, null);
+        $noDraft = $this->member('no-draft-member', $this->dentistry);
+        $unselected = $this->draftMember('unselected-member', $this->dentistry, $editor, 'Lecturer');
+
+        Livewire::withQueryParams(['faculty_scope' => 'dentistry'])
+            ->test(ListFacultyMembers::class)
+            ->callTableBulkAction('publishSelected', [$ready, $unready, $noDraft])
+            ->assertNotified(__('admin_resources.faculty_member.published_count', ['count' => 1]));
+
+        $this->assertSame(PublicationStatus::Published->value, $ready->fresh()?->publication_status);
+        $this->assertSame(PublicationStatus::Draft->value, $unready->fresh()?->publication_status);
+        $this->assertSame(PublicationStatus::Published->value, $noDraft->fresh()?->publication_status);
+        $this->assertSame(PublicationStatus::Draft->value, $unselected->fresh()?->publication_status);
+        $this->assertSame(PublicationStatus::Draft->value, $this->latestDraft($unready)->status);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'cms.published']);
+    }
+
+    public function test_faculty_editor_cannot_bulk_publish_members_of_another_faculty(): void
+    {
+        $admin = $this->user('editor');
+        $editor = $this->user('faculty_editor', 'dentistry');
+        $editor->extraPermissions()->create(['permission' => 'faculty_members.publish']);
+        $own = $this->draftMember('own-draft-member', $this->dentistry, $admin, 'Lecturer');
+        $foreign = $this->draftMember('foreign-draft-member', $this->pharmacy, $admin, 'Lecturer');
+        $workflow = app(CmsWorkflowServiceInterface::class);
+
+        try {
+            $workflow->publishMany(['entity.faculty-member.'.$own->getKey(), 'entity.faculty-member.'.$foreign->getKey()], (int) $editor->getKey());
+            $this->fail('A faculty editor published a member of another faculty.');
+        } catch (AuthorizationException) {
+        }
+
+        $this->assertSame(PublicationStatus::Draft->value, $own->fresh()?->publication_status);
+        $this->assertSame(PublicationStatus::Draft->value, $foreign->fresh()?->publication_status);
+
+        $result = $workflow->publishMany(['entity.faculty-member.'.$own->getKey()], (int) $editor->getKey());
+        $this->assertSame(['entity.faculty-member.'.$own->getKey()], $result->published);
+        $this->assertSame(PublicationStatus::Published->value, $own->fresh()?->publication_status);
+    }
+
+    /** A new member with a saved draft, as the create form leaves it. A null position leaves the draft not ready to publish. */
+    private function draftMember(string $slug, Faculty $faculty, User $author, ?string $position): FacultyMember
+    {
+        $prepared = app(AboutEntityCmsServiceInterface::class)->prepareDraft(new AboutEntityCmsDataDTO('faculty-member', null, [
+            'slug' => $slug,
+            'faculty_id' => (int) $faculty->getKey(),
+            'is_enabled' => true,
+            'translations' => [
+                'ar' => ['locale' => 'ar', 'full_name' => 'عضو '.$slug, 'position' => $position !== null ? 'مدرس' : null],
+                'en' => ['locale' => 'en', 'full_name' => $slug, 'position' => $position],
+            ],
+        ]), (int) $author->getKey());
+        app(CmsWorkflowServiceInterface::class)->saveDraft((string) $prepared->targetKey, $prepared->payload, (int) $author->getKey());
+
+        return FacultyMember::query()->findOrFail($prepared->entityId);
+    }
+
+    private function latestDraft(FacultyMember $member): CmsDraft
+    {
+        return CmsDraft::query()->where('target_key', 'entity.faculty-member.'.$member->getKey())->latest('id')->firstOrFail();
     }
 
     private function member(string $slug, Faculty $faculty): FacultyMember
