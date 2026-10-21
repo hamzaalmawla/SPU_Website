@@ -17,6 +17,7 @@ use App\Filament\Resources\StaffIntakeRequestResource\Pages\ViewStaffIntakeReque
 use App\Mail\StaffIntakeSubmittedNotification;
 use App\Models\Faculty\Department;
 use App\Models\Faculty\Faculty;
+use App\Models\Media\MediaAsset;
 use App\Models\Person\FacultyMember;
 use App\Models\Staff\StaffIntakeAccessLog;
 use App\Models\Staff\StaffIntakeLink;
@@ -280,6 +281,29 @@ final class StaffIntakeTest extends TestCase
         $this->assertSame('0944123456', $member->fresh()?->phone);
         $this->assertSame(PublicationStatus::Published->value, $member->fresh()?->publication_status);
         $this->assertSame('About the teacher.', $member->fresh()?->translations()->where('locale', 'en')->value('bio'));
+    }
+
+    public function test_approval_imports_a_cv_whose_long_name_lost_its_extension(): void
+    {
+        $member = $this->member('long-name-intake', 'معاذ عبد المجيد', 'Muath Test', $this->dentistry);
+        $token = $this->token($this->link());
+        $ref = $this->refFor($token, 'Muath Test');
+        $pdf = "%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n";
+
+        // A name longer than the 150 characters kept, so ".pdf" is cut off when the request is stored.
+        $this->post('/en/staff-intake/'.$token.'/form', $this->formData($ref, [
+            'name_ar' => 'معاذ عبد المجيد',
+            'name_en' => 'Muath Test',
+            'cv' => UploadedFile::fake()->createWithContent(str_repeat('السيرة الذاتية ', 12).'.pdf', $pdf),
+        ]))->assertSessionHasNoErrors()->assertRedirect();
+
+        $result = app(StaffIntakeReviewServiceInterface::class)->approve((int) StaffIntakeRequest::query()->sole()->getKey(), (int) $this->user('editor')->getKey());
+
+        $this->assertTrue($result->published, implode(' ', $result->publishErrors));
+        $cv = MediaAsset::query()->findOrFail($member->fresh()?->cv_media_id);
+        $this->assertSame('pdf', $cv->extension);
+        $this->assertStringStartsWith('السيرة الذاتية', (string) $cv->original_name);
+        $this->assertStringEndsWith('.pdf', (string) $cv->original_name);
     }
 
     public function test_rejecting_leaves_the_profile_alone(): void

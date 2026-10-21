@@ -407,10 +407,11 @@ final class StaffIntakeReviewService implements StaffIntakeReviewServiceInterfac
         }
 
         $faculty = Faculty::query()->find($request->faculty_id);
+        $fileName = $this->uploadFileName($upload, $path);
         $media = $this->mediaService->upload([
-            'file' => new UploadedFile($disk->path($path), (string) ($upload['name'] ?? basename($path)), (string) ($upload['mime'] ?? null), null, true),
+            'file' => new UploadedFile($disk->path($path), $fileName, (string) ($upload['mime'] ?? null), null, true),
             'uploaded_by' => $actorId,
-            'original_name' => (string) ($upload['name'] ?? basename($path)),
+            'original_name' => $fileName,
             'title_ar' => (string) ($fields['name_ar'] ?? '') ?: $name,
             'title_en' => (string) ($fields['name_en'] ?? '') ?: $name,
             'alt_text_ar' => (string) ($fields['name_ar'] ?? '') ?: $name,
@@ -419,6 +420,26 @@ final class StaffIntakeReviewService implements StaffIntakeReviewServiceInterfac
         ]);
 
         return $media->mediaId;
+    }
+
+    /**
+     * The teacher's file name ending in the extension of the stored file,
+     * which was picked from the file's content when it was sent. The name
+     * as sent may have none, another one, or lost it to the length limit,
+     * and the media library refuses a name that does not match the content.
+     *
+     * @param  array<string, mixed>  $upload
+     */
+    private function uploadFileName(array $upload, string $storedPath): string
+    {
+        // Regexes rather than pathinfo(), which can drop Arabic letters under some server locales.
+        $extension = preg_match('/\.([A-Za-z0-9]+)$/', $storedPath, $match) === 1 ? strtolower($match[1]) : '';
+        $stem = trim((string) preg_replace('/\.[A-Za-z0-9]{1,5}$/', '', trim((string) ($upload['name'] ?? ''))), " .\t");
+        if ($stem === '') {
+            $stem = (string) preg_replace('/\.[A-Za-z0-9]+$/', '', basename($storedPath));
+        }
+
+        return $stem.($extension !== '' ? '.'.$extension : '');
     }
 
     private function valueText(string $key, mixed $value, string $locale): string
