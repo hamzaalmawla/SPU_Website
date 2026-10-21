@@ -451,6 +451,7 @@ return [
             'picker' => 'Opens on the newest publications. Type part of a title, author or faculty to find any published research, imported ones included.',
             'legacy_items' => 'These are the old hand-made placeholder publications. Remove them here and publish; new publications are created in',
             'delete' => 'The publication leaves the website and every faculty or homepage selection of it.',
+            'delete_selected' => 'The :count selected publications leave the website and every faculty or homepage selection of them. Open each file first if you have not checked it yet.',
         ],
         'statuses' => [
             'published' => 'Published',
@@ -464,11 +465,16 @@ return [
             'year' => 'Year',
             'status' => 'Status',
             'updated_at' => 'Last updated',
+            'files' => 'Files',
+            'no_file' => 'No file',
         ],
         'filters' => [
             'status' => 'Status',
             'faculty' => 'Faculty',
             'year' => 'Year',
+            'file' => 'File',
+            'with_file' => 'With a file',
+            'without_file' => 'Without a file',
         ],
         'actions' => [
             'save_draft' => 'Save draft',
@@ -478,6 +484,7 @@ return [
             'schedule' => 'Schedule publication',
             'unpublish' => 'Unpublish',
             'delete' => 'Delete',
+            'delete_selected' => 'Delete selected',
         ],
         'notifications' => [
             'draft_saved' => 'Private draft saved',
@@ -486,6 +493,7 @@ return [
             'unpublished' => 'Publication unpublished',
             'not_published' => 'Publication was not published',
             'deleted' => 'Publication deleted',
+            'deleted_many' => ':count publications deleted',
             'save_failed' => 'Draft could not be saved',
             'preview_failed' => 'Preview could not be opened',
             'publish_failed' => 'Publication could not be published',

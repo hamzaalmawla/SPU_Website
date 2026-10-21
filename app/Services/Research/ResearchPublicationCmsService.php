@@ -261,6 +261,33 @@ final class ResearchPublicationCmsService implements ResearchPublicationCmsServi
         return true;
     }
 
+    public function deletePublications(array $publicationIds, int $userId): int
+    {
+        $publications = ResearchPublication::query()
+            ->whereKey(array_values(array_unique(array_map('intval', $publicationIds))))
+            ->get();
+
+        foreach ($publications as $publication) {
+            $this->authorizeManagement($userId, $publication, null, 'delete');
+        }
+
+        DB::transaction(function () use ($publications, $userId): void {
+            foreach ($publications as $publication) {
+                $publication->delete();
+                $this->auditService->log('research_publication.deleted', $userId, ResearchPublication::class, (int) $publication->getKey(), [
+                    'target_key' => $this->targetKey((int) $publication->getKey()),
+                    'bulk' => true,
+                ]);
+            }
+        });
+
+        if ($publications->isNotEmpty()) {
+            $this->flushPublicationCaches();
+        }
+
+        return $publications->count();
+    }
+
     public function facultyMemberOptions(int $userId, ?string $search = null, ?int $selectedId = null): array
     {
         $user = User::query()->find($userId);

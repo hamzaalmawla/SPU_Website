@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources;
 
 use App\Contracts\Auth\AdminAccessServiceInterface;
+use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Contracts\Research\ResearchPublicationCmsServiceInterface;
 use App\DTOs\Research\ResearcherDataDTO;
 use App\Filament\Resources\ResearchPublicationResource\Pages;
@@ -28,11 +29,17 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\HtmlString;
+use WeakMap;
 
 /**
  * The research publications on the website, imported and new, one page at a
@@ -46,6 +53,9 @@ class ResearchPublicationResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
 
     protected static ?int $navigationSort = 2;
+
+    /** @var WeakMap<HasTable, array<int, list<array{label: string, url: string, type: string}>>>|null */
+    private static ?WeakMap $pageFiles = null;
 
     public static function getModelLabel(): string
     {
@@ -300,6 +310,10 @@ class ResearchPublicationResource extends Resource
                     ->label(__('admin.research_publication.table.faculty'))
                     ->getStateUsing(fn (ResearchPublication $record): string => self::facultyName($record))
                     ->placeholder(__('admin.research_publication.table.no_faculty')),
+                TextColumn::make('files')
+                    ->label(__('admin.research_publication.table.files'))
+                    ->getStateUsing(fn (ResearchPublication $record, HasTable $livewire): HtmlString => self::fileLinks($record, $livewire))
+                    ->html(),
                 TextColumn::make('publication_year')
                     ->label(__('admin.research_publication.table.year'))
                     ->sortable()
@@ -345,7 +359,22 @@ class ResearchPublicationResource extends Resource
                 SelectFilter::make('publication_year')
                     ->label(__('admin.research_publication.filters.year'))
                     ->options(fn (): array => app(ResearchPublicationCmsServiceInterface::class)->yearFilterOptions()),
+                TernaryFilter::make('file')
+                    ->label(__('admin.research_publication.filters.file'))
+                    ->trueLabel(__('admin.research_publication.filters.with_file'))
+                    ->falseLabel(__('admin.research_publication.filters.without_file'))
+                    ->queries(
+                        true: fn (Builder $query): Builder => $query->where(fn (Builder $fileQuery): Builder => $fileQuery
+                            ->whereNotNull('file_media_id')
+                            ->orWhereHas('files')
+                            ->orWhereHas('legacyFileReferences')),
+                        false: fn (Builder $query): Builder => $query
+                            ->whereNull('file_media_id')
+                            ->whereDoesntHave('files')
+                            ->whereDoesntHave('legacyFileReferences'),
+                    ),
             ])
+            ->persistFiltersInSession()
             ->actions([
                 Tables\Actions\EditAction::make()->label(__('admin.actions.edit')),
                 Tables\Actions\Action::make('delete_publication')
@@ -362,7 +391,33 @@ class ResearchPublicationResource extends Resource
                         Notification::make()->title(__('admin.research_publication.notifications.deleted'))->success()->send();
                     }),
             ])
-            ->bulkActions([])
+            ->bulkActions([
+                Tables\Actions\BulkAction::make('delete_selected')
+                    ->label(__('admin.research_publication.actions.delete_selected'))
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalDescription(fn (Collection $records): string => __('admin.research_publication.help.delete_selected', ['count' => $records->count()]))
+                    ->visible(fn (): bool => self::mayBulkDelete())
+                    ->deselectRecordsAfterCompletion()
+                    ->action(function (Collection $records): void {
+                        $user = auth()->user();
+                        abort_unless($user instanceof User, 403);
+
+                        try {
+                            $deleted = app(ResearchPublicationCmsServiceInterface::class)->deletePublications(
+                                $records->map(fn (ResearchPublication $record): int => (int) $record->getKey())->values()->all(),
+                                (int) $user->getKey(),
+                            );
+                        } catch (AuthorizationException) {
+                            Notification::make()->title(__('admin.research_publication.notifications.delete_failed'))->danger()->send();
+
+                            return;
+                        }
+
+                        Notification::make()->title(__('admin.research_publication.notifications.deleted_many', ['count' => $deleted]))->success()->send();
+                    }),
+            ])
             ->paginated([25, 50, 100])
             ->defaultPaginationPageOption(25)
             ->emptyStateHeading(__('admin.research_publication.empty.heading'))
@@ -387,6 +442,48 @@ class ResearchPublicationResource extends Resource
         }
 
         return $publication->extraction_status === 'duplicate_review' ? 'needs_review' : 'hidden';
+    }
+
+    private static function mayBulkDelete(): bool
+    {
+        $user = auth()->user();
+
+        return $user instanceof User && app(AdminAccessServiceInterface::class)->can($user, 'research_publications.delete');
+    }
+
+    /**
+     * Links to the publication's files, opened in a new tab so they can be
+     * checked. The files of the whole page are read once per render.
+     */
+    private static function fileLinks(ResearchPublication $publication, HasTable $livewire): HtmlString
+    {
+        self::$pageFiles ??= new WeakMap;
+        $id = (int) $publication->getKey();
+        $files = self::$pageFiles[$livewire] ?? [];
+
+        if (! array_key_exists($id, $files)) {
+            $pageIds = [$id];
+
+            foreach ($livewire->getTableRecords() as $record) {
+                if ($record instanceof ResearchPublication) {
+                    $pageIds[] = (int) $record->getKey();
+                }
+            }
+
+            $pageIds = array_values(array_unique($pageIds));
+            $files = app(ResearchPageServiceInterface::class)->publicationFiles($pageIds, app()->getLocale() === 'en' ? 'en' : 'ar') + array_fill_keys($pageIds, []);
+            self::$pageFiles[$livewire] = $files;
+        }
+
+        $downloads = $files[$id] ?? [];
+
+        if ($downloads === []) {
+            return new HtmlString('<span class="text-danger-600 dark:text-danger-400">'.e(__('admin.research_publication.table.no_file')).'</span>');
+        }
+
+        return new HtmlString(collect($downloads)
+            ->map(fn (array $download): string => '<a href="'.e($download['url']).'" target="_blank" rel="noopener noreferrer" class="text-primary-600 underline dark:text-primary-400" title="'.e($download['label']).'">'.e($download['type']).'</a>')
+            ->implode(' · '));
     }
 
     private static function scopeQueryToCurrentUser(Builder $query): Builder

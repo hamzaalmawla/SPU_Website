@@ -43,6 +43,16 @@ interface ResearchPublicationCmsServiceInterface
     public function deletePublication(string $targetKey, int $userId): bool;
 
     /**
+     * Soft-deletes several publications at once (the admin list's bulk
+     * delete). The user must be allowed to delete every one, or none is
+     * deleted. Each deletion is audited; caches are flushed once.
+     *
+     * @param  list<int>  $publicationIds
+     * @return int Publications deleted (ids already gone are skipped)
+     */
+    public function deletePublications(array $publicationIds, int $userId): int;
+
+    /**
      * Faculty members a user may attribute a publication to, keyed by id.
      *
      * @return array<int, string>

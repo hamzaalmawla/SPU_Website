@@ -16,6 +16,7 @@ use App\Filament\Resources\ResearchPublicationResource\Pages\ListResearchPublica
 use App\Models\Faculty\Faculty;
 use App\Models\Person\FacultyMember;
 use App\Models\Person\FacultyMemberTranslation;
+use App\Models\Research\LegacyResearchFileReference;
 use App\Models\Research\ResearchPublication;
 use App\Models\Research\ResearchPublicationTranslation;
 use App\Models\Shared\MigrationLog;
@@ -197,6 +198,68 @@ final class ResearchPublicationAdminTest extends TestCase
         $this->assertSoftDeleted($publication);
         $this->get('/en/research/publications/'.$slug)->assertNotFound();
         $this->assertDatabaseHas('audit_logs', ['action' => 'research_publication.deleted', 'entity_id' => $publication->getKey()]);
+    }
+
+    public function test_a_faculty_list_links_each_paper_file_and_filters_papers_without_one(): void
+    {
+        $withFile = $this->legacyPublication('medicine', 'Study with a paper file');
+        $withoutFile = $this->legacyPublication('medicine', 'Study without a file');
+        LegacyResearchFileReference::query()->create([
+            'research_publication_id' => (int) $withFile->getKey(),
+            'legacy_source_table' => 'jx_member_categories',
+            'legacy_source_id' => (int) $withFile->legacy_source_id,
+            'legacy_path' => 'images/research/study-with-file.pdf',
+            'sort_order' => 0,
+        ]);
+        $this->actingAs($this->editor, 'web');
+
+        Livewire::test(ListResearchPublications::class)
+            ->filterTable('faculty', 'medicine')
+            ->assertSee('study-with-file.pdf')
+            ->assertSee(__('admin.research_publication.table.no_file'))
+            ->filterTable('file', false)
+            ->assertCanSeeTableRecords([$withoutFile])
+            ->assertCanNotSeeTableRecords([$withFile])
+            ->filterTable('file', true)
+            ->assertCanSeeTableRecords([$withFile])
+            ->assertCanNotSeeTableRecords([$withoutFile]);
+    }
+
+    public function test_selected_publications_are_deleted_together_and_each_deletion_is_audited(): void
+    {
+        $first = $this->legacyPublication('medicine', 'Wrong medicine study');
+        $second = $this->legacyPublication('medicine', 'Another wrong medicine study');
+        $kept = $this->legacyPublication('medicine', 'Correct medicine study');
+        $this->actingAs($this->editor, 'web');
+
+        Livewire::test(ListResearchPublications::class)
+            ->filterTable('faculty', 'medicine')
+            ->callTableBulkAction('delete_selected', [$first, $second])
+            ->assertHasNoTableBulkActionErrors();
+
+        $this->assertSoftDeleted($first);
+        $this->assertSoftDeleted($second);
+        $this->assertNotSoftDeleted($kept);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'research_publication.deleted', 'entity_id' => $first->getKey()]);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'research_publication.deleted', 'entity_id' => $second->getKey()]);
+        $this->get('/en/research/publications/'.$this->slug($first))->assertNotFound();
+        $this->get('/en/research/publications/'.$this->slug($kept))->assertOk();
+    }
+
+    public function test_a_bulk_delete_reaching_outside_the_users_faculties_deletes_nothing(): void
+    {
+        $own = $this->legacyPublication('medicine', 'Medicine study to delete');
+        $other = $this->legacyPublication('pharmacy', 'Pharmacy study to keep');
+        $facultyEditor = User::factory()->create(['role_slug' => 'faculty_editor', 'faculty_scopes' => ['medicine'], 'is_locked' => false]);
+
+        try {
+            app(ResearchPublicationCmsServiceInterface::class)->deletePublications([(int) $own->getKey(), (int) $other->getKey()], (int) $facultyEditor->getKey());
+            $this->fail('A delete outside the faculty limit must be refused.');
+        } catch (AuthorizationException) {
+        }
+
+        $this->assertNotSoftDeleted($own);
+        $this->assertNotSoftDeleted($other);
     }
 
     /** @param array{title_en?: string} $changes */

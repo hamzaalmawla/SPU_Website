@@ -37,6 +37,16 @@ interface ResearchPageServiceInterface
     public function publication(string $locale, string $slug): ?ResearchDetailPageDTO;
 
     /**
+     * The files of database publications as the detail page links them (main
+     * file, extra files, old-site files), keyed by publication id. Hidden and
+     * draft publications are included, for checking them in the admin.
+     *
+     * @param  list<int>  $publicationIds
+     * @return array<int, list<array{label: string, url: string, type: string}>>
+     */
+    public function publicationFiles(array $publicationIds, string $locale): array;
+
+    /**
      * The detail page of a database publication as its draft payload would
      * publish it, built without writing anything.
      *

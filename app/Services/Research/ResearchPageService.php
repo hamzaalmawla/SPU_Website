@@ -207,6 +207,22 @@ final class ResearchPageService implements ResearchPageServiceInterface
         );
     }
 
+    public function publicationFiles(array $publicationIds, string $locale): array
+    {
+        if ($publicationIds === []) {
+            return [];
+        }
+
+        return ResearchPublication::query()
+            ->with(['fileMedia', 'files.mediaAsset', 'legacyFileReferences'])
+            ->whereKey(array_values(array_unique(array_map('intval', $publicationIds))))
+            ->get()
+            ->mapWithKeys(fn (ResearchPublication $publication): array => [
+                (int) $publication->getKey() => $this->publicationDownloads($publication, $locale),
+            ])
+            ->all();
+    }
+
     public function publication(string $locale, string $slug): ?ResearchDetailPageDTO
     {
         $cmsPage = $this->cmsPublication($locale, $slug);
@@ -2002,6 +2018,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
         return $this->publicProfiles[$slug] ??= $this->profilePageService->hasPublicProfile($slug);
     }
 
+    /** @return list<array{label: string, url: string, type: string}> */
     private function publicationDownloads(ResearchPublication $publication, string $locale): array
     {
         $downloads = [];
