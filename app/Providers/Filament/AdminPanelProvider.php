@@ -8,9 +8,9 @@ use App\Filament\Support\DefaultFieldLabels;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Middleware\AdminAuthMiddleware;
 use App\Http\Middleware\AdminLocaleMiddleware;
+use App\Http\Middleware\AuthenticateAdminSession;
 use App\Http\Middleware\TwoFactorChallengeMiddleware;
 use App\Support\AdminPath;
-use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Navigation\NavigationGroup;
@@ -92,7 +92,7 @@ class AdminPanelProvider extends PanelProvider
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,
-                AuthenticateSession::class,
+                AuthenticateAdminSession::class,
                 ShareErrorsFromSession::class,
                 VerifyCsrfToken::class,
                 SubstituteBindings::class,

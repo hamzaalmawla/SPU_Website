@@ -170,6 +170,26 @@ class AdminAuthFlowTest extends TestCase
         $this->assertGuest('web');
     }
 
+    public function test_a_session_from_before_a_password_change_goes_to_the_login_page(): void
+    {
+        $user = User::factory()->create([
+            'role_slug' => 'super_admin',
+        ]);
+
+        // The session remembers the old password hash, as one opened before
+        // the password was changed on another device does.
+        $this->actingAs($user, 'web')
+            ->withSession([
+                'admin_session_started_at' => now()->getTimestamp(),
+                'admin_session_last_activity_at' => now()->getTimestamp(),
+                'password_hash_web' => 'hash-of-the-old-password',
+            ])
+            ->get('/admin/manage-settings')
+            ->assertRedirect('/admin/login');
+
+        $this->assertGuest('web');
+    }
+
     public function test_admin_idle_timeout_logs_out_authenticated_session(): void
     {
         config(['auth.admin_session.idle_timeout_minutes' => 5]);
