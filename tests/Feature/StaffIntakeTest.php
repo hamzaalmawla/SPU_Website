@@ -336,26 +336,38 @@ final class StaffIntakeTest extends TestCase
         Livewire::test(ListStaffIntakeLinks::class)->assertCanNotSeeTableRecords([$link]);
     }
 
-    public function test_photo_email_cv_and_academic_profiles_are_required(): void
+    public function test_photo_and_cv_are_required_while_email_and_profile_links_are_optional(): void
     {
         $token = $this->token($this->link());
-        $ref = $this->newRef($token, 'Zaid Required');
-        $form = $this->get('/en/staff-intake/'.$token.'/form?name=Zaid+Required')->assertOk();
-        foreach (['email', 'linkedin', 'orcid', 'scopus', 'researchgate', 'scholar', 'photo', 'cv'] as $field) {
-            $this->assertMatchesRegularExpression('/name="'.$field.'"[^>]*required/', (string) $form->getContent(), $field.' is not marked required');
+        $ref = $this->newRef($token, 'Zaid Optional');
+        $form = (string) $this->get('/en/staff-intake/'.$token.'/form?name=Zaid+Optional')->assertOk()->getContent();
+        foreach (['photo', 'cv'] as $field) {
+            $this->assertMatchesRegularExpression('/name="'.$field.'"[^>]*required/', $form, $field.' is not marked required');
+        }
+        foreach (['email', 'linkedin', 'orcid', 'scopus', 'researchgate', 'scholar', 'twitter'] as $field) {
+            $this->assertDoesNotMatchRegularExpression('/name="'.$field.'"[^>]*required/', $form, $field.' is marked required');
         }
 
-        $missing = ['ref' => $ref, 'name_ar' => 'زيد مطلوب', 'name_en' => 'Zaid Required'];
-        $this->post('/en/staff-intake/'.$token.'/form', $missing)
-            ->assertSessionHasErrors(['email', 'linkedin', 'orcid', 'scopus', 'researchgate', 'scholar']);
-        $this->post('/en/staff-intake/'.$token.'/form', [...$missing, ...$this->requiredFields(), 'photo' => null, 'cv' => null])
+        $minimal = [
+            'ref' => $ref,
+            'name_ar' => 'زيد',
+            'name_en' => 'Zaid Optional',
+            'bio_ar' => 'نبذة.',
+            'bio_en' => 'About.',
+            'photo' => UploadedFile::fake()->image('photo.jpg', 400, 400),
+            'cv' => UploadedFile::fake()->createWithContent('cv.pdf', '%PDF-1.4
+1 0 obj << /Type /Catalog >> endobj
+trailer << /Root 1 0 R >>
+%%EOF
+'),
+        ];
+        $this->post('/en/staff-intake/'.$token.'/form', [...$minimal, 'photo' => null, 'cv' => null])
             ->assertSessionHasErrors(['photo', 'cv']);
-        $this->post('/en/staff-intake/'.$token.'/form', [...$missing, ...$this->requiredFields(), 'orcid' => 'not a link'])
+        $this->post('/en/staff-intake/'.$token.'/form', [...$minimal, 'orcid' => 'not a link'])
             ->assertSessionHasErrors(['orcid']);
         $this->assertSame(0, StaffIntakeRequest::query()->count());
 
-        // X (Twitter) stays optional.
-        $this->post('/en/staff-intake/'.$token.'/form', [...$missing, ...$this->requiredFields()])->assertRedirect('/en/staff-intake/'.$token.'/sent');
+        $this->post('/en/staff-intake/'.$token.'/form', $minimal)->assertRedirect('/en/staff-intake/'.$token.'/sent');
     }
 
     public function test_a_profile_that_already_has_a_photo_and_cv_need_not_send_them_again(): void

@@ -77,7 +77,7 @@
                         @error('department_id')<p class="text-xs font-bold text-spu-red" role="alert">{{ $message }}</p>@enderror
                     </div>
                     @include('public.staff-intake.field', ['name' => 'office_location', 'value' => $fields['office_location']])
-                    @include('public.staff-intake.field', ['name' => 'email', 'value' => $fields['email'], 'type' => 'email', 'dir' => 'ltr', 'autocomplete' => 'email', 'required' => true])
+                    @include('public.staff-intake.field', ['name' => 'email', 'value' => $fields['email'], 'type' => 'email', 'dir' => 'ltr', 'autocomplete' => 'email'])
                     @include('public.staff-intake.field', ['name' => 'phone', 'value' => $fields['phone'], 'type' => 'tel', 'dir' => 'ltr', 'max' => 30, 'autocomplete' => 'tel'])
                 </div>
             </fieldset>
@@ -86,7 +86,7 @@
                 <legend class="mb-2 text-lg font-bold text-spu-blue">{{ __('staff_intake.public.section_links', [], $locale) }}</legend>
                 <div class="grid gap-4 sm:grid-cols-2">
                     @foreach (['linkedin', 'orcid', 'scopus', 'researchgate', 'scholar', 'twitter'] as $linkField)
-                        @include('public.staff-intake.field', ['name' => $linkField, 'value' => $fields[$linkField], 'type' => 'url', 'dir' => 'ltr', 'required' => $linkField !== 'twitter'])
+                        @include('public.staff-intake.field', ['name' => $linkField, 'value' => $fields[$linkField], 'type' => 'url', 'dir' => 'ltr'])
                     @endforeach
                 </div>
             </fieldset>
