@@ -398,6 +398,15 @@ trailer << /Root 1 0 R >>
         $this->assertSame(0, StaffIntakeRequest::query()->count());
 
         $this->post('/en/staff-intake/'.$token.'/form', $minimal)->assertRedirect('/en/staff-intake/'.$token.'/sent');
+
+        // Sent without email or links, it is still logged like any other submission.
+        $request = StaffIntakeRequest::query()->sole();
+        $log = StaffIntakeAccessLog::query()->where('event', 'submitted')->sole();
+        $this->assertSame((int) $request->getKey(), (int) $log->staff_intake_request_id);
+        $this->assertSame('Zaid Optional', $log->submitter_name);
+        $this->assertNotNull($log->ip_address);
+        $this->assertSame([], array_intersect(['email', 'linkedin', 'orcid', 'scopus', 'researchgate', 'scholar'], (array) $log->changed_fields));
+        $this->assertTrue(StaffIntakeAccessLog::query()->where('event', 'started_new')->exists());
     }
 
     public function test_a_profile_that_already_has_a_photo_and_cv_need_not_send_them_again(): void
