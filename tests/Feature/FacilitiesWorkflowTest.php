@@ -1957,10 +1957,12 @@ final class FacilitiesWorkflowTest extends TestCase
         self::assertSame(1, substr_count($html, '>Ahmad shekha<'), 'Ahmad is listed once, in the team');
         self::assertStringNotContainsString('font-medium leading-[26px] text-slate-600">Ahmad shekha', $html, 'A team member is not the summary');
         // No description on the legacy page either: the overview states the known
-        // fields and leads to the report instead of leaving the column empty.
+        // fields instead of leaving the column empty. The report is downloaded
+        // once, from the sidebar, not again from the overview.
         self::assertStringContainsString('نبذة عن المشروع', $html);
         self::assertStringContainsString('مشروع طلابي في كلية هندسة الذكاء الاصطناعي للعام الدراسي 2025-2026، من إعداد Farah fares و Ahmad shekha.', $html);
-        self::assertStringContainsString('تحميل تقرير المشروع', $html);
+        self::assertStringNotContainsString('تحميل تقرير المشروع', $html);
+        self::assertStringContainsString('الوثائق', $html);
 
         $english = (string) $this->get('/en/faculties/artificial-intelligence/projects/artificial-intelligence-project-6103')
             ->assertOk()
@@ -1969,7 +1971,7 @@ final class FacilitiesWorkflowTest extends TestCase
         self::assertSame(1, substr_count($english, '>Ahmad shekha<'), 'The English page reads the team from the Arabic field block');
         self::assertStringContainsString('About this project', $english);
         self::assertStringContainsString('in the 2025-2026 academic year, prepared by Farah fares and Ahmad shekha.', $english);
-        self::assertStringContainsString('Download the project report', $english);
+        self::assertStringNotContainsString('Download the project report', $english);
     }
 
     public function test_database_project_list_resolves_imported_legacy_images(): void
