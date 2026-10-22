@@ -47,6 +47,7 @@ use App\Models\Media\MediaAsset;
 use App\Models\Person\FacultyMember;
 use App\Models\Person\Person;
 use App\Models\Shared\MigrationLog;
+use App\Support\FacultyLogoSubtitle;
 use App\Support\MediaUrlResolver;
 use App\Support\PersonName;
 use Illuminate\Database\Eloquent\Builder;
@@ -738,12 +739,13 @@ final class FacultyPageService implements FacultyPageServiceInterface
     {
         $faculty = is_array($content['faculty'] ?? null) ? $content['faculty'] : [];
         $name = $this->stringOrDefault($faculty['name'] ?? null, $this->stringOrDefault($content['title'] ?? null, (string) ($modelFaculty['name'] ?? '')));
+        $nameEn = $locale === 'en' ? $name : (string) ($modelFaculty['nameEn'] ?? $name);
 
         return [
             ...$modelFaculty,
             'name' => $name,
             'nameAr' => $locale === 'ar' ? $name : (string) ($modelFaculty['nameAr'] ?? $name),
-            'nameEn' => $locale === 'en' ? $name : (string) ($modelFaculty['nameEn'] ?? $name),
+            'nameEn' => $nameEn,
             'title' => $this->stringOrDefault($faculty['title'] ?? null, $this->stringOrDefault($content['title'] ?? null, (string) ($modelFaculty['title'] ?? $name))),
             'summary' => $this->stringOrDefault($faculty['summary'] ?? null, $this->stringOrDefault($content['summary'] ?? null, (string) ($modelFaculty['summary'] ?? ''))),
             'description' => $this->stringOrDefault($faculty['description'] ?? null, $this->stringOrDefault($content['body'] ?? null, (string) ($modelFaculty['description'] ?? ''))),
@@ -751,6 +753,10 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'accentColor' => $this->stringOrDefault($faculty['accentColor'] ?? null, (string) ($modelFaculty['accentColor'] ?? '#202759')),
             'heroImage' => $this->stringOrDefault($faculty['heroImage'] ?? null, (string) ($modelFaculty['heroImage'] ?? '/images/uni-main-place.JPG')),
             'logoImage' => $this->stringOrDefault($faculty['logoImage'] ?? null, (string) ($modelFaculty['logoImage'] ?? '/images/logo-spu.png')),
+            // A saved value wins even when empty: clearing the field hides the line.
+            'logoSubtitle' => array_key_exists('logoSubtitle', $faculty)
+                ? trim((string) ($faculty['logoSubtitle'] ?? ''))
+                : FacultyLogoSubtitle::fromEnglishName($nameEn),
         ];
     }
 
@@ -928,6 +934,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'accentColor' => $faculty->accent_color,
             'heroImage' => $faculty->hero_image,
             'logoImage' => $faculty->logo_image,
+            'logoSubtitle' => FacultyLogoSubtitle::fromEnglishName((string) $englishTranslation->name),
             'url' => $this->url($locale, "/faculties/{$slug}"),
         ];
     }

@@ -1086,6 +1086,8 @@ return [
                 'accent_color' => 'Identity color',
                 'hero_image' => 'Page introduction image',
                 'logo_image' => 'Faculty logo',
+                'logo_subtitle' => 'Line under the logo',
+                'logo_subtitle_help' => 'Shown under the faculty name below the logo. Leave empty to hide it.',
                 'tabs' => 'Content sections',
                 'label' => 'Label',
                 'department_name' => 'Department name',

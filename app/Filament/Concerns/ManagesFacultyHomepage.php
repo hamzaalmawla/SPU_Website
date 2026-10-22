@@ -20,6 +20,7 @@ use App\Filament\Resources\FacultyMemberResource;
 use App\Filament\Support\MediaPicker;
 use App\Filament\Support\ResearchPublicationPicker;
 use App\Models\User\User;
+use App\Support\FacultyLogoSubtitle;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Hidden;
@@ -170,6 +171,15 @@ trait ManagesFacultyHomepage
             ? $this->matchingItemKeys($targetKey, $payload)
             : [];
 
+        $arContent = $this->contentForForm($targetKey, is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : []);
+        $enContent = $this->contentForForm($targetKey, is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : []);
+
+        if ($targetKey === $this->defaultTargetKey()) {
+            $englishName = (string) ($enContent['faculty']['name'] ?? $enContent['title'] ?? '');
+            $arContent = $this->withLogoSubtitleDefault($arContent, $englishName);
+            $enContent = $this->withLogoSubtitleDefault($enContent, $englishName);
+        }
+
         $this->form->fill([
             'target_key' => $targetKey,
             'record_search' => (string) ($this->data['record_search'] ?? ''),
@@ -181,8 +191,8 @@ trait ManagesFacultyHomepage
             ), static fn (string $key): bool => $key !== '')),
             'student_records' => $studentRecords,
             'selected_research' => $targetKey === $this->defaultTargetKey() ? $this->selectedResearchForForm($payload) : [],
-            'ar_content' => $this->contentForForm($targetKey, is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : []),
-            'en_content' => $this->contentForForm($targetKey, is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : []),
+            'ar_content' => $arContent,
+            'en_content' => $enContent,
         ]);
 
         if (is_array($this->data)) {
@@ -540,6 +550,10 @@ trait ManagesFacultyHomepage
                 TextInput::make($prefix.'.faculty.accentColor')->label(__('admin.faculty_workspace.editor.fields.accent_color'))->maxLength(20),
                 MediaPicker::image($prefix.'.faculty.heroImage', __('admin.faculty_workspace.editor.fields.hero_image')),
                 MediaPicker::image($prefix.'.faculty.logoImage', __('admin.faculty_workspace.editor.fields.logo_image')),
+                TextInput::make($prefix.'.faculty.logoSubtitle')
+                    ->label(__('admin.faculty_workspace.editor.fields.logo_subtitle'))
+                    ->helperText(__('admin.faculty_workspace.editor.fields.logo_subtitle_help'))
+                    ->maxLength(180),
                 Textarea::make($prefix.'.faculty.summary')->label(__('admin.faculty_workspace.editor.fields.short_summary'))->rows(2)->columnSpanFull(),
                 Textarea::make($prefix.'.faculty.description')->label(__('admin.faculty_workspace.editor.fields.description'))->rows(4)->columnSpanFull(),
             ])->columns(2)->collapsed(),
@@ -1252,6 +1266,25 @@ trait ManagesFacultyHomepage
             is_array($values) ? $values : [],
             static fn (mixed $slug): bool => is_string($slug) && preg_match('/^[A-Za-z0-9-]+$/', $slug) === 1,
         ))), 0, self::SELECTED_RESEARCH_LIMIT);
+    }
+
+    /**
+     * Shows editors the line the page prints under the logo until they save
+     * their own, so saving another field does not silently hide it.
+     *
+     * @param  array<string, mixed>  $content
+     * @return array<string, mixed>
+     */
+    private function withLogoSubtitleDefault(array $content, string $englishName): array
+    {
+        $faculty = is_array($content['faculty'] ?? null) ? $content['faculty'] : [];
+
+        if (! array_key_exists('logoSubtitle', $faculty)) {
+            $faculty['logoSubtitle'] = FacultyLogoSubtitle::fromEnglishName($englishName);
+            $content['faculty'] = $faculty;
+        }
+
+        return $content;
     }
 
     /** @return array<string, mixed> */

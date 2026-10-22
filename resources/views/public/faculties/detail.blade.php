@@ -44,7 +44,9 @@
             <img src="{{ $faculty['logoImage'] ?? '/images/logo-spu.png' }}" alt="{{ $faculty['title'] }}" class="h-full w-full object-cover transition-all duration-700">
         </div>
         <p class="mt-4 text-center text-2xl font-bold text-spu-blue">{{ $isAr ? ($faculty['nameAr'] ?? $faculty['name']) : ($faculty['nameEn'] ?? $faculty['name']) }}</p>
-        <p class="mt-1 text-center text-[11px] font-bold uppercase tracking-[2px] text-slate-400">{{ mb_strtoupper(preg_replace('/^(faculty of\s+)?/i', 'Faculty of ', (string) ($faculty['nameEn'] ?? $faculty['name']), 1), 'UTF-8') }}</p>
+        @if (($faculty['logoSubtitle'] ?? '') !== '')
+            <p class="mt-1 text-center text-[11px] font-bold uppercase tracking-[2px] text-slate-400">{{ $faculty['logoSubtitle'] }}</p>
+        @endif
     </div>
 
     <section id="overview" class="bg-white py-16 font-hacen lg:py-24" x-data="{ activeTab: '{{ $tabs[0]['id'] ?? 'overview' }}' }">
