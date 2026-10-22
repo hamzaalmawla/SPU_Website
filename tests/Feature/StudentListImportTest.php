@@ -177,7 +177,7 @@ final class StudentListImportTest extends TestCase
         $otherFacultyEditor = $this->user('editor', 'dentistry');
 
         $this->assertTrue($this->imports->canImport($this->editor, self::FACULTY, 'alumni'));
-        $this->assertFalse($this->imports->canImport($facultyEditor, self::FACULTY, 'alumni'));
+        $this->assertTrue($this->imports->canImport($facultyEditor, self::FACULTY, 'alumni'));
         $this->assertFalse($this->imports->canImport($otherFacultyEditor, self::FACULTY, 'alumni'));
 
         $path = $this->upload('graduates.docx', fn (string $file): string => DecisionDocxFactory::graduates($file, $this->graduates()));
@@ -247,7 +247,7 @@ final class StudentListImportTest extends TestCase
             ->assertSee('قرار 5.docx');
     }
 
-    public function test_the_import_actions_are_hidden_on_other_pages_and_for_faculty_editors(): void
+    public function test_the_import_actions_are_hidden_on_other_pages_and_shown_to_the_faculty_editor(): void
     {
         $this->actingAs($this->editor, 'web');
         Livewire::withQueryParams(['target' => 'facilities.'.self::FACULTY.'.labs'])
@@ -257,7 +257,7 @@ final class StudentListImportTest extends TestCase
         $this->actingAs($this->user('faculty_editor', self::FACULTY), 'web');
         Livewire::withQueryParams(['target' => 'facilities.'.self::FACULTY.'.valedictorians'])
             ->test(ManageArtificialIntelligenceFaculty::class)
-            ->assertActionHidden('importStudentList');
+            ->assertActionVisible('importStudentList');
     }
 
     private function importGraduates(): StudentListImportResultDTO

@@ -41,7 +41,7 @@ final class AdminNewsWorkspaceTest extends TestCase
             ->assertSee('خبر')
             ->assertSee('إعلان')
             ->assertSee('النشر والظهور')
-            ->assertSee('يبقى المقال الظاهر للزوار دون تغيير')
+            ->assertSee('يُنشر المقال فور إنشائه')
             ->assertDontSee('موعد النشر')
             ->assertSee('إعدادات متقدمة')
             ->assertSee('يتم إنشاؤه تلقائياً من العنوان');

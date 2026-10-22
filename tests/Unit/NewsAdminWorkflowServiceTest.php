@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
+use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\News\NewsAdminWorkflowServiceInterface;
 use App\Models\News\NewsArticle;
 use App\Models\News\NewsCategory;
@@ -25,12 +26,9 @@ final class NewsAdminWorkflowServiceTest extends TestCase
         $this->service = app(NewsAdminWorkflowServiceInterface::class);
     }
 
-    public function test_faculty_editor_cannot_publish_article_on_create(): void
+    public function test_user_without_publish_permission_cannot_publish_article_on_create(): void
     {
-        $user = User::factory()->create([
-            'role_slug' => 'faculty_editor',
-            'faculty_scopes' => ['pharmacy'],
-        ]);
+        $user = $this->authorWithoutPublish();
 
         $data = $this->service->prepareArticleDataForCreate([
             'slug' => 'pharmacy-news',
@@ -122,12 +120,9 @@ final class NewsAdminWorkflowServiceTest extends TestCase
         $this->assertMatchesRegularExpression('/^[a-z0-9\-]+$/', $data['slug']);
     }
 
-    public function test_faculty_editor_cannot_change_status_of_public_article(): void
+    public function test_user_without_publish_permission_cannot_change_status_of_public_article(): void
     {
-        $user = User::factory()->create([
-            'role_slug' => 'faculty_editor',
-            'faculty_scopes' => ['pharmacy'],
-        ]);
+        $user = $this->authorWithoutPublish();
         $article = NewsArticle::query()->create([
             'slug' => 'published-pharmacy-news',
             'status' => 'published',
@@ -255,5 +250,21 @@ final class NewsAdminWorkflowServiceTest extends TestCase
         $this->assertDatabaseHas(AuditLog::class, ['action' => 'news.category.created']);
         $this->assertDatabaseHas(AuditLog::class, ['action' => 'news.category.updated']);
         $this->assertDatabaseHas(AuditLog::class, ['action' => 'news.category.deleted']);
+    }
+
+    /** A faculty-limited author who may create news but neither edit nor publish it. */
+    private function authorWithoutPublish(): User
+    {
+        $user = User::factory()->create([
+            'role_slug' => null,
+            'faculty_scopes' => ['pharmacy'],
+        ]);
+        $user->extraPermissions()->createMany([
+            ['permission' => 'news_articles.view'],
+            ['permission' => 'news_articles.create'],
+        ]);
+        app(AdminAccessServiceInterface::class)->flushPermissions();
+
+        return $user;
     }
 }
