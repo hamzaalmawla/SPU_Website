@@ -15,6 +15,7 @@ use App\Models\News\NewsArticle;
 use App\Models\News\NewsCategory;
 use App\Models\User\User;
 use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\Component;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Group;
@@ -422,7 +423,7 @@ class NewsArticleResource extends Resource
         return in_array($type, self::EVENT_TYPES, true) ? $type : null;
     }
 
-    /** @return array<int, \Filament\Forms\Components\Component> */
+    /** @return array<int, Component> */
     private static function eventSchema(): array
     {
         $isEvents = fn (Get $get): bool => self::eventType($get('../news_category_id')) === 'events';
@@ -591,7 +592,7 @@ class NewsArticleResource extends Resource
         ];
     }
 
-    /** @return array<int, \Filament\Forms\Components\Component> */
+    /** @return array<int, Component> */
     private static function speakerSchema(): array
     {
         $isExternal = fn (Get $get): bool => $get('source') !== 'university';

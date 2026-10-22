@@ -17,7 +17,6 @@ use App\Models\Person\FacultyMemberTranslation;
 use App\Models\Person\Person;
 use App\Models\Person\PersonTranslation;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 final class NewsArticleEventCmsService implements NewsArticleEventCmsServiceInterface
@@ -292,7 +291,7 @@ final class NewsArticleEventCmsService implements NewsArticleEventCmsServiceInte
         // as that member, under the member's faculty.
         $leaders = Person::query()
             ->public()
-            ->whereDoesntHave('linkedFacultyMembers', fn (Builder $query): Builder => $query->public())
+            ->whereNotIn('id', FacultyMember::query()->public()->whereNotNull('person_id')->select('person_id'))
             ->with('translations')
             ->get()
             ->mapWithKeys(fn (Person $person): array => ['person:'.$person->getKey() => $this->personLabel($person, $locale)])

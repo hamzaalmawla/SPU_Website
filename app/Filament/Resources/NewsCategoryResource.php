@@ -81,7 +81,7 @@ class NewsCategoryResource extends Resource
                         ->options([
                             'news' => __('admin.news_article.types.news'),
                             'announcement' => __('admin.news_article.types.announcement'),
-                        'event' => __('admin.news_article.types.event'),
+                            'event' => __('admin.news_article.types.event'),
                         ])
                         ->default('news'),
                     Toggle::make('is_enabled')
