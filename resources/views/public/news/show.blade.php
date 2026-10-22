@@ -6,6 +6,7 @@
         $previousArticle = $adjacentArticles['previous'] ?? null;
         $nextArticle = $adjacentArticles['next'] ?? null;
         $canonicalArticleUrl = url($article->url);
+        $pageLabel = $article->event !== null ? __('public.article_event.kinds.'.$article->event->kind) : __('public.news_article_page');
     @endphp
 
     <section class="relative flex min-h-[285px] items-end overflow-hidden pt-24 font-hacen">
@@ -20,10 +21,10 @@
                 <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-2 w-2 rtl:rotate-180" aria-hidden="true">
                 <a href="/{{ $locale }}/news/articles" class="transition-colors hover:text-white">{{ __('public.news') }}</a>
                 <img src="/images/icon-chevron-right-outline.svg" alt="" class="h-2 w-2 rtl:rotate-180" aria-hidden="true">
-                <span>{{ __('public.news_article_page') }}</span>
+                <span>{{ $pageLabel }}</span>
             </nav>
 
-            <h1 class="text-[30px] font-bold leading-tight md:text-[40px]">{{ __('public.news_article_page') }}</h1>
+            <h1 class="text-[30px] font-bold leading-tight md:text-[40px]">{{ $pageLabel }}</h1>
         </div>
     </section>
 
@@ -47,6 +48,10 @@
                 </div>
             </header>
 
+            @if ($article->event !== null)
+                @include('public.news.partials.article-event-summary')
+            @endif
+
             <figure class="mt-7 w-full h-125 overflow-hidden rounded-[4px]">
                 <img src="{{ $article->imageUrl ?: '/images/news/researches.jpeg' }}" onerror="this.onerror=null;this.src='/images/news/researches.jpeg'" alt="{{ $article->title }}" class="content-media-image h-[500px] w-full object-cover object-center">
             </figure>
@@ -64,6 +69,10 @@
                     {{ __('public.news_quote') }}
                 </div>
             </div>
+
+            @if ($article->event !== null)
+                @include('public.news.partials.article-event-details')
+            @endif
 
             @if ($article->attachments !== [])
                 @php

@@ -48,7 +48,7 @@ final class FormSubmissionNotificationService implements FormSubmissionNotificat
                 'email_queued_at' => now(),
             ])->save();
 
-            if (($context['source'] ?? null) === 'news-events') {
+            if (in_array($context['source'] ?? null, ['news-events', 'news-articles'], true)) {
                 Mail::to($submission->applicant_email)->queue(new EventRegistrationReceived(
                     applicantName: $name,
                     eventTitle: $contextTitle ?? '',

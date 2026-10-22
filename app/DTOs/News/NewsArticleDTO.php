@@ -27,5 +27,6 @@ final readonly class NewsArticleDTO
         public ?string $ogDescription = null,
         public ?string $ogImage = null,
         public string $robots = 'index,follow',
+        public ?NewsArticleEventDTO $event = null,
     ) {}
 }

@@ -131,6 +131,7 @@ final class CachePublicPages
             'public.contact',
             'public.e-services.suggestions-complaints',
             'public.news.events-list.register',
+            'public.news.register',
             'public.research.conferences.register',
             // Search results are per-query and effectively unbounded in
             // variation. Caching whole rendered pages for arbitrary visitor

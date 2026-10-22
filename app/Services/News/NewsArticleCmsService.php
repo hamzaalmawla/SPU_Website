@@ -7,6 +7,7 @@ namespace App\Services\News;
 use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\News\NewsArticleCmsServiceInterface;
 use App\Contracts\News\NewsArticleEventCmsServiceInterface;
+use App\Contracts\News\NewsArticleEventServiceInterface;
 use App\Contracts\Shared\SlugServiceInterface;
 use App\DTOs\Cms\CmsTargetDTO;
 use App\DTOs\News\NewsArticleCmsDataDTO;
@@ -39,6 +40,7 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
         private readonly HtmlSanitizer $htmlSanitizer,
         private readonly AdminAccessServiceInterface $access,
         private readonly NewsArticleEventCmsServiceInterface $events,
+        private readonly NewsArticleEventServiceInterface $articleEvents,
     ) {}
 
     /** @return array<int, string> */
@@ -337,6 +339,12 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
             ogDescription: $this->nullableString($seo['og_description'] ?? null),
             ogImage: $ogImage,
             robots: 'noindex,nofollow',
+            event: $this->articleEvents->fromPayload(
+                is_array($payload['event'] ?? null) ? $payload['event'] : null,
+                $id,
+                $this->stringValue($translation['title'] ?? null),
+                $locale,
+            ),
         );
     }
 

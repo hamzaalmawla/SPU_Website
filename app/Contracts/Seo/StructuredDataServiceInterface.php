@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Contracts\Seo;
 
+use App\DTOs\News\NewsArticleDTO;
 use App\DTOs\Seo\StructuredDataDTO;
 
 /**
@@ -36,4 +37,12 @@ interface StructuredDataServiceInterface
      * The homepage document: an @graph pairing the organisation and the site.
      */
     public function homepage(string $locale): StructuredDataDTO;
+
+    /**
+     * An @graph pairing the article's breadcrumbs with a schema.org Event,
+     * or just the breadcrumbs when the event has no dated session.
+     *
+     * @param  array<int, array{name: string, url: string}>  $trail
+     */
+    public function newsEvent(string $locale, NewsArticleDTO $article, array $trail): StructuredDataDTO;
 }

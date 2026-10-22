@@ -7,6 +7,9 @@ namespace App\Services\Seo;
 use App\Contracts\Seo\StructuredDataServiceInterface;
 use App\Contracts\Settings\SettingsServiceInterface;
 use App\DTOs\Contact\ContactLinkDTO;
+use App\DTOs\News\NewsArticleDTO;
+use App\DTOs\News\NewsArticleEventSessionDTO;
+use App\DTOs\News\NewsArticleEventSpeakerDTO;
 use App\DTOs\Seo\StructuredDataDTO;
 use App\DTOs\Settings\FooterSettingsDTO;
 use App\DTOs\Settings\SocialLinkDTO;
@@ -159,6 +162,68 @@ final class StructuredDataService implements StructuredDataServiceInterface
         return new StructuredDataDTO('Graph', [
             '@context' => 'https://schema.org',
             '@graph' => [$organisation, $website],
+        ]);
+    }
+
+    public function newsEvent(string $locale, NewsArticleDTO $article, array $trail): StructuredDataDTO
+    {
+        $breadcrumbs = $this->breadcrumbs($locale, $trail);
+        $event = $article->event;
+
+        if ($event === null || $event->startsAt === null) {
+            return $breadcrumbs;
+        }
+
+        $place = $event->location !== null ? ['@type' => 'Place', 'name' => $event->location] : null;
+        $virtual = $event->onlineUrl !== null ? ['@type' => 'VirtualLocation', 'url' => $event->onlineUrl] : null;
+        $mode = match (true) {
+            $place !== null && $virtual !== null => 'MixedEventAttendanceMode',
+            $virtual !== null => 'OnlineEventAttendanceMode',
+            default => 'OfflineEventAttendanceMode',
+        };
+        $speakers = $event->speakers;
+        foreach ($event->sessions as $session) {
+            $speakers = [...$speakers, ...$session->speakers];
+        }
+        $performers = array_values(array_unique(array_map(fn (NewsArticleEventSpeakerDTO $speaker): string => $speaker->name, $speakers)));
+
+        $data = array_filter([
+            '@type' => 'Event',
+            'name' => $article->title,
+            'description' => $article->metaDescription ?? $article->excerpt,
+            'url' => $this->absolute($article->url),
+            'image' => $event->invitationImageUrl !== null ? $this->absolute($event->invitationImageUrl) : ($article->ogImage !== null ? $this->absolute($article->ogImage) : null),
+            'startDate' => $event->startsAt,
+            'endDate' => $event->endsAt,
+            'eventStatus' => 'https://schema.org/EventScheduled',
+            'eventAttendanceMode' => 'https://schema.org/'.$mode,
+            'location' => array_values(array_filter([$place, $virtual])),
+            'inLanguage' => match ($event->language) {
+                'ar' => 'ar',
+                'en' => 'en',
+                'both' => ['ar', 'en'],
+                default => null,
+            },
+            'organizer' => array_filter([
+                '@type' => 'Organization',
+                'name' => $event->organizer ?? ($this->brandTitle($locale) ?? ($locale === 'ar' ? self::ARABIC_NAME : self::ENGLISH_NAME)),
+                'url' => $this->absolute('/'.$locale),
+            ]),
+            'performer' => array_map(fn (string $name): array => ['@type' => 'Person', 'name' => $name], $performers),
+            'subEvent' => count($event->sessions) > 1 ? array_map(fn (NewsArticleEventSessionDTO $session): array => array_filter([
+                '@type' => 'Event',
+                'name' => $session->title ?? $article->title,
+                'startDate' => $session->startsAt,
+                'endDate' => $session->endsAt,
+            ]), $event->sessions) : null,
+        ], static fn (mixed $value): bool => $value !== null && $value !== [] && $value !== '');
+
+        $crumbs = $breadcrumbs->data;
+        unset($crumbs['@context']);
+
+        return new StructuredDataDTO('Graph', [
+            '@context' => 'https://schema.org',
+            '@graph' => [$crumbs, $data],
         ]);
     }
 

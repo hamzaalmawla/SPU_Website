@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Public;
 
 use App\Contracts\Navigation\NavigationServiceInterface;
+use App\Contracts\News\NewsArticleEventServiceInterface;
 use App\Contracts\News\NewsServiceInterface;
 use App\Contracts\Seo\SeoMetadataServiceInterface;
 use App\Contracts\Seo\StructuredDataServiceInterface;
@@ -14,6 +15,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 final class NewsController extends Controller
 {
@@ -23,6 +25,7 @@ final class NewsController extends Controller
         private readonly SettingsServiceInterface $settingsService,
         private readonly SeoMetadataServiceInterface $seoMetadataService,
         private readonly StructuredDataServiceInterface $structuredDataService,
+        private readonly NewsArticleEventServiceInterface $articleEvents,
     ) {}
 
     public function index(Request $request, string $locale): View
@@ -228,8 +231,12 @@ final class NewsController extends Controller
     {
         $newsArticle = $this->newsService->getPublicArticle($article, $locale);
         abort_if($newsArticle === null, 404);
+        $trail = $this->newsTrail($locale, $newsArticle->title, '/news/'.$article);
+        $eventData = $newsArticle->event !== null
+            ? ['structuredData' => $this->structuredDataService->newsEvent($locale, $newsArticle, $trail)->data]
+            : [];
 
-        return view('public.news.show', $this->sharedPayload($request, $locale, '/news/'.$article, [
+        return view('public.news.show', $this->sharedPayload($request, $locale, '/news/'.$article, $eventData + [
             'article' => $newsArticle,
             'relatedArticles' => $this->newsService->getRelatedArticleCards($article, $locale, 3),
             'adjacentArticles' => $this->newsService->getAdjacentArticleCards($article, $locale),
@@ -242,7 +249,33 @@ final class NewsController extends Controller
                 $newsArticle->ogImage,
                 $newsArticle->robots,
             ),
+        ], $trail));
+    }
+
+    public function articleRegistration(Request $request, string $locale, string $article): View
+    {
+        $newsArticle = $this->newsService->getPublicArticle($article, $locale);
+        // Seats and registration state are read fresh; the article may be cached.
+        $event = $newsArticle !== null ? $this->articleEvents->forArticle($newsArticle->id, $locale) : null;
+        abort_if($newsArticle === null || $event === null || ! $event->requiresRegistration, 404);
+        $path = '/news/'.$article.'/register';
+
+        return view('public.news.article-registration', $this->sharedPayload($request, $locale, $path, [
+            'article' => $newsArticle,
+            'event' => $event,
+            'seo' => $this->seo($locale, $path, $newsArticle->title, $newsArticle->excerpt ?? $newsArticle->title, $newsArticle->ogImage, 'noindex,follow'),
         ], $this->newsTrail($locale, $newsArticle->title, '/news/'.$article)));
+    }
+
+    public function articleCalendar(string $locale, string $article): Response
+    {
+        $file = $this->articleEvents->calendarFile($article, $locale);
+        abort_if($file === null, 404);
+
+        return response($file, 200, [
+            'Content-Type' => 'text/calendar; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="spu-event-'.preg_replace('/[^A-Za-z0-9\-]/', '', $article).'.ics"',
+        ]);
     }
 
     public function redirectLegacyArticle(Request $request, string $locale): RedirectResponse

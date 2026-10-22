@@ -7,11 +7,13 @@ namespace App\Services\Form;
 use App\Contracts\Form\DynamicFormSubmissionServiceInterface;
 use App\Contracts\Form\FormDefinitionServiceInterface;
 use App\Contracts\Form\FormSubmissionNotificationServiceInterface;
+use App\Contracts\News\NewsArticleEventServiceInterface;
 use App\Contracts\News\NewsServiceInterface;
 use App\Contracts\Page\CampusLifePageServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
 use App\DTOs\CampusLife\CampusLifeJobDTO;
 use App\DTOs\Form\DynamicFormSubmissionDataDTO;
+use App\DTOs\News\NewsArticleEventDTO;
 use App\DTOs\News\NewsEventDTO;
 use App\DTOs\Research\ResearchConferenceRegistrationDTO;
 use App\Enums\FormSubmissionInbox;
@@ -30,6 +32,7 @@ final class DynamicFormSubmissionService implements DynamicFormSubmissionService
         private readonly ResearchPageServiceInterface $researchPageService,
         private readonly FormSubmissionNotificationServiceInterface $notificationService,
         private readonly FormDefinitionServiceInterface $formDefinitions,
+        private readonly NewsArticleEventServiceInterface $articleEvents,
     ) {}
 
     /** @return array<int, string> */
@@ -183,11 +186,22 @@ final class DynamicFormSubmissionService implements DynamicFormSubmissionService
             'research-conferences' => $data->eventId !== null
                 ? $this->researchPageService->findRegisterableConference($data->eventId, $data->locale)
                 : null,
+            NewsArticleEventServiceInterface::REGISTRATION_SOURCE => $data->eventId !== null && ctype_digit($data->eventId)
+                ? $this->articleEvents->findPublicEvent($data->eventId, $data->locale)
+                : null,
             default => null,
         };
 
         if ($event instanceof NewsEventDTO) {
             if (! $event->isRegisterable || $event->formId !== $data->formId) {
+                throw ValidationException::withMessages(['event_id' => [__('forms.errors.event_not_open', [], $data->locale)]]);
+            }
+        } elseif ($event instanceof NewsArticleEventDTO) {
+            // "full" is reported as full; any other closed state as not open.
+            if ($event->registrationState === 'full') {
+                throw ValidationException::withMessages(['event_id' => [__('forms.errors.event_full', [], $data->locale)]]);
+            }
+            if (! $event->isRegistrationOpen() || $event->formId !== $data->formId) {
                 throw ValidationException::withMessages(['event_id' => [__('forms.errors.event_not_open', [], $data->locale)]]);
             }
         } elseif ($event instanceof ResearchConferenceRegistrationDTO) {

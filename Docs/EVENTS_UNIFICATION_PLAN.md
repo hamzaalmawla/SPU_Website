@@ -1,6 +1,6 @@
 # Events, Announcements and News: Unification Plan
 
-Status: agreed with the product owner (2026-10-22). Step 1 written (not yet run against the test suite, see below); steps 2-5 not started.
+Status: agreed with the product owner (2026-10-22). Step 1 built and green in CI; step 2 built (see below); steps 3-5 not started.
 
 ## Problem
 
@@ -101,4 +101,14 @@ Rules:
 - `NewsArticleResource`: "Event details" tab (visible for Events and Society's Events) with type, registration, calendar, language, certificate, sessions (each with optional speakers), place, audience, registration form and seats, event speakers, invitation and contact, and after-event results. The Events and Society's Events choices are hidden from users without `events.update`.
 - `FormDefinitionService::usage` counts event articles, so a form picked by an event cannot be deleted.
 - Tests: `tests/Feature/NewsArticleEventCmsTest.php`.
-- Until step 2, a published event shows on the public site as a plain article.
+
+## Step 2 as built
+
+- `NewsArticleEventServiceInterface` / `NewsArticleEventService`: builds `NewsArticleEventDTO` (sessions, speakers, registration state `none|open|full|closed`, seats left) from the published tables, or from a draft payload for the preview (which never offers registration). It also counts registrations and writes the `.ics` file.
+- A university speaker is read from the profile at render time (name, title, photo, link); a hidden or deleted profile drops the speaker. A member linked to a leadership profile links to the leadership address.
+- `NewsArticleDTO::$event` carries the event on the article page (`NewsService::mapArticle`, detail pages only) and in the preview (`NewsArticleCmsService::buildPreview`).
+- Article page: event summary above the cover (sessions, place, map/online link, audience, organizer, language, certificate, Register / full / closed, seats left, Add to calendar) and details below the body (speakers, invitation, contact, results once the event is over). Event JSON-LD (`StructuredDataServiceInterface::newsEvent`) with one sub-event per session.
+- `GET /{locale}/news/{article}/register` (`public.news.register`, not page-cached): the dynamic form with source `news-articles` and the article ID as the event ID. `DynamicFormSubmissionService` refuses it when the event is full, closed, past, or the form differs, and one email registers once. Seats left = capacity − prior registrations − site registrations.
+- `GET /{locale}/news/{article}/calendar.ics`: one VEVENT per session in UTC; 404 once the event is over.
+- The article page is page-cached for up to 5 minutes, so it can show Register shortly after the last seat goes; the registration page and the submission check are always live.
+- Tests: `tests/Feature/NewsArticleEventPublicTest.php`.

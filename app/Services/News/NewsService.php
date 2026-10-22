@@ -7,6 +7,7 @@ namespace App\Services\News;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Form\FormDefinitionServiceInterface;
 use App\Contracts\Media\MediaServiceInterface;
+use App\Contracts\News\NewsArticleEventServiceInterface;
 use App\Contracts\News\NewsServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
 use App\DTOs\Content\ArticleCardDTO;
@@ -37,6 +38,7 @@ final class NewsService implements NewsServiceInterface
         private readonly CmsWorkflowServiceInterface $cmsWorkflowService,
         private readonly MediaServiceInterface $mediaService,
         private readonly FormDefinitionServiceInterface $formDefinitions,
+        private readonly NewsArticleEventServiceInterface $articleEvents,
     ) {}
 
     public function getIndexPageContent(string $locale): array
@@ -604,6 +606,9 @@ final class NewsService implements NewsServiceInterface
             ogDescription: $seo?->og_description,
             ogImage: $imageUrl,
             robots: $seo?->robots ?? 'index,follow',
+            event: $includeAttachments && in_array($article->category?->slug, ['events', 'society-events'], true)
+                ? $this->articleEvents->forArticle((int) $article->getKey(), $locale)
+                : null,
         );
     }
 

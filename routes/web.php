@@ -236,6 +236,12 @@ Route::prefix('{locale}')
                     ->name('events-list.show');
                 Route::get('/gallery', 'gallery')->name('gallery');
                 Route::get('/article', 'redirectLegacyArticle')->name('article.legacy');
+                Route::get('/{article}/register', 'articleRegistration')
+                    ->where(['article' => '[A-Za-z0-9\-]+'])
+                    ->name('register');
+                Route::get('/{article}/calendar.ics', 'articleCalendar')
+                    ->where(['article' => '[A-Za-z0-9\-]+'])
+                    ->name('calendar');
                 Route::get('/{article}', 'show')->name('show');
             });
 
