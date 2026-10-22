@@ -537,6 +537,31 @@ For a plan that editors have already changed, nothing is merged automatically. E
 the visual editor, or someone runs the command by hand with `--replace-edited` after agreeing that
 their changes may be replaced (the previous draft versions stay in `cms_drafts`).
 
+### Moving the old calendar events into articles
+
+Events are now written as articles in the Events category (sessions, speakers, registration; see
+`Docs/EVENTS_UNIFICATION_PLAN.md`). The events still in the old Events page list keep showing until
+they are moved. Deploying does **not** move them. To move them, a human creates this file on the server:
+
+```
+storage/app/private/legacy-imports/calendar-events-move.approved
+actor=auto
+```
+
+`cpanel-deploy.sh` then runs `news:move-calendar-events` (a dry run, then `--write`). It runs after the
+old calendar import (`calendar-events.approved`), so both files can be placed for the same deploy.
+
+- Each published entry becomes a published Events article ("Add to calendar" on, one session per day
+  of the entry). Registrations sent for it move with it and keep counting against its seats.
+- Untouched sample events are left out. The Events page list itself is not changed: a moved entry is
+  hidden, and `/news/events-list/{id}`, `/news/events-list/register?event={id}` and
+  `/news/events-list/past?event={id}` redirect (301) to the article.
+- Re-running only moves entries not moved yet. The file is renamed to
+  `calendar-events-move.approved.consumed-<time>` once everything moved; if an entry could not be moved
+  the deploy log names it and the file stays for the next deploy.
+
+By hand: `php artisan news:move-calendar-events --user=<id or email>` (dry run), then add `--write`.
+
 ### The research office register
 
 The research office's register (its spu_sci database) is converted by

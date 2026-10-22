@@ -16,6 +16,7 @@ use App\DTOs\News\NewsRelatedLinkDTO;
 use App\Models\Form\DynamicFormSubmission;
 use App\Models\Media\MediaAsset;
 use App\Models\News\NewsArticle;
+use App\Models\News\NewsArticleEvent;
 use App\Models\News\NewsArticleTranslation;
 use App\Models\Person\FacultyMember;
 use App\Models\Person\FacultyMemberTranslation;
@@ -28,6 +29,9 @@ use Illuminate\Support\Collection;
 
 final class NewsArticleEventService implements NewsArticleEventServiceInterface
 {
+    /** @var array<string, int>|null */
+    private ?array $movedEventArticleIds = null;
+
     public function __construct(
         private readonly NewsArticleEventCmsServiceInterface $eventCms,
         private readonly FormDefinitionServiceInterface $forms,
@@ -232,6 +236,15 @@ final class NewsArticleEventService implements NewsArticleEventServiceInterface
         }
 
         return $options;
+    }
+
+    public function movedEventArticleIds(): array
+    {
+        return $this->movedEventArticleIds ??= NewsArticleEvent::query()
+            ->whereNotNull('legacy_event_id')
+            ->pluck('news_article_id', 'legacy_event_id')
+            ->map(fn (mixed $id): int => (int) $id)
+            ->all();
     }
 
     /** @return array<string, string> Published conference IDs with their title, upcoming first. */

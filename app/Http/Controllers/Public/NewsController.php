@@ -175,10 +175,14 @@ final class NewsController extends Controller
         ]));
     }
 
-    public function eventRegistration(Request $request, string $locale): View
+    public function eventRegistration(Request $request, string $locale): View|RedirectResponse
     {
-        $page = $this->newsService->getEventsPageContent($locale);
         $eventId = is_string($request->query('event')) ? $request->query('event') : '';
+        $moved = $this->movedEventRedirect($locale, $eventId, true);
+        if ($moved !== null) {
+            return $moved;
+        }
+        $page = $this->newsService->getEventsPageContent($locale);
         $event = $this->newsService->findNewsEvent($eventId, $locale, false);
         $event = $event?->isRegisterable === true ? $event : null;
         $switchPath = '/news/events-list/register'.($eventId !== '' ? '?event='.rawurlencode($eventId) : '');
@@ -190,10 +194,14 @@ final class NewsController extends Controller
         ]));
     }
 
-    public function pastEvent(Request $request, string $locale): View
+    public function pastEvent(Request $request, string $locale): View|RedirectResponse
     {
-        $page = $this->newsService->getEventsPageContent($locale);
         $eventId = is_string($request->query('event')) ? $request->query('event') : '';
+        $moved = $this->movedEventRedirect($locale, $eventId, false);
+        if ($moved !== null) {
+            return $moved;
+        }
+        $page = $this->newsService->getEventsPageContent($locale);
         $event = $this->newsService->findNewsEvent($eventId, $locale, true);
         $switchPath = '/news/events-list/past'.($eventId !== '' ? '?event='.rawurlencode($eventId) : '');
 
@@ -204,8 +212,12 @@ final class NewsController extends Controller
         ]));
     }
 
-    public function eventDetail(Request $request, string $locale, string $event): View
+    public function eventDetail(Request $request, string $locale, string $event): View|RedirectResponse
     {
+        $moved = $this->movedEventRedirect($locale, $event, false);
+        if ($moved !== null) {
+            return $moved;
+        }
         $page = $this->newsService->getEventsPageContent($locale);
         $newsEvent = $this->newsService->findNewsEvent($event, $locale);
         abort_if($newsEvent === null, 404);
@@ -298,6 +310,22 @@ final class NewsController extends Controller
         abort_if($article === null, 404);
 
         return redirect($article->url, 301);
+    }
+
+    /**
+     * Old Events page list addresses of an entry moved into an article go to
+     * the article, or to its registration when it still takes registrations.
+     */
+    private function movedEventRedirect(string $locale, string $eventId, bool $registration): ?RedirectResponse
+    {
+        $articleId = $eventId !== '' ? ($this->articleEvents->movedEventArticleIds()[$eventId] ?? null) : null;
+        if ($articleId === null) {
+            return null;
+        }
+
+        $event = $registration ? $this->articleEvents->forArticle($articleId, $locale) : null;
+
+        return redirect($event?->registrationUrl ?? '/'.$locale.'/news/'.$articleId, 301);
     }
 
     /**

@@ -6,16 +6,19 @@ namespace App\Filament\Pages;
 
 use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\News\NewsArticleEventServiceInterface;
 use App\Contracts\News\NewsServiceInterface;
 use App\DTOs\Cms\CmsTargetDTO;
 use App\Exceptions\ConflictException;
 use App\Filament\Concerns\LimitsCmsTargetsToGrants;
 use App\Filament\Support\FormPicker;
+use App\Filament\Resources\NewsArticleResource;
 use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
@@ -32,6 +35,7 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -477,6 +481,11 @@ class ManageNews extends Page implements HasForms
                 ->visible(fn (): bool => in_array($this->targetKeyForSchema(), ['news.articles', 'news.agreements', 'news.society-events'], true)),
             Section::make(__('admin_pages.news.events_catalog'))
                 ->schema([
+                    // New events are Events articles; this list only keeps the page texts and entries not moved yet.
+                    Placeholder::make('events_moved_notice')
+                        ->hiddenLabel()
+                        ->content(fn (): HtmlString => new HtmlString(e(__('admin_pages.news.events_moved_notice')).' <a href="'.e(NewsArticleResource::getUrl('create')).'" class="font-semibold text-primary-600 underline">'.e(__('admin_pages.news.events_moved_create')).'</a>'))
+                        ->columnSpanFull(),
                     TextInput::make($eventsPrefix.'.title')->label(__('admin_pages.news.page_title'))->required()->maxLength(160),
                     Textarea::make($eventsPrefix.'.summary')->label(__('admin_pages.news.page_summary'))->required()->rows(2)->columnSpanFull(),
                     MediaPicker::image($eventsPrefix.'.heroImage', __('admin_pages.news.hero_image'), true),
@@ -502,8 +511,8 @@ class ManageNews extends Page implements HasForms
                         TextInput::make('id')->label(__('admin.editorial_workspace.news_shell.identifier'))->required()->maxLength(80),
                         TextInput::make('label')->required()->maxLength(120),
                     ])->columns(2)->reorderable()->collapsible()->columnSpanFull(),
-                    Repeater::make($eventsPrefix.'.upcoming')->label(__('admin_pages.news.upcoming_events'))->schema($this->eventFields(false))->reorderable()->collapsible()->columnSpanFull(),
-                    Repeater::make($eventsPrefix.'.past')->label(__('admin_pages.news.past_events'))->schema($this->eventFields(true))->reorderable()->collapsible()->columnSpanFull(),
+                    Repeater::make($eventsPrefix.'.upcoming')->label(__('admin_pages.news.upcoming_events'))->schema($this->eventFields(false))->itemLabel(fn (array $state): ?string => $this->legacyEventLabel($state))->addable(false)->reorderable()->collapsible()->columnSpanFull(),
+                    Repeater::make($eventsPrefix.'.past')->label(__('admin_pages.news.past_events'))->schema($this->eventFields(true))->itemLabel(fn (array $state): ?string => $this->legacyEventLabel($state))->addable(false)->reorderable()->collapsible()->columnSpanFull(),
                 ])
                 ->columns(2)
                 ->visible(fn (): bool => $this->targetKeyForSchema() === 'news.events'),
@@ -887,6 +896,16 @@ class ManageNews extends Page implements HasForms
         return is_string($this->data['target_key'] ?? null) && $this->data['target_key'] !== ''
             ? $this->data['target_key']
             : $this->defaultNewsTargetKey();
+    }
+
+    /** @param array<string, mixed> $state */
+    private function legacyEventLabel(array $state): ?string
+    {
+        $title = is_string($state['title'] ?? null) ? trim($state['title']) : '';
+        $id = is_string($state['id'] ?? null) ? $state['id'] : '';
+        $moved = $id !== '' && isset(app(NewsArticleEventServiceInterface::class)->movedEventArticleIds()[$id]);
+
+        return $title === '' ? null : ($moved ? __('admin_pages.news.event_moved_label', ['title' => $title]) : $title);
     }
 
     private function validateEventDates(): void

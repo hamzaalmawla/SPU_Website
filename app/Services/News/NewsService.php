@@ -125,12 +125,15 @@ final class NewsService implements NewsServiceInterface
     /** @return Collection<int, NewsEventDTO> */
     private function legacyNewsEvents(string $locale, bool $past, ?string $category = null): Collection
     {
+        // An entry moved into an article is shown as that article only.
+        $moved = $this->articleEvents->movedEventArticleIds();
+
         return $this->mapNewsEvents(
             $this->normalizeEventsPageContent($this->publishedLocalizedPayload('news.events', $locale) ?? [], $locale),
             $locale,
             $past,
             $category,
-        );
+        )->reject(fn (NewsEventDTO $event): bool => isset($moved[$event->id]))->values();
     }
 
     /** @return Collection<int, NewsEventDTO> */

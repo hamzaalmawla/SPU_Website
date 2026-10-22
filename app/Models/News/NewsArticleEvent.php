@@ -30,6 +30,7 @@ class NewsArticleEvent extends Model
         'online_url',
         'contact_email',
         'contact_phone',
+        'legacy_event_id',
     ];
 
     protected function casts(): array

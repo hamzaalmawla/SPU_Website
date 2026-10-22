@@ -1,6 +1,6 @@
 # Events, Announcements and News: Unification Plan
 
-Status: agreed with the product owner (2026-10-22). Steps 1-4 built (see below); step 5 not started.
+Status: agreed with the product owner (2026-10-22). Steps 1-5 built (see below). Moving the existing events on the server is a separate, approved deploy step (`Docs/DEPLOYING.md`).
 
 ## Problem
 
@@ -128,3 +128,13 @@ Rules:
 - Editor: "Related link (optional)" section on the Content tab, shown only for Announcements: an event article (searchable list of public Events and Society's Events), a published research conference, or an address (site path or http(s)), plus optional button text per language. `NewsArticleCmsService` drops the link for any other category and checks the target on publish.
 - `NewsArticleEventServiceInterface::relatedLink()` builds the button on the article page and in the preview: an event with open registration links to its registration page as "Register", otherwise to the event as "Event details"; a registerable conference links to its registration as "Register", otherwise to the conference page; an address opens in a new tab when it is outside the site. A target that is no longer public shows no button.
 - Tests: `tests/Feature/NewsAnnouncementRelatedLinkTest.php`.
+
+## Step 5 as built
+
+- `news:move-calendar-events --user=<id or email> [--write]` (`NewsCalendarEventMoveServiceInterface`): each entry published in `news.events` becomes a published Events article through the normal CMS workflow: titles and summary per language, highlights and participants in the body, image as cover (a media library item when it matches, else the sharing image), gallery as image attachments, location, results, speakers (typed in), type from the old category (conference / seminar / event), "Add to calendar" on, and one session per day of the entry. Registration stays on for an upcoming entry with an enabled form; `registered` becomes `prior_registrations`.
+- Registrations sent for the old entry get source `news-articles`, the article as event and `legacy_event_id` in their context, so they count against the article's seats.
+- `news_article_events.legacy_event_id` (migration `2026_10_22_000005`) records the move. A moved entry is dropped from the page list everywhere (`NewsService::legacyNewsEvents`), the old registration lookup no longer finds it, and its old addresses redirect (301) to the article or its registration page. The `news.events` payload is not changed, so nothing an editor wrote there is lost.
+- Untouched sample events are never moved (`App\Support\News\SampleCalendarEvents`, shared with the old calendar import).
+- Admin: the Events page keeps its page texts; its event lists can no longer get new entries, show a note pointing to the article editor, and label moved entries.
+- Deploy: `calendar-events-move.approved` in `cpanel-deploy.sh`, after the old calendar import.
+- Tests: `tests/Feature/NewsCalendarEventMoveTest.php`.

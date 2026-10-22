@@ -116,6 +116,7 @@ use App\Contracts\News\NewsAdminWorkflowServiceInterface;
 use App\Contracts\News\NewsArticleCmsServiceInterface;
 use App\Contracts\News\NewsArticleEventCmsServiceInterface;
 use App\Contracts\News\NewsArticleEventServiceInterface;
+use App\Contracts\News\NewsCalendarEventMoveServiceInterface;
 use App\Contracts\News\NewsServiceInterface;
 use App\Contracts\Page\AboutNavigationCardServiceInterface;
 use App\Contracts\Page\AboutPageServiceInterface;
@@ -313,6 +314,7 @@ use App\Services\News\NewsAdminWorkflowService;
 use App\Services\News\NewsArticleCmsService;
 use App\Services\News\NewsArticleEventCmsService;
 use App\Services\News\NewsArticleEventService;
+use App\Services\News\NewsCalendarEventMoveService;
 use App\Services\News\NewsService;
 use App\Services\Page\AboutNavigationCardService;
 use App\Services\Page\AboutPageService;
@@ -703,6 +705,7 @@ class AppServiceProvider extends ServiceProvider
             NewsArticleCmsServiceInterface::class => NewsArticleCmsService::class,
             NewsArticleEventCmsServiceInterface::class => NewsArticleEventCmsService::class,
             NewsArticleEventServiceInterface::class => NewsArticleEventService::class,
+            NewsCalendarEventMoveServiceInterface::class => NewsCalendarEventMoveService::class,
             ResearchPublicationCmsServiceInterface::class => ResearchPublicationCmsService::class,
             ResearchRegisterImportServiceInterface::class => ResearchRegisterImportService::class,
             NewsServiceInterface::class => NewsService::class,

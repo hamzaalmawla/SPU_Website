@@ -44,6 +44,11 @@ The imported `AGENTS.MD` is the authoritative project rulebook (scope, architect
 - Access is publish on that faculty page (`canManageTarget(..., 'publish')`), not a separate permission.
 - Real decision files name real students: never commit them. Tests build look-alike files with `tests/Support/DecisionDocxFactory.php`.
 
+## Events, announcements and news
+- All are articles (`NewsArticleResource`). Events and Society's Events carry event details (`news_article_events`: sessions, speakers, registration) edited in the "Event details" tab; announcements can carry a related link button. Plan and as-built notes: `Docs/EVENTS_UNIFICATION_PLAN.md`.
+- `NewsArticleEventCmsServiceInterface` normalizes, validates and writes the event part of the draft payload; `NewsArticleEventServiceInterface` is the public side (event DTO, registration state and seats, `.ics`, list and calendar entries, related link).
+- Article registrations post through the dynamic form as source `news-articles` with the article ID. The old Events page list (`news.events`) is read alongside until `news:move-calendar-events` moves it.
+
 ## Where to look
 - `Docs/ARCHITECTURE.md`, `Docs/BACKEND_RULES.md`, `Docs/STYLEGUIDE.md`, `Docs/WORKFLOW.md`: layering and conventions
 - `Docs/FRONTEND_IMPORT_TRACKER.md`, `Docs/FRONTEND_ROUTE_PARITY_MATRIX.md`: parity status per route

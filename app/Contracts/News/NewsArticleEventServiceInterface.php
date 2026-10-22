@@ -74,4 +74,11 @@ interface NewsArticleEventServiceInterface
      * @return array<int|string, string>
      */
     public function relatedLinkOptions(string $kind, string $locale, int|string|null $current = null): array;
+
+    /**
+     * Events page list IDs that were moved into articles, with the article ID.
+     *
+     * @return array<string, int>
+     */
+    public function movedEventArticleIds(): array;
 }

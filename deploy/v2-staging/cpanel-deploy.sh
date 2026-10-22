@@ -1067,6 +1067,49 @@ if [[ -f "${CALENDAR_EVENTS_APPROVAL}" ]]; then
     mv "${CALENDAR_EVENTS_APPROVAL}" "${CALENDAR_EVENTS_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
 fi
 
+# ── Approved calendar events move ───────────────────────────────────────────
+# Moves the events published in the Events page list (news.events) into published
+# Events articles, keeping their registrations and redirecting their old addresses.
+# The page list itself is not changed; a moved entry is only hidden. Untouched
+# sample events are never moved. Inert unless a human places an approval file that
+# is not in git:
+#
+#     storage/app/private/legacy-imports/calendar-events-move.approved
+#         actor=auto       (or a user id)
+#
+# It runs after calendar-events.approved, so one deploy can import the old calendar
+# and then move it. Re-running it only moves entries not moved yet. It disarms itself
+# once every entry moved; otherwise it stays armed and the deploy log names the rest.
+CALENDAR_EVENTS_MOVE_APPROVAL="${IMPORT_DIR}/calendar-events-move.approved"
+
+if [[ -f "${CALENDAR_EVENTS_MOVE_APPROVAL}" ]]; then
+    log "Calendar events move"
+
+    CEM_ACTOR="$(grep -E '^actor=' "${CALENDAR_EVENTS_MOVE_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r' | tr -d ' ')"
+    [[ -n "${CEM_ACTOR}" ]] || fail "The calendar events move approval file has no actor= line."
+
+    if [[ "${CEM_ACTOR}" == "auto" ]]; then
+        CEM_ACTOR="$(cd "${APP}" && "${PHP}" artisan tinker --execute='
+            echo (string) (\DB::table("users")
+                ->where("role_slug", "super_admin")
+                ->where(function ($q) { $q->whereNull("locked_at")->orWhere("locked_at", ""); })
+                ->orderBy("id")
+                ->value("id") ?? "");
+        ' 2>/dev/null | grep -Eo '^[0-9]+$' | head -n 1 || true)"
+        [[ -n "${CEM_ACTOR}" ]] || fail "actor=auto found no unlocked super_admin to publish the events as."
+    fi
+    [[ "${CEM_ACTOR}" =~ ^[0-9]+$ ]] || fail "The calendar events actor must be a numeric user id or 'auto'."
+
+    # Dry run first: it lists what would move and writes nothing.
+    (cd "${APP}" && "${PHP}" artisan news:move-calendar-events --user="${CEM_ACTOR}" --no-ansi) || true
+
+    if (cd "${APP}" && "${PHP}" artisan news:move-calendar-events --user="${CEM_ACTOR}" --write --no-ansi); then
+        mv "${CALENDAR_EVENTS_MOVE_APPROVAL}" "${CALENDAR_EVENTS_MOVE_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+    else
+        printf '  some events were not moved (see above); the approval file stays for the next deploy\n'
+    fi
+fi
+
 # ── Approved course specifications ──────────────────────────────────────────
 # Attaches the old faculty sites' course specification PDFs
 # (database/seeders/Data/legacy-course-specifications.json) to the study plan
