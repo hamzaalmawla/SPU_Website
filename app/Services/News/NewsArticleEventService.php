@@ -180,7 +180,7 @@ final class NewsArticleEventService implements NewsArticleEventServiceInterface
             ->public()
             ->whereHas('category', fn (Builder $query): Builder => $query->whereIn('slug', $categorySlugs)->where('is_enabled', true))
             ->whereHas('event', fn (Builder $query): Builder => $calendarOnly ? $query->where('show_on_calendar', true) : $query)
-            ->with(['translations', 'coverMedia'])
+            ->with(['translations', 'coverMedia', 'seoMeta'])
             ->get()
             ->map(function (NewsArticle $article) use ($locale): ?array {
                 $payload = $this->eventCms->storedPayload((int) $article->getKey());
@@ -188,9 +188,12 @@ final class NewsArticleEventService implements NewsArticleEventServiceInterface
                     return null;
                 }
                 $translation = $article->translations->firstWhere('locale', $locale) ?? $article->translations->firstWhere('locale', 'ar');
-                $cover = $article->coverMedia instanceof MediaAsset
-                    ? MediaUrlResolver::resolveImage($article->coverMedia->webp_path, $article->coverMedia->path, $article->coverMedia->disk)
-                    : MediaUrlResolver::resolveLegacy($article->legacy_cover_path);
+                // The same order as the article page: sharing image, then cover.
+                $seo = $article->seoMeta->firstWhere('locale', $locale) ?? $article->seoMeta->firstWhere('locale', 'ar');
+                $cover = $this->filled($seo?->og_image_url)
+                    ?? ($article->coverMedia instanceof MediaAsset
+                        ? MediaUrlResolver::resolveImage($article->coverMedia->webp_path, $article->coverMedia->path, $article->coverMedia->disk)
+                        : MediaUrlResolver::resolveLegacy($article->legacy_cover_path));
 
                 return [
                     'event' => $this->map($payload, (int) $article->getKey(), $this->articleTitle($article, $locale), $locale, false),

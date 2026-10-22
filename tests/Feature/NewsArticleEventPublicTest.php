@@ -9,6 +9,7 @@ use App\Contracts\News\NewsArticleCmsServiceInterface;
 use App\DTOs\News\NewsArticleCmsDataDTO;
 use App\Enums\PublicationStatus;
 use App\Mail\EventRegistrationReceived;
+use App\Mail\FormSubmissionReceipt;
 use App\Models\Faculty\Faculty;
 use App\Models\Form\DynamicFormSubmission;
 use App\Models\News\NewsCategory;
@@ -102,7 +103,10 @@ final class NewsArticleEventPublicTest extends TestCase
         $this->assertSame('news-articles', $submission->payload_json['_context']['source'] ?? null);
         $this->assertSame((string) $articleId, $submission->payload_json['_context']['event_id'] ?? null);
         $this->assertSame('AI Workshop', $submission->payload_json['_context']['event_title'] ?? null);
-        Mail::assertQueued(EventRegistrationReceived::class, fn (EventRegistrationReceived $mail): bool => $mail->hasTo('lina@example.com'));
+        // No confirmation goes to the person registering for an event article.
+        Mail::assertNotQueued(EventRegistrationReceived::class);
+        Mail::assertNotQueued(FormSubmissionReceipt::class, fn (FormSubmissionReceipt $mail): bool => $mail->hasTo('lina@example.com'));
+        $this->assertSame('not_applicable', $submission->fresh()?->email_delivery_status);
 
         $this->postJson('/en/forms/activity-registration/submissions', [
             'fullName' => 'Omar Fares',
