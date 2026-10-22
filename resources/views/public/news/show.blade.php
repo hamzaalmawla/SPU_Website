@@ -46,6 +46,18 @@
                     <span class="h-1 w-1 rounded-full bg-slate-300" aria-hidden="true"></span>
                     <span>{{ __('public.min_read') }}</span>
                 </div>
+
+                @if ($article->relatedLink)
+                    <div class="mt-6">
+                        <a href="{{ $article->relatedLink->url }}"
+                           @if ($article->relatedLink->isExternal) target="_blank" rel="noopener noreferrer" @endif
+                           class="inline-flex items-center gap-2 rounded-[4px] bg-spu-red px-6 py-3 text-[13px] font-bold text-white transition hover:bg-spu-blue focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-red"
+                           dir="auto">
+                            <span>{{ $article->relatedLink->label }}</span>
+                            <img src="/images/icon-arrow-right-outline.svg" alt="" class="h-3 w-3 brightness-0 invert rtl:rotate-180" aria-hidden="true">
+                        </a>
+                    </div>
+                @endif
             </header>
 
             @if ($article->event !== null)

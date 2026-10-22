@@ -7,6 +7,7 @@ namespace App\Filament\Resources;
 use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\News\NewsArticleCmsServiceInterface;
 use App\Contracts\News\NewsArticleEventCmsServiceInterface;
+use App\Contracts\News\NewsArticleEventServiceInterface;
 use App\Filament\Resources\NewsArticleResource\Pages;
 use App\Filament\Support\FormPicker;
 use App\Filament\Support\GrantedFacultySelect;
@@ -14,6 +15,7 @@ use App\Filament\Support\MediaPicker;
 use App\Models\News\NewsArticle;
 use App\Models\News\NewsCategory;
 use App\Models\User\User;
+use Closure;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Component;
 use Filament\Forms\Components\DatePicker;
@@ -114,6 +116,11 @@ class NewsArticleResource extends Resource
                                         ->inline(),
                                     MediaPicker::assetImage('cover_media_id', __('admin.news_article.fields.cover_image')),
                                 ])
+                                ->columns(2),
+                            Section::make(__('admin.news_article.related_link.section'))
+                                ->description(__('admin.news_article.related_link.help'))
+                                ->visible(fn (Get $get): bool => self::isAnnouncement($get('news_category_id')))
+                                ->schema(self::relatedLinkSchema())
                                 ->columns(2),
                             Section::make(__('admin.news_article.sections.languages'))
                                 ->description(__('admin.news_article.help.languages'))
@@ -413,6 +420,66 @@ class NewsArticleResource extends Resource
     private static function editorialTypes(): array
     {
         return self::$editorialTypes ??= app(NewsArticleCmsServiceInterface::class)->editorialTypeOptions();
+    }
+
+    private static function isAnnouncement(mixed $categoryId): bool
+    {
+        return is_numeric($categoryId) && (self::editorialTypes()[(int) $categoryId] ?? null) === 'announcement';
+    }
+
+    /** @return array<int, Component> */
+    private static function relatedLinkSchema(): array
+    {
+        $kind = fn (string $value): Closure => fn (Get $get): bool => $get('related_kind') === $value;
+        $locale = fn (): string => app()->getLocale() === 'en' ? 'en' : 'ar';
+
+        return [
+            Select::make('related_kind')
+                ->label(__('admin.news_article.related_link.fields.kind'))
+                ->placeholder(__('admin.news_article.related_link.kinds.none'))
+                ->options([
+                    'article' => __('admin.news_article.related_link.kinds.article'),
+                    'conference' => __('admin.news_article.related_link.kinds.conference'),
+                    'url' => __('admin.news_article.related_link.kinds.url'),
+                ])
+                ->native(false)
+                ->live()
+                ->columnSpanFull(),
+            Select::make('related_article_id')
+                ->label(__('admin.news_article.related_link.fields.article'))
+                ->options(fn (mixed $state): array => app(NewsArticleEventServiceInterface::class)->relatedLinkOptions('article', $locale(), is_numeric($state) ? (int) $state : null))
+                ->searchable()
+                ->native(false)
+                ->visible($kind('article'))
+                ->required($kind('article'))
+                ->columnSpanFull(),
+            Select::make('related_conference_id')
+                ->label(__('admin.news_article.related_link.fields.conference'))
+                ->options(fn (mixed $state): array => app(NewsArticleEventServiceInterface::class)->relatedLinkOptions('conference', $locale(), is_string($state) ? $state : null))
+                ->searchable()
+                ->native(false)
+                ->visible($kind('conference'))
+                ->required($kind('conference'))
+                ->columnSpanFull(),
+            TextInput::make('related_url')
+                ->label(__('admin.news_article.related_link.fields.url'))
+                ->helperText(__('admin.news_article.related_link.help_url'))
+                ->maxLength(255)
+                ->visible($kind('url'))
+                ->required($kind('url'))
+                ->columnSpanFull(),
+            TextInput::make('cta_label_ar')
+                ->label(__('admin.news_article.related_link.fields.label_ar'))
+                ->helperText(__('admin.news_article.related_link.help_label'))
+                ->maxLength(80)
+                ->visible(fn (Get $get): bool => filled($get('related_kind')))
+                ->extraInputAttributes(['dir' => 'rtl']),
+            TextInput::make('cta_label_en')
+                ->label(__('admin.news_article.related_link.fields.label_en'))
+                ->maxLength(80)
+                ->visible(fn (Get $get): bool => filled($get('related_kind')))
+                ->extraInputAttributes(['dir' => 'ltr']),
+        ];
     }
 
     /** "events", "society_events", or null for a category without event details. */

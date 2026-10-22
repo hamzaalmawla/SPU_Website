@@ -674,6 +674,16 @@ final class NewsService implements NewsServiceInterface
             event: $includeAttachments && in_array($article->category?->slug, ['events', 'society-events'], true)
                 ? $this->articleEvents->forArticle((int) $article->getKey(), $locale)
                 : null,
+            relatedLink: $includeAttachments && $article->related_kind !== null
+                ? $this->articleEvents->relatedLink(
+                    $article->related_kind,
+                    $article->related_article_id,
+                    $article->related_conference_id,
+                    $article->related_url,
+                    $article->translations->firstWhere('locale', $locale)?->cta_label,
+                    $locale,
+                )
+                : null,
         );
     }
 

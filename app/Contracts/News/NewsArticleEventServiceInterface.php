@@ -6,6 +6,7 @@ namespace App\Contracts\News;
 
 use App\DTOs\News\NewsArticleEventDTO;
 use App\DTOs\News\NewsEventDTO;
+use App\DTOs\News\NewsRelatedLinkDTO;
 use Illuminate\Support\Collection;
 
 /**
@@ -16,6 +17,9 @@ interface NewsArticleEventServiceInterface
 {
     /** Registrations made on the site carry this source in their context. */
     public const REGISTRATION_SOURCE = 'news-articles';
+
+    /** What an announcement's related link can point at. */
+    public const RELATED_KINDS = ['article', 'conference', 'url'];
 
     /** The published event of an article, or null when it has none. */
     public function forArticle(int $articleId, string $locale): ?NewsArticleEventDTO;
@@ -54,4 +58,20 @@ interface NewsArticleEventServiceInterface
      * @return Collection<int, NewsEventDTO>
      */
     public function calendarEntries(string $locale): Collection;
+
+    /**
+     * The button of an announcement, or null when there is no link or its
+     * target is not public. Without an editor label the text follows the
+     * target: "Register" while registration is open, otherwise its details.
+     */
+    public function relatedLink(?string $kind, ?int $articleId, ?string $conferenceId, ?string $url, ?string $label, string $locale): ?NewsRelatedLinkDTO;
+
+    /**
+     * Choices for the announcement editor: public Events and Society's
+     * Events articles ("article"), or published research conferences
+     * ("conference"). A current value that is no longer public stays listed.
+     *
+     * @return array<int|string, string>
+     */
+    public function relatedLinkOptions(string $kind, string $locale, int|string|null $current = null): array;
 }

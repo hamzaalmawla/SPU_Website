@@ -314,4 +314,9 @@ return [
         'not_open_title' => 'Registration is not open',
         'preview_note' => 'Registration is not available in preview.',
     ],
+    'related_link' => [
+        'event_details' => 'Event details',
+        'conference_details' => 'View the conference',
+        'details' => 'View details',
+    ],
 ];

@@ -664,6 +664,26 @@ return [
                 'hidden' => 'Hidden profiles',
             ],
         ],
+        'related_link' => [
+            'section' => 'Related link (optional)',
+            'help' => 'Adds a button to the announcement, for example to the conference it announces.',
+            'help_url' => 'A site address starting with /, or a full address starting with https://.',
+            'help_label' => 'Leave empty for the default: "Register" while registration is open, otherwise the details.',
+            'fields' => [
+                'kind' => 'Link to',
+                'article' => 'Event',
+                'conference' => 'Research conference',
+                'url' => 'Address',
+                'label_ar' => 'Button text (Arabic)',
+                'label_en' => 'Button text (English)',
+            ],
+            'kinds' => [
+                'none' => 'No link',
+                'article' => 'An event on this site',
+                'conference' => 'A research conference',
+                'url' => 'Another address',
+            ],
+        ],
         'translation_item' => ':language content',
         'attachment_types' => [
             'image' => 'Image',

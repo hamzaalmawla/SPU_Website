@@ -1,6 +1,6 @@
 # Events, Announcements and News: Unification Plan
 
-Status: agreed with the product owner (2026-10-22). Steps 1-3 built (see below); steps 4-5 not started.
+Status: agreed with the product owner (2026-10-22). Steps 1-4 built (see below); step 5 not started.
 
 ## Problem
 
@@ -121,3 +121,10 @@ Rules:
 - Events list category filter: the page's own categories plus the types of published event articles.
 - Research conferences (`research.conferences`, upcoming and past, each language): "Add to calendar", start date and end date. `ResearchPageServiceInterface::calendarConferences()` places them on each day (at most 31). The text date stays what the conference page shows.
 - Tests: `tests/Feature/NewsEventsCalendarArticlesTest.php`.
+
+## Step 4 as built
+
+- Migration `2026_10_22_000004_add_related_link_to_news_articles.php`: `news_articles.related_kind|related_article_id|related_conference_id|related_url` and `news_article_translations.cta_label`.
+- Editor: "Related link (optional)" section on the Content tab, shown only for Announcements: an event article (searchable list of public Events and Society's Events), a published research conference, or an address (site path or http(s)), plus optional button text per language. `NewsArticleCmsService` drops the link for any other category and checks the target on publish.
+- `NewsArticleEventServiceInterface::relatedLink()` builds the button on the article page and in the preview: an event with open registration links to its registration page as "Register", otherwise to the event as "Event details"; a registerable conference links to its registration as "Register", otherwise to the conference page; an address opens in a new tab when it is outside the site. A target that is no longer public shows no button.
+- Tests: `tests/Feature/NewsAnnouncementRelatedLinkTest.php`.

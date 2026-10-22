@@ -12,7 +12,7 @@ class NewsArticleTranslation extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['news_article_id', 'locale', 'title', 'excerpt', 'body'];
+    protected $fillable = ['news_article_id', 'locale', 'title', 'excerpt', 'body', 'cta_label'];
 
     public function article(): BelongsTo
     {

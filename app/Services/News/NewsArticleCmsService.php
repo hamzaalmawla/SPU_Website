@@ -199,6 +199,10 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
                 'is_featured' => (bool) $payload['is_featured'],
                 'sort_order' => (int) $payload['sort_order'],
                 'faculty_scope_slug' => $this->nullableString($payload['faculty_scope_slug']),
+                'related_kind' => $payload['related_kind'],
+                'related_article_id' => $payload['related_kind'] === 'article' ? $payload['related_article_id'] : null,
+                'related_conference_id' => $payload['related_kind'] === 'conference' ? $payload['related_conference_id'] : null,
+                'related_url' => $payload['related_kind'] === 'url' ? $payload['related_url'] : null,
                 'updated_by' => $userId,
             ])->save();
 
@@ -209,6 +213,7 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
                     'title' => $this->stringValue($translation['title'] ?? null),
                     'excerpt' => $this->nullableString($translation['excerpt'] ?? null),
                     'body' => $this->nullableString($this->htmlSanitizer->sanitize($this->nullableString($translation['body'] ?? null))),
+                    'cta_label' => $payload['related_kind'] !== null ? $payload['cta_label_'.$locale] : null,
                 ]);
             }
             $article->translations()->whereNotIn('locale', $keptLocales)->delete();
@@ -345,6 +350,14 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
                 $this->stringValue($translation['title'] ?? null),
                 $locale,
             ),
+            relatedLink: $this->articleEvents->relatedLink(
+                $payload['related_kind'],
+                $payload['related_article_id'],
+                $payload['related_conference_id'],
+                $payload['related_url'],
+                $payload['cta_label_'.$locale] ?? null,
+                $locale,
+            ),
         );
     }
 
@@ -370,6 +383,31 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
             'attachments' => $this->listValue($payload['attachments'] ?? $fallback['attachments'] ?? []),
             'seo_meta' => $seo,
             'event' => $this->events->normalize($payload['event'] ?? $fallback['event'] ?? null, $categoryId),
+            ...$this->relatedLinkPayload($payload, $fallback, $categoryId),
+        ];
+    }
+
+    /**
+     * Only announcements carry a related link; any other category drops it.
+     *
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>  $fallback
+     * @return array{related_kind: ?string, related_article_id: ?int, related_conference_id: ?string, related_url: ?string, cta_label_ar: ?string, cta_label_en: ?string}
+     */
+    private function relatedLinkPayload(array $payload, array $fallback, ?int $categoryId): array
+    {
+        $announcement = $categoryId !== null && NewsCategory::query()->whereKey($categoryId)->value('type') === 'announcement';
+        $value = fn (string $key): mixed => array_key_exists($key, $payload) ? $payload[$key] : ($fallback[$key] ?? null);
+        $kind = $this->nullableString($value('related_kind'));
+        $kind = $announcement && in_array($kind, NewsArticleEventServiceInterface::RELATED_KINDS, true) ? $kind : null;
+
+        return [
+            'related_kind' => $kind,
+            'related_article_id' => $kind === 'article' ? $this->nullableInt($value('related_article_id')) : null,
+            'related_conference_id' => $kind === 'conference' ? $this->nullableString($value('related_conference_id')) : null,
+            'related_url' => $kind === 'url' ? $this->nullableString($value('related_url')) : null,
+            'cta_label_ar' => $kind !== null ? $this->nullableString($value('cta_label_ar')) : null,
+            'cta_label_en' => $kind !== null ? $this->nullableString($value('cta_label_en')) : null,
         ];
     }
 
@@ -417,6 +455,12 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
                 'robots' => (string) $seo->robots,
             ]])->all(),
             'event' => $this->events->storedPayload((int) $article->getKey()),
+            'related_kind' => $article->related_kind,
+            'related_article_id' => $article->related_article_id,
+            'related_conference_id' => $article->related_conference_id,
+            'related_url' => $article->related_url,
+            'cta_label_ar' => $article->translations->firstWhere('locale', 'ar')?->cta_label,
+            'cta_label_en' => $article->translations->firstWhere('locale', 'en')?->cta_label,
         ];
     }
 
@@ -436,6 +480,7 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
             $errors['news_category_id'][] = 'A News, Announcement or Event content type is required.';
         }
         $errors = array_merge_recursive($errors, $this->events->validationErrors(is_array($payload['event'] ?? null) ? $payload['event'] : null, $categoryId));
+        $errors = array_merge_recursive($errors, $this->relatedLinkErrors($articleId, $payload));
 
         foreach ($this->requiredLocales($payload) as $locale) {
             $translation = $payload['translations'][$locale] ?? null;
@@ -461,6 +506,36 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
                 $errors['attachments.'.$index.'.media_asset_id'][] = 'An attachment file is required.';
             }
             $this->appendMediaError($errors, 'attachments.'.$index.'.media_asset_id', $attachment['media_asset_id'] ?? null, false);
+        }
+
+        return $errors;
+    }
+
+    /** @param array<string, mixed> $payload @return array<string, array<int, string>> */
+    private function relatedLinkErrors(int $articleId, array $payload): array
+    {
+        $errors = [];
+        $kind = $payload['related_kind'] ?? null;
+
+        if ($kind === 'article') {
+            $target = $this->nullableInt($payload['related_article_id'] ?? null);
+            $isEvent = $target !== null && $target !== $articleId && NewsArticle::query()
+                ->whereKey($target)
+                ->whereHas('category', fn ($query) => $query->whereIn('slug', ['events', 'society-events']))
+                ->exists();
+            if (! $isEvent) {
+                $errors['related_article_id'][] = 'Choose an event article for the link.';
+            }
+        } elseif ($kind === 'conference' && $this->nullableString($payload['related_conference_id'] ?? null) === null) {
+            $errors['related_conference_id'][] = 'Choose a research conference for the link.';
+        } elseif ($kind === 'url') {
+            $url = (string) $this->nullableString($payload['related_url'] ?? null);
+            $valid = str_starts_with($url, '/')
+                ? ! str_starts_with($url, '//')
+                : filter_var($url, FILTER_VALIDATE_URL) !== false && in_array(strtolower((string) parse_url($url, PHP_URL_SCHEME)), ['http', 'https'], true);
+            if (! $valid) {
+                $errors['related_url'][] = 'Enter a site address starting with / or a full address starting with https://.';
+            }
         }
 
         return $errors;

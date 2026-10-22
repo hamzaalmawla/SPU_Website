@@ -314,4 +314,9 @@ return [
         'not_open_title' => 'التسجيل غير متاح',
         'preview_note' => 'التسجيل غير متاح في المعاينة.',
     ],
+    'related_link' => [
+        'event_details' => 'تفاصيل الفعالية',
+        'conference_details' => 'عرض المؤتمر',
+        'details' => 'عرض التفاصيل',
+    ],
 ];
