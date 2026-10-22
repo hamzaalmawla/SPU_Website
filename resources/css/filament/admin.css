@@ -417,20 +417,6 @@
     border-top-color: var(--spu-line);
 }
 
-/* Toggle / Switch positioning */
-.fi-fo-toggle,
-[class*="toggle"],
-[class*="switch"] {
-    display: flex;
-    justify-content: flex-end;
-}
-
-[dir="rtl"] .fi-fo-toggle,
-[dir="rtl"] [class*="toggle"],
-[dir="rtl"] [class*="switch"] {
-    justify-content: flex-start;
-}
-
 .fi-admin-locale-switcher button {
     min-height: 2.25rem;
     color: var(--spu-navy);
