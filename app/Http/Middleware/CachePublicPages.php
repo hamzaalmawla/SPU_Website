@@ -297,7 +297,7 @@ final class CachePublicPages
             'public.news.agreements' => ['search', 'page'],
             'public.news.society-events' => ['search', 'page'],
             'public.news.announcements' => ['category'],
-            'public.news.events' => ['month'],
+            'public.news.events' => ['month', 'type'],
             'public.news.events-list' => ['category'],
             'public.news.events-list.register', 'public.news.events-list.past' => ['event'],
             'public.news.gallery' => ['category', 'page'],
