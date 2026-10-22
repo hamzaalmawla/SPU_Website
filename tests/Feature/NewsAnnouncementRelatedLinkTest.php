@@ -136,10 +136,15 @@ final class NewsAnnouncementRelatedLinkTest extends TestCase
     private function categoryId(string $slug): int
     {
         if (! NewsCategory::query()->where('slug', $slug)->exists()) {
-            NewsCategory::query()->create([
+            $category = NewsCategory::query()->create([
                 'slug' => $slug,
                 'type' => $slug === 'announcements' ? 'announcement' : 'news',
                 'is_enabled' => true,
+            ]);
+            // The article page needs the category name in each language, as real categories have.
+            $category->translations()->createMany([
+                ['locale' => 'ar', 'name' => $slug === 'announcements' ? 'الإعلانات' : 'الأخبار'],
+                ['locale' => 'en', 'name' => $slug === 'announcements' ? 'Announcements' : 'News'],
             ]);
         }
 
