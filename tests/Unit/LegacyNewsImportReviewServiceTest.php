@@ -35,7 +35,8 @@ final class LegacyNewsImportReviewServiceTest extends TestCase
         $review = $this->service->review();
 
         $this->assertSame('cleanup_required', $review->status);
-        $this->assertSame(2, $review->categories);
+        // The created category plus the society-events and events categories added by migrations.
+        $this->assertSame(3, $review->categories);
         $this->assertSame(1, $review->articles);
         $this->assertSame(1, $review->legacyArticles);
         $this->assertSame(1, $review->publishedArticles);

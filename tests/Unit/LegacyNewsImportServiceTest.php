@@ -137,7 +137,8 @@ final class LegacyNewsImportServiceTest extends TestCase
         );
 
         $this->assertSame(0, $result->importedRows);
-        $this->assertDatabaseCount('news_categories', 1);
+        // Only the society-events and events categories added by migrations.
+        $this->assertDatabaseCount('news_categories', 2);
         $this->assertDatabaseCount('news_articles', 0);
     }
 
