@@ -6,6 +6,8 @@
         $previousArticle = $adjacentArticles['previous'] ?? null;
         $nextArticle = $adjacentArticles['next'] ?? null;
         $canonicalArticleUrl = url($article->url);
+        // The preview passes the announcement button separately; the article carries it otherwise.
+        $relatedLink ??= $article->relatedLink;
         $pageLabel = $article->event !== null ? __('public.article_event.kinds.'.$article->event->kind) : __('public.news_article_page');
     @endphp
 
@@ -47,13 +49,13 @@
                     <span>{{ __('public.min_read') }}</span>
                 </div>
 
-                @if ($article->relatedLink)
+                @if ($relatedLink)
                     <div class="mt-6">
-                        <a href="{{ $article->relatedLink->url }}"
-                           @if ($article->relatedLink->isExternal) target="_blank" rel="noopener noreferrer" @endif
+                        <a href="{{ $relatedLink->url }}"
+                           @if ($relatedLink->isExternal) target="_blank" rel="noopener noreferrer" @endif
                            class="inline-flex items-center gap-2 rounded-[4px] bg-spu-red px-6 py-3 text-[13px] font-bold text-white transition hover:bg-spu-blue focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-red"
                            dir="auto">
-                            <span>{{ $article->relatedLink->label }}</span>
+                            <span>{{ $relatedLink->label }}</span>
                             <img src="/images/icon-arrow-right-outline.svg" alt="" class="h-3 w-3 brightness-0 invert rtl:rotate-180" aria-hidden="true">
                         </a>
                     </div>

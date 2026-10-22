@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Public;
 use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Navigation\NavigationServiceInterface;
 use App\Contracts\News\NewsArticleCmsServiceInterface;
+use App\Contracts\News\NewsRelatedLinkServiceInterface;
 use App\Contracts\News\NewsServiceInterface;
 use App\Contracts\Page\AboutPageServiceInterface;
 use App\Contracts\Page\AdmissionsPageServiceInterface;
@@ -50,6 +51,7 @@ final class PreviewController extends Controller
         private readonly NavigationServiceInterface $navigationService,
         private readonly AboutEntityCmsServiceInterface $aboutEntityCmsService,
         private readonly NewsArticleCmsServiceInterface $newsArticleCmsService,
+        private readonly NewsRelatedLinkServiceInterface $relatedLinks,
     ) {}
 
     public function __invoke(Request $request, string $locale): View
@@ -291,6 +293,7 @@ final class PreviewController extends Controller
             'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale),
             'isPreview' => true,
             'article' => $article,
+            'relatedLink' => $this->relatedLinks->forPayload($payload, $locale),
             'relatedArticles' => collect(),
             'adjacentArticles' => ['previous' => null, 'next' => null],
             'seo' => $this->seoMetadataService->buildFallback($locale, [

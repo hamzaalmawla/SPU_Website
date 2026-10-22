@@ -8,6 +8,7 @@ use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Form\FormDefinitionServiceInterface;
 use App\Contracts\Media\MediaServiceInterface;
 use App\Contracts\News\NewsArticleEventServiceInterface;
+use App\Contracts\News\NewsRelatedLinkServiceInterface;
 use App\Contracts\News\NewsServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
@@ -44,6 +45,7 @@ final class NewsService implements NewsServiceInterface
         private readonly FormDefinitionServiceInterface $formDefinitions,
         private readonly NewsArticleEventServiceInterface $articleEvents,
         private readonly ResearchPageServiceInterface $researchPages,
+        private readonly NewsRelatedLinkServiceInterface $relatedLinks,
     ) {}
 
     public function getIndexPageContent(string $locale): array
@@ -678,7 +680,7 @@ final class NewsService implements NewsServiceInterface
                 ? $this->articleEvents->forArticle((int) $article->getKey(), $locale)
                 : null,
             relatedLink: $includeAttachments && $article->related_kind !== null
-                ? $this->articleEvents->relatedLink(
+                ? $this->relatedLinks->relatedLink(
                     $article->related_kind,
                     $article->related_article_id,
                     $article->related_conference_id,

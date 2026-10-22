@@ -6,7 +6,7 @@ namespace Tests\Feature;
 
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\News\NewsArticleCmsServiceInterface;
-use App\Contracts\News\NewsArticleEventServiceInterface;
+use App\Contracts\News\NewsRelatedLinkServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
 use App\DTOs\News\NewsArticleCmsDataDTO;
 use App\Models\News\NewsArticle;
@@ -75,7 +75,7 @@ final class NewsAnnouncementRelatedLinkTest extends TestCase
         $this->get('/en/news/'.$toPage)->assertOk()
             ->assertSee('href="/en/admissions"', false);
 
-        $this->assertArrayHasKey($conferenceId, app(NewsArticleEventServiceInterface::class)->relatedLinkOptions('conference', 'en'));
+        $this->assertArrayHasKey($conferenceId, app(NewsRelatedLinkServiceInterface::class)->relatedLinkOptions('conference', 'en'));
     }
 
     public function test_link_is_checked_and_kept_only_on_announcements(): void
@@ -99,10 +99,10 @@ final class NewsAnnouncementRelatedLinkTest extends TestCase
         $this->assertSame((int) $hidden->articleId, NewsArticle::query()->findOrFail($toHidden)->related_article_id);
         $this->get('/en/news/'.$toHidden)->assertOk()->assertDontSee('href="/en/news/'.$hidden->articleId.'"', false);
 
-        $options = app(NewsArticleEventServiceInterface::class)->relatedLinkOptions('article', 'en');
+        $options = app(NewsRelatedLinkServiceInterface::class)->relatedLinkOptions('article', 'en');
         $this->assertArrayNotHasKey($news, $options);
         $this->assertArrayNotHasKey((int) $hidden->articleId, $options);
-        $this->assertArrayHasKey((int) $hidden->articleId, app(NewsArticleEventServiceInterface::class)->relatedLinkOptions('article', 'en', (int) $hidden->articleId));
+        $this->assertArrayHasKey((int) $hidden->articleId, app(NewsRelatedLinkServiceInterface::class)->relatedLinkOptions('article', 'en', (int) $hidden->articleId));
     }
 
     /** @param array<string, mixed> $extra */

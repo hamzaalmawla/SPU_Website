@@ -8,6 +8,7 @@ use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\News\NewsArticleCmsServiceInterface;
 use App\Contracts\News\NewsArticleEventCmsServiceInterface;
 use App\Contracts\News\NewsArticleEventServiceInterface;
+use App\Contracts\News\NewsRelatedLinkServiceInterface;
 use App\Contracts\Shared\SlugServiceInterface;
 use App\DTOs\Cms\CmsTargetDTO;
 use App\DTOs\News\NewsArticleCmsDataDTO;
@@ -350,14 +351,6 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
                 $this->stringValue($translation['title'] ?? null),
                 $locale,
             ),
-            relatedLink: $this->articleEvents->relatedLink(
-                $payload['related_kind'],
-                $payload['related_article_id'],
-                $payload['related_conference_id'],
-                $payload['related_url'],
-                $payload['cta_label_'.$locale] ?? null,
-                $locale,
-            ),
         );
     }
 
@@ -399,7 +392,7 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
         $announcement = $categoryId !== null && NewsCategory::query()->whereKey($categoryId)->value('type') === 'announcement';
         $value = fn (string $key): mixed => array_key_exists($key, $payload) ? $payload[$key] : ($fallback[$key] ?? null);
         $kind = $this->nullableString($value('related_kind'));
-        $kind = $announcement && in_array($kind, NewsArticleEventServiceInterface::RELATED_KINDS, true) ? $kind : null;
+        $kind = $announcement && in_array($kind, NewsRelatedLinkServiceInterface::RELATED_KINDS, true) ? $kind : null;
 
         return [
             'related_kind' => $kind,

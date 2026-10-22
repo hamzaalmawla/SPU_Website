@@ -7,7 +7,7 @@ namespace App\Filament\Resources;
 use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\News\NewsArticleCmsServiceInterface;
 use App\Contracts\News\NewsArticleEventCmsServiceInterface;
-use App\Contracts\News\NewsArticleEventServiceInterface;
+use App\Contracts\News\NewsRelatedLinkServiceInterface;
 use App\Filament\Resources\NewsArticleResource\Pages;
 use App\Filament\Support\FormPicker;
 use App\Filament\Support\GrantedFacultySelect;
@@ -447,7 +447,7 @@ class NewsArticleResource extends Resource
                 ->columnSpanFull(),
             Select::make('related_article_id')
                 ->label(__('admin.news_article.related_link.fields.article'))
-                ->options(fn (mixed $state): array => app(NewsArticleEventServiceInterface::class)->relatedLinkOptions('article', $locale(), is_numeric($state) ? (int) $state : null))
+                ->options(fn (mixed $state): array => app(NewsRelatedLinkServiceInterface::class)->relatedLinkOptions('article', $locale(), is_numeric($state) ? (int) $state : null))
                 ->searchable()
                 ->native(false)
                 ->visible($kind('article'))
@@ -455,7 +455,7 @@ class NewsArticleResource extends Resource
                 ->columnSpanFull(),
             Select::make('related_conference_id')
                 ->label(__('admin.news_article.related_link.fields.conference'))
-                ->options(fn (mixed $state): array => app(NewsArticleEventServiceInterface::class)->relatedLinkOptions('conference', $locale(), is_string($state) ? $state : null))
+                ->options(fn (mixed $state): array => app(NewsRelatedLinkServiceInterface::class)->relatedLinkOptions('conference', $locale(), is_string($state) ? $state : null))
                 ->searchable()
                 ->native(false)
                 ->visible($kind('conference'))
