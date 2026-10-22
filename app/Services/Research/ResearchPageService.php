@@ -11,6 +11,7 @@ use App\Contracts\Research\ResearchPageServiceInterface;
 use App\DTOs\Content\ProfilePageDTO;
 use App\DTOs\Content\ResearchCardDTO;
 use App\DTOs\Navigation\NavigationActionDTO;
+use App\DTOs\News\NewsEventDTO;
 use App\DTOs\Research\ResearchConferenceRegistrationDTO;
 use App\DTOs\Research\ResearchDetailPageDTO;
 use App\DTOs\Research\ResearchPageDTO;
@@ -25,6 +26,7 @@ use App\Models\Shared\MigrationLog;
 use App\Support\LegacyPublicationMetadata;
 use App\Support\MediaUrlResolver;
 use App\Support\ResearchPublicationSlug;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -695,6 +697,72 @@ final class ResearchPageService implements ResearchPageServiceInterface
             title: (string) $event['title'],
             formId: (string) $event['formId'],
         );
+    }
+
+    public function calendarConferences(string $locale): Collection
+    {
+        $conferences = $this->conferences($locale);
+        if (! $conferences->isAvailable) {
+            return collect();
+        }
+
+        $timezone = (string) config('app.admin_timezone', 'Asia/Damascus');
+        $today = CarbonImmutable::now($timezone)->startOfDay();
+        $entries = collect();
+
+        foreach (['upcoming', 'past'] as $list) {
+            foreach ($this->arrayList($conferences->data[$list] ?? []) as $conference) {
+                $startsOn = trim((string) ($conference['startsOn'] ?? ''));
+                $title = trim((string) ($conference['title'] ?? ''));
+                if (! (bool) ($conference['showOnCalendar'] ?? false) || $title === '' || preg_match('/^\d{4}-\d{2}-\d{2}$/', $startsOn) !== 1) {
+                    continue;
+                }
+
+                $first = CarbonImmutable::parse($startsOn, $timezone)->startOfDay();
+                $endsOn = trim((string) ($conference['endsOn'] ?? ''));
+                $last = preg_match('/^\d{4}-\d{2}-\d{2}$/', $endsOn) === 1 ? CarbonImmutable::parse($endsOn, $timezone)->startOfDay() : $first;
+                // A wrong end date must not flood the calendar.
+                $last = $last->lessThan($first) || $first->diffInDays($last) > 30 ? $first : $last;
+                $isPast = $list === 'past' || $last->lessThan($today);
+                $registrationUrl = ! $isPast && is_string($conference['registrationUrl'] ?? null) && str_starts_with($conference['registrationUrl'], '/research/')
+                    ? '/'.$locale.$conference['registrationUrl']
+                    : null;
+                $id = trim((string) ($conference['id'] ?? '')) ?: Str::slug($title);
+
+                for ($day = $first; $day->lessThanOrEqualTo($last); $day = $day->addDay()) {
+                    $entries->push(new NewsEventDTO(
+                        id: 'conference-'.$id.'-'.$day->format('Ymd'),
+                        locale: $locale,
+                        title: $title,
+                        summary: trim((string) ($conference['description'] ?? '')),
+                        startsAt: $day->toIso8601String(),
+                        endsAt: $day->endOfDay()->toIso8601String(),
+                        dateLabel: trim((string) ($conference['date'] ?? '')) ?: $day->locale($locale)->translatedFormat('l j F Y'),
+                        timeLabel: '',
+                        location: trim((string) ($conference['location'] ?? '')),
+                        categoryId: 'research-conference',
+                        categoryLabel: trim((string) ($conference['eventType'] ?? '')) ?: ($locale === 'ar' ? 'مؤتمر بحثي' : 'Research conference'),
+                        imageUrl: MediaUrlResolver::resolve(is_string($conference['image'] ?? null) ? $conference['image'] : null) ?? '/images/uni-main-place.JPG',
+                        isPast: $isPast,
+                        isFeatured: false,
+                        formId: null,
+                        capacity: null,
+                        registered: 0,
+                        remainingCapacity: null,
+                        isRegisterable: $registrationUrl !== null,
+                        registrationUrl: $registrationUrl,
+                        detailUrl: '/'.$locale.'/research/conferences',
+                        participants: is_string($conference['participants'] ?? null) ? $conference['participants'] : null,
+                        highlights: [],
+                        speakers: [],
+                        results: null,
+                        gallery: [],
+                    ));
+                }
+            }
+        }
+
+        return $entries->values();
     }
 
     public function conferenceRegistration(string $locale, ?string $eventId): ResearchPageDTO

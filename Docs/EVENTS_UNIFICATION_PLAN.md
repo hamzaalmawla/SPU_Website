@@ -1,6 +1,6 @@
 # Events, Announcements and News: Unification Plan
 
-Status: agreed with the product owner (2026-10-22). Step 1 built and green in CI; step 2 built (see below); steps 3-5 not started.
+Status: agreed with the product owner (2026-10-22). Steps 1-3 built (see below); steps 4-5 not started.
 
 ## Problem
 
@@ -112,3 +112,12 @@ Rules:
 - `GET /{locale}/news/{article}/calendar.ics`: one VEVENT per session in UTC; 404 once the event is over.
 - The article page is page-cached for up to 5 minutes, so it can show Register shortly after the last seat goes; the registration page and the submission check are always live.
 - Tests: `tests/Feature/NewsArticleEventPublicTest.php`.
+
+## Step 3 as built
+
+- `NewsArticleEventServiceInterface::listingEvents()` (Events category, one entry per event) and `calendarEntries()` (Events and Society's Events with "Add to calendar", one entry per session) return `NewsEventDTO`, so the existing list, calendar and homepage views render them unchanged. Both are cached with the news tag for 5 minutes and cleared on publish.
+- `NewsService::listNewsEvents()` (events list, news index, homepage `events_activities`) returns the Events page list followed by event articles. `findNewsEvent()` stays on the page list only, so an article event can only register as `news-articles`.
+- Calendar (`getNewsEventCalendar`): page list events, marked article sessions, and research conferences marked for the calendar; a type filter (Event, Conference, Seminar, Society's Event, Research conference) shows only the types present. Filtered and month views are `noindex,follow`.
+- Events list category filter: the page's own categories plus the types of published event articles.
+- Research conferences (`research.conferences`, upcoming and past, each language): "Add to calendar", start date and end date. `ResearchPageServiceInterface::calendarConferences()` places them on each day (at most 31). The text date stays what the conference page shows.
+- Tests: `tests/Feature/NewsEventsCalendarArticlesTest.php`.

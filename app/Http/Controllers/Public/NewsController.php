@@ -137,7 +137,11 @@ final class NewsController extends Controller
     public function events(Request $request, string $locale): View
     {
         $page = $this->newsService->getEventsPageContent($locale);
-        $calendar = $this->newsService->getNewsEventCalendar($locale, is_string($request->query('month')) ? $request->query('month') : null);
+        $calendar = $this->newsService->getNewsEventCalendar(
+            $locale,
+            is_string($request->query('month')) ? $request->query('month') : null,
+            is_string($request->query('type')) && $request->query('type') !== '' ? $request->query('type') : null,
+        );
 
         return view('public.news.events-calendar', $this->sharedPayload($request, $locale, '/news/events', [
             'page' => $page,
@@ -147,11 +151,13 @@ final class NewsController extends Controller
             'nextMonth' => $calendar['nextMonth'],
             'events' => $calendar['events'],
             'days' => $calendar['days'],
+            'types' => $calendar['types'],
+            'activeType' => $calendar['type'],
             // Previous/next walk the calendar without end - a crawler following
             // them reached the 1760s and the 2200s. Each month view already
             // canonicalises to the calendar itself; noindex keeps the empty
             // months out of the index while their event links stay followed.
-            'seo' => $this->seo($locale, '/news/events', (string) $page['calendarTitle'], (string) $page['summary'], (string) $page['heroImage'], $request->has('month') ? 'noindex,follow' : 'index,follow'),
+            'seo' => $this->seo($locale, '/news/events', (string) $page['calendarTitle'], (string) $page['summary'], (string) $page['heroImage'], $request->has('month') || $request->has('type') ? 'noindex,follow' : 'index,follow'),
         ]));
     }
 

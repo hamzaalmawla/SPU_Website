@@ -2,6 +2,8 @@
 
 @section('content')
     @php
+        $types ??= [];
+        $activeType ??= null;
         $weekdays = $locale === 'ar'
             ? [
                 ['short' => 'أحد', 'full' => 'الأحد'],
@@ -40,17 +42,28 @@
                     <span>{{ $page['calendarTitle'] }}</span>
                     <input type="month" name="month" value="{{ $month }}" required aria-label="{{ $page['calendarTitle'] }}">
                 </label>
+                @if (count($types) > 1)
+                    <label class="events-calendar-filter-field">
+                        <span>{{ __('public.events_calendar_type') }}</span>
+                        <select name="type">
+                            <option value="">{{ __('public.events_calendar_all_types') }}</option>
+                            @foreach ($types as $type)
+                                <option value="{{ $type['id'] }}" @selected($activeType === $type['id'])>{{ $type['label'] }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                @endif
                 <button type="submit" class="events-calendar-filter-submit">{{ $page['detailsLabel'] }}</button>
             </form>
 
             <div class="events-calendar-card mt-8 sm:mt-10">
                 <div class="events-calendar-toolbar">
-                    <a href="/{{ $locale }}/news/events?month={{ $previousMonth }}" rel="nofollow" class="events-calendar-nav" aria-label="{{ __('public.previous') }}">
+                    <a href="/{{ $locale }}/news/events?month={{ $previousMonth }}{{ $activeType ? '&type='.urlencode($activeType) : '' }}" rel="nofollow" class="events-calendar-nav" aria-label="{{ __('public.previous') }}">
                         <span aria-hidden="true">{{ $locale === 'ar' ? '→' : '←' }}</span>
                         <span>{{ __('public.previous') }}</span>
                     </a>
                     <h2>{{ $monthLabel }}</h2>
-                    <a href="/{{ $locale }}/news/events?month={{ $nextMonth }}" rel="nofollow" class="events-calendar-nav" aria-label="{{ __('public.next') }}">
+                    <a href="/{{ $locale }}/news/events?month={{ $nextMonth }}{{ $activeType ? '&type='.urlencode($activeType) : '' }}" rel="nofollow" class="events-calendar-nav" aria-label="{{ __('public.next') }}">
                         <span>{{ __('public.next') }}</span>
                         <span aria-hidden="true">{{ $locale === 'ar' ? '←' : '→' }}</span>
                     </a>

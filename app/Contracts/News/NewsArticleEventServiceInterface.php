@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Contracts\News;
 
 use App\DTOs\News\NewsArticleEventDTO;
+use App\DTOs\News\NewsEventDTO;
+use Illuminate\Support\Collection;
 
 /**
  * Public side of article events: the event part of a published article,
@@ -37,4 +39,19 @@ interface NewsArticleEventServiceInterface
      * is over, has no sessions, or the article is not public.
      */
     public function calendarFile(string $article, string $locale): ?string;
+
+    /**
+     * Public articles in the Events category, one entry each, in the shape
+     * the events list, news index and homepage already render.
+     *
+     * @return Collection<int, NewsEventDTO>
+     */
+    public function listingEvents(string $locale): Collection;
+
+    /**
+     * Events and Society's Events marked "Add to calendar", one entry per session.
+     *
+     * @return Collection<int, NewsEventDTO>
+     */
+    public function calendarEntries(string $locale): Collection;
 }

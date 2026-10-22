@@ -9,6 +9,7 @@ use App\Contracts\Form\FormDefinitionServiceInterface;
 use App\Contracts\Media\MediaServiceInterface;
 use App\Contracts\News\NewsArticleEventServiceInterface;
 use App\Contracts\News\NewsServiceInterface;
+use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
 use App\DTOs\Content\ArticleCardDTO;
 use App\DTOs\Media\PublicMediaAssetDTO;
@@ -33,12 +34,16 @@ use Illuminate\Support\Str;
 
 final class NewsService implements NewsServiceInterface
 {
+    /** Calendar type filter, in display order. */
+    private const CALENDAR_TYPES = ['event', 'conference', 'seminar', 'society', 'research-conference'];
+
     public function __construct(
         private readonly CacheServiceInterface $cacheService,
         private readonly CmsWorkflowServiceInterface $cmsWorkflowService,
         private readonly MediaServiceInterface $mediaService,
         private readonly FormDefinitionServiceInterface $formDefinitions,
         private readonly NewsArticleEventServiceInterface $articleEvents,
+        private readonly ResearchPageServiceInterface $researchPages,
     ) {}
 
     public function getIndexPageContent(string $locale): array
@@ -83,7 +88,17 @@ final class NewsService implements NewsServiceInterface
 
     public function getEventsPageContent(string $locale): array
     {
-        return $this->normalizeEventsPageContent($this->publishedLocalizedPayload('news.events', $locale) ?? [], $locale);
+        $content = $this->normalizeEventsPageContent($this->publishedLocalizedPayload('news.events', $locale) ?? [], $locale);
+
+        // Event articles filter by their type; only types with an event are offered.
+        $existing = array_column($content['categories'], 'id');
+        foreach ($this->articleListingEvents($locale)->pluck('categoryLabel', 'categoryId') as $id => $label) {
+            if (! in_array($id, $existing, true)) {
+                $content['categories'][] = ['id' => (string) $id, 'label' => (string) $label];
+            }
+        }
+
+        return $content;
     }
 
     public function buildPreviewEventsPage(string $locale, array $content): array
@@ -91,9 +106,37 @@ final class NewsService implements NewsServiceInterface
         return $this->normalizeEventsPageContent($content, $locale);
     }
 
+    /**
+     * Events from the Events page list, followed by event articles, until
+     * the page list is moved into articles.
+     */
     public function listNewsEvents(string $locale, bool $past = false, ?string $category = null): Collection
     {
-        return $this->mapNewsEvents($this->getEventsPageContent($locale), $locale, $past, $category);
+        $articles = $this->articleListingEvents($locale)
+            ->filter(fn (NewsEventDTO $event): bool => $event->isPast === $past && ($category === null || $event->categoryId === $category));
+        $events = $this->legacyNewsEvents($locale, $past, $category)->concat($articles);
+
+        return ($past
+            ? $events->sortByDesc(fn (NewsEventDTO $event): string => $event->startsAt)
+            : $events->sortBy(fn (NewsEventDTO $event): string => $event->startsAt))
+            ->values();
+    }
+
+    /** @return Collection<int, NewsEventDTO> */
+    private function legacyNewsEvents(string $locale, bool $past, ?string $category = null): Collection
+    {
+        return $this->mapNewsEvents(
+            $this->normalizeEventsPageContent($this->publishedLocalizedPayload('news.events', $locale) ?? [], $locale),
+            $locale,
+            $past,
+            $category,
+        );
+    }
+
+    /** @return Collection<int, NewsEventDTO> */
+    private function articleListingEvents(string $locale): Collection
+    {
+        return $this->newsCache()->remember('news:article-events:listing:'.$locale, fn (): Collection => $this->articleEvents->listingEvents($locale), 300);
     }
 
     public function listPreviewNewsEvents(string $locale, array $content, bool $past = false, ?string $category = null): Collection
@@ -121,8 +164,10 @@ final class NewsService implements NewsServiceInterface
     {
         $sets = $past === null ? [false, true] : [$past];
 
+        // Only the Events page list registers through this lookup; event
+        // articles register as their own source.
         foreach ($sets as $isPast) {
-            $event = $this->listNewsEvents($locale, $isPast)
+            $event = $this->legacyNewsEvents($locale, $isPast)
                 ->first(fn (NewsEventDTO $event): bool => hash_equals($event->id, $eventId));
 
             if ($event instanceof NewsEventDTO) {
@@ -133,13 +178,31 @@ final class NewsService implements NewsServiceInterface
         return null;
     }
 
-    public function getNewsEventCalendar(string $locale, ?string $month = null): array
+    public function getNewsEventCalendar(string $locale, ?string $month = null, ?string $type = null): array
     {
-        $upcoming = $this->listNewsEvents($locale);
-        // Past events stay on the calendar, as they did on the old site.
-        $events = $upcoming->concat($this->listNewsEvents($locale, true))
+        // Past events stay on the calendar, as they did on the old site. Page
+        // list events count as "event" for the type filter.
+        $all = $this->legacyNewsEvents($locale, false)
+            ->concat($this->legacyNewsEvents($locale, true))
+            ->map(fn (NewsEventDTO $event): array => ['type' => 'event', 'event' => $event])
+            ->concat($this->newsCache()->remember('news:article-events:calendar:'.$locale, fn (): Collection => $this->articleEvents->calendarEntries($locale), 300)
+                ->map(fn (NewsEventDTO $event): array => ['type' => $event->categoryId, 'event' => $event]))
+            ->concat($this->researchPages->calendarConferences($locale)
+                ->map(fn (NewsEventDTO $event): array => ['type' => 'research-conference', 'event' => $event]));
+        $types = collect(self::CALENDAR_TYPES)
+            ->filter(fn (string $value): bool => $all->contains('type', $value))
+            ->map(fn (string $value): array => ['id' => $value, 'label' => $value === 'research-conference'
+                ? ($locale === 'ar' ? 'مؤتمر بحثي' : 'Research conference')
+                : __('public.article_event.kinds.'.$value, [], $locale)])
+            ->values()
+            ->all();
+        $type = is_string($type) && in_array($type, array_column($types, 'id'), true) ? $type : null;
+        $events = $all
+            ->filter(fn (array $item): bool => $type === null || $item['type'] === $type)
+            ->map(fn (array $item): NewsEventDTO => $item['event'])
             ->sortBy(fn (NewsEventDTO $event): string => $event->startsAt)
             ->values();
+        $upcoming = $events->reject(fn (NewsEventDTO $event): bool => $event->isPast)->values();
         $selectedMonth = is_string($month) && preg_match('/^\d{4}-\d{2}$/', $month) === 1
             ? $month
             : substr($upcoming->first()?->startsAt ?? now()->format('Y-m'), 0, 7);
@@ -166,6 +229,8 @@ final class NewsService implements NewsServiceInterface
             'nextMonth' => $monthDate->addMonth()->format('Y-m'),
             'events' => $events->filter(fn (NewsEventDTO $event): bool => str_starts_with($event->startsAt, $selectedMonth))->values(),
             'days' => $days,
+            'types' => $types,
+            'type' => $type,
         ];
     }
 

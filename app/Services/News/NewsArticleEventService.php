@@ -10,6 +10,7 @@ use App\Contracts\News\NewsArticleEventServiceInterface;
 use App\DTOs\News\NewsArticleEventDTO;
 use App\DTOs\News\NewsArticleEventSessionDTO;
 use App\DTOs\News\NewsArticleEventSpeakerDTO;
+use App\DTOs\News\NewsEventDTO;
 use App\Models\Form\DynamicFormSubmission;
 use App\Models\Media\MediaAsset;
 use App\Models\News\NewsArticle;
@@ -21,6 +22,7 @@ use App\Models\Person\PersonTranslation;
 use App\Support\MediaUrlResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 
 final class NewsArticleEventService implements NewsArticleEventServiceInterface
 {
@@ -108,6 +110,133 @@ final class NewsArticleEventService implements NewsArticleEventServiceInterface
         $lines[] = 'END:VCALENDAR';
 
         return implode("\r\n", array_map(fn (string $line): string => $this->foldLine($line), $lines))."\r\n";
+    }
+
+    public function listingEvents(string $locale): Collection
+    {
+        return $this->publicEventArticles(['events'], false, $locale)
+            ->map(function (array $item) use ($locale): NewsEventDTO {
+                /** @var NewsArticleEventDTO $event */
+                $event = $item['event'];
+                $first = $event->sessions[0] ?? null;
+                $last = $event->sessions[count($event->sessions) - 1] ?? null;
+                $dateLabel = $first === null ? '' : ($last !== null && $last->date !== $first->date ? $first->dateLabel.' – '.$last->dateLabel : $first->dateLabel);
+
+                return $this->newsEventCard($item, $event, $locale, 'article-'.$event->articleId, $event->startsAt, $event->endsAt, $dateLabel, $first?->timeLabel ?? '', $first?->location ?? $event->location);
+            })
+            ->values();
+    }
+
+    public function calendarEntries(string $locale): Collection
+    {
+        return $this->publicEventArticles(['events', 'society-events'], true, $locale)
+            ->flatMap(function (array $item) use ($locale): array {
+                /** @var NewsArticleEventDTO $event */
+                $event = $item['event'];
+                $entries = [];
+                foreach ($event->sessions as $index => $session) {
+                    $entries[] = $this->newsEventCard(
+                        $item,
+                        $event,
+                        $locale,
+                        'article-'.$event->articleId.'-'.($index + 1),
+                        $session->startsAt,
+                        $session->endsAt,
+                        $session->dateLabel,
+                        $session->timeLabel,
+                        $session->location ?? $event->location,
+                        $session->title,
+                    );
+                }
+
+                return $entries;
+            })
+            ->values();
+    }
+
+    /**
+     * Public event articles of the given categories with their event, cover
+     * and summary. Most sites have a few dozen events; each is read once.
+     *
+     * @param  list<string>  $categorySlugs
+     * @return Collection<int, array{event: NewsArticleEventDTO, summary: string, imageUrl: string, featured: bool}>
+     */
+    private function publicEventArticles(array $categorySlugs, bool $calendarOnly, string $locale): Collection
+    {
+        return NewsArticle::query()
+            ->public()
+            ->whereHas('category', fn (Builder $query): Builder => $query->whereIn('slug', $categorySlugs)->where('is_enabled', true))
+            ->whereHas('event', fn (Builder $query): Builder => $calendarOnly ? $query->where('show_on_calendar', true) : $query)
+            ->with(['translations', 'coverMedia'])
+            ->get()
+            ->map(function (NewsArticle $article) use ($locale): ?array {
+                $payload = $this->eventCms->storedPayload((int) $article->getKey());
+                if ($payload === null) {
+                    return null;
+                }
+                $translation = $article->translations->firstWhere('locale', $locale) ?? $article->translations->firstWhere('locale', 'ar');
+                $cover = $article->coverMedia instanceof MediaAsset
+                    ? MediaUrlResolver::resolveImage($article->coverMedia->webp_path, $article->coverMedia->path, $article->coverMedia->disk)
+                    : MediaUrlResolver::resolveLegacy($article->legacy_cover_path);
+
+                return [
+                    'event' => $this->map($payload, (int) $article->getKey(), $this->articleTitle($article, $locale), $locale, false),
+                    'summary' => trim(strip_tags((string) ($translation?->excerpt ?? ''))),
+                    'imageUrl' => $cover ?? '/images/uni-main-place.JPG',
+                    'featured' => (bool) $article->is_featured,
+                ];
+            })
+            ->filter(fn (?array $item): bool => $item !== null && $item['event']->sessions !== [])
+            ->values();
+    }
+
+    /** @param array{event: NewsArticleEventDTO, summary: string, imageUrl: string, featured: bool} $item */
+    private function newsEventCard(
+        array $item,
+        NewsArticleEventDTO $event,
+        string $locale,
+        string $id,
+        ?string $startsAt,
+        ?string $endsAt,
+        string $dateLabel,
+        string $timeLabel,
+        ?string $location,
+        ?string $sessionTitle = null,
+    ): NewsEventDTO {
+        $speakers = $event->speakers;
+        foreach ($event->sessions as $session) {
+            $speakers = [...$speakers, ...$session->speakers];
+        }
+        $open = $event->isRegistrationOpen();
+
+        return new NewsEventDTO(
+            id: $id,
+            locale: $locale,
+            title: $event->title.($sessionTitle !== null ? ' — '.$sessionTitle : ''),
+            summary: $item['summary'],
+            startsAt: (string) $startsAt,
+            endsAt: $endsAt,
+            dateLabel: $dateLabel,
+            timeLabel: $timeLabel,
+            location: (string) $location,
+            categoryId: $event->kind,
+            categoryLabel: __('public.article_event.kinds.'.$event->kind, [], $locale),
+            imageUrl: $item['imageUrl'],
+            isPast: $event->isPast,
+            isFeatured: $item['featured'],
+            formId: $event->formId,
+            capacity: $event->capacity,
+            registered: $event->capacity !== null && $event->seatsLeft !== null ? $event->capacity - $event->seatsLeft : 0,
+            remainingCapacity: $open ? $event->seatsLeft : null,
+            isRegisterable: $open,
+            registrationUrl: $event->registrationUrl,
+            detailUrl: '/'.$locale.'/news/'.$event->articleId,
+            participants: null,
+            highlights: [],
+            speakers: array_map(fn (NewsArticleEventSpeakerDTO $speaker): array => ['name' => $speaker->name, 'title' => (string) $speaker->title], $speakers),
+            results: $event->results,
+            gallery: [],
+        );
     }
 
     /** @param array<string, mixed> $event */

@@ -17,6 +17,7 @@ use App\Models\User\User;
 use App\Support\HtmlSanitizer;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Component;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
@@ -1133,6 +1134,25 @@ class ManageResearch extends Page implements HasForms
             TextInput::make('location')->label($this->fieldLabel('location'))->required()->maxLength(180),
             MediaPicker::image('image', $this->fieldLabel('event_image'), true)->columnSpanFull(),
             Textarea::make('description')->label($this->fieldLabel('description'))->required()->rows(2)->columnSpanFull(),
+            // The text date above is what the page shows; these place the
+            // conference on the news events calendar.
+            Toggle::make('showOnCalendar')
+                ->label($this->fieldLabel('show_on_calendar'))
+                ->helperText($this->fieldLabel('show_on_calendar_help'))
+                ->live()
+                ->columnSpanFull(),
+            DatePicker::make('startsOn')
+                ->label($this->fieldLabel('starts_on'))
+                ->native(false)
+                ->displayFormat('d/m/Y')
+                ->required(fn (Get $get): bool => (bool) $get('showOnCalendar'))
+                ->visible(fn (Get $get): bool => (bool) $get('showOnCalendar')),
+            DatePicker::make('endsOn')
+                ->label($this->fieldLabel('ends_on'))
+                ->native(false)
+                ->displayFormat('d/m/Y')
+                ->afterOrEqual('startsOn')
+                ->visible(fn (Get $get): bool => (bool) $get('showOnCalendar')),
         ];
 
         if ($upcoming) {

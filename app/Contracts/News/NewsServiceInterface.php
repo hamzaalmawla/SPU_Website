@@ -52,8 +52,13 @@ interface NewsServiceInterface
 
     public function findNewsEvent(string $eventId, string $locale, ?bool $past = null): ?NewsEventDTO;
 
-    /** @return array{month: string, monthLabel: string, previousMonth: string, nextMonth: string, events: Collection<int, NewsEventDTO>, days: array<int, array{date: string, day: int, inMonth: bool, events: Collection<int, NewsEventDTO>}>} */
-    public function getNewsEventCalendar(string $locale, ?string $month = null): array;
+    /**
+     * Page list events, event articles marked "Add to calendar" (one entry
+     * per session) and research conferences marked for the calendar.
+     *
+     * @return array{month: string, monthLabel: string, previousMonth: string, nextMonth: string, events: Collection<int, NewsEventDTO>, days: array<int, array{date: string, day: int, inMonth: bool, events: Collection<int, NewsEventDTO>}>, types: array<int, array{id: string, label: string}>, type: ?string}
+     */
+    public function getNewsEventCalendar(string $locale, ?string $month = null, ?string $type = null): array;
 
     /** @return array<string, mixed> */
     public function getGalleryPageContent(string $locale): array;

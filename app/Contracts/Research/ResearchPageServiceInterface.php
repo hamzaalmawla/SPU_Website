@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Contracts\Research;
 
 use App\DTOs\Content\ResearchCardDTO;
+use App\DTOs\News\NewsEventDTO;
 use App\DTOs\Research\ResearchConferenceRegistrationDTO;
 use App\DTOs\Research\ResearchDetailPageDTO;
 use App\DTOs\Research\ResearchPageDTO;
@@ -109,6 +110,14 @@ interface ResearchPageServiceInterface
     public function conferences(string $locale): ResearchPageDTO;
 
     public function findRegisterableConference(string $eventId, string $locale): ?ResearchConferenceRegistrationDTO;
+
+    /**
+     * Published conferences an editor marked "Add to calendar", one entry
+     * per conference day, for the news events calendar.
+     *
+     * @return Collection<int, NewsEventDTO>
+     */
+    public function calendarConferences(string $locale): Collection;
 
     public function conferenceRegistration(string $locale, ?string $eventId): ResearchPageDTO;
 
