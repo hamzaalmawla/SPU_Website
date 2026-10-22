@@ -11,6 +11,8 @@ use App\Contracts\News\NewsArticleEventCmsServiceInterface;
 use App\DTOs\News\NewsArticleCmsDataDTO;
 use App\Enums\PublicationStatus;
 use App\Filament\Resources\NewsArticleResource\Pages\CreateNewsArticle;
+use App\Filament\Resources\NewsArticleResource\Pages\EditNewsArticle;
+use App\Models\Cms\CmsDraft;
 use App\Models\Faculty\Faculty;
 use App\Models\News\NewsArticle;
 use App\Models\News\NewsArticleEvent;
@@ -120,6 +122,46 @@ final class NewsArticleEventCmsTest extends TestCase
         $this->assertSame('faculty_member:'.$member->getKey(), $stored?->payload['event']['speakers'][0]['profile'] ?? null);
         $this->assertSame('09:00', $stored?->payload['event']['sessions'][0]['starts_at'] ?? null);
         $this->assertContains('used on: Digital Health Conference', app(FormDefinitionServiceInterface::class)->usage('activity-registration', 'en'));
+    }
+
+    public function test_editing_a_published_event_keeps_its_sessions_and_speakers(): void
+    {
+        $member = $this->facultyMember('Medicine', 'الطب', 'Rania Haddad', 'رانيا حداد');
+        $prepared = $this->prepare($this->articlePayload('Editable Seminar', $this->categoryId('events')) + ['event' => [
+            'kind' => 'seminar',
+            'requires_registration' => true,
+            'formId' => 'activity-registration',
+            'capacity' => 40,
+            'show_on_calendar' => true,
+            'sessions' => [
+                ['date' => '2030-10-24', 'starts_at' => '09:00', 'ends_at' => '11:00', 'speakers' => [
+                    ['source' => 'external', 'name_ar' => 'سامر خليل', 'name_en' => 'Samer Khalil'],
+                ]],
+                ['date' => '2030-10-31', 'starts_at' => '09:00'],
+            ],
+            'speakers' => [['source' => 'university', 'profile' => 'faculty_member:'.$member->getKey()]],
+        ]]);
+        $this->workflow->saveDraft((string) $prepared->targetKey, $prepared->payload, (int) $this->editor->getKey());
+        $this->workflow->publish((string) $prepared->targetKey, (int) $this->editor->getKey());
+        $this->actingAs($this->editor, 'web');
+
+        // Opening the editor and saving without changes must not lose anything.
+        Livewire::test(EditNewsArticle::class, ['record' => $prepared->articleId])
+            ->assertFormSet(['event.kind' => 'seminar', 'event.capacity' => 40])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $draft = CmsDraft::query()->where('target_key', $prepared->targetKey)->latest('id')->firstOrFail();
+        $this->assertCount(2, $draft->payload_json['event']['sessions']);
+        $this->assertSame('Samer Khalil', $draft->payload_json['event']['sessions'][0]['speakers'][0]['name_en'] ?? null);
+        $this->assertSame('faculty_member:'.$member->getKey(), $draft->payload_json['event']['speakers'][0]['profile'] ?? null);
+        $this->assertTrue($draft->payload_json['event']['requires_registration']);
+
+        $this->assertTrue($this->workflow->publish((string) $prepared->targetKey, (int) $this->editor->getKey()));
+        $event = NewsArticleEvent::query()->with('sessions')->where('news_article_id', $prepared->articleId)->firstOrFail();
+        $this->assertCount(2, $event->sessions);
+        $this->assertSame(40, $event->capacity);
+        $this->assertSame(2, NewsArticleEventSpeaker::query()->count());
     }
 
     public function test_publish_explains_what_an_event_is_missing(): void

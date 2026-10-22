@@ -43,12 +43,21 @@ final class FormSubmissionNotificationService implements FormSubmissionNotificat
         $contextTitle = $this->contextTitle($context);
 
         try {
+            // Event articles send no confirmation to the person registering, as
+            // agreed for the events redesign; the inbox is still notified.
+            if (($context['source'] ?? null) === 'news-articles') {
+                $submission->forceFill(['email_delivery_status' => 'not_applicable'])->save();
+                $this->queueDynamicAdminNotifications($submission, $locale, $formLabel, $name, $contextTitle);
+
+                return true;
+            }
+
             $submission->forceFill([
                 'email_delivery_status' => 'queued',
                 'email_queued_at' => now(),
             ])->save();
 
-            if (in_array($context['source'] ?? null, ['news-events', 'news-articles'], true)) {
+            if (($context['source'] ?? null) === 'news-events') {
                 Mail::to($submission->applicant_email)->queue(new EventRegistrationReceived(
                     applicantName: $name,
                     eventTitle: $contextTitle ?? '',
