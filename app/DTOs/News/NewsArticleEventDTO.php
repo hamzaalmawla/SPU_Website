@@ -49,9 +49,4 @@ final readonly class NewsArticleEventDTO
         public array $sessions,
         public array $speakers,
     ) {}
-
-    public function isRegistrationOpen(): bool
-    {
-        return $this->registrationState === 'open';
-    }
 }

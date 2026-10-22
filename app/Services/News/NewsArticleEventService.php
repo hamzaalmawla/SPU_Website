@@ -320,7 +320,7 @@ final class NewsArticleEventService implements NewsArticleEventServiceInterface
         foreach ($event->sessions as $session) {
             $speakers = [...$speakers, ...$session->speakers];
         }
-        $open = $event->isRegistrationOpen();
+        $open = $event->registrationState === 'open';
 
         return new NewsEventDTO(
             id: $id,

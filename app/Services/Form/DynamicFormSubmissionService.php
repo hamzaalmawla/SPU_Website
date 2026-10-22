@@ -201,7 +201,7 @@ final class DynamicFormSubmissionService implements DynamicFormSubmissionService
             if ($event->registrationState === 'full') {
                 throw ValidationException::withMessages(['event_id' => [__('forms.errors.event_full', [], $data->locale)]]);
             }
-            if (! $event->isRegistrationOpen() || $event->formId !== $data->formId) {
+            if ($event->registrationState !== 'open' || $event->formId !== $data->formId) {
                 throw ValidationException::withMessages(['event_id' => [__('forms.errors.event_not_open', [], $data->locale)]]);
             }
         } elseif ($event instanceof ResearchConferenceRegistrationDTO) {

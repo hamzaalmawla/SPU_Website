@@ -5,7 +5,7 @@
         <div class="container max-w-[1150px]">
             <h1 class="text-center text-3xl font-bold text-spu-blue" dir="auto">{{ __('public.article_event.registration_title', ['title' => $article->title]) }}</h1>
 
-            @if (! $event->isRegistrationOpen())
+            @if ($event->registrationState !== 'open')
                 <div class="mx-auto mt-12 max-w-xl rounded-2xl bg-white p-10 text-center shadow-sm">
                     <h2 class="text-xl font-bold text-spu-blue">{{ __('public.article_event.not_open_title') }}</h2>
                     <p class="mt-3 text-sm leading-7 text-slate-600">{{ $event->registrationState === 'full' ? __('public.article_event.state_full') : __('public.article_event.state_closed') }}</p>
