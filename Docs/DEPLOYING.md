@@ -360,7 +360,7 @@ git does not deploy:
 |---|---|
 | `public/.htaccess` | Carries the `STAGING ONLY` blocks — the `X-Robots-Tag: noindex` header and the host guard — which must **not** reach the live domain. Removing them is a cutover step (`Docs/V2_PRE_CUTOVER_ACTIONS.md` §C). |
 | `public/robots.txt` | The staging `Disallow: /` overlay. Deleted at cutover so the application serves its own. Gitignored on purpose: shipping it would send `Disallow: /` to the live site. |
-| `public/.user.ini` | PHP-FPM settings. |
+| `public/.user.ini` | PHP-FPM settings. Owned by cPanel's MultiPHP INI Editor (vhost `v2.spu.edu.sy`), which also writes the same directives to a docroot `php.ini`. It sets `upload_max_filesize = 16M` and `post_max_size = 20M` (2026-10-22): the host default of 2M rejected every admin upload over 2 MB with "The file failed to upload", while the admin allows 10 MB and Livewire's temporary upload 12 MB. |
 
 The divergence is deliberate and correct. The trap is that **editing any of them
 in git changes nothing on the server, and nothing tells you.** A commit can say
