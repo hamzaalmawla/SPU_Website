@@ -1021,6 +1021,7 @@ return [
             'final_exams' => 'الامتحانات النهائية',
             'research' => 'البحث العلمي',
             'members' => 'أعضاء الهيئة الأكاديمية',
+            'study_plan_course' => 'صفحة المقرر',
         ],
         'notifications' => [
             'draft_saved' => 'تم حفظ مسودة الكلية',

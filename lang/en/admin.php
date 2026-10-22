@@ -1021,6 +1021,7 @@ return [
             'final_exams' => 'Final exams',
             'research' => 'Research',
             'members' => 'Faculty Members',
+            'study_plan_course' => 'Course page',
         ],
         'notifications' => [
             'draft_saved' => 'Faculty draft saved',

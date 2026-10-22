@@ -67,12 +67,12 @@
                     <table style="width:100%;font-size:0.875rem;border-collapse:collapse">
                         <thead style="background:#f9fafb">
                             <tr>
-                                <th style="text-align:left;padding:0.625rem;font-weight:500;color:#6b7280">{{ __('admin.faculty_workspace.navigation.subpage') }}</th>
-                                <th style="text-align:left;padding:0.625rem;font-weight:500;color:#6b7280">{{ __('admin.faculty_workspace.navigation.visible') }}</th>
-                                <th style="text-align:left;padding:0.625rem;font-weight:500;color:#6b7280">{{ __('admin.faculty_workspace.navigation.title_override_ar') }}</th>
-                                <th style="text-align:left;padding:0.625rem;font-weight:500;color:#6b7280">{{ __('admin.faculty_workspace.navigation.title_override_en') }}</th>
-                                <th style="text-align:left;padding:0.625rem;font-weight:500;color:#6b7280">{{ __('admin.faculty_workspace.navigation.sort_order') }}</th>
-                                <th style="text-align:right;padding:0.625rem"></th>
+                                <th style="text-align:start;padding:0.625rem;font-weight:500;color:#6b7280">{{ __('admin.faculty_workspace.navigation.subpage') }}</th>
+                                <th style="text-align:start;padding:0.625rem;font-weight:500;color:#6b7280">{{ __('admin.faculty_workspace.navigation.visible') }}</th>
+                                <th style="text-align:start;padding:0.625rem;font-weight:500;color:#6b7280">{{ __('admin.faculty_workspace.navigation.title_override_ar') }}</th>
+                                <th style="text-align:start;padding:0.625rem;font-weight:500;color:#6b7280">{{ __('admin.faculty_workspace.navigation.title_override_en') }}</th>
+                                <th style="text-align:start;padding:0.625rem;font-weight:500;color:#6b7280">{{ __('admin.faculty_workspace.navigation.sort_order') }}</th>
+                                <th style="text-align:end;padding:0.625rem"></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -80,15 +80,19 @@
                                 <tr style="border-top:1px solid #e5e7eb">
                                     <td style="padding:0.625rem;font-weight:500">
                                         {{ __('admin.faculty_workspace.subpages.' . str_replace('-', '_', $card['subpage_slug'])) }}
-                                        <span style="color:#9ca3af;font-size:0.75rem;margin-left:0.25rem">({{ $card['subpage_slug'] }})</span>
+                                        <span style="color:#9ca3af;font-size:0.75rem;margin-inline-start:0.25rem">({{ $card['subpage_slug'] }})</span>
                                     </td>
                                     <td style="padding:0.625rem">
                                         <button
                                             type="button"
                                             wire:click="toggleNavVisibility({{ $card['card_id'] }})"
-                                            style="position:relative;display:inline-flex;height:1.5rem;width:2.75rem;flex-shrink:0;cursor:pointer;border-radius:9999px;border:2px solid transparent;transition:background-color 0.2s;{{ $card['is_visible'] ? 'background:#10b981' : 'background:#d1d5db' }}"
+                                            role="switch"
+                                            aria-checked="{{ $card['is_visible'] ? 'true' : 'false' }}"
+                                            aria-label="{{ __('admin.faculty_workspace.navigation.visible') }}"
+                                            style="position:relative;display:inline-flex;box-sizing:border-box;height:1.5rem;width:2.75rem;flex-shrink:0;padding:0;cursor:pointer;border-radius:9999px;border:2px solid transparent;transition:background-color 0.2s;{{ $card['is_visible'] ? 'background:#10b981' : 'background:#d1d5db' }}"
                                         >
-                                            <span style="display:inline-block;height:1.25rem;width:1.25rem;transform:translateX({{ $card['is_visible'] ? '1.25rem' : '0' }});border-radius:9999px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,0.1);transition:transform 0.2s"></span>
+                                            {{-- inset-inline-start follows the page direction, so the knob stays in the track in RTL too. --}}
+                                            <span style="position:absolute;top:0;inset-inline-start:{{ $card['is_visible'] ? '1.25rem' : '0' }};height:1.25rem;width:1.25rem;border-radius:9999px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,0.1);transition:inset-inline-start 0.2s"></span>
                                         </button>
                                     </td>
                                     <td style="padding:0.625rem">
@@ -108,7 +112,7 @@
                                         />
                                     </td>
                                     <td style="padding:0.625rem;color:#6b7280">{{ $card['sort_order'] }}</td>
-                                    <td style="padding:0.625rem;text-align:right;white-space:nowrap">
+                                    <td style="padding:0.625rem;text-align:end;white-space:nowrap">
                                         <button type="button" wire:click="moveNavUp({{ $card['card_id'] }})" title="{{ __('admin.faculty_workspace.navigation.move_up') }}" style="color:#9ca3af;padding:0.25rem">&uparrow;</button>
                                         <button type="button" wire:click="moveNavDown({{ $card['card_id'] }})" title="{{ __('admin.faculty_workspace.navigation.move_down') }}" style="color:#9ca3af;padding:0.25rem">&downarrow;</button>
                                         <button type="button" wire:click="deleteNavCard({{ $card['card_id'] }})" title="{{ __('admin.faculty_workspace.navigation.delete_card') }}" style="color:#dc2626;padding:0.25rem">&times;</button>
