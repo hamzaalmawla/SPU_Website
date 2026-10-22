@@ -71,7 +71,7 @@ return [
         'slug' => 'Key',
         'slug_help' => 'Used internally. Lowercase letters, numbers and underscores.',
         'permissions' => 'Permissions',
-        'permissions_help' => 'View opens the section. Edit includes saving drafts and previewing. Publish puts changes live.',
+        'permissions_help' => 'View opens the section. Edit includes saving drafts, previewing and publishing. Publish on its own lets a role put changes live without editing them.',
         'users_count' => 'Users',
         'permissions_count' => 'Permissions',
         'all_permissions' => 'Everything',

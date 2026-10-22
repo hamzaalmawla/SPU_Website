@@ -123,6 +123,7 @@ class NewsArticleResource extends Resource
                                                 ->extraInputAttributes(fn (Get $get): array => ['dir' => $get('locale') === 'en' ? 'ltr' : 'rtl']),
                                             RichEditor::make('body')
                                                 ->label(__('admin.news_article.fields.body'))
+                                                ->required()
                                                 ->toolbarButtons(['attachFiles', 'blockquote', 'bold', 'bulletList', 'codeBlock', 'h2', 'h3', 'highlight', 'italic', 'link', 'orderedList', 'redo', 'strike', 'underline', 'undo'])
                                                 ->columnSpanFull()
                                                 ->extraAttributes(fn (Get $get): array => ['dir' => $get('locale') === 'en' ? 'ltr' : 'rtl']),
@@ -144,7 +145,7 @@ class NewsArticleResource extends Resource
                         ->icon('heroicon-o-paper-airplane')
                         ->schema([
                             Section::make(__('admin.news_article.sections.visibility'))
-                                ->description(__('admin.news_article.help.private_draft'))
+                                ->description(fn (string $operation): string => __($operation === 'create' ? 'admin.news_article.help.published_on_create' : 'admin.news_article.help.private_draft'))
                                 ->schema([
                                     Toggle::make('is_enabled')
                                         ->label(__('admin.news_article.fields.enabled'))

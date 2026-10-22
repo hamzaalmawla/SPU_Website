@@ -136,7 +136,7 @@ final class FacultySubpageCardServiceTest extends TestCase
         ]);
     }
 
-    public function test_faculty_editor_cannot_publish_or_bypass_publication_through_update(): void
+    public function test_faculty_editor_publishes_only_through_publish(): void
     {
         $service = app(FacultySubpageCardServiceInterface::class);
         $editor = $this->editor();
@@ -150,8 +150,8 @@ final class FacultySubpageCardServiceTest extends TestCase
         $this->assertTrue($service->updateCard($card->id, ['status' => 'published'], $facultyEditor->id));
         $this->assertDatabaseHas('faculty_subpage_cards', ['id' => $card->id, 'status' => 'draft']);
 
-        $this->expectException(AuthorizationException::class);
-        $service->publish($card->id, $facultyEditor->id);
+        $this->assertTrue($service->publish($card->id, $facultyEditor->id));
+        $this->assertDatabaseHas('faculty_subpage_cards', ['id' => $card->id, 'status' => 'published']);
     }
 
     public function test_faculty_editor_cannot_mutate_an_out_of_scope_card(): void

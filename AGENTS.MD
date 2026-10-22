@@ -140,6 +140,7 @@ Access is permission-based. A permission is `<component>.<action>` (for example 
 - Optional **limits** on a user narrow their permissions: `users.faculty_scopes` (faculty content only of those faculties) and `users.page_scopes` (multi-page CMS screens only for those pages). Empty means no limit.
 - `super_admin` holds every permission and no limits. Only super admins manage users, roles and permissions.
 - Default roles `editor`, `faculty_editor` and `hr` start with the access they had before permissions existed; super admins can change them.
+- Edit includes publish: holding `<component>.update` also grants `<component>.publish` (`AdminAccessService::loadPermissions`). Faculty and page limits still apply.
 
 Rules:
 - Every check goes through `AdminAccessServiceInterface` (or the per-permission Gates and the policies built on it); never compare `role_slug` to decide access

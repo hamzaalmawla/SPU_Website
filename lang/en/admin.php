@@ -530,6 +530,7 @@ return [
             'basics' => 'Choose whether this is news or an announcement, then select its image.',
             'languages' => 'Provide a clear article version for each language. Arabic content does not make the English version complete.',
             'publishing' => 'Keep work as a draft, publish it now, or choose a time for automatic publication.',
+            'published_on_create' => 'The article is published as soon as you create it. A disabled article stays hidden.',
             'private_draft' => 'Saving changes creates a private revision. The public article remains unchanged until you explicitly publish this revision.',
             'scheduled_at' => 'The article will be published automatically at this system time.',
             'published_at' => 'Leave blank to use the current publication time.',

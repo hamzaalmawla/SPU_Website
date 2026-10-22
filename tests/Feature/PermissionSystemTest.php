@@ -8,6 +8,7 @@ use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\Auth\AuthServiceInterface;
 use App\Contracts\Auth\PermissionCatalogInterface;
 use App\Contracts\Auth\RoleAdminServiceInterface;
+use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Filament\Pages\ManageAbout;
 use App\Filament\Pages\ManageAdmissions;
@@ -58,7 +59,7 @@ final class PermissionSystemTest extends TestCase
         $this->assertFalse(Gate::forUser($editor)->allows('audit_log.view'));
 
         $this->assertTrue(Gate::forUser($faculty)->allows('faculty_medicine.update'));
-        $this->assertFalse(Gate::forUser($faculty)->allows('faculty_medicine.publish'));
+        $this->assertTrue(Gate::forUser($faculty)->allows('faculty_medicine.publish'));
         $this->assertFalse(Gate::forUser($faculty)->allows('about.view'));
 
         $this->assertTrue(Gate::forUser($hr)->allows('job_board.publish'));
@@ -140,7 +141,7 @@ final class PermissionSystemTest extends TestCase
         $this->actingAs($this->user(['hr'], extra: ['contact_page.view', 'contact_page.update']));
 
         $this->assertTrue(ManageContactPage::canAccess());
-        $this->assertFalse(Gate::allows('contact_page.publish'));
+        $this->assertTrue(Gate::allows('contact_page.publish'));
     }
 
     public function test_changing_a_role_changes_its_users_at_once(): void
@@ -161,13 +162,36 @@ final class PermissionSystemTest extends TestCase
     public function test_publishing_needs_the_publish_permission(): void
     {
         $workflow = app(CmsWorkflowServiceInterface::class);
-        $user = $this->user([], extra: ['research_pages.view', 'research_pages.update']);
-
-        $workflow->saveDraft('research.centers', self::DRAFT, (int) $user->getKey());
-        $this->assertDatabaseHas('cms_drafts', ['target_key' => 'research.centers']);
+        $user = $this->user([], extra: ['research_pages.view']);
 
         $this->expectException(AuthorizationException::class);
         $workflow->publish('research.centers', (int) $user->getKey());
+    }
+
+    public function test_edit_permission_includes_publish(): void
+    {
+        $user = $this->user([], extra: ['research_pages.view', 'research_pages.update', 'news_articles.update']);
+        $access = app(AdminAccessServiceInterface::class);
+
+        $this->assertTrue(Gate::forUser($user)->allows('research_pages.publish'));
+        $this->assertTrue(Gate::forUser($user)->allows('news_articles.publish'));
+        $this->assertFalse(Gate::forUser($user)->allows('about.publish'));
+        $this->assertContains((int) $user->getKey(), $access->userIdsWithPermission('research_pages.publish'));
+        $this->assertNotContains((int) $user->getKey(), $access->userIdsWithPermission('about.publish'));
+    }
+
+    public function test_a_faculty_editor_publishes_only_within_their_faculties(): void
+    {
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $user = $this->user(['faculty_editor'], faculties: ['medicine']);
+        $access = app(AdminAccessServiceInterface::class);
+        $target = fn (string $key) => app(CmsTargetRegistryInterface::class)->find($key);
+
+        $this->assertTrue($access->canManageTarget($user, $target('facilities.medicine.overview'), 'publish'));
+        $this->assertFalse($access->canManageTarget($user, $target('facilities.dentistry.overview'), 'publish'));
+
+        $this->expectException(AuthorizationException::class);
+        $workflow->publish('facilities.dentistry.overview', (int) $user->getKey());
     }
 
     public function test_a_faculty_limit_keeps_faculty_content_to_the_chosen_faculties(): void
@@ -227,7 +251,7 @@ final class PermissionSystemTest extends TestCase
         $this->actingAs($user);
         $this->assertTrue(ManageHomepage::canAccess());
         $this->assertTrue(Gate::allows('homepage.update'));
-        $this->assertFalse(Gate::allows('homepage.publish'));
+        $this->assertTrue(Gate::allows('homepage.publish'));
     }
 
     public function test_the_super_admin_role_cannot_be_changed_or_deleted(): void

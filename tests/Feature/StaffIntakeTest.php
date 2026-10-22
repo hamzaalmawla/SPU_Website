@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Staff\StaffIntakeLinkServiceInterface;
 use App\Contracts\Staff\StaffIntakeReviewServiceInterface;
 use App\DTOs\Staff\StaffIntakeLinkCreatedDTO;
@@ -187,7 +186,7 @@ final class StaffIntakeTest extends TestCase
         $this->assertCount(1, $request->duplicate_candidates);
     }
 
-    public function test_approving_a_new_teacher_by_a_faculty_editor_leaves_an_unpublished_profile(): void
+    public function test_approving_a_new_teacher_by_a_faculty_editor_publishes_the_profile(): void
     {
         $department = Department::query()->create(['faculty_id' => $this->dentistry->getKey(), 'slug' => 'intake-orthodontics']);
         $department->translations()->create(['locale' => 'ar', 'name' => 'التقويم']);
@@ -212,16 +211,11 @@ final class StaffIntakeTest extends TestCase
         $request = StaffIntakeRequest::query()->sole();
         $result = app(StaffIntakeReviewServiceInterface::class)->approve((int) $request->getKey(), (int) $this->facultyEditor->getKey());
 
-        $this->assertFalse($result->published, 'A faculty editor cannot publish; an editor does.');
-        $member = FacultyMember::query()->with('translations')->findOrFail($result->facultyMemberId);
+        $this->assertTrue($result->published, 'Editing a faculty includes publishing its profiles.');
+        $member = FacultyMember::query()->with(['translations', 'educations.translations'])->findOrFail($result->facultyMemberId);
         $this->assertSame('lina-newintake', $member->slug);
         $this->assertSame((int) $this->dentistry->getKey(), (int) $member->faculty_id);
-        $this->assertSame(PublicationStatus::Draft->value, $member->publication_status);
-        $this->assertDatabaseHas('cms_drafts', ['target_key' => 'entity.faculty-member.'.$member->getKey(), 'status' => PublicationStatus::Draft->value]);
-
-        $editor = $this->user('editor');
-        $this->assertTrue(app(CmsWorkflowServiceInterface::class)->publish('entity.faculty-member.'.$member->getKey(), (int) $editor->getKey()));
-        $member->refresh()->load(['translations', 'educations.translations']);
+        $this->assertSame(PublicationStatus::Published->value, $member->publication_status);
         $this->assertSame((int) $department->getKey(), (int) $member->department_id);
         $this->assertSame(['Orthodontics', 'Implants'], $member->translations->firstWhere('locale', 'en')?->specializations);
         $this->assertSame(2010, (int) $member->educations->first()?->translations->firstWhere('locale', 'en')?->year_start);

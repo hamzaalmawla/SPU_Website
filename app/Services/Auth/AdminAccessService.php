@@ -95,15 +95,18 @@ final class AdminAccessService implements AdminAccessServiceInterface
 
     public function userIdsWithPermission(string $permission): array
     {
-        $roleIds = RolePermission::query()->where('permission', $permission)->pluck('role_id')->all();
+        $permissions = str_ends_with($permission, '.publish')
+            ? [$permission, substr($permission, 0, -strlen('publish')).'update']
+            : [$permission];
+        $roleIds = RolePermission::query()->whereIn('permission', $permissions)->pluck('role_id')->all();
         $roleSlugs = Role::query()->whereKey($roleIds)->pluck('slug')->all();
 
         return User::query()
-            ->where(function (Builder $query) use ($permission, $roleIds, $roleSlugs): void {
+            ->where(function (Builder $query) use ($permissions, $roleIds, $roleSlugs): void {
                 $query->where('role_slug', 'super_admin')
                     ->orWhereIn('role_slug', $roleSlugs)
                     ->orWhereHas('roles', fn (Builder $roles): Builder => $roles->whereIn('roles.id', $roleIds))
-                    ->orWhereHas('extraPermissions', fn (Builder $grants): Builder => $grants->where('permission', $permission));
+                    ->orWhereHas('extraPermissions', fn (Builder $grants): Builder => $grants->whereIn('permission', $permissions));
             })
             ->orderBy('id')
             ->pluck('id')
@@ -255,6 +258,14 @@ final class AdminAccessService implements AdminAccessServiceInterface
             ->merge(UserPermission::query()->where('user_id', $user->getKey())->pluck('permission'))
             ->unique()
             ->all();
+
+        // Edit includes publish: whoever may edit a page, faculty or record
+        // may also put it live. Their faculty and page limits still apply.
+        foreach ($granted as $permission) {
+            if (str_ends_with($permission, '.update')) {
+                $granted[] = substr($permission, 0, -strlen('update')).'publish';
+            }
+        }
 
         // Keys the catalog no longer lists grant nothing.
         return array_values(array_intersect($this->catalog->all(), $granted));

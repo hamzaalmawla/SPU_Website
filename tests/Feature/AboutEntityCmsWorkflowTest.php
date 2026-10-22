@@ -176,9 +176,9 @@ final class AboutEntityCmsWorkflowTest extends TestCase
             ->assertOk()
             ->assertSee(__('admin_pages.about_entity.preview_ar'))
             ->assertSee(__('admin_pages.about_entity.preview_en'))
-            ->assertDontSee(__('admin_pages.about_entity.publish'))
-            ->assertDontSee(__('admin_pages.about_entity.schedule'))
-            ->assertDontSee(__('admin_pages.about_entity.unpublish'));
+            ->assertSee(__('admin_pages.about_entity.publish'))
+            ->assertSee(__('admin_pages.about_entity.schedule'))
+            ->assertSee(__('admin_pages.about_entity.unpublish'));
 
         $otherFaculty = Faculty::query()->create([
             'slug' => 'other-workflow-faculty',

@@ -85,11 +85,12 @@ class AdminAuthorizationTest extends TestCase
         $this->assertFalse(Gate::forUser($editor)->allows('audit_log.view'));
 
         $this->assertFalse(Gate::forUser($facultyEditor)->allows('manage-users'));
-        foreach (['settings.update', 'homepage.update', 'about.update', 'menu.update', 'faculty_medicine.publish', 'audit_log.view'] as $permission) {
+        foreach (['settings.update', 'homepage.update', 'about.update', 'menu.update', 'audit_log.view'] as $permission) {
             $this->assertFalse(Gate::forUser($facultyEditor)->allows($permission), $permission);
         }
         $this->assertTrue(Gate::forUser($facultyEditor)->allows('media.create'));
         $this->assertTrue(Gate::forUser($facultyEditor)->allows('faculty_medicine.update'));
+        $this->assertTrue(Gate::forUser($facultyEditor)->allows('faculty_medicine.publish'));
 
         $this->assertTrue(Gate::forUser($hr)->allows('job_board.update'));
         $this->assertTrue(Gate::forUser($hr)->allows('job_board.publish'));

@@ -69,24 +69,39 @@ final class NewsArticleCmsWorkflowTest extends TestCase
         $this->get('/en/news/'.$article->getKey())->assertNotFound();
     }
 
-    public function test_filament_create_saves_a_private_revision_instead_of_live_content(): void
+    public function test_filament_create_publishes_the_article_at_once(): void
     {
         $this->actingAs($this->editor, 'web');
 
         Livewire::test(CreateNewsArticle::class)
-            ->fillForm($this->payload('Filament private article'))
+            ->fillForm($this->payload('Filament live article'))
             ->call('create')
-            ->assertHasNoFormErrors();
+            ->assertHasNoFormErrors()
+            ->assertNotified(__('admin.news_article.workflow.notifications.published'));
 
-        $article = NewsArticle::query()->where('slug', 'filament-private-article')->firstOrFail();
+        $article = NewsArticle::query()->where('slug', 'filament-live-article')->firstOrFail();
 
-        $this->assertSame('draft', $article->status);
-        $this->assertFalse((bool) $article->is_enabled);
-        $this->assertSame(0, $article->translations()->count());
-        $this->assertDatabaseHas('cms_drafts', [
-            'target_key' => $this->targetKey($article),
-            'status' => PublicationStatus::Draft->value,
-        ]);
+        $this->assertSame('published', $article->status);
+        $this->assertTrue((bool) $article->is_enabled);
+        $this->assertNotNull($article->published_at);
+        $this->assertSame(2, $article->translations()->count());
+        $this->assertDatabaseHas('audit_logs', ['action' => 'cms.published']);
+        $this->get('/en/news/'.$article->getKey())->assertOk()->assertSee('Filament live article');
+        $this->get('/ar/news/'.$article->getKey())->assertOk()->assertSee('مقال عربي');
+    }
+
+    public function test_filament_create_requires_the_article_body(): void
+    {
+        $this->actingAs($this->editor, 'web');
+        $payload = $this->payload('Article without body');
+        $payload['translations'][1]['body'] = '';
+
+        Livewire::test(CreateNewsArticle::class)
+            ->fillForm($payload)
+            ->call('create')
+            ->assertHasFormErrors();
+
+        $this->assertDatabaseMissing('news_articles', ['slug' => 'article-without-body']);
     }
 
     public function test_filament_create_does_not_require_optional_seo_metadata(): void
@@ -205,23 +220,28 @@ final class NewsArticleCmsWorkflowTest extends TestCase
         $this->assertSame('Newer working draft', $this->workflow->latestEditableDraftPayload($targetKey, (int) $this->editor->getKey())['translations']['en']['title'] ?? null);
     }
 
-    public function test_matching_faculty_editor_can_draft_and_preview_but_cannot_publish(): void
+    public function test_faculty_editor_publishes_only_their_own_faculty_articles(): void
     {
         $article = $this->publishedArticle('Faculty article', 'medicine');
+        $otherArticle = $this->publishedArticle('Other faculty article', 'pharmacy');
         $facultyEditor = User::factory()->create([
             'role_slug' => 'faculty_editor',
             'faculty_scopes' => ['medicine'],
             'is_locked' => false,
         ]);
-        $payload = $this->payloadFor($article, 'Faculty private draft');
+        $payload = $this->payloadFor($article, 'Faculty update');
         $prepared = $this->articles->prepareDraft(new NewsArticleCmsDataDTO((int) $article->getKey(), $payload), (int) $facultyEditor->getKey());
         $this->workflow->saveDraft((string) $prepared->targetKey, $prepared->payload, (int) $facultyEditor->getKey());
 
         $preview = $this->workflow->preview((string) $prepared->targetKey, 'en', (int) $facultyEditor->getKey());
-        $this->get($preview->previewUrl)->assertOk()->assertSee('Faculty private draft');
+        $this->get($preview->previewUrl)->assertOk()->assertSee('Faculty update');
 
+        $this->assertTrue($this->workflow->publish((string) $prepared->targetKey, (int) $facultyEditor->getKey()));
+        $this->get('/en/news/'.$article->getKey())->assertOk()->assertSee('Faculty update');
+
+        $this->saveDraft($otherArticle, 'Other faculty draft');
         $this->expectException(AuthorizationException::class);
-        $this->workflow->publish((string) $prepared->targetKey, (int) $facultyEditor->getKey());
+        $this->workflow->publish($this->targetKey($otherArticle), (int) $facultyEditor->getKey());
     }
 
     public function test_stale_expected_version_conflicts_without_changing_live_article(): void
