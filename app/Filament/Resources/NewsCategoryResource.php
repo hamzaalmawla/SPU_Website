@@ -81,6 +81,7 @@ class NewsCategoryResource extends Resource
                         ->options([
                             'news' => __('admin.news_article.types.news'),
                             'announcement' => __('admin.news_article.types.announcement'),
+                        'event' => __('admin.news_article.types.event'),
                         ])
                         ->default('news'),
                     Toggle::make('is_enabled')
@@ -171,6 +172,7 @@ class NewsCategoryResource extends Resource
                     ->options([
                         'news' => __('admin.news_article.types.news'),
                         'announcement' => __('admin.news_article.types.announcement'),
+                        'event' => __('admin.news_article.types.event'),
                     ]),
                 TernaryFilter::make('is_enabled')->label(__('admin.news_category.filters.enabled')),
             ])

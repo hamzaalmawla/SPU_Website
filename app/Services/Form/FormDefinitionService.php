@@ -13,6 +13,8 @@ use App\Models\Cms\CmsDraft;
 use App\Models\Cms\CmsTargetContent;
 use App\Models\Form\DynamicFormSubmission;
 use App\Models\Form\FormDefinition;
+use App\Models\News\NewsArticle;
+use App\Models\News\NewsArticleEvent;
 use App\Models\User\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Collection;
@@ -159,6 +161,14 @@ final class FormDefinitionService implements FormDefinitionServiceInterface
                 });
         }
 
+        // Published event articles keep their form on the event row.
+        NewsArticleEvent::query()
+            ->where('form_key', $key)
+            ->pluck('news_article_id')
+            ->each(function (int $articleId) use (&$targets): void {
+                $targets['entity.news-article.'.$articleId] = true;
+            });
+
         // A fixed place that has not picked a form shows its default one.
         foreach (self::PAGE_FORMS as $target => $page) {
             if ($page['default'] !== $key || isset($targets[$target])) {
@@ -174,12 +184,27 @@ final class FormDefinitionService implements FormDefinitionServiceInterface
         }
 
         foreach (array_keys($targets) as $target) {
+            if (preg_match('/^entity\.news-article\.([1-9][0-9]*)$/', $target, $matches) === 1) {
+                $usage[] = __('admin.forms.usage.page', ['page' => $this->articleTitle((int) $matches[1], $locale)], $locale);
+
+                continue;
+            }
+
             $labelKey = 'admin.cms.targets.'.$target;
             $label = __($labelKey, [], $locale);
             $usage[] = __('admin.forms.usage.page', ['page' => $label !== $labelKey ? $label : $target], $locale);
         }
 
         return $usage;
+    }
+
+    private function articleTitle(int $articleId, string $locale): string
+    {
+        $article = NewsArticle::query()->with('translations')->find($articleId);
+        $title = $article?->translations->firstWhere('locale', $locale)?->title
+            ?? $article?->translations->firstWhere('locale', 'ar')?->title;
+
+        return filled($title) ? trim((string) $title) : ($article?->slug ?? 'entity.news-article.'.$articleId);
     }
 
     public function save(?int $id, array $data, int $userId): FormDefinitionDTO

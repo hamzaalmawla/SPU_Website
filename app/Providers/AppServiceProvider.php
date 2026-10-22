@@ -114,6 +114,7 @@ use App\Contracts\Navigation\PageLinkOptionServiceInterface;
 use App\Contracts\News\LegacyCalendarEventImportServiceInterface;
 use App\Contracts\News\NewsAdminWorkflowServiceInterface;
 use App\Contracts\News\NewsArticleCmsServiceInterface;
+use App\Contracts\News\NewsArticleEventCmsServiceInterface;
 use App\Contracts\News\NewsServiceInterface;
 use App\Contracts\Page\AboutNavigationCardServiceInterface;
 use App\Contracts\Page\AboutPageServiceInterface;
@@ -309,6 +310,7 @@ use App\Services\Navigation\PageLinkOptionService;
 use App\Services\News\LegacyCalendarEventImportService;
 use App\Services\News\NewsAdminWorkflowService;
 use App\Services\News\NewsArticleCmsService;
+use App\Services\News\NewsArticleEventCmsService;
 use App\Services\News\NewsService;
 use App\Services\Page\AboutNavigationCardService;
 use App\Services\Page\AboutPageService;
@@ -697,6 +699,7 @@ class AppServiceProvider extends ServiceProvider
             MenuServiceInterface::class => MenuService::class,
             NewsAdminWorkflowServiceInterface::class => NewsAdminWorkflowService::class,
             NewsArticleCmsServiceInterface::class => NewsArticleCmsService::class,
+            NewsArticleEventCmsServiceInterface::class => NewsArticleEventCmsService::class,
             ResearchPublicationCmsServiceInterface::class => ResearchPublicationCmsService::class,
             ResearchRegisterImportServiceInterface::class => ResearchRegisterImportService::class,
             NewsServiceInterface::class => NewsService::class,

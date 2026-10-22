@@ -6,12 +6,18 @@ namespace App\Filament\Resources;
 
 use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\News\NewsArticleCmsServiceInterface;
+use App\Contracts\News\NewsArticleEventCmsServiceInterface;
 use App\Filament\Resources\NewsArticleResource\Pages;
+use App\Filament\Support\FormPicker;
 use App\Filament\Support\GrantedFacultySelect;
 use App\Filament\Support\MediaPicker;
 use App\Models\News\NewsArticle;
 use App\Models\News\NewsCategory;
 use App\Models\User\User;
+use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Group;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Repeater;
@@ -22,6 +28,7 @@ use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\Tabs\Tab;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
@@ -38,6 +45,11 @@ use Illuminate\Support\Facades\Gate;
 
 class NewsArticleResource extends Resource
 {
+    private const EVENT_TYPES = ['events', 'society_events'];
+
+    /** @var array<int, string>|null */
+    private static ?array $editorialTypes = null;
+
     protected static ?string $model = NewsArticle::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-newspaper';
@@ -95,8 +107,9 @@ class NewsArticleResource extends Resource
                                 ->schema([
                                     Radio::make('news_category_id')
                                         ->label(__('admin.news_article.fields.category'))
-                                        ->options(fn (): array => self::editorialTypeOptions())
+                                        ->options(fn (mixed $state): array => self::editorialTypeOptions(is_numeric($state) ? (int) $state : null))
                                         ->required()
+                                        ->live()
                                         ->inline(),
                                     MediaPicker::assetImage('cover_media_id', __('admin.news_article.fields.cover_image')),
                                 ])
@@ -140,6 +153,12 @@ class NewsArticleResource extends Resource
                                         ->collapsible()
                                         ->columnSpanFull(),
                                 ]),
+                        ]),
+                    Tab::make(__('admin.news_article.tabs.event'))
+                        ->icon('heroicon-o-calendar-days')
+                        ->visible(fn (Get $get): bool => self::eventType($get('news_category_id')) !== null)
+                        ->schema([
+                            Group::make(self::eventSchema())->statePath('event'),
                         ]),
                     Tab::make(__('admin.news_article.tabs.publishing'))
                         ->icon('heroicon-o-paper-airplane')
@@ -287,7 +306,7 @@ class NewsArticleResource extends Resource
             ->filters([
                 SelectFilter::make('category_type')
                     ->label(__('admin.news_article.filters.type'))
-                    ->options(['news' => __('admin.news_article.types.news'), 'announcement' => __('admin.news_article.types.announcement')])
+                    ->options(['news' => __('admin.news_article.types.news'), 'announcement' => __('admin.news_article.types.announcement'), 'event' => __('admin.news_article.types.events')])
                     ->query(fn (Builder $query, array $data): Builder => filled($data['value'] ?? null)
                         ? $query->whereHas('category', fn (Builder $categoryQuery): Builder => $categoryQuery->where('type', $data['value']))
                         : $query),
@@ -354,26 +373,283 @@ class NewsArticleResource extends Resource
 
     private static function editorialTypeLabel(mixed $category): string
     {
-        if (! $category instanceof NewsCategory || ! in_array($category->type, ['news', 'announcement'], true)) {
+        if (! $category instanceof NewsCategory || ! in_array($category->type, ['news', 'announcement', 'event'], true)) {
             return __('admin.news_article.table.no_category');
         }
 
         $type = match ($category->slug) {
             'agreements' => 'agreements',
             'society-events' => 'society_events',
+            'events' => 'events',
             default => $category->type,
         };
 
         return __('admin.news_article.types.'.$type);
     }
 
-    /** @return array<int, string> */
-    private static function editorialTypeOptions(): array
+    /**
+     * Events and Society's Events need the events permission; an article
+     * already in one of them keeps its choice listed.
+     *
+     * @return array<int, string>
+     */
+    private static function editorialTypeOptions(?int $current = null): array
     {
         $options = [];
+        $canManageEvents = Gate::allows('events.update');
 
-        foreach (app(NewsArticleCmsServiceInterface::class)->editorialTypeOptions() as $categoryId => $type) {
+        foreach (self::editorialTypes() as $categoryId => $type) {
+            if (in_array($type, self::EVENT_TYPES, true) && ! $canManageEvents && $categoryId !== $current) {
+                continue;
+            }
             $options[$categoryId] = __('admin.news_article.types.'.$type);
+        }
+
+        return $options;
+    }
+
+    /** @return array<int, string> */
+    private static function editorialTypes(): array
+    {
+        return self::$editorialTypes ??= app(NewsArticleCmsServiceInterface::class)->editorialTypeOptions();
+    }
+
+    /** "events", "society_events", or null for a category without event details. */
+    private static function eventType(mixed $categoryId): ?string
+    {
+        $type = is_numeric($categoryId) ? (self::editorialTypes()[(int) $categoryId] ?? null) : null;
+
+        return in_array($type, self::EVENT_TYPES, true) ? $type : null;
+    }
+
+    /** @return array<int, \Filament\Forms\Components\Component> */
+    private static function eventSchema(): array
+    {
+        $isEvents = fn (Get $get): bool => self::eventType($get('../news_category_id')) === 'events';
+        $needsRegistration = fn (Get $get): bool => $isEvents($get) && (bool) $get('requires_registration');
+
+        return [
+            Section::make(__('admin.news_article.event.sections.type'))
+                ->description(__('admin.news_article.event.help.type'))
+                ->schema([
+                    Radio::make('kind')
+                        ->label(__('admin.news_article.event.fields.kind'))
+                        ->options(self::translatedOptions(NewsArticleEventCmsServiceInterface::KINDS, 'kinds'))
+                        ->default('event')
+                        ->required($isEvents)
+                        ->visible($isEvents)
+                        ->inline(),
+                    Toggle::make('requires_registration')
+                        ->label(__('admin.news_article.event.fields.requires_registration'))
+                        ->helperText(__('admin.news_article.event.help.requires_registration'))
+                        ->visible($isEvents)
+                        ->live(),
+                    Toggle::make('show_on_calendar')
+                        ->label(__('admin.news_article.event.fields.show_on_calendar'))
+                        ->helperText(__('admin.news_article.event.help.show_on_calendar'))
+                        ->live(),
+                    Radio::make('language')
+                        ->label(__('admin.news_article.event.fields.language'))
+                        ->options(self::translatedOptions(NewsArticleEventCmsServiceInterface::LANGUAGES, 'languages'))
+                        ->inline(),
+                    Toggle::make('has_certificate')
+                        ->label(__('admin.news_article.event.fields.has_certificate'))
+                        ->live(),
+                    Textarea::make('certificate_note_ar')
+                        ->label(__('admin.news_article.event.fields.certificate_note_ar'))
+                        ->rows(2)
+                        ->visible(fn (Get $get): bool => (bool) $get('has_certificate'))
+                        ->extraInputAttributes(['dir' => 'rtl']),
+                    Textarea::make('certificate_note_en')
+                        ->label(__('admin.news_article.event.fields.certificate_note_en'))
+                        ->rows(2)
+                        ->visible(fn (Get $get): bool => (bool) $get('has_certificate'))
+                        ->extraInputAttributes(['dir' => 'ltr']),
+                ])
+                ->columns(2),
+            Section::make(__('admin.news_article.event.sections.sessions'))
+                ->description(__('admin.news_article.event.help.sessions'))
+                ->schema([
+                    Repeater::make('sessions')
+                        ->hiddenLabel()
+                        ->itemLabel(fn (array $state): ?string => filled($state['date'] ?? null) ? (string) $state['date'] : null)
+                        ->schema([
+                            DatePicker::make('date')
+                                ->label(__('admin.news_article.event.fields.session_date'))
+                                ->native(false)
+                                ->displayFormat('d/m/Y')
+                                ->required(),
+                            TimePicker::make('starts_at')
+                                ->label(__('admin.news_article.event.fields.session_starts_at'))
+                                ->seconds(false)
+                                ->required(),
+                            TimePicker::make('ends_at')
+                                ->label(__('admin.news_article.event.fields.session_ends_at'))
+                                ->seconds(false)
+                                ->after('starts_at'),
+                            TextInput::make('title_ar')->label(__('admin.news_article.event.fields.session_title_ar'))->maxLength(255)->extraInputAttributes(['dir' => 'rtl']),
+                            TextInput::make('title_en')->label(__('admin.news_article.event.fields.session_title_en'))->maxLength(255)->extraInputAttributes(['dir' => 'ltr']),
+                            TextInput::make('location_ar')
+                                ->label(__('admin.news_article.event.fields.session_location_ar'))
+                                ->helperText(__('admin.news_article.event.help.session_location'))
+                                ->maxLength(255)
+                                ->extraInputAttributes(['dir' => 'rtl']),
+                            TextInput::make('location_en')->label(__('admin.news_article.event.fields.session_location_en'))->maxLength(255)->extraInputAttributes(['dir' => 'ltr']),
+                            Repeater::make('speakers')
+                                ->label(__('admin.news_article.event.fields.session_speakers'))
+                                ->helperText(__('admin.news_article.event.help.session_speakers'))
+                                ->schema(self::speakerSchema())
+                                ->itemLabel(fn (array $state): ?string => self::speakerItemLabel($state))
+                                ->defaultItems(0)
+                                ->collapsible()
+                                ->columns(2)
+                                ->columnSpanFull(),
+                        ])
+                        // Society's Events off the calendar are plain articles and may have no date.
+                        ->minItems(fn (Get $get): int => $isEvents($get) || (bool) $get('show_on_calendar') ? 1 : 0)
+                        ->defaultItems(1)
+                        ->collapsible()
+                        ->columns(3)
+                        ->columnSpanFull(),
+                ]),
+            Section::make(__('admin.news_article.event.sections.place'))
+                ->schema([
+                    TextInput::make('location_ar')->label(__('admin.news_article.event.fields.location_ar'))->maxLength(255)->extraInputAttributes(['dir' => 'rtl']),
+                    TextInput::make('location_en')->label(__('admin.news_article.event.fields.location_en'))->maxLength(255)->extraInputAttributes(['dir' => 'ltr']),
+                    TextInput::make('map_url')->label(__('admin.news_article.event.fields.map_url'))->url()->maxLength(255),
+                    TextInput::make('online_url')->label(__('admin.news_article.event.fields.online_url'))->url()->maxLength(255),
+                ])
+                ->columns(2),
+            Section::make(__('admin.news_article.event.sections.audience'))
+                ->schema([
+                    CheckboxList::make('audience')
+                        ->label(__('admin.news_article.event.fields.audience'))
+                        ->options(self::translatedOptions(NewsArticleEventCmsServiceInterface::AUDIENCES, 'audiences'))
+                        ->columns(4)
+                        ->columnSpanFull(),
+                    TextInput::make('organizer_ar')->label(__('admin.news_article.event.fields.organizer_ar'))->maxLength(255)->extraInputAttributes(['dir' => 'rtl']),
+                    TextInput::make('organizer_en')->label(__('admin.news_article.event.fields.organizer_en'))->maxLength(255)->extraInputAttributes(['dir' => 'ltr']),
+                    Textarea::make('audience_note_ar')->label(__('admin.news_article.event.fields.audience_note_ar'))->rows(2)->extraInputAttributes(['dir' => 'rtl']),
+                    Textarea::make('audience_note_en')->label(__('admin.news_article.event.fields.audience_note_en'))->rows(2)->extraInputAttributes(['dir' => 'ltr']),
+                ])
+                ->columns(2),
+            Section::make(__('admin.news_article.event.sections.registration'))
+                ->description(__('admin.news_article.event.help.registration'))
+                ->visible($needsRegistration)
+                ->schema([
+                    FormPicker::make('formId')
+                        ->label(__('admin.news_article.event.fields.form'))
+                        ->required($needsRegistration),
+                    TextInput::make('capacity')
+                        ->label(__('admin.news_article.event.fields.capacity'))
+                        ->helperText(__('admin.news_article.event.help.capacity'))
+                        ->numeric()
+                        ->integer()
+                        ->minValue(1),
+                    TextInput::make('prior_registrations')
+                        ->label(__('admin.news_article.event.fields.prior_registrations'))
+                        ->helperText(__('admin.news_article.event.help.prior_registrations'))
+                        ->numeric()
+                        ->integer()
+                        ->minValue(0)
+                        ->default(0),
+                    DateTimePicker::make('registration_closes_at')
+                        ->label(__('admin.news_article.event.fields.registration_closes_at'))
+                        ->helperText(__('admin.news_article.event.help.registration_closes_at'))
+                        ->timezone((string) config('app.admin_timezone', 'Asia/Damascus'))
+                        ->seconds(false)
+                        ->native(false),
+                ])
+                ->columns(2),
+            Section::make(__('admin.news_article.event.sections.speakers'))
+                ->description(__('admin.news_article.event.help.speakers'))
+                ->schema([
+                    Repeater::make('speakers')
+                        ->hiddenLabel()
+                        ->schema(self::speakerSchema())
+                        ->itemLabel(fn (array $state): ?string => self::speakerItemLabel($state))
+                        ->defaultItems(0)
+                        ->collapsible()
+                        ->columns(2)
+                        ->columnSpanFull(),
+                ]),
+            Section::make(__('admin.news_article.event.sections.invitation'))
+                ->schema([
+                    MediaPicker::assetImage('invitation_media_id', __('admin.news_article.event.fields.invitation')),
+                    TextInput::make('contact_email')->label(__('admin.news_article.event.fields.contact_email'))->email()->maxLength(255),
+                    TextInput::make('contact_phone')->label(__('admin.news_article.event.fields.contact_phone'))->tel()->maxLength(50),
+                ])
+                ->columns(2),
+            Section::make(__('admin.news_article.event.sections.results'))
+                ->description(__('admin.news_article.event.help.results'))
+                ->collapsed()
+                ->schema([
+                    Textarea::make('results_ar')->label(__('admin.news_article.event.fields.results_ar'))->rows(4)->extraInputAttributes(['dir' => 'rtl']),
+                    Textarea::make('results_en')->label(__('admin.news_article.event.fields.results_en'))->rows(4)->extraInputAttributes(['dir' => 'ltr']),
+                ])
+                ->columns(2),
+        ];
+    }
+
+    /** @return array<int, \Filament\Forms\Components\Component> */
+    private static function speakerSchema(): array
+    {
+        $isExternal = fn (Get $get): bool => $get('source') !== 'university';
+
+        return [
+            Radio::make('source')
+                ->label(__('admin.news_article.event.fields.speaker_source'))
+                ->options([
+                    'university' => __('admin.news_article.event.speaker_sources.university'),
+                    'external' => __('admin.news_article.event.speaker_sources.external'),
+                ])
+                ->default('university')
+                ->required()
+                ->live()
+                ->inline()
+                ->columnSpanFull(),
+            Select::make('profile')
+                ->label(__('admin.news_article.event.fields.speaker_profile'))
+                ->helperText(__('admin.news_article.event.help.speaker_profile'))
+                ->options(fn (?string $state): array => app(NewsArticleEventCmsServiceInterface::class)
+                    ->speakerProfileOptions(app()->getLocale() === 'en' ? 'en' : 'ar', $state))
+                ->searchable()
+                ->native(false)
+                ->visible(fn (Get $get): bool => ! $isExternal($get))
+                ->required(fn (Get $get): bool => ! $isExternal($get))
+                ->columnSpanFull(),
+            TextInput::make('name_ar')->label(__('admin.news_article.event.fields.speaker_name_ar'))->maxLength(255)->visible($isExternal)->required($isExternal)->extraInputAttributes(['dir' => 'rtl']),
+            TextInput::make('name_en')->label(__('admin.news_article.event.fields.speaker_name_en'))->maxLength(255)->visible($isExternal)->required($isExternal)->extraInputAttributes(['dir' => 'ltr']),
+            TextInput::make('title_ar')->label(__('admin.news_article.event.fields.speaker_title_ar'))->maxLength(255)->visible($isExternal)->extraInputAttributes(['dir' => 'rtl']),
+            TextInput::make('title_en')->label(__('admin.news_article.event.fields.speaker_title_en'))->maxLength(255)->visible($isExternal)->extraInputAttributes(['dir' => 'ltr']),
+            TextInput::make('organization_ar')->label(__('admin.news_article.event.fields.speaker_organization_ar'))->maxLength(255)->visible($isExternal)->extraInputAttributes(['dir' => 'rtl']),
+            TextInput::make('organization_en')->label(__('admin.news_article.event.fields.speaker_organization_en'))->maxLength(255)->visible($isExternal)->extraInputAttributes(['dir' => 'ltr']),
+            Textarea::make('bio_ar')->label(__('admin.news_article.event.fields.speaker_bio_ar'))->rows(2)->visible($isExternal)->extraInputAttributes(['dir' => 'rtl']),
+            Textarea::make('bio_en')->label(__('admin.news_article.event.fields.speaker_bio_en'))->rows(2)->visible($isExternal)->extraInputAttributes(['dir' => 'ltr']),
+            MediaPicker::assetImage('photo_media_id', __('admin.news_article.event.fields.speaker_photo'))->visible($isExternal),
+        ];
+    }
+
+    /** @param array<string, mixed> $state */
+    private static function speakerItemLabel(array $state): ?string
+    {
+        if (($state['source'] ?? null) === 'university') {
+            return null;
+        }
+        $name = $state[app()->getLocale() === 'en' ? 'name_en' : 'name_ar'] ?? null;
+
+        return filled($name) ? (string) $name : null;
+    }
+
+    /**
+     * @param  array<int, string>  $values
+     * @return array<string, string>
+     */
+    private static function translatedOptions(array $values, string $group): array
+    {
+        $options = [];
+        foreach ($values as $value) {
+            $options[$value] = __('admin.news_article.event.'.$group.'.'.$value);
         }
 
         return $options;

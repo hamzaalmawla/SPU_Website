@@ -1,6 +1,6 @@
 # Events, Announcements and News: Unification Plan
 
-Status: agreed with the product owner (2026-10-22), not yet built.
+Status: agreed with the product owner (2026-10-22). Step 1 written (not yet run against the test suite, see below); steps 2-5 not started.
 
 ## Problem
 
@@ -29,7 +29,7 @@ An editor has to know which screen an event belongs to, display-only events and 
 
 3. An event has one or more **sessions** with separate dates (e.g. 24/10, 31/10, 2/11). **One registration covers all sessions.**
 4. **Speakers** are optional, per event or per session. Each speaker is either:
-   - **From the university**: chosen from a searchable dropdown of faculty member profiles, **grouped by faculty**. Name, photo and title are read live from the profile and the name links to it.
+   - **From the university**: chosen from a searchable dropdown: a **University leadership** group first, then faculty member profiles **grouped by faculty**. Name, photo and title are read live from the profile and the name links to it. A leadership profile linked to a faculty member is listed once, as the member.
    - **From outside**: name, title, organisation, photo, short bio typed in (AR/EN).
 5. **Research conferences stay under Research.** The research editor gets the same "Add to calendar" checkbox, and announcements can link to them.
 6. **Faculty editors cannot create events.** Choosing Events or Society's Events requires the existing `events.update` permission, which the default `faculty_editor` role does not hold.
@@ -38,18 +38,19 @@ An editor has to know which screen an event belongs to, display-only events and 
 
 ## Data model
 
-New tables (all names to be checked against existing conventions during step 1):
+New tables (migration `2026_10_22_000003_create_news_article_events_tables.php`, which also adds the `events` category with type `event`):
 
 - `news_article_events` (1:1 with `news_articles`)
   - `news_article_id`, `kind` (`event|conference|seminar|society`), `requires_registration`, `show_on_calendar`
-  - `registration_form_key` (a `form_definitions` key, picked with `FormPicker`), `capacity` (nullable), `prior_registrations` (seats taken before the move, default 0), `registration_closes_at` (nullable; otherwise closes when the last session ends)
+  - `form_key` (a `form_definitions` key, picked with `FormPicker`), `capacity` (nullable), `prior_registrations` (seats taken outside the site, default 0), `registration_closes_at` (nullable; otherwise closes when the last session ends)
+  - `starts_at`, `ends_at`: first session start and last session end in UTC, for calendar and listing queries
   - `language` (`ar|en|both`), `has_certificate`, `invitation_media_id`, `map_url`, `online_url`, `contact_email`, `contact_phone`
   - `audience` (JSON list: `students|staff|public|alumni`)
 - `news_article_event_translations`: `locale`, `location`, `organizer`, `audience_note`, `certificate_note`, `results`
-- `news_article_event_sessions`: `news_article_event_id`, `date`, `starts_at_time`, `ends_at_time` (nullable), `sort_order`
-- `news_article_event_session_translations`: `locale`, `title` (nullable), `location` (nullable, falls back to the event's)
-- `news_article_event_speakers`: `news_article_event_id`, `session_id` (nullable = whole event), `faculty_member_id` (nullable = outside speaker), `photo_media_id`, `sort_order`
-- `news_article_event_speaker_translations`: `locale`, `name`, `title`, `organization`, `bio` (outside speakers only)
+- `news_article_event_sessions`: `news_article_event_id`, `date`, `starts_at`, `ends_at` (nullable), `title_ar|en`, `location_ar|en` (falls back to the event's), `sort_order`. Times are what the editor typed, in the admin time zone; rows are stored in date order.
+- `news_article_event_speakers`: `news_article_event_id`, `news_article_event_session_id` (nullable = whole event), `faculty_member_id` or `person_id` (both null = outside speaker), `name|title|organization|bio_ar|en` and `photo_media_id` (outside speakers only), `sort_order`
+
+Session and speaker text uses `_ar`/`_en` columns, like `news_article_attachments` labels; event-level text uses a translations table, like the article.
 
 Announcement link, on `news_articles`: `related_kind` (`article|conference|url`, nullable), `related_article_id`, `related_conference_id`, `related_url`; and `cta_label` on `news_article_translations`.
 
@@ -93,6 +94,11 @@ Rules:
 4. Announcement related link (admin + public button). Tests.
 5. Move existing events, redirects, retire the old events list in `ManageEvents`; update `FRONTEND_IMPORT_TRACKER.md`, the parity matrix and the CMS user guide.
 
-## Open assumption
+## Step 1 as built
 
-Leadership profiles that are not linked to a faculty member have no faculty, so the speaker dropdown would not list them. If they should be choosable, they need their own group (for example "University leadership"). To confirm before step 1.
+- `NewsArticleEventCmsServiceInterface` / `NewsArticleEventCmsService`: normalizes the `event` part of the article payload, validates it on publish, writes it on publish (`persist`), reads it back, and builds the speaker dropdown.
+- `NewsArticleCmsService` carries `event` in the payload, merges its errors into publish validation, persists it inside the publish transaction, and requires `events.update` whenever the old or new category is Events or Society's Events.
+- `NewsArticleResource`: "Event details" tab (visible for Events and Society's Events) with type, registration, calendar, language, certificate, sessions (each with optional speakers), place, audience, registration form and seats, event speakers, invitation and contact, and after-event results. The Events and Society's Events choices are hidden from users without `events.update`.
+- `FormDefinitionService::usage` counts event articles, so a form picked by an event cannot be deleted.
+- Tests: `tests/Feature/NewsArticleEventCmsTest.php`.
+- Until step 2, a published event shows on the public site as a plain article.

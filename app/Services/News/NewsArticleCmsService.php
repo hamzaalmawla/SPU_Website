@@ -6,6 +6,7 @@ namespace App\Services\News;
 
 use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\News\NewsArticleCmsServiceInterface;
+use App\Contracts\News\NewsArticleEventCmsServiceInterface;
 use App\Contracts\Shared\SlugServiceInterface;
 use App\DTOs\Cms\CmsTargetDTO;
 use App\DTOs\News\NewsArticleCmsDataDTO;
@@ -31,10 +32,13 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
 {
     private const TARGET_PREFIX = 'entity.news-article.';
 
+    private const EDITORIAL_SLUGS = ['news', 'announcements', 'agreements', 'society-events', 'events'];
+
     public function __construct(
         private readonly SlugServiceInterface $slugService,
         private readonly HtmlSanitizer $htmlSanitizer,
         private readonly AdminAccessServiceInterface $access,
+        private readonly NewsArticleEventCmsServiceInterface $events,
     ) {}
 
     /** @return array<int, string> */
@@ -42,14 +46,14 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
     {
         $categories = NewsCategory::query()
             ->enabled()
-            ->whereIn('slug', ['news', 'announcements', 'agreements', 'society-events'])
+            ->whereIn('slug', self::EDITORIAL_SLUGS)
             ->orderBy('sort_order')
             ->orderBy('id')
             ->get()
             ->keyBy('slug');
         $options = [];
 
-        foreach (['news', 'announcements', 'agreements', 'society-events'] as $slug) {
+        foreach (self::EDITORIAL_SLUGS as $slug) {
             $category = $categories->get($slug);
             if ($category instanceof NewsCategory) {
                 $options[(int) $category->getKey()] = match ($slug) {
@@ -239,7 +243,7 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
                 ]);
             }
 
-            return true;
+            return $this->events->persist((int) $article->getKey(), is_array($payload['event'] ?? null) ? $payload['event'] : null);
         });
     }
 
@@ -341,10 +345,11 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
     {
         $translations = $this->localizedRecords($payload['translations'] ?? $fallback['translations'] ?? []);
         $seo = $this->localizedRecords($payload['seo_meta'] ?? $payload['seoMeta'] ?? $fallback['seo_meta'] ?? []);
+        $categoryId = $this->nullableInt($payload['news_category_id'] ?? $fallback['news_category_id'] ?? null);
 
         return [
             'entity_id' => $this->nullableInt($payload['entity_id'] ?? $fallback['entity_id'] ?? null),
-            'news_category_id' => $this->nullableInt($payload['news_category_id'] ?? $fallback['news_category_id'] ?? null),
+            'news_category_id' => $categoryId,
             'cover_media_id' => $this->nullableInt($payload['cover_media_id'] ?? $fallback['cover_media_id'] ?? null),
             'slug' => $this->stringValue($payload['slug'] ?? $fallback['slug'] ?? null),
             'published_at' => $this->nullableString($payload['published_at'] ?? $fallback['published_at'] ?? null),
@@ -356,6 +361,7 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
             'translations' => $translations,
             'attachments' => $this->listValue($payload['attachments'] ?? $fallback['attachments'] ?? []),
             'seo_meta' => $seo,
+            'event' => $this->events->normalize($payload['event'] ?? $fallback['event'] ?? null, $categoryId),
         ];
     }
 
@@ -402,6 +408,7 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
                 'og_image_url' => $seo->og_image_url,
                 'robots' => (string) $seo->robots,
             ]])->all(),
+            'event' => $this->events->storedPayload((int) $article->getKey()),
         ];
     }
 
@@ -417,9 +424,10 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
         }
 
         $categoryId = $this->nullableInt($payload['news_category_id'] ?? null);
-        if ($categoryId === null || ! NewsCategory::query()->enabled()->whereKey($categoryId)->whereIn('type', ['news', 'announcement'])->exists()) {
-            $errors['news_category_id'][] = 'A News or Announcement content type is required.';
+        if ($categoryId === null || ! NewsCategory::query()->enabled()->whereKey($categoryId)->whereIn('type', ['news', 'announcement', 'event'])->exists()) {
+            $errors['news_category_id'][] = 'A News, Announcement or Event content type is required.';
         }
+        $errors = array_merge_recursive($errors, $this->events->validationErrors(is_array($payload['event'] ?? null) ? $payload['event'] : null, $categoryId));
 
         foreach ($this->requiredLocales($payload) as $locale) {
             $translation = $payload['translations'][$locale] ?? null;
@@ -498,6 +506,14 @@ final class NewsArticleCmsService implements NewsArticleCmsServiceInterface
             : Gate::forUser($user)->allows('create', NewsArticle::class);
         if (! $allowed) {
             throw new AuthorizationException('This user is not authorized to manage this news article.');
+        }
+
+        // Events and Society's Events are managed with the events permission,
+        // which faculty editors do not hold by default.
+        $touchesEvents = $this->events->isEventCategory($article?->news_category_id)
+            || ($payload !== null && $this->events->isEventCategory($this->nullableInt($payload['news_category_id'] ?? null)));
+        if ($touchesEvents && ! Gate::forUser($user)->allows('events.update')) {
+            throw new AuthorizationException('This user is not authorized to manage events.');
         }
 
         if ($payload !== null && $user->hasFacultyLimit()

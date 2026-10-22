@@ -37,6 +37,12 @@ final class NewsCategorySeeder extends Seeder
                 'ar' => 'فعاليات المجتمع',
                 'en' => "Society's Events",
             ],
+            'events' => [
+                'type' => 'event',
+                'sort_order' => 5,
+                'ar' => 'الفعاليات',
+                'en' => 'Events',
+            ],
         ];
 
         foreach ($categories as $slug => $data) {
