@@ -130,6 +130,30 @@
                         <label class="spu-board-form__check"><input type="checkbox" wire:model="boardCourse.required"> {{ $t('required') }}</label>
                     </div>
 
+                    <fieldset class="spu-board-form">
+                        <legend>{{ $t('teachers') }}</legend>
+                        @php($teacherChoices = $this->boardTeacherChoices())
+                        @foreach (['theory', 'practical'] as $part)
+                            <label>{{ $t($part.'_teacher') }}
+                                <select wire:model="boardCourse.{{ $part }}TeacherId">
+                                    <option value="">{{ $t('no_teacher') }}</option>
+                                    <optgroup label="{{ $t('teachers_this_faculty') }}">
+                                        @foreach ($teacherChoices['faculty'] as $memberId => $memberName)
+                                            <option value="{{ $memberId }}">{{ $memberName }}</option>
+                                        @endforeach
+                                    </optgroup>
+                                    <optgroup label="{{ $t('teachers_other_faculties') }}">
+                                        @foreach ($teacherChoices['other'] as $memberId => $memberName)
+                                            <option value="{{ $memberId }}">{{ $memberName }}</option>
+                                        @endforeach
+                                    </optgroup>
+                                </select>
+                            </label>
+                            <label class="spu-board-form__check"><input type="checkbox" wire:model="boardCourse.{{ $part }}TeacherEnabled"> {{ $t($part.'_teacher_shown') }}</label>
+                        @endforeach
+                        <small>{{ $t('teachers_help') }}</small>
+                    </fieldset>
+
                     <div class="spu-board-form spu-board-form--stack">
                         <label>{{ $t('title_en') }}<input type="text" dir="ltr" wire:model="boardCourse.titleEn" maxlength="180" required></label>
                         <label>{{ $t('title_ar') }}<input type="text" dir="rtl" wire:model="boardCourse.titleAr" maxlength="180" required></label>

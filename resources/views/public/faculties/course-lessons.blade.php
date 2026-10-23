@@ -64,7 +64,11 @@
                         <div class="rounded-[6px] border border-slate-100 bg-white p-3"><dt class="text-slate-400">{{ $label('credits') }}</dt><dd class="mt-1 text-lg text-spu-blue">{{ $course['credits'] ?? 0 }}</dd></div>
                         <div class="rounded-[6px] border border-slate-100 bg-white p-3"><dt class="text-slate-400">{{ $label('courseType') }}</dt><dd class="mt-1 text-[13px] text-spu-blue">{{ $typeLabel($course) }}</dd></div>
                         <div class="col-span-2 rounded-[6px] border border-slate-100 bg-white p-3"><dt class="text-slate-400">{{ $label('requiredStatus') }}</dt><dd class="mt-1 text-[13px] text-spu-blue">{{ ($course['required'] ?? true) ? $label('required') : $label('elective') }}</dd></div>
-                        @if (is_array($course['instructor'] ?? null))
+                        @if (($course['teachers'] ?? []) !== [])
+                            @foreach ($course['teachers'] as $teacher)
+                                <a href="{{ $teacher['url'] }}" class="col-span-2 rounded-[1px] border border-slate-100 bg-white p-3 transition hover:border-spu-blue hover:bg-spu-blue/5"><dt class="text-slate-400">{{ $teacher['part'] === 'theory' ? ($isAr ? 'مدرّس القسم النظري' : 'Theory teacher') : ($isAr ? 'مدرّس القسم العملي' : 'Practical teacher') }}</dt><dd class="mt-1 flex items-center gap-2 text-[13px] font-bold text-spu-blue">@if ($teacher['image'])<img src="{{ $teacher['image'] }}" alt="" class="h-6 w-6 rounded-full object-cover" loading="lazy">@else<img src="/images/icon-user-graduate-outline.svg" alt="" class="h-4 w-4" aria-hidden="true">@endif<span>{{ $teacher['name'] }}</span></dd></a>
+                            @endforeach
+                        @elseif (is_array($course['instructor'] ?? null))
                             @if (is_string($course['instructorUrl'] ?? null))
                                 <a href="{{ $course['instructorUrl'] }}" class="col-span-2 rounded-[1px] border border-slate-100 bg-white p-3 transition hover:border-spu-blue hover:bg-spu-blue/5"><dt class="text-slate-400">{{ $isAr ? 'المدرس' : 'Instructor' }}</dt><dd class="mt-1 flex items-center gap-2 text-[13px] font-bold text-spu-blue"><img src="/images/icon-user-graduate-outline.svg" alt="" class="h-4 w-4" aria-hidden="true"><span>{{ $isAr ? ($course['instructor']['nameAr'] ?? '') : ($course['instructor']['nameEn'] ?? '') }}</span></dd></a>
                             @else

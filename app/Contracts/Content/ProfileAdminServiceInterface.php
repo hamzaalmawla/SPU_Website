@@ -15,6 +15,14 @@ interface ProfileAdminServiceInterface
     public function facultyIdForScope(string $scope, int $userId): ?int;
 
     /**
+     * Profiles that can teach a course of this faculty, for the study plan
+     * board: the faculty's own profiles first, then everyone else.
+     *
+     * @return array{faculty: array<int, string>, other: array<int, string>}
+     */
+    public function teacherOptions(string $facultyScope, int $userId): array;
+
+    /**
      * Faculty profiles a leadership row can belong to, matching the search
      * (name in either language, or slug), labelled with name and faculty.
      *

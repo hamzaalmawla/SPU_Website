@@ -208,6 +208,7 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
             'prerequisiteCredits' => (int) ($en['prerequisiteCredits'] ?? 0),
             'lessons' => $lessons,
             'specificationUrl' => (string) ($en['specificationUrl'] ?? ''),
+            ...$this->teacherFormFields($en['teachers'] ?? null),
         ];
     }
 
@@ -231,6 +232,7 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
             'prerequisiteCredits' => 0,
             'lessons' => [],
             'specificationUrl' => '',
+            ...$this->teacherFormFields(null),
         ];
     }
 
@@ -301,6 +303,9 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
             $record['prerequisiteCredits'] = $clean['prerequisiteCredits'];
             $record['instructor'] = $existing['instructor'] ?? null;
             $record['hours'] = ['theory' => $clean['theory'], 'practical' => $clean['practical']];
+            // Who teaches each part: a faculty profile id, never a copy of the name,
+            // so the course page shows the profile as it is now.
+            $record['teachers'] = $clean['teachers'] ?? $this->storedTeachers($existing['teachers'] ?? null);
 
             if (array_key_exists('lessons', $form)) {
                 $record['lessons'] = $this->lessonsFromForm($form['lessons'], $this->records($existing['lessons'] ?? []), $id, $locale, $this->lessonIds($department, $id));
@@ -639,6 +644,45 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
     }
 
     /**
+     * The theory and practical teacher fields of the course form.
+     *
+     * @return array{theoryTeacherId: string, theoryTeacherEnabled: bool, practicalTeacherId: string, practicalTeacherEnabled: bool}
+     */
+    private function teacherFormFields(mixed $stored): array
+    {
+        $teachers = $this->storedTeachers($stored);
+
+        return [
+            'theoryTeacherId' => $teachers['theory']['memberId'] !== null ? (string) $teachers['theory']['memberId'] : '',
+            'theoryTeacherEnabled' => $teachers['theory']['enabled'],
+            'practicalTeacherId' => $teachers['practical']['memberId'] !== null ? (string) $teachers['practical']['memberId'] : '',
+            'practicalTeacherEnabled' => $teachers['practical']['enabled'],
+        ];
+    }
+
+    /**
+     * A course's teachers as stored, with both parts present. A part is
+     * shown by default; switching it off hides it on the course page.
+     *
+     * @return array{theory: array{memberId: int|null, enabled: bool}, practical: array{memberId: int|null, enabled: bool}}
+     */
+    private function storedTeachers(mixed $stored): array
+    {
+        $stored = is_array($stored) ? $stored : [];
+        $teachers = [];
+        foreach (['theory', 'practical'] as $part) {
+            $entry = is_array($stored[$part] ?? null) ? $stored[$part] : [];
+            $memberId = $entry['memberId'] ?? null;
+            $teachers[$part] = [
+                'memberId' => is_numeric($memberId) && (int) $memberId > 0 ? (int) $memberId : null,
+                'enabled' => (bool) ($entry['enabled'] ?? true),
+            ];
+        }
+
+        return $teachers;
+    }
+
+    /**
      * @param  array<string, mixed>  $form
      * @return array<string, mixed>
      */
@@ -682,7 +726,23 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
 
         $type = (string) ($form['type'] ?? 'specialization');
 
+        $teachers = null;
+        if (array_key_exists('theoryTeacherId', $form) || array_key_exists('practicalTeacherId', $form)) {
+            $teachers = [];
+            foreach (['theory', 'practical'] as $part) {
+                $memberId = trim((string) ($form[$part.'TeacherId'] ?? ''));
+                if ($memberId !== '' && (! ctype_digit($memberId) || (int) $memberId < 1)) {
+                    throw new InvalidArgumentException('Choose the teacher from the list.');
+                }
+                $teachers[$part] = [
+                    'memberId' => $memberId === '' ? null : (int) $memberId,
+                    'enabled' => filter_var($form[$part.'TeacherEnabled'] ?? true, FILTER_VALIDATE_BOOLEAN),
+                ];
+            }
+        }
+
         return [
+            'teachers' => $teachers,
             'code' => $code,
             'titleAr' => $titleAr,
             'titleEn' => $titleEn,

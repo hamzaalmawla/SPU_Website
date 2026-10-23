@@ -100,6 +100,35 @@ final class ProfileAdminService implements ProfileAdminServiceInterface
             ->all();
     }
 
+    public function teacherOptions(string $facultyScope, int $userId): array
+    {
+        $user = User::query()->findOrFail($userId);
+        if (! $this->access->canAny($user, ['faculty_members.view', 'people.view'])) {
+            throw new AuthorizationException('You are not authorized to view profile options.');
+        }
+
+        $facultyId = Faculty::query()
+            ->where(fn ($query) => $query->where('faculty_scope_slug', $facultyScope)->orWhere('public_slug', $facultyScope)->orWhere('slug', $facultyScope))
+            ->value('id');
+        $locale = app()->getLocale() === 'ar' ? 'ar' : 'en';
+        $options = ['faculty' => [], 'other' => []];
+
+        foreach (FacultyMember::query()->with('translations')->get() as $member) {
+            $name = $member->translations->firstWhere('locale', $locale)?->full_name
+                ?? $member->translations->firstWhere('locale', $locale === 'ar' ? 'en' : 'ar')?->full_name
+                ?? (string) $member->slug;
+            $group = $facultyId !== null && (int) $member->faculty_id === (int) $facultyId ? 'faculty' : 'other';
+            $options[$group][(int) $member->getKey()] = trim((string) $name);
+        }
+
+        foreach ($options as $group => $names) {
+            asort($names, SORT_NATURAL | SORT_FLAG_CASE);
+            $options[$group] = $names;
+        }
+
+        return $options;
+    }
+
     public function facultyIdForScope(string $scope, int $userId): ?int
     {
         $allowedIds = array_keys($this->facultyOptions($userId));

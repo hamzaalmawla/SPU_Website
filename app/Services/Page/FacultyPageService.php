@@ -2066,6 +2066,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
 
         $instructor = is_array($course['instructor'] ?? null) ? $course['instructor'] : null;
         $course['instructorUrl'] = $this->courseInstructorUrl($locale, $instructor);
+        $course['teachers'] = $this->courseTeachers($locale, $course['teachers'] ?? null);
         $course['lessons'] = $lessons->all();
         $course['specificationUrl'] = $this->studyPlanLinkService->sanitizeCourseMaterialPath($course['specificationUrl'] ?? null);
         $validatedFilters = ['department' => $departmentId, 'course' => $courseId];
@@ -2086,6 +2087,56 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 'openedCourses' => $courses->filter(fn (array $item): bool => in_array($courseId, is_array($item['prerequisites'] ?? null) ? $item['prerequisites'] : [], true))->values()->all(),
             ],
         ];
+    }
+
+    /**
+     * The theory and practical teachers shown on a course page, read from
+     * their faculty profiles so the name and photo are the profile's own. A
+     * part switched off, or whose profile is not public, is left out.
+     *
+     * @return list<array{part: string, name: string, image: string|null, url: string}>
+     */
+    private function courseTeachers(string $locale, mixed $stored): array
+    {
+        $stored = is_array($stored) ? $stored : [];
+        $wanted = [];
+        foreach (['theory', 'practical'] as $part) {
+            $entry = is_array($stored[$part] ?? null) ? $stored[$part] : [];
+            $memberId = $entry['memberId'] ?? null;
+            if (($entry['enabled'] ?? true) !== false && is_numeric($memberId) && (int) $memberId > 0) {
+                $wanted[$part] = (int) $memberId;
+            }
+        }
+
+        if ($wanted === []) {
+            return [];
+        }
+
+        $members = FacultyMember::query()->public()->whereKey(array_values($wanted))->with(['translations', 'photoMedia'])->get()->keyBy('id');
+        $teachers = [];
+        foreach ($wanted as $part => $memberId) {
+            $member = $members->get($memberId);
+            if (! $member instanceof FacultyMember) {
+                continue;
+            }
+            $translation = $member->translations->firstWhere('locale', $locale)
+                ?? $member->translations->firstWhere('locale', 'ar')
+                ?? $member->translations->firstWhere('locale', 'en');
+            $name = trim((string) ($translation?->full_name ?? ''));
+            if ($name === '') {
+                continue;
+            }
+            $teachers[] = [
+                'part' => $part,
+                'name' => $name,
+                'image' => $member->photoMedia instanceof MediaAsset
+                    ? MediaUrlResolver::resolveImage($member->photoMedia->webp_path, $member->photoMedia->path, $member->photoMedia->disk)
+                    : MediaUrlResolver::resolveLegacy($member->legacy_photo_path),
+                'url' => $this->url($locale, '/about/profile/'.$member->slug),
+            ];
+        }
+
+        return $teachers;
     }
 
     /** @param array<string, mixed>|null $instructor */

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Concerns;
 
+use App\Contracts\Content\ProfileAdminServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanBoardServiceInterface;
 use App\Contracts\Media\MediaServiceInterface;
 use App\Exceptions\ConflictException;
@@ -49,6 +50,9 @@ trait ManagesStudyPlanBoard
     /** @var array<string, mixed>|null */
     private ?array $boardCache = null;
 
+    /** @var array{faculty: array<int, string>, other: array<int, string>}|null */
+    private ?array $boardTeacherCache = null;
+
     public function isStudyPlanTarget(): bool
     {
         return $this->subpageSlugFromTarget($this->currentTargetKeyForSchema()) === 'study-plan';
@@ -79,6 +83,16 @@ trait ManagesStudyPlanBoard
                 && ($search === '' || in_array($id, $selected, true) || str_contains(mb_strtolower($label), $search)),
             ARRAY_FILTER_USE_BOTH,
         );
+    }
+
+    /**
+     * Profiles for the theory and practical teacher pickers.
+     *
+     * @return array{faculty: array<int, string>, other: array<int, string>}
+     */
+    public function boardTeacherChoices(): array
+    {
+        return $this->boardTeacherCache ??= app(ProfileAdminServiceInterface::class)->teacherOptions($this->facultyScope, (int) auth()->id());
     }
 
     public function selectBoardDepartment(string $departmentId): void
