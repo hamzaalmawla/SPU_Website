@@ -14,8 +14,18 @@ use Illuminate\Support\Facades\Schema;
  */
 return new class extends Migration
 {
+    /** Children first, so they can be dropped in this order. */
+    private const TABLES = [
+        'news_article_event_speakers',
+        'news_article_event_sessions',
+        'news_article_event_translations',
+        'news_article_events',
+    ];
+
     public function up(): void
     {
+        $this->dropTablesLeftByFailedRun();
+
         Schema::create('news_article_events', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('news_article_id')->unique()->constrained('news_articles')->cascadeOnDelete();
@@ -72,7 +82,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('news_article_event_id')->constrained('news_article_events')->cascadeOnDelete();
             // Empty: the speaker belongs to the whole event.
-            $table->foreignId('news_article_event_session_id')->nullable()->constrained('news_article_event_sessions')->cascadeOnDelete();
+            // Named explicitly: the generated name is longer than MySQL's 64 characters.
+            $table->foreignId('news_article_event_session_id')->nullable()->constrained('news_article_event_sessions', 'id', 'naesp_session_foreign')->cascadeOnDelete();
             // One of the two is set for a university speaker; neither for an outside one.
             $table->foreignId('faculty_member_id')->nullable()->constrained('faculty_members')->nullOnDelete();
             $table->foreignId('person_id')->nullable()->constrained('persons')->nullOnDelete();
@@ -99,6 +110,28 @@ return new class extends Migration
         Schema::dropIfExists('news_article_event_translations');
         Schema::dropIfExists('news_article_events');
         // The Events category is kept: articles may already use it.
+    }
+
+    /**
+     * MySQL commits each CREATE TABLE at once, so an earlier run that failed
+     * partway leaves tables behind without recording the migration. They are
+     * dropped only while empty; rows in them stop the migration instead.
+     */
+    private function dropTablesLeftByFailedRun(): void
+    {
+        $tables = array_values(array_filter(self::TABLES, fn (string $table): bool => Schema::hasTable($table)));
+
+        foreach ($tables as $table) {
+            if (DB::table($table)->exists()) {
+                throw new RuntimeException("Table {$table} already exists and holds rows. Deployment stopped without dropping it.");
+            }
+        }
+
+        Schema::withoutForeignKeyConstraints(function () use ($tables): void {
+            foreach ($tables as $table) {
+                Schema::drop($table);
+            }
+        });
     }
 
     private function addEventsCategory(): void
