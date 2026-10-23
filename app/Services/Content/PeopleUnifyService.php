@@ -492,7 +492,8 @@ final class PeopleUnifyService implements PeopleUnifyServiceInterface
         $path = self::SNAPSHOT_DIRECTORY.'/snapshot-'.now()->format('Ymd-His').'.json';
         Storage::disk('local')->put($path, (string) json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
 
-        return 'storage/app/'.$path;
+        // The local disk's root differs by environment, so report where the file really is.
+        return str_replace([base_path().DIRECTORY_SEPARATOR, '\\'], ['', '/'], Storage::disk('local')->path($path));
     }
 
     private function newProfileSlug(Person $person): string
