@@ -818,7 +818,10 @@ final class FacilitiesWorkflowTest extends TestCase
             ->call('loadTarget', 'facilities.medicine.alumni')
             ->assertSee('البحث في السجلات')
             ->assertSee('الكلية أو القسم')
-            ->assertSee('السنة');
+            ->assertSee('السنة')
+            // Enter applies the filter, and a note shows while the list reloads.
+            ->assertSeeHtml('x-on:keydown.enter.prevent="$el.blur()"')
+            ->assertSeeHtml('wire:target="data.record_search"');
 
         /** @var array<string, mixed> $data */
         $data = $component->get('data');

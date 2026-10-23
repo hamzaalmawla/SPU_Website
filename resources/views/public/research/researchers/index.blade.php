@@ -18,17 +18,19 @@
         <div class="container mx-auto px-6">
             <h1 class="sr-only">{{ $data['hero']['title'] ?? '' }}</h1>
             <div class="mx-auto mb-10 max-w-[1200px]">
+                @php($allFaculties = ($data['filters']['allFaculties'] ?? '') ?: __('research.directory.all_faculties', [], $locale))
+                @php($allExpertise = ($data['filters']['allExpertise'] ?? '') ?: __('research.directory.all_expertise', [], $locale))
                 <form method="GET" action="{{ $basePath }}" class="flex flex-col gap-4 rounded-xl bg-spu-blue/[0.04] p-4 lg:flex-row lg:items-center">
                     <label class="relative flex-1">
                         <span class="sr-only">{{ $locale === 'ar' ? 'البحث عن باحث' : 'Search researchers' }}</span>
                         <img src="/images/icon-search-outline.svg" alt="" class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-spu-blue/40 rtl:left-auto rtl:right-4 rtl:rotate-180" aria-hidden="true">
-                        <input name="q" value="{{ $activeFilters['q'] ?? '' }}" type="search" placeholder="{{ $data['searchPlaceholder'] ?? '' }}" class="h-12 w-full rounded-lg border border-spu-blue/10 bg-white py-3 pl-12 pr-4 text-sm text-spu-blue placeholder:text-spu-blue/40 focus:border-spu-blue focus:outline-none focus:ring-2 focus:ring-spu-blue/20 rtl:pl-4 rtl:pr-12 rtl:text-right">
+                        <input name="q" value="{{ $activeFilters['q'] ?? '' }}" type="search" placeholder="{{ ($data['searchPlaceholder'] ?? '') ?: __('research.directory.search_placeholder', [], $locale) }}" class="h-12 w-full rounded-lg border border-spu-blue/10 bg-white py-3 pl-12 pr-4 text-sm text-spu-blue placeholder:text-spu-blue/40 focus:border-spu-blue focus:outline-none focus:ring-2 focus:ring-spu-blue/20 rtl:pl-4 rtl:pr-12 rtl:text-right">
                     </label>
                     <div class="flex flex-col gap-3 sm:flex-row md:w-auto">
                         <label>
-                            <span class="sr-only">{{ $data['filters']['allFaculties'] ?? '' }}</span>
+                            <span class="sr-only">{{ $allFaculties }}</span>
                             <select name="faculty" onchange="this.form.submit()" class="h-12 w-full sm:w-auto sm:min-w-[160px] cursor-pointer rounded-lg border border-spu-blue/10 bg-white px-4 text-sm text-spu-blue focus:border-spu-blue focus:outline-none focus:ring-2 focus:ring-spu-blue/20">
-                                <option value="">{{ $data['filters']['allFaculties'] ?? '' }}</option>
+                                <option value="">{{ $allFaculties }}</option>
                                 @foreach (($data['faculties'] ?? []) as $faculty)
                                     @php($facultyValue = (string) ($faculty['id'] ?? $faculty['value'] ?? ''))
                                     <option value="{{ $facultyValue }}" @selected(($activeFilters['faculty'] ?? '') === $facultyValue)>{{ $faculty['name'] ?? $faculty['label'] ?? '' }}</option>
@@ -37,9 +39,9 @@
                         </label>
                         @unless ($isExpertFinder)
                             <label>
-                                <span class="sr-only">{{ $data['filters']['allExpertise'] ?? '' }}</span>
+                                <span class="sr-only">{{ $allExpertise }}</span>
                                 <select name="expertise" onchange="this.form.submit()" class="h-12 w-full sm:w-auto sm:min-w-[160px] cursor-pointer rounded-lg border border-spu-blue/10 bg-white px-4 text-sm text-spu-blue focus:border-spu-blue focus:outline-none focus:ring-2 focus:ring-spu-blue/20">
-                                    <option value="">{{ $data['filters']['allExpertise'] ?? '' }}</option>
+                                    <option value="">{{ $allExpertise }}</option>
                                     @foreach (($data['expertiseAreas'] ?? []) as $area)
                                         @php($expertiseValue = (string) ($area['id'] ?? $area['value'] ?? ''))
                                         <option value="{{ $expertiseValue }}" @selected(($activeFilters['expertise'] ?? '') === $expertiseValue)>{{ $area['name'] ?? $area['label'] ?? '' }}</option>

@@ -28,4 +28,10 @@ return [
         'supervisor' => 'مشرف',
         'contributor' => 'مساهم',
     ],
+    // Researcher directory filters, when the CMS page leaves them empty.
+    'directory' => [
+        'search_placeholder' => 'ابحث بالاسم أو الاختصاص',
+        'all_faculties' => 'كل الكليات',
+        'all_expertise' => 'كل الاختصاصات',
+    ],
 ];

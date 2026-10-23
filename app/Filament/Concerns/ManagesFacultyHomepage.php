@@ -37,6 +37,7 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -200,6 +201,23 @@ trait ManagesFacultyHomepage
         }
     }
 
+    /**
+     * Enter applies a filter (it blurs the box, which is when the field
+     * updates) instead of doing nothing or submitting the editor.
+     *
+     * @return array<string, string>
+     */
+    private static function filterInputAttributes(): array
+    {
+        return ['x-on:keydown.enter.prevent' => '$el.blur()'];
+    }
+
+    /** A "Searching…" note while the list reloads after a filter changes. */
+    private static function filterLoadingHint(string $field): HtmlString
+    {
+        return new HtmlString('<span wire:loading.delay wire:target="data.'.$field.'" class="text-primary-600">'.e(__('admin.faculty_workspace.fields.searching')).'</span>');
+    }
+
     public function form(Form $form): Form
     {
         return $form
@@ -208,6 +226,8 @@ trait ManagesFacultyHomepage
                 Hidden::make('student_record_keys')->dehydrated(),
                 Section::make(__('admin.faculty_workspace.editing_tools'))->schema([
                     TextInput::make('record_search')
+                        ->extraInputAttributes(self::filterInputAttributes())
+                        ->hint(self::filterLoadingHint('record_search'))
                         ->label(__('admin.faculty_workspace.fields.search'))
                         ->helperText(fn (): ?string => $this->hasSearchableItems($this->currentTargetKeyForSchema()) ? __('admin.faculty_workspace.fields.project_search_help') : null)
                         ->visible(fn (): bool => $this->usesRecordFilters($this->currentTargetKeyForSchema()))
@@ -216,6 +236,8 @@ trait ManagesFacultyHomepage
                             $this->loadTarget($this->currentTargetKeyForSchema());
                         }),
                     TextInput::make('record_department_filter')
+                        ->extraInputAttributes(self::filterInputAttributes())
+                        ->hint(self::filterLoadingHint('record_department_filter'))
                         ->label(__('admin.faculty_workspace.fields.department_filter'))
                         ->visible(fn (): bool => $this->hasFilterableRecords($this->currentTargetKeyForSchema()))
                         ->live(onBlur: true)
@@ -223,6 +245,8 @@ trait ManagesFacultyHomepage
                             $this->loadTarget($this->currentTargetKeyForSchema());
                         }),
                     TextInput::make('record_year_filter')
+                        ->extraInputAttributes(self::filterInputAttributes())
+                        ->hint(self::filterLoadingHint('record_year_filter'))
                         ->label(__('admin.faculty_workspace.fields.year_filter'))
                         ->visible(fn (): bool => $this->usesRecordFilters($this->currentTargetKeyForSchema()))
                         ->live(onBlur: true)

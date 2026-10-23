@@ -28,4 +28,10 @@ return [
         'supervisor' => 'Supervisor',
         'contributor' => 'Contributor',
     ],
+    // Researcher directory filters, when the CMS page leaves them empty.
+    'directory' => [
+        'search_placeholder' => 'Search by name or expertise',
+        'all_faculties' => 'All faculties',
+        'all_expertise' => 'All expertise',
+    ],
 ];

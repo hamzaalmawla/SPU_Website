@@ -1118,6 +1118,7 @@ return [
         'fields' => [
             'department' => 'Department',
             'term' => 'Academic term',
+            'searching' => 'Searching…',
             'search' => 'Search Records',
             'department_filter' => 'Department / Faculty Filter',
             'project_search_help' => 'Search by project name, category, team, supervisor or year to load matching projects for editing. Leave it empty to add new projects.',
